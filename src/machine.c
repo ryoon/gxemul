@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.251 2004-12-19 08:36:55 debug Exp $
+ *  $Id: machine.c,v 1.252 2004-12-19 08:52:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2260,6 +2260,7 @@ Why is this here? TODO
 					dev_fb_init(cpu, mem, 0x100e00000ULL,
 					    VFB_GENERIC, 640,480, 1024,480,
 					    8, "necvdfrb", 1);
+					break;
 				}
 				break;
 
@@ -2357,7 +2358,11 @@ Why is this here? TODO
 					    ARC_CONSOLE_MAX_Y);
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
-					/*  VXL: TODO (G364)  */
+					/*  VXL. TODO  */
+					/*  control at 0x60100000?  */
+					dev_fb_init(cpu, mem, 0x60200000ULL,
+					    VFB_GENERIC, 1024,768, 1024,768,
+					    8, "VXL", 1);
 					break;
 				}
 
@@ -2822,8 +2827,9 @@ Why is this here? TODO
 		}
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
-		    emul->machine == MACHINE_ARC_JAZZ_PICA) {
-			uint64_t jazzbus, ali_s3;
+		    (emul->machine == MACHINE_ARC_JAZZ_PICA
+		    || emul->machine == MACHINE_ARC_JAZZ_MAGNUM)) {
+			uint64_t jazzbus, ali_s3, vxl;
 			uint64_t diskcontroller, floppy, kbdctl, kbd;
 			uint64_t ptrctl, ptr;
 			uint64_t serial1, serial2, paral, audio;
@@ -2839,22 +2845,45 @@ Why is this here? TODO
 			 *  DisplayController, needed by NetBSD:
 			 *  TODO: NetBSD still doesn't use it :(
 			 */
-			if (emul->use_x11) {
-				ali_s3 = arcbios_addchild_manual(cpu,
-				    COMPONENT_CLASS_ControllerClass,
-				    COMPONENT_TYPE_DisplayController,
-				    COMPONENT_FLAG_ConsoleOut |
-					COMPONENT_FLAG_Output,
-				    1, 2, 0, 0xffffffff, "ALI_S3",
-				    jazzbus, NULL, 0);
+			switch (emul->machine) {
+			case MACHINE_ARC_JAZZ_PICA:
+				if (emul->use_x11) {
+					ali_s3 = arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_ControllerClass,
+					    COMPONENT_TYPE_DisplayController,
+					    COMPONENT_FLAG_ConsoleOut |
+						COMPONENT_FLAG_Output,
+					    1, 2, 0, 0xffffffff, "ALI_S3",
+					    jazzbus, NULL, 0);
 
-				arcbios_addchild_manual(cpu,
-				    COMPONENT_CLASS_PeripheralClass,
-				    COMPONENT_TYPE_MonitorPeripheral,
-				    COMPONENT_FLAG_ConsoleOut |
-					COMPONENT_FLAG_Output,
-				    1, 2, 0, 0xffffffff, "1024x768",
-				    ali_s3, NULL, 0);
+					arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_PeripheralClass,
+					    COMPONENT_TYPE_MonitorPeripheral,
+					    COMPONENT_FLAG_ConsoleOut |
+						COMPONENT_FLAG_Output,
+					    1, 2, 0, 0xffffffff, "1024x768",
+					    ali_s3, NULL, 0);
+				}
+				break;
+			case MACHINE_ARC_JAZZ_MAGNUM:
+				if (emul->use_x11) {
+					vxl = arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_ControllerClass,
+					    COMPONENT_TYPE_DisplayController,
+					    COMPONENT_FLAG_ConsoleOut |
+						COMPONENT_FLAG_Output,
+					    1, 2, 0, 0xffffffff, "VXL",
+					    jazzbus, NULL, 0);
+
+					arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_PeripheralClass,
+					    COMPONENT_TYPE_MonitorPeripheral,
+					    COMPONENT_FLAG_ConsoleOut |
+						COMPONENT_FLAG_Output,
+					    1, 2, 0, 0xffffffff, "1024x768",
+					    vxl, NULL, 0);
+				}
+				break;
 			}
 
 			diskcontroller = arcbios_addchild_manual(cpu,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.62 2004-09-05 03:38:20 debug Exp $
+ *  $Id: emul.c,v 1.63 2004-09-05 03:42:52 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -66,7 +66,6 @@ extern struct cpu **cpus;
 extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
-extern int verbose;
 extern int n_dumppoints;
 extern char *dumppoint_string[];
 extern uint64_t dumppoint_pc[];
@@ -773,7 +772,7 @@ void emul_start(struct emul *emul)
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 
-	if (!verbose)
+	if (!emul->verbose)
 		quiet_mode = 1;
 
 

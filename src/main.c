@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.91 2004-09-05 03:39:46 debug Exp $
+ *  $Id: main.c,v 1.92 2004-09-05 03:42:52 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ int max_random_cycles_per_chunk = 0;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
-int verbose = 0;
 int use_x11 = 0;
 int x11_scaledown = 1;
 
@@ -363,7 +362,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->userland_emul = atoi(optarg);
 			break;
 		case 'v':
-			verbose = 1;
+			emul->verbose ++;
 			break;
 		case 'X':
 			use_x11 = 1;
@@ -390,19 +389,19 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  -i, -r, -t are pretty verbose:  */
 
-	if (emul->instruction_trace) {
+	if (emul->instruction_trace && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -i\n");
-		verbose = 1;
+		emul->verbose = 1;
 	}
 
-	if (emul->register_dump) {
+	if (emul->register_dump && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -r\n");
-		verbose = 1;
+		emul->verbose = 1;
 	}
 
-	if (emul->show_trace_tree) {
+	if (emul->show_trace_tree && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -t\n");
-		verbose = 1;
+		emul->verbose = 1;
 	}
 
 

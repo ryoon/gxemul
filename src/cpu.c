@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.73 2004-06-28 05:21:29 debug Exp $
+ *  $Id: cpu.c,v 1.74 2004-06-28 20:49:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -793,7 +793,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 		/*  The rest of the code is written for little endian, so swap if neccessary:  */
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			int tmp, tmp2;
+			unsigned char tmp, tmp2;
 			tmp  = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
 			tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
 		}
@@ -861,13 +861,14 @@ int cpu_run_instr(struct cpu *cpu)
 	if (cpu->cpu_type.exc_model == EXC3K) {
 		/*  R3000:  */
 		int enabled, mask;
+		int status = cp0->reg[COP0_STATUS];
 
 		if (cpu->last_was_rfe) {
 			enabled = 0;
 			cpu->last_was_rfe = 0;
 		} else {
-			enabled = cp0->reg[COP0_STATUS] & MIPS_SR_INT_IE;
-			mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			enabled = status & MIPS_SR_INT_IE;
+			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
 			if (enabled && mask) {
 				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 				return 0;
@@ -876,12 +877,13 @@ int cpu_run_instr(struct cpu *cpu)
 	} else {
 		/*  R4000 and others:  */
 		int enabled, mask;
+		int status = cp0->reg[COP0_STATUS];
 
-		enabled = (cp0->reg[COP0_STATUS] & STATUS_IE)
-		    && !(cp0->reg[COP0_STATUS] & STATUS_EXL)
-		    && !(cp0->reg[COP0_STATUS] & STATUS_ERL);
+		enabled = (status & STATUS_IE)
+		    && !(status & STATUS_EXL)
+		    && !(status & STATUS_ERL);
 
-		mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+		mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
 		if (enabled && mask) {
 			cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 			return 0;
@@ -907,28 +909,6 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->stats__special[special6] ++;
 
 		switch (special6) {
-		case SPECIAL_SYNC:
-			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);	/*  stype  */
-			if (instruction_trace)
-				debug("sync\t0x%02x\n", stype);
-			/*  TODO: actually sync  */
-			break;
-		case SPECIAL_SYSCALL:
-			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
-			imm &= 0xfffff;
-			if (instruction_trace)
-				debug("syscall\t0x%05x\n", imm);
-
-			if (userland_emul) {
-				useremul_syscall(cpu, imm);
-			} else
-				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
-			break;
-		case SPECIAL_BREAK:
-			if (instruction_trace)
-				debug("break\n");
-			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
-			break;
 		case SPECIAL_SLL:
 		case SPECIAL_SRL:
 		case SPECIAL_SRA:
@@ -1184,16 +1164,6 @@ int cpu_run_instr(struct cpu *cpu)
 #endif
 			}
 			break;
-		case SPECIAL_MTLO:
-		case SPECIAL_MTHI:
-		case SPECIAL_MULT:
-		case SPECIAL_MULTU:
-		case SPECIAL_DMULT:
-		case SPECIAL_DMULTU:
-		case SPECIAL_DIV:
-		case SPECIAL_DIVU:
-		case SPECIAL_DDIV:
-		case SPECIAL_DDIVU:
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
 		case SPECIAL_SUB:
@@ -1204,6 +1174,16 @@ int cpu_run_instr(struct cpu *cpu)
 		case SPECIAL_NOR:
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
+		case SPECIAL_MTLO:
+		case SPECIAL_MTHI:
+		case SPECIAL_MULT:
+		case SPECIAL_MULTU:
+		case SPECIAL_DMULT:
+		case SPECIAL_DMULTU:
+		case SPECIAL_DIV:
+		case SPECIAL_DIVU:
+		case SPECIAL_DDIV:
+		case SPECIAL_DDIVU:
 		case SPECIAL_TGE:
 		case SPECIAL_TGEU:
 		case SPECIAL_TLT:
@@ -1291,6 +1271,46 @@ int cpu_run_instr(struct cpu *cpu)
 					debug("%s\tr%i,r%i,r%i\n", instr_mnem, rd, rs, rt);
 			}
 
+			/*  TODO:  trap on overflow, and stuff like that  */
+			if (special6 == SPECIAL_ADD || special6 == SPECIAL_ADDU) {
+				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
+				cpu->gpr[rd] &= 0xffffffff;
+				if (cpu->gpr[rd] & 0x80000000)
+					cpu->gpr[rd] |= 0xffffffff00000000;
+				break;
+			}
+			if (special6 == SPECIAL_SUB || special6 == SPECIAL_SUBU) {
+				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
+				cpu->gpr[rd] &= 0xffffffff;
+				if (cpu->gpr[rd] & 0x80000000)
+					cpu->gpr[rd] |= 0xffffffff00000000;
+				break;
+			}
+
+			if (special6 == SPECIAL_AND) {
+				cpu->gpr[rd] = cpu->gpr[rs] & cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_OR) {
+				cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_XOR) {
+				cpu->gpr[rd] = cpu->gpr[rs] ^ cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_NOR) {
+				cpu->gpr[rd] = ~(cpu->gpr[rs] | cpu->gpr[rt]);		/*  TODO:  is this corrent NOR?  */
+				break;
+			}
+			if (special6 == SPECIAL_SLT) {
+				cpu->gpr[rd] = (int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_SLTU) {
+				cpu->gpr[rd] = cpu->gpr[rs] < cpu->gpr[rt];
+				break;
+			}
 			if (special6 == SPECIAL_MTLO) {
 				cpu->lo = cpu->gpr[rs];
 				break;
@@ -1433,81 +1453,34 @@ int cpu_run_instr(struct cpu *cpu)
 				}
 				break;
 			}
-
-			/*  TODO:  trap on overflow, and stuff like that  */
-			if (special6 == SPECIAL_ADD || special6 == SPECIAL_ADDU) {
-				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
-				cpu->gpr[rd] &= 0xffffffff;
-				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
-				break;
-			}
-			if (special6 == SPECIAL_SUB || special6 == SPECIAL_SUBU) {
-				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
-				cpu->gpr[rd] &= 0xffffffff;
-				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
-				break;
-			}
-
 			if (special6 == SPECIAL_TGE) {
 				if ((int64_t)cpu->gpr[rs] >= (int64_t)cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			if (special6 == SPECIAL_TGEU) {
 				if (cpu->gpr[rs] >= cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			if (special6 == SPECIAL_TLT) {
 				if ((int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			if (special6 == SPECIAL_TLTU) {
 				if (cpu->gpr[rs] < cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			if (special6 == SPECIAL_TEQ) {
 				if (cpu->gpr[rs] == cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			if (special6 == SPECIAL_TNE) {
 				if (cpu->gpr[rs] != cpu->gpr[rt])
 					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
-				break;
-			}
-
-			if (special6 == SPECIAL_AND) {
-				cpu->gpr[rd] = cpu->gpr[rs] & cpu->gpr[rt];
-				break;
-			}
-			if (special6 == SPECIAL_OR) {
-				cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
-				break;
-			}
-			if (special6 == SPECIAL_XOR) {
-				cpu->gpr[rd] = cpu->gpr[rs] ^ cpu->gpr[rt];
-				break;
-			}
-			if (special6 == SPECIAL_NOR) {
-				cpu->gpr[rd] = ~(cpu->gpr[rs] | cpu->gpr[rt]);		/*  TODO:  is this corrent NOR?  */
-				break;
-			}
-			if (special6 == SPECIAL_SLT) {
-				cpu->gpr[rd] = (int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt];
-				break;
-			}
-			if (special6 == SPECIAL_SLTU) {
-				cpu->gpr[rd] = cpu->gpr[rs] < cpu->gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_DADD) {
@@ -1538,7 +1511,28 @@ int cpu_run_instr(struct cpu *cpu)
 					cpu->gpr[rd] = cpu->gpr[rs];
 				break;
 			}
+			break;
+		case SPECIAL_SYNC:
+			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);	/*  stype  */
+			if (instruction_trace)
+				debug("sync\t0x%02x\n", stype);
+			/*  TODO: actually sync  */
+			break;
+		case SPECIAL_SYSCALL:
+			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
+			imm &= 0xfffff;
+			if (instruction_trace)
+				debug("syscall\t0x%05x\n", imm);
 
+			if (userland_emul) {
+				useremul_syscall(cpu, imm);
+			} else
+				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
+			break;
+		case SPECIAL_BREAK:
+			if (instruction_trace)
+				debug("break\n");
+			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_MFSA:
 			/*  R5900? What on earth does this thing do?  */
@@ -1997,27 +1991,32 @@ int cpu_run_instr(struct cpu *cpu)
 
 			if (st) {
 				/*  store:  */
-				int cpnr = 1, success;
+				int cpnr, success;
 
-				switch (hi6) {
-				case HI6_SWC3:	cpnr++;		/*  fallthrough  */
-				case HI6_SWC2:	cpnr++;
-				case HI6_SDC1:
-				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
-						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
-						    ) {
-							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
-							cpnr = -1;
+				if (hi6 == HI6_SWC3 || hi6 == HI6_SWC2 ||
+				    hi6 == HI6_SDC1 || hi6 == HI6_SWC1) {
+					cpnr = 1;
+					switch (hi6) {
+					case HI6_SWC3:	cpnr++;		/*  fallthrough  */
+					case HI6_SWC2:	cpnr++;
+					case HI6_SDC1:
+					case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
+							    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+							    ) {
+								cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+								cpnr = -1;
+								break;
+							} else {
+								coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
+							}
 							break;
-						} else {
-							coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
-						}
+					default:
+							;
+					}
+					if (cpnr < 0)
 						break;
-				default:	value = cpu->gpr[rt];
-				}
-
-				if (cpnr < 0)
-					break;
+				} else
+					value = cpu->gpr[rt];
 
 				if (wlen == 4) {
 					/*  Special case for 32-bit stores... (perhaps not worth it)  */

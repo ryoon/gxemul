@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.44 2004-06-28 05:21:29 debug Exp $
+ *  $Id: memory.c,v 1.45 2004-06-28 20:49:32 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -725,6 +725,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
 #if 0
+	/*  Debug message for DECstation PROM access:  */
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
 		if ((vaddr & 0xfff00000) == 0xbfc00000 && writeflag==MEM_READ) {
 			if ((vaddr & 0xffff) != 0x8030 && (vaddr & 0xffff) != 0x8064 &&
@@ -736,22 +737,22 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		}
 #endif
 
-	if (cache == CACHE_INSTRUCTION && (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
+	/*
+	 *  For instruction fetch, are we on the same
+	 *  page as the last instruction we fetched?
+	 *
+	 *  NOTE: There's no need to check this stuff
+	 *  here if pc_last_was_in_host_ram is true,
+	 *  as it's done at instruction fetch time in
+	 *  cpu.c!  Only check if _in_host_ram == 0.
+	 */
+	if (!cpu->pc_last_was_in_host_ram &&
+	    cache == CACHE_INSTRUCTION &&
+	    (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
 		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
-
-		if (cpu->pc_last_was_in_host_ram) {
-			offset = paddr & ((1 << mem->bits_per_memblock) - 1);
-
-			/*  Assume that it is aligned ok:  */
-			*(uint32_t *)data = *(uint32_t *)(cpu->pc_last_host_memblock + offset);
-
-			/*  TODO:  Make sure this works with dynamic binary translation...  */
-
-			return MEMORY_ACCESS_OK;
-		}
-
 		goto have_paddr;
 	}
+
 
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;

@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.4 2004-06-12 11:47:38 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.5 2004-06-12 14:29:11 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
  *
- *  TODO:  This is just a dummy device so far.
+ *  TODO:  This device doesn't do much yet.
  */
 
 #include <stdio.h>
@@ -44,10 +44,27 @@
 
 
 struct wdsc_data {
-	int		register_select;
+	int		irq_nr;
 
+	int		register_select;
 	unsigned char	reg[DEV_WDSC_NREGS];
+
+	int		irq_pending;
 };
+
+
+/*
+ *  dev_wdsc_tick():
+ */
+void dev_wdsc_tick(struct cpu *cpu, void *extra)
+{
+	struct wdsc_data *d = extra;
+
+	if (d->irq_pending)
+		cpu_interrupt(cpu, d->irq_nr);
+	else
+		cpu_interrupt_ack(cpu, d->irq_nr);
+}
 
 
 /*
@@ -78,6 +95,34 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 		debug("ID=%i", idata & SBIC_ID_MASK);
 		break;
 
+	case SBIC_control:
+		debug(" (control): 0x%02x =>", (int)idata);
+		if (idata & SBIC_CTL_DMA)
+			debug(" SingleByteDMA");
+		if (idata & SBIC_CTL_DBA_DMA)
+			debug(" DirectBufferAccess");
+		if (idata & SBIC_CTL_BURST_DMA)
+			debug(" BurstDMA");
+		if (idata & SBIC_CTL_HHP)
+			debug(" HaltOnParity");
+		if (idata & SBIC_CTL_EDI)
+			debug(" EndDisconIntr");
+		if (idata & SBIC_CTL_IDI)
+			debug(" IntermediateDisconIntr");
+		if (idata & SBIC_CTL_HA)
+			debug(" HaltOnATN");
+		if (idata & SBIC_CTL_HSP)
+			debug(" HaltOnParityError");
+
+		if (idata == SBIC_CTL_NO_DMA)
+			debug(" PIO");
+
+		/*  TODO:  When/how are interrupts acknowledged?  */
+		if (idata & SBIC_CTL_EDI)
+			d->irq_pending = 0;
+
+		break;
+
 	case SBIC_cmd:
 		debug(" (cmd): 0x%02x => ", (int)idata);
 
@@ -89,9 +134,15 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 		switch (idata & SBIC_CMD_MASK) {
 		case SBIC_CMD_RESET:
 			debug("RESET");
+			d->irq_pending = 1;
 			break;
 		case SBIC_CMD_ABORT:
 			debug("ABORT");
+			break;
+		case SBIC_CMD_SEL_ATN:
+			debug("SEL_ATN");
+			d->irq_pending = 1;
+			/*  TODO  */
 			break;
 		default:
 			debug("unimplemented command");
@@ -99,7 +150,7 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 		break;
 
 	default:
-		debug(" (not yet implemented): %02x", (int)idata);
+		debug(" (TODO): 0x%02x", (int)idata);
 	}
 
 	debug(" ]\n");
@@ -143,6 +194,9 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 		 */
 		if (writeflag == MEM_READ) {
 			odata = SBIC_ASR_DBR;
+			if (d->irq_pending)
+				odata |= SBIC_ASR_INT;
+
 			debug("[ wdsc: read from Status Register: %02x ]\n",
 			    (int)odata);
 		} else {
@@ -153,6 +207,15 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 	case SBIC_VAL:
 		if (writeflag == MEM_READ) {
 			odata = d->reg[d->register_select];
+
+			/*  TODO: when to ack interrupts?  */
+			if (d->register_select == SBIC_csr) {
+				d->irq_pending = 0;
+				odata = SBIC_CSR_RESET;
+				if (d->reg[SBIC_cmd] == SBIC_CMD_SEL_ATN)
+					odata = SBIC_CSR_SEL_TIMEO;
+			}
+
 			debug("[ wdsc: read from register 0x%02x: %02x ]\n",
 			    d->register_select, (int)odata);
 		} else {
@@ -178,6 +241,8 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
+	dev_wdsc_tick(cpu, extra);
+
 	return 1;
 }
 
@@ -185,7 +250,7 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_wdsc_init():
  */
-void dev_wdsc_init(struct memory *mem, uint64_t baseaddr)
+void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
 	struct wdsc_data *d;
 
@@ -195,8 +260,11 @@ void dev_wdsc_init(struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct wdsc_data));
+	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "wdsc", baseaddr, DEV_WDSC_LENGTH,
 	    dev_wdsc_access, d);
+
+	cpu_add_tickfunction(cpu, dev_wdsc_tick, d, 12);
 }
 

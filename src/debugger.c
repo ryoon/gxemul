@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.34 2005-01-17 07:58:56 debug Exp $
+ *  $Id: debugger.c,v 1.35 2005-01-17 08:07:28 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -82,6 +82,8 @@ int old_show_trace_tree = 0;
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
 
+static char *regnames[] = MIPS_REGISTER_NAMES;
+
 #define	MAX_CMD_LEN		63
 #define	N_PREVIOUS_CMDS		50
 static char *last_cmd[N_PREVIOUS_CMDS];
@@ -134,7 +136,7 @@ void debugger_activate(int x)
  *  Some examples:
  *
  *	"0x7fff1234"		==> numeric value (hex, in this case)
- *	"pc", "r5", "hi", "lo"	==> register
+ *	"pc", "r5", "hi", "t4"	==> register
  *	"memcpy+64"		==> symbol (plus offset)
  *
  *  Register names can be preceeded by "x:" where x is the CPU number. (CPU
@@ -204,22 +206,19 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 			} else
 				*valuep = emul->cpus[cpunr]->pc;
 			match_register = 1;
-		}
-		if (strcasecmp(name, "hi") == 0) {
+		} else if (strcasecmp(name, "hi") == 0) {
 			if (writeflag)
 				emul->cpus[cpunr]->hi = *valuep;
 			else
 				*valuep = emul->cpus[cpunr]->hi;
 			match_register = 1;
-		}
-		if (strcasecmp(name, "lo") == 0) {
+		} else if (strcasecmp(name, "lo") == 0) {
 			if (writeflag)
 				emul->cpus[cpunr]->lo = *valuep;
 			else
 				*valuep = emul->cpus[cpunr]->lo;
 			match_register = 1;
-		}
-		if (name[0] == 'r' && isdigit((int)name[1])) {
+		} else if (name[0] == 'r' && isdigit((int)name[1])) {
 			int nr = atoi(name + 1);
 			if (nr >= 0 && nr < 32) {
 				if (writeflag) {
@@ -231,6 +230,20 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 					*valuep = emul->cpus[cpunr]->gpr[nr];
 				match_register = 1;
 			}
+		} else {
+			/*  Check for a symbolic name such as "t6" or "at":  */
+			int nr;
+			for (nr=0; nr<32; nr++)
+				if (strcmp(name, regnames[nr]) == 0) {
+					if (writeflag) {
+						if (nr != 0)
+							emul->cpus[cpunr]->gpr[nr] = *valuep;
+						else
+							printf("WARNING: Attempt to modify r0.\n");
+					} else
+						*valuep = emul->cpus[cpunr]->gpr[nr];
+					match_register = 1;
+				}
 		}
 
 		/*  TODO: Coprocessor registers.  */
@@ -1219,7 +1232,7 @@ static struct cmd cmds[] = {
 		"quit the emulator" },
 
 	{ "reg", "[cpuid][,c]", 0, debugger_cmd_reg,
-		"show GPRs (or coprocessor registers)" },
+		"show GPRs (or coprocessor c's registers)" },
 
 	/*  NOTE: Try to keep 's' down to only one command. Having 'step'
 	    available as a one-letter command is very convenient.  */

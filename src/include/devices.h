@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.95 2004-10-14 12:22:18 debug Exp $
+ *  $Id: devices.h,v 1.96 2004-10-14 12:32:54 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -237,22 +237,6 @@ struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 
-/*  dev_jazz.c:  */
-#define	DEV_JAZZ_LENGTH			0x280
-struct jazz_data {
-	int		interval;
-	int		interval_start;
-};
-int dev_jazz_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_pckbc.c:  */
-#define	DEV_PCKBC_LENGTH		0x10
-#define	PCKBC_8042		0
-#define	PCKBC_8242		1
-int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr);
-
 /*  dev_kn02.c:  */
 #define	DEV_KN02_LENGTH		0x10
 struct kn02_csr {
@@ -319,6 +303,23 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 /*  dev_mp.c:  */
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
+
+/*  dev_pckbc.c:  */
+#define	DEV_PCKBC_LENGTH		0x10
+#define	PCKBC_8042		0
+#define	PCKBC_8242		1
+int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr);
+
+/*  dev_pica.c:  */
+#define	DEV_PICA_LENGTH			0x280
+struct pica_data {
+	uint32_t	int_enable_mask;
+	int		interval;
+	int		interval_start;
+};
+int dev_pica_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_gs.c:  */
 #define	DEV_PS2_GIF_LENGTH		0x0000000000010000

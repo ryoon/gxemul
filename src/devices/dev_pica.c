@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.2 2004-10-14 12:22:18 debug Exp $
+ *  $Id: dev_pica.c,v 1.1 2004-10-14 12:32:53 debug Exp $
  *  
- *  Jazz stuff. (Acer PICA-61, etc.)
+ *  Acer PICA-61 stuff.
  */
 
 #include <math.h>
@@ -40,31 +40,34 @@
 #include "pica.h"
 
 
+#define	DEV_PICA_TICKSHIFT		12
+
+
 /*
- *  dev_jazz_tick():
+ *  dev_pica_tick():
  */
-void dev_jazz_tick(struct cpu *cpu, void *extra)
+void dev_pica_tick(struct cpu *cpu, void *extra)
 {
-	struct jazz_data *d = extra;
+	struct pica_data *d = extra;
 
 	if (d->interval_start > 0 && d->interval > 0) {
 		d->interval --;
 		if (d->interval <= 0) {
-			debug("[ jazz: interval timer interrupt ]\n");
-			cpu_interrupt(cpu, 5);
+			debug("[ pica: interval timer interrupt ]\n");
+			cpu_interrupt(cpu, 6);
 		}
 	}
 }
 
 
 /*
- *  dev_jazz_access():
+ *  dev_pica_access():
  */
-int dev_jazz_access(struct cpu *cpu, struct memory *mem,
+int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct jazz_data *d = (struct jazz_data *) extra;
+	struct pica_data *d = (struct pica_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -72,12 +75,18 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case R4030_SYS_IT_VALUE:  /*  Interval timer reload value  */
+		if (writeflag == MEM_WRITE)
+			d->interval_start = idata;
+		else
+			odata = d->interval_start;
+		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ jazz: unimplemented write to address 0x%x"
+			fatal("[ pica: unimplemented write to address 0x%x"
 			    ", data=0x%02x ]\n", relative_addr, idata);
 		} else {
-			fatal("[ jazz: unimplemented read from address 0x%x"
+			fatal("[ pica: unimplemented read from address 0x%x"
 			    " ]\n", relative_addr);
 		}
 	}
@@ -90,21 +99,21 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_jazz_init():
+ *  dev_pica_init():
  */
-struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
+struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 	uint64_t baseaddr)
 {
-	struct jazz_data *d = malloc(sizeof(struct jazz_data));
+	struct pica_data *d = malloc(sizeof(struct pica_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct jazz_data));
+	memset(d, 0, sizeof(struct pica_data));
 
-	memory_device_register(mem, "jazz", baseaddr, DEV_JAZZ_LENGTH,
-	    dev_jazz_access, (void *)d);
-	cpu_add_tickfunction(cpu, dev_jazz_tick, d, 10);
+	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
+	    dev_pica_access, (void *)d);
+	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);
 
 	return d;
 }

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: pica.h,v 1.1 2004-10-14 12:10:49 debug Exp $  */
+/*  mips64emul: $Id: pica.h,v 1.2 2004-10-14 12:32:54 debug Exp $  */
 /*	$NetBSD: pica.h,v 1.2 2001/06/13 15:11:38 soda Exp $	*/
 /*	$OpenBSD: pica.h,v 1.4 1996/09/14 15:58:28 pefo Exp $ */
 
@@ -63,7 +63,7 @@
 #define	R4030_P_LOCAL_IO_BASE	0x80000000	/* I/O Base address */
 #define	R4030_V_LOCAL_IO_BASE	0xe0000000
 #define	R4030_S_LOCAL_IO_BASE	0x00040000	/* Size */
-#ifdef RELATIVE
+#ifndef RELATIVE
 #define R4030 R4030_V_LOCAL_IO_BASE
 #else
 #define	R4030 0
@@ -84,7 +84,7 @@
 #define	R4030_SYS_ISA_VECTOR	(R4030+0x0238)	/* ISA Interrupt vector */
 #define	R4030_SYS_EXT_IMASK	(R4030+0x00e8)	/* External int enable mask */
 
-#ifdef RELATIVE
+#ifndef RELATIVE
 #define PVLB R4030_V_LOCAL_IO_BASE
 #else
 #define PVLB 0

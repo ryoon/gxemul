@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.19 2004-07-20 01:08:08 debug Exp $
+ *  $Id: net.c,v 1.20 2004-07-20 02:51:44 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -66,6 +66,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #include "misc.h"
 
@@ -90,11 +91,13 @@ static struct ethernet_packet_link *last_ethernet_packet = NULL;
 unsigned char gateway_addr[6] = { 0x60, 0x50, 0x40, 0x30, 0x20, 0x10 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
 
+static int net_nameserver_known = 0;
+static struct in_addr nameserver_ipv4;
+
+static int64_t net_timestamp = 0;
 
 #define	MAX_TCP_CONNECTIONS	25
 #define	MAX_UDP_CONNECTIONS	15
-
-static int64_t net_timestamp = 0;
 
 struct udp_connection {
 	int		in_use;
@@ -1337,11 +1340,79 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
  */
 void net_init(void)
 {
+	FILE *f;
+	char buf[8000];
+	size_t len;
+	int res;
+	unsigned int i, j, start;
+
+	net_nameserver_known = 0;
+	memset(&nameserver_ipv4, 0, sizeof(nameserver_ipv4));
+
+	net_timestamp = 0;
 	first_ethernet_packet = last_ethernet_packet = NULL;
 
 	memset(udp_connections, 0, MAX_UDP_CONNECTIONS *
 	    sizeof(struct udp_connection));
 	memset(tcp_connections, 0, MAX_TCP_CONNECTIONS *
 	    sizeof(struct tcp_connection));
+
+	/*
+	 *  This is a very ugly hack, which tries to figure out which
+	 *  nameserver the host uses by looking for the string 'nameserver'
+	 *  in /etc/resolv.conf.  It will obviously only work on systems
+	 *  that have such a file.
+	 *
+	 *  This can later on be used for DHCP autoconfiguration.  (TODO)
+	 *
+	 *  TODO: This assumes that the first nameserver listed is the
+	 *        one to use.
+	 */
+	f = fopen("/etc/resolv.conf", "r");
+	if (f != NULL) {
+		/*  TODO: get rid of the hardcoded values  */
+		memset(buf, 0, sizeof(buf));
+		len = fread(buf, 1, sizeof(buf) - 100, f);
+		fclose(f);
+
+		for (i=0; i<len; i++)
+			if (strncmp(buf+i, "nameserver", 10) == 0) {
+				/*
+				 *  "nameserver" (1 or more whitespace)
+				 *  "x.y.z.w" (non-digit)
+				 */
+
+				printf("found nameserver at offset %i\n", i);
+				i += 10;
+				while (i<len && isspace(buf[i]))
+					i++;
+				if (i >= len)
+					break;
+				start = i;
+				while (i<len && !isspace(buf[i]))
+					i++;
+
+				/*  for (j=start; j<i; j++)
+					printf("%c", buf[j]);
+				    printf("\n");  */
+
+				res = inet_aton(buf + start,
+				    &nameserver_ipv4);
+				if (res < 1)
+					break;
+
+				debug("net: using nameserver");
+				for (i=0; i<sizeof(nameserver_ipv4); i++)
+					debug("%c%i",
+					    i? '.' : ' ',
+					    ((unsigned char *)
+					    &nameserver_ipv4)[i]);
+				debug("\n");
+
+				net_nameserver_known = 1;
+				break;
+			}
+
+	}
 }
 

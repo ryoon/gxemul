@@ -1,9 +1,8 @@
-$Id: RELEASE,v 1.83 2005-02-01 06:17:43 debug Exp $
+$Id: RELEASE,v 1.84 2005-02-02 19:40:58 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
-Some of the features I'd like to have time to implement, after the
-redesign/cleanup that I'm currently working on are:
+Some of the features I'd like to have time to implement:
 
 	x)  better support for non-DECstation modes
 		o)  for example, netbooting OpenBSD/sgi snapshots,
@@ -22,20 +21,20 @@ Release notes for mips64emul 0.2.X
 Copyright (C) 2003-2005  Anders Gavare.
 
 
-mips64emul is a free MIPS machine emulator. The goals are to emulate
-MIPS-like CPUs and enough surrounding hardware to let unmodified operating
-systems run as if they were running on a real machine, and to assist in
-experiments involving MIPS-like code in general.
+mips64emul is a free MIPS machine emulator. The goals are to emulate MIPS-like
+processors and enough surrounding hardware to let unmodified operating systems
+run as if they were running on a real machine, and to assist in experiments
+involving MIPS-like code in general.
 
-(MIPS is a registered trademark of MIPS Technologies. mips64emul is 
-developed as a spare-time hobby, and there is no affiliation with MIPS 
-Technologies in any way whatsoever.)
+(MIPS is a registered trademark of MIPS Technologies. mips64emul is developed
+as a spare-time hobby, and there is no affiliation with MIPS Technologies in
+any way whatsoever.)
 
 
-The emulator can be used for many different things. One of the most
-interesting uses is to run complete "guest" operating systems. I have
-verified that the following guest operating systems can boot from a
-harddisk image, and act similar to how a real machine would act:
+The emulator can be used for many different things. One of the most interesting
+uses is to run complete "guest" operating systems. I have verified that the
+following guest operating systems can boot from a harddisk image, and act
+similar to how a real machine would act:
 
 
        Guest operating system               Emulated machine
@@ -55,8 +54,8 @@ A couple of other emulation modes exist (for SGI's MIPS-based machines,
 Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
-Apart from running guest operating systems, the emulator can also be used
-for other experiments with MIPS-like code.
+Apart from running guest operating systems, the emulator can also be used for
+other experiments with MIPS-like code.
 
 
 Summary of changes from version 0.2.4.1 to 0.2.X:
@@ -64,7 +63,7 @@ Summary of changes from version 0.2.4.1 to 0.2.X:
 	x)  In general, the code should be much cleaner than before.
 
 	x)  It is now possible to emulate multiple machines simultaneously,
-	    with one emulator instance. (This is mostly due to the code
+	    within one emulator instance. (This is mostly due to the code
 	    cleanup.)
 
 	x)  Some command line options have been changed, but 0.2.X should
@@ -94,20 +93,18 @@ Files included in this release are:
 
 To build the emulator, run the ./configure script, and then run make.
 
-Building the emulator should work on most Unix-like systems.  (One system
-which is specifically known to NOT work is Ultrix/RISC inside the
-emulator; Ultrix chokes on the configure script and the default cc in
-Ultrix doesn't work.)
+Building the emulator should work on most Unix-like systems. (One system which
+is specifically known to NOT work is Ultrix/RISC inside the emulator; Ultrix
+chokes on the configure script and the default cc in Ultrix doesn't work.)
 
 
-Regarding files in the include/ directory:  only some of these are
-written by me, the rest are from other sources (such as NetBSD).  The
-license text says that "All advertising materials mentioning features or
-use of this software" must display acknowledgements.  Even though I do NOT
-feel I mention features or use of the header files (the "software") in any
-advertising materials, I am still very greatful for the fact that these
-people have made their files available for re-use, so I guess thanking
-them like this is in order:
+Regarding files in the include/ directory:  only some of these are written by
+me, the rest are from other sources (such as NetBSD). The license text says
+that "All advertising materials mentioning features or use of this software"
+must display acknowledgements. Even though I do NOT feel I mention features or
+use of the header files (the "software") in any advertising materials, I am
+still very greatful for the fact that these people have made their files
+available for re-use, so I guess thanking them like this is in order:
 
     This product includes software developed by the University of
     California, Berkeley and its contributors.

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.18 2004-01-24 21:11:54 debug Exp $
+#  $Id: Makefile.skel,v 1.19 2004-02-23 23:11:53 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -10,6 +10,7 @@ OBJS=console.o \
 	dev_gt.o \
 	dev_mc146818.o \
 	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o dev_8250.o \
+	dev_dec5800.o \
 	dev_pckbc.o \
 	dev_zs.o dev_wdc.o \
 	dev_n64_bios.o \

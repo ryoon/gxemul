@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.84 2005-02-07 06:14:49 debug Exp $
+ *  $Id: debugger.c,v 1.85 2005-02-07 06:35:39 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -834,8 +834,9 @@ static void debugger_cmd_pause(struct machine *m, char *cmd_line)
 
 	m->cpus[cpuid]->running ^= 1;
 
-	printf("cpu%i in machine \"%s\" is now %s\n", cpuid,
-	    m->name, m->cpus[cpuid]->running? "RUNNING" : "STOPPED");
+	printf("cpu%i (%s) in machine \"%s\" is now %s\n", cpuid,
+	    m->cpus[cpuid]->name, m->name,
+	    m->cpus[cpuid]->running? "RUNNING" : "STOPPED");
 }
 
 

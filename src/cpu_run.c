@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.1 2005-02-01 17:22:08 debug Exp $
+ *  $Id: cpu_run.c,v 1.2 2005-02-07 06:35:39 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -204,9 +204,10 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 				}
 			}
 
-			/*  All CPUs have died?  */
-			if (!running) {
-				if (machine->exit_without_entering_debugger == 0)
+			/*  Any CPU dead?  */
+			for (i=0; i<ncpus; i++) {
+				if (cpus[i]->dead &&
+				    machine->exit_without_entering_debugger == 0)
 					single_step = 1;
 			}
 

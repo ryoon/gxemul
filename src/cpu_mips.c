@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.19 2005-02-06 16:11:49 debug Exp $
+ *  $Id: cpu_mips.c,v 1.20 2005-02-07 06:35:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4030,6 +4030,8 @@ Remove this...
 
 /*
  *  mips_cpu_dumpinfo():
+ *
+ *  Debug dump of MIPS-specific CPU data for specific CPU.
  */
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
@@ -4040,7 +4042,7 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 
 	debug("%s, ", cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
 
-	debug("%i TLB entries", ct->nr_of_tlb_entries);
+	debug("nTLB=%i", ct->nr_of_tlb_entries);
 
 	if (ct->default_picache || ct->default_pdcache)
 		debug(", I+D = %i+%i KB",

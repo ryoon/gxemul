@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.11 2005-02-03 05:56:57 debug Exp $
+ *  $Id: cpu.h,v 1.12 2005-02-07 06:35:38 debug Exp $
  *
  *  See cpu.c.
  */
@@ -89,6 +89,7 @@ struct cpu {
 
 	int		byte_order;
 	int		running;
+	int		dead;
 	int		bootstrap_cpu_flag;
 	int		cpu_id;
 	char		*name;

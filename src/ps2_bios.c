@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.27 2005-02-06 15:15:06 debug Exp $
+ *  $Id: ps2_bios.c,v 1.28 2005-02-07 06:35:39 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -76,6 +76,7 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		debug("[ SIFBIOS halt(0x%llx) ]\n",
 		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		cpu->running = 0;
+		cpu->dead = 1;
 		break;
 	case 2:			/*  setdve(int mode)  */
 		debug("[ SIFBIOS setdve(0x%llx) ]\n",
@@ -221,6 +222,7 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		fatal("Playstation 2 SIFBIOS emulation: "
 		    "unimplemented call nr 0x%x\n", callnr);
 		cpu->running = 0;
+		cpu->dead = 1;
 	}
 
 	return 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.89 2005-02-06 16:11:49 debug Exp $
+ *  $Id: arcbios.c,v 1.90 2005-02-07 06:35:39 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1100,6 +1100,7 @@ void arcbios_private_emul(struct cpu *cpu)
 		debug("\n");
 		fatal("ARCBIOS: unimplemented PRIVATE vector 0x%x\n", vector);
 		cpu->running = 0;
+		cpu->dead = 1;
 	}
 }
 
@@ -1163,8 +1164,10 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x20:		/*  ReturnFromMain()  */
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
-		for (i=0; i<cpu->machine->ncpus; i++)
+		for (i=0; i<cpu->machine->ncpus; i++) {
 			cpu->machine->cpus[i]->running = 0;
+			cpu->machine->cpus[i]->dead = 1;
+		}
 		cpu->machine->exit_without_entering_debugger = 1;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
@@ -1674,6 +1677,7 @@ int arcbios_emul(struct cpu *cpu)
 		quiet_mode = 0;
 		cpu_register_dump(cpu->machine, cpu, 1, 0x1);
 		cpu->running = 0;
+		cpu->dead = 1;
 		break;
 	default:
 		quiet_mode = 0;
@@ -1683,6 +1687,7 @@ int arcbios_emul(struct cpu *cpu)
 		debug("\n");
 		fatal("ARCBIOS: unimplemented vector 0x%x\n", vector);
 		cpu->running = 0;
+		cpu->dead = 1;
 	}
 
 	return 1;

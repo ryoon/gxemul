@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.51 2005-02-07 06:14:49 debug Exp $
+ *  $Id: dec_prom.c,v 1.52 2005-02-07 06:35:39 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -88,11 +88,13 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		/*  TODO  */
 		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
+		cpu->dead = 1;
 		break;
 	case 0x10:	/*  restart()  */
 		/*  TODO  */
 		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
+		cpu->dead = 1;
 		break;
 	case 0x18:	/*  reinit()  */
 		/*  TODO  */
@@ -108,6 +110,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		if (file_opened) {
 			fatal("\ndec_jumptable_func(): opening more than one file isn't supported yet.\n");
 			cpu->running = 0;
+			cpu->dead = 1;
 		}
 		file_opened = 1;
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
@@ -173,6 +176,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		fatal("PROM emulation: unimplemented JUMP TABLE vector 0x%x (decimal function %i)\n",
 		    vector, vector/8);
 		cpu->running = 0;
+		cpu->dead = 1;
 	}
 
 	return 0;
@@ -540,6 +544,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		debug("[ DEC PROM halt() ]\n");
 		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
+		cpu->dead = 1;
 		break;
 	case 0xa4:		/*  gettcinfo()  */
 		/*  These are just bogus values...  TODO  */
@@ -567,16 +572,19 @@ int decstation_prom_emul(struct cpu *cpu)
 			debug("DEC PROM: rex('h') ==> halt\n");
 			cpu->machine->exit_without_entering_debugger = 1;
 			cpu->running = 0;
+			cpu->dead = 1;
 			break;
 		case 'b':
 			debug("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
 			cpu->machine->exit_without_entering_debugger = 1;
 			cpu->running = 0;
+			cpu->dead = 1;
 			break;
 		default:
 			fatal("DEC prom emulation: unknown rex() a0=0x%llx ('%c')\n",
 			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (char)cpu->cd.mips.gpr[MIPS_GPR_A0]);
-			exit(1);
+			cpu->running = 0;
+			cpu->dead = 1;
 		}
 		break;
 	default:
@@ -594,6 +602,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		printf("\n");
 		fatal("PROM emulation: unimplemented callback vector 0x%x\n", vector);
 		cpu->running = 0;
+		cpu->dead = 1;
 	}
 
 	return 1;

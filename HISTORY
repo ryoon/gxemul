@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.68 2004-04-15 09:13:48 debug Exp $
+$Id: HISTORY,v 1.69 2004-04-15 21:35:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -459,3 +459,13 @@ HISTORY of mips64emul
 		implemented, and the part that was implemented was buggy.
 		It works now. NetBSD/pmax and Ultrix 4.3 seems to like
 		the SCSI stuff enough to install almost all the way.
+20040415 (more)	Adding a hack which allows a host's cdrom device to be used as
+		a cdrom device inside the emulator, eg /dev/cd0c.
+		Making the cycle counter int64_t instead of long, as a 'long'
+		overflows too easily on 32-bit machines. (The bug is still
+		there, though.)
+		I've now verified that a full NetBSD/pmax install can be done.
+		If using a PMAG-AA graphics board, startx brings up X :-)
+		mips64emul can be compiled inside NetBSD inside mips64emul,
+		and it can run NetBSD in that environment. (I'm getting
+		dizzy... :-)

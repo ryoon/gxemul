@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.8 2003-11-24 02:28:57 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.9 2003-11-24 23:43:00 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -169,6 +169,7 @@ void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 	if (controlled)
 		add_to_rx_queue(d, KEY_CONTROL, DCKBD_PORT);
 
+	/*  Send the actual scan code:  */
 	add_to_rx_queue(d, found, DCKBD_PORT);
 }
 

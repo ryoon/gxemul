@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.16 2004-01-02 22:19:53 debug Exp $
+ *  $Id: misc.h,v 1.17 2004-01-02 23:55:30 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -102,14 +102,14 @@
  */
 #define	SGI_SPB_ADDR		0x80001000
 /*  0xbfc10000 is firmware callback vector stuff  */
-#define	ARC_FIRMWARE_VECTORS	0xbfc30000
-#define	ARC_FIRMWARE_ENTRIES	0xbfc38000
-#define	ARC_ARGV_START		0xbfc48000
-#define	SGI_ENV_STRINGS		0xbfc50000
-#define	SGI_SYSID_ADDR		0xbfc61800
-#define	ARC_DSPSTAT_ADDR	0xbfc61c00
-#define	ARC_MEMDESC_ADDR	0xbfc61c80
-#define	FIRST_ARC_COMPONENT	0xbfc70000
+#define	ARC_FIRMWARE_VECTORS	0xbfc80000
+#define	ARC_FIRMWARE_ENTRIES	0xbfc88000
+#define	ARC_ARGV_START		0xbfc90000
+#define	SGI_ENV_STRINGS		0xbfc98000
+#define	SGI_SYSID_ADDR		0xbfca1800
+#define	ARC_DSPSTAT_ADDR	0xbfca1c00
+#define	ARC_MEMDESC_ADDR	0xbfca1c80
+#define	FIRST_ARC_COMPONENT	0xbfca8000
 
 /*  Nintendo 64:  */
 /*  nothing yet  */

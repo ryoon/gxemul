@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.7 2004-07-03 16:25:12 debug Exp $
+ *  $Id: lk201.c,v 1.8 2004-07-11 07:02:25 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -150,28 +150,49 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
 /*
  *  lk201_send_mouse_update_sequence():
  *
- *  mouse_x,y,buttons contains the "goal", d->mouse_* contains the
- *  current state.
+ *  mouse_x,y,buttons contains the coordinates on the host's display, the
+ *  "goal" of where we want to move. d->mouse_* contains the current state.
  *
- *  TODO:  Take the framebuffer's "physical" cursor into concideration,
- *  to try to make the emulated cursor appear under the host's cursor
- *  on the framebuffer.
+ *  TODO:  Comment this better.
  */
 void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	int mouse_y, int mouse_buttons)
 {
-	int xsign, xdelta, ysign, ydelta;
+	int xsign, xdelta, ysign, ydelta, m;
+
+	if (d->old_host_mouse_x == mouse_x &&
+	    d->old_host_mouse_y == mouse_y)
+		d->old_host_mouse_stays_put ++;
+	else
+		d->old_host_mouse_stays_put = 0;
+
+	d->old_host_mouse_x = mouse_x;
+	d->old_host_mouse_y = mouse_y;
+
+	if (d->old_host_mouse_stays_put > 120)
+		return;
+
+	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y);
 
 	xdelta = mouse_x - d->mouse_x;
 	ydelta = mouse_y - d->mouse_y;
-	if (xdelta > 127)
-		xdelta = 127;
-	if (xdelta < -127)	/*  TODO:  128 would probably be OK too  */
-		xdelta = -127;
-	if (ydelta > 127)
-		ydelta = 127;
-	if (ydelta < -127)	/*  TODO:  128 would probably be OK too  */
-		ydelta = -127;
+
+	/*  If no change, then don't send any update!  */
+	if (xdelta == 0 && ydelta == 0 && d->mouse_buttons == mouse_buttons)
+		return;
+
+	m = 4 >> (d->old_host_mouse_stays_put / 4);
+	if (m < 1)
+		m = 1;
+
+	if (xdelta > m)
+		xdelta = m;
+	if (xdelta < -m)
+		xdelta = -m;
+	if (ydelta > m)
+		ydelta = m;
+	if (ydelta < -m)
+		ydelta = -m;
 
 	xsign = xdelta < 0? 1 : 0;
 	ysign = ydelta < 0? 1 : 0;
@@ -228,11 +249,27 @@ void lk201_tick(struct lk201_data *d)
 		}
 	}
 
-	/*  Check for mouse updates:  */
-	console_getmouse(&mouse_x, &mouse_y, &mouse_buttons);
-	if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
-	    mouse_buttons != d->mouse_buttons)
-		lk201_send_mouse_update_sequence(d, mouse_x, mouse_y, mouse_buttons);
+	/*  Don't do mouse updates if we're running in serial console mode:  */
+	if (!d->use_fb)
+		return;
+
+	d->mouse_check_interval --;
+	if (d->mouse_check_interval <= 0) {
+		d->mouse_check_interval =
+		    d->mouse_check_interval_reset;
+
+		/*
+		 *  Check for mouse updates:
+		 *
+		 *  Note:  mouse_{x,y} are where the mouse is
+		 *  on the host's display.
+		 */
+		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons);
+
+		if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
+		    mouse_buttons != d->mouse_buttons)
+			lk201_send_mouse_update_sequence(d, mouse_x, mouse_y, mouse_buttons);
+	}
 }
 
 
@@ -293,5 +330,7 @@ void lk201_init(struct lk201_data *d, int use_fb,
 	d->use_fb = use_fb;
 	d->mouse_mode = 0;
 	d->mouse_revision = 0;	/*  0..15  */
+
+	d->mouse_check_interval_reset = 1 << 4;
 }
 

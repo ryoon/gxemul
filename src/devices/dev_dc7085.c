@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.23 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.24 2004-07-11 07:02:25 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -40,7 +40,7 @@
 #include "dc7085.h"
 
 
-#define	MAX_QUEUE_LEN		1500
+#define	MAX_QUEUE_LEN		3000
 
 struct dc_data {
 	struct dc7085regs	regs;
@@ -65,6 +65,13 @@ struct dc_data {
 void add_to_rx_queue(void *e, int ch, int line_no)
 {
 	struct dc_data *d = (struct dc_data *) e;
+	int entries_in_use = d->cur_rx_queue_pos_write - d->cur_rx_queue_pos_read;
+	while (entries_in_use < 0)
+		entries_in_use += MAX_QUEUE_LEN;
+
+	/*  Ignore mouse updates, if they come too often:  */
+	if (entries_in_use > MAX_QUEUE_LEN/4 && line_no == DCMOUSE_PORT)
+		return;
 
 	d->rx_queue_char[d->cur_rx_queue_pos_write]   = ch;
 	d->rx_queue_lineno[d->cur_rx_queue_pos_write] = line_no;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.8 2004-01-25 00:14:24 debug Exp $
+ *  $Id: console.c,v 1.9 2004-07-11 07:02:25 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -58,6 +58,10 @@ static int console_stdout_pending;
 static unsigned char console_fifo[CONSOLE_FIFO_LEN];
 static int console_fifo_head;
 static int console_fifo_tail;
+
+/*  Mouse coordinates:  */
+static int console_framebuffer_mouse_x;		/*  absolute x, 0-based  */
+static int console_framebuffer_mouse_y;		/*  absolute y, 0-based  */
 
 static int console_mouse_x;		/*  absolute x, 0-based  */
 static int console_mouse_y;		/*  absolute y, 0-based  */
@@ -253,6 +257,30 @@ void console_mouse_button(int button, int pressed)
 
 
 /*
+ *  console_get_framebuffer_mouse():
+ *
+ *  TODO: Comment
+ */
+void console_get_framebuffer_mouse(int *x, int *y)
+{
+	*x = console_framebuffer_mouse_x;
+	*y = console_framebuffer_mouse_y;
+}
+
+
+/*
+ *  console_set_framebuffer_mouse():
+ *
+ *  TODO: Comment
+ */
+void console_set_framebuffer_mouse(int x, int y)
+{
+	console_framebuffer_mouse_x = x;
+	console_framebuffer_mouse_y = y;
+}
+
+
+/*
  *  console_getmouse():
  *
  *  Puts current mouse data into the variables pointed to by
@@ -264,4 +292,5 @@ void console_getmouse(int *x, int *y, int *buttons)
 	*y = console_mouse_y;
 	*buttons = console_mouse_buttons;
 }
+
 

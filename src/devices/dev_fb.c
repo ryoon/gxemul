@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.46 2004-07-08 01:16:18 debug Exp $
+ *  $Id: dev_fb.c,v 1.47 2004-07-11 07:02:25 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -49,9 +49,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>
@@ -213,6 +214,9 @@ void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
 		d->fb_window->cursor_ysize  = cursor_ysize;
 	}
 #endif
+
+	console_set_framebuffer_mouse(cursor_x, cursor_y);
+
 	/*  debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n",
 	    cursor_x, cursor_y, cursor_xsize, cursor_ysize, on);  */
 }

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.3 2003-11-20 05:06:15 debug Exp $
+ *  $Id: console.h,v 1.4 2004-07-11 07:02:27 debug Exp $
  *
  *  Generic console functions.  (See console.c for more info.)
  */
@@ -41,6 +41,8 @@ void console_flush(void);
 
 void console_mouse_coordinates(int, int);
 void console_mouse_button(int, int);
+void console_get_framebuffer_mouse(int *x, int *y);
+void console_set_framebuffer_mouse(int x, int y);
 void console_getmouse(int *x, int *y, int *buttons);
 
 #endif	/*  CONSOLE_H  */

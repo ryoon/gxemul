@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.151 2004-07-11 03:17:11 debug Exp $
+$Id: HISTORY,v 1.152 2004-07-11 07:02:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -745,6 +745,8 @@ HISTORY of mips64emul
 		as read-only, and gunzip preserved those flags. Thus, OpenBSD's
 		installer crashed as it didn't get its writes through to the
 		disk.
-		Parts of the PMAGB-BA graphics card has been implemented, but
-		colors don't seem to work yet, and Ultrix doesn't seem to
-		like it at all.
+		Parts of the 1280x1024x8 PMAGB-BA graphics card has been
+		implemented, it works (unaccelerated) in NetBSD and OpenBSD,
+		but Ultrix does not seem to like it.
+		Trying to make the emulated mouse coordinates follow the host's
+		mouse' coordinates (for lk201, DECstation).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.20 2004-07-01 23:06:54 debug Exp $
+ *  $Id: x11.c,v 1.21 2004-07-11 07:02:22 debug Exp $
  *
  *  X11-related functions.
  */
@@ -49,7 +49,8 @@ int x11_fb_winxsize = 0, x11_fb_winysize = 0;
 #else
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>   
+#include <X11/Xutil.h>
+#include <X11/cursorfont.h>
 
 
 Display *x11_display = NULL;
@@ -246,6 +247,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	    | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask);
 	fb_windows[fb_number].x11_fb_gc = XCreateGC(x11_display, fb_windows[fb_number].x11_fb_window, 0,0);
 
+	/*  Make sure the window is mapped:  */
 	XMapRaised(x11_display, fb_windows[fb_number].x11_fb_window);
 
 	XSetBackground(x11_display, fb_windows[fb_number].x11_fb_gc, bg_COLOR);

@@ -1,0 +1,123 @@
+<html>
+<head><title>mips64emul technical documentation</title>
+</head>
+<body bgcolor=#ffffff text=#000000 link=#4040f0 vlink=#404040 alink=#ff0000>
+
+<!--
+
+$Id: technical.html,v 1.1 2004-06-29 16:27:20 debug Exp $
+
+Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<p> 
+<table width=100%>
+  <tr><td width=100% bgcolor=#808070><font color=#ffffe0 size=6>
+  <b>mips64emul</b></font></td></tr></table>
+
+<p>
+<ul>
+  <h3><a href="index.html">User Documentation</a></h3>
+  <h3>Technical Documentation</h3>
+</ul>
+  
+<p><br>
+<p>
+ <table width=100%>
+  <tr><td width=100% bgcolor=#b0b0b0><font color="#8f2f2f" size=4>
+	Technical Documentation
+  </font></td></tr>
+</table>
+
+<p>
+This page describes some of the internals of mips64emul. For more general 
+documentation, please read the <a href="index.html">User
+Documentation</a>.
+
+<p>
+<font color="#ff0000">NOTE: This page is under construction.</font>
+
+<ul>
+  <li><a href="#overview">Overview</a>
+  <p>
+  <li><a href="#feedback">Feedback</a>
+</ul>
+
+
+
+
+<p><br>
+<a name="overview"></a>
+<h3>Overview</h3>
+
+In simple terms, mips64emul is just a simple fetch-and-execute
+loop; an instruction is fetched from memory, and executed.
+
+<p>
+In reality, a lot of things need to be handled. Before each instruction is 
+executed, the emulator checks to see if any interrupts are asserted which 
+are not masked away. If so, then an INT exception is generated. Exceptions 
+cause the program counter to be set to a specific value, and some of the 
+system coprocessor's registers to be set to values signifying what kind of 
+exception it was (an interrupt exception in this case).
+
+<p>
+Reading instructions from memory is done through a TLB, a translation
+lookaside buffer. The TLB on MIPS is software controlled, which means that 
+the program running inside the emulator (for example an operating system 
+kernel) has to take care of manually updating the TLB. Some memory 
+addresses are translated into physical addresses directly, some are 
+translated into valid physical addresses via the TLB, and some memory 
+references are not valid. Invalid memory references cause exceptions.
+
+<p>
+When an instruction is read from memory, the emulator checks which opcode 
+it contains and executes the instruction. Executing an instruction usually 
+involves reading some register and writing some register, or perhaps a 
+load from memory (or a store to memory). The program counter is increased 
+for every instruction.
+
+<p>
+Some memory references point to physical addresses which are not in the 
+normal RAM address space. They may point to hardware devices. If that is 
+the case, then loads and stores are converted into calls to a device 
+access function. The device access function is then responsible for 
+handling these reads and writes.  For example, a graphical framebuffer 
+device may put a pixel on the screen when a value is written to it, or a 
+serial controller device may output a character to stdout when written to.
+
+
+<p><br>
+<a name="feedback"></a>
+<h3>Feedback:</h3>
+
+If you have comments, don't hesitate to mail me at
+md1gavan at mdstud.chalmers.se.
+
+
+<hr>
+
+</body>
+</html>

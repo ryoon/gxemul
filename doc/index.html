@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.44 2004-06-29 07:27:05 debug Exp $
+$Id: index.html,v 1.45 2004-06-29 16:27:20 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -38,9 +38,16 @@ SUCH DAMAGE.
   <b>mips64emul</b></font></td></tr></table>
 
 <p>
+<ul>
+  <h3>User Documentation</h3>
+  <h3><a href="technical.html">Technical Documentation</a></h3>
+</ul>
+
+<p><br>
+<p>
 <table width=100%>
   <tr><td width=100% bgcolor=#b0b0b0><font color=#8f2f2f size=4>
-	Documentation
+	User Documentation
   </font></td></tr>
 </table>
 
@@ -61,13 +68,14 @@ and various bits of information. Enjoy! :-)
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#userland">Running userland binaries</a>
   <li><a href="#decrom">Using a PROM image from a DECstation</a>
+  <p>
   <li><a href="#feedback">Feedback</a>
 </ul>
 
 
 <p><br>
 <a name="overview"></a>
-<h4>Overview:</h4>
+<h3>Overview:</h3>
 
 mips64emul is a MIPS machine emulator.
 
@@ -95,7 +103,7 @@ not affiliated with MIPS Technologies in any way whatsoever.)
 
 <p><br>
 <a name="free"></a>
-<h4>Is mips64emul free software?</h4>
+<h3>Is mips64emul free software?</h3>
 
 Yes, mips64emul is distributed under a free license.
 The code I have written is released under a 2-clause BSD-style license
@@ -110,7 +118,7 @@ clauses. Please check individual files if you plan to reuse code from mips64emul
 
 <p><br>
 <a name="emulmodes"></a>
-<h4>Which machines does mips64emul emulate?</h4>
+<h3>Which machines does mips64emul emulate?</h3>
 
 A few different machine types are emulated.
 The machine types that are emulated best are:
@@ -162,7 +170,7 @@ systems, but do not with to target any specific real-world machine type.
 
 <p><br>
 <a name="build"></a>
-<h4>How to compile/build the emulator:</h4>
+<h3>How to compile/build the emulator:</h3>
 
 Uncompress the .tar.gz file, and run
 <pre>
@@ -180,7 +188,7 @@ CC and CFLAGS environment variable values.
 
 <p><br>
 <a name="guestos"></a>
-<h4>Which guest OSes are possible to run?</h4>
+<h3>Which guest OSes are possible to run?</h3>
 
 This table sums up the guest OSes that run well enough to be considered
 "working" in the emulator, that is, they can be installed onto some kind
@@ -228,7 +236,7 @@ userland.
 
 <p><br>
 <a name="use"></a>
-<h4>How to use the emulator:</h4>
+<h3>How to use the emulator:</h3>
 
 The emulator contains code which tries to emulate the workings of MIPS-like CPUs
 and surrounding hardware found in real machines, but no actual MIPS ROM code or
@@ -425,7 +433,7 @@ Here are links to some of the kernels that I usually experiment with.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h4>How to install NetBSD/pmax inside the emulator</h4>
+<h3>How to install NetBSD/pmax inside the emulator</h3>
 
 To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
 you first need to install NetBSD onto a disk image. To NetBSD, the disk 
@@ -498,7 +506,7 @@ CD-ROM media, by mounting that media as an ufs file system.)
 
 <p><br>
 <a name="hello"></a>
-<h4>Hello world:</h4>
+<h3>Hello world:</h3>
 
 You might want to use the emulator to develop programs on your own,
 not just run precompiled kernels such as NetBSD. To get started, I'd recommend
@@ -562,7 +570,7 @@ Hopefully this is enough to get you inspired. :-)
 
 <p><br>
 <a name="portmips"></a>
-<h4>Porting operating systems to MIPS using mips64emul:</h4>
+<h3>Porting operating systems to MIPS using mips64emul:</h3>
 
 Is this a good idea?  The answer is yes and no, depending on what you are
 trying to port to. If you are developing an operating system or operating
@@ -584,7 +592,7 @@ to use mips64emul when porting your code to MIPS.
 
 <p><br>
 <a name="disk"></a>
-<h4>How to start the emulator with a disk image:</h4>
+<h3>How to start the emulator with a disk image:</h3>
 
 Add <i>-d [prefixes:]diskimagefilename</i> to the command line, where prefixes
 are one or more single-character options. Run mips64emul with no command line
@@ -676,7 +684,7 @@ you can "switch tapes" without quiting and restarting the emulator.
 
 <p><br>
 <a name="userland"></a>
-<h4>Running userland binaries:</h4>
+<h3>Running userland binaries:</h3>
 
 You can run (some) userland programs as well. This will not emulate any
 particular machine, but instead try to translate syscalls from for example
@@ -710,7 +718,7 @@ Irix userland emulation might also be possible to add.
 
 <p><br>
 <a name="decrom"></a>
-<h4>Using a PROM image from a DECstation:</h4>
+<h3>Using a PROM image from a DECstation:</h3>
 
 <i>(The general ideas in this section applies to using ROM images from other machines as well.)</i>
 <p>
@@ -828,7 +836,7 @@ binary file which should be loaded at a specific virtual address.
 
 <p><br>
 <a name="feedback"></a>
-<h4>Feedback:</h4>
+<h3>Feedback:</h3>
 
 If you have comments, don't hesitate to mail me at
 md1gavan @mdstud.chalmers.se.

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.4 2003-11-08 08:47:23 debug Exp $
+#  $Id: Makefile.skel,v 1.5 2004-01-20 11:38:05 debug Exp $
 #
 #  Makefile for mips64emul src
 #
@@ -8,7 +8,7 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE) $(INCLUDE)
 BIN=mips64emul
 D=devices
 OBJS=main.o emul.o machine.o memory.o \
-	file.o diskimage.o \
+	bintrans.o file.o diskimage.o \
 	cpu.o coproc.o mips16.o symbol.o \
 	x11.o \
 	dec_prom.o ps2_bios.o arcbios.o

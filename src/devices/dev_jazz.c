@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.4 2005-01-04 16:45:22 debug Exp $
+ *  $Id: dev_jazz.c,v 1.5 2005-01-05 01:09:34 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -159,6 +159,16 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case R4030_SYS_CONFIG:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ jazz: unimplemented write to R4030_SYS_CONFIG"
+			    ", data=0x%08x ]\n", (int)idata);
+		} else {
+			/*  Reading the config register should give
+			    0x0104 or 0x0410. Why? TODO  */
+			odata = 0x104;
+		}
+		break;
 	case R4030_SYS_TL_BASE:
 		if (writeflag == MEM_WRITE) {
 			d->dma_translation_table_base = idata;

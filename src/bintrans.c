@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.127 2005-01-04 16:47:02 debug Exp $
+ *  $Id: bintrans.c,v 1.128 2005-01-05 01:09:34 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -893,11 +893,15 @@ run_it:
 			/*  TODO: This doesn't seem to work with R4000 etc?
 			    || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
 			    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
+				int ok = 1;
 				/*  32-bit special case:  */
 				a = (cpu->pc >> 22) & 0x3ff;
 				b = (cpu->pc >> 12) & 0x3ff;
+				if (cpu->vaddr_to_hostaddr_table0 !=
+				    cpu->vaddr_to_hostaddr_table0_kernel)
+					ok = 0;
 				tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-				if (tbl1->haddr_entry[b] != NULL) {
+				if (ok && tbl1->haddr_entry[b] != NULL) {
 					cpu->pc_last_virtual_page = cpu->pc & ~0xfff;
 					cpu->pc_last_physical_page = paddr & ~0xfff;
 					cpu->pc_last_host_4k_page = (unsigned char *)

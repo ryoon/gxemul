@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.96 2005-01-03 01:26:54 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.97 2005-01-05 01:09:35 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -612,11 +612,11 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 
-	/*  lda t5,4(t5)  */
-	*a++ = 0x20c60004;
-
 	/*  lda t6,1(t6)  */
 	*a++ = 0x20e70001;
+
+	/*  lda t5,4(t5)  */
+	*a++ = 0x20c60004;
 
 	*addrp = (unsigned char *) a;
 }
@@ -787,7 +787,11 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a, *unmodified = NULL;
-	int load64 = 0, store = 1, ofs;
+	int load64 = 0, store = 1, ofs, alpha_rd = ALPHA_T0;
+
+	alpha_rd = map_MIPS_to_Alpha[rd];
+	if (alpha_rd < 0)
+		alpha_rd = ALPHA_T0;
 
 	switch (instruction_type) {
 	case SPECIAL_DADDU:
@@ -847,91 +851,91 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	switch (instruction_type) {
 	case SPECIAL_ADDU:
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x40;	/*  addl t0,t1,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x22; *a++ = 0x40;	/*  addl t0,t1,rd  */
 		break;
 	case SPECIAL_DADDU:
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq t0,t1,t0  */
+		*a++ = alpha_rd; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq t0,t1,rd  */
 		break;
 	case SPECIAL_SUBU:
-		*a++ = 0x21; *a++ = 0x01; *a++ = 0x22; *a++ = 0x40;	/*  subl t0,t1,t0  */
+		*a++ = 0x20 + alpha_rd; *a++ = 0x01; *a++ = 0x22; *a++ = 0x40;	/*  subl t0,t1,t0  */
 		break;
 	case SPECIAL_DSUBU:
-		*a++ = 0x21; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;	/*  subq t0,t1,t0  */
+		*a++ = 0x20 + alpha_rd; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;	/*  subq t0,t1,t0  */
 		break;
 	case SPECIAL_AND:
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and t0,t1,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and t0,t1,t0  */
 		break;
 	case SPECIAL_OR:
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;	/*  or t0,t1,t0  */
+		*a++ = alpha_rd; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;	/*  or t0,t1,t0  */
 		break;
 	case SPECIAL_NOR:
 		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;	/*  or t0,t1,t0  */
-		*a++ = 0x01; *a++ = 0x05; *a++ = 0xe1; *a++ = 0x47;	/*  not t0,t0  */
+		*a++ = alpha_rd; *a++ = 0x05; *a++ = 0xe1; *a++ = 0x47;	/*  not t0,t0  */
 		break;
 	case SPECIAL_XOR:
-		*a++ = 0x01; *a++ = 0x08; *a++ = 0x22; *a++ = 0x44;	/*  xor t0,t1,t0  */
+		*a++ = alpha_rd; *a++ = 0x08; *a++ = 0x22; *a++ = 0x44;	/*  xor t0,t1,t0  */
 		break;
 	case SPECIAL_SLL:
 		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_SLLV:
 		/*  rd = rt << (rs&31)  (logical)     t0 = t1 << (t0&31)  */
 		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
 		*a++ = 0x21; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sll t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_DSLL:
-		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
+		*a++ = 0x20 + alpha_rd; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		break;
 	case SPECIAL_DSLL32:
 		sa += 32;
-		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
+		*a++ = 0x20 + alpha_rd; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		break;
 	case SPECIAL_SRA:
 		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_SRAV:
 		/*  rd = rt >> (rs&31)  (arithmetic)     t0 = t1 >> (t0&31)  */
 		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
 		*a++ = 0x81; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sra t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_DSRA:
-		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
+		*a++ = 0x80 + alpha_rd; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
 		break;
 	case SPECIAL_DSRA32:
 		sa += 32;
-		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
+		*a++ = 0x80 + alpha_rd; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
 		break;
 	case SPECIAL_SRL:
 		*a++ = 0x22; *a++ = 0xf6; *a++ = 0x41; *a++ = 0x48;	/*  zapnot t1,0xf,t1 (use only lowest 32 bits)  */
 		/*  Note: bits of sa are distributed among two different bytes.  */
 		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl  */
 		break;
 	case SPECIAL_SRLV:
 		/*  rd = rt >> (rs&31)  (logical)     t0 = t1 >> (t0&31)  */
 		*a++ = 0x22; *a++ = 0xf6; *a++ = 0x41; *a++ = 0x48;	/*  zapnot t1,0xf,t1 (use only lowest 32 bits)  */
 		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
 		*a++ = 0x81; *a++ = 0x06; *a++ = 0x41; *a++ = 0x48;	/*  srl t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		*a++ = alpha_rd; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_DSRL:
 		/*  Note: bits of sa are distributed among two different bytes.  */
-		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
+		*a++ = 0x80 + alpha_rd; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
 		break;
 	case SPECIAL_DSRL32:
 		/*  Note: bits of sa are distributed among two different bytes.  */
 		sa += 32;
-		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
+		*a++ = 0x80 + alpha_rd; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
 		break;
 	case SPECIAL_SLT:
-		*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;     /*  cmplt t0,t1,t0  */
+		*a++ = 0xa0 + alpha_rd; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;     /*  cmplt t0,t1,t0  */
 		break;
 	case SPECIAL_SLTU:
-		*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;     /*  cmpult t0,t1,t0  */
+		*a++ = 0xa0 + alpha_rd; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;     /*  cmpult t0,t1,t0  */
 		break;
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
@@ -962,17 +966,18 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  00 00 40 f4     bne     t1,unmodified  */
 		unmodified = a;
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x40; *a++ = 0xf4;
+		alpha_rd = ALPHA_T0;
 		break;
 	case SPECIAL_MOVN:
 		/*  if rt!=0 then rd=rs  ==>  if t1=0 then t0=unmodified else t0=rd  */
 		/*  00 00 40 e4     beq     t1,unmodified  */
 		unmodified = a;
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;
+		alpha_rd = ALPHA_T0;
 		break;
 	}
 
-	if (store) {
-		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+	if (store && alpha_rd == ALPHA_T0) {
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 	}
 
@@ -1967,13 +1972,14 @@ ok_unaligned_load1 = a;
 *a++ = 0x01; *a++ = 0x10; *a++ = 0x20; *a++ = 0x40;
 *a++ = 0x23; *a++ = 0xf6; *a++ = 0x60; *a++ = 0x48;
 *a++ = 0x03; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
-/*  03 10 60 40     addl    t2,0,t2  */
-*a++ = 0x03; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
 
 
 		*ok_unaligned_load3 = ((size_t)a - (size_t)ok_unaligned_load3 - 4) / 4;
 		*ok_unaligned_load2 = ((size_t)a - (size_t)ok_unaligned_load2 - 4) / 4;
 		*ok_unaligned_load1 = ((size_t)a - (size_t)ok_unaligned_load1 - 4) / 4;
+
+/*  03 10 60 40     addl    t2,0,t2  */
+*a++ = 0x03; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
 
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T2, rt);
 		break;
@@ -2018,12 +2024,12 @@ ok_unaligned_load1 = a;
 
 /*
   2c:   81 16 23 48     srl     t0,0x18,t0
-  30:   01 10 20 40     addl    t0,0,t0
+  b0:   21 36 20 48     zapnot  t0,0x1,t0
   34:   23 d6 7f 48     zapnot  t2,0xfe,t2
   38:   03 04 23 44     or      t0,t2,t2
 */
 *a++ = 0x81; *a++ = 0x16; *a++ = 0x23; *a++ = 0x48;
-*a++ = 0x01; *a++ = 0x10; *a++ = 0x20; *a++ = 0x40;
+*a++ = 0x21; *a++ = 0x36; *a++ = 0x20; *a++ = 0x48;
 *a++ = 0x23; *a++ = 0xd6; *a++ = 0x7f; *a++ = 0x48;
 *a++ = 0x03; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
 
@@ -2037,12 +2043,12 @@ ok_unaligned_load3 = a;
 *a++ = 0x05; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
 /*
   2c:   81 16 22 48     srl     t0,0x10,t0
-  30:   01 10 20 40     addl    t0,0,t0
+  b4:   21 76 20 48     zapnot  t0,0x3,t0
   34:   23 96 7f 48     zapnot  t2,0xfc,t2
   38:   03 04 23 44     or      t0,t2,t2
 */
 *a++ = 0x81; *a++ = 0x16; *a++ = 0x22; *a++ = 0x48;
-*a++ = 0x01; *a++ = 0x10; *a++ = 0x20; *a++ = 0x40;
+*a++ = 0x21; *a++ = 0x76; *a++ = 0x20; *a++ = 0x48;
 *a++ = 0x23; *a++ = 0x96; *a++ = 0x7f; *a++ = 0x48;
 *a++ = 0x03; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
 
@@ -2056,12 +2062,12 @@ ok_unaligned_load2 = a;
 *a++ = 0x05; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
 /*
   2c:   81 16 21 48     srl     t0,0x8,t0
-  30:   01 10 20 40     addl    t0,0,t0
+  b8:   21 f6 20 48     zapnot  t0,0x7,t0
   3c:   23 16 7f 48     zapnot  t2,0xf8,t2
   40:   03 04 23 44     or      t0,t2,t2
 */
 *a++ = 0x81; *a++ = 0x16; *a++ = 0x21; *a++ = 0x48;
-*a++ = 0x01; *a++ = 0x10; *a++ = 0x20; *a++ = 0x40;
+*a++ = 0x21; *a++ = 0xf6; *a++ = 0x20; *a++ = 0x48;
 *a++ = 0x23; *a++ = 0x16; *a++ = 0x7f; *a++ = 0x48;
 *a++ = 0x03; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
 
@@ -2082,6 +2088,9 @@ ok_unaligned_load1 = a;
 		*ok_unaligned_load3 = ((size_t)a - (size_t)ok_unaligned_load3 - 4) / 4;
 		*ok_unaligned_load2 = ((size_t)a - (size_t)ok_unaligned_load2 - 4) / 4;
 		*ok_unaligned_load1 = ((size_t)a - (size_t)ok_unaligned_load1 - 4) / 4;
+
+/*  03 10 60 40     addl    t2,0,t2  */
+*a++ = 0x03; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
 
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T2, rt);
 		break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.57 2005-01-03 01:26:54 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.58 2005-01-05 01:09:35 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2026,6 +2026,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 *  0x00000000 or 0xffffffff, then we can use the 32-bit
 		 *  lookup tables:
 		 *
+
+TODO: top 33 bits!!!!!!!
+
 		 *  83 fa 00                cmp    $0x0,%edx
 		 *  74 05                   je     <ok32>
 		 *  83 fa ff                cmp    $0xffffffff,%edx

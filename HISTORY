@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.456 2005-01-09 03:41:10 debug Exp $
+$Id: HISTORY,v 1.457 2005-01-09 04:04:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1434,3 +1434,4 @@ HISTORY of mips64emul
 		MMU8K.
 		Fixing a NS16550 bug, triggered by NetBSD 2.0, but not 1.6.2.
 		Refreshing the UltraSPARC bintrans backend skeleton.
+		Merging dev_decbi, _deccca, and _decxmi into dev_dec5800.c.

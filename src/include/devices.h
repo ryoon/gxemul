@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.129 2005-01-09 01:55:28 debug Exp $
+ *  $Id: devices.h,v 1.130 2005-01-09 04:04:42 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -146,20 +146,14 @@ struct dec5800_data {
 };
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_decbi.c:  */
 /*  16 slots, 0x2000 bytes each  */
 #define	DEV_DECBI_LENGTH			0x20000
 int dev_decbi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_decbi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_deccca.c:  */
 #define	DEV_DECCCA_LENGTH			0x10000	/*  ?  */
 #define	DEC_DECCCA_BASEADDR			0x19000000	/*  ?  I just made this up  */
 int dev_deccca_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_deccca_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_decxmi.c:  */
 #define	DEV_DECXMI_LENGTH			0x800000
 int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_decxmi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);

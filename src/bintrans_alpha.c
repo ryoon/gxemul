@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.8 2004-10-09 19:03:29 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.9 2004-10-16 14:22:58 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -123,6 +123,9 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
 	int ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
+
+	if (inc == 0)
+		return;
 
 	/*
 	 *  p[0x918 / 8] += 0x7fff;   (where a0 = p, which is a long long ptr)

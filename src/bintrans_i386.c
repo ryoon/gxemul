@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.4 2004-10-09 19:03:29 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.5 2004-10-16 14:22:58 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -95,6 +95,9 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
 	int ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
+
+	if (inc == 0)
+		return;
 
 	/*  Add inc to cpu->pc.  */
 	*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.164 2004-10-11 17:59:11 debug Exp $
+ *  $Id: cpu.c,v 1.165 2004-10-16 14:22:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1406,24 +1406,19 @@ static int cpu_run_instr(struct cpu *cpu)
 			int res;
 			res = bintrans_runchunk(cpu, cpu->pc_bintrans_paddr);
 
-			if (res) {
+			if (res != -1) {
 				/*  printf("BINTRANS cache hit :-)\n"
 				    "  pc = %016llx\n", (long long)cached_pc);  */
 				return res;
 			} else {
 				/*  Bintrans cache miss: try to translate
-				    the code chunk:  */
+				    the code chunk and run it:  */
 				res = bintrans_attempt_translate(cpu,
-				    cpu->pc_bintrans_paddr);
-				if (res) {
+				    cpu->pc_bintrans_paddr,
+				    cached_pc);
+				if (res != -1) {
 					/*  printf("BINTRANS translation success!"
 					    " pc = %016llx\n", (long long)cached_pc);  */
-					res = bintrans_runchunk(
-					    cpu, cpu->pc_bintrans_paddr);
-					if (!res) {
-						fprintf(stderr, "Weird! translate attempt succeeded, but runchunk failed?\n");
-						exit(1);
-					}
 					return res;
 				}
 			}

@@ -23,31 +23,29 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.26 2004-10-09 19:03:29 debug Exp $
+ *  $Id: bintrans.c,v 1.27 2004-10-16 14:22:58 debug Exp $
  *
  *  Dynamic binary translation.
  *
- *
- *
- *  NOTE:  This file is basically a test are for ideas, and a
- *         place to write down comments.
+ *  NOTE:  This file is basically a place for me to write down my ideas,
+ *         the dynamic binary translation system isn't really working
+ *         again yet.
  *
  *
  *	Keep a cache of a certain number of blocks.
  *
- *	Simple basic-block stuff. Only simple-enough instructions are
- *		translated. (for example, the 'cache' and 'tlbwr' instructions
- *		are NOT simple enough)
+ *	Only translate simple instructions. (For example, the 'cache' and
+ *	'tlbwr' instructions are NOT simple enough.)
  *
- *	Translate code in physical ram, not virtual.
- *		Why?  This will keep things translated over process
- *		switches, and TLB updates.
+ *	Translate code in physical ram, not virtual. (This will keep things
+ *	translated over process switches, and TLB updates.)
  *
- *	Do not translate over MIPS page boundaries (4 KB).  (Perhaps translation
- *		over page boundaries can be allowed in kernel space...?)
+ *	Do not translate over MIPS page boundaries (4 KB), unless we're
+ *	running in kernel-space (where the "next physical page" means
+ *	"the next virtual page" as well).
  *
  *	If memory is overwritten, any translated block for that page must
- *		be invalidated.
+ *	be invalidated.
  *
  *	Check before running a basic block that no external
  *		exceptions will occur for the duration of the
@@ -178,9 +176,10 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where
- *  translated code chunks are stored. When this is filled, we restart from
- *  scratch (by resetting translation_code_chunk_space_head to 0, and
- *  removing all translation entries).
+ *  translated code chunks and translation_entrys are stored. When this is
+ *  filled, we restart from scratch (by resetting
+ *  translation_code_chunk_space_head to 0, and removing all translation
+ *  entries).
  *
  *  (This is somewhat inspired by the QEMU web pages,
  *  http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
@@ -220,18 +219,16 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 			/*  printf("bintrans_invalidate(): invalidating"
 			    " %016llx\n", (long long)paddr);  */
 
-			/*  Remove the translation entry from the list,
-			    and free whatever memory it was using:  */
+			/*  Remove the translation entry from the list:  */
 			if (prev == NULL)
 				translation_entry_array[entry_index] =
 				    tep->next;
 			else
 				prev->next = tep->next;
-			free(tep);
 
-			/*  Restart the search from the beginning:  */
-			tep = translation_entry_array[entry_index];
-			prev = NULL;
+			/*  Continue search at the next entry, without
+			    changing prev:  */
+			tep = tep->next;
 			continue;
 		}
 
@@ -246,7 +243,7 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
  *
  *  Checks the translation cache for a physical address. If the address
  *  is found, then that code is run, and the number of MIPS instructions
- *  executed is returned.  Otherwise, 0 is returned.
+ *  executed is returned.  Otherwise, -1 is returned.
  */
 int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 {
@@ -272,51 +269,58 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 		tep = tep->next;
 	}
 
-	return 0;
+	return -1;
 }
 
 
 /*
  *  bintrans_attempt_translate():
  *
- *  Attempt to translate a chunk of code, starting at 'paddr'.
+ *  Attempt to translate a chunk of code, starting at 'paddr', _AND_ try to
+ *  run it.
  *
- *  Returns 0 if no code translation occured, otherwise 1 is returned and
- *  the generated code chunk is added to the translation_entry_array.
+ *  Returns -1 if no code translation occured, otherwise the generated code
+ *  chunk is added to the translation_entry_array, and is executed. The
+ *  return value is then the number of instructions executed.
  */
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
+	uint64_t vaddr)
 {
+	int (*f)(struct cpu *);
 	int try_to_translate = 1;
 	int pc_increment = 0;
 	int n_translated = 0;
 	int res, hi6, special6, rd;
 	uint64_t p;
 	unsigned char instr[4];
-	unsigned char *chunk_addr;
+	unsigned char *chunk_addr, *chunk_addr2;
 	struct translation_entry *tep;
 	int entry_index;
+	int vaddr_is_in_kernel_space = 0;
+	size_t chunk_len;
+
+	if ((vaddr >> 32) == 0xffffffffULL) {
+		uint64_t v = vaddr & 0xffffffffULL;
+		if (v >= 0x80000000ULL && v < 0xc0000000ULL)
+			vaddr_is_in_kernel_space = 1;
+	}
 
 	/*
 	 *  If the chunk space is all used up, we need to start over from
 	 *  an empty chunk space.
 	 */
 	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
-		struct translation_entry *next;
 		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 
-		for (i=0; i<n; i++) {
-			tep = translation_entry_array[i];
-			while (tep != NULL) {
-				next = tep->next;
-				free(tep);
-				tep = next;
-			}
+		for (i=0; i<n; i++)
 			translation_entry_array[i] = NULL;
-		}
 
 		translation_code_chunk_space_head = 0;
+
+		fatal("NOTE: bintrans starting over\n");
 	}
 
+	/*  chunk_addr = where to start generating the new chunk:  */
 	chunk_addr = translation_code_chunk_space
 	    + translation_code_chunk_space_head;
 
@@ -372,13 +376,17 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 
 		p += sizeof(instr);
 
-		/*  Did we reach a different page? Then stop here.  */
-		if ((p & 0xfff) == 0)
-			try_to_translate = 0;
+		/*  If we are running in user space, and we reached a
+		    different physical page, then the next page is not
+		    neccessarily guaranteed to be the next virtual, so
+		    then we just stop translating.  */
+		if (!vaddr_is_in_kernel_space)
+			if ((p & 0xfff) == 0)
+				try_to_translate = 0;
 	}
 
 	if (n_translated == 0)
-		return 0;
+		return -1;
 
 	/*  Flush the pc, to let it have a correct (emulated) value:  */
 	bintrans_write_pcflush(&chunk_addr, &pc_increment);
@@ -393,29 +401,64 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	/*  Invalidate the host's instruction cache, if neccessary:  */
 	bintrans_host_cacheinvalidate();
 
-	/*  Add the translation to the translation entry array:  */
-	tep = malloc(sizeof(struct translation_entry));
-	if (tep == NULL) {
-		fprintf(stderr, "out of memory in bintrans_attempt_translate()\n");
-		exit(1);
-	}
-	memset(tep, 0, sizeof(struct translation_entry));
+	/*
+	 *  Add the translation to the translation entry array:
+	 *
+	 *  If malloc()/free() were used, then tep would just be malloced
+	 *  like this:
+	 *
+	 *	tep = malloc(sizeof(struct translation_entry));
+	 *
+	 *  However, the space used for code chunks could just as well be
+	 *  used for translation entries as well, thus removing the
+	 *  overhead of calling malloc/free.
+	 */
+
+	/*  chunk_addr2 = ptr to the head of the new code chunk  */
+	chunk_addr2 = translation_code_chunk_space +
+	    translation_code_chunk_space_head;
+
+	/*  chunk_len = nr of bytes occupied by the new code chunk  */
+	chunk_len = (size_t)chunk_addr - (size_t)chunk_addr2;
+
+	translation_code_chunk_space_head += chunk_len;
+
+	/*  Now, we can set tep to point to the new .._space_head, but it
+	    might be wise to uint64_t align it first:  */
+	translation_code_chunk_space_head =
+	    ((translation_code_chunk_space_head - 1) |
+	    (sizeof(uint64_t)-1)) + 1;
+
+	tep = (void *)(size_t) (translation_code_chunk_space +
+	    translation_code_chunk_space_head);
+
+	/*  MIPS physical address and length:  */
 	tep->paddr = paddr;
 	tep->len = n_translated * sizeof(instr);
-	tep->chunk = translation_code_chunk_space +
-	    translation_code_chunk_space_head;
-	tep->chunk_len = (size_t)chunk_addr - (size_t)tep->chunk;
+
+	tep->chunk = chunk_addr2;
+	tep->chunk_len = chunk_len;
 
 	/*  printf("TEP paddr=%08x len=%i chunk=%p chunk_len=%i\n",
 	    (int)tep->paddr, tep->len, tep->chunk, (int)tep->chunk_len);  */
-
-	translation_code_chunk_space_head += tep->chunk_len;
 
 	entry_index = PADDR_TO_INDEX(paddr);
 	tep->next = translation_entry_array[entry_index];
 	translation_entry_array[entry_index] = tep;
 
-	return 1;
+	/*  Increase .._space_head again (the allocation of the
+	    translation_entry struct), and align it just in case:  */
+	translation_code_chunk_space_head += sizeof(struct translation_entry);
+	translation_code_chunk_space_head =
+	    ((translation_code_chunk_space_head - 1) |
+	    (sizeof(uint64_t)-1)) + 1;
+
+
+	/*  RUN the code chunk:  */
+	cpu->bintrans_instructions_executed = 0;
+	f = (void *)tep->chunk;
+	f(cpu);
+	return cpu->bintrans_instructions_executed;
 }
 
 

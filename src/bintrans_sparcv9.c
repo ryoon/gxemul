@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.3 2004-10-09 19:03:29 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.4 2004-10-16 14:22:58 debug Exp $
  *
  *  UltraSparc specific code for dynamic binary translation.
  *
@@ -94,6 +94,9 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
 	int ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
+
+	if (inc == 0)
+		return;
 
 	/*  Increment cpu->pc: (assuming %o5 is available for use)  */
 	*a++ = 0xda; *a++ = 0x5a; *a++ = 0x20 + (ofs >> 8);

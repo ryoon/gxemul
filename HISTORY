@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.632 2005-03-09 09:12:39 debug Exp $
+$Id: HISTORY,v 1.633 2005-03-10 23:56:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1732,3 +1732,4 @@ Changelog for GXemul:
 		Adding a dummy HPPA cpu family.
 		Some more OpenFirmware updates.
 		Faster loading of badly aligned ELF regions.
+20050311	Minor updates.

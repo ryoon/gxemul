@@ -28,12 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_hppa.h,v 1.1 2005-03-09 17:11:03 debug Exp $
+ *  $Id: opcodes_hppa.h,v 1.2 2005-03-10 23:56:20 debug Exp $
  *
  *
  *  HPPA opcodes.
  */
 
 #define	HPPA_LDIL		0x08
+#define	HPPA_STW		0x1a
+#define	HPPA_STW_1B		0x1b
 
 #endif	/*  OPCODES_HPPA_H  */

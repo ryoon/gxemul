@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.70 2005-03-09 06:37:19 debug Exp $
+ *  $Id: net.c,v 1.71 2005-03-10 23:56:21 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -76,6 +76,9 @@
  *
  *  The gateway isn't connected as a NIC, but is an "implicit" machine on the
  *  network.
+ *
+ *  (See http://www.sinclair.org.au/keith/networking/vendor.html for a list
+ *  of ethernet MAC assignments.)
  */
 
 #include <stdio.h>

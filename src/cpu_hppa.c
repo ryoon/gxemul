@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.2 2005-03-09 17:11:04 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.3 2005-03-10 23:56:21 debug Exp $
  *
  *  HPPA CPU emulation.
  *
@@ -127,9 +127,9 @@ struct cpu *hppa_cpu_new(struct memory *mem, struct machine *machine,
  */
 void hppa_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug("\n");
+	debug(" (%i-bit)", cpu->cd.hppa.bits);
 
-	/*  TODO  */
+	debug("\n");
 }
 
 
@@ -140,9 +140,7 @@ void hppa_cpu_dumpinfo(struct cpu *cpu)
  */
 void hppa_cpu_list_available_types(void)
 {
-	/*  TODO  */
-
-	debug("HPPA1.0\tHPPA1.1\tHPPA2.0\n");
+	debug("HPPA1.0   HPPA1.1   HPPA2.0\n");
 }
 
 
@@ -189,7 +187,7 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
-	int hi6, imm, r;
+	int hi6, imm, rr, rb;
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -226,10 +224,20 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	switch (hi6) {
 	case HPPA_LDIL:
-		r = (iword >> 21) & 31;
+		rr = (iword >> 21) & 31;
 		imm = assemble_21(iword & 0x1fffff);
 		imm <<= 11;
-		debug("ldil\t0x%x,r%i", imm, r);
+		debug("ldil\t0x%x,r%i", imm, rr);
+		break;
+	case HPPA_STW:
+	case HPPA_STW_1B:
+		rb = (iword >> 21) & 31;
+		rr = (iword >> 16) & 31;
+
+		/*  TODO:   hahahahaha, assemble_16 is really weird  */
+
+		imm = (int16_t)(iword & 0xffff);
+		debug("stw\tr%i,%i(r%i)", rr, imm, rb);
 		break;
 	default:
 		debug("unimplemented hi6=%i", hi6);

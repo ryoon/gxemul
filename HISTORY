@@ -1,3 +1,5 @@
+$Id: HISTORY,v 1.58 2004-03-30 01:19:26 debug Exp $
+
 HISTORY of mips64emul
 ---------------------
 
@@ -423,3 +425,4 @@ HISTORY of mips64emul
 		instructions. (Linux uses lq and sq.)
 		Big-endian X Windows servers now display correct rgb color,
 		not bgr as before.
+20040330	Some minor updates to the documentation.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.148 2005-01-24 16:02:30 debug Exp $
+ *  $Id: memory.c,v 1.149 2005-01-29 09:22:08 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -958,10 +958,12 @@ into the devices  */
 					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
 
-				if (cpu->machine->trace_on_bad_address) {
-					cpu->machine->instruction_trace =
-					    cpu->machine->register_dump = 1;
-					quiet_mode = 0;
+				if (cpu->machine->single_step_on_bad_addr) {
+					fatal("[ unimplemented access to "
+					    "0x%016llx, pc = 0x%016llx ]\n",
+					    (long long)paddr,
+					    (long long)cpu->pc);
+					single_step = 1;
 				}
 			}
 

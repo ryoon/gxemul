@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.27 2004-03-24 02:45:02 debug Exp $
+ *  $Id: main.c,v 1.28 2004-04-02 05:46:42 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -359,11 +359,19 @@ int get_cmd_args(int argc, char *argv[])
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
 
-	if (emulation_type == EMULTYPE_SGI && (machine == 25 || machine == 27) && !emul_cpu_name[0])
+	if (emulation_type == EMULTYPE_SGI && machine == 35 && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R12000");
+
+	if (emulation_type == EMULTYPE_SGI && (machine == 25 || machine == 27
+			|| machine == 28 || machine == 30 || machine == 32) && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R10000");
 
+	if (emulation_type == EMULTYPE_SGI && (machine == 21 || machine == 26) && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R8000");
+
+	/*  SGIs should probably work with both R4000 and R5000  */
 	if (emulation_type == EMULTYPE_SGI && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R5000");
+		strcpy(emul_cpu_name, "R4000");
 
 	if (!emul_cpu_name[0])
 		strcpy(emul_cpu_name, CPU_DEFAULT);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.6 2003-11-20 05:07:50 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.7 2003-11-20 05:18:04 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -59,6 +59,7 @@ struct dc_data {
 	int			use_fb;
 
 	int			mouse_mode;
+	int			mouse_revision;		/*  0..15  */
 	int			mouse_x, mouse_y, mouse_buttons;
 };
 
@@ -162,15 +163,17 @@ void send_mouse_update_sequence(struct dc_data *d, int mouse_x, int mouse_y, int
 	d->mouse_buttons = mouse_buttons;
 
 	switch (d->mouse_mode) {
+	case 0:
+		/*  Do nothing (before the mouse is initialized)  */
+		break;
 	case MOUSE_INCREMENTAL:
-fatal("new: %i %i %i\n", d->mouse_x, d->mouse_y, d->mouse_buttons);
 		add_to_rx_queue(d, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + mouse_buttons & 7, DCMOUSE_PORT);
 		add_to_rx_queue(d, xdelta, DCMOUSE_PORT);
 		add_to_rx_queue(d, ydelta, DCMOUSE_PORT);
 		break;
-	/*  TODO:  prompt mode?  */
 	default:
-		/*  Do nothing  */
+		/*  TODO:  prompt mode and perhaps more stuff  */
+		fatal("[ dc7085: mouse mode 0x%02x unknown: TODO ]\n", d->mouse_mode);
 	}
 }
 
@@ -351,8 +354,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 				debug("[ dc7085 writing data to MOUSE: 0x%x", idata);
 				if (idata == MOUSE_INCREMENTAL) {
 					d->mouse_mode = MOUSE_INCREMENTAL;
-				}
-				if (idata == MOUSE_SELF_TEST) {
+				} else if (idata == MOUSE_SELF_TEST) {
 					/*
 					 *  Mouse self-test:
 					 *
@@ -362,11 +364,12 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 					 *        other bits and bytes?
 					 */
 					debug(" (mouse self-test request)");
-					add_to_rx_queue(d, 0x01, DCMOUSE_PORT);
+					add_to_rx_queue(d, 0xa0 | d->mouse_revision, DCMOUSE_PORT);
 					add_to_rx_queue(d, 0x02, DCMOUSE_PORT);
-					add_to_rx_queue(d, 0x03, DCMOUSE_PORT);
-					add_to_rx_queue(d, 0x04, DCMOUSE_PORT);
-				}
+					add_to_rx_queue(d, 0x00, DCMOUSE_PORT);
+					add_to_rx_queue(d, 0x00, DCMOUSE_PORT);
+				} else
+					debug(" UNKNOWN byte; TODO");
 				debug(" ]\n");
 				break;
 			case DCCOMM_PORT:		/*  port 2  */
@@ -438,6 +441,7 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 	d->regs.dc_tcr = 0x00;
 
 	d->mouse_mode = 0;
+	d->mouse_revision = 0;	/*  0..15  */
 
 	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH, dev_dc7085_access, d);
 	cpu_add_tickfunction(cpu, dev_dc7085_tick, d, 9);		/*  every 512:th cycle  */

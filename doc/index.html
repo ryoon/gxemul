@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.183 2005-01-01 17:23:08 debug Exp $
+$Id: index.html,v 1.184 2005-01-02 14:59:57 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -253,38 +253,45 @@ a CTRL-C is sent to the emulated program.
 A few different machine types are emulated.
 The machine types that are emulated best at the moment are:
 <ul>
-  <li>DECstation/DECsystem machines, made by Digital Equipment Corp.
-  <li>Acer Pica-61 (an ARC machine)
+  <li><b>DECstation/DECsystem machines</b>
+	<br>Model 5000/200: Serial controller (including keyboard and
+		mouse), ethernet, SCSI, and graphical framebuffers are
+		emulated.
+	<br>Other models: these differ slightly from the 5000/200 model,
+		and mips64emul doesn't emulate them well enough to run
+		a complete OS yet.
+  <p>
+  <li><b>Acer Pica-61</b> (an ARC machine)
+	<br>Serial controller, "VGA" text console, and SCSI are emulated
+		well enough to let NetBSD/arc and OpenBSD/arc be installed
+		and run.
 </ul>
+
 <p>
-Some other machine types are also emulated, but the degree to which the 
-emulation works for these is generally not very high.
+There is code in mips64emul for emulation of many other machine types;
+the degree to which these work range from just outputing characters via an 
+emulated serial controller, to "almost" being able to run a complete OS.
+
+<p>
 <ul>
-  <li>Silicon Graphics' MIPS-based machines
-  <li>Other ARC machines (NEC RISCstation 2250 and 2200, RISCserver 4200,
+  <li><a href="http://www.netbsd.org/Ports/sgimips/">Silicon Graphics'</a>
+	MIPS-based machines
+  <li>Other <a href="http://www.netbsd.org/Ports/arc/">ARC machines</a>
+	(some NEC RISCstation/RISCserver machines,
 	Deskstation Tyne, Microsoft-Jazz MIPS Magnum and Olivetti M700)
-  <li>Cobalt
-  <li>Sony Playstation 2
-  <li>Skeletons for generic
-	"<a href="http://www.netbsd.org/Ports/hpcmips/">hpcmips</a>",
+  <li><a href="http://www.netbsd.org/Ports/cobalt/">Cobalt</a>
+  <li><a href="http://www.netbsd.org/Ports/playstation2/">Sony Playstation 2</a>
+  <li>"<a href="http://www.netbsd.org/Ports/hpcmips/">HPCmips</a>" (Casio BE-300),
 	<a href="http://www.netbsd.org/Ports/newsmips/history.html">Sony NeWS</a>,
 	<a href="http://www.meshcube.org/">MeshCube</a>,
 	<a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>,
-	and
 	Linksys WRT54G
 </ul>
 
 <p>
-The support for machine types in the list above (Cobalt, Playstation 2, etc)
-is not enough to allow a complete guest OS to run, but there is enough 
-skeleton code so that someone with time and interest probably could fill 
-in the details, write interrupt code and device drivers and so on to make 
-it work.
-
-<p>
-Unfortunately, even if most of these machine types have
-64-bit CPUs in them (or 128-bit, the Playstation 2),
-operating systems often run in 32-bit mode on them.
+Unfortunately, even if most of these machine types have 64-bit CPUs in
+them (or 128-bit, the Playstation 2), operating systems often run in
+32-bit mode on them.
 
 <p>
 There are other machines that use/used MIPS processors, for example the

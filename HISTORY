@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.231 2004-09-26 00:55:56 debug Exp $
+$Id: HISTORY,v 1.232 2004-09-26 19:33:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -955,5 +955,12 @@ HISTORY of mips64emul
 		Debian GNU/Linux.
 20040924	Some more updates to the documentation.
 20040925	Adding overflow stuff to 'add' and 'sub'.
-20040926	Minor updates: possibly a fix to 'sltiu',
-		and removing the 'last_was_rfe' stuff (again).
+20040926	Minor updates: possibly a fix to 'sltiu' (the imm value
+		should be treated as signed, and then converted to unsigned,
+		according to the MIPS64 manual), and removing the
+		'last_was_rfe' stuff (again).
+		OpenBSD/arc used speed-hack jumps with other deltas than just
+		+/- 1 (it used -3 iirc), so the jump speedhack should now
+		support any delta. Also adding bgtzk and blezl as possible
+		instructions for the speed-hack jumps. (This needs to be
+		tested more.)

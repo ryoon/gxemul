@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.357 2005-02-23 06:54:49 debug Exp $
+ *  $Id: machine.c,v 1.358 2005-02-23 11:21:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3980,8 +3980,12 @@ for (i=0; i<32; i++)
 
 		device_add(machine, "bebox");
 
+		/*  Serial, used by NetBSD:  */
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
 		    0x800003f8, 0, 1, 1, "serial 0");
+
+		/*  Serial, used by Linux:  */
+		dev_ns16550_init(machine, mem, 0x800002f8, 0, 1, 0, "serial 1");
 
 		store_32bit_word(cpu, 0x3010,
 		    machine->physical_ram_in_mb * 1048576);
@@ -3994,14 +3998,16 @@ for (i=0; i<32; i++)
 		/*  r3 = bootargs, r4 = ptr to stack area?
 		    r6 = ptr to bootinfo?  */
 		cpu->cd.ppc.gpr[3] = 0;
-		cpu->cd.ppc.gpr[4] = machine->physical_ram_in_mb*1048576-0xc000;
-		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb*1048576-0x100;
+		cpu->cd.ppc.gpr[4] = machine->physical_ram_in_mb * 1048576
+		    - 0xc000;
+		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576
+		    - 0x100;
 
 		/*  See NetBSD's bebox/include/bootinfo.h for details  */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 0, 12);  /*  next  */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 4, 0);  /*  mem  */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 8,
-		    machine->physical_ram_in_mb * 1048576 - 65536);
+		    (machine->physical_ram_in_mb-1) * 1048576 - 65536);
 
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
 		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */

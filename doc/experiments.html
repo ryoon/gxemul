@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.36 2005-02-22 21:12:41 debug Exp $
+$Id: experiments.html,v 1.37 2005-02-23 11:21:43 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -721,6 +721,11 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz">ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz</a>
 	<br>$ <b>tar tvzf kern.tgz</b>
 	<br>$ <b>./mips64emul -E bebox -t netbsd</b>
+      <p>
+      <li><a href="http://www.bebox.nu/os.php?s=os/linux/index">Linux/bebox</a>:
+	<br><a href="http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz">http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz</a>
+	<br>$ <b>gunzip BeBox-scsi-980610.gz</b>
+	<br>$ <b>./mips64emul -E bebox 0x1800000:0x400:BeBox-scsi-980610</b>
     </ul>
   </li>
 

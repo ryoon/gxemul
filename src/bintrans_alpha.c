@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.33 2004-11-15 05:04:06 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.34 2004-11-15 10:05:21 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -35,17 +35,17 @@
  *	t5..t7		6..8		3
  *	s0..s6		9..15		7
  *	a1..a5		17..21		5
- *	t8..t11		22..25		3
+ *	t8..t11		22..25		4
  *
  *  These can be "mapped" to MIPS registers in the translated code,
  *  except a0 which points to the cpu struct, and t0..t4 (or so)
  *  which are used by the translated code as temporaries.
  *
- *  3 + 7 + 8 = 18 available registers. Of course, all (except
+ *  3 + 7 + 5 + 4 = 19 available registers. Of course, all (except
  *  s0..s6) must be saved when calling external functions, such as
  *  when doing load/store.
  *
- *  Which are the 18 most commonly used MIPS registers? (This will
+ *  Which are the 19 most commonly used MIPS registers? (This will
  *  include the pc, and the "current number of executed translated
  *  instructions.)
  *
@@ -172,24 +172,14 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 }
 
 
-unsigned char bintrans_alpha_ret[4] = {
-	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
-};
-
-
 /*
  *  bintrans_write_chunkreturn():
  */
 static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
-	unsigned char *addr = *addrp;
-	int i;
-
-	for (i=0; i<sizeof(bintrans_alpha_ret); i++)
-		addr[i] = bintrans_alpha_ret[i];
-	addr += sizeof(bintrans_alpha_ret);
-
-	*addrp = addr;
+	uint32_t *a = (uint32_t *) *addrp;
+	*a++ = 0x6bfa8001;	/*  ret  */
+	*addrp = (unsigned char *) a;
 }
 
 
@@ -199,23 +189,23 @@ static void bintrans_write_chunkreturn(unsigned char **addrp)
 static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr)
 {
-	unsigned char *a = *addrp;
+	uint32_t *a = (uint32_t *) *addrp;
 
 	if (pc_inc == 0)
 		return;
 
 	if (flag_pc) {
 		/*  lda t5,pc_inc(t5)  */
-		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0xc6; *a++ = 0x20;
+		*a++ = 0x20c60000 | pc_inc;
 	}
 
 	if (flag_ninstr) {
 		pc_inc /= 4;
 		/*  lda t6,pc_inc(t6)  */
-		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0xe7; *a++ = 0x20;
+		*a++ = 0x20e70000 | pc_inc;
 	}
 
-	*addrp = a;
+	*addrp = (unsigned char *) a;
 }
 
 
@@ -825,7 +815,6 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  t1 = t2 & 0xfff
 		 *  t0 += t1
 		 *
-		 *  00 00 70 a4     ldq     t2,0(a0)
 		 *  ff 0f 5f 20     lda     t1,4095
 		 *  02 00 62 44     and     t2,t1,t1
 		 *  01 04 22 40     addq    t0,t1,t0
@@ -833,7 +822,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x03; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq t5,0,t2  */
 		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
-			*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
 
 		/*
 		 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
@@ -1203,7 +1192,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__lui():
  */
-static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm)
+static int bintrans_write_instruction__lui(unsigned char **addrp,
+	int rt, int imm)
 {
 	uint32_t *a;
 	int ofs;
@@ -1341,7 +1331,7 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 	 *  NOTE: Only a few registers are readable without side effects.
 	 */
 	if (rt == 0)
-		goto rt0;
+		return 0;
 
 	if (coproc_nr >= 1)
 		return 0;
@@ -1370,7 +1360,6 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 
 	*addrp = (unsigned char *) a;
 
-rt0:
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.62 2004-11-15 05:04:06 debug Exp $
+ *  $Id: bintrans.c,v 1.63 2004-11-15 10:05:21 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -559,18 +559,22 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 					    &tep->chunk[delayed_branch_new_p/4];
 				else
 					potential_chunk_p = NULL;
-				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p, &tep->chunk[0], 0);
+				bintrans_write_instruction__delayedbranch(&ca,
+				    potential_chunk_p, &tep->chunk[0], 0);
 			}
 		}
 
 		if (translated && tep->chunk[prev_p] == 0)
 			tep->chunk[prev_p] = (uint32_t)
-			    ((size_t)ca_justdid - (size_t)translation_code_chunk_space);
+			    ((size_t)ca_justdid -
+			    (size_t)translation_code_chunk_space);
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && n_translated > 10 && prev_p < 1022 &&
-		    tep->chunk[prev_p+1] != 0 && !delayed_branch) {
-			bintrans_write_instruction__delayedbranch(&ca, &tep->chunk[prev_p+1], NULL, 1);
+		if (translated && try_to_translate && n_translated > 15 &&
+		    prev_p < 1022 && tep->chunk[prev_p+1] != 0 &&
+		    !delayed_branch) {
+			bintrans_write_instruction__delayedbranch(
+			    &ca, &tep->chunk[prev_p+1], NULL, 1);
 			try_to_translate = 0;
 		}
 

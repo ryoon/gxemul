@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.236 2004-12-10 04:06:43 debug Exp $
+ *  $Id: machine.c,v 1.237 2004-12-14 16:24:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2458,7 +2458,10 @@ Why is this here? TODO
 			}
 		}
 
-		arcbios_set_default_exception_handler(cpu);
+
+		if (!emul->prom_emulation)
+			goto no_arc_prom_emulation;	/*  TODO: ugly  */
+
 
 		/*
 		 *  This is important:  :-)
@@ -2471,6 +2474,8 @@ Why is this here? TODO
 
 		if (emul->physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
+
+		arcbios_set_default_exception_handler(cpu);
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emul->emulation_type == EMULTYPE_SGI) {
@@ -2647,7 +2652,7 @@ Why is this here? TODO
 		/*
 		 *  Common stuff for both SGI and ARC:
 		 */
-		debug("system = 0x%x\n", system);
+		debug("system = 0x%llx\n", (long long)system);
 
 		for (i=0; i<emul->ncpus; i++) {
 			uint64_t cpuaddr, fpu, picache, pdcache, sdcache = 0;
@@ -2741,11 +2746,12 @@ Why is this here? TODO
 				    0xffffffff, NULL, cpuaddr, NULL, 0);
 			}
 
-			debug("adding ARC components: cpu%i = 0x%x, "
-			    "fpu%i = 0x%x, picache = 0x%x, pdcache = 0x%x",
-			    i, cpuaddr, i, fpu, picache, pdcache);
+			debug("adding ARC components: cpu%i = 0x%llx, fpu%i"
+			    " = 0x%llx, picache = 0x%llx, pdcache = 0x%llx",
+			    i, (long long)cpuaddr, i, (long long)fpu,
+			    (long long)picache, (long long)pdcache);
 			if (emul->cache_secondary >= 12)
-				debug(", sdcache = 0x%x", sdcache);
+				debug(", sdcache = 0x%llx", (long long)sdcache);
 			debug("\n");
 		}
 
@@ -3232,6 +3238,8 @@ uint64_t cdrom;
 		add_environment_string(cpu, "", &addr);	/*  the end  */
 		store_pointer_and_advance(cpu, &addr2,
 		    0, arc_wordlen==sizeof(uint64_t));
+
+no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 

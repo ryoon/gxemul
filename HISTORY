@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.392 2004-12-14 12:39:57 debug Exp $
+$Id: HISTORY,v 1.393 2004-12-14 16:24:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1330,3 +1330,7 @@ HISTORY of mips64emul
 		(with DELO). (It reads multiple separate areas from disk.)
 		Update to the SLOWSERIALINTERRUPTS stuff, making it even
 		slower.
+		Fixes based on feedback from Alec Voropay (-Q with ARC
+		emulation skips the setup of arcbios data structures in
+		memory, and no sign-extension _after_ writing a 32-bit
+		value to a 64-bit coproc 0 register).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.94 2004-12-14 05:05:04 debug Exp $
+ *  $Id: emul.c,v 1.95 2004-12-14 16:24:10 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -425,7 +425,7 @@ void emul_start(struct emul *emul)
 		    emul->max_random_cycles_per_chunk);
 
 	/*  Special hack for ARC emulation:  */
-	if (emul->emulation_type == EMULTYPE_ARC) {
+	if (emul->emulation_type == EMULTYPE_ARC && emul->prom_emulation) {
 		uint64_t start = emul->cpus[emul->bootstrap_cpu]->pc & 0x1fffffff;
 		uint64_t len = 0x800000 - start;
 		/*  NOTE/TODO: magic 8MB end of load program area  */

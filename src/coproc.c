@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.125 2004-12-13 05:28:18 debug Exp $
+ *  $Id: coproc.c,v 1.126 2004-12-14 16:24:10 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -843,11 +843,20 @@ void coproc_register_write(struct cpu *cpu,
 	cp->reg[reg_nr] = tmp;
 
 ret:
+
+#if 0
+	/*
+	 *  TODO: Which things depend on this? It seems like some things
+	 *  use 32-bit instructions to write to registers, but then they
+	 *  should only be written to as 64-bit (reserved bits in some
+	 *  registers should be zero, etc).
+	 */
 	if (!flag64) {
 		cp->reg[reg_nr] &= 0xffffffffULL;
 		if (cp->reg[reg_nr] & 0x80000000ULL)
 			cp->reg[reg_nr] |= 0xffffffff00000000ULL;
 	}
+#endif
 }
 
 

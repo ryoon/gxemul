@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.6 2004-01-03 03:10:50 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.7 2004-01-03 04:05:36 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -266,6 +266,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 /*
  *  dev_mc146818_init():
+ *
+ *  Hopefully this will work both on the DECstation 3100/2100, and
+ *  on other systems.
  */
 void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int addrdiv, int emulated_ips)
 {

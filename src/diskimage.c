@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.64 2005-01-19 08:44:53 debug Exp $
+ *  $Id: diskimage.c,v 1.65 2005-01-19 10:00:06 debug Exp $
  *
  *  Disk image support.
  *
@@ -516,7 +516,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		debug("MODE_SENSE");
 
 		if (xferp->cmd_len != 6)
-			debug(" (weird len=%i)", xferp->cmd_len);
+			fatal(" (unimplemented mode_sense len=%i)",
+			    xferp->cmd_len);
 
 		retlen = xferp->cmd[4];
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.29 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_le.c,v 1.30 2005-01-19 21:05:35 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -44,8 +44,6 @@
  *  tries to read TURBOchannel rom data from 0x1c03f0, and that is provided
  *  by the turbochannel device, not this device.
  *
- *  TODO:  Make sure that this device works with both NetBSD and Ultrix
- *         and on as many DECstation models as possible.
  *
  *  TODO:  Error conditions (such as when there are not enough receive
  *	   buffers) are not emulated yet.
@@ -156,7 +154,8 @@ void le_chip_init(struct le_data *d)
 {
 	d->init_block_addr = (d->reg[1] & 0xffff) + ((d->reg[2] & 0xff) << 16);
 	if (d->init_block_addr & 1)
-		fatal("[ le: WARNING! initialization block address not word aligned? ]\n");
+		fatal("[ le: WARNING! initialization block address "
+		    "not word aligned? ]\n");
 
 	debug("[ le: d->init_block_addr = 0x%06x ]\n", d->init_block_addr);
 
@@ -231,6 +230,9 @@ void le_tx(struct le_data *d)
 	int stp, enp, i, cur_packet_offset;
 	uint32_t bufaddr, buflen;
 
+	/*  TODO: This is just a guess:  */
+	d->reg[0] &= ~LE_TDMD;
+
 	do {
 		/*  Load the 8 descriptor bytes:  */
 		tx_descr[0] = le_read_16bit(d, d->tdra + d->txp*8 + 0);
@@ -252,20 +254,23 @@ void le_tx(struct le_data *d)
 			return;
 		if ((tx_descr[2] & 0xf000) != 0xf000)
 			return;
-		if (buflen < 12 || buflen > 1900)
+		if (buflen < 12 || buflen > 1900) {
+			fatal("[ le_tx(): buflen = %i ]\n", buflen);
 			return;
+		}
 
-		debug("[ le: tx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes, STP=%i ENP=%i ]\n",
-		    d->txp, tx_descr[0], tx_descr[1], tx_descr[2], tx_descr[3],
+		debug("[ le_tx(): descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x "
+		    "=> addr=0x%06x, len=%i bytes, STP=%i ENP=%i ]\n", d->txp,
+		    tx_descr[0], tx_descr[1], tx_descr[2], tx_descr[3],
 		    bufaddr, buflen, stp, enp);
 
 		if (d->tx_packet == NULL && !stp) {
-			fatal("[ le: le_tx(): !stp but tx_packet == NULL ]\n");
+			fatal("[ le_tx(): !stp but tx_packet == NULL ]\n");
 			return;
 		}
 
 		if (d->tx_packet != NULL && stp) {
-			fatal("[ le: le_tx(): stp but tx_packet != NULL ]\n");
+			fatal("[ le_tx(): stp but tx_packet != NULL ]\n");
 			free(d->tx_packet);
 			d->tx_packet = NULL;
 			d->tx_packet_len = 0;
@@ -279,14 +284,16 @@ void le_tx(struct le_data *d)
 			d->tx_packet_len = buflen;
 			d->tx_packet = malloc(buflen);
 			if (d->tx_packet == NULL) {
-				fprintf(stderr, "out of memory (1) in le_tx()\n");
+				fprintf(stderr, "out of memory (1) in "
+				    "le_tx()\n");
 				exit(1);
 			}
 		} else {
 			d->tx_packet_len += buflen;
 			d->tx_packet = realloc(d->tx_packet, d->tx_packet_len);
 			if (d->tx_packet == NULL) {
-				fprintf(stderr, "out of memory (2) in le_tx()\n");
+				fprintf(stderr, "out of memory (2) in"
+				    " le_tx()\n");
 				exit(1);
 			}
 		}
@@ -328,7 +335,7 @@ void le_tx(struct le_data *d)
 	} while (d->txp != start_txp);
 
 	/*  We are here if all descriptors were taken care of.  */
-	fatal("[ le: le_tx(): all TX descriptors used up? ]\n");
+	fatal("[ le_tx(): all TX descriptors used up? ]\n");
 }
 
 
@@ -365,11 +372,14 @@ void le_rx(struct le_data *d)
 			return;
 		if ((rx_descr[2] & 0xf000) != 0xf000)
 			return;
-		if (buflen < 12 || buflen > 1900)
+		if (buflen < 12 || buflen > 1900) {
+			fatal("[ le_rx(): buflen = %i ]\n", buflen);
 			return;
+		}
 
-		debug("[ le: rx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes ]\n",
-		    d->rxp, rx_descr[0], rx_descr[1], rx_descr[2], rx_descr[3],
+		debug("[ le_rx(): descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x "
+		    "=> addr=0x%06x, len=%i bytes ]\n", d->rxp,
+		    rx_descr[0], rx_descr[1], rx_descr[2], rx_descr[3],
 		    bufaddr, buflen);
 
 		/*  Copy data from the packet into SRAM:  */
@@ -433,7 +443,7 @@ void le_rx(struct le_data *d)
 	} while (d->rxp != start_rxp);
 
 	/*  We are here if all descriptors were taken care of.  */
-	fatal("[ le: le_rx(): all RX descriptors used up? ]\n");
+	fatal("[ le_rx(): all RX descriptors used up? ]\n");
 }
 
 
@@ -442,9 +452,19 @@ void le_rx(struct le_data *d)
  */
 void le_register_fix(struct le_data *d)
 {
-	/*  Should the chip be initialized with a new Initialization block?  */
+	/*  Init with new Initialization block, if needed.  */
 	if (d->reg[0] & LE_INIT)
 		le_chip_init(d);
+
+#ifdef LE_DEBUG
+	{
+		static int x = 1234;
+		if (x != d->reg[0]) {
+			debug("[ le reg[0] = 0x%04x ]\n", d->reg[0]);
+			x = d->reg[0];
+		}
+	}
+#endif
 
 	/*
 	 *  If the receiver is on:
@@ -552,7 +572,8 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 		}
 		if (x & LE_INIT) {
 			if (!(d->reg[r] & LE_STOP))
-				fatal("[ le: attempt to INIT before STOPped! ]\n");
+				fatal("[ le: attempt to INIT before"
+				    " STOPped! ]\n");
 			d->reg[r] |= LE_INIT;
 			d->reg[r] &= ~LE_STOP;
 		}
@@ -580,16 +601,16 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 int dev_le_sram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	uint64_t idata = 0;
 	int i, retval;
 	struct le_data *d = extra;
 
-	idata = memory_readmax64(cpu, data, len);
-
 #ifdef LE_DEBUG
-	if (writeflag == MEM_WRITE)
-		fatal("[ le_sram: write to addr 0x%06x: 0x%08x ]\n",
-		    relative_addr, idata);
+	if (writeflag == MEM_WRITE) {
+		fatal("[ le_sram: write to addr 0x%06x: ", (int)relative_addr);
+		for (i=0; i<len; i++)
+			fatal("%02x ", data[i]);
+		fatal("]\n");
+	}
 #endif
 
 	/*  Read/write of the SRAM:  */
@@ -635,17 +656,16 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	idata = memory_readmax64(cpu, data, len);
 
 #ifdef LE_DEBUG
-	if (writeflag == MEM_WRITE)
-		fatal("[ le: write to addr 0x%06x: 0x%08x ]\n",
-		    relative_addr, idata);
+	if (writeflag == MEM_WRITE) {
+		fatal("[ le: write to addr 0x%06x: ", (int)relative_addr);
+		for (i=0; i<len; i++)
+			fatal("%02x ", data[i]);
+		fatal("]\n");
+	}
 #endif
 
-	/*  The rest of this code was written before the SRAM
-	    was separated out for bintrans optimization.  */
-	relative_addr += 0x100000;
-
 	/*  Read from station's ROM (ethernet address):  */
-	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1fffff) {
+	if (relative_addr >= 0xc0000 && relative_addr <= 0xfffff) {
 		i = (relative_addr & 0xff) / 4;
 		i = d->rom[i & (ROM_SIZE-1)];
 
@@ -667,12 +687,12 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 
 	/*  Register read/write:  */
-	case 0x100000:
+	case 0:
 		if (writeflag==MEM_READ) {
 			odata = d->reg[d->reg_select];
 			if (!quiet_mode)
-				debug("[ le: read from register 0x%02x: 0x%02x ]\n",
-				    d->reg_select, (int)odata);
+				debug("[ le: read from register 0x%02x: 0x"
+				    "%02x ]\n", d->reg_select, (int)odata);
 			/*
 			 *  A read from csr1..3 should return "undefined"
 			 *  result if the stop bit is set.  However, Ultrix
@@ -681,8 +701,8 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			 */
 		} else {
 			if (!quiet_mode)
-				debug("[ le: write to register 0x%02x: 0x%02x ]\n",
-				    d->reg_select, (int)idata);
+				debug("[ le: write to register 0x%02x: 0x"
+				    "%02x ]\n", d->reg_select, (int)idata);
 			/*
 			 *  A write to from csr1..3 when the stop bit is
 			 *  set should be ignored. However, Ultrix writes
@@ -694,36 +714,34 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	/*  Register select:  */
-	case 0x100004:
+	case 4:
 		if (writeflag==MEM_READ) {
 			odata = d->reg_select;
 			if (!quiet_mode)
-				debug("[ le: read from register select: 0x%02x ]\n",
-				    (int)odata);
+				debug("[ le: read from register select: "
+				    "0x%02x ]\n", (int)odata);
 		} else {
 			if (!quiet_mode)
-				debug("[ le: write to register select: 0x%02x ]\n",
-				    (int)idata);
+				debug("[ le: write to register select: "
+				    "0x%02x ]\n", (int)idata);
 			d->reg_select = idata & (N_REGISTERS - 1);
 			if (idata >= N_REGISTERS)
-				fatal("[ le: WARNING! register select %i (max is %i) ]\n",
-				    idata, N_REGISTERS - 1);
+				fatal("[ le: WARNING! register select %i "
+				    "(max is %i) ]\n", idata, N_REGISTERS - 1);
 		}
 		break;
 
 	default:
 		if (writeflag==MEM_READ) {
 			fatal("[ le: read from UNIMPLEMENTED addr 0x%06x ]\n",
-			    relative_addr);
+			    (int)relative_addr);
 		} else {
-			fatal("[ le: write to UNIMPLEMENTED addr 0x%06x: 0x%08x ]\n",
-			    relative_addr, (int)idata);
+			fatal("[ le: write to UNIMPLEMENTED addr 0x%06x: "
+			    "0x%08x ]\n", (int)relative_addr, (int)idata);
 		}
 	}
 
-
 do_return:
-
 	if (writeflag == MEM_READ) {
 		memory_writemax64(cpu, data, len, odata);
 #ifdef LE_DEBUG
@@ -799,8 +817,7 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->sram);
 
 	memory_device_register(mem, "le", baseaddr + 0x100000,
-	    len - 0x100000,
-	    dev_le_access, (void *)d, MEM_DEFAULT, NULL);
+	    len - 0x100000, dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_le_tick, d, LE_TICK_SHIFT);
 }

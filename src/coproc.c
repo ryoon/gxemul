@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.7 2003-12-29 09:49:00 debug Exp $
+ *  $Id: coproc.c,v 1.8 2003-12-30 03:05:02 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -403,6 +403,12 @@ void coproc_register_write(struct cpu *cpu,
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_FRAMEMASK) {
+		/*  TODO: R10000  */
+		unimpl = 0;
+	}
+
+	if (cp->coproc_nr==0 && (reg_nr==COP0_TAGDATA_LO || reg_nr==COP0_TAGDATA_HI)) {
+		/*  TODO: R4300 and others?  */
 		unimpl = 0;
 	}
 

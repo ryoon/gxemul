@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.35 2004-06-14 22:50:59 debug Exp $
+ *  $Id: memory.c,v 1.36 2004-06-17 22:51:50 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -961,23 +961,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 
 no_exception_access:
 
-	if (bintrans_enable) {
-		/*
-		 *  On writes to physical RAM addresses, invalidate any
-		 *  binary translations for those addresses.
-		 */
-		int chunk_nr = -1;
-
-		mem->bintrans_last_paddr = paddr;
-
-		if (writeflag == MEM_WRITE)
-			bintrans_invalidate(mem, paddr, len);
-		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION)
-			transl_cache_hit = bintrans_check_cache(mem, paddr, &chunk_nr);
-
-		mem->bintrans_last_chunk_nr = chunk_nr;
-	}
-
 	/*
 	 *  Uncached access:
 	 */
@@ -1040,7 +1023,32 @@ no_exception_access:
 
 do_return_ok:
 	if (bintrans_enable) {
-		size_t host4kpage = (size_t)memblock;
+		/*
+		 *  On writes to physical RAM addresses, invalidate any
+		 *  binary translations for those addresses.
+		 */
+		size_t host4kpage;
+		int chunk_nr = -1;
+
+		mem->bintrans_last_paddr = paddr;
+
+		if (writeflag == MEM_WRITE) {
+#if 0
+			/*  Only invalidate if new data is != old data:  */
+			int i, j = 0;
+			for (i=0; i<len; i++)
+				j += (memblock[offset+i] != data[i])? 1 : 0;
+			if (j > 0)
+#endif
+				bintrans_invalidate(mem, paddr, len);
+		}
+
+		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION)
+			transl_cache_hit = bintrans_check_cache(mem, paddr, &chunk_nr);
+
+		mem->bintrans_last_chunk_nr = chunk_nr;
+
+		host4kpage = (size_t)memblock;
 		host4kpage += (offset & ~0xfff);
 
 		mem->bintrans_last_host4kpage = (void *) host4kpage;

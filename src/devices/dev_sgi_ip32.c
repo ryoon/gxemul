@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.15 2005-01-30 13:14:12 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.16 2005-02-03 07:47:28 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -128,15 +128,20 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	 *
 	 *  (TODO?)
 	 */
-	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = d->use_fb? 0xa1 : 0x11;
+	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00;
+	d->reg[7] = d->use_fb? 0xa1 : 0x11;
 
-	/*  Amount of memory.  Bit 8 of bank control set ==> 128MB instead of 32MB per bank (?)  */
-	/*  When the bank control registers contain the same value as the previous one, that
-		bank is not valid. (?)  */
-	d->reg[CRM_MEM_BANK_CTRL0 + 6] = 0x0;	/*  lowest bit set = 128MB, clear = 32MB  */
-	d->reg[CRM_MEM_BANK_CTRL0 + 7] = 0x0;	/*  address * 32MB  */
-	d->reg[CRM_MEM_BANK_CTRL1 + 6] = 0x0;	/*  lowest bit set = 128MB, clear = 32MB  */
-	d->reg[CRM_MEM_BANK_CTRL1 + 7] = 0x1;	/*  address * 32MB  */
+	/*
+	 *  Amount of memory.  Bit 8 of bank control set ==> 128MB instead
+	 *  of 32MB per bank (?)
+	 *
+	 *  When the bank control registers contain the same value as the
+	 *  previous one, that bank is not valid. (?)
+	 */
+	d->reg[CRM_MEM_BANK_CTRL0 + 6] = 0;  /* lowbit set=128MB, clear=32MB */
+	d->reg[CRM_MEM_BANK_CTRL0 + 7] = 0;  /* address * 32MB  */
+	d->reg[CRM_MEM_BANK_CTRL1 + 6] = 0;  /* lowbit set=128MB, clear=32MB */
+	d->reg[CRM_MEM_BANK_CTRL1 + 7] = 1;  /* address * 32MB  */
 
 	if (relative_addr >= CRIME_TIME && relative_addr < CRIME_TIME+8) {
 		if (writeflag == MEM_READ)
@@ -151,15 +156,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 
 	if (relative_addr == 0x18 || relative_addr == 0x1c) {
 		/*
-		 *  NOTE:  This is super-ugly. I want to force the MIPS interrupt
-		 *  assertion bits to be updated, taking the interrupt mask
-		 *  into account, so I call cpu_interrupt_ack() with something
-		 *  which "hopefully" doesn't do any damage. cpu_interrupt_ack()
-		 *  will in turn call the SGI crime interrupt stuff in src/machine.c,
-		 *  which takes the interrupt mask into account when asserting or
-		 *  deasserting the crime interrupt pin.
-		 *
-		 *  TODO: How to solve this nicer?
+		 *  Force interrupt re-assertion:
 		 */
 		cpu_interrupt_ack(cpu, 8);
 	}
@@ -170,21 +167,24 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 		    (such as NetBSD 1.6.2) write to 0x00c!  */
 		if (writeflag == MEM_WRITE) {
 			/*
-			 *  0x200 = watchdog timer (it seems, according to NetBSD)
+			 *  0x200 = watchdog timer (according to NetBSD)
 			 *  0x800 = "reboot" used by the IP32 PROM
 			 */
 			if (idata & 0x200) {
 				idata &= ~0x200;
 			}
 			if (idata & 0x800) {
-				/*  This is used by the IP32 PROM's "reboot" command:  */
+				/*  This is used by the IP32 PROM's
+				    "reboot" command:  */
 				for (i=0; i<cpu->machine->ncpus; i++)
 					cpu->machine->cpus[i]->running = 0;
-				cpu->machine->exit_without_entering_debugger = 1;
+				cpu->machine->
+				    exit_without_entering_debugger = 1;
 				idata &= ~0x800;
 			}
 			if (idata != 0)
-				fatal("[ CRIME_CONTROL: unimplemented control 0x%016llx ]\n", idata);
+				fatal("[ CRIME_CONTROL: unimplemented "
+				    "control 0x%016llx ]\n", (long long)idata);
 		}
 		break;
 #if 1
@@ -198,7 +198,8 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ crime: read from 0x%x, len=%i:", (int)relative_addr, len);
+			debug("[ crime: read from 0x%x, len=%i:",
+			    (int)relative_addr, len);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
@@ -267,7 +268,8 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem,
 #endif
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ mace: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
+			debug("[ mace: read from 0x%x, len=%i ]\n",
+			    (int)relative_addr, len);
 		} else {
 			debug("[ mace: write to 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)
@@ -343,17 +345,22 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem,
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
-			res = bus_pci_access(cpu, mem, relative_addr, &idata, writeflag, d->pci_data);
+			res = bus_pci_access(cpu, mem, relative_addr,
+			    &idata, writeflag, d->pci_data);
 		} else {
-			res = bus_pci_access(cpu, mem, relative_addr, &odata, writeflag, d->pci_data);
+			res = bus_pci_access(cpu, mem, relative_addr,
+			    &odata, writeflag, d->pci_data);
 			/*  odata = 0;  */
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ macepci: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ macepci: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ macepci: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ macepci: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -401,7 +408,7 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
 #define	MEC_TICK_SHIFT		14
 
 #define	MAX_TX_PACKET_LEN	1700
-#define	N_RX_ADDRESSES		32
+#define	N_RX_ADDRESSES		16
 
 struct sgi_mec_data {
 	uint64_t	reg[DEV_SGI_MEC_LENGTH / sizeof(uint64_t)];
@@ -455,6 +462,9 @@ void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	int i, res;
 
 	base = d->rx_addr[d->cur_rx_addr_index];
+	if (base & 0xfff)
+		fatal("[ mec_try_rx(): WARNING! lowest bits of base are "
+		    "non-zero (0x%3x). TODO ]\n", (int)(base & 0xfff));
 	base &= 0xfffff000ULL;
 	if (base == 0)
 		goto skip_but_goto_next;
@@ -492,13 +502,13 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 		goto skip;
 
 	/*  Copy the packet data:  */
-	/*  printf("RX: ");  */
+	printf("RX: ");
 	for (i=0; i<d->cur_rx_packet_len; i++) {
 		res = memory_rw(cpu, cpu->mem, base + 32 + i + 2,
 		    d->cur_rx_packet + i, 1, MEM_WRITE, PHYSICAL);
-		/*  printf(" %02x", d->cur_rx_packet[i]);  */
+		printf(" %02x", d->cur_rx_packet[i]);
 	}
-	/*  printf("\n");  */
+	printf("\n");
 
 	printf("RX: %i bytes, base = 0x%x\n", d->cur_rx_packet_len, (int)base);
 
@@ -522,7 +532,6 @@ skip_but_interrupt:
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_RX_THRESHOLD;
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &= ~MEC_INT_RX_MCL_FIFO_ALIAS;
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= ((d->cur_rx_addr_index + 1) & 0x1f) << 8;
-	cpu_interrupt(cpu, d->irq_nr);
 
 skip_but_goto_next:
 	d->cur_rx_addr_index ++;
@@ -536,7 +545,7 @@ skip:
 /*
  *  mec_try_tx():
  */
-void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
+static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 {
 	uint64_t base, addr, dma_base;
 	int tx_ring_ptr, ringread, ringwrite, res, i, j;
@@ -547,7 +556,7 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	tx_ring_ptr = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
 
 	if (base == 0)
-		return;
+		return 0;
 
 	/*  printf("base = 0x%016llx\n", base);  */
 
@@ -559,18 +568,18 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	res = memory_rw(cpu, cpu->mem, addr,
 	    &data[0], sizeof(data), MEM_READ, PHYSICAL);
 	if (!res)
-		return;
+		return 0;
 
 	/*  Is this packet transmitted already?  */
 	if (data[0] & 0x80)
-		goto skip;
+		return 0;
 
 	len = data[6] * 256 + data[7];
 	start_offset = data[5] & 0x7f;
 
-	/*  Is this packet empty? Then don't transmit it.  */
+	/*  Is this packet empty? Then don't transmit.  */
 	if (len == 0)
-		return;
+		return 0;
 
 	/*  Hm. Is len one too little?  TODO  */
 	len ++;
@@ -622,7 +631,8 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 			dma_len = (data[dma_ptr_nr * 8 + 2] << 8)
 			        + (data[dma_ptr_nr * 8 + 3]) + 1;
 
-			/*  printf("dma_base = %08x, dma_len = %i\n", (int)dma_base, dma_len);  */
+			/*  printf("dma_base = %08x, dma_len = %i\n",
+			    (int)dma_base, dma_len);  */
 
 			while (dma_len > 0) {
 				unsigned char ch;
@@ -632,7 +642,8 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 
 				d->cur_tx_packet[j++] = ch;
 				if (j >= MAX_TX_PACKET_LEN) {
-					fatal("[ mec_try_tx: packet too large? ]\n");
+					fatal("[ mec_try_tx: packet too large?"
+					    " ]\n");
 					break;
 				}
 				dma_base ++;
@@ -648,29 +659,30 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	    d->cur_tx_packet, d->cur_tx_packet_len);
 
 	/*  see openbsd's if_mec.c for details  */
+	if (data[4] & 0x01) {
+		d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |=
+		    MEC_INT_TX_PACKET_SENT;
+	}
 	data[0] = 0x80;
 	data[5] = 0x80;
 	data[4] = 0x00;
 
 	res = memory_rw(cpu, cpu->mem, addr,
 	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
-	if (!res)
-		return;
 
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_PACKET_SENT;
-	cpu_interrupt(cpu, d->irq_nr);
-
-skip:
 	/*  Advance the ring Read ptr.  */
 	tx_ring_ptr = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
 	ringread = tx_ring_ptr & MEC_TX_RING_READ_PTR;
 	ringwrite = tx_ring_ptr & MEC_TX_RING_WRITE_PTR;
 
 	ringread = ((ringread >> 16) + 1) << 16;
+	ringread &= 63;
 
 	d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)] =
 	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
 	    (ringread & MEC_TX_RING_READ_PTR);
+
+	return 1;
 }
 
 
@@ -681,15 +693,16 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 {
 	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
 
-	/*  RX:  */
+	while (mec_try_tx(cpu, d))
+		;
+
 	mec_try_rx(cpu, d);
 
-	/*  TX:  */
-	mec_try_tx(cpu, d);
-
 	/*  Interrupts:  */
-	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK)
+	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK) {
+printf("Yo\n");
 		cpu_interrupt(cpu, d->irq_nr);
+}
 	else
 		cpu_interrupt_ack(cpu, d->irq_nr);
 }
@@ -713,12 +726,12 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_WRITE) {
 		switch (relative_addr) {
 		case MEC_INT_STATUS:	/*  0x08  */
-			/*  Clear lowest bits on write:  (This is just a guess)  */
-			d->reg[regnr] = (idata & ~0xff) | ((d->reg[regnr] & ~idata) & 0xff);
+			/*  Clear bits on write:  (This is just a guess)  */
+			d->reg[regnr] &= ~idata;
 			break;
 		case MEC_TX_RING_PTR:	/*  0x30  */
-			d->reg[regnr] = (idata & MEC_TX_RING_WRITE_PTR)
-			    | (d->reg[regnr] & ~MEC_TX_RING_WRITE_PTR);
+			idata &= MEC_TX_RING_WRITE_PTR;
+			/*  TODO  */
 			break;
 		default:
 			d->reg[regnr] = idata;
@@ -738,42 +751,55 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case MEC_INT_STATUS:	/*  0x08  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_INT_STATUS: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_INT_STATUS: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_DMA_CONTROL:	/*  0x10  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_DMA_CONTROL: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_DMA_CONTROL: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_TX_ALIAS:	/*  0x20  */
-		/*  TODO?  */
-		if (writeflag)
-			debug("[ sgi_mec: write to MEC_TX_ALIAS: 0x%016llx ]\n", (long long)idata);
+		if (writeflag) {
+			debug("[ sgi_mec: write to MEC_TX_ALIAS: "
+			    "0x%016llx ]\n", (long long)idata);
+		} else {
+			debug("[ sgi_mec: read from MEC_TX_ALIAS: "
+			    "0x%016llx ]\n", (long long)idata);
+			odata = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
+		}
 		break;
 	case MEC_RX_ALIAS:	/*  0x28  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_RX_ALIAS: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_RX_ALIAS: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_TX_RING_PTR:	/*  0x30  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_TX_RING_PTR: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_TX_RING_PTR: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_PHY_DATA:	/*  0x64  */
 		if (writeflag)
-			fatal("[ sgi_mec: write to MEC_PHY_DATA: 0x%016llx ]\n", (long long)idata);
+			fatal("[ sgi_mec: write to MEC_PHY_DATA: "
+			    "0x%016llx ]\n", (long long)idata);
 		else
 			odata = 0;	/*  ?  */
 		break;
 	case MEC_PHY_ADDRESS:	/*  0x6c  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_PHY_ADDRESS: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_PHY_ADDRESS: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_PHY_READ_INITIATE:	/*  0x70  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_PHY_READ_INITIATE: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_PHY_READ_INITIATE: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case 0x74:
 		if (writeflag)
-			debug("[ sgi_mec: write to 0x74: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to 0x74: 0x%016llx ]\n",
+			    (long long)idata);
 		else
 			debug("[ sgi_mec: read from 0x74 ]\n");
 		break;
@@ -787,23 +813,26 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case MEC_STATION_ALT:	/*  0xa8  */
 		if (writeflag)
-			debug("[ sgi_mec: setting the ALTERNATIVE MAC address to "
-			    "%02x:%02x:%02x:%02x:%02x:%02x ]\n",
+			debug("[ sgi_mec: setting the ALTERNATIVE MAC address"
+			    " to %02x:%02x:%02x:%02x:%02x:%02x ]\n",
 			    (idata >> 40) & 255, (idata >> 32) & 255,
 			    (idata >> 24) & 255, (idata >> 16) & 255,
 			    (idata >>  8) & 255, (idata >>  0) & 255);
 		break;
 	case MEC_MULTICAST:	/*  0xb0  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_MULTICAST: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_MULTICAST: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_TX_RING_BASE:	/*  0xb8  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_TX_RING_BASE: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_TX_RING_BASE: "
+			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_MCL_RX_FIFO:	/*  0x100  */
 		if (writeflag) {
-			debug("[ sgi_mec: write to MEC_MCL_RX_FIFO: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_MCL_RX_FIFO: 0x"
+			    "%016llx ]\n", (long long)idata);
 			d->rx_addr[d->cur_rx_addr_index_write] = idata;
 			d->cur_rx_addr_index_write ++;
 			d->cur_rx_addr_index_write %= N_RX_ADDRESSES;
@@ -811,11 +840,12 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
-			fatal("[ sgi_mec: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
+			fatal("[ sgi_mec: unimplemented write to address"
+			    " 0x%llx, data=0x%016llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
-			fatal("[ sgi_mec: unimplemented read from address 0x%llx ]\n",
-			    (long long)relative_addr);
+			fatal("[ sgi_mec: unimplemented read from address"
+			    " 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)

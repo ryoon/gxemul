@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.557 2005-02-03 05:56:56 debug Exp $
+$Id: HISTORY,v 1.558 2005-02-03 07:47:27 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1621,3 +1621,4 @@ HISTORY of mips64emul
 		configuration file option 'bintrans_size'.
 		The debugger can now theoretically call disassembler functions
 		for cpu families with non-fixed instruction word length.
+		Working more on the mec controller.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.39 2004-10-13 15:58:56 debug Exp $
+ *  $Id: dev_asc.c,v 1.40 2004-10-13 18:37:34 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models.
  *
@@ -693,7 +693,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			{
 				int i;
 				debug("[ asc: read from DMA addr 0x%05x:",
-				    relative_addr - 0x80000);
+				    (int) (relative_addr - 0x80000));
 				for (i=0; i<len; i++)
 					debug(" %02x", data[i]);
 				debug(" ]\n");
@@ -708,7 +708,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			{
 				int i;
 				debug("[ asc: write to  DMA addr 0x%05x:",
-				    relative_addr - 0x80000);
+				    (int) (relative_addr - 0x80000));
 				for (i=0; i<len; i++)
 					debug(" %02x", data[i]);
 				debug(" ]\n");

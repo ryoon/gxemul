@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.28 2004-01-05 03:26:38 debug Exp $
+ *  $Id: machine.c,v 1.29 2004-01-05 06:41:34 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -399,6 +399,7 @@ void machine_init(struct memory *mem)
 			 *  tc0 slot 1							(0x1e800000)
 			 *  tc0 slot 2							(0x1f000000)
 			 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1f800000)
+			 *    something that has to do with interrupts? (?)		(0x1f840000 ?)
 			 *  le0 at ioasic0 offset 0xc0000				(0x1f8c0000)
 			 *  scc0 at ioasic0 offset 0x100000				(0x1f900000)
 			 *  scc1 at ioasic0 offset 0x180000: console			(0x1f980000)
@@ -884,8 +885,18 @@ void machine_init(struct memory *mem)
 					dev_sgi_ip22_init(cpus[0], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
 					break;
 				case 27:
-					strcat(machine_name, " (Origin 200)");
+					strcat(machine_name, " (Origin 200/2000, Onyx2)");
+					/*
+					 *  IRIX reads from the following addresses, so there's probably
+					 *  something interesting there:
+					 *
+					 *  0x1fcffff0 <.MIPS.options+0x30>
+					 *  0x19600000 <get_nasid+0x4>
+					 *  0x190020d0 <get_cpuinfo+0x34>
+					 */
 					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+					dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
+					dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 					break;
 				case 30:
 					strcat(machine_name, " (Octane)");
@@ -907,7 +918,6 @@ void machine_init(struct memory *mem)
 					break;
 				case 35:
 					strcat(machine_name, " (Origin 3000)");
-					cpus[0]->coproc[3] = coproc_new(cpus[0], 3);	/*  ??  */
 					break;
 				default:
 					fatal("unimplemented SGI machine type IP%i\n", machine);

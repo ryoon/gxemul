@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.12 2004-01-09 16:24:19 debug Exp $
+ *  $Id: coproc.c,v 1.13 2004-01-10 05:42:57 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -149,7 +149,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    | (   1 <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
 			    | (   1 <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
 			    | (   0 <<  3)	/*  CU: todo  */
-			    | (   0 <<  0)	/*  kseg0 coherency algorithm
+			    | (   2 <<  0)	/*  kseg0 coherency algorithm
 							(TODO)  */
 			    ;
 			break;
@@ -159,10 +159,10 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			      (   3 << 29)	/*  Primary instruction cache size, hardwired to 32KB  */
 			    | (   3 << 26)	/*  Primary data cache size, hardwired to 32KB  */
 			    | (   0 << 19)	/*  SCClkDiv  */
-			    | (   0 << 16)	/*  SCSize  */
+			    | (   0 << 16)	/*  SCSize, secondary cache size. 0 = 512KB. powers of two  */
 			    | (   0 << 15)	/*  MemEnd  */
 			    | (   0 << 14)	/*  SCCorEn  */
-			    | (   0 << 13)	/*  SCBlkSize  */
+			    | (   1 << 13)	/*  SCBlkSize. 0=16 words, 1=32 words  */
 			    | (   0 <<  9)	/*  SysClkDiv  */
 			    | (   0 <<  7)	/*  PrcReqMax  */
 			    | (   0 <<  6)	/*  PrcElmReq  */
@@ -400,11 +400,16 @@ void coproc_register_write(struct cpu *cpu,
 */		/*  Otherwise, allow the write:  */
 		unimpl = 0;
 	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_PRID)	readonly = 1;
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_PRID)
+		readonly = 1;
+
 	if (cp->coproc_nr==0 && reg_nr==COP0_CONFIG) {
+		/*  fatal("COP0_CONFIG: modifying K0 bits: 0x%08x => ", cp->reg[reg_nr]);  */
 		tmp = *ptr;
 		tmp &= 0x3;	/*  only bits 2..0 can be written  */
 		cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
+		/*  fatal("0x%08x\n", cp->reg[reg_nr]);  */
 		return;
 	}
 

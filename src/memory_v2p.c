@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.16 2005-01-09 03:05:27 debug Exp $
+ *  $Id: memory_v2p.c,v 1.17 2005-01-09 04:25:38 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -263,14 +263,13 @@ bugs are triggered.  */
 			d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
 #else
 			/*  R4000 or similar:  */
-			pmask = (cp0->tlbs[i].mask &
-			    PAGEMASK_MASK) | 0x1fff;
+			pmask = cp0->tlbs[i].mask & PAGEMASK_MASK;
 			cached_hi = cp0->tlbs[i].hi;
 			cached_lo0 = cp0->tlbs[i].lo0;
 			cached_lo1 = cp0->tlbs[i].lo1;
 
 			/*  Optimized for 4KB page size:  */
-			if (pmask == 0x1fff) {
+			if (pmask == 0) {
 				pageshift = 12;
 				entry_vpn2 = (cached_hi & vpn2_mask) >> 13;
 				vaddr_vpn2 = (vaddr & vpn2_mask) >> 13;
@@ -279,13 +278,13 @@ bugs are triggered.  */
 			} else {
 				/*  Non-standard page mask:  */
 				switch (pmask) {
-				case 0x0007fff:	pageshift = 14; break;
-				case 0x001ffff:	pageshift = 16; break;
-				case 0x007ffff:	pageshift = 18; break;
-				case 0x01fffff:	pageshift = 20; break;
-				case 0x07fffff:	pageshift = 22; break;
-				case 0x1ffffff:	pageshift = 24; break;
-				case 0x7ffffff:	pageshift = 26; break;
+				case 0x0006000:	pageshift = 14; break;
+				case 0x001e000:	pageshift = 16; break;
+				case 0x007e000:	pageshift = 18; break;
+				case 0x01fe000:	pageshift = 20; break;
+				case 0x07fe000:	pageshift = 22; break;
+				case 0x1ffe000:	pageshift = 24; break;
+				case 0x7ffe000:	pageshift = 26; break;
 				default:
 					fatal("pmask=%08x\n", i, pmask);
 					exit(1);
@@ -295,7 +294,7 @@ bugs are triggered.  */
 				    vpn2_mask) >> (pageshift + 1);
 				vaddr_vpn2 = (vaddr & vpn2_mask) >>
 				    (pageshift + 1);
-				pmask >>= 1;
+				pmask = (1 << pageshift) - 1;
 				odd = (vaddr >> pageshift) & 1;
 			}
 

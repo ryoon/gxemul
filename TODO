@@ -72,7 +72,7 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  Separate RAM as yet another device (a "RAM device"), replacing the
 			'memory' system with a more generic 'memory controller'.
 
-		o)  Separate busses and ROM emulation from machines!
+		o)  Busses, interrupt systems, and ROM emulation:
 			x)  Make interrupt sharing more generic!
 			x)  TURBOchannel  (many DEC systems)
 			x)  QBus (DECsystem 5400)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.15 2003-12-22 11:46:14 debug Exp $
+ *  $Id: machine.c,v 1.16 2003-12-22 18:20:29 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -723,8 +723,14 @@ void machine_init(struct memory *mem)
 	case EMULTYPE_SGI:
 	case EMULTYPE_ARC:
 		/*  SGI is just a special case of ARC, in a way.  */
+		machine_name = malloc(500);
+		if (machine_name == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+
 		if (emulation_type == EMULTYPE_SGI)
-			machine_name = "SGI";
+			sprintf(machine_name, "SGI-IP%i", machine);
 		else
 			machine_name = "ARC";
 
@@ -739,8 +745,8 @@ void machine_init(struct memory *mem)
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emulation_type == EMULTYPE_SGI) {
-			strncpy(arcbios_sysid.VendorId,  "SGI", 3);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "IP32", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
+			sprintf(arcbios_sysid.ProductId, "IP%i", machine);	/*  NOTE: max 8 chars  */
 		} else {
 			/*  NEC-RD94 = NEC RISCstation 2250  */
 			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
@@ -782,7 +788,7 @@ void machine_init(struct memory *mem)
 
 			if (emulation_type == EMULTYPE_SGI) {
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "SGI-IP32", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
 
 				/*  TODO:  sync devices and component tree  */
 				dev_ns16550_init(mem, 0x1f390000, 0, 0x100);	/*  com0  */

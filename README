@@ -34,8 +34,11 @@ Here are examples of kernels that can be experimented with:
   ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
   Try running with  -X -B      (-X is required, for the framebuffer).
 
-  NetBSD/sgimips:  (gunzip, and try running with  -G)
+  NetBSD/sgimips:  (gunzip, and try running with  -G32)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INDY_INSTALL.gz
+
+  Linux/SGI kernels:
+  http://www.linux-mips.org/~glaurung/
 
   NetBSD/arc:  (gunzip, and try running with  -A -q)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.7 2003-12-04 09:54:19 debug Exp $
+ *  $Id: main.c,v 1.8 2003-12-22 18:20:18 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -164,7 +164,8 @@ void usage(char *progname)
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
-	printf("  -G        try to emulate an SGI machine (Indy)\n");
+	printf("  -G ss     try to emulate an SGI machine, where ss is the IP number\n");
+	printf("                (22 for IP22, 32 for IP32, and so on)\n");
 	printf("  -H        initialize emulated RAM to random bytes, instead of zeroes\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
@@ -207,7 +208,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:d:EFGHhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -237,7 +238,7 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'G':
 			emulation_type = EMULTYPE_SGI;
-			machine = 0;
+			machine = atoi(optarg);
 			break;
 		case 'H':
 			random_mem_contents = 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.92 2005-02-13 13:36:36 debug Exp $
+ *  $Id: arcbios.c,v 1.93 2005-02-13 13:50:19 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1322,35 +1322,55 @@ int arcbios_emul(struct cpu *cpu)
 
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
-					tmp = buf[1]; buf[1] = buf[6]; buf[6] = tmp;
-					tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
-					tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[7]; buf[7] = tmp;
+					tmp = buf[1]; buf[1] = buf[6];
+					buf[6] = tmp;
+					tmp = buf[2]; buf[2] = buf[5];
+					buf[5] = tmp;
+					tmp = buf[3]; buf[3] = buf[4];
+					buf[4] = tmp;
 				}
-				parent = (uint64_t)buf[0] + ((uint64_t)buf[1]<<8) + ((uint64_t)buf[2]<<16) + ((uint64_t)buf[3]<<24) +
-				    ((uint64_t)buf[4]<<32) + ((uint64_t)buf[5]<<40) + ((uint64_t)buf[6]<<48) + ((uint64_t)buf[7]<<56);
+				parent = (uint64_t)buf[0] +
+				    ((uint64_t)buf[1]<<8) +
+				    ((uint64_t)buf[2]<<16) +
+				    ((uint64_t)buf[3]<<24) +
+				    ((uint64_t)buf[4]<<32) +
+				    ((uint64_t)buf[5]<<40) +
+				    ((uint64_t)buf[6]<<48) +
+				    ((uint64_t)buf[7]<<56);
 			} else {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-					tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[3]; buf[3] = tmp;
+					tmp = buf[1]; buf[1] = buf[2];
+					buf[2] = tmp;
 				}
-				parent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+				parent = buf[0] + (buf[1]<<8) +
+				    (buf[2]<<16) + (buf[3]<<24);
 			}
 
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = parent? (parent + 3 * arc_wordlen) : 0;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = parent?
+			    (parent + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
+				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetParent(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
-	case 0x30:		/*  GetConfigurationData(void *configdata, void *node)  */
-		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016llx,0x%016llx) ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);  */
+	case 0x30:  /*  GetConfigurationData(void *configdata, void *node)  */
+		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016llx,"
+		    "0x%016llx) ]\n", (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1]);  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
 		for (i=0; i<n_configuration_data; i++) {
-			/*  fatal("configuration_data_component[%i] = 0x%016llx\n", i, (long long)configuration_data_component[i]);  */
-			if (cpu->cd.mips.gpr[MIPS_GPR_A1] == configuration_data_component[i]) {
+			/*  fatal("configuration_data_component[%i] = "
+			    "0x%016llx\n", i,
+			    (long long)configuration_data_component[i]);  */
+			if (cpu->cd.mips.gpr[MIPS_GPR_A1] ==
+			    configuration_data_component[i]) {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 				for (j=0; j<configuration_data_len[i]; j++) {
 					unsigned char ch;
@@ -1396,8 +1416,9 @@ int arcbios_emul(struct cpu *cpu)
 			/*  Scan the string to component table:  */
 			for (i=0; i<arcbios_n_string_to_components; i++) {
 				int m = 0;
-				while (buf[m] && arcbios_string_to_component[i][m] &&
-				    arcbios_string_to_component[i][m] == buf[m])
+				while (buf[m] && arcbios_string_to_component
+				    [i][m] && arcbios_string_to_component[i][m]
+				    == buf[m])
 					m++;
 				if (m > match_len) {
 					match_len = m;
@@ -1420,18 +1441,22 @@ int arcbios_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = SGI_SYSID_ADDR;
 		break;
 	case 0x48:		/*  void *GetMemoryDescriptor(void *ptr)  */
-		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 
 		/*  If a0=NULL, then return the first descriptor:  */
 		if ((uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A0] == 0)
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = arcbios_memdescriptor_base;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] =
+			    arcbios_memdescriptor_base;
 		else {
 			int s = arc_64bit? sizeof(struct arcbios_mem64)
 			    : sizeof(struct arcbios_mem);
-			int nr = cpu->cd.mips.gpr[MIPS_GPR_A0] - arcbios_memdescriptor_base;
+			int nr = cpu->cd.mips.gpr[MIPS_GPR_A0] -
+			    arcbios_memdescriptor_base;
 			nr /= s;
 			nr ++;
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = arcbios_memdescriptor_base + s * nr;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] =
+			    arcbios_memdescriptor_base + s * nr;
 			if (nr >= arc_n_memdescriptors)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		}
@@ -1445,11 +1470,12 @@ int arcbios_emul(struct cpu *cpu)
 		debug("[ ARCBIOS GetRelativeTime() ]\n");
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t)time(NULL);
 		break;
-	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
+	case 0x5c:  /*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
 		debug("[ ARCBIOS Open(\"");
 		dump_mem_string(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		debug("\",0x%x,0x%x)", (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1], (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_ENOENT;
 
@@ -1469,9 +1495,9 @@ int arcbios_emul(struct cpu *cpu)
 			fatal("[ ARCBIOS Open: NULL ptr ]\n");
 		} else {
 			/*
-			 *  TODO: This is hardcoded to successfully open anything.
-			 *  It is used by the Windows NT SETUPLDR program to load
-			 *  stuff from the boot partition.
+			 *  TODO: This is hardcoded to successfully open
+			 *  anything. It is used by the Windows NT SETUPLDR
+			 *  program to load stuff from the boot partition.
 			 */
 			unsigned char *buf = malloc(MAX_OPEN_STRINGLEN);
 			if (buf == NULL) {
@@ -1494,26 +1520,32 @@ int arcbios_emul(struct cpu *cpu)
 
 		if (cpu->cd.mips.gpr[MIPS_GPR_V0] == ARCBIOS_ESUCCESS) {
 			debug(" = handle %i ]\n", handle);
-			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A2], handle);
+			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A2],
+			    handle);
 			file_handle_in_use[handle] = 1;
 		} else
-			debug(" = ERROR %i ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_V0]);
+			debug(" = ERROR %i ]\n",
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
 	case 0x60:		/*  Close(uint32_t handle)  */
-		debug("[ ARCBIOS Close(%i) ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		debug("[ ARCBIOS Close(%i) ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		if (!file_handle_in_use[cpu->cd.mips.gpr[MIPS_GPR_A0]]) {
 			fatal("ARCBIOS Close(%i): bad handle\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
 			file_handle_in_use[cpu->cd.mips.gpr[MIPS_GPR_A0]] = 0;
-			if (file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]] != NULL)
-				free(file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]]);
-			file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]] = NULL;
+			if (file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]]
+			    != NULL)
+				free(file_handle_string[cpu->cd.mips.gpr[
+				    MIPS_GPR_A0]]);
+			file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]] =
+			    NULL;
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 		break;
-	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
+	case 0x64:  /*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
 			int i, nread = 0;
 			/*
@@ -1559,11 +1591,14 @@ int arcbios_emul(struct cpu *cpu)
 				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
 				    &ch, 1, MEM_WRITE, CACHE_NONE);
 
-				/*  NOTE: Only one char at a time, from STDIN:  */
+				/*  NOTE: Only one char, from STDIN:  */
 				i = cpu->cd.mips.gpr[MIPS_GPR_A2];  /*  :-)  */
 			}
-			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3], nread);
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
+			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3],
+			    nread);
+			/*  TODO: not EAGAIN?  */
+			cpu->cd.mips.gpr[MIPS_GPR_V0] =
+			    nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;
 		} else {
 			int handle = cpu->cd.mips.gpr[MIPS_GPR_A0];
 			int disk_id = arcbios_handle_to_scsi_id(handle);
@@ -1575,25 +1610,35 @@ int arcbios_emul(struct cpu *cpu)
 			arcbios_handle_to_start_and_size(cpu->machine,
 			    handle, &partition_offset, &size);
 
-			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
-			    (int)cpu->cd.mips.gpr[MIPS_GPR_A1], (int)cpu->cd.mips.gpr[MIPS_GPR_A2], (int)cpu->cd.mips.gpr[MIPS_GPR_A3]);
+			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n",
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A1],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
 			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in "
+				    "arcbios.c, allocating %i bytes ]\n",
+				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
-			    partition_offset + arcbios_current_seek_offset[handle],
-			    tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			    partition_offset + arcbios_current_seek_offset[
+			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
-			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			/*  If the transfer was successful, transfer the
+			    data to emulated memory:  */
 			if (res) {
 				uint64_t dst = cpu->cd.mips.gpr[MIPS_GPR_A1];
-				store_buf(cpu, dst, (char *)tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3], cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				arcbios_current_seek_offset[handle] += cpu->cd.mips.gpr[MIPS_GPR_A2];
+				store_buf(cpu, dst, (char *)tmp_buf,
+				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				store_32bit_word(cpu,
+				    cpu->cd.mips.gpr[MIPS_GPR_A3],
+				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				arcbios_current_seek_offset[handle] +=
+				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 			} else
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EIO;
@@ -1612,7 +1657,8 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_charavail(
 			    cpu->machine->main_console_handle)? 0 : 1;
 		} else {
-			fatal("[ ARCBIOS GetReadStatus(%i) from something other than STDIN: TODO ]\n",
+			fatal("[ ARCBIOS GetReadStatus(%i) from "
+			    "something other than STDIN: TODO ]\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			/*  TODO  */
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
@@ -1634,12 +1680,16 @@ int arcbios_emul(struct cpu *cpu)
 			    handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
-			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
-			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2], (long long)cpu->cd.mips.gpr[MIPS_GPR_A3]);
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
+			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A3]);
 
 			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in"
+				    " arcbios.c, allocating %i bytes ]\n",
+				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
@@ -1650,12 +1700,15 @@ int arcbios_emul(struct cpu *cpu)
 				    CACHE_NONE);
 
 			res = diskimage_access(cpu->machine, disk_id, 1,
-			    partition_offset + arcbios_current_seek_offset[handle], tmp_buf,
-			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			    partition_offset + arcbios_current_seek_offset[
+			    handle], tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			if (res) {
-				store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3], cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				arcbios_current_seek_offset[handle] += cpu->cd.mips.gpr[MIPS_GPR_A2];
+				store_32bit_word(cpu,
+				    cpu->cd.mips.gpr[MIPS_GPR_A3],
+				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				arcbios_current_seek_offset[handle] +=
+				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 			} else
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EIO;
@@ -1670,18 +1723,24 @@ int arcbios_emul(struct cpu *cpu)
 				arcbios_putchar(cpu, ch);
 			}
 		}
-		store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3], cpu->cd.mips.gpr[MIPS_GPR_A2]);
+		store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A3],
+		    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;	/*  Success.  */
 		break;
-	case 0x70:		/*  Seek(uint32_t handle, int64_t *offset, uint32_t whence): uint32_t  */
+	case 0x70:	/*  Seek(uint32_t handle, int64_t *ofs,
+				 uint32_t whence): uint32_t  */
 		debug("[ ARCBIOS Seek(%i,0x%08llx,%i): ",
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
 		    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 		if (cpu->cd.mips.gpr[MIPS_GPR_A2] != 0) {
-			fatal("[ ARCBIOS Seek(%i,0x%08llx,%i): UNIMPLEMENTED whence=%i ]\n",
-			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
-			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2], (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			fatal("[ ARCBIOS Seek(%i,0x%08llx,%i): "
+			    "UNIMPLEMENTED whence=%i ]\n",
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A1],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2],
+			    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 		}
 
 		{

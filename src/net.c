@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.56 2005-01-26 09:26:47 debug Exp $
+ *  $Id: net.c,v 1.57 2005-01-26 09:28:54 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1412,7 +1412,7 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 	int con_id;
 
 	if (net == NULL)
-		return;
+		return 0;
 
 	/*
 	 *  UDP:
@@ -1728,7 +1728,7 @@ int net_ethernet_rx(struct net *net, void *extra,
 	struct ethernet_packet_link *lp, *prev;
 
 	if (net == NULL)
-		return;
+		return 0;
 
 	/*  Find the first packet which has the right 'extra' field.  */
 

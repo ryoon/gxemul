@@ -1,4 +1,4 @@
-$Id: TODO,v 1.111 2005-01-24 07:02:59 debug Exp $
+$Id: TODO,v 1.112 2005-01-26 09:28:53 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -186,11 +186,11 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
-		o)  Mouse clicks can be "missed" in the current system;
-			this is not good.
-		o)  More 2D and 3D framebuffer acceleration
+		o)  Mouse clicks can be "missed" in the current system; this is
+		    not good. They should be put on a stack of some kind.
+		o)  More 2D and 3D framebuffer acceleration.
 		o)  Non-resizable windows?  Or choose scaledown depending
-			on size (and center the image, with a black border)
+			on size (and center the image, with a black border).
 		o)  Different scaledown on different windows?
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:

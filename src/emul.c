@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.46 2004-08-19 19:59:46 debug Exp $
+ *  $Id: emul.c,v 1.47 2004-08-19 20:59:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -476,6 +476,7 @@ void debugger(void)
 			    "(no version)"
 #endif
 			    );
+			last_cmd_len = 0;
 		} else if (cmd[0] != '\0') {
 			printf("Unknown command '%s'. Type 'help' for help.\n",
 			    cmd);

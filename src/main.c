@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.9 2003-12-29 09:48:14 debug Exp $
+ *  $Id: main.c,v 1.10 2004-01-04 21:42:07 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -164,8 +164,7 @@ void usage(char *progname)
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
-	printf("  -G ss     try to emulate an SGI machine, where ss is the IP number\n");
-	printf("                (22 for IP22, 32 for IP32, and so on)\n");
+	printf("  -G ss     try to emulate an SGI machine (-G 32 for IP32), CPU = R5000\n");
 	printf("  -H        try to emulate a Nintendo 64 machine (default CPU = R4300)\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
@@ -348,6 +347,12 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_PS2 && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 32;
+
+	if (emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
+		physical_ram_in_mb = 48;
+
+	if (emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
+		physical_ram_in_mb = 48;
 
 	if (emulation_type == EMULTYPE_DEC && machine == MACHINE_PMAX_3100
 	    && physical_ram_in_mb == 0)

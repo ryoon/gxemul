@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.98 2004-06-24 03:55:18 debug Exp $
+$Id: HISTORY,v 1.99 2004-06-24 06:04:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -579,3 +579,4 @@ HISTORY of mips64emul
 		hardware ticks.
 		When booting from SCSI tapes on DECstation, the bootstring
 		now contains 'tz' instead of 'rz'.
+		Adding a second ARC machine mode, "Acer PICA-61", -A2.

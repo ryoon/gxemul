@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.17 2004-04-13 08:56:24 debug Exp $
+ *  $Id: diskimage.c,v 1.18 2004-04-14 22:30:34 debug Exp $
  *
  *  Disk image support.
  *
@@ -265,7 +265,8 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
 		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
-		xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
+		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
+xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
 		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
 
@@ -357,14 +358,29 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		retlen = xferp->cmd[4];
 
+		if ((xferp->cmd[2] & 0xc0) != 0)
+			fatal("WARNING: mode sense, cmd[2] = 0x%02x\n", xferp->cmd[2]);
+
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
 
 		pagecode = xferp->cmd[2] & 0x3f;
 
-		/*  4 or 8 bytes of header  */
-		xferp->data_in[0] = retlen;		/*  ?  */
-		xferp->data_in[3] = 8 * 1;		/*  ?: 1 page  */
+		/*  4 bytes of header for 6-byte command, 8 bytes of header for 10-byte command.  */
+		xferp->data_in[0] = retlen;		/*  mode data length  */
+		xferp->data_in[1] = diskimages[disk_id]->is_a_cdrom? 0x05 : 0x00;		/*  medium type  */
+		xferp->data_in[2] = 0x00;		/*  device specific parameter  */
+		xferp->data_in[3] = 8 * 1;		/*  block descriptor length: 1 page (?)  */
+
+		/*  TODO: update this when implementing 10-byte commands:  */
+		xferp->data_in[4] = 0x00;		/*  density code  */
+		xferp->data_in[5] = 0x00;		/*  nr of blocks, high  */
+		xferp->data_in[6] = 0x00;		/*  nr of blocks, mid  */
+		xferp->data_in[7] = 0x00;		/*  nr of blocks, low */
+		xferp->data_in[8] = 0x00;		/*  reserved  */
+		xferp->data_in[9] = (logical_block_size >> 16) & 255;
+		xferp->data_in[10] = (logical_block_size >> 8) & 255;
+		xferp->data_in[11] = logical_block_size & 255;
 
 		/*  descriptors, 8 bytes (each)  */
 
@@ -458,19 +474,16 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 			/*
 			 *  cmd[2..5] hold the logical block address.
 			 *  cmd[7..8] holds the number of logical blocks to transfer.
-			 *  (special case if the value is 0, actually means 65536.)
+			 *  (if the value is 0 this means 0, not 65536.)
 			 */
 			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
 			      (xferp->cmd[4] << 8) + xferp->cmd[5];
 			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
-			if (retlen == 0)
-				retlen = 65536;
 		}
 
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
 
-printf("diskimage: size = %i\n", (int)size);
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 
@@ -512,13 +525,11 @@ printf("diskimage: size = %i\n", (int)size);
 			/*
 			 *  cmd[2..5] hold the logical block address.
 			 *  cmd[7..8] holds the number of logical blocks to transfer.
-			 *  (special case if the value is 0, actually means 65536.)
+			 *  (if the value is 0 this means 0, not 65536.)
 			 */
 			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
 			      (xferp->cmd[4] << 8) + xferp->cmd[5];
 			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
-			if (retlen == 0)
-				retlen = 65536;
 		}
 
 		size = retlen * logical_block_size;
@@ -666,6 +677,9 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 		fatal("trying to access a non-existant disk image (%i)\n", disk_id);
 		exit(1);
 	}
+
+	if (len == 0)
+		return 1;
 
 	fseek(diskimages[disk_id]->f, offset, SEEK_SET);
 

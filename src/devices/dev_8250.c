@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.6 2004-08-05 21:22:12 debug Exp $
+ *  $Id: dev_8250.c,v 1.7 2004-08-05 22:22:22 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -109,7 +109,7 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	/*  For Linux/MeshCube:  */
 	if (writeflag == MEM_READ && relative_addr == 7)
-		data[0] = 64;
+		data[0] = 64 + 32;
 
 	return 1;
 }

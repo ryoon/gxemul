@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.62 2004-08-05 21:22:18 debug Exp $
+ *  $Id: main.c,v 1.63 2004-08-05 22:22:21 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -415,7 +415,9 @@ int get_cmd_args(int argc, char *argv[])
 		strcpy(emul_cpu_name, "RM5200");
 
 	if (emulation_type == EMULTYPE_MESHCUBE && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "AU1500");
+		strcpy(emul_cpu_name, "R4400");
+		/*  TODO:  Should be AU1500, but Linux doesn't like
+			the absence of caches in the emulator  */
 
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");

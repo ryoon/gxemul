@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.65 2005-02-01 14:20:38 debug Exp $
+ *  $Id: file.c,v 1.66 2005-02-01 16:19:11 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1237,9 +1237,13 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if (size == 0)
 				size ++;
 
-			if (addr != 0)
+			if (addr != 0) {
+				/*  debug("symbol info=0x%02x addr=0x%016llx"
+				    " '%s'\n", st_info, (long long)addr,
+				    symbol_strings + st_name);  */
 				add_symbol_name(&m->symbol_context,
 				    addr, size, symbol_strings + st_name, 0);
+			}
 
 			if (strcmp(symbol_strings + st_name, "_gp") == 0) {
 				debug("found _gp address: 0x");

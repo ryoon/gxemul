@@ -28,11 +28,32 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.1 2005-02-01 14:39:37 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.2 2005-02-01 16:19:08 debug Exp $
  *
- *  PPC opcodes.
+ *
+ *  PPC and POWER opcodes.
+ *
+ *  Note: The define uses the PPC name, not the POWER name, when they differ.
  */
 
+#define	PPC_HI6_MULLI		0x07
+#define	PPC_HI6_SUBFIC		0x08
+
+#define	PPC_HI6_ADDIC		0x0c
+#define	PPC_HI6_ADDIC_DOT	0x0d
+#define	PPC_HI6_ADDI		0x0e
+#define	PPC_HI6_ADDIS		0x0f
+
 #define	PPC_HI6_SC		0x11
+
+#define	PPC_HI6_ORI		0x18
+#define	PPC_HI6_ORIS		0x19
+#define	PPC_HI6_XORI		0x1a
+#define	PPC_HI6_XORIS		0x1b
+#define	PPC_HI6_ANDI_DOT	0x1c
+#define	PPC_HI6_ANDIS_DOT	0x1d
+#define	PPC_HI6_30		0x1e
+#define	  PPC_30_RLDICL		  0x0
+#define	  PPC_30_RLDICR		  0x1
 
 #endif	/*  OPCODES_PPH_H  */

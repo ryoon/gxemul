@@ -28,10 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.4 2005-02-01 14:39:37 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.5 2005-02-01 16:19:08 debug Exp $
  */
 
 #include "misc.h"
+
+
+#define	MODE_PPC		0
+#define	MODE_POWER		1
 
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
@@ -42,6 +46,8 @@ struct ppc_cpu_type_def {
 	int		dway;
 	int		l2cache_shift;
 	int		l2way;
+
+	/*  TODO: 64-bit-ness? POWER vs PowerPC?  */
 };
 
 /*  TODO: Most of these just bogus  */
@@ -61,7 +67,8 @@ struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
 
 	uint64_t	pc;		/*  Program Counter (TODO: CIA?)  */
-	int		mode;		/*  32 or 64  */
+	int		mode;		/*  MODE_PPC or MODE_POWER  */
+	int		bits;		/*  32 or 64  */
 
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */

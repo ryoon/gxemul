@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.7 2005-02-01 14:39:38 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.8 2005-02-01 16:19:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -41,6 +41,7 @@
 #include "cpu_ppc.h"
 #include "machine.h"
 #include "misc.h"
+#include "opcodes_ppc.h"
 #include "symbol.h"
 
 
@@ -85,7 +86,8 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
-	cpu->cd.ppc.mode        = 64;	/*  TODO: how about 32-bit CPUs?  */
+	cpu->cd.ppc.bits        = 64;	/*  TODO: how about 32-bit CPUs?  */
+	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -144,9 +146,20 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 {
 	struct ppc_cpu_type_def *ct = &cpu->cd.ppc.cpu_type;
 
-	debug(" (");
+	debug(" (%i-bit ", cpu->cd.ppc.bits);
 
-	debug("I+D = %i+%i KB",
+	switch (cpu->cd.ppc.mode) {
+	case MODE_PPC:
+		debug("PPC");
+		break;
+	case MODE_POWER:
+		debug("POWER");
+		break;
+	default:
+		debug("_INTERNAL ERROR_");
+	}
+
+	debug(", I+D = %i+%i KB",
 	    (1 << ct->icache_shift) / 1024,
 	    (1 << ct->dcache_shift) / 1024);
 
@@ -304,10 +317,11 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int hi6;
+	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc;
 	uint64_t addr, offset;
 	uint32_t iword;
-	char *symbol;
+	char *symbol, *mnem = "ERROR";
+	int power = cpu->cd.ppc.mode == MODE_POWER;
 
 	if (running)
 		dumpaddr = cpu->cd.ppc.pc;
@@ -346,15 +360,121 @@ void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	hi6 = iword >> 26;
 
 	switch (hi6) {
-	case PPC_HI6_SC:
-		if (iword == 0x44000002)
-			debug("sc");
+	case PPC_HI6_MULLI:
+	case PPC_HI6_SUBFIC:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		switch (hi6) {
+		case PPC_HI6_MULLI:
+			mnem = power? "muli":"mulli";
+			break;
+		case PPC_HI6_SUBFIC:
+			mnem = power? "sfi":"subfic";
+			break;
+		}
+		debug("%s\tr%i,r%i,%i", mnem, rt, ra, imm);
+		break;
+	case PPC_HI6_ADDIC:
+	case PPC_HI6_ADDIC_DOT:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		rc = hi6 == PPC_HI6_ADDIC_DOT;
+		imm = (int16_t)(iword & 0xffff);
+		mnem = power? "ai":"addic";
+		if (imm < 0 && !power) {
+			mnem = "subic";
+			imm = -imm;
+		}
+		debug("%s%s\tr%i,r%i,%i", mnem, rc?".":"", rt, ra, imm);
+		break;
+	case PPC_HI6_ADDI:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		if (ra == 0)
+			debug("li\tr%i,%i", rt, imm);
+		else {
+			mnem = power? "cal":"addi";
+			if (imm < 0 && !power) {
+				mnem = "subi";
+				imm = -imm;
+			}
+			debug("%s\tr%i,r%i,%i", mnem, rt, ra, imm);
+		}
+		break;
+	case PPC_HI6_ADDIS:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		if (ra == 0)
+			debug("lis\tr%i,%i", rt, imm);
 		else
-			debug("TODO (sc?)");
+			debug("%s\tr%i,r%i,%i",
+			    power? "cau":"addis", rt, ra, imm);
+		break;
+	case PPC_HI6_SC:
+		lev = (iword >> 5) & 0x7f;
+		debug("sc");
+		if (lev != 0) {
+			debug("\t%i", lev);
+			if (lev > 1)
+				debug(" (WARNING! reserved value)");
+		}
+		break;
+	case PPC_HI6_ORI:
+	case PPC_HI6_ORIS:
+	case PPC_HI6_XORI:
+	case PPC_HI6_XORIS:
+	case PPC_HI6_ANDI_DOT:
+	case PPC_HI6_ANDIS_DOT:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = iword & 0xffff;
+		switch (hi6) {
+		case PPC_HI6_ORI:
+			mnem = power? "oril":"ori";
+			break;
+		case PPC_HI6_ORIS:
+			mnem = power? "oriu":"oris";
+			break;
+		case PPC_HI6_XORI:
+			mnem = power? "xoril":"xori";
+			break;
+		case PPC_HI6_XORIS:
+			mnem = power? "xoriu":"xoris";
+			break;
+		case PPC_HI6_ANDI_DOT:
+			mnem = power? "andil.":"andi.";
+			break;
+		case PPC_HI6_ANDIS_DOT:
+			mnem = power? "andiu.":"andis.";
+			break;
+		}
+		if (hi6 == PPC_HI6_ORI && rs == 0 && ra == 0 && imm == 0)
+			debug("nop");
+		else
+			debug("%s\tr%i,r%i,0x%04x", mnem, ra, rs, imm);
+		break;
+	case PPC_HI6_30:
+		xo = (iword >> 2) & 7;
+		switch (xo) {
+		case PPC_30_RLDICR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			sh = ((iword >> 11) & 31) | ((iword & 2) << 4);
+			me = ((iword >> 6) & 31) | (iword & 0x20);
+			rc = iword & 1;
+			debug("rldicr%s\tr%i,r%i,%i,%i",
+			    rc?".":"", ra, rs, sh, me);
+			break;
+		default:
+			debug("unimplemented hi6_30, xo = 0x%x", xo);
+		}
 		break;
 	default:
 		/*  TODO  */
-		debug("TODO (hi6 = 0x%02x)", hi6);
+		debug("unimplemented hi6 = 0x%02x", hi6);
 	}
 
 disasm_ret:

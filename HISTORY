@@ -274,3 +274,7 @@ HISTORY of mips64emul
 		supporting fifo, so in fact it emulates a 16450
 		instead).  This causes NetBSD/sgimips to run nicely
 		into userland, sysinst, and so on.
+		Some ARC/RD94 interrupts seem to work ok now, but
+		i/o interrupts are still not correctly implemented.
+		NetBSD/arc userland is reached and can be interacted
+		with, but there's no sysinst (?).

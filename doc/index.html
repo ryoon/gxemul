@@ -15,10 +15,16 @@
   </font></td></tr>
 </table>
 
+<p>
+This "documentation" is just a collection of questions and answers
+and various bits of information. Enjoy! :-)
+
 <ul>
   <li><a href="#overview">Overview</a>
+  <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#use">How to use the emulator</a>
+  <li><a href="#cani">Can I run &lt;os-name&gt; in the emulator?</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
@@ -35,12 +41,47 @@
 mips64emul is a MIPS machine emulator. It tries to emulate a MIPS CPU
 and enough additional hardware to be able to run real (unmodified)
 operation systems, such as NetBSD, Linux, Irix, Ultrix, or OpenBSD.
+It is a spare time hobby project, and not everything has been implemented yet.
 <p>
-The emulator might also be useful as a help when porting operating systems
-to MIPS, or for academic purposes (experimenting with MIPS).
+The emulator might be useful when playing around with porting operating systems
+to the MIPS architecture, or for academic purposes (experimenting with MIPS).
 One of the reasons for writing mips64emul in the first place was to
 be able to experiment with large-scale SMP systems.
 Emulation of SMP systems is still experimental, though.
+
+
+<p><br>
+<a name="emulmodes"></a>
+<h4>Which machines does mips64emul emulate?</h4>
+
+A few different machine types are emulated. Here, "emulated" does not mean
+that the machine type is emulated <i>well</i>, just that there is such
+an emulation mode.
+
+<ul>
+  <li>DECstation/DECsystem machines, made by Digital Equipment Corp.
+  <li>Silicon Graphics MIPS-based machines
+  <li>A NEC RISCstation 2250 (an "ARC" compliant machine)
+  <li>Cobalt
+  <li>Sony Playstation 2
+  <li>Handheld "hpcmips" devices
+</ul>
+<p>
+Some notes about the list above:  The machines above have 64-bit
+capable CPUs, except most DECstations. There were upgrades from R3000 to
+R4000 available for some DECstations, but Ultrix was still running in 32-bit
+mode (I think).  Unfortunately, even if most of these machine types have
+64-bit CPUs in them (or even 128-bit, the Playstation 2's R5900 CPU
+is a bit weird), operating systems often run in 32-bit mode on them.
+<p>
+There are other machines that use/used MIPS cpus, for example the
+Playstation (1) and the Nintendo 64 game systems, but no free OS is ported
+to those platforms as far as I know, so they might not be too interesting
+to emulate.
+<p>
+Playstation 2 is among the emulated machine types, but the emulation done
+by mips64emul is <i>not</i> suitable for playing games. Running Linux and
+NetBSD is a lot more fun :-)
 
 
 <p><br>
@@ -62,9 +103,10 @@ different platforms.)
 <h4>How to use the emulator:</h4>
 
 The emulator contains code which tries to emulate the workings of MIPS-like CPUs
-and surrounding hardware found in real machines, but no actual ROM code or program
-code.  You will need some form of program to run in the emulator.  You can use
-pre-compiled kernels (for example NetBSD or Linux), ROM images, or other programs
+and surrounding hardware found in real machines, but no actual MIPS ROM code or
+MIPS program code.  You will need some form of program to run in the emulator.
+<p>
+You can use pre-compiled kernels (for example NetBSD or Linux), ROM images, or other programs
 that are in MIPS binary format. A couple of different file formats are supported
 (ELF, a.out, ECOFF, SREC, raw binaries).
 <p>
@@ -125,6 +167,8 @@ emulator like this:
 	Terminal type? [vt100] <b>_</b>
 </pre>
 and after typing vt100 (or just pressing enter), you'll reach NetBSD's install program.
+You will not be able to install anything though, as the AHC disk controller isn't
+emulated yet.
 <p>
 To exit the emulator, type CTRL-C. By typing CTRL-B instead, a CTRL-C is sent to
 the emulated program.
@@ -145,6 +189,26 @@ The result should looks something like this:
 <center>
 <img src="netbsd-pmax-framebuffer.gif">
 </center>
+
+
+<p><br>
+<a name="cani"></a>
+<h4>Can I run &lt;os-name&gt; in the emulator?</h4>
+
+The answer is probably <b>NO</b>, unless &lt;os-name&gt; is one of a few things that I have tried
+myself.
+Under DECstation emulation, NetBSD, Linux, and some Ultrix kernels work.
+Under SGI emulation, NetBSD and Linux work a bit, but I've never gotten anything out of Irix except
+for a panic message or two.
+<p>
+To sum it up: there is no guarantee that anything specific will run in the emulator,
+but NetBSD (or possibly Linux) is a good starting point for someone who wants to
+experiment. Linux kernels don't usually have ramdisks in them, so until some disk
+controller device has been implemented, NetBSD is the way to go if you want to
+reach userland.
+<p>
+Also, the set of OSes that work is obviously very different for different emulation
+modes.
 
 
 <p><br>
@@ -219,12 +283,15 @@ Is this a good idea?  The answer is yes and no, depending on what you are
 trying to port to. If you are developing an operating system or operating
 system kernel of your own, and wish to target MIPS in general (that is,
 the CPU but not hardware specific to any one machine type), then the
-answer might be yes.
+answer might be yes, for experimental purposes.
 <p>
 However, if you think that you can port an operating system
 to, say, the Silicon Graphics machine mode of mips64emul and hope that your
 operating system will run on a real SGI machine, then you will most
 likely fail. mips64emul simply does not emulate things well enough for that to work.
+A lot of the devices that are emulated are based on guesswork (for example,
+by studying code in NetBSD that uses the device, and thereby figure
+out more or less how the device is supposed to work).
 <p>
 In many cases, hardware devices in mips64emul are only implemented well
 enough to fool eg. NetBSD that they are working correctly, while in fact
@@ -236,17 +303,14 @@ to use mips64emul when porting your code to MIPS.
 <a name="disk"></a>
 <h4>How to start the emulator with a disk image:</h4>
 
+<font color=#f00000><b>NOTE: No disk controller works yet, so diskimages CAN NOT actually be used!</b></font>
+<p>
 Simply add <i>-d diskimagefilename</i> to the command line. For example, if you
 want to run a NetBSD/pmax kernel on an emulated DECstation machine, you
 would use a command line such as this:
 <pre>
 	$ <b>./mips64emul -D2 -q -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
-Only emulated machine types
-that have a <b><i>working</i></b> SCSI or IDE controller support disk images.
-DECstation type 2 (3MAX) has a SCSI controller, so we're lucky.
-<p>
-<font color=#f00000><b>NOTE: Disk images are not really supported yet.</b></font>
 <p>
 It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on.
@@ -392,6 +456,9 @@ This binary image can now be used in the emulator:
 	 osconsole=3
 	>>
 </pre>
+<i>(Note: at the moment, this doesn't work. I must have broken something when
+fixing something else, but this is what it looked like at the time.)</i>
+<p>
 During bootup, the PROM complains <i>a lot</i> about hardware failures.
 That's because the emulator doesn't emulate the hardware well enough yet.
 <p>
@@ -413,7 +480,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.14 2004-03-19 14:26:40 debug Exp $</pre>
+<pre>$Id: index.html,v 1.15 2004-03-30 01:00:35 debug Exp $</pre>
 
 </body>
 </html>

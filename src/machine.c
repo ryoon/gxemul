@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.381 2005-03-09 09:12:46 debug Exp $
+ *  $Id: machine.c,v 1.382 2005-03-11 08:53:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2067,6 +2067,34 @@ void machine_setup(struct machine *machine)
 			    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
 			    + (2 <<  8)		/*   8: model   2=EXXX*/
 			    + (2)		/*   0: submodel 2=E105  */
+			    );
+			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
+			/*  16MHz VR4121  */
+			machine->machine_name = "NEC MobilePro 780";
+			/*  TODO:  */
+			hpcmips_fb_addr = 0x0a200000;
+			hpcmips_fb_xsize = 640;
+			hpcmips_fb_ysize = 240;
+			hpcmips_fb_xsize_mem = 640;
+			hpcmips_fb_ysize_mem = 240;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_FFFF;
+
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  6 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (1 << 22)		/*  22: vendor  1=NEC  */
+			    + (2 << 16)		/*  16: series  2="NEC MCR" */
+			    + (2 <<  8)		/*   8: model   2="MCR 5XX" */
+			    + (8)		/*   0: submodel 8="MCR 530A" */
 			    );
 			break;
 		default:
@@ -4305,6 +4333,9 @@ void machine_default_cputype(struct machine *m)
 		case MACHINE_HPCMIPS_CASIO_E105:
 			m->cpu_name = strdup("VR4121");
 			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
+			m->cpu_name = strdup("VR4121");
+			break;
 		default:
 			printf("Unimplemented HPCMIPS model?\n");
 			exit(1);
@@ -4816,7 +4847,7 @@ void machine_init(void)
 
 	/*  HPCmips:  */
 	me = machine_entry_new("Handheld MIPS (HPC)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 2);
+	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 3);
 	me->aliases[0] = "hpcmips";
 	me->aliases[1] = "hpc";
 	me->subtype[0] = machine_entry_subtype_new(
@@ -4827,6 +4858,9 @@ void machine_init(void)
 	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
 	me->subtype[1]->aliases[0] = "e-105";
 	me->subtype[1]->aliases[1] = "e105";
+	me->subtype[2] = machine_entry_subtype_new(
+	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
+	me->subtype[2]->aliases[0] = "mobilepro780";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

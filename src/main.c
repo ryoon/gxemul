@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.77 2004-09-05 02:40:36 debug Exp $
+ *  $Id: main.c,v 1.78 2004-09-05 02:41:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -58,7 +58,6 @@ int quiet_mode = 0;
  */
 
 int physical_ram_in_mb = 0;
-int booting_from_diskimage = 0;
 
 int show_opcode_statistics = 0;
 int prom_emulation = 1;
@@ -499,7 +498,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 */
 	if (extra_argc == 0) {
 		if (emul->emulation_type == EMULTYPE_DEC && using_switch_d) {
-			booting_from_diskimage = 1;
+			emul->booting_from_diskimage = 1;
 		} else {
 			usage(progname);
 			exit(1);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.56 2004-09-05 02:40:36 debug Exp $
+ *  $Id: emul.c,v 1.57 2004-09-05 02:41:24 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -55,8 +55,6 @@ extern int optind;
 extern char *optarg;
 int extra_argc;
 char **extra_argv;
-
-extern int booting_from_diskimage;
 
 extern int physical_ram_in_mb;
 extern int instruction_trace;
@@ -703,7 +701,7 @@ void emul_start(struct emul *emul)
 	if (extra_argc > 0)
 		debug("loading files into emulation memory:\n");
 
-	if (booting_from_diskimage)
+	if (emul->booting_from_diskimage)
 		load_bootblock(emul, cpus[emul->bootstrap_cpu]);
 
 	while (extra_argc > 0) {
@@ -723,7 +721,7 @@ void emul_start(struct emul *emul)
 		extra_argc --;  extra_argv ++;
 	}
 
-	if (file_n_executables_loaded() == 0 && !booting_from_diskimage) {
+	if (file_n_executables_loaded() == 0 && !emul->booting_from_diskimage) {
 		fprintf(stderr, "No executable file loaded, and we're not booting directly from a disk image.\nAborting.\n");
 		exit(1);
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.15 2004-01-11 16:32:08 debug Exp $
+ *  $Id: dev_fb.c,v 1.16 2004-01-11 23:51:59 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -279,6 +279,9 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 void dev_fb_tick(struct cpu *cpu, void *extra)
 {
 	struct vfb_data *d = extra;
+
+	if (!use_x11)
+		return;
 
 	if (d->update_x1 != -1) {
 		int y, addr, addr2, q = d->vfb_scaledown;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.111 2004-07-25 03:03:19 debug Exp $
+ *  $Id: cpu.c,v 1.112 2004-07-25 03:36:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1115,7 +1115,9 @@ static int cpu_run_instr(struct cpu *cpu)
 					cpu->pc = cpu->gpr[GPR_RA];
 					/*  no need to update cached_pc, as we're returning  */
 					cpu->delay_slot = NOT_DELAYED;
-					cpu->trace_tree_depth --;
+
+					if (show_trace_tree)
+						cpu->trace_tree_depth --;
 
 					/*  TODO: how many instrs should this count as?  */
 					return 1;
@@ -1197,9 +1199,9 @@ static int cpu_run_instr(struct cpu *cpu)
 		}
 
 		/*  Trace tree:  */
-		if (cpu->show_trace_delay > 0) {
+		if (show_trace_tree && cpu->show_trace_delay > 0) {
 			cpu->show_trace_delay --;
-			if (cpu->show_trace_delay == 0 && show_trace_tree)
+			if (cpu->show_trace_delay == 0)
 				show_trace(cpu, cpu->show_trace_addr);
 		}
 	}
@@ -1577,15 +1579,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
 
-			if (rs == 31) {
-#if 0
-				/*  TODO:  This should be done _after_ the instruction following the JR,
-					that is, the branch delay, as GPR_V0 can be modified there.  */
-				int x;
-				for (x=0; x<cpu->trace_tree_depth; x++)
-					debug("  ");
-				debug("retval 0x%llx\n", cpu->gpr[GPR_V0]);
-#endif
+			if (rs == 31 && show_trace_tree) {
 				cpu->trace_tree_depth --;
 			}
 
@@ -1603,7 +1597,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			tmpvalue = cpu->gpr[rs];
 			cpu->gpr[rd] = cached_pc + 4;	/*  already increased by 4 earlier  */
 
-			if (!quiet_mode_cached && rd == 31) {
+			if (!quiet_mode_cached && show_trace_tree && rd == 31) {
 				cpu->show_trace_delay = 2;
 				cpu->show_trace_addr = tmpvalue;
 			}
@@ -2735,7 +2729,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		cpu->delay_slot = TO_BE_DELAYED;
 		cpu->delay_jmpaddr = addr;
 
-		if (!quiet_mode_cached && hi6 == HI6_JAL) {
+		if (!quiet_mode_cached && show_trace_tree && hi6 == HI6_JAL) {
 			cpu->show_trace_delay = 2;
 			cpu->show_trace_addr = addr;
 		}

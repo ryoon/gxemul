@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.60 2004-03-06 17:10:36 debug Exp $
+ *  $Id: machine.c,v 1.61 2004-03-07 03:55:02 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -547,7 +547,11 @@ void machine_init(struct memory *mem)
 			 */
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  */
+#if 0
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);
+#else
+dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-CA", KN02_IP_SLOT0 +8);
+#endif
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END, "", KN02_IP_SLOT1 +8);
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END, "", KN02_IP_SLOT2 +8);
 
@@ -662,6 +666,11 @@ void machine_init(struct memory *mem)
 				fprintf(stderr, "WARNING! 5800 will probably not run with less than 48MB RAM. Continuing anyway.\n");
 
 			/*
+			 *  According to http://www2.no.netbsd.org/Ports/pmax/models.html,
+			 *  the 5800-series is based on VAX 6000/300.
+			 */
+
+			/*
 			 *  Ultrix might support SMP on this machine type.
 			 *
 			 *  Something at 0x10000000.
@@ -759,6 +768,14 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_5500:	/*  type 11, KN220  */
 			machine_name = "DECsystem 5500 (KN220)";
+
+			/*
+			 *  According to NetBSD's pmax ports page:
+			 *  KN220-AA is a "30 MHz R3000 CPU with R3010 FPU"
+			 *  with "512 kBytes of Prestoserve battery backed RAM."
+			 */
+			if (emulated_ips == 0)
+				emulated_ips = 30000000;
 
 			/*
 			 *  See KN220 docs for more info.

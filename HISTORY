@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.269 2004-10-22 08:08:34 debug Exp $
+$Id: HISTORY,v 1.270 2004-10-22 22:12:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1049,3 +1049,7 @@ HISTORY of mips64emul
 		OpenBSD/arc.
 		emul->boot_string_argument is now empty by default (except
 		for DECstation modes, where it is "-a").
+		Speedup of dev_ram by using mmap() instead of malloc().
+		Using mmap() in memory.c as well, which reduces memory usage
+		when emulating large memory sizes if the memory isn't actually
+		written to.

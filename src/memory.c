@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.87 2004-10-20 03:22:27 debug Exp $
+ *  $Id: memory.c,v 1.88 2004-10-22 22:12:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 #include "misc.h"
 
@@ -359,12 +360,19 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 			/*  printf("  allocating for entry %i, len=%i\n",
 			    entry, alloclen);  */
 
-			table[entry] = malloc(alloclen);
+			/*  Anonymous mmap() should return zero-filled memory,
+			    try malloc + memset if mmap failed.  */
+			table[entry] = (void *) mmap(NULL, alloclen,
+			    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
+			    -1, 0);
 			if (table[entry] == NULL) {
-				fatal("out of memory\n");
-				exit(1);
+				table[entry] = malloc(alloclen);
+				if (table[entry] == NULL) {
+					fatal("out of memory\n");
+					exit(1);
+				}
+				memset(table[entry], 0, alloclen);
 			}
-			memset(table[entry], 0, alloclen);
 		}
 
 		if (shrcount == bits_per_memblock) {

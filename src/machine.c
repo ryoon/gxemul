@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.199 2004-10-22 08:08:35 debug Exp $
+ *  $Id: machine.c,v 1.200 2004-10-22 22:12:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2163,26 +2163,27 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(emul->machine_name, " (Acer PICA-61)");
 
-				/*  NetBSD/arc:  */
+				dev_ram_init(mem, 0x800000000ULL,
+				    0x100000000ULL, DEV_RAM_MIRROR,
+				    0x2000000000ULL);
+				dev_ram_init(mem, 0x6000000000ULL,
+				    0x100000000ULL, DEV_RAM_MIRROR,
+				    0x2000000000ULL);
+				dev_ram_init(mem, 0x10000000000ULL,
+				    0x100000000ULL, DEV_RAM_MIRROR,
+				    0x2000000000ULL);
+
 				pica_data = dev_pica_init(
 				    cpu, mem, 0x2000000000ULL);
 				cpu->md_interrupt = pica_interrupt;
 
-				/*  OpenBSD/arc and NetBSD/arc:  */
-				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL,
-				    0x60000003b0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);  */
-				dev_vga_init(cpu, mem, 0x100000b8000ULL,
-				    0x60000003d0ULL,
+				dev_vga_init(cpu, mem,
+				    0x20000b8000ULL, 0x20000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				dev_asc_init(cpu, mem,
 				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA);
 
-				/*  Linux:  0x800004000  */
-				/*  NetBSD: 0x2000004000  */
-				dev_mc146818_init(cpu, mem,
-				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
@@ -2191,10 +2192,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0x2000005060ULL, PCKBC_8042, 0, 0);
 
 				/*  TODO: irq numbers  */
-				/*  Linux:  0x800006000  */
-				/*  NetBSD: 0x2000006000  */
-				dev_ns16550_init(cpu, mem,
-				    0x800006000ULL, 0, 1);
 				dev_ns16550_init(cpu, mem,
 				    0x2000006000ULL, 0, 1);
 				dev_ns16550_init(cpu, mem,

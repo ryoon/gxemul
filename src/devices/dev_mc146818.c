@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.42 2004-10-18 03:10:14 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.43 2004-10-22 22:12:06 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -44,7 +44,7 @@
 
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
-/* #define MC146818_DEBUG */
+/*  #define MC146818_DEBUG  */
 #define	TICK_STEPS_SHIFT	9
 
 
@@ -137,6 +137,17 @@ int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
 {
 	struct mc_data *mc_data = extra;
 
+#ifdef MC146818_DEBUG
+	if (writeflag == MEM_WRITE) {
+		int i;
+		fatal("[ mc146818_pica: write to addr=0x%04x: ", relative_addr);
+		for (i=0; i<len; i++)
+			fatal("%02x ", data[i]);
+		fatal("]\n");
+	} else
+		fatal("[ mc146818_pica: read from addr=0x%04x ]\n", relative_addr);
+#endif
+
 	if (writeflag == MEM_WRITE) {
 		mc_data->last_addr = data[0];
 		return 1;
@@ -167,7 +178,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			fatal("%02x ", data[i]);
 		fatal("]\n");
 	} else
-		fatal("[ mc146818: read from addr=0x%04x ]\n", relative_addr);
+		fatal("[ mc146818: read from addr=0x%04x (len %i) ]\n",
+		    relative_addr, len);
 #endif
 
 	relative_addr /= mc_data->addrdiv;

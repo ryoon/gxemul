@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.41 2004-08-18 10:09:54 debug Exp $
+ *  $Id: emul.c,v 1.42 2004-08-18 10:11:55 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -311,11 +311,13 @@ void debugger(void)
 			printf("  continue       continue emulation\n");
 			printf("  dump [addr]    dumps emulated memory contents\n");
 			printf("  help           prints this help message\n");
-			printf("  itrace         toggle instruction_trace on or off\n");
+			printf("  itrace         toggle instruction_trace on or off (currently %s)\n",
+			    old_instruction_trace? "ON" : "OFF");
 			printf("  quit           quits mips64emul\n");
 			printf("  registers      dump all CPUs' register values\n");
 			printf("  step           single step\n");
-			printf("  trace          toggle show_trace_tree on or off\n");
+			printf("  trace          toggle show_trace_tree on or off (currently %s)\n",
+			    old_show_trace_tree? "ON" : "OFF");
 			printf("  version        print mips64emul version\n");
 			last_cmd_len = 0;
 		} else if (strcasecmp(cmd, "i") == 0 ||

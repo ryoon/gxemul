@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.103 2004-11-24 09:30:18 debug Exp $
+ *  $Id: coproc.c,v 1.104 2004-11-24 10:22:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -309,8 +309,12 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		struct vth32_table *tbl1;
 		void *p;
 
-if ((vaddr_page & 0xc0000000) != 0x80000000)
+#if 0
+if ((vaddr_page & 0xc0000000) >= 0xc0000000) {
+/*	printf("vaddr_page = %08x\n", (int)vaddr_page); */
 	return;
+}
+#endif
 
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
@@ -321,9 +325,21 @@ if ((vaddr_page & 0xc0000000) != 0x80000000)
 /*			printf("tbl1 = %p\n", tbl1);
 */			if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
 				/*  Allocate a new table1:  */
-				printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
+/*				printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
 				    a << 22, (a << 22) + 0x3fffff);
-				tbl1 = zeroed_alloc(sizeof(struct vth32_table));
+*/
+				if (cpu->next_free_vth_table == NULL) {
+					tbl1 = malloc(sizeof(struct vth32_table));
+					if (tbl1 == NULL) {
+						fprintf(stderr, "out of mem\n");
+						exit(1);
+					}
+					memset(tbl1, 0, sizeof(struct vth32_table));
+				} else {
+					tbl1 = cpu->next_free_vth_table;
+					cpu->next_free_vth_table = tbl1->next_free;
+					tbl1->next_free = NULL;
+				}
 				cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
 			}
 			p = tbl1->entry[b];
@@ -344,6 +360,47 @@ if ((vaddr_page & 0xc0000000) != 0x80000000)
 
 
 /*
+ *  invalidate_table_entry():
+ */
+static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
+{
+#ifdef BINTRANS
+	int a, b;
+	struct vth32_table *tbl1;
+	void *p;
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		a = (vaddr >> 22) & 0x3ff;
+		b = (vaddr >> 12) & 0x3ff;
+/*
+		printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
+*/
+		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+/*		printf("tbl1 = %p\n", tbl1); */
+		p = tbl1->entry[b];
+/*		printf("   p = %p\n", p);
+*/		if (p != NULL) {
+/*			printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
+*/			tbl1->entry[b] = NULL;
+			tbl1->refcount --;
+			if (tbl1->refcount == 0) {
+				cpu->vaddr_to_hostaddr_table0_kernel[a] =
+				    cpu->vaddr_to_hostaddr_nulltable;
+				/*  "free" tbl1:  */
+				tbl1->next_free = cpu->next_free_vth_table;
+				cpu->next_free_vth_table = tbl1;
+			}
+		}
+		break;
+	default:
+		;
+	}
+#endif
+}
+
+
+/*
  *  invalidate_translation_caches():
  *
  *  This is neccessary for every change to the TLB, and when the ASID is
@@ -353,33 +410,24 @@ if ((vaddr_page & 0xc0000000) != 0x80000000)
 static void invalidate_translation_caches(struct cpu *cpu,
 	int all, uint64_t vaddr, int kernelspace)
 {
-/*printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
+/* printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
 */
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
-		int a, b;
-		struct vth32_table *tbl1;
-		void *p;
-
-		switch (cpu->cpu_type.mmu_model) {
-		case MMU3K:
-			a = (vaddr >> 22) & 0x3ff;
-			b = (vaddr >> 12) & 0x3ff;
-/*
-			printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
-*/
-			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-/*			printf("tbl1 = %p\n", tbl1); */
-			p = tbl1->entry[b];
-/*			printf("   p = %p\n", p);
-*/			if (p != NULL) {
-				printf("Found a mapping :-)\n");
-				exit(1);
+		if (all) {
+			int i, asid;
+			uint64_t tlb_vaddr;
+			switch (cpu->cpu_type.mmu_model) {
+			case MMU3K:
+				for (i=0; i<64; i++) {
+					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
+					if ((cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
+					    (tlb_vaddr & 0xc0000000ULL) != 0x80000000ULL)
+						invalidate_table_entry(cpu, tlb_vaddr);
+				}
 			}
-			break;
-		default:
-			;
-		}
+		} else
+			invalidate_table_entry(cpu, vaddr);
 	}
 #endif
 
@@ -1565,7 +1613,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	/*  Translation caches must be invalidated:  */
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
-		oldvaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
+		oldvaddr = cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK;
 		oldvaddr &= 0xffffffffULL;
 		if (oldvaddr & 0x80000000ULL)
 			oldvaddr |= 0xffffffff00000000ULL;
@@ -1589,6 +1637,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0);
 		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0);
 	}
+
+invalidate_translation_caches(cpu, 1, 0, 0);
 
 	/*  Write the new entry:  */
 

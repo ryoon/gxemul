@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.158 2004-11-24 08:53:25 debug Exp $
+ *  $Id: misc.h,v 1.159 2004-11-24 10:22:29 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -557,8 +557,9 @@ struct r4000_cache_line {
 
 /*  Virtual to host address translation tables:  */
 struct vth32_table {
-	void	*entry[1024];
-	int	refcount;
+	void			*entry[1024];
+	struct vth32_table	*next_free;
+	int			refcount;
 };
 
 
@@ -638,6 +639,7 @@ struct cpu {
 	struct vth32_table **vaddr_to_hostaddr_table0_kernel;
 	struct vth32_table **vaddr_to_hostaddr_table0_user;
 	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
+	struct vth32_table *next_free_vth_table;
 
 	void		(*bintrans_fast_rfe)(struct cpu *);
 	void		(*bintrans_fast_eret)(struct cpu *);

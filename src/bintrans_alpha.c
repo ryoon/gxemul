@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.92 2005-01-02 19:55:52 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.93 2005-01-02 20:25:25 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -992,11 +992,17 @@ rd0:
 static int bintrans_write_instruction__branch(unsigned char **addrp,
 	int instruction_type, int regimm_type, int rt, int rs, int imm)
 {
-	uint32_t *a, *b;
-	int alpha_rs, alpha_rt;
+	uint32_t *a, *b, *c = NULL;
+	int alpha_rs, alpha_rt, likely = 0, ofs;
 
 	alpha_rs = map_MIPS_to_Alpha[rs];
 	alpha_rt = map_MIPS_to_Alpha[rt];
+
+	switch (instruction_type) {
+	case HI6_BEQL:
+	case HI6_BNEL:
+		likely = 1;
+	}
 
 	/*
 	 *  t0 = gpr[rt]; t1 = gpr[rs];
@@ -1008,6 +1014,8 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	switch (instruction_type) {
 	case HI6_BEQ:
 	case HI6_BNE:
+	case HI6_BEQL:
+	case HI6_BNEL:
 		if (alpha_rt < 0) {
 			bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rt, ALPHA_T0);
 			alpha_rt = ALPHA_T0;
@@ -1030,13 +1038,14 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  01 00 20 e4     beq     t0,14 <f+0x14>
 	 */
 	b = NULL;
-	if (instruction_type == HI6_BEQ && rt != rs) {
+	if ((instruction_type == HI6_BEQ ||
+	     instruction_type == HI6_BEQL) && rt != rs) {
 		/*  cmpeq rt,rs,t0  */
 		*a++ = 0x400005a1 | (alpha_rt << 21) | (alpha_rs << 16);
 		b = a;
 		*a++ = 0xe4200001;	/*  beq  */
 	}
-	if (instruction_type == HI6_BNE) {
+	if (instruction_type == HI6_BNE || instruction_type == HI6_BNEL) {
 		/*  cmpeq rt,rs,t0  */
 		*a++ = 0x400005a1 | (alpha_rt << 21) | (alpha_rs << 16);
 		b = a;
@@ -1084,8 +1093,35 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
 	*a++ = 0x213f0000 | TO_BE_DELAYED;
 
-	if (b != NULL)
-		*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
+	/*
+	 *  Special case:  "likely"-branches:
+	 */
+	if (likely) {
+		c = a;
+		*a++ = 0xc3e00001;	/*  br delayed_ok  */
+
+		if (b != NULL)
+			*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
+
+		/*  cpu->nullify_next = 1;  */
+		/*  01 00 3f 20     lda     t0,1  */
+		*a++ = 0x203f0001;
+		ofs = (size_t)&dummy_cpu.nullify_next - (size_t)&dummy_cpu;
+		*a++ = 0xb0300000 | (ofs & 0xffff);
+
+		/*  fail, so that the next instruction is handled manually:  */
+		*addrp = (unsigned char *) a;
+		bintrans_write_pc_inc(addrp);
+		bintrans_write_chunkreturn_fail(addrp);
+		a = (uint32_t *) *addrp;
+
+		if (c != NULL)
+			*((unsigned char *)c) = ((size_t)a - (size_t)c - 4) / 4;
+	} else {
+		/*  Normal (non-likely) exit:  */
+		if (b != NULL)
+			*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
+	}
 
 	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp);

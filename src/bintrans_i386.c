@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.51 2005-01-02 18:58:47 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.52 2005-01-02 20:25:25 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1376,7 +1376,17 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 {
 	unsigned char *a;
 	unsigned char *skip1 = NULL, *skip2 = NULL;
-	int ofs;
+	int ofs, likely;
+
+	switch (instruction_type) {
+	case HI6_BEQL:
+	case HI6_BNEL:
+		likely = 1;
+	}
+
+	/*  TODO: See the Alpha backend on how these could be implemented:  */
+	if (likely)
+		return 0;
 
 	a = *addrp;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.29 2004-02-06 06:12:24 debug Exp $
+ *  $Id: cpu.c,v 1.30 2004-02-19 10:25:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -76,8 +76,6 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
-
-extern int (*machine_irq)(int, int);
 
 /*  Ugly, but needed for kn230 and kn02 "shared" interrupts:  */
 extern struct kn230_csr *kn230_csr;
@@ -266,48 +264,21 @@ void show_trace(struct cpu *cpu, uint64_t addr)
  *
  *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS interrupt.
  *  0 and 1 are ignored (software interrupts).
+ *
  *  If it is >= 8, then it is an external (machine dependant) interrupt.
+ *  cpu->md_interrupt() is called. That function may call cpu_interrupt()
+ *  using low values (2..7). There's no actual check to make sure that
+ *  there's no recursion, so the md_interrupt routine has to make sure of
+ *  this.
  */
 int cpu_interrupt(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (emulation_type == EMULTYPE_DEC && machine == MACHINE_3MAX_5000) {
-			/*  KN02:  */
-			irq_nr -= 8;
-
-			/*  OR in the irq_nr mask into the CSR:  */
-			kn02_csr->csr |= irq_nr;
-
-			irq_nr = 2;
-		} else if (emulation_type == EMULTYPE_DEC && machine == MACHINE_MIPSMATE_5100) {
-			/*  KN230:  */
-			int orig_irq_nr = irq_nr;
-			switch (irq_nr) {
-			case KN230_CSR_INTR_SII:
-			case KN230_CSR_INTR_LANCE:
-				irq_nr = 3;
-				break;
-			case KN230_CSR_INTR_DZ0:
-			case KN230_CSR_INTR_OPT0:
-			case KN230_CSR_INTR_OPT1:
-			default:
-				irq_nr = 2;
-			}
-
-			/*  OR in the orig_irq_nr mask into the CSR:  */
-			kn230_csr->csr |= orig_irq_nr;
-		} else {
-			/*
-			 *  Generic machine dependant interrupt:
-			 *
-			 *  A machine dependant interrupt routine is given irq_nr,
-			 *  and should return the MIPS interrupt number that it
-			 *  corresponds to. This value must still be 2..7.
-			 *  A value of 0, for example, causes no interrupt.
-			 */
-			if (machine_irq != NULL)
-				irq_nr = machine_irq(1, irq_nr);
-		}
+		if (cpu->md_interrupt != NULL)
+			cpu->md_interrupt(cpu, irq_nr, 1);
+		else
+			fatal("cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+		return;
 	}
 
 	if (irq_nr < 2 || irq_nr >= 8)
@@ -327,58 +298,11 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (emulation_type == EMULTYPE_DEC && machine == MACHINE_3MAX_5000) {
-			/*  KN02:  */
-			irq_nr -= 8;
-
-			/*  AND out the irq_nr mask from the CSR:  */
-			kn02_csr->csr &= ~irq_nr;
-
-			if ((kn02_csr->csr & KN02_CSR_IOINT) != 0)
-				return 1;
-
-			irq_nr = 2;
-		} else if (emulation_type == EMULTYPE_DEC && machine == MACHINE_MIPSMATE_5100) {
-			/*  KN230:  */
-			int orig_irq_nr = irq_nr;
-			switch (irq_nr) {
-			case KN230_CSR_INTR_SII:
-			case KN230_CSR_INTR_LANCE:
-				irq_nr = 3;
-				break;
-			case KN230_CSR_INTR_DZ0:
-			case KN230_CSR_INTR_OPT0:
-			case KN230_CSR_INTR_OPT1:
-			default:
-				irq_nr = 2;
-			}
-
-			/*  AND out the orig_irq_nr mask from the CSR.  */
-			kn230_csr->csr &= ~orig_irq_nr;
-
-			/*  If the CSR interrupt bits are all zero, clear the bit in the cause register as well.  */
-			if (irq_nr == 2) {
-				/*  irq 2:  */
-				if ((kn230_csr->csr & (KN230_CSR_INTR_DZ0 | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) != 0)
-					return 1;
-			} else {
-				/*  irq 3:  */
-				if ((kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) != 0)
-					return 1;
-			}
-		} else {
-			/*
-			 *  Generic machine dependant interrupt acknowledgement:
-			 *
-			 *  A machine dependant interrupt routine is given irq_nr,
-			 *  and should return the MIPS interrupt number that should
-			 *  be cleared. This value must still be 2..7.
-			 *  A value of 0, for example, means that the interrupt in
-			 *  question will stay asserted.
-			 */
-			if (machine_irq != NULL)
-				irq_nr = machine_irq(0, irq_nr);
-		}
+		if (cpu->md_interrupt != NULL)
+			cpu->md_interrupt(cpu, irq_nr, 0);
+		else
+			fatal("cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+		return;
 	}
 
 	if (irq_nr < 2 || irq_nr >= 8)

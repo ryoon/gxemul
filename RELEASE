@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.27 2004-07-30 11:30:56 debug Exp $
+$Id: RELEASE,v 1.28 2004-07-30 13:35:17 debug Exp $
 
 Preliminary 0.2 release notes:
 
@@ -87,7 +87,9 @@ release, but will most probably work anyway.
 
 	FreeBSD/alpha 4.9
 		gcc version 2.95.4 20020320 [FreeBSD]
+		gcc version 3.3
 		gcc version 3.3.1 [FreeBSD]
+		gcc version 3.3.2
 		gcc version 3.4 20030730 (experimental)
 		ccc 6.4.9.005-1
 

@@ -8,7 +8,7 @@ Serious bugs:
       uncommon with -CR3000, a bit more common with -CR4000. Reason and
       solution are unknown at this point.
 
-  x)  Linux/DECstation (Debian) installer (boot.img) crashes during install.
+  x)  Linux/DECstation (Debian) cannot be installed. Why? Not sure yet.
 
   x)  Newer NetBSD 2.0_BETA snapshots from releng.netbsd.org sometimes crash.
           Host\Snapshot:       20040606 20040707

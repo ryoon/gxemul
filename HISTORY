@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.193 2004-08-07 01:14:07 debug Exp $
+$Id: HISTORY,v 1.194 2004-08-10 02:31:29 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -893,3 +893,4 @@ HISTORY of mips64emul
 20040806	Adding include/impactsr-bsd.h (a newer version of what was in
 		mgras.h before, and this time with only a BSD-style license),
 		but it is not used yet.
+20040810	Some Au1500 updates.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.91 2004-08-05 22:45:09 debug Exp $
+ *  $Id: devices.h,v 1.92 2004-08-10 02:31:31 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -72,6 +72,10 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 #define	DEV_ASC_LENGTH			0xc0000
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, void *turbochannel);
+
+/*  dev_au1x00.c:  */
+int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_au1x00_init(struct cpu *cpu, struct memory *mem);
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
@@ -289,10 +293,6 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pci
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
-
-/*  dev_meshcube.c:  */
-int dev_meshcube_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_meshcube_init(struct cpu *cpu, struct memory *mem);
 
 /*  dev_mp.c:  */
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

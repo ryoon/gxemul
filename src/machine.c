@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.155 2004-08-07 01:14:09 debug Exp $
+ *  $Id: machine.c,v 1.156 2004-08-10 02:31:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2539,8 +2539,11 @@ void machine_init(struct memory *mem)
 		if (use_x11)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
+		/*  First of all, the MeshCube has an Au1500 in it:  */
+		dev_au1x00_init(cpus[bootstrap_cpu], mem);
+
 		/*
-		 *  TODO:  Which devices, and at what addresses?
+		 *  TODO:  Which non-Au1500 devices, and at what addresses?
 		 *
 		 *  "4G Systems MTX-1 Board" at ?
 		 *	1017fffc, 14005004, 11700000, 11700008, 11900014,
@@ -2552,9 +2555,7 @@ void machine_init(struct memory *mem)
 		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
 		 */
 
-		dev_8250_init(cpus[bootstrap_cpu], mem, 0x11100000, 0, 4);
 		dev_random_init(mem, 0x1017fffc, 4);
-		dev_meshcube_init(cpus[bootstrap_cpu], mem);
 
 		/*
 		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I

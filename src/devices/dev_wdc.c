@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.22 2005-03-29 00:26:20 debug Exp $
+ *  $Id: dev_wdc.c,v 1.23 2005-03-29 00:32:27 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -376,16 +376,16 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			odata = (d->sectorsize << 6) + (d->lba << 5) +
 			    (d->drive << 4) + (d->head);
 			debug("[ wdc: read from SDH: 0x%02x (sectorsize %i,"
-			    " lba=%i, drive %i, head %i) ]\n",
-			    (int)odata, d->sectorsize, d->lba, d->drive, d->head);
+			    " lba=%i, drive %i, head %i) ]\n", (int)odata,
+			    d->sectorsize, d->lba, d->drive, d->head);
 		} else {
 			d->sectorsize = (idata >> 6) & 3;
 			d->lba   = (idata >> 5) & 1;
 			d->drive = (idata >> 4) & 1;
 			d->head  = idata & 0xf;
 			debug("[ wdc: write to SDH: 0x%02x (sectorsize %i,"
-			    " lba=%i, drive %i, head %i) ]\n",
-			    (int)idata, d->sectorsize, d->lba, d->drive, d->head);
+			    " lba=%i, drive %i, head %i) ]\n", (int)idata,
+			    d->sectorsize, d->lba, d->drive, d->head);
 		}
 		break;
 

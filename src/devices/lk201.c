@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.2 2004-04-06 02:30:59 debug Exp $
+ *  $Id: lk201.c,v 1.3 2004-04-15 21:34:35 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -174,6 +174,14 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x, int mou
 		/*  Do nothing (before the mouse is initialized)  */
 		break;
 	case MOUSE_INCREMENTAL:
+		if (xdelta < 0)
+			xdelta = -xdelta;
+		if (ydelta < 0)
+			ydelta = -ydelta;
+
+		/*  Reverse sign of x:  (this is needed for some reason)  */
+		xsign ^= 1;
+
 		d->add_to_rx_queue(d->add_data, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + (mouse_buttons & 7), DCMOUSE_PORT);
 		d->add_to_rx_queue(d->add_data, xdelta, DCMOUSE_PORT);
 		d->add_to_rx_queue(d->add_data, ydelta, DCMOUSE_PORT);

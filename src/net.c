@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.4 2004-07-05 23:10:12 debug Exp $
+ *  $Id: net.c,v 1.5 2004-07-06 14:01:43 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -159,8 +159,15 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
 		lp->data[36] = lp->data[37] = 0xff;
 		lp->data[24] = lp->data[25] = 0x00;
 
+/*  TODO: NetBSD doesn't seem to recognize this packet yet  */
+
 		/*  Decrease the TTL:  */
-		lp->data[22] --;
+		lp->data[22] = 2;
+
+		/*  Increase the IP id field:  */
+		lp->data[19] ++;
+		if (lp->data[19] == 0)
+			lp->data[18] ++;
 
 		break;
 	default:

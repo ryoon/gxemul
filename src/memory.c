@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.79 2004-09-24 14:58:56 debug Exp $
+ *  $Id: memory.c,v 1.80 2004-10-06 08:17:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -796,7 +796,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 */
 		case 0xc:
 			if (cpu->emul->emulation_type != EMULTYPE_SGI ||
-			    cpu->emul->machine < 25)
+			    cpu->emul->machine < 25 && cpu->emul->machine != 19)
 				break;
 		case 8:
 		case 9:

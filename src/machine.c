@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.184 2004-09-29 14:03:41 debug Exp $
+ *  $Id: machine.c,v 1.185 2004-10-06 08:17:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1674,7 +1674,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
-			/*  TODO:  Other machine types?  */
+			/*  TODO:  Other SGI machine types?  */
 			switch (emul->machine) {
 			case 19:
 				strcat(emul->machine_name, " (Everest IP19)");
@@ -1682,6 +1682,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_scc_init(cpu, mem, 0x10086000, 0, emul->use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpu, mem, 0x18000000);
+
+				/*  Irix' <everest_du_init+0x130> reads this device:  */
+				dev_random_init(mem, 0x10006000, 16);
 
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
 				store_32bit_word(cpu, 0xa0000000 + 0x3000,
@@ -1925,9 +1928,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_ram_init(mem, 0x41000000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 #endif
-				/*
 				dev_ram_init(mem, 0x42000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x47000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				/*
 				dev_ram_init(mem,    0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem,    0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
@@ -2725,6 +2728,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (emul->use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
+		if (emul->physical_ram_in_mb != 16)
+			fprintf(stderr, "WARNING! Real NetGear WG602 boxes have exactly 16 MB RAM. Continuing anyway.\n");
+
+		/*
+		 *  Lots of info about the IDT 79RC 32334
+		 *  http://www.idt.com/products/pages/Integrated_Processors-79RC32334.html
+		 */
 
 		dev_8250_init(cpu, mem, 0x18000800, 0, 4);
 

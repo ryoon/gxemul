@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.46 2004-04-11 15:47:57 debug Exp $
+ *  $Id: cpu.c,v 1.47 2004-04-14 23:36:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -955,8 +955,14 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			 *  Instead, check if the destination register is r0.
 			 */
 			if (rd == 0 && special6 == SPECIAL_SLL) {
-				if (instruction_trace)
-					debug("nop\n");
+				if (instruction_trace) {
+					if (sa == 0)
+						debug("nop\n");
+					else if (sa == 1)
+						debug("ssnop\n");
+					else
+						debug("nop (weird, sa=%i)\n", sa);
+				}
 				break;
 			} else
 				if (instruction_trace)
@@ -2339,8 +2345,16 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				debug("%s\n", instr_mnem);
 		}
 
-		if (cpu->coproc[cpnr] == NULL) {
-			/*  If there is no coprocessor nr cpnr, then we get an exception:  */
+		/*
+		 *  If there is no coprocessor nr cpnr, or we are running in
+		 *  userland and the coprocessor is not marked as Useable in
+		 *  the status register of CP0, then we get an exception:
+		 *
+		 *  TODO:  More robust checking for user code (ie R4000 stuff)
+		 */
+		if (cpu->coproc[cpnr] == NULL ||
+		    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+		    ) {
 			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 		} else {
 			switch (copz) {
@@ -2358,6 +2372,12 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			case COPz_MTCz:
 			case COPz_DMTCz:
 				tmpvalue = cpu->gpr[rt];
+				if (copz == COPz_MTCz) {
+					/*  Sign-extend:  */
+					tmpvalue &= 0xffffffff;
+					if (tmpvalue & 0x80000000)
+						tmpvalue |= 0xffffffff00000000;
+				}
 				coproc_register_write(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
 				break;
 			default:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.15 2004-06-11 12:43:36 debug Exp $
+ *  $Id: dev_crime.c,v 1.16 2004-06-12 19:55:27 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -85,10 +85,9 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	struct crime_data *d = extra;
 
 	/*
-	 *  Set crime version/revision:
-	 *  This makes linux say "CRIME id 1 rev 1", NetBSD says "rev 1.1".
+	 *  Set crime version/revision:  (0x11 or 0xa1?)
 	 */
-	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0x11;
+	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0xa1;
 
 	/*  Amount of memory.  Bit 8 of bank control set ==> 128MB instead of 32MB per bank (?)  */
 	/*  When the bank control registers contain the same value as the previous one, that

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.61 2004-08-05 00:39:06 debug Exp $
+ *  $Id: main.c,v 1.62 2004-08-05 21:22:18 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -195,6 +195,7 @@ void usage(char *progname)
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
+	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -h        display this help message\n");
@@ -248,7 +249,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -275,6 +276,10 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'E':
 			emulation_type = EMULTYPE_COBALT;
+			machine = 0;
+			break;
+		case 'e':
+			emulation_type = EMULTYPE_MESHCUBE;
 			machine = 0;
 			break;
 		case 'F':
@@ -409,6 +414,9 @@ int get_cmd_args(int argc, char *argv[])
 	if (emulation_type == EMULTYPE_COBALT && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "RM5200");
 
+	if (emulation_type == EMULTYPE_MESHCUBE && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "AU1500");
+
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
 
@@ -439,6 +447,9 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;
+
+	if (emulation_type == EMULTYPE_MESHCUBE && physical_ram_in_mb == 0)
+		physical_ram_in_mb = 64;
 
 	if (emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;

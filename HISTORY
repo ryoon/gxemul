@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.190 2004-08-05 00:39:01 debug Exp $
+$Id: HISTORY,v 1.191 2004-08-05 21:22:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -885,3 +885,7 @@ HISTORY of mips64emul
 		The -y switch has to do with number of cycles, not number
 		of instructions; variable names have been changed to reflect
 		this.
+20040805	Minor updates. Adding some more CPU types/names, but they
+		are probably bogus.
+		Adding a MeshCube emulation mode skeleton.
+		Adding the 'deret' instruction.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.150 2004-08-03 13:10:45 debug Exp $
+ *  $Id: machine.c,v 1.151 2004-08-05 21:22:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2524,6 +2524,36 @@ void machine_init(struct memory *mem)
 		add_environment_string("verbose=istrue", &addr);
 		add_environment_string("showconfig=istrue", &addr);
 		add_environment_string("", &addr);	/*  the end  */
+
+		break;
+
+	case EMULTYPE_MESHCUBE:
+		machine_name = "MeshCube";
+
+		if (physical_ram_in_mb != 64)
+			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
+		if (use_x11)
+			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
+
+		dev_8250_init(cpus[bootstrap_cpu], mem, 0x11100000, 0, 4);
+
+		/*
+		 *  TODO
+		 *
+		 *  A Linux kernel probably wants "memsize" from
+		 *  somewhere... I haven't found any docs on how
+		 *  it is used though.
+		 */
+
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 1;
+		cpus[bootstrap_cpu]->gpr[GPR_A1] = 0xa0001000ULL;
+		store_32bit_word(cpus[bootstrap_cpu]->gpr[GPR_A1], 0xa0002000ULL);
+		store_string(0xa0002000ULL, "memsize=64");
+
+		cpus[bootstrap_cpu]->gpr[GPR_A2] = 0xa0003000ULL;
+		store_string(0xa0002000ULL, "hello=world\n");
+
+		cpus[bootstrap_cpu]->gpr[GPR_A3] = 0x12303321;
 
 		break;
 

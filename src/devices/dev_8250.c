@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.5 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_8250.c,v 1.6 2004-08-05 21:22:12 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -100,10 +100,16 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	relative_addr /= d->addrmult;
 
-if (writeflag == MEM_WRITE && relative_addr == 1)
-	console_putchar(data[0]);
-if (writeflag == MEM_READ && relative_addr == 4)
-	data[0] = random();
+	/*  TODO  */
+
+	if (writeflag == MEM_WRITE && relative_addr == 1)
+		console_putchar(data[0]);
+	if (writeflag == MEM_READ && relative_addr == 4)
+		data[0] = random();
+
+	/*  For Linux/MeshCube:  */
+	if (writeflag == MEM_READ && relative_addr == 7)
+		data[0] = 64;
 
 	return 1;
 }
@@ -112,7 +118,8 @@ if (writeflag == MEM_READ && relative_addr == 4)
 /*
  *  dev_8250_init():
  */
-void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
+void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int addrmult)
 {
 	struct dev_8250_data *d;
 
@@ -131,7 +138,8 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 	d->parity   = 'N';
 	d->stopbits = "1";
 
-	memory_device_register(mem, "8250", baseaddr, DEV_8250_LENGTH * addrmult, dev_8250_access, d);
+	memory_device_register(mem, "8250", baseaddr,
+	    DEV_8250_LENGTH * addrmult, dev_8250_access, d);
 	cpu_add_tickfunction(cpu, dev_8250_tick, d, 10);
 }
 

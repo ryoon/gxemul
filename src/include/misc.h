@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.95 2004-08-03 13:10:46 debug Exp $
+ *  $Id: misc.h,v 1.96 2004-08-05 21:22:16 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -97,6 +97,7 @@ typedef uint64_t u_int64_t;
 #define	EMULTYPE_PS2		5
 #define	EMULTYPE_SGI		6
 #define	EMULTYPE_ARC		7
+#define	EMULTYPE_MESHCUBE	8
 
 /*  Specific machines:  */
 #define	MACHINE_NONE		0
@@ -168,22 +169,27 @@ typedef uint64_t u_int64_t;
 
 struct cpu_type_def {
 	char		*name;
-	unsigned char	rev;
-	unsigned char	sub;
+	int		rev;
+	int		sub;
 	char		flags;
 	char		exc_model;		/*  EXC3K or EXC4K  */
 	char		mmu_model;		/*  MMU3K or MMU4K  */
-	char		isa_level;		/*  1, 2, 3, 4, 5  */
-	int		nr_of_tlb_entries;	/*  48, 64, ...  */
+	char		isa_level;		/*  1, 2, 3, 4, 5, 32, 64  */
+	int		nr_of_tlb_entries;	/*  32, 48, 64, ...  */
 	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4, for example  */
 };
 
 #define	EXC3K		3
 #define	EXC4K		4
+#define	EXC32		32
+#define	EXC64		64
+
 #define	MMU3K		3
 #define	MMU4K		4
 #define	MMU8K		8
 #define	MMU10K		10
+#define	MMU32		32
+#define	MMU64		64
 
 /*  Bit-field values for the flags field:  */
 #define	NOLLSC		1
@@ -208,10 +214,20 @@ struct cpu_type_def {
 	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4 }, /*  instrs/cycle?  */ \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4 }, /*  instrs/cycle?  */ \
+	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2 }, /*  TODO: bogus?  */ \
+	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,	3,	48, 4 }, /*  TODO: bogus?  */ \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4 }, /*  instrs/cycle?  */ \
-	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "5K",		0x100+MIPS_5K, 1,	0,	EXC4K, MMU4K,	5,	48, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64,      32, 2 }, /*  TODO: this is just bogus  */ \
+	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64,      32, 2 }, /*  TODO: this is just bogus  */ \
 	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0 } }
 
 /*  Debug stuff:  */

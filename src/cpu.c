@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.116 2004-08-05 00:39:06 debug Exp $
+ *  $Id: cpu.c,v 1.117 2004-08-05 21:22:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -618,6 +618,10 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 		rd = (instr[1] >> 3) & 31;
 		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
 			debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
+		} else if (special6 == SPECIAL2_MUL) {
+			/*  TODO: this is just a guess, I don't have the
+				docs in front of me  */
+			debug("mul\tr%i,r%i,r%i\n", rd, rs, rt);
 		} else if ((instrword & 0xffff07ffULL) == 0x70000209
 		    || (instrword & 0xffff07ffULL) == 0x70000249) {
 			if (instr[0] == 0x49) {
@@ -2895,6 +2899,9 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->gpr[rd] =
 			    ((cpu->gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->gpr[rt] & 0xffffffffULL);
+		} else if (special6 == SPECIAL2_MUL) {
+			cpu->gpr[rd] = (int64_t)cpu->gpr[rt] *
+			    (int64_t)cpu->gpr[rs];
 		} else {
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",

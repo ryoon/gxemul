@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.61 2004-07-20 00:24:50 debug Exp $
+ *  $Id: coproc.c,v 1.62 2004-08-05 21:22:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -92,6 +92,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		if (!prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
 
+		/*  Note: .rev may contain the company ID as well!  */
 		c->reg[COP0_PRID] =
 		      (0x00 << 24)		/*  Company Options  */
 		    | (0x00 << 16)		/*  Company ID       */
@@ -245,7 +246,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		int fpu_rev;
 		uint64_t other_stuff = 0;
 
-		switch (cpu->cpu_type.rev) {
+		switch (cpu->cpu_type.rev & 0xff) {
 		case MIPS_R2000:	fpu_rev = MIPS_R2010;	break;
 		case MIPS_R3000:	fpu_rev = MIPS_R3010;
 					other_stuff |= 0x40;	/*  or 0x30? TODO  */
@@ -334,6 +335,8 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_LO)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_HI)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_ERROREPC)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_DEBUG)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)	unimpl = 0;
 
 	if (cp->coproc_nr==1)	unimpl = 0;
 
@@ -529,6 +532,9 @@ void coproc_register_write(struct cpu *cpu,
 		unimpl = 0;
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_DEPC)
+		unimpl = 0;
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)
 		unimpl = 0;
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_PERFCNT)
@@ -1200,6 +1206,28 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 			return;
 	}
 #endif
+
+	/*  For AU1500 and probably others:  deret  */
+	if (function == 0x0200001f) {
+		if (instruction_trace)
+			debug("deret\n");
+
+		/*
+		 *  According to the MIPS64 manual, deret loads PC from the
+		 *  DEPC cop0 register, and jumps there immediately. No
+		 *  delay slot.
+		 *
+		 *  TODO: This instruction is only available if the processor
+		 *  is in debug mode. (What does that mean?)
+		 *  TODO: This instruction is undefined in a delay slot.
+		 */
+
+		cpu->pc = cpu->pc_last = cp->reg[COP0_DEPC];
+		cpu->delay_slot = 0;
+		cp->reg[COP0_STATUS] &= ~STATUS_EXL;
+
+		return;
+	}
 
 
 	/*  Ugly R59000 hacks:  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.115 2004-06-30 07:13:48 debug Exp $
+$Id: HISTORY,v 1.116 2004-06-30 07:34:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -624,7 +624,7 @@ HISTORY of mips64emul
 		way into userland and be interacted with), and -A4
 		(Deskstation Tyne).
 		Some more minor fixes.
-20040630	Adding support for 15 and 16 bits little endian X servers,
+20040630	Adding support for 15 and 16 bits X11 framebuffers,
 		and converting from XYPixmap to ZPixmap (this fixes the
 		problem of updates appearing in "layers" on some X
 		servers).

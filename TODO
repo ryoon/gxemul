@@ -181,9 +181,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  More 2D and 3D framebuffer acceleration
 		o)  Hide the host's mouse cursor.
 		o)  Multi-head stuff with DECstation emulation:
-			x) how to move _left_? (Moving the mouse to the right
-			   edge of a screen switches to the next, but moving
-			   left doesn't work yet.)
 			x) Using different X11 displays for different
 			   framebuffer windows? (For those running a host
 			   with more than one display.)

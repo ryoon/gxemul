@@ -1,13 +1,13 @@
-$Id: RELEASE,v 1.50 2004-11-01 12:33:55 debug Exp $
+$Id: RELEASE,v 1.51 2004-11-01 16:56:51 debug Exp $
 
-I'm currently working on post-0.2.1.
-
+I'm currently working on what will become 0.2.2.
 The release "road map" at the moment looks something like this:
 
   0.2.2:  there has been a number of minor updates since 0.2.1, so this
           would at least be a bugfix release, but perhaps also contain some
-          new features.  (maybe the 0.2.2 release will be in november or
-          december, 2004)
+          new features.
+
+0.2.2 will most probably be released some time in November 2004. Then:
 
   0.2.x:  ?
 
@@ -38,7 +38,7 @@ combinations as possible of the following must be tested:
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.X
+Release notes for mips64emul 0.2.2
 ==================================
 
 Copyright (C) 2003-2004  Anders Gavare.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.2 2003-12-29 00:50:56 debug Exp $
+ *  $Id: dev_macepci.c,v 1.3 2003-12-30 03:03:34 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -70,21 +70,33 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	/*  Read from/write to the macepci:  */
 	switch (relative_addr) {
 	case 0x00:	/*  Error address  */
-		odata_set = 1;
-		odata = 0;
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0;
+		}
 		break;
 	case 0x04:	/*  Error flags  */
-		odata_set = 1;
-		odata = 0x06;
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0x06;
+		}
 		break;
 	case 0x0c:	/*  Revision number  */
-		odata_set = 1;
-		odata = 0x01;
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0x01;
+		}
 		break;
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
-		odata_set = 1;
-		odata = 0;
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0;
+		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

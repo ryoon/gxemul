@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.56 2005-01-30 12:54:52 debug Exp $
+ *  $Id: file.c,v 1.57 2005-01-30 14:22:15 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -949,7 +949,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	if (((eflags >> 24) & 0xff) == 0x24) {
 		debug("MIPS16 encoding (e_flags = 0x%08x)\n", eflags);
 #ifdef ENABLE_MIPS16
-		cpu->mips16 = 1;
+		cpu->cd.mips.mips16 = 1;
 #else
 		fatal("ENABLE_MIPS16 must be defined in misc.h.\n");
 		exit(1);
@@ -957,7 +957,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	} else if (eentry & 0x3) {
 		debug("MIPS16 encoding (eentry not 32-bit aligned)\n");
 #ifdef ENABLE_MIPS16
-		cpu->mips16 = 1;
+		cpu->cd.mips.mips16 = 1;
 #else
 		fatal("ENABLE_MIPS16 must be defined in misc.h.\n");
 		exit(1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.151 2005-01-30 12:54:53 debug Exp $
+ *  $Id: memory.c,v 1.152 2005-01-30 14:22:15 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -413,7 +413,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		cpu->cd.mips.instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
 		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
@@ -574,7 +574,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		cpu->cd.mips.instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
 		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
@@ -832,7 +832,7 @@ into the devices  */
 				if (res == 0)
 					res = -1;
 
-				cpu->instruction_delay +=
+				cpu->cd.mips.instruction_delay +=
 				    ( (abs(res) - 1) *
 				     cpu->cd.mips.cpu_type.instrs_per_cycle );
 #endif

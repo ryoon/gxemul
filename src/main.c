@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.192 2005-01-30 14:06:44 debug Exp $
+ *  $Id: main.c,v 1.193 2005-01-30 14:22:15 debug Exp $
  */
 
 #include <stdio.h>
@@ -306,8 +306,10 @@ void show_cpus_and_machine_types(void)
 	debug_indentation(-iadd);
 
 	printf("\n");
-	printf("Use the alias when selecting a machine type or subtype,"
-	    " not the real name.\n");
+	printf("Most of the machine types are bogus too. Please read the "
+	    "mips64emul\ndocumentation for information about which machine"
+	    " types that actually\nwork. Use the alias when selecting a "
+	    "machine type or subtype, not the\nreal name.\n");
 }
 
 

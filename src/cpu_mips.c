@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.3 2005-01-30 14:06:44 debug Exp $
+ *  $Id: cpu_mips.c,v 1.4 2005-01-30 14:22:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1796,8 +1796,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
-	if (cpu->instruction_delay > 0) {
-		cpu->instruction_delay --;
+	if (cpu->cd.mips.instruction_delay > 0) {
+		cpu->cd.mips.instruction_delay --;
 		return 1;
 	}
 #endif
@@ -2089,7 +2089,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Read an instruction from memory:  */
 #ifdef ENABLE_MIPS16
-	if (cpu->mips16 && (cached_pc & 1)) {
+	if (cpu->cd.mips.mips16 && (cached_pc & 1)) {
 		/*  16-bit instruction word:  */
 		unsigned char instr16[2];
 		int mips16_offset = 0;
@@ -2106,7 +2106,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
 		}
 
-		cpu->mips16_extend = 0;
+		cpu->cd.mips.mips16_extend = 0;
 
 		/*
 		 *  Translate into 32-bit instruction, little endian (instr[3..0]):
@@ -2311,7 +2311,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (sa == 1) {
 					/*  ssnop  */
 #ifdef ENABLE_INSTRUCTION_DELAYS
-					cpu->instruction_delay +=
+					cpu->cd.mips.instruction_delay +=
 					    cpu->cd.mips.cpu_type.
 					    instrs_per_cycle - 1;
 #endif

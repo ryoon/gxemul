@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.95 2004-07-05 19:24:00 debug Exp $
+ *  $Id: cpu.c,v 1.96 2004-07-05 23:06:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -61,7 +61,7 @@ extern int prom_emulation;
 extern int tlb_dump;
 extern int userland_emul;
 extern int bootstrap_cpu;
-extern int max_instructions;
+extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
@@ -582,6 +582,7 @@ const char *cpu_flags(struct cpu *cpu)
 int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
+	int instruction_trace_cached = instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
 	int i;
 	unsigned char instr[4];
@@ -661,7 +662,7 @@ int cpu_run_instr(struct cpu *cpu)
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
 		if (cached_pc == dumppoint_pc[i]) {
-			instruction_trace = 1;
+			instruction_trace = instruction_trace_cached = 1;
 			quiet_mode = quiet_mode_cached = 0;
 			if (dumppoint_flag_r[i])
 				register_dump = 1;
@@ -801,7 +802,7 @@ int cpu_run_instr(struct cpu *cpu)
 		 *  caused, it will appear as if it was caused when reading the extend instruction.
 		 */
 		while (mips16_to_32(cpu, instr16, instr) == 0) {
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("cpu%i @ %016llx: %02x%02x\t\t\textend\n",
 				    cpu->cpu_id, (cpu->pc_last ^ 1) + mips16_offset,
 				    instr16[1], instr16[0]);
@@ -821,7 +822,7 @@ int cpu_run_instr(struct cpu *cpu)
 		cpu->pc += sizeof(instr16) + mips16_offset;
 		cached_pc = cpu->pc;
 
-		if (instruction_trace) {
+		if (instruction_trace_cached) {
 			int offset;
 			char *symbol = get_symbol_name(cpu->pc_last ^ 1, &offset);
 			if (symbol != NULL && offset==0)
@@ -877,7 +878,7 @@ int cpu_run_instr(struct cpu *cpu)
 			tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
 		}
 
-		if (instruction_trace) {
+		if (instruction_trace_cached) {
 			int offset;
 			char *symbol = get_symbol_name(cpu->pc_last, &offset);
 			if (symbol != NULL && offset==0)
@@ -893,7 +894,7 @@ int cpu_run_instr(struct cpu *cpu)
 	/*  Nullify this instruction?  (Set by previous instruction)  */
 	if (cpu->nullify_next) {
 		cpu->nullify_next = 0;
-		if (instruction_trace)
+		if (instruction_trace_cached)
 			debug("(nullified)\n");
 
 		/*  Note: Return value is 1, even if no instruction was actually executed.  */
@@ -973,7 +974,7 @@ int cpu_run_instr(struct cpu *cpu)
 			rd = (instr[1] >> 3) & 31;
 			sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
 
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				instr_mnem = NULL;
 				if (special6 == SPECIAL_SLL)	instr_mnem = "sll";
 				if (special6 == SPECIAL_SRL)	instr_mnem = "srl";
@@ -1001,7 +1002,7 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  code here is incorrect.
 			 */
 			if (rd == 0 && special6 == SPECIAL_SLL) {
-				if (instruction_trace) {
+				if (instruction_trace_cached) {
 					if (sa == 0)
 						debug("nop\n");
 					else if (sa == 1) {
@@ -1017,7 +1018,7 @@ int cpu_run_instr(struct cpu *cpu)
 				}
 				break;
 			} else
-				if (instruction_trace)
+				if (instruction_trace_cached)
 					debug("%s\tr%i,r%i,%i\n", instr_mnem, rd, rt, sa);
 
 			if (special6 == SPECIAL_SLL) {
@@ -1078,7 +1079,7 @@ int cpu_run_instr(struct cpu *cpu)
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				instr_mnem = NULL;
 				if (special6 == SPECIAL_DSRLV)	instr_mnem = "dsrlv";
 				if (special6 == SPECIAL_DSRAV)	instr_mnem = "dsrav";
@@ -1150,7 +1151,7 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				int offset;
 				char *symbol = get_symbol_name(cpu->gpr[rs], &offset);
 				if (symbol != NULL)
@@ -1184,7 +1185,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				int offset;
 				char *symbol = get_symbol_name(cpu->gpr[rs], &offset);
 				if (symbol != NULL)
@@ -1208,7 +1209,7 @@ int cpu_run_instr(struct cpu *cpu)
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
 
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				instr_mnem = NULL;
 				if (special6 == SPECIAL_MFHI)	instr_mnem = "mfhi";
 				if (special6 == SPECIAL_MFLO)	instr_mnem = "mflo";
@@ -1284,7 +1285,7 @@ int cpu_run_instr(struct cpu *cpu)
 				debug("warning: instruction modifying HI too early after mfhi!\n");
 #endif
 
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				instr_mnem = NULL;
 				if (special6 == SPECIAL_MTLO)	instr_mnem = "mtlo";
 				if (special6 == SPECIAL_MTHI)	instr_mnem = "mthi";
@@ -1588,14 +1589,14 @@ int cpu_run_instr(struct cpu *cpu)
 			break;
 		case SPECIAL_SYNC:
 			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("sync\t0x%02x\n", stype);
 			/*  TODO: actually sync  */
 			break;
 		case SPECIAL_SYSCALL:
 			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
 			imm &= 0xfffff;
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("syscall\t0x%05x\n", imm);
 
 			if (userland_emul) {
@@ -1604,26 +1605,26 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_BREAK:
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("break\n");
 			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_MFSA:
 			/*  R5900? What on earth does this thing do?  */
 			rd = (instr[1] >> 3) & 31;
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("mfsa\tr%i\n", rd);
 			/*  TODO  */
 			break;
 		case SPECIAL_MTSA:
 			/*  R5900? What on earth does this thing do?  */
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("mtsa\tr%i\n", rs);
 			/*  TODO  */
 			break;
 		default:
-			if (!instruction_trace) {
+			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
@@ -1691,7 +1692,7 @@ int cpu_run_instr(struct cpu *cpu)
 		if (imm >= 32768)		/*  signed 16-bit  */
 			imm -= 65536;
 
-		if (instruction_trace) {
+		if (instruction_trace_cached) {
 			instr_mnem = NULL;
 			if (hi6 == HI6_BEQ)	instr_mnem = "beq";
 			if (hi6 == HI6_BEQL)	instr_mnem = "beql";
@@ -1838,20 +1839,20 @@ int cpu_run_instr(struct cpu *cpu)
 			if (speed_tricks && cpu->delay_slot && cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt && cpu->jump_to_self_reg == rs) {
 				if ((int64_t)cpu->gpr[rt] > 5 && imm == -1) {
-					if (instruction_trace)
+					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
 					cpu->gpr[rt] = 0;
-					if (instruction_trace)
+					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
 
 					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
 				if ((int64_t)cpu->gpr[rt] < -5 && imm == 1) {
-					if (instruction_trace)
+					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 					cpu->gpr[rt] = 0;
-					if (instruction_trace)
+					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
 
 					/*  TODO: return value, -cpu->gpr[rt]*2;  */
@@ -2153,7 +2154,7 @@ int cpu_run_instr(struct cpu *cpu)
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
 				if (!success) {
 					/*  The store failed, and might have caused an exception.  */
-					if (instruction_trace && dataflag)
+					if (instruction_trace_cached && dataflag)
 						debug("(failed)]\n");
 					break;
 				}
@@ -2165,7 +2166,7 @@ int cpu_run_instr(struct cpu *cpu)
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
 				if (!success) {
 					/*  The load failed, and might have caused an exception.  */
-					if (instruction_trace && dataflag)
+					if (instruction_trace_cached && dataflag)
 						debug("(failed)]\n");
 					break;
 				}
@@ -2262,7 +2263,7 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->rmw = 0;
 			}
 
-			if (instruction_trace && dataflag) {
+			if (instruction_trace_cached && dataflag) {
 				char *t;
 				switch (wlen) {
 				case 2:		t = "0x%04llx"; break;
@@ -2354,11 +2355,11 @@ int cpu_run_instr(struct cpu *cpu)
 				if (st) {
 					databyte = (result_value >> (reg_ofs * 8)) & 255;
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
-					/*  if (instruction_trace && dataflag)
+					/*  if (instruction_trace_cached && dataflag)
 						debug("%02x ", databyte);  */
 				} else {
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
-					/*  if (instruction_trace && dataflag)
+					/*  if (instruction_trace_cached && dataflag)
 						debug("%02x ", databyte);  */
 					result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
 					result_value |= (uint64_t)databyte << (reg_ofs * 8);
@@ -2381,7 +2382,7 @@ int cpu_run_instr(struct cpu *cpu)
 					cpu->gpr[rt] |= 0xffffffff00000000ULL;
 			}
 
-			if (instruction_trace && dataflag) {
+			if (instruction_trace_cached && dataflag) {
 				char *t;
 				switch (wlen) {
 				case 2:		t = "0x%04llx"; break;
@@ -2416,7 +2417,7 @@ int cpu_run_instr(struct cpu *cpu)
 			if (imm >= 32768)		/*  signed 16-bit  */
 				imm -= 65536;
 
-			if (instruction_trace) {
+			if (instruction_trace_cached) {
 				instr_mnem = NULL;
 				if (regimm5 == REGIMM_BLTZ)	instr_mnem = "bltz";
 				if (regimm5 == REGIMM_BGEZ)	instr_mnem = "bgez";
@@ -2464,7 +2465,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 			break;
 		default:
-			if (!instruction_trace) {
+			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
@@ -2490,7 +2491,7 @@ int cpu_run_instr(struct cpu *cpu)
 		addr = cached_pc & ~((1 << 28) - 1);
 		addr |= imm;
 
-		if (instruction_trace) {
+		if (instruction_trace_cached) {
 			int offset;
 			char *symbol = get_symbol_name(addr, &offset);
 
@@ -2536,7 +2537,7 @@ int cpu_run_instr(struct cpu *cpu)
 		if (cpu->coproc[cpnr] == NULL ||
 		    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 		    ) {
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);
 
 			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
@@ -2554,7 +2555,7 @@ int cpu_run_instr(struct cpu *cpu)
 		cache_op    = copz >> 2;
 		which_cache = copz & 3;
 
-		if (instruction_trace) {
+		if (instruction_trace_cached) {
 			int showtag = 0;
 
 			debug("cache\t0x%02x,0x%04x(r%i)", copz, imm, rt);
@@ -2622,7 +2623,7 @@ int cpu_run_instr(struct cpu *cpu)
 		 */
 
 		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
 			{
 				int32_t a, b;
@@ -2658,11 +2659,11 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x49) {
-				if (instruction_trace)
+				if (instruction_trace_cached)
 					debug("pmflo\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->lo;
 			} else {
-				if (instruction_trace)
+				if (instruction_trace_cached)
 					debug("pmfhi\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->hi;
 			}
@@ -2676,11 +2677,11 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x69) {
-				if (instruction_trace)
+				if (instruction_trace_cached)
 					debug("pmtlo\tr%i rs=%i\n", rs);
 				cpu->lo = cpu->gpr[rs];
 			} else {
-				if (instruction_trace)
+				if (instruction_trace_cached)
 					debug("pmthi\tr%i rs=%i\n", rs);
 				cpu->hi = cpu->gpr[rs];
 			}
@@ -2693,7 +2694,7 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  A wild guess is that this is a 128-bit "or" between two registers.
 			 *  For now, let's just or using 64-bits.  (TODO)
 			 */
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
@@ -2702,13 +2703,13 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  It seems that this instruction is used to combine two 32-bit
 			 *  words into a 64-bit dword, typically before a sd (store dword).
 			 */
-			if (instruction_trace)
+			if (instruction_trace_cached)
 				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] =
 			    ((cpu->gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->gpr[rt] & 0xffffffffULL);
 		} else {
-			if (!instruction_trace) {
+			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
@@ -2720,7 +2721,7 @@ int cpu_run_instr(struct cpu *cpu)
 		}
 		break;
 	default:
-		if (!instruction_trace) {
+		if (!instruction_trace_cached) {
 			fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 			    cpu->cpu_id, cpu->pc_last,
 			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
@@ -2859,13 +2860,14 @@ void cpu_show_full_statistics(struct cpu **cpus)
 int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int te;
+	int64_t max_instructions_cached = max_instructions;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */
-	int running;
+	int running, ncpus_cached = ncpus;
 	struct rusage rusage;
 	struct timeval starttime;
-	int a_few_cycles = 1048576;
+	int a_few_cycles = 1048576, a_few_instrs;
 
 	/*
 	 *  Instead of doing { one cycle, check hardware ticks }, we
@@ -2889,9 +2891,12 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	while (running) {
 		ncycles_chunk_end = ncycles + (1 << 15);
 
+		a_few_instrs = a_few_cycles *
+		    cpus[0]->cpu_type.instrs_per_cycle;
+
 		/*  Do a chunk of cycles:  */
 		do {
-			int i, j, te, cpu0instrs, a_few_instrs;
+			int i, j, te, cpu0instrs, a_few_instrs2;
 
 			running = 0;
 			cpu0instrs = 0;
@@ -2901,28 +2906,27 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			 */
 
 			/*  Is any cpu alive?  */
-			for (i=0; i<ncpus; i++)
+			for (i=0; i<ncpus_cached; i++)
 				if (cpus[i]->running)
 					running = 1;
 
 			/*  CPU 0 is special, cpu0instr must be updated.  */
-			a_few_instrs = a_few_cycles *
-			    cpus[0]->cpu_type.instrs_per_cycle;
 			for (j=0; j<a_few_instrs; j++)
 				if (cpus[0]->running) {
-					int instrs_run = 0;
-					while (!instrs_run)
+					int instrs_run;
+					do {
 						instrs_run =
 						    cpu_run_instr(cpus[0]);
+					} while (instrs_run == 0);
 
 					cpu0instrs += instrs_run;
 				}
 
 			/*  CPU 1 and up:  */
-			for (i=1; i<ncpus; i++) {
-				a_few_instrs = a_few_cycles *
+			for (i=1; i<ncpus_cached; i++) {
+				a_few_instrs2 = a_few_cycles *
 				    cpus[i]->cpu_type.instrs_per_cycle;
-				for (j=0; j<a_few_instrs; j++)
+				for (j=0; j<a_few_instrs2; j++)
 					if (cpus[i]->running) {
 						int instrs_run = 0;
 						while (!instrs_run)
@@ -2986,7 +2990,8 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			ncycles_show = ncycles;
 		}
 
-		if (max_instructions!=0 && ncycles >= max_instructions)
+		if (max_instructions_cached != 0 &&
+		    ncycles >= max_instructions_cached)
 			running = 0;
 	}
 

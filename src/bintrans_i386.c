@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.54 2005-01-02 23:16:39 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.55 2005-01-02 23:34:39 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1865,7 +1865,7 @@ try_chunk_p:
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a, *retfail;
+	unsigned char *a, *retfail, *generic64bit, *doloadstore;
 	int ofs, alignment, load=0;
 
 	/*  TODO: Not yet:  */
@@ -1958,10 +1958,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  Here, edx:eax = vaddr  */
 
 	if (bintrans_32bit_only) {
+		/*  Call the quick lookup routine:  */
 		ofs = (size_t)bintrans_i386_loadstore_32bit;
-
 		ofs = ofs - ((size_t)a + 5);
-
 		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
 		    *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -2006,7 +2005,80 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
 		*a++ = 0x01; *a++ = 0xc1;
 	} else {
-		/*  64-bit generic case:  */
+		/*
+		 *  If the load/store address has the top 32 bits set to
+		 *  0x00000000 or 0xffffffff, then we can use the 32-bit
+		 *  lookup tables:
+		 *
+		 *  83 fa 00                cmp    $0x0,%edx
+		 *  74 05                   je     <ok32>
+		 *  83 fa ff                cmp    $0xffffffff,%edx
+		 *  75 01                   jne    <not32>
+		 */
+		*a++ = 0x83; *a++ = 0xfa; *a++ = 0x00;
+		*a++ = 0x74; *a++ = 0x05;
+		*a++ = 0x83; *a++ = 0xfa; *a++ = 0xff;
+		*a++ = 0x75; generic64bit = a; *a++ = 0x01;
+
+		/*  Call the quick lookup routine:  */
+		ofs = (size_t)bintrans_i386_loadstore_32bit;
+		ofs = ofs - ((size_t)a + 5);
+		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
+		    *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		/*
+		 *  ecx = NULL? Then return with failure.
+		 *
+		 *  83 f9 00                cmp    $0x0,%ecx
+		 *  75 01                   jne    <okzzz>
+		 */
+		*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
+		*a++ = 0x75; retfail = a; *a++ = 0x00;
+		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+		*retfail = (size_t)a - (size_t)retfail - 1;
+
+		/*
+		 *  If the lowest bit is zero, and we're storing, then fail.
+		 */
+		if (!load) {
+			/*
+			 *  f7 c1 01 00 00 00       test   $0x1,%ecx
+			 *  75 01                   jne    <ok>
+			 */
+			*a++ = 0xf7; *a++ = 0xc1; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+			*a++ = 0x75; retfail = a; *a++ = 0x00;
+			bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+			*retfail = (size_t)a - (size_t)retfail - 1;
+		}
+
+		/*
+		 *  eax = offset within page = vaddr & 0xfff
+		 *
+		 *  25 ff 0f 00 00       and    $0xfff,%eax
+		 */
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+		/*
+		 *  ecx = host address   ( = host page + offset)
+		 *
+		 *  83 e1 fe                and    $0xfffffffe,%ecx	clear the lowest bit
+		 *  01 c1                   add    %eax,%ecx
+		 */
+		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
+		*a++ = 0x01; *a++ = 0xc1;
+
+		*a++ = 0xeb; doloadstore = a; *a++ = 0x01;
+
+
+		/*  TODO: The stuff above is so similar to the pure 32-bit
+		    case that it should be factored out.  */
+
+
+		*generic64bit = (size_t)a - (size_t)generic64bit - 1;
+
+		/*
+		 *  64-bit generic case:
+		 */
 
 		/*  push writeflag  */
 		*a++ = 0x6a; *a++ = load? 0 : 1;
@@ -2039,6 +2111,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 		/*  89 c1                   mov    %eax,%ecx  */
 		*a++ = 0x89; *a++ = 0xc1;
+
+		*doloadstore = (size_t)a - (size_t)doloadstore - 1;
 	}
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cp_removeblocks.c,v 1.7 2004-10-17 15:31:42 debug Exp $
+ *  $Id: cp_removeblocks.c,v 1.8 2004-11-23 08:34:42 debug Exp $
  *
  *  This program copies a file, but only those blocks that are not zero-
  *  filled.  Typical usage would be if you have a harddisk image stored
@@ -47,10 +47,7 @@
  *	      You don't even need to gunzip the file to be 1 GB first,
  *            you can pipe it through cp_removeblocks directly.
  *
- *		  gunzip -c file.gz | ./cp_removeblocks /dev/stdin output
- *
- *	      but then the filesize might be wrong. If it is, then you might
- *	      want to write the last byte manually using 'dd' or such.
+ *		  gunzip -c file.img.gz | ./cp_removeblocks - file.img
  */
 
 #include <stdio.h>
@@ -70,11 +67,30 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		fprintf(stderr, "usage: %s infile outfile\n", argv[0]);
+		fprintf(stderr, "if infile is \"-\", then stdin is used.\n");
+		fprintf(stderr, "if outfile is \"-\", then stdout is used.\n");
 		exit(1);
 	}
 
-	f1 = fopen(argv[1], "r");
-	f2 = fopen(argv[2], "w");
+	if (strcmp(argv[1], "-") == 0)
+		f1 = stdin;
+	else
+		f1 = fopen(argv[1], "r");
+
+	if (f1 == NULL) {
+		perror(argv[1]);
+		exit(1);
+	}
+
+	if (strcmp(argv[2], "-") == 0)
+		f2 = stdout;
+	else
+		f2 = fopen(argv[2], "w");
+
+	if (f2 == NULL) {
+		perror(argv[2]);
+		exit(1);
+	}
 
 	while (!feof(f1)) {
 		len = fread(buf, 1, BSIZE, f1);

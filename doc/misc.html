@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.10 2005-01-28 09:13:46 debug Exp $
+$Id: misc.html,v 1.11 2005-01-28 09:21:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -99,6 +99,12 @@ through an example is good enough:
 				<font color="#2020cf">!  value, depending on <i>type</i> and <i>subtype</i></font>
 
 		<font color="#2020cf">! ncpus(4)</font>
+
+		<b>memory(128)</b>	<font color="#2020cf">!  128 MB memory. This overrides</font>
+				<font color="#2020cf">!  the default amount of memory for</font>
+				<font color="#2020cf">!  this machine type.</font>
+
+		<font color="#2020cf">! random_mem_contents(yes)</font>
 
 		<b>load("netbsd-INSTALL")</b>
 		<b>bootname("netbsd")</b>

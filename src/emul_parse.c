@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.11 2005-01-28 09:13:47 debug Exp $
+ *  $Id: emul_parse.c,v 1.12 2005-01-28 09:21:03 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -198,8 +198,10 @@ static char cur_machine_slow_serial[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
+static char cur_machine_random_mem_contents[10];
 static char cur_machine_force_netboot[10];
 static char cur_machine_ncpus[10];
+static char cur_machine_memory[10];
 #define	MAX_N_LOAD	20
 #define	MAX_LOAD_LEN	4000
 static char *cur_machine_load[MAX_N_LOAD];
@@ -311,8 +313,10 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
+		cur_machine_random_mem_contents[0] = '\0';
 		cur_machine_force_netboot[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
+		cur_machine_memory[0] = '\0';
 		return;
 	}
 
@@ -364,12 +368,6 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 
 /*
  *  parse__machine():
- *
- *  Simple words: name, cpu, type, subtype, load, use_x11, x11_scaledown,
- *                bintrans, disk, bootname, bootarg,
- *		  slow_serial_interrupts_hack_for_linux
- *
- *  TODO: more words?
  */
 static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	int *parsestate, char *word, size_t maxbuflen)
@@ -402,6 +400,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		m->slow_serial_interrupts_hack_for_linux =
 		    parse_on_off(cur_machine_slow_serial);
 
+		if (!cur_machine_random_mem_contents[0])
+			strcpy(cur_machine_random_mem_contents, "no");
+		m->random_mem_contents =
+		    parse_on_off(cur_machine_random_mem_contents);
+
 		if (!cur_machine_bintrans[0])
 			strcpy(cur_machine_bintrans, "no");
 		m->bintrans_enable = m->bintrans_enabled_from_start =
@@ -418,6 +421,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		if (!cur_machine_ncpus[0])
 			strcpy(cur_machine_ncpus, "0");
 		m->ncpus = atoi(cur_machine_ncpus);
+
+		/*  NOTE: Default nr of CPUs is 0:  */
+		if (!cur_machine_memory[0])
+			strcpy(cur_machine_memory, "0");
+		m->physical_ram_in_mb = atoi(cur_machine_memory);
 
 		if (!cur_machine_x11_scaledown[0])
 			m->x11_scaledown = 1;
@@ -463,8 +471,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
 	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
 	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);
+	ACCEPT_SIMPLE_WORD("random_mem_contents", cur_machine_random_mem_contents);
 	ACCEPT_SIMPLE_WORD("force_netboot", cur_machine_force_netboot);
 	ACCEPT_SIMPLE_WORD("ncpus", cur_machine_ncpus);
+	ACCEPT_SIMPLE_WORD("memory", cur_machine_memory);
 
 	if (strcmp(word, "load") == 0) {
 		read_one_word(f, word, maxbuflen,

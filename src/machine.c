@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.303 2005-01-28 09:13:48 debug Exp $
+ *  $Id: machine.c,v 1.304 2005-01-28 09:21:03 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4047,7 +4047,7 @@ void machine_dumpinfo(struct machine *m)
 	if (m->memory_offset_in_mb != 0)
 		debug(" (offset by %i MB)", m->memory_offset_in_mb);
 	if (m->random_mem_contents)
-		debug(", randomized contents at startup");
+		debug(", randomized contents");
 	if (m->dbe_on_nonexistant_memaccess)
 		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");

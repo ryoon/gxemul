@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.172 2004-10-29 09:48:24 debug Exp $
+ *  $Id: cpu.c,v 1.173 2004-11-01 15:04:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -649,8 +649,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				    (long long)(cpu->gpr[rs] + imm));
 		} else
 			break;
-		/*  NOTE: No break here, it is up to the
-			caller to print 'data'.  */
+		/*  NOTE: No break here (if we are running) as it is up
+		    to the caller to print 'data'.  */
 		return;
 	case HI6_J:
 	case HI6_JAL:
@@ -1173,7 +1173,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->emul->instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
-	int i;
+	int i, ninstrs_executed;
 	unsigned char instr[4];
 	uint32_t instrword;
 	uint64_t cached_pc;
@@ -2315,35 +2315,40 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  interrupts!!!  For now: return as if we just
 			 *  executed 1 instruction.
 			 */
+			ninstrs_executed = 1;
 			if (cpu->emul->speed_tricks && cpu->delay_slot &&
 			    cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt &&
 			    cpu->jump_to_self_reg == rs) {
-				if ((int64_t)cpu->gpr[rt] > 1 && (int64_t)cpu->gpr[rt] < 40000
+				if ((int64_t)cpu->gpr[rt] > 1 && (int64_t)cpu->gpr[rt] < 0x70000000
 				    && (imm >= -30000 && imm <= -1)) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
-					while ((int64_t)cpu->gpr[rt] > 0)
+					while ((int64_t)cpu->gpr[rt] > 0 && ninstrs_executed < 1000
+					    && ((int64_t)cpu->gpr[rt] + (int64_t)imm) > 0) {
 						cpu->gpr[rt] += (int64_t)imm;
+						ninstrs_executed += 2;
+					}
 
 					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
 
 					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
-				if ((int64_t)cpu->gpr[rt] > -40000 && (int64_t)cpu->gpr[rt] < -1
+				if ((int64_t)cpu->gpr[rt] > -0x70000000 && (int64_t)cpu->gpr[rt] < -1
 				     && (imm >= 1 && imm <= 30000)) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
-					while ((int64_t)cpu->gpr[rt] < 0)
+					while ((int64_t)cpu->gpr[rt] < 0 && ninstrs_executed < 1000
+					    && ((int64_t)cpu->gpr[rt] + (int64_t)imm) < 0) {
 						cpu->gpr[rt] += (int64_t)imm;
+						ninstrs_executed += 2;
+					}
 
 					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
-
-					/*  TODO: return value, -cpu->gpr[rt]*2;  */
 				}
 			}
 
@@ -2353,7 +2358,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				if (cpu->gpr[rt] & 0x80000000ULL)
 					cpu->gpr[rt] |= 0xffffffff00000000ULL;
 			}
-			return 1;
+			return ninstrs_executed;
 		case HI6_BEQ:
 		case HI6_BNE:
 		case HI6_BGTZ:

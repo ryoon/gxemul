@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.49 2004-11-01 12:23:28 debug Exp $
+ *  $Id: diskimage.c,v 1.50 2004-11-01 15:04:58 debug Exp $
  *
  *  Disk image support.
  *
@@ -411,7 +411,9 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
 		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
-		xferp->data_in[3] = 0x02;	/*  Response data format = SCSI-2  */
+#if 0
+xferp->data_in[3] = 0x02;	/*  Response data format = SCSI-2  */
+#endif
 		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
 xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */

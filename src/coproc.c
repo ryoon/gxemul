@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.78 2004-11-01 09:35:51 debug Exp $
+ *  $Id: coproc.c,v 1.79 2004-11-01 15:04:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1685,8 +1685,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
-exit(1);
-
+#if 1
+	exit(1);
+#else
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
+#endif
 }
 

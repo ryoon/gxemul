@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.288 2004-11-01 12:23:26 debug Exp $
+$Id: HISTORY,v 1.289 2004-11-01 15:08:58 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1100,3 +1100,6 @@ HISTORY of mips64emul
 		so that it in practice changes screen.
 		Running Ultrix with dual- and tripple-head now feels really
 		great.
+20041101(later)	OpenBSD/arc and Linux/Olivetti-M700 don't both work at the
+		same time with the speed-hack stuff. So, from now on, you
+		need to add -J for Linux, and add nothing for openbsd.

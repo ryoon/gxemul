@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.23 2004-10-29 09:48:23 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.24 2004-11-01 15:04:56 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -295,16 +295,10 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
  */
 static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 {
-	int cmd;
+	int cmd = d->reg[PC_CMD];
 
-	switch (d->type) {
-	case PCKBC_8042:
-		cmd = d->reg[PC_CMD];
-		break;
-	case PCKBC_8242:
+	if (d->type == PCKBC_8242)
 		cmd = d->reg[PS2_TXBUF];
-		break;
-	}
 
 	if (d->state == STATE_WAITING_FOR_TRANSLTABLE) {
 		debug("[ pckbc: switching to translation table 0x%02x ]\n",
@@ -355,7 +349,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, code, port_nr = 0;
+	int i, port_nr = 0;
 	struct pckbc_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);

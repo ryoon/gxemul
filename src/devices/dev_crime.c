@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.2 2003-12-29 00:51:21 debug Exp $
+ *  $Id: dev_crime.c,v 1.3 2003-12-30 03:03:21 debug Exp $
  *  
  *  SGI "crime".
  */
@@ -36,6 +36,7 @@
 #include "console.h"
 #include "devices.h"
 
+#include "crimereg.h"
 
 struct crime_data {
 	unsigned char	reg[DEV_CRIME_LENGTH];
@@ -60,10 +61,15 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	else
 		memcpy(data, &d->reg[relative_addr], len);
 
+if ((random() & 0xfff) == 0)
+	d->reg[CRIME_TIME+7] ++;
+
 	switch (relative_addr) {
 	case 0x18:
 	case 0x1c:
 	case 0x34:
+	case CRIME_TIME:
+	case CRIME_TIME+4:
 		/*  don't dump debug info for these  */
 		break;
 	default:

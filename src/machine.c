@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.237 2004-12-14 16:24:10 debug Exp $
+ *  $Id: machine.c,v 1.238 2004-12-14 21:55:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2652,10 +2652,10 @@ Why is this here? TODO
 		/*
 		 *  Common stuff for both SGI and ARC:
 		 */
-		debug("system = 0x%llx\n", (long long)system);
+		debug("ARC system @ 0x%llx\n", (long long)system);
 
 		for (i=0; i<emul->ncpus; i++) {
-			uint64_t cpuaddr, fpu, picache, pdcache, sdcache = 0;
+			uint64_t cpuaddr, fpu=0, picache, pdcache, sdcache=0;
 			int cache_size, cache_line_size;
 			unsigned int jj;
 			char arc_cpu_name[100];
@@ -2674,9 +2674,10 @@ Why is this here? TODO
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
 			    0, 1, 2, i, 0xffffffff, arc_cpu_name, system, NULL, 0);
 
-			/*  TODO: Maybe this shouldn't be here?  */
-			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);
+			/*  TODO: This was in the ARC specs, but it isn't
+			    really used by ARC implementations?  */
+			/*  fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);  */
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
 			if (emul->cache_picache)
@@ -2746,13 +2747,19 @@ Why is this here? TODO
 				    0xffffffff, NULL, cpuaddr, NULL, 0);
 			}
 
-			debug("adding ARC components: cpu%i = 0x%llx, fpu%i"
-			    " = 0x%llx, picache = 0x%llx, pdcache = 0x%llx",
-			    i, (long long)cpuaddr, i, (long long)fpu,
+			debug("ARC cpu%i @ 0x%llx", i, (long long)cpuaddr);
+
+			if (fpu != 0)
+				debug(" (fpu @ 0x%llx)\n", (long long)fpu);
+			else
+				debug("\n");
+
+			debug("    picache @ 0x%llx, pdcache @ 0x%llx\n",
 			    (long long)picache, (long long)pdcache);
+
 			if (emul->cache_secondary >= 12)
-				debug(", sdcache = 0x%llx", (long long)sdcache);
-			debug("\n");
+				debug("    sdcache @ 0x%llx\n",
+				    (long long)sdcache);
 		}
 
 

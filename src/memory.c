@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.128 2004-12-10 00:39:53 debug Exp $
+ *  $Id: memory.c,v 1.129 2004-12-14 21:55:40 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1098,7 +1098,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		exit(1);
 	}
 
-	debug("adding device %i at 0x%016llx: %s\n",
+	debug("adding device %2i at 0x%016llx: %s\n",
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
 	mem->dev_name[mem->n_mmapped_devices] = device_name;

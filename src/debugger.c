@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.8 2004-12-14 21:55:40 debug Exp $
+ *  $Id: debugger.c,v 1.9 2004-12-14 21:57:46 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -557,7 +557,7 @@ static struct cmd cmds[] = {
 	{ "devices", "", 0, debugger_cmd_devices,
 		"print a list of memory-mapped devices" },
 
-	{ "dump", "[addr]", 0, debugger_cmd_dump,
+	{ "dump", "[vaddr]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
 	{ "help", "", 0, debugger_cmd_help,

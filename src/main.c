@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.138 2004-12-14 16:39:16 debug Exp $
+ *  $Id: main.c,v 1.139 2004-12-14 21:55:40 debug Exp $
  */
 
 #include <stdio.h>
@@ -673,6 +673,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (!using_switch_Z && !emul->use_x11)
 		emul->n_gfx_cards = 0;
+
+	emul->bintrans_enabled_from_start = emul->bintrans_enable;
 
 	return 0;
 }

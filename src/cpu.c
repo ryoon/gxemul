@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.203 2004-11-30 11:57:25 debug Exp $
+ *  $Id: cpu.c,v 1.204 2004-11-30 14:15:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3397,9 +3397,14 @@ void cpu_show_cycles(struct emul *emul,
 		if (first_adjustment) {
 			emul->emulated_hz = cur_cycles_per_second;
 			first_adjustment = 0;
-		} else
-			emul->emulated_hz = (31 * emul->emulated_hz +
-			    cur_cycles_per_second) / 32;
+		} else {
+			if (cur_cycles_per_second > emul->emulated_hz)
+				emul->emulated_hz = (63 * emul->emulated_hz +
+				    cur_cycles_per_second) / 64;
+			else
+				emul->emulated_hz = (15 * emul->emulated_hz +
+				    cur_cycles_per_second) / 16;
+		}
 
 		debug("[ updating emulated_hz to %lli Hz ]\n",
 		    (long long)emul->emulated_hz);

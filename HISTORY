@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.337 2004-11-30 12:48:37 debug Exp $
+$Id: HISTORY,v 1.338 2004-11-30 14:15:12 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1208,5 +1208,7 @@ HISTORY of mips64emul
 		diskimage subsystem.
 20041129	Minor updates to the Alpha bintrans backend.
 20041130	Trying to fix the bug which prevents Linux from working
-		with bintrans.
+		with bintrans. It _seems_ to work now. (Pages could in some
+		cases be written to after they were translated, but that
+		has been fixed now.)
 		A couple of other minor fixes.

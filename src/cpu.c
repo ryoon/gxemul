@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.40 2004-03-26 21:42:59 debug Exp $
+ *  $Id: cpu.c,v 1.41 2004-03-27 05:43:01 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2474,8 +2474,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
 
 			cpu->gpr[rd] =
-			    ((cpu->gpr[rs] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
-			    | (cpu->gpr[rt] & 0xffffffff);
+			    ((cpu->gpr[rt] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
+			    | (cpu->gpr[rs] & 0xffffffff);
 		} else {
 			if (!instruction_trace) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",

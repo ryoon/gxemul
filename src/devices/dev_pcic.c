@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.1 2005-03-12 23:38:57 debug Exp $
- *  
- *  PCMCIA controller. (Called "pcic" by NetBSD.)
+ *  $Id: dev_pcic.c,v 1.2 2005-03-13 10:32:13 debug Exp $
  *
- *  TODO
+ *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
+ *
+ *  TODO: Lots of stuff.
  */
 
 #include <stdio.h>
@@ -43,7 +43,8 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "net.h"
+
+#include "i82365reg.h"
 
 
 #define	DEV_PCIC_LENGTH		2
@@ -63,8 +64,12 @@ int dev_pcic_access(struct cpu *cpu, struct memory *mem,
 {
 	struct pcic_data *d = (struct pcic_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	int controller_nr, socket_nr;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	controller_nr = d->regnr & 0x80? 1 : 0;
+	socket_nr = d->regnr & 0x40? 1 : 0;
 
 	switch (relative_addr) {
 	case 0:	/*  Register select:  */
@@ -74,29 +79,34 @@ int dev_pcic_access(struct cpu *cpu, struct memory *mem,
 			odata = d->regnr;
 		break;
 	case 1:	/*  Register access:  */
-		switch (d->regnr) {
-		case 0:		/*  Controller 0 socket A.  */
-			/*  0x82 = "Intel 82365SL Revision 0",
-			    0x83 = Revision 1.  0x00 = not present.  */
-			odata = 0x83;
+		switch (d->regnr & 0x3f) {
+		case PCIC_IDENT:
+			/*  This causes sockets A and B to be present on
+			    controller 0, and only socket A on controller 1.  */
+			if (controller_nr == 1 && socket_nr == 1)
+				odata = 0;
+			else
+				odata = PCIC_IDENT_IFTYPE_MEM_AND_IO
+				    | PCIC_IDENT_REV_I82365SLR1;
 			break;
-		case 0x40:	/*  Controller 0 socket B.  */
-			odata = 0x83;
+#if 0
+/*  TODO: make NetBSD accept card present  */
+		case PCIC_IF_STATUS:
+			odata = PCIC_IF_STATUS_CARDDETECT_PRESENT;
 			break;
-		case 0x80:	/*  Controller 1 socket A.  */
-			odata = 0x83;
-			break;
-		case 0xc0:	/*  Controller 1 socket B.  */
-			odata = 0x00;
-			break;
+#endif
 		default:
 			if (writeflag == MEM_WRITE) {
 				fatal("[ pcic: unimplemented write to "
-				    " (regnr %i), data=0x%02x ]\n",
-				    d->regnr, (int)idata);
+				    "controller %i socket %c, regnr %i: "
+				    "data=0x%02x ]\n", controller_nr,
+				    socket_nr? 'B' : 'A',
+				    d->regnr & 0x3f, (int)idata);
 			} else {
 				fatal("[ pcic: unimplemented read from "
-				    "(regnr %i) ]\n", d->regnr);
+				    "controller %i socket %c, regnr %i ]\n",
+				    controller_nr, socket_nr? 'B' : 'A',
+				    d->regnr & 0x3f);
 			}
 		}
 	}

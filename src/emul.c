@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.172 2005-03-01 06:48:24 debug Exp $
+ *  $Id: emul.c,v 1.173 2005-03-01 09:54:01 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -699,6 +699,29 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			debug("0x%08x", (int)entrypoint);
 		else
 			debug("0x%016llx", (long long)entrypoint);
+		break;
+	case ARCH_URISC:
+		{
+			char tmps[100];
+			unsigned char buf[sizeof(uint64_t)];
+
+			cpu->memory_rw(cpu, m->memory, 0, buf, sizeof(buf),
+			    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+
+			entrypoint = 0;
+			for (i=0; i<cpu->cd.urisc.wordlen/8; i++) {
+				entrypoint <<= 8;
+				if (cpu->byte_order == EMUL_BIG_ENDIAN)
+					entrypoint += buf[i];
+				else
+					entrypoint += buf[cpu->
+					    cd.urisc.wordlen/8 - 1 - i];
+			}
+
+			sprintf(tmps, "0x%%0%illx", cpu->cd.urisc.wordlen / 4);
+			debug(tmps, (long long)entrypoint);
+			cpu->pc = entrypoint;
+		}
 		break;
 	default:
 		debug("0x%016llx", (long long)entrypoint);

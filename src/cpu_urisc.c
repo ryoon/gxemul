@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.3 2005-03-01 09:35:38 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.4 2005-03-01 09:54:01 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -117,9 +117,15 @@ struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cd.urisc.acc_in_mem = 0;
 	cpu->cd.urisc.halt_on_zero = 1;
 
-	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
+	/*  Only show name for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
 		debug("%s", cpu->name);
+		debug(" (%i-bit, ", cpu->cd.urisc.wordlen);
+		debug("%s-endian", cpu->byte_order == EMUL_BIG_ENDIAN?
+		    "big" : "little");
+		if (cpu->cd.urisc.acc_in_mem)
+			debug(", memory-mapped accumulator");
+		debug(")");
 	}
 
 	return cpu;
@@ -131,9 +137,12 @@ struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
  */
 void urisc_cpu_dumpinfo(struct cpu *cpu)
 {
-	debug("\n");
-
-	/*  TODO  */
+	debug(" (%i-bit, ", cpu->cd.urisc.wordlen);
+	debug("%s-endian", cpu->byte_order == EMUL_BIG_ENDIAN?
+	    "big" : "little");
+	if (cpu->cd.urisc.acc_in_mem)
+		debug(", memory-mapped accumulator");
+	debug(")\n");
 }
 
 
@@ -230,7 +239,6 @@ void urisc_cpu_register_match(struct machine *m, char *name,
 	int nbytes = m->cpus[cpunr]->cd.urisc.wordlen / 8;
 
 	/*  CPU number:  */
-
 	/*  TODO  */
 
 	/*  Register name:  */
@@ -270,8 +278,6 @@ void urisc_cpu_register_match(struct machine *m, char *name,
 			*valuep = m->cpus[cpunr]->cd.urisc.acc;
 		*match_register = 1;
 	}
-
-	/*  TODO: _LOTS_ of stuff.  */
 }
 
 

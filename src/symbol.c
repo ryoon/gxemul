@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.5 2004-01-11 16:52:48 debug Exp $
+ *  $Id: symbol.c,v 1.6 2004-06-14 22:48:15 debug Exp $
  *
  *  Address to symbol translation routines.
  */
@@ -79,6 +79,11 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
  *  get_symbol_name():
  *
  *  Return a nicely formated string, if the address was found.
+ *
+ *  NOTE:  This algorithm has linear time complexity, O(n).
+ *  It should _NOT_ be used during fast execution.  It is ok
+ *  however to use this routine when debugging, ie when there
+ *  is a (fatal) error, or when quiet_mode == 0.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
 char *get_symbol_name(uint64_t addr, int *offset)

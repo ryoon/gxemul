@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.159 2004-12-13 02:09:47 debug Exp $
+$Id: index.html,v 1.160 2004-12-13 02:38:46 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -331,9 +331,8 @@ R12000-specific features, it will most likely fail.
 <h3>Which guest OSes are possible to run?</h3>
 
 This table sums up the guest OSes that run well enough to be considered
-working in the emulator in some sence. They can boot from
-some kind of harddisk image and be interacted with similar to a real 
-machine:
+working in the emulator. They can boot from a harddisk image and be
+interacted with similar to a real machine:
 
 <p><br>
  <center>
@@ -350,6 +349,10 @@ machine:
 	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
 	      <td width="20">&nbsp;</td>
 	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
+	    </tr>
+
+	    <tr>
+	      <td height="1"></td>
 	    </tr>
 
 	    <tr>
@@ -383,7 +386,7 @@ machine:
 	    </tr>
 
 	    <tr>
-	      <td valign="top">Redhat&nbsp;Linux&nbsp;7.1<super>*</super></td>
+	      <td valign="top">Redhat&nbsp;Linux<super>*</super></td>
 	      <td></td>
 	      <td valign="top">DECstation</td>
 	      <td></td>
@@ -409,7 +412,7 @@ machine:
 		<td align=center>NetBSD&nbsp;1.6.2/pmax</td>
 		<td align=center>OpenBSD&nbsp;2.8/pmax</td>
 		<td align=center>Ultrix&nbsp;4.5</td>
-		<td align=center>Redhat&nbsp;Linux&nbsp;7.1<super>*</super></td>
+		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
 	      </tr>
 	      <tr>
 		<td height=10>&nbsp;</td>
@@ -424,7 +427,7 @@ machine:
 		<td align=center>NetBSD&nbsp;1.6.2/arc</td>
 		<td align=center>OpenBSD&nbsp;2.3/arc</td>
 		<td align=center>Sprite</td>
-		<td align=center>Debian&nbsp;GNU/Linux&nbsp;3.1<super>*</super></td>
+		<td align=center>Debian&nbsp;GNU/Linux<super>*</super></td>
 	      </tr>
 	    </table>
 	  </center>
@@ -437,12 +440,12 @@ machine:
 <p><br>
 
 <super>*</super> Although Linux runs under DECstation emulation, at the
-time of writing this Linux has no support for the 5000/200's keyboard
-controller, so when the login prompt is reached you cannot interact with 
-the system. Some people are
+time of writing this Linux has no support for keyboards on the 5000/200
+(the specific DECstation model being emulated), so when the login prompt
+is reached you cannot interact with the system. Some people are
 <a href="http://meeting.ffis.de/Oldenburg2004/work.html">working on</a>
-making it work. Running in text-mode (emulated serial console) works
-fine, though, but then you don't get to see the penguin in the corner.
+improving the situation. Running in text-mode (emulated serial console) 
+works fine, though, but then you don't get to see the penguin in the corner.
 
 <p>
 It is non-trivial to get a specific operating system or OS kernel to

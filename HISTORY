@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.214 2004-08-31 23:30:52 debug Exp $
+$Id: HISTORY,v 1.215 2004-09-01 12:23:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -923,3 +923,4 @@ HISTORY of mips64emul
 		regression test is added. (A combination of instructions from
 		the TX79 manual, the GNU assembler, and the MIPS64 manual).
 		Hopefully I haven't missed too many.
+		Adding a section on regression testing to doc/technical.html.

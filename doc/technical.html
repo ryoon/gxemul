@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.20 2004-08-24 10:45:20 debug Exp $
+$Id: technical.html,v 1.21 2004-09-01 12:23:58 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -65,6 +65,7 @@ Documentation</a>.
   <li><a href="#speed">Speed</a>
   <li><a href="#net">Networking</a>
   <li><a href="#devices">Emulation of hardware devices</a>
+  <li><a href="#regtest">Regression tests</a>
   <p>
   <li><a href="#feedback">Feedback</a>
 </ul>
@@ -473,9 +474,76 @@ by the caller (in src/memory.c) as a value of -1.
 
 
 
+
+<p><br>
+<a name="regtest"></a>
+<h3>Regression tests</h3>
+
+In order to make sure that the emulator actually works like it is supposed 
+to, it must be tested. For this purpose, there is a simple regression 
+testing framework in the <b>tests/</b> directory.
+<p>
+
+<i>NOTE:  The regression testing framework is basically just a skeleton so 
+far.
+Regression tests are very good to have. However, the fact that complete
+operating systems can run in the emulator indicate that the emulation is
+probably not too incorrect. This makes it less of a priority to write 
+regression tests.</i>
+
+<p>
+To run all the regression tests, type <b>make regtest</b>. Each assembly 
+language file matching the pattern <b>test_*.S</b> will be compiled and 
+linked into a 64-bit MIPS ELF (using a gcc cross compiler), and run in the 
+emulator. If everything goes well, you should see something like this:
+
+<pre>
+	$ make regtest
+	cd tests; make run_tests; cd ..
+	gcc33 -Wall -fomit-frame-pointer -fmove-all-movables -fpeephole -O2 
+		-mcpu=ev5 -I/usr/X11R6/include -lm -L/usr/X11R6/lib -lX11  do_tests.c
+		-o do_tests
+	do_tests.c: In function `main':
+	do_tests.c:173: warning: unused variable `s'
+	/var/tmp//ccFOupvD.o: In function `do_tests':
+	/var/tmp//ccFOupvD.o(.text+0x3a8): warning: tmpnam() possibly used
+		unsafely; consider using mkstemp()
+	mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips64 
+		-mabi=64 test_common.c -c -o test_common.o
+	./do_tests "mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns 
+		-mips64 -mabi=64" "mips64-unknown-elf-as -mabi=64 -mips64" 
+		"mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e main 
+		--oformat=elf64-bigmips" "../mips64emul"
+
+	Starting tests:
+	  test_addu.S
+	  test_daddu.S
+	  test_dummy.S
+	  test_clo_clz.S
+	  test_dclo_dclz.S
+
+	Done. (5 tests done)
+	    PASS:      5
+	    FAIL:      0
+
+	All tests OK
+</pre>
+
+<p>
+Each test writes output to stdout, and there is a <b>test_*.good</b> for 
+each <b>.S</b> file which contains the wanted output. If the actual output 
+matches the <b>.good</b> file, then the test passes, otherwise it fails.
+
+<p>
+Read <b>tests/README</b> for more information.
+
+
+
+
+
 <p><br>
 <a name="feedback"></a>
-<h3>Feedback:</h3>
+<h3>Feedback</h3>
 
 If you have comments, don't hesitate to mail me at
 md1gavan at mdstud.chalmers.se.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.497 2005-01-18 14:44:12 debug Exp $
+$Id: HISTORY,v 1.498 2005-01-19 07:46:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1511,3 +1511,5 @@ HISTORY of mips64emul
 		inet_aton() to inet_pton() (as suggested by Nils Weller).
 		Also adding -lnsl on Solaris, if required by inet_pton().
 		Lots of minor R4100-related updates.
+20050119	Correcting the R4100 config register in src/coproc.c, and
+		a minor update to dev_vr41xx.

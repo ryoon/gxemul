@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.147 2005-01-18 14:44:12 debug Exp $
+ *  $Id: coproc.c,v 1.148 2005-01-19 07:46:51 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -65,6 +65,11 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct coproc *c;
+#ifdef ENABLE_MIPS16
+	const int m16 = 1;
+#else
+	const int m16 = 0;
+#endif
 	int IB, DB, SB, IC, DC, SC;
 
 	c = malloc(sizeof(struct coproc));
@@ -134,7 +139,6 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R4000:	/*  according to the R4000 manual  */
-		case MIPS_R4100:
 		case MIPS_R4600:
 			IB = cpu->emul->cache_picache_linesize - 4;
 			IB = IB < 0? 0 : (IB > 1? 1 : IB);
@@ -168,6 +172,33 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    | (   0 <<  3)	/*  CU: todo  */
 			    | (   0 <<  0)	/*  kseg0 coherency algorithm
 							(TODO)  */
+			    ;
+			break;
+		case MIPS_R4100:	/*  According to the VR4131 manual:  */
+			IB = cpu->emul->cache_picache_linesize - 4;
+			IB = IB < 0? 0 : (IB > 1? 1 : IB);
+			DB = cpu->emul->cache_pdcache_linesize - 4;
+			DB = DB < 0? 0 : (DB > 1? 1 : DB);
+			IC = cpu->emul->cache_picache - 10;
+			IC = IC < 0? 0 : (IC > 7? 7 : IC);
+			DC = cpu->emul->cache_pdcache - 10;
+			DC = DC < 0? 0 : (DC > 7? 7 : DC);
+			c->reg[COP0_CONFIG] =
+			      (   0 << 31)	/*  IS: Instruction Streaming bit  */
+			    | (0x01 << 28)	/*  EC: system clock divisor, 0x01 = 2  */
+			    | (0x00 << 24)	/*  EP  */
+			    | (0x00 << 23)	/*  AD: Accelerate data mode (0=VR4000-compatible)  */
+			    | ( m16 << 20)	/*  M16: MIPS16 support  */
+			    | (   1 << 17)	/*  '1'  */
+			    | (0x00 << 16)	/*  BP: 'Branch forecast' (0 = enabled)  */
+			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
+			    | (   2 << 13)	/*  '2' hardcoded on VR4131  */
+			    | (   1 << 12)	/*  CS: Cache size mode (1 on VR4131)  */
+			    | (  IC <<  9)	/*  IC: I-cache = 2^(10+IC) bytes  (0 = 1KB, 4=16K)  */
+			    | (  DC <<  6)	/*  DC: D-cache = 2^(10+DC) bytes  (0 = 1KB, 4=16K)  */
+			    | (  IB <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
+			    | (  DB <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
+			    | (   0 <<  0)	/*  kseg0 coherency algorithm (TODO)  */
 			    ;
 			break;
 		case MIPS_R5000:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.8 2005-01-12 07:42:38 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.9 2005-01-19 07:46:50 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -44,6 +44,8 @@
 
 
 #define	DEV_VR41XX_TICKSHIFT		14
+
+/*  #define debug fatal  */
 
 
 /*
@@ -81,6 +83,12 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	/*  BCU:  0x00 .. 0x1c  */
 	case BCUREVID_REG_W:	/*  0x010  */
+	case BCU81REVID_REG_W:	/*  0x014  */
+		/*
+		 *  TODO?  Linux seems to read 0x14. The lowest bits are
+		 *  a divisor for PClock, bits 8 and up seem to be a
+		 *  divisor for VTClock (relative to PClock?)...
+		 */
 		switch (d->cpumodel) {
 		case 4131:	revision = BCUREVID_RID_4131; break;
 		case 4122:	revision = BCUREVID_RID_4122; break;
@@ -90,15 +98,13 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		case 4101:	revision = BCUREVID_RID_4101; break;
 		case 4181:	revision = BCUREVID_RID_4181; break;
 		}
-		odata = (revision << BCUREVID_RIDSHFT);
+		odata = (revision << BCUREVID_RIDSHFT) | 0x020c;
 		break;
-	case 0x14:
+	case BCU81CLKSPEED_REG_W:	/*  0x018  */
 		/*
-		 *  TODO?  Linux seems to read this. The lowest bits are
-		 *  a divisor for PClock, bits 8 and up seem to be a
-		 *  divisor for VTClock (relative to PClock?)...
+		 *  TODO: Implement this for ALL cpu types:
 		 */
-		odata = 0x0000020c;
+		odata = BCUCLKSPEED_DIVT4 << BCUCLKSPEED_DIVTSHFT;
 		break;
 
 	/*  DMAAU:  0x20 .. 0x3c  */
@@ -147,6 +153,8 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		/*  Ack. timer interrupts?  */
 		cpu_interrupt_ack(cpu, 8 + 3);
 		break;
+
+	/*  0x180: possibly a "KIU", see NetBSD sources for more info  */
 
 	default:
 		if (writeflag == MEM_WRITE)

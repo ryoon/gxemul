@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.12 2005-01-16 09:21:05 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.13 2005-01-16 09:38:43 debug Exp $  */
 /*  This file has been modified from the NetBSD version, the additions
     are mostly guesses for 64-bit SGI stuff.  */
 
@@ -129,20 +129,21 @@ struct arcbios_spb {
  */
 struct arcbios_spb_64 {
 	uint64_t	SPBSignature;
-/*	uint32_t	SPBLength;  */
+	uint64_t	SPBLength;
 	uint16_t	Version;
 	uint16_t	Revision;
-	uint32_t	RestartBlock;			/*  was void * in netbsd  */
-	uint32_t	DebugBlock;			/*  was void *  */
-	uint32_t	GEVector;			/*  was void *  */
-	uint32_t	UTLBMissVector;			/*  was void *  */
-	uint32_t	FirmwareVectorLength;
+	uint32_t	dummy;
+	uint64_t	RestartBlock;			/*  was void * in netbsd  */
+	uint64_t	DebugBlock;			/*  was void *  */
+	uint64_t	GEVector;			/*  was void *  */
+	uint64_t	UTLBMissVector;			/*  was void *  */
+	uint64_t	FirmwareVectorLength;
 	uint64_t	FirmwareVector;			/*  was void *  */
-	uint32_t	PrivateVectorLength;
+	uint64_t	PrivateVectorLength;
 	uint64_t	PrivateVector;			/*  was void *  */
-	uint32_t	AdapterCount;
-	uint32_t	AdapterType;
-	uint32_t	AdapterVectorLength;
+	uint64_t	AdapterCount;
+	uint64_t	AdapterType;
+	uint64_t	AdapterVectorLength;
 	uint64_t	AdapterVector;			/*  was void *  */
 };
 

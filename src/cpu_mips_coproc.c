@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.3 2005-02-11 09:29:50 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.4 2005-02-13 20:27:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2192,6 +2192,12 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		}
 		fatal("[ pc=0x%016llx cop%i\t0x%08x (coprocessor not "
 		    "available)\n", (long long)cpu->cd.mips.pc, cpnr, (int)function);
+		return;
+	}
+
+	/*  No FPU?  */
+	if (cpnr == 1 && (cpu->cd.mips.flags & NOFPU))
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.17 2005-02-11 09:29:50 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.18 2005-02-13 20:27:11 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -207,6 +207,30 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 
 
 /*
+ *  reg_access_msr():
+ */
+static void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
+{
+	if (valuep == NULL) {
+		fatal("reg_access_msr(): NULL\n");
+		return;
+	}
+
+	if (writeflag)
+		cpu->cd.ppc.msr = *valuep;
+
+	/*  TODO: Is the little-endian bit writable?  */
+
+	cpu->cd.ppc.msr &= ~PPC_MSR_LE;
+	if (cpu->byte_order != EMUL_BIG_ENDIAN)
+		cpu->cd.ppc.msr |= PPC_MSR_LE;
+
+	if (!writeflag)
+		*valuep = cpu->cd.ppc.msr;
+}
+
+
+/*
  *  ppc_cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
@@ -217,7 +241,7 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	char *symbol;
-	uint64_t offset;
+	uint64_t offset, tmp;
 	int i, x = cpu->cpu_id;
 	int bits32 = cpu->cd.ppc.bits == 32;
 
@@ -267,6 +291,10 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("\n");
 			}
 		}
+
+		/*  Other special registers:  */
+		reg_access_msr(cpu, &tmp, 0);
+		debug("cpu%i: msr = 0x%016llx\n", x, (long long)tmp);
 	}
 
 	if (coprocs) {
@@ -376,7 +404,7 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc;
+	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc, l_bit;
 	uint64_t offset;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -478,6 +506,16 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug(" (WARNING! reserved value)");
 		}
 		break;
+	case PPC_HI6_19:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_19_ISYNC:
+			debug("%s", power? "ics" : "isync");
+			break;
+		default:
+			debug("unimplemented hi6_19, xo = 0x%x", xo);
+		}
+		break;
 	case PPC_HI6_ORI:
 	case PPC_HI6_ORIS:
 	case PPC_HI6_XORI:
@@ -528,6 +566,18 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("unimplemented hi6_30, xo = 0x%x", xo);
 		}
 		break;
+	case PPC_HI6_31:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_31_MTMSR:
+			rs = (iword >> 21) & 31;
+			l_bit = (iword >> 16) & 1;
+			debug("mtmsr\tr%i,%i", rs, l_bit);
+			break;
+		default:
+			debug("unimplemented hi6_31, xo = 0x%x", xo);
+		}
+		break;
 	default:
 		/*  TODO  */
 		debug("unimplemented hi6 = 0x%02x", hi6);
@@ -551,7 +601,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	uint32_t iword;
 	unsigned char buf[4];
-	int r, hi6, rt, rs, ra, xo, lev, sh, me, rc, imm;
+	int r, hi6, rt, rs, ra, xo, lev, sh, me, rc, imm, l_bit;
 	uint64_t tmp;
 	uint64_t cached_pc;
 
@@ -642,7 +692,29 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.ppc.gpr[ra] = tmp;
 			break;
 		default:
-			debug("unimplemented hi6_30, xo = 0x%x", xo);
+			fatal("[ unimplemented PPC hi6_30, xo = 0x%04x, "
+			    "pc = 0x%016llx ]\n",
+			    xo, (long long) (cpu->cd.ppc.pc_last));
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case PPC_HI6_31:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_31_MTMSR:
+			rs = (iword >> 21) & 31;
+			l_bit = (iword >> 16) & 1;
+			/*  TODO: the l_bit  */
+			reg_access_msr(cpu, &cpu->cd.ppc.gpr[rs], 1);
+			break;
+		default:
+			fatal("[ unimplemented PPC hi6_31, xo = 0x%04x, "
+			    "pc = 0x%016llx ]\n",
+			    xo, (long long) (cpu->cd.ppc.pc_last));
+			cpu->running = 0;
+			return 0;
 		}
 		break;
 

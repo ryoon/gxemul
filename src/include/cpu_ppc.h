@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.11 2005-02-09 14:53:19 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.12 2005-02-13 20:27:10 debug Exp $
  */
 
 #include "misc.h"
@@ -81,14 +81,40 @@ struct ppc_cpu {
 	uint64_t	gpr[PPC_NGPRS];	/*  General Purpose Registers  */
 	uint64_t	xer;		/*  FP Exception Register  */
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
+
+	uint64_t	ssr0;		/*  Machine status save/restore
+					    register 0  */
+	uint64_t	ssr1;		/*  Machine status save/restore
+					    register 1  */
+	uint64_t	msr;		/*  Machine state register  */
 };
+
+
+/*  Machine status word bits: (according to Book 3)  */
+#define	PPC_MSR_SF	(1ULL << 63)	/*  Sixty-Four-Bit Mode  */
+/*  bits 62..61 are reserved  */
+#define	PPC_MSR_HV	(1ULL << 60)	/*  Hypervisor  */
+/*  bits 59..17  are reserved  */
+#define	PPC_MSR_ILE	(1 << 16)	/*  Interrupt Little-Endian Mode  */
+#define	PPC_MSR_EE	(1 << 15)	/*  External Interrupt Enable  */
+#define	PPC_MSR_PR	(1 << 14)	/*  Problem State  */
+#define	PPC_MSR_FP	(1 << 13)	/*  Floating-Point Available  */
+#define	PPC_MSR_ME	(1 << 12)	/*  Machine Check Interrupt Enable  */
+#define	PPC_MSR_FE0	(1 << 11)	/*  Floating-Point Exception Mode 0  */
+#define	PPC_MSR_SE	(1 << 10)	/*  Single-Step Trace Enable  */
+#define	PPC_MSR_BE	(1 << 9)	/*  Branch Trace Enable  */
+#define	PPC_MSR_FE1	(1 << 8)	/*  Floating-Point Exception Mode 1  */
+#define	PPC_MSR_IR	(1 << 5)	/*  Instruction Relocate  */
+#define	PPC_MSR_DR	(1 << 4)	/*  Data Relocate  */
+#define	PPC_MSR_PMM	(1 << 2)	/*  Performance Monitor Mark  */
+#define	PPC_MSR_RI	(1 << 1)	/*  Recoverable Interrupt  */
+#define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
 
 
 /*  cpu_ppc.c:  */
 struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
 void ppc_cpu_show_full_statistics(struct machine *m);
-void ppc_cpu_tlbdump(struct machine *m, int x, int rawflag);
 void ppc_cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);
 void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
@@ -96,9 +122,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t addr, int bintrans);
 int ppc_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int ppc_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
-void ppc_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-        /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
-        int vaddr_asid, int x_64);
 int ppc_cpu_run(struct emul *emul, struct machine *machine);
 void ppc_cpu_dumpinfo(struct cpu *cpu);
 void ppc_cpu_list_available_types(void);

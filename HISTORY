@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.583 2005-02-13 18:36:33 debug Exp $
+$Id: HISTORY,v 1.584 2005-02-13 20:27:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1663,3 +1663,4 @@ HISTORY of mips64emul
 		and dev_mp, better hello.c, and some other things).
 20050213	Some minor fixes: documentation, 80 columns in some source
 		files, better configure script options.
+		Adding some more PPC instructions.

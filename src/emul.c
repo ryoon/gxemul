@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.168 2005-02-22 06:43:11 debug Exp $
+ *  $Id: emul.c,v 1.169 2005-02-22 12:05:19 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -188,7 +188,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 
 		bootblock_pc &= 0x0fffffffULL;
 		bootblock_pc |= 0xffffffffa0000000ULL;
-		cpu->cd.mips.pc = bootblock_pc;
+		cpu->pc = bootblock_pc;
 
 		debug("DEC boot: loadaddr=0x%08x, pc=0x%08x",
 		    (int)bootblock_loadaddr, (int)bootblock_pc);
@@ -319,13 +319,13 @@ struct machine *emul_add_machine(struct emul *e, char *name)
 static void add_arc_components(struct machine *m)
 {
 	struct cpu *cpu = m->cpus[m->bootstrap_cpu];
-	uint64_t start = cpu->cd.mips.pc & 0x1fffffff;
+	uint64_t start = cpu->pc & 0x1fffffff;
 	uint64_t len = 0xc00000 - start;
 	struct diskimage *d;
 	uint64_t scsicontroller, scsidevice, scsidisk;
 
-	if ((cpu->cd.mips.pc >> 60) != 0xf) {
-		start = cpu->cd.mips.pc & 0xffffffffffULL;
+	if ((cpu->pc >> 60) != 0xf) {
+		start = cpu->pc & 0xffffffffffULL;
 		len = 0xc00000 - start;
 	}
 
@@ -585,13 +585,13 @@ void emul_machine_setup(struct machine *m, int n_load,
 		if (byte_order != NO_BYTE_ORDER_OVERRIDE)
 			cpu->byte_order = byte_order;
 
+		cpu->pc = entrypoint;
+
 		switch (m->arch) {
 		case ARCH_MIPS:
-			cpu->cd.mips.pc = entrypoint;
-
-			if ((cpu->cd.mips.pc >> 32) == 0
-			    && (cpu->cd.mips.pc & 0x80000000ULL))
-				cpu->cd.mips.pc |= 0xffffffff00000000ULL;
+			if ((cpu->pc >> 32) == 0
+			    && (cpu->pc & 0x80000000ULL))
+				cpu->pc |= 0xffffffff00000000ULL;
 
 			cpu->cd.mips.gpr[MIPS_GPR_GP] = gp;
 
@@ -601,10 +601,8 @@ void emul_machine_setup(struct machine *m, int n_load,
 				    0xffffffff00000000ULL;
 			break;
 		case ARCH_PPC:
-			cpu->cd.ppc.pc = entrypoint;
 			break;
 		case ARCH_SPARC:
-			cpu->cd.sparc.pc = entrypoint;
 			break;
 		default:
 			fatal("emul_machine_setup(): Internal error: "
@@ -674,14 +672,14 @@ void emul_machine_setup(struct machine *m, int n_load,
 		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
 		    cpu->cd.mips.cpu_type.isa_level == 32) {
 			debug("0x%08x", (int)m->cpus[
-			    m->bootstrap_cpu]->cd.mips.pc);
+			    m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
 				debug(" (gp=0x%08x)", (int)m->cpus[
 				    m->bootstrap_cpu]->cd.mips.gpr[
 				    MIPS_GPR_GP]);
 		} else {
 			debug("0x%016llx", (long long)m->cpus[
-			    m->bootstrap_cpu]->cd.mips.pc);
+			    m->bootstrap_cpu]->pc);
 			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
 				debug(" (gp=0x%016llx)", (long long)
 				    cpu->cd.mips.gpr[MIPS_GPR_GP]);

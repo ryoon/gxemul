@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.56 2005-02-18 07:22:31 debug Exp $
+ *  $Id: dec_prom.c,v 1.57 2005-02-22 12:05:19 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -236,8 +236,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 int decstation_prom_emul(struct cpu *cpu)
 {
 	int i, j, ch, argreg, argdata;
-	int vector = cpu->cd.mips.pc & 0xfff;
-	int callback = (cpu->cd.mips.pc & 0xf000)? 1 : 0;
+	int vector = cpu->pc & 0xfff;
+	int callback = (cpu->pc & 0xf000)? 1 : 0;
 	unsigned char buf[100];
 	unsigned char ch1, ch2, ch3;
 	uint64_t tmpaddr, slot_base = 0x10000000, slot_size = 0;

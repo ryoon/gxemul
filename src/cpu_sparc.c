@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.7 2005-02-19 13:00:37 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.8 2005-02-22 12:05:19 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -151,9 +151,9 @@ void sparc_cpu_register_match(struct machine *m, char *name,
 	/*  Register name:  */
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
-			m->cpus[cpunr]->cd.sparc.pc = *valuep;
+			m->cpus[cpunr]->pc = *valuep;
 		} else
-			*valuep = m->cpus[cpunr]->cd.sparc.pc;
+			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	}
 

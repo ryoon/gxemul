@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.72 2005-02-02 20:12:45 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.73 2005-02-22 12:05:19 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -56,7 +56,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 
 
 #define ofs_i		(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-#define ofs_pc		(((size_t)&dummy_cpu.cd.mips.pc) - ((size_t)&dummy_cpu))
+#define ofs_pc		(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 #define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
 
 
@@ -311,7 +311,7 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 	if (!bintrans_32bit_only) {
 		int ofs;
 		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
-		ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 		ofs += 4;
 		*a++ = 0x83; *a++ = 0x96;
 		*a++ = ofs & 255;
@@ -347,7 +347,7 @@ static void load_pc_into_eax_edx(unsigned char **addrp)
 	} else
 #endif
  {
-		int ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
+		int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
 		ofs += 4;
 		*a++ = 0x8b; *a++ = 0x96;
@@ -364,7 +364,7 @@ static void load_pc_into_eax_edx(unsigned char **addrp)
 static void store_eax_edx_into_pc(unsigned char **addrp)
 {
 	unsigned char *a;
-	int ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
+	int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 	a = *addrp;
 
 	/*  89 c7                   mov    %eax,%edi  */

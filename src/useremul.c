@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.41 2005-02-19 13:18:31 debug Exp $
+ *  $Id: useremul.c,v 1.42 2005-02-22 12:05:19 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -156,7 +156,7 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 	case ARCH_MIPS:
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
 		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
+		cpu->cd.mips.gpr[25] = cpu->pc;		/*  reg. t9  */
 
 		/*  The userland stack:  */
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
@@ -225,7 +225,7 @@ void useremul__ultrix_setup(struct cpu *cpu, int argc, char **host_argv)
 
 	/*  TODO:  is this correct?  */
 	cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-	cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
+	cpu->cd.mips.gpr[25] = cpu->pc;		/*  reg. t9  */
 
 	/*  The userland stack:  */
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;

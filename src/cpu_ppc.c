@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.46 2005-02-22 07:15:58 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.47 2005-02-22 12:05:19 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -252,13 +252,13 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->cd.ppc.pc, &offset);
+		    cpu->pc, &offset);
 
 		debug("cpu%i: pc  = 0x", x);
 		if (bits32)
-			debug("%08x", x, (int)cpu->cd.ppc.pc);
+			debug("%08x", (int)cpu->pc);
 		else
-			debug("%016llx", x, (long long)cpu->cd.ppc.pc);
+			debug("%016llx", (long long)cpu->pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
 		debug("cpu%i: lr  = 0x", x);
@@ -345,9 +345,9 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 	/*  Register name:  */
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
-			m->cpus[cpunr]->cd.ppc.pc = *valuep;
+			m->cpus[cpunr]->pc = *valuep;
 		} else
-			*valuep = m->cpus[cpunr]->cd.ppc.pc;
+			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	} else if (strcasecmp(name, "msr") == 0) {
 		if (writeflag)
@@ -425,12 +425,11 @@ void ppc_cpu_register_match(struct machine *m, char *name,
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->cd.ppc.pc should be the address of the
- *  instruction.
+ *  If running is 1, cpu->pc should be the address of the instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
  *  register contents) will not be shown, and addr will be used instead of
- *  cpu->cd.ppc.pc for relative addresses.
+ *  cpu->pc for relative addresses.
  */
 int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
@@ -443,7 +442,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int power = cpu->cd.ppc.mode == MODE_POWER;
 
 	if (running)
-		dumpaddr = cpu->cd.ppc.pc;
+		dumpaddr = cpu->pc;
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
@@ -1016,7 +1015,7 @@ disasm_ret_nonewline:
  */
 static void show_trace(struct cpu *cpu)
 {
-	uint64_t offset, addr = cpu->cd.ppc.pc;
+	uint64_t offset, addr = cpu->pc;
 	int x, n_args_to_print;
 	char strbuf[60];
 	char *symbol;
@@ -1135,7 +1134,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	uint64_t tmp=0, tmp2, addr;
 	uint64_t cached_pc;
 
-	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
+	cached_pc = cpu->cd.ppc.pc_last = cpu->pc & ~3;
 
 	/*  Check PC against breakpoints:  */
 	if (!single_step)
@@ -1170,7 +1169,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	if (cpu->machine->instruction_trace)
 		ppc_cpu_disassemble_instr(cpu, buf, 1, 0, 0);
 
-	cpu->cd.ppc.pc += sizeof(iword);
+	cpu->pc += sizeof(iword);
 	cached_pc += sizeof(iword);
 
 	hi6 = iword >> 26;
@@ -1359,9 +1358,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
 
 		if (lk_bit)
-			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+			cpu->cd.ppc.lr = cpu->pc;
 		if (ctr_ok && cond_ok)
-			cpu->cd.ppc.pc = addr & ~3;
+			cpu->pc = addr & ~3;
 		if (lk_bit && cpu->machine->show_trace_tree)
 			show_trace(cpu);
 		break;
@@ -1392,9 +1391,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			addr &= 0xffffffff;
 
 		if (lk_bit)
-			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+			cpu->cd.ppc.lr = cpu->pc;
 
-		cpu->cd.ppc.pc = addr;
+		cpu->pc = addr;
 
 		if (lk_bit && cpu->machine->show_trace_tree)
 			show_trace(cpu);
@@ -1432,11 +1431,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cond_ok |= ( ((bo >> 3) & 1) ==
 			    ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
 			if (lk_bit)
-				cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+				cpu->cd.ppc.lr = cpu->pc;
 			if (ctr_ok && cond_ok) {
-				cpu->cd.ppc.pc = addr & ~3;
+				cpu->pc = addr & ~3;
 				if (cpu->cd.ppc.bits == 32)
-					cpu->cd.ppc.pc &= 0xffffffff;
+					cpu->pc &= 0xffffffff;
 			}
 			if (lk_bit && cpu->machine->show_trace_tree)
 				show_trace(cpu);

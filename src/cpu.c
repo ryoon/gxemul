@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.285 2005-02-18 06:01:17 debug Exp $
+ *  $Id: cpu.c,v 1.286 2005-02-22 12:05:19 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -343,7 +343,7 @@ void cpu_show_cycles(struct machine *machine,
 	    < 3 || machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.
 	    isa_level == 32)
 		is_32bit = 1;
-	pc = machine->cpus[machine->bootstrap_cpu]->cd.mips.pc;
+	pc = machine->cpus[machine->bootstrap_cpu]->pc;
 	instrs_per_cycle = machine->cpus[machine->bootstrap_cpu]->
 	    cd.mips.cpu_type.instrs_per_cycle;
 

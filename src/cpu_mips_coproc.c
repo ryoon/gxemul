@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.6 2005-02-21 21:54:40 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.7 2005-02-22 12:05:19 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1758,7 +1758,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 
 		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("%s\t%i,0x%016llx\n", instr_mnem, cc,
-			    (long long) (cpu->cd.mips.pc + (imm << 2)));
+			    (long long) (cpu->pc + (imm << 2)));
 		if (unassemble_only)
 			return 1;
 
@@ -1781,8 +1781,7 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 
 		if (cond_true) {
 			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.pc +
-			    (imm << 2);
+			cpu->cd.mips.delay_jmpaddr = cpu->pc + (imm << 2);
 		} else {
 			/*  "likely":  */
 			if (nd) {
@@ -2131,8 +2130,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	 *  question.)
 	 */
 
-	if (cpu->cd.mips.pc < (uint64_t)0xffffffff80000000ULL ||
-	    cpu->cd.mips.pc >= (uint64_t)0xffffffffc0000000ULL)
+	if (cpu->pc < (uint64_t)0xffffffff80000000ULL ||
+	    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
 		cpu->cd.mips.pc_last_virtual_page =
 		    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
@@ -2319,11 +2318,11 @@ void coproc_eret(struct cpu *cpu)
 		oldmode = 1;
 
 	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_ERL) {
-		cpu->cd.mips.pc = cpu->cd.mips.pc_last =
+		cpu->pc = cpu->cd.mips.pc_last =
 		    cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_ERL;
 	} else {
-		cpu->cd.mips.pc = cpu->cd.mips.pc_last =
+		cpu->pc = cpu->cd.mips.pc_last =
 		    cpu->cd.mips.coproc[0]->reg[COP0_EPC];
 		cpu->cd.mips.delay_slot = 0;
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
@@ -2369,8 +2368,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			return;
 		}
 		fatal("[ pc=0x%016llx cop%i\t0x%08x (coprocessor not "
-		    "available)\n", (long long)cpu->cd.mips.pc, cpnr,
-		    (int)function);
+		    "available)\n", (long long)cpu->pc, cpnr, (int)function);
 		return;
 	}
 
@@ -2524,7 +2522,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		 *  TODO: This instruction is undefined in a delay slot.
 		 */
 
-		cpu->cd.mips.pc = cpu->cd.mips.pc_last = cp->reg[COP0_DEPC];
+		cpu->pc = cpu->cd.mips.pc_last = cp->reg[COP0_DEPC];
 		cpu->cd.mips.delay_slot = 0;
 		cp->reg[COP0_STATUS] &= ~STATUS_EXL;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.151 2005-02-09 20:36:08 debug Exp $
+ *  $Id: bintrans.c,v 1.152 2005-02-22 12:05:18 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -783,30 +783,30 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 run_it:
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
-	    (long long)cpu->cd.mips.pc, (long long)cpu->gpr[31]); */
+	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
 
-	enter_chunks_into_tables(cpu, cpu->cd.mips.pc, &tep->chunk[0]);
+	enter_chunks_into_tables(cpu, cpu->pc, &tep->chunk[0]);
 
 	old_n_executed = cpu->cd.mips.bintrans_instructions_executed;
 
 	bintrans_runchunk(cpu, f);
 
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
-	    (long long)cpu->cd.mips.pc, (long long)cpu->gpr[31]);  */
+	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
 	if (!cpu->cd.mips.delay_slot && !cpu->cd.mips.nullify_next &&
 	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
-	    && (cpu->cd.mips.pc & 3) == 0
+	    && (cpu->pc & 3) == 0
 	    && cpu->cd.mips.bintrans_instructions_executed != old_n_executed) {
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
 		if (cpu->mem->bintrans_32bit_only ||
-		    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0 ||
-		    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
+		    (cpu->pc & 0xffffffff80000000ULL) == 0 ||
+		    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
 			/*  32-bit special case:  */
-			a = (cpu->cd.mips.pc >> 22) & 0x3ff;
-			b = (cpu->cd.mips.pc >> 12) & 0x3ff;
+			a = (cpu->pc >> 22) & 0x3ff;
+			b = (cpu->pc >> 12) & 0x3ff;
 
 			/*  TODO: There is a bug here; if caches are disabled, and
 			    for some reason the code jumps to a different page, then
@@ -818,7 +818,7 @@ run_it:
 
 			tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0[a];
 			if (tbl1->haddr_entry[b] != NULL) {
-				paddr = tbl1->paddr_entry[b] | (cpu->cd.mips.pc & 0xfff);
+				paddr = tbl1->paddr_entry[b] | (cpu->pc & 0xfff);
 				ok = 1;
 			}
 		}
@@ -826,12 +826,12 @@ run_it:
 		/*  General case, or if the special case above failed:  */
 		/*  (This may cause exceptions.)  */
 		if (!ok) {
-			uint64_t old_pc = cpu->cd.mips.pc_last = cpu->cd.mips.pc;
-			ok = cpu->translate_address(cpu, cpu->cd.mips.pc, &paddr, FLAG_INSTR);
+			uint64_t old_pc = cpu->cd.mips.pc_last = cpu->pc;
+			ok = cpu->translate_address(cpu, cpu->pc, &paddr, FLAG_INSTR);
 
-			if (!ok && old_pc != cpu->cd.mips.pc) {
+			if (!ok && old_pc != cpu->pc) {
 				/*  pc is something like ...0080 or ...0000 or so.  */
-				paddr = cpu->cd.mips.pc & 0xfff;
+				paddr = cpu->pc & 0xfff;
 				ok = 1;
 
 				cpu->cd.mips.pc_last_host_4k_page = NULL;
@@ -860,7 +860,7 @@ run_it:
 
 #if 1
 			/*  We have no translation.  */
-			if ((cpu->cd.mips.pc & 0xfff00000) == 0xbfc00000 &&
+			if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
 			    cpu->machine->prom_emulation)
 				return cpu->cd.mips.bintrans_instructions_executed;
 
@@ -868,18 +868,18 @@ run_it:
 			    in the main cpu_run_instr() lower:  */
 			/*  TODO: This doesn't seem to work with R4000 etc?  */
 			if (cpu->mem->bintrans_32bit_only) {
-			    /* || (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0 ||
-			    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
+			    /* || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
+			    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
 				int ok = 1;
 				/*  32-bit special case:  */
-				a = (cpu->cd.mips.pc >> 22) & 0x3ff;
-				b = (cpu->cd.mips.pc >> 12) & 0x3ff;
+				a = (cpu->pc >> 22) & 0x3ff;
+				b = (cpu->pc >> 12) & 0x3ff;
 				if (cpu->cd.mips.vaddr_to_hostaddr_table0 !=
 				    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel)
 					ok = 0;
 				tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 				if (ok && tbl1->haddr_entry[b] != NULL) {
-					cpu->cd.mips.pc_last_virtual_page = cpu->cd.mips.pc & ~0xfff;
+					cpu->cd.mips.pc_last_virtual_page = cpu->pc & ~0xfff;
 					cpu->cd.mips.pc_last_physical_page = paddr & ~0xfff;
 					cpu->cd.mips.pc_last_host_4k_page = (unsigned char *)
 					    (((size_t)tbl1->haddr_entry[b]) & ~1);

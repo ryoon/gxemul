@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.94 2005-02-21 22:20:58 debug Exp $
+ *  $Id: arcbios.c,v 1.95 2005-02-22 12:05:18 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1135,7 +1135,7 @@ static int arcbios_getfileinformation(struct cpu *cpu)
  */
 void arcbios_private_emul(struct cpu *cpu)
 {
-	int vector = cpu->cd.mips.pc & 0xfff;
+	int vector = cpu->pc & 0xfff;
 
 	switch (vector) {
 	case 0x04:
@@ -1186,13 +1186,13 @@ void arcbios_private_emul(struct cpu *cpu)
  */
 int arcbios_emul(struct cpu *cpu)
 {
-	int vector = cpu->cd.mips.pc & 0xfff;
+	int vector = cpu->pc & 0xfff;
 	int i, j, handle;
 	unsigned char ch2;
 	unsigned char buf[40];
 
-	if (cpu->cd.mips.pc >= ARC_PRIVATE_ENTRIES &&
-	    cpu->cd.mips.pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
+	if (cpu->pc >= ARC_PRIVATE_ENTRIES &&
+	    cpu->pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
 		arcbios_private_emul(cpu);
 		return 1;
 	}
@@ -1201,7 +1201,7 @@ int arcbios_emul(struct cpu *cpu)
 		vector /= 2;
 
 	/*  Special case for reboot by jumping to 0xbfc00000:  */
-	if (vector == 0 && (cpu->cd.mips.pc & 0xffffffffULL) == 0xbfc00000ULL)
+	if (vector == 0 && (cpu->pc & 0xffffffffULL) == 0xbfc00000ULL)
 		vector = 0x18;
 
 	switch (vector) {

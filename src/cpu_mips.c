@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.28 2005-02-19 18:39:07 debug Exp $
+ *  $Id: cpu_mips.c,v 1.29 2005-02-22 12:05:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -591,7 +591,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	/*  Register name:  */
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
-			m->cpus[cpunr]->cd.mips.pc = *valuep;
+			m->cpus[cpunr]->pc = *valuep;
 			if (m->cpus[cpunr]->cd.mips.delay_slot) {
 				printf("NOTE: Clearing the delay slot"
 				    " flag! (It was set before.)\n");
@@ -603,7 +603,7 @@ void mips_cpu_register_match(struct machine *m, char *name,
 				m->cpus[cpunr]->cd.mips.nullify_next = 0;
 			}
 		} else
-			*valuep = m->cpus[cpunr]->cd.mips.pc;
+			*valuep = m->cpus[cpunr]->pc;
 		*match_register = 1;
 	} else if (strcasecmp(name, "hi") == 0) {
 		if (writeflag)
@@ -695,12 +695,11 @@ static const char *cpu_flags(struct cpu *cpu)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->cd.mips.pc should be the address of the
- *  instruction.
+ *  If running is 1, cpu->pc should be the address of the instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
  *  register contents) will not be shown, and addr will be used instead of
- *  cpu->cd.mips.pc for relative addresses.
+ *  cpu->pc for relative addresses.
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
@@ -715,7 +714,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	char *symbol;
 
 	if (running)
-		dumpaddr = cpu->cd.mips.pc;
+		dumpaddr = cpu->pc;
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
@@ -1264,13 +1263,13 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	if (gprs) {
 		/*  Special registers (pc, hi/lo) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->cd.mips.pc, &offset);
+		    cpu->pc, &offset);
 
 		if (bits32)
-			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->cd.mips.pc);
+			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->pc);
 		else
 			debug("cpu%i:    pc = %016llx",
-			    cpu->cpu_id, (long long)cpu->cd.mips.pc);
+			    cpu->cpu_id, (long long)cpu->pc);
 
 		debug("    <%s>\n", symbol != NULL? symbol :
 		    " no symbol ");
@@ -1714,9 +1713,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  Userspace tlb, vs others:  */
 		if (tlb && !(vaddr & 0x80000000ULL) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
-			cpu->cd.mips.pc = base + 0x000;
+			cpu->pc = base + 0x000;
 		else
-			cpu->cd.mips.pc = base + 0x080;
+			cpu->pc = base + 0x080;
 		break;
 	default:
 		/*
@@ -1733,15 +1732,15 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    exccode == EXCEPTION_TLBS) &&
 		    !(reg[COP0_STATUS] & STATUS_EXL)) {
 			if (x_64)
-				cpu->cd.mips.pc = base + 0x080;
+				cpu->pc = base + 0x080;
 			else
-				cpu->cd.mips.pc = base + 0x000;
+				cpu->pc = base + 0x000;
 		} else {
 			if (exccode == EXCEPTION_INT &&
 			    (reg[COP0_CAUSE] & CAUSE_IV))
-				cpu->cd.mips.pc = base + 0x200;
+				cpu->pc = base + 0x200;
 			else
-				cpu->cd.mips.pc = base + 0x180;
+				cpu->pc = base + 0x180;
 		}
 	}
 
@@ -1784,8 +1783,8 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *
  *  Execute one instruction on a cpu.
  *
- *  If we are in a delay slot, set cpu->cd.mips.pc to
- *  cpu->cd.mips.delay_jmpaddr after the instruction is executed.
+ *  If we are in a delay slot, set cpu->pc to cpu->cd.mips.delay_jmpaddr
+ *  after the instruction is executed.
  *
  *  Return value is the number of instructions executed during this call,
  *  0 if no instruction was executed.
@@ -1860,14 +1859,14 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #endif
 
 	/*  Cache the program counter in a local variable:  */
-	cached_pc = cpu->cd.mips.pc;
+	cached_pc = cpu->pc;
 
 	/*  Hardwire the zero register to 0:  */
 	cpu->cd.mips.gpr[MIPS_GPR_ZERO] = 0;
 
 	if (cpu->cd.mips.delay_slot) {
 		if (cpu->cd.mips.delay_slot == DELAYED) {
-			cached_pc = cpu->cd.mips.pc = cpu->cd.mips.delay_jmpaddr;
+			cached_pc = cpu->pc = cpu->cd.mips.delay_jmpaddr;
 			cpu->cd.mips.delay_slot = NOT_DELAYED;
 		} else /* if (cpu->cd.mips.delay_slot == TO_BE_DELAYED) */ {
 			/*  next instruction will be delayed  */
@@ -1982,7 +1981,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!res)
 				return 1000;
 
-			cpu->cd.mips.pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
+			cpu->pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
 			cpu->cd.mips.delay_slot = NOT_DELAYED;
 
@@ -2012,10 +2011,10 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			warning = 1;
 		}
 
-		if (cpu->cd.mips.pc != (int64_t)(int32_t)cpu->cd.mips.pc) {
+		if (cpu->pc != (int64_t)(int32_t)cpu->pc) {
 			fatal("\nWARNING: pc was not sign-extended correctly"
-			    " (%016llx)\n\n", (long long)cpu->cd.mips.pc);
-			cpu->cd.mips.pc = (int64_t)(int32_t)cpu->cd.mips.pc;
+			    " (%016llx)\n\n", (long long)cpu->pc);
+			cpu->pc = (int64_t)(int32_t)cpu->pc;
 			warning = 1;
 		}
 
@@ -2077,7 +2076,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (warning) {
-			fatal("Halting. pc = %016llx\n", (long long)cpu->cd.mips.pc);
+			fatal("Halting. pc = %016llx\n", (long long)cpu->pc);
 			cpu->running = 0;
 		}
 	}
@@ -2200,14 +2199,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  TODO: bintrans like in 32-bit mode?  */
 
 		/*  Advance the program counter:  */
-		cpu->cd.mips.pc += sizeof(instr16) + mips16_offset;
-		cached_pc = cpu->cd.mips.pc;
+		cpu->pc += sizeof(instr16) + mips16_offset;
+		cached_pc = cpu->pc;
 
 		if (instruction_trace_cached) {
 			uint64_t offset;
-			char *symbol = get_symbol_name(
-			    &cpu->machine->symbol_context, cpu->cd.mips.pc_last ^ 1,
-			    &offset);
+			char *symbol = get_symbol_name(&cpu->machine->
+			    symbol_context, cpu->cd.mips.pc_last ^ 1, &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
 
@@ -2260,7 +2258,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (res >= 0) {
 				/*  debug("BINTRANS translation + hit,"
 				    " pc = %016llx\n", (long long)cached_pc);  */
-				if (res > 0 || cpu->cd.mips.pc != cached_pc) {
+				if (res > 0 || cpu->pc != cached_pc) {
 					if (instruction_trace_cached)
 						mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					if (res & BINTRANS_DONT_RUN_NEXT)
@@ -2291,8 +2289,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 
 		/*  Advance the program counter:  */
-		cpu->cd.mips.pc += sizeof(instr);
-		cached_pc = cpu->cd.mips.pc;
+		cpu->pc += sizeof(instr);
+		cached_pc = cpu->pc;
 
 		/*
 		 *  TODO:  If Reverse-endian is set in the status cop0 register
@@ -3613,7 +3611,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  Store:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8];
-				uint64_t oldpc = cpu->cd.mips.pc;
+				uint64_t oldpc = cpu->pc;
 				/*
 				 *  NOTE (this is ugly): The memory_rw()
 				 *  call generates a TLBL exception, if there
@@ -3625,7 +3623,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    aligned_addr, &aligned_word[0], wlen,
 				    MEM_READ, CACHE_DATA);
 				if (!ok) {
-					if (cpu->cd.mips.pc != oldpc) {
+					if (cpu->pc != oldpc) {
 						cp0->reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
 						cp0->reg[COP0_CAUSE] |= (EXCEPTION_TLBS << CAUSE_EXCCODE_SHIFT);
 					}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.23 2005-02-18 06:32:39 debug Exp $
+ *  $Id: dev_mp.c,v 1.24 2005-02-22 12:05:16 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -82,21 +82,28 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_STARTUPCPU:
-		if (cpu->machine->arch != ARCH_MIPS) {
-			fatal("dev_mp_access(): DEV_MP_STARTUPCPU:"
-			    " not for !MIPS yet\n");
+		which_cpu = idata;
+		d->cpus[which_cpu]->pc = d->startup_addr;
+		switch (cpu->machine->arch) {
+		case ARCH_MIPS:
+			d->cpus[which_cpu]->cd.mips.gpr[MIPS_GPR_SP] =
+			    d->stack_addr;
+			break;
+		case ARCH_PPC:
+			d->cpus[which_cpu]->cd.ppc.gpr[1] = d->stack_addr;
+			break;
+		default:
+			fatal("dev_mp(): DEV_MP_STARTUPCPU: not for this"
+			    " arch yet!\n");
 			exit(1);
 		}
-		which_cpu = idata;
-		d->cpus[which_cpu]->cd.mips.pc = d->startup_addr;
-		d->cpus[which_cpu]->cd.mips.gpr[MIPS_GPR_SP] = d->stack_addr;
 		d->cpus[which_cpu]->running = 1;
 		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", 
 		    which_cpu, (long long)d->startup_addr);  */
 		break;
 
 	case DEV_MP_STARTUPADDR:
-		if ((idata >> 32) == 0 && (idata & 0x80000000ULL))
+		if (len==4 && (idata >> 32) == 0 && (idata & 0x80000000ULL))
 			idata |= 0xffffffff00000000ULL;
 		d->startup_addr = idata;
 		break;
@@ -123,7 +130,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_STARTUPSTACK:
-		if ((idata >> 32) == 0 && (idata & 0x80000000ULL))
+		if (len == 4 && (idata >> 32) == 0 && (idata & 0x80000000ULL))
 			idata |= 0xffffffff00000000ULL;
 		d->stack_addr = idata;
 		break;

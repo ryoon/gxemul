@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.7 2005-02-18 08:07:59 debug Exp $
+ *  $Id: memory_rw.c,v 1.8 2005-02-22 12:05:19 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -379,13 +379,10 @@ have_paddr:
 				}
 
 				if (cpu->machine->single_step_on_bad_addr) {
-					uint64_t pc = 0;
-#ifdef MEM_MIPS
-					pc = cpu->cd.mips.pc;
-#endif
 					fatal("[ unimplemented access to "
 					    "0x%016llx, pc = 0x%016llx ]\n",
-					    (long long)paddr, (long long)pc);
+					    (long long)paddr,
+					    (long long)cpu->pc);
 					single_step = 1;
 				}
 			}

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.19 2005-02-22 06:43:10 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.20 2005-02-22 12:05:17 debug Exp $
  */
 
 #include "misc.h"
@@ -76,7 +76,6 @@ struct ppc_cpu {
 
 	int		trace_tree_depth;
 
-	uint64_t	pc;		/*  Program Counter (TODO: CIA?)  */
 	uint64_t	pc_last;
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.37 2005-01-17 09:55:58 debug Exp $
+ *  $Id: debugger.c,v 1.38 2005-01-17 10:05:02 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -743,7 +743,11 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_opcodestats(struct emul *emul, char *cmd_line)
 {
-	cpu_show_full_statistics(emul);
+	if (!emul->show_opcode_statistics) {
+		printf("You need to start the emulator "
+		    "with -s, if you want to gather statistics.\n");
+	} else
+		cpu_show_full_statistics(emul);
 }
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.12 2003-12-30 03:06:42 debug Exp $
+ *  $Id: cpu.c,v 1.13 2004-01-05 03:26:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -602,7 +602,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem;
 	int cond, likely, and_link;
-	int dir, is_left, reg_ofs, reg_dir;		/*  for unaligned load/store  */
+	uint64_t dir, is_left, reg_ofs, reg_dir;	/*  for unaligned load/store  */
 	uint64_t tmpvalue, tmpaddr;
 
 	int cpnr;					/*  coprocessor nr  */
@@ -797,7 +797,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		}
 	} else
 #endif
-		{
+	    {
 		/*  32-bit instruction word:  */
 		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 			return 0;
@@ -1143,6 +1143,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
 		case SPECIAL_DMULT:
+		case SPECIAL_DMULTU:
 		case SPECIAL_DIV:
 		case SPECIAL_DIVU:
 		case SPECIAL_DDIV:
@@ -1168,27 +1169,19 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 #if 0
 			if (cpu->mflo_delay > 0 && (
-			    special6 == SPECIAL_DDIV ||
-			    special6 == SPECIAL_DDIVU ||
-			    special6 == SPECIAL_DIV ||
-			    special6 == SPECIAL_DIVU ||
-			    special6 == SPECIAL_DMULT ||
-/*			    special6 == SPECIAL_DMULTU ||  */
-			    special6 == SPECIAL_MTLO ||
-			    special6 == SPECIAL_MULT
+			    special6 == SPECIAL_DDIV ||   special6 == SPECIAL_DDIVU ||
+			    special6 == SPECIAL_DIV ||    special6 == SPECIAL_DIVU ||
+			    special6 == SPECIAL_DMULT ||  special6 == SPECIAL_DMULTU ||
+			    special6 == SPECIAL_MTLO ||   special6 == SPECIAL_MULT
 			    || special6 == SPECIAL_MULTU
 			    ) )
 				debug("warning: instruction modifying LO too early after mflo!\n");
 
 			if (cpu->mfhi_delay > 0 && (
-			    special6 == SPECIAL_DDIV ||
-			    special6 == SPECIAL_DDIVU ||
-			    special6 == SPECIAL_DIV ||
-			    special6 == SPECIAL_DIVU ||
-			    special6 == SPECIAL_DMULT ||
-/*			    special6 == SPECIAL_DMULTU ||  */
-			    special6 == SPECIAL_MTHI ||
-			    special6 == SPECIAL_MULT
+			    special6 == SPECIAL_DDIV ||  special6 == SPECIAL_DDIVU ||
+			    special6 == SPECIAL_DIV ||   special6 == SPECIAL_DIVU ||
+			    special6 == SPECIAL_DMULT || special6 == SPECIAL_DMULTU ||
+			    special6 == SPECIAL_MTHI ||  special6 == SPECIAL_MULT
 			    || special6 == SPECIAL_MULTU
 			    ) )
 				debug("warning: instruction modifying HI too early after mfhi!\n");
@@ -1210,6 +1203,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				if (special6 == SPECIAL_MULT)	instr_mnem = "mult";
 				if (special6 == SPECIAL_MULTU)	instr_mnem = "multu";
 				if (special6 == SPECIAL_DMULT)	instr_mnem = "dmult";
+				if (special6 == SPECIAL_DMULTU)	instr_mnem = "dmultu";
 				if (special6 == SPECIAL_DIV)	instr_mnem = "div";
 				if (special6 == SPECIAL_DIVU)	instr_mnem = "divu";
 				if (special6 == SPECIAL_DDIV)	instr_mnem = "ddiv";
@@ -1298,7 +1292,12 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 					cpu->hi |= 0xffffffff00000000;
 				break;
 			}
-			if (special6 == SPECIAL_DMULT) {
+			/*
+			 *  TODO:  I'm too tired to think now.  DMULT is probably
+			 *  correct, but is DMULTU?  (Unsigned 64x64 multiply.)
+			 *  Or, hm, perhaps it is dmult which is incorrect.
+			 */
+			if (special6 == SPECIAL_DMULT || special6 == SPECIAL_DMULTU) {
 				/*  64x64 = 128 bit multiplication:  SLOW!!!  TODO  */
 				uint64_t i, low_add, high_add;
 
@@ -1563,6 +1562,8 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			if (hi6 == HI6_LLD)	instr_mnem = "lld";
 			if (hi6 == HI6_LWL)	instr_mnem = "lwl";
 			if (hi6 == HI6_LWR)	instr_mnem = "lwr";
+			if (hi6 == HI6_LDL)	instr_mnem = "ldl";
+			if (hi6 == HI6_LDR)	instr_mnem = "ldr";
 			if (hi6 == HI6_SB)	instr_mnem = "sb";
 			if (hi6 == HI6_SH)	instr_mnem = "sh";
 			if (hi6 == HI6_SW)	instr_mnem = "sw";
@@ -1574,6 +1575,8 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			if (hi6 == HI6_SWC3)	instr_mnem = "swc3";
 			if (hi6 == HI6_SWL)	instr_mnem = "swl";
 			if (hi6 == HI6_SWR)	instr_mnem = "swr";
+			if (hi6 == HI6_SDL)	instr_mnem = "sdl";
+			if (hi6 == HI6_SDR)	instr_mnem = "sdr";
 			dataflag = 0;
 			if (instr_mnem != NULL) {
 				int offset;
@@ -1977,16 +1980,21 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 				if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
 					break;
 
-				/*  debug("unaligned byte at %016llx\n", tmpaddr);  */
+				/*  debug("unaligned byte at %016llx, reg_ofs=%i reg=0x%016llx\n",
+				    tmpaddr, reg_ofs, (long long)result_value);  */
 
 				/*  Load or store one byte:  */
 				if (st) {
 					databyte = (result_value >> (reg_ofs * 8)) & 255;
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
+					/*  if (instruction_trace && dataflag)
+						debug("%02x ", databyte);  */
 				} else {
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
-					result_value &= ~(0xff << (reg_ofs * 8));
-					result_value |= databyte << (reg_ofs * 8);
+					/*  if (instruction_trace && dataflag)
+						debug("%02x ", databyte);  */
+					result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
+					result_value |= (uint64_t)databyte << (reg_ofs * 8);
 				}
 
 				/*  Return immediately if exception.  */
@@ -2000,10 +2008,22 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 				cpu->gpr[rt] = result_value;
 
 			/*  Sign extend for 32-bit load lefts:  */
-			if (!st && signd) {
+			if (!st && signd && wlen == 4) {
 				cpu->gpr[rt] &= 0xffffffff;
 				if (cpu->gpr[rt] & 0x80000000)
 					cpu->gpr[rt] |= 0xffffffff00000000;
+			}
+
+			if (instruction_trace && dataflag) {
+				char *t;
+				switch (wlen) {
+				case 2:		t = "0x%04llx"; break;
+				case 4:		t = "0x%08llx"; break;
+				case 8:		t = "0x%016llx"; break;
+				default:	t = "0x%02llx";
+				}
+				debug(t, (long long)cpu->gpr[rt]);
+				debug("]\n");
 			}
 
 			break;

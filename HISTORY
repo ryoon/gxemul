@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.61 2004-04-06 02:31:06 debug Exp $
+$Id: HISTORY,v 1.62 2004-04-06 09:11:15 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -430,3 +430,6 @@ HISTORY of mips64emul
 20040402	Progress on the asc SCSI controller.
 20040406	Hack to allow ./configure, make to work on HP-UX B.11.00
 		on HPPA-RISC, gcc 3.3.2. (Does not work with HP's cc.)
+		More progress on the asc SCSI controller. Fixing INQUIRY,
+		adding READ_CAPACITY, adding READ. Works a bit with NetBSD
+		and some (but not all) Ultrix kernels, on DECstation type 2.

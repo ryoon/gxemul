@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.27 2004-01-24 21:09:40 debug Exp $
+ *  $Id: devices.h,v 1.28 2004-02-19 10:25:49 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -177,7 +177,7 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_le.c:  */
-#define	DEV_LE_LENGTH			0x0000000000000100
+#define	DEV_LE_LENGTH			0x1c0100
 int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
 

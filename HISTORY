@@ -265,3 +265,12 @@ HISTORY of mips64emul
 		incomplete.
 		SGI userland is now reached, but interaction is broken
 		(due to the buggy ns16550).
+20031229	Adding some more instructions: teq, dsllv
+		Adding a Nintendo 64 emulation mode (skeleton).
+		Adding R4300 and R12000 to the cpu list.
+20031230	Adding bltzal, bltzall, bgezal, bgezall (not really
+		tested yet).
+		Fixing the 16550 serial controller device (by not
+		supporting fifo, so in fact it emulates a 16450
+		instead).  This causes NetBSD/sgimips to run nicely
+		into userland, sysinst, and so on.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.397 2005-04-02 23:02:17 debug Exp $
+ *  $Id: machine.c,v 1.398 2005-04-03 00:04:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2237,6 +2237,26 @@ void machine_setup(struct machine *machine)
 		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
 		store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
 
+		/*  Special case for the Agenda VR3:  */
+		if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
+			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
+
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
+
+			if (machine->use_x11)
+				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
+				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
+				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
+				    "init=/sbin/restore_defaults");
+			else
+				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
+				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
+				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
+				    "console=ttyS0,115200 "
+				    "init=/sbin/restore_defaults");
+		}
+
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
@@ -2252,11 +2272,6 @@ void machine_setup(struct machine *machine)
 		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		if (hpcmips_fb_addr != 0) {
-			if (!machine->use_x11)
-				fprintf(stderr, "\nWARNING! Emulating this "
-				    "machine type without X11 is pretty "
-				    "meaningless. Continuing anyway.\n");
-
 			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
 			    hpcmips_fb_xsize, hpcmips_fb_ysize,
 			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,

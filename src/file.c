@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.81 2005-03-30 06:45:21 debug Exp $
+ *  $Id: file.c,v 1.82 2005-04-03 00:04:45 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -837,6 +837,7 @@ static void file_load_srec(struct machine *m, struct memory *mem,
  *  Loads a raw binary into emulated memory. The filename should be
  *  of the following form:     loadaddress:filename
  *  or    loadaddress:skiplen:filename
+ *  or    loadaddress:skiplen:pc:filename
  */
 static void file_load_raw(struct machine *m, struct memory *mem,
 	char *filename, uint64_t *entrypointp)
@@ -854,6 +855,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	}
 
 	entry = strtoull(filename, NULL, 0);
+	vaddr = entry;
 	p2 = p+1;
 
 	/*  A second value? That's the optional skip value  */
@@ -861,16 +863,20 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	if (p != NULL) {
 		skip = strtoull(p2, NULL, 0);
 		p = p+1;
+		/*  A third value? That's the initial pc:  */
+		if (strchr(p, ':') != NULL) {
+			entry = strtoull(p, NULL, 0);
+			p = strchr(p, ':') + 1;
+		}
 	} else
 		p = p2;
 
-	f = fopen(p, "r");
+	f = fopen(strrchr(filename, ':')+1, "r");
 	if (f == NULL) {
 		perror(p);
 		exit(1);
 	}
 
-	vaddr = entry;
 	fseek(f, skip, SEEK_SET);
 
 	/*  Load file contents:  */

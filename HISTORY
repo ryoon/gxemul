@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.667 2005-04-02 23:02:14 debug Exp $
+$Id: HISTORY,v 1.668 2005-04-03 00:04:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1792,3 +1792,8 @@ Changelog for GXemul:
 		kernel image, but not much success yet.
 		Changing BIFB_D16_FFFF -> BIFB_D16_0000 for the hpcmips 
 		framebuffers, causing NetBSD to boot with correct colors.
+		New syntax for loading raw files: loadaddr:skiplen:
+		initialpc:filename. (This is necessary to boot the Linux VR3
+		kernels.)
+		The Linux VR3 kernel boots in both serial console mode and
+		using the framebuffer, but it panics relatively early.

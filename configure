@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.78 2005-01-09 03:41:10 debug Exp $
+#  $Id: configure,v 1.79 2005-01-09 06:06:58 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -507,15 +507,27 @@ else
 
 	#  UltraSPARC:
 	if [ z"`uname -m`" = zsun4u ]; then
-		printf "#define SPARCV9\n" >> config.h
-		printf "#define BINTRANS\n" >> config.h
-		printf "sparcv9\n"
-		BINTRANS=YES
-	else
-		if [ z"`uname -m`" = zsparc64 ]; then
+		if [ z$SPARCEXPERIMENTAL = z ]; then
+			echo "no"
+			printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
+			printf "enable experimental bintrans. (It isn't really working yet.)\n"
+		else
 			printf "#define SPARCV9\n" >> config.h
 			printf "#define BINTRANS\n" >> config.h
 			printf "sparcv9\n"
+		fi
+		BINTRANS=YES
+	else
+		if [ z"`uname -m`" = zsparc64 ]; then
+			if [ z$SPARCEXPERIMENTAL = z ]; then
+				echo "no"
+				printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
+				printf "enable experimental bintrans. (It isn't really working yet.)\n"
+			else
+				printf "#define SPARCV9\n" >> config.h
+				printf "#define BINTRANS\n" >> config.h
+				printf "sparcv9\n"
+			fi
 			BINTRANS=YES
 		fi
 	fi

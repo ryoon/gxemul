@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.397 2004-12-15 03:35:58 debug Exp $
+$Id: HISTORY,v 1.398 2004-12-15 05:27:31 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1344,3 +1344,5 @@ HISTORY of mips64emul
 		state function for the bt459 device.
 		Implementing yet another variant of the SLOWSERIALINTERRUPTS
 		stuff.
+		Implementing more of the different exception offsets (taking
+		CAUSE_IV and STATUS_BEV into account).

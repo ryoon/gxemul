@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.1 2004-12-06 13:15:05 debug Exp $
+ *  $Id: cop0.h,v 1.2 2004-12-15 05:27:33 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -123,6 +123,8 @@
 #define	   CAUSE_BD		    0x80000000UL	/*  branch delay flag  */
 #define	   CAUSE_CE_MASK	    0x30000000		/*  which coprocessor  */
 #define	   CAUSE_CE_SHIFT	    28
+#define	   CAUSE_IV		    0x00800000UL	/*  interrupt vector at offset 0x200 instead of 0x180  */
+#define	   CAUSE_WP		    0x00400000UL	/*  watch exception ...  */
 #define	   CAUSE_IP_MASK	    0xff00		/*  interrupt pending  */
 #define	   CAUSE_IP_SHIFT	    8
 #define    CAUSE_EXCCODE_MASK	    0x7c		/*  exception code  */
@@ -187,9 +189,14 @@
 #define	EXCEPTION_TR		13	/*  Trap exception  */
 #define	EXCEPTION_VCEI		14	/*  Virtual Coherency Exception, Instruction  */
 #define	EXCEPTION_FPE		15	/*  Floating point exception  */
-/*  16..22: Unused  */
+/*  16..17: Available for "implementation dependant use"  */
+#define	EXCEPTION_C2E		18	/*  MIPS64 C2E (precise coprocessor 2 exception)  */
+/*  19..21: Reserved  */
+#define	EXCEPTION_MDMX		22	/*  MIPS64 MDMX unusable  */
 #define	EXCEPTION_WATCH		23	/*  Reference to WatchHi/WatchLo address  */
-/*  24..30: Unused  */
+#define	EXCEPTION_MCHECK	24	/*  MIPS64 Machine Check  */
+/*  25..29: Reserved  */
+#define	EXCEPTION_CACHEERR	30	/*  MIPS64 Cache Error  */
 #define	EXCEPTION_VCED		31	/*  Virtual Coherency Exception, Data  */
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.126 2004-12-14 16:24:10 debug Exp $
+ *  $Id: coproc.c,v 1.127 2004-12-15 05:27:34 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -88,6 +88,12 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		if (cpu->emul->userland_emul)
 			c->reg[COP0_STATUS] |=
 			    ((uint32_t)0xf << STATUS_CU_SHIFT);
+
+		/*  Hm. Enable coprocessors 0 and 1 even if we're not just
+		    emulating userland? TODO: Think about this.  */
+		if (cpu->emul->prom_emulation)
+			c->reg[COP0_STATUS] |=
+			    ((uint32_t)0x3 << STATUS_CU_SHIFT);
 
 		c->reg[COP0_COMPARE] = (uint64_t) -1;
 

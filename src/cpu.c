@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.218 2004-12-14 04:27:07 debug Exp $
+ *  $Id: cpu.c,v 1.219 2004-12-15 05:27:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1047,6 +1047,7 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
+	uint64_t base;
 	uint64_t *reg = &cpu->coproc[0]->reg[0];
 	int exc_model = cpu->cpu_type.exc_model;
 
@@ -1190,23 +1191,46 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	cpu->delay_slot = NOT_DELAYED;
 	cpu->nullify_next = 0;
 
-	if (exc_model == EXC3K) {
+	/*  TODO: This is true for MIPS64, but how about others?  */
+	if (reg[COP0_STATUS] & STATUS_BEV)
+		base = 0xffffffffbfc00200ULL;
+	else
+		base = 0xffffffff80000000ULL;
+
+	switch (exc_model) {
+	case EXC3K:
 		/*  Userspace tlb, vs others:  */
 		if (tlb && !(vaddr & 0x80000000ULL) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
-			cpu->pc = 0xffffffff80000000ULL;
+			cpu->pc = base + 0x000;
 		else
-			cpu->pc = 0xffffffff80000080ULL;
-	} else {
-		/*  R4000:  */
-		if (tlb && (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS)
-		    && !(reg[COP0_STATUS] & STATUS_EXL)) {
+			cpu->pc = base + 0x080;
+		break;
+	default:
+		/*
+		 *  These offsets are according to the MIPS64 manual, but
+		 *  should work with R4000 and the rest too (I hope).
+		 *
+		 *  0x000  TLB refill, if EXL=0
+		 *  0x080  64-bit XTLB refill, if EXL=0
+		 *  0x100  cache error  (not implemented yet)
+		 *  0x180  general exception
+		 *  0x200  interrupt (if CAUSE_IV is set)
+		 */
+		if (tlb && (exccode == EXCEPTION_TLBL ||
+		    exccode == EXCEPTION_TLBS) &&
+		    !(reg[COP0_STATUS] & STATUS_EXL)) {
 			if (x_64)
-				cpu->pc = 0xffffffff80000080ULL;
+				cpu->pc = base + 0x080;
 			else
-				cpu->pc = 0xffffffff80000000ULL;
-		} else
-			cpu->pc = 0xffffffff80000180ULL;
+				cpu->pc = base + 0x000;
+		} else {
+			if (exccode == EXCEPTION_INT &&
+			    (reg[COP0_CAUSE] & CAUSE_IV))
+				cpu->pc = base + 0x200;
+			else
+				cpu->pc = base + 0x180;
+		}
 	}
 
 	if (exc_model == EXC3K) {

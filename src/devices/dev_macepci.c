@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_macepci.c,v 1.5 2004-01-06 06:47:00 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -36,9 +36,10 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
-
+#include "bus_pci.h"
 
 struct macepci_data {
+	struct pci_data *pci_data;
 	uint32_t	reg[DEV_MACEPCI_LENGTH / 4];
 };
 
@@ -52,7 +53,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
 	uint64_t idata = 0, odata=0;
-	int regnr, i;
+	int regnr, i, res = 1;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);
@@ -80,8 +81,10 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
+			res = bus_pci_access(cpu, mem, relative_addr, &idata, writeflag, d->pci_data);
 		} else {
-			odata = 0;
+			res = bus_pci_access(cpu, mem, relative_addr, &odata, writeflag, d->pci_data);
+			/*  odata = 0;  */
 		}
 		break;
 	default:
@@ -95,7 +98,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
-	return 1;
+	return res;
 }
 
 
@@ -110,6 +113,8 @@ void dev_macepci_init(struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct macepci_data));
+
+	d->pci_data = bus_pci_init(mem);
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH, dev_macepci_access, (void *)d);
 }

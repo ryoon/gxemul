@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.5 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_gt.c,v 1.6 2004-01-06 06:47:00 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -37,6 +37,8 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
+#include "bus_pci.h"
+
 
 #define	TICK_STEPS_SHIFT	16
 
@@ -44,21 +46,8 @@ struct gt_data {
 	int	reg[8];
 	int	irqnr;
 
-	int	pci_addr;
+	struct pci_data *pci_data;
 };
-
-
-#define	PCI_VENDOR_GALILEO			0x11ab
-#define	PCI_PRODUCT_GALILEO_GT64011		0x4146
-
-#define	PCI_VENDOR_DEC				0x1011
-#define	PCI_PRODUCT_DEC_21142			0x0019
-
-#define	PCI_VENDOR_SYMBIOS			0x1000
-#define	PCI_PRODUCT_SYMBIOS_860			0x0006
-
-#define	PCI_VENDOR_VIATECH			0x1106
-#define	PCI_PRODUCT_VIATECH_VT82C586_ISA	0x0586
 
 
 /*
@@ -89,7 +78,6 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	case 0xc18:
 		if (writeflag == MEM_WRITE) {
 			debug("[ gt write to  0xc18: data = 0x%08lx ]\n", (long)idata);
-			d->pci_addr = idata;
 			return 1;
 		} else {
 			odata = 0xffffffff;	/*  ???  interrupt something...  */
@@ -98,66 +86,11 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		}
 		break;
 	case 0xcf8:	/*  PCI ADDR  */
-		if (writeflag == MEM_WRITE) {
-			debug("[ gt write to  PCI ADDR: data = 0x%08lx ]\n", (long)idata);
-			d->pci_addr = idata;
-			return 1;
-		} else {
-			debug("[ gt read from PCI ADDR (data = 0x%08lx) ]\n", (long)d->pci_addr);
-			odata = d->pci_addr;
-		}
-		break;
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ gt write to PCI DATA: data = 0x%08lx ]\n", (long)idata);
-			return 0;
+			bus_pci_access(cpu, mem, relative_addr, &idata, writeflag, d->pci_data);
 		} else {
-			switch (d->pci_addr) {
-			case 0x80000000 + (0 << 16) + (0 << 11):	/*  bus 0, device 0  */
-				odata = PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64011 << 16);
-				break;
-			case 0x80000000 + (0 << 16) + (7 << 11):	/*  bus 0, device 7  */
-				odata = PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);
-				break;
-/*			case 0x80000000 + (0 << 16) + (8 << 11):  */	/*  bus 0, device 8  */
-/*				odata = PCI_VENDOR_SYMBIOS + (PCI_PRODUCT_SYMBIOS_860 << 16);  */
-/*				break;  */
-/*			case 0x80000000 + (0 << 16) + (9 << 11):  */	/*  bus 0, device 9  */
-/*				odata = PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_ISA << 16);  */
-/*				break;  */
-/*			case 0x80000000 + (0 << 16) + (12 << 11):  */	/*  bus 0, device 12  */
-/*				odata = PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);  */
-/*				break;  */
-			default:
-				if ((d->pci_addr & 0xff) == 0)
-					odata = 0xffffffff;
-				else {
-					switch (d->pci_addr) {
-					case 0x80000008:	/*  GT-64011 revision: 1  */
-						odata = 0x1;
-						break;
-					case 0x80003804:	/*  tulip  */
-						odata = 0xffffffff;
-						break;
-					case 0x80003808:	/*  tulip card revision: 4.1 */
-						odata = 0x41;
-						break;
-					case 0x80003810:	/*  tulip  */
-						odata = 0x9ca00001;	/*  1ca00000, I/O space  */
-						break;
-					case 0x80003814:	/*  tulip  */
-						odata = 0x9ca10000;	/*  1ca10000, mem space  */
-						break;
-					case 0x8000383c:	/*  tulip card  */
-						odata = 0x00000100;	/*  interrupt pin A  */
-						break;
-					default:
-						odata = 0;
-					}
-					debug("[ gt read from PCI DATA, addr = 0x%x, returning: 0x%x ]\n",
-					    (int)d->pci_addr, odata);
-				}
-			}
+			bus_pci_access(cpu, mem, relative_addr, &odata, writeflag, d->pci_data);
 		}
 		break;
 	default:
@@ -194,6 +127,7 @@ void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq
 	}
 	memset(d, 0, sizeof(struct gt_data));
 	d->irqnr = irq_nr;
+	d->pci_data = bus_pci_init(mem);
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH, dev_gt_access, d);
 	cpu_add_tickfunction(cpu, dev_gt_tick, d, TICK_STEPS_SHIFT);

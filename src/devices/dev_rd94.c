@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_rd94.c,v 1.5 2004-01-06 06:47:00 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -37,10 +37,12 @@
 #include "misc.h"
 #include "devices.h"
 
+#include "bus_pci.h"
 #include "rd94.h"
 
 
 struct rd94_data {
+	struct pci_data *pci_data;
 	uint32_t	reg[DEV_RD94_LENGTH / 4];
 
 	int		intmask;
@@ -143,8 +145,10 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_PCI_CONFADDR:
 	case RD94_SYS_PCI_CONFDATA:
 		if (writeflag == MEM_WRITE) {
+			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &idata, writeflag, d->pci_data);
 		} else {
-			odata = 0;
+			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &odata, writeflag, d->pci_data);
+			/*  odata = 0;  */
 		}
 		break;
 	default:
@@ -173,6 +177,8 @@ void dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct rd94_data));
+
+	d->pci_data = bus_pci_init(mem);
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH, dev_rd94_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);

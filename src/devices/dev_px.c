@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.10 2004-05-08 02:06:04 debug Exp $
+ *  $Id: dev_px.c,v 1.11 2004-05-10 01:29:19 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -56,7 +56,10 @@
  *		PMAG-FA:	gq0 at ibus0, gq0 ( 24+24+24Z+24X plane 5x2 stamp )  (crashes in serial console mode)
  *
  *  TODO:  A lot of stuff:
- *	Cursor.  (BT459)
+ *
+ *	Read http://www.mit.edu/afs/athena/system/pmax_ul3/srvd.73/sys/io/tc/gq.h
+ *	and try to figure out the interrupt and memory management stuff.
+ *
  *	Color support: foreground, background, 8-bit palette?
  *	2D and 3D stuff: polygons? shading?
  *	Don't use so many hardcoded values.

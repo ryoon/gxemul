@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.4 2004-06-18 12:23:53 debug Exp $
+$Id: RELEASE,v 1.5 2004-06-19 12:03:33 debug Exp $
 
 
 	    =====================================================
@@ -32,7 +32,15 @@ The following things have to work before a release to become a reality:
 
 	o)  the code needs to stabilize in general.
 
-Then, to make the official release:
+
+The following will most definitely NOT be included in the first release:
+
+	o)  binary translation
+
+	o)  GUI
+
+
+Then, to make an official release:
 
 	o)  Try mips64emul on as many combinations as possible of the
 	    following variables:
@@ -44,7 +52,17 @@ Then, to make the official release:
 		x)  OSes running under emulation (NetBSD, OpenBSD,
 		    Linux, Ultrix?, Irix?, ..)
 
+		For each Host platform:
+			o)  does it configure correctly?  (try multiple compilers)
+			o)  does it build?  (make)
+			o)  does it run?  (try multiple guest kernels/OSes)
+			o)  does it support X11?
+			o)  any bugs while running?
+
 	o)  Documentation.
+		x)  doc/
+		x)  release file
+		x)  man page?
 
 	o)  Make sure all URLs on the project homepage and in the
 	    documentation are valid.

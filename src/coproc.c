@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.154 2005-01-20 20:45:52 debug Exp $
+ *  $Id: coproc.c,v 1.155 2005-01-21 20:35:40 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1752,8 +1752,14 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 				return;
 			}
 
-			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi  & ~0x3f;
-			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0 & ~0xff;
+			/*
+			 *  TODO: Hm. Earlier I had an & ~0x3f on the high
+			 *  assignment and an & ~0xff on the lo0 assignment.
+			 *  I wonder why.
+			 */
+
+			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi; /* & ~0x3f; */
+			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;/* & ~0xff; */
 		} else {
 			/*  R4000:  */
 			i = cp->reg[COP0_INDEX] & INDEX_MASK;

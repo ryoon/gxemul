@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.25 2005-02-07 06:14:50 debug Exp $
+ *  $Id: emul_parse.c,v 1.26 2005-02-26 12:35:48 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -222,15 +222,19 @@ static char cur_machine_n_gfx_cards[10];
 static char cur_machine_emulated_hz[10];
 static char cur_machine_memory[10];
 #define	MAX_N_LOAD		15
-#define	MAX_LOAD_LEN		4000
+#define	MAX_LOAD_LEN		2000
 static char *cur_machine_load[MAX_N_LOAD];
 static int cur_machine_n_load;
 #define	MAX_N_DISK		10
-#define	MAX_DISK_LEN		4000
+#define	MAX_DISK_LEN		2000
 static char *cur_machine_disk[MAX_N_DISK];
 static int cur_machine_n_disk;
+#define	MAX_N_DEVICE		20
+#define	MAX_DEVICE_LEN		400
+static char *cur_machine_device[MAX_N_DISK];
+static int cur_machine_n_device;
 #define	MAX_N_X11_DISP		5
-#define	MAX_X11_DISP_LEN	4000
+#define	MAX_X11_DISP_LEN	1000
 static char *cur_machine_x11_disp[MAX_N_X11_DISP];
 static int cur_machine_n_x11_disp;
 
@@ -352,6 +356,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
 		cur_machine_n_disk = 0;
+		cur_machine_n_device = 0;
 		cur_machine_n_x11_disp = 0;
 		cur_machine_slowsi[0] = '\0';
 		cur_machine_debugger_on_badaddr[0] = '\0';
@@ -514,7 +519,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			m->n_gfx_cards = atoi(cur_machine_n_gfx_cards);
 
 		if (cur_machine_emulated_hz[0]) {
-			m->emulated_hz = atoi(cur_machine_emulated_hz);
+			m->emulated_hz = mystrtoll(cur_machine_emulated_hz,
+			    NULL, 0);
 			m->automatic_clock_adjustment = 0;
 		}
 
@@ -565,8 +571,14 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			cur_machine_x11_disp[i] = NULL;
 		}
 
-		emul_machine_setup(m, cur_machine_n_load,
-		    cur_machine_load);
+		emul_machine_setup(m,
+		    cur_machine_n_load, cur_machine_load,
+		    cur_machine_n_device, cur_machine_device);
+
+		for (i=0; i<cur_machine_n_device; i++) {
+			free(cur_machine_device[i]);
+			cur_machine_device[i] = NULL;
+		}
 
 		for (i=0; i<cur_machine_n_load; i++) {
 			free(cur_machine_load[i]);
@@ -635,6 +647,27 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		read_one_word(f, cur_machine_disk[cur_machine_n_disk],
 		    MAX_DISK_LEN, line, EXPECT_WORD);
 		cur_machine_n_disk ++;
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
+		return;
+	}
+
+	if (strcmp(word, "device") == 0) {
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		if (cur_machine_n_device >= MAX_N_DEVICE) {
+			fprintf(stderr, "too many devices\n");
+			exit(1);
+		}
+		cur_machine_device[cur_machine_n_device] =
+		    malloc(MAX_DEVICE_LEN);
+		if (cur_machine_device[cur_machine_n_device] == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		read_one_word(f, cur_machine_device[cur_machine_n_device],
+		    MAX_DEVICE_LEN, line, EXPECT_WORD);
+		cur_machine_n_device ++;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_RIGHT_PARENTHESIS);
 		return;

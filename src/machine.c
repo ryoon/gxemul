@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.368 2005-02-26 11:56:44 debug Exp $
+ *  $Id: machine.c,v 1.369 2005-02-26 12:35:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3841,7 +3841,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  Lots of info about the IDT 79RC 32334
 		 *  http://www.idt.com/products/pages/Integrated_Processors-79RC32334.html
 		 */
-		device_add(machine, "8250 addr=0x18000800 addr_mult=0 irq=4");
+		device_add(machine, "8250 addr=0x18000800 addr_mult=4 irq=0");
 		break;
 
 	case MACHINE_WRT54G:

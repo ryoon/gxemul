@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.611 2005-02-26 11:40:27 debug Exp $
+$Id: HISTORY,v 1.612 2005-02-26 12:35:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1700,5 +1700,7 @@ HISTORY of mips64emul
 		Continuing on the device registry rewrite.
 20050225	Continuing on the device stuff.
 20050226	Continuing more on the device rewrite.
-		Separating the "testmips" machine into testmips and baremips.
+		Separating the "testmips" machine into testmips and baremips
+		(and similarly with the ppc machine).
 		Redesigning the device registry again :-)
+		Adding a "device" command to the config file parser.

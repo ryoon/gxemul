@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.170 2005-02-23 06:54:49 debug Exp $
+ *  $Id: emul.c,v 1.171 2005-02-26 12:35:48 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -45,6 +45,7 @@
 #include "emul.h"
 #include "console.h"
 #include "debugger.h"
+#include "device.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
@@ -425,8 +426,8 @@ static void add_arc_components(struct machine *m)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-void emul_machine_setup(struct machine *m, int n_load,
-	char **load_names)
+void emul_machine_setup(struct machine *m, int n_load, char **load_names,
+	int n_devices, char **device_names)
 {
 	struct emul *emul;
 	struct cpu *cpu;
@@ -559,6 +560,9 @@ void emul_machine_setup(struct machine *m, int n_load,
 		 *  is needed.
 		 */
 	} else {
+		for (i=0; i<n_devices; i++)
+			device_add(m, device_names[i]);
+
 		machine_setup(m);
 	}
 
@@ -762,7 +766,7 @@ void emul_simple_init(struct emul *emul)
 	}
 
 	/*  Create the machine:  */
-	emul_machine_setup(m, extra_argc, extra_argv);
+	emul_machine_setup(m, extra_argc, extra_argv, 0, NULL);
 
 	debug_indentation(-iadd);
 }

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.31 2005-02-23 22:18:08 debug Exp $
+$Id: misc.html,v 1.32 2005-02-26 12:35:47 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -124,6 +124,15 @@ through an example is good enough:
 
 	<font color="#2020cf">! add_x11_display("otherbox:0")  !  for dual/tripple-head etc</font>
 	<font color="#2020cf">! add_x11_display("thisbox:0")</font>
+
+	<font color="#2020cf">{
+	    Devices can be added like this:
+
+	    device("8250 addr=0x18000800 addr_mult=4")
+
+	    The name comes first, followed by optional parameters.
+	    Remember to use 0x for hexadecimal values.
+	}</font>
 
 	<font color="#2020cf">! force_netboot(yes)</font>
 	<font color="#2020cf">! start_paused(yes)</font>

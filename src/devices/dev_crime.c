@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.6 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_crime.c,v 1.7 2004-01-09 04:20:40 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -48,6 +48,33 @@ struct crime_data {
 };
 
 
+#define	CRIME_TICKSHIFT		8
+
+
+/*
+ *  dev_crime_tick():
+ *
+ *  TODO:  This function simply updates CRIME_TIME by 1 for each tick.
+ *  This is probably not correct.
+ */
+void dev_crime_tick(struct cpu *cpu, void *extra)
+{
+	int i, j;
+	struct crime_data *d = extra;
+
+	/*  Increase CRIME_TIME by 1<<CRIME_TICKSHIFT steps for each tick:  */
+	for (i=0; i<(1<<CRIME_TICKSHIFT); i++) {
+		j = 7;
+		while (j >= 0) {
+			if ((++ d->reg[CRIME_TIME + j]) == 0)
+				j --;
+			else
+				break;
+		}
+	}
+}
+
+
 /*
  *  dev_crime_access():
  *
@@ -60,15 +87,6 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	/*  Set crime version/revision:  */
 	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0x11;
-
-	/*  CRIME_TIME:  */
-	i = 7;
-	while (i >= 0) {
-		if ((++ d->reg[CRIME_TIME + i]) == 0)
-			i --;
-		else
-			break;
-	}
 
 	if (writeflag == MEM_WRITE)
 		memcpy(&d->reg[relative_addr], data, len);
@@ -101,7 +119,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_crime_init():
  */
-void dev_crime_init(struct memory *mem, uint64_t baseaddr)
+void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 {
 	struct crime_data *d;
 
@@ -113,5 +131,6 @@ void dev_crime_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct crime_data));
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
+	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);
 }
 

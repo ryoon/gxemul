@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.249 2004-12-18 23:34:58 debug Exp $
+ *  $Id: machine.c,v 1.250 2004-12-19 06:57:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2945,24 +2945,8 @@ config[77] = 0x30;
 			    COMPONENT_TYPE_SCSIAdapter,
 			    0, 1, 2, 0, 0xffffffff, "ESP216",
 			    system, config, sizeof(config));
-}
 
-{
-uint64_t cdrom;
-			cdrom = arcbios_addchild_manual(cpu,
-			    COMPONENT_CLASS_ControllerClass,
-			    COMPONENT_TYPE_CDROMController,
-				COMPONENT_FLAG_ReadOnly | COMPONENT_FLAG_Removable |
-				COMPONENT_FLAG_Input,
-			     0, 0, 6, 0xffffffff, "NEC     CD-ROM CDR-210P 1.0 ",
-			    scsi, NULL, 0);
-			arcbios_addchild_manual(cpu,
-			    COMPONENT_CLASS_PeripheralClass,
-			    COMPONENT_TYPE_FloppyDiskPeripheral,
-				COMPONENT_FLAG_ReadOnly | COMPONENT_FLAG_Removable |
-				COMPONENT_FLAG_Input,
-			     0, 0, 0, 0xffffffff, NULL,
-			    cdrom, NULL, 0);
+			arcbios_register_scsicontroller(scsi);
 }
 
 		}

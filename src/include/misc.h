@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.185 2004-12-17 03:40:10 debug Exp $
+ *  $Id: misc.h,v 1.186 2004-12-19 06:57:11 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -563,6 +563,8 @@ void fatal(char *fmt, ...);
 /*  arcbios.c:  */
 void arcbios_console_init(struct cpu *cpu,
 	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy);
+void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
+uint64_t arcbios_get_scsicontroller(void);
 void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,

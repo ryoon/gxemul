@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.408 2004-12-19 00:01:56 debug Exp $
+$Id: HISTORY,v 1.409 2004-12-19 06:57:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1361,3 +1361,5 @@ HISTORY of mips64emul
 20041219	Fixing stuff that broke because of the pageshift bugfix.
 		Adding an argument to the s (step) debugger command, for doing
 		more than 1 step at a time.
+		ARCBIOS components representing disk images are now created
+		to actually match the disk images in use.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.55 2004-12-08 12:17:07 debug Exp $
+ *  $Id: diskimage.c,v 1.56 2004-12-19 06:57:12 debug Exp $
  *
  *  Disk image support.
  *
@@ -50,35 +50,10 @@
 #include "diskimage.h"
 
 
-struct diskimage {
-	char		*fname;
-	off_t		total_size;
-
-	int		writable;
-	int		is_a_cdrom;
-	int		is_boot_device;
-
-	int		logical_block_size;
-
-	int		is_a_tape;
-	uint64_t	tape_offset;
-	int		tape_filenr;
-	int		filemark;
-
-	int		rpms;
-	int		ncyls;
-
-	FILE		*f;
-};
-
-
 extern int quiet_mode;
 
-
-#define	MAX_DISKIMAGES		8
-
-static struct diskimage *diskimages[MAX_DISKIMAGES];
-static int n_diskimages = 0;
+struct diskimage *diskimages[MAX_DISKIMAGES];
+int n_diskimages = 0;
 
 
 static struct scsi_transfer *first_free_scsi_transfer_alloc = NULL;

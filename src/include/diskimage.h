@@ -26,12 +26,37 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.20 2004-11-30 21:47:42 debug Exp $
+ *  $Id: diskimage.h,v 1.21 2004-12-19 06:57:11 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
 
 #include <sys/types.h>
+
+
+#define	MAX_DISKIMAGES		8
+
+struct diskimage {
+	char		*fname;
+	off_t		total_size;
+
+	int		writable;
+	int		is_a_cdrom;
+	int		is_boot_device;
+
+	int		logical_block_size;
+
+	int		is_a_tape;
+	uint64_t	tape_offset;
+	int		tape_filenr;
+	int		filemark;
+
+	int		rpms;
+	int		ncyls;
+
+	FILE		*f;
+};
+
 
 /*  Transfer command, sent from a SCSI controller device to a disk:  */
 struct scsi_transfer {
@@ -101,3 +126,4 @@ void diskimage_dump_info(void);
 
 
 #endif	/*  DISKIMAGE_H  */
+

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.51 2004-12-19 06:02:11 debug Exp $
+ *  $Id: arcbios.c,v 1.52 2004-12-19 06:57:12 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -81,6 +81,8 @@ static uint64_t configuration_data_configdata[MAX_CONFIG_DATA];
 
 static int arc_64bit = 0;		/*  For some SGI modes  */
 static int arc_wordlen = sizeof(uint32_t);
+
+static uint64_t scsicontroller = 0;
 
 extern int arc_n_memdescriptors;
 static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
@@ -389,6 +391,24 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	byte = addr & 255;
 	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  arcbios_register_scsicontroller():
+ */
+void arcbios_register_scsicontroller(uint64_t scsicontroller_component)
+{
+	scsicontroller = scsicontroller_component;
+}
+
+
+/*
+ *  arcbios_get_scsicontroller():
+ */
+uint64_t arcbios_get_scsicontroller(void)
+{
+	return scsicontroller;
 }
 
 
@@ -865,6 +885,7 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x28	GetChild(node)
  *	0x2c	GetParent(node)
  *	0x30	GetConfigurationData(config_data, node)
+ *	0x3c	GetComponent(name)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
  *	0x54	GetRelativeTime()
@@ -1007,6 +1028,15 @@ void arcbios_emul(struct cpu *cpu)
 				break;
 			}
 		}
+		break;
+	case 0x3c:		/*  GetComponent(char *name)  */
+		fatal("[ ARCBIOS GetComponent(0x%016llx) ]\n",
+		    (long long)cpu->gpr[GPR_A0]);
+
+/*  "scsi(0)disk(0)rdisk(0)partition(0)"  */
+
+cpu->gpr[GPR_V0] = 0;
+
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");

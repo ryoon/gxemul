@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.96 2004-12-18 08:51:19 debug Exp $
+ *  $Id: emul.c,v 1.97 2004-12-19 06:57:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -56,6 +56,7 @@ extern char **extra_argv;
 extern int quiet_mode;
 
 extern struct emul *debugger_emul;
+extern struct diskimage *diskimages[];
 
 
 /*
@@ -261,6 +262,66 @@ struct emul *emul_new(void)
 
 
 /*
+ *  add_arc_components():
+ *
+ *  This function adds ARCBIOS memory descriptors for the loaded program,
+ *  and ARCBIOS components for SCSI devices.
+ */
+static void add_arc_components(struct emul *emul)
+{
+	struct cpu *cpu = emul->cpus[emul->bootstrap_cpu];
+	uint64_t start = cpu->pc & 0x1fffffff;
+	uint64_t len = 0x800000 - start;
+	int i;
+	uint64_t scsicontroller, scsidevice;
+
+	/*  NOTE/TODO: magic 8MB end of load program area  */
+	arcbios_add_memory_descriptor(cpu,
+	    0x60000, start-0x60000, ARCBIOS_MEM_FreeMemory);
+	arcbios_add_memory_descriptor(cpu,
+	    start, len, ARCBIOS_MEM_LoadedProgram);
+
+	scsicontroller = arcbios_get_scsicontroller();
+	if (scsicontroller == 0)
+		return;
+
+	/*  TODO: The device 'name' should defined be somewhere else.  */
+
+	for (i=0; i<MAX_DISKIMAGES; i++)
+		if (diskimages[i] != NULL) {
+			int a, b, flags = COMPONENT_FLAG_Input;
+			char *name = "DEC     RZ58     (C) DEC2000";
+
+			/*  Read-write, or read-only?  */
+			if (diskimages[i]->writable)
+				flags |= COMPONENT_FLAG_Output;
+			else
+				flags |= COMPONENT_FLAG_ReadOnly;
+
+			a = COMPONENT_TYPE_DiskController;
+			b = COMPONENT_TYPE_DiskPeripheral;
+
+			if (diskimages[i]->is_a_cdrom) {
+				flags |= COMPONENT_FLAG_Removable;
+				a = COMPONENT_TYPE_CDROMController;
+				b = COMPONENT_TYPE_FloppyDiskPeripheral;
+				name = "NEC     CD-ROM CDR-210P 1.0 ";
+			}
+
+			scsidevice = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    a, flags, 1, 2, i, 0xffffffff,
+			    name, scsicontroller, NULL, 0);
+
+			arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_PeripheralClass,
+			    b, flags, 1, 2, 0, 0xffffffff, NULL,
+			    scsidevice, NULL, 0);
+		}
+}
+
+
+/*
  *  emul():
  *
  *	o)  Initialize the hardware (RAM, devices, CPUs, ...) which
@@ -387,7 +448,8 @@ void emul_start(struct emul *emul)
 	}
 
 	if (file_n_executables_loaded() == 0 && !emul->booting_from_diskimage) {
-		fprintf(stderr, "No executable file loaded, and we're not booting directly from a disk image.\nAborting.\n");
+		fprintf(stderr, "No executable file loaded, and we're not "
+		    "booting directly from a disk image.\nAborting.\n");
 		exit(1);
 	}
 
@@ -424,16 +486,9 @@ void emul_start(struct emul *emul)
 		debug("using random cycle chunks (1 to %i cycles)\n",
 		    emul->max_random_cycles_per_chunk);
 
-	/*  Special hack for ARC emulation:  */
-	if (emul->emulation_type == EMULTYPE_ARC && emul->prom_emulation) {
-		uint64_t start = emul->cpus[emul->bootstrap_cpu]->pc & 0x1fffffff;
-		uint64_t len = 0x800000 - start;
-		/*  NOTE/TODO: magic 8MB end of load program area  */
-		arcbios_add_memory_descriptor(emul->cpus[emul->bootstrap_cpu],
-		    0x60000, start-0x60000, ARCBIOS_MEM_FreeMemory);
-		arcbios_add_memory_descriptor(emul->cpus[emul->bootstrap_cpu],
-		    start, len, ARCBIOS_MEM_LoadedProgram);
-	}
+	/*  Special hack for ARC emulation:  (TODO: how about SGI?)  */
+	if (emul->emulation_type == EMULTYPE_ARC && emul->prom_emulation)
+		add_arc_components(emul);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    emul->bootstrap_cpu, emul->cpus[emul->bootstrap_cpu]->pc,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.16 2004-01-16 17:34:07 debug Exp $
+ *  $Id: file.c,v 1.17 2004-01-25 00:57:36 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -866,9 +866,13 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 				int i = 0;
 
 				len = fread(&ch[0], 1, chunk_len, f);
+				if (ofs + len > p_filesz)
+					len = p_filesz - ofs;
 
 				while (i < len) {
-					memory_rw(cpu, mem, p_vaddr + ofs, &ch[i], align_len, MEM_WRITE, 0);
+					size_t len_to_copy;
+					len_to_copy = (i + align_len) <= len? align_len : len - i;
+					memory_rw(cpu, mem, p_vaddr + ofs, &ch[i], len_to_copy, MEM_WRITE, 0);
 					ofs += align_len;
 					i += align_len;
 				}

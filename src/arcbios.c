@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.15 2004-01-16 17:34:07 debug Exp $
+ *  $Id: arcbios.c,v 1.16 2004-02-24 21:58:11 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -352,14 +352,14 @@ void arcbios_emul(struct cpu *cpu)
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
-			for (j=0; j<strlen(buf); j++) {
+			for (j=0; j<strlen((char *)buf); j++) {
 				memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + strlen(buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-			if (nmatches == strlen(buf) && ch2 == '=') {
-				cpu->gpr[GPR_V0] = SGI_ENV_STRINGS + i + strlen(buf) + 1;
+			memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			if (nmatches == strlen((char *)buf) && ch2 == '=') {
+				cpu->gpr[GPR_V0] = SGI_ENV_STRINGS + i + strlen((char *)buf) + 1;
 				return;
 			}
 		}

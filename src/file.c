@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.18 2004-02-22 13:12:48 debug Exp $
+ *  $Id: file.c,v 1.19 2004-02-24 21:58:46 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -126,7 +126,7 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu)
 
 	/*  Load text and data:  */
 	total_len = textsize + datasize;
-	while (total_len > 0) {
+	while (total_len != 0) {
 		len = total_len > sizeof(buf) ? sizeof(buf) : total_len;
 		len = fread(buf, 1, len, f);
 
@@ -142,7 +142,7 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	unencode(symbsize, &aout_header.a_syms, uint32_t);
-	if (symbsize > 0) {
+	if (symbsize != 0) {
 		struct aout_symbol *aout_symbol_ptr;
 		int i, n_symbols;
 		uint32_t type, addr, str_index;
@@ -639,7 +639,7 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	debug("'%s': 0x%llx bytes loaded at 0x%08llx", p, (long long) (ftell(f) - skip), (long long)entry);
-	if (skip > 0)
+	if (skip != 0)
 		debug(" (0x%llx bytes of header skipped)", (long long)skip);
 	debug("\n");
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.83 2005-04-04 20:08:58 debug Exp $
+ *  $Id: file.c,v 1.84 2005-04-06 18:10:16 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -850,7 +850,8 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 
 	p = strchr(filename, ':');
 	if (p == NULL) {
-		fprintf(stderr, "error opening %s\n", filename);
+		fprintf(stderr, "\n");
+		perror(filename);
 		exit(1);
 	}
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.594 2005-02-19 13:00:35 debug Exp $
+$Id: HISTORY,v 1.595 2005-02-20 14:27:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1682,3 +1682,4 @@ HISTORY of mips64emul
 		Single-stepping now looks/works better with bintrans enabled.
 		Beginning the first phase of release testing; various minor
 		updates to make everything build cleanly on Solaris.
+20050220	Continuing testing for the release...

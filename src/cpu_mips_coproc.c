@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.9 2005-03-14 12:13:52 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.10 2005-03-14 12:49:17 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -693,11 +693,11 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 
 
 /*
- *  invalidate_translation_caches_paddr():
+ *  mips_invalidate_translation_caches_paddr():
  *
  *  Invalidate based on physical address.
  */
-void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
+void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 {
 #ifdef BINTRANS
 	paddr &= ~0xfff;

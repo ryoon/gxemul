@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.162 2005-03-12 13:15:29 debug Exp $
+ *  $Id: memory.c,v 1.163 2005-03-14 12:49:17 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -282,31 +282,22 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 				*high = mem->dev_bintrans_write_high[i];
 			mem->dev_bintrans_write_high[i] = 0;
 
-/*			if (!need_inval)
+			if (!need_inval)
 				return;
-*/
+
+			if (cpu->machine->arch != ARCH_MIPS) {
+				/*  TODO!  */
+
+				return;
+			}
+
 			/*  Invalidate any pages of this device that might
 			    be in the bintrans load/store cache, by marking
 			    the pages read-only.  */
 
-			/*  TODO: This only works for R3000-style
-			    physical addresses!  */
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
-#if 1
-				invalidate_translation_caches_paddr(cpu,
-				    mem->dev_baseaddr[i] + s);
-#else
-				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s +
-				    0xffffffff80000000ULL,
-				    mem->dev_bintrans_data[i] + s, -1,
-				    mem->dev_baseaddr[i] + s);
-				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s +
-				    0xffffffffa0000000ULL,
-				    mem->dev_bintrans_data[i] + s, -1,
-				    mem->dev_baseaddr[i] + s);
-#endif
+				mips_invalidate_translation_caches_paddr(
+				    cpu, mem->dev_baseaddr[i] + s);
 			}
 
 			/*  ... and invalidate the "fast_vaddr_to_hostaddr"

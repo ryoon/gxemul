@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.155 2005-03-14 12:13:52 debug Exp $
+ *  $Id: bintrans.c,v 1.156 2005-03-14 12:49:17 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -411,7 +411,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	 *  Make sure that this page will not be written to by translated
 	 *  code:
 	 */
-	invalidate_translation_caches_paddr(cpu, paddr);
+	mips_invalidate_translation_caches_paddr(cpu, paddr);
 
 	/*
 	 *  Try to translate a chunk of code:

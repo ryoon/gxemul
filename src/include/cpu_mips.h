@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.12 2005-02-22 12:05:17 debug Exp $
+ *  $Id: cpu_mips.h,v 1.13 2005-03-14 12:49:16 debug Exp $
  */
 
 #include "misc.h"
@@ -396,7 +396,7 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
         unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void clear_all_chunks_from_all_tables(struct cpu *cpu);
-void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
+void mips_invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
 void coproc_register_read(struct cpu *cpu,
         struct mips_coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,

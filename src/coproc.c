@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.104 2004-11-24 10:22:30 debug Exp $
+ *  $Id: coproc.c,v 1.105 2004-11-24 10:37:43 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -408,7 +408,7 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
  *  they should not be.
  */
 static void invalidate_translation_caches(struct cpu *cpu,
-	int all, uint64_t vaddr, int kernelspace)
+	int all, uint64_t vaddr, int kernelspace, int old_asid_to_invalidate)
 {
 /* printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
 */
@@ -422,8 +422,12 @@ static void invalidate_translation_caches(struct cpu *cpu,
 				for (i=0; i<64; i++) {
 					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
 					if ((cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
-					    (tlb_vaddr & 0xc0000000ULL) != 0x80000000ULL)
-						invalidate_table_entry(cpu, tlb_vaddr);
+					    (tlb_vaddr & 0xc0000000ULL) != 0x80000000ULL) {
+						int asid = (cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
+						if (old_asid_to_invalidate < 0 ||
+						    old_asid_to_invalidate == asid)
+							invalidate_table_entry(cpu, tlb_vaddr);
+					}
 				}
 			}
 		} else
@@ -600,21 +604,24 @@ void coproc_register_write(struct cpu *cpu,
 		 *  Translation caches must be invalidated, because the
 		 *  address space might change (if the ASID changes).
 		 */
-		int inval = 0;
+		int inval = 0, old_asid;
 
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
+			old_asid = (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK)
+			    >> R2K3K_ENTRYHI_ASID_SHIFT;
 			if ((cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) != (tmp & R2K3K_ENTRYHI_ASID_MASK))
 				inval = 1;
 			break;
 		default:
+			old_asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
 			if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) != (tmp & ENTRYHI_ASID))
 				inval = 1;
 			break;
 		}
 
 		if (inval)
-			invalidate_translation_caches(cpu, 1, 0, 0);
+			invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
 
 		unimpl = 0;
 		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
@@ -669,11 +676,11 @@ void coproc_register_write(struct cpu *cpu,
 		if (cpu->cpu_type.mmu_model == MMU3K) {
 			if (!(oldmode & MIPS1_SR_KU_CUR)
 			    && (tmp & MIPS1_SR_KU_CUR))
-				invalidate_translation_caches(cpu, 0, 0, 1);
+				invalidate_translation_caches(cpu, 0, 0, 1, 0);
 		} else {
 			/*  TODO: don't hardcode  */
 			if ((oldmode & 0xff) != (tmp & 0xff))
-				invalidate_translation_caches(cpu, 0, 0, 1);
+				invalidate_translation_caches(cpu, 0, 0, 1, 0);
 		}
 
 		unimpl = 0;
@@ -1541,6 +1548,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	struct coproc *cp = cpu->coproc[0];
 	int index, g_bit;
 	uint64_t oldvaddr;
+	int old_asid = -1;
 
 	/*
 	 *  ... and the last instruction page:
@@ -1617,8 +1625,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		oldvaddr &= 0xffffffffULL;
 		if (oldvaddr & 0x80000000ULL)
 			oldvaddr |= 0xffffffff00000000ULL;
+		old_asid = (cp->tlbs[index].hi & R2K3K_ENTRYHI_ASID_MASK)
+		    >> R2K3K_ENTRYHI_ASID_SHIFT;
 		if (cp->tlbs[index].lo0 & ENTRYLO_V)
-			invalidate_translation_caches(cpu, 0, oldvaddr, 0);
+			invalidate_translation_caches(cpu, 0, oldvaddr, 0, 0);
 		break;
 	default:
 		if (cpu->cpu_type.mmu_model == MMU10K) {
@@ -1634,11 +1644,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 				oldvaddr |= 0xffffff0000000000ULL;
 		}
 		/*  Both pages:  */
-		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0);
-		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0);
+		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0, 0);
+		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
 	}
 
-invalidate_translation_caches(cpu, 1, 0, 0);
+
+/*  TODO: This shouldn't be here. (Bug.)  */
+invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
+
 
 	/*  Write the new entry:  */
 
@@ -1686,7 +1699,7 @@ void coproc_rfe(struct cpu *cpu)
 	if (!oldmode && 
 	    (cpu->coproc[0]->reg[COP0_STATUS] &
 	    MIPS1_SR_KU_CUR))
-		invalidate_translation_caches(cpu, 0, 0, 1);
+		invalidate_translation_caches(cpu, 0, 0, 1, 0);
 }
 
 
@@ -1729,7 +1742,7 @@ void coproc_eret(struct cpu *cpu)
 	/*  Changing from kernel to user mode?
 	    Then this is neccessary:  TODO  */
 	if (oldmode && !newmode)
-		invalidate_translation_caches(cpu, 0, 0, 1);
+		invalidate_translation_caches(cpu, 0, 0, 1, 0);
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.47 2004-11-09 00:21:10 debug Exp $
+ *  $Id: bintrans.c,v 1.48 2004-11-09 01:17:40 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -657,7 +657,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			/*  Read the next instruction (in the delay slot):  */
 			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
 			hi6_2 = instr2[3] >> 2;
-#if 0
+#if 1
 			if (hi6_2 == HI6_ADDIU) {
 				rs = ((instr2[3] & 3) << 3) + ((instr2[2] >> 5) & 7);
 				rt = instr2[2] & 31;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.19 2004-11-09 00:21:10 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.20 2004-11-09 01:17:40 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1121,13 +1121,8 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 	unsigned char *a, *b, *b2;
 	int n;
 	int ofs;
-
-	imm *= 4;
-
-/*  TODO: make it work with larger offsets?  */
-if (imm > 0x7ff0 || imm <-0x7ff0)
-	return 0;
-
+	uint64_t alpha_addr;
+	uint64_t subaddr;
 
 #if 0
 	/*  Flush the PC, but don't include this instruction.  */
@@ -1186,14 +1181,21 @@ if (imm > 0x7ff0 || imm <-0x7ff0)
 	/*
 	 *  Perform the jump by changing pc.
 	 *
-	 *  44 04 30 a0     ldl     t0,1092(a0)		load pc
-	 *  34 12 21 20     lda     t0,imm(t0)		add imm
+	 *  44 04 30 a4     ldq     t0,1092(a0)		load pc
+	 *  c8 01 5f 20     lda     t1,456
+	 *  22 57 40 48     sll     t1,0x2,t1
+	 *  01 04 22 40     addq    t0,t1,t0
 	 *  88 08 30 b4     stq     t0,2184(a0)		store pc
 	 */
 	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x21; *a++ = 0x20;
+
+	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
+	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
+	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
+
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
 
 	if (potential_chunk_p == NULL) {
 		/*  Not much we can do here if this wasn't to the same
@@ -1210,14 +1212,14 @@ if (imm > 0x7ff0 || imm <-0x7ff0)
 		 *  we go on with the fast path (bintrans), otherwise we
 		 *  abort by returning.
 		 *
-		 *  f4 01 5f 20     lda     t1,500
+		 *  f4 01 5f 20     lda     t1,500  (some low number...)
 		 *  50 00 30 a0     ldl     t0,80(a0)
 		 *  a1 0d 22 40     cmple   t0,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 		    - ((size_t)&dummy_cpu);
-		*a++ = 0xf4; *a++ = 0x01; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x00; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -1232,6 +1234,51 @@ if (imm > 0x7ff0 || imm <-0x7ff0)
 		 *  loop.
 		 */
 
+		/*  15 bits at a time, which means max 60 bits, but
+		    that should be enough. the top 4 bits are probably
+		    not used by userland alpha code. (TODO: verify this)  */
+		alpha_addr = (size_t)potential_chunk_p;
+		subaddr = (alpha_addr >> 45) & 0x7fff;
+
+		/*
+		 *  00 00 3f 20     lda     t0,0
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 */
+
+		/*  Start with the topmost 15 bits:  */
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = (alpha_addr >> 30) & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = (alpha_addr >> 15) & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = alpha_addr & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+
+		/*
+		 *  Load the chunk pointer into t0.
+		 *  If it is NULL (zero), then skip the following jump.
+		 *  Jump to t0.
+		 */
+
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa4;	/*  ldq t0,0(t0)  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+
+		/*  00 00 e1 6b     jmp     (t0)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
+
+
+		/*  "Failure", then let's return to the main loop.  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 	}
 

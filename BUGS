@@ -4,12 +4,19 @@ anything listed in TODO is not worth reporting.)
 
 Serious bugs:
 
-  x)  NetBSD/pmax works with X with -CR3000, but not always with -CR4000.
-      Reason and solution unknown at this point. A temporary workaround
-      is to not use -CR4000 if you want to run X11 inside emulated
-      NetBSD/pmax.
+  x)  NetBSD/pmax in the emulator sometimes crashes when running X. It is very
+      uncommon with -CR3000, a bit more common with -CR4000. Reason and
+      solution are unknown at this point.
 
   x)  Linux/DECstation (Debian) installer (boot.img) crashes during install.
+      This might be a bug in Linux, according to
+      http://www.debian.org/ports/mips/:
+	"R3000 Decstation does crash with current cvs kernel"
+
+  x)  Newer NetBSD 2.0_BETA snapshots from releng.netbsd.org crash when run
+      on a Linux/i386 host. A 20040606 snapshot runs fine, but a 20040626
+      snapshot doesn't. (On an Alpha host, both run fine.)  (This bug is
+      probably caused by overwritten memory, or some similar type of bug.)
 
 Less serious bugs / issues:
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.182 2004-08-01 01:14:08 debug Exp $
+$Id: HISTORY,v 1.183 2004-08-01 10:41:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -860,3 +860,4 @@ HISTORY of mips64emul
 		sure why.
 		UDP packets sent to the gateway (at 10.0.0.254) are now
 		forwarded to the machine that the host uses as its nameserver.
+		Some other minor fixes.

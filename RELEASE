@@ -1,13 +1,8 @@
-$Id: RELEASE,v 1.29 2004-07-31 14:26:52 debug Exp $
-
-Preliminary 0.2 release notes:
-
--------------------------------------------------------------------------------
-
 Release notes for mips64emul 0.2
 ================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
+
 
 mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs
 and enough surrounding hardware to fake real machines, capable of running real
@@ -26,8 +21,7 @@ mentioning. These are the major changes:
   o)  0.1 -> 0.1.1:
 
 	x)  Added support for booting directly from disk images and CDROM
-	    images, if the emulation mode supports it (DECstation only so
-	    far).
+	    images (so far only for the DECstation emulation mode).
 
   o)  0.1.1 -> 0.2:
 
@@ -139,7 +133,7 @@ release, but will most probably work anyway.
 	OpenBSD/pmax 2.7  (inside the emulator)
 		gcc 2.95.2 19991024 (release)
 
-	OpenBSD/pmax 2.8  (inside the emulator)
+	OpenBSD/pmax 2.8-beta  (inside the emulator)
 		gcc 2.95.3 19991030 (prerelease)
 
 	OpenBSD/sparc64

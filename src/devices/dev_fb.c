@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.60 2004-11-17 20:55:50 debug Exp $
+ *  $Id: dev_fb.c,v 1.61 2004-11-21 09:22:40 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -63,21 +63,8 @@
 
 #define	FB_TICK_SHIFT		18
 
-/*
- *  FB_DEBUG enables lots of debug output.
- *
- *  FB_TICK_EVERYOTHER tries to improve overall performance by lagging behind
- *     in the updates, but this might make the framebuffer seem less responsive.
- *
- *  EXPERIMENTAL_PUTPIXEL is my own inlined replacement for XPutPixel.
- *     It only works for XYPixmap, and should probably not be used anymore.
- */
 
 /*  #define FB_DEBUG  */
-/*  #define FB_TICK_EVERYOTHER  */
-
-/*  #define EXPERIMENTAL_PUTPIXEL  */
-
 
 /*
  *  set_grayscale_palette():
@@ -113,73 +100,6 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 		d->rgb_palette[i*3 + 1] = gray;
 		d->rgb_palette[i*3 + 2] = gray;
 	}
-}
-
-
-/*
- *  experimental_PutPixel():
- *
- *  Manipulate the XImage's data directly, instead of calling
- *  XPutPixel (which is awfully slow).
- *
- *  TODO:  This thing probably doesn't do color stuff correctly.
- */
-void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
-{
-#ifdef WITH_X11
-#ifdef EXPERIMENTAL_PUTPIXEL
-	int ofs, ofs2, bit, bits, t;
-
-	ofs = (fbw->x11_fb_winxsize * y + x) >> 3;
-	ofs2 = (fbw->x11_fb_winxsize * fbw->x11_fb_winysize) >> 3;
-
-	if (fbw->fb_ximage->byte_order)
-		t = 1 << (7-(x & 7));
-	else
-		t = 1 << (x & 7);
-
-	/*  TODO: other bitdepths?  */
-	bits = fbw->x11_screen_depth;
-	switch (bits) {
-	case 24:
-		color = ((color & 255) << 16)
-		    + (color & 0xff00) + ((color >> 16) & 255);
-		break;
-	case 16:
-		color = ((color & 0x1f) << 8)		/*  5 blue  */
-		    + (((color >> 11) & 0x1f) << 3)	/*  5 red  */
-		    + ((color >> 8) & 0x7)		/*  high 3 green bits  */
-		    + (((color >> 5) & 0x7) << 13);	/*  low 3 green bits  */
-		break;
-	case 15:
-		color = ((color & 0x1f) << 9)		/*  5 blue  */
-		    + (((color >> 10) & 0x1f) << 3)	/*  5 red  */
-		    + ((color >> 7) & 0x7)		/*  high 3 green bits  */
-		    + (((color >> 5) & 0x3) << 14);	/*  low 2 green bits  */
-		break;
-	case 8:	/*
-		 *  when using XYPixmap, the experimental (fast)
-		 *  putpixel works, but XYPixmap seem to be
-		 *  slow in other ways.
-		 */
-		break;
-	default:
-		/*  Fallback on X11's putpixel:  */
-		XPutPixel(fbw->fb_ximage, x, y, color);
-		return;
-	}
-
-	for (bit = 0; bit < bits; bit++) {
-		if (color & (1 << ((bit&(~7)) + 7-(bit&7)) ))
-			fbw->ximage_data[ofs + bit*ofs2] |= t;
-		else
-			fbw->ximage_data[ofs + bit*ofs2] &= ~t;
-	}
-
-#else	/*  !EXPERIMENTAL_PUTPIXEL  */
-	XPutPixel(fbw->fb_ximage, x, y, color);
-#endif	/*  EXPERIMENTAL_PUTPIXEL  */
-#endif	/*  WITH_X11  */
 }
 
 
@@ -342,7 +262,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 				color = d->fb_window->x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel; \
 			}								\
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
-				experimental_PutPixel(d->fb_window, x, y, color);	\
+				XPutPixel(d->fb_window->fb_ximage, x, y, color);	\
 		}
 #else
 /*  If not WITH_X11:  */
@@ -610,19 +530,6 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (d->update_x2 != -1) {
 		int y, addr, addr2, q = d->vfb_scaledown;
 
-#ifdef FB_TICK_EVERYOTHER
-		/*
-		 *  This make sure we don't update too often, but if we haven't
-		 *  been updating in a while (that is, updated_last_tick = 0),
-		 *  then start immediately. This might improve performance.
-		 */
-		if (d->updated_last_tick == 1) {
-			d->updated_last_tick = 0;
-			goto skip_update;
-		}
-#endif
-		d->updated_last_tick = 1;
-
 		if (d->update_x1 >= d->visible_xsize)	d->update_x1 = d->visible_xsize - 1;
 		if (d->update_x2 >= d->visible_xsize)	d->update_x2 = d->visible_xsize - 1;
 		if (d->update_y1 >= d->visible_ysize)	d->update_y1 = d->visible_ysize - 1;
@@ -658,12 +565,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 
 		d->update_x1 = d->update_y1 = 99999;
 		d->update_x2 = d->update_y2 = -1;
-	} else
-		d->updated_last_tick = 0;
-
-#ifdef FB_TICK_EVERYOTHER
-skip_update:
-#endif
+	}
 
 #ifdef WITH_X11
 	if (need_to_redraw_cursor) {

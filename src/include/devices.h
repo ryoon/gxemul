@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.108 2004-11-20 08:57:14 debug Exp $
+ *  $Id: devices.h,v 1.109 2004-11-21 09:22:41 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -201,7 +201,6 @@ struct vfb_data {
 	size_t		framebuffer_size;
 	int		x11_xsize, x11_ysize;
 
-	int		updated_last_tick;
 	int		update_x1, update_y1, update_x2, update_y2;
 
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */

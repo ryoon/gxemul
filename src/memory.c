@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.21 2004-03-23 02:30:56 debug Exp $
+ *  $Id: memory.c,v 1.22 2004-03-24 00:28:14 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -363,7 +363,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 		 *  TODO:  Make this correct.
 		 */
 		switch (vaddr >> 60) {
-		case 9:
+		case 9:		/*  0x9000...  */
+		case 0xa:		/*  like 0xa8...  */
 			*return_addr = vaddr;
 			return 1;
 		case 0xc:
@@ -608,13 +609,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
 #if 0
-/*  Irix weirdness  */
-if ((vaddr & 0xffffffff) == 0xc1806794)
-	printf("pc = %016llx\n", (long long)cpu->pc);
-#endif
-
-
-#if 0
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
 		if ((vaddr & 0xfff00000) == 0xbfc00000 && writeflag==MEM_READ) {
 			if ((vaddr & 0xffff) != 0x8030 && (vaddr & 0xffff) != 0x8064 &&
@@ -638,6 +632,16 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 		return MEMORY_ACCESS_FAILED;
 
 
+	/*
+	 *  Physical addresses of the form 0xa8........ and 0x90..........
+	 *  don't actually have all 64 bit significant, only the lower part.
+	 *
+	 *  (TODO:  Is this SGI specific?)
+	 *  (TODO 2:  Is 48 bits ok?)
+	 */
+	paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
+
+
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
 		if (no_exceptions && cpu != NULL)
 			goto no_exception_access;
@@ -656,6 +660,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 /*	if (cache == CACHE_INSTRUCTION)
 		goto no_exception_access;
 */
+
 
 	/*
 	 *  Memory mapped device?
@@ -762,6 +767,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 			}
 		}
 	}
+
 
 	/*
 	 *  Outside of physical RAM?  (For userland emulation only,

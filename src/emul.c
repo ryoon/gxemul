@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.120 2005-01-20 14:25:19 debug Exp $
+ *  $Id: emul.c,v 1.121 2005-01-20 14:49:17 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -303,7 +303,6 @@ static void add_arc_components(struct machine *m)
 	uint64_t start = cpu->pc & 0x1fffffff;
 	uint64_t len = 0xc00000 - start;
 	struct diskimage *d;
-	int i;
 	uint64_t scsicontroller, scsidevice, scsidisk;
 
 	if ((cpu->pc >> 60) != 0xf) {

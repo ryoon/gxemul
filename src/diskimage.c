@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.69 2005-01-20 14:25:19 debug Exp $
+ *  $Id: diskimage.c,v 1.70 2005-01-20 14:49:17 debug Exp $
  *
  *  Disk image support.
  *
@@ -1271,7 +1271,7 @@ int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
 int diskimage_add(struct machine *machine, char *fname)
 {
 	struct diskimage *d, *d2;
-	int id;
+	int id = 0;
 	char *cp;
 	int prefix_b = 0;
 	int prefix_c = 0;
@@ -1341,6 +1341,8 @@ int diskimage_add(struct machine *machine, char *fname)
 			}
 			if (!collision)
 				id = free;
+			else
+				free ++;
 		}
 	} else {
 		id = prefix_id;
@@ -1524,10 +1526,10 @@ void diskimage_dump_info(struct machine *machine)
 		debug(" id %i, ", d->id);
 		debug("%s, ", d->writable? "read/write" : "read-only");
 
-		debug("%lli bytes (%lli sectors)%s\n",
-		    (long long) d->total_size,
+		debug("%lli MB (%lli sectors)%s\n",
+		    (long long) (d->total_size / 1048576),
 		    (long long) (d->total_size / 512),
-		    d->is_boot_device? ", BOOT DEVICE" : "");
+		    d->is_boot_device? " (BOOT)" : "");
 
 		debug_indentation(-iadd);
 

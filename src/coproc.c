@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.17 2004-03-04 03:13:50 debug Exp $
+ *  $Id: coproc.c,v 1.18 2004-03-09 00:06:06 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -230,7 +230,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R2000:	fpu_rev = MIPS_R2010;	break;
 		case MIPS_R3000:	fpu_rev = MIPS_R3010;
-					other_stuff |= 0x40;
+					other_stuff |= 0x40;	/*  or 0x30? TODO  */
 					break;
 		case MIPS_R6000:	fpu_rev = MIPS_R6010;	break;
 		case MIPS_R4000:	fpu_rev = MIPS_R4010;	break;

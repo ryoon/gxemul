@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.93 2005-02-13 13:50:19 debug Exp $
+ *  $Id: arcbios.c,v 1.94 2005-02-21 22:20:58 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -593,7 +593,8 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		uint32_t eparent, echild, epeer, tmp;
 		unsigned char buf[4];
 
-		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
+		/*  debug("[ addchild: peeraddr = 0x%08x ]\n",
+		    (int)peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
@@ -624,21 +625,21 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
 		/*  debug("  epeer=%x echild=%x eparent=%x\n",
-		    epeer,echild,eparent);  */
+		    (int)epeer,(int)echild,(int)eparent);  */
 
 		if ((uint32_t)eparent == (uint32_t)parent &&
 		    (uint32_t)epeer == 0) {
 			epeer = a;
 			store_32bit_word(cpu, peeraddr + 0x00, epeer);
 			/*  debug("[ addchild: adding 0x%08x as peer "
-			    "to 0x%08x ]\n", a, peeraddr);  */
+			    "to 0x%08x ]\n", (int)a, (int)peeraddr);  */
 		}
 		if ((uint32_t)peeraddr == (uint32_t)parent &&
 		    (uint32_t)echild == 0) {
 			echild = a;
 			store_32bit_word(cpu, peeraddr + 0x04, echild);
 			/*  debug("[ addchild: adding 0x%08x as "
-			    "child to 0x%08x ]\n", a, peeraddr);  */
+			    "child to 0x%08x ]\n", (int)a, (int)peeraddr);  */
 		}
 
 		/*  Go to the next component:  */
@@ -782,8 +783,9 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		/*  debug("  epeer=%x echild=%x eparent=%x\n",
-		    epeer,echild,eparent);  */
+		/*  debug("  epeer=%llx echild=%llx eparent=%llx\n",
+		    (long long)epeer, (long long)echild,
+		    (long long)eparent);  */
 
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
@@ -1519,7 +1521,7 @@ int arcbios_emul(struct cpu *cpu)
 		}
 
 		if (cpu->cd.mips.gpr[MIPS_GPR_V0] == ARCBIOS_ESUCCESS) {
-			debug(" = handle %i ]\n", handle);
+			debug(" = handle %i ]\n", (int)handle);
 			store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A2],
 			    handle);
 			file_handle_in_use[handle] = 1;
@@ -1756,10 +1758,12 @@ int arcbios_emul(struct cpu *cpu)
 				tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
 				tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
 			}
-			ofs = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24) +
-			    ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40) +
-			    ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
-			arcbios_current_seek_offset[cpu->cd.mips.gpr[MIPS_GPR_A0]] = ofs;
+			ofs = buf[0] + (buf[1] << 8) + (buf[2] << 16) +
+			    (buf[3] << 24) + ((uint64_t)buf[4] << 32) +
+			    ((uint64_t)buf[5] << 40) + ((uint64_t)buf[6] << 48)
+			    + ((uint64_t)buf[7] << 56);
+			arcbios_current_seek_offset[
+			    cpu->cd.mips.gpr[MIPS_GPR_A0]] = ofs;
 			debug("%016llx ]\n", (long long)ofs);
 		}
 
@@ -1789,7 +1793,9 @@ int arcbios_emul(struct cpu *cpu)
 			    strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
+				cpu->cd.mips.gpr[MIPS_GPR_V0] =
+				    ARC_ENV_STRINGS + i +
+				    strlen((char *)buf) + 1;
 				return 1;
 			}
 		}
@@ -1807,7 +1813,8 @@ int arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x80:		/*  GetFileInformation()  */
 		debug("[ ARCBIOS GetFileInformation(%i,0x%x): ",
-		    cpu->cd.mips.gpr[MIPS_GPR_A0], (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] >= MAX_HANDLES) {
 			debug("invalid file handle ]\n");
@@ -1816,8 +1823,10 @@ int arcbios_emul(struct cpu *cpu)
 			debug("file handle not in use! ]\n");
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
-			debug("'%s' ]\n", file_handle_string[cpu->cd.mips.gpr[MIPS_GPR_A0]]);
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = arcbios_getfileinformation(cpu);
+			debug("'%s' ]\n", file_handle_string[
+			    cpu->cd.mips.gpr[MIPS_GPR_A0]]);
+			cpu->cd.mips.gpr[MIPS_GPR_V0] =
+			    arcbios_getfileinformation(cpu);
 		}
 		break;
 	case 0x88:		/*  FlushAllCaches()  */
@@ -1825,7 +1834,8 @@ int arcbios_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x90:		/*  void *GetDisplayStatus(handle)  */
-		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n", cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		/*  TODO:  handle different values of 'handle'?  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ARC_DSPSTAT_ADDR;
 		break;

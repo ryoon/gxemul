@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.78 2005-02-21 07:55:19 debug Exp $
+ *  $Id: diskimage.c,v 1.79 2005-02-21 22:20:58 debug Exp $
  *
  *  Disk image support.
  *
@@ -698,17 +698,20 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  4 bytes of header for 6-byte command,
 		    8 bytes of header for 10-byte command.  */
-		xferp->data_in[0] = retlen;	/*  mode data length  */
-		xferp->data_in[1] = d->is_a_cdrom? 0x05 : 0x00;		/*  medium type  */
-		xferp->data_in[2] = 0x00;	/*  device specific parameter  */
-		xferp->data_in[3] = 8 * 1;	/*  block descriptor length: 1 page (?)  */
+		xferp->data_in[0] = retlen;	/*  0: mode data length  */
+		xferp->data_in[1] = d->is_a_cdrom? 0x05 : 0x00;
+				/*  1: medium type  */
+		xferp->data_in[2] = 0x00;	/*  device specific
+						    parameter  */
+		xferp->data_in[3] = 8 * 1;	/*  block descriptor
+						    length: 1 page (?)  */
 
 		/*  TODO: update this when implementing 10-byte commands:  */
-		xferp->data_in[4] = 0x00;		/*  density code  */
-		xferp->data_in[5] = 0;			/*  nr of blocks, high  */
-		xferp->data_in[6] = 0;			/*  nr of blocks, mid  */
-		xferp->data_in[7] = 0;			/*  nr of blocks, low */
-		xferp->data_in[8] = 0x00;		/*  reserved  */
+		xferp->data_in[4] = 0x00;	/*  density code  */
+		xferp->data_in[5] = 0;		/*  nr of blocks, high  */
+		xferp->data_in[6] = 0;		/*  nr of blocks, mid  */
+		xferp->data_in[7] = 0;		/*  nr of blocks, low */
+		xferp->data_in[8] = 0x00;	/*  reserved  */
 		xferp->data_in[9] = (d->logical_block_size >> 16) & 255;
 		xferp->data_in[10] = (d->logical_block_size >> 8) & 255;
 		xferp->data_in[11] = d->logical_block_size & 255;
@@ -735,7 +738,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 11] = 1;	/*  TODO  */
 
 			/*  12,13 = physical sector size  */
-			xferp->data_in[12 + 12] = (d->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 12] =
+			    (d->logical_block_size >> 8) & 255;
 			xferp->data_in[12 + 13] = d->logical_block_size & 255;
 			break;
 		case 4:		/*  rigid disk geometry page  */
@@ -757,11 +761,12 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 2] = ((5000) >> 8) & 255;
 			xferp->data_in[12 + 3] = (5000) & 255;
 
-			xferp->data_in[12 + 4] = 2;	/*  nr of heads  */
-			xferp->data_in[12 + 5] = 18;	/*  sectors per track  */
+			xferp->data_in[12 + 4] = 2;    /*  nr of heads  */
+			xferp->data_in[12 + 5] = 18;   /*  sectors per track  */
 
 			/*  6,7 = data bytes per sector  */
-			xferp->data_in[12 + 6] = (d->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 6] = (d->logical_block_size >> 8)
+			    & 255;
 			xferp->data_in[12 + 7] = d->logical_block_size & 255;
 
 			xferp->data_in[12 + 8] = (d->ncyls >> 8) & 255;
@@ -771,7 +776,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 29] = d->rpms & 255;
 			break;
 		default:
-			fatal("[ MODE_SENSE for page %i is not yet implemented! ]\n", pagecode);
+			fatal("[ MODE_SENSE for page %i is not yet "
+			    "implemented! ]\n", pagecode);
 		}
 
 		break;
@@ -802,7 +808,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			}
 
 			if (d->filemark) {
-				/*  At end of file, switch to the next automagically:  */
+				/*  At end of file, switch to the next
+				    automagically:  */
 				d->tape_filenr ++;
 				diskimage__switch_tape(d);
 
@@ -817,14 +824,16 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
-					debug(" (weird len=%i)", xferp->cmd_len);
+					debug(" (weird len=%i)",
+					    xferp->cmd_len);
 
 				/*
-				 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
-				 *  logical block address.
+				 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3]
+				 *  hold the logical block address.
 				 *
-				 *  cmd[4] holds the number of logical blocks to transfer.
-				 *  (special case if the value is 0, actually means 256.)
+				 *  cmd[4] holds the number of logical blocks
+				 *  to transfer. (Special case if the value is
+				 *  0, actually means 256.)
 				 */
 				ofs = ((xferp->cmd[1] & 0x1f) << 16) +
 				      (xferp->cmd[2] << 8) + xferp->cmd[3];
@@ -833,15 +842,18 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 					retlen = 256;
 			} else {
 				if (xferp->cmd_len != 10)
-					debug(" (weird len=%i)", xferp->cmd_len);
+					debug(" (weird len=%i)",
+					    xferp->cmd_len);
 
 				/*
 				 *  cmd[2..5] hold the logical block address.
-				 *  cmd[7..8] holds the number of logical blocks to transfer.
-				 *  (if the value is 0 this means 0, not 65536.)
+				 *  cmd[7..8] holds the number of logical
+				 *  blocks to transfer. (NOTE: If the value is
+				 *  0, this means 0, not 65536. :-)
 				 */
-				ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
-				      (xferp->cmd[4] << 8) + xferp->cmd[5];
+				ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3]
+				    << 16) + (xferp->cmd[4] << 8) +
+				    xferp->cmd[5];
 				retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 			}
 
@@ -850,7 +862,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size, 0);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
+		    size, 0);
 
 		debug(" READ  ofs=%lli size=%i\n", (long long)ofs, (int)size);
 
@@ -897,8 +910,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
 			 *  logical block address.
 			 *
-			 *  cmd[4] holds the number of logical blocks to transfer.
-			 *  (special case if the value is 0, actually means 256.)
+			 *  cmd[4] holds the number of logical blocks to
+			 *  transfer. (Special case if the value is 0, actually
+			 *  means 256.)
 			 */
 			ofs = ((xferp->cmd[1] & 0x1f) << 16) +
 			      (xferp->cmd[2] << 8) + xferp->cmd[3];
@@ -911,8 +925,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			/*
 			 *  cmd[2..5] hold the logical block address.
-			 *  cmd[7..8] holds the number of logical blocks to transfer.
-			 *  (if the value is 0 this means 0, not 65536.)
+			 *  cmd[7..8] holds the number of logical blocks to
+			 *  transfer. (NOTE: If the value is 0 this means 0,
+			 *  not 65536.)
 			 */
 			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
 			      (xferp->cmd[4] << 8) + xferp->cmd[5];
@@ -923,14 +938,16 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		ofs *= d->logical_block_size;
 
 		if (xferp->data_out_offset != size) {
-			debug(", data_out == NULL, wanting %i bytes, \n\n", (int)size);
+			debug(", data_out == NULL, wanting %i bytes, \n\n",
+			    (int)size);
 			xferp->data_out_len = size;
 			return 2;
 		}
 
 		debug(", data_out != NULL, OK :-)");
 
-		debug("WRITE ofs=%i size=%i offset=%i\n", (int)ofs, (int)size, (int)xferp->data_out_offset);
+		debug("WRITE ofs=%i size=%i offset=%i\n", (int)ofs,
+		    (int)size, (int)xferp->data_out_offset);
 
 		diskimage__internal_access(d, 1, ofs,
 		    xferp->data_out, size);
@@ -976,28 +993,32 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 		if (xferp->cmd[1] != 0x00)
-			fatal("WARNING: REQUEST_SENSE with cmd[1]=0x%02x not yet implemented\n");
+			fatal("WARNING: REQUEST_SENSE with cmd[1]=0x%02x not"
+			    " yet implemented\n", (int)xferp->cmd[1]);
 
 		if (retlen < 18) {
-			fatal("WARNING: SCSI request sense len=%i, <18!\n", retlen);
+			fatal("WARNING: SCSI request sense len=%i, <18!\n",
+			    (int)retlen);
 			retlen = 18;
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
+		    retlen, 1);
 
-		xferp->data_in[0] = 0x80 + 0x70;	/*  0x80 = valid, 0x70 = "current errors"  */
-		xferp->data_in[2] = 0x00;		/*  SENSE KEY!  */
+		xferp->data_in[0] = 0x80 + 0x70;/*  0x80 = valid,
+						    0x70 = "current errors"  */
+		xferp->data_in[2] = 0x00;	/*  SENSE KEY!  */
 
 		if (d->filemark) {
 			xferp->data_in[2] = 0x80;
 		}
 		debug(": [2]=0x%02x ", xferp->data_in[2]);
 
-printf(" XXX \n");
+		printf(" XXX(!) \n");
 
 		/*  TODO  */
-		xferp->data_in[7] = retlen - 7;		/*  additional sense length  */
+		xferp->data_in[7] = retlen - 7;	/*  additional sense length  */
 		/*  TODO  */
 
 		diskimage__return_default_status_and_message(xferp);
@@ -1010,15 +1031,16 @@ printf(" XXX \n");
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 		if (xferp->cmd[1] != 0x00)
-			fatal("WARNING: READ_BLOCK_LIMITS with cmd[1]=0x%02x not yet implemented\n");
+			fatal("WARNING: READ_BLOCK_LIMITS with cmd[1]="
+			    "0x%02x not yet implemented\n", (int)xferp->cmd[1]);
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
+		    retlen, 1);
 
 		/*
-		 *  data[0] is reserved, data[1..3] contain the maximum
-		 *  block length limit, data[4..5] contain the minimum
-		 *  limit.
+		 *  data[0] is reserved, data[1..3] contain the maximum block
+		 *  length limit, data[4..5] contain the minimum limit.
 		 */
 
 		{
@@ -1040,7 +1062,8 @@ printf(" XXX \n");
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 		if ((xferp->cmd[1] & 0xe0) != 0x00)
-			fatal("WARNING: REWIND with cmd[1]=0x%02x not yet implemented\n");
+			fatal("WARNING: REWIND with cmd[1]=0x%02x not yet "
+			    "implemented\n", (int)xferp->cmd[1]);
 
 		/*  Close and reopen.  */
 
@@ -1066,12 +1089,13 @@ printf(" XXX \n");
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 		if ((xferp->cmd[1] & 0xe0) != 0x00)
-			fatal("WARNING: SPACE with cmd[1]=0x%02x not yet implemented\n");
+			fatal("WARNING: SPACE with cmd[1]=0x%02x not yet "
+			    "implemented\n", (int)xferp->cmd[1]);
 
 		/*
-		 *  Bits 2..0 of buf[1] contain the 'code' which describes
-		 *  how we should space, and buf[2..4] contain the number
-		 *  of operations.
+		 *  Bits 2..0 of buf[1] contain the 'code' which describes how
+		 *  we should space, and buf[2..4] contain the number of
+		 *  operations.
 		 */
 		debug("[ SPACE: buf[] = %02x %02x %02x %02x %02x %02x ]\n",
 		    xferp->cmd[0],
@@ -1105,7 +1129,8 @@ printf(" XXX \n");
 			d->filemark = 0;
 			break;
 		default:
-			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n", xferp->cmd[1] & 7);
+			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n",
+			    xferp->cmd[1] & 7);
 		}
 
 		diskimage__return_default_status_and_message(xferp);
@@ -1233,7 +1258,8 @@ printf(" XXX \n");
 		/*
 		 *  Used by Windows NT?
 		 *
-		 *  Not documented in http://www.danbbs.dk/~dino/SCSI/SCSI2-D.html.
+		 *  Not documented in http://www.danbbs.dk/~dino/
+		 *		SCSI/SCSI2-D.html.
 		 *  Google gave the answer "MECHANISM_STATUS" for ATAPI. Hm.
 		 */
 
@@ -1358,7 +1384,8 @@ int diskimage_add(struct machine *machine, char *fname)
 			case ':':
 				break;
 			default:
-				fprintf(stderr, "diskimage_add(): invalid prefix char '%c'\n", c);
+				fprintf(stderr, "diskimage_add(): invalid "
+				    "prefix char '%c'\n", c);
 				exit(1);
 			}
 		}

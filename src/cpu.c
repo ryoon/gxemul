@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.23 2004-01-16 17:34:07 debug Exp $
+ *  $Id: cpu.c,v 1.24 2004-01-19 12:50:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2336,7 +2336,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		 *  This is really ugly.
 		 */
 
-		if (cpu->cpu_type.mmu_model == MMU10K) {
+/*		if (cpu->cpu_type.mmu_model == MMU10K) {  */
 /*			printf("taghi=%08lx taglo=%08lx\n",
 			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
 			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
@@ -2349,7 +2349,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				/*  Dislocate the cache:  */
 				cpu->r10k_cache_disable_TODO = 1;
 			}
-		}
+/*		}  */
 
 		break;
 	case HI6_SPECIAL2:

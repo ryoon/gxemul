@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.118 2004-10-25 03:21:24 debug Exp $
+ *  $Id: main.c,v 1.119 2004-10-25 03:26:24 debug Exp $
  */
 
 #include <stdio.h>
@@ -162,7 +162,7 @@ void usage(char *progname)
 	printf("  -n nr     set nr of CPUs\n");
 	printf("  -O        fake netboot (tftp instead of rzX), even when a disk image is\n"
 	       "            present (for DECstation emulation)\n");
-	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
+	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI emulation).\n");
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");

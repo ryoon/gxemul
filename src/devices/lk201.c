@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.4 2004-05-04 15:55:00 debug Exp $
+ *  $Id: lk201.c,v 1.5 2004-05-06 03:52:35 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -84,6 +84,7 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
 			found = 0xbc;
 			break;
 		case '\n':
+		case '\r':
 			found = 0xbd;
 			break;
 		case '\t':

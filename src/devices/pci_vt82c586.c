@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.3 2004-01-07 00:53:44 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.4 2004-01-10 06:33:43 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -84,7 +84,7 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 	case 0x00:
 		return PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_IDE << 16);
 	case 0x08:
-		/*  Probably not correct:  */
+		/*  Possibly not correct:  */
 		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_ATA, 0) + 0x01;		/*  Revision ???  */
 	default:
 		return 0;

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.157 2004-12-13 00:43:39 debug Exp $
+$Id: index.html,v 1.158 2004-12-13 01:48:48 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1054,7 +1054,7 @@ binary translation, enabled by the <b>-b</b> command line. (Without this
 option, the emulator is very slow.)
 
 <p>
-(If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS03'</b> on
+(If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS3'</b> on
 the command line. This will cause Linux to use the graphical framebuffer.
 Unfortunately, Linux does not seem to have a driver for the DZ11 keyboard
 controller yet, so you cannot interact with the system. You will see the
@@ -1091,11 +1091,24 @@ a clean solution to this yet.)
 
 </pre>
   <li>Boot Debian using the following command line:<pre>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' \
+	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
+
+</pre>
+	You'll enter single-user mode. You need to add a line to
+	/etc/inittab, to enable logins via serial console.<pre>
+	sh-2.05b# <b>echo 'T3:23:respawn:/sbin/getty -L ttyS3 9600 vt100' >> /etc/inittab</b>
+	sh-2.05b# <b>sync; umount /</b>
+</pre>
+</ol>
+
+<p>
+Once the install has finished, the following command should let you
+boot Debian:<pre>
 	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 ro' \
 	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
-</ol>
 
 
 
@@ -1150,14 +1163,14 @@ in mips64emul:
 </pre>(Note sda1 instead of sdc1.)
   <p>
   <li>To boot Linux, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -M128 -o "console=ttyS03 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 </ol>
 
 <p>
 If you need to boot into single user mode, try the following:<pre>
-	$ <b>./mips64emul -D2 -o "console=ttyS03 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 
@@ -1166,7 +1179,7 @@ Redhat Linux on DECstation in R3000 mode should work fine with dynamic binary
 translation (enabled by adding <b>-b</b> to the command line).
 
 <p>
-NOTE: You can add -XN and remove console=ttyS03 from the command line, if you want
+NOTE: You can add -XN and remove console=ttyS3 from the command line, if you want
 to use a graphical framebuffer. Unfortunately, Linux doesn't have support for
 the keyboard controller yet, so you cannot actually interact with the sytem. :-(
 
@@ -1347,7 +1360,7 @@ Here are links to some of the kernels that I usually experiment with.
 	<b>mv boot/vmlinux-* .; rmdir boot</b>
 </pre>
 	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
-	<br>To try with serial console: <b>-D2 -o 'console=ttyS03' vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with serial console: <b>-D2 -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
 	<br>Read <a href="#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>

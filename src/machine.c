@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.268 2005-01-05 23:43:58 debug Exp $
+ *  $Id: machine.c,v 1.269 2005-01-09 00:38:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -161,6 +161,8 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
  */
 void store_byte(struct cpu *cpu, uint64_t addr, uint8_t data)
 {
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
 	memory_rw(cpu, cpu->mem,
 	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
@@ -204,6 +206,8 @@ void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
 void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 {
 	unsigned char data[8];
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
 	data[0] = (data64 >> 56) & 255;
 	data[1] = (data64 >> 48) & 255;
 	data[2] = (data64 >> 40) & 255;
@@ -233,6 +237,8 @@ void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
 	data[2] = (data32 >> 8) & 255;
@@ -253,6 +259,8 @@ void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
  */
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
 	if ((addr & 7) == 0 && (((size_t)s) & 7) == 0) {
 		while (len >= 8) {
 			memory_rw(cpu, cpu->mem, addr, (unsigned char *)s, 8, MEM_WRITE, CACHE_DATA);
@@ -307,6 +315,8 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[4];
 
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
 	memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 
@@ -1804,9 +1814,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
 		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576
-		    + 0x80000000ULL - 512;	/*  argv  */
+		    + 0xffffffff80000000ULL - 512;	/*  argv  */
 		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576
-		    + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
 		bootstr = emul->boot_kernel_filename;
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8);

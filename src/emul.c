@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.102 2005-01-08 15:30:58 debug Exp $
+ *  $Id: emul.c,v 1.103 2005-01-09 00:38:07 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -171,13 +171,13 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 			fatal("\nWARNING! Weird load address 0x%08x.\n\n",
 			    (int)bootblock_loadaddr);
 		bootblock_loadaddr &= 0x0fffffff;
-		bootblock_loadaddr |= 0xa0000000;
+		bootblock_loadaddr |= 0xffffffffa0000000;
 
 		bootblock_pc = minibuf[0x14] + (minibuf[0x15] << 8)
 		  + (minibuf[0x16] << 16) + (minibuf[0x17] << 24);
 
 		bootblock_pc &= 0x0fffffff;
-		bootblock_pc |= 0xa0000000;
+		bootblock_pc |= 0xffffffffa0000000;
 		cpu->pc = bootblock_pc;
 
 		readofs = 0x18;
@@ -413,7 +413,7 @@ void emul_start(struct emul *emul)
 			unsigned int j;
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
-			addr = 0x80000000 + i;
+			addr = 0xffffffff80000000 + i;
 			memory_rw(emul->cpus[emul->bootstrap_cpu], mem,
 			    addr, data, sizeof(data), MEM_WRITE,
 			    CACHE_NONE | NO_EXCEPTIONS);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.2 2004-07-17 22:45:00 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.3 2004-07-26 00:19:55 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -85,13 +85,13 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 	g = d->fb->rgb_palette[d->color * 3 + 1];
 	b = d->fb->rgb_palette[d->color * 3 + 2];
 
-	if ((idata & 0x00ffffff00000000) == MGRAS_SET_COLOR) {
+	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_COLOR) {
 		int color = (idata >> 12) & 0xff;
 		d->color = color;
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000) == MGRAS_SET_STARTXY) {
+	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_STARTXY) {
 		d->startx = (idata >> 16) & 0xffff;
 		d->starty = idata & 0xffff;
 		if (d->startx >= mardigras_xsize)
@@ -103,7 +103,7 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000) == MGRAS_SET_STOPXY) {
+	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_STOPXY) {
 		d->stopx = (idata >> 16) & 0xffff;
 		d->stopy = idata & 0xffff;
 		if (d->stopx >= mardigras_xsize)
@@ -149,7 +149,7 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000) == MGRAS_SEND_LINE) {
+	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SEND_LINE) {
 		addr = (mardigras_xsize * (mardigras_ysize - 1 - d->currenty)
 		    + d->currentx) * 3;
 /*

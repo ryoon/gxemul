@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.103 2005-02-11 09:29:47 debug Exp $
+#  $Id: configure,v 1.104 2005-02-11 16:51:22 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -689,8 +689,7 @@ if [ ! -x _testr ]; then
 		printf " -lm\n"
 	fi
 else
-	printf " none needed (?)\n"
-	ls -la _testr*
+	printf " none needed\n"
 fi
 rm -f _testr.[co] _testr
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.79 2004-09-05 02:46:03 debug Exp $
+ *  $Id: main.c,v 1.80 2004-09-05 03:03:44 debug Exp $
  */
 
 #include <stdio.h>
@@ -76,7 +76,6 @@ int64_t max_instructions = 0;
 int emulated_hz = 0;
 int max_random_cycles_per_chunk = 0;
 int speed_tricks = 1;
-int userland_emul = 0;
 char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
 char *boot_string_argument = "-a";		/*  overridden with -o  */
 
@@ -219,7 +218,9 @@ void usage(char *progname)
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
+#ifdef ENABLE_USERLAND
 	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
+#endif
 	printf("  -v        verbose debug messages\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
@@ -363,7 +364,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			tlb_dump = 1;
 			break;
 		case 'u':
-			userland_emul = atoi(optarg);
+			emul->userland_emul = atoi(optarg);
 			break;
 		case 'v':
 			verbose = 1;
@@ -512,6 +513,13 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->bintrans_enable) {
 		fprintf(stderr, "WARNING: %s was compiled without bintrans support. Ignoring -b.\n", progname);
 		emul->bintrans_enable = 0;
+	}
+#endif
+
+#ifndef ENABLE_USERLAND
+	if (emul->userland_emul) {
+		fprintf(stderr, "FATAL: Userland emulation must be enabled at configure time (--userland).\n");
+		exit(1);
 	}
 #endif
 

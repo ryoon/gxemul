@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.219 2004-09-05 02:19:16 debug Exp $
+$Id: HISTORY,v 1.220 2004-09-05 03:03:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -928,3 +928,5 @@ HISTORY of mips64emul
 		main.c into a "struct emul". Very time-consuming.
 		Some minor fixes for LL/SC on R10000.
 20040905	Moving more stuff from main.c into struct emul.
+		Userland emulation is now only used if --userland is used
+		when running configure.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.58 2004-09-05 02:46:03 debug Exp $
+ *  $Id: emul.c,v 1.59 2004-09-05 03:03:44 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -65,7 +65,6 @@ extern int single_step;
 extern int max_random_cycles_per_chunk;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int userland_emul;
 extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
@@ -672,7 +671,7 @@ void emul_start(struct emul *emul)
 	if (use_x11)
 		x11_init();
 
-	if (userland_emul) {
+	if (emul->userland_emul) {
 		/*
 		 *  For userland only emulation, no machine emulation is
 		 *  needed.
@@ -714,7 +713,7 @@ void emul_start(struct emul *emul)
 		 *  The program's name will be in argv[0], and the
 		 *  rest of the parameters in argv[1] and up.
 		 */
-		if (userland_emul)
+		if (emul->userland_emul)
 			break;
 
 		extra_argc --;  extra_argv ++;
@@ -739,7 +738,7 @@ void emul_start(struct emul *emul)
 			cpus[i]->byte_order =
 			    cpus[emul->bootstrap_cpu]->byte_order;
 
-	if (userland_emul)
+	if (emul->userland_emul)
 		useremul_init(cpus[emul->bootstrap_cpu],
 		    extra_argc, extra_argv);
 

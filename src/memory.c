@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.72 2004-09-05 02:27:09 debug Exp $
+ *  $Id: memory.c,v 1.73 2004-09-05 03:03:44 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -43,7 +43,6 @@ extern int physical_ram_in_mb;
 extern int instruction_trace;
 extern int register_dump;
 extern int trace_on_bad_address;
-extern int userland_emul;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
@@ -1110,10 +1109,12 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 #endif
 
-	if (userland_emul) {
+#ifdef ENABLE_USERLAND
+	if (cpu->emul->userland_emul) {
 		paddr = vaddr & 0x7fffffff;
 		goto have_paddr;
 	}
+#endif
 
 	/*
 	 *  For instruction fetch, are we on the same page as the last
@@ -1310,7 +1311,11 @@ into the devices  */
 	 *  the host's virtual memory and don't care about memory sizes,
 	 *  so this doesn't apply.)
 	 */
-	if (paddr >= mem->physical_max && !userland_emul) {
+	if (paddr >= mem->physical_max
+#ifdef ENABLE_USERLAND
+	    && !cpu->emul->userland_emul
+#endif
+	    ) {
 		if ((paddr & 0xffff000000ULL) == 0x1f000000) {
 			/*  Ok, this is PROM stuff  */
 		} else if ((paddr & 0xfffff00000ULL) == 0x1ff00000) {

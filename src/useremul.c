@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.17 2004-09-02 02:13:14 debug Exp $
+ *  $Id: useremul.c,v 1.18 2004-09-05 03:03:44 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -67,12 +67,26 @@
 
 #include "misc.h"
 
+
+#ifndef ENABLE_USERLAND
+
+
+void useremul_init(struct cpu *cpu, int argc, char **host_argv)
+{
+}
+
+void useremul_syscall(struct cpu *cpu, uint32_t code)
+{
+}
+
+
+#else	/*  ENABLE_USERLAND  */
+
+
 #include "memory.h"
 #include "syscall_netbsd.h"
 #include "sysctl_netbsd.h"
 #include "syscall_ultrix.h"
-
-extern int userland_emul;
 
 /*  Max length of strings passed using syscall parameters:  */
 #define	MAXLEN		8192
@@ -94,7 +108,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	int i, i2;
 	int envc = 1;
 
-	switch (userland_emul) {
+	switch (cpu->emul->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
 		cpu->gpr[GPR_A0] = stack_top - stack_margin;
@@ -150,7 +164,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
  *
  *  Warning: returns a pointer to a static array.
  */
-unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
+static unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
 {
 	static unsigned char charbuf[MAXLEN];
 	int i;
@@ -177,7 +191,8 @@ unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
  *  Warning: returns a pointer to a static array.
  *  TODO: combine this with get_userland_string() in some way
  */
-unsigned char *get_userland_buf(struct cpu *cpu, uint64_t baseaddr, int len)
+static unsigned char *get_userland_buf(struct cpu *cpu,
+	uint64_t baseaddr, int len)
 {
 	static unsigned char charbuf[MAXLEN];
 	int i;
@@ -224,7 +239,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 	uint32_t sysctl_name, sysctl_namelen, sysctl_oldp, sysctl_oldlenp, sysctl_newp, sysctl_newlen;
 	uint32_t name0, name1, name2, name3;
 
-	switch (userland_emul) {
+	switch (cpu->emul->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		sysnr = cpu->gpr[GPR_V0];
 
@@ -963,8 +978,10 @@ TODO
 
 	default:
 		fprintf(stderr, "useremul_syscall(): unimplemented syscall"
-		   " emulation %i\n", userland_emul);
+		   " emulation %i\n", cpu->emul->userland_emul);
 		exit(1);
 	}
 }
 
+
+#endif	/*  ENABLE_USERLAND  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.32 2004-09-28 15:14:28 debug Exp $
+ *  $Id: arcbios.c,v 1.33 2004-09-29 05:35:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -187,7 +187,7 @@ uint64_t arcbios_addchild(struct cpu *cpu,
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_32bit_word(cpu, a + 0x2c, a + 0x30);
 		store_string(cpu, a + 0x30, identifier);
-		arcbios_next_component_address += strlen(identifier) + 1;
+		arcbios_next_component_address += strlen(identifier) + 2;
 	}
 
 	/*  Round up to next 0x4 bytes:  */
@@ -338,7 +338,7 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_64bit_word(cpu, a + 0x48, a + 0x50);
 		store_string(cpu, a + 0x50, identifier);
-		arcbios_next_component_address += strlen(identifier) + 1;
+		arcbios_next_component_address += strlen(identifier) + 2;
 	}
 
 	/*  Round up to next 0x8 bytes:  */
@@ -379,7 +379,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		component.IdentifierLength      = 0;
 		component.Identifier            = 0;
 		if (identifier != NULL) {
-			component.IdentifierLength = strlen(identifier);
+			component.IdentifierLength = strlen(identifier) + 1;
 		}
 		return arcbios_addchild(cpu, &component, identifier, parent);
 	} else {
@@ -394,7 +394,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		component64.IdentifierLength      = 0;
 		component64.Identifier            = 0;
 		if (identifier != NULL) {
-			component64.IdentifierLength = strlen(identifier);
+			component64.IdentifierLength = strlen(identifier) + 1;
 		}
 		return arcbios_addchild64(cpu, &component64, identifier, parent);
 	}

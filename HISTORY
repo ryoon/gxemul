@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.235 2004-09-28 15:23:26 debug Exp $
+$Id: HISTORY,v 1.236 2004-09-29 05:35:15 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -966,3 +966,4 @@ HISTORY of mips64emul
 		tested more.)
 20040928	Minor updates. Some ARC stuff ("arcdiag" runs now).
 		cpu_register_dump() now also dumps coprocessor registers.
+20040929	Minor updates.

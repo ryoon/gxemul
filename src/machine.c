@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.180 2004-09-28 15:14:28 debug Exp $
+ *  $Id: machine.c,v 1.181 2004-09-29 05:35:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -771,7 +771,7 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  */
 void machine_init(struct emul *emul, struct memory *mem)
 {
-	uint64_t addr;
+	uint64_t addr, addr2;
 	int i;
 
 	/*  DECstation:  */
@@ -2434,10 +2434,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  Hahaha, this is so ugly.  */
 		/*  TODO: Make it less ugly by not hardcoding everything.  */
 
-		cpu->gpr[GPR_A0] = 10;
-		cpu->gpr[GPR_A1] = ARC_ARGV_START;
-		cpu->gpr[GPR_A2] = ARC_ENV_STRINGS;
-
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
 			/*  64-bit ARCBIOS SPB:  (TODO: This is just a guess)  */
@@ -2537,6 +2533,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  ARCBIOS SPB:  */
 			memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBLength, sizeof(arcbios_spb));
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Version, 1);
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
@@ -2559,19 +2556,24 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		/*  Boot string in ARC format:  */
-		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
+		if (emul->emulation_type == EMULTYPE_SGI)
+			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
+		else
+			init_bootpath = "multi()disk()fdisk()";
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);
 		strcpy(bootstr, init_bootpath);
 		strcat(bootstr, emul->boot_kernel_filename);
 
-		bootarg = emul->boot_string_argument;		/*  -a, for example  */
+		/*  Boot args., eg "-a"  */
+		bootarg = emul->boot_string_argument;
 
 		/*
 		 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
-		 *  for more options.  It seems that on SGI machines, _ALL_ environment
-		 *  variables are passed on the command line.  (This is not true for ARC? TODO)
+		 *  for more options.  It seems that on SGI machines, _ALL_
+		 *  environment variables are passed on the command line,
+		 *  but NOT on generic ARC.
 		 */
 
 		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
@@ -2597,32 +2599,75 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_string(cpu, ARC_ARGV_START + 0x2c0, "diagmode=istrue");
 		store_string(cpu, ARC_ARGV_START + 0x2e0, bootarg);
 
+		/*  argc, argv, envp in a0, a1, a2:  */
+		if (emul->emulation_type == EMULTYPE_SGI)
+			cpu->gpr[GPR_A0] = 10;
+		else
+			cpu->gpr[GPR_A0] = 1;
+		cpu->gpr[GPR_A1] = ARC_ARGV_START;
+		cpu->gpr[GPR_A2] = ARC_ENV_POINTERS;
+
 		/*  TODO:  not needed?  */
 		cpu->gpr[GPR_SP] = emul->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
+		/*
+		 *  Add environment variables.  For each variable, add it
+		 *  as a string using add_environment_string(), and add a
+		 *  pointer to it to the ARC_ENV_POINTERS array.
+		 *
+		 *  TODO: 64-bit pointers for some SGI modes?
+		 */
 		addr = ARC_ENV_STRINGS;
+		addr2 = ARC_ENV_POINTERS;
 
 		if (emul->use_x11) {
 			if (emul->emulation_type == EMULTYPE_ARC) {
-				add_environment_string(cpu, "ConsoleIn=multi()key()keyboard()console()", &addr);
-				add_environment_string(cpu, "ConsoleOut=multi()video()monitor()console()", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "CONSOLEOUT=multi()video()monitor()console()", &addr);
 			} else {
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
 				add_environment_string(cpu, "ConsoleIn=keyboard()", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
 				add_environment_string(cpu, "ConsoleOut=video()", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "console=g", &addr);
 			}
-
-			add_environment_string(cpu, "console=g", &addr);
 		} else {
-			add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
-			add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
-			add_environment_string(cpu, "console=d2", &addr);		/*  d2 = serial?  */
+			if (emul->emulation_type == EMULTYPE_ARC) {
+				/*  TODO: serial console for ARC?  */
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "CONSOLEIN=serial(0)", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "CONSOLEOUT=serial(0)", &addr);
+			} else {
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
+				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				add_environment_string(cpu, "console=d2", &addr);		/*  d2 = serial?  */
+			}
 		}
-		add_environment_string(cpu, "cpufreq=3", &addr);
-		add_environment_string(cpu, "dbaud=9600", &addr);
-		add_environment_string(cpu, "eaddr=00:00:00:00:00:00", &addr);
-		add_environment_string(cpu, "verbose=istrue", &addr);
-		add_environment_string(cpu, "showconfig=istrue", &addr);
+
+		if (emul->emulation_type == EMULTYPE_SGI) {
+			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			add_environment_string(cpu, "cpufreq=3", &addr);
+			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			add_environment_string(cpu, "dbaud=9600", &addr);
+			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			add_environment_string(cpu, "eaddr=00:00:00:00:00:00", &addr);
+			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			add_environment_string(cpu, "verbose=istrue", &addr);
+			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			add_environment_string(cpu, "showconfig=istrue", &addr);
+		}
+
+		/*  End the environment strings with an empty zero-terminated
+		    string, and the envp array with a NULL pointer.  */
 		add_environment_string(cpu, "", &addr);	/*  the end  */
+		store_32bit_word(cpu, addr2, 0);
 
 		break;
 

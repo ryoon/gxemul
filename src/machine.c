@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.143 2004-07-18 12:34:46 debug Exp $
+ *  $Id: machine.c,v 1.144 2004-07-18 13:17:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1405,8 +1405,6 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_COBALT:
 		machine_name = "Cobalt";
-		if (emulated_hz == 0)
-			emulated_hz = 1000000;		/*  TODO: how fast are Cobalt machines?  */
 
 		/*
 		 *  Interrupts seem to be the following:
@@ -1605,7 +1603,6 @@ void machine_init(struct memory *mem)
 			sprintf(short_machine_name, "ARC");
 			sprintf(machine_name, "ARC");
 		}
-
 
 		if (emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other machine types?  */

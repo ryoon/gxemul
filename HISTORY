@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.167 2004-07-18 10:52:53 debug Exp $
+$Id: HISTORY,v 1.168 2004-07-18 13:17:25 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -809,3 +809,4 @@ HISTORY of mips64emul
 		the performance gain was worth.
 20040718	The MardiGras device works well enough to let Linux draw the
 		SGI logo and output text.
+		A bunch of other minor changes.

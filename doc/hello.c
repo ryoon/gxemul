@@ -1,9 +1,9 @@
 /*  Hello world for mips64emul  */
 
-/*  Note: The cast to an int causes the address to be sign-extended
+/*  Note: The cast to a signed int causes the address to be sign-extended
     correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
-#define	PUTCHAR_ADDRESS		((int)0xb0000000)
-#define	HALT_ADDRESS		((int)0xb0000010)
+#define	PUTCHAR_ADDRESS		((signed int)0xb0000000)
+#define	HALT_ADDRESS		((signed int)0xb0000010)
 
 void printchar(char ch)
 {

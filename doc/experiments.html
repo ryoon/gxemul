@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.18 2005-02-12 09:55:38 debug Exp $
+$Id: experiments.html,v 1.19 2005-02-12 10:05:09 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -132,35 +132,44 @@ of its portability. Then try to compile the hello world program:
 </pre>
 
 <p>
-You need to type CTRL-C after Hello world has appeared on your terminal,
-because the program just hangs forever there. Typing CTRL-C brings up the
-single-step debugger. To exit the emulator, type 'quit'.
-
-<p>
 As you can see above, a GCC configured for mips64-unknown-elf can produce
 both 64-bit and 32-bit binaries. If you don't want to run the entire
 Hello World program, but want to single-step through the execution to
 learn more about how MIPS programs run, then add -V to the command line:
+
+<p>
 <pre>
 	$ <b>./mips64emul -Va hello</b>
 	..
 	mips64emul&gt; <b>r</b>
-	cpu0:    pc = ffffffff800300a4    <f>
+	cpu0:    pc = a800000000030078    <f>
 	cpu0:    hi = 0000000000000000    lo = 0000000000000000
 	cpu0:    zr = 0000000000000000    at = 0000000000000000
 	cpu0:    v0 = 0000000000000000    v1 = 0000000000000000
 	..
-	cpu0:    gp = ffffffff800780e0    sp = ffffffffa0007f00
+	cpu0:    gp = a8000000000780c0    sp = ffffffffa0007f00
 	cpu0:    fp = 0000000000000000    ra = 0000000000000000
-	mips64emul&gt; <b>s 5</b>
+	mips64emul&gt; <b>s 15</b>
 	&lt;f&gt;
-	ffffffff800300a4: 67bdfff0   daddiu  sp,sp,-16
-	ffffffff800300a8: ffbf0008   sd      ra,8(sp)    [0xffffffffa0007ef8, data=0x0000000000000000]
-	ffffffff800300ac: ffbe0000   sd      fp,0(sp)    [0xffffffffa0007ef0, data=0x0000000000000000]
-	ffffffff800300b0: 03a0f02d   daddu   fp,sp,zr
-	ffffffff800300b4: 3c040000   lui     a0,0x0
-	mips64emul&gt; <b>print fp</b>
-	fp = 0xffffffffa0007ef0
+	a800000000030078: 67bdfff0      daddiu  sp,sp,-16
+	a80000000003007c: 3c04a800      lui     a0,0xa800
+	a800000000030080: 3c010003      lui     at,0x3
+	a800000000030084: 64840000      daddiu  a0,a0,0
+	a800000000030088: 642100b8      daddiu  at,at,184
+	a80000000003008c: 0004203c      dsll32  a0,a0,0
+	a800000000030090: 0081202d      daddu   a0,a0,at
+	a800000000030094: ffbf0000      sd      ra,0(sp)           [0xffffffffa0007ef0, data=0x0000000000000000]
+	a800000000030098: 0c00c00a      jal     0xa800000000030028 &lt;printstr&gt;
+	a80000000003009c: 00000000 (d)  nop
+	  &lt;printstr("Hello world\n",0,0,0,..)&gt;
+	&lt;printstr&gt;
+	a800000000030028: 67bdfff0      daddiu  sp,sp,-16
+	a80000000003002c: ffb00000      sd      s0,0(sp)           [0xffffffffa0007ee0, data=0x0000000000000000]
+	a800000000030030: ffbf0008      sd      ra,8(sp)           [0xffffffffa0007ee8, data=0xa8000000000300a0]
+	a800000000030034: 90820000      lbu     v0,0(a0)           [0xa8000000000300b8 = $LC0, data=0x48]
+	a800000000030038: 00021600      sll     v0,v0,24
+	mips64emul&gt; <b>print v0</b>
+	v0 = 0x0000000048000000
 	mips64emul&gt; <b><blink>_</blink></b>
 </pre>
 

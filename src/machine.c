@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.354 2005-02-22 13:23:45 debug Exp $
+ *  $Id: machine.c,v 1.355 2005-02-22 15:20:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3942,7 +3942,11 @@ for (i=0; i<32; i++)
 
 		dev_pmppc_init(mem);
 
-		/*  com0 = 0xff600300, com1 = 0xff600400 ?  */
+		/*  com0 = 0xff600300, com1 = 0xff600400  */
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0xff600300, 0, 1, 1, "serial 0");
+		dev_ns16550_init(machine, mem,
+		    0xff600300, 0, 1, 0, "serial 1");
 
 		{
 			int i;

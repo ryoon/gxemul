@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.53 2005-02-22 14:53:54 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.54 2005-02-22 15:20:17 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -769,6 +769,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (l_bit)
 				debug(",%i", l_bit);
 			break;
+		case PPC_31_LBZX:
+		case PPC_31_LBZUX:
 		case PPC_31_LHZX:
 		case PPC_31_LHZUX:
 		case PPC_31_LWZX:
@@ -784,6 +786,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			switch (xo) {
+			case PPC_31_LBZX:  mnem = "lbzx"; break;
+			case PPC_31_LBZUX: mnem = "lbzux"; break;
 			case PPC_31_LHZX:  mnem = "lhzx"; break;
 			case PPC_31_LHZUX: mnem = "lhzux"; break;
 			case PPC_31_LWZX:
@@ -846,6 +850,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_MULLWO:
 		case PPC_31_SUBF:
 		case PPC_31_SUBFO:
+		case PPC_31_SUBFC:
+		case PPC_31_SUBFCO:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFEO:
 			rt = (iword >> 21) & 31;
@@ -883,6 +889,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			case PPC_31_SUBF:   mnem = "subf"; break;
 			case PPC_31_SUBFO:  mnem = "subfo"; break;
+			case PPC_31_SUBFC:
+				mnem = power? "sf" : "subfc";
+				break;
+			case PPC_31_SUBFCO:
+				mnem = power? "sfo" : "subfco";
+				break;
 			case PPC_31_SUBFE:
 				mnem = power? "sfe" : "subfe";
 				break;
@@ -1743,6 +1755,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			reg_access_msr(cpu, &cpu->cd.ppc.gpr[rs], 1);
 			break;
 
+		case PPC_31_LBZX:
+		case PPC_31_LBZUX:
 		case PPC_31_LHZX:
 		case PPC_31_LHZUX:
 		case PPC_31_LWZX:
@@ -1758,6 +1772,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			rb = (iword >> 11) & 31;
 			update = 0;
 			switch (xo) {
+			case PPC_31_LBZUX:
 			case PPC_31_LHZUX:
 			case PPC_31_LWZUX:
 			case PPC_31_STBUX:
@@ -1772,6 +1787,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			addr += cpu->cd.ppc.gpr[rb];
 			load = 0;
 			switch (xo) {
+			case PPC_31_LBZX:
+			case PPC_31_LBZUX:
 			case PPC_31_LHZX:
 			case PPC_31_LHZUX:
 			case PPC_31_LWZX:
@@ -1788,6 +1805,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			tmp_data_len = 4;
 			switch (xo) {
+			case PPC_31_LBZX:
+			case PPC_31_LBZUX:
 			case PPC_31_STBX:
 			case PPC_31_STBUX:
 				tmp_data_len = 1;
@@ -1929,6 +1948,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_31_MULLWO:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFEO:
+		case PPC_31_SUBFC:
+		case PPC_31_SUBFCO:
 		case PPC_31_SUBF:
 		case PPC_31_SUBFO:
 			rt = (iword >> 21) & 31;
@@ -1991,9 +2012,13 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] +
 				    cpu->cd.ppc.gpr[rb] + 1;
 				break;
+			case PPC_31_SUBFC:
+			case PPC_31_SUBFCO:
 			case PPC_31_SUBFE:
 			case PPC_31_SUBFEO:
 				old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
+				if (xo == PPC_31_SUBFC || xo == PPC_31_SUBFCO)
+					old_ca = 1;
 				cpu->cd.ppc.xer &= PPC_XER_CA;
 				if (cpu->cd.ppc.bits == 32) {
 					tmp = (~cpu->cd.ppc.gpr[ra])

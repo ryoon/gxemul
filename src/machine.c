@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.389 2005-03-15 07:37:41 debug Exp $
+ *  $Id: machine.c,v 1.390 2005-03-15 18:43:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -769,11 +769,32 @@ void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
  *  irq_nr = 8 + x
  *	x = 0..15 for level1
  *	x = 16..31 for level2
+ *	x = 32+y for GIU interrupt y
  */
 void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 	int irq_nr, int assrt)
 {
+	int giu_irq = 0;
+
 	irq_nr -= 8;
+	if (irq_nr >= 32) {
+		giu_irq = irq_nr - 32;
+
+		if (assrt)
+			m->vr41xx_data->giuint |= (1 << giu_irq);
+		else
+			m->vr41xx_data->giuint &= ~(1 << giu_irq);
+	}
+
+	if (irq_nr != 8) {
+		/*  If any GIU bit is asserted, then assert the main
+		    GIU interrupt:  */
+		if (m->vr41xx_data->giuint & m->vr41xx_data->giumask)
+			vr41xx_interrupt(m, cpu, 8 + 8, 1);
+		else
+			vr41xx_interrupt(m, cpu, 8 + 8, 0);
+	}
+
 	/*  debug("vr41xx_interrupt(): irq_nr=%i assrt=%i\n",
 	    irq_nr, assrt);  */
 

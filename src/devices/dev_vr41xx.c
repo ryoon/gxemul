@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.19 2005-03-15 07:37:42 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.20 2005-03-15 18:43:06 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -396,11 +396,23 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 			d->sysint1 &= 0xffff;
 		}
 		break;
+	case 0x88:
+		if (writeflag == MEM_READ)
+			odata = d->giuint;
+		else
+			d->giuint &= ~idata;
+		break;
 	case 0x8c:
 		if (writeflag == MEM_READ)
 			odata = d->msysint1;
 		else
 			d->msysint1 = idata;
+		break;
+	case 0x94:
+		if (writeflag == MEM_READ)
+			odata = d->giumask;
+		else
+			d->giumask = idata;
 		break;
 	case 0xa0:	/*  Level 1 system interrupt reg 2...  */
 		if (writeflag == MEM_READ)
@@ -420,6 +432,17 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 
 	/*  PMU:  0xc0 .. 0xfc  */
 	/*  RTC:  0x100 .. ?  */
+
+	case 0x108:
+		if (writeflag == MEM_READ)
+			odata = d->giuint;
+		else
+			d->giuint &= ~idata;
+		break;
+	/*  case 0x10a:
+		"High" part of GIU?
+		break;
+	*/
 
 	case 0x13e:	/*  on 4181?  */
 		/*  RTC interrupt register...  */
@@ -445,7 +468,9 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 
 ret:
 	/*  Recalculate interrupt assertions:  */
-	cpu_interrupt_ack(cpu, 8 + 32);
+	cpu_interrupt_ack(cpu, 8 + 31);		/*  TODO: hopefully nothing
+						useful at irq 15 in
+						sysint2  */
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

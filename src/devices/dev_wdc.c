@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.18 2005-03-05 12:31:26 debug Exp $
+ *  $Id: dev_wdc.c,v 1.19 2005-03-15 18:43:06 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -412,7 +412,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					wdc_addtoinbuf(d, d->identify_struct
 					    [i+1]);
 				}
-
+printf("WDC INTERRUPT\n");
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			default:
@@ -464,7 +464,5 @@ void dev_wdc_init(struct machine *machine, struct memory *mem,
 	    dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
 	    dev_wdc_access, d, MEM_DEFAULT, NULL);
-
-/*	machine_add_tickfunction(machine, dev_wdc_tick, d, 10);  */
 }
 

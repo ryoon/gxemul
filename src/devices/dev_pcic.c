@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.3 2005-03-15 09:54:06 debug Exp $
+ *  $Id: dev_pcic.c,v 1.4 2005-03-15 18:43:06 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -171,6 +171,9 @@ int dev_pcic_access(struct cpu *cpu, struct memory *mem,
 				odata = PCIC_IDENT_IFTYPE_MEM_AND_IO
 				    | PCIC_IDENT_REV_I82365SLR1;
 			break;
+		case PCIC_CSC:
+			odata = PCIC_CSC_GPI;
+			break;
 		case PCIC_IF_STATUS:
 			odata = PCIC_IF_STATUS_READY;
 			if (controller_nr == 0 && socket_nr == 0)
@@ -224,7 +227,7 @@ int devinit_pcic(struct devinit *devinit)
 
 	/*  TODO: find out a good way to specify the address, and the IRQ!  */
 	dev_wdc_init(devinit->machine, devinit->machine->memory,
-	    0x14000180, 0, 0);
+	    0x14000180, 8 + 32 + 9, 0);
 
 	return 1;
 }

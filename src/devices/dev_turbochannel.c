@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.9 2004-03-07 03:55:49 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.10 2004-03-08 03:22:42 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -175,13 +175,13 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, "PMAG-AA");
-		dev_bt459_init(mem, baseaddr + VFB_MFB_BT459, fb->rgb_palette, 8);
+		dev_bt459_init(mem, baseaddr + VFB_MFB_BT459, fb, 8);
 		/*  TODO: There should be a BT431 at 0x180000, and a BT455 at 0x100000. No BT459. */
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, "PMAG-BA");
-		dev_bt459_init(mem, baseaddr + VFB_CFB_BT459, fb->rgb_palette, 8);
+		dev_bt459_init(mem, baseaddr + VFB_CFB_BT459, fb, 8);
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */
@@ -193,11 +193,11 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-EA")==0) {
 		/*  pxg+ in NetBSD: TODO  (not supported by the kernel I've tried)  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0, VFB_GENERIC, 1280, 1024, 1280, 1024, 24, "PMAG-EA");
+		fatal("TODO (see dev_turbochannel.c)\n");
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-FA")==0) {
-		/*  "pxg+ Turbo" in NetBSD: TODO  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0, VFB_GENERIC, 1280, 1024, 1280, 1024, 24, "PMAG-FA");
+		/*  "pxg+ Turbo" in NetBSD  */
+		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PXGPLUSTURBO, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DV")==0) {
 		/*  xcfb in NetBSD: TODO  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.131 2005-01-24 11:28:31 debug Exp $
+ *  $Id: emul.c,v 1.132 2005-01-26 08:22:58 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -39,9 +39,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "arcbios.h"
 #include "bintrans.h"
 #include "emul.h"
 #include "console.h"
+#include "debugger.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
@@ -49,6 +51,7 @@
 #include "misc.h"
 #include "net.h"
 #include "sgi_arcbios.h"
+#include "x11.h"
 
 #ifdef HACK_STRTOLL
 #define strtoll strtol
@@ -755,6 +758,17 @@ void emul_run(struct emul **emuls, int n_emuls)
 			continue;
 		for (j=0; j<e->n_machines; j++)
 			cpu_run_deinit(e, e->machines[j]);
+	}
+
+	/*  Any force_debugger_at_exit flag set? Then enter the debugger:  */
+	n = 0;
+	for (i=0; i<n_emuls; i++)
+		if (emuls[i]->force_debugger_at_exit)
+			n++;
+	if (n > 0) {
+		quiet_mode = 0;
+		debugger_reset();
+		debugger();
 	}
 
 	/*  Any machine using X11? Then we should wait before exiting:  */

@@ -1,5 +1,5 @@
-#ifndef	EMUL_H
-#define	EMUL_H
+#ifndef	ARCBIOS_H
+#define	ARCBIOS_H
 
 /*
  *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
@@ -28,32 +28,36 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.29 2005-01-26 08:22:57 debug Exp $
+ *  $Id: arcbios.h,v 1.1 2005-01-26 08:22:57 debug Exp $
+ *
+ *  Headerfile for src/arcbios.c.
+ *
+ *  (Note: There are also files called arcbios_other.h and sgi_arcbios.h,
+ *  which are copied from NetBSD.)
  */
 
 #include "misc.h"
 
-struct machine;
-struct net;
-
-struct emul {
-	int		verbose;
-	int		single_step;
-	int		force_debugger_at_exit;
-
-	struct net	*net;
-
-	int		n_machines;
-	struct machine	**machines;
-};
-
-/*  emul.c:  */
-struct emul *emul_new(void);
-struct machine *emul_add_machine(struct emul *e, char *name);
-void emul_dumpinfo(struct emul *e);
-void emul_simple_init(struct emul *emul);
-struct emul *emul_create_from_configfile(char *fname);
-void emul_run(struct emul **emuls, int n_emuls);
+struct cpu;
 
 
-#endif	/*  EMUL_H  */
+/*  arcbios.c:  */
+void arcbios_add_string_to_component(char *string, uint64_t component);
+void arcbios_console_init(struct cpu *cpu,
+	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy);
+void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
+uint64_t arcbios_get_scsicontroller(void);
+void arcbios_add_memory_descriptor(struct cpu *cpu,
+	uint64_t base, uint64_t len, int arctype);
+uint64_t arcbios_addchild_manual(struct cpu *cpu,
+	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
+	uint64_t revision, uint64_t key, uint64_t affinitymask,
+	char *identifier, uint64_t parent, void *config_data,
+	size_t config_len);
+void arcbios_emul(struct cpu *cpu);
+void arcbios_set_64bit_mode(int enable);
+void arcbios_set_default_exception_handler(struct cpu *cpu);
+void arcbios_init(void);
+
+
+#endif	/*  ARCBIOS_H  */

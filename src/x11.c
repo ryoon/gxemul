@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.44 2005-01-19 21:27:10 debug Exp $
+ *  $Id: x11.c,v 1.45 2005-01-26 08:22:59 debug Exp $
  *
  *  X11-related functions.
  */
@@ -34,10 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc.h"
-
 #include "console.h"
 #include "machine.h"
+#include "misc.h"
+#include "x11.h"
 
 
 #ifndef	WITH_X11

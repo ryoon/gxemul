@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.211 2005-01-25 08:38:27 debug Exp $
+ *  $Id: misc.h,v 1.212 2005-01-26 08:22:57 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -54,9 +54,6 @@
 #define USE_TINY_CACHE
 /*  #define HALT_IF_PC_ZERO  */
 
-#ifdef WITH_X11
-#include <X11/Xlib.h>
-#endif
 
 #ifdef NO_MAP_ANON
 #ifdef mmap
@@ -106,40 +103,9 @@ struct memory;
 #define	DEFAULT_NCPUS			1
 
 
-/*  main.c:  */
-void debug_indentation(int diff);
-void debug(char *fmt, ...);
-void fatal(char *fmt, ...);
-
-
-/*  arcbios.c:  */
-void arcbios_add_string_to_component(char *string, uint64_t component);
-void arcbios_console_init(struct cpu *cpu,
-	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy);
-void arcbios_register_scsicontroller(uint64_t scsicontroller_component);
-uint64_t arcbios_get_scsicontroller(void);
-void arcbios_add_memory_descriptor(struct cpu *cpu,
-	uint64_t base, uint64_t len, int arctype);
-uint64_t arcbios_addchild_manual(struct cpu *cpu,
-	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
-	uint64_t revision, uint64_t key, uint64_t affinitymask,
-	char *identifier, uint64_t parent, void *config_data,
-	size_t config_len);
-void arcbios_emul(struct cpu *cpu);
-void arcbios_set_64bit_mode(int enable);
-void arcbios_set_default_exception_handler(struct cpu *cpu);
-void arcbios_init(void);
-
-
 /*  cpu_common.c:  */
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
-
-
-/*  debugger.c:  */
-void debugger_activate(int x);
-void debugger(void);
-void debugger_init(struct emul **emuls, int n_emuls);
 
 
 /*  dec_prom.c:  */
@@ -149,6 +115,12 @@ void decstation_prom_emul(struct cpu *cpu);
 /*  file.c:  */
 int file_n_executables_loaded(void);
 void file_load(struct memory *mem, char *filename, struct cpu *cpu);
+
+
+/*  main.c:  */
+void debug_indentation(int diff);
+void debug(char *fmt, ...);
+void fatal(char *fmt, ...);
 
 
 /*  mips16.c:  */
@@ -165,63 +137,6 @@ void playstation2_sifbios_emul(struct cpu *cpu);
 #define	USERLAND_ULTRIX_PMAX	2
 void useremul_init(struct cpu *, int, char **);
 void useremul_syscall(struct cpu *cpu, uint32_t code);
-
-
-/*  x11.c:  */
-#define N_GRAYCOLORS            16
-#define	CURSOR_COLOR_TRANSPARENT	-1
-#define	CURSOR_COLOR_INVERT		-2
-#define	CURSOR_MAXY		64
-#define	CURSOR_MAXX		64
-/*  Framebuffer windows:  */
-struct fb_window {
-	int		fb_number;
-
-#ifdef WITH_X11
-	/*  x11_fb_winxsize > 0 for a valid fb_window  */
-	int		x11_fb_winxsize, x11_fb_winysize;
-	int		scaledown;
-	Display		*x11_display;
-
-	int		x11_screen;
-	int		x11_screen_depth;
-	unsigned long	fg_color;
-	unsigned long	bg_color;
-	XColor		x11_graycolor[N_GRAYCOLORS];
-	Window		x11_fb_window;
-	GC		x11_fb_gc;
-
-	XImage		*fb_ximage;
-	unsigned char	*ximage_data;
-
-	/*  -1 means transparent, 0 and up are grayscales  */
-	int		cursor_pixels[CURSOR_MAXY][CURSOR_MAXX];
-	int		cursor_x;
-	int		cursor_y;
-	int		cursor_xsize;
-	int		cursor_ysize;
-	int		cursor_on;
-	int		OLD_cursor_x;
-	int		OLD_cursor_y;
-	int		OLD_cursor_xsize;
-	int		OLD_cursor_ysize;
-	int		OLD_cursor_on;
-
-	/*  Host's X11 cursor:  */
-	Cursor		host_cursor;
-	Pixmap		host_cursor_pixmap;
-#endif
-};
-void x11_redraw_cursor(int);
-void x11_redraw(int);
-void x11_putpixel_fb(int, int x, int y, int color);
-#ifdef WITH_X11
-void x11_putimage_fb(int);
-#endif
-void x11_init(struct machine *);
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
-	int scaledown, struct machine *);
-void x11_check_event(void);
 
 
 #endif	/*  MISC_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.257 2005-01-25 08:38:28 debug Exp $
+ *  $Id: cpu.c,v 1.258 2005-01-26 08:22:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -37,11 +37,11 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "misc.h"
-
+#include "arcbios.h"
 #include "bintrans.h"
 #include "console.h"
 #include "cop0.h"
+#include "debugger.h"
 #include "devices.h"
 #include "emul.h"
 #include "machine.h"
@@ -50,6 +50,7 @@
 #include "mips_cpu_types.h"
 #include "opcodes.h"
 #include "symbol.h"
+#include "x11.h"
 
 
 extern int old_show_trace_tree;

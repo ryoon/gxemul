@@ -1,5 +1,5 @@
-#ifndef	EMUL_H
-#define	EMUL_H
+#ifndef	DEBUGGER_H
+#define	DEBUGGER_H
 
 /*
  *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
@@ -28,32 +28,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.29 2005-01-26 08:22:57 debug Exp $
+ *  $Id: debugger.h,v 1.1 2005-01-26 08:22:57 debug Exp $
+ *
+ *  See src/debugger.c.
  */
 
-#include "misc.h"
+struct emul;
 
-struct machine;
-struct net;
-
-struct emul {
-	int		verbose;
-	int		single_step;
-	int		force_debugger_at_exit;
-
-	struct net	*net;
-
-	int		n_machines;
-	struct machine	**machines;
-};
-
-/*  emul.c:  */
-struct emul *emul_new(void);
-struct machine *emul_add_machine(struct emul *e, char *name);
-void emul_dumpinfo(struct emul *e);
-void emul_simple_init(struct emul *emul);
-struct emul *emul_create_from_configfile(char *fname);
-void emul_run(struct emul **emuls, int n_emuls);
+/*  debugger.c:  */
+void debugger_activate(int x);
+void debugger(void);
+void debugger_reset(void);
+void debugger_init(struct emul **emuls, int n_emuls);
 
 
-#endif	/*  EMUL_H  */
+#endif	/*  DEBUGGER_H  */

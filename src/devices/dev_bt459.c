@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.54 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_bt459.c,v 1.55 2005-01-26 08:22:56 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -39,6 +39,7 @@
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
+#include "x11.h"
 
 #include "bt459.h"
 

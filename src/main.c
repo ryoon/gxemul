@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.168 2005-01-25 08:38:28 debug Exp $
+ *  $Id: main.c,v 1.169 2005-01-26 08:22:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -216,6 +216,7 @@ static void usage(char *progname, int longusage)
 	printf("                -j netbsd          for NetBSD/pmax\n");
 	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j vmunix          for Ultrix/RISC\n");
+	printf("  -K        force the debugger to be entered at the end of a simulation\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
@@ -275,7 +276,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	m->machine_type = MACHINE_NONE;
 	symbol_init(&m->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:"
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -352,6 +353,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				exit(1);
 			}
 			strcpy(m->boot_kernel_filename, optarg);
+			break;
+		case 'K':
+			emul->force_debugger_at_exit = 1;
 			break;
 		case 'M':
 			m->physical_ram_in_mb = atoi(optarg);

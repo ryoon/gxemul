@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.53 2005-01-24 11:28:31 debug Exp $
+ *  $Id: debugger.c,v 1.54 2005-01-26 08:22:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -55,6 +55,7 @@
 
 #include "console.h"
 #include "cop0.h"
+#include "debugger.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
@@ -1024,13 +1025,24 @@ static void debugger_cmd_quiet(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 {
-	int i;
+	int i, j, k;
+	struct emul *e;
 
-	for (i=0; i<m->ncpus; i++)
-		m->cpus[i]->running = 0;
+	for (i=0; i<debugger_n_emuls; i++) {
+		e = debugger_emuls[i];
+		e->single_step = 0;
+		e->force_debugger_at_exit = 0;
 
-	m->exit_without_entering_debugger = 1;
-	debugger_emul->single_step = 0;
+		for (j=0; j<e->n_machines; j++) {
+			struct machine *m = e->machines[j];
+
+			for (k=0; k<m->ncpus; k++)
+				m->cpus[k]->running = 0;
+
+			m->exit_without_entering_debugger = 1;
+		}
+	}
+
 	exit_debugger = 1;
 }
 
@@ -1975,6 +1987,20 @@ void debugger(void)
 	debugger_machine->instruction_trace = old_instruction_trace;
 	debugger_machine->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;
+}
+
+
+/*
+ *  debugger_reset():
+ *
+ *  This function should be called before calling debugger(), when it is
+ *  absolutely necessary that debugger() is interactive. Otherwise, it might
+ *  return without doing anything, such as when single-stepping multiple
+ *  instructions at a time.
+ */
+void debugger_reset(void)
+{
+	n_steps_left_before_interaction = 0;
 }
 
 

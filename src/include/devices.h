@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.141 2005-02-07 07:12:25 debug Exp $
+ *  $Id: devices.h,v 1.142 2005-02-13 11:51:07 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -128,7 +128,8 @@ void dev_bt459_init(struct machine *machine, struct memory *mem, uint64_t basead
 int dev_cons_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *);
-int dev_cons_init(struct machine *machine, struct memory *mem, char *name);
+int dev_cons_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, char *name);
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
@@ -302,22 +303,34 @@ void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 struct kn230_csr {
 	uint32_t	csr;
 };
-int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+int dev_kn230_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr);
 
 /*  dev_le.c:  */
 #define	DEV_LE_LENGTH			0x1c0200
-int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len);
+int dev_le_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_le_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end,
+	int irq_nr, int len);
 
 /*  dev_m700_fb.c:  */
 #define	DEV_M700_FB_LENGTH		0x10000		/*  TODO?  */
-int dev_m700_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_m700_fb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t baseaddr2);
+int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_m700_fb_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t baseaddr2);
 
 /*  dev_n64_bios.c:  */
 #define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)
-int dev_n64_bios_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_n64_bios_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ns16550.c:  */
@@ -338,12 +351,17 @@ int dev_ns16550_init(struct machine *machine, struct memory *mem,
 #define	MC146818_SGI		4
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
-int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mc146818_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
+int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_mc146818_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
 
 /*  dev_mp.c:  */
-int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
+int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_mp_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x10

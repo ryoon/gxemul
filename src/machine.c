@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.344 2005-02-13 11:23:33 debug Exp $
+ *  $Id: machine.c,v 1.345 2005-02-13 11:51:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -60,6 +60,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "mp.h"
 #include "net.h"
 #include "symbol.h"
 
@@ -1239,14 +1240,10 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "\"Bare\" MIPS test machine";
 
-		dev_cons_init(machine, mem, "console");
+		machine->main_console_handle = dev_cons_init(
+		    machine, mem, DEV_CONS_ADDRESS, "console");
 
-		/*  This works with 'mmon' (MIPS):  */
-		/*  TODO: Move or remove this!  */
-		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x10800000, 2, 4, 1, "serial 0");
-
-		dev_mp_init(mem, machine->cpus);
+		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);

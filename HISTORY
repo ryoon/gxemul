@@ -408,3 +408,6 @@ HISTORY of mips64emul
 		to work with SGI-IP19 (in addition to DECstations).
 		Adding the 'sdc1' instruction.
 		Some progress on various SGI emulation modes.
+20040325	Minor updates.
+20040326	Fixed a 'madd' bug (r5900). NetBSD/playstation2 now reaches
+		userland correctly.

@@ -39,13 +39,7 @@ mips64emul TODO
 
 	CPU Emulation:
 		o)  Instructions:
-			o)  Step through the entire MIPS64, MIPS32, VR5432 and other
-			    ISA specs, and make sure that every instruction is:
-				*  included in the emulator,
-				*  tested using a kind of regression test (ie test code
-				   written in mips assembly language)
-					x)  correct results
-					x)  causes exceptions correctly
+			o)  Regression tests (see tests/README for more info)
 			o)  Floating point instructions!
 			o)  Finish the MIPS16 translator, and test it!
 			o)  MIPS V (SIMD vector stuff?)

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.176 2004-12-22 17:49:58 debug Exp $
+$Id: index.html,v 1.177 2004-12-22 18:06:00 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1528,10 +1528,11 @@ Here are links to some of the kernels that I usually experiment with.
   <li>HPCmips:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>.
-	<br>TODO: Update this section.
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>Try <b>./mips64emul -Xv -F1 netbsd-GENERIC</b>
       <p>
       <li>Linux for BE300: <a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try running <b>./mips64emul -F1 -X -t vmlinux</b>
+	<br>Try <b>./mips64emul -Xv -F1 vmlinux</b>
     </ul>
   </li>
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.5 2005-02-07 06:14:49 debug Exp $
+ *  $Id: console.c,v 1.6 2005-03-05 12:17:53 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -145,7 +145,7 @@ void console_sigcont(int x)
  *  start_xterm():
  *
  *  When using X11, this routine tries to start up an xterm, with another
- *  copy of mips64emul inside. The other mips64emul copy is given arguments
+ *  copy of gxemul inside. The other gxemul copy is given arguments
  *  that will cause it to run console_slave().
  */
 static void start_xterm(int handle)
@@ -511,7 +511,7 @@ static void console_slave_sigcont(int x)
 /*
  *  console_slave():
  *
- *  This function is used when running with X11, and mips64emul opens up
+ *  This function is used when running with X11, and gxemul opens up
  *  separate xterms for each emulated terminal or serial port.
  */
 void console_slave(char *arg)
@@ -623,8 +623,8 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
  *
  *  When using X11:
  *
- *  This routine tries to start up an xterm, with another copy of mips64emul
- *  inside. The other mips64emul copy is given arguments that will cause it
+ *  This routine tries to start up an xterm, with another copy of gxemul
+ *  inside. The other gxemul copy is given arguments that will cause it
  *  to run console_slave().
  *
  *  When not using X11:  Things will seem to work the same way without X11,
@@ -654,7 +654,7 @@ int console_start_slave(struct machine *machine, char *consolename)
 		printf("out of memory\n");
 		exit(1);
 	}
-	sprintf(chp->name, "mips64emul: '%s' %s", machine->name, consolename);
+	sprintf(chp->name, "GXemul: '%s' %s", machine->name, consolename);
 
 #if 0
 	if (!machine->use_x11) {
@@ -697,7 +697,7 @@ int console_start_slave_inputonly(struct machine *machine, char *consolename)
 		printf("out of memory\n");
 		exit(1);
 	}
-	sprintf(chp->name, "mips64emul: '%s' %s", machine->name, consolename);
+	sprintf(chp->name, "GXemul: '%s' %s", machine->name, consolename);
 
 	return handle;
 }

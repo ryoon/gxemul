@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.94 2005-03-05 12:05:30 debug Exp $
+ *  $Id: debugger.c,v 1.95 2005-03-05 12:16:14 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1608,7 +1608,7 @@ static char *debugger_readline(void)
 	char *cmd = last_cmd[last_cmd_index];
 
 	cmd_len = 0; cmd[0] = '\0';
-	printf("gxemul> ");
+	printf("GXemul> ");
 	fflush(stdout);
 
 	ch = '\0';
@@ -1797,7 +1797,7 @@ static char *debugger_readline(void)
 				}
 				if (j != 0)
 					printf("\n");
-				printf("gxemul> ");
+				printf("GXemul> ");
 				for (i=0; i<cmd_len; i++)
 					printf("%c", cmd[i]);
 			}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.215 2005-03-05 12:05:30 debug Exp $
+ *  $Id: main.c,v 1.216 2005-03-05 12:16:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -253,7 +253,7 @@ void internal_w(char *arg)
  */
 static void usage(int longusage)
 {
-	printf("gxemul");
+	printf("GXemul");
 #ifdef VERSION
 	printf("-" VERSION);
 #endif
@@ -710,7 +710,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
  *  Two kinds of emulations are started from here:
  *
  *	o)  Simple emulations, using command line arguments, compatible with
- *	    earlier version of gxemul.
+ *	    earlier version of GXemul/mips64emul.
  *
  *	o)  Emulations set up by parsing special config files. (0 or more.)
  */
@@ -747,7 +747,7 @@ int main(int argc, char *argv[])
 	get_cmd_args(argc, argv, emuls[0]);
 
 	/*  Print startup message:  */
-	debug("gxemul");
+	debug("GXemul");
 #ifdef VERSION
 	debug("-" VERSION);
 #endif

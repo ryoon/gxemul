@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.153 2005-03-05 08:42:25 debug Exp $
+ *  $Id: bintrans.c,v 1.154 2005-03-05 12:17:53 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -119,7 +119,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
 void bintrans_init(struct machine *machine, struct memory *mem)
 {
-	fatal("\n***  NOT starting bintrans, as mips64emul "
+	fatal("\n***  NOT starting bintrans, as gxemul "
 	    "was compiled without such support!\n\n");
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.54 2004-07-04 03:29:02 debug Exp $
+ *  $Id: coproc.c,v 1.55 2004-07-05 19:25:04 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -449,15 +449,6 @@ void coproc_register_write(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS) {
 		tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
 		unimpl = 0;
-
-#if 1
-		if (cpu->cpu_type.mmu_model == MMU3K) {
-			if (!(tmp & MIPS1_ISOL_CACHES)) {
-				cpu->cache_last_paddr[0] = IMPOSSIBLE_PADDR;
-				cpu->cache_last_paddr[1] = IMPOSSIBLE_PADDR;
-			}
-		}
-#endif
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_CAUSE) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.127 2004-07-05 01:09:06 debug Exp $
+ *  $Id: machine.c,v 1.128 2004-07-05 19:25:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -834,7 +834,7 @@ void machine_init(struct memory *mem)
 			dev_le_init(cpus[bootstrap_cpu], mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
 			dev_sii_init(cpus[bootstrap_cpu], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_hz);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -901,8 +901,7 @@ void machine_init(struct memory *mem)
 			dev_dc7085_init(cpus[bootstrap_cpu], mem,
 			    KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem,
-			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC,
-			    1, emulated_hz);
+			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
 			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu],
 			    mem, KN02_SYS_CSR);
@@ -940,7 +939,7 @@ void machine_init(struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_hz);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*
@@ -998,7 +997,7 @@ void machine_init(struct memory *mem)
 			    0, 0, KN03_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_hz);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*
@@ -1141,7 +1140,7 @@ void machine_init(struct memory *mem)
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000,
 			    XINE_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000,
-			    XINE_INT_TOY, MC146818_DEC, 1, emulated_hz);
+			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000,
 			    XINE_INTR_SCSI +8);
 
@@ -1210,7 +1209,7 @@ void machine_init(struct memory *mem)
 			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_hz);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
@@ -1401,7 +1400,7 @@ void machine_init(struct memory *mem)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_hz);	*/
-		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_hz);  	/*  mcclock0  */
+		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4);  	/*  mcclock0  */
 		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);				/*  com0  */
 
 		/*
@@ -1867,7 +1866,7 @@ void machine_init(struct memory *mem)
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
 
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40, emulated_hz);  /*  mcclock0  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*
@@ -1914,8 +1913,7 @@ void machine_init(struct memory *mem)
 				pci_data = dev_rd94_init(cpus[bootstrap_cpu],
 				    mem, 0x2000000000ULL, 0);
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
-				    0x2000004000ULL, 0, MC146818_ARC_NEC,
-				    1, emulated_hz);	/*  ???  */
+				    0x2000004000ULL, 0, MC146818_ARC_NEC, 1);
 				dev_pckbc_init(cpus[bootstrap_cpu], mem,
 				    0x2000005000ULL, PCKBC_8042, 0, 0);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem,
@@ -1975,11 +1973,9 @@ void machine_init(struct memory *mem)
 				/*  Linux:  0x800004000  */
 				/*  NetBSD: 0x2000004000  */
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
-				    0x800004000ULL, 2, MC146818_ARC_PICA, 1,
-				    emulated_hz);
+				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
-				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1,
-				    emulated_hz);
+				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
 				/*  TODO: irq numbers  */
 				dev_pckbc_init(cpus[bootstrap_cpu], mem,

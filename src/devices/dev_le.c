@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.11 2004-07-05 15:38:20 debug Exp $
+ *  $Id: dev_le.c,v 1.12 2004-07-05 19:25:02 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -287,10 +287,7 @@ void le_tx(struct le_data *d)
 		 *  the packet.
 		 */
 		if (enp) {
-			fatal("PACKET@0x%05x = ", bufaddr);
-			for (i=0; i<d->tx_packet_len; i++)
-				fatal("%02x", d->tx_packet[i]);
-			fatal("\n");
+			net_ethernet_tx(d, d->tx_packet, d->tx_packet_len);
 
 			free(d->tx_packet);
 			d->tx_packet = NULL;
@@ -326,8 +323,51 @@ void le_tx(struct le_data *d)
 void le_rx(struct le_data *d)
 {
 	int start_rxp = d->rxp;
+	uint16_t rx_descr[4];
+	int i, cur_packet_offset;
+	uint32_t bufaddr, buflen;
 
 	do {
+		/*  Load the 8 descriptor bytes:  */
+		rx_descr[0] = le_read_16bit(d, d->rdra + d->rxp*8 + 0);
+		rx_descr[1] = le_read_16bit(d, d->rdra + d->rxp*8 + 2);
+		rx_descr[2] = le_read_16bit(d, d->rdra + d->rxp*8 + 4);
+		rx_descr[3] = le_read_16bit(d, d->rdra + d->rxp*8 + 6);
+
+		bufaddr = rx_descr[0] + ((rx_descr[1] & 0xff) << 16);
+		buflen = 4096 - (rx_descr[2] & 0xfff);
+
+		/*
+		 *  Check the OWN bit. If it is zero, then this buffer is
+		 *  not ready to receive data yet.  Also check the '1111'
+		 *  mark, and make sure that byte-count is reasonable.
+		 */
+		if (!(rx_descr[1] & LE_OWN))
+			return;
+		if ((rx_descr[2] & 0xf000) != 0xf000)
+			return;
+		if (buflen < 12 || buflen > 1900)  /* TODO: eth frame size  */
+			return;
+
+fatal
+("[ le: rx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes ]\n",
+		    d->rxp, rx_descr[0], rx_descr[1], rx_descr[2], rx_descr[3],
+		    bufaddr, buflen);
+
+
+/**********/
+/*  TODO  */
+/**********/
+
+
+		/*  Clear the OWN bit:  */
+		rx_descr[1] &= ~LE_OWN;
+
+		/*  Write back the descriptor to SRAM:  */
+		le_write_16bit(d, d->rdra + d->rxp*8 + 2, rx_descr[1]);
+		le_write_16bit(d, d->rdra + d->rxp*8 + 4, rx_descr[2]);
+		le_write_16bit(d, d->rdra + d->rxp*8 + 6, rx_descr[3]);
+
 		/*  Go to the next descriptor:  */
 		d->rxp ++;
 		if (d->rxp >= d->rlen)
@@ -352,11 +392,27 @@ void le_register_fix(struct le_data *d)
 	if (d->reg[0] & LE_TXON)
 		le_tx(d);
 
-	/*  If the receiver is on, check for incomming buffers:  */
-/*	if (d->reg[0] & LE_RXON)
-		le_rx(d);
-TODO
-*/
+	/*
+	 *  If the receiver is on:
+	 *  If there is a current rx_packet, try to receive it into the
+	 *  Lance buffers.  Then try to receive any additional packets.
+	 */
+	if (d->reg[0] & LE_RXON) {
+		do {
+			if (d->rx_packet != NULL)
+				/*  Try to receive the packet:  */
+				le_rx(d);
+
+			if (d->rx_packet != NULL)
+				/*  If the packet wasn't fully received, 
+				    then abort for now.  */
+				break;
+
+			if (d->rx_packet == NULL && net_ethernet_rx_avail(d))
+				net_ethernet_rx(d, &d->rx_packet,
+				    &d->rx_packet_len);
+		} while (d->rx_packet != NULL);
+	}
 
 	/*  SERR should be the OR of BABL, CERR, MISS, and MERR:  */
 	d->reg[0] &= ~LE_SERR;

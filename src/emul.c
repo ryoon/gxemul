@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.25 2004-07-04 15:50:56 debug Exp $
+ *  $Id: emul.c,v 1.26 2004-07-05 19:25:04 debug Exp $
  *
  *  Emulation startup.
  */
@@ -36,10 +36,11 @@
 #include <unistd.h>
 
 #include "bintrans.h"
+#include "console.h"
+#include "diskimage.h"
 #include "memory.h"
 #include "misc.h"
-#include "diskimage.h"
-#include "console.h"
+#include "net.h"
 
 
 extern int optind;
@@ -319,6 +320,7 @@ void emul(void)
 	    bootstrap_cpu,
 	    cpus[bootstrap_cpu]->pc, cpus[bootstrap_cpu]->gpr[GPR_GP]);
 
+	net_init();
 	console_init();
 
 	if (!verbose)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.131 2004-07-05 02:33:46 debug Exp $
+$Id: HISTORY,v 1.132 2004-07-05 19:25:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -671,4 +671,8 @@ HISTORY of mips64emul
 		Various small optimizations.
 		R3000 caches finally work. (I know that there is at least one
 		bug, regarding interrupt response.)
-20040705	Working on the 'le' device.
+20040705	Working on the 'le' device, and on a generic (device
+		independant) networking framework.
+		Adding a '-c' command line option, which makes emulated_hz
+		automatically adjust itself to the current number of
+		emulated cycles per second (measured at regular intervals).

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: if_lereg.h,v 1.2 2004-07-05 01:09:24 debug Exp $  */
+/*  mips64emul: $Id: if_lereg.h,v 1.3 2004-07-05 19:25:03 debug Exp $  */
 /*	$NetBSD: if_lereg.h,v 1.4 1994/10/26 21:09:08 cgd Exp $	*/
 
 #ifndef IF_LEREG_H
@@ -370,6 +370,7 @@ struct lereg2pad {
 /*
  * Control and status bits -- lereg2
  */
+/*  (mips64emul: NOTE: These are not lereg, they are tx/rx descriptors)  */
 #define	LE_OWN		0x8000
 #define	LE_ERR		0x4000
 #define	LE_STP		0x0200

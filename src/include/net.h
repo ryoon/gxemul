@@ -26,10 +26,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.1 2004-07-05 02:43:19 debug Exp $
+ *  $Id: net.h,v 1.2 2004-07-05 19:25:03 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
+
+/*  net.c:  */
+int net_ethernet_rx_avail(void *extra);
+int net_ethernet_rx(void *extra, unsigned char **packetp, int *lenp);
+void net_ethernet_tx(void *extra, unsigned char *packet, int len);
+void net_init(void);
 
 
 #endif	/*  NET_H  */

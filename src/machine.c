@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.50 2004-02-25 01:08:02 debug Exp $
+ *  $Id: machine.c,v 1.51 2004-02-25 12:24:36 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -763,19 +763,24 @@ void machine_init(struct memory *mem)
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0xc0));
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
 
-		/*  For ultrixboot, these might work:  */
-		bootstr = "boot"; bootarg = "0/tftp/vmunix";
-
 		/*
-		 *  For booting NetBSD or Ultrix immediately, the following might work:
-		 *     "rz(0,0,0)netbsd" for 3100/2100, "5/rz0a/netbsd" for others
-		 *  where netbsd is the name of the kernel.  This fakes the bootstring
-		 *  as given to the kernel by ultrixboot.
+		 *  NOTE:  NetBSD and Ultrix expect their bootargs in different ways.
+		 *
+		 *	NetBSD:  "bootdev" "-a"
+		 *	Ultrix:  "ultrixboot" "bootdev" [args]
+		 *
+		 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for 3100/2100
+		 *  (although that crashes Ultrix :-/), and "5/rz0a/netbsd" for alll
+		 *  others.  The number '5' is the slot number of the boot device.
+		 *
+		 *  TODO:  Make this nicer.
 		 */
+#if 0
 		if (machine == MACHINE_PMAX_3100)
 			init_bootpath = "rz(0,0,0)";
 		else
-			init_bootpath = "5/rz0/";
+#endif
+			init_bootpath = "0/rz0/";
 
 		tmp_ptr = rindex(last_filename, '/');
 		if (tmp_ptr == NULL)
@@ -783,13 +788,17 @@ void machine_init(struct memory *mem)
 		else
 			tmp_ptr ++;
 
+#if 0
+		/*  For ultrixboot, these might work:  */
+		bootstr = "boot"; bootarg = "0/tftp/vmunix";
+#endif
 		bootstr = malloc(strlen(init_bootpath) + strlen(tmp_ptr) + 1);
 		strcpy(bootstr, init_bootpath);
 		strcat(bootstr, tmp_ptr);
 		bootarg = "-a";
 
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootstr);
+		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootstr);	/*  TODO  */
 		store_string(DEC_PROM_INITIAL_ARGV+0xc0, bootarg);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;

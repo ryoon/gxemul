@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.102 2005-03-29 07:48:41 debug Exp $
+$Id: RELEASE,v 1.103 2005-03-31 14:09:14 debug Exp $
 
 I'm now working on post-0.3.
 
@@ -33,7 +33,7 @@ following operating systems can run inside the emulator:
        Redhat Linux 7.1 for mips            DECstation 5000/200
        NetBSD/arc 1.6.2                     Acer PICA-61
        OpenBSD/arc 2.3                      Acer PICA-61
-       NetBSD/hpcmips 2.0                   MobilePro 780
+       NetBSD/hpcmips 2.0                   NEC MobilePro 770, 780, 800
 
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
@@ -49,7 +49,7 @@ The most important changes from version 0.3 to 0.3.1 are:
 	x)  Name change (from mips64emul to GXemul).
 
 	x)  NetBSD/hpcmips can now be installed and run from a harddisk
-	    image on an emulated MobilePro 780.
+	    image on an emulated NEC MobilePro 770, 780, or 800.
 
 	x)  ...
 

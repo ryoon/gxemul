@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.24 2005-03-29 07:48:42 debug Exp $
+$Id: guestoses.html,v 1.25 2005-03-31 14:08:47 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -282,8 +282,56 @@ option and try again.
 <a name="netbsdhpcmipsinstall"></a>
 <h3>How to install NetBSD/hpcmips in GXemul:</h3>
 
-It is possible to install NetBSD/hpcmips onto a disk image, on an
-an emulated MobilePro 780, by following these instructions:
+It is possible to install NetBSD/hpcmips onto a disk image, on an an
+emulated MobilePro 770, 780, or 800. The emulator treats the different
+machine models as being almost identical; the most important difference is
+regarding the framebuffer.
+
+<p>
+<table border="0">
+	<tr>
+		<td width="80">&nbsp;</td>
+		<td><u>Model:</u></td>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><u>Framebuffer size/depth:</u></td>
+		<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+		<td><u>Framebuffer address:</u></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>MobilePro 770</td>
+		<td></td>
+		<td>640 x 240, 16 bits</td>
+		<td></td>
+		<td>0xa000000</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>MobilePro 780</td>
+		<td></td>
+		<td>640 x 240, 16 bits</td>
+		<td></td>
+		<td>0xa180100 (<super>*</super>)</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>MobilePro 800</td>
+		<td></td>
+		<td>800 x 600, 16 bits</td>
+		<td></td>
+		<td>0xa000000</td>
+	</tr>
+</table>
+
+<p>
+(<super>*</super>) = not aligned at a 4 KB boundary, so it will not
+work with the current bintrans system. Using this mode will still work,
+but each load and store will be emulated much more slowly than is possible
+with an aligned framebuffer.
+
+<p>
+These instructions show an example of how to install
+NetBSD/hpcmips on an emulated MobilePro 800:
 
 <p>
 <ol start="1">
@@ -300,11 +348,11 @@ an emulated MobilePro 780, by following these instructions:
 </pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
-	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
+	$ <b>gxemul -E hpc -e mobilepro800 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
 
 </pre>
 	and proceed like you would do if you were installing NetBSD on a real
-	MobilePro 780. (Install onto wd0, choose "Use entire disk" when
+	MobilePro 800. (Install onto wd0, choose "Use entire disk" when
 	doing the MBR partitioning, and choose wd1d (not cd0c) as the
 	CDROM device to install from.)
 </ol>
@@ -316,11 +364,11 @@ disk image, so you need to download a generic kernel separately:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
 
 </pre>
-You can now use the generic NetBSD/hpcmips kernel to boot from the harddisk
-image, using the following command:
+
 <p>
-<pre>
-	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img netbsd-GENERIC</b>
+Once you have gunziped the generic kernel, you can now use it to boot from
+the harddisk image, using the following command:<pre>
+	$ <b>gxemul -E hpc -e mobilepro800 -b -X -d nbsd_hpcmips.img netbsd-GENERIC</b>
 
 </pre>
 

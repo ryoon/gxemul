@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.69 2004-11-20 04:16:24 debug Exp $
+ *  $Id: bintrans.c,v 1.70 2004-11-20 04:36:52 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -133,7 +133,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, 
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
 static int bintrans_write_instruction__rfe(unsigned char **addrp);
-static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd);
+static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
 
 
 #define	BINTRANS_CACHE_N_INDEX_BITS	14
@@ -536,13 +536,25 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				/*  mfc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc(&ca, 0, 0, rt, rd);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 0, rt, rd, 0);
 				n_translated += translated;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x20 && (instr[1]&7)==0 && instr[0]==0) {
 				/*  dmfc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc(&ca, 0, 1, rt, rd);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 1, rt, rd, 0);
+				n_translated += translated;
+			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x80 && (instr[1]&7)==0 && instr[0]==0) {
+				/*  mtc0:  */
+				rt = instr[2] & 31;
+				rd = (instr[1] >> 3) & 31;
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 0, rt, rd, 1);
+				n_translated += translated;
+			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0xa0 && (instr[1]&7)==0 && instr[0]==0) {
+				/*  dmtc0:  */
+				rt = instr[2] & 31;
+				rd = (instr[1] >> 3) & 31;
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 1, rt, rd, 1);
 				n_translated += translated;
 			} else
 				try_to_translate = 0;

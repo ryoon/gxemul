@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.41 2004-11-20 04:16:24 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.42 2004-11-20 04:36:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1654,11 +1654,11 @@ static int bintrans_write_instruction__rfe(unsigned char **addrp)
 
 
 /*
- *  bintrans_write_instruction__mfc():
+ *  bintrans_write_instruction__mfc_mtc():
  */
-static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd)
+static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
 {
-	uint32_t *a;
+	uint32_t *a, *jump;
 	int ofs;
 
 	/*
@@ -1685,14 +1685,42 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
 	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
 
-	ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
-	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
+	if (mtcflag) {
+		/*  mtc:  */
+		/*  Only allow mtc if it does NOT change the register!!  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
 
-	if (!flag64bit) {
-		*a++ = 0x40401002;		/*  addl t1,0,t1  */
+		bintrans_move_MIPS_reg_into_Alpha_reg((unsigned char **)&a, rt, ALPHA_T0);
+
+		if (!flag64bit) {
+			*a++ = 0x40201001;	/*  addl t0,0,t0  */
+			*a++ = 0x40401002;	/*  addl t1,0,t1  */
+		}
+
+		/*  a3 05 22 40     cmpeq   t0,t1,t2  */
+		/*  01 00 60 f4     bne     t2,<ok>  */
+		*a++ = 0x402205a3;
+		jump = a;
+		*a++ = 0;	/*  later  */
+
+		bintrans_write_chunkreturn_fail((unsigned char **)&a);
+
+		*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+
+		/*  The mtc is "allowed", but as it didn't change the
+		    register, we don't have do do any store here :-)  */
+	} else {
+		/*  mfc:  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
+
+		if (!flag64bit) {
+			*a++ = 0x40401002;		/*  addl t1,0,t1  */
+		}
+
+		bintrans_move_Alpha_reg_into_MIPS_reg((unsigned char **)&a, ALPHA_T1, rt);
 	}
-
-	bintrans_move_Alpha_reg_into_MIPS_reg((unsigned char **)&a, ALPHA_T1, rt);
 
 	*addrp = (unsigned char *) a;
 

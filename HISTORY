@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.315 2004-11-20 04:16:24 debug Exp $
+$Id: HISTORY,v 1.316 2004-11-20 04:36:50 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1154,3 +1154,4 @@ HISTORY of mips64emul
 		Adding bgez, bltz, bgtz, and blez to the i386 backend.
 20041120	Minor updates (bintrans related mostly).
 		Time to reach Ultrix login on the Xeon is now 11 seconds.
+		Adding 'mult' and 'multu' to the Alpha backend.

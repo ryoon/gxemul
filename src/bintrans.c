@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.90 2004-11-27 08:49:16 debug Exp $
+ *  $Id: bintrans.c,v 1.91 2004-11-27 09:30:48 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -404,42 +404,20 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		/*  Check for instructions that can be translated:  */
 		switch (hi6) {
 
-		case HI6_REGIMM:
-			regimm5 = instr[2] & 0x1f;
-			switch (regimm5) {
-			case REGIMM_BLTZ:
-			case REGIMM_BGEZ:
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				imm = (instr[1] << 8) + instr[0];
-				if (imm >= 32768)
-					imm -= 65536;  
-				translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, regimm5, rt, rs, imm);
-				n_translated += translated;
-				delayed_branch = 2;
-				delayed_branch_new_p = p + 4 + 4*imm;
-				break;
-			default:
-				try_to_translate = 0;
-				/*  Untranslatable:  */
-				/*  TODO: this code should only be in one place  */
-				bintrans_write_chunkreturn_fail(&ca);
-				tep->flags[prev_p] |= UNTRANSLATABLE;
-				try_to_translate = 0;
-			}
-			break;
-
 		case HI6_SPECIAL:
 			special6 = instr[0] & 0x3f;
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rd = (instr[1] >> 3) & 31;
+			rt = instr[2] & 31;
+			sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
 			switch (special6) {
 			case SPECIAL_JR:
 			case SPECIAL_JALR:
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				rd = (instr[1] >> 3) & 31;
 				translated = try_to_translate = bintrans_write_instruction__jr(&ca, rs, rd, special6);
 				n_translated += translated;
 				delayed_branch = 2;
 				delayed_branch_new_p = -1;	/*  anything, not within this physical page  */
-				if (special6 == SPECIAL_JR && rs == 31)
+				if (special6 == SPECIAL_JR)
 					stop_after_delayed_branch = 1;
 				break;
 			case SPECIAL_ADDU:
@@ -469,11 +447,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			case SPECIAL_MULT:
 			case SPECIAL_MULTU:
 			case SPECIAL_SYNC:
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				rt = instr[2] & 31;
-				rd = (instr[1] >> 3) & 31;
-				sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
-
 				/*  treat SYNC as a nop :-)  */
 				if (special6 == SPECIAL_SYNC) {
 					rd = rt = rs = sa = 0;
@@ -486,8 +459,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			case SPECIAL_MFLO:
 			case SPECIAL_MTHI:
 			case SPECIAL_MTLO:
-				rd = (instr[1] >> 3) & 31;
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 				translated = try_to_translate = bintrans_write_instruction__mfmthilo(&ca,
 				    (special6 == SPECIAL_MFHI || special6 == SPECIAL_MFLO)? rd : rs,
 				    special6 == SPECIAL_MFHI || special6 == SPECIAL_MFLO,
@@ -503,59 +474,28 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			}
 			break;
 
-		case HI6_BEQ:
-		case HI6_BNE:
-		case HI6_BGTZ:
-		case HI6_BLEZ:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			if (imm >= 32768)
-				imm -= 65536;
-			translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, 0, rt, rs, imm);
-			n_translated += translated;
-			delayed_branch = 2;
-			delayed_branch_new_p = p + 4 + 4*imm;
-			break;
-
-		case HI6_CACHE:
-			translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
-			n_translated += translated;
-			break;
-
-		case HI6_LUI:
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			translated = try_to_translate = bintrans_write_instruction__lui(&ca, rt, imm);
-			n_translated += translated;
-			break;
-
-		case HI6_LQ_MDMX:
-		case HI6_LD:
-		case HI6_LWU:
-		case HI6_LW:
-		case HI6_LHU:
-		case HI6_LH:
-		case HI6_LBU:
-		case HI6_LB:
-		case HI6_SQ:
-		case HI6_SD:
-		case HI6_SW:
-		case HI6_SH:
-		case HI6_SB:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			if (imm >= 32768)
-				imm -= 65536;
-switch (cpu->cpu_type.mmu_model) {
-case MMU3K:
-			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
-	break;
-default:
-	translated = try_to_translate = 0;
-}
-			n_translated += translated;
+		case HI6_REGIMM:
+			regimm5 = instr[2] & 0x1f;
+			switch (regimm5) {
+			case REGIMM_BLTZ:
+			case REGIMM_BGEZ:
+				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+				imm = (instr[1] << 8) + instr[0];
+				if (imm >= 32768)
+					imm -= 65536;  
+				translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, regimm5, rt, rs, imm);
+				n_translated += translated;
+				delayed_branch = 2;
+				delayed_branch_new_p = p + 4 + 4*imm;
+				break;
+			default:
+				try_to_translate = 0;
+				/*  Untranslatable:  */
+				/*  TODO: this code should only be in one place  */
+				bintrans_write_chunkreturn_fail(&ca);
+				tep->flags[prev_p] |= UNTRANSLATABLE;
+				try_to_translate = 0;
+			}
 			break;
 
 		case HI6_J:
@@ -570,17 +510,39 @@ default:
 				stop_after_delayed_branch = 1;
 			break;
 
+		case HI6_BEQ:
+		case HI6_BNE:
+		case HI6_BLEZ:
+		case HI6_BGTZ:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			imm = (instr[1] << 8) + instr[0];
+			if (imm >= 32768)
+				imm -= 65536;
+			translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, 0, rt, rs, imm);
+			n_translated += translated;
+			delayed_branch = 2;
+			delayed_branch_new_p = p + 4 + 4*imm;
+			break;
+
 		case HI6_ADDIU:
-		case HI6_DADDIU:
+		case HI6_SLTI:
+		case HI6_SLTIU:
 		case HI6_ANDI:
 		case HI6_ORI:
 		case HI6_XORI:
-		case HI6_SLTI:
-		case HI6_SLTIU:
+		case HI6_DADDIU:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			imm = (instr[1] << 8) + instr[0];
 			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
+			n_translated += translated;
+			break;
+
+		case HI6_LUI:
+			rt = instr[2] & 31;
+			imm = (instr[1] << 8) + instr[0];
+			translated = try_to_translate = bintrans_write_instruction__lui(&ca, rt, imm);
 			n_translated += translated;
 			break;
 
@@ -637,6 +599,39 @@ default:
 				n_translated += translated;
 			} else
 				try_to_translate = 0;
+			break;
+
+		case HI6_LQ_MDMX:
+		case HI6_LD:
+		case HI6_LWU:
+		case HI6_LW:
+		case HI6_LHU:
+		case HI6_LH:
+		case HI6_LBU:
+		case HI6_LB:
+		case HI6_SQ:
+		case HI6_SD:
+		case HI6_SW:
+		case HI6_SH:
+		case HI6_SB:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			imm = (instr[1] << 8) + instr[0];
+			if (imm >= 32768)
+				imm -= 65536;
+switch (cpu->cpu_type.mmu_model) {
+case MMU3K:
+			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+	break;
+default:
+	translated = try_to_translate = 0;
+}
+			n_translated += translated;
+			break;
+
+		case HI6_CACHE:
+			translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
+			n_translated += translated;
 			break;
 
 		default:

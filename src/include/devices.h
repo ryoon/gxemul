@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.59 2004-06-11 15:22:42 debug Exp $
+ *  $Id: devices.h,v 1.60 2004-06-12 11:47:37 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -463,7 +463,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive);
 
 /*  dev_wdsc.c:  */
-#define	DEV_WDSC_LENGTH			0x1000
+#define	DEV_WDSC_NREGS			0x100		/*  8-bit register select  */
+#define	DEV_WDSC_LENGTH			0x10
 int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_wdsc_init(struct memory *mem, uint64_t baseaddr);
 

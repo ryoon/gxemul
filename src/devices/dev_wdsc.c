@@ -23,11 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.3 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.4 2004-06-12 11:47:38 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
+ *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
  *
- *  TODO:  This is just a dummy device.
+ *  TODO:  This is just a dummy device so far.
  */
 
 #include <stdio.h>
@@ -39,10 +40,70 @@
 #include "console.h"
 #include "devices.h"
 
+#include "wdsc_sbicreg.h"
+
 
 struct wdsc_data {
-	unsigned char	reg[DEV_WDSC_LENGTH];
+	int		register_select;
+
+	unsigned char	reg[DEV_WDSC_NREGS];
 };
+
+
+/*
+ *  dev_wdsc_regwrite():
+ *
+ *  Handle writes to WDSC registers.
+ */
+void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
+{
+	d->reg[d->register_select] = idata & 0xff;
+
+	debug("[ wdsc: write to register 0x%02x", d->register_select);
+
+	switch (d->register_select) {
+
+	case SBIC_myid:
+		debug(" (myid): 0x%02x => ", (int)idata);
+		if (idata & SBIC_ID_FS_16_20)
+			debug("16-20MHz, ");
+		if (idata & SBIC_ID_FS_12_15)
+			debug("12-15MHz, ");
+		if (idata & SBIC_ID_RAF)
+			debug("RAF(?), ");
+		if (idata & SBIC_ID_EHP)
+			debug("Parity, ");
+		if (idata & SBIC_ID_EAF)
+			debug("EnableAdvancedFeatures, ");
+		debug("ID=%i", idata & SBIC_ID_MASK);
+		break;
+
+	case SBIC_cmd:
+		debug(" (cmd): 0x%02x => ", (int)idata);
+
+		/*  SBT = Single Byte Transfer  */
+		if (idata & SBIC_CMD_SBT)
+			debug("SBT, ");
+
+		/*  Handle commands:  */
+		switch (idata & SBIC_CMD_MASK) {
+		case SBIC_CMD_RESET:
+			debug("RESET");
+			break;
+		case SBIC_CMD_ABORT:
+			debug("ABORT");
+			break;
+		default:
+			debug("unimplemented command");
+		}
+		break;
+
+	default:
+		debug(" (not yet implemented): %02x", (int)idata);
+	}
+
+	debug(" ]\n");
+}
 
 
 /*
@@ -50,33 +111,72 @@ struct wdsc_data {
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	int i;
 	struct wdsc_data *d = extra;
+	uint64_t idata = 0, odata = 0;
 
-	/*  ???  */
-	d->reg[3] = random();
+	idata = memory_readmax64(cpu, data, len);
 
-	if (writeflag == MEM_WRITE)
-		memcpy(&d->reg[relative_addr], data, len);
-	else
-		memcpy(data, &d->reg[relative_addr], len);
+	/*
+	 *  All registers on the WDSC seem to be accessed by writing the
+	 *  register number to one address (SBIC_ADDR), and then reading/
+	 *  writing another address (SBIC_VAL).
+	 *
+	 *  On SGI-IP22, these are at offset 3 and 7, respectively.
+	 *
+	 *  TODO: If this device is to be used by other machine types, then
+	 *        this needs to be conditionalized.
+	 */
+	relative_addr = (relative_addr - 3) / 4;
 
 	switch (relative_addr) {
-	default:
-		if (writeflag==MEM_READ) {
-			debug("[ wdsc: read from 0x%x:", (int)relative_addr);
-			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" (len=%i) ]\n", len);
+
+	case SBIC_ADDR:
+		/*
+		 *  Reading the combined ADDR/ASR returns the Status
+		 *  Register, writing selects which register to access
+		 *  via SBIC_VAL.
+		 */
+		if (writeflag == MEM_READ) {
+			odata = SBIC_ASR_DBR;
+			debug("[ wdsc: read from Status Register: %02x ]\n",
+			    (int)odata);
 		} else {
-			debug("[ wdsc: write to 0x%x:", (int)relative_addr);
+			d->register_select = idata & (DEV_WDSC_NREGS - 1);
+		}
+		break;
+
+	case SBIC_VAL:
+		if (writeflag == MEM_READ) {
+			odata = d->reg[d->register_select];
+			debug("[ wdsc: read from register 0x%02x: %02x ]\n",
+			    d->register_select, (int)odata);
+		} else {
+			dev_wdsc_regwrite(d, idata & 0xff);
+		}
+		break;
+
+	default:
+		/*  These should never occur:  */
+		if (writeflag==MEM_READ) {
+			fatal("[ wdsc: read from 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" (len=%i) ]\n", len);
+				fatal(" %02x", data[i]);
+			fatal(" (len=%i) ]\n", len);
+		} else {
+			fatal("[ wdsc: write to 0x%x:", (int)relative_addr);
+			for (i=0; i<len; i++)
+				fatal(" %02x", data[i]);
+			fatal(" (len=%i) ]\n", len);
 		}
 	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }
@@ -96,6 +196,7 @@ void dev_wdsc_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct wdsc_data));
 
-	memory_device_register(mem, "wdsc", baseaddr, DEV_WDSC_LENGTH, dev_wdsc_access, d);
+	memory_device_register(mem, "wdsc", baseaddr, DEV_WDSC_LENGTH,
+	    dev_wdsc_access, d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.3 2004-01-25 14:14:27 debug Exp $
+ *  $Id: useremul.c,v 1.4 2004-02-09 12:46:02 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -61,6 +61,7 @@
 #include "misc.h"
 #include "syscall_netbsd.h"
 #include "sysctl_netbsd.h"
+#include "syscall_ultrix.h"
 
 extern int errno;
 
@@ -96,6 +97,11 @@ void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_ar
 	switch (userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
+		cpu->gpr[GPR_A0] = stack_top - stack_margin;
+		cpu->gpr[25] = cpu->pc;		/*  reg. t9  */
+		break;
+	case USERLAND_ULTRIX_PMAX:
+		/*  TODO:  is this correct?  */
 		cpu->gpr[GPR_A0] = stack_top - stack_margin;
 		cpu->gpr[25] = cpu->pc;		/*  reg. t9  */
 		break;
@@ -262,6 +268,15 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				error_flag = 1;
 				error_code = errno;
 			}
+			break;
+
+		case SYS_close:
+			descr   = arg0;
+			debug("useremul_syscall(): netbsd close(%i)\n", (int)descr);
+
+			error_code = close(descr);
+			if (error_code != 0)
+				error_flag = 1;
 			break;
 
 		case SYS_access:
@@ -447,6 +462,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 				/*  zero-terminate in host's space:  */
 				buf[sizeof(buf)-1] = 0;
+
 				for (i = 0; i<sizeof(buf) && i < arg1; i++)
 					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
 
@@ -521,6 +537,155 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		if (result_high_set)
 			cpu->gpr[GPR_V1] = result_high;
 		break;
+
+	case USERLAND_ULTRIX_PMAX:
+		/*
+		 *  Ultrix/pmax gets the syscall number in register v0,
+		 *  and syscall arguments in registers a0, a1, ...
+		 *
+		 *  TODO:  If there is a __syscall-like syscall (as in NetBSD)
+		 *  then 64-bit args may be passed in two registers or something...
+		 *  If so, then copy from the section above (NetBSD).
+		 */
+		sysnr = cpu->gpr[GPR_V0];
+
+		arg0 = cpu->gpr[GPR_A0];
+		arg1 = cpu->gpr[GPR_A1];
+		arg2 = cpu->gpr[GPR_A2];
+		arg3 = cpu->gpr[GPR_A3];
+		/*  TODO:  stack arguments? Are these correct?  */
+		stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 4);
+		stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
+		stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 12);
+
+		switch (sysnr) {
+
+		case ULTRIX_SYS_exit:
+			debug("useremul_syscall(): ultrix exit()\n");
+			cpu->running = 0;
+			break;
+
+		case ULTRIX_SYS_write:
+			descr   = arg0;
+			mipsbuf = arg1;
+			length  = arg2;
+			debug("useremul_syscall(): ultrix write(%i,0x%llx,%lli)\n",
+			    (int)descr, (long long)mipsbuf, (long long)length);
+
+			if (length > 0) {
+				charbuf = malloc(length);
+				if (charbuf == NULL) {
+					fprintf(stderr, "out of memory in useremul_syscall()\n");
+					exit(1);
+				}
+
+				/*  TODO: address validity check  */
+				memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
+				write(descr, charbuf, length);
+				free(charbuf);
+			}
+			break;
+
+		case ULTRIX_SYS_open:
+			charbuf = get_userland_string(cpu, arg0);
+			debug("useremul_syscall(): ultrix open(\"%s\", 0x%llx, 0x%llx)\n",
+			    charbuf, (long long)arg1, (long long)arg2);
+
+			result_low = open(charbuf, arg1, arg2);
+			if (result_low != 0) {
+				error_flag = 1;
+				error_code = errno;
+			}
+			break;
+
+		case ULTRIX_SYS_close:
+			descr   = arg0;
+			debug("useremul_syscall(): ultrix close(%i)\n", (int)descr);
+
+			/*  Special case because some Ultrix programs tend to close low descriptors:  */
+			if (descr <= 2) {
+				error_flag = 1;
+				error_code = 2;	/*  TODO: Ultrix ENOENT error code  */
+				break;
+			}
+
+			error_code = close(descr);
+			if (error_code != 0)
+				error_flag = 1;
+			break;
+
+		case ULTRIX_SYS_break:
+			debug("useremul_syscall(): ultrix break(0x%llx): TODO\n", (long long)arg0);
+			/*  TODO  */
+			break;
+
+		case ULTRIX_SYS_getpagesize:
+			debug("useremul_syscall(): ultrix getpagesize()\n");
+			result_low = 4096;
+			break;
+
+		case ULTRIX_SYS_gethostname:
+			debug("useremul_syscall(): ultrix gethostname(0x%llx,%lli)\n",
+			    (long long)arg0, (long long)arg1);
+			result_low = 0;
+			if (arg1 > 0 && arg1 < 500000) {
+				char buf[arg1];
+				int i;
+
+				result_low = gethostname(buf, sizeof(buf));
+
+				for (i = 0; i<sizeof(buf) && i < arg1; i++)
+					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
+			} else {
+				error_flag = 1;
+				error_code = 5555; /* TODO */  /*  ENOMEM  */
+			}
+			break;
+
+		case ULTRIX_SYS_gettimeofday:
+			debug("useremul_syscall(): ultrix gettimeofday(0x%llx,0x%llx)\n",
+			    (long long)arg0, (long long)arg1);
+			result_low = gettimeofday(&tv, &tz);
+			if (result_low) {
+				error_flag = 1;
+				error_code = errno;
+			} else {
+				if (arg0 != 0) {
+					/*  Store tv.tv_sec and tv.tv_usec as 'long' (32-bit) values:  */
+					store_32bit_word(arg0 + 0, tv.tv_sec);
+					store_32bit_word(arg0 + 4, tv.tv_usec);
+				}
+				if (arg1 != 0) {
+					/*  Store tz.tz_minuteswest and tz.tz_dsttime as 'long' (32-bit) values:  */
+					store_32bit_word(arg1 + 0, tz.tz_minuteswest);
+					store_32bit_word(arg1 + 4, tz.tz_dsttime);
+				}
+			}
+			break;
+
+		default:
+			fatal("UNIMPLEMENTED ultrix syscall %i\n", sysnr);
+			error_flag = 1;
+			error_code = 78;  /*  ENOSYS  */
+		}
+
+		/*
+		 *  Ultrix/mips return values:
+		 *
+TODO
+		 *  a3 is 0 if the syscall was ok, otherwise 1.
+		 *  v0 (and sometimes v1) contain the result value.
+		 */
+		cpu->gpr[GPR_A3] = error_flag;
+		if (error_flag)
+			cpu->gpr[GPR_V0] = error_code;
+		else
+			cpu->gpr[GPR_V0] = result_low;
+		if (result_high_set)
+			cpu->gpr[GPR_V1] = result_high;
+/* TODO */
+		break;
+
 	default:
 		fprintf(stderr, "useremul_syscall(): unimplemented syscall"
 		   " emulation %i\n", userland_emul);

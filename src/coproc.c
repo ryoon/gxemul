@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.111 2004-11-26 09:07:03 debug Exp $
+ *  $Id: coproc.c,v 1.112 2004-11-26 16:17:24 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1689,7 +1689,6 @@ if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 		wf = 0;
 
 	update_translation_table(cpu, vaddr, memblock, wf, paddr);
-
 }
 
 

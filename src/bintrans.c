@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.87 2004-11-26 15:36:20 debug Exp $
+ *  $Id: bintrans.c,v 1.88 2004-11-26 16:17:24 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -581,7 +581,7 @@ default:
 			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
 			n_translated += translated;
 			break;
-#if 0
+
 		case HI6_COP0:
 			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
 				/*  rfe:  */
@@ -636,7 +636,7 @@ default:
 			} else
 				try_to_translate = 0;
 			break;
-#endif
+
 		default:
 			/*  Untranslatable:  */
 			/*  TODO: this code should only be in one place  */

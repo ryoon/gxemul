@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.11 2003-12-20 21:20:12 debug Exp $
+ *  $Id: machine.c,v 1.12 2003-12-20 21:55:53 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -758,8 +758,8 @@ void machine_init(struct memory *mem)
 
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 4 * 1048576 / 4096);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 4) * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 8 * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 		/*
@@ -788,6 +788,7 @@ void machine_init(struct memory *mem)
 			debug("ARC system = 0x%x\n", system);
 
 			/*  TODO:  sync devices and component tree  */
+			dev_pckbc_init(mem, 0x2000005001, 0);
 			dev_ns16550_init(mem, 0x2000006000, 0);
 		}
 

@@ -23,12 +23,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.21 2004-12-26 14:10:37 debug Exp $
+ *  $Id: debugger.c,v 1.22 2004-12-26 14:15:29 debug Exp $
  *
  *  Single-step debugger.
  *
  *
- *  TODO: This entire module is very much non-reentrant. :-/
+ *  TODO:
+ *
+ *	This entire module is very much non-reentrant. :-/
+ *
+ *	Add more functionality that already exists elsewhere in the emulator.
+ *
+ *	Nicer looking output of register and TLB dumps, floating point
+ *	registers too. Warn about weird/invalid register contents.
  */
 
 #include <ctype.h>
@@ -1060,8 +1067,8 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 		i++;
 	}
 
-	printf("Generic assignments:   x = y\n");
-	printf("where x must be a register, and y can be a register, a numeric value, or\n"
+	printf("Generic assignments:   x = expr\n");
+	printf("where x must be a register, and expr can be a register, a numeric value, or\n"
 	    "a symbol name (+ an optional numeric offset). In case there are multiple\n"
 	    "matches (ie a symbol that has the same name as a register), you may add a\n"
 	    "prefix character as a hint: '%%' for registers, '@' for symbols, and\n"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.23 2005-02-01 07:21:53 debug Exp $
+ *  $Id: emul_parse.c,v 1.24 2005-02-02 23:55:20 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -211,6 +211,7 @@ static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
+static char cur_machine_bintrans_size[10];
 static char cur_machine_byte_order[20];
 static char cur_machine_random_mem[10];
 static char cur_machine_random_cpu[10];
@@ -357,6 +358,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
+		cur_machine_bintrans_size[0] = '\0';
 		cur_machine_byte_order[0] = '\0';
 		cur_machine_random_mem[0] = '\0';
 		cur_machine_random_cpu[0] = '\0';
@@ -489,6 +491,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		if (m->bintrans_enable)
 			m->speed_tricks = 0;
 
+		if (cur_machine_bintrans_size[0])
+			m->bintrans_size = 1048576 *
+			    atoi(cur_machine_bintrans_size);
+
 		if (!cur_machine_force_netboot[0])
 			strcpy(cur_machine_force_netboot, "no");
 		m->force_netboot = parse_on_off(cur_machine_force_netboot);
@@ -577,6 +583,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("use_x11", cur_machine_use_x11);
 	WORD("x11_scaledown", cur_machine_x11_scaledown);
 	WORD("bintrans", cur_machine_bintrans);
+	WORD("bintrans_size", cur_machine_bintrans_size);
 	WORD("byte_order", cur_machine_byte_order);
 	WORD("random_mem_contents", cur_machine_random_mem);
 	WORD("use_random_bootstrap_cpu", cur_machine_random_cpu);

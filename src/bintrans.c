@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.148 2005-02-01 14:39:38 debug Exp $
+ *  $Id: bintrans.c,v 1.149 2005-02-02 23:55:20 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -334,7 +334,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	 *  If the chunk space is all used up, we need to start over from
 	 *  an empty chunk space.
 	 */
-	if (cpu->mem->translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+	if (cpu->mem->translation_code_chunk_space_head >=
+	    cpu->machine->bintrans_size) {
 		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 		for (i=0; i<n; i++)
 			cpu->mem->translation_page_entry_array[i] = NULL;
@@ -977,7 +978,7 @@ void bintrans_init_cpu(struct cpu *cpu)
  *
  *  Should be called before any other bintrans_*() function is used.
  */
-void bintrans_init(struct memory *mem)
+void bintrans_init(struct machine *machine, struct memory *mem)
 {
 	int res, i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	size_t s;
@@ -998,7 +999,7 @@ void bintrans_init(struct memory *mem)
 		mem->translation_page_entry_array[i] = NULL;
 
 	/*  Allocate the large code chunk space:  */
-	s = CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN;
+	s = machine->bintrans_size + CODE_CHUNK_SPACE_MARGIN;
 	mem->translation_code_chunk_space = (unsigned char *) mmap(NULL, s,
 	    PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.329 2005-02-02 19:33:51 debug Exp $
+ *  $Id: machine.c,v 1.330 2005-02-02 23:55:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -141,7 +141,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->n_gfx_cards = 1;
 	m->dbe_on_nonexistant_memaccess = 1;
 	m->show_symbolic_register_names = 1;
-
+	m->bintrans_size = DEFAULT_BINTRANS_SIZE_IN_MB * 1048576;
 	symbol_init(&m->symbol_context);
 
 	return m;

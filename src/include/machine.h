@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.23 2005-02-02 18:45:24 debug Exp $
+ *  $Id: machine.h,v 1.24 2005-02-02 23:55:19 debug Exp $
  */
 
 #include <sys/types.h>
@@ -121,7 +121,6 @@ struct machine {
 	int	random_mem_contents;
 	int	physical_ram_in_mb;
 	int	memory_offset_in_mb;
-
 	int	prom_emulation;
 	int	register_dump;
 
@@ -142,6 +141,7 @@ struct machine {
 	int	dbe_on_nonexistant_memaccess;
 	int	bintrans_enable;
 	int	bintrans_enabled_from_start;
+	int	bintrans_size;
 	int	instruction_trace;
 	int	single_step_on_bad_addr;
 	int	show_nr_of_instructions;

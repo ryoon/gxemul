@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.17 2005-01-25 08:14:47 debug Exp $
+ *  $Id: bintrans.h,v 1.18 2005-02-02 23:55:19 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */
@@ -53,11 +53,6 @@ struct translation_page_entry {
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#ifndef	BINTRANS_SIZE_IN_MB
-#define	BINTRANS_SIZE_IN_MB		16
-#endif
-
-#define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
 #define	CODE_CHUNK_SPACE_MARGIN		65536
 
 
@@ -65,7 +60,7 @@ struct translation_page_entry {
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr);
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr);
 void bintrans_init_cpu(struct cpu *cpu);
-void bintrans_init(struct memory *mem);
+void bintrans_init(struct machine *machine, struct memory *mem);
 
 
 #endif	/*  BINTRANS_H  */

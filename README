@@ -16,8 +16,8 @@ Real operating system kernels can be downloaded from various places.
 Here are examples of kernels that can be experimented with:
 
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
-  Suitable command line arguments may be  -D2 -XY2 -M16 -I500000
-  for a graphical framebuffer console, or  -D2 -q -M16 -I500000 for
+  Suitable command line arguments may be  -D2 -q -XY2 -M16 -I1000000
+  for a graphical framebuffer console, or  -D2 -q -M16 -I1000000 for
   serial (stdin/stdout) console.
 
   ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd

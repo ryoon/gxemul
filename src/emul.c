@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.84 2004-11-05 00:31:01 debug Exp $
+ *  $Id: emul.c,v 1.85 2004-11-07 13:23:47 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -247,7 +247,7 @@ static void debugger_unasm(struct emul *emul, uint64_t addr, int lines)
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 
-		cpu_disassemble_instr(c, &buf[0], 0, addr);
+		cpu_disassemble_instr(c, &buf[0], 0, addr, 0);
 
 		addr += sizeof(buf);
 	}

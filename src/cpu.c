@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.174 2004-11-04 22:57:36 debug Exp $
+ *  $Id: cpu.c,v 1.175 2004-11-07 13:23:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -357,7 +357,7 @@ const char *cpu_flags(struct cpu *cpu)
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
 void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t dumpaddr)
+	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, special6, regimm5;
 	int rt, rd, rs, sa, imm, copz, cache_op, which_cache, showtag;
@@ -390,6 +390,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("%s", cpu_flags(cpu));
 
 	debug("\t");
+
+	if (bintrans) {
+		debug("(bintrans)");
+		goto disasm_ret;
+	}
 
 	/*
 	 *  Decode the instruction:
@@ -1240,47 +1245,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		if (cpu->delay_slot == DELAYED) {
 			cached_pc = cpu->pc = cpu->delay_jmpaddr;
 			cpu->delay_slot = NOT_DELAYED;
-
-			/*
-			 *  ROM emulation:
-			 *
-			 *  This assumes that a jal was made to a ROM address,
-			 *  and we should return via gpr ra.
-			 */
-			if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
-			    cpu->emul->prom_emulation) {
-				int rom_jal;
-				switch (cpu->emul->emulation_type) {
-				case EMULTYPE_DEC:
-					decstation_prom_emul(cpu);
-					rom_jal = 1;
-					break;
-				case EMULTYPE_PS2:
-					playstation2_sifbios_emul(cpu);
-					rom_jal = 1;
-					break;
-				case EMULTYPE_ARC:
-				case EMULTYPE_SGI:
-					arcbios_emul(cpu);
-					rom_jal = 1;
-					break;
-				default:
-					rom_jal = 0;
-				}
-
-				if (rom_jal) {
-					cpu->pc = cpu->gpr[GPR_RA];
-					/*  no need to update cached_pc, as we're returning  */
-					cpu->delay_slot = NOT_DELAYED;
-
-					if (!quiet_mode_cached &&
-					    cpu->emul->show_trace_tree)
-						cpu->trace_tree_depth --;
-
-					/*  TODO: how many instrs should this count as?  */
-					return 1;
-				}
-			}
 		} else /* if (cpu->delay_slot == TO_BE_DELAYED) */ {
 			/*  next instruction will be delayed  */
 			cpu->delay_slot = DELAYED;
@@ -1299,6 +1263,47 @@ static int cpu_run_instr(struct cpu *cpu)
 			if (cpu->emul->dumppoint_flag_r[i])
 				cpu->emul->register_dump = 1;
 		}
+
+	/*
+	 *  ROM emulation:
+	 *
+	 *  This assumes that a jal was made to a ROM address,
+	 *  and we should return via gpr ra.
+	 */
+	if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
+	    cpu->emul->prom_emulation) {
+		int rom_jal;
+		switch (cpu->emul->emulation_type) {
+		case EMULTYPE_DEC:
+			decstation_prom_emul(cpu);
+			rom_jal = 1;
+			break;
+		case EMULTYPE_PS2:
+			playstation2_sifbios_emul(cpu);
+			rom_jal = 1;
+			break;
+		case EMULTYPE_ARC:
+		case EMULTYPE_SGI:
+			arcbios_emul(cpu);
+			rom_jal = 1;
+			break;
+		default:
+			rom_jal = 0;
+		}
+
+		if (rom_jal) {
+			cpu->pc = cpu->gpr[GPR_RA];
+			/*  no need to update cached_pc, as we're returning  */
+			cpu->delay_slot = NOT_DELAYED;
+
+			if (!quiet_mode_cached &&
+			    cpu->emul->show_trace_tree)
+				cpu->trace_tree_depth --;
+
+			/*  TODO: how many instrs should this count as?  */
+			return 1;
+		}
+	}
 
 #ifdef ALWAYS_SIGNEXTEND_32
 	/*
@@ -1473,18 +1478,22 @@ static int cpu_run_instr(struct cpu *cpu)
 			res = bintrans_runchunk(cpu, cpu->pc_bintrans_paddr);
 
 			if (res != -1) {
-				/*  printf("BINTRANS cache hit :-)\n"
+				/*  debug("BINTRANS cache hit,"
 				    "  pc = %016llx\n", (long long)cached_pc);  */
+				if (instruction_trace_cached)
+					cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 				return res;
 			} else {
 				/*  Bintrans cache miss: try to translate
 				    the code chunk and run it:  */
 				res = bintrans_attempt_translate(cpu,
 				    cpu->pc_bintrans_paddr,
-				    cached_pc, 1, MAX_TRANSLATE_DEPTH);
+				    1, MAX_TRANSLATE_DEPTH);
 				if (res != -1) {
-					/*  printf("BINTRANS translation success!"
+					/*  debug("BINTRANS translation + hit,"
 					    " pc = %016llx\n", (long long)cached_pc);  */
+					if (instruction_trace_cached)
+						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					return res;
 				}
 			}
@@ -1512,7 +1521,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		}
 
 		if (instruction_trace_cached)
-			cpu_disassemble_instr(cpu, instr, 1, 0);
+			cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 	}
 
 

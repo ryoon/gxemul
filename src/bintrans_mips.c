@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_mips.c,v 1.3 2004-10-17 15:31:44 debug Exp $
+ *  $Id: bintrans_mips.c,v 1.4 2004-11-07 13:23:46 debug Exp $
  *
  *  MIPS specific code (64-bit) for dynamic binary translation.
  *  NOTE: This code will not work on 32-bit MIPS machines.
@@ -128,7 +128,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
+	int *pc_increment, uint64_t arg_a, uint64_t arg_b, uint64_t arg_c)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 	int res = 0;
@@ -141,7 +141,7 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 	default:
 		fatal("bintrans_write_instruction(): unimplemented "
 		    "instruction %i\n", instr);
-		exit(1);
+		res = 0;
 	}
 
 	*addrp = (unsigned char *) a;

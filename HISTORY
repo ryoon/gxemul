@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.299 2004-11-06 22:29:05 debug Exp $
+$Id: HISTORY,v 1.300 2004-11-07 13:23:45 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1123,3 +1123,4 @@ HISTORY of mips64emul
 20041106	More bt459 updates. The color seems to be correct for NetBSD,
 		OpenBSD, Ultrix, and Sprite.
 		Some minor bintrans updates (redesigning some things).
+20041107	More bintrans updates (probably broken for non-Alpha targets).

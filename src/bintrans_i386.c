@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.8 2004-10-17 15:31:44 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.9 2004-11-07 13:23:46 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -135,7 +135,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
+	int *pc_increment, uint64_t arg_a, uint64_t arg_b, uint64_t arg_c)
 {
 	unsigned char *addr = *addrp;
 	int res = 0;
@@ -148,7 +148,7 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 	default:
 		fatal("bintrans_write_instruction(): unimplemented "
 		    "instruction %i\n", instr);
-		exit(1);
+		res = 0;
 	}
 
 	*addrp = addr;

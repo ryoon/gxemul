@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.196 2005-01-10 22:30:30 debug Exp $
+ *  $Id: misc.h,v 1.197 2005-01-15 08:37:05 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -444,9 +444,6 @@ struct cpu {
 	int		cache_linesize[2];
 	int		cache_mask[2];
 	int		cache_miss_penalty[2];
-
-	/*  TODO: remove this once cache functions correctly  */
-	int		r10k_cache_disable_TODO;
 
 	/*
 	 *  Hardware devices, run every x clock cycles.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.139 2005-01-15 07:33:31 debug Exp $
+ *  $Id: memory.c,v 1.140 2005-01-15 08:37:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -868,6 +868,8 @@ into the devices  */
 				goto do_return_ok;
 		}
 		break;
+#if 0
+/*  Remove this, it doesn't work anyway  */
 	case MMU10K:
 		/*  other cpus:  */
 		/*
@@ -884,12 +886,15 @@ into the devices  */
 		 *  cache from the main memory for R10000.  (TODO !!!)
 		 */
 /*		if ((cpu->coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
+/*
 		if (cache == CACHE_DATA &&
 		    cpu->r10k_cache_disable_TODO) {
 			paddr &= ((512*1024)-1);
 			paddr += 512*1024;
 		}
+*/
 		break;
+#endif
 	default:
 		/*  R4000 etc  */
 		/*  TODO  */

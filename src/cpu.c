@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.230 2005-01-09 01:55:30 debug Exp $
+ *  $Id: cpu.c,v 1.231 2005-01-15 08:37:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3342,6 +3342,9 @@ int cpu_run_instr(struct cpu *cpu)
 		 *  This is really ugly.
 		 */
 
+#if 0
+Remove this...
+
 /*		if (cpu->cpu_type.mmu_model == MMU10K) {  */
 /*			printf("taghi=%08lx taglo=%08lx\n",
 			    (long)cp0->reg[COP0_TAGDATA_HI],
@@ -3356,8 +3359,12 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->r10k_cache_disable_TODO = 1;
 			}
 /*		}  */
+#endif
 
-		/*  Clear the LLbit (at least on R10000):  */
+		/*
+		 *  Clear the LLbit (at least on R10000):
+		 *  TODO: How about R4000?
+		 */
 		cpu->rmw = 0;
 
 		return 1;

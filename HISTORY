@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.473 2005-01-15 05:53:58 debug Exp $
+$Id: HISTORY,v 1.474 2005-01-15 08:37:04 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1461,4 +1461,5 @@ HISTORY of mips64emul
 
 ==============  RELEASE 0.2.4.1  ==============
 
-20050115	Various minor IP32 updates.
+20050115	Various updates and fixes: some IP32 stuff, the debugger,
+		ns16550 loopback tx isn't transmitted out anymore, ...

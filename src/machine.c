@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.274 2005-01-15 05:54:00 debug Exp $
+ *  $Id: machine.c,v 1.275 2005-01-15 08:37:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2211,9 +2211,9 @@ Why is this here? TODO
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
 				dev_ram_init(mem, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
-				dev_ram_init(mem, 0x10000000ULL,           128, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x10000000ULL,           256, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x11ffff00ULL,           256, DEV_RAM_MIRROR, 0x01ffff00);
-				dev_ram_init(mem, 0x12000000ULL,           128, DEV_RAM_MIRROR, 0x02000000);
+				dev_ram_init(mem, 0x12000000ULL,           256, DEV_RAM_MIRROR, 0x02000000);
 				dev_ram_init(mem, 0x17ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);

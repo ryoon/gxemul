@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.6 2005-01-15 05:53:59 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.7 2005-01-15 08:37:05 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -44,6 +44,7 @@
 #include "bus_pci.h"
 #include "console.h"
 #include "devices.h"
+#include "emul.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
@@ -109,6 +110,9 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 {
 	int i;
 	struct crime_data *d = extra;
+	uint64_t idata;
+
+	idata = memory_readmax64(cpu, data, len);
 
 	/*
 	 *  Set crime version/revision:
@@ -159,10 +163,32 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	switch (relative_addr) {
+	case CRIME_CONTROL:	/*  0x008  */
+		/*  TODO: 64-bit write to CRIME_CONTROL, but some things
+		    (such as NetBSD 1.6.2) write to 0x00c!  */
+		if (writeflag == MEM_WRITE) {
+			/*
+			 *  0x200 = watchdog timer (it seems, according to NetBSD)
+			 *  0x800 = "reboot" used by the IP32 PROM
+			 */
+			if (idata & 0x200) {
+				idata &= ~0x200;
+			}
+			if (idata & 0x800) {
+				/*  This is used by the IP32 PROM's "reboot" command:  */
+				for (i=0; i<cpu->emul->ncpus; i++)
+					cpu->emul->cpus[i]->running = 0;
+				cpu->emul->exit_without_entering_debugger = 1;
+				idata &= ~0x800;
+			}
+			if (idata != 0)
+				fatal("[ CRIME_CONTROL: unimplemented control 0x%016llx ]\n", idata);
+		}
+		break;
 #if 1
-	case 0x10:	/*  Current interrupt status  */
+	case CRIME_INTSTAT:	/*  0x010, Current interrupt status  */
 	case 0x14:
-	case 0x18:	/*  Current interrupt mask  */
+	case CRIME_INTMASK:	/*  0x018,  Current interrupt mask  */
 	case 0x1c:
 	case 0x34:
 #endif

@@ -1,4 +1,6 @@
 #
+#  $Id: Makefile.skel,v 1.2 2003-11-06 13:56:07 debug Exp $
+#
 #  Makefile for mips64emul src
 #
 
@@ -19,3 +21,4 @@ clean:
 
 clean_all: clean
 	rm -f Makefile
+

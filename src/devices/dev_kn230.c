@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_kn230.c  --  DEC MIPSMATE 5100 (KN230) stuff
+ *   
+ *
+ *  $Id: dev_kn230.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  DEC MIPSMATE 5100 (KN230) stuff.
  */
 
 #include <stdio.h>

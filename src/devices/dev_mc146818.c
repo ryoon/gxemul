@@ -21,14 +21,14 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_mc146818.c  --  mc146818 real-time clock, used by
- *                      DECstation machines
+ *   
  *
- *  This device contains Date/time, the machine's ethernet address, and
- *  can cause periodic (hardware) interrupts.
+ *  $Id: dev_mc146818.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  MC146818 real-time clock, used by DECstation machines.
+ *
+ *  This device contains Date/time, the machine's ethernet address (on
+ *  DECstation 3100), and can cause periodic (hardware) interrupts.
  */
 
 #include <stdio.h>

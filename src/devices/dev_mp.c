@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_mp.c  --  multiprocessor support
+ *   
+ *
+ *  $Id: dev_mp.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  
+ *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
  *  TODO:  Find out how actual MIPS machines implement MP stuff.
  *

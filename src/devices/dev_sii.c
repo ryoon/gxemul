@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_sii.c  --  SII SCSI controller
+ *   
+ *
+ *  $Id: dev_sii.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  
+ *  SII SCSI controller, used in some DECstation systems.
  *
  *  TODO:  This is huge and ugly. Fix this.
  */

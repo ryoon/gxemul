@@ -21,12 +21,13 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_asc.c  --  SCSI controller for some DECsystems
  *
- *  TODO
+ *
+ *  $Id: dev_asc.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *
+ *  SCSI controller for some DECsystems.
+ *
+ *  TODO :-)
  */
 
 #include <stdio.h>

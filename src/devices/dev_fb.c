@@ -21,15 +21,18 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_fb.c  --  generic framebuffer device
+ *   
+ *
+ *  $Id: dev_fb.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  Generic framebuffer device.
  *
  *	HPCmips framebuffer
  *	DECstation VFB01 monochrome framebuffer, 1024x864
- *	DECstation VFB02 color framebuffer, 1024x864
+ *	DECstation VFB02 8-bit color framebuffer, 1024x864
+ *	DECstation Maxine, 1024x768 8-bit color
  *	Playstation 2 (24-bit color)
+ *	generic (any resolution, several bit depths possible)
  *
  *  VFB01/02 is called 'pm' in NetBSD/pmax, 'fb' in Ultrix.
  *

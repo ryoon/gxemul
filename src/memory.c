@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  memory.c  --  memory handling functions
+ *
+ *
+ *  $Id: memory.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *
+ *  Functions for handling the memory of an emulated machine.
  */
 
 #include <assert.h>

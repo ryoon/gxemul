@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_colorplanemask.c  --  color plane mask used by DECstation 3100
+ *   
+ *
+ *  $Id: dev_colorplanemask.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  Color plane mask used by DECstation 3100.
  *
  *  Just a one-byte thingy, but the way things work now this has to
  *  be a separate device. :-/

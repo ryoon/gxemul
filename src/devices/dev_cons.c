@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_cons.c  --  a console device
+ *   
+ *
+ *  $Id: dev_cons.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  A console device.  (Fake, only useful for simple tests.)
  *
  *  This device provides memory mapped I/O for a simple console supporting
  *  putchar (writing to memory) and getchar (reading from memory).

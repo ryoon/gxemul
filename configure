@@ -1,4 +1,11 @@
 #!/bin/sh
+#
+#  $Id: configure,v 1.2 2003-11-06 13:55:43 debug Exp $
+#
+#  Configure script for mips64emul.
+#  This script figures out which compiler flags will work, and creates
+#  makefiles in subdirs.
+#
 
 if [ z$1 != z ]; then
 	if [ z$1 = z--nox11 ]; then

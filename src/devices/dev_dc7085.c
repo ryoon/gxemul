@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_dc7085.c  --  dc7085 serial controller
+ *   
+ *
+ *  $Id: dev_dc7085.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  DC7085 serial controller, used in some DECstation models.
  *
  *  TODO:  Quite a lot has been implemented, but there are some things
  *         left;  self-test, the mouse stuff, more keyboard stuff, ...

@@ -21,10 +21,13 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  coproc.c  --  emulation of coprocessors (0..3)
+ *
+ *
+ *  $Id: coproc.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *
+ *  Emulation of MIPS coprocessors.
+ *
+ *  TODO: separate out math coprocessor stuff (?)
  */
 
 #include <assert.h>

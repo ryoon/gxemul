@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_kn210.c  --  DECsystem 5400 (KN210) stuff
+ *   
+ *
+ *  $Id: dev_kn210.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  DECsystem 5400 (KN210) stuff
  */
 
 #include <stdio.h>

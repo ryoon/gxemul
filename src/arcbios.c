@@ -21,10 +21,14 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  arcbios.c  --  ARCBIOS (SGI) emulation
+ *
+ *
+ *  $Id: arcbios.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *
+ *  ARCBIOS emulation.
+ *
+ *  TODO:  ARCBIOS emulation should be made more generic, so that it can
+ *         be used with both SGI machines and other types of machines.
  */
 
 #include <assert.h>

@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_bt459.c  --  Brooktree 459 vdac, used by TURBOchannel graphics cards
+ *   
+ *
+ *  $Id: dev_bt459.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
 
 #include <math.h>

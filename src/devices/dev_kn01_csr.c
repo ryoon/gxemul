@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_kn01_csr.c  --  PMAX (KN01) System Control Register
+ *   
+ *
+ *  $Id: dev_kn01_csr.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  PMAX (KN01) System Control Register.
  *
  *  TODO:  This is just a dummy device.
  *

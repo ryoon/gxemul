@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  x11.c  --  X11 functions
+ *
+ *
+ *  $Id: x11.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *
+ *  X11-related functions.
  */
 
 #include <stdio.h>

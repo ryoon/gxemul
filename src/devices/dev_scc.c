@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_scc.c  --  serial controller on some DECsystems (5000 ?)
+ *   
+ *
+ *  $Id: dev_scc.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  
+ *  Serial controller on some DECsystems (5000 ?).
  *
  *  TODO:  Make it do more stuff than just outputing chars :-)
  */

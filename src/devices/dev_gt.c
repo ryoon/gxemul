@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  dev_gt.c  --  the "gt" device used in Cobalt machines
+ *   
+ *
+ *  $Id: dev_gt.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  
+ *  The "gt" device used in Cobalt machines.  (TODO)
  */
 
 #include <stdio.h>

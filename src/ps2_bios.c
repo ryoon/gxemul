@@ -21,10 +21,11 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  ps2_bios.c  --  Playstation 2 SIFBIOS emulation
+ *
+ *
+ *  $Id: ps2_bios.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *
+ *  Playstation 2 SIFBIOS emulation.
  */
 
 #include <assert.h>

@@ -21,12 +21,12 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- */
-
-/*
- *  file.c  --  load executable images into (emulated) memory
  *
- *  File formats recognized so far:
+ *
+ *  $Id: file.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *
+ *  This file contains functions which load executable images into (emulated)
+ *  memory.  File formats recognized so far:
  *
  *	ELF		32-bit and 64-bit MSB and LSB MIPS
  *	a.out		some format used by OpenBSD 2.x pmax kernels

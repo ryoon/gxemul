@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.246 2005-01-20 14:25:19 debug Exp $
+ *  $Id: cpu.c,v 1.247 2005-01-20 18:14:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1657,6 +1657,20 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			fatal("\nWARNING: r0 was not zero! (%016llx)\n\n",
 			    (long long)cpu->gpr[0]);
 			cpu->gpr[0] = 0;
+			warning = 1;
+		}
+
+		if (cpu->pc != (int64_t)(int32_t)cpu->pc) {
+			fatal("\nWARNING: pc was not sign-extended correctly"
+			    " (%016llx)\n\n", (long long)cpu->pc);
+			cpu->pc != (int64_t)(int32_t)cpu->pc;
+			warning = 1;
+		}
+
+		if (cpu->pc_last != (int64_t)(int32_t)cpu->pc_last) {
+			fatal("\nWARNING: pc_last was not sign-extended correc"
+			    "tly (%016llx)\n\n", (long long)cpu->pc_last);
+			cpu->pc_last = (int64_t)(int32_t)cpu->pc_last;
 			warning = 1;
 		}
 

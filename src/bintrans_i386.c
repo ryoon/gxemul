@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.66 2005-01-20 17:02:49 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.67 2005-01-20 18:14:34 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -657,18 +657,10 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	case HI6_ORI:
 		/*  0d 34 12 00 00          or     $0x1234,%eax  */
 		*a++ = 0xd; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
-		if (bintrans_32bit_only) {
-			/*  99                      cltd   */
-			*a++ = 0x99;
-		}
 		break;
 	case HI6_XORI:
 		/*  35 34 12 00 00          xor    $0x1234,%eax  */
 		*a++ = 0x35; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
-		if (bintrans_32bit_only) {
-			/*  99                      cltd   */
-			*a++ = 0x99;
-		}
 		break;
 	case HI6_SLTIU:
 		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */

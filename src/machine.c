@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.174 2004-09-05 03:06:32 debug Exp $
+ *  $Id: machine.c,v 1.175 2004-09-05 03:12:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -70,7 +70,6 @@
 extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int emulated_hz;
 extern int use_x11;
 
 uint64_t file_loaded_end_addr = 0;
@@ -858,8 +857,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			emul->machine_name = "DEC PMAX 3100 (KN01)";
 
 			/*  12 MHz for 2100, 16.67 MHz for 3100  */
-			if (emulated_hz == 0)
-				emulated_hz = 16670000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 16670000;
 
 			if (emul->physical_ram_in_mb > 24)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines cannot have more than 24MB RAM. Continuing anyway.\n");
@@ -899,8 +898,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  and a R3220 Memory coprocessor  */
 			emul->machine_name = "DECstation 5000/200 (3MAX, KN02)";
 
-			if (emulated_hz == 0)
-				emulated_hz = 25000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 25000000;
 
 			if (emul->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
@@ -966,8 +965,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
 			emul->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
-			if (emulated_hz == 0)
-				emulated_hz = 33000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 33000000;
 			if (emul->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
@@ -1023,8 +1022,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  5000/240 (KN03-GA, R3000): 40 MHz  */
 			/*  5000/260 (KN05-NB, R4000): 60 MHz  */
 			/*  TODO: are both these type 4?  */
-			if (emulated_hz == 0)
-				emulated_hz = 40000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 40000000;
 			if (emul->physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
@@ -1142,8 +1141,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
 			emul->machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
-			if (emulated_hz == 0)
-				emulated_hz = 33000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 33000000;
 
 			if (emul->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02CA machines do not have less than 8MB RAM. Continuing anyway.\n");
@@ -1208,8 +1207,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  KN220-AA is a "30 MHz R3000 CPU with R3010 FPU"
 			 *  with "512 kBytes of Prestoserve battery backed RAM."
 			 */
-			if (emulated_hz == 0)
-				emulated_hz = 30000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 30000000;
 
 			/*
 			 *  See KN220 docs for more info.
@@ -1244,8 +1243,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
 			emul->machine_name = "DEC MIPSMATE 5100 (KN230)";
-			if (emulated_hz == 0)
-				emulated_hz = 20000000;
+			if (emul->emulated_hz == 0)
+				emul->emulated_hz = 20000000;
 			if (emul->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
@@ -1467,7 +1466,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *	6	VIA southbridge PIC
 		 *	7	PCI
 		 */
-/*		dev_XXX_init(cpu, mem, 0x10000000, emulated_hz);	*/
+/*		dev_XXX_init(cpu, mem, 0x10000000, emul->emulated_hz);	*/
 		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4);  	/*  mcclock0  */
 		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1);				/*  com0  */
 
@@ -2686,12 +2685,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 	if (emul->machine_name != NULL)
 		debug("machine: %s", emul->machine_name);
 
-	if (emulated_hz > 0)
-		debug(" (%.2f MHz)", (float)emulated_hz / 1000000);
+	if (emul->emulated_hz > 0)
+		debug(" (%.2f MHz)", (float)emul->emulated_hz / 1000000);
 	debug("\n");
 
-	if (emulated_hz < 1)
-		emulated_hz = 1500000;
+	if (emul->emulated_hz < 1)
+		emul->emulated_hz = 1500000;
 
 	if (bootstr != NULL) {
 		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.38 2004-09-02 02:13:12 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.39 2004-09-05 03:12:43 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -44,7 +44,6 @@
 
 extern int register_dump;
 extern int instruction_trace;
-extern int emulated_hz;
 extern int ncpus;
 extern struct cpu **cpus;
 
@@ -82,11 +81,11 @@ struct mc_data {
  *  dynamically.  We have to recalculate how often interrupts are to be
  *  triggered.
  */
-void recalc_interrupt_cycle(struct mc_data *mc_data)
+static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *mc_data)
 {
 	if (mc_data->interrupt_hz > 0)
 		mc_data->interrupt_every_x_cycles =
-		    emulated_hz / mc_data->interrupt_hz;
+		    cpu->emul->emulated_hz / mc_data->interrupt_hz;
 	else
 		mc_data->interrupt_every_x_cycles = 0;
 }
@@ -102,7 +101,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 	if (mc_data == NULL)
 		return;
 
-	recalc_interrupt_cycle(mc_data);
+	recalc_interrupt_cycle(cpu, mc_data);
 
 	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) &&
 	     mc_data->interrupt_every_x_cycles > 0) {
@@ -331,7 +330,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				;
 			}
 
-			recalc_interrupt_cycle(mc_data);
+			recalc_interrupt_cycle(cpu, mc_data);
 
 			mc_data->cycles_left_until_interrupt =
 				mc_data->interrupt_every_x_cycles;

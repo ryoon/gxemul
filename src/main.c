@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.84 2004-09-05 03:10:18 debug Exp $
+ *  $Id: main.c,v 1.85 2004-09-05 03:12:45 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ int instruction_trace = 0;
 int single_step = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
-int emulated_hz = 0;
 int max_random_cycles_per_chunk = 0;
 
 int ncpus = DEFAULT_NCPUS;
@@ -293,7 +292,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->machine = 0;
 			break;
 		case 'I':
-			emulated_hz = atoi(optarg);
+			emul->emulated_hz = atoi(optarg);
 			emul->automatic_clock_adjustment = 0;
 			break;
 		case 'i':

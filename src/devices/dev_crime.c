@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.10 2004-01-14 06:10:45 debug Exp $
+ *  $Id: dev_crime.c,v 1.11 2004-01-19 12:48:23 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -49,28 +49,31 @@ struct crime_data {
 
 
 #define	CRIME_TICKSHIFT		9
-
+#define	CRIME_SPEED_FACTOR	1
 
 /*
  *  dev_crime_tick():
  *
- *  TODO:  This function simply updates CRIME_TIME by 1 for each tick.
- *  This is probably not correct.
+ *  TODO:  This function simply updates CRIME_TIME by CRIME_SPEED_FACTOR for each tick.
+ *  A R10000 is detected as running at CRIME_SPEED_FACTOR * 66 MHz.
  */
 void dev_crime_tick(struct cpu *cpu, void *extra)
 {
-	int i, j;
+	int j, carry, old, new;
+	int what_to_add = (1<<CRIME_TICKSHIFT) / CRIME_SPEED_FACTOR;
 	struct crime_data *d = extra;
 
-	/*  Increase CRIME_TIME by 1<<CRIME_TICKSHIFT steps for each tick:  */
-	for (i=0; i<(1<<CRIME_TICKSHIFT); i++) {
-		j = 7;
-		while (j >= 0) {
-			if ((++ d->reg[CRIME_TIME + j]) == 0)
-				j --;
-			else
-				break;
-		}
+	j = 0;
+	carry = 0;
+	while (j < 8) {
+		old = d->reg[CRIME_TIME + 7 - j];
+		new = old + ((what_to_add >> (j * 8)) & 255) + carry;
+		d->reg[CRIME_TIME + 7 - j] = new & 255;
+		if (new >= 256)
+			carry = 1;
+		else
+			carry = 0;
+		j++;
 	}
 }
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.90 2005-02-18 08:16:44 debug Exp $
+$Id: RELEASE,v 1.91 2005-02-18 08:45:45 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
@@ -51,13 +51,13 @@ Summary of changes from version 0.2.4.1 to 0.3:
 	    settings do not have to be entered on the command line anymore.
 	    (Useful for complex emulation setups.)
 
-	x)  Multiple machines can be emulated simultaneously.
+	x)  Multiple machines can now be emulated simultaneously.
 
 	x)  Some seldomly used command line options have been changed or
 	    removed, but 0.3 should be mostly backward compatible with
 	    0.2.4.1.
 
-	x)  Many other bugfixes, too many to mention here.
+	x)  Many bugfixes, too many to mention here.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

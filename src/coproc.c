@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.90 2004-11-16 20:50:36 debug Exp $
+ *  $Id: coproc.c,v 1.91 2004-11-20 08:57:15 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -306,15 +306,12 @@ static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vad
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int i;
-
-		if (all) {
-			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-				cpu->bintrans_data_hostpage[i] = NULL;
-		} else {
-			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-				if ((cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2)
+		for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+			if (all ||
+			    (cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2) {
+				if ((cpu->bintrans_data_vaddr[i] & ~0x3fffffffULL) != 0xffffffff80000000ULL)
 					cpu->bintrans_data_hostpage[i] = NULL;
-		}
+			}
 	}
 #endif
 
@@ -326,11 +323,24 @@ static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vad
 
 	/*  Invalidate the tiny translation cache...  */
 	for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-/*		if (all || vaddr2 == cpu->translation_cache_instr[i].vaddr_pfn)  */
+		if (all ||
+		    vaddr2 == (cpu->translation_cache_instr[i].vaddr_pfn & ~1))
 			cpu->translation_cache_instr[i].wf = 0;
+
 	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-/*		if (all || vaddr2 == cpu->translation_cache_data[i].vaddr_pfn)  */
+{
+/*
+printf("vaddr2=%016llx vaddr_pfn=%016llx\n",
+(long long)vaddr2, (long long)cpu->translation_cache_instr[i].vaddr_pfn);
+
+TODO: Why doesn't this work?
+
+		if (all ||
+		    vaddr2 == (cpu->translation_cache_data[i].vaddr_pfn & ~1))
+*/
 			cpu->translation_cache_data[i].wf = 0;
+}
+
 }
 #endif
 }

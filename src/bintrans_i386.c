@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.13 2004-11-20 04:16:25 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.14 2004-11-20 08:57:15 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -793,12 +793,19 @@ static int bintrans_write_instruction__rfe(unsigned char **addrp)
 
 
 /*
- *  bintrans_write_instruction__mfc():
+ *  bintrans_write_instruction__mfc_mtc():
  */
-static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd)
+static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
 {
 	unsigned char *a;
 	int ofs;
+
+	if (mtcflag) {
+		/*  mtc: */
+		/*  TODO:  see bintrans_alpha.c  */
+		bintrans_write_chunkreturn_fail(addrp);
+		return 0;
+	}
 
 	/*
 	 *  NOTE: Only a few registers are readable without side effects.
@@ -812,14 +819,13 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 	if (rd == COP0_RANDOM || rd == COP0_COUNT)
 		return 0;
 
+	a = *addrp;
 
 	/*************************************************************
 	 *
 	 *  TODO: Check for kernel mode, or Coproc X usability bit!
 	 *
 	 *************************************************************/
-
-	a = *addrp;
 
 	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.26 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_le.c,v 1.27 2004-11-20 08:57:13 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -60,6 +60,8 @@
 
 #include "if_lereg.h"
 
+
+#define	LE_TICK_SHIFT		14
 
 /*  #define LE_DEBUG  */
 /*  #define debug fatal  */
@@ -768,6 +770,6 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "le", baseaddr, len,
 	    dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_le_tick, d, 13);
+	cpu_add_tickfunction(cpu, dev_le_tick, d, LE_TICK_SHIFT);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.45 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_bt459.c,v 1.46 2004-11-20 08:57:13 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -50,7 +50,7 @@ extern int quiet_mode;
 
 /*  #define BT459_DEBUG  */
 /*  #define WITH_CURSOR_DEBUG  */
-#define BT459_TICK_SHIFT	13
+#define BT459_TICK_SHIFT	14
 
 struct bt459_data {
 	uint32_t	bt459_reg[DEV_BT459_NREGS];
@@ -260,7 +260,7 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 
 	/*
 	 *  Vertical retrace interrupts. (This hack is kind of ugly.)
-	 *  Once ever 'interrupt_time_reset_value', the interrupt is
+	 *  Once every 'interrupt_time_reset_value', the interrupt is
 	 *  asserted. It is acked either manually (by someone reading
 	 *  a normal BT459 register or the Interrupt ack register),
 	 *  or after another tick has passed.  (This is to prevent
@@ -311,7 +311,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int btaddr, old_cursor_on = d->cursor_on;
+	int btaddr, old_cursor_on = d->cursor_on, modified;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -372,13 +372,15 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		if (writeflag == MEM_WRITE) {
 			if (!quiet_mode)
 				debug("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+			modified = (d->bt459_reg[btaddr] != idata);
 			d->bt459_reg[btaddr] = idata;
 
 			switch (btaddr) {
 			case BT459_REG_CCOLOR_1:
 			case BT459_REG_CCOLOR_2:
 			case BT459_REG_CCOLOR_3:
-				d->need_to_update_cursor_shape = 1;
+				if (modified)
+					d->need_to_update_cursor_shape = 1;
 				break;
 			case BT459_REG_PRM:
 				/*
@@ -408,7 +410,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				default:
 					fatal("[ bt459: unimplemented CCR value 0x%08x ]\n", idata);
 				}
-				d->need_to_update_cursor_shape = 1;
+				if (modified)
+					d->need_to_update_cursor_shape = 1;
 				break;
 			default:
 				if (btaddr < 0x100)
@@ -416,7 +419,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			}
 
 			/*  Write to cursor bitmap:  */
-			if (btaddr >= BT459_REG_CRAM_BASE)
+			if (btaddr >= BT459_REG_CRAM_BASE && modified)
 				d->need_to_update_cursor_shape = 1;
 		} else {
 			odata = d->bt459_reg[btaddr];
@@ -552,7 +555,7 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		break;
 	}
 
-	d->interrupt_time_reset_value = 10000;
+	d->interrupt_time_reset_value = 500;
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH,
 	    dev_bt459_access, (void *)d, MEM_DEFAULT, NULL);

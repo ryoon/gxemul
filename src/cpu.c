@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.190 2004-11-20 04:16:25 debug Exp $
+ *  $Id: cpu.c,v 1.191 2004-11-20 08:57:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -310,8 +310,9 @@ void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
 	}
 
 	/*  Don't use too low clockshifts, that would be too inefficient with bintrans.  */
-	if (clockshift < 13)
-		fatal("WARNING! clockshift = %i, less than 13 (which would be more suitable)\n", clockshift);
+	if (clockshift < N_SAFE_BINTRANS_LIMIT_SHIFT)
+		fatal("WARNING! clockshift = %i, less than N_SAFE_BINTRANS_LIMIT_SHIFT (%i)\n",
+		    clockshift, N_SAFE_BINTRANS_LIMIT_SHIFT);
 
 	cpu->ticks_till_next[n]   = 0;
 	cpu->ticks_reset_value[n] = 1 << clockshift;
@@ -1041,22 +1042,12 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 	}
 
-	if (tlb && vaddr == 0) {
-		uint64_t offset;
-		char *symbol = get_symbol_name(
-		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
-		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
-		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
-/*		tlb_dump = 1;  */
-	}
-
-	if (vaddr != 0 && vaddr < 0x1000) {
+	if (tlb && vaddr < 0x1000) {
 		uint64_t offset;
 		char *symbol = get_symbol_name(
 		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
-/*		tlb_dump = 1;  */
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
@@ -1088,8 +1079,8 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 #endif
 
-	if ((exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
-	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED || tlb) {
+	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
+	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
 		cpu->coproc[0]->reg[COP0_BADVADDR] = vaddr;
 		/*  sign-extend vaddr, if it is 32-bit  */
 		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))

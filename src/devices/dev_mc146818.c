@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.47 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.48 2004-11-20 08:57:13 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -45,7 +45,7 @@
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /*  #define MC146818_DEBUG  */
-#define	TICK_STEPS_SHIFT	13
+#define	TICK_STEPS_SHIFT	14
 
 
 #define	N_REGISTERS	256
@@ -105,8 +105,8 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		if (mc_data->cycles_left_until_interrupt < 0 ||
 		    mc_data->cycles_left_until_interrupt >=
 		    mc_data->interrupt_every_x_cycles) {
-			debug("[ rtc interrupt (every %i cycles) ]\n",
-			    mc_data->interrupt_every_x_cycles);
+			/*  debug("[ rtc interrupt (every %i cycles) ]\n",
+			    mc_data->interrupt_every_x_cycles);  */
 			cpu_interrupt(cpu, mc_data->irq_nr);
 
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;

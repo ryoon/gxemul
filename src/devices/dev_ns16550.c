@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.21 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.22 2004-11-20 08:57:13 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -41,6 +41,8 @@
 
 #include "comreg.h"
 
+
+#define	NS16550_TICK_SHIFT		14
 
 /*  #define DISABLE_FIFO  */
 
@@ -297,7 +299,8 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->stopbits = "1";
 
 	memory_device_register(mem, "ns16550", baseaddr,
-	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 13);
+	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d,
+	    MEM_DEFAULT, NULL);
+	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, NS16550_TICK_SHIFT);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.102 2004-11-18 16:25:44 debug Exp $
+ *  $Id: memory.c,v 1.103 2004-11-20 08:57:16 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1081,7 +1081,7 @@ exception:
 unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	uint64_t vaddr, int writeflag)
 {
-	int ok, i;
+	int ok, i, n, start_and_stop;
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
@@ -1090,22 +1090,20 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	    cpu, (long long)vaddr, writeflag);  */
 
 	vaddr_page = vaddr & ~0xfff;
-	i = cpu->bintrans_next_index;
+	i = start_and_stop = cpu->bintrans_next_index;
+	n = 0;
 	for (;;) {
 		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
 		    cpu->bintrans_data_hostpage[i] != NULL &&
-		    cpu->bintrans_data_writable[i] >= writeflag)
-#if 0
-			return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
-#else
-{
+		    cpu->bintrans_data_writable[i] >= writeflag) {
 			uint64_t tmpaddr;
 			unsigned char *tmpptr;
 			int tmpwf;
-			unsigned char *ret = cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
 
-if (cpu->bintrans_next_index != i) {
-			cpu->bintrans_next_index --;
+			if (n < 4)
+				return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+
+			cpu->bintrans_next_index = start_and_stop - 1;
 			if (cpu->bintrans_next_index < 0)
 				cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
 
@@ -1121,15 +1119,14 @@ if (cpu->bintrans_next_index != i) {
 			cpu->bintrans_data_vaddr[i] = tmpaddr;
 			cpu->bintrans_data_writable[i] = tmpwf;
 
-			ret = cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
-}
-			return ret;
-}
-#endif
-		i++;
+			return cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
+		}
+
+		n ++;
+		i ++;
 		if (i == N_BINTRANS_VADDR_TO_HOST)
 			i = 0;
-		if (i == cpu->bintrans_next_index)
+		if (i == start_and_stop)
 			break;
 	}
 
@@ -1168,7 +1165,6 @@ if (cpu->bintrans_next_index != i) {
 				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
 				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
 				cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;
-
 				return cpu->mem->dev_bintrans_data[i] + paddr;
 			} else
 				return NULL;
@@ -1313,9 +1309,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 
-
 have_paddr:
-
 
 	/*  TODO: How about bintrans vs cache emulation?  */
 #ifdef BINTRANS

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.42 2004-11-20 04:36:52 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.43 2004-11-20 08:57:15 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1685,12 +1685,11 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
 	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
 
+	ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
+
 	if (mtcflag) {
 		/*  mtc:  */
-		/*  Only allow mtc if it does NOT change the register!!  */
-		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
-		*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
-
 		bintrans_move_MIPS_reg_into_Alpha_reg((unsigned char **)&a, rt, ALPHA_T0);
 
 		if (!flag64bit) {
@@ -1698,23 +1697,69 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			*a++ = 0x40401002;	/*  addl t1,0,t1  */
 		}
 
-		/*  a3 05 22 40     cmpeq   t0,t1,t2  */
-		/*  01 00 60 f4     bne     t2,<ok>  */
-		*a++ = 0x402205a3;
-		jump = a;
-		*a++ = 0;	/*  later  */
+		/*
+		 *  In the general case:  Only allow mtc if it does NOT
+		 *  change the register!!
+		 */
 
-		bintrans_write_chunkreturn_fail((unsigned char **)&a);
+		switch (rd) {
+		case COP0_INDEX:
 
-		*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+		/*  TODO: Some bits are not writable!  */
+		case COP0_ENTRYLO0:
+		case COP0_ENTRYLO1:
 
-		/*  The mtc is "allowed", but as it didn't change the
-		    register, we don't have do do any store here :-)  */
+		case COP0_EPC:
+			break;
+#if 0
+
+This stuff doesn't really work very well.
+Perhaps allowing interrupts to be _disabled_ but not enabled is
+a solution.
+
+		case COP0_STATUS:
+			/*  Only allow updates to the status register if
+			    the interrupt enable bits were changed, but no
+			    other bits!  */
+			/*  ff fe bf 20     lda     t4, ~1  */
+/* *a++ = 0x20bffffe; */
+
+			/*  ff ff bf 24     ldah    t4,-1  */
+			/*  fe 00 a5 20     lda     t4,254(t4)  */
+			*a++ = 0x24bfffff;
+			*a++ = 0x20a500fe;
+
+			/*  03 00 25 44     and     t0,t4,t2  */
+			/*  04 00 45 44     and     t1,t4,t3  */
+			/*  a3 05 64 40     cmpeq   t2,t3,t2  */
+			/*  01 00 60 f4     bne     t2,<ok>  */
+			*a++ = 0x44250003;
+			*a++ = 0x44450004;
+			*a++ = 0x406405a3;
+			jump = a;
+			*a++ = 0;	/*  later  */
+			bintrans_write_chunkreturn_fail((unsigned char **)&a);
+			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+			break;
+#endif
+		default:
+			/*  a3 05 22 40     cmpeq   t0,t1,t2  */
+			/*  01 00 60 f4     bne     t2,<ok>  */
+			*a++ = 0x402205a3;
+			jump = a;
+			*a++ = 0;	/*  later  */
+			bintrans_write_chunkreturn_fail((unsigned char **)&a);
+			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+		}
+
+		*a++ = 0x40201402;	/*  addq    t0,0,t1  */
+
+		ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+		*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0xb4410000 | (ofs & 0xffff);		/*  stq t1,reg_rd(t0)  */
 	} else {
 		/*  mfc:  */
-		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
-		*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
-
 		if (!flag64bit) {
 			*a++ = 0x40401002;		/*  addl t1,0,t1  */
 		}

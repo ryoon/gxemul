@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.27 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.28 2004-11-20 08:57:13 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -60,7 +60,7 @@
 
 #define	PS2	100
 
-#define	PCKBC_TICKSHIFT		13
+#define	PCKBC_TICKSHIFT		14
 
 struct pckbc_data {
 	int		in_use;

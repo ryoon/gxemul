@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.127 2004-11-05 00:31:01 debug Exp $
+ *  $Id: main.c,v 1.128 2004-11-20 08:57:16 debug Exp $
  */
 
 #include <stdio.h>
@@ -619,6 +619,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		    "Cannot do both dynamic binary translation and exact opcode statistics.\n"
 		    "Aborting.\n");
 		exit(1);
+	}
+
+	if (emul->bintrans_enable) {
+		emul->speed_tricks = 0;
+		/*  TODO: Print a warning about this?  */
 	}
 
 #ifndef BINTRANS

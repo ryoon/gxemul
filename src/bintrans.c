@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.70 2004-11-20 04:36:52 debug Exp $
+ *  $Id: bintrans.c,v 1.71 2004-11-20 08:57:15 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -120,6 +120,7 @@ void bintrans_init(void)
 
 static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
+static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr);
 static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);
@@ -283,12 +284,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 
 	/*  Abort if the current "environment" isn't safe enough:  */
-	if (cpu->delay_slot || cpu->nullify_next)
-		return -1;
-
-	/*  Not on a page directly readable by the host? Then abort.  */
-	host_mips_page = cpu->pc_bintrans_host_4kpage;
-	if (host_mips_page == NULL || (paddr & 3)!=0)
+	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
 		return -1;
 
 	/*  Is this a part of something that is already translated?  */
@@ -312,6 +308,11 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		}
 		tep = tep->next;
 	}
+
+	host_mips_page = cpu->pc_bintrans_host_4kpage;
+	if (host_mips_page == NULL)
+		return -1;
+
 
 	if (tep == NULL) {
 		/*  Allocate a new translation page entry:  */
@@ -383,6 +384,11 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				break;
 			default:
 				try_to_translate = 0;
+				/*  Untranslatable:  */
+				/*  TODO: this code should only be in one place  */
+				bintrans_write_chunkreturn_fail(&ca);
+				tep->flags[prev_p] |= UNTRANSLATABLE;
+				try_to_translate = 0;
 			}
 			break;
 
@@ -449,6 +455,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				n_translated += translated;
 				break;
 			default:
+				/*  Untranslatable:  */
+				/*  TODO: this code should only be in one place  */
+				bintrans_write_chunkreturn_fail(&ca);
+				tep->flags[prev_p] |= UNTRANSLATABLE;
 				try_to_translate = 0;
 			}
 			break;
@@ -561,6 +571,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			break;
 
 		default:
+			/*  Untranslatable:  */
+			/*  TODO: this code should only be in one place  */
+			bintrans_write_chunkreturn_fail(&ca);
+			tep->flags[prev_p] |= UNTRANSLATABLE;
 			try_to_translate = 0;
 		}
 
@@ -589,7 +603,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			    (size_t)translation_code_chunk_space);
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 20 &&
+		if (translated && try_to_translate && n_translated > 30 &&
 		    prev_p < 1020 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
@@ -597,7 +611,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 300)
+		if (n_translated > 200)
 			try_to_translate = 0;
 
 		p += sizeof(instr);
@@ -653,18 +667,21 @@ run_it:
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
 	if (!cpu->delay_slot && !cpu->nullify_next &&
-	    cpu->bintrans_instructions_executed < 4095 && (cpu->pc & 3) == 0
+	    cpu->bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
+	    && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
-		uint64_t paddr = (uint64_t) -1;
+		uint64_t paddr;
 		int ok;
+		cpu->pc_last = cpu->pc;
 		ok = translate_address(cpu, cpu->pc, &paddr,
-		    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+		    FLAG_INSTR);	/*  + FLAG_NOEXCEPTIONS);  */
 		if (ok) {
 			if (cpu->emul->emulation_type == EMULTYPE_DEC)
 				paddr &= 0x1fffffff;
 			else
 				paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
 
+			/*  TODO: how about code between devices?  */
 			if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
 				paddr = (uint64_t) -1;
 		} else

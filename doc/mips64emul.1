@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.24 2004-09-29 05:35:02 debug Exp $
+.\" $Id: mips64emul.1,v 1.25 2004-10-07 15:10:00 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -78,9 +78,9 @@ DECstation harddisk or CDROM image, then just supplying the diskimage via
 the -d option is sufficient. The filename of the kernel can then be 
 skipped, as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
-.SH EXAMPLE
+.SH EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
-5000/200:
+5000/200 (which is "type 2" in the DECstation world):
 .nf
 
 	mips64emul \-D2 \-d netbsddisk.img
@@ -88,8 +88,29 @@ The following command will start NetBSD/pmax on an emulated DECstation
 .fi
 if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
 You may wish to add -X -M128 to use the X11 framebuffer feature and 
-increase the amount of emulated RAM to 128 MB. Read the
-documentation for more details.
+increase the amount of emulated RAM to 128 MB.
+
+This will boot a NetBSD/cobalt kernel (called
+netbsd-GENERIC) on an emulated Cobalt machine:
+.nf
+
+	mips64emul \-E netbsd-GENERIC
+
+.fi
+
+If you have extracted a copy of the PROM from a real SGI O2 machine
+(which is type "32", for IP32),
+then this command will try to run it:
+.nf
+
+	mips64emul \-G32 -Q 0xbfc00000:raw_prom_dump
+
+.fi
+The SGI IP32 emulation is not good enough yet to actually run the
+PROM correctly. You can add -t to the command line; this will let
+you see a call trace.
+
+Please read the documentation for more details.
 .SH AUTHOR
 Anders Gavare <md1gavan@mdstud.chalmers.se>
 .SH HISTORY

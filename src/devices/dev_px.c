@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.25 2005-02-18 07:22:30 debug Exp $
+ *  $Id: dev_px.c,v 1.26 2005-02-18 07:29:56 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -503,21 +503,41 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 				for (xbit = 0; xbit < 8; xbit ++) {
 					if (bytesperpixel == 3) {
 						/*  24-bit:  */
-						/*  TODO:  Which one is r, which one is g, which one is b?  */
-						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_r : bg_r;
-						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_g : bg_g;
-						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_b : bg_b;
-						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_r : bg_r;
-						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_g : bg_g;
-						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_b : bg_b;
+						/*  TODO:  Which one is r,
+						    which one is g, and b?  */
+						pixels[xbit * 3 + 0] =
+						    (dma_buf[i*4 + j*2 + 0] &
+						    (1 << xbit))? fg_r : bg_r;
+						pixels[xbit * 3 + 1] =
+						    (dma_buf[i*4 + j*2 + 0] &
+						    (1 << xbit))? fg_g : bg_g;
+						pixels[xbit * 3 + 2] =
+						    (dma_buf[i*4 + j*2 + 0] &
+						    (1 << xbit))? fg_b : bg_b;
+						pixels[(xbit + 8) * 3 + 0] =
+						    (dma_buf[i*4 + j*2 + 1] &
+						    (1 << xbit))? fg_r : bg_r;
+						pixels[(xbit + 8) * 3 + 1] =
+						    (dma_buf[i*4 + j*2 + 1] &
+						    (1 << xbit))? fg_g : bg_g;
+						pixels[(xbit + 8) * 3 + 2] =
+						    (dma_buf[i*4 + j*2 + 1] &
+						    (1 << xbit))? fg_b : bg_b;
 					} else {
 						/*  8-bit:  */
-						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? (fgcolor & 255) : (bgcolor & 255);
-						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? (fgcolor & 255) : (bgcolor & 255);
+						pixels[xbit] = (dma_buf[i*4 +
+						    j*2 + 0] & (1 << xbit))?
+						    (fgcolor & 255) :
+						    (bgcolor & 255);
+						pixels[xbit + 8] = (dma_buf[i*4
+						    + j*2 + 1] & (1 << xbit))?
+						    (fgcolor & 255) :
+						    (bgcolor & 255);
 					}
 				}
 
-				memcpy(d->vfb_data->framebuffer + ((y+suby) * PX_XSIZE + x) * bytesperpixel,
+				memcpy(d->vfb_data->framebuffer + ((y+suby)
+				    * PX_XSIZE + x) * bytesperpixel,
 				    pixels, pixels_len * bytesperpixel);
 
 				if (y+suby < d->vfb_data->update_y1)
@@ -552,29 +572,34 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (relative_addr < 0x0c0000) {
 		/*
 		 *  DMA poll:  a read from this address should start a DMA
-		 *  transfer, and return 1 in odata while the DMA is in progress (STAMP_BUSY),
-		 *  and then 0 (STAMP_OK) once we're done.
+		 *  transfer, and return 1 in odata while the DMA is in
+		 *  progress (STAMP_BUSY), and then 0 (STAMP_OK) once we're
+		 *  done.
 		 *
-		 *  According to NetBSD's pxreg.h, the following formula gets us from
-		 *  system address to DMA address:  (v is the system address)
+		 *  According to NetBSD's pxreg.h, the following formula gets
+		 *  us from system address to DMA address:  (v is the system
+		 *  address)
 		 *
-		 *	dma_addr = ( ( ((v & ~0x7fff) << 3) | (v & 0x7fff) ) & 0x1ffff800) >> 9;
+		 *	dma_addr = ( ( ((v & ~0x7fff) << 3) |
+		 *		(v & 0x7fff) ) & 0x1ffff800) >> 9;
 		 *
 		 *  Hopefully, this is a good enough reversal of that formula:
 		 *
 		 *	sys_addr = ((dma_addr << 9) & 0x7800) +
 		 *		   ((dma_addr << 6) & 0xffff8000);
 		 *
-		 *  If the board type is "PX" then the system address is an address in host
-		 *  memory.  Otherwise, it is relative to 0x200000 (the i860's memory space
-		 *  on the board).
+		 *  If the board type is "PX" then the system address is an
+		 *  address in host memory.  Otherwise, it is relative to
+		 *  0x200000 (the i860's memory space on the board).
 		 */
 		uint32_t sys_addr;	/*  system address for DMA transfers  */
-		sys_addr = ((relative_addr << 9) & 0x7800) + ((relative_addr << 6) & 0xffff8000);
+		sys_addr = ((relative_addr << 9) & 0x7800) +
+		    ((relative_addr << 6) & 0xffff8000);
 
 		/*
-		 *  If the system address is sane enough, then start a DMA transfer:
-		 *  (for the "PX" board type, don't allow obviously too-low physical addresses)
+		 *  If the system address is sane enough, then start a DMA
+		 *  transfer:  (for the "PX" board type, don't allow obviously
+		 *  too-low physical addresses)
 		 */
 		if (sys_addr >= 0x4000 || d->type != DEV_PX_TYPE_PX)
 			dev_px_dma(cpu, sys_addr, d);
@@ -586,20 +611,22 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	/*  N10 sram:  */
 	if (relative_addr >= 0x200000 && relative_addr < 0x280000) {
 		if (d->type == DEV_PX_TYPE_PX)
-			fatal("WARNING: the vdac should be at this address. overlap problems?\n");
+			fatal("WARNING: the vdac should be at this "
+			    "address. overlap problems?\n");
 
 		if (writeflag == MEM_WRITE) {
 			for (i=0; i<len; i++)
 				d->sram[relative_addr - 0x200000 + i] = data[i];
-			/*  NOTE:  this return here supresses debug output (which
-				would be printed if we continue)  */
+			/*  NOTE:  this return here supresses debug output
+			    (which would be printed if we continue)  */
 			return 1;
 		} else {
 			/*
-			 *
+			 *  Huh? Why have I commented out this? TODO
 			 */
 			/*  for (i=0; i<len; i++)
-				data[i] = d->sram[relative_addr - 0x200000 + i];  */
+				data[i] = d->sram[relative_addr - 0x200000
+			    + i];  */
 			odata = 1;
 		}
 	}
@@ -609,37 +636,47 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	case 0x180008:		/*  hsync  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from hsync: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from hsync: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to hsync: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to hsync: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x18000c:		/*  hsync2  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from hsync2: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from hsync2: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to hsync2: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to hsync2: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180010:		/*  hblank  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from hblank: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from hblank: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to hblank: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to hblank: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180014:		/*  vsync  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from vsync: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from vsync: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to vsync: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to vsync: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180018:		/*  vblank  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from vblank: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from vblank: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to vblank: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to vblank: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180020:		/*  ipdvint  */
@@ -649,7 +686,8 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*  TODO:  how do interrupts work on the pixelstamp boards?  */
 odata = random();
 
-			debug("[ px: read from ipdvint: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from ipdvint: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
 			d->intr = idata;
 			if (idata & STIC_INT_E_WE)
@@ -658,36 +696,46 @@ odata = random();
 				d->intr &= ~STIC_INT_V;
 			if (idata & STIC_INT_P_WE)
 				d->intr &= ~STIC_INT_P;
-			debug("[ px: write to ipdvint: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to ipdvint: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180028:		/*  sticsr  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from sticsr: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from sticsr: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to sticsr: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to sticsr: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x180038:		/*  buscsr  */
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from buscsr: 0x%08llx ]\n", (long long)odata);
+			debug("[ px: read from buscsr: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to buscsr: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to buscsr: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	case 0x18003c:		/*  modcl  */
 		if (writeflag==MEM_READ) {
-			odata = (d->type << 12) + (d->xconfig << 11) + (d->yconfig << 9);
-			debug("[ px: read from modcl: 0x%llx ]\n", (long long)odata);
+			odata = (d->type << 12) + (d->xconfig << 11) +
+			    (d->yconfig << 9);
+			debug("[ px: read from modcl: 0x%llx ]\n",
+			    (long long)odata);
 		} else {
-			debug("[ px: write to modcl: 0x%llx ]\n", (long long)idata);
+			debug("[ px: write to modcl: 0x%llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ px: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+			debug("[ px: read from addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)odata);
 		} else {
-			debug("[ px: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+			debug("[ px: write to addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)idata);
 		}
 	}
 

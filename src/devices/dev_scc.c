@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.24 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_scc.c,v 1.25 2005-02-18 07:29:56 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -104,26 +104,30 @@ void dev_scc_add_to_rx_queue(void *e, int ch, int portnr)
 
 	portnr &= (N_SCC_PORTS - 1);
 
-        d->rx_queue_char[portnr * MAX_QUEUE_LEN + d->cur_rx_queue_pos_write[portnr]] = ch; 
+        d->rx_queue_char[portnr * MAX_QUEUE_LEN +
+	    d->cur_rx_queue_pos_write[portnr]] = ch; 
         d->cur_rx_queue_pos_write[portnr] ++;
         if (d->cur_rx_queue_pos_write[portnr] == MAX_QUEUE_LEN)
                 d->cur_rx_queue_pos_write[portnr] = 0;
 
-        if (d->cur_rx_queue_pos_write[portnr] == d->cur_rx_queue_pos_read[portnr])
+        if (d->cur_rx_queue_pos_write[portnr] ==
+	    d->cur_rx_queue_pos_read[portnr])
                 fatal("warning: add_to_rx_queue(): rx_queue overrun!\n");
 }
 
 
-int rx_avail(struct scc_data *d, int portnr)
+static int rx_avail(struct scc_data *d, int portnr)
 {
-	return d->cur_rx_queue_pos_write[portnr] != d->cur_rx_queue_pos_read[portnr];
+	return d->cur_rx_queue_pos_write[portnr] !=
+	    d->cur_rx_queue_pos_read[portnr];
 }
 
 
-unsigned char rx_nextchar(struct scc_data *d, int portnr)
+static unsigned char rx_nextchar(struct scc_data *d, int portnr)
 {
 	unsigned char ch;
-	ch = d->rx_queue_char[portnr * MAX_QUEUE_LEN + d->cur_rx_queue_pos_read[portnr]];
+	ch = d->rx_queue_char[portnr * MAX_QUEUE_LEN +
+	    d->cur_rx_queue_pos_read[portnr]];
 	d->cur_rx_queue_pos_read[portnr]++;
 	if (d->cur_rx_queue_pos_read[portnr] == MAX_QUEUE_LEN)
 		d->cur_rx_queue_pos_read[portnr] = 0;
@@ -150,17 +154,21 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 
 	for (i=0; i<N_SCC_PORTS; i++) {
 		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_TX_EMPTY;
-		d->scc_register_r[i * N_SCC_REGS + SCC_RR1] = 0;		/*  No receive errors  */
+		d->scc_register_r[i * N_SCC_REGS + SCC_RR1] = 0;
+		    /*  No receive errors  */
 
-		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] &= ~SCC_RR0_RX_AVAIL;
+		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] &=
+		    ~SCC_RR0_RX_AVAIL;
 		if (rx_avail(d, i))
-			d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_RX_AVAIL;
+			d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |=
+			    SCC_RR0_RX_AVAIL;
 
 		/*
 		 *  Interrupts:
 		 *  (NOTE: Interrupt enables are always at channel A)
 		 */
-		if (d->scc_register_w[N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE) {
+		if (d->scc_register_w[N_SCC_REGS + SCC_WR9] &
+		    SCC_WR9_MASTER_IE) {
 			/*  TX interrupts?  */
 			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
 				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_A ||

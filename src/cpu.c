@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.211 2004-12-08 17:05:14 debug Exp $
+ *  $Id: cpu.c,v 1.212 2004-12-08 19:55:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3517,7 +3517,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 	/*  The main loop:  */
 	running = 1;
 	while (running || emul->single_step) {
-		ncycles_chunk_end = ncycles + (1 << 17);
+		ncycles_chunk_end = ncycles + (1 << 16);
 
 		a_few_instrs = a_few_cycles *
 		    cpus[0]->cpu_type.instrs_per_cycle;
@@ -3664,7 +3664,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 		/*  If we've done buffered console output,
 		    the flush stdout every now and then:  */
-		if (ncycles > ncycles_flush + (1<<17)) {
+		if (ncycles > ncycles_flush + (1<<16)) {
 			console_flush();
 			ncycles_flush = ncycles;
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.231 2004-12-08 17:05:14 debug Exp $
+ *  $Id: machine.c,v 1.232 2004-12-08 19:55:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -920,7 +920,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 		emul->machine_name = "\"Bare\" test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
+
+		/*  This works with 'mmon':  */
+		dev_ns16550_init(cpu, mem, 0x10800000, 0, 4, 1);
+
 		dev_mp_init(mem, emul->cpus);
+
 		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
 

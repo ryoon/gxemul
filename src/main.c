@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.93 2004-09-05 03:46:41 debug Exp $
+ *  $Id: main.c,v 1.94 2004-09-05 03:47:45 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,7 +64,6 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
 int max_random_cycles_per_chunk = 0;
 
@@ -307,7 +306,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			max_instructions = atoi(optarg);
 			break;
 		case 'N':
-			show_nr_of_instructions = 1;
+			emul->show_nr_of_instructions = 1;
 			break;
 		case 'n':
 			ncpus = atoi(optarg);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.141 2004-09-05 03:46:40 debug Exp $
+ *  $Id: cpu.c,v 1.142 2004-09-05 03:47:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -50,7 +50,6 @@
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
-extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
 extern int tlb_dump;
@@ -3087,7 +3086,7 @@ void cpu_show_cycles(struct emul *emul,
 
 
 	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
-	if (!show_nr_of_instructions && !forced)
+	if (!emul->show_nr_of_instructions && !forced)
 		goto do_return;
 
 
@@ -3335,7 +3334,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 	debug("All CPUs halted.\n");
 
-	if (show_nr_of_instructions || !quiet_mode)
+	if (emul->show_nr_of_instructions || !quiet_mode)
 		cpu_show_cycles(emul, &starttime, ncycles, 1);
 
 	if (emul->show_opcode_statistics)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.11 2005-01-09 03:52:24 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.12 2005-01-09 05:18:22 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -49,7 +49,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 
 
 static uint32_t bintrans_sparcv9_runchunk[2] = {
-	0x81c3e008,
+	0x81c24000,	/*  jmp %o1  */
 	0x01000000
 };
 
@@ -219,7 +219,34 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 static int bintrans_write_instruction__lui(unsigned char **addrp,
 	int rt, int imm)
 {
-	return 0;
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	if (rt != 0) {
+		/*
+		 *  Trick if imm&0x8000: Load it shifted only
+		 *  5 bits to the left instead of 6, and then
+		 *  do a sll by 1 to sign-extend it. :-)
+		 */
+
+		if (imm & 0x8000) {
+			/*  sethi %hi(0xXXXX0000), %o5  */
+			*a++ = 0x1b000000 | ((imm & 0xffff) << 5);
+			/*  sll  %o5, 1, %o5  */
+			*a++ = 0x9b2b6001;
+		} else {
+			/*  sethi %hi(0xXXXX0000), %o5  */
+			*a++ = 0x1b000000 | ((imm & 0xffff) << 6);
+		}
+
+		/*  stx  %o5, [ %o0 + ofs ]  */
+		ofs = ((size_t)&dummy_cpu.gpr[rt]) - ((size_t)&dummy_cpu);
+		*a++ = 0xda722000 | ofs;
+	}
+
+	*addrp = (unsigned char *) a;
+	bintrans_write_pc_inc(addrp);
+	return 1;
 }
 
 

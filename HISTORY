@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.514 2005-01-22 07:18:58 debug Exp $
+$Id: HISTORY,v 1.515 2005-01-22 13:49:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1536,3 +1536,6 @@ HISTORY of mips64emul
 		Fixbug: not clearing lowest parts of lo0 and hi on tlbr
 		(seems to increase performance when emulating Linux?).
 20050122	Continuing the remodelling/cleanup.
+		Linux on DECstation uses a non-used part of the RTC registers
+		for the year value; this is supported now, so Linux thinks
+		it is 2005 and not 2000.

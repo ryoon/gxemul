@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.197 2004-10-21 04:44:07 debug Exp $
+ *  $Id: machine.c,v 1.198 2004-10-22 06:23:24 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -58,6 +58,10 @@
 
 /*  For SGI emulation:  */
 #include "crimereg.h"
+
+/*  For ARC emulation:  */
+#define	ARC_CONSOLE_MAX_X	80
+#define	ARC_CONSOLE_MAX_Y	30
 
 /*  For DECstation emulation:  */
 #include "dec_5100.h"
@@ -2160,8 +2164,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 				cpu->md_interrupt = pica_interrupt;
 
 				/*  OpenBSD/arc and NetBSD/arc:  */
-				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL, 0x60000003b0ULL);  */
-				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x60000003d0ULL);
+				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL,
+				    0x60000003b0ULL,
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);  */
+				dev_vga_init(cpu, mem, 0x100000b8000ULL,
+				    0x60000003d0ULL,
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				dev_asc_init(cpu, mem,
 				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA);
@@ -2203,7 +2211,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(emul->machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x900000003d0ULL);
+				dev_vga_init(cpu, mem, 0x100000b8000ULL,
+				    0x900000003d0ULL,
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				dev_ns16550_init(cpu, mem, 0x900000003f8ULL, 0, 1);
 				dev_ns16550_init(cpu, mem, 0x900000002f8ULL, 0, 1);
@@ -2327,8 +2337,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  TODO:  get 80 and 24 from the current terminal settings?  */
 		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorXPosition, 1);
 		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorYPosition, 1);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 80);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 25);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, ARC_CONSOLE_MAX_X);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, ARC_CONSOLE_MAX_Y);
 		arcbios_dsp_stat.ForegroundColor = 7;
 		arcbios_dsp_stat.HighIntensity = 15;
 		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));

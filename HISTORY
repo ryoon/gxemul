@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.267 2004-10-21 04:44:05 debug Exp $
+$Id: HISTORY,v 1.268 2004-10-22 06:23:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1044,3 +1044,5 @@ HISTORY of mips64emul
 		be ok.
 		Trying to make dev_asc.c work better with PICA.
 		More work on PICA interrupts (but they are broken now).
+20041022	Generalizing the dev_vga text console device so that it can be
+		of other resolutions than just 80x25. Works with OpenBSD/arc.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.6 2004-10-17 15:31:40 debug Exp $
+ *  $Id: dev_vga.c,v 1.7 2004-10-22 06:23:23 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -39,9 +39,6 @@
 #include "fonts/font8x16.c"
 
 
-#define	MAX_X		80
-#define	MAX_Y		25
-
 #define	VGA_FB_ADDR	0x123000000000ULL
 
 
@@ -51,7 +48,10 @@ struct vga_data {
 
 	struct vfb_data *fb;
 
-	unsigned char	videomem[MAX_X * MAX_Y * 2];
+	int		max_x;
+	int		max_y;
+	size_t		videomem_size;
+	unsigned char	*videomem;	/*  2 bytes per char  */
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
@@ -85,13 +85,14 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 			int tmp = fg; fg = bg; bg = tmp;
 		}
 
-		x = (i/2) % MAX_X; x *= 8;
-		y = (i/2) / MAX_X; y *= 16;
+		x = (i/2) % d->max_x; x *= 8;
+		y = (i/2) / d->max_x; y *= 16;
 
 		for (line = 0; line < 16; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
-				int addr = (MAX_X*8 * (line+y) + x + subx) * 3;
+				int addr = (d->max_x*8 * (line+y) + x + subx)
+				    * 3;
 
 				pixel[0] = d->fb->rgb_palette[bg * 3 + 0];
 				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
@@ -103,7 +104,8 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 					pixel[2] = d->fb->rgb_palette[fg * 3 + 2];
 				}
 
-				dev_fb_access(cpu, cpu->mem, addr, &pixel[0], sizeof(pixel), MEM_WRITE, d->fb);
+				dev_fb_access(cpu, cpu->mem, addr, &pixel[0],
+				    sizeof(pixel), MEM_WRITE, d->fb);
 			}
 		}
 	}
@@ -123,10 +125,11 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	idata = memory_readmax64(cpu, data, len);
 
-	if (relative_addr < sizeof(d->videomem)) {
+	if (relative_addr < d->videomem_size) {
 		if (writeflag == MEM_WRITE) {
 			memcpy(d->videomem + relative_addr, data, len);
-			vga_update(cpu, d, relative_addr, relative_addr + len-1);
+			vga_update(cpu, d, relative_addr,
+			    relative_addr + len-1);
 		} else
 			memcpy(data, d->videomem + relative_addr, len);
 		return 1;
@@ -159,8 +162,8 @@ void vga_reg_write(struct vga_data *d, int regnr, int idata)
 
 	if (regnr == 0xe || regnr == 0xf) {
 		int ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
-		d->cursor_x = ofs % MAX_X;
-		d->cursor_y = ofs / MAX_X;
+		d->cursor_x = ofs % d->max_x;
+		d->cursor_y = ofs / d->max_x;
 
 		/*  TODO: Don't hardcode the cursor size.  */
 
@@ -220,10 +223,10 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
  *  dev_vga_init():
  */
 void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
-	uint64_t control_base)
+	uint64_t control_base, int max_x, int max_y)
 {
 	struct vga_data *d;
-	int r,g,b,i;
+	int r,g,b,i, x,y;
 
 	d = malloc(sizeof(struct vga_data));
 	if (d == NULL) {
@@ -233,9 +236,24 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	memset(d, 0, sizeof(struct vga_data));
 	d->videomem_base = videomem_base;
 	d->control_base  = control_base;
+	d->max_x         = max_x;
+	d->max_y         = max_y;
+	d->videomem_size = max_x * max_y * 2;
+	d->videomem = malloc(d->videomem_size);
+	if (d->videomem == NULL) {
+		fprintf(stderr, "out of memory in dev_vga_init()\n");
+		exit(1);
+	}
+
+	for (y=0; y<max_y; y++)
+		for (x=0; x<max_x; x++) {
+			i = (x + max_x * y) * 2;
+			d->videomem[i] = ' ';
+			d->videomem[i+1] = 0x07;	/*  Default color  */
+		}
 
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    8*MAX_X, 16*MAX_Y, 8*MAX_X, 16*MAX_Y, 24, "VGA");
+	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA");
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -255,9 +273,11 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 				i+=3;
 			}
 
-	memory_device_register(mem, "vga_mem", videomem_base, sizeof(d->videomem),
+	memory_device_register(mem, "vga_mem", videomem_base, d->videomem_size,
 	    dev_vga_access, d);
 	memory_device_register(mem, "vga_ctrl", control_base, 16,
 	    dev_vga_ctrl_access, d);
+
+	vga_update(cpu, d, 0, d->videomem_size-1);
 }
 

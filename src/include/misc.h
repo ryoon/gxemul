@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.20 2004-01-06 02:22:48 debug Exp $
+ *  $Id: misc.h,v 1.21 2004-01-07 00:52:55 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -501,7 +501,7 @@ struct cpu {
 #define	CACHE_NONE			2
 
 #define	NO_EXCEPTIONS			8
-
+#define	PHYSICAL			16
 
 #define	EMUL_LITTLE_ENDIAN		0
 #define	EMUL_BIG_ENDIAN			1

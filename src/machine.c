@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.24 2004-01-02 22:23:18 debug Exp $
+ *  $Id: machine.c,v 1.25 2004-01-03 03:10:31 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -648,9 +648,20 @@ void machine_init(struct memory *mem)
 		if (emulated_ips == 0)
 			emulated_ips = 1000000;		/*  TODO: how fast are Cobalt machines?  */
 
-		dev_mc146818_init(cpus[0], mem, 0x10000000, 4, 1, 1, emulated_ips);	/*  ???  */
-		dev_gt_init(mem, 0x14000000, 0);			/*  ???  */
-		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);		/*  ???  */
+		/*
+		 *  Interrupts seem to be the following:
+		 *  (according to http://www.funet.fi/pub/Linux/PEOPLE/Linus/v2.4/patch-html/patch-2.4.19/linux-2.4.19_arch_mips_cobalt_irq.c.html)
+		 *
+		 *	2	Galileo chip (timer)
+		 *	3	Tulip 0 + NCR SCSI
+		 *	4	Tulip 1
+		 *	5	16550 UART (serial console)
+		 *	6	VIA southbridge PIC
+		 *	7	PCI
+		 */
+/*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_ips);	*/
+		dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);
+		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -834,16 +845,27 @@ void machine_init(struct memory *mem)
 				    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
 
 				/*  TODO:  sync devices and component tree  */
-				/*  TODO 2: These are model dependant!!!  */
-				dev_crime_init(mem, 0x14000000);		/*  crime0  */
-				dev_macepci_init(mem, 0x1f080000);		/*  macepci0  */
-				/*  mec0 (ethernet) at 0x1f280000  */
-				dev_mace_init(mem, 0x1f310000);			/*  mace0  */
-				dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
-				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
-				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);
+
+				/*  TODO:  Other machine types?  */
+				switch (machine) {
+				case 32:
+					dev_crime_init(mem, 0x14000000);		/*  crime0  */
+					/*  mte (?) at 0x15000000  */
+					/*  gbe (?) at 0x16000000  */
+					/*  ??? at 0x18000000  */
+					dev_macepci_init(mem, 0x1f080000);		/*  macepci0  */
+					/*  mec0 (ethernet) at 0x1f280000  */
+					dev_mace_init(mem, 0x1f310000);			/*  mace0  */
+					dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
+					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
+					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
+					dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
+					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);
+					break;
+				default:
+					fatal("unimplemented SGI machine type IP%i\n", machine);
+					exit(1);
+				}
 			} else {
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
@@ -900,6 +922,7 @@ void machine_init(struct memory *mem)
 
 		store_string(ARC_ARGV_START + 0x100, bootstr);
 		store_string(ARC_ARGV_START + 0x200, bootarg);
+store_string(ARC_ARGV_START + 0x200, "ConsoleOut=serial(0)");
 
 		/*  TODO:  not needed?  */
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;

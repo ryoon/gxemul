@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.158 2005-03-23 09:00:56 debug Exp $
+ *  $Id: bintrans.c,v 1.159 2005-04-02 11:23:07 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -627,58 +627,72 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			break;
 
 		case HI6_COP0:
-			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
-				/*  rfe:  */
-				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_RFE);
-				n_translated += translated;
- 				try_to_translate = 0;
-			} else if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x18) {
-				/*  eret:  */
-				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_ERET);
-				n_translated += translated;
- 				try_to_translate = 0;
-			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0 && (instr[1]&7)==0 && instr[0]==0) {
-				/*  mfc0:  */
-				rt = instr[2] & 31;
-				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 0);
-				n_translated += translated;
-			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x20 && (instr[1]&7)==0 && instr[0]==0) {
-				/*  dmfc0:  */
-				rt = instr[2] & 31;
-				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 0);
-				n_translated += translated;
-			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x80 && (instr[1]&7)==0 && instr[0]==0) {
-				/*  mtc0:  */
-				rt = instr[2] & 31;
-				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 1);
-				n_translated += translated;
-			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0xa0 && (instr[1]&7)==0 && instr[0]==0) {
-				/*  dmtc0:  */
-				rt = instr[2] & 31;
-				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 1);
-				n_translated += translated;
-			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
-				/*  tlbwi:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWI);
-				n_translated += translated;
-			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 6) {
-				/*  tlbwr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWR);
-				n_translated += translated;
-			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 8) {
-				/*  tlbp:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBP);
-				n_translated += translated;
-			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 1) {
-				/*  tlbr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBR);
-				n_translated += translated;
-			} else
+			switch (instr[3]) {
+			case 0x40:
+				if (instr[0] == 0 && (instr[1]&7)==0) {
+					if ((instr[2] & 0xe0)==0) {
+						/*  mfc0:  */
+						rt = instr[2] & 31;
+						rd = (instr[1] >> 3) & 31;
+						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 0);
+						n_translated += translated;
+					} else if ((instr[2] & 0xe0)==0x20) {
+						/*  dmfc0:  */
+						rt = instr[2] & 31;
+						rd = (instr[1] >> 3) & 31;
+						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 0);
+						n_translated += translated;
+					} else if ((instr[2] & 0xe0)==0x80) {
+						/*  mtc0:  */
+						rt = instr[2] & 31;
+						rd = (instr[1] >> 3) & 31;
+						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 1);
+						n_translated += translated;
+					} else if ((instr[2] & 0xe0)==0xa0) {
+						/*  dmtc0:  */
+						rt = instr[2] & 31;
+						rd = (instr[1] >> 3) & 31;
+						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 1);
+						n_translated += translated;
+					}
+				}
+				break;
+			case 0x42:
+				if (instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
+					/*  rfe:  */
+					translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_RFE);
+					n_translated += translated;
+	 				try_to_translate = 0;
+				} else if (instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x18) {
+					/*  eret:  */
+					translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_ERET);
+					n_translated += translated;
+	 				try_to_translate = 0;
+				} else if (instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
+					/*  tlbwi:  */
+					translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWI);
+					n_translated += translated;
+				} else if (instr[2] == 0 && instr[1] == 0 && instr[0] == 6) {
+					/*  tlbwr:  */
+					translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWR);
+					n_translated += translated;
+				} else if (instr[2] == 0 && instr[1] == 0 && instr[0] == 8) {
+					/*  tlbp:  */
+					translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBP);
+					n_translated += translated;
+				} else if (instr[2] == 0 && instr[1] == 0 && instr[0] == 1) {
+					/*  tlbr:  */
+					translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBR);
+					n_translated += translated;
+				} else if (instr[2] == 0 && instr[1] == 0 && (instr[0] == 0x21 || instr[0] == 0x22)) {
+					/*  standby and suspend on VR41xx etc ==> NOP  */
+					translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
+					n_translated += translated;
+				}
+				break;
+			default:
 				try_to_translate = 0;
+			}
 			break;
 
 #if 0

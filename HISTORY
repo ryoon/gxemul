@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.586 2005-02-14 07:28:34 debug Exp $
+$Id: HISTORY,v 1.587 2005-02-14 09:22:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1668,3 +1668,4 @@ HISTORY of mips64emul
 		FPU instructions on for example VR4xxx will fail (as suggested
 		by Alexander Yurchenko).
 20050214	Implementing more PPC instructions.
+		Adding dev_pmppc.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.23 2005-02-14 08:22:17 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.24 2005-02-14 09:22:51 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -747,6 +747,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			nb = (iword >> 11) & 31;
 			debug("%s\tr%i,r%i,%i", power? "stsi" : "stswi",
 			    rs, ra, nb);
+			if (running)
+				goto disasm_ret_nonewline;
 			break;
 		case PPC_31_EIEIO:
 			debug("%s", power? "eieio?" : "eieio");
@@ -846,7 +848,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	size_t tmp_data_len;
 	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
 	int c, m, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
-	int update, load, mb;
+	int update, load, mb, nb;
 	uint64_t tmp, addr;
 	uint64_t cached_pc;
 
@@ -1314,6 +1316,51 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_31_SYNC:
 			/*  TODO: actually sync  */
 			break;
+		case PPC_31_STSWI:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			nb = (iword >> 11) & 31;
+			if (nb == 0)
+				nb = 32;
+			if (ra == 0)
+				addr = 0;
+			else
+				addr = cpu->cd.ppc.gpr[ra];
+
+			if (cpu->machine->instruction_trace) {
+				if (cpu->cd.ppc.cpu_type.bits == 32)
+					debug("\t[0x%08llx", (long long)addr);
+				else
+					debug("\t[0x%016llx", (long long)addr);
+			}
+
+			i = 24;
+			r = 0;	/*  There can be multiple errors  */
+			while (nb > 0) {
+				tmp_data[0] = cpu->cd.ppc.gpr[rs] >> i;
+				if (cpu->memory_rw(cpu, cpu->mem, addr,
+				    tmp_data, 1, MEM_WRITE, CACHE_DATA)
+				    != MEMORY_ACCESS_OK)
+					r++;
+				nb--; addr++; i-=8;
+				if (i < 0) {
+					i = 24;
+					rs = (rs + 1) % 32;
+				}
+			}
+
+			if (cpu->machine->instruction_trace) {
+				if (r == 0)
+					debug(", ...]\n");
+				else
+					debug(", FAILED]\n");
+			}
+
+			if (r > 0) {
+				/*  TODO: exception  */
+				return 0;
+			}
+			break;
 		case PPC_31_EIEIO:
 			/*  TODO: actually eieio  */
 			break;
@@ -1488,11 +1535,12 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		while (rs <= 31) {
 			if (load) {
-				r += cpu->memory_rw(cpu, cpu->mem, addr,
+				if (cpu->memory_rw(cpu, cpu->mem, addr,
 				    tmp_data, tmp_data_len, MEM_READ,
-				    CACHE_DATA);
+				    CACHE_DATA) != MEMORY_ACCESS_OK)
+					r++;
 
-				if (r == MEMORY_ACCESS_OK) {
+				if (r == 0) {
 					tmp = 0;
 					if (cpu->byte_order ==
 					    EMUL_BIG_ENDIAN) {
@@ -1523,9 +1571,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						tmp_data[i] = (tmp >> 8) & 255;
 				}
 
-				r += cpu->memory_rw(cpu, cpu->mem, addr,
+				if (cpu->memory_rw(cpu, cpu->mem, addr,
 				    tmp_data, tmp_data_len, MEM_WRITE,
-				    CACHE_DATA);
+				    CACHE_DATA) != MEMORY_ACCESS_OK)
+					r ++;
 			}
 
 			/*  TODO: Exception!  */
@@ -1536,13 +1585,13 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (cpu->machine->instruction_trace) {
-			if (r == MEMORY_ACCESS_OK) {
+			if (r == 0) {
 				debug(", data = ...]\n");
 			} else
 				debug(", FAILED]\n");
 		}
 
-		if (r != MEMORY_ACCESS_OK)
+		if (r > 0)
 			return 0;
 		break;
 

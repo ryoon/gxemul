@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.6 2004-07-06 14:37:13 debug Exp $
+ *  $Id: net.c,v 1.7 2004-07-07 06:01:24 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -72,6 +72,33 @@ static struct ethernet_packet_link *last_ethernet_packet = NULL;
 
 unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
+
+
+/*
+ *  net_ip_checksum():
+ *
+ *  Fill in an IP header checksum.  (Assumes that bytes at offset 10 and
+ *  11 are the checksum bytes.)
+ */
+void net_ip_checksum(unsigned char *ip_header, int len)
+{
+	int i;
+	uint32_t sum = 0;
+
+	for (i=0; i<len; i+=2)
+		if (i != 10) {
+			uint16_t w = (ip_header[i] << 8) + ip_header[i+1];
+			sum += w;
+			while (sum > 65535) {
+				int to_add = sum >> 16;
+				sum = (sum & 0xffff) + to_add;
+			}
+		}
+
+	sum ^= 0xffff;
+	ip_header[10] = sum >> 8;
+	ip_header[11] = sum & 0xff;
+}
 
 
 /*
@@ -160,19 +187,21 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
 		/*  Change from echo REQUEST to echo REPLY:  */
 		lp->data[34] = 0x00;
 
-		/*  Zero out the ICMP and IP checksums:  */
+		/*  Zero out the ICMP checksum:  */
 		lp->data[36] = lp->data[37] = 0xff;
-		lp->data[24] = lp->data[25] = 0x00;
 
 /*  TODO: NetBSD doesn't seem to recognize this packet yet  */
 
-		/*  Decrease the TTL:  */
+		/*  Decrease the TTL to a low value:  */
 		lp->data[22] = 2;
 
 		/*  Increase the IP id field:  */
 		lp->data[19] ++;
 		if (lp->data[19] == 0)
 			lp->data[18] ++;
+
+		/*  Recalculate IP header checksum:  */
+		net_ip_checksum(lp->data + 14, 20);
 
 		break;
 	default:

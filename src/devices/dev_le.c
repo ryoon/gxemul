@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.14 2004-07-05 21:22:22 debug Exp $
+ *  $Id: dev_le.c,v 1.15 2004-07-07 06:01:25 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -426,10 +426,6 @@ void le_register_fix(struct le_data *d)
 	if (d->reg[0] & LE_INIT)
 		le_chip_init(d);
 
-	/*  If the transmitter is on, check for outgoing buffers:  */
-	if (d->reg[0] & LE_TXON)
-		le_tx(d);
-
 	/*
 	 *  If the receiver is on:
 	 *  If there is a current rx_packet, try to receive it into the
@@ -451,6 +447,10 @@ void le_register_fix(struct le_data *d)
 				    &d->rx_packet_len);
 		} while (d->rx_packet != NULL);
 	}
+
+	/*  If the transmitter is on, check for outgoing buffers:  */
+	if (d->reg[0] & LE_TXON)
+		le_tx(d);
 
 	/*  SERR should be the OR of BABL, CERR, MISS, and MERR:  */
 	d->reg[0] &= ~LE_SERR;
@@ -482,10 +482,11 @@ void dev_le_tick(struct cpu *cpu, void *extra)
 {
 	struct le_data *d = (struct le_data *) extra;
 
-	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA) {
-		debug("[ le: interrupt ]\n");
+	le_register_fix(d);
+
+	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA)
 		cpu_interrupt(cpu, d->irq_nr);
-	} else
+	else
 		cpu_interrupt_ack(cpu, d->irq_nr);
 }
 
@@ -563,9 +564,6 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		fatal("[ le: write to addr 0x%06x: 0x%08x ]\n",
 		    relative_addr, idata);
 #endif
-
-	/*  Automatic update of some registers:  */
-	le_register_fix(d);
 
 	/*  Read/write of the SRAM:  */
 	if (relative_addr < SRAM_SIZE && relative_addr + len <= SRAM_SIZE) {
@@ -674,7 +672,6 @@ do_return:
 #endif
 	}
 
-	le_register_fix(d);
 	dev_le_tick(cpu, extra);
 
 	return retval;
@@ -735,6 +732,6 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "le", baseaddr, len, dev_le_access,
 	    (void *)d);
 
-	cpu_add_tickfunction(cpu, dev_le_tick, d, 12);
+	cpu_add_tickfunction(cpu, dev_le_tick, d, 11);
 }
 

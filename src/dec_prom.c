@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.28 2004-09-05 02:27:09 debug Exp $
+ *  $Id: dec_prom.c,v 1.29 2004-09-05 03:21:11 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -47,7 +47,6 @@
 #include "dec_kn03.h"
 
 
-extern int register_dump;
 extern int instruction_trace;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
@@ -252,7 +251,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x30:		/*  printf()  */
-		if (register_dump || instruction_trace)
+		if (cpu->emul->register_dump || instruction_trace)
 			debug("PROM printf(0x%08lx): \n", (long)cpu->gpr[GPR_A0]);
 
 		i = 0; ch = -1; argreg = GPR_A1;
@@ -322,7 +321,7 @@ void decstation_prom_emul(struct cpu *cpu)
 				printf("%c", ch);
 			}
 		}
-		if (register_dump || instruction_trace)
+		if (cpu->emul->register_dump || instruction_trace)
 			debug("\n");
 		fflush(stdout);
 		cpu->gpr[GPR_V0] = 0;

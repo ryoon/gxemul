@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.87 2004-09-05 03:16:18 debug Exp $
+ *  $Id: main.c,v 1.88 2004-09-05 03:21:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,8 +56,6 @@ int quiet_mode = 0;
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
  */
-
-int register_dump = 0;
 
 /*  PC Dumppoints: if the PC value ever matches one of these, we set
 	register_dump = instruction_trace = 1  */
@@ -347,7 +345,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->use_random_bootstrap_cpu = 1;
 			break;
 		case 'r':
-			register_dump = 1;
+			emul->register_dump = 1;
 			break;
 		case 'S':
 			emul->random_mem_contents = 1;
@@ -400,7 +398,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		verbose = 1;
 	}
 
-	if (register_dump) {
+	if (emul->register_dump) {
 		printf("implicitly turning of -q and turning on -v, because of -r\n");
 		verbose = 1;
 	}

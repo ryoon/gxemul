@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.9 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_cons.c,v 1.10 2004-09-05 03:21:09 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -40,7 +40,6 @@
 #include "devices.h"
 
 
-extern int register_dump;
 extern int instruction_trace;
 
 
@@ -60,12 +59,14 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (writeflag == MEM_WRITE) {
 		for (i=0; i<len; i++) {
 			if (data[i] != 0) {
-				if (register_dump || instruction_trace)
+				if (cpu->emul->register_dump ||
+				    instruction_trace)
 					debug("putchar '");
 
 				console_putchar(data[i]);
 
-				if (register_dump || instruction_trace)
+				if (cpu->emul->register_dump ||
+				    instruction_trace)
 					debug("'\n");
 				fflush(stdout);
 			}

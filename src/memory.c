@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.74 2004-09-05 03:08:59 debug Exp $
+ *  $Id: memory.c,v 1.75 2004-09-05 03:21:11 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -41,7 +41,6 @@
 
 extern int physical_ram_in_mb;
 extern int instruction_trace;
-extern int register_dump;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
@@ -1019,7 +1018,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		int i;
 
 		quiet_mode = 0;
-		instruction_trace = register_dump = 1;
+		instruction_trace = cpu->emul->register_dump = 1;
 
 		debug("not using tlb, but still no hit. TODO\n");
 
@@ -1343,7 +1342,8 @@ into the devices  */
 				}
 
 				if (cpu->emul->trace_on_bad_address) {
-					instruction_trace = register_dump = 1;
+					instruction_trace =
+					    cpu->emul->register_dump = 1;
 					quiet_mode = 0;
 				}
 			}

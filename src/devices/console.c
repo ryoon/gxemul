@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.12 2004-08-18 09:04:11 debug Exp $
+ *  $Id: console.c,v 1.13 2004-09-05 03:21:09 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -43,7 +43,6 @@
 #include "console.h"
 
 
-extern int register_dump;
 extern int instruction_trace;
 extern int show_trace_tree;
 
@@ -74,7 +73,7 @@ static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
  *
  *  Put host's console into single-character (non-canonical) mode.
  */
-void console_init(void)
+void console_init(struct emul *emul)
 {
 	if (console_initialized)
 		return;
@@ -96,7 +95,8 @@ void console_init(void)
 	 *  use CTRL-J instead of the enter key.  Hence, this bit is only
 	 *  cleared if we're not tracing:
 	 */
-	if (!show_trace_tree && !instruction_trace && !register_dump)
+	if (!show_trace_tree && !instruction_trace &&
+	    !emul->register_dump)
 		console_curtermios.c_iflag &= ~ICRNL;
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);

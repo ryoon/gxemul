@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.137 2004-09-05 03:16:18 debug Exp $
+ *  $Id: cpu.c,v 1.138 2004-09-05 03:21:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -49,7 +49,6 @@
 
 extern int show_trace_tree;
 extern int old_show_trace_tree;
-extern int register_dump;
 extern int instruction_trace;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
@@ -1198,7 +1197,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			instruction_trace = instruction_trace_cached = 1;
 			quiet_mode = quiet_mode_cached = 0;
 			if (dumppoint_flag_r[i])
-				register_dump = 1;
+				cpu->emul->register_dump = 1;
 		}
 
 #ifdef ALWAYS_SIGNEXTEND_32
@@ -1253,7 +1252,7 @@ static int cpu_run_instr(struct cpu *cpu)
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */
-		if (register_dump) {
+		if (cpu->emul->register_dump) {
 			debug("\n");
 			cpu_register_dump(cpu);
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.59 2004-09-05 03:03:44 debug Exp $
+ *  $Id: emul.c,v 1.60 2004-09-05 03:21:11 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -771,7 +771,7 @@ void emul_start(struct emul *emul)
 	 */
 	debugger_emul = emul;
 
-	console_init();
+	console_init(emul);
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.16 2005-02-03 07:47:28 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.17 2005-02-03 08:13:05 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -455,11 +455,11 @@ static void mec_control_write(struct cpu *cpu, struct sgi_mec_data *d,
 /*
  *  mec_try_rx():
  */
-void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
+static int mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 {
 	uint64_t base;
 	unsigned char data[8];
-	int i, res;
+	int i, res, retval = 0;
 
 	base = d->rx_addr[d->cur_rx_addr_index];
 	if (base & 0xfff)
@@ -475,7 +475,7 @@ void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	res = memory_rw(cpu, cpu->mem, base,
 	    &data[0], sizeof(data), MEM_READ, PHYSICAL);
 	if (!res)
-		return;
+		return 0;
 
 #if 0
 	printf("{ mec: rxdesc %i: ", d->cur_rx_addr_index);
@@ -533,12 +533,14 @@ skip_but_interrupt:
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &= ~MEC_INT_RX_MCL_FIFO_ALIAS;
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= ((d->cur_rx_addr_index + 1) & 0x1f) << 8;
 
+	retval = 1;
+
 skip_but_goto_next:
 	d->cur_rx_addr_index ++;
 	d->cur_rx_addr_index %= N_RX_ADDRESSES;
 
 skip:
-	;
+	return retval;
 }
 
 
@@ -675,12 +677,15 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	ringread = tx_ring_ptr & MEC_TX_RING_READ_PTR;
 	ringwrite = tx_ring_ptr & MEC_TX_RING_WRITE_PTR;
 
-	ringread = ((ringread >> 16) + 1) << 16;
+	ringread = (ringread >> 16) + 1;
 	ringread &= 63;
+	ringread <<= 16;
 
 	d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)] =
 	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
 	    (ringread & MEC_TX_RING_READ_PTR);
+
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;
 
 	return 1;
 }
@@ -696,13 +701,12 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 	while (mec_try_tx(cpu, d))
 		;
 
-	mec_try_rx(cpu, d);
+	while (mec_try_rx(cpu, d))
+		;
 
-	/*  Interrupts:  */
-	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK) {
-printf("Yo\n");
+	/*  Interrupts:  (TODO: only when enabled)  */
+	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK)
 		cpu_interrupt(cpu, d->irq_nr);
-}
 	else
 		cpu_interrupt_ack(cpu, d->irq_nr);
 }
@@ -727,7 +731,8 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		switch (relative_addr) {
 		case MEC_INT_STATUS:	/*  0x08  */
 			/*  Clear bits on write:  (This is just a guess)  */
-			d->reg[regnr] &= ~idata;
+			d->reg[regnr] = (d->reg[regnr] & ~0xff)
+			    | ((d->reg[regnr] & ~idata) & 0xff);
 			break;
 		case MEC_TX_RING_PTR:	/*  0x30  */
 			idata &= MEC_TX_RING_WRITE_PTR;

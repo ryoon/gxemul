@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.440 2005-01-04 16:47:01 debug Exp $
+$Id: HISTORY,v 1.441 2005-01-04 16:49:20 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1416,3 +1416,4 @@ HISTORY of mips64emul
 		Adding an incomplete regression test case for lwl/lwr/ldl/ldr.
 		Playing around with bintranslated lwl and lwr for Alpha.
 20040104	Changing many occurances of pica to jazz.
+		Various minor updates.

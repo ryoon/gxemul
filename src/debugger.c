@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.27 2004-12-30 18:38:26 debug Exp $
+ *  $Id: debugger.c,v 1.28 2005-01-04 16:49:20 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1347,7 +1347,7 @@ static char *debugger_readline(void)
 		while ((ch = console_readchar()) < 0)
 			usleep(1);
 
-		if (ch == '\b' && cursor_pos > 0) {
+		if ((ch == '\b' || ch == 127) && cursor_pos > 0) {
 			/*  Backspace.  */
 			cursor_pos --;
 			cmd_len --;

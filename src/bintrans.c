@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.126 2005-01-03 01:26:54 debug Exp $
+ *  $Id: bintrans.c,v 1.127 2005-01-04 16:47:02 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -824,7 +824,9 @@ run_it:
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
-		if (bintrans_32bit_only || (cpu->pc >> 32) == 0 || (cpu->pc >> 32) == 0xffffffff) {
+		if (bintrans_32bit_only ||
+		    (cpu->pc & 0xffffffff80000000ULL) == 0 ||
+		    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
 			/*  32-bit special case:  */
 			a = (cpu->pc >> 22) & 0x3ff;
 			b = (cpu->pc >> 12) & 0x3ff;
@@ -887,7 +889,10 @@ run_it:
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */
-			if (bintrans_32bit_only || (cpu->pc >> 32) == 0 || (cpu->pc >> 32) == 0xffffffff) {
+			if (bintrans_32bit_only) {
+			/*  TODO: This doesn't seem to work with R4000 etc?
+			    || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
+			    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
 				/*  32-bit special case:  */
 				a = (cpu->pc >> 22) & 0x3ff;
 				b = (cpu->pc >> 12) & 0x3ff;

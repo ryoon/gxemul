@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.6 2004-02-22 13:19:29 debug Exp $
+ *  $Id: diskimage.c,v 1.7 2004-03-11 05:30:39 debug Exp $
  *
  *  Disk image support.
  *
@@ -153,7 +153,8 @@ int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned cha
 		exit(1);
 		break;
 	default:
-		debug("unimplemented command");
+		fatal("unimplemented SCSI command 0x%02x\n", buf[0]);
+		exit(1);
 	}
 	debug(" ]\n");
 

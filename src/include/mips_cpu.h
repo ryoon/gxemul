@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.4 2005-01-28 09:13:46 debug Exp $
+ *  $Id: mips_cpu.h,v 1.5 2005-01-28 18:07:54 debug Exp $
  */
 
 #include "misc.h"
@@ -105,7 +105,16 @@ struct coproc {
 #define	NGPRS		32		/*  General purpose registers  */
 #define	NFPUREGS	32		/*  Floating point registers  */
 
-/*  These should all be 2 characters wide:  */
+/*
+ *  These should all be 2 characters wide:
+ *
+ *  NOTE: These are for 32-bit ABIs. For the 64-bit ABI, registers 8..11
+ *  are used to pass arguments and are then called "a4".."a7".
+ *
+ *  TODO: Should there be two different variants of this? It's not really
+ *  possible to figure out in some easy way if the code running was
+ *  written for a 32-bit or 64-bit ABI.
+ */
 #define MIPS_REGISTER_NAMES	{ \
 	"zr", "at", "v0", "v1", "a0", "a1", "a2", "a3", \
 	"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", \

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.59 2005-01-28 01:27:40 debug Exp $
+ *  $Id: net.c,v 1.60 2005-01-28 18:07:55 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1915,12 +1915,10 @@ static void parse_resolvconf(struct net *net)
 				break;
 			start = i;
 
-			p = strchr(buf + start, '\n');
-			if (p != NULL)
-				*p = '\0';
-			p = strchr(buf + start, '\r');
-			if (p != NULL)
-				*p = '\0';
+			p = buf+start;
+			while ((*p >= '0' && *p <= '9') || *p == '.')
+				p++;
+			*p = '\0';
 
 			res = inet_pton(AF_INET, buf + start,
 			    &net->nameserver_ipv4);
@@ -2015,7 +2013,7 @@ void net_dumpinfo(struct net *net)
 	if (net->domain_name != NULL && net->domain_name[0])
 		debug("domain \"%s\", ", net->domain_name);
 	if (!net->nameserver_known) {
-		/*  debug("(could not determine host's nameserver)");  */
+		debug("(could not determine nameserver)");
 	} else {
 		debug("nameserver ");
 		net_debugaddr(&net->nameserver_ipv4, ADDR_IPV4);

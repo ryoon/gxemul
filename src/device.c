@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.11 2005-02-26 12:35:48 debug Exp $
+ *  $Id: device.c,v 1.12 2005-02-26 16:53:33 debug Exp $
  *
  *  Device registry framework.
  */
@@ -41,6 +41,7 @@
 static struct device_entry *device_entries = NULL;
 static int device_entries_sorted = 0;
 static int n_device_entries = 0;
+static int device_exit_on_error = 1;
 
 
 /*
@@ -246,7 +247,10 @@ void *device_add(struct machine *machine, char *name_and_params)
 	p = device_lookup(devinit.name);
 	if (p == NULL) {
 		fatal("no such device (\"%s\")\n", devinit.name);
-		exit(1);
+		if (device_exit_on_error)
+			exit(1);
+		else
+			goto return_fail;
 	}
 
 	/*  Get params from name_and_params:  */
@@ -266,7 +270,10 @@ void *device_add(struct machine *machine, char *name_and_params)
 			s3 ++;
 		if (s3 == s2) {
 			fatal("weird param: %s\n", s2);
-			exit(1);
+			if (device_exit_on_error)
+				exit(1);
+			else
+				goto return_fail;
 		}
 		s3 ++;
 		/*  s3 now points to the parameter value ("1234")  */
@@ -281,7 +288,10 @@ void *device_add(struct machine *machine, char *name_and_params)
 			devinit.irq_nr = mystrtoull(s3, NULL, 0);
 		} else {
 			fatal("unknown param: %s\n", s2);
-			exit(1);
+			if (device_exit_on_error)
+				exit(1);
+			else
+				goto return_fail;
 		}
 
 		/*  skip to the next param:  */
@@ -292,12 +302,18 @@ void *device_add(struct machine *machine, char *name_and_params)
 
 	if (!p->initf(&devinit)) {
 		fatal("error adding device (\"%s\")\n", name_and_params);
-		exit(1);
+		if (device_exit_on_error)
+			exit(1);
+		else
+			goto return_fail;
 	}
 
 	free(devinit.name);
-
 	return devinit.return_ptr;
+
+return_fail:
+	free(devinit.name);
+	return NULL;
 }
 
 
@@ -321,6 +337,15 @@ void device_dumplist(void)
 
 		debug("\n");
 	}
+}
+
+
+/*
+ *  device_set_exit_on_error():
+ */
+void device_set_exit_on_error(int exit_on_error)
+{
+	device_exit_on_error = exit_on_error;
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.213 2005-02-22 06:09:25 debug Exp $
+ *  $Id: main.c,v 1.214 2005-02-26 16:53:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -803,6 +803,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "No emulations defined.\n");
 		exit(1);
 	}
+
+	device_set_exit_on_error(0);
 
 	/*  Run all emulations:  */
 	emul_run(emuls, n_emuls);

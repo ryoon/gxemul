@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.160 2005-02-26 11:40:30 debug Exp $
+ *  $Id: memory.c,v 1.161 2005-02-26 16:53:34 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -400,11 +400,16 @@ void memory_device_register(struct memory *mem, const char *device_name,
 #endif
 	debug("\n");
 
-	mem->dev_name[mem->n_mmapped_devices] = device_name;
+	mem->dev_name[mem->n_mmapped_devices] = strdup(device_name);
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;
 	mem->dev_length[mem->n_mmapped_devices] = len;
 	mem->dev_flags[mem->n_mmapped_devices] = flags;
 	mem->dev_bintrans_data[mem->n_mmapped_devices] = bintrans_data;
+
+	if (mem->dev_name[mem->n_mmapped_devices] == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 
 	if ((size_t)bintrans_data & 1) {
 		fprintf(stderr, "memory_device_register():"
@@ -424,6 +429,52 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		mem->mmap_dev_minaddr = baseaddr;
 	if (baseaddr + len > mem->mmap_dev_maxaddr)
 		mem->mmap_dev_maxaddr = baseaddr + len;
+}
+
+
+/*
+ *  memory_device_remove():
+ *
+ *  Unregister a (memory mapped) device from a memory struct.
+ */
+void memory_device_remove(struct memory *mem, int i)
+{
+	if (i < 0 || i >= mem->n_mmapped_devices) {
+		fatal("memory_device_remove(): invalid device number %i\n", i);
+		return;
+	}
+
+	mem->n_mmapped_devices --;
+
+	if (i == mem->n_mmapped_devices)
+		return;
+
+	/*
+	 *  YUCK! This is ugly. TODO: fix
+	 */
+
+	memmove(&mem->dev_name[i], &mem->dev_name[i+1], sizeof(char *) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_baseaddr[i], &mem->dev_baseaddr[i+1],
+	    sizeof(uint64_t) * (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_length[i], &mem->dev_length[i+1], sizeof(uint64_t) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_flags[i], &mem->dev_flags[i+1], sizeof(int) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_extra[i], &mem->dev_extra[i+1], sizeof(void *) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_f[i], &mem->dev_f[i+1], sizeof(void *) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_f_state[i], &mem->dev_f_state[i+1], sizeof(void *) *
+	    (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_bintrans_data[i], &mem->dev_bintrans_data[i+1],
+	    sizeof(void *) * (MAX_DEVICES - i - 1));
+#ifdef BINTRANS
+	memmove(&mem->dev_bintrans_write_low[i], &mem->dev_bintrans_write_low
+	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
+	memmove(&mem->dev_bintrans_write_high[i], &mem->dev_bintrans_write_high
+	    [i+1], sizeof(void *) * (MAX_DEVICES - i - 1));
+#endif
 }
 
 

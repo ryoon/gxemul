@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.28 2005-02-11 09:29:49 debug Exp $
+ *  $Id: memory.h,v 1.29 2005-02-26 16:53:32 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -176,8 +176,11 @@ void memory_device_register(struct memory *mem, const char *,
 	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,
 	    struct memory *,uint64_t,unsigned char *,size_t,int,void *),
 	void *extra, int flags, unsigned char *bintrans_data);
+void memory_device_remove(struct memory *mem, int i);
+
 #define	MEM_DEFAULT			0
 #define	MEM_BINTRANS_OK			1
 #define	MEM_BINTRANS_WRITE_OK		2
+
 
 #endif	/*  MEMORY_H  */

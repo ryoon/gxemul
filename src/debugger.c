@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.91 2005-02-22 06:09:25 debug Exp $
+ *  $Id: debugger.c,v 1.92 2005-02-26 16:53:33 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -411,9 +411,9 @@ static void debugger_cmd_continue(struct machine *m, char *cmd_line)
 
 
 /*
- *  debugger_cmd_devices():
+ *  debugger_cmd_device():
  */
-static void debugger_cmd_devices(struct machine *m, char *cmd_line)
+static void debugger_cmd_device(struct machine *m, char *cmd_line)
 {
 	int i, j;
 	struct memory *mem;
@@ -446,6 +446,14 @@ static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 
 	if (strcmp(cmd_line, "all") == 0) {
 		device_dumplist();
+	} else if (strncmp(cmd_line, "add ", 4) == 0) {
+		device_add(m, cmd_line+4);
+	} else if (strncmp(cmd_line, "remove ", 7) == 0) {
+		i = atoi(cmd_line + 7);
+		if (i==0 && cmd_line[7]!='0') {
+			printf("Weird device number. Use 'device list'.\n");
+		} else
+			memory_device_remove(m->memory, i);
 	} else if (strncmp(cmd_line, "state ", 6) == 0) {
 		i = atoi(cmd_line + 6);
 		if (i < 0 || i >= mem->n_mmapped_devices) {
@@ -505,10 +513,15 @@ static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 return_help:
 	printf("syntax: devices cmd [...]\n");
 	printf("Available cmds are:\n");
-	printf("  all         list all registered devices\n");
-	printf("  list        list all memory-mapped devices for the "
+	printf("  add name_and_params    add a device to the current "
+	    "machine\n");
+	printf("  all                    list all registered devices\n");
+	printf("  list                   list memory-mapped devices in the"
+	    " current machine\n");
+	printf("  remove x               remove device nr x from the "
 	    "current machine\n");
-	printf("  state x     show state of device nr x\n");
+	printf("  state x                show state of device nr x in"
+	    " the current machine\n");
 }
 
 
@@ -1389,7 +1402,7 @@ static struct cmd cmds[] = {
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
-	{ "device", "...", 0, debugger_cmd_devices,
+	{ "device", "...", 0, debugger_cmd_device,
 		"show info about (or manipulate) devices" },
 
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
@@ -1884,11 +1897,32 @@ void debugger(void)
 			repeat_cmd[0] = '\0';
 		}
 
-		/*  Is there a '=' on the command line? Then try to
-		    do an assignment:  */
+		/*
+		 *  Is there a '=' on the command line? Then try to do an
+		 *  assignment.  (Only if there is just one word, followed
+		 *  by the '=' sign. This makes it possible to use commands
+		 *  such as "device add name addr=xyz".)
+		 */
 		if (strchr(cmd, '=') != NULL) {
-			debugger_assignment(debugger_machine, cmd);
-			continue;
+			/*  Count the nr of words:  */
+			int nw = 0, inword = 0;
+			char *p = cmd;
+			while (*p) {
+				if (*p == '=')
+					break;
+				if (*p != ' ') {
+					if (!inword)
+						nw ++;
+					inword = 1;
+				} else
+					inword = 0;
+				p++;
+			}
+
+			if (nw == 1) {
+				debugger_assignment(debugger_machine, cmd);
+				continue;
+			}
 		}
 
 		i = 0;

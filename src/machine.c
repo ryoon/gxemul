@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.369 2005-02-26 12:35:49 debug Exp $
+ *  $Id: machine.c,v 1.370 2005-02-26 16:53:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -636,12 +636,15 @@ void maxine_interrupt(struct machine *m, struct cpu *cpu,
 	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
 	if (assrt)
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+		    / 0x10] |= irq_nr;
 	else
-		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+		    / 0x10] &= ~irq_nr;
 
 	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START)
+	    / 0x10])
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, XINE_INT_TC3);
@@ -681,14 +684,17 @@ void kn230_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 		/*  AND out the irq_nr mask from the CSR:  */
 		m->kn230_csr->csr &= ~irq_nr;
 
-		/*  If the CSR interrupt bits are all zero, clear the bit in the cause register as well.  */
+		/*  If the CSR interrupt bits are all zero,
+		    clear the bit in the cause register as well.  */
 		if (r2 == 2) {
 			/*  irq 2:  */
-			if ((m->kn230_csr->csr & (KN230_CSR_INTR_DZ0 | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
+			if ((m->kn230_csr->csr & (KN230_CSR_INTR_DZ0
+			    | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		} else {
 			/*  irq 3:  */
-			if ((m->kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) == 0)
+			if ((m->kn230_csr->csr & (KN230_CSR_INTR_SII |
+			    KN230_CSR_INTR_LANCE)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		}
 	}
@@ -1720,7 +1726,10 @@ void machine_setup(struct machine *machine)
 			/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
 			dev_le_init(machine, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(machine, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
-			machine->kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
+
+			snprintf(tmpstr, sizeof(tmpstr) - 1,
+			    "kn230 addr=0x%llx", (long long)KN230_SYS_ICSR);
+			machine->kn230_csr = device_add(machine, tmpstr);
 
 			serial_console_name = "osconsole=0";
 			break;

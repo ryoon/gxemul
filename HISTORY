@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.612 2005-02-26 12:35:46 debug Exp $
+$Id: HISTORY,v 1.613 2005-02-26 16:53:58 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1704,3 +1704,4 @@ HISTORY of mips64emul
 		(and similarly with the ppc machine).
 		Redesigning the device registry again :-)
 		Adding a "device" command to the config file parser.
+		Adding "device add" and "device remove" to the debugger.

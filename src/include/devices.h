@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.150 2005-02-26 11:56:43 debug Exp $
+ *  $Id: devices.h,v 1.151 2005-02-26 16:53:32 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -293,15 +293,9 @@ int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_kn230.c:  */
-#define	DEV_KN230_LENGTH		0x1c00000
 struct kn230_csr {
 	uint32_t	csr;
 };
-int dev_kn230_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr);
 
 /*  dev_le.c:  */
 #define	DEV_LE_LENGTH			0x1c0200

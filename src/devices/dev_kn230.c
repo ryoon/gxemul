@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.10 2005-02-22 06:26:10 debug Exp $
+ *  $Id: dev_kn230.c,v 1.11 2005-02-26 16:53:32 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -34,9 +34,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "device.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+#define	DEV_KN230_LENGTH		0x1c00000
 
 
 /*
@@ -80,10 +85,9 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_kn230_init():
+ *  devinit_kn230():
  */
-struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_kn230(struct devinit *devinit)
 {
 	struct kn230_csr *d;
 
@@ -94,8 +98,12 @@ struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct kn230_csr));
 
-	memory_device_register(mem, "kn230", baseaddr, DEV_KN230_LENGTH,
-	    dev_kn230_access, d, MEM_DEFAULT, NULL);
-	return d;
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_KN230_LENGTH, dev_kn230_access, d,
+	    MEM_DEFAULT, NULL);
+
+	devinit->return_ptr = d;
+
+	return 1;
 }
 

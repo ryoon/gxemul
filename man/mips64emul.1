@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.6 2004-12-15 01:59:58 debug Exp $
+.\" $Id: mips64emul.1,v 1.7 2004-12-15 03:35:59 debug Exp $
 .\"
 .\" Copyright (C) 2004  Anders Gavare.  All rights reserved.
 .\"
@@ -88,16 +88,8 @@ binary translation enabled:
 
 .fi
 if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
-You may wish to add -X -N -M128 to use the X11 framebuffer feature and 
+You may wish to add -X -M128 to use the X11 framebuffer feature and 
 increase the amount of emulated RAM to 128 MB.
-
-This will boot a NetBSD/cobalt kernel (called
-netbsd-GENERIC) on an emulated Cobalt machine:
-.nf
-
-	mips64emul \-E netbsd-GENERIC
-
-.fi
 
 Please read the documentation for more details.
 .SH AUTHOR

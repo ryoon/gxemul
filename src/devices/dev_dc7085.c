@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.35 2004-12-14 12:39:58 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.36 2004-12-15 03:34:32 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -48,7 +48,7 @@ struct dc_data {
 	struct dc7085regs	regs;
 
 #ifdef SLOWSERIALINTERRUPTS
-	int every_other;
+	int			just_transmitted_something;
 #endif
 
 	unsigned char		rx_queue_char[MAX_QUEUE_LEN];
@@ -103,9 +103,14 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	int avail;
 
 #ifdef SLOWSERIALINTERRUPTS
-	d->every_other ^= 1;
-	if (!d->every_other)
+	/*
+	 *  Special hack to prevent Linux from Oopsing. (This makes
+	 *  interrupts not come as fast as possible.)
+	 */
+	if (d->just_transmitted_something) {
+		d->just_transmitted_something --;
 		return;
+	}
 #endif
 
 	d->regs.dc_csr &= ~CSR_RDONE;
@@ -191,21 +196,21 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 			/*  read:  */
 			int avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
 			int ch = 0, lineno = 0;
-			debug("[ dc7085 read from RBUF: ");
+			/*  debug("[ dc7085 read from RBUF: ");  */
 			if (avail) {
 				ch     = d->rx_queue_char[d->cur_rx_queue_pos_read];
 				lineno = d->rx_queue_lineno[d->cur_rx_queue_pos_read];
 				d->cur_rx_queue_pos_read++;
 				if (d->cur_rx_queue_pos_read == MAX_QUEUE_LEN)
 					d->cur_rx_queue_pos_read = 0;
-				if (ch >= ' ' && ch < 127)
+				/*  if (ch >= ' ' && ch < 127)
 					debug("'%c'", ch);
 				else
 					debug("0x%x", ch);
-				debug(" for lineno %i ", lineno);
-			} else
+				debug(" for lineno %i ", lineno);  */
+			}  /*  else
 				debug("empty ");
-			debug("]\n");
+			debug("]\n");  */
 			odata = (avail? RBUF_DVAL:0) | (lineno << RBUF_LINE_NUM_SHIFT) | ch;
 
 			d->regs.dc_csr &= ~CSR_RDONE;
@@ -235,6 +240,10 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 			d->regs.dc_csr &= ~CSR_TRDY;
 			cpu_interrupt_ack(cpu, d->irqnr);
 
+#ifdef SLOWSERIALINTERRUPTS
+			d->just_transmitted_something = 2;
+#endif
+
 			goto do_return;
 		} else {
 			/*  read:  */
@@ -258,9 +267,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 		memory_writemax64(cpu, data, len, odata);
 
 do_return:
-#ifndef SLOWSERIALINTERRUPTS
 	dev_dc7085_tick(cpu, extra);
-#endif
 
 	return 1;
 }

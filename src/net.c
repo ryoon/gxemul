@@ -23,13 +23,25 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.31 2004-10-17 15:31:45 debug Exp $
+ *  $Id: net.c,v 1.32 2004-10-21 02:38:53 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
  *
- *	NOTE:	This is just a hack, and just barely enough to get some
+ *	NOTE:	This is just an ugly hack, and just barely enough to get some
  *		Internet networking up and running for the guest OS.
+ *
+ *
+ *	TODO:	o)  TCP: fin/ack stuff, and connection time-outs and
+ *                  connection refused (reset on connect?), resend
+ *                  data to the guest OS if no ack has arrived for
+ *                  some time (? buffers?)
+ *                  http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
+ *		o)  remove the netbsd-specific options in the tcp header (?)
+ *		o)  Outgoing UDP packet fragment support.
+ *		o)  IPv6
+ *		o)  Make sure it works with Sprite too
+ *		o)  DHCP? (Just return the 10.x.x.x default values.)
  *
  *
  *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.
@@ -51,7 +63,6 @@
  *
  *	guestOS   <------->   gateway (in the   <------->   outside machine
  *          ("inside")          emulator)                     ("outside")
- *
  */
 
 #include <stdio.h>

@@ -4,35 +4,30 @@ mips64emul TODO
 This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 
+	Binary translation:
+		o)  see src/bintrans.c
+
 	Caches / memory hierarchies:
-		o)  Implement correct cache emulation (per CPU, multiple
-		    levels should be possible, associativity etc!)
+		o)  src/coproc.c: bits in config registers should reflect
+		    correct cache sizes for _all_ CPU types. (currently only
+		    implemented for R4000 and a few others)
+		o)  src/memory.c: Implement correct cache emulation for
+		    all CPU types. (currently only R2000/R3000 is implemented)
+		    (per CPU, multiple levels should be possible,
+		    associativity etc!)
 		o)  Move the -S (fill mem with random) functionality into the
-			memory.c subsystem, not machine.c or wherever it is now
+		    memory.c subsystem, not machine.c or wherever it is now
 		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
-			(using manual swap-out of blocks to disk, ugly)
+		    (using manual swap-out of blocks to disk, ugly)
 		o)  A global command line option should be used to turn
 		    cache emulation on or off. When off, caches should be
 		    faked like they are right now. When on, caches and
 		    memory latencies should be emulated as correctly as
 		    possible.
 
-	Binary translation:
-		o)  see src/bintrans.c
-
-	Network layer:  src/net.c
-		o)  TCP: fin/ack stuff, and connection time-outs and
-			connection refused (reset on connect?), resend
-			data to the guest OS if no ack has arrived for
-			some time (? buffers?), remove the netbsd-specific
-			options in the tcp header (?)
-		http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
-		o)  Outgoing UDP packet fragment support.
-		o)  IPv6
-		o)  Make it work with Ultrix and Sprite too, not just
-		    with NetBSD/OpenBSD/Linux.
-		o)  DHCP? (Just return the 10.x.x.x default values.)
+	Network layer:
+		o)  see src/net.c
 
 	Configure script:
 		o)  Only enable Alpha prefetch on pca56 or higher, not on
@@ -93,11 +88,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  "wdc" IDE controller!
 		o)  PC-style keyboard controller
 		o)  Busses, interrupt systems, and ROM emulation:
-			x)  Make interrupt sharing more generic!
 			x)  PCI:  i/o and interrupts
-			x)  TURBOchannel  (many DEC systems)
-			x)  ARCBIOS (SGI, arc?)
-				x)  Both 32-bit and 64-bit modes!
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
 			framebuffers:
@@ -105,9 +96,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 				2D/3D acceleration, PX[G]
 			status words / control words, make this more
 				portable/cleaner
-			scsi controller(s): sii, asc (+ DMA)
-			ethernet controller(s): le, fddi?
-			serial controllers: dc, ssc, scc
+			scsi controller(s): sii, DMA for asc
+			serial controllers: ssc, scc (and more work on dc?)
 			nvram on decstation 5000/125:  when using X11,
 				set console=g or similar
 			DECstation 5840? "xbi-based SMP"
@@ -115,7 +105,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			x)  Finish the SGI O2 framebuffer and keyboard support
 			x)  IP30 (Linux with graphics support?)
 			x)  SMP / NUMA?
-			x)  Jazz (ARC)
 			x)  Interrupts (PCI and others) (both ARC and SGI)
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)
@@ -124,9 +113,10 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			Has an R3000A as a subsystem (!)
 		o)  hpcmips:  framebuffer(s) and harddisk controller,
 			among other things
-		o)  newsmips?
-		o)  mipsco?
 		o)  Less interesting platforms:
+			o)  newsmips? (NetBSD)
+			o)  mipsco? (NetBSD)
+			o)  other embedded / evaluation MIPS boards
 			o)  Playstation 1? R3000A. Weird hardware?
 				No FPU, but something as coproc 2.
 			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
@@ -136,8 +126,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  SGI's NUMA architecture. Study
 			x)  Linux sources
 			x)  SGI's specs on NUMA address space
-		o)  Ultrix?  (NetBSD is not SMP yet on any MIPS platform,
-			it seems.)
+		o)  Ultrix?  (NetBSD is not SMP yet on any MIPS platform.)
 		o)  Own experiments with ycx2.
 
 	File/disk handling:
@@ -149,12 +138,14 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			(ELF structure format)?
 		o)  Better handling of tape files
 
-	Userland ABI emulation: src/useremul.c
+	Userland ABI emulation:
+		o)  see src/useremul.c
 
 	Terminal based interactive debugger:
 		o)  Add more of the functionality that exists elsewhere
 		    in the emulator, so that it is useful from the debugger:
-			x) breakpoints, ...
+			x)  breakpoints/watchpoints, ...
+			x)  ability to _change_ values, not just watch them
 
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register
@@ -171,12 +162,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			Multiple simultaneous machines should be possible.
 		o)  Disk images.
 
-	Regression tests: tests/
+	Regression tests:
+		o)  see tests/
 
 	Verify that building and running the emulator works on some platforms:
-		o)  Irix
-		o)  AIX
-		o)  QNX
+		o)  Irix, AIX, QNX
 		o)  MacOS X  (I've not tried this personally, but others have)
 		o)  Ultrix using gcc? (Inside the emulator)
 

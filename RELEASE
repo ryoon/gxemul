@@ -1,6 +1,33 @@
-$Id: RELEASE,v 1.43 2004-10-17 15:31:38 debug Exp $
+$Id: RELEASE,v 1.44 2004-10-21 02:38:52 debug Exp $
 
 I'm currently working on post-0.2.1.
+
+The release "road map" at the moment looks something like this:
+
+  0.2.2:  there has been a number of minor updates since 0.2.1, so this
+          would at least be a bugfix release, but perhaps also contain some
+          new features.  (maybe the 0.2.2 release will be in november or
+          december, 2004)
+
+  0.3:  some kind of major feature update; one or more of the following
+        would be nice:
+
+		o)  dynamic bintrans (if/when it is working)
+		o)  --long-command-line-options
+		o)  ability to install Linux (Debian) onto a disk image
+		o)  better support for non-DECstation modes
+
+A 0.3 release would need to be tested a lot, to make sure that everything 
+mentioned in the documentation works as stated. As many possible 
+combinations as possible of the following must be tested:
+
+	o)  host platforms
+		x)  different architectures
+		x)  host OSes
+		x)  compilers (gcc vs other compilers)
+	o)  different configure flags
+	o)  different guest OSes
+	o)  different runtime flags (eg. bintrans enabled or not)
 
 ------------------------------------------------------------------------------
 
@@ -19,6 +46,7 @@ involving MIPS-like code in general.
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
+
 In its current form, it is possible to use the emulator to install an
 operating system (NetBSD/pmax, Ultrix/RISC, or OpenBSD/pmax) onto an
 emulated DECstation harddisk image; the "guest" operating system will run
@@ -31,7 +59,7 @@ a curiosity, and should not be considered working yet.
 
 
 --------------------------------------------------
-TODO:  Feature additions 0.2.1 -> 0.2.X goes here.
+TODO:  Feature additions 0.2.1 -> 0.2.2 goes here.
 --------------------------------------------------
 
 
@@ -41,34 +69,24 @@ free to drop me an email regarding other bugs.
 
 Files included in this release are:
 
-  RELEASE            This file.
+  RELEASE                     This file.
+  README                      Quick start instructions, for the impatient.
+  LICENSE                     Copyright message / license.
+  HISTORY                     Detailed revision history/changelog.
+  TODO                        TODO notes.
+  BUGS                        A list of known bugs.
+  src, devices, and include   Source code.
+  doc                         Documentation.
+  tests                       Regression tests.
+  experiments                 Experimental code (not usually needed).
 
-  README             Contains quick start instructions, for the impatient ones.
 
-  LICENSE            Copyright message / license.
+To build the emulator, run the ./configure script, and then run make.
 
-  HISTORY            Revision history/changelog.
-
-  TODO               TODO notes.
-
-  BUGS               A list of known bugs.
-
-  src/, devices/,    Source code.
-  and include/
-
-  doc/               Documentation.
-
-  tests/             Regression tests.
-
-  experiments/       Experimental code (not needed by the emulator itself).
-
-and a configure + Makefile.skel combination for configuring and building the
-emulator.
-
-Building the emulator should work on most Unix-like systems.  One system
+Building the emulator should work on most Unix-like systems.  (One system
 which is specifically known to NOT work is Ultrix/RISC inside the
 emulator; Ultrix chokes on the configure script and the default cc in
-Ultrix doesn't work.
+Ultrix doesn't work.)
 
 
 Regarding files in the include/ directory:  only a few of these are

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.264 2004-10-20 03:22:25 debug Exp $
+$Id: HISTORY,v 1.265 2004-10-21 02:38:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1039,3 +1039,4 @@ HISTORY of mips64emul
 		src/file.c now loads files using NO_EXCEPTIONS. Whether this
 		is good or bad, I'm not sure.
 20041020	Adding a Linksys WRT54G emulation skeleton (-H).
+20041021	Minor updates.

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.6 2005-02-14 07:28:36 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.7 2005-02-14 08:22:14 debug Exp $
  *
  *
  *  PPC and POWER opcodes.
@@ -65,6 +65,7 @@
 #define	  PPC_30_RLDICL		  0x0
 #define	  PPC_30_RLDICR		  0x1
 #define	PPC_HI6_31		0x1f
+#define	  PPC_31_MFCR		  19
 #define	  PPC_31_SUBF		  40
 #define	  PPC_31_ANDC		  60
 #define	  PPC_31_MFMSR		  83
@@ -76,14 +77,20 @@
 #define	  PPC_31_MTSPR		  467
 #define	  PPC_31_SUBFO		  552
 #define	  PPC_31_SYNC		  598
+#define	  PPC_31_STSWI		  725
 #define	  PPC_31_ADDO		  778
 #define	  PPC_31_EIEIO		  854
 
+#define	PPC_HI6_LWZ		0x20
+#define	PPC_HI6_LWZU		0x21
 #define	PPC_HI6_LBZ		0x22
 #define	PPC_HI6_LBZU		0x23
 #define	PPC_HI6_STW		0x24
 #define	PPC_HI6_STWU		0x25
 #define	PPC_HI6_STB		0x26
 #define	PPC_HI6_STBU		0x27
+
+#define	PPC_HI6_LMW		0x2e
+#define	PPC_HI6_STMW		0x2f
 
 #endif	/*  OPCODES_PPH_H  */

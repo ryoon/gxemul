@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.22 2005-02-14 07:28:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.23 2005-02-14 08:22:17 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -402,7 +402,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
-	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb;
+	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb;
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -655,6 +655,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+
+		case PPC_31_MFCR:
+			rt = (iword >> 21) & 31;
+			debug("mfcr\tr%i", rt);
+			break;
 		case PPC_31_SUBF:
 		case PPC_31_SUBFO:
 			rt = (iword >> 21) & 31;
@@ -736,6 +741,13 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_SYNC:
 			debug("%s", power? "dcs" : "sync");
 			break;
+		case PPC_31_STSWI:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			nb = (iword >> 11) & 31;
+			debug("%s\tr%i,r%i,%i", power? "stsi" : "stswi",
+			    rs, ra, nb);
+			break;
 		case PPC_31_EIEIO:
 			debug("%s", power? "eieio?" : "eieio");
 			break;
@@ -743,24 +755,31 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("unimplemented hi6_31, xo = 0x%x", xo);
 		}
 		break;
+	case PPC_HI6_LWZ:
+	case PPC_HI6_LWZU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
+	case PPC_HI6_STMW:
 		/*  NOTE: Loads use rt, not rs, but are otherwise similar
 		    to stores  */
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
 		switch (hi6) {
+		case PPC_HI6_LWZ:	mnem = power? "l" : "lwz"; break;
+		case PPC_HI6_LWZU:	mnem = power? "lu" : "lwzu"; break;
 		case PPC_HI6_LBZ:	mnem = "lbz"; break;
 		case PPC_HI6_LBZU:	mnem = "lbzu"; break;
 		case PPC_HI6_STW:	mnem = power? "st" : "stw"; break;
 		case PPC_HI6_STWU:	mnem = power? "stu" : "stwu"; break;
 		case PPC_HI6_STB:	mnem = "stb"; break;
 		case PPC_HI6_STBU:	mnem = "stbu"; break;
+		case PPC_HI6_LMW:	mnem = power? "lm" : "lmw"; break;
+		case PPC_HI6_STMW:	mnem = power? "stm" : "stmw"; break;
 		}
 		debug("%s\tr%i,%i(r%i)", mnem, rs, imm, ra);
 		if (running)
@@ -775,6 +794,39 @@ disasm_ret:
 	debug("\n");
 disasm_ret_nonewline:
 	return sizeof(iword);
+}
+
+
+/*
+ *  update_cr0():
+ *
+ *  Sets the top 4 bits of the CR register.
+ */
+static void update_cr0(struct cpu *cpu, uint64_t value)
+{
+	int c;
+
+	if (cpu->cd.ppc.cpu_type.bits == 64) {
+		if ((int64_t)value < 0)
+			c = 8;
+		else if ((int64_t)value > 0)
+			c = 4;
+		else
+			c = 2;
+	} else {
+		if ((int32_t)value < 0)
+			c = 8;
+		else if ((int32_t)value > 0)
+			c = 4;
+		else
+			c = 2;
+	}
+
+	/*  SO bit, copied from XER:  */
+	c |= ((cpu->cd.ppc.xer >> 31) & 1);
+
+	cpu->cd.ppc.cr &= ~(0xf << 28);
+	cpu->cd.ppc.cr |= (c << 28);
 }
 
 
@@ -847,9 +899,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				c = 2;
 		}
 
-		/*  TODO: SO bit  */
-		cpu->cd.ppc.cr &= ~(0xf << (31 - 4*bf));
-		cpu->cd.ppc.cr |= (c << (31 - 4*bf));
+		/*  SO bit, copied from XER:  */
+		c |= ((cpu->cd.ppc.xer >> 31) & 1);
+
+		cpu->cd.ppc.cr &= ~(0xf << (28 - 4*bf));
+		cpu->cd.ppc.cr |= (c << (28 - 4*bf));
 		break;
 
 	case PPC_HI6_ADDI:
@@ -1010,6 +1064,31 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.ppc.gpr[ra] = tmp | (uint32_t)imm;
 		break;
 
+	case PPC_HI6_XORI:
+	case PPC_HI6_XORIS:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		if (hi6 == PPC_HI6_XORI)
+			imm = (iword & 0xffff);
+		else
+			imm = (iword & 0xffff) << 16;
+		tmp = cpu->cd.ppc.gpr[rs];
+		cpu->cd.ppc.gpr[ra] = tmp ^ (uint32_t)imm;
+		break;
+
+	case PPC_HI6_ANDI_DOT:
+	case PPC_HI6_ANDIS_DOT:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		if (hi6 == PPC_HI6_ANDIS_DOT)
+			imm = (iword & 0xffff);
+		else
+			imm = (iword & 0xffff) << 16;
+		tmp = cpu->cd.ppc.gpr[rs];
+		cpu->cd.ppc.gpr[ra] = tmp & (uint32_t)imm;
+		update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
+		break;
+
 	case PPC_HI6_30:
 		xo = (iword >> 2) & 7;
 		switch (xo) {
@@ -1050,6 +1129,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_31_MFCR:
+			rt = (iword >> 21) & 31;
+			cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.cr;
+			break;
 		case PPC_31_SUBF:
 		case PPC_31_SUBFO:
 			rt = (iword >> 21) & 31;
@@ -1243,6 +1326,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case PPC_HI6_LWZ:
+	case PPC_HI6_LWZU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
@@ -1258,6 +1343,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		load = 1; update = 0; tmp_data_len = 4;
 
 		switch (hi6) {
+		case PPC_HI6_LWZU:
 		case PPC_HI6_LBZU:
 		case PPC_HI6_STBU:
 		case PPC_HI6_STWU:
@@ -1305,20 +1391,23 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			r = cpu->memory_rw(cpu, cpu->mem, addr, tmp_data,
 			    tmp_data_len, MEM_READ, CACHE_DATA);
 
-			tmp = 0;
-			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-				for (i=0; i<tmp_data_len; i++) {
-					tmp <<= 8;
-					tmp += tmp_data[tmp_data_len - 1 -i];
+			if (r == MEMORY_ACCESS_OK) {
+				tmp = 0;
+				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+					for (i=0; i<tmp_data_len; i++) {
+						tmp <<= 8;
+						tmp += tmp_data[i];
+					}
+				} else {
+					for (i=0; i<tmp_data_len; i++) {
+						tmp <<= 8;
+						tmp += tmp_data[
+						    tmp_data_len - 1 -i];
+					}
 				}
-			} else {
-				for (i=0; i<tmp_data_len; i++) {
-					tmp <<= 8;
-					tmp += tmp_data[i];
-				}
-			}
 
-			cpu->cd.ppc.gpr[rs] = tmp;
+				cpu->cd.ppc.gpr[rs] = tmp;
+			}
 		} else {
 			tmp = cpu->cd.ppc.gpr[rs];
 
@@ -1358,6 +1447,103 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		if (update && ra != 0)
 			cpu->cd.ppc.gpr[ra] = addr;
+		break;
+
+	case PPC_HI6_LMW:
+	case PPC_HI6_STMW:
+		/*  NOTE: Loads use rt, not rs, but are otherwise similar
+		    to stores. This code uses rs for both.  */
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+
+		load = 1; tmp_data_len = 4;
+
+		switch (hi6) {
+		case PPC_HI6_STMW:
+			load = 0;
+		}
+
+		if (ra == 0) {
+			addr = 0;
+		} else
+			addr = cpu->cd.ppc.gpr[ra];
+
+		if (load && rs == 0)
+			fatal("[ PPC WARNING: invalid LMW form ]\n");
+
+		addr += imm;
+
+		/*  TODO: alignment check?  */
+
+		if (cpu->machine->instruction_trace) {
+			if (cpu->cd.ppc.cpu_type.bits == 32)
+				debug("\t[0x%08llx", (long long)addr);
+			else
+				debug("\t[0x%016llx", (long long)addr);
+		}
+
+		/*  There can be multiple errors!  */
+		r = 0;
+
+		while (rs <= 31) {
+			if (load) {
+				r += cpu->memory_rw(cpu, cpu->mem, addr,
+				    tmp_data, tmp_data_len, MEM_READ,
+				    CACHE_DATA);
+
+				if (r == MEMORY_ACCESS_OK) {
+					tmp = 0;
+					if (cpu->byte_order ==
+					    EMUL_BIG_ENDIAN) {
+						for (i=0; i<tmp_data_len; i++) {
+							tmp <<= 8;
+							tmp += tmp_data[i];
+						}
+					} else {
+						for (i=0; i<tmp_data_len; i++) {
+							tmp <<= 8;
+							tmp += tmp_data[
+							    tmp_data_len - 1
+							    - i];
+						}
+					}
+
+					cpu->cd.ppc.gpr[rs] = tmp;
+				}
+			} else {
+				tmp = cpu->cd.ppc.gpr[rs];
+
+				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+					for (i=0; i<tmp_data_len; i++)
+						tmp_data[tmp_data_len-1-i] =
+						    (tmp >> 8) & 255;
+				} else {
+					for (i=0; i<tmp_data_len; i++)
+						tmp_data[i] = (tmp >> 8) & 255;
+				}
+
+				r += cpu->memory_rw(cpu, cpu->mem, addr,
+				    tmp_data, tmp_data_len, MEM_WRITE,
+				    CACHE_DATA);
+			}
+
+			/*  TODO: Exception!  */
+
+			/*  Go to next register, multiword...  */
+			rs ++;
+			addr += tmp_data_len;
+		}
+
+		if (cpu->machine->instruction_trace) {
+			if (r == MEMORY_ACCESS_OK) {
+				debug(", data = ...]\n");
+			} else
+				debug(", FAILED]\n");
+		}
+
+		if (r != MEMORY_ACCESS_OK)
+			return 0;
 		break;
 
 	default:

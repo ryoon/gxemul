@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.60 2004-06-14 22:50:00 debug Exp $
+ *  $Id: cpu.c,v 1.61 2004-06-14 23:23:40 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -664,7 +664,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	if (!quiet_mode_cached) {
 		if (cpu->show_trace_delay > 0) {
 			cpu->show_trace_delay --;
-			if (cpu->show_trace_delay == 0 && show_trace_tree == 0)
+			if (cpu->show_trace_delay == 0 && show_trace_tree)
 				show_trace(cpu, cpu->show_trace_addr);
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.5 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sn.c,v 1.6 2005-02-03 23:36:20 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -37,16 +37,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
+#include "devices.h"
+#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
+#include "net.h"
 
 #include "dp83932reg.h"
 
 
 struct sn_data {
 	int		irq_nr;
-
+	unsigned char	macaddr[6];
 	uint32_t	reg[SONIC_NREGS];
 };
 
@@ -103,8 +107,11 @@ void dev_sn_init(struct cpu *cpu, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct sn_data));
 	d->irq_nr = irq_nr;
+	net_generate_unique_mac(d->macaddr);
 
 	memory_device_register(mem, "sn", baseaddr, DEV_SN_LENGTH,
 	    dev_sn_access, (void *)d, MEM_DEFAULT, NULL);
+
+	net_add_nic(cpu->machine->emul->net, d, d->macaddr);
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.560 2005-02-03 22:20:13 debug Exp $
+$Id: HISTORY,v 1.561 2005-02-03 23:36:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1624,3 +1624,4 @@ HISTORY of mips64emul
 		Working more on the mec controller. It now works well enough
 		to let both NetBSD/sgimips and OpenBSD/sgi connect to the
 		outside world using ftp :-)
+		Continuing on the cleanup of the networking subsystem.

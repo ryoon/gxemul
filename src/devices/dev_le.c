@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.36 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_le.c,v 1.37 2005-02-03 23:36:20 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -788,12 +788,7 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	d->rx_packet = NULL;
 
 	/*  ROM (including the MAC address):  */
-	d->rom[0] = 0x10;
-	d->rom[1] = 0x20;
-	d->rom[2] = 0x30;
-	d->rom[3] = 0x40;
-	d->rom[4] = 0x50;
-	d->rom[5] = 0x60;
+	net_generate_unique_mac(&d->rom[0]);
 
 	/*
 	 *  NOTE:  According to the Lance documentation, the low order bit of
@@ -825,5 +820,7 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	    len - 0x100000, dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_le_tick, d, LE_TICK_SHIFT);
+
+	net_add_nic(machine->emul->net, d, &d->rom[0]);
 }
 

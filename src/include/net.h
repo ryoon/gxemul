@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.9 2005-01-27 23:45:30 debug Exp $
+ *  $Id: net.h,v 1.10 2005-02-03 23:36:21 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -40,7 +40,9 @@
 struct emul;
 struct ethernet_packet_link;
 
-/*******************************************************************/
+
+/*****************************************************************************/
+
 /*  NOTE: udp_connection and tcp_connection are actually for
           internal use only.  */
 struct udp_connection {
@@ -91,7 +93,8 @@ struct tcp_connection {
 	int		outside_tcp_port;
 	uint32_t	outside_timestamp;
 };
-/*******************************************************************/
+
+/*****************************************************************************/
 
 
 #define	MAX_TCP_CONNECTIONS	60
@@ -104,6 +107,10 @@ struct net {
 	/*  The network's addresses:  */
 	struct in_addr	netmask_ipv4;
 	int		netmask_ipv4_len;
+
+	/*  NICs connected to this network:  */
+	int		n_nics;
+	void		**nic_extra;	/*  one void * per NIC  */
 
 	/*  The "special machine":  */
 	unsigned char	gateway_ipv4_addr[4];
@@ -124,12 +131,14 @@ struct net {
 };
 
 /*  net.c:  */
+void net_generate_unique_mac(unsigned char *macbuf);
 int net_ethernet_rx_avail(struct net *net, void *extra);
 int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);
 void net_ethernet_tx(struct net *net, void *extra,
 	unsigned char *packet, int len);
 void net_dumpinfo(struct net *net);
+void net_add_nic(struct net *net, void *extra, unsigned char *macaddr);
 struct net *net_init(struct emul *emul, int init_flags,
 	char *ipv4addr, int netipv4len);
 

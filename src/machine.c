@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.330 2005-02-02 23:55:20 debug Exp $
+ *  $Id: machine.c,v 1.331 2005-02-03 23:36:22 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -60,6 +60,7 @@
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+#include "net.h"
 #include "symbol.h"
 
 /*  For SGI and ARC emulation:  */
@@ -1181,6 +1182,8 @@ void machine_setup(struct machine *machine)
 	uint64_t arc_reserved;
 	int arc_wordlen = sizeof(uint32_t);
 	char *short_machine_name = NULL;
+	char *eaddr_string = "eaddr=10:20:30:40:50:60";   /*  nonsense  */
+	unsigned char macaddr[6];
 
 	/*  Generic bootstring stuff:  */
 	int bootdev_id = diskimage_bootdev(machine);
@@ -2505,7 +2508,17 @@ Why is this here? TODO
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
-				dev_sgi_mec_init(machine, mem, 0x1f280000, MACE_ETHERNET);
+				net_generate_unique_mac(macaddr);
+				eaddr_string = malloc(30);
+				if (eaddr_string == NULL) {
+					fprintf(stderr, "out of memory\n");
+					exit(1);
+				}
+				sprintf(eaddr_string, "eaddr=%02x:%02x:"
+				    "%02x:%02x:%02x:%02x",
+				    macaddr[0], macaddr[1], macaddr[2],
+				    macaddr[3], macaddr[4], macaddr[5]);
+				dev_sgi_mec_init(machine, mem, 0x1f280000, MACE_ETHERNET, macaddr);
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
@@ -3689,7 +3702,7 @@ config[77] = 0x30;
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "dbaud=9600", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "eaddr=10:20:30:40:50:60", &addr);
+			add_environment_string(cpu, eaddr_string, &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "verbose=istrue", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));

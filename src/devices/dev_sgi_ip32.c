@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.19 2005-02-03 22:20:14 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.20 2005-02-03 23:36:20 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -901,7 +901,7 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
  *  dev_sgi_mec_init():
  */
 void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr)
+	uint64_t baseaddr, int irq_nr, unsigned char *macaddr)
 {
 	struct sgi_mec_data *d = malloc(sizeof(struct sgi_mec_data));
 	if (d == NULL) {
@@ -918,6 +918,8 @@ void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 	    MEM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_sgi_mec_tick, d, MEC_TICK_SHIFT);
+
+	net_add_nic(machine->emul->net, d, macaddr);
 }
 
 

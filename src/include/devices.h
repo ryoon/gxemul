@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.135 2005-01-29 18:23:40 debug Exp $
+ *  $Id: devices.h,v 1.136 2005-02-03 23:36:21 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -521,7 +521,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
 #define	DEV_SGI_MEC_LENGTH		0x1000
 int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mec_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_sgi_mec_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, unsigned char *macaddr);
 #define	DEV_SGI_UST_LENGTH		0x10000
 int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);

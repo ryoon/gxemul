@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.61 2005-02-02 20:12:45 debug Exp $
+ *  $Id: net.c,v 1.62 2005-02-03 23:36:23 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -119,6 +119,46 @@ static void net_debugaddr(void *ipv4_addr, int type)
 		break;
 	default:
 		fatal("( net_debugaddr(): UNIMPLEMTED type %i )\n", type);
+	}
+}
+
+
+static unsigned char unique_ethernet_mac[6];
+static int initialized_unique_ethernet_mac = 0;
+
+/*
+ *  net_generate_unique_mac():
+ *
+ *  NOTE: This function is NOT reentrant.
+ */
+void net_generate_unique_mac(unsigned char *macbuf)
+{
+	int j;
+
+	if (macbuf == NULL) {
+		fatal("**\n**  net_generate_unique_mac(): NULL ptr\n**\n");
+		return;
+	}
+
+	if (!initialized_unique_ethernet_mac) {
+		unique_ethernet_mac[0] = 0x10;
+		unique_ethernet_mac[1] = 0x20;
+		unique_ethernet_mac[2] = 0x30;
+		unique_ethernet_mac[3] = 0x10;
+		unique_ethernet_mac[4] = 0x10;
+		unique_ethernet_mac[5] = 0x10;
+		initialized_unique_ethernet_mac = 1;
+	}
+
+	memcpy(macbuf, unique_ethernet_mac, sizeof(unique_ethernet_mac));
+
+	/*  Advance to a new unique address:  */
+	j = 5;
+	while (j >= 0) {
+		unique_ethernet_mac[j] += 0x10;
+		if (unique_ethernet_mac[j] != 0x00)
+			j = 0;
+		j--;
 	}
 }
 
@@ -378,8 +418,10 @@ static void net_ip_tcp_connectionreply(struct net *net, void *extra,
 	lp->data[21] = 0x00;
 	lp->data[22] = 0x40;	/*  ttl  */
 	lp->data[23] = 6;	/*  p = TCP  */
-	memcpy(lp->data + 26, net->tcp_connections[con_id].outside_ip_address, 4);
-	memcpy(lp->data + 30, net->tcp_connections[con_id].inside_ip_address, 4);
+	memcpy(lp->data + 26, net->tcp_connections[con_id].
+	    outside_ip_address, 4);
+	memcpy(lp->data + 30, net->tcp_connections[con_id].
+	    inside_ip_address, 4);
 	net_ip_checksum(lp->data + 14, 10, 20);
 
 	/*  TCP header and options at offset 34:  */
@@ -387,13 +429,20 @@ static void net_ip_tcp_connectionreply(struct net *net, void *extra,
 	lp->data[35] = net->tcp_connections[con_id].outside_tcp_port & 0xff;
 	lp->data[36] = net->tcp_connections[con_id].inside_tcp_port >> 8;
 	lp->data[37] = net->tcp_connections[con_id].inside_tcp_port & 0xff;
-	lp->data[38] = (net->tcp_connections[con_id].outside_seqnr >> 24) & 0xff;
-	lp->data[39] = (net->tcp_connections[con_id].outside_seqnr >> 16) & 0xff;
-	lp->data[40] = (net->tcp_connections[con_id].outside_seqnr >>  8) & 0xff;
-	lp->data[41] = net->tcp_connections[con_id].outside_seqnr & 0xff;
-	lp->data[42] = (net->tcp_connections[con_id].outside_acknr >> 24) & 0xff;
-	lp->data[43] = (net->tcp_connections[con_id].outside_acknr >> 16) & 0xff;
-	lp->data[44] = (net->tcp_connections[con_id].outside_acknr >>  8) & 0xff;
+	lp->data[38] = (net->tcp_connections[con_id].
+	    outside_seqnr >> 24) & 0xff;
+	lp->data[39] = (net->tcp_connections[con_id].
+	    outside_seqnr >> 16) & 0xff;
+	lp->data[40] = (net->tcp_connections[con_id].
+	    outside_seqnr >>  8) & 0xff;
+	lp->data[41] = net->tcp_connections[con_id].
+	    outside_seqnr & 0xff;
+	lp->data[42] = (net->tcp_connections[con_id].
+	    outside_acknr >> 24) & 0xff;
+	lp->data[43] = (net->tcp_connections[con_id].
+	    outside_acknr >> 16) & 0xff;
+	lp->data[44] = (net->tcp_connections[con_id].
+	    outside_acknr >>  8) & 0xff;
 	lp->data[45] = net->tcp_connections[con_id].outside_acknr & 0xff;
 
 	/*  Control  */
@@ -432,10 +481,14 @@ static void net_ip_tcp_connectionreply(struct net *net, void *extra,
 	lp->data[67] = (net->timestamp >> 16) & 0xff;
 	lp->data[68] = (net->timestamp >> 8) & 0xff;
 	lp->data[69] = net->timestamp & 0xff;
-	lp->data[70] = (net->tcp_connections[con_id].inside_timestamp >> 24) & 0xff;
-	lp->data[71] = (net->tcp_connections[con_id].inside_timestamp >> 16) & 0xff;
-	lp->data[72] = (net->tcp_connections[con_id].inside_timestamp >> 8) & 0xff;
-	lp->data[73] = net->tcp_connections[con_id].inside_timestamp & 0xff;
+	lp->data[70] = (net->tcp_connections[con_id].
+	    inside_timestamp >> 24) & 0xff;
+	lp->data[71] = (net->tcp_connections[con_id].
+	    inside_timestamp >> 16) & 0xff;
+	lp->data[72] = (net->tcp_connections[con_id].
+	    inside_timestamp >> 8) & 0xff;
+	lp->data[73] = net->tcp_connections[con_id].
+	    inside_timestamp & 0xff;
 
 	/*  data:  */
 	if (data != NULL) {
@@ -1787,6 +1840,19 @@ void net_ethernet_tx(struct net *net, void *extra,
 	if (net == NULL)
 		return;
 
+	/*  Copy this packet to all other NICs on this network:  */
+	if (extra != NULL && net->n_nics > 0) {
+		for (i=0; i<net->n_nics; i++)
+			if (extra != net->nic_extra[i]) {
+				struct ethernet_packet_link *lp;
+				lp = net_allocate_packet_link(net,
+				    net->nic_extra[i], len);
+
+				/*  Copy the entire packet:  */
+				memcpy(lp->data, packet, len);
+			}
+	}
+
 #if 0
 	fatal("[ net: ethernet: ");
 	for (i=0; i<6; i++)
@@ -1949,6 +2015,35 @@ static void parse_resolvconf(struct net *net)
 			net->domain_name = strdup(buf + start);
 			break;
 		}
+}
+
+
+/*
+ *  net_add_nic():
+ *
+ *  Add a NIC to a network. (All NICs on a network will see each other's
+ *  packets.)
+ */
+void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
+{
+	int iadd = 4;
+
+	net->n_nics ++;
+	net->nic_extra = realloc(net->nic_extra, sizeof(void *)
+	    * net->n_nics);
+	if (net->nic_extra == NULL) {
+		fprintf(stderr, "net_add_nic(): out of memory\n");
+		exit(1);
+	}
+
+	net->nic_extra[net->n_nics - 1] = extra;
+
+	/*  TODO: save away the MAC address somewhere (?)  */
+	debug_indentation(iadd);
+	debug("nic: ");
+	net_debugaddr(macaddr, ADDR_ETHERNET);
+	debug("\n");
+	debug_indentation(-iadd);
 }
 
 

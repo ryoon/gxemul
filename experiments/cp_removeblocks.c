@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cp_removeblocks.c,v 1.2 2004-06-28 21:08:56 debug Exp $
+ *  $Id: cp_removeblocks.c,v 1.3 2004-07-03 16:58:15 debug Exp $
  *
  *  This program copies a file, but only those blocks that are not zero-
  *  filled.  Typical usage would be if you have a harddisk image stored
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	unsigned char buf[BSIZE];
 	off_t len;
 	off_t in_pos = 0;
-	int i;
+	int i, res;
 
 	if (argc != 3) {
 		fprintf(stderr, "usage: %s infile outfile\n", argv[0]);
@@ -86,12 +86,22 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/*  This causes f2 to get the correct file size:  */
+	/*
+	 *  Copy the last byte explicitly.
+	 *  (This causes f2 to get the correct file size.)
+	 */
+	res = fseek(f1, -1, SEEK_END);
+	if (res != 0)
+		perror("fseek(f1)");
+
 	in_pos = ftell(f1);
 	if (in_pos > 0) {
-		fseek(f2, in_pos - 1, SEEK_SET);
-		buf[0] = '\0';
-		fwrite(buf, 1, 1, f2);
+		res = fseek(f2, in_pos - 1, SEEK_SET);
+		if (res != 0)
+			perror("fseek(f2)");
+
+		fread(&buf[0], 1, 1, f1);
+		fwrite(&buf[0], 1, 1, f2);
 	}
 
 	fclose(f1);

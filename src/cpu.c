@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.139 2004-09-05 03:35:39 debug Exp $
+ *  $Id: cpu.c,v 1.140 2004-09-05 03:38:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -47,7 +47,6 @@
 #include "memory.h"
 
 
-extern int show_trace_tree;
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
@@ -1174,7 +1173,7 @@ static int cpu_run_instr(struct cpu *cpu)
 					/*  no need to update cached_pc, as we're returning  */
 					cpu->delay_slot = NOT_DELAYED;
 
-					if (show_trace_tree)
+					if (cpu->emul->show_trace_tree)
 						cpu->trace_tree_depth --;
 
 					/*  TODO: how many instrs should this count as?  */
@@ -1258,7 +1257,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		}
 
 		/*  Trace tree:  */
-		if (show_trace_tree && cpu->show_trace_delay > 0) {
+		if (cpu->emul->show_trace_tree && cpu->show_trace_delay > 0) {
 			cpu->show_trace_delay --;
 			if (cpu->show_trace_delay == 0)
 				show_trace(cpu, cpu->show_trace_addr);
@@ -1638,7 +1637,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
 
-			if (rs == 31 && show_trace_tree) {
+			if (rs == 31 && cpu->emul->show_trace_tree) {
 				cpu->trace_tree_depth --;
 			}
 
@@ -1654,9 +1653,11 @@ static int cpu_run_instr(struct cpu *cpu)
 			rd = (instr[1] >> 3) & 31;
 
 			tmpvalue = cpu->gpr[rs];
-			cpu->gpr[rd] = cached_pc + 4;	/*  already increased by 4 earlier  */
+			cpu->gpr[rd] = cached_pc + 4;
+			    /*  already increased by 4 earlier  */
 
-			if (!quiet_mode_cached && show_trace_tree && rd == 31) {
+			if (!quiet_mode_cached && cpu->emul->show_trace_tree
+			    && rd == 31) {
 				cpu->show_trace_delay = 2;
 				cpu->show_trace_addr = tmpvalue;
 			}
@@ -2797,7 +2798,8 @@ static int cpu_run_instr(struct cpu *cpu)
 		cpu->delay_slot = TO_BE_DELAYED;
 		cpu->delay_jmpaddr = addr;
 
-		if (!quiet_mode_cached && show_trace_tree && hi6 == HI6_JAL) {
+		if (!quiet_mode_cached && cpu->emul->show_trace_tree &&
+		    hi6 == HI6_JAL) {
 			cpu->show_trace_delay = 2;
 			cpu->show_trace_addr = addr;
 		}
@@ -3195,9 +3197,9 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					old_quiet_mode =
 					    quiet_mode;
 					old_show_trace_tree =
-					    show_trace_tree;
+					    emul->show_trace_tree;
 					emul->instruction_trace = 1;
-					show_trace_tree = 1;
+					emul->show_trace_tree = 1;
 					quiet_mode = 0;
 					single_step = 2;
 				}

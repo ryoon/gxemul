@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.89 2004-09-05 03:35:39 debug Exp $
+ *  $Id: main.c,v 1.90 2004-09-05 03:38:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ int max_random_cycles_per_chunk = 0;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
-int show_trace_tree = 0;
 int tlb_dump = 0;
 int verbose = 0;
 int use_x11 = 0;
@@ -356,7 +355,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->trace_on_bad_address = 1;
 			break;
 		case 't':
-			show_trace_tree = 1;
+			emul->show_trace_tree = 1;
 			break;
 		case 'U':
 			tlb_dump = 1;
@@ -402,7 +401,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		verbose = 1;
 	}
 
-	if (show_trace_tree) {
+	if (emul->show_trace_tree) {
 		printf("implicitly turning of -q and turning on -v, because of -t\n");
 		verbose = 1;
 	}

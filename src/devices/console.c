@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.14 2004-09-05 03:35:38 debug Exp $
+ *  $Id: console.c,v 1.15 2004-09-05 03:38:19 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -41,9 +41,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
-
-
-extern int show_trace_tree;
 
 
 struct termios console_oldtermios;
@@ -94,7 +91,7 @@ void console_init(struct emul *emul)
 	 *  use CTRL-J instead of the enter key.  Hence, this bit is only
 	 *  cleared if we're not tracing:
 	 */
-	if (!show_trace_tree && !emul->instruction_trace &&
+	if (!emul->show_trace_tree && !emul->instruction_trace &&
 	    !emul->register_dump)
 		console_curtermios.c_iflag &= ~ICRNL;
 

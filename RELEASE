@@ -1,0 +1,43 @@
+$Id: RELEASE,v 1.1 2004-03-29 23:46:35 debug Exp $
+
+
+	    =====================================================
+
+	        THERE IS NO ACTUAL RELEASE OF mips64emul YET!
+
+	    =====================================================
+
+
+Only development snapshots of what I have in CVS.  However, I plan to make
+a release some time in the future.
+
+The following things have to work for a release to become a reality:
+
+	o)  Diskimages need to be usable under at least some emulation modes,
+	    preferably DECstations (the 'asc' SCSI controller), but others
+	    would be nice as well,
+
+	o)  regression tests  (yes, the skeleton is there, but it isn't used
+	    yet),
+
+	o)  the code needs to stabilize in general.
+
+Then, to make the official release:
+
+	o)  Try mips64emul on as many combinations as possible of the
+	    following variables:
+
+		x)  Host OS  (Linux, *BSD, Solaris, others?)
+		x)  emulation mode   (DECstation, SGI?, ..)
+		    and regression tests (if possible)
+		x)  OSes running under emulation (NetBSD, OpenBSD,
+		    Linux, Ultrix?, Irix?, ..)
+
+	o)  Documentation.
+
+	o)  Make sure all URLs on the project homepage and in the
+	    documentation are valid.
+
+	o)  General clean-up.
+
+:-)

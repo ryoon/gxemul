@@ -26,13 +26,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.3 2004-01-29 20:48:26 debug Exp $
+ *  $Id: memory.h,v 1.4 2004-02-18 09:37:53 debug Exp $
  *
  *  Memory controller related functions.
  */
 
-#include <inttypes.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
 struct cpu;
 

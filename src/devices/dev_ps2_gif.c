@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.9 2004-03-28 01:23:17 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.10 2004-03-28 14:55:49 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -247,16 +247,33 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 					addr += 4;
 				}
 			}
-		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  Possibly "scroll/copy 640x16":  */
-			int y_source, y_dest;
-			unsigned char pixels[640 * 16 * 3];
+		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  blockcopy  */
+			int y_source, y_dest, x_source, x_dest, x_size, y_size;
+			x_source = data[8*4 + 0] + ((data[8*4 + 1]) << 8);
+			y_source = data[8*4 + 2] + ((data[8*4 + 3]) << 8);
+			x_dest   = data[9*4 + 0] + ((data[9*4 + 1]) << 8);
+			y_dest   = data[9*4 + 2] + ((data[9*4 + 3]) << 8);
+			x_size   = data[12*4 + 0] + ((data[12*4 + 1]) << 8);
+			y_size   = data[13*4 + 0] + ((data[13*4 + 1]) << 8);
 
-			y_source = data[8*4 + 2] + ((data[8*4 + 3] & 0x7) << 8);
-			y_dest   = data[9*4 + 2] + ((data[9*4 + 3] & 0x7) << 8);
-			debug("[ gif: scroll/copy 640x16: y_source=%i y_dest=%i ]\n", y_source, y_dest);
+			fatal("[ gif: blockcopy (%i,%i) -> (%i,%i), size=(%i,%i) ]\n",
+			    x_source,y_source, x_dest,y_dest, x_size,y_size);
 
-			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0, 0,y_dest, 639,y_dest+15, 0,y_source);
-		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  Possibly "output cursor":  */
+			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0, x_dest,y_dest,
+			    x_dest + x_size - 1, y_dest + y_size - 1, x_source, y_source);
+		} else if (data[8] == 0x10 && data[9] == 0x55 && len == 48) {			/*  Linux "clear":  */
+			/*  This is used by linux to clear the lowest 16 pixels of the framebuffer.  */
+			int xbase, ybase, xend, yend;
+
+			xbase = (data[8*4 + 0] + (data[8*4 + 1] << 8)) / 16;
+			ybase = (data[8*4 + 2] + (data[8*4 + 3] << 8)) / 16;
+			xend  = (data[8*5 + 0] + (data[8*5 + 1] << 8)) / 16;
+			yend  = (data[8*5 + 2] + (data[8*5 + 3] << 8)) / 16;
+
+			debug("[ gif: linux \"clear\" (%i,%i)-(%i,%i) ]\n", xbase,ybase, xend,yend);
+
+			framebuffer_blockcopyfill(d->vfb_data, 1, 0,0,0, xbase,ybase, xend-1,yend-1, 0,0);
+		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  NetBSD "output cursor":  */
 			int xbase, ybase, xend, yend, x, y;
 
 			xbase = (data[20*4 + 0] + (data[20*4 + 1] << 8)) / 16;
@@ -264,7 +281,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			xend  = (data[28*4 + 0] + (data[28*4 + 1] << 8)) / 16;
 			yend  = (data[28*4 + 2] + (data[28*4 + 3] << 8)) / 16;
 
-			/*  debug("[ gif: cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);  */
+			/*  debug("[ gif: NETBSD cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);  */
 
 			/*  Output the cursor to framebuffer memory:  */
 
@@ -279,7 +296,29 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 					pixels[2] = 0xff - pixels[2];
 					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 				}
+		} else if (data[0] == 0x01 && data[1] == 0x00 && len == 80) {			/*  Linux "output cursor":  */
+			int xbase, ybase, xend, yend, x, y;
 
+			xbase = (data[7*8 + 0] + (data[7*8 + 1] << 8)) / 16;
+			ybase = (data[7*8 + 2] + (data[7*8 + 3] << 8)) / 16;
+			xend  = (data[8*8 + 0] + (data[8*8 + 1] << 8)) / 16;
+			yend  = (data[8*8 + 2] + (data[8*8 + 3] << 8)) / 16;
+
+			fatal("[ gif: LINUX cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);
+
+			/*  Output the cursor to framebuffer memory:  */
+
+			for (y=ybase; y<=yend; y++)
+				for (x=xbase; x<=xend; x++) {
+					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
+					unsigned char pixels[3];
+
+					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+					pixels[0] = 0xff - pixels[0];
+					pixels[1] = 0xff - pixels[1];
+					pixels[2] = 0xff - pixels[2];
+					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+				}
 		} else {		/*  Unknown command:  */
 			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
 			for (i=0; i<len; i++)

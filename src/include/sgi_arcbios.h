@@ -1,9 +1,9 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.3 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.4 2003-12-20 21:17:17 debug Exp $  */
 
 #ifndef SGI_ARCBIOS_H
 #define	SGI_ARCBIOS_H
 
-#define	sgimips
+/*  It's better to not #define sgimips here, and assume generic ARC instead  */
 
 #ifdef __attribute__
 #undef __attribute__

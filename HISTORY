@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.548 2005-02-01 06:03:42 debug Exp $
+$Id: HISTORY,v 1.549 2005-02-01 07:21:50 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1605,3 +1605,7 @@ HISTORY of mips64emul
 		(corresponding to the -z command line option).
 		Continuing the multi-emul machine cleanup.
 20050201	Minor updates (man page, RELEASE, README).
+		Continuing the cleanup.
+		Adding a 'name' field to the emul struct, and adding a command
+		to the debugger ("focus") to make it possible to switch focus
+		to different machines (in different emuls).

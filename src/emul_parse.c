@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.22 2005-01-31 21:56:42 debug Exp $
+ *  $Id: emul_parse.c,v 1.23 2005-02-01 07:21:53 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -295,14 +295,33 @@ static void parse__none(struct emul *e, FILE *f, int *in_emul, int *line,
 /*
  *  parse__emul():
  *
- *  net ( [...] )
- *  machine ( [...] )
+ *  name, net, machine
  */
 static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 	int *parsestate, char *word, size_t maxbuflen)
 {
 	if (word[0] == ')') {
 		*parsestate = PARSESTATE_NONE;
+		return;
+	}
+
+	if (strcmp(word, "name") == 0) {
+		char tmp[200];
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		read_one_word(f, tmp, sizeof(tmp), line, EXPECT_WORD);
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
+		if (e->name != NULL) {
+			free(e->name);
+			e->name = NULL;
+		}
+		e->name = strdup(tmp);
+		if (e->name == NULL) {
+			fprintf(stderr, "out of memory in parse__emul()\n");
+			exit(1);
+		}
+		debug("name: \"%s\"\n", e->name);
 		return;
 	}
 

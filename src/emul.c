@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.153 2005-01-31 20:21:16 debug Exp $
+ *  $Id: emul.c,v 1.154 2005-02-01 07:21:52 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -256,17 +256,27 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
  *
  *  Returns a reasonably initialized struct emul.
  */
-struct emul *emul_new(void)
+struct emul *emul_new(char *name)
 {
 	struct emul *e;
 	e = malloc(sizeof(struct emul));
-	if (e == NULL)
-		return NULL;
+	if (e == NULL) {
+		fprintf(stderr, "out of memory in emul_new()\n");
+		exit(1);
+	}
 
 	memset(e, 0, sizeof(struct emul));
 
 	/*  Sane default values:  */
 	e->n_machines = 0;
+
+	if (name != NULL) {
+		e->name = strdup(name);
+		if (e->name == NULL) {
+			fprintf(stderr, "out of memory in emul_new()\n");
+			exit(1);
+		}
+	}
 
 	return e;
 }
@@ -720,7 +730,7 @@ void emul_simple_init(struct emul *emul)
 struct emul *emul_create_from_configfile(char *fname)
 {
 	int iadd = 4;
-	struct emul *e = emul_new();
+	struct emul *e = emul_new(fname);
 	FILE *f;
 	char buf[128];
 	size_t len;

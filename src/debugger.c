@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.76 2005-02-01 06:48:53 debug Exp $
+ *  $Id: debugger.c,v 1.77 2005-02-01 07:21:52 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -623,13 +623,65 @@ static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
 		if (e == NULL)
 			continue;
 
-		debug("emulation %i:\n", i);
+		debug("emulation %i: \"%s\"\n", i,
+		    e->name == NULL? "(no name)" : e->name);
 		debug_indentation(iadd);
 
 		emul_dumpinfo(e);
 
 		debug_indentation(-iadd);
 	}
+}
+
+
+/*
+ *  debugger_cmd_focus():
+ *
+ *  Changes focus to specific machine (in a specific emulation).
+ */
+static void debugger_cmd_focus(struct machine *m, char *cmd_line)
+{
+	int x = -1, y = -1;
+	char *p;
+
+	if (!cmd_line[0]) {
+		printf("syntax: focus x[,y]\n");
+		printf("where x and y are integers as reported by the"
+		    " 'emuls' command\n");
+		goto print_current_focus_and_return;
+	}
+
+	x = atoi(cmd_line);
+	p = strchr(cmd_line, ',');
+	if (p != NULL)
+		y = atoi(p + 1);
+
+	if (y != -1) {
+		/*  Change emul:  */
+		if (y < 0 || y >= debugger_n_emuls) {
+			printf("Invalid emul number: %i\n", y);
+			return;
+		}
+
+		debugger_emul = debugger_emuls[y];
+
+		/*  This is just in case the machine change below fails...  */
+		debugger_machine = debugger_emul->machines[0];
+	}
+
+	/*  Change machine:  */
+	if (x < 0 || x >= debugger_emul->n_machines) {
+		printf("Invalid machine number: %i\n", x);
+		return;
+	}
+
+	debugger_machine = debugger_emul->machines[x];
+
+print_current_focus_and_return:
+	printf("current emul: \"%s\"\n", debugger_emul->name == NULL?
+	    "(no name)" : debugger_emul->name);
+	printf("current machine: \"%s\"\n", debugger_machine->name == NULL?
+	    "(no name)" : debugger_machine->name);
 }
 
 
@@ -1242,6 +1294,9 @@ static struct cmd cmds[] = {
 
 	{ "emuls", "", 0, debugger_cmd_emuls,
 		"print a summary of all current emuls" },
+
+	{ "focus", "x[,y]", 0, debugger_cmd_focus,
+		"changes focus to machine x (in emul y)" },
 
 	{ "help", "", 0, debugger_cmd_help,
 		"print this help message" },

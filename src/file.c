@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.8 2003-12-22 11:38:08 debug Exp $
+ *  $Id: file.c,v 1.9 2004-01-02 22:20:34 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -819,13 +819,13 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 			unencode(p_align,   &phdr32.p_align,   Elf32_Word);
 		}
 
-		if (p_type == PT_LOAD || p_type == 0x70000000) {
+		if (p_type == PT_LOAD || p_type == 0x70000000 || p_type == 0x70000002) {
 			if (p_type == PT_LOAD)
 				debug("'%s': loadable chunk %i @ %08llx, vaddr %016llx len=0x%llx\n",
 				    filename, i, p_offset, p_vaddr, p_memsz);
 			else
-				debug("'%s': type 0x70000000 chunk %i @ %08llx, vaddr %016llx len=0x%llx\n",
-				    filename, i, p_offset, p_vaddr, p_memsz);
+				debug("'%s': type 0x%08x chunk %i @ %08llx, vaddr %016llx len=0x%llx\n",
+				    filename, p_type, i, p_offset, p_vaddr, p_memsz);
 
 			if (p_vaddr != p_paddr) {
 				fprintf(stderr, "%s: vaddr != paddr. TODO: how to handle this? "

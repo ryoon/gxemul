@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.121 2004-07-03 18:38:12 debug Exp $
+ *  $Id: machine.c,v 1.122 2004-07-03 19:49:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2369,10 +2369,10 @@ void machine_init(struct memory *mem)
 	if (machine_name != NULL)
 		debug("machine: %s", machine_name);
 
-	if (emulated_hz != 0)
-		debug(" (%.2f MHz)\n", (float)emulated_hz / 1000000);
-	else
-		debug("\n");
+	if (emulated_hz < 1)
+		emulated_hz = 1000000;
+
+	debug(" (%.2f MHz)\n", (float)emulated_hz / 1000000);
 
 	if (bootstr != NULL) {
 		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)", bootstr);

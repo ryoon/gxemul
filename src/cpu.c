@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.233 2005-01-17 07:58:56 debug Exp $
+ *  $Id: cpu.c,v 1.234 2005-01-17 08:15:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3825,6 +3825,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 				}
 
 				for (i=0; i<ncpus_cached; i++) {
+				    if (cpus[i]->running)
 					for (j=0;
 					  j<cpus[i]->cpu_type.instrs_per_cycle;
 					    j++) {

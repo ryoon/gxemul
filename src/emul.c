@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.130 2005-01-23 13:43:07 debug Exp $
+ *  $Id: emul.c,v 1.131 2005-01-24 11:28:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -584,6 +584,33 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
 	debug("\n");
 
 	debug_indentation(-iadd);
+}
+
+
+/*
+ *  emul_dumpinfo():
+ *
+ *  Dump info about all machines in an emul.
+ */
+void emul_dumpinfo(struct emul *e)
+{
+	int j, nm, iadd = 4;
+
+	if (e->net != NULL)
+		net_dumpinfo(e->net);
+
+	nm = e->n_machines;
+	for (j=0; j<nm; j++) {
+		if (nm > 1) {
+			debug("machine %i: \"%s\"\n", j, e->machines[j]->name);
+			debug_indentation(iadd);
+		}
+
+		machine_dumpinfo(e->machines[j]);
+
+		if (nm > 1)
+			debug_indentation(-iadd);
+	}
 }
 
 

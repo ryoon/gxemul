@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.52 2005-01-23 13:43:07 debug Exp $
+ *  $Id: debugger.c,v 1.53 2005-01-24 11:28:31 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -747,7 +747,7 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int i, j, nm, iadd = 4;
+	int i, iadd = 4;
 
 	for (i=0; i<debugger_n_emuls; i++) {
 		struct emul *e = debugger_emuls[i];
@@ -760,24 +760,7 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 			debug_indentation(iadd);
 		}
 
-		if (e->net != NULL)
-			net_dumpinfo(e->net);
-
-		nm = e->n_machines;
-		for (j=0; j<nm; j++) {
-			if (nm > 1 || debugger_n_emuls > 1) {
-				debug("machine %i:", j);
-				if (debugger_machine == e->machines[j])
-					debug(" [ FOCUSED ]");
-				debug("\n");
-				debug_indentation(iadd);
-			}
-
-			machine_dumpinfo(e->machines[j]);
-
-			if (nm > 1 || debugger_n_emuls > 1)
-				debug_indentation(-iadd);
-		}
+		emul_dumpinfo(e);
 
 		if (debugger_n_emuls > 1)
 			debug_indentation(-iadd);

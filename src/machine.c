@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.293 2005-01-23 13:43:07 debug Exp $
+ *  $Id: machine.c,v 1.294 2005-01-24 11:28:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3798,7 +3798,7 @@ void machine_dumpinfo(struct machine *m)
 {
 	int i;
 
-	debug("ram: %i MB", m->physical_ram_in_mb);
+	debug("memory: %i MB", m->physical_ram_in_mb);
 	if (m->memory_offset_in_mb != 0)
 		debug(" (offset by %i MB)", m->memory_offset_in_mb);
 	debug("\n");

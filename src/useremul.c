@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.18 2004-09-05 03:03:44 debug Exp $
+ *  $Id: useremul.c,v 1.19 2004-10-13 18:30:12 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -126,7 +126,8 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 
 	/*  The userland stack:  */
 	cpu->gpr[GPR_SP] = stack_top - stack_margin;
-	add_symbol_name(stack_top - stacksize, stacksize, "userstack", 0);
+	add_symbol_name(&cpu->emul->symbol_context,
+	    stack_top - stacksize, stacksize, "userstack", 0);
 
 	/*
 	 *  Stack contents:  (TODO: emulation dependant?)

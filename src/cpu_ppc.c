@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.31 2005-02-15 09:10:15 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.32 2005-02-15 09:47:21 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -342,6 +342,12 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 		} else
 			*valuep = m->cpus[cpunr]->cd.ppc.pc;
 		*match_register = 1;
+	} else if (strcasecmp(name, "msr") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.ppc.msr = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->cd.ppc.msr;
+		*match_register = 1;
 	} else if (strcasecmp(name, "lr") == 0) {
 		if (writeflag)
 			m->cpus[cpunr]->cd.ppc.lr = *valuep;
@@ -353,6 +359,18 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			m->cpus[cpunr]->cd.ppc.cr = *valuep;
 		else
 			*valuep = m->cpus[cpunr]->cd.ppc.cr;
+		*match_register = 1;
+	} else if (strcasecmp(name, "dec") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.ppc.dec = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->cd.ppc.dec;
+		*match_register = 1;
+	} else if (strcasecmp(name, "hdec") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->cd.ppc.hdec = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->cd.ppc.hdec;
 		*match_register = 1;
 	} else if (strcasecmp(name, "ctr") == 0) {
 		if (writeflag)
@@ -895,6 +913,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
+	case PPC_HI6_LHZ:
+	case PPC_HI6_LHZU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
@@ -912,6 +932,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (hi6) {
 		case PPC_HI6_LWZ:	mnem = power? "l" : "lwz"; break;
 		case PPC_HI6_LWZU:	mnem = power? "lu" : "lwzu"; break;
+		case PPC_HI6_LHZ:	mnem = "lhz"; break;
+		case PPC_HI6_LHZU:	mnem = "lhzu"; break;
 		case PPC_HI6_LBZ:	mnem = "lbz"; break;
 		case PPC_HI6_LBZU:	mnem = "lbzu"; break;
 		case PPC_HI6_STW:	mnem = power? "st" : "stw"; break;
@@ -1096,6 +1118,14 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	hi6 = iword >> 26;
 
 	switch (hi6) {
+
+	case PPC_HI6_MULLI:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		cpu->cd.ppc.gpr[rt] = (int64_t)cpu->cd.ppc.gpr[ra]
+		    * (int64_t)imm;
+		break;
 
 	case PPC_HI6_SUBFIC:
 		rt = (iword >> 21) & 31;
@@ -1934,6 +1964,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	case PPC_HI6_LWZ:
 	case PPC_HI6_LWZU:
+	case PPC_HI6_LHZ:
+	case PPC_HI6_LHZU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
@@ -1952,6 +1984,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		switch (hi6) {
 		case PPC_HI6_LWZU:
+		case PPC_HI6_LHZU:
 		case PPC_HI6_LBZU:
 		case PPC_HI6_STBU:
 		case PPC_HI6_STHU:
@@ -1976,6 +2009,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_HI6_STBU:
 			tmp_data_len = 1;
 			break;
+		case PPC_HI6_LHZ:
+		case PPC_HI6_LHZU:
 		case PPC_HI6_STH:
 		case PPC_HI6_STHU:
 			tmp_data_len = 2;

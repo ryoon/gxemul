@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.96 2004-12-01 14:23:02 debug Exp $
+ *  $Id: bintrans.c,v 1.97 2004-12-01 22:42:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -304,7 +304,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	uint64_t delayed_branch_new_p;
 	int prev_p;
 
+#if 0
+/*  This doesn't work yet.  */
 quick_attempt_translate_again:
+#endif
 
 	/*
 	 *  If the chunk space is all used up, we need to start over from

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.59 2004-12-01 22:14:48 debug Exp $
+$Id: RELEASE,v 1.60 2004-12-01 22:38:41 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -51,19 +51,21 @@ affiliated with MIPS Technologies in any way whatsoever.)
 
 In its current form, it is possible to use the emulator to install an
 operating systems onto a harddisk image; the "guest" operating system will run
-similar to how it would run on a real physical machine, only a lot slower.
+similar to how it would run on a real physical machine.
 
 The following guest operating systems have been verified to work:
 
-    Operating system             Emulated machine
-    ----------------             ----------------
-    NetBSD 1.6.2/pmax            DECstation 5000/200
-    OpenBSD 2.8-BETA/pmax        DECstation 5000/200
-    Ultrix 4.2-4.5/RISC          DECstation 5000/200
-    Sprite demo harddisk image   DECstation 5000/200
-    Redhat Linux 7.1 for mips    DECstation 5000/200
-    NetBSD 1.6.2/arc             Acer PICA-61
-    OpenBSD 2.3/arc              Acer PICA-61
+
+    Operating system                Emulated machine
+    ----------------                ----------------
+
+    NetBSD 1.6.2/pmax               DECstation 5000/200
+    OpenBSD 2.8-BETA/pmax           DECstation 5000/200
+    Ultrix 4.2-4.5/RISC             DECstation 5000/200
+    Sprite demo harddisk image      DECstation 5000/200
+    Redhat Linux 7.1 for mips       DECstation 5000/200
+    NetBSD 1.6.2/arc                Acer PICA-61
+    OpenBSD 2.3/arc                 Acer PICA-61
 
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
@@ -71,7 +73,7 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
-Here is a short summary of the changes from version 0.2 to 0.2.2:
+Here is a short summary of the changes from version 0.2.2 to 0.2.3:
 
 	x)  An experimental dynamic binary translation subsystem has been
 	    added, which improves speed.  It should work when emulating
@@ -80,9 +82,10 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
 	    reliable yet.)
 
 	x)  Redhat Linux 7.1 for mips has been verified to work under
-	    DECstation 5000/200 emulation.
+	    DECstation 5000/200 emulation. (It could probably run with
+	    earlier versions of the emulator, but I hadn't seen it myself.)
 
-        x)  A number of minor bug fixes.
+        x)  Lots of minor bug fixes.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

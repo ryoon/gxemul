@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.650 2005-03-20 20:27:25 debug Exp $
+$Id: HISTORY,v 1.651 2005-03-23 08:45:48 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1761,3 +1761,5 @@ Changelog for GXemul:
 		continuing on the device cleanup, ...)
 20050319	Minor updates.
 20050320	Minor updates.
+20050322	Various minor updates.
+20050323	Some more minor updates.

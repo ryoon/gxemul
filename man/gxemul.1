@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.4 2005-03-18 21:09:28 debug Exp $
+.\" $Id: gxemul.1,v 1.5 2005-03-23 08:45:50 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -47,11 +47,12 @@
 .Ar file Op Ar args ...
 .Sh DESCRIPTION
 .Nm
-is a machine emulator, which can be used to experiment with 
-binary code for (among others) MIPS-based machines. Several emulation
-modes are available. For some emulation modes, processors and surrounding
-hardware components are emulated well enough to let unmodified operating
-systems run as if they were running on a real machine.
+is an experimental instruction-level machine emulator. It can be used 
+to run binary code for (among others) MIPS-based machines.
+Several emulation modes are available. For some emulation modes, processors
+and surrounding hardware components are emulated well enough to let
+unmodified operating systems (eg NetBSD) run as if they were running on a
+real machine.
 .Pp
 There are three ways to invoke the emulator. When emulating a 
 complete machine, settings can be entered directly on the command line, or
@@ -150,8 +151,9 @@ Display each instruction as it is being executed.
 Disable some speed tricks.
 .It Fl j Ar n
 Set the name of the kernel to
-.Ar "n",
-for example "bsd" for OpenBSD/pmax, or "vmunix" for Ultrix.
+.Ar "n".
+Useful names are "bsd" for OpenBSD/pmax, or "vmunix" for Ultrix.
+("netbsd" is usually the default value.)
 .It Fl M Ar m
 Emulate
 .Ar m
@@ -234,7 +236,10 @@ settings are identical. (If this option is used, then
 must also be used.)
 .It Fl H
 Display a list of available CPU types, machine types, and userland
-emulation modes.
+emulation modes. (Most of these don't work. Please read the documentation
+included in the
+.Nm
+distribution for details on which modes that actually work.)
 .It Fl h
 Display a list of all available command line options.
 .It Fl K
@@ -276,7 +281,8 @@ verbose.
 .Dl "gxemul -v @mysession"
 .Pp
 If you have compiled the small Hello World program mentioned in the
-GXemul documentation, the following command will start up an
+.Nm
+documentation, the following command will start up an
 emulated test machine in "paused" mode:
 .Pp
 .Dl "gxemul -E testmips -V hello_mips"
@@ -285,6 +291,15 @@ emulated test machine in "paused" mode:
 directly at startup, instead of launching the Hello World program.)
 .Pp
 Please read the documentation for more details.
+.Sh BUGS
+There are many bugs. Some are listed in the BUGS file in the
+.Nm
+source distribution, some are indirectly mentioned in the TODO file.
+.Pp
+.Nm
+does not simulate individual pipe-line stages or penalties due to 
+branch-prediction misses, so it cannot be used for accurate performance 
+measurement.
 .Sh AUTHOR
 Anders Gavare <anders@gavare.se>
 .Pp

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.219 2005-03-14 12:13:53 debug Exp $
+ *  $Id: main.c,v 1.220 2005-03-23 08:45:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -764,7 +764,7 @@ int main(int argc, char *argv[])
 
 	if (!fully_deterministic) {
 		/*  TODO: More than just time(). Use gettimeofday().  */
-		srandom(time(NULL));
+		srandom(time(NULL) ^ (getpid() << 12));
 	} else {
 		/*  Fully deterministic. -I must have been supplied.  */
 		if (emuls[0]->machines[0]->automatic_clock_adjustment) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.44 2005-03-13 09:51:41 debug Exp $
+ *  $Id: useremul.c,v 1.45 2005-03-23 08:45:51 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -1445,7 +1445,7 @@ void useremul_list_emuls(void)
 	}
 
 	debug_indentation(-iadd);
-	debug("\n");
+	debug("\n(Most of these modes are bogus.)\n\n");
 }
 
 

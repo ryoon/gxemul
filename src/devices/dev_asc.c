@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.69 2005-03-08 23:10:09 debug Exp $
+ *  $Id: dev_asc.c,v 1.70 2005-03-23 08:45:49 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -991,12 +991,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 /*			d->reg_ro[NCR_INTR] |= NCRINTR_BS; */
-			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ? probably 7  */
-			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
+			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;
+				/*  ? probably 7  */
+			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;
+				/*  ?  */
 			break;
 
 		case NCRCMD_MSGOK:
-			/*  Message is being Rejected if ATN is set, otherwise Accepted.  */
+			/*  Message is being Rejected if ATN is set,
+			    otherwise Accepted.  */
 			if (!quiet_mode) {
 				debug("MSGOK");
 				if (d->atn)
@@ -1007,8 +1010,10 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 
-			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;	/*  6?  */
-			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
+			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) |
+			    d->cur_phase;	/*  6?  */
+			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) |
+			    4;	/*  ?  */
 
 			d->cur_state = STATE_DISCONNECTED;
 
@@ -1039,26 +1044,33 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			case NCRCMD_SELATNS:
 				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATNS) {
 					if (!quiet_mode)
-						debug("SELATNS: select with atn and stop, id %i", d->reg_wo[NCR_SELID] & 7);
+						debug("SELATNS: select with "
+						    "atn and stop, id %i",
+						    d->reg_wo[NCR_SELID] & 7);
 					d->cur_phase = PHASE_MSG_OUT;
 				} else {
 					if (!quiet_mode)
-						debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+						debug("SELATN: select with atn"
+						    ", id %i",
+						    d->reg_wo[NCR_SELID] & 7);
 				}
 				n_messagebytes = 1;
 				break;
 			case NCRCMD_SELATN3:
 				if (!quiet_mode)
-					debug("SELNATN: select with atn3, id %i", d->reg_wo[NCR_SELID] & 7);
+					debug("SELNATN: select with atn3, "
+					    "id %i", d->reg_wo[NCR_SELID] & 7);
 				n_messagebytes = 3;
 				break;
 			case NCRCMD_SELNATN:
 				if (!quiet_mode)
-					debug("SELNATN: select without atn, id %i", d->reg_wo[NCR_SELID] & 7);
+					debug("SELNATN: select without atn, "
+					    "id %i", d->reg_wo[NCR_SELID] & 7);
 				n_messagebytes = 0;
 			}
 
-			/*  TODO: not just disk, but some generic SCSI device  */
+			/*  TODO: not just disk, but some generic
+			    SCSI device  */
 			target_exists = diskimage_exist(cpu->machine,
 			    d->reg_wo[NCR_SELID] & 7);
 
@@ -1083,7 +1095,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 					d->cur_state = STATE_DISCONNECTED;
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					d->reg_ro[NCR_STEP] =
+					    (d->reg_ro[NCR_STEP] & ~7) | 0;
 					if (d->xferp != NULL)
 						scsi_transfer_free(d->xferp);
 					d->xferp = NULL;
@@ -1119,7 +1132,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 					d->cur_state = STATE_DISCONNECTED;
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					d->reg_ro[NCR_STEP] = (d->reg_ro[
+					    NCR_STEP] & ~7) | 0;
 					if (d->xferp != NULL)
 						scsi_transfer_free(d->xferp);
 					d->xferp = NULL;
@@ -1160,7 +1174,8 @@ break;
 					d->cur_state = STATE_DISCONNECTED;
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					d->reg_ro[NCR_STEP] = (d->reg_ro[
+					    NCR_STEP] & ~7) | 0;
 					if (d->xferp != NULL)
 						scsi_transfer_free(d->xferp);
 					d->xferp = NULL;
@@ -1202,7 +1217,8 @@ break;
 	if (regnr == NCR_CFG1) {
 		/*  TODO: other bits  */
 		if (!quiet_mode) {
-			debug(" parity %s,", d->reg_ro[regnr] & NCRCFG1_PARENB? "enabled" : "disabled");
+			debug(" parity %s,", d->reg_ro[regnr] &
+			    NCRCFG1_PARENB? "enabled" : "disabled");
 			debug(" scsi_id %i", d->reg_ro[regnr] & 0x7);
 		}
 	}

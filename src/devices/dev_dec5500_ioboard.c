@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5500_ioboard.c,v 1.2 2004-03-04 04:08:58 debug Exp $
+ *  $Id: dev_dec5500_ioboard.c,v 1.3 2004-06-22 22:24:25 debug Exp $
  *  
  *  DEC 5500 "ioboard" device.
  *
@@ -53,7 +53,7 @@ struct dec5500_ioboard_data {
  */
 int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	struct dec5500_ioboard_data *d = (struct dec5500_ioboard_data *) extra;
+	/*  struct dec5500_ioboard_data *d = (struct dec5500_ioboard_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);

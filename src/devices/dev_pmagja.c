@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.2 2004-05-08 02:06:04 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.3 2004-06-22 22:24:25 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -126,13 +126,15 @@ for (i=0; i<len; i++)
 		fatal("[ pmagja: write to addr 0x%08llx: 0x%08llx ]\n", (long long)relative_addr, (long long)idata);
 }
 #endif
-			int x, y, ofs, ix;
+			int x, y, ofs;
+
 			ofs = (relative_addr - 0x100000) * 2;
 			y = ofs / XSIZE;
 			x = ofs - x * XSIZE;
 
 #if 0
 			if (writeflag == MEM_WRITE) {
+				int ix;
 				for (ix=0; ix<len*2; ix++) {
 					unsigned char data[3];
 					int ctype;

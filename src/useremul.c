@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.11 2004-06-21 15:11:28 debug Exp $
+ *  $Id: useremul.c,v 1.12 2004-06-22 22:23:54 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -219,7 +219,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 	struct timeval tv;
 	struct timezone tz;
 	int descr;
-	uint64_t length, mipsbuf, flags, i;
+	uint64_t length, mipsbuf, flags;
 	unsigned char *charbuf;
 	uint32_t sysctl_name, sysctl_namelen, sysctl_oldp, sysctl_oldlenp, sysctl_newp, sysctl_newlen;
 	uint32_t name0, name1, name2, name3;
@@ -755,9 +755,9 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 			/*  TODO  */
 {
-long x;
-x = 1 << 3;
-result_low = select(4, &x, NULL, NULL, NULL);
+fd_set fdset;
+FD_SET(3, &fdset);
+result_low = select(4, &fdset, NULL, NULL, NULL);
 }
 			break;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.101 2004-06-21 09:38:28 debug Exp $
+ *  $Id: machine.c,v 1.102 2004-06-22 22:26:45 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -42,6 +42,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
+#include "diskimage.h"
 #include "bus_pci.h"
 
 /*  For SGI emulation:  */
@@ -388,7 +389,7 @@ void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
-	int r2;
+	int r2 = 0;
 
 	kn230_csr->csr |= irq_nr;
 
@@ -679,7 +680,7 @@ void machine_init(struct memory *mem)
 	struct arcbios_mem arcbios_mem;
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
-	uint32_t system;
+	uint32_t system = 0;
 	uint64_t sgi_ram_offset = 0;
 	int arc_wordlen = sizeof(uint32_t);
 	char *short_machine_name = NULL;
@@ -696,9 +697,6 @@ void machine_init(struct memory *mem)
 	/*  Framebuffer stuff:  */
 	struct vfb_data *fb;
 
-	/*  Playstation:  */
-	struct cpu *ps1_subcpu;
-	struct memory *ps1_mem;
 
 	machine_name = NULL;
 
@@ -1396,17 +1394,6 @@ void machine_init(struct memory *mem)
 		/*  TODO:  Is this neccessary?  */
 		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
 
-#if 0
-		debug("adding playstation 1 memory: 4 MB\n");
-		ps1_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
-		if (ps1_mem == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-
-		debug("adding playstation 1 cpu: R3000A\n");
-		ps1_subcpu = cpu_new(ps1_mem, -1, "R3000A");
-#endif
 		break;
 
 	case EMULTYPE_SGI:
@@ -1867,10 +1854,12 @@ void machine_init(struct memory *mem)
 		if (short_machine_name == NULL)
 			fatal("ERROR: short_machine_name == NULL\n");
 
-		if (emulation_type == EMULTYPE_SGI) {
+		switch (emulation_type) {
+		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
-		} else {
+			break;
+		default:
 			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 		}
@@ -1902,7 +1891,7 @@ void machine_init(struct memory *mem)
 			    0, 1, 20, 0, 0x0, arc_fpc_name, cpu);
 
 			/*  TODO:  cache (per cpu)  */
-			debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);
+			debug("adding ARC components: cpu%i = 0x%x, fpu = 0x%x\n", i, cpu, fpu);
 /*  NetBSD:
 case arc_CacheClass:
                 if (cf->type == arc_SecondaryDcache)

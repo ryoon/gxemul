@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.17 2004-06-07 09:17:38 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.18 2004-06-22 22:23:37 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -38,7 +38,6 @@
 #include "devices.h"
 
 #include "dc7085.h"
-#include "lk201.h"		/*  mouse and keyboard stuff  */
 
 
 #define	MAX_QUEUE_LEN		1500

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.2 2004-06-15 21:27:33 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.3 2004-06-22 22:24:54 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -49,7 +49,7 @@ extern int quiet_mode;
  */
 int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	struct sgi_ip20_data *d = (struct sgi_ip20_data *) extra;
+	/*  struct sgi_ip20_data *d = (struct sgi_ip20_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);

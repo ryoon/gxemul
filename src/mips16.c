@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.5 2003-12-15 06:00:38 debug Exp $
+ *  $Id: mips16.c,v 1.6 2004-06-22 22:23:54 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -41,7 +41,7 @@
 /*  MIPS16 register numbers:  */
 static int mips16_reg8_to_reg32[8] = { 16, 17, 2, 3, 4, 5, 6, 7 };
 static int mips16_sp = 29;
-static int mips16_t = 24;
+/*  static int mips16_t = 24;  */
 
 
 /*

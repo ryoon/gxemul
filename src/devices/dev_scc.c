@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.11 2004-03-24 00:27:53 debug Exp $
+ *  $Id: dev_scc.c,v 1.12 2004-06-22 22:23:37 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -49,7 +49,6 @@
 #include "console.h"
 #include "devices.h"
 
-#include "lk201.h"
 #include "sccreg.h"
 
 #define	N_SCC_PORTS	2

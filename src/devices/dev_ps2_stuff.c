@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.3 2004-03-27 19:26:15 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.4 2004-06-22 22:24:24 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -77,9 +77,9 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, regnr = 0;
+	int regnr = 0;
 	struct ps2_data *d = extra;
-	int timer_nr;
+	int timer_nr = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.29 2004-06-21 23:07:44 debug Exp $
+ *  $Id: dev_asc.c,v 1.30 2004-06-22 22:23:37 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -35,6 +35,11 @@
  *	DMA address register	at base + 0x40000
  *	128K SRAM buffer	at base + 0x80000
  *	ROM			at base + 0xc0000
+ *
+ *
+ *  TODO:  This module needs a clean-up, and some testing to see that
+ *         it works will all OSes that might use it (NetBSD, OpenBSD,
+ *         Ultrix, Linux, Mach(?), OSF/1?, ...)
  */
 
 #include <stdio.h>
@@ -290,9 +295,11 @@ fatal("TODO..............\n");
 					memset(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), 0, len2);
 
 #ifdef ASC_DEBUG
-				if (!quiet_mode)
+				if (!quiet_mode) {
+					int i;
 					for (i=0; i<len; i++)
 						debug(" %02x", d->xferp->data_in[i]);
+				}
 #endif
 
 				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len2);
@@ -365,9 +372,11 @@ fatal("TODO.......asdgasin\n");
 			}
 
 #ifdef ASC_DEBUG
-			if (!quiet_mode)
+			if (!quiet_mode) {
+				int i;
 				for (i=0; i<len; i++)
 					debug(" %02x", d->xferp->data_out[i]);
+			}
 #endif
 			len = 0;
 
@@ -592,7 +601,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	int regnr, i;
+	int regnr;
 	struct asc_data *d = extra;
 	int target_exists;
 	int n_messagebytes = 0;
@@ -643,11 +652,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			memcpy(data, d->dma + (relative_addr - 0x80000), len);
 #ifdef ASC_DEBUG
-			debug("[ asc: read from DMA addr 0x%05x:",
-			    relative_addr - 0x80000);
-			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" ]\n");
+			{
+				int i;
+				debug("[ asc: read from DMA addr 0x%05x:",
+				    relative_addr - 0x80000);
+				for (i=0; i<len; i++)
+					debug(" %02x", data[i]);
+				debug(" ]\n");
+			}
 #endif
 
 			/*  Don't return the common way, as that would overwrite data.  */
@@ -655,11 +667,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			memcpy(d->dma + (relative_addr - 0x80000), data, len);
 #ifdef ASC_DEBUG
-			debug("[ asc: write to  DMA addr 0x%05x:",
-			    relative_addr - 0x80000);
-			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" ]\n");
+			{
+				int i;
+				debug("[ asc: write to  DMA addr 0x%05x:",
+				    relative_addr - 0x80000);
+				for (i=0; i<len; i++)
+					debug(" %02x", data[i]);
+				debug(" ]\n");
+			}
 #endif
 
 			/*  Quick return.  */

@@ -23,18 +23,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.34 2004-06-22 16:19:02 debug Exp $
+ *  $Id: dev_fb.c,v 1.35 2004-06-22 22:24:25 debug Exp $
  *  
  *  Generic framebuffer device.
  *
- *	HPCmips framebuffer
  *	DECstation VFB01 monochrome framebuffer, 1024x864
  *	DECstation VFB02 8-bit color framebuffer, 1024x864
  *	DECstation Maxine, 1024x768 8-bit color
+ *	HPCmips framebuffer
  *	Playstation 2 (24-bit color)
  *	generic (any resolution, several bit depths possible)
  *
- *  VFB01/02 is called 'pm' in NetBSD/pmax, 'fb' in Ultrix.
  *
  *  TODO:  This should actually be independant of X11, but that
  *  might be too hard to do right now.
@@ -538,7 +537,9 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	} else
 		d->updated_last_tick = 0;
 
+#ifdef FB_TICK_EVERYOTHER
 skip_update:
+#endif
 
 #ifdef WITH_X11
 	if (need_to_redraw_cursor) {

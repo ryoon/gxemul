@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.15 2004-01-06 02:00:20 debug Exp $
+ *  $Id: cpu.c,v 1.16 2004-01-08 07:34:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1600,11 +1600,29 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		}
 
 		switch (hi6) {
-		case HI6_ADDI:		/*  TODO:  addi and daddi should trap on overflow...  */
+		case HI6_ADDI:
 		case HI6_ADDIU:
 		case HI6_DADDI:
 		case HI6_DADDIU:
-			cpu->gpr[rt] = cpu->gpr[rs] + imm;
+			tmpvalue = cpu->gpr[rs];
+			result_value = cpu->gpr[rs] + imm;
+
+			/*
+			 *  addi and daddi should trap on overflow:
+			 *
+			 *  TODO:  This is incorrect? The R4000 manual says
+			 *  that overflow occurs if the carry bits out of bit
+			 *  62 and 63 differ.   The destination register should
+			 *  not be modified on overflow.
+			 */
+			if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000) != (tmpvalue & 0x80000000)))
+			    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000) != (tmpvalue & 0x8000000000000000))) ) {
+				cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
+				break;
+			}
+
+			cpu->gpr[rt] = result_value;
+
 			/*
 			 *  Super-ugly speed-hack:  (only if speed_tricks != 0)
 			 *
@@ -1643,7 +1661,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				if (cpu->gpr[rt] & 0x80000000)
 					cpu->gpr[rt] |= 0xffffffff00000000;
 */
-cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
+				cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 			}
 			break;
 		case HI6_BEQ:

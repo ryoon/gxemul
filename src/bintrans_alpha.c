@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.67 2004-11-29 08:15:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.68 2004-11-29 08:20:38 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -59,7 +59,7 @@
  *	t7		a0 (mips register 4)  (64-bit)
  *	t8		a1 (mips register 5)  (64-bit)
  *	t9		s0 (mips register 16)  (64-bit)
- *	t10		table0 cached
+ *	t10		table0 cached (for load/store)
  *	t11		t3 (mips register 11)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)
@@ -194,9 +194,7 @@ unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t0&255,ofs_t0>>8,0xb0,0xa5,	/*  ldq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[t2]"(a0)  */
-#if 1
 	ofs_tbl0&255,ofs_tbl0>>8,0x10,0xa7,/*  ldq     t10,table0(a0)  */
-#endif
 	ofs_t3&255,ofs_t3>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t3]"(a0)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
@@ -213,7 +211,7 @@ unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xb5,	/*  stq     s6,"gpr[t2]"(a0)  */
-	ofs_t3&255,ofs_t3>>8,0x30,0xb7,	/*  stq     t11,"gpr[t4]"(a0)  */
+	ofs_t3&255,ofs_t3>>8,0x30,0xb7,	/*  stq     t11,"gpr[t3]"(a0)  */
 
 	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */

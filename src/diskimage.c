@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.35 2004-07-03 15:38:45 debug Exp $
+ *  $Id: diskimage.c,v 1.36 2004-07-05 18:26:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -870,12 +870,22 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 	case SCSICDROM_READ_SUBCHANNEL:
 	case SCSICDROM_READ_TOC:
-		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+		retlen = 0;
 
-		retlen = xferp->cmd[4];
+		switch (xferp->cmd[0]) {
+		case SCSICDROM_READ_SUBCHANNEL:
+			retlen = 48;
+			debug("CDROM_READ_SUBCHANNEL: TODO");
+			break;
+		case SCSICDROM_READ_TOC:
+			retlen = 12;
+			debug("CDROM_READ_TOC: TODO");
+			break;
+		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen);
 
 		/*  TODO  */
 

@@ -321,3 +321,5 @@ HISTORY of mips64emul
 		Increasing performance a little bit by inlining the check for
 		interrupts (which occurs for every instruction).
 20040124	Experimenting with pure userland (syscall) emulation.
+20040127	Fixes for compiling under Solaris.
+20040206	Some bintrans experiments.

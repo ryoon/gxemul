@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sysctl_netbsd.h,v 1.1 2004-01-24 21:12:37 debug Exp $  */
+/*  mips64emul: $Id: sysctl_netbsd.h,v 1.2 2004-01-27 21:52:28 debug Exp $  */
 /*	$NetBSD: sysctl.h,v 1.74 2002/03/20 00:23:46 christos Exp $	*/
 
 /*
@@ -725,10 +725,10 @@ extern struct lock sysctl_memlock;
 #endif
 
 #else	/* !_KERNEL */
-#include <sys/cdefs.h>
+/*  #include <sys/cdefs.h>  */
 
-__BEGIN_DECLS
-int	sysctl __P((int *, u_int, void *, size_t *, const void *, size_t));
-__END_DECLS
+/*  __BEGIN_DECLS
+int sysctl __P((int *, u_int, void *, size_t *, const void *, size_t));
+__END_DECLS  */
 #endif	/* _KERNEL */
 #endif	/* !NETBSD_SYS_SYSCTL_H_ */

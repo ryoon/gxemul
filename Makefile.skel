@@ -4,7 +4,7 @@
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
 BIN=mips64emul
-LIBS=-lm $(XLIB)
+LIBS=-lm $(XLIB) $(OTHERLIBS)
 
 all:
 	cd src; $(MAKE); cd ..

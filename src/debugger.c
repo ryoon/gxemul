@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.59 2005-01-28 09:28:33 debug Exp $
+ *  $Id: debugger.c,v 1.60 2005-01-28 09:32:10 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -688,11 +688,11 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 
 
 /*
- *  debugger_cmd_emul():
+ *  debugger_cmd_emuls():
  *
  *  Dump info about all current emuls.
  */
-static void debugger_cmd_emul(struct machine *m, char *cmd_line)
+static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
 {
 	int i, iadd = 4;
 
@@ -779,8 +779,9 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
 	int iadd = 4;
 
+	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
-	machine_dumpinfo(debugger_machine);
+	machine_dumpinfo(m);
 	debug_indentation(-iadd);
 }
 
@@ -1485,7 +1486,7 @@ static struct cmd cmds[] = {
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
-	{ "emul", "", 0, debugger_cmd_emul,
+	{ "emuls", "", 0, debugger_cmd_emul,
 		"print a summary of all current emuls" },
 
 	{ "help", "", 0, debugger_cmd_help,
@@ -1579,7 +1580,7 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 			else
 				printf(" ");
 
-		printf("  %s\n", cmds[i].description);
+		printf("   %s\n", cmds[i].description);
 		i++;
 	}
 

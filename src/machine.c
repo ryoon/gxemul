@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.105 2004-06-24 05:23:00 debug Exp $
+ *  $Id: machine.c,v 1.106 2004-06-24 06:04:25 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1747,7 +1747,7 @@ void machine_init(struct memory *mem)
 				 *  "NEC-RD94" (NEC RISCstation 2250)
 				 */
 
-				strcat(machine_name, " (NEC-RD94)");
+				strcat(machine_name, " (NEC-RD94, NEC RISCstation 2250)");
 
 				/*  TODO:  sync devices and component tree  */
 
@@ -1772,15 +1772,42 @@ void machine_init(struct memory *mem)
 				/*
 				 *  "PICA-61"
 				 *
-				 *  Something at paddr 0x100000b8000,
-				 *  0x60000003b4, 0x100000aff60,
-				 *  and 0x2000005060 - 2000005061.
+				 *  Something at 0x60000003b4, and something at 0x90000000070.
 				 *
 				 *  OpenBSD/arc seems to try to draw text onto a "VGA text"
 				 *  like device at 0x100000b0000 or 0x100000b8000.
+				 *
+				 *  According to NetBSD 1.6.2:
+				 *
+				 *  jazzio0 at mainbus0
+				 *  timer0 at jazzio0 addr 0xe0000228
+				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
+				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
+				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
+				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
+				 *  ALI_S3 at jazzio0 addr 0xe0800000 intr 3 not configured
+				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
+				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
+				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
+				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
+				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
+				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
+				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
+				 *  jazzisabr0 at mainbus0
+				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
 				 */
 
-				strcat(machine_name, " (PICA-61)");
+				strcat(machine_name, " (Acer PICA-61)");
+
+				/*  dev_asc_init(cpus[bootstrap_cpu], mem, 0x2000002000, 0);  */
+
+				/*  perhaps _PC_CMOS, not _ARC_NEC?  how about addr div?  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);  /*  mcclock0  */
+
+				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005060, PCKBC_8042, 0, 0);  /*  TODO: irq numbers  */
+
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);
 
 				break;
 
@@ -1812,7 +1839,7 @@ void machine_init(struct memory *mem)
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 				break;
 			case ARC_MACHINE_PICA:
-				strncpy(arcbios_sysid.VendorId,  "abcdefgh", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
 			}

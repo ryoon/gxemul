@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.71 2004-03-25 12:39:33 debug Exp $
+ *  $Id: machine.c,v 1.72 2004-03-25 20:58:27 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1321,6 +1321,8 @@ void machine_init(struct memory *mem)
 				break;
 			case 21:
 				strcat(machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
+				/*  NOTE:  Special case for arc_wordlen:  */
+				arc_wordlen = sizeof(uint64_t);
 				break;
 			case 22:
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
@@ -1557,7 +1559,7 @@ case arc_CacheClass:
 		for (i=0; i<100; i++)
 			store_32bit_word(ARC_PRIVATE_VECTORS + i*4, ARC_PRIVATE_ENTRIES + i*4);
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 9;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 10;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
 		switch (arc_wordlen) {
@@ -1571,7 +1573,8 @@ case arc_CacheClass:
 			store_64bit_word(ARC_ARGV_START + 0x18 * 2, ARC_ARGV_START + 0x280);
 			store_64bit_word(ARC_ARGV_START + 0x1c * 2, ARC_ARGV_START + 0x2a0);
 			store_64bit_word(ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
-			store_64bit_word(ARC_ARGV_START + 0x24 * 2, 0);
+			store_64bit_word(ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
+			store_64bit_word(ARC_ARGV_START + 0x28 * 2, 0);
 			break;
 		default:	/*  32-bit  */
 			store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
@@ -1583,7 +1586,8 @@ case arc_CacheClass:
 			store_32bit_word(ARC_ARGV_START + 0x18, ARC_ARGV_START + 0x280);
 			store_32bit_word(ARC_ARGV_START + 0x1c, ARC_ARGV_START + 0x2a0);
 			store_32bit_word(ARC_ARGV_START + 0x20, ARC_ARGV_START + 0x2c0);
-			store_32bit_word(ARC_ARGV_START + 0x24, 0);
+			store_32bit_word(ARC_ARGV_START + 0x24, ARC_ARGV_START + 0x2e0);
+			store_32bit_word(ARC_ARGV_START + 0x28, 0);
 		}
 
 		/*  Boot string in ARC format:  */
@@ -1625,7 +1629,8 @@ case arc_CacheClass:
 		store_string(ARC_ARGV_START + 0x260, "dbaud=9600");
 		store_string(ARC_ARGV_START + 0x280, "verbose=istrue");
 		store_string(ARC_ARGV_START + 0x2a0, "showconfig=istrue");
-		store_string(ARC_ARGV_START + 0x2c0, bootarg);
+		store_string(ARC_ARGV_START + 0x2c0, "diagmode=istrue");
+		store_string(ARC_ARGV_START + 0x2e0, bootarg);
 
 		/*  TODO:  not needed?  */
 		cpus[bootstrap_cpu]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.66 2004-12-02 19:33:54 debug Exp $
+ *  $Id: dev_fb.c,v 1.67 2004-12-03 20:03:45 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -61,7 +61,7 @@
 #endif
 
 
-#define	FB_TICK_SHIFT		19
+#define	FB_TICK_SHIFT		18
 
 #define	LOGO_XSIZE		256
 #define	LOGO_YSIZE		256

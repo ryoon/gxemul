@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.40 2004-12-02 22:09:35 debug Exp $
+ *  $Id: arcbios.c,v 1.41 2004-12-03 20:03:47 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <unistd.h>
 
 #include "misc.h"
 
@@ -73,10 +74,309 @@ static int arc_64bit = 0;		/*  For some SGI modes  */
 static int arc_wordlen = sizeof(uint32_t);
 
 extern int arc_n_memdescriptors;
-uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
+static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
 
-uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
-int n_arc_components = 0;
+static uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
+static int n_arc_components = 0;
+
+static uint64_t arcbios_console_vram = 0;
+static uint64_t arcbios_console_ctrlregs = 0;
+#define MAX_ESC		16
+static char arcbios_escape_sequence[MAX_ESC+1];
+static int arcbios_in_escape_sequence;
+static int arcbios_console_maxx, arcbios_console_maxy;
+int arcbios_console_curx = 0, arcbios_console_cury = 0;
+int arcbios_console_curcolor = 0x1f;
+
+
+/*
+ *  arcbios_putcell():
+ */
+static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
+{
+	unsigned char buf[2];
+	buf[0] = ch;
+	buf[1] = arcbios_console_curcolor;
+	memory_rw(cpu, cpu->mem, arcbios_console_vram +
+	    2*(x + arcbios_console_maxx * y),
+	    &buf[0], sizeof(buf), MEM_WRITE,
+	    CACHE_NONE | PHYSICAL);
+}
+
+
+/*
+ *  arcbios_console_init():
+ *
+ *  Called from machine.c whenever an ARC-based machine is running with
+ *  a graphical VGA-style framebuffer, which can be used as console.
+ */
+void arcbios_console_init(struct cpu *cpu,
+	uint64_t vram, uint64_t ctrlregs, int maxx, int maxy)
+{
+	int x, y;
+
+	arcbios_console_vram = vram;
+	arcbios_console_ctrlregs = ctrlregs;
+	arcbios_console_maxx = maxx;
+	arcbios_console_maxy = maxy;
+	arcbios_in_escape_sequence = 0;
+	arcbios_escape_sequence[0] = '\0';
+
+	for (y=0; y<arcbios_console_maxy; y++)
+		for (x=0; x<arcbios_console_maxx; x++) {
+			char ch = ' ';
+			char *s = " mips64emul "
+#ifdef VERSION
+			    "-" VERSION " "
+#endif
+			    "ARC text console ";
+
+			if (y == 0) {
+				arcbios_console_curcolor = 0x70;
+				if (x < strlen(s))
+					ch = s[x];
+			} else
+				arcbios_console_curcolor = 0x07;
+
+			arcbios_putcell(cpu, ch, x, y);
+		}
+
+	arcbios_console_curx = 0;
+	arcbios_console_cury = 2;
+	arcbios_console_curcolor = 0x07;
+}
+
+
+/*
+ *  handle_esc_seq():
+ *
+ *  Used by arcbios_putchar().
+ */
+static void handle_esc_seq(struct cpu *cpu)
+{
+	int i, len = strlen(arcbios_escape_sequence);
+	int row, col, color, code, start, stop;
+	char *p;
+
+	if (arcbios_escape_sequence[0] != '[')
+		return;
+
+	code = arcbios_escape_sequence[len-1];
+	arcbios_escape_sequence[len-1] = '\0';
+
+	switch (code) {
+	case 'm':
+		color = atoi(arcbios_escape_sequence + 1);
+		switch (color) {
+		case 0:	/*  Default.  */
+			arcbios_console_curcolor = 0x07; break;
+		case 1:	/*  "Bold".  */
+			arcbios_console_curcolor |= 0x80; break;
+		case 30: /*  Black foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x00; break;
+		case 31: /*  Red foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x04; break;
+		case 32: /*  Green foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x02; break;
+		case 33: /*  Yellow foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x06; break;
+		case 34: /*  Blue foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x01; break;
+		case 35: /*  Red-blue foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x05; break;
+		case 36: /*  Green-blue foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x03; break;
+		case 37: /*  White foreground.  */
+			arcbios_console_curcolor &= 0xf0;
+			arcbios_console_curcolor |= 0x07; break;
+		case 40: /*  Black background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x00; break;
+		case 41: /*  Red background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x40; break;
+		case 42: /*  Green background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x20; break;
+		case 43: /*  Yellow background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x60; break;
+		case 44: /*  Blue background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x10; break;
+		case 45: /*  Red-blue background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x50; break;
+		case 46: /*  Green-blue background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x30; break;
+		case 47: /*  White background.  */
+			arcbios_console_curcolor &= 0x0f;
+			arcbios_console_curcolor |= 0x70; break;
+		default:fatal("{ handle_esc_seq: color %i }\n", color);
+		}
+		return;
+	case 'H':
+		p = strchr(arcbios_escape_sequence, ';');
+		if (p == NULL)
+			return;		/*  TODO  */
+		row = atoi(arcbios_escape_sequence + 1);
+		col = atoi(p + 1);
+		arcbios_console_curx = col - 1;
+		arcbios_console_cury = row - 1;
+		return;
+	case 'K':
+		col = atoi(arcbios_escape_sequence + 1);
+		/*  2 = clear line to the right. 1 = to the left (?)  */
+		start = 0; stop = arcbios_console_curx;
+		if (col == 2) {
+			start = arcbios_console_curx;
+			stop = arcbios_console_maxx-1;
+		}
+		for (i=start; i<=stop; i++)
+			arcbios_putcell(cpu, ' ', i, arcbios_console_cury);
+
+		return;
+	}
+
+	fatal("{ handle_esc_seq(): unimplemented escape sequence: ");
+	for (i=0; i<len; i++) {
+		int x = arcbios_escape_sequence[i];
+		if (i == len-1)
+			x = code;
+
+		if (x >= ' ' && x < 127)
+			fatal("%c", x);
+		else
+			fatal("[0x%02x]", x);
+	}
+	fatal(" }\n");
+}
+
+
+/*
+ *  scroll_if_neccessary():
+ */
+static void scroll_if_neccessary(struct cpu *cpu)
+{
+	/*  Scroll?  */
+	if (arcbios_console_cury >= arcbios_console_maxy) {
+		unsigned char buf[2];
+		int x, y;
+		for (y=0; y<arcbios_console_maxy-1; y++)
+			for (x=0; x<arcbios_console_maxx; x++) {
+				memory_rw(cpu, cpu->mem, arcbios_console_vram +
+				    2*(x + arcbios_console_maxx * (y+1)),
+				    &buf[0], sizeof(buf), MEM_READ,
+				    CACHE_NONE | PHYSICAL);
+				memory_rw(cpu, cpu->mem, arcbios_console_vram +
+				    2*(x + arcbios_console_maxx * y),
+				    &buf[0], sizeof(buf), MEM_WRITE,
+				    CACHE_NONE | PHYSICAL);
+			}
+
+		arcbios_console_cury = arcbios_console_maxy - 1;
+
+		for (x=0; x<arcbios_console_maxx; x++)
+			arcbios_putcell(cpu, ' ', x, arcbios_console_cury);
+	}
+}
+
+
+/*
+ *  arcbios_putchar():
+ *
+ *  If we're using X11 with VGA-style console, then output to that console.
+ *  Otherwise, use console_putchar().
+ */
+static void arcbios_putchar(struct cpu *cpu, int ch)
+{
+	int addr;
+	unsigned char byte;
+
+	if (!cpu->emul->use_x11) {
+		/*  Text console output:  */
+
+		/*  SUPER-ugly hack for Windows NT, which uses
+		    0x9b instead of ESC + [  */
+		if (ch == 0x9b) {
+			console_putchar(27);
+			ch = '[';
+		}
+		console_putchar(ch);
+		return;
+	}
+
+	if (arcbios_in_escape_sequence) {
+		int len = strlen(arcbios_escape_sequence);
+		arcbios_escape_sequence[len] = ch;
+		len++;
+		if (len >= MAX_ESC)
+			len = MAX_ESC;
+		arcbios_escape_sequence[len] = '\0';
+		if ((ch >= 'a' && ch <= 'z') ||
+		    (ch >= 'A' && ch <= 'Z') || len >= MAX_ESC) {
+			handle_esc_seq(cpu);
+			arcbios_in_escape_sequence = 0;
+		}
+	} else {
+		if (ch == 27) {
+			arcbios_in_escape_sequence = 1;
+			arcbios_escape_sequence[0] = '\0';
+		} else if (ch == 0x9b) {
+			arcbios_in_escape_sequence = 1;
+			arcbios_escape_sequence[0] = '[';
+			arcbios_escape_sequence[1] = '\0';
+		} else if (ch == '\b') {
+			if (arcbios_console_curx > 0)
+				arcbios_console_curx --;
+		} else if (ch == '\r') {
+			arcbios_console_curx = 0;
+		} else if (ch == '\n') {
+			arcbios_console_cury ++;
+		} else if (ch == '\t') {
+			arcbios_console_curx =
+			    ((arcbios_console_curx - 1) | 7) + 1;
+			/*  TODO: Print spaces?  */
+		} else {
+			/*  Put char:  */
+			if (arcbios_console_curx >= arcbios_console_maxx) {
+				arcbios_console_curx = 0;
+				arcbios_console_cury ++;
+				scroll_if_neccessary(cpu);
+			}
+			arcbios_putcell(cpu, ch, arcbios_console_curx,
+			    arcbios_console_cury);
+			arcbios_console_curx ++;
+		}
+	}
+
+	scroll_if_neccessary(cpu);
+
+	/*  Update cursor position:  */
+	addr = (arcbios_console_curx >= arcbios_console_maxx?
+	    arcbios_console_maxx-1 : arcbios_console_curx) +
+	    arcbios_console_cury * arcbios_console_maxx;
+	byte = 0x0e;
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 4,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = (addr >> 8) & 255;
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 5,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = 0x0f;
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 4,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+	byte = addr & 255;
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 5,
+	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
+}
 
 
 /*
@@ -697,17 +997,27 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			int i, nread = 0;
-			/*  Before going into the loop, make sure stdout
-			    is flushed.  */
+			/*
+			 *  Before going into the loop, make sure stdout
+			 *  is flushed.  If we're using an X11 VGA console,
+			 *  then it needs to be flushed as well.
+			 */
 			fflush(stdout);
+			/*  NOTE/TODO: This gives a tick to _everything_  */
+			for (i=0; i<cpu->n_tick_entries; i++)
+				cpu->tick_func[i](cpu, cpu->tick_extra[i]);
+
 			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 				int x;
 				unsigned char ch;
 
 				/*  Read from STDIN is blocking (at least that seems to
 				    be how NetBSD's arcdiag wants it)  */
-				while ((x = console_readchar()) < 0)
-					;
+				while ((x = console_readchar()) < 0) {
+					if (cpu->emul->use_x11)
+						x11_check_event();
+					usleep(1);
+				}
 
 				ch = x;
 				nread ++;
@@ -762,23 +1072,16 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
 		if (cpu->gpr[GPR_A0] != ARCBIOS_STDOUT) {
-			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
+			fatal("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
 			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
 			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
-		}
+		} else {
+			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
+				unsigned char ch = '\0';
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 
-		for (i=0; i<cpu->gpr[GPR_A2]; i++) {
-			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
-
-			/*  SUPER-ugly hack for Windows NT, which uses
-			    0x9b instead of ESC + [  */
-			if (ch == 0x9b) {
-				console_putchar(27);
-				ch = '[';
+				arcbios_putchar(cpu, ch);
 			}
-
-			console_putchar(ch);
 		}
 		store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
 		cpu->gpr[GPR_V0] = 0;	/*  Success.  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.348 2004-12-02 22:09:34 debug Exp $
+$Id: HISTORY,v 1.349 2004-12-03 20:03:44 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1234,3 +1234,6 @@ HISTORY of mips64emul
 		Adding arbios hacks for Open(), Seek(), GetRelativeTime(),
 		and Read() to allow WinNT's SETUPLDR to read the filesystem
 		on the diskimage used for booting.
+20041203	Adding a terminal emulator layer which converts arcbios
+		stdout writes to "VGA text console" cell characters. Seems
+		to work with Windows NT and arcdiag.

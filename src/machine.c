@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.223 2004-12-02 20:59:15 debug Exp $
+ *  $Id: machine.c,v 1.224 2004-12-03 20:03:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -64,6 +64,9 @@
 #define	ARC_CONSOLE_MAX_X	80
 #define	ARC_CONSOLE_MAX_Y	30
 int arc_n_memdescriptors = 0;
+extern int arcbios_console_curcolor;
+extern int arcbios_console_curx;
+extern int arcbios_console_cury;
 
 /*  For DECstation emulation:  */
 #include "dec_5100.h"
@@ -2295,6 +2298,10 @@ Why is this here? TODO
 				    0x100000b8000ULL, 0x60000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
+				arcbios_console_init(cpu, 0x100000b8000ULL,
+				    0x60000003d0ULL, ARC_CONSOLE_MAX_X,
+				    ARC_CONSOLE_MAX_Y);
+
 				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
 
 				dev_asc_init(cpu, mem,
@@ -2366,6 +2373,10 @@ Why is this here? TODO
 				dev_vga_init(cpu, mem, 0x100000b8000ULL,
 				    0x900000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
+
+				arcbios_console_init(cpu, 0x100000b8000ULL,
+				    0x900000003d0ULL, ARC_CONSOLE_MAX_X,
+				    ARC_CONSOLE_MAX_Y);
 
 				dev_ns16550_init(cpu, mem, 0x900000003f8ULL,
 				    0, 1, emul->use_x11? 0 : 1);
@@ -2463,13 +2474,13 @@ Why is this here? TODO
 		store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
 
 		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
-		/*  TODO:  get 80 and 24 from the current terminal settings?  */
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorXPosition, 1);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorYPosition, 1);
+		/*  TODO:  get maxx and maxy from the current terminal settings?  */
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorXPosition, arcbios_console_curx + 1);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorYPosition, arcbios_console_cury + 1);
 		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, ARC_CONSOLE_MAX_X);
 		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, ARC_CONSOLE_MAX_Y);
-		arcbios_dsp_stat.ForegroundColor = 7;
-		arcbios_dsp_stat.HighIntensity = 15;
+		arcbios_dsp_stat.ForegroundColor = arcbios_console_curcolor;
+		arcbios_dsp_stat.HighIntensity = arcbios_console_curcolor ^ 0x08;
 		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*
@@ -2705,6 +2716,7 @@ Why is this here? TODO
 		if (emul->emulation_type == EMULTYPE_ARC &&
 		    emul->machine == MACHINE_ARC_JAZZ_PICA) {
 			uint32_t jazzbus;
+#if 1
 			jazzbus = arcbios_addchild_manual(cpu,
 			    3 /*  Adapter  */,
 			    12 /* MultiFunctionAdapter */,
@@ -2723,6 +2735,7 @@ Why is this here? TODO
 					COMPONENT_FLAG_Output,
 				    1, 2, 0, 0xffffffff, "ALI_S3",
 				    jazzbus);
+#endif
 		}
 
 

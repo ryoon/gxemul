@@ -245,3 +245,4 @@ HISTORY of mips64emul
 		Keypresses in X framebuffer windows are now
 		translated into console keypresses. (Normal keys, but
 		not cursor keys or other special keys.)
+20031111	Adding support for X11 using non-24-bit output.

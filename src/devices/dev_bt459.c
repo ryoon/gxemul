@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.31 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_bt459.c,v 1.32 2004-10-25 01:54:03 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -200,7 +200,7 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 /*
  *  schedule_redraw_of_whole_screen():
  */
-void schedule_redraw_of_whole_screen(struct bt459_data *d)
+static void schedule_redraw_of_whole_screen(struct bt459_data *d)
 {
 	d->vfb_data->update_x1 = 0;
 	d->vfb_data->update_x2 = d->vfb_data->xsize - 1;

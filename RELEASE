@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.47 2004-10-24 10:59:16 debug Exp $
+$Id: RELEASE,v 1.48 2004-10-25 01:54:03 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -9,11 +9,12 @@ The release "road map" at the moment looks something like this:
           new features.  (maybe the 0.2.2 release will be in november or
           december, 2004)
 
+  0.2.x:  ?
+
   0.3:  some kind of major feature update; one or more of the following
         would be nice:
 
 		o)  dynamic bintrans (if/when it is working)
-		o)  --long-command-line-options
 		o)  ability to install Linux (Debian) onto a disk image
 		o)  better support for non-DECstation modes
 
@@ -51,16 +52,18 @@ affiliated with MIPS Technologies in any way whatsoever.)
 
 In its current form, it is possible to use the emulator to install an
 operating systems onto a harddisk image; the "guest" operating system will run
-as if it was running on a real physical machine.
+similar to how it would run on a real physical machine, only a lot slower.
 
 The following guest operating systems have been verified to work:
 
-    NetBSD/pmax      DECstation 5000/200
-    OpenBSD/pmax     DECstation 5000/200
-    Ultrix/RISC      DECstation 5000/200
-    Sprite           DECstation 5000/200
-    NetBSD/arc       Acer PICA-61
-    OpenBSD/arc      Acer PICA-61
+    Operating system   Emulated machine
+    ----------------   ----------------
+    NetBSD/pmax        DECstation 5000/200
+    OpenBSD/pmax       DECstation 5000/200
+    Ultrix/RISC        DECstation 5000/200
+    Sprite             DECstation 5000/200
+    NetBSD/arc         Acer PICA-61
+    OpenBSD/arc        Acer PICA-61
 
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
@@ -68,9 +71,27 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
---------------------------------------------------
-TODO:  Feature additions 0.2.1 -> 0.2.2 goes here.
---------------------------------------------------
+Here is a short summary of the changes from version 0.2 to 0.2.2:
+
+  o)  0.2 -> 0.2.1:
+
+        x)  No major feature enhancements, but a couple of minor bug fixes.
+
+  o)  0.2.1 -> 0.2.2:
+
+        x)  Acer PICA-61 is now emulated well enough to let NetBSD/arc or
+            OpenBSD/arc be installed onto a harddisk image.
+
+        x)  Some parts of TCP/IP networking work when running Ultrix as
+            the guest OS. (Network support should still be considered
+            experimental, though, even for NetBSD, OpenBSD, and Linux.)
+
+        x)  Mach (the microkernel) seems to boot and run on an emulated
+            DECstation. (Unfortunately, I haven't found any "mach_servers"
+            binaries for pmax yet, and without those the microkernel cannot
+            do much.)
+
+        x)  Lots of minor bug fixes.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -79,16 +100,16 @@ free to drop me an email regarding other bugs.
 
 Files included in this release are:
 
-  RELEASE                     This file.
-  README                      Quick start instructions, for the impatient.
-  LICENSE                     Copyright message / license.
-  HISTORY                     Detailed revision history/changelog.
-  TODO                        TODO notes.
   BUGS                        A list of known bugs.
-  src, devices, and include   Source code.
+  HISTORY                     Detailed revision history/changelog.
+  LICENSE                     Copyright message / license.
+  README                      Quick start instructions, for the impatient.
+  RELEASE                     This file.
+  TODO                        TODO notes.
   doc                         Documentation.
-  tests                       Regression tests.
   experiments                 Experimental code (not usually needed).
+  src, devices, and include   Source code.
+  tests                       Regression tests.
 
 
 To build the emulator, run the ./configure script, and then run make.
@@ -166,6 +187,7 @@ mips64emul or reuse code.
 And thanks to everyone who has provided me with feedback, ideas, patches,
 or encouraged me to work on specific issues.
 
-Don't hesitate to send feedback to me. My email address is at the top of
-this file.
+Don't hesitate to send feedback to me (Anders Gavare, md1gavan at
+mdstud.chalmers.se) if you have found mips64emul useful or if you have 
+found a bug.
 

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.121 2005-02-19 13:00:36 debug Exp $
+$Id: TODO,v 1.122 2005-02-22 13:23:43 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -41,10 +41,8 @@ a mess. Order is random. Don't trust it to be up-to-date.
 			+)  Irix, AIX, QNX
 			+)  MacOS X  (I've not tried this personally yet)
 			+)  Ultrix using gcc? (Inside the emulator)
-		o)  Make it possible to disable various CPU families? (for
-		    example PPC64)
 
-	MIPS CPU emulation:
+	CPU emulation:
 		o)  Binary translation:
 			+)  use an Intermediate Representation!
 			+)  recursive translation?
@@ -52,6 +50,11 @@ a mess. Order is random. Don't trust it to be up-to-date.
 			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backends for UltraSparc and MIPS
 			+)  see src/bintrans.c for more info
+
+	PPC CPU emulation:
+		o)  TOC (r2, set up from loaded files nicely?)
+
+	MIPS CPU emulation:
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info):
 				o)  Floating point exception handling, and

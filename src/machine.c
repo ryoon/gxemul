@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.353 2005-02-22 07:15:58 debug Exp $
+ *  $Id: machine.c,v 1.354 2005-02-22 13:23:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -54,6 +54,7 @@
 #include "bus_pci.h"
 #include "cpu.h"
 #include "cpu_mips.h"
+#include "device.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "emul.h"
@@ -3965,6 +3966,8 @@ for (i=0; i<32; i++)
 		 *  NetBSD/bebox (http://www.netbsd.org/Ports/bebox/)
 		 */
 		machine->machine_name = "BeBox";
+
+		device_add(machine, "bebox");
 
 		break;
 

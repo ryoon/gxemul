@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: makeautodev.sh,v 1.1 2005-02-22 12:56:21 debug Exp $
+#  $Id: makeautodev.sh,v 1.2 2005-02-22 13:23:43 debug Exp $
 
 printf "Generating autodev.c... "
 
@@ -36,6 +36,15 @@ rm -f autodev.c
 printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> autodev.c
 
 cat autodev_head.c >> autodev.c
+
+for a in `echo dev_*.o`; do
+	B=`echo $a|cut -c5-|sed s/\\\\.o//g`
+	if grep devinit_$B dev_$B.c > /dev/null; then
+		printf "int devinit_$B(struct devinit *);\n" >> autodev.c
+	fi
+done
+
+cat autodev_middle.c >> autodev.c
 
 for a in `echo dev_*.o`; do
 	B=`echo $a|cut -c5-|sed s/\\\\.o//g`

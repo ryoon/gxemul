@@ -1,6 +1,3 @@
-#ifndef	DEVICE_H
-#define	DEVICE_H
-
 /*
  *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
@@ -26,37 +23,80 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
+ *   
  *
+ *  $Id: dev_bebox.c,v 1.1 2005-02-22 13:23:43 debug Exp $
  *
- *  $Id: device.h,v 1.3 2005-02-22 13:23:44 debug Exp $
+ *  Emulation of BeBox motherboard registers. See the following URL for more
+ *  information:
  *
- *  Device registry.  (See device.c for more info.)
+ *	http://www.bebox.nu/history.php?s=history/benews/benews27
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cpu.h"
+#include "device.h"
+#include "machine.h"
+#include "memory.h"
 #include "misc.h"
 
-struct machine;
 
-struct devinit {
-	struct machine	*machine;
-	char		*name;
+struct bebox_data {
+	int		dummy;
 };
 
-struct device_entry {
-	char		*name;
-	int		(*initf)(struct devinit *);
-};
 
-/*  autodev.c: (built automatically in the devices/ directory):  */
-void autodev_init(void);
+/*
+ *  dev_bebox_access():
+ */
+int dev_bebox_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
+	void *extra)
+{
+	struct bebox_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+	int port_nr;
 
-/*  device.c:  */
-int device_register(char *name, int (*initf)(struct devinit *));
-struct device_entry *device_lookup(char *name);
-int device_unregister(char *name);
-void device_add(struct machine *machine, char *name);
-void device_dumplist(void);
-void device_init(void);
+	idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr) {
+	default:
+		if (writeflag==MEM_READ) {
+			debug("[ bebox: read from 0x%08lx ]\n",
+			    (long)relative_addr);
+		} else {
+			debug("[ bebox: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
 
 
-#endif	/*  CONSOLE_H  */
+/*
+ *  devinit_bebox():
+ */
+int devinit_bebox(struct devinit *devinit)
+{
+	struct bebox_data *d;
+
+	d = malloc(sizeof(struct bebox_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct bebox_data));
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    0x7ffff000, 0x500, dev_bebox_access, d, MEM_DEFAULT, NULL);
+
+	return 1;
+}
+

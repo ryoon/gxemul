@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.3 2005-02-22 06:26:11 debug Exp $
+ *  $Id: device.c,v 1.4 2005-02-22 13:23:45 debug Exp $
  *
  *  Device registry framework.
  */
@@ -82,7 +82,7 @@ static void sort_entries(void)
  *
  *  Return value is 1 if the device was registered, 0 otherwise.
  */
-int device_register(char *name)
+int device_register(char *name, int (*initf)(struct devinit *))
 {
 	device_entries = realloc(device_entries, sizeof(struct device_entry)
 	    * (n_device_entries + 1));
@@ -91,8 +91,11 @@ int device_register(char *name)
 		exit(1);
 	}
 
-	/*  TODO  */
+	memset(&device_entries[n_device_entries], 0,
+	    sizeof(struct device_entry));
+
 	device_entries[n_device_entries].name = strdup(name);
+	device_entries[n_device_entries].initf = initf;
 
 	device_entries_sorted = 0;
 	n_device_entries ++;
@@ -175,6 +178,10 @@ int device_unregister(char *name)
 
 	i = (size_t)p - (size_t)device_entries;
 	i /= sizeof(struct device_entry);
+
+	free(device_entries[i].name);
+	device_entries[i].name = NULL;
+
 	if (i == n_device_entries-1) {
 		/*  Do nothing if we're removing the last array element.  */
 	} else {
@@ -190,6 +197,31 @@ int device_unregister(char *name)
 
 	/*  TODO: realloc?  */
 	return 1;
+}
+
+
+/*
+ *  device_add():
+ *
+ *  Add a device to a machine.
+ */
+void device_add(struct machine *machine, char *name)
+{
+	struct device_entry *p = device_lookup(name);
+	struct devinit devinit;
+
+	if (p == NULL) {
+		fatal("no such device (\"%s\")\n", name);
+		exit(1);
+	}
+
+	devinit.machine = machine;
+	devinit.name = name;
+
+	if (!p->initf(&devinit)) {
+		fatal("error adding device \"%s\"\n", name);
+		exit(1);
+	}
 }
 
 

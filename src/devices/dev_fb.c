@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.7 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_fb.c,v 1.8 2003-11-09 03:59:16 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -157,10 +157,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				}
 			}
 
-			/*  Combine the color into an RGB long:  */
+#ifdef WITH_X11
+			/*  Combine the color into an X11 long and display it:  */
 			/*  TODO:  construct color in a more portable way:  */
 			color = (r << 16) + (g << 8) + b;
-#ifdef WITH_X11
+
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
 				XPutPixel(d->fb_window->fb_ximage, x, y, color);
 #endif
@@ -338,13 +339,11 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	 *  If the framebuffer is modified, then we should keep a track
 	 *  of which area(s) we modify, so that the display isn't updated
 	 *  unneccessarily.
-	 *
-	 *  TODO: this doesn't really work with 24-bit stuff
 	 */
 	if (writeflag == MEM_WRITE && use_x11) {
 		int x, y;
 
-		x = (relative_addr % d->bytes_per_line) * d->eight_div_bit_depth;
+		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
 		y = relative_addr / d->bytes_per_line;
 
 		/*  Is this far away from the previous updates? Then update:  */
@@ -359,7 +358,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		}
 
 		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		x += len * d->eight_div_bit_depth;	/*  note: x2 is _after_ the last pixel  */
+		x += len * 8 / d->bit_depth;	/*  note: x2 is _after_ the last pixel  */
 
 		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
 		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
@@ -445,8 +444,6 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 		set_grayscale_palette(d, 1 << d->bit_depth);
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
-
-	d->eight_div_bit_depth = 8 / d->bit_depth;
 
 	d->vfb_scaledown = x11_scaledown;
 

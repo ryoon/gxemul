@@ -1,4 +1,4 @@
-$Id: TODO,v 1.122 2005-02-22 13:23:43 debug Exp $
+$Id: TODO,v 1.123 2005-03-05 10:35:36 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -50,9 +50,6 @@ a mess. Order is random. Don't trust it to be up-to-date.
 			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backends for UltraSparc and MIPS
 			+)  see src/bintrans.c for more info
-
-	PPC CPU emulation:
-		o)  TOC (r2, set up from loaded files nicely?)
 
 	MIPS CPU emulation:
 		o)  Instructions:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.173 2005-03-01 09:54:01 debug Exp $
+ *  $Id: emul.c,v 1.174 2005-03-05 10:35:39 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -432,7 +432,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 	struct emul *emul;
 	struct cpu *cpu;
 	int i, iadd=4;
-	uint64_t addr, memory_amount, entrypoint = 0, gp = 0;
+	uint64_t addr, memory_amount, entrypoint = 0, gp = 0, toc = 0;
 	int byte_order;
 
 	emul = m->emul;
@@ -584,7 +584,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		byte_order = NO_BYTE_ORDER_OVERRIDE;
 
 		file_load(m, m->memory, *load_names, &entrypoint,
-		    m->arch, &gp, &byte_order);
+		    m->arch, &gp, &byte_order, &toc);
 
 		if (byte_order != NO_BYTE_ORDER_OVERRIDE)
 			cpu->byte_order = byte_order;
@@ -605,7 +605,7 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				    0xffffffff00000000ULL;
 			break;
 		case ARCH_PPC:
-			/*  TODO: TOC in r2?  */
+			cpu->cd.ppc.gpr[2] = toc;
 			break;
 		case ARCH_SPARC:
 			break;

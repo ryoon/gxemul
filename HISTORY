@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.622 2005-03-05 08:43:38 debug Exp $
+$Id: HISTORY,v 1.623 2005-03-05 10:35:35 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1718,3 +1718,4 @@ HISTORY of mips64emul
 20050305	Moving the static i386 bintrans runchunk code snippet (and the
 		others) to be dynamically generated. (This allows the code to
 		compile on i386 with old gcc.)
+		Loading PPC64 ELFs now sets R2 to the TOC base.

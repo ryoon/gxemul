@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.376 2005-03-04 20:12:36 debug Exp $
+ *  $Id: machine.c,v 1.377 2005-03-05 10:35:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4377,7 +4377,14 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("PPC603e");
 		break;
 	case MACHINE_MACPPC:
-		m->cpu_name = strdup("G4e");
+		switch (m->machine_subtype) {
+		case MACHINE_MACPPC_G4:
+			m->cpu_name = strdup("G4e");
+			break;
+		case MACHINE_MACPPC_G5:
+			m->cpu_name = strdup("PPC970");
+			break;
+		}
 		break;
 	case MACHINE_DB64360:
 		m->cpu_name = strdup("PPC750");
@@ -4762,8 +4769,14 @@ void machine_init(void)
 
 	/*  Macintosh (PPC):  */
 	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
-	    MACHINE_MACPPC, 1, 0);
+	    MACHINE_MACPPC, 1, 2);
 	me->aliases[0] = "macppc";
+	me->subtype[0] = machine_entry_subtype_new("MacPPC G4",
+	    MACHINE_MACPPC_G4, 1);
+	me->subtype[0]->aliases[0] = "g4";
+	me->subtype[1] = machine_entry_subtype_new("MacPPC G5",
+	    MACHINE_MACPPC_G5, 1);
+	me->subtype[1]->aliases[0] = "g5";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

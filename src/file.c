@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.76 2005-02-13 11:40:59 debug Exp $
+ *  $Id: file.c,v 1.77 2005-03-05 10:35:39 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -910,7 +910,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
  */
 static void file_load_elf(struct machine *m, struct memory *mem,
 	char *filename, uint64_t *entrypointp, int arch, uint64_t *gpp,
-	int *byte_order)
+	int *byte_order, uint64_t *tocp)
 {
 	Elf32_Ehdr hdr32;
 	Elf64_Ehdr hdr64;
@@ -1442,6 +1442,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 		debug("entrypoint 0x%016llx, toc_base 0x%016llx\n",
 		    (long long)*entrypointp, (long long)toc_base);
+		if (tocp != NULL)
+			*tocp = toc_base;
 	}
 
 	n_executables_loaded ++;
@@ -1471,7 +1473,7 @@ int file_n_executables_loaded(void)
  */
 void file_load(struct machine *machine, struct memory *mem,
 	char *filename, uint64_t *entrypointp,
-	int arch, uint64_t *gpp, int *byte_orderp)
+	int arch, uint64_t *gpp, int *byte_orderp, uint64_t *tocp)
 {
 	int iadd = 4;
 	FILE *f;
@@ -1532,7 +1534,7 @@ void file_load(struct machine *machine, struct memory *mem,
 	/*  Is it an ELF?  */
 	if (buf[0] == 0x7f && buf[1]=='E' && buf[2]=='L' && buf[3]=='F') {
 		file_load_elf(machine, mem, filename,
-		    entrypointp, arch, gpp, byte_orderp);
+		    entrypointp, arch, gpp, byte_orderp, tocp);
 		goto ret;
 	}
 

@@ -1,13 +1,24 @@
 mips64emul
 ==========
 
+
+Overview
+--------
+
 mips64emul is a MIPS machine emulator.  The goal is to emulate MIPS CPUs and
 enough surrounding hardware well enough to run unmodified operating systems
-as if they were running on real machines.  This is a spare time project,
-and the emulator isn't fully functional yet.
+as if they were running on real machines.  This is a spare time hobby project,
+and many things are not implemented yet.
 
-To compile, type './configure' and then 'make'.  (If this doesn't work, then
-please mail me a bug report.)
+To compile, type './configure' and then 'make'.  (This should work on most
+Unix-like systems, if not then please mail me a bug report.)
+
+Please read the the documentation in the doc/ sub-directory for more detailed
+information.
+
+
+Quick start
+-----------
 
 Real operating system kernels can be downloaded from various places. Here are
 links to some kernels that can be experimented with:
@@ -80,8 +91,13 @@ NOTE:  Add a  -q  to the command line options to supress debug messages.
        supports that.  (You can add  -Y2  to scale down the framebuffer
        window a bit.)
 
-MIPS is a registered trademark of MIPS Technologies. This project is not
-affiliated with MIPS Technologies in any way whatsoever.
+
+Feedback
+--------
 
 Send feedback to:  md1gavan at mdstud.chalmers.se.
+
+
+(MIPS is a registered trademark of MIPS Technologies. This project is not
+affiliated with MIPS Technologies in any way whatsoever.)
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.15 2005-01-09 01:55:31 debug Exp $
+ *  $Id: memory_v2p.c,v 1.16 2005-01-09 03:05:27 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -219,7 +219,9 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	if (vaddr <= 0x7fffffff)
 		use_tlb = 1;
 	else {
-#if 0
+#if 1
+/*  TODO: This should be removed, but it seems that other
+bugs are triggered.  */
 		/*  Sign-extend vaddr, if necessary:  */
 		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000ULL)
 			vaddr |= 0xffffffff00000000ULL;

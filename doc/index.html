@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.191 2005-01-09 01:55:26 debug Exp $
+$Id: index.html,v 1.192 2005-01-09 03:05:26 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -410,8 +410,8 @@ interacted with similar to a real machine:
 		<td width=140 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
 	      </tr>
 	      <tr>
-		<td align=center>NetBSD&nbsp;1.6.2/pmax</td>
-		<td align=center>OpenBSD&nbsp;2.8/pmax</td>
+		<td align=center>NetBSD/pmax&nbsp;1.6.2</td>
+		<td align=center>OpenBSD/pmax&nbsp;2.8</td>
 		<td align=center>Ultrix&nbsp;4.5</td>
 		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
 	      </tr>
@@ -425,8 +425,8 @@ interacted with similar to a real machine:
 		<td width=140 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
 	      </tr>
 	      <tr>
-		<td align=center>NetBSD&nbsp;1.6.2/arc</td>
-		<td align=center>OpenBSD&nbsp;2.3/arc</td>
+		<td align=center>NetBSD/arc&nbsp;1.6.2</td>
+		<td align=center>OpenBSD/arc&nbsp;2.3</td>
 		<td align=center>Sprite</td>
 		<td align=center>Debian&nbsp;GNU/Linux<super>*</super></td>
 	      </tr>
@@ -598,12 +598,11 @@ follow these instructions:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=800000</b>
+	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
 
 </pre>
   <li>Download a NetBSD/arc CDROM image from ftp:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
-	76873728 bytes, md5 = efce79ecd6d0421551ab1eae7e6a34ee
 
 </pre>
   <li>Download a NetBSD/arc installation (ramdisk) kernel,
@@ -612,7 +611,7 @@ follow these instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>./mips64emul -A2 -d nbsd_arc.img -d arccd.iso netbsd.RAMDISK</b>
+	$ <b>./mips64emul -A2 -b -d nbsd_arc.img -d arccd.iso netbsd.RAMDISK</b>
 
 </pre>
   <li>From now on, you have to use your imagination, as there is no
@@ -620,7 +619,7 @@ follow these instructions:
 	and hints on how you can proceed with the install:<pre>
 	$ <b>mount /dev/cd0a /mnt2</b>
 	$ <b>disklabel -i -I sd0</b>    (for example 'a', '4.2BSD', '1c',
-	    '600M', 'b', 'swap', '601M', '$', 'P', 'W', 'y', and 'Q')
+	    '700M', 'b', 'swap', '701M', '$', 'P', 'W', 'y', and 'Q')
 	$ <b>newfs /dev/sd0a</b>
 	$ <b>mount /dev/sd0a /mnt</b>
 	$ <b>cd /mnt</b>
@@ -647,7 +646,7 @@ You can now use the generic NetBSD/arc kernel to boot from the harddisk
 image, using the following command:
 <p>
 <pre>
-	$ <b>./mips64emul -A2 -d nbsd_arc.img netbsd-GENERIC</b>
+	$ <b>./mips64emul -A2 -b -d nbsd_arc.img netbsd-GENERIC</b>
 
 </pre>
 

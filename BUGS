@@ -46,3 +46,6 @@ Less serious bugs / issues:
       all zeroes or all ones, and then uses 32-bit tables and such. This
       is a bug. It should check the top 33 bits, not 32.
 
+  o)  NetBSD/arc 2.0 uses the ASC controller in a way which mips64emul
+      cannot yet handle. (NetBSD 1.6.2 works ok.)
+

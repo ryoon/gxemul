@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.12 2004-04-24 22:39:12 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.13 2004-05-06 03:52:20 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -210,11 +210,15 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		/*  I though that meant 24-bit, but Ultrix output pixels as if it were an 8-bit device.  */
 		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-JA");
+		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
+		fb = dev_fb_init(cpu, mem, baseaddr + 0x400000, VFB_GENERIC, 1280,1024, 1280,1024, 24, "PMAG-JA");
+		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */
 		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO");
+		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {
 		/*  If this slot is empty, then occupy the entire 4MB slot address range:  */

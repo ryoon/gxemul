@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.38 2004-07-25 01:38:55 debug Exp $
+#  $Id: configure,v 1.39 2004-07-25 22:42:02 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -17,6 +17,8 @@
 #
 #
 #  TODO:  The command line parsing is a mess.
+#
+#  TODO:  uname -m returns "sun4u" on Solaris, but "sparc64" on BSD?
 #
 #  The main things that need to be detected are:
 #
@@ -266,19 +268,11 @@ rm -f _tests.c _tests
 #
 #  Dynamic binary translation (BINTRANS):
 #
-#  Should only be defined for compilers and architectures that really support
-#  bintrans.  As of now, only gcc on Alpha does this.
+#############################################################################
 
 if [ z"`uname -m`" = zalpha ]; then
 	printf "#define ALPHA\n" >> config.h
-
-#	rm -f _alpha_asm_test.c _alpha_asm_test
-#	printf "int main(int argc, char *argv[]) { asm(\"imb\"); return 0; }\n" > _alpha_asm_test.c
-#	$CC _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
-#	if [ -x _alpha_asm_test ]; then
-		printf "#define BINTRANS\n" >> config.h
-#	fi
-#	rm -f _alpha_asm_test.c _alpha_asm_test
+	printf "#define BINTRANS\n" >> config.h
 
 	#  Try to detect prefetch-ability while we're at it:
 	rm -f _alpha_asm_test.c _alpha_asm_test
@@ -293,9 +287,13 @@ fi
 
 if [ z"`uname -m`" = zi386 ]; then
 	printf "#define I386\n" >> config.h
+	printf "#define BINTRANS\n" >> config.h
+fi
 
-	#  Uncomment this when bintrans is available for i386:
-	#printf "#define BINTRANS\n" >> config.h
+#  TODO: "sun4u" on Solaris, but "sparc64" on BSD?
+if [ z"`uname -m`" = zsun4u ]; then
+	printf "#define SPARCV9\n" >> config.h
+	printf "#define BINTRANS\n" >> config.h
 fi
 
 

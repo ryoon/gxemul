@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.24 2004-07-23 14:15:54 debug Exp $
+ *  $Id: net.c,v 1.25 2004-07-25 22:42:03 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -433,7 +433,6 @@ void net_ip_tcp_connectionreply(void *extra, int con_id, int connecting,
 	if (connecting)
 		lp->data[47] |= 0x02;	/*  SYN  */
 	if (tcp_connections[con_id].state == TCP_OUTSIDE_CONNECTED)
-/*	if (data != NULL) */
 		lp->data[47] |= 0x08;	/*  PSH  */
 	if (rst)
 		lp->data[47] |= 0x04;	/*  RST  */
@@ -767,11 +766,12 @@ debug("  all acked\n");
 	tcp_connections[con_id].inside_seqnr = seqnr;
 
 	/*  TODO: This is hardcoded for a specific NetBSD packet:  */
-	tcp_connections[con_id].inside_timestamp =
-	    (packet[34 + 32 + 0] << 24) +
-	    (packet[34 + 32 + 1] << 16) +
-	    (packet[34 + 32 + 2] <<  8) +
-	    (packet[34 + 32 + 3] <<  0);
+	if (packet[34 + 30] == 0x08 && packet[34 + 31] == 0x0a)
+		tcp_connections[con_id].inside_timestamp =
+		    (packet[34 + 32 + 0] << 24) +
+		    (packet[34 + 32 + 1] << 16) +
+		    (packet[34 + 32 + 2] <<  8) +
+		    (packet[34 + 32 + 3] <<  0);
 
 
 	net_timestamp ++;

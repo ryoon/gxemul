@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.18 2004-07-16 18:19:45 debug Exp $
+ *  $Id: bintrans.c,v 1.19 2004-07-25 22:42:03 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -131,20 +131,26 @@ void bintrans_init(void)
 #else
 
 
+/*  Function declaration, should be the same as in bintrans_*.c:  */
+
+void bintrans_host_cacheinvalidate(void);
+
+
 /*  Include host architecture specific bintrans code:  */
 
 #ifdef ALPHA
 #include "bintrans_alpha.c"
 #else
-
 #ifdef I386
 #include "bintrans_i386.c"
 #else
+#ifdef SPARCV9
+#include "bintrans_sparcv9.c"
+#else
 #error Unsupported host architecture for bintrans.
-#endif
-
-#endif
-
+#endif	/*  SPARCV9  */
+#endif	/*  I386  */
+#endif	/*  ALPHA  */
 
 
 /*
@@ -161,4 +167,3 @@ void bintrans_init(void)
 
 
 #endif	/*  BINTRANS  */
-

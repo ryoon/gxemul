@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.24 2004-07-23 20:30:11 debug Exp $
+$Id: RELEASE,v 1.25 2004-07-25 22:42:02 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -164,7 +164,7 @@ release, but will most probably work anyway.
 		gcc version 2.95.3 20010315 (release)
 
 	Tru64/alpha v5.1 (OSF/1)
-		cc: Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
+		Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
 
 
 Platforms/compilers that have been tried and did NOT work when they were 

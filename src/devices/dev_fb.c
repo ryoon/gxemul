@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.5 2003-11-07 03:32:12 debug Exp $
+ *  $Id: dev_fb.c,v 1.6 2003-11-07 05:19:49 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -393,10 +393,8 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name)
 {
 	struct vfb_data *d;
-	struct fb_window *fb_window;
 	size_t size;
 	char title[400];
-	int bytes_per_pixel = 3;
 
 	d = malloc(sizeof(struct vfb_data));
 	if (d == NULL) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.141 2005-01-09 01:55:30 debug Exp $
+ *  $Id: coproc.c,v 1.142 2005-01-10 23:22:23 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -426,6 +426,10 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 				tbl1->next_free = NULL;
 			}
 			cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
+			if (tbl1->refcount != 0) {
+				printf("INTERNAL ERROR in coproc.c\n");
+				exit(1);
+			}
 		}
 		p = tbl1->haddr_entry[b];
 		p_paddr = tbl1->paddr_entry[b];

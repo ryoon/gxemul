@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.271 2005-01-09 04:17:19 debug Exp $
+ *  $Id: machine.c,v 1.272 2005-01-10 23:22:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -85,8 +85,6 @@ extern int arcbios_console_cury;
 #include "hpc_bootinfo.h"
 
 uint64_t file_loaded_end_addr = 0;
-
-extern struct memory *GLOBAL_gif_mem;
 
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
@@ -1867,7 +1865,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 */
 
 		dev_ps2_gs_init(cpu, mem, 0x12000000);
-		ps2_data = dev_ps2_stuff_init(cpu, mem, 0x10000000, GLOBAL_gif_mem);
+		ps2_data = dev_ps2_stuff_init(cpu, mem, 0x10000000);
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 

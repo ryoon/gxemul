@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.19 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.20 2005-01-10 23:22:21 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -46,7 +46,7 @@
 #include "devices.h"
 
 
-#define	PS2_FB_ADDR	0x60000000000ULL  /*  hopefully nothing else here  */
+#define	PS2_FB_ADDR	0x60000000ULL 		/*  hopefully nothing else here  */
 
 
 struct gif_data {
@@ -386,13 +386,13 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 
-#if 0
+#if 1
 	test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
 	test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
 	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
 #endif
 
-	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH,
+	memory_device_register(mem, "ps2_gif", baseaddr, DEV_PS2_GIF_LENGTH,
 	    dev_ps2_gif_access, d, MEM_DEFAULT, NULL);
 }
 

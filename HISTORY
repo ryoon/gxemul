@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.465 2005-01-10 22:30:39 debug Exp $
+$Id: HISTORY,v 1.466 2005-01-10 23:22:20 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1443,4 +1443,8 @@ HISTORY of mips64emul
 20050110	Changing the default bintrans cache to 16 MB, and some other
 		minor updates.
 		Adding div and divu to the i386 backend (but not Alpha yet).
-		More work on ARC emulation.
+		More work on ARCBIOS emulation.
+		Trying to find a bug which affects Linux on Playstation 2 in
+		bintrans mode.
+20050111	Moving around some Playstation 2 stuff, but I haven't found
+		the bug yet. It is triggered by load/stores.

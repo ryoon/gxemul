@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.8 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.9 2005-01-10 23:22:21 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -154,8 +154,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 			/*  debug("[ ps2_stuff: dmac write to D2_CHCR, data 0x%016llx ]\n", (long long) idata);  */
 			if (idata & D_CHCR_STR) {
 				int length = d->dmac_reg[D2_QWC_REG/0x10] * 16;
-				uint64_t from_addr = 0xa0000000 + d->dmac_reg[D2_MADR_REG/0x10];
-				uint64_t to_addr   = 0xa0000000 + d->dmac_reg[D2_TADR_REG/0x10];
+				uint64_t from_addr = d->dmac_reg[D2_MADR_REG/0x10];
+				uint64_t to_addr   = d->dmac_reg[D2_TADR_REG/0x10];
 				unsigned char *copy_buf;
 
 				debug("[ ps2_stuff: dmac [ch2] transfer addr=0x%016llx len=0x%lx ]\n",
@@ -166,8 +166,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 					fprintf(stderr, "out of memory in dev_ps2_stuff_access()\n");
 					exit(1);
 				}
-				memory_rw(cpu, cpu->mem, from_addr, copy_buf, length, MEM_READ, CACHE_NONE);
-				memory_rw(cpu, d->other_memory[2], to_addr, copy_buf, length, MEM_WRITE, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, from_addr, copy_buf, length, MEM_READ, CACHE_NONE | PHYSICAL);
+				memory_rw(cpu, cpu->mem, d->other_memory_base[DMA_CH_GIF] + to_addr, copy_buf, length, MEM_WRITE, CACHE_NONE | PHYSICAL);
 				free(copy_buf);
 
 				/*  Done with the transfer:  */
@@ -249,11 +249,9 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_ps2_stuff_init():
- *
- *	mem_gif			pointer to the GIF's memory
  */
 struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, struct memory *mem_gif)
+	uint64_t baseaddr)
 {
 	struct ps2_data *d;
 
@@ -264,7 +262,7 @@ struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct ps2_data));
 
-	d->other_memory[DMA_CH_GIF] = mem_gif;
+	d->other_memory_base[DMA_CH_GIF] = DEV_PS2_GIF_FAKE_BASE;
 
 	memory_device_register(mem, "ps2_stuff", baseaddr,
 	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d, MEM_DEFAULT, NULL);

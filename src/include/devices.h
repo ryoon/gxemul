@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.130 2005-01-09 04:04:42 debug Exp $
+ *  $Id: devices.h,v 1.131 2005-01-10 23:22:22 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -344,7 +344,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
 
 /*  dev_ps2_gs.c:  */
-#define	DEV_PS2_GIF_LENGTH		0x0000000000010000
+#define	DEV_PS2_GIF_LENGTH		0x10000
+#define	DEV_PS2_GIF_FAKE_BASE		0x50000000
 int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
@@ -375,14 +376,14 @@ struct ps2_data {
 
         uint64_t	dmac_reg[DMAC_REGSIZE / 0x10];
 
-	struct memory	*other_memory[N_PS2_DMA_CHANNELS];
+	uint64_t	other_memory_base[N_PS2_DMA_CHANNELS];
 
 	uint32_t	intr;
 	uint32_t	imask;
 };
 #define	DEV_PS2_STUFF_LENGTH		0x10000
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct memory *mem_gif);
+struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_pmagja.c:  */
 #define	DEV_PMAGJA_LENGTH		0x3c0000

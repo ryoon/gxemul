@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.252 2005-01-21 20:21:03 debug Exp $
+ *  $Id: cpu.c,v 1.253 2005-01-22 07:43:09 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -722,11 +722,16 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		/*  LWC3 is PREF in the newer ISA levels:  */
 		/*  TODO: Which ISAs? cpu->cpu_type.isa_level >= 4?  */
 		if (hi6 == HI6_LWC3) {
-			debug("pref\t0x%x,%i(%s)\t\t[0x%016llx = %s]",
-			    rt, imm, regname(cpu->machine, rs),
-			    (long long)(cpu->gpr[rs] + imm),
-			    symbol);
-			/*  TODO: only use gpr[rs] when running  */
+			debug("pref\t0x%x,%i(%s)",
+			    rt, imm, regname(cpu->machine, rs));
+
+			if (running) {
+				debug("\t\t[0x%016llx = %s]",
+				    (long long)(cpu->gpr[rs] + imm));
+				if (symbol != NULL)
+					debug(" = %s", symbol);
+				debug("]");
+			}
 			goto disasm_ret;
 		}
 
@@ -812,8 +817,9 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (cache_op==5)	debug("fill OR hit writeback invalidate");
 		if (cache_op==6)	debug("hit writeback");
 		if (cache_op==7)	debug("hit set virtual");
-		debug(", %s=0x%016llx", regname(cpu->machine, rt),
-		    (long long)cpu->gpr[rt]);
+		if (running)
+			debug(", addr 0x%016llx",
+			    (long long)(cpu->gpr[rt] + imm));
 		if (showtag)
 		debug(", taghi=%08lx lo=%08lx",
 		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],

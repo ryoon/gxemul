@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.163 2005-01-21 19:50:19 debug Exp $
+ *  $Id: main.c,v 1.164 2005-01-22 07:43:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -185,6 +185,7 @@ static void usage(char *progname, int longusage)
 		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
 			printf("\n");
 	}
+	printf("                (Most of these are bogus, and not really implemented.)\n");
 
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.48 2005-01-22 07:19:02 debug Exp $
+ *  $Id: net.c,v 1.49 2005-01-22 07:43:09 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1628,6 +1628,7 @@ static void get_host_nameserver(struct net *net)
 	memset(buf, 0, sizeof(buf));
 	len = fread(buf, 1, sizeof(buf) - 100, f);
 	fclose(f);
+	buf[sizeof(buf) - 1] = '\0';
 
 	for (i=0; i<len; i++)
 		if (strncmp(buf+i, "nameserver", 10) == 0) {

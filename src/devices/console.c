@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.22 2005-01-19 14:24:20 debug Exp $
+ *  $Id: console.c,v 1.23 2005-01-22 07:43:07 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -76,6 +76,8 @@ static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
  */
 void console_init(struct emul *emul)
 {
+	int i, tra;
+
 	if (console_initialized)
 		return;
 
@@ -89,18 +91,21 @@ void console_init(struct emul *emul)
 
 	console_curtermios.c_lflag &= ~ECHO;
 
-#if 0
 	/*
-	 *  Most guest OSes seem to work ok without this, but Linux/DECstation
-	 *  requires it to be usable.  Unfortunately, clearing out ICRNL
-	 *  makes tracing with '-t ... |more' akward, as you might need to
-	 *  use CTRL-J instead of the enter key.  Hence, this bit is only
-	 *  cleared if we're not tracing:
+	 *  Most guest OSes seem to work ok without ~ICRNL, but Linux on
+	 *  DECstation requires it to be usable.  Unfortunately, clearing
+	 *  out ICRNL makes tracing with '-t ... |more' akward, as you
+	 *  might need to use CTRL-J instead of the enter key.  Hence,
+	 *  this bit is only cleared if we're not tracing:
 	 */
-	if (!emul->show_trace_tree && !emul->instruction_trace &&
-	    !emul->register_dump)
+	tra = 0;
+	for (i=0; i<emul->n_machines; i++)
+		if (emul->machines[i]->show_trace_tree ||
+		    emul->machines[i]->instruction_trace ||
+		    emul->machines[i]->register_dump)
+			tra = 1;
+	if (!tra)
 		console_curtermios.c_iflag &= ~ICRNL;
-#endif
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 

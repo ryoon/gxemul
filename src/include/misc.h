@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.205 2005-01-21 19:50:18 debug Exp $
+ *  $Id: misc.h,v 1.206 2005-01-22 07:43:08 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -202,7 +202,7 @@ struct coproc {
 
 /*  These should all be 2 characters wide:  */
 #define MIPS_REGISTER_NAMES	{ \
-	"z0", "at", "v0", "v1", "a0", "a1", "a2", "a3", \
+	"zr", "at", "v0", "v1", "a0", "a1", "a2", "a3", \
 	"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", \
 	"s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", \
 	"t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"  }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.64 2004-09-05 03:03:44 debug Exp $
+ *  $Id: coproc.c,v 1.65 2004-09-05 03:15:04 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -40,7 +40,6 @@
 
 extern int instruction_trace;
 extern int register_dump;
-extern int prom_emulation;
 
 char *cop0_names[32] = COP0_NAMES;
 
@@ -88,7 +87,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		c->reg[COP0_COMPARE] = (uint64_t) -1;
 
-		if (!prom_emulation)
+		if (!cpu->emul->prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
 
 		/*  Note: .rev may contain the company ID as well!  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.85 2004-09-05 03:12:45 debug Exp $
+ *  $Id: main.c,v 1.86 2004-09-05 03:15:05 debug Exp $
  */
 
 #include <stdio.h>
@@ -58,7 +58,6 @@ int quiet_mode = 0;
  */
 
 int show_opcode_statistics = 0;
-int prom_emulation = 1;
 int register_dump = 0;
 
 /*  PC Dumppoints: if the PC value ever matches one of these, we set
@@ -340,7 +339,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			n_dumppoints ++;
 			break;
 		case 'Q':
-			prom_emulation = 0;
+			emul->prom_emulation = 0;
 			break;
 		case 'q':
 			quiet_mode = 1;

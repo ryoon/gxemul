@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.135 2004-09-05 03:12:45 debug Exp $
+ *  $Id: cpu.c,v 1.136 2004-09-05 03:15:04 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -57,7 +57,6 @@ extern int single_step;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
-extern int prom_emulation;
 extern int tlb_dump;
 extern int64_t max_instructions;
 extern struct cpu **cpus;
@@ -1152,7 +1151,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  This assumes that a jal was made to a ROM address,
 			 *  and we should return via gpr ra.
 			 */
-			if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
+			if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
+			    cpu->emul->prom_emulation) {
 				int rom_jal;
 				switch (cpu->emul->emulation_type) {
 				case EMULTYPE_DEC:

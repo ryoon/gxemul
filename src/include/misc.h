@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.65 2004-06-24 15:05:52 debug Exp $
+ *  $Id: misc.h,v 1.66 2004-06-24 21:36:49 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -464,7 +464,8 @@ struct coproc {
 
 #define	MAX_TICK_FUNCTIONS	12
 
-#define	N_TRANSLATION_CACHE	3
+#define	N_TRANSLATION_CACHE		4
+#define	N_TRANSLATION_CACHE_INSTR	4
 
 struct cpu {
 	int		cpu_id;
@@ -480,6 +481,7 @@ struct cpu {
 
 	struct memory	*mem;
 
+
 	/*
 	 *  The translation_cached stuff is used to speed up the
 	 *  most recent lookups into the TLB.  Whenever the TLB is
@@ -490,11 +492,18 @@ struct cpu {
 	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
 
+	int		translation_instr_cached_i;
+	int		translation_instr_cached[N_TRANSLATION_CACHE_INSTR];
+	uint64_t	translation_instr_cached_vaddr_pfn[N_TRANSLATION_CACHE_INSTR];
+	uint64_t	translation_instr_cached_paddr[N_TRANSLATION_CACHE_INSTR];
+
+
 	/*  Special purpose registers:  */
 	uint64_t	pc;
 	uint64_t	pc_last;		/*  PC of last instruction   */
 	uint64_t	hi;
 	uint64_t	lo;
+
 
 	/*
 	 *  For faster memory lookup when running instructions:

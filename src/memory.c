@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.38 2004-06-23 00:38:31 debug Exp $
+ *  $Id: memory.c,v 1.39 2004-06-24 21:36:50 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -253,6 +253,11 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 }
 
 
+#define	FLAG_WRITEFLAG		1
+#define	FLAG_NOEXCEPTIONS	2
+#define	FLAG_INSTR		4
+
+
 /*
  *  translate_address():
  *
@@ -262,8 +267,11 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
  *  TODO:  vpn2 is a bad name for R2K/R3K, as it is the actual framenumber
  */
 int translate_address(struct cpu *cpu, uint64_t vaddr,
-	uint64_t *return_addr, int writeflag, int no_exceptions)
+	uint64_t *return_addr, int flags)
 {
+	int writeflag = flags & FLAG_WRITEFLAG? 1 : 0;
+	int no_exceptions = flags & FLAG_NOEXCEPTIONS? 1 : 0;
+	int instr = flags & FLAG_INSTR;
 	int ksu, exl, erl;
 	int x_64;
 	int use_tlb, i, pmask;
@@ -284,20 +292,34 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	/*
 	 *  Check the tiny translation cache first:
 	 *
-	 *  (Only userland addresses are checked, because other addresses
+	 *  Only userland addresses are checked, because other addresses
 	 *  are probably better of being statically translated, or through
-	 *  the TLB.)
+	 *  the TLB.  (Note: When running with 64-bit addresses, this
+	 *  will still produce the correct result. At worst, we check the
+	 *  cache in vain, but the result should still be correct.)
 	 */
-	if ((cpu->pc & 0x80000000) == 0) {
+	if ((vaddr & 0xc0000000) != 0x80000000) {
 		int wf = 1 + (writeflag == MEM_WRITE);
 		int i;
 		uint64_t vaddr_shift_12 = vaddr >> 12;
 
-		for (i=0; i<N_TRANSLATION_CACHE; i++) {
-			if (cpu->translation_cached[i] >= wf &&
-			    vaddr_shift_12 == (cpu->translation_cached_vaddr_pfn[i])) {
-				*return_addr = cpu->translation_cached_paddr[i] | (vaddr & 0xfff);
-				return 1;
+		if (instr) {
+			/*  Code:  */
+			for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++) {
+				if (cpu->translation_instr_cached[i] >= wf &&
+				    vaddr_shift_12 == (cpu->translation_instr_cached_vaddr_pfn[i])) {
+					*return_addr = cpu->translation_instr_cached_paddr[i] | (vaddr & 0xfff);
+					return 1;
+				}
+			}
+		} else {
+			/*  Data:  */
+			for (i=0; i<N_TRANSLATION_CACHE; i++) {
+				if (cpu->translation_cached[i] >= wf &&
+				    vaddr_shift_12 == (cpu->translation_cached_vaddr_pfn[i])) {
+					*return_addr = cpu->translation_cached_paddr[i] | (vaddr & 0xfff);
+					return 1;
+				}
 			}
 		}
 	}
@@ -553,10 +575,19 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 #ifdef USE_TINY_CACHE
 						/*  Enter into the tiny translation cache:  */
-						cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
-						cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
-						cpu->translation_cached_paddr[cpu->translation_cached_i] = (*return_addr) & ~0xfff;
-						cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
+						if (instr) {
+							/*  Code:  */
+							cpu->translation_instr_cached[cpu->translation_instr_cached_i] = 1 + (writeflag == MEM_WRITE);
+							cpu->translation_instr_cached_vaddr_pfn[cpu->translation_instr_cached_i] = vaddr >> 12;
+							cpu->translation_instr_cached_paddr[cpu->translation_instr_cached_i] = (*return_addr) & ~0xfff;
+							cpu->translation_instr_cached_i = (cpu->translation_instr_cached_i+1) % N_TRANSLATION_CACHE;
+						} else {
+							/*  Data:  */
+							cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
+							cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
+							cpu->translation_cached_paddr[cpu->translation_cached_i] = (*return_addr) & ~0xfff;
+							cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
+						}
 #endif
 						return 1;
 					} else {
@@ -710,7 +741,9 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;
 	} else {
-		ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
+		ok = translate_address(cpu, vaddr, &paddr,
+		    (writeflag? FLAG_WRITEFLAG : 0) + (no_exceptions? FLAG_NOEXCEPTIONS : 0)
+		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
 		/*  If the translation caused an exception, or was invalid in some way,
 			we simply return without doing the memory access:  */
 		if (!ok)

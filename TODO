@@ -67,7 +67,7 @@ Most important stuff (but these are all non-trivial tasks):
 			x)  TURBOchannel  (many DEC systems)
 			x)  QBus (DECsystem 5400)
 			x)  ARCBIOS (SGI, arc?)
-			x)  PCI  (Cobalt)
+			x)  PCI  (Cobalt, SGI, ...)
 
 		o)  DECstations (pmax):
 			framebuffers:
@@ -90,6 +90,7 @@ Most important stuff (but these are all non-trivial tasks):
 
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  More ARCBIOS stuff must be implemented
+			x)  PCI
 			x)  SMP?
 			x)  ARC: NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
 

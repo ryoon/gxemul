@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.256 2005-01-23 13:43:06 debug Exp $
+ *  $Id: cpu.c,v 1.257 2005-01-25 08:38:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1637,7 +1637,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  registers are sign-extended:   (Slow, but might be useful
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
-	if (cpu->cpu_type.mmu_model == MMU3K) {
+	if (cpu->cpu_type.isa_level < 3 || cpu->cpu_type.isa_level == 32) {
 		int warning = 0;
 		uint64_t x;
 
@@ -1651,7 +1651,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (cpu->pc != (int64_t)(int32_t)cpu->pc) {
 			fatal("\nWARNING: pc was not sign-extended correctly"
 			    " (%016llx)\n\n", (long long)cpu->pc);
-			cpu->pc != (int64_t)(int32_t)cpu->pc;
+			cpu->pc = (int64_t)(int32_t)cpu->pc;
 			warning = 1;
 		}
 

@@ -28,13 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.9 2005-01-23 13:43:05 debug Exp $
+ *  $Id: bus_pci.h,v 1.10 2005-01-25 08:38:27 debug Exp $
  */
 
-#include "memory.h"
 #include "misc.h"
 
 struct machine;
+struct memory;
 
 struct pci_device {
 	int		bus, device, function;

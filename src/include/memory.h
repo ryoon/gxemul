@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.24 2005-01-21 13:13:13 debug Exp $
+ *  $Id: memory.h,v 1.25 2005-01-25 08:38:27 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -37,6 +37,87 @@
 #include <inttypes.h>
 
 #include "misc.h"
+
+
+#define	DEFAULT_RAM_IN_MB		32
+#define	MAX_DEVICES			24
+
+#define	DEVICE_STATE_TYPE_INT		1
+#define	DEVICE_STATE_TYPE_UINT64_T	2
+
+struct cpu;
+struct translation_page_entry;
+
+/*  For bintrans:  */
+#define	MAX_QUICK_JUMPS			8
+
+struct memory {
+	uint64_t	physical_max;
+	void		*pagetable;
+
+	int		n_mmapped_devices;
+	int		last_accessed_device;
+	/*  The following two might speed up things a little bit.  */
+	/*  (actually maxaddr is the addr after the last address)  */
+	uint64_t	mmap_dev_minaddr;
+	uint64_t	mmap_dev_maxaddr;
+
+	const char	*dev_name[MAX_DEVICES];
+	uint64_t	dev_baseaddr[MAX_DEVICES];
+	uint64_t	dev_length[MAX_DEVICES];
+	int		dev_flags[MAX_DEVICES];
+	void		*dev_extra[MAX_DEVICES];
+	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
+			    uint64_t,unsigned char *,size_t,int,void *);
+	int		(*dev_f_state[MAX_DEVICES])(struct cpu *,
+			    struct memory *, void *extra, int wf, int nr,
+			    int *type, char **namep, void **data, size_t *len);
+	unsigned char	*dev_bintrans_data[MAX_DEVICES];
+
+#ifdef BINTRANS
+	uint64_t	dev_bintrans_write_low[MAX_DEVICES];
+	uint64_t	dev_bintrans_write_high[MAX_DEVICES];
+
+	/*
+	 *  translation_code_chunk_space is a large chunk of (linear) memory
+	 *  where translated code chunks and translation_entrys are stored.
+	 *  When this is filled, translation is restart from scratch (by
+	 *  resetting translation_code_chunk_space_head to 0, and removing all
+	 *  translation entries).
+	 *
+	 *  (Using a static memory region like this is somewhat inspired by
+	 *  the QEMU web pages,
+	 *  http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
+	 */
+
+	unsigned char	*translation_code_chunk_space;
+	size_t		translation_code_chunk_space_head;
+
+	struct translation_page_entry **translation_page_entry_array;
+
+	unsigned char	*quick_jump_host_address[MAX_QUICK_JUMPS];
+	int		quick_jump_page_offset[MAX_QUICK_JUMPS];
+	int		n_quick_jumps;
+	int		quick_jumps_index;
+#endif
+};
+
+#define	BITS_PER_PAGETABLE	20
+#define	BITS_PER_MEMBLOCK	20
+#define	MAX_BITS		40
+
+#define	MEM_READ			0
+#define	MEM_WRITE			1
+
+
+#define	CACHE_DATA			0
+#define	CACHE_INSTRUCTION		1
+#define	CACHE_NONE			2
+
+#define	CACHE_FLAGS_MASK		0x3
+
+#define	NO_EXCEPTIONS			8
+#define	PHYSICAL			16
 
 
 /*  memory.c:  */
@@ -98,4 +179,3 @@ void memory_device_register(struct memory *mem, const char *,
 #define	MEM_BINTRANS_WRITE_OK		2
 
 #endif	/*  MEMORY_H  */
-

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.85 2005-01-24 16:02:27 debug Exp $
+#  $Id: configure,v 1.86 2005-01-25 08:38:26 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -60,6 +60,8 @@ if [ z"$*" != z ]; then
 	for a in $*; do
 		if [ z$a = z--nox11 ]; then
 			NOX11=YES
+		else if [ z$a = z--always32 ]; then
+			ALWAYS32=YES
 		else if [ z$a = z--nobintrans ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--mips16 ]; then
@@ -74,6 +76,7 @@ if [ z"$*" != z ]; then
 			CACHES=YES
 		else
 			echo "usage: $0 [options]"
+			echo "  --always32     enable ALWAYS_SIGNEXTEND_32 (for hunting down 32/64-bit bugs)"
 			echo "  --caches       enable cache emulation (experimental)"
 			echo "  --delays       enable instruction latency/delay emulation"
 #			echo "  --gui          compile with GTK+ 2.x"
@@ -83,7 +86,7 @@ if [ z"$*" != z ]; then
 			echo "  --nox11        configure without X11 support"
 			echo "  --userland     enable userland emulation (experimental)"
 			exit
-		fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -113,7 +116,7 @@ else
 fi
 
 
-ZZ=`echo compiled on \`date\``
+ZZ=`echo compiled on \`uname\`/\`uname -m\`, \`date\``
 printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 
 
@@ -136,6 +139,13 @@ fi
 if [ z$DELAYS = zYES ]; then
 	echo 'Enabling Instruction delay/latency emulation.'
 	printf "#define ENABLE_INSTRUCTION_DELAYS\n" >> config.h
+fi
+
+
+#  Instruction delay/latency emulation:
+if [ z$ALWAYS32 = zYES ]; then
+	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE: This slows down everything.)'
+	printf "#define ALWAYS_SIGNEXTEND_32\n" >> config.h
 fi
 
 

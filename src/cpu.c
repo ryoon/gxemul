@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.151 2004-09-16 22:56:33 debug Exp $
+ *  $Id: cpu.c,v 1.152 2004-09-25 16:39:09 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1739,19 +1739,52 @@ static int cpu_run_instr(struct cpu *cpu)
 				debug("warning: instruction modifying HI too early after mfhi!\n");
 #endif
 
-			/*  TODO:  trap on overflow, and stuff like that  */
-			if (special6 == SPECIAL_ADD ||
-			    special6 == SPECIAL_ADDU) {
+			if (special6 == SPECIAL_ADDU) {
 				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
 				cpu->gpr[rd] &= 0xffffffffULL;
 				if (cpu->gpr[rd] & 0x80000000ULL)
 					cpu->gpr[rd] |= 0xffffffff00000000ULL;
 				break;
 			}
-			if (special6 == SPECIAL_SUB ||
-			    special6 == SPECIAL_SUBU) {
+			if (special6 == SPECIAL_ADD) {
+				/*  According to the MIPS64 manual:  */
+				uint64_t temp, temp1, temp2;
+				temp1 = cpu->gpr[rs] + ((cpu->gpr[rs] & 0x80000000ULL) << 1);
+				temp2 = cpu->gpr[rt] + ((cpu->gpr[rt] & 0x80000000ULL) << 1);
+				temp = temp1 + temp2;
+				/*  If bits 32 and 31 of temp differ, then it's an overflow  */
+				temp1 = temp & 0x100000000ULL;
+				temp2 = temp & 0x80000000ULL;
+				if ((temp1 && !temp2) || (!temp1 && temp2)) {
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+					break;
+				}
+				cpu->gpr[rd] = temp & 0xffffffffULL;
+				if (cpu->gpr[rd] & 0x80000000ULL)
+					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				break;
+			}
+			if (special6 == SPECIAL_SUBU) {
 				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
 				cpu->gpr[rd] &= 0xffffffffULL;
+				if (cpu->gpr[rd] & 0x80000000ULL)
+					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				break;
+			}
+			if (special6 == SPECIAL_SUB) {
+				/*  According to the MIPS64 manual:  */
+				uint64_t temp, temp1, temp2;
+				temp1 = cpu->gpr[rs] + ((cpu->gpr[rs] & 0x80000000ULL) << 1);
+				temp2 = cpu->gpr[rt] + ((cpu->gpr[rt] & 0x80000000ULL) << 1);
+				temp = temp1 - temp2;
+				/*  If bits 32 and 31 of temp differ, then it's an overflow  */
+				temp1 = temp & 0x100000000ULL;
+				temp2 = temp & 0x80000000ULL;
+				if ((temp1 && !temp2) || (!temp1 && temp2)) {
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+					break;
+				}
+				cpu->gpr[rd] = temp & 0xffffffffULL;
 				if (cpu->gpr[rd] & 0x80000000ULL)
 					cpu->gpr[rd] |= 0xffffffff00000000ULL;
 				break;

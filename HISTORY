@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.228 2004-09-23 23:22:48 debug Exp $
+$Id: HISTORY,v 1.229 2004-09-25 16:39:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -953,3 +953,5 @@ HISTORY of mips64emul
 
 20040923	Updating the documentation about how to (try to) install
 		Debian GNU/Linux.
+20040924	Some more updates to the documentation.
+20040925	Adding overflow stuff to 'add' and 'sub'.

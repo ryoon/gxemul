@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.9 2004-06-27 13:29:27 debug Exp $
+$Id: RELEASE,v 1.10 2004-06-29 06:28:10 debug Exp $
 
 
 	    =====================================================
@@ -85,8 +85,9 @@ again before a release is made:
 
 	Linux/i386
 		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
+		gcc 3.3.4 (Linux-2.6.7, Slackware)
 
-	OpenBSD/i386
+	OpenBSD/i386 3.2
 		gcc (which version?)
 
 	OpenBSD/sparc64
@@ -96,8 +97,11 @@ again before a release is made:
 		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
 		gcc version 2.95.3 20010315 (release)
 
-	NetBSD/pmax  (inside the emulator itself)
-		default gcc seems to work
+	NetBSD/pmax 1.6.2  (inside the emulator itself)
+		default gcc (2.9x.y) seems to work
+
+	NetBSD/i386 2.0/-current
+		gcc 3.3.3
 
 	Ultrix/MIPS  (inside the emulator itself)
 		(default cc doesn't seem to work)

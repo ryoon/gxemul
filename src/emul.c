@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.155 2005-02-01 12:11:34 debug Exp $
+ *  $Id: emul.c,v 1.156 2005-02-01 14:20:38 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -636,15 +636,6 @@ void emul_machine_setup(struct machine *m, int n_load,
 	if ((m->machine_type == MACHINE_ARC ||
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
-
-	if (m->arch == ARCH_PPC) {
-		/*  The ELF starting symbol points to a ".opd" section
-		    which contains a function descriptor.  */
-
-		debug("PPC: .opd function descriptor: TODO\n");
-
-		/*  TODO  */
-	}
 
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {

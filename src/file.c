@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.64 2005-02-01 11:49:30 debug Exp $
+ *  $Id: file.c,v 1.65 2005-02-01 14:20:38 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -823,6 +823,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	int ofs;
 	int chunk_len = 1024, align_len;
 	char *symbol_strings = NULL; size_t symbol_length = 0;
+	char *s;
 	Elf32_Sym *symbols_sym32 = NULL;  int n_symbols = 0;
 	Elf64_Sym *symbols_sym64 = NULL;
 
@@ -943,8 +944,13 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		exit(1);
 	}
 
-	debug("ELF%i %s, entry point 0x", elf64? 64 : 32,
-	    encoding == ELFDATA2LSB? "LSB (LE)" : "MSB (BE)");
+	s = "entry point";
+	if (elf64 && arch == ARCH_PPC)
+		s = "function descriptor at";
+
+	debug("ELF%i %s, %s 0x", elf64? 64 : 32,
+	    encoding == ELFDATA2LSB? "LSB (LE)" : "MSB (BE)", s);
+
 	if (elf64)
 		debug("%016llx\n", (long long)eentry);
 	else
@@ -1252,6 +1258,50 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		*byte_order = EMUL_LITTLE_ENDIAN;
 	else
 		*byte_order = EMUL_BIG_ENDIAN;
+
+	if (elf64 && arch == ARCH_PPC) {
+		/*
+		 *  Special case for 64-bit PPC ELFs:
+		 *
+		 *  The ELF starting symbol points to a ".opd" section
+		 *  which contains a function descriptor:
+		 *
+		 *      uint64_t  start;
+		 *      uint64_t  toc_base;
+		 *      uint64_t  something_else;       (?)
+		 */
+		int res;
+		unsigned char b[sizeof(uint64_t)];
+		uint64_t toc_base;
+
+		debug("PPC64: ");
+
+		res = memory_rw(m->cpus[0], mem, eentry, b, sizeof(b),
+		    MEM_READ, memory_rw_flags);
+		if (!res)
+			debug(" [WARNING: could not read memory?] ");
+
+		/*  PPC are always big-endian:  */
+		*entrypointp = ((uint64_t)b[0] << 56) +
+		    ((uint64_t)b[1] << 48) + ((uint64_t)b[2] << 40) +
+		    ((uint64_t)b[3] << 32) + ((uint64_t)b[4] << 24) +
+		    ((uint64_t)b[5] << 16) + ((uint64_t)b[6] << 8) +
+		    (uint64_t)b[7];
+
+		res = memory_rw(m->cpus[0], mem, eentry + 8, b, sizeof(b),
+		    MEM_READ, memory_rw_flags);
+		if (!res)
+			debug(" [WARNING: could not read memory?] ");
+
+		toc_base = ((uint64_t)b[0] << 56) +
+		    ((uint64_t)b[1] << 48) + ((uint64_t)b[2] << 40) +
+		    ((uint64_t)b[3] << 32) + ((uint64_t)b[4] << 24) +
+		    ((uint64_t)b[5] << 16) + ((uint64_t)b[6] << 8) +
+		    (uint64_t)b[7];
+
+		debug("entrypoint 0x%016llx, toc_base 0x%016llx\n",
+		    (long long)*entrypointp, (long long)toc_base);
+	}
 
 	n_executables_loaded ++;
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.7 2005-01-31 18:26:43 debug Exp $
+ *  $Id: cpu.h,v 1.8 2005-02-01 14:20:37 debug Exp $
  *
  *  See cpu.c.
  */
@@ -36,6 +36,7 @@
 
 #include <sys/types.h>
 #include <inttypes.h>
+#include <sys/time.h>
 
 /*  This is needed for undefining 'mips' or 'ppc', on weird systems:  */
 #include "../config.h"
@@ -93,6 +94,8 @@ int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);
 void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
+void cpu_show_cycles(struct machine *machine,
+	struct timeval *starttime, int64_t ncycles, int forced);
 
 
 #endif	/*  CPU_H  */

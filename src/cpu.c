@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.275 2005-01-31 05:45:52 debug Exp $
+ *  $Id: cpu.c,v 1.276 2005-02-01 14:20:38 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -40,6 +40,10 @@
 #include "cpu_ppc.h"
 #include "machine.h"
 #include "misc.h"
+
+
+extern int quiet_mode;
+extern int show_opcode_statistics;
 
 
 /*
@@ -121,8 +125,12 @@ void cpu_register_match(struct machine *m, char *name,
 		mips_cpu_register_match(m, name, writeflag,
 		    valuep, match_register);
 		break;
+	case ARCH_PPC:
+		ppc_cpu_register_match(m, name, writeflag,
+		    valuep, match_register);
+		break;
 	default:
-		fatal("cpu_register_match(): not for PPC yet\n");
+		fatal("cpu_register_match(): ?\n");
 	}
 }
 
@@ -178,7 +186,13 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
  */
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	return mips_cpu_interrupt(cpu, irq_nr);
+	switch (cpu->machine->arch) {
+	case ARCH_MIPS:
+		return mips_cpu_interrupt(cpu, irq_nr);
+	default:
+		fatal("cpu_interrupt(): ?\n");
+		return 0;
+	}
 }
 
 
@@ -190,24 +204,12 @@ int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	return mips_cpu_interrupt_ack(cpu, irq_nr);
-}
-
-
-/*
- *  cpu_run_init():
- *
- *  Prepare to run instructions on all CPUs in this machine. (This function
- *  should only need to be called once for each machine.)
- */
-void cpu_run_init(struct emul *emul, struct machine *machine)
-{
-	switch (machine->arch) {
+	switch (cpu->machine->arch) {
 	case ARCH_MIPS:
-		mips_cpu_run_init(emul, machine);
-		break;
+		return mips_cpu_interrupt_ack(cpu, irq_nr);
 	default:
-		fatal("cpu_run_init(): not for PPC yet\n");
+		fatal("cpu_interrupt_ack(): ?\n");
+		return 0;
 	}
 }
 
@@ -229,24 +231,6 @@ int cpu_run(struct emul *emul, struct machine *machine)
 	default:
 		fatal("cpu_run(): not for PPC yet\n");
 		return 0;
-	}
-}
-
-
-/*
- *  cpu_run_deinit():
- *                               
- *  Shuts down all CPUs in a machine when ending a simulation. (This function
- *  should only need to be called once for each machine.)
- */                             
-void cpu_run_deinit(struct emul *emul, struct machine *machine)
-{
-	switch (machine->arch) {
-	case ARCH_MIPS:
-		mips_cpu_run_deinit(emul, machine);
-		break;
-	default:
-		fatal("cpu_run_deinit(): not for PPC yet\n");
 	}
 }
 
@@ -293,5 +277,195 @@ void cpu_list_available_types(void)
 	debug_indentation(iadd);
 	ppc_cpu_list_available_types();
 	debug_indentation(-iadd);
+}
+
+
+/*
+ *  cpu_run_deinit():
+ *
+ *  Shuts down all CPUs in a machine when ending a simulation. (This function
+ *  should only need to be called once for each machine.)
+ */
+void cpu_run_deinit(struct emul *emul, struct machine *machine)
+{
+	int te;
+
+	/*
+	 *  Two last ticks of every hardware device.  This will allow
+	 *  framebuffers to draw the last updates to the screen before
+	 *  halting.
+	 */
+        for (te=0; te<machine->n_tick_entries; te++) {
+		machine->tick_func[te](machine->cpus[0],
+		    machine->tick_extra[te]);
+		machine->tick_func[te](machine->cpus[0],
+		    machine->tick_extra[te]);
+	}
+
+	debug("cpu_run_deinit(): All CPUs halted.\n");
+
+	if (machine->show_nr_of_instructions || !quiet_mode)
+		cpu_show_cycles(machine, &machine->starttime,
+		    machine->ncycles, 1);
+
+	if (show_opcode_statistics)
+		cpu_show_full_statistics(machine);
+
+	fflush(stdout);
+}
+
+
+/*
+ *  cpu_show_cycles():
+ *
+ *  If automatic adjustment of clock interrupts is turned on, then recalculate
+ *  emulated_hz.  Also, if show_nr_of_instructions is on, then print a
+ *  line to stdout about how many instructions/cycles have been executed so
+ *  far.
+ */
+void cpu_show_cycles(struct machine *machine,
+	struct timeval *starttime, int64_t ncycles, int forced)
+{
+	uint64_t offset;
+	char *symbol;
+	int64_t mseconds, ninstrs;
+	struct timeval tv;
+	int h, m, s, ms, d;
+
+	static int64_t mseconds_last = 0;
+	static int64_t ninstrs_last = -1;
+
+	if (machine->arch != ARCH_MIPS) {
+		fatal("cpu_show_cycles(): not yet for !MIPS\n");
+		return;
+	}
+
+	gettimeofday(&tv, NULL);
+	mseconds = (tv.tv_sec - starttime->tv_sec) * 1000
+	         + (tv.tv_usec - starttime->tv_usec) / 1000;
+
+	if (mseconds == 0)
+		mseconds = 1;
+
+	if (mseconds - mseconds_last == 0)
+		mseconds ++;
+
+	ninstrs = ncycles * machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
+
+	if (machine->automatic_clock_adjustment) {
+		static int first_adjustment = 1;
+
+		/*  Current nr of cycles per second:  */
+		int64_t cur_cycles_per_second = 1000 *
+		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
+		    / machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
+
+		if (cur_cycles_per_second < 1500000)
+			cur_cycles_per_second = 1500000;
+
+		if (first_adjustment) {
+			machine->emulated_hz = cur_cycles_per_second;
+			first_adjustment = 0;
+		} else {
+			machine->emulated_hz = (15 * machine->emulated_hz +
+			    cur_cycles_per_second) / 16;
+		}
+
+		debug("[ updating emulated_hz to %lli Hz ]\n",
+		    (long long)machine->emulated_hz);
+	}
+
+
+	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
+	if (!machine->show_nr_of_instructions && !forced)
+		goto do_return;
+
+
+	printf("[ ");
+
+	if (!machine->automatic_clock_adjustment) {
+		d = machine->emulated_hz / 1000;
+		if (d < 1)
+			d = 1;
+		ms = ncycles / d;
+		h = ms / 3600000;
+		ms -= 3600000 * h;
+		m = ms / 60000;
+		ms -= 60000 * m;
+		s = ms / 1000;
+		ms -= 1000 * s;
+
+		printf("emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
+	}
+
+	printf("cycles=%lli", (long long) ncycles);
+
+	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle > 1)
+		printf(" (%lli instrs)", (long long) ninstrs);
+
+	/*  Instructions per second, and average so far:  */
+	printf("; i/s=%lli avg=%lli",
+	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
+		/ (mseconds-mseconds_last)),
+	    (long long) ((long long)1000 * ninstrs / mseconds));
+
+	symbol = get_symbol_name(&machine->symbol_context,
+	    machine->cpus[machine->bootstrap_cpu]->cd.mips.pc, &offset);
+
+	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level < 3 ||
+	    machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level == 32)
+		printf("; pc=%08x",
+		    (int)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
+	else
+		printf("; pc=%016llx",
+		    (long long)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
+
+	printf(" <%s> ]\n", symbol? symbol : "no symbol");
+
+do_return:
+	ninstrs_last = ninstrs;
+	mseconds_last = mseconds;
+}
+
+
+/*
+ *  cpu_run_init():
+ *
+ *  Prepare to run instructions on all CPUs in this machine. (This function
+ *  should only need to be called once for each machine.)
+ */
+void cpu_run_init(struct emul *emul, struct machine *machine)
+{
+	int ncpus = machine->ncpus;
+	int te;
+
+	machine->a_few_cycles = 1048576;
+	machine->ncycles_flush = 0;
+	machine->ncycles = 0;
+	machine->ncycles_show = 0;
+
+	/*
+	 *  Instead of doing { one cycle, check hardware ticks }, we
+	 *  can do { n cycles, check hardware ticks }, as long as
+	 *  n is at most as much as the lowest number of cycles/tick
+	 *  for any hardware device.
+	 */
+	for (te=0; te<machine->n_tick_entries; te++) {
+		if (machine->ticks_reset_value[te] < machine->a_few_cycles)
+			machine->a_few_cycles = machine->ticks_reset_value[te];
+	}
+
+	machine->a_few_cycles >>= 1;
+	if (machine->a_few_cycles < 1)
+		machine->a_few_cycles = 1;
+
+	if (ncpus > 1 && machine->max_random_cycles_per_chunk == 0)
+		machine->a_few_cycles = 1;
+
+	/*  debug("cpu_run_init(): a_few_cycles = %i\n",
+	    machine->a_few_cycles);  */
+
+	/*  For performance measurement:  */
+	gettimeofday(&machine->starttime, NULL);
 }
 

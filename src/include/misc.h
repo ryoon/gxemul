@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.69 2004-06-28 05:21:19 debug Exp $
+ *  $Id: misc.h,v 1.70 2004-06-28 23:26:16 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -218,6 +218,7 @@ struct memory {
 	void		*first_pagetable;
 
 	int		n_mmapped_devices;
+	int		last_accessed_device;
 	uint64_t	mmap_dev_minaddr;		/*  might speed up things a little bit  */
 	uint64_t	mmap_dev_maxaddr;		/*  (actually maxaddr is the addr after the last address)  */
 

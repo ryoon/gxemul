@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.45 2004-06-28 20:49:32 debug Exp $
+ *  $Id: memory.c,v 1.46 2004-06-28 23:26:17 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -273,8 +273,8 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 int translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
-	int writeflag = flags & FLAG_WRITEFLAG? 1 : 0;
-	int no_exceptions = flags & FLAG_NOEXCEPTIONS? 1 : 0;
+	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
+	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int instr = flags & FLAG_INSTR;
 	int ksu, exl, erl;
 	int x_64;
@@ -497,21 +497,28 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	if (use_tlb) {
 		int i;
+		uint64_t cached_hi, cached_lo0, cached_lo1;
 		uint64_t entry_vpn2, entry_asid, pfn;
 
 		for (i=0; i<n_tlbs; i++) {
 			if (mmumodel3k) {
 				/*  R3000 or similar:  */
-				entry_vpn2 = (cp0->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
-				entry_asid = (cp0->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
-				g_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_G;
+				cached_hi = cp0->tlbs[i].hi;
+				cached_lo0 = cp0->tlbs[i].lo0;
 
-				pfn = (cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK) >> R2K3K_ENTRYLO_PFN_SHIFT;
-				v_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_V;
-				d_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_D;
+				entry_vpn2 = (cached_hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
+				entry_asid = (cached_hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
+				g_bit = cached_lo0 & R2K3K_ENTRYLO_G;
+
+				pfn = (cached_lo0 & R2K3K_ENTRYLO_PFN_MASK) >> R2K3K_ENTRYLO_PFN_SHIFT;
+				v_bit = cached_lo0 & R2K3K_ENTRYLO_V;
+				d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
 			} else {
 				/*  R4000 or similar:  */
 				int pmask = (cp0->tlbs[i].mask & PAGEMASK_MASK) | 0x1fff;
+				cached_hi = cp0->tlbs[i].hi;
+				cached_lo0 = cp0->tlbs[i].lo0;
+				cached_lo1 = cp0->tlbs[i].lo1;
 
 				if (pmask == 0x1fff)
 					pageshift = 12;
@@ -532,25 +539,25 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 				}
 
 				if (cpu->cpu_type.mmu_model == MMU10K) {
-					entry_vpn2 = (cp0->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
+					entry_vpn2 = (cached_hi & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
 					vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);
 				} else {
-					entry_vpn2 = (cp0->tlbs[i].hi & ENTRYHI_VPN2_MASK) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
+					entry_vpn2 = (cached_hi & ENTRYHI_VPN2_MASK) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
 					vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK) >> (pageshift + 1);
 				}
 
-				entry_asid = cp0->tlbs[i].hi & ENTRYHI_ASID;
-				g_bit = cp0->tlbs[i].hi & TLB_G;
+				entry_asid = cached_hi & ENTRYHI_ASID;
+				g_bit = cached_hi & TLB_G;
 
 				/*  Even or odd virtual page?  */
 				if ((vaddr >> pageshift) & 1) {
-					pfn = (cp0->tlbs[i].lo1 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
-					v_bit = cp0->tlbs[i].lo1 & ENTRYLO_V;
-					d_bit = cp0->tlbs[i].lo1 & ENTRYLO_D;
+					pfn = (cached_lo1 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
+					v_bit = cached_lo1 & ENTRYLO_V;
+					d_bit = cached_lo1 & ENTRYLO_D;
 				} else {
-					pfn = (cp0->tlbs[i].lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
-					v_bit = cp0->tlbs[i].lo0 & ENTRYLO_V;
-					d_bit = cp0->tlbs[i].lo0 & ENTRYLO_D;
+					pfn = (cached_lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
+					v_bit = cached_lo0 & ENTRYLO_V;
+					d_bit = cached_lo0 & ENTRYLO_D;
 				}
 
 				if (cpu->cpu_type.mmu_model == MMU8K) {
@@ -572,7 +579,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 			}
 
 			/*  Is there a VPN and ASID match?  */
-			if (entry_vpn2 == vaddr_vpn2 && (g_bit || entry_asid == vaddr_asid)) {
+			if (entry_vpn2 == vaddr_vpn2 && (entry_asid == vaddr_asid || g_bit)) {
 				/*  debug("OK MAP 1!!! { vaddr=%016llx ==> paddr %016llx v=%i d=%i asid=0x%02x }\n",
 				    (long long)vaddr, (long long) *return_addr, v_bit?1:0, d_bit?1:0, vaddr_asid);  */
 				if (v_bit) {
@@ -711,14 +718,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	uint64_t endaddr = vaddr + len - 1;
 	uint64_t paddr;
 	int cache, no_exceptions;
-	unsigned char *memblock = NULL;
+	unsigned char *memblock;
 	int bits_per_memblock, bits_per_pagetable;
 	int ok, hit;
-	int entry, i;
+	int entry;
 	void **table;
 	int shrcount, mask;
 	int offset;
-	int cachemask[2];
 	int transl_cache_hit = 0;
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
@@ -825,23 +831,32 @@ have_paddr:
 	 *  TODO2: if paddr<base, but len enough, then we should write to a device to
 	 */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
-	    for (i=0; i<mem->n_mmapped_devices; i++)
-		if (paddr >= mem->dev_baseaddr[i] &&
-		    paddr < mem->dev_baseaddr[i] + mem->dev_length[i]) {
-			paddr -= mem->dev_baseaddr[i];
-			if (paddr + len > mem->dev_length[i])
-				len = mem->dev_length[i] - paddr;
-			if (mem->dev_f[i](cpu, mem, paddr, data, len, writeflag, mem->dev_extra[i]) == 0) {
-				debug("%s device '%s' addr %08lx failed\n",
-				    writeflag? "writing to" : "reading from",
-				    mem->dev_name[i], (long)paddr);
+		int i, start;
+		i = start = mem->last_accessed_device;
 
-				/*  If the memory mapped device failed, then return with a DBE exception  */
-				cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
-				return MEMORY_ACCESS_FAILED;
+		do {
+			if (paddr >= mem->dev_baseaddr[i] &&
+			    paddr < mem->dev_baseaddr[i] + mem->dev_length[i]) {
+				paddr -= mem->dev_baseaddr[i];
+				if (paddr + len > mem->dev_length[i])
+					len = mem->dev_length[i] - paddr;
+				if (mem->dev_f[i](cpu, mem, paddr, data, len, writeflag, mem->dev_extra[i]) == 0) {
+					debug("%s device '%s' addr %08lx failed\n",
+					    writeflag? "writing to" : "reading from",
+					    mem->dev_name[i], (long)paddr);
+
+					/*  If the memory mapped device failed, then return with a DBE exception  */
+					cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
+					return MEMORY_ACCESS_FAILED;
+				}
+				mem->last_accessed_device = i;
+				goto do_return_ok;
 			}
-			goto do_return_ok;
-		}
+
+			i ++;
+			if (i == mem->n_mmapped_devices)
+				i = 0;
+		} while (i != start);
 	}
 
 
@@ -870,9 +885,12 @@ have_paddr:
 		vaddr &= (uint64_t)0xffffffff;
 
 	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000 && vaddr <= 0xbfffffff)) {
-		cachemask[0] = cpu->cache_size[0] - 1;
-		cachemask[1] = cpu->cache_size[1] - 1;
-		if (cpu->cpu_type.mmu_model == MMU3K) {		/*  TODO: not MMU model ?  */
+		if (cpu->cpu_type.mmu_model == MMU3K) {
+			int cachemask[2];
+
+			cachemask[0] = cpu->cache_size[0] - 1;
+			cachemask[1] = cpu->cache_size[1] - 1;
+
 			if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
 				cache ^= 1;
 
@@ -988,6 +1006,7 @@ no_exception_access:
 	 */
 	bits_per_memblock  = mem->bits_per_memblock;
 	bits_per_pagetable = mem->bits_per_pagetable;
+	memblock = NULL;
 
 	/*  Step through the pagetables until we find the correct memory block:  */
 	table = mem->first_pagetable;

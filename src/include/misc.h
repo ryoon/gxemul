@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.56 2004-06-11 12:34:24 debug Exp $
+ *  $Id: misc.h,v 1.57 2004-06-12 18:45:11 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -475,7 +475,7 @@ struct coproc {
 #define	N_SPECIAL		64
 #define	N_REGIMM		32
 
-#define	MAX_TICK_FUNCTIONS	8
+#define	MAX_TICK_FUNCTIONS	12
 
 #define	N_TRANSLATION_CACHE	3
 

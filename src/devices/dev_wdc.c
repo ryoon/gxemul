@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.19 2005-03-15 18:43:06 debug Exp $
+ *  $Id: dev_wdc.c,v 1.20 2005-03-15 20:18:27 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -46,8 +46,13 @@
 
 #include "wdcreg.h"
 
+
+extern int single_step;
+
 #define	WDC_INBUF_SIZE		4096
 
+#define	debug fatal
+/*  #define  DATA_DEBUG  */
 
 struct wdc_data {
 	int		irq_nr;
@@ -222,8 +227,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_data:	/*  0: data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
-
-#if 1
+#if 0
 			if (len == 4) {
 				odata += (wdc_get_inbuf(d) << 24);
 				odata += (wdc_get_inbuf(d) << 16);
@@ -232,20 +236,20 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata += (wdc_get_inbuf(d) << 8);
 			odata += wdc_get_inbuf(d);
 #else
-			switch (len) {
-			case 4:
-			case 2:	odata += (wdc_get_inbuf(d) << 8);
-			default:odata += wdc_get_inbuf(d);
-			}
+			odata += wdc_get_inbuf(d);
+			if (len >= 2)
+				odata += (wdc_get_inbuf(d) << 8);
 			if (len == 4) {
-				odata += (wdc_get_inbuf(d) << 24);
 				odata += (wdc_get_inbuf(d) << 16);
+				odata += (wdc_get_inbuf(d) << 24);
 			}
 #endif
 
+#ifdef DATA_DEBUG
 			debug("[ wdc: read from DATA: 0x%04x ]\n", odata);
+#endif
 		} else {
-			debug("[ wdc: write to DATA: 0x%04x ]\n", idata);
+			fatal("[ wdc: write to DATA: 0x%04x ]\n", idata);
 			/*  TODO  */
 		}
 		break;
@@ -366,6 +370,14 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					int count = d->seccnt? d->seccnt : 256;
 					uint64_t offset = 512 * (d->sector - 1
 					    + d->head * 63 + 16*63*cyl);
+
+#if 0
+/*  LBA:  */
+if (d->lba)
+	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
+#endif
+printf("WDC read from offset %lli\n", (long long)offset);
+/*  single_step = 1;  */
 					diskimage_access(cpu->machine,
 					    d->drive + d->base_drive, 0,
 					    offset, buf, 512 * count);
@@ -408,11 +420,10 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				    in low/high byte order:  */
 				for (i=0; i<sizeof(d->identify_struct); i+=2) {
 					wdc_addtoinbuf(d, d->identify_struct
-					    [i+0]);
-					wdc_addtoinbuf(d, d->identify_struct
 					    [i+1]);
+					wdc_addtoinbuf(d, d->identify_struct
+					    [i+0]);
 				}
-printf("WDC INTERRUPT\n");
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			default:
@@ -450,6 +461,7 @@ void dev_wdc_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int base_drive)
 {
 	struct wdc_data *d;
+	uint64_t alt_status_addr;
 
 	d = malloc(sizeof(struct wdc_data));
 	if (d == NULL) {
@@ -460,7 +472,13 @@ void dev_wdc_init(struct machine *machine, struct memory *mem,
 	d->irq_nr     = irq_nr;
 	d->base_drive = base_drive;
 
-	memory_device_register(mem, "wdc_altstatus", baseaddr + 0x206, 1,
+	alt_status_addr = baseaddr + 0x206;
+
+	/*  Special hack for pcic/hpcmips:  TODO: Fix  */
+	if (baseaddr == 0x14000180)
+		alt_status_addr = 0x14000386;
+
+	memory_device_register(mem, "wdc_altstatus", alt_status_addr, 2,
 	    dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
 	    dev_wdc_access, d, MEM_DEFAULT, NULL);

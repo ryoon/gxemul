@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.646 2005-03-15 20:15:08 debug Exp $
+$Id: HISTORY,v 1.647 2005-03-15 20:18:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1755,3 +1755,5 @@ Changelog for GXemul:
 		ISA/PCMCIA interrupts yet).
 		Adding preliminary instructions on how to install
 		NetBSD/hpcmips.
+		Continuing the attempt to get harddisks working with interrupts
+		(pcic, wdc on hpcmips).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.68 2005-01-16 09:21:05 debug Exp $
+ *  $Id: arcbios.c,v 1.69 2005-01-17 15:34:11 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1642,10 +1642,22 @@ void arcbios_emul(struct cpu *cpu)
 		 *  Like a return_from_main(), or similar.
 		 */
 		debug("[ ARCBIOS: IRIX return_from_main() (?) ]\n");
+
+/*
+ *  Update 2005-01-17:
+ *
+ *  It seems that this is NOT a return from main,
+ *  but something else. Hm...
+ */
+
+#if 0
 		/*  Halt all CPUs.  */
 		for (i=0; i<cpu->emul->ncpus; i++)
 			cpu->emul->cpus[i]->running = 0;
 		cpu->emul->exit_without_entering_debugger = 1;
+#endif
+
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x888:
 		/*

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.487 2005-01-17 13:29:25 debug Exp $
+$Id: HISTORY,v 1.488 2005-01-17 15:34:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1488,3 +1488,5 @@ HISTORY of mips64emul
 		Also using symbolic names for coprocessor 0 registers.
 		Adding DEV_MP_MEMORY to dev_mp.c.
 		Adding a 'put' command to the debugger.
+		ARCBIOS function 0x100 used by IRIX seems to _NOT_ be a
+		ReturnFromMain(), but something else undocumented.

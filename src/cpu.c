@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.109 2004-07-17 20:10:10 debug Exp $
+ *  $Id: cpu.c,v 1.110 2004-07-19 15:04:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -274,6 +274,396 @@ const char *cpu_flags(struct cpu *cpu)
 		else
 			return "";
 	}
+}
+
+
+/*
+ *  cpu_disassemble_instr():
+ *
+ *  Convert an instruction word into human readable format, for instruction
+ *  tracing.
+ *
+ *  NOTE:  cpu->pc_last should be the address of the instruction, cpu->pc
+ *         should already point to the _next_ instruction.
+ *
+ *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
+ */
+void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
+{
+	int offset, hi6, special6, regimm5;
+	int rt, rd, rs, sa, imm, copz, cache_op, which_cache, showtag;
+	uint64_t addr;
+	uint32_t instrword;
+	char *symbol;
+
+	symbol = get_symbol_name(cpu->pc_last, &offset);
+	if (symbol != NULL && offset==0)
+		debug("<%s>\n", symbol);
+
+	debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
+	    cpu->cpu_id, cpu->pc_last,
+	    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+
+	/*
+	 *  Decode the instruction:
+	 */
+
+	if (cpu->nullify_next) {
+		debug("(nullified)");
+		goto disasm_ret;
+	}
+
+	hi6 = (instr[3] >> 2) & 0x3f;
+
+	switch (hi6) {
+	case HI6_SPECIAL:
+		special6 = instr[0] & 0x3f;
+		switch (special6) {
+		case SPECIAL_SLL:
+		case SPECIAL_SRL:
+		case SPECIAL_SRA:
+		case SPECIAL_DSLL:
+		case SPECIAL_DSRL:
+		case SPECIAL_DSRA:
+		case SPECIAL_DSLL32:
+		case SPECIAL_DSRL32:
+		case SPECIAL_DSRA32:
+			rt = instr[2] & 31;
+			rd = (instr[1] >> 3) & 31;
+			sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
+
+			if (rd == 0 && special6 == SPECIAL_SLL) {
+				if (sa == 0)
+					debug("nop");
+				else if (sa == 1)
+					debug("ssnop");
+				else
+					debug("nop (weird, sa=%i)", sa);
+				goto disasm_ret;
+			} else
+				debug("%s\tr%i,r%i,%i",
+				    special_names[special6], rd, rt, sa);
+			break;
+		case SPECIAL_DSRLV:
+		case SPECIAL_DSRAV:
+		case SPECIAL_DSLLV:
+		case SPECIAL_SLLV:
+		case SPECIAL_SRAV:
+		case SPECIAL_SRLV:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			rd = (instr[1] >> 3) & 31;
+			debug("%s\tr%i,r%i,r%i",
+			    special_names[special6], rd, rt, rs);
+			break;
+		case SPECIAL_JR:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			symbol = get_symbol_name(cpu->gpr[rs], &offset);
+			if (symbol != NULL)
+				debug("jr\tr%i\t\t<%s>", rs, symbol);
+			else
+				debug("jr\tr%i", rs);
+			break;
+		case SPECIAL_JALR:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rd = (instr[1] >> 3) & 31;
+			symbol = get_symbol_name(cpu->gpr[rs], &offset);
+			if (symbol != NULL)
+				debug("jalr\tr%i,r%i\t<%s>",
+				    rd, rs, symbol);
+			else
+				debug("jalr\tr%i,r%i", rd, rs);
+			break;
+		case SPECIAL_MFHI:
+		case SPECIAL_MFLO:
+			rd = (instr[1] >> 3) & 31;
+			debug("%s\tr%i", special_names[special6], rd);
+			break;
+		case SPECIAL_MTLO:
+		case SPECIAL_MTHI:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			debug("%s\tr%i", special_names[special6], rs);
+			break;
+		case SPECIAL_ADD:
+		case SPECIAL_ADDU:
+		case SPECIAL_SUB:
+		case SPECIAL_SUBU:
+		case SPECIAL_AND:
+		case SPECIAL_OR:
+		case SPECIAL_XOR:
+		case SPECIAL_NOR:
+		case SPECIAL_SLT:
+		case SPECIAL_SLTU: 
+		case SPECIAL_DADD:
+		case SPECIAL_DADDU:
+		case SPECIAL_DSUB:
+		case SPECIAL_DSUBU:
+		case SPECIAL_MOVZ:
+		case SPECIAL_MOVN:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			rd = (instr[1] >> 3) & 31;
+			debug("%s\tr%i,r%i,r%i", special_names[special6],
+			    rd, rs, rt);
+			break;
+		case SPECIAL_MULT:
+		case SPECIAL_MULTU:
+		case SPECIAL_DMULT:
+		case SPECIAL_DMULTU:
+		case SPECIAL_DIV:
+		case SPECIAL_DIVU:
+		case SPECIAL_DDIV:  
+		case SPECIAL_DDIVU:
+		case SPECIAL_TGE:                
+		case SPECIAL_TGEU:
+		case SPECIAL_TLT:
+		case SPECIAL_TLTU:
+		case SPECIAL_TEQ:
+		case SPECIAL_TNE:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			rd = (instr[1] >> 3) & 31;
+			if (special6 == SPECIAL_MULT) {
+				if (rd != 0) {
+					debug("mult_xx\tr%i,r%i,r%i",
+					    rd, rs, rt);
+					goto disasm_ret;
+				}
+			}
+			debug("%s\tr%i,r%i", special_names[special6],
+			    rs, rt);
+			break;
+		case SPECIAL_SYNC:
+			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
+			debug("sync\t0x%02x", imm);
+			break;
+		case SPECIAL_SYSCALL:
+			imm = (((instr[3] << 24) + (instr[2] << 16) +
+			    (instr[1] << 8) + instr[0]) >> 6) & 0xfffff;
+			debug("syscall\t0x%05x", imm);
+			break;
+		case SPECIAL_BREAK:
+			debug("break");
+			break;
+		case SPECIAL_MFSA:
+			rd = (instr[1] >> 3) & 31;
+			debug("mfsa\tr%i", rd);
+			break;
+		case SPECIAL_MTSA:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			debug("mtsa\tr%i", rs);
+			break;
+		default:
+			debug("unimplemented special6 = 0x%02x", special6);
+		}
+		break;
+	case HI6_BEQ:
+	case HI6_BEQL:
+	case HI6_BNE:
+	case HI6_BGTZ:
+	case HI6_BGTZL:
+	case HI6_BLEZ:
+	case HI6_BLEZL:
+	case HI6_BNEL:
+		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+		rt = instr[2] & 31;
+		imm = (instr[1] << 8) + instr[0];
+		if (imm >= 32768)
+			imm -= 65536;
+		debug("%s\tr%i,r%i,%016llx", hi6_names[hi6], rt, rs,
+		    cpu->pc + (imm << 2));
+		break;
+	case HI6_ADDI:
+	case HI6_ADDIU:
+	case HI6_DADDI:
+	case HI6_DADDIU:
+	case HI6_SLTI:
+	case HI6_SLTIU:
+	case HI6_ANDI:
+	case HI6_ORI:
+	case HI6_XORI:
+		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+		rt = instr[2] & 31;
+		imm = (instr[1] << 8) + instr[0];
+		if (imm >= 32768)
+			imm -= 65536;
+		debug("%s\tr%i,r%i,%i", hi6_names[hi6], rt, rs, imm);
+		break;
+	case HI6_LUI:
+		rt = instr[2] & 31;
+		imm = (instr[1] << 8) + instr[0];
+		if (imm >= 32768)
+			imm -= 65536;
+		debug("lui\tr%i,0x%x", rt, imm & 0xffff);
+		break;
+	case HI6_LB:
+	case HI6_LBU:
+	case HI6_LH:
+	case HI6_LHU:
+	case HI6_LW:
+	case HI6_LWU:
+	case HI6_LD:
+	case HI6_LQ_MDMX:
+	case HI6_LWC1:
+	case HI6_LWC2:
+	case HI6_LWC3:
+	case HI6_LDC1:
+	case HI6_LDC2:
+	case HI6_LL:
+	case HI6_LLD:
+	case HI6_SB:
+	case HI6_SH:
+	case HI6_SW:
+	case HI6_SD:
+	case HI6_SQ:
+	case HI6_SC:
+	case HI6_SCD:
+	case HI6_SWC1:
+	case HI6_SWC2:
+	case HI6_SWC3:
+	case HI6_SDC1:
+	case HI6_LWL:   
+	case HI6_LWR:
+	case HI6_LDL:
+	case HI6_LDR:
+	case HI6_SWL:
+	case HI6_SWR:
+	case HI6_SDL:
+	case HI6_SDR:
+		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+		rt = instr[2] & 31;
+		imm = (instr[1] << 8) + instr[0];
+		if (imm >= 32768)
+			imm -= 65536;
+		symbol = get_symbol_name(cpu->gpr[rs] + imm, &offset);
+
+		/*  LWC3 is PREF in the newer ISA levels:  */
+		if (hi6 == HI6_LWC3) {
+			debug("pref\t0x%x,%i(r%i)\t\t[0x%016llx = %s]",
+			    rt, imm, rs, (long long)(cpu->gpr[rs] + imm),
+			    symbol);
+			goto disasm_ret;
+		}
+
+		if (symbol != NULL)
+			debug("%s\tr%i,%i(r%i)\t\t[0x%016llx = %s, data=",
+			    hi6_names[hi6], rt, imm, rs, (long long)
+			    (cpu->gpr[rs] + imm), symbol);
+		else
+			debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=",
+			    hi6_names[hi6], rt, imm, rs, (long long)
+			    (cpu->gpr[rs] + imm));
+		break;
+	case HI6_J:
+	case HI6_JAL:
+		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
+		    (instr[1] << 8) + instr[0]) << 2;
+		addr = cpu->pc & ~((1 << 28) - 1);
+		addr |= imm;
+		symbol = get_symbol_name(addr, &offset);
+		if (symbol != NULL)
+			debug("%s\t0x%016llx\t<%s>",
+			    hi6_names[hi6], (long long)addr, symbol);
+		else
+			debug("%s\t0x%016llx", hi6_names[hi6], (long long)addr);
+		break;
+	case HI6_COP0:
+	case HI6_COP1:
+	case HI6_COP2:
+	case HI6_COP3:
+		imm = (instr[3] << 24) + (instr[2] << 16) +
+		     (instr[1] << 8) + instr[0];
+		imm &= ((1 << 26) - 1);
+		/*  TODO: disassemble into correct opcode!  */
+		debug("%s\t0x%08x", hi6_names[hi6], imm);
+		break;
+	case HI6_CACHE:
+		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
+		copz = instr[2] & 31;
+		imm  = (instr[1] << 8) + instr[0];
+		cache_op    = copz >> 2;
+		which_cache = copz & 3;
+		showtag = 0;
+		debug("cache\t0x%02x,0x%04x(r%i)", copz, imm, rt);
+		if (which_cache==0)	debug("  [ primary I-cache");
+		if (which_cache==1)	debug("  [ primary D-cache");
+		if (which_cache==2)	debug("  [ secondary I-cache");
+		if (which_cache==3)	debug("  [ secondary D-cache");
+		debug(", ");
+		if (cache_op==0)	debug("index invalidate");
+		if (cache_op==1)	debug("index load tag");
+		if (cache_op==2)	debug("index store tag"), showtag=1;
+		if (cache_op==3)	debug("create dirty exclusive");
+		if (cache_op==4)	debug("hit invalidate");
+		if (cache_op==5)	debug("fill OR hit writeback invalidate");
+		if (cache_op==6)	debug("hit writeback");
+		if (cache_op==7)	debug("hit set virtual");
+		debug(", r%i=0x%016llx", rt, (long long)cpu->gpr[rt]);
+		if (showtag)
+		debug(", taghi=%08lx lo=%08lx",
+		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
+		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+		debug(" ]");
+		break;
+	case HI6_SPECIAL2:
+		special6 = instr[0] & 0x3f;
+		instrword = (instr[3] << 24) + (instr[2] << 16) +
+		    (instr[1] << 8) + instr[0];
+		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+		rt = instr[2] & 31;
+		rd = (instr[1] >> 3) & 31;
+		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
+			debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
+		} else if ((instrword & 0xffff07ffULL) == 0x70000209
+		    || (instrword & 0xffff07ffULL) == 0x70000249) {
+			if (instr[0] == 0x49) {
+			debug("pmflo\tr%i rs=%i\n", rd);
+			} else {
+			debug("pmfhi\tr%i rs=%i\n", rd);
+			}
+		} else if ((instrword & 0xfc1fffff) == 0x70000269 
+		    || (instrword & 0xfc1fffff) == 0x70000229) {
+			if (instr[0] == 0x69) {
+				debug("pmtlo\tr%i rs=%i\n", rs);
+			} else {
+				debug("pmthi\tr%i rs=%i\n", rs);
+			} 
+		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
+			debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
+		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
+			debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
+		} else {
+			debug("unimplemented special2 = 0x%02x", special6);
+		}
+		break;
+	case HI6_REGIMM:
+		regimm5 = instr[2] & 0x1f;
+		switch (regimm5) {
+		case REGIMM_BLTZ:
+		case REGIMM_BGEZ:
+		case REGIMM_BLTZL:
+		case REGIMM_BGEZL:
+		case REGIMM_BLTZAL:
+		case REGIMM_BLTZALL:
+		case REGIMM_BGEZAL:
+		case REGIMM_BGEZALL:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			imm = (instr[1] << 8) + instr[0];
+			if (imm >= 32768)               
+				imm -= 65536;
+			debug("%s\tr%i,%016llx", regimm_names[regimm5],
+			    rs, cpu->pc + (imm << 2));
+			break;
+		default:
+			debug("unimplemented regimm5 = 0x%02x", regimm5);
+		}
+		break;
+	default:
+		debug("unimplemented hi6 = 0x%02x", hi6);
+	}
+
+disasm_ret:
+	debug("\n");
 }
 
 
@@ -634,9 +1024,6 @@ static int cpu_run_instr(struct cpu *cpu)
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, which_cache, cache_op;
 
-	/*  for instruction trace  */
-	char *instr_mnem = NULL;
-
 	int cond, likely, and_link;
 
 	/*  for unaligned load/store  */
@@ -648,7 +1035,7 @@ static int cpu_run_instr(struct cpu *cpu)
 
 	/*  for load/store  */
 	uint64_t addr, value, value_hi, result_value;
-	int wlen, st, signd, linked, dataflag;
+	int wlen, st, signd, linked;
 	unsigned char d[16];		/*  room for at most 128 bits  */
 
 
@@ -927,26 +1314,20 @@ static int cpu_run_instr(struct cpu *cpu)
 			tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
 		}
 
-		if (instruction_trace_cached) {
-			int offset;
-			char *symbol = get_symbol_name(cpu->pc_last, &offset);
-			if (symbol != NULL && offset==0)
-				debug("<%s>\n", symbol);
-
-			debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, cpu->pc_last,
-			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
-		}
+		if (instruction_trace_cached)
+			cpu_disassemble_instr(cpu, instr);
 	}
 
 
-	/*  Nullify this instruction?  (Set by previous instruction)  */
+	/*
+	 *  Nullify this instruction?  (Set by a previous branch-likely
+	 *  instruction.)
+	 *
+	 *  Note: The return value is 1, even if no instruction was actually
+	 *  executed.
+	 */
 	if (cpu->nullify_next) {
 		cpu->nullify_next = 0;
-		if (instruction_trace_cached)
-			debug("(nullified)\n");
-
-		/*  Note: Return value is 1, even if no instruction was actually executed.  */
 		return 1;
 	}
 
@@ -1031,19 +1412,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			rd = (instr[1] >> 3) & 31;
 			sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
 
-			if (instruction_trace_cached) {
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_SLL)	instr_mnem = "sll";
-				if (special6 == SPECIAL_SRL)	instr_mnem = "srl";
-				if (special6 == SPECIAL_SRA)	instr_mnem = "sra";
-				if (special6 == SPECIAL_DSLL)	instr_mnem = "dsll";
-				if (special6 == SPECIAL_DSRL)	instr_mnem = "dsrl";
-				if (special6 == SPECIAL_DSRA)	instr_mnem = "dsra";
-				if (special6 == SPECIAL_DSLL32)	instr_mnem = "dsll32";
-				if (special6 == SPECIAL_DSRL32)	instr_mnem = "dsrl32";
-				if (special6 == SPECIAL_DSRA32)	instr_mnem = "dsra32";
-			}
-
 			/*
 			 *  Check for NOP:
 			 *
@@ -1059,24 +1427,16 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  code here is incorrect.
 			 */
 			if (rd == 0 && special6 == SPECIAL_SLL) {
-				if (instruction_trace_cached) {
-					if (sa == 0)
-						debug("nop\n");
-					else if (sa == 1) {
-						debug("ssnop\n");
+				if (sa == 1) {
+					/*  ssnop  */
 #ifdef ENABLE_INSTRUCTION_DELAYS
-						cpu->instruction_delay +=
-						    cpu->cpu_type.
-						    instrs_per_cycle - 1;
+					cpu->instruction_delay +=
+					    cpu->cpu_type.
+					    instrs_per_cycle - 1;
 #endif
-					} else
-						debug("nop (weird, sa=%i)\n",
-						    sa);
 				}
 				return 1;
-			} else
-				if (instruction_trace_cached)
-					debug("%s\tr%i,r%i,%i\n", instr_mnem, rd, rt, sa);
+			}
 
 			if (special6 == SPECIAL_SLL) {
 				switch (sa) {
@@ -1145,18 +1505,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 
-			if (instruction_trace_cached) {
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_DSRLV)	instr_mnem = "dsrlv";
-				if (special6 == SPECIAL_DSRAV)	instr_mnem = "dsrav";
-				if (special6 == SPECIAL_DSLLV)	instr_mnem = "dsllv";
-				if (special6 == SPECIAL_SLLV)	instr_mnem = "sllv";
-				if (special6 == SPECIAL_SRAV)	instr_mnem = "srav";
-				if (special6 == SPECIAL_SRLV)	instr_mnem = "srlv";
-
-				debug("%s\tr%i,r%i,r%i\n", instr_mnem, rd, rt, rs);
-			}
-
 			if (special6 == SPECIAL_DSRLV) {
 				sa = cpu->gpr[rs] & 63;
 				cpu->gpr[rd] = cpu->gpr[rt] >> sa;
@@ -1217,14 +1565,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			}
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			if (instruction_trace_cached) {
-				int offset;
-				char *symbol = get_symbol_name(cpu->gpr[rs], &offset);
-				if (symbol != NULL)
-					debug("jr\tr%i\t\t<%s>\n", rs, symbol);
-				else
-					debug("jr\tr%i\n", rs);
-			}
 
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
@@ -1251,14 +1591,6 @@ static int cpu_run_instr(struct cpu *cpu)
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
-			if (instruction_trace_cached) {
-				int offset;
-				char *symbol = get_symbol_name(cpu->gpr[rs], &offset);
-				if (symbol != NULL)
-					debug("jalr\tr%i,r%i\t\t<%s>\n", rd, rs, symbol);
-				else
-					debug("jalr\tr%i,r%i\n", rd, rs);
-			}
 
 			tmpvalue = cpu->gpr[rs];
 			cpu->gpr[rd] = cached_pc + 4;	/*  already increased by 4 earlier  */
@@ -1274,13 +1606,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
-
-			if (instruction_trace_cached) {
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_MFHI)	instr_mnem = "mfhi";
-				if (special6 == SPECIAL_MFLO)	instr_mnem = "mflo";
-				debug("%s\tr%i\n", instr_mnem, rd);
-			}
 
 			if (special6 == SPECIAL_MFHI) {
 				cpu->gpr[rd] = cpu->hi;
@@ -1350,57 +1675,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			    ) )
 				debug("warning: instruction modifying HI too early after mfhi!\n");
 #endif
-
-			if (instruction_trace_cached) {
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_MTLO)	instr_mnem = "mtlo";
-				if (special6 == SPECIAL_MTHI)	instr_mnem = "mthi";
-				if (instr_mnem)
-					debug("%s\tr%i\n", instr_mnem, rs);
-
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_MULT) {
-					if (rd!=0)
-						debug("mult_xx\tr%i,r%i,r%i\n", rd, rs, rt);
-					else
-						instr_mnem = "mult";
-				}
-				if (special6 == SPECIAL_MULTU)	instr_mnem = "multu";
-				if (special6 == SPECIAL_DMULT)	instr_mnem = "dmult";
-				if (special6 == SPECIAL_DMULTU)	instr_mnem = "dmultu";
-				if (special6 == SPECIAL_DIV)	instr_mnem = "div";
-				if (special6 == SPECIAL_DIVU)	instr_mnem = "divu";
-				if (special6 == SPECIAL_DDIV)	instr_mnem = "ddiv";
-				if (special6 == SPECIAL_DDIVU)	instr_mnem = "ddivu";
-				if (special6 == SPECIAL_TGE)	instr_mnem = "tge";
-				if (special6 == SPECIAL_TGEU)	instr_mnem = "tgeu";
-				if (special6 == SPECIAL_TLT)	instr_mnem = "tlt";
-				if (special6 == SPECIAL_TLTU)	instr_mnem = "tltu";
-				if (special6 == SPECIAL_TEQ)	instr_mnem = "teq";
-				if (special6 == SPECIAL_TNE)	instr_mnem = "tne";
-				if (instr_mnem)
-					debug("%s\tr%i,r%i\n", instr_mnem, rs, rt);
-
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_ADD)	instr_mnem = "add";
-				if (special6 == SPECIAL_ADDU)	instr_mnem = "addu";
-				if (special6 == SPECIAL_SUB)	instr_mnem = "sub";
-				if (special6 == SPECIAL_SUBU)	instr_mnem = "subu";
-				if (special6 == SPECIAL_AND)	instr_mnem = "and";
-				if (special6 == SPECIAL_OR)	instr_mnem = "or";
-				if (special6 == SPECIAL_XOR)	instr_mnem = "xor";
-				if (special6 == SPECIAL_NOR)	instr_mnem = "nor";
-				if (special6 == SPECIAL_SLT)	instr_mnem = "slt";
-				if (special6 == SPECIAL_SLTU)	instr_mnem = "sltu";
-				if (special6 == SPECIAL_DADD)	instr_mnem = "dadd";
-				if (special6 == SPECIAL_DADDU)	instr_mnem = "daddu";
-				if (special6 == SPECIAL_DSUB)	instr_mnem = "dsub";
-				if (special6 == SPECIAL_DSUBU)	instr_mnem = "dsubu";
-				if (special6 == SPECIAL_MOVZ)	instr_mnem = "movz";
-				if (special6 == SPECIAL_MOVN)	instr_mnem = "movn";
-				if (instr_mnem)
-					debug("%s\tr%i,r%i,r%i\n", instr_mnem, rd, rs, rt);
-			}
 
 			/*  TODO:  trap on overflow, and stuff like that  */
 			if (special6 == SPECIAL_ADD ||
@@ -1655,15 +1929,11 @@ static int cpu_run_instr(struct cpu *cpu)
 			return 1;
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
-			if (instruction_trace_cached)
-				debug("sync\t0x%02x\n", imm);
 			/*  TODO: actually sync  */
 			return 1;
 		case SPECIAL_SYSCALL:
 			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
 			imm &= 0xfffff;
-			if (instruction_trace_cached)
-				debug("syscall\t0x%05x\n", imm);
 
 			if (userland_emul) {
 				useremul_syscall(cpu, imm);
@@ -1671,22 +1941,16 @@ static int cpu_run_instr(struct cpu *cpu)
 				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
 			return 1;
 		case SPECIAL_BREAK:
-			if (instruction_trace_cached)
-				debug("break\n");
 			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			return 1;
 		case SPECIAL_MFSA:
 			/*  R5900? What on earth does this thing do?  */
 			rd = (instr[1] >> 3) & 31;
-			if (instruction_trace_cached)
-				debug("mfsa\tr%i\n", rd);
 			/*  TODO  */
 			return 1;
 		case SPECIAL_MTSA:
 			/*  R5900? What on earth does this thing do?  */
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			if (instruction_trace_cached)
-				debug("mtsa\tr%i\n", rs);
 			/*  TODO  */
 			return 1;
 		default:
@@ -1757,95 +2021,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)		/*  signed 16-bit  */
 			imm -= 65536;
-
-		dataflag = 0;
-
-		if (instruction_trace_cached) {
-			instr_mnem = NULL;
-			if (hi6 == HI6_BEQ)	instr_mnem = "beq";
-			if (hi6 == HI6_BEQL)	instr_mnem = "beql";
-			if (hi6 == HI6_BNE)	instr_mnem = "bne";
-			if (hi6 == HI6_BGTZ)	instr_mnem = "bgtz";
-			if (hi6 == HI6_BGTZL)	instr_mnem = "bgtzl";
-			if (hi6 == HI6_BLEZ)	instr_mnem = "blez";
-			if (hi6 == HI6_BLEZL)	instr_mnem = "blezl";
-			if (hi6 == HI6_BNEL)	instr_mnem = "bnel";
-			if (instr_mnem != NULL)
-				debug("%s\tr%i,r%i,%016llx\n", instr_mnem, rt, rs, cached_pc + (imm << 2));
-
-			instr_mnem = NULL;
-			if (hi6 == HI6_ADDI)	instr_mnem = "addi";
-			if (hi6 == HI6_ADDIU)	instr_mnem = "addiu";
-			if (hi6 == HI6_DADDI)	instr_mnem = "daddi";
-			if (hi6 == HI6_DADDIU)	instr_mnem = "daddiu";
-			if (hi6 == HI6_SLTI)	instr_mnem = "slti";
-			if (hi6 == HI6_SLTIU)	instr_mnem = "sltiu";
-			if (hi6 == HI6_ANDI)	instr_mnem = "andi";
-			if (hi6 == HI6_ORI)	instr_mnem = "ori";
-			if (hi6 == HI6_XORI)	instr_mnem = "xori";
-			if (instr_mnem != NULL)
-				debug("%s\tr%i,r%i,%i\n", instr_mnem, rt, rs, imm);
-
-			instr_mnem = NULL;
-			if (hi6 == HI6_LUI)	instr_mnem = "lui";
-			if (instr_mnem != NULL)
-				debug("%s\tr%i,0x%x\n", instr_mnem, rt, imm & 0xffff);
-
-			instr_mnem = NULL;
-			if (hi6 == HI6_LB)	instr_mnem = "lb";
-			if (hi6 == HI6_LBU)	instr_mnem = "lbu";
-			if (hi6 == HI6_LH)	instr_mnem = "lh";
-			if (hi6 == HI6_LHU)	instr_mnem = "lhu";
-			if (hi6 == HI6_LW)	instr_mnem = "lw";
-			if (hi6 == HI6_LWU)	instr_mnem = "lwu";
-			if (hi6 == HI6_LD)	instr_mnem = "ld";
-			if (hi6 == HI6_LQ_MDMX)	instr_mnem = "lq";	/*  R5900 only, otherwise MDMX (TODO)  */
-			if (hi6 == HI6_LWC1)	instr_mnem = "lwc1";
-			if (hi6 == HI6_LWC2)	instr_mnem = "lwc2";
-			if (hi6 == HI6_LWC3)	instr_mnem = "pref";	/* "lwc3"; */
-			if (hi6 == HI6_LDC1)	instr_mnem = "ldc1";
-			if (hi6 == HI6_LDC2)	instr_mnem = "ldc2";
-			if (hi6 == HI6_LL)	instr_mnem = "ll";
-			if (hi6 == HI6_LLD)	instr_mnem = "lld";
-			if (hi6 == HI6_LWL)	instr_mnem = "lwl";
-			if (hi6 == HI6_LWR)	instr_mnem = "lwr";
-			if (hi6 == HI6_LDL)	instr_mnem = "ldl";
-			if (hi6 == HI6_LDR)	instr_mnem = "ldr";
-			if (hi6 == HI6_SB)	instr_mnem = "sb";
-			if (hi6 == HI6_SH)	instr_mnem = "sh";
-			if (hi6 == HI6_SW)	instr_mnem = "sw";
-			if (hi6 == HI6_SD)	instr_mnem = "sd";
-			if (hi6 == HI6_SQ)	instr_mnem = "sq";	/*  R5900 ?  */
-			if (hi6 == HI6_SC)	instr_mnem = "sc";
-			if (hi6 == HI6_SCD)	instr_mnem = "scd";
-			if (hi6 == HI6_SWC1)	instr_mnem = "swc1";
-			if (hi6 == HI6_SWC2)	instr_mnem = "swc2";
-			if (hi6 == HI6_SWC3)	instr_mnem = "swc3";
-			if (hi6 == HI6_SDC1)	instr_mnem = "sdc1";
-			if (hi6 == HI6_SWL)	instr_mnem = "swl";
-			if (hi6 == HI6_SWR)	instr_mnem = "swr";
-			if (hi6 == HI6_SDL)	instr_mnem = "sdl";
-			if (hi6 == HI6_SDR)	instr_mnem = "sdr";
-			dataflag = 0;
-			if (instr_mnem != NULL) {
-				int offset;
-		                char *symbol = get_symbol_name(cpu->gpr[rs] + imm, &offset);
-
-				if (hi6 == HI6_LWC3)
-					debug("%s\t0x%x,%i(r%i)\t\t[0x%016llx = %s]\n", instr_mnem,
-					    rt, imm, rs, (long long)(cpu->gpr[rs] + imm), symbol);
-				else {
-					if (symbol != NULL)
-						debug("%s\tr%i,%i(r%i)\t\t[0x%016llx = %s, data=", instr_mnem,
-						    rt, imm, rs, (long long)(cpu->gpr[rs] + imm), symbol);
-					else
-						debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=", instr_mnem,
-						    rt, imm, rs, (long long)(cpu->gpr[rs] + imm));
-				}
-
-				dataflag = 1;
-			}
-		}
 
 		tmpvalue = imm;		/*  used later in several cases  */
 
@@ -2227,7 +2402,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
 				if (!success) {
 					/*  The store failed, and might have caused an exception.  */
-					if (instruction_trace_cached && dataflag)
+					if (instruction_trace_cached)
 						debug("(failed)]\n");
 					break;
 				}
@@ -2239,7 +2414,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
 				if (!success) {
 					/*  The load failed, and might have caused an exception.  */
-					if (instruction_trace_cached && dataflag)
+					if (instruction_trace_cached)
 						debug("(failed)]\n");
 					break;
 				}
@@ -2336,7 +2511,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				cpu->rmw = 0;
 			}
 
-			if (instruction_trace_cached && dataflag) {
+			if (instruction_trace_cached) {
 				char *t;
 				switch (wlen) {
 				case 2:		t = "0x%04llx"; break;
@@ -2428,11 +2603,11 @@ static int cpu_run_instr(struct cpu *cpu)
 				if (st) {
 					databyte = (result_value >> (reg_ofs * 8)) & 255;
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
-					/*  if (instruction_trace_cached && dataflag)
+					/*  if (instruction_trace_cached)
 						debug("%02x ", databyte);  */
 				} else {
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
-					/*  if (instruction_trace_cached && dataflag)
+					/*  if (instruction_trace_cached)
 						debug("%02x ", databyte);  */
 					result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
 					result_value |= (uint64_t)databyte << (reg_ofs * 8);
@@ -2455,7 +2630,7 @@ static int cpu_run_instr(struct cpu *cpu)
 					cpu->gpr[rt] |= 0xffffffff00000000ULL;
 			}
 
-			if (instruction_trace_cached && dataflag) {
+			if (instruction_trace_cached) {
 				char *t;
 				switch (wlen) {
 				case 2:		t = "0x%04llx"; break;
@@ -2489,19 +2664,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)		/*  signed 16-bit  */
 				imm -= 65536;
-
-			if (instruction_trace_cached) {
-				instr_mnem = NULL;
-				if (regimm5 == REGIMM_BLTZ)	instr_mnem = "bltz";
-				if (regimm5 == REGIMM_BGEZ)	instr_mnem = "bgez";
-				if (regimm5 == REGIMM_BLTZL)	instr_mnem = "bltzl";
-				if (regimm5 == REGIMM_BGEZL)	instr_mnem = "bgezl";
-				if (regimm5 == REGIMM_BLTZAL)	instr_mnem = "bltzal";
-				if (regimm5 == REGIMM_BLTZALL)	instr_mnem = "bltzall";
-				if (regimm5 == REGIMM_BGEZAL)	instr_mnem = "bgezal";
-				if (regimm5 == REGIMM_BGEZALL)	instr_mnem = "bgezall";
-				debug("%s\tr%i,%016llx\n", instr_mnem, rs, cached_pc + (imm << 2));
-			}
 
 			cond = and_link = likely = 0;
 
@@ -2562,20 +2724,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		addr = cached_pc & ~((1 << 28) - 1);
 		addr |= imm;
 
-		if (instruction_trace_cached) {
-			int offset;
-			char *symbol = get_symbol_name(addr, &offset);
-
-			instr_mnem = NULL;
-			if (hi6 == HI6_J)	instr_mnem = "j";
-			if (hi6 == HI6_JAL)	instr_mnem = "jal";
-
-			if (symbol != NULL)
-				debug("%s\t0x%016llx\t\t<%s>\n", instr_mnem, addr, symbol);
-			else
-				debug("%s\t0x%016llx\n", instr_mnem, addr);
-		}
-
 		cpu->delay_slot = TO_BE_DELAYED;
 		cpu->delay_jmpaddr = addr;
 
@@ -2626,33 +2774,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		cache_op    = copz >> 2;
 		which_cache = copz & 3;
 
-		if (instruction_trace_cached) {
-			int showtag = 0;
-
-			debug("cache\t0x%02x,0x%04x(r%i)", copz, imm, rt);
-			if (which_cache==0)	debug("  [ primary I-cache");
-			if (which_cache==1)	debug("  [ primary D-cache");
-			if (which_cache==2)	debug("  [ secondary I-cache");
-			if (which_cache==3)	debug("  [ secondary D-cache");
-			debug(", ");
-			if (cache_op==0)	debug("index invalidate");
-			if (cache_op==1)	debug("index load tag");
-			if (cache_op==2)	debug("index store tag"), showtag=1;
-			if (cache_op==3)	debug("create dirty exclusive");
-			if (cache_op==4)	debug("hit invalidate");
-			if (cache_op==5)	debug("fill OR hit writeback invalidate");
-			if (cache_op==6)	debug("hit writeback");
-			if (cache_op==7)	debug("hit set virtual");
-			debug(", r%i=0x%016llx", rt, (long long)cpu->gpr[rt]);
-
-			if (showtag)
-				debug(", taghi=%08lx lo=%08lx",
-				    (long)cp0->reg[COP0_TAGDATA_HI],
-				    (long)cp0->reg[COP0_TAGDATA_LO]);
-
-			debug(" ]\n");
-		}
-
 		/*
 		 *  TODO:  The cache instruction is implementation dependant.
 		 *  This is really ugly.
@@ -2694,8 +2815,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		 */
 
 		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
-			if (instruction_trace_cached)
-				debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
 			{
 				int32_t a, b;
 				int64_t c;
@@ -2730,12 +2849,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x49) {
-				if (instruction_trace_cached)
-					debug("pmflo\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->lo;
 			} else {
-				if (instruction_trace_cached)
-					debug("pmfhi\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->hi;
 			}
 		} else if ((instrword & 0xfc1fffff) == 0x70000269 || (instrword & 0xfc1fffff) == 0x70000229) {
@@ -2748,12 +2863,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x69) {
-				if (instruction_trace_cached)
-					debug("pmtlo\tr%i rs=%i\n", rs);
 				cpu->lo = cpu->gpr[rs];
 			} else {
-				if (instruction_trace_cached)
-					debug("pmthi\tr%i rs=%i\n", rs);
 				cpu->hi = cpu->gpr[rs];
 			}
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
@@ -2765,8 +2876,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  A wild guess is that this is a 128-bit "or" between two registers.
 			 *  For now, let's just or using 64-bits.  (TODO)
 			 */
-			if (instruction_trace_cached)
-				debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
 			/*
@@ -2774,8 +2883,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  It seems that this instruction is used to combine two 32-bit
 			 *  words into a 64-bit dword, typically before a sd (store dword).
 			 */
-			if (instruction_trace_cached)
-				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] =
 			    ((cpu->gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->gpr[rt] & 0xffffffffULL);
@@ -2887,14 +2994,14 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 	if (cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instructions)", (long long) ninstrs);
 
-	printf(", instr/sec: %lli cur, %lli avg, ",
+	printf(", instr/sec: %lli cur, %lli avg",
 	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
 	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
 
-	printf(" pc=%016llx <%s> ]\n",
+	printf(", pc=%016llx <%s> ]\n",
 	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
 
 do_return:

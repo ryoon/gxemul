@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.3 2004-07-09 05:27:21 debug Exp $
+.\" $Id: mips64emul.1,v 1.4 2004-07-09 05:43:00 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -73,13 +73,12 @@ Appart from the name of a MIPS binary, it is also neccessary to select
 which specific emulation mode to use. For example, a MIPS-based machine
 from DEC (a DECstation) is very different from a MIPS-based machine
 from SGI. This selection is done by supplying the correct command 
-line option (-D2 or -G22, respectively, in this example.)
+line option -D2 or -G22, respectively, in this example.)
 
 (There is an exception to the normal invokation usage mentioned above;
 if you want to use the DECstation emulation mode, and have a bootable
 DECstation harddisk image, then just supplying the diskimage via the
-.B -d
-option is sufficient. The filename of the kernel can then be skipped,
+-d option is sufficient. The filename of the kernel can then be skipped,
 as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
 .SH AUTHOR

@@ -254,7 +254,7 @@ You need to do the following:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=512 count=1 seek=980000000</b>
+	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=512 seek=980000000</b>
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
@@ -638,7 +638,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.19 2004-04-11 15:52:54 debug Exp $</pre>
+<pre>$Id: index.html,v 1.20 2004-04-11 16:31:59 debug Exp $</pre>
 
 </body>
 </html>

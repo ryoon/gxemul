@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.613 2005-02-26 16:53:58 debug Exp $
+$Id: HISTORY,v 1.614 2005-02-26 18:00:54 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1705,3 +1705,4 @@ HISTORY of mips64emul
 		Redesigning the device registry again :-)
 		Adding a "device" command to the config file parser.
 		Adding "device add" and "device remove" to the debugger.
+		Removing pcidevs.h, because it was almost unused.

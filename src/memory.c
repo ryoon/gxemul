@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.8 2004-01-06 02:00:21 debug Exp $
+ *  $Id: memory.c,v 1.9 2004-01-06 10:31:15 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -610,13 +610,17 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	if (no_exceptions && cpu != NULL)
 		goto no_exception_access;
 
-	/*  TODO:  perhaps this optimization is bad;  TURBOchannel devices
-		may have MIPS opcodes in them (memory mapped). But in the
-		general case, memory mapped devices shouldn't have instructions
-		in them  */
+	/*
+	 *  TODO:  this optimization is a bit ugly;  TURBOchannel devices
+	 *  may have MIPS opcodes in them (memory mapped), and one possible
+	 *  implementation of the memory aliasing on SGI IP22 (128MB)
+	 *  would be a memory device.
+	 *
+	 *  This code simply bypasses the device check, when reading
+	 *  instructions.
+	 */
 	if (cache == CACHE_INSTRUCTION)
 		goto no_exception_access;
-
 
 	/*
 	 *  Memory mapped device?

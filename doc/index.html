@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.30 2004-06-18 12:23:54 debug Exp $
+$Id: index.html,v 1.31 2004-06-18 12:35:54 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -291,6 +291,12 @@ You need to do the following:
 	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img  \
 		-d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
+	Alternatively, if you don't want to use a graphical framebuffer:<pre>
+	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img  \
+		-d b:pmaxcd.iso netbsd-INSTALL</b>
+</pre>
+	but then make sure you choose 'vt100' when prompted with which terminal
+	type to use, and not 'rcons'.
 </ol>
 
 <p>
@@ -422,20 +428,18 @@ Hopefully this is enough to get you inspired. :-)
 
 Is this a good idea?  The answer is yes and no, depending on what you are
 trying to port to. If you are developing an operating system or operating
-system kernel of your own, and wish to target MIPS in general (that is,
-the CPU but not hardware specific to any one machine type), then the
-answer might be yes, for experimental purposes.
+system kernel of your own, and wish to target MIPS-like systems in general,
+then the answer might be yes, for experimental purposes.
 <p>
 However, if you think that you can port an operating system
 to, say, the Silicon Graphics machine mode of mips64emul and hope that your
 operating system will run on a real SGI machine, then you will most
 likely fail. mips64emul simply does not emulate things well enough for that to work.
-A lot of the devices that are emulated are based on guesswork (for example,
-by studying code in NetBSD that uses the device, and thereby figure
-out more or less how the device is supposed to work).
+Another example would be specific CPU details; if your code depends on,
+say, R10000 specifics, chances are that mips64emul will not be sufficient.
 <p>
 In many cases, hardware devices in mips64emul are only implemented well
-enough to fool eg. NetBSD that they are working correctly, while in fact
+enough to fool for example NetBSD that they are working correctly, while in fact
 they don't work very much at all.  Please keep this in mind, if you plan
 to use mips64emul when porting your code to MIPS.
 
@@ -644,7 +648,6 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.30 2004-06-18 12:23:54 debug Exp $</pre>
 
 </body>
 </html>

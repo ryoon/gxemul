@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.79 2004-11-23 16:11:11 debug Exp $
+ *  $Id: bintrans.c,v 1.80 2004-11-23 20:08:08 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -732,8 +732,6 @@ run_it:
 
 	bintrans_runchunk(cpu, f);
 
-return cpu->bintrans_instructions_executed;
-
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
@@ -756,11 +754,6 @@ return cpu->bintrans_instructions_executed;
 		}
 
 		if (ok) {
-			if (cpu->emul->emulation_type == EMULTYPE_DEC)
-				paddr &= 0x1fffffff;
-			else
-				paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
-
 			/*  TODO: how about code between devices?  */
 			if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
 				ok = 0;

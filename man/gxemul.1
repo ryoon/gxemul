@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.6 2005-03-23 09:00:56 debug Exp $
+.\" $Id: gxemul.1,v 1.7 2005-03-31 05:35:13 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -194,6 +194,10 @@ Show a trace tree of all function calls being made.
 Enable slow_serial_interrupts_hack_for_linux.
 .It Fl X
 Use X11.
+.It Fl x
+Open up new xterms for emulated serial ports. (Default is to open up 
+xterms when using configuration files, but not when starting an 
+emulation with settings directly on the command line.)
 .It Fl Y Ar n
 Scale down framebuffer windows by
 .Ar n

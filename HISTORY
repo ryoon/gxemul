@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.661 2005-03-30 22:57:31 debug Exp $
+$Id: HISTORY,v 1.662 2005-03-31 05:35:11 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1780,3 +1780,5 @@ Changelog for GXemul:
 20050330	Print a nicer warning when the user attempts to load a
 		gzipped file.
 20050331	Importing aic7xxx_reg.h from NetBSD.
+		Adding a "-x" command line option, which forces xterms for
+		each emulated serial port to always be opened.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.221 2005-03-23 09:00:56 debug Exp $
+ *  $Id: main.c,v 1.222 2005-03-31 05:35:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -339,6 +339,11 @@ static void usage(int longusage)
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
+#endif /*  WITH_X11  */
+	printf("  -x        open up new xterms for emulated serial ports "
+	    "(default is on when\n            using configuration files, off"
+	    " otherwise)\n");
+#ifdef WITH_X11
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
 	printf("  -y x      set max_random_cycles_per_chunk to x"
@@ -394,7 +399,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	struct machine *m = emul_add_machine(emul, "default");
 
 	while ((ch = getopt(argc, argv, "BbC:Dd:E:e:HhI:iJj:KM:m:"
-	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
+	    "Nn:Oo:p:QqRrSsTtUu:VvW:XxY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'B':
 			m->bintrans_enable = 0;
@@ -552,6 +557,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'X':
 			m->use_x11 = 1;
 			msopts = 1;
+			break;
+		case 'x':
+			console_allow_slaves(1);
 			break;
 		case 'Y':
 			m->x11_scaledown = atoi(optarg);
@@ -824,7 +832,7 @@ int main(int argc, char *argv[])
 			emuls[n_emuls - 1] =
 			    emul_create_from_configfile(s);
 
-			/*  Allow slave xterms when using multiple
+			/*  Always allow slave xterms when using multiple
 			    emulations:  */
 			console_allow_slaves(1);
 		}

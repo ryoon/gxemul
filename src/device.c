@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.2 2005-02-22 06:09:25 debug Exp $
+ *  $Id: device.c,v 1.3 2005-02-22 06:26:11 debug Exp $
  *
  *  Device registry framework.
  */
@@ -113,6 +113,11 @@ struct device_entry *device_lookup(char *name)
 {
 	int i, step, r;
 
+	if (name == NULL) {
+		fprintf(stderr, "device_lookup(): NULL ptr\n");
+		exit(1);
+	}
+
 	if (!device_entries_sorted)
 		sort_entries();
 
@@ -160,8 +165,31 @@ struct device_entry *device_lookup(char *name)
  */
 int device_unregister(char *name)
 {
-	fatal("device_unregister(): TODO\n");
-	return 0;
+	size_t i;
+	struct device_entry *p = device_lookup(name);
+
+	if (p == NULL) {
+		fatal("device_unregister(): no such device (\"%s\")\n", name);
+		return 0;
+	}
+
+	i = (size_t)p - (size_t)device_entries;
+	i /= sizeof(struct device_entry);
+	if (i == n_device_entries-1) {
+		/*  Do nothing if we're removing the last array element.  */
+	} else {
+		/*  Remove array element i by copying the last element
+		    to i's position:  */
+		device_entries[i] = device_entries[n_device_entries-1];
+
+		/*  The array is not sorted anymore:  */
+		device_entries_sorted = 0;
+	}
+
+	n_device_entries --;
+
+	/*  TODO: realloc?  */
+	return 1;
 }
 
 

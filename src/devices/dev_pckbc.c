@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.36 2005-02-07 07:12:25 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.37 2005-02-22 06:26:10 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -378,8 +378,10 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 
 	/*  8242 PS2-style:  */
 	if (d->type == PCKBC_8242) {
-		relative_addr /= sizeof(uint64_t);	/*  if using 8-byte alignment  */
-		port_nr = (relative_addr >> 2);		/*  0 for keyboard, 1 for mouse  */
+		/*  when using 8-byte alignment...  */
+		relative_addr /= sizeof(uint64_t);
+		/*  port_nr = 0 for keyboard, 1 for mouse  */
+		port_nr = (relative_addr >> 2);
 		relative_addr &= 3;
 		relative_addr += PS2;
 	} else {
@@ -439,7 +441,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 			    d->state == STATE_RDCMDBYTE)
 				odata |= KBS_DIB;
 			/*  odata |= KBS_OCMD;  */
-			/*  debug("[ pckbc: read from CTL status port: 0x%02x ]\n", odata);  */
+			/*  debug("[ pckbc: read from CTL status port: "
+			    "0x%02x ]\n", (int)odata);  */
 		} else {
 			debug("[ pckbc: write to CTL:");
 			for (i=0; i<len; i++)
@@ -483,74 +486,98 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 	case PS2 + PS2_TXBUF:
 		if (writeflag==MEM_READ) {
 			odata = random() & 0xff;
-			debug("[ pckbc: read from port %i, PS2_TXBUF: 0x%x ]\n", port_nr, (int)odata);
+			debug("[ pckbc: read from port %i, PS2_TXBUF: "
+			    "0x%x ]\n", port_nr, (int)odata);
 		} else {
-			debug("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_TXBUF: "
+			    "0x%llx ]\n", port_nr, (long long)idata);
 
 			/*  Handle keyboard commands:  */
 			switch (idata) {
-			/*  These are incorrect, the second byte of commands should be treated better:  */
-			case 0x00:	/*  second byte of 0xed, SGI-IP32's prom  */
-				pckbc_add_code(d, 0x03, port_nr);	/*  ack  (?) */
+			/*  These are incorrect, the second byte of
+			    commands should be treated better:  */
+			case 0x00:	/*  second byte of 0xed,
+					    SGI-IP32's prom  */
+				pckbc_add_code(d, 0x03, port_nr);/*  ack  (?) */
 				break;
-			case 0x14:	/*  second byte of 0xfc, SGI-IP32's prom  */
-			case 0x28:	/*  second byte of 0xf3, SGI-IP32's prom  */
-			case 0x76:	/*  third byte of 0xfc, SGI-IP32's prom  */
-			case 0x03:	/*  second byte of ATKBD_CMD_GSCANSET (?)  */
+			case 0x14:	/*  second byte of 0xfc,
+					    SGI-IP32's prom  */
+			case 0x28:	/*  second byte of 0xf3,
+					    SGI-IP32's prom  */
+			case 0x76:	/*  third byte of 0xfc,
+					    SGI-IP32's prom  */
+			case 0x03:	/*  second byte of
+					    ATKBD_CMD_GSCANSET (?)  */
 			case 0x04:
-				pckbc_add_code(d, 0x03, port_nr);	/*  ?  */
+				pckbc_add_code(d, 0x03, port_nr);/*  ?  */
 				break;
 
 			/*  Command bytes:  */
 			case 0xf0:	/*  ATKBD_CMD_GSCANSET (?)  */
-				pckbc_add_code(d, 0x03, port_nr);	/*  ?  */
+				pckbc_add_code(d, 0x03, port_nr);/*  ?  */
 				break;
 			case 0xf2:	/*  Get keyboard ID  */
-				/*  The keyboard should generate 2 status bytes.  */
+				/*  The keyboard should generate 2
+				    status bytes.  */
 				pckbc_add_code(d, 0xab, port_nr);
 				pckbc_add_code(d, 0x83, port_nr);
 				break;
-			case 0xed:	/*  "ATKBD_CMD_SETLEDS", takes 1 byte arg  */
-			case 0xf3:	/*  "PSMOUSE_CMD_SETRATE", takes 1 byte arg  */
-			case 0xf4:	/*  "ATKBD_CMD_ENABLE" (or PSMOUSE_CMD_ENABLE), no args  */
-			case 0xf5:	/*  "ATKBD_CMD_RESET_DIS" (keyboard, according to Linux sources)  */
-			case 0xf6:	/*  "PSMOUSE_CMD_RESET_DIS" (mouse, according to Linux sources)  */
+			case 0xed:	/*  "ATKBD_CMD_SETLEDS",
+					    takes 1 byte arg  */
+			case 0xf3:	/*  "PSMOUSE_CMD_SETRATE",
+					    takes 1 byte arg  */
+			case 0xf4:	/*  "ATKBD_CMD_ENABLE" (or
+					    PSMOUSE_CMD_ENABLE), no args  */
+			case 0xf5:	/*  "ATKBD_CMD_RESET_DIS" (keyboard,
+					    according to Linux sources)  */
+			case 0xf6:	/*  "PSMOUSE_CMD_RESET_DIS" (mouse,
+					    according to Linux sources)  */
 				/*  TODO: what does this do?  */
-				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
 				break;
 			case 0xfa:	/*  "ATKBD_CMD_SETALL_MBR" (linux)  */
-				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
 				break;
 			case 0xfc:	/*  ?  */
-				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
 				break;
 			case 0xff:	/*  Keyboard reset  */
-				/*  The keyboard should generate 2 status bytes.  */
-				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
-				pckbc_add_code(d, 0xaa, port_nr);	/*  battery ok (?)  */
+				/*  The keyboard should generate 2
+				    status bytes.  */
+				pckbc_add_code(d, 0xfa, port_nr);/*  ack  (?) */
+				pckbc_add_code(d, 0xaa, port_nr);
+					/*  battery ok (?)  */
 				break;
 			default:
-				debug("[ pckbc: UNIMPLEMENTED keyboard command 0x%02x (port %i) ]\n", (int)idata, port_nr);
+				debug("[ pckbc: UNIMPLEMENTED keyboard command"
+				    " 0x%02x (port %i) ]\n", (int)idata,
+				    port_nr);
 			}
 		}
 		break;
 
 	case PS2 + PS2_RXBUF:
 		if (writeflag==MEM_READ) {
-			odata = random() & 0xff;	/*  what to return if no data is available? TODO  */
+			/*  TODO: What should be returned if no data 
+			    is available?  */
+			odata = random() & 0xff;
 			if (d->head[port_nr] != d->tail[port_nr])
 				odata = pckbc_get_code(d, port_nr);
-			debug("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);
+			debug("[ pckbc: read from port %i, PS2_RXBUF: "
+			    "0x%02x ]\n", port_nr, (int)odata);
 		} else {
-			debug("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_RXBUF: "
+			    "0x%llx ]\n", port_nr, (long long)idata);
 		}
 		break;
 
 	case PS2 + PS2_CONTROL:
 		if (writeflag==MEM_READ) {
-			debug("[ pckbc: read from port %i, PS2_CONTROL ]\n", port_nr);
+			debug("[ pckbc: read from port %i, PS2_CONTROL"
+			    " ]\n", port_nr);
 		} else {
-			debug("[ pckbc: write to port %i, PS2_CONTROL: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_CONTROL:"
+			    " 0x%llx ]\n", port_nr, (long long)idata);
 			d->clocksignal = (idata & 0x10) ? 1 : 0;
 			d->rx_int_enable = (idata & 0x08) ? 1 : 0;
 			d->tx_int_enable = (idata & 0x04) ? 1 : 0;
@@ -559,14 +586,19 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 
 	case PS2 + PS2_STATUS:
 		if (writeflag==MEM_READ) {
-			odata = d->clocksignal + 0x08;	/* 0x08 = transmit buffer empty  */
+			/* 0x08 = transmit buffer empty  */
+			odata = d->clocksignal + 0x08;
 
-			if (d->head[port_nr] != d->tail[port_nr])
-				odata |= 0x10;		/*  0x10 = receicer data available (?)  */
+			if (d->head[port_nr] != d->tail[port_nr]) {
+				/*  0x10 = receicer data available (?)  */
+				odata |= 0x10;
+			}
 
-			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
+			debug("[ pckbc: read from port %i, PS2_STATUS: "
+			    "0x%llx ]\n", port_nr, (long long)odata);
 		} else {
-			debug("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_STATUS: "
+			    "0x%llx ]\n", port_nr, (long long)idata);
 		}
 		break;
 

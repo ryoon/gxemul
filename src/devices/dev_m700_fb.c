@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.10 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.11 2005-02-22 06:26:10 debug Exp $
  *  
  *  Olivetti M700 framebuffer.
  *
@@ -37,9 +37,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 #define	DEFAULT_XSIZE		800
@@ -105,10 +105,12 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ m700_fb: unimplemented write to address 0x%x, data=0x%02x ]\n",
+			debug("[ m700_fb: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n",
 			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ m700_fb: unimplemented read from address 0x%x ]\n", (int)relative_addr);
+			debug("[ m700_fb: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.14 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.15 2005-02-22 06:26:10 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -84,13 +84,16 @@ int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem,
 
 	if (writeflag == MEM_READ) {
 		/*  TODO  */
-		/*  0xfc = transmit interrupt, 0xf8 = receive interrupt, 0x80 = IPI  */
+		/*  0xfc = transmit interrupt, 0xf8 = receive interrupt,
+		    0x80 = IPI  */
 		odata = d->vector_0x50;
 /* odata = 0xfc; */
-		debug("[ dec5800_vectors: read from 0x%02x: 0x%02x ]\n", (int)relative_addr, (int)odata);
+		debug("[ dec5800_vectors: read from 0x%02x: 0x%02x ]\n",
+		    (int)relative_addr, (int)odata);
 	} else {
 		d->vector_0x50 = idata;
-		debug("[ dec5800_vectors: write to 0x%02x: 0x%02x ]\n", (int)relative_addr, (int)idata);
+		debug("[ dec5800_vectors: write to 0x%02x: 0x%02x ]\n",
+		    (int)relative_addr, (int)idata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -120,7 +123,8 @@ int dev_dec5800_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ) {
 			odata = d->csr;
 			odata ^= random() & 0x10000;
-			debug("[ dec5800: read from csr: 0x%08x ]\n", (int)odata);
+			debug("[ dec5800: read from csr: 0x%08x ]\n",
+			    (int)odata);
 		} else {
 			d->csr = idata;
 
@@ -128,14 +132,17 @@ int dev_dec5800_access(struct cpu *cpu, struct memory *mem,
 			d->csr &= ~0x20000000;
 			cpu_interrupt_ack(cpu, 3);
 
-			debug("[ dec5800: write to csr: 0x%08x ]\n", (int)idata);
+			debug("[ dec5800: write to csr: 0x%08x ]\n",
+			    (int)idata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ dec5800: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ dec5800: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ dec5800: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ dec5800: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -164,7 +171,8 @@ struct dec5800_data *dev_dec5800_init(struct machine *machine,
 	memory_device_register(mem, "dec5800", baseaddr,
 	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "dec5800_vectors",
-	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d, MEM_DEFAULT, NULL);
+	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access,
+	    d, MEM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_dec5800_tick, d, 14);
 
 	return d;
@@ -210,41 +218,53 @@ int dev_decbi_access(struct cpu *cpu, struct memory *mem,
 			 *  This is a list of the devices in our BI slots:
 			 */
 			switch (node_nr) {
-			case 1:	odata = BIDT_KDB50; break;		/*  Disk  */
-			/*  case 2:	odata = BIDT_DEBNA; break;  */	/*  Ethernet  */
-			/*  case 3:	odata = BIDT_MS820; break;  */	/*  Memory  */
+			case 1:	odata = BIDT_KDB50; break;	/*  Disk  */
+			/*  case 2:	odata = BIDT_DEBNA; break;  */
+				/*  BIDT_DEBNA = Ethernet  */
+			/*  case 3:	odata = BIDT_MS820; break;  */
+				/*  BIDT_MS820 = Memory  */
 			default:
 				/*  No device.  */
 				odata = 0;
 			}
 
-			debug("[ decbi: (node %i) read from BIREG_DTYPE: 0x%x ]\n", node_nr, odata);
+			debug("[ decbi: (node %i) read from BIREG_DTYPE:"
+			    " 0x%x ]\n", node_nr, (int)odata);
 		} else {
-			debug("[ decbi: (node %i) attempt to write to BIREG_DTYPE: 0x%08x ]\n", node_nr, idata);
+			debug("[ decbi: (node %i) attempt to write to "
+			    "BIREG_DTYPE: 0x%08x ]\n", node_nr, (int)idata);
 		}
 		break;
 	case BIREG_VAXBICSR:
 		if (writeflag==MEM_READ) {
 			odata = (d->csr[node_nr] & ~BICSR_NODEMASK) | node_nr;
-			debug("[ decbi: (node %i) read from BIREG_VAXBICSR: 0x%x ]\n", node_nr, odata);
+			debug("[ decbi: (node %i) read from BIREG_"
+			    "VAXBICSR: 0x%x ]\n", node_nr, (int)odata);
 		} else {
 			d->csr[node_nr] = idata;
-			debug("[ decbi: (node %i) attempt to write to BIREG_VAXBICSR: 0x%08x ]\n", node_nr, idata);
+			debug("[ decbi: (node %i) attempt to write to "
+			    "BIREG_VAXBICSR: 0x%08x ]\n", node_nr, (int)idata);
 		}
 		break;
 	case 0xf4:
 		if (writeflag==MEM_READ) {
 			odata = 0xffff;	/*  ?  */
-			debug("[ decbi: (node %i) read from 0xf4: 0x%x ]\n", node_nr, odata);
+			debug("[ decbi: (node %i) read from 0xf4: "
+			    "0x%x ]\n", node_nr, (int)odata);
 		} else {
-			debug("[ decbi: (node %i) attempt to write to 0xf4: 0x%08x ]\n", node_nr, idata);
+			debug("[ decbi: (node %i) attempt to write "
+			    "to 0xf4: 0x%08x ]\n", node_nr, (int)idata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ decbi: (node %i) read from unimplemented 0x%08lx ]\n", node_nr, (long)relative_addr, odata);
+			debug("[ decbi: (node %i) read from unimplemented "
+			    "0x%08lx ]\n", node_nr, (long)relative_addr,
+			    (int)odata);
 		} else {
-			debug("[ decbi: (node %i) write to unimpltemeted  0x%08lx: 0x%08x ]\n", node_nr, (long)relative_addr, idata);
+			debug("[ decbi: (node %i) write to unimplemented "
+			    "0x%08lx: 0x%08x ]\n", node_nr,
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -321,9 +341,11 @@ int dev_deccca_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ deccca: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ deccca: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ deccca: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ deccca: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -397,38 +419,50 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem,
 			if (node_nr == 0)
 				odata = XMIDT_DWMBA;
 
-			debug("[ decxmi: (node %i) read from XMI_TYPE: 0x%08x ]\n", node_nr, odata);
+			debug("[ decxmi: (node %i) read from XMI_TYPE: "
+			    "0x%08x ]\n", node_nr, (int)odata);
 		} else
-			debug("[ decxmi: (node %i) write to XMI_TYPE: 0x%08x ]\n", node_nr, idata);
+			debug("[ decxmi: (node %i) write to XMI_TYPE: "
+			    "0x%08x ]\n", node_nr, (int)idata);
 		break;
 	case XMI_BUSERR:
 		if (writeflag == MEM_READ) {
 			odata = 0;
-			debug("[ decxmi: (node %i) read from XMI_BUSERR: 0x%08x ]\n", node_nr, odata);
+			debug("[ decxmi: (node %i) read from XMI_BUSERR: "
+			    "0x%08x ]\n", node_nr, (int)odata);
 		} else
-			debug("[ decxmi: (node %i) write to XMI_BUSERR: 0x%08x ]\n", node_nr, idata);
+			debug("[ decxmi: (node %i) write to XMI_BUSERR: "
+			    "0x%08x ]\n", node_nr, (int)idata);
 		break;
 	case XMI_FAIL:
 		if (writeflag == MEM_READ) {
 			odata = 0;
-			debug("[ decxmi: (node %i) read from XMI_FAIL: 0x%08x ]\n", node_nr, odata);
+			debug("[ decxmi: (node %i) read from XMI_FAIL: "
+			    "0x%08x ]\n", node_nr, (int)odata);
 		} else
-			debug("[ decxmi: (node %i) write to XMI_FAIL: 0x%08x ]\n", node_nr, idata);
+			debug("[ decxmi: (node %i) write to XMI_FAIL: "
+			    "0x%08x ]\n", node_nr, (int)idata);
 		break;
 	case 0xc:
 		if (writeflag == MEM_READ) {
 			odata = d->reg_0xc[node_nr];
-			debug("[ decxmi: (node %i) read from REG 0xC: 0x%08x ]\n", node_nr, (int)odata);
+			debug("[ decxmi: (node %i) read from REG 0xC: "
+			    "0x%08x ]\n", node_nr, (int)odata);
 		} else {
 			d->reg_0xc[node_nr] = idata;
-			debug("[ decxmi: (node %i) write to REG 0xC: 0x%08x ]\n", node_nr, (int)idata);
+			debug("[ decxmi: (node %i) write to REG 0xC: "
+			    "0x%08x ]\n", node_nr, (int)idata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ decxmi: (node %i) read from unimplemented 0x%08lx ]\n", node_nr, (long)relative_addr, odata);
+			debug("[ decxmi: (node %i) read from unimplemented "
+			    "0x%08lx ]\n", node_nr, (long)relative_addr,
+			    (int)odata);
 		} else {
-			debug("[ decxmi: (node %i) write to unimpltemeted  0x%08lx: 0x%08x ]\n", node_nr, (long)relative_addr, idata);
+			debug("[ decxmi: (node %i) write to unimplemented "
+			    "0x%08lx: 0x%08x ]\n", node_nr,
+			    (long)relative_addr, (int)idata);
 		}
 	}
 

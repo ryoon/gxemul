@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.9 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_kn230.c,v 1.10 2005-02-22 06:26:10 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -34,9 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 /*
@@ -55,16 +55,20 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem,
 	case 0:
 		if (writeflag==MEM_READ) {
 			odata = d->csr;
-			/* debug("[ kn230: read from CSR: 0x%08x ]\n", odata); */
+			/* debug("[ kn230: read from CSR: 0x%08x ]\n",
+			    (int)odata); */
 		} else {
-			/* debug("[ kn230: write to CSR: 0x%08x ]\n", idata); */
+			/* debug("[ kn230: write to CSR: 0x%08x ]\n",
+			    (int)idata); */
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ kn230: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ kn230: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ kn230: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ kn230: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -78,7 +82,8 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_kn230_init():
  */
-struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct kn230_csr *d;
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.195 2005-01-13 06:25:40 debug Exp $
+$Id: index.html,v 1.196 2005-01-15 06:09:52 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1287,8 +1287,12 @@ for DECstation in the emulator:
 <p>
 Operating system kernels and other test programs can be downloaded from 
 various places. Here are links to some of the kernels that I usually 
-experiment with. (The degree to which these work in the emulator varies 
-a lot.)
+experiment with.
+
+<p>
+The degree to which these work in the emulator varies a lot, and the
+example arguments listed here do not necessarily work with every release
+or snapshot of the emulator.
 
 <p>
 <ul>
@@ -1354,23 +1358,25 @@ a lot.)
 	<br>gunzip, and try running with <b>-G22</b> or <b>-G24</b> or <b>-G20</b>.
       <p>
       <li>Linux/SGI:
-	<br><a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
-	<br>Try running with <b>-G32 -q</b>. You need to add <b>-CR5000</b> or
-		<b>-CR10000</b> to select a specific CPU type, as Linux
-		doesn't autodetect CPU at runtime, and <b>-X</b> for a graphical
-		framebuffer.
+	<br>Some kernels are available here: <a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
+	<br>Try running with <b>-G32 -X</b> for a graphical framebuffer, or
+		<b>-G32 -o 'console=ttyS0'</b> for serial console.
+	<br>Adding -b (bintrans) might work sometimes.
+	<br>(You need to add <b>-CR5000</b> if you're trying to run
+		a kernel compiled for R5000, because Linux
+		doesn't autodetect CPU at runtime.)
       <p>
       <li><a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>:
 	<br>Snapshots can be found at <a href="ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/">ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/</a>.
-		Try running the bsd.rd kernel with <b>-G32</b>.
+	<br>Try <b>./mips64emul -b -G32 bsd.rd</b>
       <p>
       <li><a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS</a>:
-		I don't think public snapshots are available yet.
+		I don't think public binary snapshots are available yet.
       <p>
       <li>arcdiag:
 	<br>The NetBSD people have also made available an "arcdiag" for SGI-IP22:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22">ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22</a>
-	<br>Try running with <b>-G22 arcdiag.ip22</b>.
+	<br>Try running <b>./mips64emul -G22 arcdiag.ip22</b>.
     </ul>
   </li>
 

@@ -115,12 +115,20 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 				set console=g or similar
 			x)  DECstation 5840? "xbi-based SMP"
 		o)  SGI and ARC machines (sgimips, arc):
+			x)  IP32 ("O2"): (Lots of stuff)
+				+)  mec (ethernet)
+				+)  scsi
+				+)  ps2 kbd
+				+)  memory controller
+				+)  R10000
+				+)  "power off" stuff
+				+)  framebuffer/graphics
+				+)  caches
+				+)  pci
 			x)  more ARCBIOS stuff
 			x)  Memory/interrupt controllers
-			x)  Finish the SGI O2 framebuffer and keyboard support
 			x)  IP30 (Linux with graphics support?)
-			x)  IP32 ("O2"): mec (ethernet), scsi, ps2 kbd ...
-			x)  SMP / NUMA?
+			x)  SMP / NUMA?  (SGI and various ARC machines)
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)
 		o)  Playstation 2:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.169 2004-10-19 03:40:33 debug Exp $
+ *  $Id: cpu.c,v 1.170 2004-10-21 05:06:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -224,19 +224,23 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 		secondary_cache_size = 1 << emul->cache_secondary;
 	/*  TODO: linesize...  */
 
-	debug(" (I+D = %i+%i KB",
-	    (int)(cpu->cache_size[CACHE_INSTRUCTION] / 1024),
-	    (int)(cpu->cache_size[CACHE_DATA] / 1024));
+	if (cpu_id == 0) {
+		debug(" (I+D = %i+%i KB",
+		    (int)(cpu->cache_size[CACHE_INSTRUCTION] / 1024),
+		    (int)(cpu->cache_size[CACHE_DATA] / 1024));
 
-	if (secondary_cache_size != 0) {
-		debug(", L2 = ");
-		if (secondary_cache_size >= 1048576)
-			debug("%i MB", (int)(secondary_cache_size / 1048576));
-		else
-			debug("%i KB", (int)(secondary_cache_size / 1024));
+		if (secondary_cache_size != 0) {
+			debug(", L2 = ");
+			if (secondary_cache_size >= 1048576)
+				debug("%i MB", (int)
+				    (secondary_cache_size / 1048576));
+			else
+				debug("%i KB", (int)
+				    (secondary_cache_size / 1024));
+		}
+
+		debug(")");
 	}
-
-	debug(")");
 
 	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
 	cpu->coproc[1] = coproc_new(cpu, 1);	/*  FPU  */

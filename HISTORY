@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.106 2004-06-27 15:38:42 debug Exp $
+$Id: HISTORY,v 1.107 2004-06-27 16:51:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -600,6 +600,8 @@ HISTORY of mips64emul
 		behaviour required a hack, which was incorrect), so
 		performance for machines using the PMAG-BA framebuffer is
 		now improved.
+		For X11 bitdepths other than 8 or 24, a warning message
+		is printed at startup.
 		A number of other minor fixes, optimizations, updated
 		comments and so on.
 		Adding a BUGS file, a list of known bugs.

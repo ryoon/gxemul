@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.13 2004-06-25 04:19:31 debug Exp $
+ *  $Id: x11.c,v 1.14 2004-06-27 16:51:08 debug Exp $
  *
  *  X11-related functions.
  */
@@ -164,8 +164,10 @@ void x11_init(void)
 	screen_depth = DefaultDepth(x11_display, x11_screen);
 
 	if (((screen_depth / 8) * 8) != screen_depth) {
-		fatal("***\n***  %i BITS COLOR, not really supported yet\n***\n",
-		    screen_depth);
+		fatal("\n***\n***  WARNING! Your X server is running %i-bit color mode. This is not really\n", screen_depth);
+		fatal("***  supported yet.  8-bit server gives grayscale output,\n");
+		fatal("***  24-bit server gives color.  Any other bit depth gives undefined result!\n***\n\n");
+
 		/*  Round up to nearest 8:  */
 		screen_depth = ((screen_depth - 1) | 7) + 1;
 	}

@@ -87,6 +87,7 @@ mips64emul TODO
 			x)  ARCBIOS (SGI, arc?)
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
+			boot directly from disk/cd-rom images
 			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
 			status words / control words, make this more portable/cleaner
 			scsi controller(s): sii, asc

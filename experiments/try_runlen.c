@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: try_runlen.c,v 1.2 2004-10-17 15:31:42 debug Exp $
+ *  $Id: try_runlen.c,v 1.3 2004-10-21 02:46:31 debug Exp $
  *
  *  Run length test.
  *  This program takes a text file of the following format as input:
@@ -39,8 +39,8 @@
  *	8013f748
  *	8013f74c
  *
- *  and returns the number of successive instructions in a block. Using the example
- *  above, the output would be:
+ *  and returns the number of successive instructions in a block. Using
+ *  the example above, the output would be:
  *
  *	6
  *	4

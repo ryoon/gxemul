@@ -3,11 +3,11 @@ Please report any bugs you find to me.  Here is a list of KNOWN bugs:
   o)  PMAG-BA / BT459 issues (for example when running DECstation "-D2 -X"
       emulation):
 
-	x)  NetBSD/pmax works with X with -CR3000, but not always with
-	    -CR4000.  Reason and solution unknown at this point.
-            Temporary workaround:  Don't use -CR4000 if you want to run
-            X11 inside emulated NetBSD/pmax.
+	x)  NetBSD/pmax works with X with -CR3000, but not always with -CR4000.
+	    Reason and solution unknown at this point. A temporary workaround
+	    is to not use -CR4000 if you want to run X11 inside emulated
+	    NetBSD/pmax.
 
-        x)  The mouse pointer is just a block, sometimes leaves crap at
-            the edge of the screen, and some other minor issues.
+        x)  The mouse pointer is a rectangular shape with no transparency, so
+	    it looks a bit funny.
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.18 2004-06-29 08:25:37 debug Exp $
+ *  $Id: dev_bt459.c,v 1.19 2004-06-30 08:23:53 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -38,6 +38,16 @@
 #include "devices.h"
 
 #include "bt459.h"
+
+
+#ifdef WITH_X11
+#include <X11/Xlib.h>     
+#include <X11/Xutil.h>
+
+/*  TODO:  These must be moved!  */
+#define N_GRAYCOLORS            16
+extern XColor x11_graycolor[N_GRAYCOLORS];
+#endif
 
 
 /*  #define BT459_DEBUG  */
@@ -112,6 +122,46 @@ void bt459_sync_xysize(struct bt459_data *d)
 			if (data & 0x30)	xmax = x + 1;
 			if (data & 0x0c)	xmax = x + 2;
 			if (data & 0x03)	xmax = x + 3;
+		}
+
+	d->cursor_xsize = xmax + 1;
+	d->cursor_ysize = ymax + 1;
+}
+
+
+/*
+ *  bt459_update_X_cursor():
+ *
+ *  This routine takes the color values in the cursor
+ *  RAM area, and put them in the framebuffer window's
+ *  cursor_ximage.
+ *
+ *  d->cursor_xsize and ysize are also updated.
+ */
+void bt459_update_X_cursor(struct bt459_data *d)
+{
+	struct fb_window *win = d->vfb_data->fb_window;
+	int x,y, xmax=0, ymax=0;
+
+	for (y=0; y<64; y++)
+		for (x=0; x<64; x+=4) {
+			int i;
+			int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
+			unsigned char data = d->bt459_reg[reg];
+
+			if (data)
+				ymax = y;
+
+			for (i=0; i<4; i++) {
+				int color = (data >> (6-2*i)) & 3;
+
+				if (color != 0)
+					xmax = x + i;
+
+#ifdef WITH_X11
+				XPutPixel(win->cursor_ximage, x + i, y, x11_graycolor[color * 5].pixel);
+#endif
+			}
 		}
 
 	d->cursor_xsize = xmax + 1;
@@ -231,8 +281,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			}
 
 			/*  Write to cursor bitmap:  */
-			if (btaddr >= 0x400)
-				bt459_sync_xysize(d);
+			if (btaddr >= BT459_REG_CRAM_BASE)
+				bt459_update_X_cursor(d);	/*  or  bt459_sync_xysize(d);  */
 		} else {
 			odata = d->bt459_reg[btaddr];
 

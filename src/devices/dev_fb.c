@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.42 2004-06-30 06:30:26 debug Exp $
+ *  $Id: dev_fb.c,v 1.43 2004-06-30 08:23:53 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -195,6 +195,15 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
 	int cursor_xsize, int cursor_ysize)
 {
+	if (cursor_x < 0)
+		cursor_x = 0;
+	if (cursor_y < 0)
+		cursor_y = 0;
+	if (cursor_x + cursor_xsize >= d->xsize)
+		cursor_x = d->xsize - cursor_xsize;
+	if (cursor_y + cursor_ysize >= d->ysize)
+		cursor_y = d->ysize - cursor_ysize;
+
 #ifdef WITH_X11
 	if (d->fb_window != NULL) {
 		d->fb_window->cursor_x      = cursor_x;

@@ -1,7 +1,4 @@
-$Id: RELEASE,v 1.38 2004-09-17 19:16:49 debug Exp $
-
-This will be the RELEASE file for 0.2.1.
-
+$Id: RELEASE,v 1.39 2004-09-17 20:25:31 debug Exp $
 ------------------------------------------------------------------------------
 
 Release notes for mips64emul 0.2.1
@@ -10,20 +7,32 @@ Release notes for mips64emul 0.2.1
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
 
-mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs
-and enough surrounding hardware to fake real machines, capable of running real
-(unmodified) operating systems, such as NetBSD, Linux, FreeBSD, or OpenBSD, and
-to assist in experiments involving MIPS-like code in general.
+mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like
+CPUs and enough surrounding hardware to be able to run unmodified
+operating systems (such as NetBSD, Ultrix, Linux, FreeBSD, or OpenBSD) as
+if they were running on a real machine, and to assist in experiments
+involving MIPS-like code in general.
 
 This is a spare time hobby project, and many things are not implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
+In its current form, it is possible to use the emulator to install an
+operating system (NetBSD/pmax, Ultrix/RISC, or OpenBSD/pmax) onto an
+emulated DECstation harddisk image; the "guest" operating system will run
+as if it was running on a real physical machine. It is also possible to
+run Sprite/DECstation this way.
 
-This release (0.2.1) is more or less a clean-up of release 0.2, and does not
-contain any major feature additions. In fact, 0.2.1 is a bit slower than 
-0.2, so those looking for performance should keep running 0.2.
+A couple of other emulation modes exist (for SGI's MIPS-based machines,
+Playstation 2, Cobalt, some ARC machines, etc) but these modes are more of
+a curiosity, and should not be considered working yet.
+
+
+NOTE:  This release (0.2.1) is more or less a clean-up of release 0.2, and
+       does NOT contain any major feature additions. In fact, 0.2.1 is a
+       bit slower than 0.2, so those looking for performance should keep
+       running 0.2.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -55,7 +64,6 @@ Files included in this release are:
 
 and a configure + Makefile.skel combination for configuring and building the
 emulator.
-
 
 Building the emulator should work on most Unix-like systems.  One system
 which is specifically known to NOT work is Ultrix/RISC inside the
@@ -122,11 +130,11 @@ them like this is in order:
     Wasabi Systems, Inc.  [by Simon Burge]
 
 
-See individual files for details, if you plan to redistribute mips64emul 
-or reuse code.
+See individual files for license details, if you plan to redistribute
+mips64emul or reuse code.
 
-And thanks to everyone who has provided me with feedback, ideas, 
-patches, or encouraged me to work on specific issues.
+And thanks to everyone who has provided me with feedback, ideas, patches,
+or encouraged me to work on specific issues.
 
 Don't hesitate to send feedback to me. My email address is at the top of
 this file.

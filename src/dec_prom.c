@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.13 2004-07-03 18:45:04 debug Exp $
+ *  $Id: dec_prom.c,v 1.14 2004-07-03 19:15:55 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -275,12 +275,9 @@ void decstation_prom_emul(struct cpu *cpu)
 		    + (machine << 16) + (0x3 << 8);
 		break;
 	case 0x84:		/*  getbitmap()  */
-		debug("[ DEC PROM getbitmap(0x%08x) ]\n", (int)cpu->gpr[GPR_A0]);
-		{
-			unsigned char buf[sizeof(memmap)];
-			memory_rw(cpu, cpu->mem, DEC_MEMMAP_ADDR, buf, sizeof(buf), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0], buf, sizeof(buf), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
-		}
+		debug("[ DEC PROM getbitmap(0x%08x) ]\n",
+		    (int)cpu->gpr[GPR_A0]);
+		store_buf(cpu->gpr[GPR_A0], (char *)&memmap, sizeof(memmap));
 		cpu->gpr[GPR_V0] = sizeof((memmap.bitmap));
 		break;
 	case 0x9c:		/*  halt()  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: symbol.c,v 1.3 2003-11-07 01:14:26 debug Exp $
  *
  *  Address to symbol translation routines.
  */
@@ -176,7 +176,7 @@ void symbol_readfile(char *fname)
 
 	fclose(f);
 
-	debug("%s: %i symbols\n", fname, n_symbols - cur_n_symbols, fname);
+	debug("'%s': %i symbols\n", fname, n_symbols - cur_n_symbols, fname);
 }
 
 

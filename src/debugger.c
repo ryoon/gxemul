@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.56 2005-01-26 17:19:57 debug Exp $
+ *  $Id: debugger.c,v 1.57 2005-01-26 19:08:45 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -584,7 +584,7 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
  *
  *  Dump emulated memory in hex and ASCII.
  *
- *  syntax: unassemble [addr [endaddr]]
+ *  syntax: dump [addr [endaddr]]
  */
 static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 {
@@ -615,7 +615,7 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 		p = strchr(cmd_line, ' ');
 	}
 
-	addr_start = last_unasm_addr;
+	addr_start = last_dump_addr;
 	addr_end = addr_start + 4 * 16;
 
 	/*  endaddr:  */

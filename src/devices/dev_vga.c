@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.29 2005-01-26 08:57:27 debug Exp $
+ *  $Id: dev_vga.c,v 1.30 2005-01-26 19:08:44 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -183,7 +183,7 @@ static void vga_update_cursor(struct vga_data *d)
 void dev_vga_tick(struct cpu *cpu, void *extra)
 {
 	struct vga_data *d = extra;
-	uint64_t low = -1, high;
+	uint64_t low = (uint64_t)-1, high;
 
 	memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
 

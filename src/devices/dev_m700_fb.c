@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.4 2004-10-25 02:51:18 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.5 2004-10-29 07:25:01 debug Exp $
  *  
  *  Olivetti M700 framebuffer.
  *
@@ -100,7 +100,7 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 	case 0x0150:
 		/*  TODO: This has to do with ysize, but I haven't
 		    figured out exactly how yet.  */
-		odata = d->ysize + 256;
+		odata = d->ysize + 512;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

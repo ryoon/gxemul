@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.121 2004-10-29 06:41:08 debug Exp $
+ *  $Id: main.c,v 1.122 2004-10-29 07:20:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -490,6 +490,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		if (emul->physical_ram_in_mb == 0)
 			emul->physical_ram_in_mb = 32;
 	}
+
+	if (emul->emulation_type == EMULTYPE_ARC &&
+	    emul->machine == MACHINE_ARC_JAZZ_M700 &&
+	    emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 64;
 
 	if (emul->emulation_type == EMULTYPE_ARC && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 48;

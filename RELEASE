@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.74 2005-01-09 03:41:18 debug Exp $
+$Id: RELEASE,v 1.75 2005-01-12 04:31:57 debug Exp $
 
 The next release will most probably be 0.2.4. Some of the features I'd like
 to have time to implement and test:
@@ -60,7 +60,7 @@ The following guest operating systems have been verified to work:
     Sprite demo harddisk image         DECstation 5000/200
     Debian GNU/Linux for DECstation    DECstation 5000/200 (*)
     Redhat Linux 7.1 for mips          DECstation 5000/200
-    NetBSD/arc 2.0 (and 1.6.2)         Acer PICA-61
+    NetBSD/arc 1.6.2                   Acer PICA-61
     OpenBSD/arc 2.3                    Acer PICA-61
 
 

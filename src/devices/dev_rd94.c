@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.2 2003-12-30 04:32:14 debug Exp $
+ *  $Id: dev_rd94.c,v 1.3 2003-12-30 05:49:38 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -96,7 +96,11 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		} else {
 			odata_set = 1;
 			/*  Return value is (irq level + 1) << 2  */
-			odata = 9 << 2;
+			odata = (8+1) << 2;
+
+			/*  Ugly hack:  */
+			if ((cpu->coproc[0]->reg[COP0_CAUSE] & 0x800) == 0)
+				odata = 0;
 		}
 		debug("[ rd94: intstat1 ]\n");
 /*		cpu_interrupt_ack(cpu, 3); */

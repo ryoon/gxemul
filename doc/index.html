@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.199 2005-01-16 05:12:31 debug Exp $
+$Id: index.html,v 1.200 2005-01-21 20:43:23 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1135,6 +1135,18 @@ Use this command to boot from the completely installed disk image:<pre>
 	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
+Kaj-Michael Lang noticed that the current CVS-version of
+<a href="http://www.linux-mips.org/">linux-mips</a> has
+support for keyboards now, on DECstation 5000/200, so it is
+possible to run Debian GNU/Linux with framebuffer/keyboard.
+He has made a kernel available here:
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+It has other problems (ethernet doesn't seem to work, for
+example), but at least it doesn't Oops that often.&nbsp;]
 
 
 

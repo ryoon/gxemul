@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.76 2004-05-24 17:58:09 debug Exp $
+$Id: HISTORY,v 1.77 2004-06-06 10:23:23 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -496,3 +496,4 @@ HISTORY of mips64emul
 20040511	Prints current nr of instructions per seconds, not only
 		average, when using -N.
 20040515	Some more bintrans experiments.
+20040606	Adding ARCBIOS GetReadStatus() and Read().

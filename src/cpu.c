@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.6 2003-11-07 08:48:24 debug Exp $
+ *  $Id: cpu.c,v 1.7 2003-11-08 08:44:48 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -652,7 +652,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		cpu_register_dump(cpu);
 	}
 
-#if ALWAYS_SIGNEXTEND_32
+#ifdef ALWAYS_SIGNEXTEND_32
 	/*
 	 *  An extra check for 32-bit mode to make sure that all
 	 *  registers are sign-extended:   (Slow, but might be useful
@@ -681,7 +681,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 #endif
 
-#if HALT_IF_PC_ZERO
+#ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */
 	if (cpu->pc == 0) {
 		debug("cpu%i: pc=0, halting\n", cpu->cpu_id);
@@ -730,13 +730,13 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 
 	/*  Read an instruction:  */
-#if SUPPORT_MIPS16
-	if (cpu->mips16) {
+#ifdef SUPPORT_MIPS16
+	if (cpu->mips16 && (cpu->pc & 1)) {
 		/*  16-bit instruction word:  */
 		unsigned char instr16[2];
 		int mips16_offset = 0;
 
-		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+		if (!memory_rw(cpu, cpu->mem, cpu->pc ^ 1, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 			return 0;
 
 		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
@@ -760,20 +760,20 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		 *  caused, it will appear as if it was caused when reading the extend instruction.
 		 */
 		while (mips16_to_32(cpu, instr16, instr) == 0) {
-			if (instruction_trace) {
-				int offset;
-				char *symbol = get_symbol_name(cpu->pc_last, &offset);
-				if (symbol != NULL && offset==0)
-					debug("<%s>\n", symbol);
+			if (instruction_trace)
 				debug("cpu%i @ %016llx: %02x%02x\t\t\textend\n",
-				    cpu->cpu_id, cpu->pc_last + mips16_offset,
+				    cpu->cpu_id, (cpu->pc_last ^ 1) + mips16_offset,
 				    instr16[1], instr16[0]);
-			}
 
 			/*  instruction with extend:  */
 			mips16_offset += 2;
-			if (!memory_rw(cpu, cpu->mem, cpu->pc + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+			if (!memory_rw(cpu, cpu->mem, (cpu->pc ^ 1) + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
+
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				int tmp;
+				tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
+			}
 		}
 
 		/*  Advance the program counter:  */
@@ -781,12 +781,12 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 		if (instruction_trace) {
 			int offset;
-			char *symbol = get_symbol_name(cpu->pc_last, &offset);
+			char *symbol = get_symbol_name(cpu->pc_last ^ 1, &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
 
 			debug("cpu%i @ %016llx: %02x%02x => %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, cpu->pc_last + mips16_offset,
+			    cpu->cpu_id, (cpu->pc_last ^ 1) + mips16_offset,
 			    instr16[1], instr16[0],
 			    instr[3], instr[2], instr[1], instr[0],
 			    cpu_flags(cpu));
@@ -2246,6 +2246,10 @@ void cpu_show_cycles(struct timeval *starttime, long ncycles)
 	mseconds = (rusage.ru_utime.tv_sec -
 		    starttime->tv_sec) * 1000
 	    + (rusage.ru_utime.tv_usec - starttime->tv_usec) / 1000;
+
+	if (mseconds == 0)
+		mseconds = 1;
+
 	printf("[ %li cycles, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
 	    (long) ncycles,
 	    (long long) ((long long)1000 * ncycles / mseconds),

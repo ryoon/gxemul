@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.201 2005-01-21 21:42:22 debug Exp $
+$Id: index.html,v 1.202 2005-01-22 18:30:36 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1054,11 +1054,17 @@ onto a harddisk image:
 	$ <b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
-  <li>Download the install kernel:<pre>
+  <li>Download an install kernel:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
 	    <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
+	or
+	<a href="http://http.us.debian.org/debian/dists/unstable/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/unstable/main/</a>
+	    <a href="http://http.us.debian.org/debian/dists/unstable/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
 
 </pre>
+	depending on whether you want to install Debian "Testing" or
+	"Unstable".
+  <p>
   <li>For a text-mode installation, start the emulator like this:<pre>
 	$ <b>./mips64emul -D2 -b -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
@@ -1066,9 +1072,10 @@ onto a harddisk image:
 </ol>
 
 <p>
-Debian GNU/Linux on DECstation in R3000 mode should work fine with dynamic
+Debian GNU/Linux on DECstation works reasonably fine with dynamic
 binary translation, enabled by the <b>-b</b> command line option. (Without
-this option, the emulator is very slow.)
+this option, the emulator might be less buggy, but also too slow to be 
+useful when running Linux as a guest OS.)
 
 <p>
 (If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS3'</b> on
@@ -1217,9 +1224,20 @@ Redhat Linux on DECstation in R3000 mode should work fine with dynamic binary
 translation (enabled by the <b>-b</b> command line option).
 
 <p>
-NOTE: You can add -XN and remove console=ttyS3 from the command line, if you want
-to use a graphical framebuffer. Unfortunately, Linux doesn't have support for
-the keyboard controller yet, so you cannot actually interact with the sytem. :-(
+NOTE: You can add <b>-X</b> and remove <b>console=ttyS3</b> from the command
+line, if you want to use a graphical framebuffer. Unfortunately, Linux 
+doesn't have support for keyboards on DECstation 5000/200 yet, so you cannot
+actually interact with the sytem. :-(
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-22:</font>&nbsp;
+Read the 2005-01-19 update in the Debian section above, and then, if
+you do not need ethernet support, try Kaj-Michael Lang's kernel compiled
+from <a href="http://www.linux-mips.org/">linux-mips</a>' CVS.
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+It should work with framebuffer/keyboard.&nbsp;]
+
 
 
 

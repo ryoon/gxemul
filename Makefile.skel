@@ -1,12 +1,12 @@
 #
-#  $Id: Makefile.skel,v 1.23 2005-01-18 12:43:47 debug Exp $
+#  $Id: Makefile.skel,v 1.24 2005-02-09 10:00:09 debug Exp $
 #
 #  Makefile for mips64emul
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
 BIN=mips64emul
-LIBS=-lm $(XLIB) $(OTHERLIBS)
+LIBS=$(XLIB) $(OTHERLIBS)
 
 all: $(BIN)
 
@@ -32,7 +32,7 @@ install: all
 	@echo
 
 clean:
-	rm -f $(BIN) *core core.* *.gmon
+	rm -f $(BIN) *core core.* *.gmon _*
 	cd src; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.86 2005-02-07 07:17:42 debug Exp $
+$Id: RELEASE,v 1.87 2005-02-09 10:00:09 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
@@ -60,9 +60,10 @@ Summary of changes from version 0.2.4.1 to 0.2.X:
 
 	x)  In general, the code should be much cleaner than before.
 
-	x)  It is now possible to emulate multiple machines simultaneously,
-	    within one emulator instance. (This is mostly due to the code
-	    cleanup.)
+	x)  Support for using "configuration files" has been added, instead
+	    of entering all emulation parameters on the command line. This
+	    has two advantages: shorter command lines, and the ability to
+	    emulate multiple machines simulatenously.
 
 	x)  Some seldomly used command line options have been changed or
 	    removed, but 0.2.X should be mostly backward compatible with

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.100 2005-02-08 20:30:49 debug Exp $
+#  $Id: configure,v 1.101 2005-02-09 10:00:09 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -656,9 +656,9 @@ printf "checking whether -lresolv is required for inet_pton... "
 printf "extern void (*inet_pton)(void); int main(int argc, char *argv[]) { void *x; x = inet_pton; return 0; }\n" > _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
-	$CC $CFLAGS -lresolv _testr.c -o _testr 2> /dev/null
+	$CC $CFLAGS _testr.c -lresolv -o _testr 2> /dev/null
 	if [ ! -x _testr ]; then
-		$CC $CFLAGS -lresolv -lnsl _testr.c -o _testr 2> /dev/null
+		$CC $CFLAGS _testr.c -lresolv -lnsl -o _testr 2> /dev/null
 		if [ ! -x _testr ]; then
 			printf "WARNING! COULD NOT COMPILE WITH inet_pton AT ALL!\n"
 		else
@@ -673,6 +673,34 @@ if [ ! -x _testr ]; then
 	fi
 else
 	printf "no\n"
+fi
+rm -f _testr.[co] _testr
+
+
+#  -lm?
+printf "checking for math libs..."
+printf "#include <math.h>\nint main(int argc, char *argv[]) { double x = sqrt((double)argc); return (int)x; }\n" > _testr.c
+$CC $CFLAGS _testr.c -o _testr 2> /dev/null
+if [ ! -x _testr ]; then
+	$CC $CFLAGS _testr.c -lm -o _testr 2> /dev/null
+	if [ ! -x _testr ]; then
+		$CC $CFLAGS _testr.c -lm -lcpml -o _testr 2> /dev/null
+		if [ ! -x _testr ]; then
+			printf "\nWARNING! Could not compile math test at all!\n"
+			printf "Continuing anyway.\n\n"
+		else
+			#  -lm AND -lcpml
+			OTHERLIBS="-lm -lcpml $OTHERLIBS"
+			printf " -lm -lcpml\n"
+		fi
+	else
+		#  Normal -lm
+		OTHERLIBS="-lm $OTHERLIBS"
+		printf " -lm\n"
+	fi
+else
+	printf " none needed (?)\n"
+	ls -la _testr*
 fi
 rm -f _testr.[co] _testr
 

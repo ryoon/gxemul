@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.568 2005-02-08 20:30:48 debug Exp $
+$Id: HISTORY,v 1.569 2005-02-09 10:00:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1643,3 +1643,4 @@ HISTORY of mips64emul
 		no actual success yet.
 		sizeof => (int)sizeof in the configure script (suggested by
 		Nils Weller).
+20050209	Adding a check for -lm to the configure script.

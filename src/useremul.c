@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.8 2004-02-18 09:29:47 debug Exp $
+ *  $Id: useremul.c,v 1.9 2004-02-25 01:07:39 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -775,7 +775,7 @@ result_low = select(4, &x, NULL, NULL, NULL);
 				error_code = errno;
 				error_flag = 1;
 			}
-printf("setsockopt!!!! res = %i error=%i\n", result_low, error_code);
+printf("setsockopt!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			break;
 
 		case ULTRIX_SYS_connect:
@@ -787,7 +787,7 @@ printf("setsockopt!!!! res = %i error=%i\n", result_low, error_code);
 				error_code = errno;
 				error_flag = 1;
 			}
-printf("connect!!!! res = %i error=%i\n", result_low, error_code);
+printf("connect!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			break;
 
 		case ULTRIX_SYS_fcntl:
@@ -799,7 +799,7 @@ printf("connect!!!! res = %i error=%i\n", result_low, error_code);
 				error_code = errno;
 				error_flag = 1;
 			}
-printf("fcntl!!!! res = %i error=%i\n", result_low, error_code);
+printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			break;
 
 		case ULTRIX_SYS_stat43:

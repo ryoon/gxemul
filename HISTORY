@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.154 2004-07-11 13:10:56 debug Exp $
+$Id: HISTORY,v 1.155 2004-07-12 10:23:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -754,3 +754,14 @@ HISTORY of mips64emul
 		"de-accelerating" the data sent to the emulated OS.
 20040711(later)	Fix so that Sprite detects the PMAG-BA correctly.
 		Adding some stuff about NFS via UDP to the documentation.
+		Fixed the 'update flag' for seconds, so now Sprite doesn't
+		crash because of timer-related issues anymore.
+		Fixing KN02 interrupt masks a bit more, to make Sprite not
+		crash. Sprite now runs quite well.
+20040712	Working on IP/UDP fragementation issues. Incoming UDP packets
+		from the outside world can now be broken up into fragments
+		for the guest OS. (This allows, for example, OpenBSD/pmax to
+		be installed via nfs.)  Outgoing packets are NOT yet handled.
+		Linux doesn't use 64-bit file offsets by default, which is
+		needed when using large disk images (more than 2GB), so the
+		configure has now been modified to add such support on Linux.

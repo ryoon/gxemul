@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.9 2004-07-11 13:10:57 debug Exp $
+$Id: technical.html,v 1.10 2004-07-12 10:23:23 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -295,7 +295,7 @@ something else, use your imagination to modify them:
 <ul>
   <li>On the server, add a line to your /etc/exports file, exporting
 	the files you wish to use in the emulator:<pre>
-	/tftpboot -mapall=nobody -ro 123.11.22.33
+	<b>/tftpboot -mapall=nobody -ro 123.11.22.33</b>
 </pre>
 	where 123.11.22.33 is the IP address of the machine running the
 	emulator process, as seen from the outside world.
@@ -310,19 +310,25 @@ something else, use your imagination to modify them:
 </pre>
   <li>In the guest OS in the emulator, once you have ethernet and IPv4
 	configured so that you can use UDP, mounting the filesystem
-	should now be possible:  (this example is for NetBSD/pmax)<pre>
+	should now be possible:  (this example is for NetBSD/pmax
+	or OpenBSD/pmax)<pre>
 	# <b>mount -o ro,-r=1024,-w=1024,-U,-s my.server.com:/tftpboot /mnt</b>
+    or
+	# <b>mount my.server.com:/tftpboot /mnt</b>
 </pre>
 	If you don't supply the read and write sizes, there is a risk
 	that the default values are too large. The emulator currently
-	does not fragment/defragment packets, so going above the ethernet
-	frame size (1518) is a very bad idea.
+	does not handle fragmentation/defragmentation of <i>outgoing</i>
+	packets, so going above the ethernet frame size (1518) is a very
+	bad idea. Incoming packets (reading from nfs) should work, though,
+	for example during an NFS install.
 </ul>
 
 The example above uses read-only mounts. That is enough for things like
-letting NetBSD/pmax install itself via NFS, without the need for
-an ISO image. You might want to use a read-write mount if you wish
-to share files in both directions.
+letting NetBSD/pmax or OpenBSD/pmax install via NFS, without the need for
+a CDROM ISO image. You can use a read-write mount if you wish to share
+files in both directions, but then you should be aware of the 
+fragmentation issue mentioned above.
 
 
 

@@ -20,9 +20,12 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Binary translation:  src/bintrans.c
 
-	Network layer
+	Network layer:  src/net.c
 		o)  TCP :-)
-		o)  Make it work with Ultrix too, not just NetBSD.
+		o)  Outgoing UDP packet fragment support.
+		o)  Make it work with Ultrix and Sprite too, not just
+		    with NetBSD and OpenBSD.
+		o)  DHCP?
 
 	Configure script:
 		o)  Only enable Alpha prefetch on pca56 or higher, not on

@@ -1,10 +1,14 @@
 #!/bin/sh
+###############################################################################
 #
-#  $Id: configure,v 1.31 2004-07-11 01:13:39 debug Exp $
+#  $Id: configure,v 1.32 2004-07-12 10:23:36 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
 #  is also created.
+#
+#
+#  --->   FOR NORMAL USE, JUST RUN ./configure WITHOUT OPTIONS!
 #
 #
 #  To compile the emulator with profiling (during development), use
@@ -23,6 +27,9 @@
 #    o)  binary translation (on supported platforms)
 #    o)  prefetch capability  (TODO: this is assumed on Alpha, but not all
 #                              Alphas have it...)
+#
+###############################################################################
+
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -268,6 +275,15 @@ if [ z"`uname`" = zHP-UX ]; then
 	printf "#define strtoull strtoul\n" >> config.h
 fi
 
+
+
+if [ z"`uname`" = zLinux ]; then
+	#  A special hack is needed to support off_t > 32 bits on
+	#  32-bit Linux machines:
+	COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
+fi
+
+
 if [ z"$CC" = zccc ]; then
 	#  -O4 is possible, but is -O3 better?
 	COPTIM="-O4 $COPTIM"
@@ -326,6 +342,7 @@ if [ z"$CC" = zccc ]; then
 	rm -f _testprog
 fi
 
+
 #  -fpeephole
 $CC $CFLAGS _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
@@ -338,6 +355,7 @@ else
 fi
 rm -f _testprog _testprog.error _testprog.stdout
 
+
 #  -fomit-frame-pointer
 $CC $CFLAGS _testprog.c -o _testprog -fomit-frame-pointer 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
@@ -349,6 +367,7 @@ else
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout
+
 
 #############################################################################
 

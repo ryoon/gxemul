@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.26 2004-07-11 04:57:45 debug Exp $
+ *  $Id: dev_bt459.c,v 1.27 2004-07-12 10:23:30 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -174,6 +174,16 @@ void bt459_update_X_cursor(struct bt459_data *d)
 					    x11_graycolor[color * 5].pixel);
 				}
 			}
+
+		/*
+		 *  Make sure the cursor is redrawn, if it is on:
+		 *
+		 *  How does this work? Well, 0 is off, and non-zero is on,
+		 *  but if the old and new differ, the cursor is redrawn.
+		 *  (Hopefully this will "never" overflow.)
+		 */
+		if (d->vfb_data->fb_window->cursor_on)
+			d->vfb_data->fb_window->cursor_on ++;
 	}
 #endif
 }

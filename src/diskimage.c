@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.36 2004-07-05 18:26:09 debug Exp $
+ *  $Id: diskimage.c,v 1.37 2004-07-12 10:23:18 debug Exp $
  *
  *  Disk image support.
  *
@@ -1265,10 +1265,10 @@ void diskimage_dump_info(void)
 
 	for (i=0; i<MAX_DISKIMAGES; i++)
 		if (diskimages[i] != NULL) {
-			debug("adding diskimage id=%i: '%s', %s, %li bytes (%s%li sectors)%s\n",
+			debug("adding diskimage id=%i: '%s', %s, %lli bytes (%s%li sectors)%s\n",
 			    i, diskimages[i]->fname,
 			    diskimages[i]->writable? "read/write" : "read-only",
-			    (long int) diskimages[i]->total_size,
+			    (long long) diskimages[i]->total_size,
 
 			    diskimages[i]->is_a_tape? "TAPE, " : (
 				diskimages[i]->is_a_cdrom?

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.22 2004-07-10 11:49:59 debug Exp $
+ *  $Id: dec_prom.c,v 1.23 2004-07-12 10:23:18 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -280,7 +280,7 @@ void decstation_prom_emul(struct cpu *cpu)
 						/*  Linux booters seem to go
 						    over the edge sometimes: */
 						ch = '\0';
-						printf("\n");
+						printf("[...]\n");
 #else
 						printf("[ decstation_prom_emul(): too many arguments ]");
 						argreg = GPR_A3;	/*  This reuses the last argument,

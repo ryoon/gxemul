@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.10 2004-07-11 15:25:08 debug Exp $
+ *  $Id: console.c,v 1.11 2004-07-12 10:23:30 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -44,6 +44,7 @@
 
 extern int register_dump;
 extern int instruction_trace;
+extern int show_trace_tree;
 extern int ncpus;
 
 
@@ -87,7 +88,15 @@ void console_init(void)
 
 	console_curtermios.c_lflag &= ~ECHO;
 
-	console_curtermios.c_iflag &= ~ICRNL;
+	/*
+	 *  Most guest OSes seem to work ok without this, but Linux/DECstation
+	 *  requires it to be usable.  Unfortunately, clearing out ICRNL
+	 *  makes tracing with '-t ... |more' akward, as you might need to
+	 *  use CTRL-J instead of the enter key.  Hence, this bit is only
+	 *  cleared if we're not tracing:
+	 */
+	if (!show_trace_tree && !instruction_trace && !register_dump)
+		console_curtermios.c_iflag &= ~ICRNL;
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 

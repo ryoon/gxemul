@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.159 2004-10-07 22:55:37 debug Exp $
+ *  $Id: cpu.c,v 1.160 2004-10-08 16:38:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -304,6 +304,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	debug(": %02x%02x%02x%02x",
 	    instr[3], instr[2], instr[1], instr[0]);
+
+	if (cpu->emul->bintrans_enable) {
+		if (bintrans_pc_is_in_cache(cpu, dumpaddr))
+			debug("b");
+	}
 
 	if (running)
 		debug("%s", cpu_flags(cpu));
@@ -1088,7 +1093,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->emul->instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
-	int i;
+	int i, res;
 	unsigned char instr[4];
 	uint32_t instrword;
 	uint64_t cached_pc;
@@ -1335,6 +1340,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			}
 		}
 
+		/*  TODO: bintrans like in 32-bit mode?  */
+
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr16) + mips16_offset;
 		cached_pc = cpu->pc;
@@ -1371,13 +1378,30 @@ static int cpu_run_instr(struct cpu *cpu)
 			    aligned correctly!  (TODO)  */
 			*(uint32_t *)instr = *(uint32_t *)
 			    (cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
-
-			/*  TODO:  Make sure this works with
-			    dynamic binary translation...  */
                 } else {
 			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
+		}
+
+		/*  TODO: bintrans  */
+		if (cpu->emul->bintrans_enable) {
+			res = bintrans_pc_is_in_cache(cpu, cached_pc);
+			if (res) {
+				printf("BINTRANS cache hit :-)  TODO\n"
+				    "  pc = %016llx\n", (long long)cached_pc);
+				exit(1);
+			} else {
+				/*  Bintrans cache miss: try to translate
+				    the code chunk:  */
+				res = bintrans_attempt_translate(cpu,
+				    cached_pc);
+				if (res) {
+					printf("BINTRANS translation success!"
+					    " TODO. pc = %016llx\n", (long long)cached_pc);
+					exit(1);
+				}
+			}
 		}
 
 		/*  Advance the program counter:  */

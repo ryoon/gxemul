@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.20 2004-07-30 11:24:03 debug Exp $
+ *  $Id: bintrans.c,v 1.21 2004-10-08 16:38:19 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -111,6 +111,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "misc.h"
 
@@ -123,6 +124,8 @@
  *  No bintrans, then let's supply dummy functions:
  */
 
+int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { }
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc) { }
 void bintrans_init(void)
 {
 	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
@@ -153,6 +156,64 @@ void bintrans_host_cacheinvalidate(void);
 #endif	/*  ALPHA  */
 
 
+#define	BINTRANS_CACHE_N_INDEX_BITS	14
+#define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
+#define	PC_TO_INDEX(p)			((pc >> 2) & CACHE_INDEX_MASK)
+
+struct translation_entry {
+	uint64_t			pc;
+	struct translation_entry	*next;
+
+	/*  TODO  */
+};
+
+struct translation_entry **translation_entry_array;
+
+
+/*
+ *  bintrans_pc_is_in_cache():
+ *
+ *  Checks the translation cache to see if a certain address is translated.
+ *  Return 1 if the address is known, 0 otherwise.
+ *
+ *  bits 2 through 2+N-1 of pc are used as an index into an array to speed
+ *  up the search, where N is the number of bits in that index.
+ */
+int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc)
+{
+	int entry_index = PC_TO_INDEX(pc);
+	struct translation_entry *tep;
+
+	tep = translation_entry_array[entry_index];
+
+	/*  TODO: Something better than a linked list would be nice.  */
+
+	while (tep != NULL) {
+		if (tep->pc == pc)
+			return 1;
+
+		tep = tep->next;
+	}
+
+	return 0;
+}
+
+
+/*
+ *  bintrans_attempt_translate():
+ *
+ *  Attempt to translate a chunk of code, starting at 'pc'.
+ *
+ *  Returns 0 if no code translation occured, otherwise 1 is returned and
+ *  the generated code chunk is added to the translation_entry_array.
+ */
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc)
+{
+
+	return 0;
+}
+
+
 /*
  *  bintrans_init():
  *
@@ -160,12 +221,20 @@ void bintrans_host_cacheinvalidate(void);
  */
 void bintrans_init(void)
 {
+	size_t s;
+
 	debug("starting bintrans\n");
 
-	fatal("TODO: bintrans is not (re)implemented yet\n");
-	exit(1);
+	s = 1 << BINTRANS_CACHE_N_INDEX_BITS;
+	s *= sizeof(struct translation_entry *);
+	translation_entry_array = malloc(s);
+	if (translation_entry_array == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 
-	/*  TODO  */
+	memset(translation_entry_array, 0, s);
+	debug("    (%i bytes allocated for the bintrans cache array)\n", s);
 }
 
 

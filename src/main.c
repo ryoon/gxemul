@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.104 2004-10-07 15:10:09 debug Exp $
+ *  $Id: main.c,v 1.105 2004-10-08 16:38:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -117,7 +117,7 @@ void usage(char *progname)
 	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz, 6=NEC-R98)\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
-	printf("  -b        enable dynamic binary translation (not yet!)\n");
+	printf("  -b        enable dynamic binary translation\n");
 #endif
 	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.3 2004-06-22 22:25:31 debug Exp $
+ *  $Id: bintrans.h,v 1.4 2004-10-08 16:38:18 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */
@@ -36,6 +36,8 @@
 #include "misc.h"
 
 
+int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc);
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc);
 void bintrans_init(void);
 
 

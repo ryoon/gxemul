@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.3 2003-11-07 00:25:32 debug Exp $
+ *  $Id: cpu.c,v 1.4 2003-11-07 05:20:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -728,22 +728,85 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 
 	/*  Read an instruction:  */
-	if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
-		return 0;
+	if (cpu->mips16) {
+		/*  16-bit instruction word:  */
+		unsigned char instr16[2];
+		int mips16_offset = 0;
 
-	/*  TODO:  If Reverse-endian is set in the status cop0 register, and
-		we are in usermode, then reverse endianness!  */
+		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+			return 0;
 
-	/*  The rest of the code is written for little endian, so swap if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-		int tmp, tmp2;
-		tmp  = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
-		tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
+		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
+			we are in usermode, then reverse endianness!  */
+
+		/*  The rest of the code is written for little endian, so swap if neccessary:  */
+		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			int tmp;
+			tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
+		}
+
+		cpu->mips16_extend = 0;
+
+		/*
+		 *  Translate into 32-bit instruction, little endian (instr[3..0]):
+		 *
+		 *  This ugly loop is neccessary because if we would get an exception between
+		 *  reading an extend instruction and the next instruction, and execution
+		 *  continues on the second instruction, the extend data would be lost. So the
+		 *  entire instruction (the two parts) need to be read in. If an exception is
+		 *  caused, it will appear as if it was caused when reading the extend instruction.
+		 */
+		while (mips16_to_32(cpu, instr16, instr) == 0) {
+			/*  instruction with extend:  */
+			mips16_offset += 2;
+			if (!memory_rw(cpu, cpu->mem, cpu->pc + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+				return 0;
+		}
+
+		/*  Advance the program counter:  */
+		cpu->pc += sizeof(instr16) + mips16_offset;
+
+		if (instruction_trace) {
+			int offset;
+			char *symbol = get_symbol_name(cpu->pc_last, &offset);
+			if (symbol != NULL && offset==0)
+				debug("<%s>\n", symbol);
+
+			debug("cpu%i @ %016llx: %02x%02x => %02x%02x%02x%02x%s\t",
+			    cpu->cpu_id, cpu->pc_last,
+			    instr16[1], instr16[0],
+			    instr[3], instr[2], instr[1], instr[0],
+			    cpu_flags(cpu));
+		}
+	} else {
+		/*  32-bit instruction word:  */
+		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
+			return 0;
+
+		/*  Advance the program counter:  */
+		cpu->pc += sizeof(instr);
+
+		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
+			we are in usermode, then reverse endianness!  */
+
+		/*  The rest of the code is written for little endian, so swap if neccessary:  */
+		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			int tmp, tmp2;
+			tmp  = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
+			tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
+		}
+
+		if (instruction_trace) {
+			int offset;
+			char *symbol = get_symbol_name(cpu->pc_last, &offset);
+			if (symbol != NULL && offset==0)
+				debug("<%s>\n", symbol);
+
+			debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
+			    cpu->cpu_id, cpu->pc_last,
+			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+		}
 	}
-
-	/*  Advance the program counter:  */
-	cpu->pc += sizeof(instr);
-
 
 	/*
 	 *  Update Coprocessor 0 registers:
@@ -773,17 +836,6 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		cpu->mfhi_delay--;
 	if (cpu->mflo_delay > 0)
 		cpu->mflo_delay--;
-
-	if (instruction_trace) {
-		int offset;
-		char *symbol = get_symbol_name(cpu->pc_last, &offset);
-		if (symbol != NULL && offset==0)
-			debug("<%s>\n", symbol);
-
-		debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-		    cpu->cpu_id, cpu->pc_last,
-		    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
-	}
 
 	/*  Nullify this instruction?  (Set by previous instruction)  */
 	if (cpu->nullify_next) {

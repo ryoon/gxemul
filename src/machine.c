@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.131 2004-07-08 22:49:18 debug Exp $
+ *  $Id: machine.c,v 1.132 2004-07-09 09:17:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -940,7 +940,7 @@ void machine_init(struct memory *mem)
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -998,7 +998,7 @@ void machine_init(struct memory *mem)
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
-			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
+			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1142,7 +1142,7 @@ void machine_init(struct memory *mem)
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000,
-			    XINE_INTR_SCSI +8);
+			    XINE_INTR_SCSI +8, NULL);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=3";
@@ -1183,7 +1183,7 @@ void machine_init(struct memory *mem)
 #if 0
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x17100000, 0);		/*  irq?  */
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x17100000, 0, NULL);		/*  irq?  */
 #endif
 
 			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -1979,7 +1979,7 @@ void machine_init(struct memory *mem)
 				/*  TODO:  lots of stuff  */
 
 				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
-				    0x2000002000ULL, 0);  */
+				    0x2000002000ULL, 0, NULL);  */
 
 				/*  Linux:  0x800004000  */
 				/*  NetBSD: 0x2000004000  */

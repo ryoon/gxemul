@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.21 2004-07-09 08:14:41 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.22 2004-07-09 09:17:48 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -108,9 +108,14 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 		 *  with all of the those OS kernels:
 		 */
 		relative_addr &= 0xffff;
-		if (d->card_module_name[0] ==  ' ' &&
-			(relative_addr < 0x3e0 || relative_addr >= 0x500))
-			return 0;
+		if (d->card_module_name[0] ==  ' ') {
+			/*  Return no data for empty slot:  */
+			odata = 0;
+
+			/*  Return DBE exception in some cases:  */
+			if (relative_addr < 0x3e0 || relative_addr >= 0x500)
+				return 0;
+		}
 
 		debug(") ]\n");
 	} else {
@@ -185,8 +190,10 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAZ-AA")==0) {
 		/*  asc in NetBSD, SCSI  */
-		dev_asc_init(cpu, mem, baseaddr, irq);
+		dev_asc_init(cpu, mem, baseaddr, irq, d);
 		rom_offset = 0xc0000;
+		/*  There is a copy at 0x0, at least that's where Linux
+		    looks for the rom signature  */
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, "PMAG-AA");

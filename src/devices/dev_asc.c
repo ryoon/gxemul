@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.32 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_asc.c,v 1.33 2004-07-09 09:17:48 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -76,6 +76,7 @@ extern int instruction_trace;
 #define	ASC_SCSI_ID		7
 
 struct asc_data {
+	void		*turbochannel;
 	int		irq_nr;
 	int		irq_caused_last_time;
 
@@ -636,6 +637,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			debug("[ asc: write to  %s: 0x%02x",
 			    asc_reg_names[regnr], (int)idata);
 		}
+	} else if (relative_addr >= 0x300 && relative_addr < 0x600
+	    && d->turbochannel != NULL) {
+		debug("[ asc: offset 0x%x, redirecting to turbochannel access ]\n", relative_addr);
+		return dev_turbochannel_access(cpu, mem,
+		    relative_addr, data, len, writeflag,
+		    d->turbochannel);
 	} else if (relative_addr == 0x40000) {
 		if (writeflag==MEM_READ) {
 			odata = d->dma_address_reg;
@@ -680,10 +687,10 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		}
 	} else {
 		if (writeflag==MEM_READ) {
-			debug("[ asc: read from 0x%04x: 0x%02x",
+			fatal("[ asc: read from 0x%04x: 0x%02x ]\n",
 			    relative_addr, (int)odata);
 		} else {
-			debug("[ asc: write to  0x%04x: 0x%02x",
+			fatal("[ asc: write to  0x%04x: 0x%02x ]\n",
 			    relative_addr, (int)idata);
 		}
 	}
@@ -968,7 +975,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
  *  Register an 'asc' device.
  */
 void dev_asc_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, int irq_nr)
+	uint64_t baseaddr, int irq_nr, void *turbochannel)
 {
 	struct asc_data *d;
 
@@ -978,11 +985,12 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct asc_data));
-	d->irq_nr = irq_nr;
+	d->irq_nr       = irq_nr;
+	d->turbochannel = turbochannel;
 
 	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH,
 	    dev_asc_access, d);
 
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 16);
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
 }
 

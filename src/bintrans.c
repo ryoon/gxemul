@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.91 2004-11-27 09:30:48 debug Exp $
+ *  $Id: bintrans.c,v 1.92 2004-11-27 10:01:18 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -275,9 +275,7 @@ struct translation_page_entry *prev = NULL;
  *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
  *  and "run_flag" is non-zero, then the code chunk is run.
  *
- *  Returns -1 if no code translation occured, otherwise the generated code
- *  chunk is added to the translation_entry_array. The return value is then
- *  the number of instructions executed.
+ *  Returns the number of executed instructions.
  */
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 {
@@ -299,8 +297,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
 	int delayed_branch, stop_after_delayed_branch;
-	uint64_t delayed_branch_new_p=0;
+	uint64_t delayed_branch_new_p;
 	int prev_p;
+
+quick_attempt_translate_again:
 
 	/*
 	 *  If the chunk space is all used up, we need to start over from
@@ -318,7 +318,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 	/*  Abort if the current "environment" isn't safe enough:  */
 	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
-		return -1;
+		return cpu->bintrans_instructions_executed;
 
 	/*  Is this a part of something that is already translated?  */
 	paddr_page = paddr & ~0xfff;
@@ -328,10 +328,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
 			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-				return -1;
+				return cpu->bintrans_instructions_executed;
 			if (tep->chunk[offset_within_page] != 0) {
 				if (!run_flag)
-					return -1;
+					return cpu->bintrans_instructions_executed;
 
 				f = (size_t)tep->chunk[offset_within_page] +
 				    translation_code_chunk_space;
@@ -344,7 +344,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 	host_mips_page = cpu->pc_bintrans_host_4kpage;
 	if (host_mips_page == NULL)
-		return -1;
+		return cpu->bintrans_instructions_executed;
 
 
 	if (tep == NULL) {
@@ -382,6 +382,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	res = 0;
 	delayed_branch = 0;
 	stop_after_delayed_branch = 0;
+	delayed_branch_new_p = 0;
 
 	n_quick_jumps = quick_jumps_index = 0;
 
@@ -707,7 +708,7 @@ default:
 	/*  Not enough translated? Then abort.  */
 	if (n_translated < 1) {
 		tep->flags[offset_within_page] |= UNTRANSLATABLE;
-		return -1;
+		return cpu->bintrans_instructions_executed;
 	}
 
 	/*  ca2 = ptr to the head of the new code chunk  */
@@ -730,7 +731,7 @@ default:
 	    ((translation_code_chunk_space_head - 1) | 31) + 1;
 
 	if (!run_flag)
-		return 0;
+		return cpu->bintrans_instructions_executed;
 
 
 	/*  RUN the code chunk:  */
@@ -777,6 +778,7 @@ run_it:
 			if (!ok && old_pc != cpu->pc) {
 				ok = cpu->translate_address(cpu, cpu->pc, &paddr,
 				    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+				cpu->pc_last_host_4k_page = NULL;
 			}
 		}
 
@@ -796,6 +798,31 @@ run_it:
 				}
 				tep = tep->next;
 			}
+
+			/*  We have no translation. This special hack
+			    might make the time spent in the main cpu_run_instr()
+			    lower:  */
+			switch (cpu->cpu_type.mmu_model) {
+			case MMU3K:
+				/*  32-bit special case:  */
+				a = (cpu->pc >> 22) & 0x3ff;
+				b = (cpu->pc >> 12) & 0x3ff;
+				tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+				if (tbl1->haddr_entry[b] != NULL) {
+					cpu->pc_last_virtual_page = cpu->pc & ~0xfff;
+					cpu->pc_last_physical_page = paddr & ~0xfff;
+					cpu->pc_last_host_4k_page = (unsigned char *)
+					    (((size_t)tbl1->haddr_entry[b]) & ~1);
+					cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
+					cpu->pc_bintrans_paddr = paddr;
+#if 0
+					/*  Why doesn't this work? TODO  */
+					goto quick_attempt_translate_again;
+#endif
+				}
+			}
+
+			/*  Return.  */
 		}
 	}
 

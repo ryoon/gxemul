@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.43 2004-06-25 04:01:50 debug Exp $
+ *  $Id: main.c,v 1.44 2004-06-27 01:06:48 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -52,7 +52,7 @@ char **extra_argv;
 
 char emul_cpu_name[50];
 
-int emulation_type = EMULTYPE_NONE;
+int emulation_type = EMULTYPE_TEST;
 int machine = MACHINE_NONE;
 char *machine_name = NULL;
 

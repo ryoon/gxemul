@@ -23,9 +23,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.109 2004-06-25 04:19:37 debug Exp $
+ *  $Id: machine.c,v 1.110 2004-06-27 01:06:48 debug Exp $
  *
  *  Emulation of specific machines.
+ *
+ *  This module is quite large. Hopefully it is still clear enough to be
+ *  easily understood. The main parts are:
+ *
+ *	Helper functions.
+ *
+ *	Machine specific Interrupt routines.
+ *
+ *	Machine specific Initialization routines.
  */
 
 #include <stdio.h>
@@ -90,7 +99,11 @@ struct sgi_ip20_data *sgi_ip20_data;
 struct sgi_ip22_data *sgi_ip22_data;
 
 
-/********************** Helper functions **********************/
+/****************************************************************************
+ *                                                                          *
+ *                              Helper functions                            *
+ *                                                                          *
+ ****************************************************************************/
 
 
 int int_to_bcd(int i)
@@ -101,24 +114,35 @@ int int_to_bcd(int i)
 
 /*
  *  read_char_from_memory():
+ *
+ *  Reads a byte from emulated RAM. (Helper function.)
  */
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
 {
 	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
+	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch),
+	    MEM_READ, CACHE_NONE);
 	return ch;
 }
 
 
 /*
  *  dump_mem_string():
+ *
+ *  Dump the contents of emulated RAM as readable text.  Bytes that aren't
+ *  readable are dumped in [xx] notation, where xx is in hexadecimal.
+ *  Dumping ends after DUMP_MEM_STRING_MAX bytes, or when a terminating
+ *  zero byte is found.
  */
+#define DUMP_MEM_STRING_MAX	45
 void dump_mem_string(struct cpu *cpu, uint64_t addr)
 {
 	int i;
-	for (i=0; i<40; i++) {
+	for (i=0; i<DUMP_MEM_STRING_MAX; i++) {
 		unsigned char ch = '\0';
-		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
+
+		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch),
+		    MEM_READ, CACHE_NONE);
 		if (ch == '\0')
 			return;
 		if (ch >= ' ' && ch < 126)
@@ -132,18 +156,21 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 /*
  *  store_byte():
  *
- *  Helper function.
+ *  Stores a byte in emulated ram. (Helper function.)
  */
 void store_byte(uint64_t addr, uint8_t data)
 {
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, &data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	    addr, &data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
 /*
  *  store_string():
  *
- *  Helper function.
+ *  Stores chars into emulated RAM until a zero byte (string terminating
+ *  character) is found. The zero byte is also copied.
+ *  (strcpy()-like helper function, host-RAM-to-emulated-RAM.)
  */
 void store_string(uint64_t addr, char *s)
 {
@@ -154,7 +181,11 @@ void store_string(uint64_t addr, char *s)
 
 
 /*
- *  Like store_string(), but advances the pointer afterwards.
+ *  add_environment_string():
+ *
+ *  Like store_string(), but advances the pointer afterwards. The most
+ *  obvious use is to place a number of strings (such as environment variable
+ *  strings) after one-another in emulated memory.
  */
 void add_environment_string(char *s, uint64_t *addr)
 {
@@ -166,7 +197,7 @@ void add_environment_string(char *s, uint64_t *addr)
 /*
  *  store_buf():
  *
- *  Helper function.
+ *  memcpy()-like helper function, from host RAM to emulated RAM.
  */
 void store_buf(uint64_t addr, char *s, size_t len)
 {
@@ -178,6 +209,7 @@ void store_buf(uint64_t addr, char *s, size_t len)
 /*
  *  store_64bit_word():
  *
+ *  Stores a 64-bit word in emulated RAM.  Byte order is taken into account.
  *  Helper function.
  */
 void store_64bit_word(uint64_t addr, uint64_t data64)
@@ -197,13 +229,15 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
 /*
  *  store_32bit_word():
  *
+ *  Stores a 32-bit word in emulated RAM.  Byte order is taken into account.
  *  Helper function.
  */
 void store_32bit_word(uint64_t addr, uint32_t data32)
@@ -217,22 +251,23 @@ void store_32bit_word(uint64_t addr, uint32_t data32)
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
 /*
  *  load_32bit_word():
  *
- *  Helper function.  Prints a warning and returns 0, if
- *  the read failed.
+ *  Helper function.  Prints a warning and returns 0, if the read failed.
+ *  Emulated byte order is taken into account.
  */
 uint32_t load_32bit_word(uint64_t addr)
 {
 	unsigned char data[4];
 
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data),
-	    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr,
+	    data, sizeof(data), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 
 	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
@@ -246,7 +281,9 @@ uint32_t load_32bit_word(uint64_t addr)
 /*
  *  store_64bit_word_in_host():
  *
- *  Helper function.
+ *  Stores a 64-bit word in the _host's_ RAM.  Emulated byte order is taken
+ *  into account.  This is useful when building structs in the host's RAM
+ *  which will later be copied into emulated RAM.
  */
 void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
 {
@@ -270,7 +307,7 @@ void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
 /*
  *  store_32bit_word_in_host():
  *
- *  Helper function.
+ *  See comment for store_64bit_word_in_host().
  */
 void store_32bit_word_in_host(unsigned char *data, uint32_t data32)
 {
@@ -288,7 +325,7 @@ void store_32bit_word_in_host(unsigned char *data, uint32_t data32)
 /*
  *  store_16bit_word_in_host():
  *
- *  Helper function.
+ *  See comment for store_64bit_word_in_host().
  */
 void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
 {
@@ -300,9 +337,16 @@ void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
 }
 
 
-/**************************************************************/
+/****************************************************************************
+ *                                                                          *
+ *                    Machine dependant Interrupt routines                  *
+ *                                                                          *
+ ****************************************************************************/
 
 
+/*
+ *  DECstation KN02 interrupts:
+ */
 void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
@@ -323,6 +367,9 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  DECstation KMIN interrupts:
+ */
 void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
@@ -344,6 +391,9 @@ void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  DECstation KN03 interrupts:
+ */
 void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
@@ -366,6 +416,9 @@ void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  DECstation MAXINE interrupts:
+ */
 void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
@@ -387,6 +440,9 @@ void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  DECstation KN230 interrupts:
+ */
 void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	int r2 = 0;
@@ -431,6 +487,9 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  Playstation 2 interrupt routine:
+ */
 void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
@@ -464,6 +523,9 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
+/*
+ *  SGI "IP22" interrupt routine:
+ */
 void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	/*
@@ -522,7 +584,10 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
-void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+/*
+ *  SGI "IP32" interrupt routine:
+ */
+void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	/*
 	 *  The 64-bit word at crime offset 0x10 is CRIME_INTSTAT,
@@ -645,14 +710,18 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
-/**************************************************************/
+/****************************************************************************
+ *                                                                          *
+ *                  Machine dependant Initialization routines               *
+ *                                                                          *
+ ****************************************************************************/
 
 
 /*
  *  machine_init():
  *
- *  Initialize memory and/or devices required by specific
- *  machine emulations.
+ *  This (rather large) function initializes memory, registers, and/or
+ *  devices required by specific machine emulations.
  */
 void machine_init(struct memory *mem)
 {
@@ -701,11 +770,17 @@ void machine_init(struct memory *mem)
 	machine_name = NULL;
 
 	switch (emulation_type) {
+
 	case EMULTYPE_NONE:
+		break;
+
+	case EMULTYPE_TEST:
 		/*
-		 *  This "none" type is used if no type is specified.
-		 *  It is used for testing.
+		 *  A 1 mips "bare" test machine.
 		 */
+		machine_name = "\"Bare\" test machine";
+		if (emulated_ips == 0)
+			emulated_ips = 1000000;
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
@@ -1691,7 +1766,7 @@ void machine_init(struct memory *mem)
 				 * 	  1f3a0000	  mcclock0
 				 */
 				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				cpus[bootstrap_cpu]->md_interrupt = sgi_crime_interrupt;
+				cpus[bootstrap_cpu]->md_interrupt = sgi_ip32_interrupt;
 
 				/*
 				 *  IRQ mapping is really ugly.  TODO: fix
@@ -1745,7 +1820,7 @@ void machine_init(struct memory *mem)
 		} else {
 			switch (machine) {
 
-			case ARC_MACHINE_NEC:
+			case MACHINE_ARC_NEC:
 				/*
 				 *  "NEC-RD94" (NEC RISCstation 2250)
 				 */
@@ -1771,7 +1846,7 @@ void machine_init(struct memory *mem)
 				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 				break;
 
-			case ARC_MACHINE_PICA:
+			case MACHINE_ARC_PICA:
 				/*
 				 *  "PICA-61"
 				 *
@@ -1838,11 +1913,11 @@ void machine_init(struct memory *mem)
 			}
 		} else {
 			switch (machine) {
-			case ARC_MACHINE_NEC:
+			case MACHINE_ARC_NEC:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 				break;
-			case ARC_MACHINE_PICA:
+			case MACHINE_ARC_PICA:
 				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
@@ -1931,11 +2006,11 @@ void machine_init(struct memory *mem)
 		default:
 			/*  ARC:  */
 			switch (machine) {
-			case ARC_MACHINE_NEC:
+			case MACHINE_ARC_NEC:
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 				break;
-			case ARC_MACHINE_PICA:
+			case MACHINE_ARC_PICA:
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "PICA-61", 0  /*  ROOT  */);
 				break;
@@ -2147,7 +2222,8 @@ case arc_CacheClass:
 		break;
 
 	default:
-		;
+		fatal("Unknown emulation type %i\n", emulation_type);
+		exit(1);
 	}
 
 	if (machine_name != NULL)

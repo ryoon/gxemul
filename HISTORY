@@ -350,3 +350,6 @@ HISTORY of mips64emul
 		for -D7 (Maxine) and -D4, and some more 'scc' serial
 		controller featuers are implemented (but no interrupts/
 		dma/keyboard/mouse stuff yet).
+20040228	Progress on the scc controller; -D4 works in both serial
+		console mode and with keyboard (graphical console), but no
+		mouse yet.

@@ -41,6 +41,10 @@ mips64emul TODO
 
 	Binary translation:  src/bintrans.c
 
+	Userland ABI emulation  (to run on any Unix-ish host)
+		o)  NetBSD
+		o)  System V?
+
 	CPU Emulation:
 		o)  Instructions:
 			o)  Step through the entire MIPS64, MIPS32, VR5432 and other

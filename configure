@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.4 2004-01-05 01:25:05 debug Exp $
+#  $Id: configure,v 1.5 2004-01-20 23:10:08 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -119,14 +119,19 @@ rm -f _testprog
 #  COPTIM:
 COPTIM=$CFLAGS
 
-$CC _testprog.c -o _testprog -O 2> /dev/null
-if [ -x _testprog ]; then
-	rm -f _testprog
-	$CC _testprog.c -o _testprog -O2 2> /dev/null
+if [ z"$CC" = zccc ]; then
+	#  -O4 is possible, but -O3 is slightly better?
+	COPTIM="-O3 $COPTIM"
+else
+	$CC _testprog.c -o _testprog -O 2> /dev/null
 	if [ -x _testprog ]; then
-		COPTIM="-O2 $COPTIM"
-	else
-		COPTIM="-O $COPTIM"
+		rm -f _testprog
+		$CC _testprog.c -o _testprog -O2 2> /dev/null
+		if [ -x _testprog ]; then
+			COPTIM="-O2 $COPTIM"
+		else
+			COPTIM="-O $COPTIM"
+		fi
 	fi
 fi
 rm -f _testprog
@@ -160,6 +165,14 @@ if [ z"$CC" = zccc ]; then
 	rm -f _testprog
 fi
 
+#  -intrinsics
+$CC _testprog.c -o _testprog -intrinsics 2> /dev/null
+if [ -x _testprog ]; then
+	COPTIM="-intrinsics $COPTIM"
+fi
+rm -f _testprog
+
+
 $CC _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
 if grep peephole _testprog.error; then
@@ -177,13 +190,6 @@ if [ -x _testprog ]; then
 fi
 rm -f _testprog
 
-if [ z"$CC" = zccc ]; then
-	$CC _testprog.c -o _testprog -O4 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-O4 $COPTIM"
-	fi
-	rm -f _testprog
-fi
 
 rm -f _testprog.c
 

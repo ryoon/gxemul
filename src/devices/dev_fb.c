@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.53 2004-11-03 00:36:47 debug Exp $
+ *  $Id: dev_fb.c,v 1.54 2004-11-04 23:56:36 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -58,12 +58,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 #include <X11/Xutil.h>
-#endif
-
-
-#ifdef WITH_X11
-extern XColor x11_graycolor[16];
-extern int x11_screen_depth;
 #endif
 
 
@@ -143,7 +137,7 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 		t = 1 << (x & 7);
 
 	/*  TODO: other bitdepths?  */
-	bits = x11_screen_depth;
+	bits = fbw->x11_screen_depth;
 	switch (bits) {
 	case 24:
 		color = ((color & 255) << 16)
@@ -304,7 +298,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 #define macro_put_pixel() {	\
 			/*  Combine the color into an X11 long and display it:  */	\
 			/*  TODO:  construct color in a more portable way:  */		\
-			switch (x11_screen_depth) {					\
+			switch (d->fb_window->x11_screen_depth) {					\
 			case 24:							\
 				if (d->fb_window->fb_ximage->byte_order)		\
 					color = (b << 16) + (g << 8) + r;		\
@@ -342,7 +336,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 				}							\
 				break;							\
 			default:							\
-				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel; \
+				color = d->fb_window->x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel; \
 			}								\
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
 				experimental_PutPixel(d->fb_window, x, y, color);	\

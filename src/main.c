@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.125 2004-11-01 09:35:51 debug Exp $
+ *  $Id: main.c,v 1.126 2004-11-04 23:56:37 debug Exp $
  */
 
 #include <stdio.h>
@@ -96,7 +96,7 @@ void fatal(char *fmt, ...)
  *
  *  Print program usage to stdout.
  */
-void usage(char *progname)
+static void usage(char *progname, int longusage)
 {
 	int i;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
@@ -109,8 +109,14 @@ void usage(char *progname)
 #endif
 	    );
 	printf("Read the documentation and/or source code for other copyright notices.\n");
+	printf("\nusage: %s [options] file [...]\n", progname);
 
-	printf("usage: %s [options] file [...]\n", progname);
+	if (!longusage) {
+		printf("\nRun with  -h  for help on command line options.\n\n");
+		goto ret;
+	}
+
+	printf("\n");
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
 	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700)\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
@@ -188,6 +194,9 @@ void usage(char *progname)
 	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
 	printf("  -Z n      set nr of graphics cards, for emulating a dual-head or tripple-head\n"
 	       "            environment (only for DECstation emulation)\n");
+	printf("\n");
+
+ret:
 	printf("You must specify one or more names of files that you wish to load into memory.\n");
 	printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
 	printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
@@ -267,6 +276,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->emulation_type = EMULTYPE_WRT54G;
 			emul->machine = 0;
 			break;
+		case 'h':
+			usage(progname, 1);
+			exit(1);
 		case 'I':
 			emul->emulated_hz = atoi(optarg);
 			emul->automatic_clock_adjustment = 0;
@@ -372,9 +384,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->n_gfx_cards = atoi(optarg);
 			using_switch_Z = 1;
 			break;
-		case 'h':
 		default:
-			usage(progname);
+			printf("Invalid option.\n");
+			usage(progname, 0);
 			exit(1);
 		}
 	}
@@ -542,7 +554,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		if (emul->emulation_type == EMULTYPE_DEC && using_switch_d) {
 			emul->booting_from_diskimage = 1;
 		} else {
-			usage(progname);
+			usage(progname, 0);
+			printf("\nNo filename given. Aborting.\n");
 			exit(1);
 		}
 	} else if (emul->boot_kernel_filename[0] == '\0') {

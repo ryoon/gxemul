@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.33 2004-11-01 09:25:39 debug Exp $
+ *  $Id: dev_bt459.c,v 1.34 2004-11-04 23:56:36 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -43,10 +43,6 @@
 #ifdef WITH_X11
 #include <X11/Xlib.h>     
 #include <X11/Xutil.h>
-
-/*  TODO:  These must be moved!  */
-#define N_GRAYCOLORS            16
-extern XColor x11_graycolor[N_GRAYCOLORS];
 #endif
 
 extern int quiet_mode;
@@ -148,7 +144,7 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 					XPutPixel(win->cursor_ximage,
 					    (x + i) / win->scaledown,
 					    y / win->scaledown,
-					    x11_graycolor[color * 5].pixel);
+					    win->x11_graycolor[color * 5].pixel);
 				}
 			}
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.150 2004-07-11 00:29:41 debug Exp $
+$Id: HISTORY,v 1.151 2004-07-11 03:17:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -745,3 +745,6 @@ HISTORY of mips64emul
 		as read-only, and gunzip preserved those flags. Thus, OpenBSD's
 		installer crashed as it didn't get its writes through to the
 		disk.
+		Parts of the PMAGB-BA graphics card has been implemented, but
+		colors don't seem to work yet, and Ultrix doesn't seem to
+		like it at all.

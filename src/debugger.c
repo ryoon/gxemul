@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.58 2005-01-26 19:14:26 debug Exp $
+ *  $Id: debugger.c,v 1.59 2005-01-28 09:28:33 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -687,6 +687,31 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 }
 
 
+/*
+ *  debugger_cmd_emul():
+ *
+ *  Dump info about all current emuls.
+ */
+static void debugger_cmd_emul(struct machine *m, char *cmd_line)
+{
+	int i, iadd = 4;
+
+	for (i=0; i<debugger_n_emuls; i++) {
+		struct emul *e = debugger_emuls[i];
+
+		if (e == NULL)
+			continue;
+
+		debug("emulation %i:\n", i);
+		debug_indentation(iadd);
+
+		emul_dumpinfo(e);
+
+		debug_indentation(-iadd);
+	}
+}
+
+
 /*  This is defined below.  */
 static void debugger_cmd_help(struct machine *m, char *cmd_line);
 
@@ -748,28 +773,15 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
 /*
  *  debugger_cmd_machine():
  *
- *  Dump info about all machines in all emulations.
+ *  Dump info about the currently focused machine.
  */
 static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int i, iadd = 4;
+	int iadd = 4;
 
-	for (i=0; i<debugger_n_emuls; i++) {
-		struct emul *e = debugger_emuls[i];
-
-		if (e == NULL)
-			continue;
-
-		if (debugger_n_emuls > 1) {
-			debug("emulation %i:\n", i);
-			debug_indentation(iadd);
-		}
-
-		emul_dumpinfo(e);
-
-		if (debugger_n_emuls > 1)
-			debug_indentation(-iadd);
-	}
+	debug_indentation(iadd);
+	machine_dumpinfo(debugger_machine);
+	debug_indentation(-iadd);
 }
 
 
@@ -1473,6 +1485,9 @@ static struct cmd cmds[] = {
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
+	{ "emul", "", 0, debugger_cmd_emul,
+		"print a summary of all current emuls" },
+
 	{ "help", "", 0, debugger_cmd_help,
 		"print this help message" },
 
@@ -1483,7 +1498,7 @@ static struct cmd cmds[] = {
 		"lookup a symbol by name or address" },
 
 	{ "machine", "", 0, debugger_cmd_machine,
-		"print a summary of the machine(s) being emulated" },
+		"print a summary of the current machine" },
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
 		"show opcode statistics" },

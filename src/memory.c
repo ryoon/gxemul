@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.53 2004-07-04 03:28:47 debug Exp $
+ *  $Id: memory.c,v 1.54 2004-07-04 03:47:15 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -55,6 +55,8 @@ extern int use_x11;
  *  Read at most 64 bits of data from a buffer.  Length is given by
  *  len, and the byte order by cpu->byte_order.
  *
+ *  This function should not be called with cpu == NULL.
+ *
  *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
  *  helper function.
  */
@@ -64,12 +66,7 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 	uint64_t x = 0;
 
 #if 0
-	if (cpu == NULL) {
-		fatal("memory_readmax64(): cpu = NULL\n");
-		exit(1);
-	}
-
-	if (len < 1 || len > 8) {
+	if (len > 8) {
 		fatal("memory_readmax64(): len = %i\n", len);
 		exit(1);
 	}
@@ -97,6 +94,8 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
  *  Write at most 64 bits of data to a buffer.  Length is given by
  *  len, and the byte order by cpu->byte_order.
  *
+ *  This function should not be called with cpu == NULL.
+ *
  *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
  *  helper function.
  */
@@ -106,23 +105,22 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 	int i;
 
 #if 0
-	if (cpu == NULL) {
-		fatal("memory_readmax64(): cpu = NULL\n");
-		exit(1);
-	}
-
-	if (len < 1 || len > 8) {
+	if (len > 8) {
 		fatal("memory_readmax64(): len = %i\n", len);
 		exit(1);
 	}
 #endif
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-		for (i=0; i<len; i++)
-			buf[i] = (data >> (i*8)) & 255;
+		for (i=0; i<len; i++) {
+			buf[i] = data & 255;
+			data >>= 8;
+		}
 	} else {
-		for (i=0; i<len; i++)
-			buf[len - 1 - i] = (data >> (i*8)) & 255;
+		for (i=0; i<len; i++) {
+			buf[len - 1 - i] = data & 255;
+			data >>= 8;
+		}
 	}
 }
 

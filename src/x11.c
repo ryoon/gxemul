@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: x11.c,v 1.3 2003-11-07 00:25:32 debug Exp $
  *
  *  X11-related functions.
  */
@@ -218,6 +218,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 		fprintf(stderr, "out of memory allocating ximage\n");
 		exit(1);
 	}
+
+	XInitImage(fb_windows[fb_number].fb_ximage);
 
 	x11_putimage_fb(fb_number);
 

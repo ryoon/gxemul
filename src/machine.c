@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: machine.c,v 1.3 2003-11-07 00:25:32 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -197,6 +197,7 @@ void machine_init(struct memory *mem)
 		dev_cons_init(mem);
 		dev_mp_init(mem, cpus);
 		break;
+
 	case EMULTYPE_DEC:
 		/*  An R2020 or R3220 memory thingy:  */
 		cpus[0]->coproc[3] = coproc_new(cpus[0], 3);
@@ -570,6 +571,7 @@ void machine_init(struct memory *mem)
 /*  cpus[0]->gpr[GPR_SP] = physical_ram_in_mb*1048576 + 0x80000000 - 0x2100;  */
 
 		break;
+
 	case EMULTYPE_COBALT:
 		machine_name = "Cobalt";
 		if (emulated_ips == 0)
@@ -591,6 +593,7 @@ void machine_init(struct memory *mem)
 		bootstr = "nfsroot=/usr/cobalt/";
 		store_string(0x80000000 + physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
+
 	case EMULTYPE_HPCMIPS:
 		machine_name = "hpcmips";
 		dev_fb_init(cpus[0], mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS, HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
@@ -622,6 +625,7 @@ void machine_init(struct memory *mem)
 		hpc_bootinfo.timezone = 0;
 		store_buf(0x80000000 + physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 		break;
+
 	case EMULTYPE_PS2:
 		machine_name = "Playstation 2";
 
@@ -646,8 +650,14 @@ void machine_init(struct memory *mem)
 		ps1_subcpu = cpu_new(ps1_mem, -1, "R3000A");
 
 		break;
+
 	case EMULTYPE_SGI:
-		machine_name = "SGI";
+	case EMULTYPE_ARC:
+		/*  SGI is just a special case of ARC, in a way.  */
+		if (emulation_type == EMULTYPE_SGI)
+			machine_name = "SGI";
+		else
+			machine_name = "ARC";
 
 		/*  ARCBIOS:  */
 		memset(&arcbios_spb, 0, sizeof(arcbios_spb));

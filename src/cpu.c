@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: cpu.c,v 1.3 2003-11-07 00:25:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -702,6 +702,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		case EMULTYPE_PS2:
 			playstation2_sifbios_emul(cpu);
 			break;
+		case EMULTYPE_ARC:
 		case EMULTYPE_SGI:
 			arcbios_emul(cpu);
 			break;

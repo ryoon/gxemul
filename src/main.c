@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: main.c,v 1.3 2003-11-07 00:25:32 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -142,6 +142,7 @@ void usage(char *progname)
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
 	printf("usage: %s [options] file [...]\n", progname);
+	printf("  -A        try to emulate a generic ARC machine (default CPU = R4000)\n");
 	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
 	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
 
@@ -204,8 +205,12 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "BC:D:EFGHhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:EFGHhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
 		switch (ch) {
+		case 'A':
+			emulation_type = EMULTYPE_ARC;
+			machine = 0;
+			break;
 		case 'B':
 			emulation_type = EMULTYPE_PS2;
 			machine = 0;
@@ -314,6 +319,9 @@ int get_cmd_args(int argc, char *argv[])
 		strcpy(emul_cpu_name, "R2000");
 
 	if (emulation_type == EMULTYPE_COBALT && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R4000");
+
+	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
 
 	if (emulation_type == EMULTYPE_SGI && !emul_cpu_name[0])

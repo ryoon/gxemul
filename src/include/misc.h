@@ -40,6 +40,7 @@
 #define	EMULTYPE_HPCMIPS	3
 #define	EMULTYPE_PS2		4
 #define	EMULTYPE_SGI		5
+#define	EMULTYPE_ARC		6
 
 /*  Specific machines:  */
 /*  DEC:  */
@@ -79,7 +80,7 @@
 #define	PLAYSTATION2_BDA	0xa0001000
 #define	PLAYSTATION2_SIFBIOS	0xbfc10000
 
-/*  SGI:  */
+/*  SGI and ARC:  */
 #include "sgi_arcbios.h"
 #define	SGI_SPB_ADDR		0x80001000
 #define	SGI_SYSID_ADDR		0x80001800

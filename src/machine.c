@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.326 2005-02-01 06:48:53 debug Exp $
+ *  $Id: machine.c,v 1.327 2005-02-01 08:26:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2459,11 +2459,11 @@ Why is this here? TODO
 				machine->crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  framebuffer?  */
-				/*  0x17000000: something called 'VICE' in linux  */
 
 				/*
 				 *  A combination of NetBSD and Linux info:
 				 *
+				 *      17000000	vice (Video Image Compression Engine)
 				 *	1f000000	mace
 				 *	1f080000	macepci
 				 *	1f100000	vin1

@@ -25,12 +25,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.62 2005-01-31 21:10:34 debug Exp $
+ *  $Id: file.c,v 1.63 2005-02-01 08:26:36 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
  *
- *	ELF		32-bit and 64-bit MSB and LSB MIPS
+ *	ELF		32-bit and 64-bit ELFs
  *	a.out		old format used by OpenBSD 2.x pmax kernels
  *	ecoff		old format used by Ultrix, Windows NT, etc
  *	srec		Motorola SREC format
@@ -799,8 +799,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
  *  ELF symbol table) are stored in the specified CPU's registers.
  *
  *  This is pretty heavy stuff, but is needed because of the heaviness of
- *  ELF files. :-/   Hopefully it will be able to recognize most valid MIPS
- *  executables.
+ *  ELF files. :-/   Hopefully it will be able to recognize most valid ELFs.
  */
 static void file_load_elf(struct machine *m, struct memory *mem,
 	char *filename, uint64_t *entrypointp, int arch, uint64_t *gpp,
@@ -1010,7 +1009,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			unencode(p_align,   &phdr32.p_align,   Elf32_Word);
 		}
 
-		if (p_type == PT_LOAD || (p_type & PF_MASKPROC) == PT_MIPS_REGINFO) {
+		if (p_type == PT_LOAD ||
+		    (p_type & PF_MASKPROC) == PT_MIPS_REGINFO) {
 			debug("chunk %i (", i);
 			if (p_type == PT_LOAD)
 				debug("loadable");
@@ -1283,7 +1283,7 @@ void file_load(struct machine *machine, struct memory *mem,
 {
 	int iadd = 4;
 	FILE *f;
-	unsigned char minibuf[12];
+	unsigned char buf[12];
 	int len, i;
 	off_t size;
 
@@ -1326,29 +1326,29 @@ void file_load(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 
-	memset(minibuf, 0, sizeof(minibuf));
-	len = fread(minibuf, 1, sizeof(minibuf), f);
+	memset(buf, 0, sizeof(buf));
+	len = fread(buf, 1, sizeof(buf), f);
 	fclose(f);
 
-	if (len < (signed int)sizeof(minibuf)) {
+	if (len < (signed int)sizeof(buf)) {
 		fprintf(stderr, "\nThis file is too small to contain anything useful\n");
 		exit(1);
 	}
 
 	/*  Is it an ELF?  */
-	if (minibuf[1]=='E' && minibuf[2]=='L' && minibuf[3]=='F') {
+	if (buf[0] == 0x7f && buf[1]=='E' && buf[2]=='L' && buf[3]=='F') {
 		file_load_elf(machine, mem, filename,
 		    entrypointp, arch, gpp, byte_orderp);
 		goto ret;
 	}
 
 	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
-	if (minibuf[0]==0x00 && minibuf[1]==0x8b && minibuf[2]==0x01 && minibuf[3]==0x07) {
+	if (buf[0]==0x00 && buf[1]==0x8b && buf[2]==0x01 && buf[3]==0x07) {
 		file_load_aout(machine, mem, filename, 0,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}
-	if (minibuf[0]==0x00 && minibuf[2]==0x00 && minibuf[8]==0x7a && minibuf[9]==0x75) {
+	if (buf[0]==0x00 && buf[2]==0x00 && buf[8]==0x7a && buf[9]==0x75) {
 		file_load_aout(machine, mem, filename, 1,
 		    entrypointp, arch, byte_orderp);
 		goto ret;
@@ -1360,25 +1360,25 @@ void file_load(struct machine *machine, struct memory *mem,
 	 *  TODO: What's the deal with the magic value's byte order? Sometimes
 	 *  it seems to be reversed for BE when compared to LE, but not always?
 	 */
-	if (minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB ||
-	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL ||
-	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB2 ||
-	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL2 ||
-	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB3 ||
-	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL3 ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB2 ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL2 ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB3 ||
-	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL3) {
+	if (buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEB ||
+	    buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEL ||
+	    buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEB2 ||
+	    buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEL2 ||
+	    buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEB3 ||
+	    buf[0]+256*buf[1] == ECOFF_MAGIC_MIPSEL3 ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEB ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEL ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEB2 ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEL2 ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEB3 ||
+	    buf[1]+256*buf[0] == ECOFF_MAGIC_MIPSEL3) {
 		file_load_ecoff(machine, mem, filename, entrypointp,
 		    arch, gpp, byte_orderp);
 		goto ret;
 	}
 
 	/*  Is it a Motorola SREC file?  */
-	if ((minibuf[0]=='S' && minibuf[1]>='0' && minibuf[1]<='9')) {
+	if ((buf[0]=='S' && buf[1]>='0' && buf[1]<='9')) {
 		file_load_srec(machine, mem, filename, entrypointp);
 		goto ret;
 	}
@@ -1386,17 +1386,17 @@ void file_load(struct machine *machine, struct memory *mem,
 	/*
 	 *  Last resort:  symbol definitions from nm (or nm -S):
 	 *
-	 *  If the minibuf contains typical 'binary' characters, then print
+	 *  If the buf contains typical 'binary' characters, then print
 	 *  an error message and quit instead of assuming that it is a
 	 *  symbol file.
 	 */
-	for (i=0; i<(signed)sizeof(minibuf); i++)
-		if (minibuf[i] < 32 && minibuf[i] != '\t' &&
-		    minibuf[i] != '\n' && minibuf[i] != '\r' &&
-		    minibuf[i] != '\f') {
+	for (i=0; i<(signed)sizeof(buf); i++)
+		if (buf[i] < 32 && buf[i] != '\t' &&
+		    buf[i] != '\n' && buf[i] != '\r' &&
+		    buf[i] != '\f') {
 			fprintf(stderr, "\nThe file format of '%s' is unknown.\n", filename);
-			for (i=0; i<(signed)sizeof(minibuf); i++)
-				fprintf(stderr, " %02x", minibuf[i]);
+			for (i=0; i<(signed)sizeof(buf); i++)
+				fprintf(stderr, " %02x", buf[i]);
 			fprintf(stderr, "\n");
 			fprintf(stderr, "Possible explanations:\n\n");
 			fprintf(stderr, "  o)  If this is a disk image, you forgot '-d' on the command line.\n");

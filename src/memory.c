@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.158 2005-02-11 09:29:51 debug Exp $
+ *  $Id: memory.c,v 1.159 2005-02-13 12:04:42 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -151,7 +151,8 @@ struct memory *memory_new(uint64_t physical_max)
 
 	/*  Check bits_per_pagetable and bits_per_memblock for sanity:  */
 	if (bits_per_pagetable + bits_per_memblock != max_bits) {
-		fprintf(stderr, "memory_new(): bits_per_pagetable and bits_per_memblock mismatch\n");
+		fprintf(stderr, "memory_new(): bits_per_pagetable and "
+		    "bits_per_memblock mismatch\n");
 		exit(1);
 	}
 
@@ -288,18 +289,23 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 			    be in the bintrans load/store cache, by marking
 			    the pages read-only.  */
 
-			/*  TODO: This only works for R3000-style physical addresses!  */
+			/*  TODO: This only works for R3000-style
+			    physical addresses!  */
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
 #if 1
 				invalidate_translation_caches_paddr(cpu,
 				    mem->dev_baseaddr[i] + s);
 #else
 				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s + 0xffffffff80000000ULL,
-				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
+				    mem->dev_baseaddr[i] + s +
+				    0xffffffff80000000ULL,
+				    mem->dev_bintrans_data[i] + s, -1,
+				    mem->dev_baseaddr[i] + s);
 				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s + 0xffffffffa0000000ULL,
-				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
+				    mem->dev_baseaddr[i] + s +
+				    0xffffffffa0000000ULL,
+				    mem->dev_bintrans_data[i] + s, -1,
+				    mem->dev_baseaddr[i] + s);
 #endif
 			}
 
@@ -312,7 +318,8 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 				    cpu->cd.mips.bintrans_data_hostpage[j] <
 				    mem->dev_bintrans_data[i] +
 				    mem->dev_length[i])
-					cpu->cd.mips.bintrans_data_hostpage[j] = NULL;
+					cpu->cd.mips.
+					    bintrans_data_hostpage[j] = NULL;
 			}
 
 			return;
@@ -342,7 +349,8 @@ void memory_device_register_statefunction(
 			return;
 		}
 
-	printf("memory_device_register_statefunction(): couldn't find the device\n");
+	printf("memory_device_register_statefunction(): "
+	    "couldn't find the device\n");
 	exit(1);
 }
 

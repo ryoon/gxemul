@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.66 2005-02-11 19:45:40 debug Exp $
+ *  $Id: net.c,v 1.67 2005-02-13 12:04:42 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -37,7 +37,8 @@
  *                  connection refused (reset on connect?), resend
  *                  data to the guest OS if no ack has arrived for
  *                  some time (? buffers?)
- *                  http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
+ *                  http://www.tcpipguide.com/free/
+ *			t_TCPConnectionTermination-2.htm
  *		o)  remove the netbsd-specific options in the tcp header (?)
  *		o)  Outgoing UDP packet fragment support.
  *		o)  IPv6  (outgoing, incoming, and the nameserver/gateway)
@@ -651,7 +652,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 	 *  TODO:  Send back RST?
 	 */
 	if (con_id < 0 && !syn) {
-		debug("[ net: TCP: dropping packet from unknown connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i %s%s%s%s%s]\n",
+		debug("[ net: TCP: dropping packet from unknown connection,"
+		    " %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i %s%s%s%s%s]\n",
 		    packet[26], packet[27], packet[28], packet[29], srcport,
 		    packet[30], packet[31], packet[32], packet[33], dstport,
 		    fin? "FIN ": "", syn? "SYN ": "", ack? "ACK ": "",
@@ -661,7 +663,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 
 	/*  Known connection, and SYN? Then ignore the packet.  */
 	if (con_id >= 0 && syn) {
-		debug("[ net: TCP: ignoring redundant SYN packet from known connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i ]\n",
+		debug("[ net: TCP: ignoring redundant SYN packet from known"
+		    " connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i ]\n",
 		    packet[26], packet[27], packet[28], packet[29], srcport,
 		    packet[30], packet[31], packet[32], packet[33], dstport);
 		return;
@@ -671,7 +674,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 	 *  A new outgoing connection?
 	 */
 	if (con_id < 0 && syn) {
-		debug("[ net: TCP: new outgoing connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i ]\n",
+		debug("[ net: TCP: new outgoing connection, %i.%i.%i.%i:%i"
+		    " -> %i.%i.%i.%i:%i ]\n",
 		    packet[26], packet[27], packet[28], packet[29], srcport,
 		    packet[30], packet[31], packet[32], packet[33], dstport);
 
@@ -682,17 +686,21 @@ static void net_ip_tcp(struct net *net, void *extra,
 			 *  TODO:  Reuse the oldest one currently in use, or
 			 *  just drop the new connection attempt? Drop for now.
 			 */
-			fatal("[ TOO MANY TCP CONNECTIONS IN USE! Increase MAX_TCP_CONNECTIONS in src/net.c! ]\n");
+			fatal("[ TOO MANY TCP CONNECTIONS IN USE! "
+			    "Increase MAX_TCP_CONNECTIONS! ]\n");
 			return;
 #else
 			int i;
-			int64_t oldest = net->tcp_connections[0].last_used_timestamp;
+			int64_t oldest = net->
+			    tcp_connections[0].last_used_timestamp;
 			free_con_id = 0;
 
 			fatal("[ NO FREE TCP SLOTS, REUSING OLDEST ONE ]\n");
 			for (i=0; i<MAX_TCP_CONNECTIONS; i++)
-				if (net->tcp_connections[i].last_used_timestamp < oldest) {
-					oldest = net->tcp_connections[i].last_used_timestamp;
+				if (net->tcp_connections[i].
+				    last_used_timestamp < oldest) {
+					oldest = net->tcp_connections[i].
+					    last_used_timestamp;
 					free_con_id = i;
 				}
 			tcp_closeconnection(net, free_con_id);
@@ -742,7 +750,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 		/*  connect can return -1, and errno = EINPROGRESS
 		    as we might not have connected right away.  */
 
-		net->tcp_connections[con_id].state = TCP_OUTSIDE_TRYINGTOCONNECT;
+		net->tcp_connections[con_id].state =
+		    TCP_OUTSIDE_TRYINGTOCONNECT;
 
 		net->tcp_connections[con_id].outside_acknr = 0;
 		net->tcp_connections[con_id].outside_seqnr =
@@ -758,7 +767,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 
 	if (ack && net->tcp_connections[con_id].state
 	    == TCP_OUTSIDE_DISCONNECTED2) {
-		debug("[ 'ack': guestOS's final termination of TCP connection %i ]\n", con_id);
+		debug("[ 'ack': guestOS's final termination of TCP "
+		    "connection %i ]\n", con_id);
 
 		/*  Send an RST?  (TODO, this is wrong...)  */
 		net_ip_tcp_connectionreply(net, extra, con_id, 0, NULL, 0, 1);
@@ -770,7 +780,8 @@ static void net_ip_tcp(struct net *net, void *extra,
 
 	if (fin && net->tcp_connections[con_id].state
 	    == TCP_OUTSIDE_DISCONNECTED) {
-		debug("[ 'fin': response to outside's disconnection of TCP connection %i ]\n", con_id);
+		debug("[ 'fin': response to outside's disconnection of "
+		    "TCP connection %i ]\n", con_id);
 
 		/*  Send an ACK:  */
 		net->tcp_connections[con_id].state = TCP_OUTSIDE_CONNECTED;
@@ -780,10 +791,13 @@ static void net_ip_tcp(struct net *net, void *extra,
 	}
 
 	if (fin) {
-		debug("[ 'fin': guestOS disconnecting TCP connection %i ]\n", con_id);
+		debug("[ 'fin': guestOS disconnecting TCP connection %i ]\n",
+		    con_id);
+
 		/*  Send ACK:  */
 		net_ip_tcp_connectionreply(net, extra, con_id, 0, NULL, 0, 0);
 		net->tcp_connections[con_id].state = TCP_OUTSIDE_DISCONNECTED2;
+
 		/*  Return and send FIN:  */
 		goto ret;
 	}
@@ -845,8 +859,9 @@ debug("  all acked\n");
 	/*  Drop outgoing packet if the guest OS' seqnr is not
 	    the same as we have acked. (We have missed something, perhaps.)  */
 	if (seqnr != net->tcp_connections[con_id].outside_acknr) {
-		debug("!! outgoing TCP packet dropped (seqnr = %u, outside_acknr = %u)\n",
-		    seqnr, net->tcp_connections[con_id].outside_acknr);
+		debug("!! outgoing TCP packet dropped (seqnr = %u, "
+		    "outside_acknr = %u)\n", seqnr,
+		    net->tcp_connections[con_id].outside_acknr);
 		goto ret;
 	}
 
@@ -865,8 +880,8 @@ debug("  all acked\n");
 			goto ret;
 		}
 
-		res = write(net->tcp_connections[con_id].socket, packet + send_ofs,
-		    len - send_ofs);
+		res = write(net->tcp_connections[con_id].socket,
+		    packet + send_ofs, len - send_ofs);
 
 		if (res > 0) {
 			net->tcp_connections[con_id].outside_acknr += res;
@@ -874,9 +889,10 @@ debug("  all acked\n");
 			/*  Just ignore this attempt.  */
 			return;
 		} else {
-			debug("[ error writing %i bytes to TCP connection %i: errno = %i ]\n",
-			    len - send_ofs, con_id, errno);
-			net->tcp_connections[con_id].state = TCP_OUTSIDE_DISCONNECTED;
+			debug("[ error writing %i bytes to TCP connection %i:"
+			    " errno = %i ]\n", len - send_ofs, con_id, errno);
+			net->tcp_connections[con_id].state =
+			    TCP_OUTSIDE_DISCONNECTED;
 			debug("[ TCP: disconnect on write() ]\n");
 			goto ret;
 		}
@@ -913,7 +929,8 @@ static void net_ip_udp(struct net *net, void *extra,
 	struct sockaddr_in remote_ip;
 
 	if ((packet[20] & 0x3f) != 0) {
-		fatal("[ net_ip_udp(): WARNING! fragmented UDP packet, TODO ]\n");
+		fatal("[ net_ip_udp(): WARNING! fragmented UDP "
+		    "packet, TODO ]\n");
 		return;
 	}
 
@@ -956,13 +973,16 @@ static void net_ip_udp(struct net *net, void *extra,
 		debug("NEW");
 		if (free_con_id < 0) {
 			int i;
-			int64_t oldest = net->udp_connections[0].last_used_timestamp;
+			int64_t oldest = net->
+			    udp_connections[0].last_used_timestamp;
 			free_con_id = 0;
 
 			debug(", NO FREE SLOTS, REUSING OLDEST ONE");
 			for (i=0; i<MAX_UDP_CONNECTIONS; i++)
-				if (net->udp_connections[i].last_used_timestamp < oldest) {
-					oldest = net->udp_connections[i].last_used_timestamp;
+				if (net->udp_connections[i].
+				    last_used_timestamp < oldest) {
+					oldest = net->udp_connections[i].
+					    last_used_timestamp;
 					free_con_id = i;
 				}
 			close(net->udp_connections[free_con_id].socket);
@@ -980,7 +1000,8 @@ static void net_ip_udp(struct net *net, void *extra,
 		    packet + 30, 4);
 		net->udp_connections[con_id].outside_udp_port = dstport;
 
-		net->udp_connections[con_id].socket = socket(AF_INET, SOCK_DGRAM, 0);
+		net->udp_connections[con_id].socket = socket(AF_INET,
+		    SOCK_DGRAM, 0);
 		if (net->udp_connections[con_id].socket < 0) {
 			fatal("[ net: UDP: socket() returned %i ]\n",
 			    net->udp_connections[con_id].socket);
@@ -1470,7 +1491,8 @@ static void net_arp(struct net *net, void *extra,
 		case 2:		/*  Reply  */
 		case 4:		/*  Reverse Reply  */
 		default:
-			fatal("[ net: ARP: UNIMPLEMENTED request type 0x%04x ]\n", r);
+			fatal("[ net: ARP: UNIMPLEMENTED request type "
+			    "0x%04x ]\n", r);
 		}
 	} else {
 		fatal("[ net: ARP: UNIMPLEMENTED arp packet type: ");
@@ -1524,19 +1546,21 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			continue;
 
 		if (net->udp_connections[con_id].socket < 0) {
-			fatal("INTERNAL ERROR in net.c, udp socket < 0 but in use?\n");
+			fatal("INTERNAL ERROR in net.c, udp socket < 0 "
+			    "but in use?\n");
 			continue;
 		}
 
-		res = recvfrom(net->udp_connections[con_id].socket, buf, sizeof(buf),
-		    0, (struct sockaddr *)&from, &from_len);
+		res = recvfrom(net->udp_connections[con_id].socket, buf,
+		    sizeof(buf), 0, (struct sockaddr *)&from, &from_len);
 
 		/*  No more incoming UDP on this connection?  */
 		if (res < 0)
 			continue;
 
 		net->timestamp ++;
-		net->udp_connections[con_id].last_used_timestamp = net->timestamp;
+		net->udp_connections[con_id].last_used_timestamp =
+		    net->timestamp;
 
 		net->udp_connections[con_id].udp_id ++;
 
@@ -1569,10 +1593,13 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 
 		/*  UDP:  */
 		udp_len = res + 8;
-		udp_data[0] = ((unsigned char *)&from)[2];	/*  outside_udp_port  */
+		/*  from[2..3] = outside_udp_port  */
+		udp_data[0] = ((unsigned char *)&from)[2];
 		udp_data[1] = ((unsigned char *)&from)[3];
-		udp_data[2] = (net->udp_connections[con_id].inside_udp_port >> 8) & 0xff;
-		udp_data[3] = net->udp_connections[con_id].inside_udp_port & 0xff;
+		udp_data[2] = (net->udp_connections[con_id].
+		    inside_udp_port >> 8) & 0xff;
+		udp_data[3] = net->udp_connections[con_id].
+		    inside_udp_port & 0xff;
 		udp_data[4] = udp_len >> 8;
 		udp_data[5] = udp_len & 0xff;
 		udp_data[6] = 0;
@@ -1601,7 +1628,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			    14 + 20 + this_packets_data_length);
 
 			/*  Ethernet header:  */
-			memcpy(lp->data + 0, net->udp_connections[con_id].ethernet_address, 6);
+			memcpy(lp->data + 0, net->udp_connections[con_id].
+			    ethernet_address, 6);
 			memcpy(lp->data + 6, net->gateway_ethernet_addr, 6);
 			lp->data[12] = 0x08;	/*  IP = 0x0800  */
 			lp->data[13] = 0x00;
@@ -1612,7 +1640,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			lp->data[16] = ip_len >> 8;
 			lp->data[17] = ip_len & 0xff;
 			lp->data[18] = net->udp_connections[con_id].udp_id >> 8;
-			lp->data[19] = net->udp_connections[con_id].udp_id & 0xff;
+			lp->data[19] = net->udp_connections[con_id].udp_id
+			    & 0xff;
 			lp->data[20] = (fragment_ofs >> 8);
 			if (bytes_converted + this_packets_data_length
 			    < udp_len)
@@ -1624,10 +1653,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			lp->data[27] = ((unsigned char *)&from)[5];
 			lp->data[28] = ((unsigned char *)&from)[6];
 			lp->data[29] = ((unsigned char *)&from)[7];
-			lp->data[30] = net->udp_connections[con_id].inside_ip_address[0];
-			lp->data[31] = net->udp_connections[con_id].inside_ip_address[1];
-			lp->data[32] = net->udp_connections[con_id].inside_ip_address[2];
-			lp->data[33] = net->udp_connections[con_id].inside_ip_address[3];
+			memcpy(lp->data + 30, net->udp_connections[con_id].
+			    inside_ip_address, 4);
 			net_ip_checksum(lp->data + 14, 10, 20);
 
 			memcpy(lp->data+34, udp_data + bytes_converted,
@@ -1728,19 +1755,27 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 		 */
 		if (net->tcp_connections[con_id].incoming_buf_len != 0) {
 			net->tcp_connections[con_id].incoming_buf_rounds ++;
-			if (net->tcp_connections[con_id].incoming_buf_rounds > 10000) {
-debug("  at seqnr %u but backing back to %u, resending %i bytes\n",
-	net->tcp_connections[con_id].outside_seqnr,
-	net->tcp_connections[con_id].incoming_buf_seqnr,
-	net->tcp_connections[con_id].incoming_buf_len);
-				net->tcp_connections[con_id].incoming_buf_rounds = 0;
+			if (net->tcp_connections[con_id].incoming_buf_rounds >
+			    10000) {
+				debug("  at seqnr %u but backing back to %u,"
+				    " resending %i bytes\n",
+				    net->tcp_connections[con_id].outside_seqnr,
+				    net->tcp_connections[con_id].
+				    incoming_buf_seqnr,
+				    net->tcp_connections[con_id].
+				    incoming_buf_len);
+
+				net->tcp_connections[con_id].
+				    incoming_buf_rounds = 0;
 				net->tcp_connections[con_id].outside_seqnr =
-				    net->tcp_connections[con_id].incoming_buf_seqnr;
+				    net->tcp_connections[con_id].
+				    incoming_buf_seqnr;
 
 				net_ip_tcp_connectionreply(net, extra, con_id,
-				    0, net->tcp_connections[con_id].incoming_buf,
-				    net->tcp_connections[con_id].incoming_buf_len,
-				    0);
+				    0, net->tcp_connections[con_id].
+				    incoming_buf,
+				    net->tcp_connections[con_id].
+				    incoming_buf_len, 0);
 			}
 			continue;
 		}
@@ -1768,13 +1803,16 @@ debug("  at seqnr %u but backing back to %u, resending %i bytes\n",
 		res = read(net->tcp_connections[con_id].socket, buf, 1400);
 		if (res > 0) {
 			/*  debug("\n -{- %lli -}-\n", (long long)res);  */
-net->tcp_connections[con_id].incoming_buf_len = res;
-net->tcp_connections[con_id].incoming_buf_rounds = 0;
-net->tcp_connections[con_id].incoming_buf_seqnr = 
-    net->tcp_connections[con_id].outside_seqnr;
-debug("  putting %i bytes (seqnr %u) in the incoming buf\n", res,
-    net->tcp_connections[con_id].incoming_buf_seqnr);
-memcpy(net->tcp_connections[con_id].incoming_buf, buf, res);
+			net->tcp_connections[con_id].incoming_buf_len = res;
+			net->tcp_connections[con_id].incoming_buf_rounds = 0;
+			net->tcp_connections[con_id].incoming_buf_seqnr = 
+			    net->tcp_connections[con_id].outside_seqnr;
+			debug("  putting %i bytes (seqnr %u) in the incoming "
+			    "buf\n", res, net->tcp_connections[con_id].
+			    incoming_buf_seqnr);
+			memcpy(net->tcp_connections[con_id].incoming_buf,
+			    buf, res);
+
 			net_ip_tcp_connectionreply(net, extra, con_id, 0,
 			    buf, res, 0);
 		} else if (res == 0) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.21 2005-01-31 20:21:16 debug Exp $
+ *  $Id: symbol.c,v 1.22 2005-02-13 12:04:42 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -266,11 +266,13 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 			fscanf(f, "%s %s\n", b3,b4);
 		}
 
-		/*  printf("b1='%s' b2='%s' b3='%s' b4='%s'\n", b1,b2,b3,b4);  */
+		/*  printf("b1='%s' b2='%s' b3='%s' b4='%s'\n",
+		    b1,b2,b3,b4);  */
 		addr = strtoull(b1, NULL, 16);
 		len  = strtoull(b2, NULL, 16);
 		type = b3[0];
-		/*  printf("addr=%016llx len=%016llx type=%i\n", addr, len, type);  */
+		/*  printf("addr=%016llx len=%016llx type=%i\n",
+		    addr, len, type);  */
 
 		if (type == 't' || type == 'r' || type == 'g')
 			continue;

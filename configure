@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.6 2004-01-27 21:52:43 debug Exp $
+#  $Id: configure,v 1.7 2004-02-09 06:27:38 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -118,6 +118,11 @@ rm -f _testprog
 
 #  COPTIM:
 COPTIM=$CFLAGS
+
+if [ z"`uname -m`" = zalpha ]; then
+	#  This is not an optimization, actually, just a flag:
+	COPTIM="-DALPHA $COPTIM"
+fi
 
 if [ z"$CC" = zccc ]; then
 	#  -O4 is possible, but -O3 is slightly better?

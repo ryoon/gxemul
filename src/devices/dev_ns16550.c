@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.23 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.24 2005-01-09 02:54:41 debug Exp $
  *  
  *  NS16550 serial controller.
  *
- *  TODO: fifo.
+ *  TODO: actually implement the fifo :)
  */
 
 #include <stdio.h>
@@ -43,6 +43,8 @@
 
 #include "comreg.h"
 
+
+/*  #define	debug		fatal  */
 
 #define	NS16550_TICK_SHIFT		14
 
@@ -80,16 +82,11 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 			d->reg[com_iir] |= IIR_RXRDY;
 	}
 
-	if (d->reg[com_mcr] & MCR_IENABLE) {
-		if (d->irq_enable & IER_ETXRDY && d->reg[com_iir] & IIR_TXRDY) {
+	if ((d->irq_enable & IER_ETXRDY && d->reg[com_iir] & IIR_TXRDY) ||
+	    (d->irq_enable & IER_ERXRDY && d->reg[com_iir] & IIR_RXRDY)) {
+		d->reg[com_iir] &= ~IIR_NOPEND;
+		if (d->reg[com_mcr] & MCR_IENABLE)
 			cpu_interrupt(cpu, d->irqnr);
-			d->reg[com_iir] &= ~IIR_NOPEND;
-		}
-
-		if (d->irq_enable & IER_ERXRDY && d->reg[com_iir] & IIR_RXRDY) {
-			cpu_interrupt(cpu, d->irqnr);
-			d->reg[com_iir] &= ~IIR_NOPEND;
-		}
 	}
 }
 
@@ -177,8 +174,13 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			if (idata != 0)		/*  <-- to supress Linux' behaviour  */
 				debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
+
+			/*  Needed for NetBSD 2.0, but not 1.6.2?  */
+			if (!(d->irq_enable & IER_ETXRDY)
+			    && (idata & IER_ETXRDY))
+				d->reg[com_iir] |= IIR_TXRDY;
+
 			d->irq_enable = idata;
-/* cpu_interrupt_ack(cpu, d->irqnr); */
 			dev_ns16550_tick(cpu, d);
 		} else {
 			odata = d->reg[relative_addr];
@@ -191,8 +193,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			odata = d->reg[relative_addr];
 			debug("[ ns16550 read from iir: 0x%02x ]\n", odata);
-d->reg[com_iir] &= ~IIR_TXRDY;
-dev_ns16550_tick(cpu, d);
+			dev_ns16550_tick(cpu, d);
 		}
 		break;
 	case com_lsr:

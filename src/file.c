@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.21 2004-03-11 05:30:06 debug Exp $
+ *  $Id: file.c,v 1.22 2004-06-07 10:34:30 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -77,9 +77,13 @@ char *last_filename = "not_yet_set";
 				Wb = Wp[Wlen-1 - Wi];			\
 			else						\
 				Wb = Wp[Wi];				\
-			var += Wb;					\
+			var |= Wb;					\
 			if (Wi < Wlen-1)				\
 				var <<= 8;				\
+		}							\
+		if (sizeof (var) == 8 && Wlen == 4) {			\
+			if ((uint32_t)var >= 0x80000000LU)		\
+			var |= 0xFFFFFFFFLLU << 32;			\
 		}							\
 	}
 

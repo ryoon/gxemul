@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.25 2004-04-06 15:36:24 debug Exp $
+ *  $Id: coproc.c,v 1.26 2004-04-15 03:59:21 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -727,13 +727,18 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 		case COPz_CTCz:		/*  Copy to FPU control register  */
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
-			cp->fcr[fs] = cpu->gpr[rt];
+			if (fs == 0)
+				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
+			else
+				cp->fcr[fs] = cpu->gpr[rt];
 			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
 			/*  TODO: writing to control register 31 should cause
 				exceptions, depending on status bits!  */
 			return;
 		default:
-			;
+			fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
+			    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
+			return;
 		}
 	}
 
@@ -744,13 +749,6 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 	/*  TODO: RM5200 idle (?)  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
-
-/*  TODO  */
-if (cp->coproc_nr==1) {
-	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
-	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
-	return;
-}
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);

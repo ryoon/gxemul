@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.38 2004-12-18 06:01:16 debug Exp $
+ *  $Id: net.c,v 1.39 2004-12-18 08:51:19 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1064,7 +1064,7 @@ static void net_ip(void *extra, unsigned char *packet, int len)
 /*
  *  net_arp():
  *
- *  Handle an ARP packet, coming from the emulated NIC.
+ *  Handle an ARP (or RARP) packet, coming from the emulated NIC.
  *
  *  An ARP packet might look like this:
  *
@@ -1082,12 +1082,15 @@ static void net_ip(void *extra, unsigned char *packet, int len)
  *  An ARP request with the same from and to IP addresses should be ignored.
  *  (This would be a host testing to see if there is an IP collision.)
  */
-static void net_arp(void *extra, unsigned char *packet, int len)
+static void net_arp(void *extra, unsigned char *packet, int len, int reverse)
 {
 	int i;
 
 	/*  TODO: This debug dump assumes ethernet->IPv4 translation:  */
-	debug("[ net: ARP: ");
+	if (reverse)
+		debug("[ net: RARP: ");
+	else
+		debug("[ net: ARP: ");
 	for (i=0; i<2; i++)
 		debug("%02x", packet[i]);
 	debug(" ");
@@ -1137,8 +1140,35 @@ static void net_arp(void *extra, unsigned char *packet, int len)
 			lp->data[6 + 14] = 0x00; lp->data[7 + 14] = 0x02;
 
 			break;
-		case 2:		/*  Reply  */
 		case 3:		/*  Reverse Request  */
+			lp = net_allocate_packet_link(extra, len + 14);
+
+			/*  Copy the old packet first:  */
+			memcpy(lp->data + 14, packet, len);
+
+			/*  Add ethernet RARP header:  */
+			memcpy(lp->data + 0, packet + 8, 6);
+			memcpy(lp->data + 6, gateway_addr, 6);
+			lp->data[12] = 0x80; lp->data[13] = 0x35;
+
+			/*  This is a RARP reply:  */
+			lp->data[6 + 14] = 0x00; lp->data[7 + 14] = 0x04;
+
+			/*  Address of the gateway:  */
+			memcpy(lp->data +  8 + 14, gateway_addr, 6);
+			memcpy(lp->data + 14 + 14, gateway_ipv4, 4);
+
+			/*  MAC address of emulated machine:  */
+			memcpy(lp->data + 18 + 14, packet + 8, 6);
+
+			/*  IP address of the emulated machine:  */
+			lp->data[24 + 14] = 10;
+			lp->data[25 + 14] =  0;
+			lp->data[26 + 14] =  0;
+			lp->data[27 + 14] =  1;
+
+			break;
+		case 2:		/*  Reply  */
 		case 4:		/*  Reverse Reply  */
 		default:
 			fatal("[ net: ARP: UNIMPLEMENTED request type 0x%04x ]\n", r);
@@ -1576,15 +1606,16 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 	}
 
 	/*  ARP:  */
-	if (len == 60 && packet[12] == 0x08 && packet[13] == 0x06) {
-		net_arp(extra, packet + 14, len - 14);
+	if (packet[12] == 0x08 && packet[13] == 0x06) {
+		if (len != 60)
+			fatal("[ net_ethernet_tx: WARNING! unusual ARP len (%i) ]\n", len);
+		net_arp(extra, packet + 14, len - 14, 0);
 		return;
 	}
 
 	/*  RARP:  */
 	if (packet[12] == 0x80 && packet[13] == 0x35) {
-		/*  TODO.  */
-		fatal("[ net: TX: UNIMPLEMENTED RARP packet ]\n");
+		net_arp(extra, packet + 14, len - 14, 1);
 		return;
 	}
 

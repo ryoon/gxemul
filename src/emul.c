@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.95 2004-12-14 16:24:10 debug Exp $
+ *  $Id: emul.c,v 1.96 2004-12-18 08:51:19 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -101,7 +101,7 @@ static void add_dump_points(struct emul *emul)
 			dp |= 0xffffffff00000000ULL;
 		emul->breakpoint_addr[i] = dp;
 
-		debug("breakpoint %i: %016llx", i, (long long)dp);
+		debug("breakpoint %i: 0x%016llx", i, (long long)dp);
 		if (string_flag)
 			debug(" (%s)", emul->breakpoint_string[i]);
 		debug("\n");

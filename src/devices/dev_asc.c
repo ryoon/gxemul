@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.24 2004-04-14 22:29:15 debug Exp $
+ *  $Id: dev_asc.c,v 1.25 2004-04-15 04:00:02 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -332,6 +332,10 @@ fatal("TODO.......asdgasin\n");
 		} else {
 			/*  Copy data from DMA to data_out:  */
 			int len = d->xferp->data_out_len;
+			int len2 = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+			if (len2 == 0)
+				len2 = 65536;
+
 			if (len == 0) {
 				fprintf(stderr, "d->xferp->data_out_len == 0 ?\n");
 				exit(1);
@@ -340,9 +344,24 @@ fatal("TODO.......asdgasin\n");
 			if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 				len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
 
-			scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
+			if (d->xferp->data_out == NULL) {
+				scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
+				memcpy(d->xferp->data_out, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len2);
+				d->xferp->data_out_offset = len2;
+			} else {
+				/*  Continuing a multi-transfer:  */
+				memcpy(d->xferp->data_out + d->xferp->data_out_offset, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len2);
+				d->xferp->data_out_offset += len2;
+			}
 
-			memcpy(d->xferp->data_out, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len);
+			/*  If the disk wants more than we're DMAing, then this is a multitransfer:  */
+			if (d->xferp->data_out_offset != d->xferp->data_out_len) {
+				fatal("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
+				if (d->xferp->data_out_offset > d->xferp->data_out_len)
+					fatal("[ asc data_out dma: too much? ]\n");
+				else
+					all_done = 0;
+			}
 
 #ifdef ASC_DEBUG
 			if (!quiet_mode)
@@ -416,6 +435,7 @@ fatal("TODO.......asdgasin\n");
 	/*  Cause an interrupt after the transfer:  */
 	d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+	d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
 	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  4?  */
 
@@ -676,11 +696,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		if (idata & NCRCMD_DMA) {
 			debug("[DMA] ");
 
-			/*  DMA commands load the transfer count from the
-			    write-only registers to the read-only ones:  */
+			/*
+			 *  DMA commands load the transfer count from the
+			 *  write-only registers to the read-only ones, and
+			 *  the Terminal Count bit is cleared.
+			 */
 			d->reg_ro[NCR_TCL] = d->reg_wo[NCR_TCL];
 			d->reg_ro[NCR_TCM] = d->reg_wo[NCR_TCM];
 			d->reg_ro[NCR_TCH] = d->reg_wo[NCR_TCH];
+			d->reg_ro[NCR_STAT] &= ~NCRSTAT_TC;
 		}
 
 		switch (idata & ~NCRCMD_DMA) {
@@ -864,7 +888,19 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 				break;
 			}
 
-			dev_asc_transfer(d, idata & NCRCMD_DMA? 1 : 0);
+			{
+				int ok;
+
+				ok = dev_asc_transfer(d, idata & NCRCMD_DMA? 1 : 0);
+				if (!ok) {
+					d->cur_state = STATE_DISCONNECTED;
+					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
+					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					scsi_transfer_free(d->xferp);
+					d->xferp = NULL;
+				}
+			}
 			break;
 
 		default:

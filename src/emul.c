@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.21 2004-07-03 19:45:22 debug Exp $
+ *  $Id: emul.c,v 1.22 2004-07-03 19:46:53 debug Exp $
  *
  *  Emulation startup.
  */
@@ -53,6 +53,7 @@ extern int bintrans_enable;
 extern char emul_cpu_name[50];
 extern int emulation_type;
 extern int machine;
+extern int emulated_hz;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int bootstrap_cpu;
@@ -312,6 +313,9 @@ void emul(void)
 
 	/*  Add PC dump points:  */
 	add_pc_dump_points();
+
+	if (emulated_hz < 1)
+		emulated_hz = 1;
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    bootstrap_cpu,

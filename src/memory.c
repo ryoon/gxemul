@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.104 2004-11-21 22:09:07 debug Exp $
+ *  $Id: memory.c,v 1.105 2004-11-23 08:45:41 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1157,22 +1157,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 
 	/*
-	 *  Physical addresses of the form 0xa8........ and 0x90..........
-	 *  don't actually have all 64 bits significant, only the lower part.
-	 *
-	 *  (TODO:  Is this SGI specific?)  (TODO 2:  Is 48 bits ok?)
-	 *
-	 *  It seems that some Ultrix code (or OSF/1) seems to use addresses
-	 *  such as 0xbe000000 as if they were physical addresses. (It should
-	 *  be 0x1e000000, so I just take the lowest bits here.)
-	 */
-	if (cpu->emul->emulation_type == EMULTYPE_DEC)
-		paddr &= 0x1fffffff;
-	else
-		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
-
-
-	/*
 	 *  If correct cache emulation is enabled, and we need to simluate
 	 *  cache misses even from the instruction cache, we can't run directly
 	 *  from a host page. :-/
@@ -1377,7 +1361,7 @@ into the devices  */
 					symbol = get_symbol_name(
 					    &cpu->emul->symbol_context,
 					    cpu->pc_last, &offset);
-					debug(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
+fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
 					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
 

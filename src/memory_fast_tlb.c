@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_tlb.c,v 1.3 2004-11-22 00:13:55 debug Exp $
+ *  $Id: memory_fast_tlb.c,v 1.4 2004-11-23 08:45:42 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  *
@@ -142,11 +142,6 @@ urk_fulkod:
 	/*  printf("ok=%i\n", ok);  */
 	if (!ok)
 		return NULL;
-
-	if (cpu->emul->emulation_type == EMULTYPE_DEC)
-		paddr &= 0x1fffffff;
-	else
-		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
 
 	for (i=0; i<cpu->mem->n_mmapped_devices; i++)
 		if (paddr >= cpu->mem->dev_baseaddr[i] &&

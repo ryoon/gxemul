@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.51 2004-11-22 09:19:08 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.52 2004-11-23 08:45:41 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -253,7 +253,7 @@ static void bintrans_write_quickjump(unsigned char *quickjump_code,
 	    chunkoffset, (long long)alpha_addr, (long long)a, ofs);  */
 
 	if (ofs > -0xfffff && ofs < 0xfffff) {
-		*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + (ofs >> 16) & 0x1f; *a++ = 0xc3;	/*  br <chunk>  */
+		*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + ((ofs >> 16) & 0x1f); *a++ = 0xc3;	/*  br <chunk>  */
 	}
 }
 
@@ -1108,7 +1108,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		/*  printf("%016llx %016llx %i\n", (long long)alpha_addr, (long long)a, ofs);  */
 
 		if ((*potential_chunk_p) != 0 && ofs > -0xfffff && ofs < 0xfffff) {
-			*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + (ofs >> 16) & 0x1f; *a++ = 0xc3;	/*  br <chunk>  */
+			*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + ((ofs >> 16) & 0x1f); *a++ = 0xc3;	/*  br <chunk>  */
 		} else {
 			/*  Case 2:  */
 
@@ -1699,7 +1699,9 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 
 	if (mtcflag) {
 		/*  mtc:  */
-		bintrans_move_MIPS_reg_into_Alpha_reg((unsigned char **)&a, rt, ALPHA_T0);
+		*addrp = (unsigned char *) a;
+		bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rt, ALPHA_T0);
+		a = (uint32_t *) *addrp;
 
 		if (!flag64bit) {
 			*a++ = 0x40201001;	/*  addl t0,0,t0  */
@@ -1815,7 +1817,9 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			*a++ = 0x40401002;		/*  addl t1,0,t1  */
 		}
 
-		bintrans_move_Alpha_reg_into_MIPS_reg((unsigned char **)&a, ALPHA_T1, rt);
+		*addrp = (unsigned char *) a;
+		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T1, rt);
+		a = (uint32_t *) *addrp;
 	}
 
 	*addrp = (unsigned char *) a;

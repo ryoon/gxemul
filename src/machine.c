@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.218 2004-11-17 20:37:42 debug Exp $
+ *  $Id: machine.c,v 1.219 2004-11-23 08:45:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1390,6 +1390,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 		default:
 			;
 		}
+
+		/*
+		 *  Most OSes on DECstation use physical addresses below
+		 *  0x20000000, but OSF/1 seems to use 0xbe...... as if it was
+		 *  0x1e......, so we need this hack:
+		 */
+		dev_ram_init(mem, 0xa0000000, 0x20000000, DEV_RAM_MIRROR, 0x0);
 
 		/*  DECstation PROM stuff:  (TODO: endianness)  */
 		for (i=0; i<100; i++)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.124 2004-07-04 12:52:16 debug Exp $
+ *  $Id: machine.c,v 1.125 2004-07-04 13:18:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -119,7 +119,7 @@ unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
 {
 	unsigned char ch;
 	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch),
-	    MEM_READ, CACHE_NONE);
+	    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 	return ch;
 }
 
@@ -140,7 +140,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 		unsigned char ch = '\0';
 
 		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch),
-		    MEM_READ, CACHE_NONE);
+		    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		if (ch == '\0')
 			return;
 		if (ch >= ' ' && ch < 126)
@@ -159,7 +159,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 void store_byte(uint64_t addr, uint8_t data)
 {
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, &data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
 }
 
 
@@ -228,7 +228,7 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
 }
 
 
@@ -251,7 +251,7 @@ void store_32bit_word(uint64_t addr, uint64_t data32)
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
 }
 
 
@@ -266,7 +266,7 @@ uint32_t load_32bit_word(uint64_t addr)
 	unsigned char data[4];
 
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr,
-	    data, sizeof(data), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+	    data, sizeof(data), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 
 	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;

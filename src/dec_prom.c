@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.14 2004-07-03 19:15:55 debug Exp $
+ *  $Id: dec_prom.c,v 1.15 2004-07-04 13:18:02 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -216,18 +216,24 @@ void decstation_prom_emul(struct cpu *cpu)
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i],
+			    sizeof(char), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ DEC PROM getenv(\"%s\") ]\n", buf);
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<strlen((char *)buf); j++) {
-				memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+				memory_rw(cpu, cpu->mem, (uint64_t)
+				    (DEC_PROM_STRINGS + i + j), &ch2,
+				    sizeof(char), MEM_READ, CACHE_DATA |
+				    NO_EXCEPTIONS);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS
+			    + i + strlen((char *)buf)), &ch2, sizeof(char),
+			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
 				cpu->gpr[GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
 				return;
@@ -318,7 +324,8 @@ void decstation_prom_emul(struct cpu *cpu)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch,
+			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);
 			else

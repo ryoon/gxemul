@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.50 2004-07-05 19:24:00 debug Exp $
+ *  $Id: main.c,v 1.51 2004-07-05 21:22:23 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -384,6 +384,10 @@ int get_cmd_args(int argc, char *argv[])
 		printf("implicitly turning of -q and turning on -v, because of -t\n");
 		verbose = 1;
 	}
+
+	if (automatic_clock_adjustment && emulated_hz != 0)
+		printf("WARNING! -I %i is ignored because of -c.\n",
+		    emulated_hz);
 
 
 	/*  Default CPU type:  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.132 2004-07-05 19:25:01 debug Exp $
+$Id: HISTORY,v 1.133 2004-07-05 21:22:21 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -672,7 +672,10 @@ HISTORY of mips64emul
 		R3000 caches finally work. (I know that there is at least one
 		bug, regarding interrupt response.)
 20040705	Working on the 'le' device, and on a generic (device
-		independant) networking framework.
+		independant) networking framework. le can transmit and
+		receive packets, and the network framework fakes ARP
+		responses from a fake gateway machine (at a fixed ip
+		address, 10.0.0.254).
 		Adding a '-c' command line option, which makes emulated_hz
 		automatically adjust itself to the current number of
 		emulated cycles per second (measured at regular intervals).

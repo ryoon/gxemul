@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.13 2004-07-05 21:08:41 debug Exp $
+ *  $Id: dev_le.c,v 1.14 2004-07-05 21:22:22 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -40,6 +40,9 @@
  *
  *  TODO:  Make sure that this device works with both NetBSD and Ultrix
  *         and on as many DECstation models as possible.
+ *
+ *  TODO:  Error conditions (such as when there are not enough receive
+ *	   buffers) are not emulated yet.
  */
 
 #include <stdio.h>
@@ -240,7 +243,7 @@ void le_tx(struct le_data *d)
 			return;
 		if ((tx_descr[2] & 0xf000) != 0xf000)
 			return;
-		if (buflen < 12 || buflen > 1900)  /* TODO: eth frame size  */
+		if (buflen < 12 || buflen > 1900)
 			return;
 
 		debug("[ le: tx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes, STP=%i ENP=%i ]\n",
@@ -353,11 +356,10 @@ void le_rx(struct le_data *d)
 			return;
 		if ((rx_descr[2] & 0xf000) != 0xf000)
 			return;
-		if (buflen < 12 || buflen > 1900)  /* TODO: eth frame size  */
+		if (buflen < 12 || buflen > 1900)
 			return;
 
-fatal
-("[ le: rx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes ]\n",
+		debug("[ le: rx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes ]\n",
 		    d->rxp, rx_descr[0], rx_descr[1], rx_descr[2], rx_descr[3],
 		    bufaddr, buflen);
 

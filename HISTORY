@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.88 2004-06-14 22:48:25 debug Exp $
+$Id: HISTORY,v 1.89 2004-06-15 21:27:32 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -543,3 +543,6 @@ HISTORY of mips64emul
 		names unless the symbol name is actually printed.
 		Added support for loading old big-endian (Irix) ECOFF
 		kernels (0x60 0x01 as the first two bytes).
+20040615 (late)	Adding enough SGI IP20 (Indigo) support to let NetBSD 2.0
+		enter userland :-)  No interrupt specifics are implemented
+		yet, so it hangs while doing terminal output.

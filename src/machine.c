@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.98 2004-06-14 23:49:03 debug Exp $
+ *  $Id: machine.c,v 1.99 2004-06-15 21:27:37 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1474,16 +1474,43 @@ void machine_init(struct memory *mem)
 
 				/*
 				 *  Guesses based on NetBSD 2.0 beta, 20040606.
+				 *
+				 *  int0 at mainbus0 addr 0x1fb801c0: bus 1MHz, CPU 2MHz
+				 *  imc0 at mainbus0 addr 0x1fa00000: revision 0
+				 *  gio0 at imc0
+				 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 0 addr 0x1f400000 not configured
+				 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 1 addr 0x1f600000 not configured
+				 *  unknown GIO card (product 0x00 revision 0x00) at gio0 slot 2 addr 0x1f000000 not configured
+				 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC1
+				 *  zsc0 at hpc0 offset 0xd10   (channels 0 and 1, channel 1 for console)
+				 *  zsc1 at hpc0 offset 0xd00   (2 channels)
+				 *  sq0 at hpc0 offset 0x100: SGI Seeq 80c03
+				 *  wdsc0 at hpc0 offset 0x11f
+				 *  dpclock0 at hpc0 offset 0xe00
 				 */
 
 				/*  int0 at mainbus0 addr 0x1fb801c0  */
 				sgi_ip20_data = dev_sgi_ip20_init(cpus[bootstrap_cpu], mem, DEV_SGI_IP20_BASE);
 
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);
+				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				/*  something at 0x1fa00000, perhaps 0x200 bytes long  */
-				/*  IP20 probably has a gio bus  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
+
+				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
+
+				/*  WDSC SCSI controller:  */
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fb8011f, 0);
+
+				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
+				dev_unreadable_init(mem, 0x1fb00000, 0x10000);		/*  hpc1  */
+				dev_unreadable_init(mem, 0x1f980000, 0x10000);		/*  hpc2  */
+
+				/*  Return nothing for gio slots 0, 1, and 2:  */
+				dev_unreadable_init(mem, 0x1f400000, 0x1000);	/*  gio0 slot 0  */
+				dev_unreadable_init(mem, 0x1f600000, 0x1000);	/*  gio0 slot 1  */
+				dev_unreadable_init(mem, 0x1f000000, 0x1000);	/*  gio0 slot 2  */
 
 				break;
 			case 21:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.1 2004-06-14 22:48:54 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.2 2004-06-15 21:27:33 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -59,8 +59,18 @@ int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip20: write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
 		} else {
-			odata = 0x80;	/*  ?  */
-instruction_trace = 1;  quiet_mode = 0;
+			/*
+			 *  TODO:
+			 *
+			 *  I haven't had time to figure out what values should be
+			 *  returned by this device.  Simple bit patterns don't seem
+			 *  to be enough, but using random() is obviously pretty
+			 *  bad.  This must be fixed some day.
+			 */
+
+			/*  instruction_trace = 1;  quiet_mode = 0;  */
+			odata = random() & 0xff;
+
 			debug("[ sgi_ip20: read from address 0x%x: 0x%x ]\n", relative_addr, (int)odata);
 		}
 		break;

@@ -342,3 +342,7 @@ HISTORY of mips64emul
 20040225	An Ultrix OSF1 kernel with a ramdisk now boots :-)  (It was
 		a problem with ultrixboot not giving the same arguments as
 		NetBSD's boot program.)
+20040225(later)	Fixing a bug in the DECstation dc serial device; digits 0-9
+		were translated to numeric keypad 0-9, not the normal 0-9.
+		(This caused Ultrix to print escape sequences instead of
+		digits.)

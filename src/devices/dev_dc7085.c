@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.13 2004-01-25 00:14:24 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.14 2004-02-25 12:24:13 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -141,11 +141,17 @@ void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 			}
 
 			shifted = 0;
-			for (i=0; i<256; i++)
+			for (i=0; i<256; i++) {
+				/*  Skip numeric digits, so that the normal
+					digits are used instead.  */
+				if (i >= 0x92 && i<=0xa0)
+					continue;
+
 				if (unshiftedAscii[i] == ch) {
 					found = i;
 					break;
 				}
+			}
 
 			if (found == -1) {
 				/*  unshift ch:  */

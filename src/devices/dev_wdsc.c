@@ -23,9 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.1 2004-01-05 01:07:28 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.2 2004-01-05 01:23:37 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
+ *
+ *  TODO:  This is just a dummy device.
  */
 
 #include <stdio.h>
@@ -52,6 +54,9 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	int i;
 	struct wdsc_data *d = extra;
 
+	/*  ???  */
+	d->reg[3] = random();
+
 	if (writeflag == MEM_WRITE)
 		memcpy(&d->reg[relative_addr], data, len);
 	else
@@ -60,7 +65,10 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ wdsc: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
+			debug("[ wdsc: read from 0x%x:", (int)relative_addr);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" (len=%i) ]\n", len);
 		} else {
 			debug("[ wdsc: write to 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.7 2004-02-18 09:37:36 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.8 2004-02-23 23:11:45 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -166,7 +166,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 
 	if (strcmp(device_name, "PMAD-AA")==0) {
 		/*  le in NetBSD, Lance ethernet  */
-		dev_le_init(mem, baseaddr, 0, 0, irq);
+		dev_le_init(mem, baseaddr, 0, 0, irq, 4*1048576);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAZ-AA")==0) {
 		/*  asc in NetBSD, SCSI  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.5 2004-02-19 10:25:28 debug Exp $
+ *  $Id: dev_le.c,v 1.6 2004-02-23 23:11:45 debug Exp $
  *  
  *  LANCE ethernet.
  */
@@ -43,6 +43,7 @@ struct le_data {
 	int		irq_nr;
 	uint64_t	buf_start;
 	uint64_t	buf_end;
+	int		len;
 
 	int		register_choice;
 	uint32_t	reg[N_REGISTERS];
@@ -120,7 +121,7 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 /*
  *  dev_le_init():
  */
-void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr)
+void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len)
 {
 	struct le_data *d = malloc(sizeof(struct le_data));
 	if (d == NULL) {
@@ -130,9 +131,10 @@ void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint
 
 	memset(d, 0, sizeof(struct le_data));
 	d->irq_nr    = irq_nr;
+	d->len       = len;
 	d->buf_start = buf_start;
 	d->buf_end   = buf_end;
 
-	memory_device_register(mem, "le", baseaddr, DEV_LE_LENGTH, dev_le_access, (void *)d);
+	memory_device_register(mem, "le", baseaddr, len, dev_le_access, (void *)d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.40 2004-11-06 22:29:05 debug Exp $
+ *  $Id: dev_bt459.c,v 1.41 2004-11-07 22:50:29 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -366,6 +366,11 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			d->bt459_reg[btaddr] = idata;
 
 			switch (btaddr) {
+			case BT459_REG_CCOLOR_1:
+			case BT459_REG_CCOLOR_2:
+			case BT459_REG_CCOLOR_3:
+				d->need_to_update_cursor_shape = 1;
+				break;
 			case BT459_REG_PRM:
 				/*
 				 *  NetBSD writes 0x00 to this register to

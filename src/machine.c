@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.108 2004-06-25 03:49:20 debug Exp $
+ *  $Id: machine.c,v 1.109 2004-06-25 04:19:37 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1972,7 +1972,7 @@ void machine_init(struct memory *mem)
 			    0, 1, 20, 0, 0x0, arc_fpc_name, cpu);
 
 			/*  TODO:  cache (per cpu)  */
-			debug("adding ARC components: cpu%i = 0x%x, fpu = 0x%x\n", i, cpu, fpu);
+			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x\n", i, cpu, i, fpu);
 /*  NetBSD:
 case arc_CacheClass:
                 if (cf->type == arc_SecondaryDcache)

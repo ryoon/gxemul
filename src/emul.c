@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.93 2004-12-14 04:19:07 debug Exp $
+ *  $Id: emul.c,v 1.94 2004-12-14 05:05:04 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -133,7 +133,7 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
-	int n_blocks, res;
+	int n_blocks, res, readofs;
 
 	if (boot_disk_id < 0)
 		return;
@@ -150,6 +150,11 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 		 *         0x18 = nr of 512-byte blocks to read
 		 *         0x1c = offset on disk to where the bootblocks
 		 *                are (in 512-byte units)
+		 *         0x20 = nr of blocks to read...
+		 *         0x24 = offset...
+		 *
+		 *  nr of blocks to read and offset are repeated until nr of
+		 *  blocks to read is zero.
 		 */
 		res = diskimage_access(boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
@@ -157,55 +162,64 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
 		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
 
-		bootblock_pc = minibuf[0x14] + (minibuf[0x15] << 8)
-		  + (minibuf[0x16] << 16) + (minibuf[0x17] << 24);
-
-		n_blocks = minibuf[0x18] + (minibuf[0x19] << 8)
-		  + (minibuf[0x1a] << 16) + (minibuf[0x1b] << 24);
-
-		bootblock_offset = (minibuf[0x1c] + (minibuf[0x1d] << 8)
-		  + (minibuf[0x1e] << 16) + (minibuf[0x1f] << 24)) * 512;
-
-		if (n_blocks < 1) {
-			fatal("\nWARNING! Non-positive number of bootblocks (%i)\n\n",
-			    n_blocks);
-			n_blocks = 1;
-		}
-
-		if (n_blocks * 512 > 65536)
-			fatal("\nWARNING! Unusually large bootblock (%i bytes)\n\n",
-			    n_blocks * 512);
-
-		bootblock_buf = malloc(n_blocks * 512);
-		if (bootblock_buf == NULL) {
-			fprintf(stderr, "out of memory in load_bootblock()\n");
-			exit(1);
-		}
-
-		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
-		    bootblock_buf, n_blocks * 512);
-		if (!res) {
-			fatal("WARNING: could not load bootblocks from disk offset 0x%llx\n",
-			    (long long)bootblock_offset);
-		}
-
 		/*  Convert loadaddr to uncached:  */
 		if ((bootblock_loadaddr & 0xf0000000ULL) != 0x80000000 &&
 		    (bootblock_loadaddr & 0xf0000000ULL) != 0xa0000000)
 			fatal("\nWARNING! Weird load address 0x%08x.\n\n",
 			    (int)bootblock_loadaddr);
-
 		bootblock_loadaddr &= 0x0fffffff;
 		bootblock_loadaddr |= 0xa0000000;
 
-		store_buf(cpu, bootblock_loadaddr, (char *)bootblock_buf,
-		    n_blocks * 512);
+		bootblock_pc = minibuf[0x14] + (minibuf[0x15] << 8)
+		  + (minibuf[0x16] << 16) + (minibuf[0x17] << 24);
 
 		bootblock_pc &= 0x0fffffff;
 		bootblock_pc |= 0xa0000000;
 		cpu->pc = bootblock_pc;
 
-		free(bootblock_buf);
+		readofs = 0x18;
+
+		for (;;) {
+			res = diskimage_access(boot_disk_id, 0, readofs,
+			    minibuf, sizeof(minibuf));
+			if (!res) {
+				printf("couldn't read disk?\n");
+				exit(1);
+			}
+
+			n_blocks = minibuf[0] + (minibuf[1] << 8)
+			  + (minibuf[2] << 16) + (minibuf[3] << 24);
+
+			bootblock_offset = (minibuf[4] + (minibuf[5] << 8)
+			  + (minibuf[6] << 16) + (minibuf[7] << 24)) * 512;
+
+			if (n_blocks < 1)
+				break;
+
+			if (n_blocks * 512 > 65536)
+				fatal("\nWARNING! Unusually large bootblock (%i bytes)\n\n",
+				    n_blocks * 512);
+
+			bootblock_buf = malloc(n_blocks * 512);
+			if (bootblock_buf == NULL) {
+				fprintf(stderr, "out of memory in load_bootblock()\n");
+				exit(1);
+			}
+
+			res = diskimage_access(boot_disk_id, 0, bootblock_offset,
+			    bootblock_buf, n_blocks * 512);
+			if (!res) {
+				fatal("WARNING: could not load bootblocks from disk offset 0x%llx\n",
+				    (long long)bootblock_offset);
+			}
+
+			store_buf(cpu, bootblock_loadaddr, (char *)bootblock_buf,
+			    n_blocks * 512);
+
+			bootblock_loadaddr += 512*n_blocks;
+			free(bootblock_buf);
+			readofs += 8;
+		}
 
 		break;
 	default:

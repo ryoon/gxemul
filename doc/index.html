@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.161 2004-12-13 02:44:59 debug Exp $
+$Id: index.html,v 1.162 2004-12-14 05:05:04 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1093,15 +1093,8 @@ a clean solution to this yet.)
 </font>
 
 <ol start="5">
-  <li>Download a kernel. (Not an install RAMDISK kernel, but a normal one.)<pre>
-	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
-	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
-	3223460 bytes, md5 = dc44f6501040e04d6fa5151681565434
-
-</pre>
   <li>Boot Debian using the following command line:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' \
-	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' -d debian.img</b>
 
 </pre>
 	You'll enter single-user mode. You need to add a line to
@@ -1114,8 +1107,7 @@ a clean solution to this yet.)
 <p>
 Once the install has finished, the following command should let you
 boot Debian:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 ro' \
-	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.88 2005-02-11 22:19:16 debug Exp $
+$Id: RELEASE,v 1.89 2005-02-13 11:23:31 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
@@ -55,7 +55,7 @@ other experiments with MIPS-like code.
 
 Summary of changes from version 0.2.4.1 to 0.2.X:
 
-	x)  In general, the code should be much cleaner than before.
+	x)  I've performed a major code clean-up.
 
 	x)  Support for using "configuration files" has been added, instead
 	    of entering all emulation parameters on the command line. This

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.104 2005-02-11 16:51:22 debug Exp $
+#  $Id: configure,v 1.105 2005-02-13 11:23:31 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -81,17 +81,25 @@ if [ z"$*" != z ]; then
 			CACHES=YES
 		else
 			echo "usage: $0 [options]"
-			echo "  --always32     enable ALWAYS_SIGNEXTEND_32 (for hunting down 32/64-bit bugs)"
-			echo "  --caches       enable cache emulation (experimental)"
-			echo "  --delays       enable instruction latency/delay emulation"
+			echo "  --always32     enable ALWAYS_SIGNEXTEND_32" \
+			    "(for hunting down 32/64-bit bugs)"
+			echo "  --caches       enable cache emulation" \
+			    "(experimental)"
+			echo "  --delays       enable instruction" \
+			    "latency/delay emulation"
 #			echo "  --gui          compile with GTK+ 2.x"
 			#  TODO: separate out MIPS options from the others
-			echo "  --mips16       enable MIPS16 instruction support (experimental)"
-			echo "  --nobintrans   configure without bintrans, even if the host supports it"
+			echo "  --mips16       enable MIPS16 instruction" \
+			    "support (experimental)"
+			echo "  --nobintrans   configure without bintrans," \
+			    "even if the host supports it"
 			echo "  --nox11        configure without X11 support"
-#			echo "  --withoutmips  disable MIPS CPU emulation (NOT YET)"
-#			echo "  --withppc      enable PPC CPU emulation (NOT YET)"
-#			echo "  --withsparc    enable SPARC CPU emulation (NOT YET)"
+#			echo "  --withoutmips  disable MIPS CPU emulation" \
+#			    "(NOT YET)"
+#			echo "  --withppc      enable PPC CPU emulation" \
+#			    "(NOT YET)"
+#			echo "  --withsparc    enable SPARC CPU emulation" \
+#			    " (NOT YET)"
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
@@ -102,7 +110,7 @@ fi
 #
 #  Configure options:
 #
-#  This creates a config.h file, which is the included from include/misc.h.
+#  This creates a config.h file, which is then included from include/misc.h.
 #
 ###############################################################################
 
@@ -157,7 +165,8 @@ fi
 
 #  Instruction delay/latency emulation:
 if [ z$ALWAYS32 = zYES ]; then
-	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE: This slows down everything.)'
+	echo 'Enabling ALWAYS_SIGNEXTEND_32. (NOTE:' \
+	    'This slows down everything.)'
 	printf "#define ALWAYS_SIGNEXTEND_32\n" >> config.h
 fi
 
@@ -168,8 +177,10 @@ if [ z$CACHES = zYES ]; then
 	printf "#define ENABLE_CACHE_EMULATION\n" >> config.h
 
 	if [ z$DELAYS != zYES ]; then
-		printf 'WARNING: Cache emulation without instruction delay/latency emulation\n'
-		printf '         (--delays) will not produce correct cache miss penalties and such.\n'
+		printf 'WARNING: Cache emulation without instruction '
+		printf 'delay/latency emulation\n'
+		printf '         (--delays) will not produce correct '
+		printf 'cache miss penalties and such.\n'
 	fi
 fi
 
@@ -244,7 +255,8 @@ if [ z"$CC" = z ]; then
 	CC=cc
 
 	#  Try gcc first:
-	printf "#!/bin/sh\ngcc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	printf "#!/bin/sh\ngcc _testprog.c -o _testprog >" > _test.sh
+	printf " /dev/null 2> /dev/null\n" >> _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
@@ -254,7 +266,8 @@ if [ z"$CC" = z ]; then
 
 	#  If both gcc and cc exist, then cc might be a vendor specific
 	#  compiler which produces faster code than gcc (eg on Solaris):
-	printf "#!/bin/sh\ncc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	printf "#!/bin/sh\ncc _testprog.c -o _testprog >" > _test.sh
+	printf " /dev/null 2> /dev/null\n" >> _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
@@ -263,7 +276,8 @@ if [ z"$CC" = z ]; then
 	rm -f _testprog
 
 	#  Try ccc (FreeBSD/Alpha):
-	printf "#!/bin/sh\nccc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	printf "#!/bin/sh\nccc _testprog.c -o _testprog >" > _test.sh
+	printf " /dev/null 2> /dev/null\n" >> _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
@@ -333,7 +347,8 @@ if [ z$NOX11 = z ]; then
 
 	if [ z$XOK = z0 ]; then
 		XINCLUDE=""
-		$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o \
+		    $XINCLUDE 2> /dev/null
 
 		#  -lsocket for Solaris
 		XLIB="-lX11 -lsocket"
@@ -358,7 +373,8 @@ if [ z$NOX11 = z ]; then
 	fi
 
 	if [ z$XOK = z0 ]; then
-		echo Failed to compile X11 test program. Configuring without X11.
+		echo "Failed to compile X11 test program." \
+		    "Configuring without X11."
 	else
 		printf "X11 headers: $XINCLUDE\n"
 		printf "X11 libraries: $XLIB\n"
@@ -396,7 +412,8 @@ printf(\"2\");
 printf(\"\\\n\");return 0;}\n" > _testm.c
 	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
 	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
+		printf "\nWARNING! COULD NOT COMPILE mips define TEST"
+		printf " PROGRAM AT ALL!\n"
 	else
 		if [ z`./_testm` = z1 ]; then
 			printf "yes, workaround applied\n"
@@ -429,7 +446,8 @@ printf(\"2\");
 printf(\"\\\n\");return 0;}\n" > _testm.c
 	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
 	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE ppc define TEST PROGRAM AT ALL!\n"
+		printf "\nWARNING! COULD NOT COMPILE ppc define TEST"
+		printf " PROGRAM AT ALL!\n"
 	else
 		if [ z`./_testm` = z12 ]; then
 			printf "yes, workaround applied\n"
@@ -462,7 +480,8 @@ printf(\"2\");
 printf(\"\\\n\");return 0;}\n" > _testm.c
 	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
 	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE sparc define TEST PROGRAM AT ALL!\n"
+		printf "\nWARNING! COULD NOT COMPILE sparc define TEST "
+		printf "PROGRAM AT ALL!\n"
 	else
 		if [ z`./_testm` = z12 ]; then
 			printf "yes, workaround applied\n"
@@ -589,7 +608,8 @@ rm -f _testprog _testprog.error _testprog.stdout
 
 #  -fmove-all-movables
 printf "checking whether -fmove-all-movables can be used... "
-$CC $CFLAGS -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
+$CC $CFLAGS -fmove-all-movables _testprog.c -o \
+    _testprog > _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
 if grep movables _testprog.error > /dev/null 2>&1; then
 	printf "no\n"
@@ -606,7 +626,8 @@ rm -f _testprog _testprog.error _testprog.stdout
 
 #  -fomit-frame-pointer
 printf "checking whether -fomit-frame-pointer can be used... "
-$CC $CFLAGS -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
+$CC $CFLAGS -fomit-frame-pointer _testprog.c -o \
+    _testprog 1> _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
 if grep frame _testprog.error > /dev/null 2>&1; then
 	printf "no\n"
@@ -643,14 +664,16 @@ rm -f _testns.c _testns
 
 #  -lresolv for inet_pton?
 printf "checking whether -lresolv is required for inet_pton... "
-printf "extern void (*inet_pton)(void); int main(int argc, char *argv[]) { void *x; x = inet_pton; return 0; }\n" > _testr.c
+printf "extern void (*inet_pton)(void); int main(int argc, " > _testr.c
+printf "char *argv[]) { void *x; x = inet_pton; return 0; }\n" >> _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
 	$CC $CFLAGS _testr.c -lresolv -o _testr 2> /dev/null
 	if [ ! -x _testr ]; then
 		$CC $CFLAGS _testr.c -lresolv -lnsl -o _testr 2> /dev/null
 		if [ ! -x _testr ]; then
-			printf "WARNING! COULD NOT COMPILE WITH inet_pton AT ALL!\n"
+			printf "WARNING! COULD NOT COMPILE WITH inet_pton "
+			printf "AT ALL!\n"
 		else
 			#  -lresolv -lnsl for inet_pton
 			OTHERLIBS="-lresolv -lnsl $OTHERLIBS"
@@ -669,15 +692,16 @@ rm -f _testr.[co] _testr
 
 #  -lm?
 printf "checking for math libs..."
-printf "#include <math.h>\nint main(int argc, char *argv[]) { double x = sqrt((double)argc); return (int)x; }\n" > _testr.c
+printf "#include <math.h>\nint main(int argc, char *argv[]) { " > _testr.c
+printf "double x = sqrt((double)argc); return (int)x; }\n" >> _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
 	$CC $CFLAGS _testr.c -lm -o _testr 2> /dev/null
 	if [ ! -x _testr ]; then
 		$CC $CFLAGS _testr.c -lm -lcpml -o _testr 2> /dev/null
 		if [ ! -x _testr ]; then
-			printf "\nWARNING! Could not compile math test at all!\n"
-			printf "Continuing anyway.\n\n"
+			printf "\nWARNING! Could not compile math test "
+			printf "at all!\nContinuing anyway.\n\n"
 		else
 			#  -lm AND -lcpml
 			OTHERLIBS="-lm -lcpml $OTHERLIBS"
@@ -721,7 +745,8 @@ int main(int argc, char *argv[]) { fseeko(NULL, 0, 0); return 0;}\n" > _tests.c
 $CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
 	printf "no\n"
-	printf "WARNING! fseeko missing from libc. Using a hack, which probably doesn't work.\n"
+	printf "WARNING! fseeko missing from libc. Using a hack, "
+	printf "which probably doesn't work.\n"
 	printf "#define HACK_FSEEKO\n" >> config.h
 else
 	printf "yes\n"
@@ -759,12 +784,14 @@ if [ ! -x _tests ]; then
 	printf "#include <stdio.h>
 #include <sys/types.h>
 #include <sys/mman.h>
-int main(int argc, char *argv[]) { int x = MAP_ANONYMOUS; return 0;}\n" > _tests.c
+int main(int argc, char *argv[])
+{ int x = MAP_ANONYMOUS; return 0;}\n" > _tests.c
 	$CC $CFLAGS _tests.c -o _tests 2> /dev/null
 	if [ ! -x _tests ]; then
 		printf "no\n\n"
-		printf "WARNING! Neither MAP_ANON nor MAP_ANONYMOUS work on this system.\n"
-		printf "Please try to compile anyway, and report to me whether it builds/runs or not.\n\n"
+		printf "WARNING! Neither MAP_ANON nor MAP_ANONYMOUS work on "
+		printf "this system.\nPlease try to compile anyway, and report"
+		printf " to me whether it builds/runs or not.\n\n"
 		printf "#define MAP_ANON 0\n" >> config.h
 		printf "#define NO_MAP_ANON\n" >> config.h
 	else
@@ -780,7 +807,8 @@ rm -f _tests.[co] _tests
 #  Check for 64-bit off_t:
 printf "checking for 64-bit off_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(off_t));return 0;}\n" > _testoff.c
+int main(int argc, char *argv[]){printf(\"%%i\\\n\",
+ (int)sizeof(off_t));return 0;}\n" > _testoff.c
 $CC $CFLAGS _testoff.c -o _testoff 2> /dev/null
 if [ ! -x _testoff ]; then
 	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
@@ -788,16 +816,21 @@ else
 	if [ z`./_testoff` = z8 ]; then
 		printf "yes\n"
 	else
-		$CC $CFLAGS -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
+		$CC $CFLAGS -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
+		    _testoff.c -o _testoff 2> /dev/null
 		if [ ! -x _testoff ]; then
-			printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM!\n"
+			printf "\nWARNING! COULD NOT COMPILE off_t TEST "
+			printf "PROGRAM!\n"
 		else
 			if [ z`./_testoff` = z8 ]; then
-				CFLAGS="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $CFLAGS"
-				printf "using -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE\n"
+				CFLAGS="-D_FILE_OFFSET_BITS=64 $CFLAGS"
+				CFLAGS="-D_LARGEFILE_SOURCE $CFLAGS"
+				printf "using -D_FILE_OFFSET_BITS=64 "
+				printf "-D_LARGEFILE_SOURCE\n"
 			else
 				printf "NO\n"
-				printf "Warning! No 64-bit off_t. Continuing anyway.\n"
+				printf "Warning! No 64-bit off_t. Continuing "
+				printf "anyway.\n"
 			fi
 		fi
 	fi
@@ -808,20 +841,26 @@ rm -f _testoff.c _testoff
 #  Check for u_int8_t etc:
 printf "checking for u_int8_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(u_int8_t));return 0;}\n" > _testuint.c
+int main(int argc, char *argv[]){printf(\"%%i\\\n\",
+ (int)sizeof(u_int8_t));return 0;}\n" > _testuint.c
 $CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 if [ ! -x _testuint ]; then
 	rm -f _testuint*
-	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-	int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(uint8_t));return 0;}\n" > _testuint.c
+	printf "#include <stdio.h>\n#include <inttypes.h>
+	\n#include <sys/types.h>\nint main(int argc, char *argv[])
+	{printf(\"%%i\\\n\", (int)sizeof(uint8_t));return 0;}\n" > _testuint.c
 	$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 	if [ ! -x _testuint ]; then
 		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"
+		#  TODO: Automagically detect using various combinations
+		#  of char, int, short, long etc.
 		exit
 	fi
 
-	printf "typedef uint8_t u_int8_t;\ntypedef uint16_t u_int16_t;\n" >> config.h
-	printf "typedef uint32_t u_int32_t;\ntypedef uint64_t u_int64_t;\n" >> config.h
+	printf "typedef uint8_t u_int8_t;\n" >> config.h
+	printf "typedef uint16_t u_int16_t;\n" >> config.h
+	printf "typedef uint32_t u_int32_t;\n" >> config.h
+	printf "typedef uint64_t u_int64_t;\n" >> config.h
 	printf "uint8_t\n"
 else
 	printf "yes\n"
@@ -880,27 +919,15 @@ else
 
 #	#  UltraSPARC:
 #	if [ z"`uname -m`" = zsun4u ]; then
-#		if [ z$SPARCEXPERIMENTAL = z ]; then
-#			echo "no"
-#			printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
-#			printf "enable experimental bintrans. (It isn't really working yet.)\n"
-#		else
-#			printf "#define SPARCV9\n" >> config.h
-#			printf "#define BINTRANS\n" >> config.h
-#			printf "sparcv9\n"
-#		fi
+#		printf "#define SPARCV9\n" >> config.h
+#		printf "#define BINTRANS\n" >> config.h
+#		printf "sparcv9\n"
 #		BINTRANS=YES
 #	else
 #		if [ z"`uname -m`" = zsparc64 ]; then
-#			if [ z$SPARCEXPERIMENTAL = z ]; then
-#				echo "no"
-#				printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
-#				printf "enable experimental bintrans. (It isn't really working yet.)\n"
-#			else
-#				printf "#define SPARCV9\n" >> config.h
-#				printf "#define BINTRANS\n" >> config.h
-#				printf "sparcv9\n"
-#			fi
+#			printf "#define SPARCV9\n" >> config.h
+#			printf "#define BINTRANS\n" >> config.h
+#			printf "sparcv9\n"
 #			BINTRANS=YES
 #		fi
 #	fi
@@ -917,11 +944,15 @@ fi
 printf "checking for asm prefetch support... "
 if [ z"`uname -m`" = zalpha ]; then
 	rm -f _alpha_asm_test.c _alpha_asm_test
-	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
-	$CC $CFLAGS -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+	printf 'int main(int argc, char *argv[])
+	 { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y));
+	  return 0; }\n' > _alpha_asm_test.c
+	$CC $CFLAGS -O2 _alpha_asm_test.c -o _alpha_asm_test \
+	    > /dev/null 2> /dev/null
 	if [ -x _alpha_asm_test ]; then
 #		printf "#define HAVE_PREFETCH\n" >> config.h
-		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
+		printf "#define PREFETCH(x) asm(\"ldl" >> config.h
+		printf " \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
 		echo "yes"
 		PREFSUP=YES
 	fi
@@ -978,9 +1009,11 @@ if [ z$WITHMIPS = zYES ]; then
 fi
 rm -f _testprog* _test.sh
 
-echo "MIPS_CC="$MIPS"-gcc -g -O2 -fno-builtin -fschedule-insns -mips64 -mabi=64" >> _Makefile.header
+echo "MIPS_CC="$MIPS"-gcc -g -O2 -fno-builtin -fschedule-insns" \
+    "-mips64 -mabi=64" >> _Makefile.header
 echo "MIPS_AS="$MIPS"-as -mabi=64 -mips64" >> _Makefile.header
-echo "MIPS_LD="$MIPS"-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
+echo "MIPS_LD="$MIPS"-ld -Ttext 0xa800000000030000 -e main" \
+    "--oformat=elf64-bigmips" >> _Makefile.header
 echo "" >> _Makefile.header
 
 
@@ -995,7 +1028,8 @@ if [ z$WITHPPC = zYES ]; then
 	  for b in unknown; do
 	    for c in elf elf64 linux linux64 aix aix5; do
 		PPC_TRY=$a-$b-$c
-		printf '#!/bin/sh\n'$PPC_TRY'-as _testprog.s -o _testprog.o\n' > _test.sh
+		printf '#!/bin/sh\n'$PPC_TRY'-as _testprog.s' > _test.sh
+		printf ' -o _testprog.o\n' >> _test.sh
 		chmod 755 _test.sh
 		rm -f _testprog.o
 		./_test.sh > /dev/null 2> /dev/null
@@ -1033,7 +1067,8 @@ if [ z$WITHSPARC = zYES ]; then
 	  for b in unknown; do
 	    for c in elf elf64; do
 		SPARC_TRY=$a-$b-$c
-		printf '#!/bin/sh\n'$SPARC_TRY'-gcc _testprog.c -c -o _testprog.o\n' > _test.sh
+		printf '#!/bin/sh\n'$SPARC_TRY'-gcc _testprog.c -c' > _test.sh
+		printf ' -o _testprog.o\n' >> _test.sh
 		chmod 755 _test.sh
 		rm -f _testprog.o
 		./_test.sh > /dev/null 2> /dev/null

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.53 2005-02-06 15:39:39 debug Exp $
+ *  $Id: x11.c,v 1.54 2005-02-13 11:23:33 debug Exp $
  *
  *  X11-related functions.
  */
@@ -83,8 +83,10 @@ void x11_redraw_cursor(struct machine *m, int i)
 		    m->fb_windows[i]->OLD_cursor_y/m->fb_windows[i]->scaledown,
 		    m->fb_windows[i]->OLD_cursor_x/m->fb_windows[i]->scaledown,
 		    m->fb_windows[i]->OLD_cursor_y/m->fb_windows[i]->scaledown,
-		    m->fb_windows[i]->OLD_cursor_xsize/m->fb_windows[i]->scaledown + 1,
-		    m->fb_windows[i]->OLD_cursor_ysize/m->fb_windows[i]->scaledown + 1);
+		    m->fb_windows[i]->OLD_cursor_xsize/
+		    m->fb_windows[i]->scaledown + 1,
+		    m->fb_windows[i]->OLD_cursor_ysize/
+		    m->fb_windows[i]->scaledown + 1);
 	}
 
 	if (m->fb_windows[i]->x11_display != NULL &&
@@ -95,8 +97,10 @@ void x11_redraw_cursor(struct machine *m, int i)
 		xtmp = XSubImage(m->fb_windows[i]->fb_ximage,
 		    m->fb_windows[i]->cursor_x/m->fb_windows[i]->scaledown,
 		    m->fb_windows[i]->cursor_y/m->fb_windows[i]->scaledown,
-		    m->fb_windows[i]->cursor_xsize/m->fb_windows[i]->scaledown + 1,
-		    m->fb_windows[i]->cursor_ysize/m->fb_windows[i]->scaledown + 1);
+		    m->fb_windows[i]->cursor_xsize/
+		    m->fb_windows[i]->scaledown + 1,
+		    m->fb_windows[i]->cursor_ysize/
+		    m->fb_windows[i]->scaledown + 1);
 		if (xtmp == NULL) {
 			fatal("out of memory in x11_redraw_cursor()\n");
 			return;

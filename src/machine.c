@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.343 2005-02-12 09:32:46 debug Exp $
+ *  $Id: machine.c,v 1.344 2005-02-13 11:23:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4365,8 +4365,9 @@ void machine_list_available_types_and_cpus(void)
 	cpu_list_available_types();
 	debug_indentation(-iadd);  
 
-	debug("\nMost of the CPU types are bogus, and not"
-	    " really implemented.\nAvailable machine types (with "
+	debug("\nMost of the CPU types are bogus, and not really implemented."
+	    " The main effect of\nselecting a specific CPU type is to choose "
+	    "what kind of 'id' it will have.\n\nAvailable machine types (with "
 	    "aliases) and their subtypes:\n\n");
 
 	debug_indentation(iadd);

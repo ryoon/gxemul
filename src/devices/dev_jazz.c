@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.20 2004-12-18 23:07:28 debug Exp $
+ *  $Id: dev_jazz.c,v 1.4 2005-01-04 16:45:22 debug Exp $
  *  
- *  Acer PICA-61 stuff.
+ *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
 
 #include <stdio.h>
@@ -40,18 +40,18 @@
 #include "jazz_r4030_dma.h"
 
 
-#define	DEV_PICA_TICKSHIFT		14
+#define	DEV_JAZZ_TICKSHIFT		14
 
 #define	PICA_TIMER_IRQ			15
 
 
 /*
- *  dev_pica_dma_controller():
+ *  dev_jazz_dma_controller():
  */
-size_t dev_pica_dma_controller(void *dma_controller_data,
+size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag)
 {
-	struct pica_data *d = (struct pica_data *) dma_controller_data;
+	struct jazz_data *d = (struct jazz_data *) dma_controller_data;
 	struct cpu *cpu = d->cpu;
 	int i, enab_writeflag;
 	int res;
@@ -60,7 +60,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 	uint32_t phys_addr;
 
 #if 0
-	fatal("[ dev_pica_dma_controller(): writeflag=%i, len=%i, data =",
+	fatal("[ dev_jazz_dma_controller(): writeflag=%i, len=%i, data =",
 	    writeflag, (int)len);
 	for (i=0; i<len; i++)
 		fatal(" %02x", data[i]);
@@ -72,7 +72,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 #endif
 
 	if (!(d->dma0_enable & R4030_DMA_ENAB_RUN)) {
-		fatal("[ dev_pica_dma_controller(): dma not enabled? ]\n");
+		fatal("[ dev_jazz_dma_controller(): dma not enabled? ]\n");
 		/*  return 0;  */
 	}
 
@@ -80,7 +80,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 	    argument to this function means write to memory.  */
 	enab_writeflag = (d->dma0_enable & R4030_DMA_ENAB_WRITE)? 0 : 1;
 	if (enab_writeflag != writeflag) {
-		fatal("[ dev_pica_dma_controller(): wrong direction? ]\n");
+		fatal("[ dev_jazz_dma_controller(): wrong direction? ]\n");
 		return 0;
 	}
 
@@ -117,27 +117,27 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 
 
 /*
- *  dev_pica_tick():
+ *  dev_jazz_tick():
  */
-void dev_pica_tick(struct cpu *cpu, void *extra)
+void dev_jazz_tick(struct cpu *cpu, void *extra)
 {
-	struct pica_data *d = extra;
+	struct jazz_data *d = extra;
 
 	/*  Used by NetBSD/arc and OpenBSD/arc:  */
 	if (d->interval_start > 0 && d->interval > 0
 	    && (d->int_enable_mask & 2) /* Hm? */ ) {
 		d->interval -= 2;
 		if (d->interval <= 0) {
-			debug("[ pica: interval timer interrupt ]\n");
+			debug("[ jazz: interval timer interrupt ]\n");
 			cpu_interrupt(cpu, 8 + PICA_TIMER_IRQ);
 		}
 	}
 
 	/*  Linux?  */
-	if (d->pica_timer_value != 0) {
-		d->pica_timer_current -= 5;
-		if (d->pica_timer_current < 1) {
-			d->pica_timer_current = d->pica_timer_value;
+	if (d->jazz_timer_value != 0) {
+		d->jazz_timer_current -= 5;
+		if (d->jazz_timer_current < 1) {
+			d->jazz_timer_current = d->jazz_timer_value;
 			cpu_interrupt(cpu, 6);
 		}
 	}
@@ -145,13 +145,13 @@ void dev_pica_tick(struct cpu *cpu, void *extra)
 
 
 /*
- *  dev_pica_access():
+ *  dev_jazz_access():
  */
-int dev_pica_access(struct cpu *cpu, struct memory *mem,
+int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -246,10 +246,10 @@ printf("R4030_SYS_ISA_VECTOR\n");
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ pica: unimplemented write to address 0x%x"
+			fatal("[ jazz: unimplemented write to address 0x%x"
 			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ pica: unimplemented read from address 0x%x"
+			fatal("[ jazz: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
 		}
 	}
@@ -262,15 +262,15 @@ printf("R4030_SYS_ISA_VECTOR\n");
 
 
 /*
- *  dev_pica_access_a0():
+ *  dev_jazz_access_a0():
  *
  *  ISA interrupt stuff, high 8 interrupts.
  */
-int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
+int dev_jazz_access_a0(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -289,7 +289,7 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 			idata = ((idata ^ 0xff) & 0xff) << 8;
 			d->isa_int_enable_mask =
 			    (d->isa_int_enable_mask & 0xff) | idata;
-			debug("[ pica_a0: setting isa_int_enable_mask "
+			debug("[ jazz_isa_a0: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
 			/*  Recompute interrupt stuff:  */
 			cpu_interrupt_ack(cpu, 8 + 0);
@@ -298,10 +298,10 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ pica_a0: unimplemented write to address 0x%x"
+			fatal("[ jazz_isa_a0: unimplemented write to address 0x%x"
 			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ pica_a0: unimplemented read from address 0x%x"
+			fatal("[ jazz_isa_a0: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
 		}
 	}
@@ -314,15 +314,15 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_pica_access_20():
+ *  dev_jazz_access_20():
  *
  *  ISA interrupt stuff, low 8 interrupts.
  */
-int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
+int dev_jazz_access_20(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -341,7 +341,7 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 			idata = (idata ^ 0xff) & 0xff;
 			d->isa_int_enable_mask =
 			    (d->isa_int_enable_mask & 0xff00) | idata;
-			debug("[ pica_20: setting isa_int_enable_mask "
+			debug("[ jazz_isa_20: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
 			/*  Recompute interrupt stuff:  */
 			cpu_interrupt_ack(cpu, 8 + 0);
@@ -350,10 +350,10 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ pica_20: unimplemented write to address 0x%x"
+			fatal("[ jazz_isa_20: unimplemented write to address 0x%x"
 			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ pica_20: unimplemented read from address 0x%x"
+			fatal("[ jazz_isa_20: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
 		}
 	}
@@ -366,16 +366,16 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_pica_access_jazzio():
+ *  dev_jazz_access_jazzio():
  *
  *  See jazzio_intr() in NetBSD's
  *  /usr/src/sys/arch/arc/jazz/jazzio.c for more info.
  */
-int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
+int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int i, v;
 
@@ -396,16 +396,16 @@ int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
 		/*  TODO: Should this be here?!  */
 
 		if (writeflag == MEM_WRITE)
-			d->pica_timer_value = idata;
+			d->jazz_timer_value = idata;
 		else
-			odata = d->pica_timer_value;
+			odata = d->jazz_timer_value;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ pica int: unimplemented write to address 0x%x"
+			fatal("[ jazzio: unimplemented write to address 0x%x"
 			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ pica int: unimplemented read from address 0x%x"
+			fatal("[ jazzio: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
 		}
 	}
@@ -421,35 +421,35 @@ int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_pica_init():
+ *  dev_jazz_init():
  */
-struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
+struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
 	uint64_t baseaddr)
 {
-	struct pica_data *d = malloc(sizeof(struct pica_data));
+	struct jazz_data *d = malloc(sizeof(struct jazz_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct pica_data));
+	memset(d, 0, sizeof(struct jazz_data));
 
 	d->cpu = cpu;
 
 	d->isa_int_enable_mask = 0xffff;
 
-	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
-	    dev_pica_access, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "jazz", baseaddr, DEV_JAZZ_LENGTH,
+	    dev_jazz_access, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_20", 0x90000020ULL, 2,
-	    dev_pica_access_20, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "jazz_isa_20", 0x90000020ULL, 2,
+	    dev_jazz_access_20, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_a0", 0x900000a0ULL, 2,
-	    dev_pica_access_a0, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "jazz_isa_a0", 0x900000a0ULL, 2,
+	    dev_jazz_access_a0, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_jazzio", 0xf0000000ULL, 4,
-	    dev_pica_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
+	    dev_jazz_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);
+	cpu_add_tickfunction(cpu, dev_jazz_tick, d, DEV_JAZZ_TICKSHIFT);
 
 	return d;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.264 2004-12-30 18:38:26 debug Exp $
+ *  $Id: machine.c,v 1.265 2005-01-04 16:45:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -93,7 +93,7 @@ struct ps2_data *ps2_data;
 struct dec5800_data *dec5800_csr;
 struct au1x00_ic_data *au1x00_ic_data;
 struct vr41xx_data *vr41xx_data = NULL;
-struct pica_data *pica_data;
+struct jazz_data *jazz_data;
 struct crime_data *crime_data;
 struct mace_data *mace_data;
 struct sgi_ip20_data *sgi_ip20_data;
@@ -530,20 +530,20 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
- *  Acer PICA-61 interrupts:
+ *  Jazz interrupts (for Acer PICA-61 etc):
  *
  *  0..7			MIPS interrupts
  *  8 + x, where x = 0..15	Jazz interrupts
  *  8 + x, where x = 16..31	ISA interrupt (irq nr + 16)
  */
-void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void jazz_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	uint32_t irq;
 	int isa = 0;
 
 	irq_nr -= 8;
 
-	/*  debug("pica_interrupt() irq_nr = %i, assrt = %i\n",
+	/*  debug("jazz_interrupt() irq_nr = %i, assrt = %i\n",
 		irq_nr, assrt);  */
 
 	if (irq_nr >= 16) {
@@ -555,34 +555,34 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (isa) {
 		if (assrt)
-			pica_data->isa_int_asserted |= irq;
+			jazz_data->isa_int_asserted |= irq;
 		else
-			pica_data->isa_int_asserted &= ~irq;
+			jazz_data->isa_int_asserted &= ~irq;
 	} else {
 		if (assrt)
-			pica_data->int_asserted |= irq;
+			jazz_data->int_asserted |= irq;
 		else
-			pica_data->int_asserted &= ~irq;
+			jazz_data->int_asserted &= ~irq;
 	}
 
-	/*  debug("   %08x %08x\n", pica_data->int_asserted,
-		pica_data->int_enable_mask);  */
-	/*  debug("   %08x %08x\n", pica_data->isa_int_asserted,
-		pica_data->isa_int_enable_mask);  */
+	/*  debug("   %08x %08x\n", jazz_data->int_asserted,
+		jazz_data->int_enable_mask);  */
+	/*  debug("   %08x %08x\n", jazz_data->isa_int_asserted,
+		jazz_data->isa_int_enable_mask);  */
 
-	if (pica_data->int_asserted /* & pica_data->int_enable_mask  */
+	if (jazz_data->int_asserted /* & jazz_data->int_enable_mask  */
 	    & ~0x8000 )
 		cpu_interrupt(cpu, 3);
 	else
 		cpu_interrupt_ack(cpu, 3);
 
-	if (pica_data->isa_int_asserted & pica_data->isa_int_enable_mask)
+	if (jazz_data->isa_int_asserted & jazz_data->isa_int_enable_mask)
 		cpu_interrupt(cpu, 4);
 	else
 		cpu_interrupt_ack(cpu, 4);
 
 	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
-	if (pica_data->int_asserted & 0x8000)
+	if (jazz_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
@@ -2406,9 +2406,9 @@ Why is this here? TODO
 					exit(1);
 				}
 
-				pica_data = dev_pica_init(
+				jazz_data = dev_jazz_init(
 				    cpu, mem, 0x80000000ULL);
-				cpu->md_interrupt = pica_interrupt;
+				cpu->md_interrupt = jazz_interrupt;
 
 				switch (emul->machine) {
 				case MACHINE_ARC_JAZZ_PICA:
@@ -2436,19 +2436,21 @@ Why is this here? TODO
 
 				dev_asc_init(cpu, mem,
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
-				    dev_pica_dma_controller, pica_data);
+				    dev_jazz_dma_controller, jazz_data);
+
+				dev_fdc_init(mem, 0x80003000ULL, 0);
 
 				dev_mc146818_init(cpu, mem,
 				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);
+
+				dev_pckbc_init(cpu, mem, 0x80005000ULL,
+				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
 
 				dev_ns16550_init(cpu, mem,
 				    0x80006000ULL, 8 + 8, 1,
 				    emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
 				    0x80007000ULL, 8 + 9, 1, 0);
-
-				dev_pckbc_init(cpu, mem, 0x80005000ULL,
-				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
 
 				break;
 
@@ -2464,9 +2466,9 @@ Why is this here? TODO
 
 				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
-				pica_data = dev_pica_init(
+				jazz_data = dev_jazz_init(
 				    cpu, mem, 0x80000000ULL);
-				cpu->md_interrupt = pica_interrupt;
+				cpu->md_interrupt = jazz_interrupt;
 
 				dev_mc146818_init(cpu, mem,
 				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);

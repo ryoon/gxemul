@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.105 2005-02-13 11:23:31 debug Exp $
+#  $Id: configure,v 1.106 2005-02-13 14:02:22 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -989,7 +989,7 @@ if [ z$WITHMIPS = zYES ]; then
 	printf "Checking for a GNU cross-compiler for 64-bit MIPS... "
 	echo 'int f(int x) { return x; }' > _testprog.c
 
-	for MIPS_TRY in mips64-unknown-elf mips-unknown-elf64; do
+	for MIPS_TRY in mips64-unknown-elf mips64-elf mips-unknown-elf64; do
 		printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
 		chmod 755 _test.sh
 		rm -f _testprog.o

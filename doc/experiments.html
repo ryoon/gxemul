@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.22 2005-02-13 12:04:41 debug Exp $
+$Id: experiments.html,v 1.23 2005-02-13 14:02:23 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -624,16 +624,22 @@ The following work even less than the ones listed above:
 		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
     </ul>
   </li>
+</ul>
 
-  <p>
+<p>
+The following don't work at all, actually, because the PPC and SPARC
+modes are just skeletons so far. (To enable PPC and/or SPARC support, add
+--withppc and --withsparc to the configure command line, respectively.)
 
-<!--
+<p>
+<ul>
+
   <li>Walnut (evbppc):
     <ul>
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E walnut -v netbsd-INSTALL_WALNUT</b>
+	<br>$ <b>./mips64emul -E walnut -vi netbsd-INSTALL_WALNUT</b>
     </ul>
   </li>
 
@@ -644,7 +650,7 @@ The following work even less than the ones listed above:
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc -v netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E pmppc -vi netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -655,17 +661,16 @@ The following work even less than the ones listed above:
       <li><a href="http://www.netbsd.org/Ports/sparc64/">NetBSD/sparc64</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E sparc64 -v netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E sparc64 -vi netbsd-INSTALL</b>
       <p>
       <li><a href="http://www.openbsd.org/sparc64.html">OpenBSD/sparc64</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd</a>
 	<br>rename to bsd.rd.gz, gunzip, and try the following:
-	<br>$ <b>./mips64emul -E sparc64 -v bsd.rd</b>
+	<br>$ <b>./mips64emul -E sparc64 -vi bsd.rd</b>
     </ul>
   </li>
 
   <p>
--->
 
 </ul>
 

@@ -278,3 +278,5 @@ HISTORY of mips64emul
 		i/o interrupts are still not correctly implemented.
 		NetBSD/arc userland is reached and can be interacted
 		with, but there's no sysinst (?).
+20040103	Trying to get some Irix stuff to work, but it's hard.
+		Fixing some Cobalt/linux problems.

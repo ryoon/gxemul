@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.107 2004-12-07 12:56:47 debug Exp $
+ *  $Id: bintrans.c,v 1.108 2004-12-07 13:05:42 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -183,7 +183,8 @@ struct translation_page_entry {
 };
 #define	UNTRANSLATABLE		0x01
 
-static struct translation_page_entry **translation_page_entry_array;
+static struct translation_page_entry *translation_page_entry_array[
+    (1 << BINTRANS_CACHE_N_INDEX_BITS) ];
 
 
 #define	MAX_QUICK_JUMPS		10
@@ -813,13 +814,13 @@ run_it:
 			tep = translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
-					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-						return cpu->bintrans_instructions_executed;
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    translation_code_chunk_space;
 						goto run_it;	/*  see further down  */
 					}
+					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+						return cpu->bintrans_instructions_executed;
 					break;
 				}
 				tep = tep->next;
@@ -949,28 +950,12 @@ void bintrans_init(void)
 
 	debug("bintrans: EXPERIMENTAL!\n");
 
-	s = 1 << BINTRANS_CACHE_N_INDEX_BITS;
-	s *= sizeof(struct translation_page_entry *);
-	translation_page_entry_array = (void *) mmap(NULL, s,
-	    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	if (translation_page_entry_array == NULL) {
-		translation_page_entry_array = malloc(s);
-		if (translation_page_entry_array == NULL) {
-			fprintf(stderr, "bintrans_init(): out of memory (1)\n");
-			exit(1);
-		}
-
-		/*
-		 *  The entry array must be NULLed, as these are pointers to
-		 *  translation page entries. If the mmap() succeeded, then
-		 *  the array is zero-filled by default anyway...
-		 */
-		for (i=0; i<n; i++)
-			translation_page_entry_array[i] = NULL;
-	}
-
-	debug("bintrans: translation_page_entry_array = %i KB at %p\n",
-	    (int)(s/1024), translation_page_entry_array);
+	/*
+	 *  The entry array must be NULLed, as these are pointers to
+	 *  translation page entries.
+	 */
+	for (i=0; i<n; i++)
+		translation_page_entry_array[i] = NULL;
 
 	/*  Allocate the large code chunk space:  */
 	s = CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN;

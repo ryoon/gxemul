@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.10 2004-07-12 10:23:23 debug Exp $
+$Id: technical.html,v 1.11 2004-07-12 10:27:37 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -214,7 +214,7 @@ emulation:
 	If the emulator receives an UDP packet from the outside world, it
 	is converted into an UDP packet for the emulated OS. (This is not
 	implemented very well yet, but seems to be enough for nameserver
-	lookups and tftp file transfers, see below.)
+	lookups, tftp file transfers, and NFS mounts using UDP.)
   <li><font color="#ff0000">NOTE: TCP is <i>NOT</i> yet working!</font>
   <li>RARP is not implemented yet. (I haven't needed it so far.)
 </ul>

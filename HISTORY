@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.155 2004-07-12 10:23:09 debug Exp $
+$Id: HISTORY,v 1.156 2004-07-12 10:25:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -761,7 +761,9 @@ HISTORY of mips64emul
 20040712	Working on IP/UDP fragementation issues. Incoming UDP packets
 		from the outside world can now be broken up into fragments
 		for the guest OS. (This allows, for example, OpenBSD/pmax to
-		be installed via nfs.)  Outgoing packets are NOT yet handled.
+		be installed via nfs.)  Outgoing fragmented packets are NOT
+		yet handled.
 		Linux doesn't use 64-bit file offsets by default, which is
 		needed when using large disk images (more than 2GB), so the
-		configure has now been modified to add such support on Linux.
+		configure script has now been modified to add neccessary
+		compiler flags for Linux.

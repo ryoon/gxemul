@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.53 2005-02-11 09:29:50 debug Exp $
+ *  $Id: dec_prom.c,v 1.54 2005-02-11 19:56:31 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -377,7 +377,7 @@ int decstation_prom_emul(struct cpu *cpu)
 						while (ch2) {
 							ch2 = read_char_from_memory(cpu, argreg, j++);
 							if (ch2) {
-								snprintf(printfbuf,
+								snprintf(printfbuf+strlen(printfbuf),
 								    sizeof(printfbuf)-1-strlen(printfbuf),
 								    "%c", ch2);
 								ch3 = ch2;

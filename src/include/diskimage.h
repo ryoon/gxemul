@@ -26,13 +26,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.1 2003-11-08 09:02:35 debug Exp $
+ *  $Id: diskimage.h,v 1.2 2003-11-08 14:41:14 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
 
 int diskimage_add(char *fname);
 int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *buf, size_t len);
+int diskimage_exist(int disk_id);
 void diskimage_dump_info(void);
 
 

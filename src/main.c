@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.106 2004-10-08 17:49:54 debug Exp $
+ *  $Id: main.c,v 1.107 2004-10-08 17:52:05 debug Exp $
  */
 
 #include <stdio.h>
@@ -163,7 +163,7 @@ void usage(char *progname)
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
 	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
 	printf("            Default arg is -a. The other useful arg would be -s.\n");
-	printf("  -n nr     set nr of CPUs  (default = %i)\n", DEFAULT_NCPUS);
+	printf("  -n nr     set nr of CPUs\n");
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");

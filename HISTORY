@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.503 2005-01-19 21:05:35 debug Exp $
+$Id: HISTORY,v 1.504 2005-01-19 21:15:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1518,3 +1518,4 @@ HISTORY of mips64emul
 		in struct emul into a new struct machine.
 		Userland emulation now works with bintrans.
 		Refreshing the LANCE controller (dev_le.c).
+		Fixing the LK201 keyboard id.

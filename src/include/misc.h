@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.94 2004-08-02 23:55:45 debug Exp $
+ *  $Id: misc.h,v 1.95 2004-08-03 13:10:46 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -139,6 +139,7 @@ typedef uint64_t u_int64_t;
 #define	MACHINE_ARC_PICA		2
 #define	MACHINE_ARC_NEC_R94		3
 #define	MACHINE_ARC_DESKTECH_TYNE	4
+#define	MACHINE_ARC_JAZZ		5
 
 /*
  *  Problem: kernels seem to be loaded at low addresses in RAM, so

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.149 2004-08-03 02:25:10 debug Exp $
+ *  $Id: machine.c,v 1.150 2004-08-03 13:10:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2039,14 +2039,56 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (Deskstation Tyne)");
 
 				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b8000ULL, 0x900000003d0ULL);
+
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003f8ULL, 0, 1);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002f8ULL, 0, 1);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003e8ULL, 0, 1);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002e8ULL, 0, 1);
 
+				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				    0x90000000070ULL, 2, MC146818_PC_CMOS, 1);
+
+#if 0
+				dev_wdc_init(cpus[bootstrap_cpu], mem, 0x900000001f0ULL, 0, 0);
+				dev_wdc_init(cpus[bootstrap_cpu], mem, 0x90000000170ULL, 0, 2);
+#endif
 				/*  PC kbd  */
 				dev_zero_init(mem, 0x90000000064ULL, 1);
 				dev_random_init(mem, 0x90000000060ULL, 1);
+
+				break;
+
+			case MACHINE_ARC_JAZZ:
+				/*
+				 *  "Microsoft-Jazz", "MIPS Magnum"
+				 *
+				 *  timer0 at jazzio0 addr 0xe0000228
+				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
+				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
+				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
+				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
+				 *  VXL at jazzio0 addr 0xe0800000 intr 3 not configured
+				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
+				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
+				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
+				 *  scsibus0 at asc0: 8 targets, 8 luns per target
+				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
+				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
+				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
+				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
+				 *  jazzisabr0 at mainbus0
+				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
+				 */
+
+				strcat(machine_name, " (Microsoft Jazz, MIPS Magnum)");
+
+				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
+
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000006000ULL, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000007000ULL, 0, 1);
 
 				break;
 
@@ -2097,6 +2139,10 @@ void machine_init(struct memory *mem)
 				break;
 			case MACHINE_ARC_DESKTECH_TYNE:
 				strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_JAZZ:
+				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
 			}
@@ -2234,6 +2280,10 @@ void machine_init(struct memory *mem)
 			case MACHINE_ARC_DESKTECH_TYNE:
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "DESKTECH-TYNE", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_JAZZ:
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n", machine);

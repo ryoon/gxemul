@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.128 2004-07-05 19:25:04 debug Exp $
+ *  $Id: machine.c,v 1.129 2004-07-07 06:33:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1226,12 +1226,12 @@ void machine_init(struct memory *mem)
 
 		/*  DECstation PROM stuff:  (TODO: endianness)  */
 		for (i=0; i<100; i++)
-			store_32bit_word(DEC_PROM_CALLBACK_STRUCT + i*4, DEC_PROM_EMULATION + i*4);
+			store_32bit_word(DEC_PROM_CALLBACK_STRUCT + i*4, DEC_PROM_EMULATION + i*8);
 
 		/*  Fill PROM with dummy return instructions:  (TODO: make this nicer)  */
 		for (i=0; i<100; i++) {
-			store_32bit_word(0xbfc00000 + i*8,     0x03e00008);	/*  return  */
-			store_32bit_word(0xbfc00000 + i*8 + 4, 0x00000000);	/*  nop  */
+			store_32bit_word(DEC_PROM_EMULATION + i*8,     0x03e00008);	/*  return  */
+			store_32bit_word(DEC_PROM_EMULATION + i*8 + 4, 0x00000000);	/*  nop  */
 		}
 
 		/*
@@ -1361,6 +1361,16 @@ void machine_init(struct memory *mem)
 		{
 			char tmps[300];
 			sprintf(tmps, "boot=%s", bootarg);
+			add_environment_string(tmps, &addr);
+		}
+
+		{
+			char tmps[300];
+			sprintf(tmps, "bitmap=0x%x", (uint32_t)(DEC_MEMMAP_ADDR +
+			    sizeof(memmap.pagesize)));
+			add_environment_string(tmps, &addr);
+
+			sprintf(tmps, "bitmaplen=0x%x", (uint32_t)sizeof(memmap.bitmap));
 			add_environment_string(tmps, &addr);
 		}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.16 2004-07-04 15:51:24 debug Exp $
+ *  $Id: dec_prom.c,v 1.17 2004-07-07 06:33:41 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -55,18 +55,117 @@ extern int use_x11;
 
 
 /*
+ *  dec_jumptable_func():
+ *
+ *  The jumptable is located at the beginning of the PROM, at 0xbfc00000 + i*8,
+ *  where i is the decimal function number. Many of these can be converted to
+ *  an identical callback function.
+ *
+ *  Return value is non-zero if the vector number was converted into a callback
+ *  function number, otherwise 0.
+ *
+ *	Vector	(dec)	Function
+ *	0x18	3	reinit()
+ *	0x30	6	open()
+ *	0x38	7	read()
+ *	0x58	11	lseek()
+ *	0x68	13	putchar()
+ *	0x88	17	printf()
+ *	0x108	33	getenv2()
+ */
+int dec_jumptable_func(struct cpu *cpu, int vector)
+{
+	int i;
+	static int current_file_offset = 0;
+
+	switch (vector) {
+	case 0x18:	/*  reinit()  */
+		/*  TODO  */
+		cpu->gpr[GPR_V0] = 0;
+		break;
+	case 0x30:	/*  open()  */
+		/*  TODO  */
+		cpu->gpr[GPR_V0] = 1;
+		break;
+	case 0x38:	/*  read(handle, ptr, length)  */
+		cpu->gpr[GPR_V0] = -1;
+		if ((int32_t)cpu->gpr[GPR_A2] > 0) {
+			int disk_id = diskimage_bootdev();
+			int res;
+			unsigned char *tmp_buf;
+
+			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			if (tmp_buf == NULL) {
+				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				break;
+			}
+
+			res = diskimage_access(disk_id, 0, current_file_offset, tmp_buf, cpu->gpr[GPR_A2]);
+
+			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			if (res) {
+				uint64_t dst = cpu->gpr[GPR_A1];
+				store_buf(dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
+				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
+				current_file_offset += cpu->gpr[GPR_A2];
+			}
+
+			free(tmp_buf);
+		}
+		break;
+	case 0x58:	/*  lseek(handle, offset[, whence])  */
+		/*  TODO  */
+		if (cpu->gpr[GPR_A2] == 0)
+			current_file_offset = cpu->gpr[GPR_A1];
+		else
+			fatal("WARNING! Unimplemented whence in dec_jumptable_func()\n");
+		cpu->gpr[GPR_V0] = 0;
+		break;
+	case 0x68:	/*  putchar()  */
+		console_putchar(cpu->gpr[GPR_A0]);
+		break;
+	case 0x88:	/*  printf()  */
+		return 0x30;
+	case 0x108:	/*  getenv2()  */
+		return 0x64;
+	default:
+		cpu_register_dump(cpu);
+		printf("a0 points to: ");
+		for (i=0; i<40; i++) {
+			unsigned char ch = '\0';
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch,
+			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+			if (ch >= ' ' && ch < 126)
+				printf("%c", ch);
+			else
+				printf("[%02x]", ch);
+		}
+		printf("\n");
+		fatal("PROM emulation: unimplemented JUMP TABLE vector 0x%x (decimal function %i)\n",
+		    vector, vector/8);
+		cpu->running = 0;
+	}
+
+	return 0;
+}
+
+
+/*
  *  decstation_prom_emul():
  *
  *  DECstation PROM emulation.
  *
+ *  Callback functions:
  *	0x0c	strcmp()
  *	0x14	strlen()
  *	0x24	getchar()
  *	0x30	printf()
+ *	0x38	iopoll()
  *	0x54	bootinit()
  *	0x58	bootread()
  *	0x64	getenv()
  *	0x6c	slot_address()
+ *	0x70	wbflush()
  *	0x7c	clear_cache()
  *	0x80	getsysid()
  *	0x84	getbitmap()
@@ -79,10 +178,20 @@ extern int use_x11;
 void decstation_prom_emul(struct cpu *cpu)
 {
 	int i, j, ch, argreg, argdata;
-	int vector = cpu->pc & 0xffff;
+	int vector = cpu->pc & 0xfff;
+	int callback = (cpu->pc & 0xf000)? 1 : 0;
 	unsigned char buf[100];
 	unsigned char ch1, ch2;
 	uint64_t slot_base = 0x10000000, slot_size = 0;
+
+	if (!callback) {
+		vector = dec_jumptable_func(cpu, vector);
+		if (vector == 0)
+			return;
+	} else {
+		/*  Vector number is n*4, PC points to n*8.  */
+		vector /= 2;
+	}
 
 	switch (vector) {
 	case 0x0c:		/*  strcmp():  */
@@ -173,6 +282,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		if (register_dump || instruction_trace)
 			debug("\n");
 		fflush(stdout);
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x54:		/*  bootinit()  */
 		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->gpr[GPR_A0]);  */
@@ -187,8 +297,8 @@ void decstation_prom_emul(struct cpu *cpu)
 		 *
 		 *  TODO: Return value? NetBSD thinks that 0 is ok.
 		 */
-		/*  debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
-		    (int)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);  */
+		debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
+		    (int)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
 
 		cpu->gpr[GPR_V0] = 0;
 
@@ -207,8 +317,11 @@ void decstation_prom_emul(struct cpu *cpu)
 
 			/*  If the transfer was successful, transfer the data to emulated memory:  */
 			if (res) {
-				store_buf(cpu->gpr[GPR_A1],
-				    (char *)tmp_buf, cpu->gpr[GPR_A2]);
+				uint64_t dst = cpu->gpr[GPR_A1];
+				if (dst < 0x80000000ULL)
+					dst |= 0x80000000;
+
+				store_buf(dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
 				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
 			}
 
@@ -271,6 +384,10 @@ void decstation_prom_emul(struct cpu *cpu)
 		}
 		cpu->gpr[GPR_V0] = 0x80000000 + slot_base + slot_size * cpu->gpr[GPR_A0];
 		break;
+	case 0x70:		/*  wbflush()  */
+		debug("[ DEC PROM wbflush(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;
+		break;
 	case 0x7c:		/*  clear_cache(addr, len)  */
 		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n", (uint32_t)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1]);
 		/*  TODO  */
@@ -290,9 +407,11 @@ void decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x88:		/*  disableintr()  */
 		debug("[ DEC PROM disableintr(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x8c:		/*  enableintr()  */
 		debug("[ DEC PROM enableintr(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x9c:		/*  halt()  */
 		debug("[ DEC PROM halt() ]\n");

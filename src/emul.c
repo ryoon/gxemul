@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.28 2004-07-07 04:19:58 debug Exp $
+ *  $Id: emul.c,v 1.29 2004-07-07 06:33:41 debug Exp $
  *
  *  Emulation startup.
  */
@@ -141,6 +141,7 @@ void load_bootblock(void)
 	unsigned char bootblock_buf[8192];
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr;
+	int n_blocks;
 
 	switch (emulation_type) {
 	case EMULTYPE_DEC:
@@ -153,6 +154,9 @@ void load_bootblock(void)
 		 *  identical for all cases I've seen) seem to indicate the
 		 *  load address and/or starting PC.  It's usually 0x80600000,
 		 *  or similar.
+		 *
+		 *  The value at offset 0x18 seems to be the number of
+		 *  512-byte to read. (TODO: use this)
 		 */
 		res = diskimage_access(boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
@@ -162,6 +166,13 @@ void load_bootblock(void)
 
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
 		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
+
+		n_blocks = minibuf[0x18] + (minibuf[0x19] << 8)
+		  + (minibuf[0x1a] << 16) + (minibuf[0x1b] << 24);
+
+		if (n_blocks * 512 > sizeof(bootblock_buf))
+			fatal("\nWARNING! Unusually large bootblock (%i bytes, more than 8KB)\n\n",
+			    n_blocks * 512);
 
 		if (minibuf[0x10] != minibuf[0x14] ||
 		    minibuf[0x11] != minibuf[0x15] ||

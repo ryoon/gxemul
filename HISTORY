@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.135 2004-07-07 01:33:44 debug Exp $
+$Id: HISTORY,v 1.136 2004-07-07 06:33:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -683,3 +683,10 @@ HISTORY of mips64emul
 		interrupts to runtime speed (as long as it is above 1 MHz).
 		(This can be overridden by specifying a static clock rate by
 		the -I option.)
+		Updating the doc/ stuff a bit.
+		Generalization of the DECstation bootblock loading, to work
+		with Sprite/pmax. Lots of other minor modifications to make
+		Sprite work, such as adding support for DECstation "jump table"
+		PROM functions, in addition to the old callback functions.
+		Sprite boots from a disk image, starting the kernel if the
+		argument "-j vmsprite" is used.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.85 2004-07-06 01:21:38 debug Exp $
+ *  $Id: misc.h,v 1.86 2004-07-07 06:33:40 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -106,8 +106,8 @@ typedef uint64_t u_int64_t;
 
 #include "dec_prom.h"
 #include "dec_bootinfo.h"
-#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc08000ULL
-#define	DEC_PROM_EMULATION		0xffffffffbfc10000ULL
+#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc04000ULL
+#define	DEC_PROM_EMULATION		0xffffffffbfc08000ULL
 #define	DEC_PROM_INITIAL_ARGV		(INITIAL_STACK_POINTER + 0x80)
 #define	DEC_PROM_STRINGS		0xffffffffbfc20000ULL
 #define	DEC_PROM_TCINFO			0xffffffffbfc2c000ULL

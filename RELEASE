@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.60 2004-12-01 22:38:41 debug Exp $
+$Id: RELEASE,v 1.61 2004-12-01 23:00:14 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -79,7 +79,8 @@ Here is a short summary of the changes from version 0.2.2 to 0.2.3:
 	    added, which improves speed.  It should work when emulating
 	    R3000-style CPUs. Add -b to the command line to enable bintrans.
 	    (For R4000-style CPUs, the bintrans system is not entirely
-	    reliable yet.)
+	    reliable yet.)  Bintrans backends have been written for the
+	    Alpha and i386 platforms.
 
 	x)  Redhat Linux 7.1 for mips has been verified to work under
 	    DECstation 5000/200 emulation. (It could probably run with

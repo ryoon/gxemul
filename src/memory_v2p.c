@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.5 2004-12-02 16:28:03 debug Exp $
+ *  $Id: memory_v2p.c,v 1.6 2004-12-07 12:41:52 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -51,6 +51,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint64_t vaddr_vpn2=0, vaddr_asid=0;
 	int exccode, tlb_refill;
 	struct coproc *cp0;
+	int bintrans_cached = cpu->emul->bintrans_enable;
 
 #ifdef V2P_MMU3K
 	const int x_64 = 0;
@@ -74,7 +75,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *  will still produce the correct result. At worst, we check the
 	 *  cache in vain, but the result should still be correct.)
 	 */
-	if (!cpu->emul->bintrans_enable &&
+	if (!bintrans_cached &&
 	    (vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 		int i, wf = 1 + (writeflag == MEM_WRITE);
 		uint64_t vaddr_shift_12 = vaddr >> 12;
@@ -391,7 +392,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 						 *  lation cache (if enabled)
 						 *  and return:
 						 */
-						if (!cpu->emul->bintrans_enable)
+						if (!bintrans_cached)
 							insert_into_tiny_cache(cpu,
 							    instr, d_bit? MEM_WRITE : MEM_READ,
 							    vaddr, paddr);

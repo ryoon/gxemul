@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.79 2004-12-07 10:34:38 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.80 2004-12-07 12:41:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -249,6 +249,7 @@ unsigned char bintrans_alpha_runchunk[200] = {
 };
 
 
+#if 0
 /*
  *  bintrans_runchunk():
  */
@@ -258,6 +259,10 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 	f = (void *)&bintrans_alpha_runchunk[0];
 	f(cpu, code);
 }
+#else
+static const void (*bintrans_runchunk)
+    (struct cpu *, unsigned char *) = (void *)bintrans_alpha_runchunk;
+#endif
 
 
 /*
@@ -1805,6 +1810,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 		/*  TODO: Some bits are not writable  */
 		case COP0_ENTRYLO0:
 		case COP0_ENTRYLO1:
+			break;
 
 		case COP0_ENTRYHI:
 			/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.105 2004-12-07 11:52:02 debug Exp $
+ *  $Id: bintrans.c,v 1.106 2004-12-07 12:41:51 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -126,7 +126,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
 static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp);
-static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);
+/*  static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);  */
 static void bintrans_write_quickjump(unsigned char *quickjump_code, uint32_t chunkoffset);
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, int rs, int rt, int sa, int instruction_type);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.40 2004-12-07 11:46:57 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.41 2004-12-07 12:41:52 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -91,6 +91,7 @@ unsigned char bintrans_i386_runchunk[41] = {
 };
 
 
+#if 0
 /*
  *  bintrans_runchunk():
  */
@@ -100,6 +101,10 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 	f = (void *)&bintrans_i386_runchunk[0];
 	f(cpu, code);
 }
+#else
+static const void (*bintrans_runchunk)
+    (struct cpu *, unsigned char *) = (void *)bintrans_i386_runchunk;
+#endif
 
 
 /*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.121 2004-12-06 13:15:06 debug Exp $
+ *  $Id: coproc.c,v 1.122 2004-12-07 12:41:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -593,229 +593,212 @@ void coproc_register_write(struct cpu *cpu,
 	int unimpl = 1;
 	int readonly = 0;
 	uint64_t tmp = *ptr;
-	uint64_t tmp2 = 0;
+	uint64_t tmp2 = 0, old;
+	int inval = 0, old_asid, oldmode;
 
-	if (cp->coproc_nr==0 && reg_nr==COP0_INDEX)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_RANDOM)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYLO0) {
-		unimpl = 0;
-		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0xff)!=0) {
-			/*  char *symbol;
-			    uint64_t offset;
-			    symbol = get_symbol_name(cpu->pc_last, &offset);
-			    fatal("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp); */
-			tmp &= (R2K3K_ENTRYLO_PFN_MASK |
-			    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
-			    R2K3K_ENTRYLO_V | R2K3K_ENTRYLO_G);
-		} else if (cpu->cpu_type.mmu_model == MMU4K) {
-			tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
-			    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
-		}
-	}
-	if (cp->coproc_nr==0 && reg_nr == COP0_BADVADDR) {
-		/*  Hm. Irix writes to this register. (Why?)  */
-		unimpl = 0;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYLO1) {
-		unimpl = 0;
-		if (cpu->cpu_type.mmu_model == MMU4K) {
-			tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
-			    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
-		}
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_CONTEXT) {
-		uint64_t old = cp->reg[COP0_CONTEXT];
-		cp->reg[COP0_CONTEXT] = tmp;
-		if (cpu->cpu_type.mmu_model == MMU3K) {
-			cp->reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
-			cp->reg[COP0_CONTEXT] |= (old & R2K3K_CONTEXT_BADVPN_MASK);
-		} else {
-			cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
-			cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
-		}
-		goto ret;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_PAGEMASK) {
-		tmp2 = tmp >> PAGEMASK_SHIFT;
-		if (tmp2 != 0x000 &&
-		    tmp2 != 0x003 &&
-		    tmp2 != 0x00f &&
-		    tmp2 != 0x03f &&
-		    tmp2 != 0x0ff &&
-		    tmp2 != 0x3ff &&
-		    tmp2 != 0xfff)
-			fatal("cpu%i: trying to write an invalid pagemask %08lx to COP0_PAGEMASK\n",
-			    cpu->cpu_id, (long)tmp2);
-		unimpl = 0;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED) {
-		if (cpu->cpu_type.mmu_model == MMU3K) {
-			fatal("cpu%i: r2k/r3k wired register must always be 8\n", cpu->cpu_id);
-			tmp = 8;
-		}
-		cp->reg[COP0_RANDOM] = cp->nr_of_tlbs-1;
-		tmp &= INDEX_MASK;
-		unimpl = 0;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
-		unimpl = 0;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_COMPARE) {
-		/*  Clear the timer interrupt bit (bit 7):  */
-		cpu_interrupt_ack(cpu, 7);
-		unimpl = 0;
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI) {
-		/*
-		 *  Translation caches must be invalidated, because the
-		 *  address space might change (if the ASID changes).
-		 */
-		int inval = 0, old_asid;
-
-		switch (cpu->cpu_type.mmu_model) {
-		case MMU3K:
-			old_asid = (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK)
-			    >> R2K3K_ENTRYHI_ASID_SHIFT;
-			if ((cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) != (tmp & R2K3K_ENTRYHI_ASID_MASK))
-				inval = 1;
+	switch (cp->coproc_nr) {
+	case 0:
+		/*  COPROC 0:  */
+		switch (reg_nr) {
+		case COP0_INDEX:
+		case COP0_RANDOM:
+			unimpl = 0;
 			break;
-		default:
-			old_asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
-			if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) != (tmp & ENTRYHI_ASID))
-				inval = 1;
+		case COP0_ENTRYLO0:
+			unimpl = 0;
+			if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0xff)!=0) {
+				/*  char *symbol;
+				    uint64_t offset;
+				    symbol = get_symbol_name(cpu->pc_last, &offset);
+				    fatal("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp); */
+				tmp &= (R2K3K_ENTRYLO_PFN_MASK |
+				    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
+				    R2K3K_ENTRYLO_V | R2K3K_ENTRYLO_G);
+			} else if (cpu->cpu_type.mmu_model == MMU4K) {
+				tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
+				    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
+			}
 			break;
-		}
-
-		if (inval)
-			invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
-
-		unimpl = 0;
-		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
-			/* char *symbol;
-			   uint64_t offset;
-			   symbol = get_symbol_name(cpu->pc_last, &offset);
-			   fatal("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
-			tmp &= ~0x3f;
-		}
-
-		if (cpu->cpu_type.mmu_model == MMU3K)
-			tmp &= (R2K3K_ENTRYHI_VPN_MASK | R2K3K_ENTRYHI_ASID_MASK);
-		else if (cpu->cpu_type.mmu_model == MMU10K)
-			tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
-		else
-			tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
-	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_EPC) {
-		/*
-		 *  According to the R4000 manual:
-		 *	"The processor does not write to the EPC register
-		 *	 when the EXL bit in the Status register is set to a 1."
-		 *
-		 *  Perhaps that refers to hardware updates of the register,
-		 *  not software.  If this code is enabled, NetBSD crashes.
-		 */
-/*		if (cpu->cpu_type.exc_model == EXC4K &&
-		    cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
+		case COP0_BADVADDR:
+			/*  Hm. Irix writes to this register. (Why?)  */
+			unimpl = 0;
+			break;
+		case COP0_ENTRYLO1:
+			unimpl = 0;
+			if (cpu->cpu_type.mmu_model == MMU4K) {
+				tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
+				    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
+			}
+			break;
+		case COP0_CONTEXT:
+			old = cp->reg[COP0_CONTEXT];
+			cp->reg[COP0_CONTEXT] = tmp;
+			if (cpu->cpu_type.mmu_model == MMU3K) {
+				cp->reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
+				cp->reg[COP0_CONTEXT] |= (old & R2K3K_CONTEXT_BADVPN_MASK);
+			} else {
+				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
+				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
+			}
 			goto ret;
-*/		/*  Otherwise, allow the write:  */
-		unimpl = 0;
-	}
+		case COP0_PAGEMASK:
+			tmp2 = tmp >> PAGEMASK_SHIFT;
+			if (tmp2 != 0x000 &&
+			    tmp2 != 0x003 &&
+			    tmp2 != 0x00f &&
+			    tmp2 != 0x03f &&
+			    tmp2 != 0x0ff &&
+			    tmp2 != 0x3ff &&
+			    tmp2 != 0xfff)
+				fatal("cpu%i: trying to write an invalid pagemask %08lx to COP0_PAGEMASK\n",
+				    cpu->cpu_id, (long)tmp2);
+			unimpl = 0;
+			break;
+		case COP0_WIRED:
+			if (cpu->cpu_type.mmu_model == MMU3K) {
+				fatal("cpu%i: r2k/r3k wired register must always be 8\n", cpu->cpu_id);
+				tmp = 8;
+			}
+			cp->reg[COP0_RANDOM] = cp->nr_of_tlbs-1;
+			tmp &= INDEX_MASK;
+			unimpl = 0;
+			break;
+		case COP0_COUNT:
+			unimpl = 0;
+			break;
+		case COP0_COMPARE:
+			/*  Clear the timer interrupt bit (bit 7):  */
+			cpu_interrupt_ack(cpu, 7);
+			unimpl = 0;
+			break;
+		case COP0_ENTRYHI:
+			/*
+			 *  Translation caches must be invalidated, because the
+			 *  address space might change (if the ASID changes).
+			 */
+			switch (cpu->cpu_type.mmu_model) {
+			case MMU3K:
+				old_asid = (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK)
+				    >> R2K3K_ENTRYHI_ASID_SHIFT;
+				if ((cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) != (tmp & R2K3K_ENTRYHI_ASID_MASK))
+					inval = 1;
+				break;
+			default:
+				old_asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
+				if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) != (tmp & ENTRYHI_ASID))
+					inval = 1;
+				break;
+			}
+			if (inval)
+				invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
+			unimpl = 0;
+			if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
+				/* char *symbol;
+				   uint64_t offset;
+				   symbol = get_symbol_name(cpu->pc_last, &offset);
+				   fatal("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
+				tmp &= ~0x3f;
+			}
+			if (cpu->cpu_type.mmu_model == MMU3K)
+				tmp &= (R2K3K_ENTRYHI_VPN_MASK | R2K3K_ENTRYHI_ASID_MASK);
+			else if (cpu->cpu_type.mmu_model == MMU10K)
+				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
+			else
+				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
+			break;
+		case COP0_EPC:
+			/*
+			 *  According to the R4000 manual:
+			 *	"The processor does not write to the EPC register
+			 *	 when the EXL bit in the Status register is set to a 1."
+			 *
+			 *  Perhaps that refers to hardware updates of the register,
+			 *  not software.  If this code is enabled, NetBSD crashes.
+			 */
+/*			if (cpu->cpu_type.exc_model == EXC4K &&
+			    cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
+				goto ret;
+*/			/*  Otherwise, allow the write:  */
+			unimpl = 0;
+			break;
+		case COP0_PRID:
+			readonly = 1;
+			break;
+		case COP0_CONFIG:
+			/*  fatal("COP0_CONFIG: modifying K0 bits: 0x%08x => ", cp->reg[reg_nr]);  */
+			tmp = *ptr;
+			tmp &= 0x3;	/*  only bits 2..0 can be written  */
+			cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
+			/*  fatal("0x%08x\n", cp->reg[reg_nr]);  */
+			goto ret;
+		case COP0_STATUS:
+			oldmode = cp->reg[COP0_STATUS];
+			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
+			/*  Changing from kernel to user mode? Then
+			    invalidate some translation caches:  */
+			if (cpu->cpu_type.mmu_model == MMU3K) {
+				if (!(oldmode & MIPS1_SR_KU_CUR)
+				    && (tmp & MIPS1_SR_KU_CUR))
+					invalidate_translation_caches(cpu, 0, 0, 1, 0);
+			} else {
+				/*  TODO: don't hardcode  */
+				if ((oldmode & 0xff) != (tmp & 0xff))
+					invalidate_translation_caches(cpu, 0, 0, 1, 0);
+			}
+			unimpl = 0;
+			break;
+		case COP0_CAUSE:
+			/*  A write to the cause register only affects IM bits 0 and 1:  */
+			cp->reg[reg_nr] &= ~(0x3 << STATUS_IM_SHIFT);
+			cp->reg[reg_nr] |= (tmp & (0x3 << STATUS_IM_SHIFT));
+			if (!(cp->reg[COP0_CAUSE] & STATUS_IM_MASK))
+		                cpu->cached_interrupt_is_possible = 0;
+			else
+		                cpu->cached_interrupt_is_possible = 1;
+			goto ret;
+		case COP0_FRAMEMASK:
+			/*  TODO: R10000  */
+			unimpl = 0;
+			break;
+		case COP0_TAGDATA_LO:
+		case COP0_TAGDATA_HI:
+			/*  TODO: R4300 and others?  */
+			unimpl = 0;
+			break;
+		case COP0_LLADDR:
+			unimpl = 0;
+			break;
+		case COP0_WATCHLO:
+		case COP0_WATCHHI:
+			unimpl = 0;
+			break;
+		case COP0_XCONTEXT:
+			/*
+			 *  TODO:  According to the R10000 manual, the R4400 shares the PTEbase
+			 *  portion of the context registers (that is, xcontext and context).
+			 *  on R10000, they are separate registers.
+			 */
+			/*  debug("[ xcontext 0x%016llx ]\n", tmp);  */
+			unimpl = 0;
+			break;
 
-	if (cp->coproc_nr==0 && reg_nr==COP0_PRID)
-		readonly = 1;
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_CONFIG) {
-		/*  fatal("COP0_CONFIG: modifying K0 bits: 0x%08x => ", cp->reg[reg_nr]);  */
-		tmp = *ptr;
-		tmp &= 0x3;	/*  only bits 2..0 can be written  */
-		cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
-		/*  fatal("0x%08x\n", cp->reg[reg_nr]);  */
-		goto ret;
-	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS) {
-		int oldmode = cp->reg[COP0_STATUS];
-		tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
-
-		/*  Changing from kernel to user mode? Then
-		    invalidate some translation caches:  */
-		if (cpu->cpu_type.mmu_model == MMU3K) {
-			if (!(oldmode & MIPS1_SR_KU_CUR)
-			    && (tmp & MIPS1_SR_KU_CUR))
-				invalidate_translation_caches(cpu, 0, 0, 1, 0);
-		} else {
-			/*  TODO: don't hardcode  */
-			if ((oldmode & 0xff) != (tmp & 0xff))
-				invalidate_translation_caches(cpu, 0, 0, 1, 0);
+		/*  Most of these are actually TODOs:  */
+		case COP0_ERROREPC:
+		case COP0_DEPC:
+		case COP0_RESERVED_22:	/*  Used by Linux on Linksys WRT54G  */
+		case COP0_DESAVE:
+		case COP0_PERFCNT:
+		case COP0_ERRCTL:	/*  R10000  */
+			unimpl = 0;
+			break;
 		}
+		break;
 
+	case 1:
+		/*  COPROC 1:  */
 		unimpl = 0;
+		break;
 	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_CAUSE) {
-		/*  A write to the cause register only affects IM bits 0 and 1:  */
-		cp->reg[reg_nr] &= ~(0x3 << STATUS_IM_SHIFT);
-		cp->reg[reg_nr] |= (tmp & (0x3 << STATUS_IM_SHIFT));
-		if (!(cp->reg[COP0_CAUSE] & STATUS_IM_MASK))
-	                cpu->cached_interrupt_is_possible = 0;
-		else
-	                cpu->cached_interrupt_is_possible = 1;
-		goto ret;
-	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_FRAMEMASK) {
-		/*  TODO: R10000  */
-		unimpl = 0;
-	}
-
-	if (cp->coproc_nr==0 && (reg_nr==COP0_TAGDATA_LO || reg_nr==COP0_TAGDATA_HI)) {
-		/*  TODO: R4300 and others?  */
-		unimpl = 0;
-	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_LLADDR)
-		unimpl = 0;
-
-	if (cp->coproc_nr==0 && (reg_nr==COP0_WATCHLO || reg_nr==COP0_WATCHHI)) {
-		/*  TODO  */
-		unimpl = 0;
-	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_XCONTEXT) {
-		/*
-		 *  TODO:  According to the R10000 manual, the R4400 shares the PTEbase
-		 *  portion of the context registers (that is, xcontext and context).
-		 *  on R10000, they are separate registers.
-		 */
-		/*  debug("[ xcontext 0x%016llx ]\n", tmp);  */
-		unimpl = 0;
-	}
-
-	/*  Most of these are actually TODOs:  */
-	if (cp->coproc_nr==0 && reg_nr==COP0_ERROREPC)
-		unimpl = 0;
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_DEPC)
-		unimpl = 0;
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_RESERVED_22) {
-		/*  Used by Linux on Linksys WRT54G  */
-		unimpl = 0;
-	}
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)
-		unimpl = 0;
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_PERFCNT)
-		unimpl = 0;
-
-	if (cp->coproc_nr==0 && reg_nr==COP0_ERRCTL) {
-		/*  TODO: R10000  */
-		unimpl = 0;
-	}
-
-	if (cp->coproc_nr==1)
-		unimpl = 0;
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.126 2005-01-09 00:46:44 debug Exp $
+ *  $Id: devices.h,v 1.127 2005-01-09 00:57:53 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -504,16 +504,14 @@ struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr
 #define	DEV_MACEPCI_LENGTH		0x1000
 int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
+#define	DEV_SGI_MEC_LENGTH		0x1000
+int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_sgi_mardigras.c:  */
 #define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
 int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_sgi_mec.c:  */
-#define	DEV_SGI_MEC_LENGTH		0x1000
-int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_sgi_mte.c:  */
 #define	DEV_SGI_MTE_LENGTH		0x10000

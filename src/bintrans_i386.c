@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.59 2005-01-05 01:31:20 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.60 2005-01-05 21:56:08 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1865,7 +1865,8 @@ try_chunk_p:
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a, *retfail, *generic64bit, *doloadstore;
+	unsigned char *a, *retfail, *generic64bit, *doloadstore,
+	    *okret0, *okret1, *okret2, *skip;
 	int ofs, alignment, load=0, unaligned=0;
 
 	/*  TODO: Not yet:  */
@@ -1878,8 +1879,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:
+	case HI6_LDL:
+	case HI6_LDR:
 	case HI6_LD:
 	case HI6_LWU:
+	case HI6_LWL:
+	case HI6_LWR:
 	case HI6_LW:
 	case HI6_LHU:
 	case HI6_LH:
@@ -1901,10 +1906,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	case HI6_SDR:
 		unaligned = 1;
 	}
-
-	/*  TODO  */
-	if (unaligned)
-		return 0;
 
 	a = *addrp;
 
@@ -1938,12 +1939,20 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		alignment = 15;
 		break;
 	case HI6_LD:
+	case HI6_LDL:
+	case HI6_LDR:
 	case HI6_SD:
+	case HI6_SDL:
+	case HI6_SDR:
 		alignment = 7;
 		break;
 	case HI6_LW:
+	case HI6_LWL:
+	case HI6_LWR:
 	case HI6_LWU:
 	case HI6_SW:
+	case HI6_SWL:
+	case HI6_SWR:
 		alignment = 3;
 		break;
 	case HI6_LH:
@@ -1953,7 +1962,15 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		break;
 	}
 
-	if (alignment > 0) {
+	if (unaligned) {
+		/*
+		 *  Perform the actual load/store from an
+		 *  aligned address.
+		 *
+		 *  83 e0 fc       and    $0xfffffffc,%eax
+		 */
+		*a++ = 0x83; *a++ = 0xe0; *a++ = 0xff - alignment;
+	} else if (alignment > 0) {
 		unsigned char *alignskip;
 		/*
 		 *  Check alignment:
@@ -2136,7 +2153,7 @@ TODO: top 33 bits!!!!!!!
 
 
 	if (!load) {
-		if (instruction_type == HI6_SD)
+		if (alignment >= 7)
 			load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
 		else
 			load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
@@ -2196,6 +2213,204 @@ TODO: top 33 bits!!!!!!!
 		*a++ = 0x99;
 		break;
 
+	case HI6_LWL:
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
+		*a++ = 5;
+		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
+		/*  83 e0 03                and    $0x03,%eax  */
+		*a++ = 0x83; *a++ = 0xe0; *a++ = alignment;
+		/*  89 c3                   mov    %eax,%ebx  */
+		*a++ = 0x89; *a++ = 0xc3;
+
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+
+		/*  ALIGNED LOAD:  */
+		/*  8b 11                   mov    (%ecx),%edx  */
+		*a++ = 0x8b; *a++ = 0x11;
+
+		/*
+		 *  CASE 0:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwl: 0x12 0x.. 0x.. 0x..
+		 */
+		/*  83 fb 00                cmp    $0x0,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  c1 e2 18                shl    $0x18,%edx  */
+		/*  25 ff ff ff 00          and    $0xffffff,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xe2; *a++ = 0x18;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff; *a++ = 0x00;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret0 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 1:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwl: 0x34 0x12 0x.. 0x..
+		 */
+		/*  83 fb 01                cmp    $0x1,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x01;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  c1 e2 10                shl    $0x10,%edx  */
+		/*  25 ff ff 00 00          and    $0xffff,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xe2; *a++ = 0x10;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0xff; *a++ = 0x00; *a++ = 0x00;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret1 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 2:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwl: 0x56 0x34 0x12 0x..
+		 */
+		/*  83 fb 02                cmp    $0x2,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x02;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  c1 e2 08                shl    $0x08,%edx  */
+		/*  25 ff 00 00 00          and    $0xff,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xe2; *a++ = 0x08;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0x00; *a++ = 0x00; *a++ = 0x00;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret2 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 3:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwl: 0x78 0x56 0x34 0x12
+		 */
+		/*  89 d0                   mov    %edx,%eax  */
+		*a++ = 0x89; *a++ = 0xd0;
+
+		/*  okret:  */
+		*okret0 = (size_t)a - (size_t)okret0 - 1;
+		*okret1 = (size_t)a - (size_t)okret1 - 1;
+		*okret2 = (size_t)a - (size_t)okret2 - 1;
+
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+
+	case HI6_LWR:
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
+		*a++ = 5;
+		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
+		/*  83 e0 03                and    $0x03,%eax  */
+		*a++ = 0x83; *a++ = 0xe0; *a++ = alignment;
+		/*  89 c3                   mov    %eax,%ebx  */
+		*a++ = 0x89; *a++ = 0xc3;
+
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+
+		/*  ALIGNED LOAD:  */
+		/*  8b 11                   mov    (%ecx),%edx  */
+		*a++ = 0x8b; *a++ = 0x11;
+
+		/*
+		 *  CASE 0:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwr: 0x78 0x56 0x34 0x12
+		 */
+		/*  83 fb 00                cmp    $0x0,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  89 d0                   mov    %edx,%eax  */
+		*a++ = 0x89; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret0 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 1:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwr: 0x.. 0x78 0x56 0x34
+		 */
+		/*  83 fb 01                cmp    $0x1,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x01;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  c1 ea 08                shr    $0x8,%edx  */
+		/*  25 00 00 00 ff          and    $0xff000000,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xea; *a++ = 0x08;
+		*a++ = 0x25; *a++ = 0x00; *a++ = 0x00; *a++ = 0x00; *a++ = 0xff;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret1 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 2:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwr: 0x.. 0x.. 0x78 0x56
+		 */
+		/*  83 fb 02                cmp    $0x2,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x02;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  c1 ea 10                shr    $0x10,%edx  */
+		/*  25 00 00 ff ff          and    $0xffff0000,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xea; *a++ = 0x10;
+		*a++ = 0x25; *a++ = 0x00; *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret2 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 3:
+		 *	memory = 0x12 0x34 0x56 0x78
+		 *	register after lwr: 0x.. 0x.. 0x.. 0x78
+		 */
+		/*  c1 ea 18                shr    $0x18,%edx  */
+		/*  25 00 ff ff ff          and    $0xffffff00,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0xc1; *a++ = 0xea; *a++ = 0x18;
+		*a++ = 0x25; *a++ = 0x00; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  okret:  */
+		*okret0 = (size_t)a - (size_t)okret0 - 1;
+		*okret1 = (size_t)a - (size_t)okret1 - 1;
+		*okret2 = (size_t)a - (size_t)okret2 - 1;
+
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+
 	case HI6_SD:
 		/*  89 01                   mov    %eax,(%ecx)  */
 		/*  89 51 04                mov    %edx,0x4(%ecx)  */
@@ -2214,8 +2429,9 @@ TODO: top 33 bits!!!!!!!
 		/*  88 01                   mov    %al,(%ecx)  */
 		*a++ = 0x88; *a++ = 0x01;
 		break;
+
 	default:
-		;
+		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 	}
 
 	if (load && rt != 0)

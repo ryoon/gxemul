@@ -42,3 +42,7 @@ Less serious bugs / issues:
   o)  UDP packets that are too large are not handled well by the Lance
       device.
 
+  o)  bintranslated 64-bit stuff checks to see if the top 32 bits are
+      all zeroes or all ones, and then uses 32-bit tables and such. This
+      is a bug. It should check the top 33 bits, not 32.
+

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.34 2005-02-16 06:00:30 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.35 2005-02-16 06:06:53 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1009,7 +1009,7 @@ disasm_ret_nonewline:
  */
 static void show_trace(struct cpu *cpu)
 {
-	uint64_t offset, addr = cpu->cd.ppc.lr;
+	uint64_t offset, addr = cpu->cd.ppc.pc;
 	int x, n_args_to_print;
 	char strbuf[60];
 	char *symbol;
@@ -1271,13 +1271,12 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cond_ok |= ( ((bo >> 3) & 1) ==
 		    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
 
-		if (lk_bit) {
+		if (lk_bit)
 			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
-			if (cpu->machine->show_trace_tree)
-				show_trace(cpu);
-		}
 		if (ctr_ok && cond_ok)
 			cpu->cd.ppc.pc = addr & ~3;
+		if (lk_bit && cpu->machine->show_trace_tree)
+			show_trace(cpu);
 		break;
 
 	case PPC_HI6_SC:
@@ -1305,12 +1304,13 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (cpu->cd.ppc.bits == 32)
 			addr &= 0xffffffff;
 
-		if (lk_bit) {
+		if (lk_bit)
 			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
-			if (cpu->machine->show_trace_tree)
-				show_trace(cpu);
-		}
+
 		cpu->cd.ppc.pc = addr;
+
+		if (lk_bit && cpu->machine->show_trace_tree)
+			show_trace(cpu);
 		break;
 
 	case PPC_HI6_19:
@@ -1344,16 +1344,15 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cond_ok = (bo >> 4) & 1;
 			cond_ok |= ( ((bo >> 3) & 1) ==
 			    ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
-			if (lk_bit) {
+			if (lk_bit)
 				cpu->cd.ppc.lr = cpu->cd.ppc.pc;
-				if (cpu->machine->show_trace_tree)
-					show_trace(cpu);
-			}
 			if (ctr_ok && cond_ok) {
 				cpu->cd.ppc.pc = addr & ~3;
 				if (cpu->cd.ppc.bits == 32)
 					cpu->cd.ppc.pc &= 0xffffffff;
 			}
+			if (lk_bit && cpu->machine->show_trace_tree)
+				show_trace(cpu);
 			break;
 
 		case PPC_19_ISYNC:

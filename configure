@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.54 2004-08-28 14:04:31 debug Exp $
+#  $Id: configure,v 1.55 2004-08-31 22:54:07 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -603,7 +603,7 @@ echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
 echo "MIPS_CC=mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips64 -mabi=64" >> _Makefile.header
 echo "MIPS_AS=mips64-unknown-elf-as -mabi=64 -mips64" >> _Makefile.header
-echo "MIPS_LD=mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
+echo "MIPS_LD=mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
 echo "" >> _Makefile.header
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.147 2004-07-10 06:37:00 debug Exp $
+$Id: HISTORY,v 1.148 2004-07-10 08:45:23 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -729,3 +729,5 @@ HISTORY of mips64emul
 		Naively added a PMAGB-BA (1280x1024x8) in hopes that it would
 		basically be a PMAG-BA (1024x864x8) in higher resolution,
 		but it didn't work that way. I'll have to look into this later.
+		Adding a -o option, useful for selecting '-s' (single user
+		mode) during OpenBSD install and other things.

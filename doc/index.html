@@ -71,7 +71,9 @@ that are in MIPS binary format. A couple of different file formats are supported
 As an example, let's say you want to emulate a Silicon Graphics O2 machine.
 This machine type is also known as IP32, in the SGI namespace. Let's also
 say that you want to run NetBSD on this emulated machine. A pre-compiled kernel
-for NetBSD/sgimips can be found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz">netbsd-INSTALL.gz</a>
+for NetBSD/sgimips can be found here:
+<a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">
+http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
 <p>
 Once you have downloaded the kernel and gunzip'd it, you can try it out in the
 emulator like this:
@@ -85,27 +87,51 @@ emulator like this:
 	zs channel 0 had address 0xbfbd9830
 	 [ no symbols available ]
 	CPU clock speed = 3.00Mhz
-	Copyright (c) 1996, 1997, 1998, 1999, 2000, 2001, 2002
+	Copyright (c) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003
 	    The NetBSD Foundation, Inc.  All rights reserved.
 	Copyright (c) 1982, 1986, 1989, 1991, 1993
 	    The Regents of the University of California.  All rights reserved.
-
-	NetBSD 1.6.1 (RAMDISK) #0: Wed Apr  9 00:56:44 UTC 2003
-	    autobuild@tgm.daemon.org:/autobuild/netbsd-1-6/sgimips/OBJ/autobuild/netbsd-1-6/src/sys/arch/sgimips/compile/RAMDISK
+	
+	NetBSD 1.6.2 (RAMDISK) #0: Wed Feb 11 06:38:58 UTC 2004
+	    autobuild@tgm.netbsd.org:/autobuild/netbsd-1-6-PATCH002/sgimips/OBJ/autobuild/netbsd-1-6-PATCH002/src/sys/arch/sgimips/compile/RAMDISK
 	32768 KB memory, 29988 KB free, 0 for ARCS, 1740 KB in 435 buffers
 	mainbus0 (root): SGI-IP32 [SGI, 8], 1 processor
 	cpu0 at mainbus0: MIPS R5000 CPU (0x2321) Rev. 2.1 with built-in FPU Rev. 2.1
 	cpu0: 32KB/32B 2-way set-associative L1 Instruction cache, 48 TLB entries
 	cpu0: 32KB/32B 2-way set-associative write-back L1 Data cache
-	...
+	crime0 at mainbus0 addr 0x14000000: rev 1.1
+	mace0 at mainbus0 addr 0x1f000000
+	mace0: isa sts 0
+	mace0: isa msk 0
+	com0 at mace0 offset 0x390000 intr 4: ns16550a, working fifo
+	com0: console
+	com1 at mace0 offset 0x398000 intr 4: ns16550a, working fifo
+	pckbc0 at mace0 offset 0x320000 intr 5: stub
+	lpt0 at mace0 offset 0x380000 intr 4: stub
+	mcclock0 at mace0 offset 0x3a0000
+	mec0 at mace0 offset 0x280000 intr 3: MAC-110 Ethernet, rev 0
+	mec0: station address 00:00:00:00:00:00
+	mec0: sorry, this is not a real driver
+	macepci0 at mace0 offset 0x80000 intr 7: rev 1
+	macepci0: ctrl 0
+	pci0 at macepci0 bus 0
+	pci0: i/o space, memory space enabled, rd/line, rd/mult, wr/inv ok
+	biomask 7f netmask 7f ttymask 7f clockmask ff
+	md0: internal 3072 KB image area
+	boot device: <unknown>
+	root on md0a dumps on md0b
+	WARNING: clock gained 28 days -- CHECK AND RESET THE DATE!
+	root file system type: ffs
+	Terminal type? [vt100] <b>_</b>
 </pre>
-... and after a while be able to interact with sysinst, NetBSD's install program.
+and after typing vt100 (or just pressing enter), you'll reach NetBSD's install program.
 <p>
 To exit the emulator, type CTRL-C. By typing CTRL-B instead, a CTRL-C is sent to
 the emulated program.
 <p>
 For some emulated machine types, a graphical framebuffer console is supported.
-NetBSD/pmax (kernel found <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz">here</a>)
+NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">
+http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
 running on an emulated DECstation 5000 supports this:
 <pre>
 	$ <b>./mips64emul -D2 -X -Y2 -q -I500000 -M12 netbsd-INSTALL</b>

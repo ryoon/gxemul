@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.14 2004-02-25 01:08:16 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.15 2004-03-05 13:06:04 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -52,7 +52,7 @@ extern struct cpu **cpus;
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /*  #define MC146818_DEBUG  */
-#define	TICK_STEPS_SHIFT	6
+#define	TICK_STEPS_SHIFT	7
 
 
 #define	N_REGISTERS	256
@@ -292,13 +292,10 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 			switch (mc_data->access_style) {
 			case MC146818_ARC_NEC:
-				/*  On ARC/NEC, the year 2004 is 0x18. On DEC, 2004 is 104.  */
 				mc_data->reg[0x24] += (0x18 - 104);
 				break;
 			case MC146818_SGI:
-				/*  On SGI, the year 2004 is 100. On DEC, 2004 is 104.  */
 				mc_data->reg[0x24] += (100 - 104);
-
 				/*
 				 *  TODO:  The thing above only works for NetBSD/sgimips,
 				 *  not for the IP32 PROM.  For example, it interprets
@@ -308,6 +305,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 				 */
 
 				break;
+			case MC146818_DEC:
+				/*  DECstations must have 72 or 73 in the Year field, or Ultrix screems  */
+				mc_data->reg[0x24] = 72;
 			default:
 				;
 			}
@@ -386,6 +386,9 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->reg[0x75] = 0x00;
 	mc_data->reg[0x79] = 0x55;
 	mc_data->reg[0x7d] = 0xaa;
+
+	if (access_style == MC146818_DEC)
+		mc_data->reg[0xf8] = 1;		/*  Battery valid, for DECstations  */
 
 	if (access_style == MC146818_PC_CMOS)
 		memory_device_register(mem, "mc146818", baseaddr, 2, dev_mc146818_access, (void *)mc_data);

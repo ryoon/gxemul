@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.42 2004-12-09 02:23:42 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.43 2004-12-10 01:32:56 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1431,6 +1431,17 @@ try_chunk_p:
 
 	if (potential_chunk_p == NULL) {
 		if (bintrans_32bit_only) {
+			/*  Don't execute too many instructions.  */
+			/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+			/*  7c 01                jl     <okk>  */
+			/*  c3                   ret    */
+			*a++ = 0x81; *a++ = 0xfd;
+			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = 0x7c; failskip = a; *a++ = 0x01;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
+
 			/*
 			 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
 			 *

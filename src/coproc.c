@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.123 2004-12-09 01:40:44 debug Exp $
+ *  $Id: coproc.c,v 1.124 2004-12-10 01:32:56 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -435,36 +435,6 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 					tbl1->bintrans_chunks[b] = NULL;
 			}
 		}
-		break;
-	default:
-		;
-	}
-}
-
-
-/*
- *  enter_chunks_into_tables():
- */
-void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *chunk0)
-{
-	int i;
-
-	int a, b;
-	struct vth32_table *tbl1;
-	void *p;
-	uint32_t p_paddr;
-
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		a = (vaddr >> 22) & 0x3ff;
-		b = (vaddr >> 12) & 0x3ff;
-		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-		p = tbl1->haddr_entry[b];
-		p_paddr = tbl1->paddr_entry[b];
-		if (p != NULL && p_paddr != 0) {
-			tbl1->bintrans_chunks[b] = chunk0;
-		} else
-			tbl1->bintrans_chunks[b] = NULL;
 		break;
 	default:
 		;

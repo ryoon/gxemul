@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.111 2004-12-09 02:23:00 debug Exp $
+ *  $Id: bintrans.c,v 1.112 2004-12-10 01:32:55 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -272,6 +272,29 @@ struct translation_page_entry *prev = NULL;
 	memset(&tep->chunk[0], 0, sizeof(tep->chunk));
 	memset(&tep->flags[0], 0, sizeof(tep->flags));
 	return;
+}
+
+
+/*
+ *  enter_chunks_into_tables():
+ */
+static void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *chunk0)
+{
+	int a, b;
+	struct vth32_table *tbl1;
+	void *p;
+	uint32_t p_paddr;
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		a = (vaddr >> 22) & 0x3ff;
+		b = (vaddr >> 12) & 0x3ff;
+		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+		if (tbl1->haddr_entry[b] != NULL)
+			tbl1->bintrans_chunks[b] = chunk0;
+		break;
+	default:
+		;
+	}
 }
 
 

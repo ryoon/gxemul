@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.81 2004-12-09 01:40:44 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.82 2004-12-10 01:32:55 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1064,6 +1064,13 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 
 	if (potential_chunk_p == NULL) {
 		if (bintrans_32bit_only) {
+			/*  Don't execute too many instructions. (see comment below)  */
+			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
+			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
 			bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_A1);
 			/*
 			 *  Special case for 32-bit addressing:
@@ -1106,15 +1113,12 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 			 */
 			*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
 
-			/*  34 12 73 22     lda     a3,ofs(a3)  */
-			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table;
-			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x73; *a++ = 0x22;
-
 			/*  02 00 22 46     and     a1,t1,t1  */
 			*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
 
-			/*  00 00 73 a6     ldq     a3,0(a3)  */
-			*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
+			/*  00 00 73 a6     ldq     a3,chunks[0](a3)  */
+			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x73; *a++ = 0xa6;
 
 			/*
 			 *  NULL? Then just return.

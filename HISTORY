@@ -250,3 +250,4 @@ HISTORY of mips64emul
 		translation, but it's not tested yet.
 		Trying to get more of the SCSI controller emulation
 		to work.
+20031124	Raw binaries can now be loaded into memory.

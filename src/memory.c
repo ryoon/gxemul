@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.58 2004-07-06 01:21:55 debug Exp $
+ *  $Id: memory.c,v 1.59 2004-07-07 06:50:47 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1299,8 +1299,13 @@ into the devices  */
 	 *  so this doesn't apply.)
 	 */
 	if (paddr >= mem->physical_max && !userland_emul) {
-		if ((paddr & 0xffffc00000ULL) == 0x1fc00000) {
+		if ((paddr & 0xfffff00000ULL) == 0x1fc00000) {
 			/*  Ok, this is PROM stuff  */
+		} else if ((paddr & 0xfffff00000ULL) == 0x1ff00000) {
+			/*  Sprite reads from this area of memory...  */
+			if (writeflag == MEM_READ)
+				memset(data, 0, len);
+			goto do_return_ok;
 		} else {
 			if (paddr >= mem->physical_max + 0 * 1024) {
 				char *symbol;

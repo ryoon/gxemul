@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.22 2004-03-24 00:28:14 debug Exp $
+ *  $Id: memory.c,v 1.23 2004-04-02 05:46:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -625,6 +625,14 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		ok = 1;
 	} else
 		ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
+
+#if 0
+	/*  IRIX experiments  */
+	if (vaddr == 0xffffffffffffc488 || (paddr & 0xfffffff00)==0x13d0400)
+		printf("vaddr==0xffffffffffffc488 paddr=%016llx pc=%016llx writeflag=%i data=%016llx\n",
+			(long long)paddr, (long long)cpu->pc,
+			writeflag, (long long) *(long long *)data);
+#endif
 
 	/*  If the translation caused an exception, or was invalid in some way,
 		we simply return without doing the memory access:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.37 2004-01-09 16:23:16 debug Exp $
+ *  $Id: machine.c,v 1.38 2004-01-10 11:38:25 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -258,8 +258,15 @@ void machine_init(struct memory *mem)
 
 	switch (emulation_type) {
 	case EMULTYPE_NONE:
-		dev_cons_init(mem);
+		/*
+		 *  This "none" type is used if no type is specified.
+		 *  It is used for testing.
+		 */
+
+		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
+		fb = dev_fb_init(cpus[0], mem, 0x12000000, VFB_GENERIC, 640,480, 640,480, 24, "generic");
+
 		break;
 
 	case EMULTYPE_DEC:

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.149 2004-12-01 22:26:02 debug Exp $
+$Id: index.html,v 1.150 2004-12-01 22:33:31 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -308,7 +308,17 @@ mips64emul does not. The ideal goal would be to support "all" MIPS-like CPUs.
 
 <p>
 Right now, both R3000-style (32-bit) and R4000-style (64-bit) CPUs can
-be emulated.
+be emulated. mips64emul is basically an instruction-level simulator;
+things that would happen in several steps within a physical CPU are not 
+neccessarily simulated correctly or at all (eg. pipe-line stages).
+
+<p>
+I have written an experimental dynamic binary translation subsystem.  
+This gives higher total performance than interpreting one instruction at a
+time and executing it. So far, bintrans seems to work with R3000-style
+emulation. (With R4000-style emulation, or generic 64-bit emulation, there
+are still bugs.) If you wish to enable bintrans, add <b>-b</b> to the
+command line, but keep in mind that it is still experimental.
 
 <p>
 MIPS CPUs have a lot of overlapping, in order to remain somewhat 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.6 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_kn02.c,v 1.7 2004-07-10 04:03:22 debug Exp $
  *  
  *  DEC (KN02) stuff.
  */
@@ -56,10 +56,8 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 			/* debug("[ kn02: read from CSR: 0x%08x ]\n", odata); */
 		} else {
 			/* debug("[ kn02: write to CSR: 0x%08x ]\n", idata); */
-
-			/*  TODO: which bits are writable?  */
-
-			d->csr = idata;
+			idata &= 0x00ffff00;
+			d->csr = (d->csr & 0xff0000ffULL) | idata;
 		}
 		break;
 	default:

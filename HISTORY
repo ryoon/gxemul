@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.652 2005-03-28 21:52:03 debug Exp $
+$Id: HISTORY,v 1.653 2005-03-28 22:22:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1766,3 +1766,4 @@ Changelog for GXemul:
 20050328	VR41xx-related updates (keyboard stuff: the space key and
 		shifted and ctrled keys are now working in userland (ie
 		NetBSD/hpcmips' ramdisk installer).
+		Also adding simple cursor key support to the VR41xx kiu.

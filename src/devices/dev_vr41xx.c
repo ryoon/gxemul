@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.21 2005-03-28 21:52:04 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.22 2005-03-28 22:22:44 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -138,7 +138,25 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 	if (console_charavail(d->kiu_console_handle)) {
 		char ch = console_readchar(d->kiu_console_handle);
 
-		switch (ch) {
+		if (d->escape_state > 0) {
+			switch (d->escape_state) {
+			case 1:	/*  expecting a [  */
+				d->escape_state = 0;
+				if (ch == '[')
+					d->escape_state = 2;
+				break;
+			case 2:	/*  cursor keys etc:  */
+				switch (ch) {
+				case 'A':	d->d0 = 0x1000; break;
+				case 'B':	d->d0 = 0x2000; break;
+				case 'C':	d->d0 = 0x20; break;
+				case 'D':	d->d0 = 0x10; break;
+				default:	fatal("[ vr41xx kiu: "
+				    "unimplemented escape 0x%02 ]\n", ch);
+				}
+				d->escape_state = 0;
+			}
+		} else switch (ch) {
 		case '+':	console_makeavail(d->kiu_console_handle, '=');
 				d->d5 = 0x800; break;
 		case '_':	console_makeavail(d->kiu_console_handle, '-');
@@ -236,6 +254,8 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		case ' ':	d->d0 = 0x01; break;
 		case '\b':	d->d4 = 0x10; break;
 
+		case 27:	d->escape_state = 1; break;
+
 		default:
 			/*  Shifted:  */
 			if (ch >= 'A' && ch <= 'Z') {
@@ -256,7 +276,8 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 			}
 		}
 
-		keychange = 1;
+		if (d->escape_state == 0)
+			keychange = 1;
 	}
 
 	if (keychange) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.48 2004-07-02 14:17:16 debug Exp $
+ *  $Id: memory.c,v 1.49 2004-07-03 18:37:36 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -712,8 +712,8 @@ exception:
  #
  #  (MEMORY_ACCESS_FAILED is 0.)
  */
-int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len,
-	int writeflag, int cache_flags)
+int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
 	uint64_t endaddr = vaddr + len - 1;
 	uint64_t paddr;
@@ -833,28 +833,46 @@ have_paddr:
 	 *  NOTE: cpu may be NULL.
 	 *
 	 *  TODO: this is utterly slow.
-	 *  TODO2: if paddr<base, but len enough, then we should write to a device to
+	 *  TODO2: if paddr<base, but len enough, then we should write
+	 *  to a device to
 	 */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
-		int i, start;
+		int i, start, res;
 		i = start = mem->last_accessed_device;
 
+		/*  Scan through all devices:  */
 		do {
 			if (paddr >= mem->dev_baseaddr[i] &&
 			    paddr < mem->dev_baseaddr[i] + mem->dev_length[i]) {
+				/*  Found a device, let's access it:  */
+				mem->last_accessed_device = i;
+
 				paddr -= mem->dev_baseaddr[i];
 				if (paddr + len > mem->dev_length[i])
 					len = mem->dev_length[i] - paddr;
-				if (mem->dev_f[i](cpu, mem, paddr, data, len, writeflag, mem->dev_extra[i]) == 0) {
+
+				res = mem->dev_f[i](cpu, mem, paddr, data, len,
+				    writeflag, mem->dev_extra[i]);
+				if (res == 0)
+					res = -1;
+
+#ifdef ENABLE_INSTRUCTION_DELAYS
+				cpu->instruction_delay += (abs(res) - 1);
+#endif
+				/*
+				 *  If accessing the memory mapped device
+				 *  failed, then return with a DBE exception.
+				 */
+				if (res < 0) {
 					debug("%s device '%s' addr %08lx failed\n",
 					    writeflag? "writing to" : "reading from",
 					    mem->dev_name[i], (long)paddr);
 
-					/*  If the memory mapped device failed, then return with a DBE exception  */
-					cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_DBE, 0,
+					    vaddr, 0, 0, 0, 0);
 					return MEMORY_ACCESS_FAILED;
 				}
-				mem->last_accessed_device = i;
+
 				goto do_return_ok;
 			}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.178 2004-11-09 04:28:42 debug Exp $
+ *  $Id: cpu.c,v 1.179 2004-11-10 15:41:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3364,6 +3364,10 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		if (cpus[0]->ticks_reset_value[te] < a_few_cycles)
 			a_few_cycles = cpus[0]->ticks_reset_value[te];
 	}
+
+	a_few_cycles >>= 1;
+	if (a_few_cycles < 1)
+		a_few_cycles = 1;
 
 	if (ncpus > 1 && max_random_cycles_per_chunk_cached == 0)
 		a_few_cycles = 1;

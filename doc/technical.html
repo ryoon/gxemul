@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.22 2004-10-17 15:31:41 debug Exp $
+$Id: technical.html,v 1.23 2004-11-10 15:41:32 debug Exp $
 
 Copyright (C) 2004  Anders Gavare.  All rights reserved.
 
@@ -128,6 +128,10 @@ TODO.
 <a name="speed"></a>
 <h3>Speed</h3>
 
+<font color="#ff0000">(NOTE: This section was valid for 0.2.2, but
+I'm currently experimenting with bintrans again.)</font>
+
+<p>
 There is no dynamic binary translation yet (there was, but I ripped it all
 out in order to rewrite it cleanly some time later), so the whole emulator is
 basically a fetch-one-instruction-and-execute-it loop. This makes it very slow.

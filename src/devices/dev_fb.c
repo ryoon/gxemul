@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.56 2004-11-05 23:06:45 debug Exp $
+ *  $Id: dev_fb.c,v 1.57 2004-11-10 15:41:31 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -60,6 +60,8 @@
 #include <X11/Xutil.h>
 #endif
 
+
+#define	FB_TICK_SHIFT		18
 
 /*
  *  FB_DEBUG enables lots of debug output.
@@ -853,7 +855,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, name, baseaddr, size, dev_fb_access, d);
 
-	cpu_add_tickfunction(cpu, dev_fb_tick, d, 18);
+	cpu_add_tickfunction(cpu, dev_fb_tick, d, FB_TICK_SHIFT);
 	return d;
 }
 

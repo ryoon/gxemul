@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.22 2004-11-09 05:01:44 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.23 2004-11-10 15:41:34 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -67,7 +67,7 @@ unsigned char bintrans_alpha_ret[4] = {
  *  compilers have such simple constructs, so an entire function has to
  *  be written as bintrans_alpha_imb[] above.
  */
-void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
+static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 {
 	/*  Long form of ``asm("imb");''  */
 
@@ -79,10 +79,8 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 
 /*
  *  bintrans_chunk_header_len():
- *
- *  TODO: Comment.
  */
-size_t bintrans_chunk_header_len(void)
+static size_t bintrans_chunk_header_len(void)
 {
 	return 0;
 }
@@ -90,20 +88,16 @@ size_t bintrans_chunk_header_len(void)
 
 /*
  *  bintrans_write_chunkhead():
- *
- *  TODO: Comment.
  */
-void bintrans_write_chunkhead(unsigned char *p)
+static void bintrans_write_chunkhead(unsigned char *p)
 {
 }
 
 
 /*
  *  bintrans_write_chunkreturn():
- *
- *  TODO: Comment.
  */
-void bintrans_write_chunkreturn(unsigned char **addrp)
+static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
 	unsigned char *addr = *addrp;
 	int i;
@@ -118,10 +112,8 @@ void bintrans_write_chunkreturn(unsigned char **addrp)
 
 /*
  *  bintrans_write_pcflush():
- *
- *  TODO: Comment.
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_inc,
+static void bintrans_write_pcflush(unsigned char **addrp, int *pc_inc,
 	int flag_pc, int flag_ninstr)
 {
 	unsigned char *a = *addrp;
@@ -169,7 +161,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_inc,
 /*
  *  bintrans_write_instruction__addiu():
  */
-int bintrans_write_instruction__addiu(unsigned char **addrp,
+static int bintrans_write_instruction__addiu(unsigned char **addrp,
 	int *pc_inc, int rt, int rs, int imm)
 {
 	unsigned char *a;
@@ -211,7 +203,7 @@ int bintrans_write_instruction__addiu(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__andi():
  */
-int bintrans_write_instruction__andi(unsigned char **addrp,
+static int bintrans_write_instruction__andi(unsigned char **addrp,
 	int *pc_inc, int rt, int rs, int imm)
 {
 	unsigned char *a;
@@ -271,7 +263,7 @@ int bintrans_write_instruction__andi(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__ori():
  */
-int bintrans_write_instruction__ori(unsigned char **addrp,
+static int bintrans_write_instruction__ori(unsigned char **addrp,
 	int *pc_inc, int rt, int rs, int imm)
 {
 	unsigned char *a;
@@ -331,7 +323,7 @@ int bintrans_write_instruction__ori(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__xori():
  */
-int bintrans_write_instruction__xori(unsigned char **addrp,
+static int bintrans_write_instruction__xori(unsigned char **addrp,
 	int *pc_inc, int rt, int rs, int imm)
 {
 	unsigned char *a;
@@ -391,7 +383,7 @@ int bintrans_write_instruction__xori(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__addu():
  */
-int bintrans_write_instruction__addu(unsigned char **addrp,
+static int bintrans_write_instruction__addu(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -426,7 +418,7 @@ int bintrans_write_instruction__addu(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__subu():
  */
-int bintrans_write_instruction__subu(unsigned char **addrp,
+static int bintrans_write_instruction__subu(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -461,7 +453,7 @@ int bintrans_write_instruction__subu(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__and():
  */
-int bintrans_write_instruction__and(unsigned char **addrp,
+static int bintrans_write_instruction__and(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -496,7 +488,7 @@ int bintrans_write_instruction__and(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__or():
  */
-int bintrans_write_instruction__or(unsigned char **addrp,
+static int bintrans_write_instruction__or(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -531,7 +523,7 @@ int bintrans_write_instruction__or(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__nor():
  */
-int bintrans_write_instruction__nor(unsigned char **addrp,
+static int bintrans_write_instruction__nor(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -566,7 +558,7 @@ int bintrans_write_instruction__nor(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__xor():
  */
-int bintrans_write_instruction__xor(unsigned char **addrp,
+static int bintrans_write_instruction__xor(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -601,7 +593,7 @@ int bintrans_write_instruction__xor(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__slt():
  */
-int bintrans_write_instruction__slt(unsigned char **addrp,
+static int bintrans_write_instruction__slt(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -636,7 +628,7 @@ int bintrans_write_instruction__slt(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__sltu():
  */
-int bintrans_write_instruction__sltu(unsigned char **addrp,
+static int bintrans_write_instruction__sltu(unsigned char **addrp,
 	int *pc_inc, int rd, int rs, int rt)
 {
 	unsigned char *a;
@@ -671,7 +663,7 @@ int bintrans_write_instruction__sltu(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__sll():
  */
-int bintrans_write_instruction__sll(unsigned char **addrp,
+static int bintrans_write_instruction__sll(unsigned char **addrp,
 	int *pc_inc, int rd, int rt, int sa)
 {
 	unsigned char *a;
@@ -705,7 +697,7 @@ int bintrans_write_instruction__sll(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__sra():
  */
-int bintrans_write_instruction__sra(unsigned char **addrp,
+static int bintrans_write_instruction__sra(unsigned char **addrp,
 	int *pc_inc, int rd, int rt, int sa)
 {
 	unsigned char *a;
@@ -737,7 +729,7 @@ int bintrans_write_instruction__sra(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__srl():
  */
-int bintrans_write_instruction__srl(unsigned char **addrp,
+static int bintrans_write_instruction__srl(unsigned char **addrp,
 	int *pc_inc, int rd, int rt, int sa)
 {
 	unsigned char *a;
@@ -772,7 +764,7 @@ int bintrans_write_instruction__srl(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__lui():
  */
-int bintrans_write_instruction__lui(unsigned char **addrp,
+static int bintrans_write_instruction__lui(unsigned char **addrp,
 	int *pc_inc, int rt, int imm)
 {
 	unsigned char *a;
@@ -799,8 +791,8 @@ int bintrans_write_instruction__lui(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__lw():
  */
-int bintrans_write_instruction__lw(unsigned char **addrp,
-	int *pc_inc, int first_load, int first_store, int rt, int imm, int rs, int load_type)
+static int bintrans_write_instruction__lw(unsigned char **addrp,
+	int *pc_inc, int rt, int imm, int rs, int load_type)
 {
 	unsigned char *jumppast1, *jumppast1b=NULL, *jumppast1c, *jumppast2;
 	unsigned char *a;
@@ -822,32 +814,27 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 	 */
 	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage[0]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
+	jumppast1 = a;
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
 
-	if (1) {  /* first_load && first_store) { */
-		jumppast1 = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
-	}
-
-	if (1) { /* first_store) { */
-		switch (load_type) {
-		case LOAD_TYPE_SW:
-		case LOAD_TYPE_SH:
-		case LOAD_TYPE_SB:
-			/*
-			 *  if (!cpu->pc_bintrans_data_writeflag[0])
-			 *	return;
-			 *
-			 *  00 00 30 a0     ldl     t0,0(a0)
-			 *  01 00 20 e4     beq     t0,2c <skip>
-			 */
-			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[0]) - (size_t)&dummy_cpu;
-			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-			jumppast1b = a;
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
-			break;
-		default:
-			;
-		}
+	switch (load_type) {
+	case LOAD_TYPE_SW:
+	case LOAD_TYPE_SH:
+	case LOAD_TYPE_SB:
+		/*
+		 *  if (!cpu->pc_bintrans_data_writeflag[0])
+		 *	return;
+		 *
+		 *  00 00 30 a0     ldl     t0,0(a0)
+		 *  01 00 20 e4     beq     t0,2c <skip>
+		 */
+		ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[0]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		jumppast1b = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+		break;
+	default:
+		;
 	}
 
 	/*
@@ -1010,32 +997,28 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage[1]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
 
-	if (1) {  /* first_load && first_store) { */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xf4;
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
-	}
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xf4;
+	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
 
-	if (first_store) {
-		switch (load_type) {
-		case LOAD_TYPE_SW:
-		case LOAD_TYPE_SH:
-		case LOAD_TYPE_SB:
-			/*
-			 *  if (!cpu->pc_bintrans_data_writeflag[1])
-			 *	return;
-			 *
-			 *  00 00 30 a0     ldl     t0,0(a0)
-			 *  01 00 20 f4     bne     t0,2c <ok>
-			 *  01 80 fa 6b     ret
-			 */
-			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[1]) - (size_t)&dummy_cpu;
-			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
-			break;
-		default:
-			;
-		}
+	switch (load_type) {
+	case LOAD_TYPE_SW:
+	case LOAD_TYPE_SH:
+	case LOAD_TYPE_SB:
+		/*
+		 *  if (!cpu->pc_bintrans_data_writeflag[1])
+		 *	return;
+		 *
+		 *  00 00 30 a0     ldl     t0,0(a0)
+		 *  01 00 20 f4     bne     t0,2c <ok>
+		 *  01 80 fa 6b     ret
+		 */
+		ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[1]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
+		break;
+	default:
+		;
 	}
 
 	/*
@@ -1183,7 +1166,7 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__jr():
  */
-int bintrans_write_instruction__jr(unsigned char **addrp,
+static int bintrans_write_instruction__jr(unsigned char **addrp,
 	int *pc_inc, int rs)
 {
 	unsigned char *a;
@@ -1211,7 +1194,7 @@ int bintrans_write_instruction__jr(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__jalr():
  */
-int bintrans_write_instruction__jalr(unsigned char **addrp,
+static int bintrans_write_instruction__jalr(unsigned char **addrp,
 	int *pc_inc, int rd, int rs)
 {
 	unsigned char *a;
@@ -1258,7 +1241,7 @@ int bintrans_write_instruction__jalr(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__mfmthilo():
  */
-int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
+static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	int *pc_inc, int rd, int from_flag, int hi_flag)
 {
 	unsigned char *a;
@@ -1308,9 +1291,9 @@ int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__branch():
  */
-int bintrans_write_instruction__branch(unsigned char **addrp,
+static int bintrans_write_instruction__branch(unsigned char **addrp,
 	int *pc_inc, int branch_type, int rt, int rs, int imm,
-	unsigned char **potential_chunk_p)
+	uint32_t *potential_chunk_p)
 {
 	unsigned char *a, *b, *b2;
 	int n;
@@ -1412,12 +1395,13 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 		/*
-		 *  potential_chunk_p points to an "unsigned char *".
+		 *  potential_chunk_p points to an "uint32_t".
 		 *  If this value is non-NULL, then it is a piece of Alpha
 		 *  machine language code corresponding to the address
 		 *  we're jumping to. Otherwise, those instructions haven't
 		 *  been translated yet, so we have to return to the main
-		 *  loop.
+		 *  loop.  (Actually, we have to add cpu->chunk_base_address,
+		 *  because the uint32_t is limited to 32-bit offsets.)
 		 */
 
 		/*  15 bits at a time, which means max 60 bits, but
@@ -1457,8 +1441,16 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 		 *  Jump to t0.
 		 */
 
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa4;	/*  ldq t0,0(t0)  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
+		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+
+
+		/*  ldl t2,chunk_base_address(a0)  */
+		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+		/*  addq t0,t2,t0  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+
 
 		/*  00 00 e1 6b     jmp     (t0)  */
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
@@ -1488,8 +1480,8 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__jal():
  */
-int bintrans_write_instruction__jal(unsigned char **addrp,
-	int *pc_inc, int imm, int link, unsigned char **chunks)
+static int bintrans_write_instruction__jal(unsigned char **addrp,
+	int *pc_inc, int imm, int link, uint32_t *chunks)
 {
 	unsigned char *a;
 	int ofs;
@@ -1631,29 +1623,35 @@ int bintrans_write_instruction__jal(unsigned char **addrp,
 	/*
 	 *  t2 = pc
 	 *  t1 = t2 & 0xfff
-	 *  t0 += t1 * 2	(because each pointer on alpha is 8 bytes)
+	 *  t0 += t1
 	 *
 	 *  00 00 70 a4     ldq     t2,0(a0)
 	 *  ff 0f 5f 20     lda     t1,4095
 	 *  02 00 62 44     and     t2,t1,t1
-	 *  22 37 40 48     sll     t1,0x1,t1
 	 *  01 04 22 40     addq    t0,t1,t0
 	 */
 	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 	*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
-	*a++ = 0x22; *a++ = 0x37; *a++ = 0x40; *a++ = 0x48;	/*  sll  */
 	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
 
 	/*
-	 *  Load the chunk pointer into t0.
-	 *  If it is NULL (zero), then skip the following jump.
+	 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
+	 *  If it is zero, then skip the following.
+	 *  Add cpu->chunk_base_address to t0.
 	 *  Jump to t0.
 	 */
 
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa4;	/*  ldq t0,0(t0)  */
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
+	*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+
+	/*  ldl t2,chunk_base_address(a0)  */
+	ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+	/*  addq t0,t2,t0  */
+	*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+
 
 	/*  00 00 e1 6b     jmp     (t0)  */
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */

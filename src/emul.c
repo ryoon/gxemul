@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.85 2004-11-07 13:23:47 debug Exp $
+ *  $Id: emul.c,v 1.86 2004-11-10 15:41:34 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -672,8 +672,11 @@ void emul_start(struct emul *emul)
 	if (emul->ncpus > 1)
 		debug(" .. cpu%i", emul->ncpus-1);
 	debug(": %s", emul->emul_cpu_name);
-	for (i=0; i<emul->ncpus; i++)
+	for (i=0; i<emul->ncpus; i++) {
 		emul->cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
+		if (emul->bintrans_enable)
+			bintrans_init_cpu(emul->cpus[i]);
+	}
 	debug("\n");
 
 	if (emul->use_random_bootstrap_cpu)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.214 2004-12-10 02:11:32 debug Exp $
+ *  $Id: cpu.c,v 1.215 2004-12-11 15:54:40 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1255,7 +1255,7 @@ int cpu_run_instr(struct cpu *cpu)
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->emul->instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
-	int i, ninstrs_executed;
+	int i, tmp, ninstrs_executed;
 	unsigned char instr[4];
 	uint32_t instrword;
 	uint64_t cached_pc;
@@ -2748,8 +2748,7 @@ int cpu_run_instr(struct cpu *cpu)
 					case HI6_SWC2:	cpnr++;
 					case HI6_SDC1:
 					case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
-							    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
-							    ) {
+							    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
 								cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 								cpnr = -1;
 								break;
@@ -2875,8 +2874,7 @@ int cpu_run_instr(struct cpu *cpu)
 				case HI6_LWC2:	cpnr++;
 				case HI6_LDC1:
 				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
-						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
-						    ) {
+						    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 						} else {
 							coproc_register_write(cpu, cpu->coproc[cpnr], rt, &value,
@@ -3167,12 +3165,32 @@ int cpu_run_instr(struct cpu *cpu)
 		/*
 		 *  If there is no coprocessor nr cpnr, or we are running in
 		 *  userland and the coprocessor is not marked as Useable in
-		 *  the status register of CP0, then we get an exception:
+		 *  the status register of CP0, then we get an exception.
 		 *
-		 *  TODO:  More robust checking for user code (ie R4000 stuff)
+		 *  An exception (hehe) to this rule is that the kernel should
+		 *  always be able to access CP0.
 		 */
+		/*  Set tmp = 1 if we're in user mode.  */
+		tmp = 0;
+		switch (cpu->cpu_type.exc_model) {
+		case EXC3K:
+			/*
+			 *  NOTE: If the KU bit is checked, Linux crashes.
+			 *  It is the PC that counts.  TODO: Check whether
+			 *  this is true or not for R4000 as well.
+			 */
+			if (cached_pc <= 0x7fffffff) /* if (cp0->reg[COP0_STATUS] & MIPS1_SR_KU_CUR) */
+				tmp = 1;
+			break;
+		default:
+			/*  R4000 etc:  (TODO: How about supervisor mode?)  */
+			if (((cp0->reg[COP0_STATUS] & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT) != KSU_KERNEL)
+				tmp = 1;
+			break;
+		}
 		if (cpu->coproc[cpnr] == NULL ||
-		    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+		    (tmp && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ||
+		    (!tmp && cpnr >= 1 && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 		    ) {
 			if (instruction_trace_cached)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);

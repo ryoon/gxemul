@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.6 2004-01-06 10:33:29 debug Exp $
+ *  $Id: emul.c,v 1.7 2004-01-06 11:40:39 debug Exp $
  *
  *  Emulation startup.
  */
@@ -88,7 +88,7 @@ void emul(void)
 
 	/*  Create the system's memory:  */
 	debug("adding memory: %i MB\n", physical_ram_in_mb);
-	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, physical_ram_in_mb * 1048576, DEFAULT_MAX_BITS);
+	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, (uint64_t)physical_ram_in_mb * 1048576, DEFAULT_MAX_BITS);
 
 	/*  Create CPUs:  */
 	cpus = malloc(sizeof(struct cpu *) * ncpus);

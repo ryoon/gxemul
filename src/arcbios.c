@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.13 2004-01-06 02:00:20 debug Exp $
+ *  $Id: arcbios.c,v 1.14 2004-01-06 11:40:39 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -312,6 +312,8 @@ void arcbios_emul(struct cpu *cpu)
 		/*  If a0=NULL, then return a pointer to the first descriptor:  */
 		if ((uint32_t)cpu->gpr[GPR_A0] == 0)
 			break;
+
+		/*  TODO: change this into reading the descriptor structure, nr of pages = zero ==> stop  */
 
 		mb_left = physical_ram_in_mb;
 		while (mb_left > 0) {

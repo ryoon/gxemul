@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.9 2004-01-06 10:31:15 debug Exp $
+ *  $Id: memory.c,v 1.10 2004-01-06 11:40:39 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -128,7 +128,7 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t da
  *
  *  This function creates a new memory object.  An emulated machine needs one of these.
  */
-struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, size_t physical_max, int max_bits)
+struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_t physical_max, int max_bits)
 {
 	struct memory *mem;
 	int n, ok;

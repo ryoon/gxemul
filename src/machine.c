@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.33 2004-01-06 10:49:12 debug Exp $
+ *  $Id: machine.c,v 1.34 2004-01-06 11:40:39 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -836,9 +836,12 @@ void machine_init(struct memory *mem)
 		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
 		 *  If there's more than 512MB of RAM, it has to be split in two, according to
 		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
+		 *
+		 *  NOTE:  The region of physical address space between 0x10000000 and 0x1fffffff
+		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
 		 */
 		mem_base = 16 * 1048576 / 4096;
-		mem_count = physical_ram_in_mb <= 512? physical_ram_in_mb : 512;
+		mem_count = physical_ram_in_mb <= 256? physical_ram_in_mb : 256;
 		mem_count = (mem_count - 16) * 1048576 / 4096;
 
 		/*  SUPER-special case:   SGI-IP22, ignore the lowest 128MB of RAM:  */
@@ -867,12 +870,17 @@ void machine_init(struct memory *mem)
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+
 			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			mem_bufaddr += sizeof(arcbios_mem);
 
 			mem_mb_left -= 512;
 			mem_base += 512 * (1048576 / 4096);
-			mem_bufaddr += sizeof(arcbios_mem);
 		}
+
+		/*  End of memory descriptors:  (pagecount = zero)  */
+		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+		store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 		/*
 		 *  Components:   (this is an example of what a system could look like)

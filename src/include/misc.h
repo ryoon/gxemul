@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.60 2004-06-21 09:38:09 debug Exp $
+ *  $Id: misc.h,v 1.61 2004-06-22 22:27:07 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -192,7 +192,6 @@ struct cpu_type_def {
 #define	MAX_PC_DUMPPOINTS	16
 #define	MAX_DEVICES		22
 
-#define	BINTRANS_CACHEENTRIES	16
 
 /*  lowest 5 bits are register number, bit 6 and up can be used as flags:  */
 #define	MEMREGISTERHINT_WRITE	32
@@ -220,20 +219,6 @@ struct memory {
 	uint64_t	dev_length[MAX_DEVICES];
 	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *);
 	void		*dev_extra[MAX_DEVICES];
-
-	/*  Stuff for binary translation:  */
-	uint64_t	bintrans_last_paddr;
-	void		*bintrans_last_host4kpage;
-	int		bintrans_last_chunk_nr;
-
-	long		bintrans_tickcount;
-	uint64_t	bintrans_paddr_start[BINTRANS_CACHEENTRIES];
-	uint64_t	bintrans_paddr_end[BINTRANS_CACHEENTRIES];
-	void		*bintrans_codechunk[BINTRANS_CACHEENTRIES];
-	size_t		bintrans_codechunk_len[BINTRANS_CACHEENTRIES];
-	size_t		bintrans_codechunk_time[BINTRANS_CACHEENTRIES];	/*  time for most recent use  */
-	int		bintrans_codechunk_ninstr[BINTRANS_CACHEENTRIES];
-	int		bintrans_codechunk_memregisterhint[BINTRANS_CACHEENTRIES];
 };
 
 /* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */
@@ -513,7 +498,6 @@ struct cpu {
 
 	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
 
-	int		bintrans_last_was_jump;
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
 
@@ -882,7 +866,6 @@ void symbol_init(void);
 #define	USERLAND_NONE		0
 #define	USERLAND_NETBSD_PMAX	1
 #define	USERLAND_ULTRIX_PMAX	2
-#define	USERLAND_IRIX		3
 void useremul_init(struct cpu *, struct memory *, int, char **);
 void useremul_syscall(struct cpu *cpu, uint32_t code);
 

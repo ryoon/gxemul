@@ -24,7 +24,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
  *
- *  $Id: rssb_as.c,v 1.1 2005-03-03 06:24:41 debug Exp $
+ *  $Id: rssb_as.c,v 1.2 2005-03-08 23:10:10 debug Exp $
  *
  *  A simple assembler for URISC ("reverse subtract and skip on borrow").
  */
@@ -243,7 +243,7 @@ void pass2(FILE *fin, FILE *fout, uint32_t first_diffaddr)
 				fwrite(&b3, 1, 1, fout);
 				fwrite(&b4, 1, 1, fout);
 
-				/*  Output the diff addr to the code section:  */
+				/*  Output the diff addr to the code section: */
 				fseek(fout, curaddr, SEEK_SET);
 				value = curdiffaddr;
 				b1 = value >> 24;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.68 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_asc.c,v 1.69 2005-03-08 23:10:09 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -325,7 +325,8 @@ fatal("TODO..............\n");
 					    ((sizeof(d->dma)-1)));
 
 				if (len2 > len) {
-					memset(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), 0, len2);
+					memset(d->dma + (d->dma_address_reg &
+					    ((sizeof(d->dma)-1))), 0, len2);
 					len2 = len;
 				}
 
@@ -333,7 +334,8 @@ fatal("TODO..............\n");
 				if (!quiet_mode) {
 					int i;
 					for (i=0; i<len; i++)
-						debug(" %02x", d->xferp->data_in[i]);
+						debug(" %02x", d->xferp->
+						    data_in[i]);
 				}
 #endif
 
@@ -362,15 +364,19 @@ if (d->dma_controller != NULL)
 	    (int)d->xferp->data_in_len);
 
 					all_done = 0;
-					/*  fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);  */
+					/*  fatal("{ asc: multi-transfer"
+					    " data_in, len=%i len2=%i }\n",
+					    (int)len, (int)len2);  */
 
 					d->xferp->data_in_len -= len2;
 					n = malloc(d->xferp->data_in_len);
 					if (n == NULL) {
-						fprintf(stderr, "out of memory in dev_asc\n");
+						fprintf(stderr, "out of memory"
+						    " in dev_asc\n");
 						exit(1);
 					}
-					memcpy(n, d->xferp->data_in + len2, d->xferp->data_in_len);
+					memcpy(n, d->xferp->data_in + len2,
+					    d->xferp->data_in_len);
 					free(d->xferp->data_in);
 					d->xferp->data_in = n;
 
@@ -393,28 +399,33 @@ fatal("TODO.......asdgasin\n");
 		} else {
 			/*  Copy data from DMA to data_out:  */
 			int len = d->xferp->data_out_len;
-			int len2 = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+			int len2 = d->reg_wo[NCR_TCL] +
+			    d->reg_wo[NCR_TCM] * 256;
 			if (len2 == 0)
 				len2 = 65536;
 
 			if (len == 0) {
-				fprintf(stderr, "d->xferp->data_out_len == 0 ?\n");
+				fprintf(stderr, "d->xferp->data_out_len == "
+				    "0 ?\n");
 				exit(1);
 			}
 
-			/*  TODO: Make sure that len2 doesn't go outside of the dma memory?  */
+			/*  TODO: Make sure that len2 doesn't go outside
+			    of the dma memory?  */
 
-			/*  fatal("    data out offset=%5i len=%5i\n", d->xferp->data_out_offset, len2);  */
+			/*  fatal("    data out offset=%5i len=%5i\n",
+			    d->xferp->data_out_offset, len2);  */
 
-			if (d->xferp->data_out_offset + len2 > d->xferp->data_out_len) {
-				len2 = d->xferp->data_out_len - d->xferp->data_out_offset;
+			if (d->xferp->data_out_offset + len2 >
+			    d->xferp->data_out_len) {
+				len2 = d->xferp->data_out_len -
+				    d->xferp->data_out_offset;
 			}
 
 			/*
-			 *  Are we using an external DMA controller?
-			 *  Then use it. Otherwise place the data in
-			 *  the DECstation 5000/200 built-in DMA
-			 *  region.
+			 *  Are we using an external DMA controller? Then use
+			 *  it. Otherwise place the data in the DECstation
+			 *  5000/200 built-in DMA region.
 			 */
 			if (d->xferp->data_out == NULL) {
 				scsi_transfer_allocbuf(&d->xferp->data_out_len,
@@ -446,12 +457,18 @@ fatal("TODO.......asdgasin\n");
 				d->xferp->data_out_offset += len2;
 			}
 
-			/*  If the disk wants more than we're DMAing, then this is a multitransfer:  */
-			if (d->xferp->data_out_offset != d->xferp->data_out_len) {
+			/*  If the disk wants more than we're DMAing,
+			    then this is a multitransfer:  */
+			if (d->xferp->data_out_offset !=
+			    d->xferp->data_out_len) {
 				if (!quiet_mode)
-					debug("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
-				if (d->xferp->data_out_offset > d->xferp->data_out_len)
-					fatal("[ asc data_out dma: too much? ]\n");
+					debug("[ asc: data_out, multitransfer "
+					    "len = %i, len2 = %i ]\n",
+					    (int)len, (int)len2);
+				if (d->xferp->data_out_offset >
+				    d->xferp->data_out_len)
+					fatal("[ asc data_out dma: too much?"
+					    " ]\n");
 				else
 					all_done = 0;
 			}
@@ -482,15 +499,16 @@ fatal("TODO.......asdgasin\n");
 			int newlen;
 
 			if (oldlen != 1) {
-				fatal(" (PHASE OUT MSG len == %i, should be 1)\n",
-				    oldlen);
+				fatal(" (PHASE OUT MSG len == %i, "
+				    "should be 1)\n", oldlen);
 			}
 
 			newlen = oldlen + d->n_bytes_in_fifo;
 			d->xferp->msg_out = realloc(d->xferp->msg_out, newlen);
 			d->xferp->msg_out_len = newlen;
 			if (d->xferp->msg_out == NULL) {
-				fprintf(stderr, "out of memory realloc'ing msg_out\n");
+				fprintf(stderr, "out of memory realloc'ing "
+				    "msg_out\n");
 				exit(1);
 			}
 
@@ -539,7 +557,8 @@ fatal("TODO.......asdgasin\n");
 		    d->reg_wo[NCR_SELID] & 7, dmaflag, 0);
 		return res;
 	} else {
-		fatal("!!! TODO: unknown/unimplemented phase in transfer: %i\n", d->cur_phase);
+		fatal("!!! TODO: unknown/unimplemented phase "
+		    "in transfer: %i\n", d->cur_phase);
 	}
 
 	/*  Redo the command if data was just sent using DATA_OUT:  */
@@ -770,7 +789,8 @@ int dev_asc_dma_access(struct cpu *cpu, struct memory *mem,
 		}
 #endif
 
-		/*  Don't return the common way, as that would overwrite data.  */
+		/*  Don't return the common way, as that
+		    would overwrite data.  */
 		return 1;
 	} else {
 		memcpy(d->dma + relative_addr, data, len);
@@ -861,7 +881,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 #endif
 	} else if (relative_addr >= 0x300 && relative_addr < 0x600
 	    && d->turbochannel != NULL) {
-		debug("[ asc: offset 0x%x, redirecting to turbochannel access ]\n", relative_addr);
+		debug("[ asc: offset 0x%x, redirecting to turbochannel"
+		    " access ]\n", relative_addr);
 		return dev_turbochannel_access(cpu, mem,
 		    relative_addr, data, len, writeflag,
 		    d->turbochannel);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.30 2005-02-22 19:09:01 debug Exp $
+ *  $Id: cpu_mips.c,v 1.31 2005-03-08 23:10:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -256,7 +256,8 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 			fprintf(stderr, "out of memory\n");
 		}
 
-		n_cache_lines = cpu->cd.mips.cache_size[i] / cpu->cd.mips.cache_linesize[i];
+		n_cache_lines = cpu->cd.mips.cache_size[i] /
+		    cpu->cd.mips.cache_linesize[i];
 		tags_size = n_cache_lines * size_per_cache_line;
 
 		cpu->cd.mips.cache_tags[i] = malloc(tags_size);
@@ -371,9 +372,12 @@ void mips_cpu_show_full_statistics(struct machine *m)
 			debug_indentation(iadd);
 			if (s1 == HI6_SPECIAL)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->cd.mips.stats__special[s2] > 0)
-						fatal("special %02x (%7s): %li\n",
-						    s2, special_names[s2], m->cpus[i]->cd.mips.stats__special[s2]);
+					if (m->cpus[i]->cd.mips.stats__special[
+					    s2] > 0)
+						fatal("special %02x (%7s): "
+						    "%li\n", s2, special_names[
+						    s2], m->cpus[i]->cd.mips.
+						    stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
 					if (m->cpus[i]->cd.mips.stats__regimm[s2] > 0)

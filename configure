@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.113 2005-03-08 22:58:57 debug Exp $
+#  $Id: configure,v 1.114 2005-03-08 23:10:08 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -292,22 +292,22 @@ fi
 
 
 rm -f _testprog
-printf "$CC $CFLAGS\n"
+printf "$CC $CFLAGS"
 
 
 CCTYPE="generic"
 
-if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
+if $CC $CFLAGS -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
 	COMPAQCC=YES
 	CCTYPE="Compaq CC"
 fi
 
-if $CC -V 2>&1 | grep Sun 1> /dev/null 2> /dev/null; then
+if $CC $CFLAGS -V 2>&1 | grep Sun 1> /dev/null 2> /dev/null; then
 	SUNCC=YES
 	CCTYPE="Solaris CC"
 fi
 
-if $CC -v 2>&1 | grep gcc 1> /dev/null 2> /dev/null; then
+if $CC $CFLAGS -v 2>&1 | grep gcc 1> /dev/null 2> /dev/null; then
 	GCCCC=YES
 	CCTYPE="GNU CC"
 fi
@@ -316,7 +316,7 @@ if [ z$CYGWIN = zYES ]; then
 	CCTYPE="$CCTYPE (Cygwin)"
 fi
 
-echo "C compiler type: $CCTYPE"
+echo " ($CCTYPE)"
 
 
 if [ z$NOX11 = z ]; then
@@ -964,7 +964,6 @@ fi
 
 INCLUDE=-I../include/
 
-echo C compiler: $CC
 echo C compiler flags: $CFLAGS $CWARNINGS $INCLUDE
 echo Linker flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header

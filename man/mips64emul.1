@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.19 2005-02-02 19:33:50 debug Exp $
+.\" $Id: mips64emul.1,v 1.20 2005-02-11 22:03:48 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -29,101 +29,236 @@
 .\" This is a minimal man page for mips64emul. Process this file with
 .\"     groff -man -Tascii mips64emul.1    or    nroff -man mips64emul.1
 .\"
-.TH mips64emul 1 "FEBRUARY 2005" mips64emul "User commands"
-.SH NAME
-.B mips64emul
--- a MIPS machine emulator
-.SH SYNOPSIS
-.B mips64emul
-[
-.I machine and general options
-]
-[
-.I file ...
-]
-
-.B mips64emul
-[
-.I general options
-]
-.I @configfile
-[
-.I ...
-]
-.SH DESCRIPTION
-.B mips64emul
-is a MIPS machine emulator. The goals are to emulate
-MIPS-like CPUs and enough surrounding hardware to let unmodified operating
-systems run as if they were running on a real machine, and to assist in
-experiments involving MIPS-like code in general.
-
-Run
-.B mips64emul \-h
-to get a list of available command line options.
-You should also read the documentation provided in the
-.B doc/
-subdirectory of the
-.B mips64emul
-distribution.
-
-There are two ways to invoke the emulator: settings can be entered 
+.Dd FEBRUARY 2005
+.Dt MIPS64EMUL 1
+.Os
+.Sh NAME
+.Nm mips64emul
+.Nd a MIPS machine emulator
+.Sh SYNOPSIS
+.Nm
+.Op machine and general options
+.Op Ar
+.Nm
+.Op general options
+.Op Ar @configfile ...
+.Sh DESCRIPTION
+.Nm
+is a MIPS machine emulator. MIPS-like processors and surrounding hardware
+components are emulated well enough to let unmodified operating systems run
+as if they were running on a real machine, and to assist in experiments
+involving MIPS-like code in general.
+.Pp
+There are two ways to invoke the emulator: machine settings can be entered 
 directly on the command line, or they can be read from a configuration 
-file. Please read the documentation for more information about the 
-configuration files.
-
+file. Please read the documentation in the doc/ subdirectory of the
+.Nm
+distribution for more information about the configuration files.
+.Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line. The most important thing you need to supply is the
-.I file
-argument. This is the name of a MIPS binary file (an ELF32, ELF64,
-a.out, ECOFF, SREC, or a raw binary image) which you wish to run in the 
-emulator. This file might be an operating system kernel, or perhaps a ROM 
-image file.
-
+file argument. This is the name of a MIPS binary file (an ELF, a.out, ECOFF,
+SREC, or a raw binary image) which you wish to run in the emulator. This file
+might be an operating system kernel, or perhaps a ROM image file.
+.Pp
 Apart from the name of a MIPS binary, it is also necessary to select
 which specific emulation mode to use. For example, a MIPS-based machine
 from DEC (a DECstation) is very different from a MIPS-based machine
 from SGI. Use
-.B mips64emul \-H
+.Nm
+\-H
 to get a list of available emulation modes.
-
+.Pp
 (There is an exception to the normal invocation usage mentioned above;
 if you want to use the DECstation emulation mode, and have a bootable
 DECstation harddisk or CDROM image, then just supplying the diskimage via 
 the -d option is sufficient. The filename of the kernel can then be 
 skipped, as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
-.SH EXAMPLES
+.Pp
+Machine selection options:
+.Bl -tag -width Ds
+.It Fl A Ar x
+Try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,
+4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700,
+8=NEC-R96).
+.It Fl a
+Emulate a generic MIPS machine (useful for experimenting with MIPS-like
+code, when no specific real machine emulation is required).
+.It Fl D Ar x
+Try to emulate a DECstation or DECsystem machine (1=PMAX(3100), 2=3MAX(5000),
+3=3MIN(5000), 4=3MAX+(5000,5900), 5=5800, 6=5400, 7=MAXINE(5000), 11=5500,
+12=5100(MIPSMATE)).
+.It Fl E Ar t
+Try to emulate machine type
+.Ar "t".
+(Use
+.Fl H
+to get a list of types.)
+.It Fl e Ar st
+Try to emulate machine subtype
+.Ar "st".
+Use this together with
+.Fl E .
+.El
+.Pp
+Other machine specific options:
+.Bl -tag -width Ds
+.It Fl b
+Enable dynamic binary translation.
+.It Fl C Ar x
+Try to emulate a specific CPU type,
+.Ar "x".
+(Use
+.Fl H
+to get a list of available CPU types.)
+.It Fl d Ar name
+Add
+.Ar name
+as a disk image. By adding one or more modifier characters and then a
+colon (":") as a prefix to
+.Ar "name",
+you can modify the disk image's behaviour. Available modifiers are:
+.Bl -tag -width Ds
+.It b
+Specifies that this is a boot device.
+.It c
+CD-ROM (instead of a normal SCSI DISK).
+.It d
+SCSI DISK (this is the default).
+.It r
+Read-only (don't allow changes to be written to the file).
+.It t
+SCSI tape.
+.It 0-7
+Force a specific SCSI ID number.
+.El
+.Pp
+Filenames ending with ".iso" are assumed to be CDROM images, all others
+are assumed to be normal SCSI disks.
+.It Fl I Ar x
+Emulate clock interrupts at
+.Ar x
+Hz. (This affects emulated clock devices only, not actual runtime speed.
+This disables automatic clock adjustments, which is otherwise turned on.)
+.It Fl i
+Display each instruction as it is being executed.
+.It Fl J
+Disable some speed tricks.
+.It Fl j Ar n
+Set the name of the kernel to
+.Ar "n",
+for example "bsd" for OpenBSD/pmax, or "vmunix" for Ultrix.
+.It Fl M Ar m
+Emulate
+.Ar m
+MBs of physical RAM.
+.It Fl m Ar nr
+Run at most
+.Ar nr
+instructions (on any cpu).
+.It Fl N
+Display nr of instructions/second average, at regular intervals.
+.It Fl n Ar nr
+Set nr of CPUs (for SMP experiments).
+.It Fl O
+Force a "netboot" (tftp instead of disk), even when a disk image is
+present (for DECstation, SGI, and ARC emulation).
+.It Fl o Ar arg
+Set the boot argument (for DEC, ARC, or SGI emulation).
+Default
+.Ar arg
+for DEC is '-a', for ARC '-aN'.
+.It Fl p Ar pc
+Add a breakpoint (remember to use the '0x' prefix for hex).
+.It Fl Q
+Disable the built-in PROM emulation. This is useful for running raw ROM
+images from real machines.
+.It Fl R
+Use a random bootstrap cpu, instead of CPU nr 0. (For SMP experiments.)
+.It Fl r
+Dump register contents for every executed instruction.
+.It Fl S
+Initialize the emulated RAM to random data, instead of zeroes.
+.It Fl T
+Enter the single-step debugger on unimplemented memory accesses.
+.It Fl t
+Show a trace tree of all function calls being made.
+.It Fl U
+Enable slow_serial_interrupts_hack_for_linux.
+.It Fl u Ar emul-mode
+Userland-only (syscall) emulation. (Use
+.Fl H
+to get a list of available emulation modes.)
+.It Fl X
+Use X11.
+.It Fl Y Ar n
+Scale down framebuffer windows by
+.Ar n
+x
+.Ar n
+times.
+.It Fl y Ar x
+Set max_random_cycles_per_chunk to
+.Ar x
+(experimental).
+.It Fl Z Ar n
+Set the number of graphics cards, for emulating a dual-head or tripple-head
+environment. (Only for DECstation emulation so far.)
+.It Fl z Ar disp
+Add
+.Ar disp
+as an X11 display to use for framebuffers.
+.El
+.Pp
+General options:
+.Bl -tag -width Ds
+.It Fl H
+Displays a list of possible CPU and machine types.
+.It Fl h
+Displays a list of all available command line options.
+.It Fl K
+Force the single-step debugger to be entered at the end of a simulation.
+.It Fl q
+Quiet mode; this suppresses startup messages.
+.It Fl s
+Show opcode usage statistics after simulation.
+.It Fl V
+Start up in the single-step debugger, paused.
+.It Fl v
+Verbose debug messages.
+.El
+.Pp
+For more information, please read the documentation in the doc/
+subdirectory of the
+.Nm
+distribution.
+.Sh EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
 5000/200, with dynamic binary translation enabled:
-.nf
-
-	mips64emul \-D2 \-b \-d netbsddisk.img
-
-.fi
+.Pp
+.Dl "mips64emul -D2 -b -d netbsddisk.img"
+.Pp
 netbsddisk.img should be a raw disk image containing a NetBSD/pmax
 filesystem.
-
+.Pp
 The following command will start an emulation session based on settings in 
 the configuration file "mysession". The -v option tells mips64emul to be
 verbose.
-.nf
-
-	mips64emul \-v @mysession
-
-.fi
+.Pp
+.Dl "mips64emul -v @mysession"
+.Pp
 If you have compiled the small Hello world program mentioned in the
 mips64emul documentation, the following command will start up an
 emulated test machine in "paused" mode:
-.nf
-
-	mips64emul \-a \-V hello
-
-.fi
+.Pp
+.Dl "mips64emul -a -V hello"
+.Pp
 (Paused mode means that you enter the interactive single-step debugger
 directly at startup, instead of launching the Hello world program.)
-
+.Pp
 Please read the documentation for more details.
-.SH AUTHOR
+.Sh AUTHOR
 Anders Gavare <anders@gavare.se>
-
+.Pp
 See http://gavare.se/mips64emul/ for more information.

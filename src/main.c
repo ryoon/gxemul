@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.206 2005-02-11 09:29:51 debug Exp $
+ *  $Id: main.c,v 1.207 2005-02-11 22:03:49 debug Exp $
  */
 
 #include <stdio.h>
@@ -278,8 +278,8 @@ static void usage(int longusage)
 	    "7=Olivetti M700,\n");
 	printf("            8=NEC-R96)\n");
 	printf("  -a        emulate a generic test machine\n");
-	printf("  -D id     try to emulate a DECstation machine type 'id', "
-	    "where id may be:\n");
+	printf("  -D x      try to emulate a DECstation machine type 'x', "
+	    "where x may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), "
 	    "4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, "
@@ -288,7 +288,6 @@ static void usage(int longusage)
 	    "a list of types.)\n");
 	printf("  -e st     try to emulate machine subtype st. (Use this "
 	    "with -E.)\n");
-	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 
 	printf("\nOther machine specific options:\n");
 #ifdef BINTRANS
@@ -393,7 +392,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "A:abC:D:d:E:e:G:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "A:abC:D:d:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -431,11 +430,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'e':
 			subtype = optarg;
 			msopts = 1;
-			break;
-		case 'G':
-			m->arch = ARCH_MIPS;
-			m->machine_type = MACHINE_SGI;
-			m->machine_subtype = atoi(optarg);
 			break;
 		case 'H':
 			machine_list_available_types_and_cpus();

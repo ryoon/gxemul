@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.27 2004-11-20 08:57:13 debug Exp $
+ *  $Id: dev_le.c,v 1.28 2004-11-24 13:51:48 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -573,20 +573,20 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 
 
 /*
- *  dev_le_access():
+ *  dev_le_sram_access():
  */
-int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+int dev_le_sram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	uint64_t idata = 0, odata = 0;
-	int i, retval = 1;
+	uint64_t idata = 0;
+	int i, retval;
 	struct le_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
 
 #ifdef LE_DEBUG
 	if (writeflag == MEM_WRITE)
-		fatal("[ le: write to addr 0x%06x: 0x%08x ]\n",
+		fatal("[ le_sram: write to addr 0x%06x: 0x%08x ]\n",
 		    relative_addr, idata);
 #endif
 
@@ -613,9 +613,34 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			}
 			retval = 6;	/*  6 cycles  */
 		}
-		return 1;
+		return retval;
 	}
 
+	return 0;
+}
+
+
+/*
+ *  dev_le_access():
+ */
+int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
+{
+	uint64_t idata = 0, odata = 0;
+	int i, retval = 1;
+	struct le_data *d = extra;
+
+	idata = memory_readmax64(cpu, data, len);
+
+#ifdef LE_DEBUG
+	if (writeflag == MEM_WRITE)
+		fatal("[ le: write to addr 0x%06x: 0x%08x ]\n",
+		    relative_addr, idata);
+#endif
+
+	/*  The rest of this code was written before the SRAM
+	    was separated out for bintrans optimization.  */
+	relative_addr += 0x100000;
 
 	/*  Read from station's ROM (ethernet address):  */
 	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1fffff) {
@@ -767,7 +792,12 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->rom[26] = d->rom[30] = 0x55;
 	d->rom[27] = d->rom[31] = 0xaa;
 
-	memory_device_register(mem, "le", baseaddr, len,
+	memory_device_register(mem, "le_sram", baseaddr,
+	    SRAM_SIZE, dev_le_sram_access, (void *)d,
+	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->sram);
+
+	memory_device_register(mem, "le", baseaddr + 0x100000,
+	    len - 0x100000,
 	    dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_le_tick, d, LE_TICK_SHIFT);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.22 2004-11-24 09:30:17 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.23 2004-11-24 13:51:49 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -1524,10 +1524,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*
 	 *  edi = host address   ( = host page + offset)
 	 *
-	 *  83 e7 fc                and    $0xfffffffc,%edi	clear the lowest two bits
+	 *  83 e7 fe                and    $0xfffffffe,%edi	clear the lowest bit
 	 *  01 df                   add    %ebx,%edi
 	 */
-	*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfc;
+	*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfe;
 	*a++ = 1; *a++ = 0xdf;
 
 /* bintrans_write_chunkreturn_fail(&a); */

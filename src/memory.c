@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.113 2004-11-24 10:22:30 debug Exp $
+ *  $Id: memory.c,v 1.114 2004-11-24 13:51:49 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1517,6 +1517,13 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	mem->dev_length[mem->n_mmapped_devices] = len;
 	mem->dev_flags[mem->n_mmapped_devices] = flags;
 	mem->dev_bintrans_data[mem->n_mmapped_devices] = bintrans_data;
+
+	if ((size_t)bintrans_data & 1) {
+		fprintf(stderr, "memory_device_register():"
+		    " bintrans_data not aligned correctly\n");
+		exit(1);
+	}
+
 #ifdef BINTRANS
 	mem->dev_bintrans_write_low[mem->n_mmapped_devices] = (uint64_t)-1;
 	mem->dev_bintrans_write_high[mem->n_mmapped_devices] = 0;

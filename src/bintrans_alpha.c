@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.60 2004-11-24 13:35:11 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.61 2004-11-24 13:51:49 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1384,11 +1384,11 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*
 	 *  The rest of this code was written with t3 as the address.
 	 *
-	 *  fc ff 7f 20     lda     t2,-4	Get rid of the two
-	 *  04 00 63 46     and     a3,t2,t3	lowest bits, and add
+	 *  fe ff 7f 20     lda     t2,-2	Get rid of the
+	 *  04 00 63 46     and     a3,t2,t3	bit, and add
 	 *  04 04 82 40     addq    t3,t1,t3	the offset within the page.
 	 */
-	*a++ = 0xfc; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;
+	*a++ = 0xfe; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x63; *a++ = 0x46;
 	*a++ = 0x04; *a++ = 0x04; *a++ = 0x82; *a++ = 0x40;
 
@@ -1643,7 +1643,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	/*
 	 *  NOTE: Only a few registers are readable without side effects.
 	 */
-	if (rt == 0)
+	if (rt == 0 && mtcflag==0)
 		return 0;
 
 	if (coproc_nr >= 1)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.9 2004-07-11 07:02:25 debug Exp $
+ *  $Id: console.c,v 1.10 2004-07-11 15:25:08 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -81,11 +81,13 @@ void console_init(void)
 	tcgetattr(STDIN_FILENO, &console_oldtermios);
 	memcpy(&console_curtermios, &console_oldtermios, sizeof (struct termios));
 
-	console_curtermios.c_lflag &= (~ICANON);
+	console_curtermios.c_lflag &= ~ICANON;
 	console_curtermios.c_cc[VTIME] = 0;
 	console_curtermios.c_cc[VMIN] = 1;
 
-	console_curtermios.c_lflag &= (~ECHO);
+	console_curtermios.c_lflag &= ~ECHO;
+
+	console_curtermios.c_iflag &= ~ICRNL;
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 

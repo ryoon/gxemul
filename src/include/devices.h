@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.145 2005-02-23 15:00:06 debug Exp $
+ *  $Id: devices.h,v 1.146 2005-02-24 15:38:34 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -220,11 +220,6 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int vfb_type,
 	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name, int logo);
 
-/*  dev_fdc.c:  */
-#define	DEV_FDC_LENGTH		0x0000000000000100
-int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
-
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -264,8 +259,11 @@ struct jazz_data {
 };
 size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);
-int dev_jazz_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
+int dev_jazz_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr);
 
 /*  dev_kn01.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
@@ -283,18 +281,13 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
 
 /*  dev_kn02.c:  */
-#define	DEV_KN02_LENGTH		0x1000
 struct kn02_csr {
 	uint8_t		csr[sizeof(uint32_t)];
 	uint8_t		filler[4096 - sizeof(uint32_t)];  /*  for bintrans mapping  */
 };
 int dev_kn02_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_kn210.c:  */
-#define	DEV_KN210_LENGTH		0x0000000000001000
-int dev_kn210_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_kn210_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr);
 
 /*  dev_kn220.c:  */
 #define	DEV_DEC5500_IOBOARD_LENGTH		0x100000

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.8 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_fdc.c,v 1.9 2005-02-24 15:38:34 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -37,9 +37,13 @@
 #include <string.h>
 
 #include "console.h"
-#include "devices.h"
+#include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+#define	DEV_FDC_LENGTH		0x100
 
 
 struct fdc_data {
@@ -93,9 +97,9 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_fdc_init():
+ *  devinit_fdc():
  */
-void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
+int devinit_fdc(struct devinit *devinit)
 {
 	struct fdc_data *d;
 
@@ -105,9 +109,12 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct fdc_data));
-	d->irqnr = irq_nr;
+	d->irqnr = devinit->irq_nr;
 
-	memory_device_register(mem, "fdc", baseaddr, DEV_FDC_LENGTH,
-	    dev_fdc_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_FDC_LENGTH, dev_fdc_access, d,
+	    MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

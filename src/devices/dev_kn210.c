@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.10 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_kn210.c,v 1.11 2005-02-24 15:38:34 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -34,10 +34,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "devices.h"
+#include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+
+#define	DEV_KN210_LENGTH	0x1000
 
 struct kn210_data {
 	int		dummy;
@@ -74,9 +77,9 @@ int dev_kn210_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_kn210_init():
+ *  devinit_kn210():
  */
-void dev_kn210_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+int devinit_kn210(struct devinit *devinit)
 {
 	struct kn210_data *d;
 
@@ -87,7 +90,10 @@ void dev_kn210_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct kn210_data));
 
-	memory_device_register(mem, "kn210", baseaddr, DEV_KN210_LENGTH,
+	memory_device_register(devinit->machine->memory,
+	    devinit->name, devinit->addr, DEV_KN210_LENGTH,
 	    dev_kn210_access, d, MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

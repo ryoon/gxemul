@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.5 2005-02-22 19:17:34 debug Exp $
+ *  $Id: device.c,v 1.6 2005-02-24 15:38:35 debug Exp $
  *
  *  Device registry framework.
  */
@@ -200,11 +200,13 @@ int device_unregister(char *name)
 
 
 /*
- *  device_add():
+ *  device_add__internal():
  *
- *  Add a device to a machine.
+ *  Add a device to a machine.  (This is the real add function, used by
+ *  all the different functions below.)
  */
-void device_add(struct machine *machine, char *name)
+static void device_add__internal(struct machine *machine, char *name,
+	uint64_t addr, uint64_t len, int irq_nr)
 {
 	struct device_entry *p = device_lookup(name);
 	struct devinit devinit;
@@ -214,13 +216,62 @@ void device_add(struct machine *machine, char *name)
 		exit(1);
 	}
 
+	memset(&devinit, 0, sizeof(struct devinit));
 	devinit.machine = machine;
 	devinit.name = name;
+	devinit.addr = addr;
+	devinit.len = len;
+	devinit.irq_nr = irq_nr;
 
 	if (!p->initf(&devinit)) {
 		fatal("error adding device \"%s\"\n", name);
 		exit(1);
 	}
+}
+
+
+/*
+ *  device_add():
+ *
+ *  Add a device to a machine.
+ */
+void device_add(struct machine *machine, char *name)
+{
+	device_add__internal(machine, name, 0,0,0);
+}
+
+
+/*
+ *  device_add_a():
+ *
+ *  Add a device to a machine, with address info.
+ */
+void device_add_a(struct machine *machine, char *name, uint64_t a)
+{
+	device_add__internal(machine, name, a, 0, 0);
+}
+
+
+/*
+ *  device_add_ai():
+ *
+ *  Add a device to a machine, with address and interrupt info.
+ */
+void device_add_ai(struct machine *machine, char *name, uint64_t a, int i)
+{
+	device_add__internal(machine, name, a, 0, i);
+}
+
+
+/*
+ *  device_add_al():
+ *
+ *  Add a device to a machine, with address and length info.
+ */
+void device_add_al(struct machine *machine, char *name, uint64_t a,
+	uint64_t len)
+{
+	device_add__internal(machine, name, a, len, 0);
 }
 
 

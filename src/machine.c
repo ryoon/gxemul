@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.362 2005-02-24 14:50:10 debug Exp $
+ *  $Id: machine.c,v 1.363 2005-02-24 15:38:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1569,7 +1569,7 @@ void machine_setup(struct machine *machine)
 			 */
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
-			dev_kn210_init(cpu, mem, 0x10080000);
+			device_add_a(machine, "kn210", 0x10080000);
 			dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
@@ -2620,7 +2620,8 @@ Why is this here? TODO
 					machine->main_console_handle = j;
 
 				/*  lpt at 0x80008000  */
-				dev_fdc_init(mem, 0x8000c000ULL, 0);
+
+				device_add_ai(machine, "fdc", 0x8000c000ULL, 0);
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_NEC_RD94:
@@ -2748,7 +2749,7 @@ Why is this here? TODO
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
 				    dev_jazz_dma_controller, machine->jazz_data);
 
-				dev_fdc_init(mem, 0x80003000ULL, 0);
+				device_add_ai(machine, "fdc", 0x80003000ULL, 0);
 
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);

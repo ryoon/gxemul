@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.50 2004-11-09 05:01:44 debug Exp $
+ *  $Id: bintrans.c,v 1.51 2004-11-10 12:41:28 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -214,7 +214,7 @@ int bintrans_write_instruction__jal(unsigned char **addrp, int *pc_inc, int imm,
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#define	CODE_CHUNK_SPACE_SIZE		(16 * 1048576)
+#define	CODE_CHUNK_SPACE_SIZE		(20 * 1048576)
 #define	CODE_CHUNK_SPACE_MARGIN		262144
 
 /*

@@ -28,12 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.1 2005-01-19 14:24:21 debug Exp $
+ *  $Id: machine.h,v 1.2 2005-01-19 15:31:08 debug Exp $
  */
 
 #include "misc.h"
-
-#define	CPU_NAME_MAXLEN		48
 
 #define	MAX_BREAKPOINTS		8
 #define	BREAKPOINT_FLAG_R	1
@@ -46,10 +44,15 @@ struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
 
-	char	cpu_name[CPU_NAME_MAXLEN];
 	int	emulation_type;
 	int	machine_subtype;
 	char	*machine_name;
+
+	char	*cpu_name;
+	int	bootstrap_cpu;
+	int	use_random_bootstrap_cpu;
+	int	ncpus;
+	struct cpu **cpus;
 
 	struct symbol_context symbol_context;
 
@@ -93,11 +96,6 @@ struct machine {
 
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
-
-	int	bootstrap_cpu;
-	int	use_random_bootstrap_cpu;
-	int	ncpus;
-	struct cpu **cpus;
 
 	int	automatic_clock_adjustment;
 

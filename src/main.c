@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.157 2005-01-19 14:59:22 debug Exp $
+ *  $Id: main.c,v 1.158 2005-01-19 15:31:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -155,7 +155,8 @@ static void usage(char *progname, int longusage)
 	printf("-" VERSION);
 #endif
 	printf("  Copyright (C) 2003-2005  Anders Gavare\n");
-	printf("Read the source code and/or documentation for other Copyright messages.\n");
+	printf("Read the source code and/or documentation for "
+	    "other Copyright messages.\n");
 	printf("\nusage: %s [options] file [...]\n", progname);
 
 	if (!longusage) {
@@ -269,8 +270,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int n_cpus_set = 0;
 	struct machine *m = emul_add_machine(emul);
 
-	m->cpu_name[0] = m->cpu_name[CPU_NAME_MAXLEN-1] = '\0';
-
 	symbol_init(&m->symbol_context);
 
 	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:"
@@ -292,7 +291,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->bintrans_enable = 1;
 			break;
 		case 'C':
-			strncpy(m->cpu_name, optarg, CPU_NAME_MAXLEN - 1);
+			m->cpu_name = strdup(optarg);
 			break;
 		case 'D':
 			m->emulation_type = EMULTYPE_DEC;
@@ -477,17 +476,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  -i, -r, -t are pretty verbose:  */
 
 	if (m->instruction_trace && !emul->verbose) {
-		printf("implicitly turning of -q and turning on -v, because of -i\n");
+		printf("implicitly turning of -q and turning on -v, "
+		    "because of -i\n");
 		emul->verbose = 1;
 	}
 
 	if (m->register_dump && !emul->verbose) {
-		printf("implicitly turning of -q and turning on -v, because of -r\n");
+		printf("implicitly turning of -q and turning on -v, "
+		    "because of -r\n");
 		emul->verbose = 1;
 	}
 
 	if (m->show_trace_tree && !emul->verbose) {
-		printf("implicitly turning of -q and turning on -v, because of -t\n");
+		printf("implicitly turning of -q and turning on -v, "
+		    "because of -t\n");
 		emul->verbose = 1;
 	}
 
@@ -505,98 +507,149 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 
-	/*  Default CPU type:  */
+	/*  Default CPU type: (overridden by -C)  */
 
-	if (m->emulation_type == EMULTYPE_PS2 && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R5900");
+	if (m->cpu_name == NULL) {
+		switch (m->emulation_type) {
+		case EMULTYPE_PS2:
+			m->cpu_name = strdup("R5900");
+			break;
+		case EMULTYPE_DEC:
+			if (m->machine_subtype > 2)
+				m->cpu_name = strdup("R3000A");
+			if (m->machine_subtype > 1 && m->cpu_name == NULL)
+				m->cpu_name = strdup("R3000");
+			if (m->cpu_name == NULL)
+				m->cpu_name = strdup("R2000");
+			break;
+		case EMULTYPE_SONYNEWS:
+			m->cpu_name = strdup("R3000");
+			break;
+		case EMULTYPE_HPCMIPS:
+			switch (m->machine_subtype) {
+			case HPCMIPS_CASIO_BE300:
+				m->cpu_name = strdup("VR4131");
+				break;
+			case HPCMIPS_CASIO_E105:
+				m->cpu_name = strdup("VR4121");
+				break;
+			default:
+				printf("Unimplemented HPCMIPS model?\n");
+				exit(1);
+			}
+		case EMULTYPE_COBALT:
+			m->cpu_name = strdup("RM5200");
+			break;
+		case EMULTYPE_MESHCUBE:
+			m->cpu_name = strdup("R4400");
+			/*  TODO:  Should be AU1500, but Linux doesn't like
+			    the absence of caches in the emulator  */
+			break;
+		case EMULTYPE_NETGEAR:
+			m->cpu_name = strdup("RC32334");
+			break;
+		case EMULTYPE_WRT54G:
+			m->cpu_name = strdup("BCM4712");
+			break;
+		case EMULTYPE_ARC:
+			switch (m->machine_subtype) {
+			case MACHINE_ARC_JAZZ_PICA:
+				m->cpu_name = strdup("R4000");
+				break;
+			default:
+				m->cpu_name = strdup("R4400");
+			}
+			break;
+		case EMULTYPE_SGI:
+			if (m->machine_subtype <= 12)
+				m->cpu_name = strdup("R3000");
+			if (m->cpu_name == NULL && m->machine_subtype == 35)
+				m->cpu_name = strdup("R12000");
+			if (m->cpu_name == NULL && (m->machine_subtype == 25 ||
+			    m->machine_subtype == 27 ||
+			    m->machine_subtype == 28 ||
+			    m->machine_subtype == 30 ||
+			    m->machine_subtype == 32))
+				m->cpu_name = strdup("R10000");
+			if (m->cpu_name == NULL && (m->machine_subtype == 21 ||
+			    m->machine_subtype == 26))
+				m->cpu_name = strdup("R8000");
+			if (m->cpu_name == NULL && m->machine_subtype == 24)
+				m->cpu_name = strdup("R5000");
 
-	if (m->emulation_type == EMULTYPE_DEC && m->machine_subtype > 2 &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R3000A");
-
-	if (m->emulation_type == EMULTYPE_DEC && m->machine_subtype > 1 &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R3000");
-
-	if (m->emulation_type == EMULTYPE_DEC && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R2000");
-
-	if (m->emulation_type == EMULTYPE_SONYNEWS && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R3000");
-
-	if (m->emulation_type == EMULTYPE_HPCMIPS
-	    && !m->cpu_name[0]) {
-		if (m->machine_subtype == HPCMIPS_CASIO_BE300)
-			strcpy(m->cpu_name, "VR4131");
-		else if (m->machine_subtype == HPCMIPS_CASIO_E105)
-			strcpy(m->cpu_name, "VR4121");
-		else {
-			printf("Unimplemented HPCMIPS model?\n");
-			exit(1);
+			/*  Other SGIs should probably work with
+			    R4000, R4400 or R5000 or similar:  */
+			if (m->cpu_name == NULL)
+				m->cpu_name = strdup("R4400");
+			break;
 		}
 	}
 
-	if (m->emulation_type == EMULTYPE_COBALT && !m->cpu_name[0])
-		strcpy(m->cpu_name, "RM5200");
-
-	if (m->emulation_type == EMULTYPE_MESHCUBE &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R4400");
-		/*  TODO:  Should be AU1500, but Linux doesn't like
-			the absence of caches in the emulator  */
-
-	if (m->emulation_type == EMULTYPE_NETGEAR && !m->cpu_name[0])
-		strcpy(m->cpu_name, "RC32334");
-
-	if (m->emulation_type == EMULTYPE_WRT54G && !m->cpu_name[0])
-		strcpy(m->cpu_name, "BCM4712");
-
-	if (m->emulation_type == EMULTYPE_ARC &&
-	    m->machine_subtype == MACHINE_ARC_JAZZ_PICA && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R4000");
-
-	if (m->emulation_type == EMULTYPE_ARC && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R4400");
-
-	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype <= 12 &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R3000");
-
-	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype == 35 &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R12000");
-
-	if (m->emulation_type == EMULTYPE_SGI && (m->machine_subtype == 25 ||
-	    m->machine_subtype == 27 || m->machine_subtype == 28 || m->machine_subtype == 30
-	    || m->machine_subtype == 32) && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R10000");
-
-	if (m->emulation_type == EMULTYPE_SGI && (m->machine_subtype == 21 ||
-	    m->machine_subtype == 26) && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R8000");
-
-	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype == 24 &&
-	    !m->cpu_name[0])
-		strcpy(m->cpu_name, "R5000");
-
-	/*  SGIs should probably work with R4000, R4400 or R5000 or similar.  */
-	if (m->emulation_type == EMULTYPE_SGI && !m->cpu_name[0])
-		strcpy(m->cpu_name, "R4400");
-
-	if (!m->cpu_name[0])
-		strcpy(m->cpu_name, CPU_DEFAULT);
+	/*  Still no CPU set? Then use a default value:  */
+	if (m->cpu_name == NULL)
+		m->cpu_name = strdup(CPU_DEFAULT);
 
 
-	/*  Default memory size:  */
+	/*  Default memory size: (overridden with -M)  */
 
-	if (m->emulation_type == EMULTYPE_PS2 && m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 32;
-
-	if (m->emulation_type == EMULTYPE_SGI) {
-		if (m->physical_ram_in_mb == 0)
+	if (m->physical_ram_in_mb == 0) {
+		switch (m->emulation_type) {
+		case EMULTYPE_PS2:
+			m->physical_ram_in_mb = 32;
+			break;
+		case EMULTYPE_SGI:
 			m->physical_ram_in_mb = 64;
+			break;
+		case EMULTYPE_HPCMIPS:
+			switch (m->machine_subtype) {
+			case HPCMIPS_CASIO_BE300:
+				m->physical_ram_in_mb = 16;
+				break;
+			case HPCMIPS_CASIO_E105:
+				m->physical_ram_in_mb = 32;
+				break;
+			}
+			break;
+		case EMULTYPE_MESHCUBE:
+			m->physical_ram_in_mb = 64;
+			break;
+		case EMULTYPE_NETGEAR:
+			m->physical_ram_in_mb = 16;
+			break;
+		case EMULTYPE_WRT54G:
+			m->physical_ram_in_mb = 32;
+			break;
+		case EMULTYPE_ARC:
+			switch (m->machine_subtype) {
+			case MACHINE_ARC_JAZZ_PICA:
+				m->physical_ram_in_mb = 64;
+				break;
+			case MACHINE_ARC_JAZZ_M700:
+				m->physical_ram_in_mb = 64;
+				break;
+			default:
+				m->physical_ram_in_mb = 32;
+			}
+			break;
+		case EMULTYPE_DEC:
+			switch (m->machine_subtype) {
+			case MACHINE_DEC_PMAX_3100:
+				m->physical_ram_in_mb = 24;
+				break;
+			default:
+				m->physical_ram_in_mb = 32;
+			}
+			break;
+		}
+	}
 
-		/*  Special SGI memory offsets:  */
+	/*  Special hack for WRT54G:  */
+	if (m->emulation_type == EMULTYPE_WRT54G) {
+		m->dbe_on_nonexistant_memaccess = 0;
+	}
+
+	/*  Special SGI memory offsets:  */
+	if (m->emulation_type == EMULTYPE_SGI) {
 		switch (m->machine_subtype) {
 		case 20:
 		case 22:
@@ -611,62 +664,21 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		}
 	}
 
-	if (m->emulation_type == EMULTYPE_HPCMIPS &&
-	    m->physical_ram_in_mb == 0) {
-		switch (m->machine_subtype) {
-		case HPCMIPS_CASIO_BE300:
-			m->physical_ram_in_mb = 16;
-			break;
-		case HPCMIPS_CASIO_E105:
-			m->physical_ram_in_mb = 32;
-			break;
-		}
-	}
-
-	if (m->emulation_type == EMULTYPE_MESHCUBE && m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 64;
-
-	if (m->emulation_type == EMULTYPE_NETGEAR && m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 16;
-
-	if (m->emulation_type == EMULTYPE_WRT54G) {
-		m->dbe_on_nonexistant_memaccess = 0;
-		if (m->physical_ram_in_mb == 0)
-			m->physical_ram_in_mb = 32;
-	}
-
-	if (m->emulation_type == EMULTYPE_ARC &&
-	    m->machine_subtype == MACHINE_ARC_JAZZ_PICA &&
-	    m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 64;
-
-	if (m->emulation_type == EMULTYPE_ARC &&
-	    m->machine_subtype == MACHINE_ARC_JAZZ_M700 &&
-	    m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 64;
-
-	if (m->emulation_type == EMULTYPE_ARC && m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 32;
-
-	if (m->emulation_type == EMULTYPE_DEC &&
-	    m->machine_subtype == MACHINE_DEC_PMAX_3100 &&
-	    m->physical_ram_in_mb == 0)
-		m->physical_ram_in_mb = 24;
-
 	if (m->physical_ram_in_mb == 0)
 		m->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
 
 
-	/*  Default Boot string arguments:  */
+	/*  Default Boot string arguments: (overridden by -o)  */
 
-	if (m->emulation_type == EMULTYPE_ARC &&
-	    !using_switch_o) {
-		m->boot_string_argument = "-aN";
-	}
-
-	if (m->emulation_type == EMULTYPE_DEC &&
-	    !using_switch_o) {
-		m->boot_string_argument = "-a";
+	if (!using_switch_o) {
+		switch (m->emulation_type) {
+		case EMULTYPE_ARC:
+			m->boot_string_argument = "-aN";
+			break;
+		case EMULTYPE_DEC:
+			m->boot_string_argument = "-a";
+			break;
+		}
 	}
 
 
@@ -724,8 +736,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 #if 0
 	if (emul->show_opcode_statistics && m->bintrans_enable) {
-		fprintf(stderr,
-		    "Cannot do both dynamic binary translation and exact opcode statistics.\n"
+		fprintf(stderr, "Cannot do both dynamic binary "
+		    "translation and exact opcode statistics.\n"
 		    "Aborting.\n");
 		exit(1);
 	}
@@ -737,32 +749,37 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 	if (m->ncpus > 1 && m->bintrans_enable) {
-		fprintf(stderr, "FATAL: Cannot use bintrans with more than one cpu.\n");
+		fprintf(stderr, "FATAL: Cannot use bintrans with more "
+		    "than one cpu.\n");
 		exit(1);
 	}
 
 	if (m->n_breakpoints > 0 && m->bintrans_enable) {
-		fprintf(stderr, "Breakpoints and dynamic translation don't work too well together right now.\n");
+		fprintf(stderr, "Breakpoints and dynamic translation "
+		    "don't work too well together right now.\n");
 		exit(1);
 	}
 
 #ifndef BINTRANS
 	if (m->bintrans_enable) {
-		fprintf(stderr, "WARNING: %s was compiled without bintrans support. Ignoring -b.\n", progname);
+		fprintf(stderr, "WARNING: %s was compiled without "
+		    "bintrans support. Ignoring -b.\n", progname);
 		m->bintrans_enable = 0;
 	}
 #endif
 
 #ifndef ENABLE_USERLAND
 	if (m->userland_emul) {
-		fprintf(stderr, "FATAL: Userland emulation must be enabled at configure time (--userland).\n");
+		fprintf(stderr, "FATAL: Userland emulation must be "
+		    "enabled at configure time (--userland).\n");
 		exit(1);
 	}
 #endif
 
 #ifndef WITH_X11
 	if (m->use_x11) {
-		fprintf(stderr, "WARNING: %s was compiled without X11 support. Ignoring -X.\n", progname);
+		fprintf(stderr, "WARNING: %s was compiled without "
+		    "X11 support. Ignoring -X.\n", progname);
 		m->use_x11 = 0;
 	}
 #endif

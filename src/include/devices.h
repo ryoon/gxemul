@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.24 2004-01-11 16:33:30 debug Exp $
+ *  $Id: devices.h,v 1.25 2004-01-11 23:54:23 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -145,8 +145,10 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x0000000000000100
+#define	PCKBC_8042		0
+#define	PCKBC_8242		1
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pckbc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr);
 
 /*  dev_kn02.c:  */
 #define	DEV_KN02_LENGTH		0x10
@@ -187,8 +189,10 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 
 /*  dev_mace.c:  */
 #define	DEV_MACE_LENGTH			0x100
+int dev_mace_interrupt(int mace_irq);
+int dev_mace_interrupt_ack(int mace_irq);
 int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mace_init(struct memory *mem, uint64_t baseaddr);
+void dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
 
 /*  dev_macepci.c:  */
 #define	DEV_MACEPCI_LENGTH		0x1000
@@ -309,6 +313,11 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 #define	DEV_VDAC_OVERRA			    0x1c
 int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
+
+/*  dev_wdc.c:  */
+#define	DEV_WDC_LENGTH			0x8
+int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive);
 
 /*  dev_wdsc.c:  */
 #define	DEV_WDSC_LENGTH			0x1000

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.25 2005-02-12 09:18:49 debug Exp $
+ *  $Id: cpu_mips.c,v 1.26 2005-02-12 09:43:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -862,10 +862,26 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\t%s", special_names[special6],
-			    regname(cpu->machine, rd));
-			debug(",%s", regname(cpu->machine, rs));
-			debug(",%s", regname(cpu->machine, rt));
+			if ((special6 == SPECIAL_ADDU ||
+			    special6 == SPECIAL_DADDU ||
+			    special6 == SPECIAL_SUBU ||
+			    special6 == SPECIAL_DSUBU) && rt == 0) {
+				/*  Special case 1: addu/daddu/subu/dsubu with
+				    rt = the zero register ==> move  */
+				debug("move\t%s", regname(cpu->machine, rd));
+				debug(",%s", regname(cpu->machine, rs));
+			} else if ((special6 == SPECIAL_ADDU ||
+			    special6 == SPECIAL_DADDU) && rs == 0) {
+				/*  Special case 2: addu/daddu with
+				    rs = the zero register ==> move  */
+				debug("move\t%s", regname(cpu->machine, rd));
+				debug(",%s", regname(cpu->machine, rt));
+			} else {
+				debug("%s\t%s", special_names[special6],
+				    regname(cpu->machine, rd));
+				debug(",%s", regname(cpu->machine, rs));
+				debug(",%s", regname(cpu->machine, rt));
+			}
 			break;
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:

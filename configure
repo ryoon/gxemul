@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.5 2004-01-20 23:10:08 debug Exp $
+#  $Id: configure,v 1.6 2004-01-27 21:52:43 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -123,31 +123,29 @@ if [ z"$CC" = zccc ]; then
 	#  -O4 is possible, but -O3 is slightly better?
 	COPTIM="-O3 $COPTIM"
 else
-	$CC _testprog.c -o _testprog -O 2> /dev/null
-	if [ -x _testprog ]; then
-		rm -f _testprog
-		$CC _testprog.c -o _testprog -O2 2> /dev/null
+	if [ z"`uname`" = zSunOS ]; then
+		#  "cc", the system's default compiler:
+		if [ z"$CC" = zcc ]; then
+			COPTIM="-xO5 -fast $COPTIM"
+		fi
+		COPTIM="-DSOLARIS $COPTIM"
+		OTHERLIBS="-lrt $OTHERLIBS"
+	else
+		#  gcc or something else:
+		$CC _testprog.c -o _testprog -O 2> /dev/null
 		if [ -x _testprog ]; then
-			COPTIM="-O2 $COPTIM"
-		else
-			COPTIM="-O $COPTIM"
+			rm -f _testprog
+			$CC _testprog.c -o _testprog -O2 2> /dev/null
+			if [ -x _testprog ]; then
+				COPTIM="-O2 $COPTIM"
+			else
+				COPTIM="-O $COPTIM"
+			fi
 		fi
 	fi
 fi
 rm -f _testprog
 
-if [ z"$CC" = zcc ]; then
-	$CC -xO5 _testprog.c -o _testprog 1> _testprog.stdout 2> _testprog.stderr
-	cat _testprog.stdout >> _testprog.stderr
-	if grep O5 _testprog.stderr; then
-		rm _testprog.stderr	# no -xO5
-	else
-		if [ -x _testprog ]; then
-			COPTIM="-xO5 $COPTIM"
-		fi
-	fi
-	rm -f _testprog _testprog.stderr _testprog.stdout
-fi
 
 #  -fschedule-insns causes bugs on i386 with gcc,
 #  but works OK on my alpha with ccc (compaq's cc).
@@ -163,15 +161,21 @@ if [ z"$CC" = zccc ]; then
 		COPTIM="-fschedule-insns $COPTIM"
 	fi
 	rm -f _testprog
-fi
 
-#  -intrinsics
-$CC _testprog.c -o _testprog -intrinsics 2> /dev/null
-if [ -x _testprog ]; then
-	COPTIM="-intrinsics $COPTIM"
-fi
-rm -f _testprog
+	#  -intrinsics
+	$CC _testprog.c -o _testprog -intrinsics 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-intrinsics $COPTIM"
+	fi
+	rm -f _testprog
 
+	#  -fast
+	$CC _testprog.c -o _testprog -fast 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-fast $COPTIM"
+	fi
+	rm -f _testprog
+fi
 
 $CC _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
@@ -184,22 +188,17 @@ else
 fi
 rm -f _testprog _testprog.error _testprog.stdout
 
-$CC _testprog.c -o _testprog -fast 2> /dev/null
-if [ -x _testprog ]; then
-	COPTIM="-fast $COPTIM"
-fi
-rm -f _testprog
-
 
 rm -f _testprog.c
 
 INCLUDE=-I../include/
 
-echo C compiler and flags: $CC $COPTIM $CWARNINGS $INCLUDE
+echo C compiler and flags: $CC $COPTIM $CWARNINGS $INCLUDE $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$COPTIM" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
+echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 
 for a in ./ src/ devices/; do
 	cat _Makefile.header > $a/Makefile

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.28 2004-01-25 14:15:39 debug Exp $
+ *  $Id: misc.h,v 1.29 2004-01-27 21:52:41 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -39,6 +39,14 @@
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>
+#endif
+
+#ifdef SOLARIS
+/*  For Solaris:  */
+typedef uint8_t u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
 #endif
 
 /*  These can be defined, but they reduce speed of the emulator.

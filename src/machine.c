@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.87 2004-06-10 08:25:41 debug Exp $
+ *  $Id: machine.c,v 1.88 2004-06-11 11:25:57 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -465,18 +465,21 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	/*
 	 *  The 64-bit word at crime offset 0x10 is CRIME_INTSTAT,
-	 *  which I assume contains the current interrupt bits.
+	 *  which contains the current interrupt bits. CRIME_INTMASK
+	 *  contains a mask of which bits are actually in use.
 	 *
 	 *  crime hardcoded at 0x14000000, for SGI-IP32.
 	 *  If any of these bits are asserted, then physical MIPS
 	 *  interrupt 2 should be asserted.
 	 *
 	 *  TODO:  how should all this be done nicely?
+	 *
+	 *  TODO:  mace interrupt mask
 	 */
 
-	uint64_t addr = CRIME_INTSTAT;
+	uint64_t crime_addr = CRIME_INTSTAT;
 	uint64_t mace_addr = 0x14;
-	uint64_t crime_interrupts, mace_interrupts;
+	uint64_t crime_interrupts, crime_interrupts_mask, mace_interrupts;
 	int i;
 	unsigned char x[8];
 
@@ -512,7 +515,7 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	}
 
 	/*  Read CRIME_INTSTAT:  */
-	memcpy(x, crime_data->reg + addr, sizeof(uint64_t));
+	memcpy(x, crime_data->reg + crime_addr, sizeof(uint64_t));
 	crime_interrupts = 0;
 	for (i=0; i<8; i++) {
 		/*  SGI is big-endian...  */
@@ -528,9 +531,17 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	/*  Write back CRIME_INTSTAT:  */
 	for (i=0; i<8; i++)
 		x[7-i] = crime_interrupts >> (i*8);
-	memcpy(crime_data->reg + addr, x, sizeof(uint64_t));
+	memcpy(crime_data->reg + crime_addr, x, sizeof(uint64_t));
 
-	if (crime_interrupts == 0)
+	/*  Read CRIME_INTMASK:  */
+	memcpy(x, crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
+	crime_interrupts_mask = 0;
+	for (i=0; i<8; i++) {
+		crime_interrupts_mask <<= 8;
+		crime_interrupts_mask |= x[i];
+	}
+
+	if ((crime_interrupts & crime_interrupts_mask) == 0)
 		cpu_interrupt_ack(cpu, 2);
 	else
 		cpu_interrupt(cpu, 2);
@@ -1592,7 +1603,7 @@ void machine_init(struct memory *mem)
 				dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
 
-				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
+				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
@@ -1628,8 +1639,13 @@ void machine_init(struct memory *mem)
 							/*  keyb+mouse (mace irq numbers)  */
 
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
+#if 1
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_MISC, 0x100);	/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_MISC, 0x100);	/*  com1  */
+#else
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 0, 0x100);	/*  com1  */
+#endif
 				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 

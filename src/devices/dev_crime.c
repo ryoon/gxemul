@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.13 2004-06-10 08:25:39 debug Exp $
+ *  $Id: dev_crime.c,v 1.14 2004-06-11 11:25:55 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -100,14 +100,29 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	else
 		memcpy(data, &d->reg[relative_addr], len);
 
+	if (relative_addr == 0x18 || relative_addr == 0x1c) {
+		/*
+		 *  NOTE:  This is super-ugly. I want to force the MIPS interrupt
+		 *  assertion bits to be updated, taking the interrupt mask
+		 *  into account, so I call cpu_interrupt_ack() with something
+		 *  which "hopefully" doesn't do any damage. cpu_interrupt_ack()
+		 *  will in turn call the SGI crime interrupt stuff in src/machine.c,
+		 *  which takes the interrupt mask into account when asserting or
+		 *  deasserting the crime interrupt pin.
+		 *
+		 *  TODO: How to solve this nicer?
+		 */
+		cpu_interrupt_ack(cpu, 8);
+	}
+
 	switch (relative_addr) {
 #if 0
-	case 0x10:
+	case 0x10:	/*  Current interrupt status  */
 	case 0x14:
-#endif
-	case 0x18:
+	case 0x18:	/*  Current interrupt mask  */
 	case 0x1c:
 	case 0x34:
+#endif
 #if 1
 	case CRIME_TIME:
 	case CRIME_TIME+4:
@@ -135,7 +150,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_crime_init():
  */
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
 	struct crime_data *d;
 
@@ -145,6 +160,7 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t 
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct crime_data));
+	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);

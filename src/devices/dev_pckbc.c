@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.8 2004-06-10 08:25:39 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.9 2004-06-11 11:25:55 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -56,33 +56,44 @@ struct pckbc_data {
 	int		mouse_irqnr;
 	int		type;
 
+	/*  TODO: one of these for each port?  */
 	int		clocksignal;
 	int		rx_int_enable;
 	int		tx_int_enable;
 
-	unsigned	key_queue[MAX_8042_QUEUELEN];
-	int		head, tail;
+	unsigned	key_queue[2][MAX_8042_QUEUELEN];
+	int		head[2], tail[2];
 };
 
 
-void pckbc_add_code(struct pckbc_data *d, int code)
+/*
+ *  pckbc_add_code():
+ *
+ *  Adds a byte to the data queue.
+ */
+void pckbc_add_code(struct pckbc_data *d, int code, int port)
 {
-	/*  Add at the head, read at the tail  */
-	d->head = (d->head+1) % MAX_8042_QUEUELEN;
-	if (d->head == d->tail)
-		fatal("pckbc: queue overrun!\n");
+	/*  Add at the head, read at the tail:  */
+	d->head[port] = (d->head[port]+1) % MAX_8042_QUEUELEN;
+	if (d->head[port] == d->tail[port])
+		fatal("pckbc: queue overrun, port %i!\n", port);
 
-	d->key_queue[d->head] = code;
+	d->key_queue[port][d->head[port]] = code;
 }
 
 
-int pckbc_get_key(struct pckbc_data *d)
+/*
+ *  pckbc_get_key():
+ *
+ *  Reads a byte from a data queue.
+ */
+int pckbc_get_key(struct pckbc_data *d, int port)
 {
-	if (d->head == d->tail)
-		fatal("pckbc: queue empty!\n");
+	if (d->head[port] == d->tail[port])
+		fatal("pckbc: queue empty, port %i!\n", port);
 
-	d->tail = (d->tail+1) % MAX_8042_QUEUELEN;
-	return d->key_queue[d->tail];
+	d->tail[port] = (d->tail[port]+1) % MAX_8042_QUEUELEN;
+	return d->key_queue[port][d->tail[port]];
 }
 
 
@@ -92,13 +103,16 @@ int pckbc_get_key(struct pckbc_data *d)
 void dev_pckbc_tick(struct cpu *cpu, void *extra)
 {
 	struct pckbc_data *d = extra;
+	int port_nr;
 
-	/*  Cause receive interrupt, if there's something in the receive buffer:  */
-/*	if (d->head != d->tail && d->rx_int_enable) {  */
-	if (d->head != d->tail) {
-		cpu_interrupt(cpu, d->keyboard_irqnr);
-	} else
-		cpu_interrupt_ack(cpu, d->keyboard_irqnr);
+	for (port_nr=0; port_nr<2; port_nr++) {
+		/*  Cause receive interrupt, if there's something in the receive buffer:  */
+		if (d->head[port_nr] != d->tail[port_nr] && d->rx_int_enable) {
+			cpu_interrupt(cpu, port_nr==0? d->keyboard_irqnr : d->mouse_irqnr);
+		} else {
+			cpu_interrupt_ack(cpu, port_nr==0? d->keyboard_irqnr : d->mouse_irqnr);
+		}
+	}
 }
 
 
@@ -136,8 +150,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case 0:		/*  data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
-			if (d->head != d->tail)
-				odata = pckbc_get_key(d);
+			if (d->head[0] != d->tail[0])
+				odata = pckbc_get_key(d, 0);
 			debug("[ pckbc: read from DATA: 0x%02x ]\n", odata);
 		} else {
 			debug("[ pckbc: write to DATA:");
@@ -152,7 +166,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			odata = 0;
 
 			/*  "Data in buffer" bit  */
-			if (d->head != d->tail)
+			if (d->head[0] != d->tail[0])
 				odata |= 1;
 
 			/*  debug("[ pckbc: read from CTL: 0x%02x ]\n", odata);  */
@@ -169,7 +183,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			if (idata == 0xaa)
 				code = 0x55;
 
-			pckbc_add_code(d, code);
+			pckbc_add_code(d, code, 0);
 		}
 		break;
 
@@ -182,25 +196,40 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			fatal("[ pckbc: read from port %i, PS2_TXBUF ]\n", port_nr);
 		else {
 			fatal("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
-			if (idata == 0xff) {
-				/*  Keyboard reset. The keyboard should generate 2 status bytes.  */
-				pckbc_add_code(d, 0xfa);		/*  ack  (?) */
-				pckbc_add_code(d, 0xaa);		/*  batery ok (?)  */
+
+			/*  Handle keyboard commands:  */
+			switch (idata) {
+			case 0xf2:	/*  Get keyboard ID  */
+				/*  The keyboard should generate 2 status bytes.  */
+				pckbc_add_code(d, 0xab, port_nr);
+				pckbc_add_code(d, 0x83, port_nr);
+				break;
+			case 0xff:	/*  Keyboard reset  */
+				/*  The keyboard should generate 2 status bytes.  */
+				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				pckbc_add_code(d, 0xaa, port_nr);	/*  batery ok (?)  */
+				break;
+			default:
+				fatal("[ pckbc: UNIMPLEMENTED keyboard command 0x%02x (port %i) ]\n", (int)idata, port_nr);
 			}
 		}
 		break;
 
 	case PS2 + PS2_RXBUF:
-		if (writeflag==MEM_READ)
-			fatal("[ pckbc: read from port %i, PS2_RXBUF ]\n", port_nr);
-		else
+		if (writeflag==MEM_READ) {
+			odata = 0;
+			if (d->head[port_nr] != d->tail[port_nr])
+				odata = pckbc_get_key(d, port_nr);
+			fatal("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);
+		} else {
 			fatal("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+		}
 		break;
 
 	case PS2 + PS2_CONTROL:
-		if (writeflag==MEM_READ)
+		if (writeflag==MEM_READ) {
 			fatal("[ pckbc: read from port %i, PS2_CONTROL ]\n", port_nr);
-		else {
+		} else {
 			fatal("[ pckbc: write to port %i, PS2_CONTROL: 0x%llx ]\n", port_nr, (long long)idata);
 			d->clocksignal = (idata & 0x10) ? 1 : 0;
 			d->rx_int_enable = (idata & 0x08) ? 1 : 0;
@@ -211,13 +240,14 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case PS2 + PS2_STATUS:
 		if (writeflag==MEM_READ) {
 			odata = d->clocksignal + 0x08;	/* 0x08 = transmit buffer empty  */
-			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
-/* odata = random(); */
 
-			/*  Ack. interrupts? (TODO?)  */
-			cpu_interrupt_ack(cpu, port_nr==0? d->keyboard_irqnr : d->mouse_irqnr);
-		} else
+			if (d->head[port_nr] != d->tail[port_nr])
+				odata |= 0x10;		/*  0x10 = receicer data available (?)  */
+
+			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
+		} else {
 			fatal("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
+		}
 		break;
 
 	default:
@@ -261,9 +291,7 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int 
 	d->keyboard_irqnr = keyboard_irqnr;
 	d->mouse_irqnr    = mouse_irqnr;
 
-	/*  pckbc_add_code(d, 0x00);  */
-
 	memory_device_register(mem, "pckbc", baseaddr, DEV_PCKBC_LENGTH, dev_pckbc_access, d);
-	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, 9);
+	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, 10);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.26 2005-03-30 22:57:32 debug Exp $
+ *  $Id: dev_wdc.c,v 1.27 2005-03-31 05:45:59 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -316,7 +316,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 #endif
 			if ((inbuf_len % 512) == 0) {
 				int count = 1;	/*  d->write_count;  */
-				char *buf = malloc(count * 512);
+				unsigned char *buf = malloc(count * 512);
 				if (buf == NULL) {
 					fprintf(stderr, "out of memory\n");
 					exit(1);

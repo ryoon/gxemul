@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.168 2004-07-18 13:17:25 debug Exp $
+$Id: HISTORY,v 1.169 2004-07-19 15:04:28 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -810,3 +810,6 @@ HISTORY of mips64emul
 20040718	The MardiGras device works well enough to let Linux draw the
 		SGI logo and output text.
 		A bunch of other minor changes.
+20040719	Trying to move out all of the instruction_trace stuff from the
+		main cpu loop (for two reasons: a little performance gain,
+		and to make it easier to add a GUI later on).

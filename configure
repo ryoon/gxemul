@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.36 2004-07-19 14:15:13 debug Exp $
+#  $Id: configure,v 1.37 2004-07-19 15:03:47 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -48,7 +48,7 @@ if [ z"$*" != z ]; then
 			echo "usage: $0 [options]"
 			echo "  --caches    enable cache emulation (EXPERIMENTAL)"
 			echo "  --delays    enable instruction latency/delay emulation"
-			echo "  --gui       compile with GTK+ 2.x (NOT YET)"
+#			echo "  --gui       compile with GTK+ 2.x (NOT YET)"
 			echo "  --nox11     configure without x11 support"
 			echo "  --mips16    enable MIPS16 instruction support"
 			exit

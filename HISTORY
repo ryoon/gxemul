@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.554 2005-02-02 20:12:43 debug Exp $
+$Id: HISTORY,v 1.555 2005-02-02 20:42:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1616,3 +1616,4 @@ HISTORY of mips64emul
 		Adding a dummy cpu_sparc.c and include/cpu_sparc.h.
 		Cleaning up more to support multiple cpu families.
 		Various other minor updates.
+		Fixing another old-gcc-on-Alpha problem.

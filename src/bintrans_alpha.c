@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.111 2005-01-30 12:54:51 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.112 2005-02-02 20:42:40 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -191,95 +191,9 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_v0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_V0]) - ((size_t)&dummy_cpu))
 #define ofs_s0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_S0]) - ((size_t)&dummy_cpu))
 #define ofs_tbl0 (((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
-
-static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
-	/*  Don't execute too many instructions. (see comment below)  */
-	(N_SAFE_BINTRANS_LIMIT-1)&255, ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255,
-		0x5f, 0x20,		/*  lda t1,safe limit - 1 */
-	0xa1, 0x0d, 0xe2, 0x40,		/*  cmple t6,t1,t0  */
-	0x01, 0x00, 0x20, 0xf4,		/*  bne  */
-	0x01, 0x80, 0xfa, 0x6b,		/*  ret  */
-
-	0x11, 0x14, 0xc0, 0x40,		/*  addq t5,0,a1  */
-
-	/*
-	 *  Special case for 32-bit addressing:
-	 *
-	 *  t1 = 1023;
-	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-	 *  t1 = a1 & 4095;
-	 *
-	 *  f8 1f 5f 20     lda     t1,1023 * 8
-	 *  83 76 22 4a     srl     a1,19,t2
-	 *  84 36 21 4a     srl     a1, 9,t3
-	 *  03 00 62 44     and     t2,t1,t2
-	 */
-	0xf8, 0x1f, 0x5f, 0x20,
-	0x83, 0x76, 0x22, 0x4a,
-	0x84, 0x36, 0x21, 0x4a,
-	0x03, 0x00, 0x62, 0x44,
-
-	/*
-	 *  t10 is vaddr_to_hostaddr_table0
-	 *
-	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  12 04 03 43     addq    t10,t2,a2
-	 */
-	0x12, 0x04, 0x03, 0x43,
-
-	/*  04 00 82 44     and     t3,t1,t3  */
-	0x04, 0x00, 0x82, 0x44,
-
-	/*  00 00 72 a6     ldq     a3,0(a2)  */
-	0x00, 0x00, 0x72, 0xa6,
-
-	/*  fc 0f 5f 20     lda     t1,0xffc  */
-	0xfc, 0x0f, 0x5f, 0x20,
-
-	/*
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
-	 *  13 04 64 42     addq    a3,t3,a3
-	 */
-	0x13, 0x04, 0x64, 0x42,
-
-	/*  02 00 22 46     and     a1,t1,t1  */
-	0x02, 0x00, 0x22, 0x46,
-
-	/*  00 00 73 a6     ldq     a3,chunks[0](a3)  */
 #define ofs_c0	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
-	ofs_c0 & 255, (ofs_c0 >> 8) & 255, 0x73, 0xa6,
-
-	/*
-	 *  NULL? Then just return.
-	 *  01 00 60 f6     bne     a3,f8 <okzz>
-	 */
-	0x01, 0x00, 0x60, 0xf6,
-	0x01, 0x80, 0xfa, 0x6b,		/*  ret  */
-
-	/*
-	 *  02 04 53 40     addq    t1,a3,t1
-	 *  00 00 22 a0     ldl     t0,0(t1)
-	 */
-	0x02, 0x04, 0x53, 0x40,
-	0x00, 0x00, 0x22, 0xa0,
-
-	/*  No translation? Then return.  */
-	0x03, 0x00, 0x20, 0xe4,		/*  beq t0,<skip>  */
-
-	/*  ldq t2,chunk_base_address(a0)  */
 #define ofs_cb (((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu)
-	(ofs_cb & 255), (ofs_cb >> 8) & 255, 0x70, 0xa4,
 
-	/*  addq t0,t2,t0  */
-	0x01, 0x04, 0x23, 0x40,
-
-	/*  00 00 e1 6b     jmp     (t0)  */
-	0x00, 0x00, 0xe1, 0x6b,		/*  jmp (t0)  */
-
-	/*  Return to the main translation loop.  */
-	0x01, 0x80, 0xfa, 0x6b		/*  ret  */
-};
 
 static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	/*
@@ -355,8 +269,7 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
 
-static void (*bintrans_jump_to_32bit_pc)
-    (struct cpu *) = (void *)bintrans_alpha_jump_to_32bit_pc;
+static void (*bintrans_jump_to_32bit_pc)(struct cpu *);
 
 static void (*bintrans_loadstore_32bit)
     (struct cpu *) = (void *)bintrans_alpha_loadstore_32bit;
@@ -2665,9 +2578,12 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
  */
 static void bintrans_backend_init(void)
 { 
-	int size = 256;		/*  NOTE: This MUST be enough, or we fail  */
+	int size;
 	uint32_t *p;
 
+
+	/*  "runchunk":  */
+	size = 256;		/*  NOTE: This MUST be enough, or we fail  */
 	p = (uint32_t *)mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
 	    MAP_ANON | MAP_PRIVATE, -1, 0);
 
@@ -2735,5 +2651,82 @@ static void bintrans_backend_init(void)
 	*p++ = 0xa7be0058;		/*  ldq     gp,0x58(sp)  */
 	*p++ = 0x23de0060;		/*  lda     sp,0x60(sp)  */
 	*p++ = 0x6bfa8001;		/*  ret   */
+
+
+	/*  "jump to 32bit pc":  */
+	size = 128;	/*  WARNING! Don't make this too small.  */
+	p = (uint32_t *)mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+	    MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init(): out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_jump_to_32bit_pc = (void *)p;
+
+	/*  Don't execute too many instructions:  */
+	*p++ = 0x205f0000 | (N_SAFE_BINTRANS_LIMIT-1);  /*  lda t1,safe-1 */
+
+	*p++ = 0x40e20da1;		/*  cmple t6,t1,t0  */
+	*p++ = 0xf4200001;		/*  bne  */
+	*p++ = 0x6bfa8001;		/*  ret  */
+
+	*p++ = 0x40c01411;		/*  addq t5,0,a1  */
+
+	/*
+	 *  Special case for 32-bit addressing:
+	 *
+	 *  t1 = 1023;
+	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+	 *  t1 = a1 & 4095;
+	 */
+	*p++ = 0x205f1ff8;	/*  lda     t1,1023 * 8  */
+	*p++ = 0x4a227683;	/*  srl     a1,19,t2  */
+	*p++ = 0x4a213684;	/*  srl     a1, 9,t3  */
+	*p++ = 0x44620003;	/*  and     t2,t1,t2  */
+
+	/*
+	 *  t10 is vaddr_to_hostaddr_table0
+	 *
+	 *  a3 = tbl0[t2]  (load entry from tbl0)
+	 */
+	*p++ = 0x43030412;	/*  addq    t10,t2,a2  */
+	*p++ = 0x44820004;	/*  and     t3,t1,t3  */
+	*p++ = 0xa6720000;	/*  ldq     a3,0(a2)  */
+	*p++ = 0x205f0ffc;	/*  lda     t1,0xffc  */
+
+	/*
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+	 */
+	*p++ = 0x42640413;	/*  addq    a3,t3,a3  */
+	*p++ = 0x46220002;	/*  and     a1,t1,t1  */
+
+	*p++ = 0xa6730000 | ofs_c0;	/*  ldq a3,chunks[0](a3)  */
+
+	/*
+	 *  NULL? Then just return.
+	 */
+	*p++ = 0xf6600001;	/*  bne     a3,<ok>  */
+	*p++ = 0x6bfa8001;	/*  ret  */
+
+	*p++ = 0x40530402;	/*  addq    t1,a3,t1  */
+	*p++ = 0xa0220000;	/*  ldl     t0,0(t1)  */
+
+	/*  No translation? Then return.  */
+	*p++ = 0xe4200003;	/*  beq t0,<skip>  */
+
+	*p++ = 0xa4700000 | ofs_cb;	/*  ldq t2,chunk_base_address(a0)  */
+
+	*p++ = 0x40230401;	/*  addq t0,t2,t0  */
+	*p++ = 0x6be10000;	/*  jmp (t0)  */
+
+	/*  Return to the main translation loop.  */
+	*p++ = 0x6bfa8001;		/*  ret  */
 } 
 

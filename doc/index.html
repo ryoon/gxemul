@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.106 2004-09-28 09:36:49 debug Exp $
+$Id: index.html,v 1.107 2004-09-28 09:37:26 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -719,11 +719,7 @@ onto a harddisk image:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=debian.img bs=1 count=512 seek=999000000</b>
-
-</pre>
-  <li>MBR hack:<pre>
-	(TODO)
+	$ <b>dd if=/dev/zero of=debian.img bs=1 count=512 seek=1999000000</b>
 
 </pre>
   <li>Download the install kernel:<pre>

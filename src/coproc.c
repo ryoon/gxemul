@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.42 2004-06-23 02:01:32 debug Exp $
+ *  $Id: coproc.c,v 1.43 2004-06-24 01:15:37 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -504,7 +504,16 @@ void coproc_register_write(struct cpu *cpu,
 		unimpl = 0;
 	}
 
-	if (cp->coproc_nr==1)	unimpl = 0;
+	if (cp->coproc_nr==1) {
+		switch (reg_nr) {
+		case 31:	/*  FCSR:  */
+
+			break;
+		default:
+			;
+		}
+		unimpl = 0;
+	}
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "
@@ -563,15 +572,10 @@ void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, i
 {
 	int n_frac = 0, n_exp = 0;
 	int i;
-	int sign, exponent;
+	int sign = 0, exponent;
 	double fraction;
 
 	memset(fvp, 0, sizeof(struct internal_float_value));
-
-	/*  sign:  */
-	sign = (reg >> 31) & 1;
-	if (fmt == FMT_D || fmt == FMT_L)
-		sign = (reg >> 63) & 1;
 
 	/*  n_frac and n_exp:  */
 	switch (fmt) {
@@ -602,15 +606,24 @@ void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, i
 	fraction = 0.0;
 	switch (fmt) {
 	case FMT_W:
+		{
+			int32_t r_int = reg;
+			fraction = r_int;
+		}
+		break;
 	case FMT_L:
-		for (i=n_frac-1; i>=0; i--) {
-			fraction *= 2.0;
-			if ((reg >> i) & 1)
-				fraction += 1.0;
+		{
+			int64_t r_int = reg;
+			fraction = r_int;
 		}
 		break;
 	case FMT_S:
 	case FMT_D:
+		/*  sign:  */
+		sign = (reg >> 31) & 1;
+		if (fmt == FMT_D || fmt == FMT_L)
+			sign = (reg >> 63) & 1;
+
 		fraction = 0.0;
 		for (i=0; i<n_frac; i++) {
 			int bit = (reg >> i) & 1;
@@ -656,6 +669,7 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 	int n_frac = 0, n_exp = 0, signofs=0;
 	int i, exponent;
 	uint64_t r = 0, r2;
+	int64_t r3;
 
 	/*  n_frac and n_exp:  */
 	switch (fmt) {
@@ -667,22 +681,32 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
 	}
 
-	/*  sign bit:  */
-	if (nf < 0.0) {
-		r |= ((uint64_t)1 << signofs);
-		nf = -nf;
-	}
-
 	/*  fraction:  */
 	switch (fmt) {
 	case FMT_W:
 	case FMT_L:
-		r2 = nf;	/*  implicit conversion of double to integer  */
+		/*
+		 *  This causes an implicit conversion of double to integer.
+		 *  If nf < 0.0, then r2 will begin with a sequence of binary
+		 *  1's, which is ok.
+		 */
+		r3 = nf;
+		r2 = r3;
 		r |= r2;
+
+		if (fmt == FMT_W)
+			r &= 0xffffffff;
 		break;
 	case FMT_S:
 	case FMT_D:
 		/*  fatal("store f=%f ", nf);  */
+
+		/*  sign bit:  */
+		if (nf < 0.0) {
+			r |= ((uint64_t)1 << signofs);
+			nf = -nf;
+		}
+
 		/*
 		 *  How to convert back from double to exponent + fraction:
 		 *  We want fraction to be 1.xxx, that is   1.0 <= fraction < 2.0
@@ -789,18 +813,22 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_DIV:
-		if (fabs(float_value[1].f) > 0.000001)
+		if (fabs(float_value[1].f) > 0.00000000001)
 			nf = float_value[0].f / float_value[1].f;
-		else
+		else {
+			debug("DIV by zero !!!!\n");
 			nf = 0.0;	/*  TODO  */
+		}
 		debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_SQRT:
 		if (float_value[0].f >= 0.0)
 			nf = sqrt(float_value[0].f);
-		else
+		else {
+			debug("SQRT by less than zero, %f !!!!\n", float_value[0].f);
 			nf = 0.0;	/*  TODO  */
+		}
 		debug("  sqrt: %f => %f\n", float_value[0].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
@@ -827,9 +855,9 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		case 1:		return 0;					/*  Unordered  */
 		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
 		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
-		case 4:		return (float_value[0].f < float_value[1].f);	/*  Ordered or Less than  */
+		case 4:		return 1; /* (float_value[0].f < float_value[1].f);  */	/*  Ordered or Less than  TODO (?)  */
 		case 5:		return (float_value[0].f < float_value[1].f);	/*  Unordered or Less than  */
-		case 6:		return (float_value[0].f <= float_value[1].f);	/*  Ordered or Less than or Equal  */
+		case 6:		return 1; /* (float_value[0].f <= float_value[1].f);  */  /*  Ordered or Less than or Equal  TODO (?)  */
 		case 7:		return (float_value[0].f <= float_value[1].f);	/*  Unordered or Less than or Equal  */
 		case 8:		return 0;					/*  Signaling false  */
 		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */
@@ -867,6 +895,7 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	cc = (function >> 8) & 7;
 	fd = (function >> 6) & 31;
 	cond = (function >> 0) & 15;
+
 
 	/*  bc1f, bc1t, bc1fl, bc1tl:  */
 	if ((function & 0x03e00000) == 0x01000000) {

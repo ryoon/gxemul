@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.226 2005-03-05 12:34:02 debug Exp $
+ *  $Id: misc.h,v 1.227 2005-03-08 22:58:58 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -122,6 +122,10 @@ void debug_indentation(int diff);
 void debug(char *fmt, ...);
 void fatal(char *fmt, ...);
 unsigned long long mystrtoull(const char *s, char **endp, int base);
+
+
+/*  of.c:  */
+int of_emul(struct cpu *cpu);
 
 
 /*  ps2_bios.c:  */

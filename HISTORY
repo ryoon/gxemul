@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.627 2005-03-06 08:21:10 debug Exp $
+$Id: HISTORY,v 1.628 2005-03-08 22:58:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1725,3 +1725,4 @@ Changelog for GXemul:
 20050306	Some really minor documentation updates.
 		Adding a -D command line option (for "fully deterministic"
 		behaviour).
+20050308	Minor PPC updates. Adding a dummy OpenFirmware emulation layer.

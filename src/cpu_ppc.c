@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.59 2005-03-01 06:48:23 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.60 2005-03-08 22:58:59 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -114,6 +114,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
+	cpu->cd.ppc.of_emul_addr = 0xff000000;	/*  TODO  */
 
 	/*  Current operating mode:  */
 	cpu->cd.ppc.bits        = cpu->cd.ppc.cpu_type.bits;
@@ -851,10 +852,15 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("mtsr\tTODO");
 			break;
 		case PPC_31_MTSRIN:
-			/*  Move to segment register indirect (?)  */
+		case PPC_31_MFSRIN:
+			/*  Move to/from segment register indirect  */
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
-			debug("mtsrin\tr%i,r%i", rt, rb);
+			switch (xo) {
+			case PPC_31_MTSRIN:  mnem = "mtsrin"; break;
+			case PPC_31_MFSRIN:  mnem = "mfsrin"; break;
+			}
+			debug("%s\tr%i,r%i", mnem, rt, rb);
 			break;
 		case PPC_31_ADDC:
 		case PPC_31_ADDCO:
@@ -1294,6 +1300,16 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  TODO: dec interrupt!  */
 
 	/*  TODO: hdec for POWER4+  */
+
+	/*  ROM emulation:  (TODO: non-OF-emuls)  */
+	if (cpu->pc == cpu->cd.ppc.of_emul_addr &&
+	    cpu->machine->prom_emulation) {
+		int res = of_emul(cpu);
+		if (res) {
+			cpu->pc = cpu->cd.ppc.lr;
+		}
+		return 100;
+	}
 
 	r = cpu->memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION | PHYSICAL);
@@ -2021,12 +2037,17 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  TODO  */
 			break;
 
+		case PPC_31_MFSRIN:
 		case PPC_31_MTSRIN:
-			/*  Move to segment register indirect (?)  */
+			/*  mfsrin: Move to segment register indirect (?)  */
+			/*  mtsrin: Move to segment register indirect (?)  */
 			rt = (iword >> 21) & 31;
 			rb = (iword >> 11) & 31;
+
 			/*  TODO  */
-			cpu->cd.ppc.gpr[rt] = 0;
+
+			if (xo == PPC_31_MFSRIN)
+				cpu->cd.ppc.gpr[rt] = 0;
 			break;
 
 		case PPC_31_ADDC:

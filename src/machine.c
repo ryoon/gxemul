@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.378 2005-03-05 12:05:30 debug Exp $
+ *  $Id: machine.c,v 1.379 2005-03-08 22:58:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4064,6 +4064,10 @@ for (i=0; i<32; i++)
 				    0x12340000 + (i << 8) + 0x55;
 		}
 
+		/*  Linux on PReP has 0xdeadc0de at address 0? (See
+		    http://joshua.raleigh.nc.us/docs/linux-2.4.10_html/113568.html)  */
+		store_32bit_word(cpu, 0, 0xdeadc0de);
+
 		/*  r6 should point to "residual data"?  */
 		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576
 		    - 0x1000;
@@ -4081,8 +4085,11 @@ for (i=0; i<32; i++)
 			int i;
 			for (i=0; i<32; i++)
 				cpu->cd.ppc.gpr[i] =
-				    0x12340000 + (i << 8) + 0x55;
+				    0x12000000 + (i << 16);
 		}
+
+		/*  r5 = OpenFirmware entry point  */
+		cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;
 
 		break;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.21 2005-02-22 20:18:31 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.22 2005-03-08 22:58:58 debug Exp $
  */
 
 #include "misc.h"
@@ -50,6 +50,7 @@ struct ppc_cpu_type_def {
 	int		dway;
 	int		l2cache_shift;
 	int		l2way;
+	int		altivec;
 
 	/*  TODO: POWER vs PowerPC?  */
 };
@@ -58,14 +59,14 @@ struct ppc_cpu_type_def {
 #define	PPC_NOFP		1
 /*  TODO: Most of these just bogus  */
 
-#define PPC_CPU_TYPE_DEFS	{					\
-	{ "PPC405GP", 32, PPC_NOFP, 15, 2, 15, 2, 20, 1, },	 	\
-	{ "PPC603e", 32, 0, 14, 4, 14, 4, 0, 0 },			\
-	{ "MPC7400", 32, 0, 15, 2, 15, 2, 19, 1 },			\
-	{ "PPC750", 32, 0, 15, 2, 15, 2, 20, 1 },			\
-	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8 },				\
-	{ "PPC970", 64, 0, 16, 1, 15, 2, 19, 1 },			\
-	{ NULL, 0, 0, 0,0, 0,0, 0,0 }					\
+#define PPC_CPU_TYPE_DEFS	{				\
+	{ "PPC405GP", 32, PPC_NOFP, 15, 2, 15, 2, 20, 1, 0 },	\
+	{ "PPC603e", 32, 0, 14, 4, 14, 4, 0, 0, 0 },		\
+	{ "MPC7400", 32, 0, 15, 2, 15, 2, 19, 1, 1 },		\
+	{ "PPC750", 32, 0, 15, 2, 15, 2, 20, 1, 0 },		\
+	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8, 1 },		\
+	{ "PPC970", 64, 0, 16, 1, 15, 2, 19, 1, 1 },		\
+	{ NULL, 0, 0, 0,0, 0,0, 0,0, 0 }			\
 	};
 
 #define	PPC_NGPRS		32
@@ -76,6 +77,7 @@ struct ppc_cpu {
 
 	int		trace_tree_depth;
 
+	uint64_t	of_emul_addr;
 	uint64_t	pc_last;
 
 	int		mode;		/*  MODE_PPC or MODE_POWER  */

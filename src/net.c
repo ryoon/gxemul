@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.50 2005-01-22 07:53:51 debug Exp $
+ *  $Id: net.c,v 1.51 2005-01-22 13:31:15 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -107,6 +107,10 @@ static void net_debugaddr(void *ipv4_addr, int type)
 	case ADDR_IPV4:
 		for (i=0; i<4; i++)
 			debug("%s%i", i? "." : "", p[i]);
+		break;
+	case ADDR_IPV6:
+		for (i=0; i<16; i+=2)
+			debug("%s%4x", i? ":" : "", p[i] * 256 + p[i+1]);
 		break;
 	case ADDR_ETHERNET:
 		for (i=0; i<6; i++)
@@ -226,7 +230,7 @@ static struct ethernet_packet_link *net_allocate_packet_link(
 
 	lp = malloc(sizeof(struct ethernet_packet_link));
 	if (lp == NULL) {
-		fprintf(stderr, "out of memory in net_allocate_packet_link()\n");
+		fprintf(stderr, "net_allocate_packet_link(): out of memory\n");
 		exit(1);
 	}
 
@@ -235,7 +239,7 @@ static struct ethernet_packet_link *net_allocate_packet_link(
 	lp->extra = extra;
 	lp->data = malloc(len);
 	if (lp->data == NULL) {
-		fprintf(stderr, "out of memory in net_allocate_packet_link()\n");
+		fprintf(stderr, "net_allocate_packet_link(): out of memory\n");
 		exit(1);
 	}
 	memset(lp->data, 0, len);
@@ -1014,6 +1018,92 @@ static void net_ip(struct net *net, void *extra,
 
 
 /*
+ *  net_ip_broadcast():
+ *
+ *  Handle an IP broadcast packet, coming from the emulated NIC.
+ *  (This is usually a DHCP request, or similar.)
+ */
+static void net_ip_broadcast(struct net *net, void *extra,
+	unsigned char *packet, int len)
+{
+	unsigned char *p = (void *) &net->netmask_ipv4;
+	uint32_t x, y;
+	int xl, warning = 0, match = 0;
+
+#if 0
+	int i;
+
+	fatal("[ net: IP BROADCAST: ");
+	fatal("ver=%02x ", packet[14]);
+	fatal("tos=%02x ", packet[15]);
+	fatal("len=%02x%02x ", packet[16], packet[17]);
+	fatal("id=%02x%02x ",  packet[18], packet[19]);
+	fatal("ofs=%02x%02x ", packet[20], packet[21]);
+	fatal("ttl=%02x ", packet[22]);
+	fatal("p=%02x ", packet[23]);
+	fatal("sum=%02x%02x ", packet[24], packet[25]);
+	fatal("src=%02x%02x%02x%02x ",
+	    packet[26], packet[27], packet[28], packet[29]);
+	fatal("dst=%02x%02x%02x%02x ",
+	    packet[30], packet[31], packet[32], packet[33]);
+	for (i=34; i<len; i++)
+		fatal("%02x", packet[i]);
+	fatal(" ]\n");
+#endif
+
+	/*  Check for 10.0.0.255 first, maybe some guest OSes think that
+	    it's a /24 network, regardless of what it actually is.  */
+	y = (packet[30] << 24) + (packet[31] << 16) +
+	    packet[32] << 8 + packet[33];
+
+	x = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3];
+	/*  Example: x = 10.0.0.0  */
+	x |= 255;
+
+	if (x == y) {
+		warning = 1;
+		match = 1;
+	}
+
+	xl = 32 - net->netmask_ipv4_len;
+	x |= (1 << xl) - 1;
+	/*  x = 10.255.255.255  */
+
+	if (x == y)
+		match = 1;
+
+	if (warning)
+		fatal("[ net_ip_broadcast(): warning: broadcast to "
+		    "0x%08x, expecting broadcast to 0x%08x ]\n", y, x);
+
+	/*  Cut off overflowing tail data:  */
+	len = 14 + packet[16]*256 + packet[17];
+
+#if 0
+	if (packet[14] == 0x45) {
+		/*  IPv4:  */
+		switch (packet[23]) {
+		case 1:	/*  ICMP  */
+			net_ip_icmp(net, extra, packet, len);
+			break;
+		case 6:	/*  TCP  */
+			net_ip_tcp(net, extra, packet, len);
+			break;
+		case 17:/*  UDP  */
+			net_ip_udp(net, extra, packet, len);
+			break;
+		default:
+			fatal("[ net: IP: UNIMPLEMENTED protocol %i ]\n",
+			    packet[23]);
+		}
+	} else
+		fatal("[ net: IP: UNIMPLEMENTED ip, first byte = 0x%02x ]\n",
+		    packet[14]);
+#endif
+}
+
+
+/*
  *  net_arp():
  *
  *  Handle an ARP (or RARP) packet, coming from the emulated NIC.
@@ -1554,7 +1644,7 @@ void net_ethernet_tx(struct net *net, void *extra,
 			if (packet[i] == 0xff)
 				n++;
 		if (n == 6) {
-			debug("[ net: TX: IP broadcast: TODO ]\n");
+			net_ip_broadcast(net, extra, packet, len);
 			return;
 		}
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.12 2004-01-03 03:11:08 debug Exp $
+ *  $Id: devices.h,v 1.13 2004-01-04 21:44:06 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -38,6 +38,11 @@
 #include <X11/Xlib.h>
 #endif */
 
+
+/*  dev_8250.c:  */
+#define	DEV_8250_LENGTH		0x0000000000000008
+int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 /*  dev_asc.c:  */
 #define	DEV_ASC_LENGTH			0xc0000
@@ -165,6 +170,11 @@ struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t b
 int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
 
+/*  dev_n64_bios.c:  */
+#define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)
+int dev_n64_bios_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
+
 /*  dev_ns16550.c:  */
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
@@ -216,6 +226,10 @@ void dev_ps2_gif_init(struct memory *mem, uint64_t baseaddr);
 int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ps2_gs_init(struct memory *mem, uint64_t baseaddr);
 
+/*  dev_ram.c:  */
+int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length);
+
 /*  dev_rd94.c:  */
 #define	DEV_RD94_LENGTH			0x1000
 int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -231,6 +245,11 @@ void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+
+/*  dev_sgi_gbe.c:  */
+#define	DEV_SGI_GBE_LENGTH		0x1000000
+int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_gbe_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000

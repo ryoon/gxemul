@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.13 2004-09-01 11:54:46 debug Exp $
+.\" $Id: mips64emul.1,v 1.14 2004-09-16 11:43:07 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -64,9 +64,9 @@ distribution.
 For a normal invocation of the emulator, you need to supply the
 .I file
 argument. This is the name of a MIPS binary file (an ELF32, ELF64,
-a.out, ECOFF, SREC, or raw binary image) which you wish to run in the emulator.
-This file might be an operating system kernel, or perhaps a ROM image 
-file.
+a.out, ECOFF, SREC, or a raw binary image) which you wish to run in the 
+emulator. This file might be an operating system kernel, or perhaps a ROM 
+image file.
 
 Apart from the name of a MIPS binary, it is also necessary to select
 which specific emulation mode to use. For example, a MIPS-based machine
@@ -80,6 +80,16 @@ DECstation harddisk image, then just supplying the diskimage via the
 -d option is sufficient. The filename of the kernel can then be skipped,
 as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
+.SH EXAMPLE
+The following command will start NetBSD/pmax on an emulated DECstation 
+5000/200:
+
+.B		mips64emul -D2 -d netbsd_disk.img
+
+if netbsd_disk.img is a raw disk image. You may wish to add
+.B -XNM64
+to use the X11 framebuffer feature. Read the documentation for more 
+details.
 .SH AUTHOR
 Anders Gavare <md1gavan@mdstud.chalmers.se>
 .SH HISTORY

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.107 2004-06-27 16:51:07 debug Exp $
+$Id: HISTORY,v 1.108 2004-06-28 05:21:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -606,3 +606,8 @@ HISTORY of mips64emul
 		comments and so on.
 		Adding a BUGS file, a list of known bugs.
 		Adding a minimal man page, doc/mips64emul.1.
+20040628	Hacks for faking the existance of a second level cache
+		(ARCBIOS and other places).
+		An important fix for dc7085: tx interrupts should happen
+		before rx interrupts, not the other way around as it was
+		before. (This speeds up NetBSD boot on DECstation.)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.20 2004-06-24 01:15:09 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.21 2004-06-28 05:21:01 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -89,24 +89,7 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	struct dc_data *d = extra;
 	int avail;
 
-	lk201_tick(&d->lk201);
-
-	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
-
-	d->regs.dc_csr &= ~CSR_RDONE;
-	if (avail && d->regs.dc_csr & CSR_MSE)
-		d->regs.dc_csr |= CSR_RDONE;
-
-	if (d->regs.dc_csr & CSR_RDONE && d->regs.dc_csr & CSR_RIE) {
-		cpu_interrupt(cpu, d->irqnr);
-
-		/*  We have to return here. NetBSD can handle both
-		    rx and tx interrupts simultaneously, but Ultrix
-		    doesn't like that.  */
-		return;
-	}
-
-	if (d->regs.dc_csr & CSR_MSE && !(d->regs.dc_csr & CSR_TRDY)) {
+	if ((d->regs.dc_csr & CSR_MSE) && !(d->regs.dc_csr & CSR_TRDY)) {
 		int scanner_start = d->tx_scanner;
 
 		/*  Loop until we've checked all 4 channels, or some
@@ -124,7 +107,25 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 				d->regs.dc_csr |= (d->tx_scanner << 8);
 			}
 		} while (!(d->regs.dc_csr & CSR_TRDY) && d->tx_scanner != scanner_start);
+
+		/*  We have to return here. NetBSD can handle both
+		    rx and tx interrupts simultaneously, but Ultrix
+		    doesn't like that?  */
+
+		if (d->regs.dc_csr & CSR_TRDY)
+			return;
 	}
+
+	lk201_tick(&d->lk201);
+
+	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
+
+	d->regs.dc_csr &= ~CSR_RDONE;
+	if (avail && (d->regs.dc_csr & CSR_MSE))
+		d->regs.dc_csr |= CSR_RDONE;
+
+	if ((d->regs.dc_csr & CSR_RDONE) && (d->regs.dc_csr & CSR_RIE))
+		cpu_interrupt(cpu, d->irqnr);
 }
 
 
@@ -153,10 +154,11 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			d->regs.dc_csr |= idata;
 			if (!(d->regs.dc_csr & CSR_MSE))
 				d->regs.dc_csr &= ~(CSR_TRDY | CSR_RDONE);
-			return 1;
+			goto do_return;
 		} else {
 			/*  read:  */
-			/*  debug("[ dc7085 read from CSR: (csr = 0x%04x) ]\n", d->regs.dc_csr);  */
+
+			/*  fatal("[ dc7085 read from CSR: (csr = 0x%04x) ]\n", d->regs.dc_csr);  */
 			odata = d->regs.dc_csr;
 		}
 		break;
@@ -164,7 +166,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 		if (writeflag == MEM_WRITE) {
 			debug("[ dc7085 write to LPR: 0x%04x ]\n", idata);
 			d->regs.dc_rbuf_lpr = idata;
-			return 1;
+			goto do_return;
 		} else {
 			/*  read:  */
 			int avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
@@ -192,11 +194,11 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 		break;
 	case 0x10:	/*  TCR:  */
 		if (writeflag == MEM_WRITE) {
-			/*  debug("[ dc7085 write to TCR: 0x%04x) ]\n", idata);  */
+			/*  fatal("[ dc7085 write to TCR: 0x%04x) ]\n", idata);  */
 			d->regs.dc_tcr = idata;
 			d->regs.dc_csr &= ~CSR_TRDY;
 			cpu_interrupt_ack(cpu, d->irqnr);
-			return 1;
+			goto do_return;
 		} else {
 			/*  read:  */
 			/*  debug("[ dc7085 read from TCR: (tcr = 0x%04x) ]\n", d->regs.dc_tcr);  */
@@ -213,7 +215,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			d->regs.dc_csr &= ~CSR_TRDY;
 			cpu_interrupt_ack(cpu, d->irqnr);
 
-			return 1;
+			goto do_return;
 		} else {
 			/*  read:  */
 			d->regs.dc_msr_tdr |= MSR_DSR2 | MSR_CD2 | MSR_DSR3 | MSR_CD3;
@@ -235,6 +237,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
+do_return:
 	dev_dc7085_tick(cpu, extra);
 
 	return 1;

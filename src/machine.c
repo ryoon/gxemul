@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.23 2003-12-30 05:47:58 debug Exp $
+ *  $Id: machine.c,v 1.24 2004-01-02 22:23:18 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -689,9 +689,17 @@ void machine_init(struct memory *mem)
 		hpc_bootinfo.fb_height = HPCMIPS_FB_YSIZE;
 		hpc_bootinfo.fb_type = BIFB_D2_M2L_3;
 		hpc_bootinfo.bi_cnuse = BI_CNUSE_BUILTIN;  /*  _BUILTIN or _SERIAL  */
-		hpc_bootinfo.platid_cpu = random();
-		hpc_bootinfo.platid_machine = random();
-		printf("hpc_bootinfo.platid_cpu = 0x%x\n", hpc_bootinfo.platid_cpu);
+
+		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
+		hpc_bootinfo.platid_cpu = 1 << 14;
+		hpc_bootinfo.platid_machine = (2 << 22) + (1 << 16);
+/*
+#define PLATID_SUBMODEL_SHIFT           0
+#define PLATID_MODEL_SHIFT              8
+#define PLATID_SERIES_SHIFT             16
+#define PLATID_VENDOR_SHIFT             22
+*/
+		printf("hpc_bootinfo.platid_cpu     = 0x%x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%x\n", hpc_bootinfo.platid_machine);
 		hpc_bootinfo.timezone = 0;
 		store_buf(0x80000000 + physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
@@ -750,7 +758,7 @@ void machine_init(struct memory *mem)
 		/*  ARCBIOS:  */
 		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, 0xbfc00000);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
@@ -787,10 +795,10 @@ void machine_init(struct memory *mem)
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 		mem_mb_left = physical_ram_in_mb - 512;
-		mem_base = 512 * 1048576 / 4096;
+		mem_base = 512 * (1048576 / 4096);
 		mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
 		while (mem_mb_left > 0) {
-			mem_count = mem_mb_left * 1048576 / 4096;
+			mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
@@ -799,7 +807,7 @@ void machine_init(struct memory *mem)
 			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 			mem_mb_left -= 512;
-			mem_base += (512 * 1048576 / 4096);
+			mem_base += 512 * (1048576 / 4096);
 			mem_bufaddr += sizeof(arcbios_mem);
 		}
 
@@ -835,6 +843,7 @@ void machine_init(struct memory *mem)
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
 				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);
 			} else {
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
@@ -864,17 +873,17 @@ void machine_init(struct memory *mem)
 			}
 		}
 
-		add_symbol_name(0xbfc10000, 0x10000, "[ARCBIOS entry]", 0);
+		add_symbol_name(ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
 
 		for (i=0; i<100; i++)
-			store_32bit_word(0xbfc00000 + i*4, 0xbfc10000 + i*4);
+			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
 
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 2;
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = 0x80018000;
+		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
-		store_32bit_word(0x80018000, 0x80018100);
-		store_32bit_word(0x80018004, 0x80018200);
-		store_32bit_word(0x80018010, 0);
+		store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
+		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x200);
+		store_32bit_word(ARC_ARGV_START + 0x8, 0);
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
@@ -889,18 +898,19 @@ void machine_init(struct memory *mem)
 
 		bootarg = "-a";
 
-		store_string(0x80018100, bootstr);
-		store_string(0x80018200, bootarg);
+		store_string(ARC_ARGV_START + 0x100, bootstr);
+		store_string(ARC_ARGV_START + 0x200, bootarg);
 
+		/*  TODO:  not needed?  */
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
-#if 1
-		add_environment_string("ConsoleOut=arcs", &addr);
-#else
+
+		/*  This works with NetBSD/sgimips and NetBSD/arc:  */
+		/*  add_environment_string("ConsoleOut=arcs", &addr);  */
+
 		add_environment_string("ConsoleIn=serial(0)", &addr);
 		add_environment_string("ConsoleOut=serial(0)", &addr);
-#endif
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("eaddr=00:00:00:00:00:00", &addr);

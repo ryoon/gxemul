@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.92 2004-06-12 21:59:13 debug Exp $
+ *  $Id: machine.c,v 1.93 2004-06-13 10:30:48 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -544,8 +544,42 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	/*
 	 *  This mapping of both MACE and CRIME interrupts into the same
-	 *  'int' is really ugly.  TODO: fix.
+	 *  'int' is really ugly.
+	 *
+	 *  If MACE_PERIPH_MISC or MACE_PERIPH_SERIAL is set, then mask
+	 *  that bit out and treat the rest of the word as the mace interrupt
+	 *  bitmask.
+	 *
+	 *  TODO: fix.
 	 */
+	if (irq_nr & MACE_PERIPH_SERIAL) {
+		/*  Read current MACE interrupt bits:  */
+		memcpy(x, mace_data->reg + mace_addr, sizeof(uint32_t));
+		mace_interrupts = 0;
+		for (i=0; i<sizeof(uint32_t); i++) {
+			/*  SGI is big-endian...  */
+			mace_interrupts <<= 8;
+			mace_interrupts |= x[i];
+		}
+
+		if (assrt)
+			mace_interrupts |= (irq_nr & ~MACE_PERIPH_SERIAL);
+		else
+			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_SERIAL);
+
+		/*  Write back MACE interrupt bits:  */
+		for (i=0; i<4; i++)
+			x[3-i] = mace_interrupts >> (i*8);
+		memcpy(mace_data->reg + mace_addr, x, sizeof(uint32_t));
+
+		irq_nr = MACE_PERIPH_SERIAL;
+		if (mace_interrupts == 0)
+			assrt = 0;
+		else
+			assrt = 1;
+	}
+
+	/*  Hopefully _MISC and _SERIAL will not be both on at the same time.  */
 	if (irq_nr & MACE_PERIPH_MISC) {
 		/*  Read current MACE interrupt bits:  */
 		memcpy(x, mace_data->reg + mace_addr, sizeof(uint32_t));
@@ -1390,6 +1424,10 @@ void machine_init(struct memory *mem)
 		if (emulation_type == EMULTYPE_SGI) {
 			cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(machine_name, "SGI-IP%i", machine);
+
+			/*  Super-special case for IP24:  */
+			if (machine == 24)
+				sprintf(machine_name, "SGI-IP22");
 		} else {
 			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
 			machine_name = "ARC";
@@ -1539,11 +1577,16 @@ void machine_init(struct memory *mem)
 				break;
 			case 22:
 			case 24:
-				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
+				if (machine == 22) {
+					strcat(machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
+					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9000, 0);
+				} else {
+					strcat(machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
+					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880, 1);
+				}
+
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
-				/*  0x1fbd9880 on "Guiness", or 0x1fbd9000 on "fullhouse" machines?  */
-				sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);
 				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
 
 				/*
@@ -1582,6 +1625,9 @@ void machine_init(struct memory *mem)
 
 	 			/*  wdsc0, SCSI.  TODO: irq nr  */
 				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 8 + 1);
+
+				/*  wdsc1:  TODO: irq nr  */
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbcc000, 8 + 1);
 
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
@@ -1687,7 +1733,7 @@ void machine_init(struct memory *mem)
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
 				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 0, 0x1);	/*  serial??  */
-				pci_data = dev_macepci_init(mem, 0x1f080000, 0);	/*  macepci0  */
+
 				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
 				/*
 				 *  A combination of NetBSD and Linux info:
@@ -1713,18 +1759,28 @@ void machine_init(struct memory *mem)
 				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
 				cpus[bootstrap_cpu]->md_interrupt = sgi_crime_interrupt;
 
-				/*  IRQ mapping is really ugly.  TODO: fix  */
+				/*
+				 *  IRQ mapping is really ugly.  TODO: fix
+				 *
+				 *  com0 at mace0 offset 0x390000 intr 4 intrmask 0x3f00000: ns16550a, working fifo
+				 *  com1 at mace0 offset 0x398000 intr 4 intrmask 0xfc000000: ns16550a, working fifo
+				 *  pckbc0 at mace0 offset 0x320000 intr 5 intrmask 0x0
+				 *  mcclock0 at mace0 offset 0x3a0000 intrmask 0x0
+				 *  macepci0 at mace0 offset 0x80000 intr 7 intrmask 0x0: rev 1
+				 *
+				 *  intr 4 = MACE_PERIPH_SERIAL
+				 *  intr 5 = MACE_PERIPH_MISC
+				 *  intr 7 = MACE_PCI_BRIDGE
+				 */
+
 				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200 + MACE_PERIPH_MISC, 0x800 + MACE_PERIPH_MISC);
 							/*  keyb+mouse (mace irq numbers)  */
 
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
-#if 1
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_MISC, 0x100);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_MISC, 0x100);	/*  com1  */
-#else
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 0, 0x100);	/*  com1  */
-#endif
+
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
+
 				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
@@ -1736,6 +1792,7 @@ void machine_init(struct memory *mem)
 				 *	ahc1            at pci0 dev 2 function ?
 				 */
 
+				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
 /*				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */

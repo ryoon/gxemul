@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.48 2004-03-29 23:51:40 debug Exp $
+ *  $Id: devices.h,v 1.49 2004-04-02 05:48:04 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -289,10 +289,15 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ps2_gs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
-/*  dev_ps2_gs.c:  */
+/*  dev_ps2_ohci.c:  */
 #define	DEV_PS2_OHCI_LENGTH		0x1000
 int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ps2_ohci_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_ps2_spd.c:  */
+#define	DEV_PS2_SPD_LENGTH		0x800
+int dev_ps2_spd_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_ps2_spd_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_stuff.c:  */
 #include "ps2_dmacreg.h"

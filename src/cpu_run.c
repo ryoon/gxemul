@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.4 2005-02-11 19:45:40 debug Exp $
+ *  $Id: cpu_run.c,v 1.5 2005-02-19 12:41:10 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -90,9 +90,19 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 
 			if (single_step) {
 				if (single_step == 1) {
-					old_instruction_trace = machine->instruction_trace;
+					/*
+					 *  TODO: (Important!)
+					 *
+					 *  If these are enabled, and focus is
+					 *  shifted to another machine in the
+					 *  debugger, then the wrong machine
+					 *  gets its variables restored!
+					 */
+					old_instruction_trace =
+					    machine->instruction_trace;
 					old_quiet_mode = quiet_mode;
-					old_show_trace_tree = machine->show_trace_tree;
+					old_show_trace_tree =
+					    machine->show_trace_tree;
 					machine->instruction_trace = 1;
 					machine->show_trace_tree = 1;
 					quiet_mode = 0;

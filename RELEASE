@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.70 2004-12-26 13:37:53 debug Exp $
+$Id: RELEASE,v 1.71 2004-12-26 18:02:05 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -73,8 +73,10 @@ of a curiosity, and should not be considered working yet.
 
 Here is a short summary of the changes from version 0.2.3 to 0.2.4:
 
-	x)  Debian GNU/Linux can now be installed. (However, you need to
-	    add -DSLOWSERIALINTERRUPTS to CFLAGS when building the emulator.)
+	x)  Debian GNU/Linux can now be installed. However, it is VERY
+	    unstable, and Linux Oopses when there is heavy serial console
+	    output. A '-U' command line option reduces the risk, but doesn't
+	    fix the problem.
 
 	x)  When emulating framebuffers for machines like the DECstation
 	    5000/200, that have a hardware mouse cursor, the host machine's
@@ -83,6 +85,8 @@ Here is a short summary of the changes from version 0.2.3 to 0.2.4:
 
 	x)  Improvements to the experimental dynamic binary translation
 	    subsystem.
+
+	x)  Many improvements to the single-step debugger.
 
 	x)  Various other bugfixes and updates.
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.26 2004-01-24 21:11:18 debug Exp $
+ *  $Id: cpu.c,v 1.27 2004-01-29 20:47:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -36,6 +36,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "bintrans.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -49,6 +50,7 @@ extern int machine;
 
 extern int show_trace_tree;
 
+extern int bintrans_enable;
 extern int register_dump;
 extern int instruction_trace;
 extern int show_nr_of_instructions;
@@ -582,6 +584,7 @@ const char *cpu_flags(struct cpu *cpu)
 int cpu_run_instr(struct cpu *cpu, int instrcount)
 {
 	struct coproc *cp0 = cpu->coproc[0];
+	int instr_fetched;
 	int i;
 	int dcount;
 	unsigned char instr[4];
@@ -800,8 +803,49 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 #endif
 	    {
 		/*  32-bit instruction word:  */
-		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
+		instr_fetched = memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
+
+		if (!instr_fetched)
 			return 0;
+
+		if (bintrans_enable) {
+			/*
+			 *  Binary translation:
+			 */
+			if (instr_fetched == INSTR_BINTRANS) {
+				/*  Cache hit:  */
+				int result;
+
+				fatal("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx): TODO\n",
+				    (long long)cpu->pc, (long long)cpu->mem->bintrans_last_paddr);
+
+				result = bintrans_try_to_run(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
+
+				if (result) {
+					fatal("!!! bintrans_try_to_run() returned 1 :-)\n");
+					exit(1);
+				}
+
+				exit(1);
+			} else {
+				int result;
+				/*  Cache miss:  */
+
+				fatal("BINTRANS cache miss (pc = 0x%08llx, paddr = 0x%08llx): TODO\n",
+				    (long long)cpu->pc, (long long)cpu->mem->bintrans_last_paddr);
+
+				result = bintrans_try_to_add(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
+
+				/*  If a code chunk was added to the cache, then try to run it now:  */
+				if (result) {
+					result = bintrans_try_to_run(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
+					if (result) {
+						fatal("!!! bintrans_try_to_run() returned 1 :-)\n");
+						exit(1);
+					}
+				}
+			}
+		}
 
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.15 2004-01-24 21:10:22 debug Exp $
+ *  $Id: memory.c,v 1.16 2004-01-29 20:47:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -34,10 +34,11 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "bintrans.h"
 #include "memory.h"
 #include "misc.h"
 
-
+extern int bintrans_enable;
 extern int emulation_type;
 extern int physical_ram_in_mb;
 extern int machine;
@@ -580,7 +581,12 @@ exception:
  *  If the address indicates access to a memory mapped device, that device'
  *  read/write access function is called.
  *
- *  Returns 1 on success, 0 on error.
+ *  Returns one of the following:
+ #	MEMORY_ACCESS_FAILED
+ #	MEMORY_ACCESS_OK
+ #	INSTR_BINTRANS
+ #
+ #  (MEMORY_ACCESS_FAILED is 0.)
  */
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len,
 	int writeflag, int cache_flags)
@@ -628,7 +634,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 	/*  If the translation caused an exception, or was invalid in some way,
 		we simply return without doing the memory access:  */
 	if (!ok)
-		return 0;
+		return MEMORY_ACCESS_FAILED;
 
 
 	if (no_exceptions && cpu != NULL)
@@ -665,9 +671,9 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 				debug("%s device '%s' addr %08lx failed\n",
 				    writeflag? "writing to" : "reading from",
 				    mem->dev_name[i], (long)paddr);
-				return 0;
+				return MEMORY_ACCESS_FAILED;
 			}
-			return 1;
+			return MEMORY_ACCESS_OK;
 		}
 	}
 
@@ -682,7 +688,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 	if ( (paddr & ~(mem->memblock_size - 1)) != endaddr ) {
 		debug("memory access crosses memory block? "
 		    "paddr=%016llx len=%i\n", (long long)paddr, (int)len);
-		return 0;
+		return MEMORY_ACCESS_FAILED;
 	}
 
 	/*
@@ -720,7 +726,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 					for (i=0; i<len; i++)
 						cpu->cache[cache][(addr+i) & cachemask[cache]] = data[i];
 				}
-				return 1;
+				return MEMORY_ACCESS_OK;
 			} else {
 				/*  Reload caches if neccessary:  */
 				/*  TODO  */
@@ -791,13 +797,33 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 				}
 			}
 
-			return 1;
+			return MEMORY_ACCESS_OK;
 		}
 	}
 
 
 
 no_exception_access:
+
+	if (bintrans_enable) {
+		/*
+		 *  On writes to physical RAM addresses, invalidate any
+		 *  binary translations for those addresses.
+		 */
+
+		mem->bintrans_last_paddr = paddr;
+
+		if (writeflag == MEM_WRITE)
+			bintrans_invalidate(mem, paddr, len);
+		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION) {
+			/*  TODO: return something more than just 1 or 0.  */
+
+			int transl_cache_hit;
+			transl_cache_hit = bintrans_check_cache(mem, paddr);
+			if (transl_cache_hit)
+				return INSTR_BINTRANS;
+		}
+	}
 
 	/*
 	 *  Uncached access:
@@ -824,7 +850,7 @@ no_exception_access:
 			    the same thing happens):  */
 			if (writeflag == MEM_READ) {
 				memset(data, 0, len);
-				return 1;
+				return MEMORY_ACCESS_OK;
 			}
 
 			/*  Allocate a pagetable, OR a memblock:  */
@@ -858,7 +884,7 @@ no_exception_access:
 	else
 		memcpy(data, memblock + offset, len);
 
-	return 1;
+	return MEMORY_ACCESS_OK;
 }
 
 

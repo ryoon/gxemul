@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.205 2004-08-19 19:59:44 debug Exp $
+$Id: HISTORY,v 1.206 2004-08-22 21:52:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -909,3 +909,4 @@ HISTORY of mips64emul
 20040818(later)	Adding a 'tlbdump' debugger command, and some other minor
 		fixes.
 20040819	Minor updates. Adding an 'unassemble' debugger command.
+20040822	Minor updates to the regression testing framework.

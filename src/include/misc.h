@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.71 2004-06-29 01:25:33 debug Exp $
+ *  $Id: misc.h,v 1.72 2004-07-01 11:03:18 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -885,6 +885,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(uint64_t addr, char *s);
 void store_32bit_word(uint64_t addr, uint32_t data32);
 uint32_t load_32bit_word(uint64_t addr);
+void store_buf(uint64_t addr, char *s, size_t len);
 void machine_init(struct memory *mem);
 
 

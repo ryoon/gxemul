@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.641 2005-03-14 19:14:01 debug Exp $
+$Id: HISTORY,v 1.642 2005-03-14 19:30:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1747,3 +1747,4 @@ Changelog for GXemul:
 		all selects "new bintrans".
 		Better generation of MAC addresses when emulating multiple
 		machines and/or NICs.
+		Minor documentation updates (regarding configuration files).

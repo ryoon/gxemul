@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.158 2005-01-23 13:43:06 debug Exp $
+ *  $Id: coproc.c,v 1.159 2005-01-24 16:02:30 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -514,11 +514,17 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 
 	/*  This table stuff only works for 32-bit mode:  */
 	if (vaddr & 0x80000000ULL) {
-		if ((vaddr >> 32) != 0xffffffffULL)
+		if ((vaddr >> 32) != 0xffffffffULL) {
+			fatal("invalidate_table_entry(): vaddr = 0x%016llx\n",
+			    (long long)vaddr);
 			return;
+		}
 	} else {
-		if ((vaddr >> 32) != 0)
+		if ((vaddr >> 32) != 0) {
+			fatal("invalidate_table_entry(): vaddr = 0x%016llx\n",
+			    (long long)vaddr);
 			return;
+		}
 	}
 
 	a = (vaddr >> 22) & 0x3ff;
@@ -579,15 +585,18 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 	paddr &= ~0xfff;
 
 	if (cpu->machine->bintrans_enable) {
-#if 0
+#if 1
 		int i;
 		uint64_t tlb_paddr0, tlb_paddr1;
 		uint64_t tlb_vaddr;
+		uint64_t p, p2;
+
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
 			for (i=0; i<64; i++) {
 				tlb_paddr0 = cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK;
 				tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
+				tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
 				if ((cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
 				    tlb_paddr0 == paddr)
 					invalidate_table_entry(cpu, tlb_vaddr);
@@ -596,7 +605,15 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 		default:
 			for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
 				int psize = 12;
-				switch (cpu->coproc[0]->tlbs[i].mask | 0x1fff) {
+				int or_pmask = 0x1fff;
+				int phys_shift = 12;
+
+				if (cpu->cpu_type.rev == MIPS_R4100) {
+					or_pmask = 0x7ff;
+					phys_shift = 10;
+				}
+				switch (cpu->coproc[0]->tlbs[i].mask | or_pmask) {
+				case 0x000007ff:	psize = 10; break;
 				case 0x00001fff:	psize = 12; break;
 				case 0x00007fff:	psize = 14; break;
 				case 0x0001ffff:	psize = 16; break;
@@ -608,18 +625,31 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 				default:
 					printf("invalidate_translation_caches_paddr(): bad pagemask?\n");
 				}
-				tlb_paddr0 = (cpu->coproc[0]->tlbs[i].lo0 & ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT;
-				tlb_paddr1 = (cpu->coproc[0]->tlbs[i].lo1 & ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT;
-				if (cpu->cpu_type.mmu_model == MMU10K)
+				tlb_paddr0 = (cpu->coproc[0]->tlbs[i].lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
+				tlb_paddr1 = (cpu->coproc[0]->tlbs[i].lo1 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
+				tlb_paddr0 <<= phys_shift;
+				tlb_paddr1 <<= phys_shift;
+				if (cpu->cpu_type.mmu_model == MMU10K) {
 					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
-				else
+					if (tlb_vaddr & ((int64_t)1 << 43))
+						tlb_vaddr |=0xfffff00000000000ULL;
+				} else {
 					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK;
+					if (tlb_vaddr & ((int64_t)1 << 39))
+						tlb_vaddr |=0xffffff0000000000ULL;
+				}
 				if ((cpu->coproc[0]->tlbs[i].lo0 & ENTRYLO_V) &&
-				    tlb_paddr0 == paddr)
-					invalidate_table_entry(cpu, tlb_vaddr);
+				    paddr >= tlb_paddr0 && paddr < tlb_paddr0 + (1<<psize)) {
+					p2 = 1 << psize;
+					for (p=0; p<p2; p+=4096)
+						invalidate_table_entry(cpu, tlb_vaddr + p);
+				}
 				if ((cpu->coproc[0]->tlbs[i].lo1 & ENTRYLO_V) &&
-				    tlb_paddr1 == paddr)
-					invalidate_table_entry(cpu, tlb_vaddr | (1 << psize));
+				    paddr >= tlb_paddr1 && paddr < tlb_paddr1 + (1<<psize)) {
+					p2 = 1 << psize;
+					for (p=0; p<p2; p+=4096)
+						invalidate_table_entry(cpu, tlb_vaddr + p + (1 << psize));
+				}
 			}
 		}
 #endif
@@ -631,9 +661,13 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 	}
 
 #if 0
+{
+	int i;
+
 	/*  TODO: Don't invalidate everything.  */
 	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
 		cpu->bintrans_data_hostpage[i] = NULL;
+}
 #endif
 
 #endif
@@ -663,6 +697,7 @@ static void invalidate_translation_caches(struct cpu *cpu,
 			case MMU3K:
 				for (i=0; i<64; i++) {
 					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
+					tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
 					if ((cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
 					    (tlb_vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 						int asid = (cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
@@ -674,8 +709,16 @@ static void invalidate_translation_caches(struct cpu *cpu,
 				break;
 			default:
 				for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
-					int psize = 12;
-					switch (cpu->coproc[0]->tlbs[i].mask | 0x1fff) {
+					int psize = 10, or_pmask = 0x1fff;
+					int phys_shift = 12;
+
+					if (cpu->cpu_type.rev == MIPS_R4100) {
+						or_pmask = 0x7ff;
+						phys_shift = 10;
+					}
+
+					switch (cpu->coproc[0]->tlbs[i].mask | or_pmask) {
+					case 0x000007ff:	psize = 10; break;
 					case 0x00001fff:	psize = 12; break;
 					case 0x00007fff:	psize = 14; break;
 					case 0x0001ffff:	psize = 16; break;
@@ -687,10 +730,19 @@ static void invalidate_translation_caches(struct cpu *cpu,
 					default:
 						printf("invalidate_translation_caches_paddr(): bad pagemask?\n");
 					}
-					if (cpu->cpu_type.mmu_model == MMU10K)
+
+					if (cpu->cpu_type.mmu_model == MMU10K) {
 						tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
-					else
+						if (tlb_vaddr & ((int64_t)1 << 43))
+							tlb_vaddr |=0xfffff00000000000ULL;
+					} else {
 						tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK;
+						if (tlb_vaddr & ((int64_t)1 << 39))
+							tlb_vaddr |=0xffffff0000000000ULL;
+					}
+
+					/*  TODO: Check the ASID etc.  */
+
 					invalidate_table_entry(cpu, tlb_vaddr);
 					invalidate_table_entry(cpu, tlb_vaddr | (1 << psize));
 				}

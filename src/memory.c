@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.147 2005-01-24 07:40:07 debug Exp $
+ *  $Id: memory.c,v 1.148 2005-01-24 16:02:30 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1061,7 +1061,7 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 	void *extra, uint64_t *low, uint64_t *high)
 {
 #ifdef BINTRANS
-	int i;
+	int i, j;
 	size_t s;
 	int need_inval = 0;
 
@@ -1070,7 +1070,8 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 	    called too often.  */
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
-		if (mem->dev_extra[i] == extra) {
+		if (mem->dev_extra[i] == extra &&
+		    mem->dev_bintrans_data[i] != NULL) {
 			if (mem->dev_bintrans_write_low[i] != (uint64_t) -1)
 				need_inval = 1;
 			if (low != NULL)
@@ -1081,41 +1082,43 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 				*high = mem->dev_bintrans_write_high[i];
 			mem->dev_bintrans_write_high[i] = 0;
 
-			if (!need_inval)
+/*			if (!need_inval)
 				return;
-
+*/
 			/*  Invalidate any pages of this device that might
 			    be in the bintrans load/store cache, by marking
 			    the pages read-only.  */
 
 			/*  TODO: This only works for R3000-style physical addresses!  */
-
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
+#if 1
+				invalidate_translation_caches_paddr(cpu,
+				    mem->dev_baseaddr[i] + s);
+#else
 				update_translation_table(cpu,
 				    mem->dev_baseaddr[i] + s + 0xffffffff80000000ULL,
 				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
 				update_translation_table(cpu,
 				    mem->dev_baseaddr[i] + s + 0xffffffffa0000000ULL,
 				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
+#endif
 			}
 
 			/*  ... and invalidate the "fast_vaddr_to_hostaddr"
 			    cache entries that contain pointers to this
-			    device:  */
-			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++) {
-				if (cpu->bintrans_data_hostpage[i] >=
+			    device:  (NOTE: Device i, cache entry j)  */
+			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
+				if (cpu->bintrans_data_hostpage[j] >=
 				    mem->dev_bintrans_data[i] &&
-				    cpu->bintrans_data_hostpage[i] <
+				    cpu->bintrans_data_hostpage[j] <
 				    mem->dev_bintrans_data[i] +
 				    mem->dev_length[i])
-					cpu->bintrans_data_hostpage[i] = NULL;
+					cpu->bintrans_data_hostpage[j] = NULL;
 			}
 
 			return;
 		}
 	}
-#else
-	return;
 #endif
 }
 

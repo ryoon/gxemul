@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.7 2005-01-24 07:40:07 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.8 2005-01-24 16:02:30 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -66,7 +66,9 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
 	    cpu, (long long)vaddr, writeflag);  */
 
-#if 1
+#if 0
+/*  Hm. This seems to work now, so this #if X can be removed. (?)  */
+
 /*
  *  TODO:
  *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.27 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_vga.c,v 1.28 2005-01-24 16:02:28 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -56,6 +56,9 @@
 #include "fonts/font8x16.c"
 
 
+/*  For bintranslated videomem -> framebuffer updates:  */
+#define	VGA_TICK_SHIFT		14
+
 #define	VGA_MEM_MAXY		60
 #define	VGA_MEM_ALLOCY		67
 
@@ -81,6 +84,12 @@ struct vga_data {
 
 	int		cursor_x;
 	int		cursor_y;
+
+	int		modified;
+	int		update_x1;
+	int		update_y1;
+	int		update_x2;
+	int		update_y2;
 };
 
 
@@ -88,13 +97,17 @@ struct vga_data {
  *  vga_update():
  *
  *  This function should be called whenever any part of d->videomem[] has
- *  been written to. It will redraw all characters within the range start..end
- *  using the right palette.
+ *  been written to. It will redraw all characters within the range x1,y1
+ *  .. x2,y2 using the right palette.
  */
 static void vga_update(struct machine *machine, struct vga_data *d,
-	int start, int end)
+	int x1, int y1, int x2, int y2)
 {
-	int fg, bg, i, x,y, subx, line;
+	int fg, bg, i, x,y, subx, line, start, end;
+
+	/*  Hm... I'm still using the old start..end code:  */
+	start = (d->max_x * y1 + x1) * 2;
+	end   = (d->max_x * y2 + x2) * 2;
 
 	start &= ~1;
 	end |= 1;
@@ -165,6 +178,41 @@ static void vga_update_cursor(struct vga_data *d)
 
 
 /*
+ *  dev_vga_tick():
+ */
+void dev_vga_tick(struct cpu *cpu, void *extra)
+{
+	struct vga_data *d = extra;
+	uint64_t low = -1, high;
+
+	memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
+
+	if ((int64_t)low != -1) {
+		debug("[ dev_vga_tick: bintrans access, %llx .. %llx ]\n",
+		    (long long)low, (long long)high);
+		d->update_x1 = 0;
+		d->update_x2 = d->max_x - 1;
+		d->update_y1 = (low/2) / d->max_x;
+		d->update_y2 = ((high/2) / d->max_x) + 1;
+		if (d->update_y2 >= d->max_y)
+			d->update_y2 = d->max_y - 1;
+		d->modified = 1;
+	}
+
+	if (d->modified) {
+		vga_update(cpu->machine, d,
+		    d->update_x1, d->update_y1, d->update_x2, d->update_x2);
+
+		d->modified = 0;
+		d->update_x1 = 999999;
+		d->update_x2 = -1;
+		d->update_y1 = 999999;
+		d->update_y2 = -1;
+	}
+}
+
+
+/*
  *  dev_vga_access():
  *
  *  Reads and writes to the VGA video memory.
@@ -174,12 +222,15 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int modified, i;
-	int y;
+	int i, x, y, x2, y2;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	y = relative_addr / (d->max_x * 2);
+	x = (relative_addr/2) % d->max_x;
+
+	y2 = (relative_addr+len-1) / (d->max_x * 2);
+	x2 = ((relative_addr+len-1)/2) % d->max_x;
 
 	/*
 	 *  Switch fonts?   This is an ugly hack which only switches when
@@ -193,15 +244,16 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->font_size = 8;
 			d->font = font8x8;
 			d->max_y = VGA_MEM_MAXY;
-			vga_update(cpu->machine, d, 0,
-			    d->max_x * d->max_y * 2 -1);
+			vga_update(cpu->machine, d, 0, 0,
+			    d->max_x - 1, d->max_y - 1);
 			vga_update_cursor(d);
 		} else if (y >= 30 && d->font_size > 11) {
 			/*  Switch to 8x10 font:  */
 			debug("SWITCHING to 8x10 font\n");
 			d->font_size = 11;	/*  NOTE! 11  */
 			d->font = font8x10;
-			vga_update(cpu->machine, d, 0, d->max_x * 44 * 2 -1);
+			vga_update(cpu->machine, d, 0, 0,
+			    d->max_x - 1, d->max_y - 1);
 			d->max_y = 43;
 			vga_update_cursor(d);
 		}
@@ -209,19 +261,26 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	if (relative_addr < d->videomem_size) {
 		if (writeflag == MEM_WRITE) {
-			modified = 0;
 			for (i=0; i<len; i++) {
 				int old = d->videomem[relative_addr + i];
 				if (old != data[i]) {
 					d->videomem[relative_addr + i] =
 					    data[i];
-					modified = 1;
+					d->modified = 1;
 				}
 			}
 
-			if (modified)
-				vga_update(cpu->machine, d, relative_addr,
-				    relative_addr + len-1);
+			if (d->modified) {
+				if (x < d->update_x1)  d->update_x1 = x;
+				if (x > d->update_x2)  d->update_x2 = x;
+				if (y < d->update_y1)  d->update_x1 = y;
+				if (y > d->update_y2)  d->update_x2 = y;
+
+				if (x2 < d->update_x1)  d->update_x1 = x2;
+				if (x2 > d->update_x2)  d->update_x2 = x2;
+				if (y2 < d->update_y1)  d->update_x1 = y2;
+				if (y2 > d->update_y2)  d->update_x2 = y2;
+			}
 		} else
 			memcpy(data, d->videomem + relative_addr, len);
 		return 1;
@@ -230,10 +289,10 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ vga: read from 0x%08lx ]\n",
+			fatal("[ vga: read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			debug("[ vga: write to  0x%08lx: 0x%08x ]\n",
+			fatal("[ vga: write to  0x%08lx: 0x%08x ]\n",
 			    (long)relative_addr, idata);
 		}
 	}
@@ -312,6 +371,15 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ vga_ctrl: read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
+			static int warning = 0;
+			warning ++;
+			if (warning > 2)
+				break;
+			if (warning > 1) {
+				fatal("[ vga_ctrl: multiple unimplemented wr"
+				    "ites, ignoring warnings from now on ]\n");
+				break;
+			}
 			fatal("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n",
 			    (long)relative_addr, idata);
 		}
@@ -336,6 +404,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 {
 	struct vga_data *d;
 	int r,g,b,i, x,y;
+	size_t allocsize;
 
 	d = malloc(sizeof(struct vga_data));
 	if (d == NULL) {
@@ -348,6 +417,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->max_x         = max_x;
 	d->max_y         = max_y;
 	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
+
+	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
+	allocsize = ((d->videomem_size - 1) | 0xfff) + 1;
 	d->videomem = malloc(d->videomem_size);
 	if (d->videomem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
@@ -371,7 +443,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 				ch = s[x];
 			i = (x + max_x * y) * 2;
 			d->videomem[i] = ch;
-			d->videomem[i+1] = y==0? 0x70 : 0x07;	/*  Default color  */
+
+			/*  Default color:  */
+			d->videomem[i+1] = y==0? 0x70 : 0x07;
 		}
 	}
 
@@ -399,13 +473,23 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 				i+=3;
 			}
 
-	memory_device_register(mem, "vga_mem", videomem_base,
-	    VGA_MEM_ALLOCY * max_x * 2,
-	    dev_vga_access, d, MEM_DEFAULT, NULL);	/*  TODO: BINTRANS  */
+	memory_device_register(mem, "vga_mem", videomem_base, allocsize,
+	    dev_vga_access, d, MEM_BINTRANS_OK
+/* | MEM_BINTRANS_WRITE_OK */
+,
+	    d->videomem);
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
 	/*  Make sure that the first line is in synch.  */
-	vga_update(machine, d, 0, max_x * 2 -1);
+	vga_update(machine, d, 0, 0, d->max_x - 1, 0);
+
+	d->update_x1 = 999999;
+	d->update_x2 = -1;
+	d->update_y1 = 999999;
+	d->update_y2 = -1;
+	d->modified = 0;
+
+	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
 }
 

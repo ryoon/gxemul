@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.82 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_fb.c,v 1.83 2005-01-24 16:02:28 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -541,7 +541,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 
 #ifdef BINTRANS
 	do {
-		uint64_t low, high;
+		uint64_t low = -1, high;
 		int x, y;
 
 		memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);

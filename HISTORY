@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.579 2005-02-11 22:03:47 debug Exp $
+$Id: HISTORY,v 1.580 2005-02-12 09:19:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1659,3 +1659,5 @@ HISTORY of mips64emul
 		nfs works, but not yet from the generic kernel.)
 		Major update to the manpage.
 		Removing the -G command line option (SGI modes).
+20050212	Updating the documentation (experimental devices: dev_cons
+		and dev_mp).

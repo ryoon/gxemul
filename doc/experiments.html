@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.15 2005-02-11 22:03:48 debug Exp $
+$Id: experiments.html,v 1.16 2005-02-12 09:19:07 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -50,6 +50,7 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#hello">Hello world</a>
+  <li><a href="#expdevices">Experimental devices</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes</a>
 </ul>
 
@@ -163,6 +164,177 @@ will repeat the 's' command. Type 'quit' to quit.
 
 <p>
 Hopefully this is enough to get you inspired. :-)
+
+
+
+
+
+<p><br>
+<a name="expdevices"></a>
+<h3>Experimental devices:</h3>
+
+The "bare" MIPS machine has the following experimental devices:
+
+<p>
+<center><table border="0" width="85%">
+
+  <tr>
+    <td width="30">&nbsp;</td>
+    <td align="left" valign="top" width="250">
+	<b>cons:</b>
+	<p>This is a simple "console" device, for writing
+	characters to the mips64emul terminal.
+	<p>Source code:&nbsp;&nbsp;<font color="#0000f0">devices/dev_cons.c</font>
+	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x10000000</font>
+    </td>
+    <td align="left" valign="top" width="25">&nbsp;</td>
+    <td align="left" valign="top">
+	<table border="0">
+	  <tr>
+	    <td align="left" valign="top"><i><u>Offset:</u></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0000</td>
+	    <td align="left" valign="top">
+		Read: getchar() (non-blocking)<br>
+		Write: putchar(ch)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0010</td>
+	    <td align="left" valign="top">Read or write: halt()<br>
+		(Useful for exiting the emulator.)</td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+
+  <tr height="15">
+    <td height="15">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td align="left" valign="top">
+	<b>mp:</b>
+	<p>This device controls the behaviour of CPUs is an
+	emulated multi-processor system.
+	<p>Source code:&nbsp;&nbsp;<font color="#0000f0">devices/dev_mp.c</font>
+	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x11000000</font>
+    </td>
+    <td></td>
+    <td align="left" valign="top">
+	<table border="0">
+	  <tr>
+	    <td align="left" valign="top"><i><u>Offset:</u></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0000</td>
+	    <td align="left" valign="top">Read: whoami().
+		Returns the id of the CPU doing the read.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0010</td>
+	    <td align="left" valign="top">Read: ncpus().
+		Returns the number of CPUs in the system.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0020</td>
+	    <td align="left" valign="top">Write: startupcpu(i).
+		Starts CPU i. It begins execution at the address
+		set by a write to startupaddr (see below).</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0030</td>
+	    <td align="left" valign="top">Write: startupaddr(addr).
+		Sets the starting address for CPUs.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0040</td>
+	    <td align="left" valign="top">Write: pause_addr(addr).
+		Sets the pause address. (TODO: This is not
+		used anymore?)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0050</td>
+	    <td align="left" valign="top">Write: pause_cpu(i).
+		Stops all CPUs <i>except</i> CPU i.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0060</td>
+	    <td align="left" valign="top">Write: unpause_cpu(i).
+		Unpauses all CPUs <i>except</i> CPU i.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0070</td>
+	    <td align="left" valign="top">Write: startupstack(addr).
+		Sets the startup stack address. (CPUs started with
+		startupcpu() above will have their stack pointer
+		set to this value.)</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0080</td>
+	    <td align="left" valign="top">Read: hardware_random().
+		This produces a "random" number.</td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">0x0090</td>
+	    <td align="left" valign="top">Read: memory().
+		Returns the number of bytes of RAM in the system.</td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+
+  <tr height="15">
+    <td height="15">&nbsp;</td>
+  </tr>
+
+  <tr>
+    <td></td>
+    <td align="left" valign="top">
+	<b>fb:</b>
+	<p>A simple linear framebuffer, for graphics output.
+	640 x 480 pixels, 3 bytes per pixel (red, green, blue, 8 bits each).
+	<p>Source code:&nbsp;&nbsp;<font color="#0000f0">devices/dev_fb.c</font>
+	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x12000000</font>
+    </td>
+    <td></td>
+    <td align="left" valign="top">
+	<table border="0">
+	  <tr>
+	    <td align="left" valign="top"><i><u>Offset:</u></i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	    <td align="left" valign="top"><i><u>Effect:</u></i></td>
+	  </tr>
+	  <tr>
+	    <td align="left" valign="top">...</td>
+	    <td align="left" valign="top">Read: read pixel values.
+		<br>Write: write pixel values.</td>
+	  </tr>
+	</table>
+    </td>
+  </tr>
+
+</table></center>
+
+<p>
+While these devices may resemble real-world hardware, they are 
+intentionally made simpler to use. (An exception is the framebuffer;
+some machines actually have simple linear framebuffers like this.)
+
+<p>
+If the physical address is 0x10000000, then for MIPS that means that it 
+can be accessed at virtual address 0xffffffffb0000000. (Actually it can be 
+accessed at 0xffffffff90000000 too, but devices should usually be accessed
+in a non-cached manner.)
+
+<p>
+The <b>cons</b> and <b>mp</b> devices are mostly agnostic when it comes to 
+word-length. For example, when reading offset 0x0000 of the <b>mp</b> 
+device, you may use any kind of read (an 8-bit read will work just as well 
+as a 64-bit read, although the value will be truncated to 8 bits in the 
+first case).
 
 
 

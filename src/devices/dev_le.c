@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.12 2004-07-05 19:25:02 debug Exp $
+ *  $Id: dev_le.c,v 1.13 2004-07-05 21:08:41 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -99,8 +99,11 @@ struct le_data {
 
 	unsigned char	*tx_packet;
 	int		tx_packet_len;
+
 	unsigned char	*rx_packet;
 	int		rx_packet_len;
+	int		rx_packet_offset;
+	int		rx_middle_bit;
 };
 
 
@@ -196,6 +199,8 @@ void le_chip_init(struct le_data *d)
 		free(d->rx_packet);
 	d->rx_packet = NULL;
 	d->rx_packet_len = 0;
+	d->rx_packet_offset = 0;
+	d->rx_middle_bit = 0;
 }
 
 
@@ -322,12 +327,14 @@ void le_tx(struct le_data *d)
  */
 void le_rx(struct le_data *d)
 {
-	int start_rxp = d->rxp;
+	int i, start_rxp = d->rxp;
 	uint16_t rx_descr[4];
-	int i, cur_packet_offset;
 	uint32_t bufaddr, buflen;
 
 	do {
+		if (d->rx_packet == NULL)
+			return;
+
 		/*  Load the 8 descriptor bytes:  */
 		rx_descr[0] = le_read_16bit(d, d->rdra + d->rxp*8 + 0);
 		rx_descr[1] = le_read_16bit(d, d->rdra + d->rxp*8 + 2);
@@ -354,11 +361,40 @@ fatal
 		    d->rxp, rx_descr[0], rx_descr[1], rx_descr[2], rx_descr[3],
 		    bufaddr, buflen);
 
+		/*  Copy data from the packet into SRAM:  */
+		for (i=0; i<buflen; i++) {
+			if (d->rx_packet_offset + i >= d->rx_packet_len)
+				break;
+			d->sram[(bufaddr + i) & (SRAM_SIZE-1)] =
+			    d->rx_packet[d->rx_packet_offset + i];
+		}
 
-/**********/
-/*  TODO  */
-/**********/
+		/*  Here, i is the number of bytes copied.  */
+		d->rx_packet_offset += i;
 
+		/*  Set the ENP bit if this was the end of a packet:  */
+		if (d->rx_packet_offset >= d->rx_packet_len) {
+			rx_descr[1] |= LE_ENP;
+			rx_descr[3] &= ~0xfff;
+			rx_descr[3] |= d->rx_packet_len;
+
+			free(d->rx_packet);
+			d->rx_packet = NULL;
+			d->rx_packet_len = 0;
+			d->rx_packet_offset = 0;
+			d->rx_middle_bit = 0;
+
+			d->reg[0] |= LE_RINT;
+		}
+
+		/*  Set the STP bit if this was the start of a packet:  */
+		if (!d->rx_middle_bit) {
+			rx_descr[1] |= LE_STP;
+
+			/*  Are we continuing on this packet?  */
+			if (d->rx_packet != NULL)
+				d->rx_middle_bit = 1;
+		}
 
 		/*  Clear the OWN bit:  */
 		rx_descr[1] &= ~LE_OWN;

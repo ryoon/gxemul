@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.2 2004-07-05 19:25:04 debug Exp $
+ *  $Id: net.c,v 1.3 2004-07-05 21:08:42 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -66,7 +66,65 @@ static struct ethernet_packet_link *first_ethernet_packet = NULL;
 static struct ethernet_packet_link *last_ethernet_packet = NULL;
 
 unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
-unsigned char gateway_ipv4[4] = { 10, 0, 0, 1 };
+unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
+
+
+/*
+ *  net_allocate_packet_link():
+ *
+ *  This routine allocates an ethernet_packet_link struct, and adds it at
+ *  the end of the packet chain.  A data buffer is allocated (and zeroed),
+ *  and the data, extra, and len fields of the link are set.
+ *
+ *  Return value is a pointer to the link on success. It doesn't return on
+ *  failure.
+ */
+struct ethernet_packet_link *net_allocate_packet_link(void *extra, int len)
+{
+	struct ethernet_packet_link *lp;
+
+	lp = malloc(sizeof(struct ethernet_packet_link));
+	if (lp == NULL) {
+		fprintf(stderr, "out of memory in net_allocate_packet_link()\n");
+		exit(1);
+	}
+
+	memset(lp, 0, sizeof(struct ethernet_packet_link));
+	lp->len = len;
+	lp->extra = extra;
+	lp->data = malloc(len);
+	if (lp->data == NULL) {
+		fprintf(stderr, "out of memory in net_allocate_packet_link()\n");
+		exit(1);
+	}
+	memset(lp->data, 0, len);
+
+	/*  Add last in the link chain:  */
+	lp->prev = last_ethernet_packet;
+	if (lp->prev != NULL)
+		lp->prev->next = lp;
+	else
+		first_ethernet_packet = lp;
+	last_ethernet_packet = lp;
+
+	return lp;
+}
+
+
+/*
+ *  net_ip():
+ *
+ *  Handle an IP packet, coming from the emulated NIC.
+ */
+static void net_ip(void *extra, unsigned char *packet, int len)
+{
+	int i;
+
+	fatal("[ net: IP: ");
+	for (i=0; i<len; i++)
+		fatal("%02x", packet[i]);
+	fatal(" ]\n");
+}
 
 
 /*
@@ -83,7 +141,6 @@ unsigned char gateway_ipv4[4] = { 10, 0, 0, 1 };
  *	    ARP request:		0001
  *	    ARP from:			112233445566 01020304
  *	    ARP to:			000000000000 01020301
- *	Fill:				000000000000000000000000000000000000
  *
  *  An ARP request with a 'to' IP value of the gateway should cause an
  *  ARP response packet to be created.
@@ -115,6 +172,48 @@ static void net_arp(void *extra, unsigned char *packet, int len)
 	for (i=18; i<28; i++)
 		debug("%02x", packet[i]);
 	debug(" ]\n");
+
+	if (packet[0] == 0x00 && packet[1] == 0x01 &&
+	    packet[2] == 0x08 && packet[3] == 0x00 &&
+	    packet[4] == 0x06 && packet[5] == 0x04) {
+		int r = (packet[6] << 8) + packet[7];
+		struct ethernet_packet_link *lp;
+
+		switch (r) {
+		case 1:		/*  Request  */
+			lp = net_allocate_packet_link(extra, len + 14);
+
+			/*  Copy the old packet first:  */
+			memcpy(lp->data + 14, packet, len);
+
+			/*  Add ethernet ARP header:  */
+			memcpy(lp->data + 0, lp->data + 8 + 14, 6);
+			memcpy(lp->data + 6, gateway_addr, 6);
+			lp->data[12] = 0x08; lp->data[13] = 0x06;
+
+			/*  Address of the emulated machine:  */
+			memcpy(lp->data + 18 + 14, lp->data + 8 + 14, 10);
+
+			/*  Address of the gateway:  */
+			memcpy(lp->data +  8 + 14, gateway_addr, 6);
+			memcpy(lp->data + 14 + 14, gateway_ipv4, 4);
+
+			/*  This is a Reply:  */
+			lp->data[6 + 14] = 0x00; lp->data[7 + 14] = 0x02;
+
+			break;
+		case 2:		/*  Reply  */
+		case 3:		/*  Reverse Request  */
+		case 4:		/*  Reverse Reply  */
+		default:
+			fatal("[ net: ARP: UNIMPLEMENTED request type 0x%04x ]\n", r);
+		}
+	} else {
+		fatal("[ net: ARP: UNIMPLEMENTED arp packet type: ");
+		for (i=0; i<len; i++)
+			fatal("%02x", packet[i]);
+		fatal(" ]\n");
+	}
 }
 
 
@@ -225,14 +324,14 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 		return;
 	}
 
-	/*  IP:  */
-/*
-	if (packet[12] == 0x08 && packet[13] == 0x00) {
+	/*  IP, routed via the gateway:  */
+	if (packet[12] == 0x08 && packet[13] == 0x00 &&
+	    memcmp(packet+0, gateway_addr, 6) == 0) {
 		net_ip(extra, packet, len);
+		return;
 	}
-*/
 
-	fatal("[ net: TX: UNIMPLEMENTED ethernet packet type 0x%02%02! ]\n",
+	fatal("[ net: TX: UNIMPLEMENTED ethernet packet type 0x%02x%02x! ]\n",
 	    packet[12], packet[13]);
 }
 

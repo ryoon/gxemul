@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.16 2004-06-12 19:55:27 debug Exp $
+ *  $Id: dev_crime.c,v 1.17 2004-06-13 10:31:43 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -44,19 +44,29 @@
 #include "crimereg.h"
 
 
-#define	CRIME_TICKSHIFT		9
-#define	CRIME_SPEED_FACTOR	1
+#define	CRIME_TICKSHIFT			11
+#define	CRIME_SPEED_MUL_FACTOR		1
+#define	CRIME_SPEED_DIV_FACTOR		4
+
 
 /*
  *  dev_crime_tick():
  *
- *  TODO:  This function simply updates CRIME_TIME by CRIME_SPEED_FACTOR for each tick.
- *  A R10000 is detected as running at CRIME_SPEED_FACTOR * 66 MHz.
+ *  This function simply updates CRIME_TIME each tick.
+ *
+ *  The names DIV and MUL may be a bit confusing. Increasing the
+ *  MUL factor will result in an OS running on the emulated machine
+ *  detecting a faster CPU. Increasing the DIV factor will result
+ *  in a slower detected CPU.
+ *
+ *  A R10000 is detected as running at
+ *  CRIME_SPEED_FACTOR * 66 MHz. (TODO: this is not correct anymore)
  */
 void dev_crime_tick(struct cpu *cpu, void *extra)
 {
 	int j, carry, old, new;
-	uint64_t what_to_add = (1<<CRIME_TICKSHIFT) / CRIME_SPEED_FACTOR;
+	uint64_t what_to_add = (1<<CRIME_TICKSHIFT)
+	    * CRIME_SPEED_DIV_FACTOR / CRIME_SPEED_MUL_FACTOR;
 	struct crime_data *d = extra;
 
 	j = 0;

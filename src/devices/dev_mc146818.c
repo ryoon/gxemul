@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.10 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.11 2004-01-11 23:52:38 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -293,6 +293,15 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			case MC146818_SGI:
 				/*  On SGI, the year 2004 is 100. On DEC, 2004 is 104.  */
 				mc_data->reg[0x24] += (100 - 104);
+
+				/*
+				 *  TODO:  The thing above only works for NetBSD/sgimips,
+				 *  not for the IP32 PROM.  For example, it interprets
+				 *  a host date of 'Sun Jan 11 19:10:39 CET 2004'
+				 *  as 'January 11 64, 12:10:13 GMT'.   TODO: Fix this.
+				 *  Perhaps it is a ds17287, not a mc146818.
+				 */
+
 				break;
 			default:
 				;

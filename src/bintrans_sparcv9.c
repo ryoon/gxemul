@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.13 2005-01-09 05:57:44 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.14 2005-01-09 06:38:18 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -162,12 +162,86 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
-	if (instruction_type == SPECIAL_SLL && rd == 0) {
-		bintrans_write_pc_inc(addrp);
-		return 1;
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	switch (instruction_type) {
+	case SPECIAL_ADDU:
+	case SPECIAL_DADDU:
+	case SPECIAL_SUBU:
+	case SPECIAL_DSUBU:
+	case SPECIAL_AND:
+	case SPECIAL_OR:
+	case SPECIAL_NOR:
+	case SPECIAL_XOR:
+	case SPECIAL_SLL:
+	case SPECIAL_DSLL:
+	case SPECIAL_SRL:
+	case SPECIAL_SRA:
+		break;
+	default:
+		return 0;
 	}
 
-	return 0;
+	if (rd == 0)
+		goto rd_0;
+
+	/*  Most of these are:  rd = rs OP rt  */
+
+	/*  o5 = rs, o4 = rt, then place result in o5  */
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = 0xda5a2000 + ofs;		/*  ldx [ %o0 + ofs ], %o5  */
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = 0xd85a2000 + ofs;		/*  ldx [ %o0 + ofs ], %o4  */
+
+	switch (instruction_type) {
+	case SPECIAL_ADDU:
+	case SPECIAL_DADDU:
+		*a++ = 0x9a03400c;	/*  add  %o5, %o4, %o5  */
+		if (instruction_type == SPECIAL_ADDU)
+			*a++ = 0x9b3b6000;	/*  sra  %o5, 0, %o5  */
+		break;
+	case SPECIAL_SUBU:
+	case SPECIAL_DSUBU:
+		*a++ = 0x9a23400c;	/*  sub  %o5, %o4, %o5  */
+		if (instruction_type == SPECIAL_SUBU)
+			*a++ = 0x9b3b6000;	/*  sra  %o5, 0, %o5  */
+		break;
+	case SPECIAL_AND:
+		*a++ = 0x9a0b000d;		/*  and  %o4, %o5, %o5  */
+		break;
+	case SPECIAL_OR:
+	case SPECIAL_NOR:
+		*a++ = 0x9a13000d;		/*  or   %o4, %o5, %o5  */
+		if (instruction_type == SPECIAL_NOR)
+			*a++ = 0x9a3b6000;	/*  xnor  %o5, 0, %o5  */
+		break;
+	case SPECIAL_XOR:
+		*a++ = 0x9a1b000d;		/*  xor  %o4, %o5, %o5  */
+		break;
+	case SPECIAL_SLL:
+	case SPECIAL_DSLL:
+		*a++ = 0x9b2b2000 | sa;		/*  sll  %o4, sa, %o5  */
+		if (instruction_type == SPECIAL_SLL)
+			*a++ = 0x9b3b6000;	/*  sra  %o5, 0, %o5  */
+		break;
+	case SPECIAL_SRA:
+		*a++ = 0x9b3b2000 | sa;		/*  sra  %o4, sa, %o5  */
+		break;
+	case SPECIAL_SRL:
+		*a++ = 0x9b332000 | sa;		/*  srl  %o4, sa, %o5  */
+		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
+		break;
+	}
+
+	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+	*a++ = 0xda722000 + ofs;		/*  stx %o5, [ %o0 + ofs ]  */
+
+rd_0:
+
+	*addrp = (unsigned char *) a;
+	bintrans_write_pc_inc(addrp);
+	return 1;
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.34 2004-03-04 18:44:25 debug Exp $
+ *  $Id: cpu.c,v 1.35 2004-03-05 13:05:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -368,6 +368,12 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb && vaddr == 0) {
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
+/*		tlb_dump = 1;  */
+	}
+
+	if (vaddr > 0 && vaddr < 0x1000) {
+		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
+		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
 	}
 

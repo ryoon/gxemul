@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_types.h,v 1.9 2005-01-18 10:34:25 debug Exp $
+ *  $Id: cpu_types.h,v 1.10 2005-01-18 16:22:16 debug Exp $
  *
  *  CPU types.
  */
@@ -55,6 +55,15 @@
 #define	DCOUNT		2
 
 #define	CPU_DEFAULT	"R4000"
+
+/*
+ *  Please do NOT use this list as a definite source for CPU PrID numbers!
+ *  ----------------------------------------------------------------------
+ *
+ *  They are gathered from various other places (manuals, mailing list
+ *  posts, and from source code from various operating systems), and are
+ *  not necessarily correct.
+ */
 
 #define	CPU_TYPE_DEFS	{	\
 	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
@@ -99,6 +108,5 @@
 	{ "SB1",	0x000401,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "SR7100",	0x000504,   0x00,	0,	EXC64, MMU64,  64,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0 } }
-
 
 #endif	/*  CPU_TYPES_H  */

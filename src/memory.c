@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.138 2005-01-12 14:07:22 debug Exp $
+ *  $Id: memory.c,v 1.139 2005-01-15 07:33:31 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -925,8 +925,18 @@ into the devices  */
 					if (writeflag) {
 						unsigned int i;
 						debug("data={", writeflag);
-						for (i=0; i<len; i++)
-							debug("%s%02x", i?",":"", data[i]);
+						if (len > 16) {
+							int start2 = len-16;
+							for (i=0; i<16; i++)
+								debug("%s%02x", i?",":"", data[i]);
+							debug(" .. ");
+							if (start2 < 16)
+								start2 = 16;
+							for (i=start2; i<len; i++)
+								debug("%s%02x", i?",":"", data[i]);
+						} else
+							for (i=0; i<len; i++)
+								debug("%s%02x", i?",":"", data[i]);
 						debug("}");
 					}
 					symbol = get_symbol_name(

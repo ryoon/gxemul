@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.6 2005-01-05 02:27:59 debug Exp $
+ *  $Id: dev_jazz.c,v 1.7 2005-01-05 05:47:22 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */

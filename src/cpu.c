@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.87 2004-07-04 00:43:59 debug Exp $
+ *  $Id: cpu.c,v 1.88 2004-07-04 00:55:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -123,15 +123,26 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 		exit(1);
 	}
 
-	/*  Data and Instruction caches:  */
+	/*
+	 *  Data and Instruction caches:
+	 *
+	 *  TODO: These should be configurable at runtime, perhaps.
+	 */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
-		cpu->cache_size[i] = 16384;
-
-		/*  TODO: linesize depends on CPU type!  */
-		cpu->cache_linesize[i] = 16;
+		switch (cpu->cpu_type.rev) {
+		case MIPS_R2000:
+		case MIPS_R3000:
+			cpu->cache_size[i] = 16384;
+			cpu->cache_linesize[i] = 4;
+			break;
+		default:
+			cpu->cache_size[i] = 32768;
+			cpu->cache_linesize[i] = 32;
+		}
 
 		cpu->cache_mask[i] = cpu->cache_size[i] - 1;
 		cpu->cache_miss_penalty[i] = 10;	/*  TODO ?  */
+
 		cpu->cache[i] = malloc(cpu->cache_size[i]);
 		if (cpu->cache[i] == NULL) {
 			fprintf(stderr, "out of memory\n");

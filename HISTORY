@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.121 2004-07-01 23:08:35 debug Exp $
+$Id: HISTORY,v 1.122 2004-07-02 08:09:45 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -646,3 +646,7 @@ HISTORY of mips64emul
 		-j vmunix, though, to boot from /vmunix instead of /netbsd.)
 20040702	Minor bugfix (some new untested code for X11 keypresses was
 		incorrect).
+20040702(later)	Adding an ugly hack for CDROMs in FreeBSD; if an fread() isn't
+		done at a 2048-byte aligned offset, it will fail. The hack
+		tries to read at 2048-byte aligned offsets and move around
+		buffers to make it work.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.20 2005-01-31 19:31:31 debug Exp $
+ *  $Id: emul_parse.c,v 1.21 2005-01-31 19:44:13 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -330,6 +330,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootname[0] = '\0';
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
+		cur_machine_n_x11_disp = 0;
 		cur_machine_slowsi[0] = '\0';
 		cur_machine_debugger_on_badaddr[0] = '\0';
 		cur_machine_prom_emulation[0] = '\0';
@@ -608,8 +609,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	if (strcmp(word, "add_x11_display") == 0) {
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_LEFT_PARENTHESIS);
-		if (cur_machine_n_disk >= MAX_N_DISK) {
-			fprintf(stderr, "too many disks\n");
+		if (cur_machine_n_x11_disp >= MAX_N_X11_DISP) {
+			fprintf(stderr, "too many x11 displays\n");
 			exit(1);
 		}
 		cur_machine_x11_disp[cur_machine_n_x11_disp] =
@@ -619,7 +620,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			exit(1);
 		}
 		read_one_word(f, cur_machine_x11_disp[cur_machine_n_x11_disp],
-		    MAX_DISK_LEN, line, EXPECT_WORD);
+		    MAX_X11_DISP_LEN, line, EXPECT_WORD);
 		cur_machine_n_x11_disp ++;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_RIGHT_PARENTHESIS);

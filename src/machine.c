@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.322 2005-01-31 19:31:32 debug Exp $
+ *  $Id: machine.c,v 1.323 2005-01-31 19:44:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4175,6 +4175,13 @@ void machine_dumpinfo(struct machine *m)
 		debug("Using X11");
 		if (m->x11_scaledown > 1)
 			debug(", scaledown %i", m->x11_scaledown);
+		if (m->x11_n_display_names > 0) {
+			for (i=0; i<m->x11_n_display_names; i++) {
+				debug(i? ", " : " (");
+				debug("\"%s\"", m->x11_display_names[i]);
+			}
+			debug(")");
+		}
 		debug("\n");
 	}
 

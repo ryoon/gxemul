@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.30 2004-06-07 09:17:53 debug Exp $
+ *  $Id: memory.c,v 1.31 2004-06-07 10:35:11 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -374,12 +374,13 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		case 0xa:		/*  like 0xa8...  */
 			*return_addr = vaddr;
 			return 1;
-#if 1
-		/*  SGI-IP27:  */
+		/*  SGI-IP27?  */
 		case 0xc:
-			*return_addr = vaddr & 0xffffffffff;
-			return 1;
-#endif
+			if (emulation_type == EMULTYPE_SGI && machine >= 25) {
+				*return_addr = vaddr & 0xffffffffff;
+				return 1;
+			}
+			break;
 		default:
 			;
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.91 2004-11-07 19:58:52 debug Exp $
+ *  $Id: memory.c,v 1.92 2004-11-09 04:28:42 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1098,6 +1098,9 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, ok, offset;
 	unsigned char *memblock;
+#ifdef BINTRANS
+	uint64_t orig_vaddr = vaddr;
+#endif
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
@@ -1107,10 +1110,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_bintrans_host_4kpage = NULL;
 			cpu->pc_bintrans_paddr_valid = 0;
-		}
-		if (cache == CACHE_DATA) {
-			cpu->pc_bintrans_data_host_4kpage = NULL;
-			cpu->pc_bintrans_data_virtual_4kpage = vaddr & ~0xfff;
 		}
 	}
 #endif
@@ -1195,9 +1194,6 @@ have_paddr:
 			cpu->pc_bintrans_paddr_valid = 1;
 			cpu->pc_bintrans_paddr = paddr;
 		}
-
-		if (writeflag == MEM_WRITE)
-			bintrans_invalidate(cpu, paddr);
 	}
 #endif
 
@@ -1417,6 +1413,11 @@ no_exception_access:
 	offset = paddr & (mem->memblock_size - 1);
 
 	if (writeflag == MEM_WRITE) {
+#ifdef BINTRANS
+		if (cpu->emul->bintrans_enable)
+			bintrans_invalidate(cpu, paddr);
+#endif
+
 		if (len == sizeof(uint32_t) && (offset & 3)==0)
 			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
 		else if (len == sizeof(uint8_t))
@@ -1445,8 +1446,24 @@ no_exception_access:
 
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable && cache == CACHE_DATA) {
-		cpu->pc_bintrans_data_host_4kpage = memblock + (offset & ~0xfff);
-		cpu->pc_bintrans_data_writeflag = (writeflag == MEM_WRITE);
+		unsigned char *new_4kpage = memblock + (offset & ~0xfff);
+		uint64_t new_virtual_4kpage = orig_vaddr & ~0xfff;
+		int index = cpu->pc_bintrans_data_index;
+
+		/*  Switch index?  */
+		if (cpu->pc_bintrans_data_host_4kpage[index] != new_4kpage
+		    || cpu->pc_bintrans_data_virtual_4kpage[index] != new_virtual_4kpage) {
+			index = (index + 1) % N_BINTRANS_DATA;
+			cpu->pc_bintrans_data_index = index;
+
+			cpu->pc_bintrans_data_virtual_4kpage[index] = new_virtual_4kpage;
+			cpu->pc_bintrans_data_host_4kpage[index] = new_4kpage;
+			cpu->pc_bintrans_data_writeflag[index] = (writeflag == MEM_WRITE);
+		} else {
+			/*  Same index, possibly update the writeflag:  */
+			if (writeflag == MEM_WRITE)
+				cpu->pc_bintrans_data_writeflag[index] = 1;
+		}
 	}
 #endif
 

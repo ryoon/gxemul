@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.177 2004-11-09 00:21:10 debug Exp $
+ *  $Id: cpu.c,v 1.178 2004-11-09 04:28:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1162,7 +1162,9 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
-		cpu->pc_bintrans_data_host_4kpage = NULL;
+		int i;
+		for (i=0; i<N_BINTRANS_DATA; i++)
+			cpu->pc_bintrans_data_host_4kpage[i] = NULL;
 	}
 #endif
 }
@@ -3436,7 +3438,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					}
 			} else {
 				/*  CPU 0 is special, cpu0instr must be updated.  */
-				for (j=0; j<a_few_instrs; j++) {
+				for (j=0; j<a_few_instrs; ) {
 					int instrs_run;
 					if (!cpus[0]->running)
 						break;
@@ -3444,6 +3446,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						instrs_run =
 						    cpu_run_instr(cpus[0]);
 					} while (instrs_run == 0);
+					j += instrs_run;
 					cpu0instrs += instrs_run;
 				}
 
@@ -3451,11 +3454,12 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 				for (i=1; i<ncpus_cached; i++) {
 					a_few_instrs2 = a_few_cycles *
 					    cpus[i]->cpu_type.instrs_per_cycle;
-					for (j=0; j<a_few_instrs2; j++)
+					for (j=0; j<a_few_instrs2; )
 						if (cpus[i]->running) {
 							int instrs_run = 0;
 							while (!instrs_run)
 								instrs_run = cpu_run_instr(cpus[i]);
+							j += instrs_run;
 						}
 				}
 			}

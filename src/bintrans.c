@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.48 2004-11-09 01:17:40 debug Exp $
+ *  $Id: bintrans.c,v 1.49 2004-11-09 04:28:42 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -174,6 +174,7 @@ int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_inc, int rs);
 int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_inc, int rd, int rs);
 int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int rd, int from_flag, int hi_flag);
 int bintrans_write_instruction__branch(unsigned char **addrp, int *pc_inc, int branch_type, int rt, int rs, int imm, unsigned char **potential_chunk_p);
+int bintrans_write_instruction__jal(unsigned char **addrp, int *pc_inc, int imm, int link);
 
 #define	LOAD_TYPE_LW	0
 #define	LOAD_TYPE_LHU	1
@@ -234,14 +235,14 @@ struct translation_page_entry {
 
 	uint64_t			paddr;
 
+	int				page_is_potentially_in_use;
+
 	unsigned char			*chunk[1024];
 	int				length_and_flags[1024];
 };
 #define	LENMASK			0x0ffff
 #define	START_OF_CHUNK		0x10000
-#define	INSIDE_A_CHUNK		0x20000
-#define	UNTRANSLATABLE		0x40000
-#define	TO_BE_INVALIDATED	0x80000
+#define	UNTRANSLATABLE		0x20000
 
 struct translation_page_entry **translation_page_entry_array;
 
@@ -269,43 +270,14 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 	if (tep == NULL)
 		return;
 
-	/*  Nothing translated? Then simply return.  */
-	if (tep->length_and_flags[offset_within_page] == 0)
+	if (!tep->page_is_potentially_in_use)
 		return;
 
-	/*  printf("bintrans_invalidate(): invalidating"
-	    " %016llx\n", (long long)paddr);  */
+	memset(&tep->chunk[0], 0, sizeof(tep->chunk));
+	memset(&tep->length_and_flags[0], 0, sizeof(tep->length_and_flags));
 
-	/*  Overwrite the translated chunk so that it is
-	    just a header and a return instruction:  */
-	if (tep->chunk[offset_within_page] != NULL) {
-		p = tep->chunk[offset_within_page] +
-		    bintrans_chunk_header_len();
-		bintrans_write_chunkreturn(&p);
-
-		bintrans_host_cacheinvalidate(p, 80);		/*  TODO: len of return?  */
-	}
-
-	/*  Remove any entry which reaches this address:  */
-	i = 0;
-	while (i <= offset_within_page) {
-		chunklen = tep->length_and_flags[i] & LENMASK;
-
-		if (chunklen != 0) {
-			/*  from i to i+chunklen-1  */
-			if (i <= offset_within_page && offset_within_page < i+chunklen) {
-				for (j=i; j<i+chunklen; j++)
-					tep->length_and_flags[j] |= TO_BE_INVALIDATED;
-			}
-		}
-		i++;
-	}
-
-	for (i=0; i<1024; i++)
-		if (tep->length_and_flags[i] & TO_BE_INVALIDATED) {
-			tep->chunk[i] = NULL;
-			tep->length_and_flags[i] = 0;
-		}
+	tep->page_is_potentially_in_use = 0;
+	return;
 }
 
 
@@ -396,6 +368,19 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int byte_order_cached;
 
 
+	/*
+	 *  If the chunk space is all used up, we need to start over from
+	 *  an empty chunk space.
+	 */
+	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
+		for (i=0; i<n; i++)
+			translation_page_entry_array[i] = NULL;
+		translation_code_chunk_space_head = 0;
+		fatal("bintrans: Starting over!\n");
+	}
+
+
 	/*  Abort if the current "environment" isn't safe enough:  */
 	if (cpu->delay_slot || cpu->nullify_next)
 		return -1;
@@ -444,19 +429,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 
 	/*  printf("translation_page_entry_array[%i] = %p, ofs = %i\n",
 	    entry_index, translation_page_entry_array[entry_index], offset_within_page);  */
-
-
-	/*
-	 *  If the chunk space is all used up, we need to start over from
-	 *  an empty chunk space.
-	 */
-	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
-		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
-		for (i=0; i<n; i++)
-			translation_page_entry_array[i] = NULL;
-		translation_code_chunk_space_head = 0;
-		fatal("bintrans: Starting over!\n");
-	}
 
 
 	/*  ca is the "chunk address"; where to start generating a chunk:  */
@@ -657,7 +629,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			/*  Read the next instruction (in the delay slot):  */
 			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
 			hi6_2 = instr2[3] >> 2;
-#if 1
 			if (hi6_2 == HI6_ADDIU) {
 				rs = ((instr2[3] & 3) << 3) + ((instr2[2] >> 5) & 7);
 				rt = instr2[2] & 31;
@@ -666,16 +637,13 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 					imm -= 65536;
 				if (rt == 0)
 					res = 1;
-				else if (rt == branch_rt || rt == branch_rs
-				      || rs == branch_rt || rs == branch_rs)
+				else if (rt == branch_rt || rt == branch_rs)
 					res = 0;
 				else
 					res = bintrans_write_instruction__addiu(&ca, &pc_inc, rt, rs, imm);
 				if (!res)
 					try_to_translate = 0;
-			} else
-#endif
-			if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
+			} else if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
 				/*  Nop.  */
 			} else
 				try_to_translate = 0;
@@ -764,6 +732,26 @@ try_to_translate = 0;
 				try_to_translate = 0;
 			else
 				n_translated += res;
+			break;
+		case HI6_J:
+		case HI6_JAL:
+			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
+			if (p == 0xffc) {
+				try_to_translate = 0;
+				break;
+			}
+#if 1
+			if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
+				imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
+				    (instr[1] << 8) + instr[0]) & 0x03ffffff;
+				pc_inc += sizeof(instr);
+				bintrans_write_instruction__jal(&ca, &pc_inc, imm, hi6 == HI6_JAL);
+				n_translated += 2;
+				p += sizeof(instr);
+				pc_inc = sizeof(instr);	/*  will be decreased later  */
+			}
+#endif
+			try_to_translate = 0;
 			break;
 		case HI6_LW:
 		case HI6_LHU:
@@ -856,6 +844,8 @@ try_to_translate = 0;
 			try_to_translate = 0;
 	}
 
+	tep->page_is_potentially_in_use = 1;
+
 	/*  Not enough translated? Then abort.  */
 	if (n_translated < 1) {
 		tep->length_and_flags[offset_within_page] |= UNTRANSLATABLE;
@@ -895,8 +885,7 @@ try_to_translate = 0;
 	/*  ... and make sure all instructions are accounted for:  */
 	if (n_translated > 1) {
 		for (i=1; i<n_translated; i++) {
-			tep->length_and_flags[offset_within_page + i] =
-			    INSIDE_A_CHUNK;
+			tep->length_and_flags[offset_within_page + i] = 0;
 			tep->chunk[offset_within_page + i] = NULL;
 		}
 	}

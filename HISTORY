@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.302 2004-11-08 20:20:32 debug Exp $
+$Id: HISTORY,v 1.303 2004-11-09 04:28:40 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1126,3 +1126,4 @@ HISTORY of mips64emul
 20041107	More bintrans updates (probably broken for non-Alpha targets).
 		Moving doc/mips64emul.1 to man/.
 20041108	Some updates.
+20041109	More updates. Bintrans experiments mostly.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.20 2004-11-09 01:17:40 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.21 2004-11-09 04:28:42 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -802,6 +802,7 @@ int bintrans_write_instruction__lui(unsigned char **addrp,
 int bintrans_write_instruction__lw(unsigned char **addrp,
 	int *pc_inc, int first_load, int first_store, int rt, int imm, int rs, int load_type)
 {
+	unsigned char *jumppast1, *jumppast1b=NULL, *jumppast1c, *jumppast2;
 	unsigned char *a;
 	int ofs;
 
@@ -813,17 +814,203 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 	a = *addrp;
 
 	/*
-	 *  if (cpu->pc_bintrans_data_host_4kpage == NULL)
+	 *  if (cpu->pc_bintrans_data_host_4kpage[0] == NULL)
+	 *	skip;
+	 *
+	 *  98 08 90 a4     ldq     t3,2200(a0)
+	 *  01 00 80 e4     beq     t3,c <skip>
+	 */
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage[0]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
+
+	if (1) {  /* first_load && first_store) { */
+		jumppast1 = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
+	}
+
+	if (1) { /* first_store) { */
+		switch (load_type) {
+		case LOAD_TYPE_SW:
+		case LOAD_TYPE_SH:
+		case LOAD_TYPE_SB:
+			/*
+			 *  if (!cpu->pc_bintrans_data_writeflag[0])
+			 *	return;
+			 *
+			 *  00 00 30 a0     ldl     t0,0(a0)
+			 *  01 00 20 e4     beq     t0,2c <skip>
+			 */
+			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[0]) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+			jumppast1b = a;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+			break;
+		default:
+			;
+		}
+	}
+
+	/*
+	 *  t2 = gpr[rs] + imm;
+	 *
+	 *  88 08 30 a4     ldq     t0,2184(a0)
+	 *  34 12 61 20     lda     t2,4660(t0)
+	 */
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x61; *a++ = 0x20;
+
+	switch (load_type) {
+	case LOAD_TYPE_LW:
+	case LOAD_TYPE_SW:
+		/*
+		 *  if (t2 & 3)		check for misalignment
+		 *	return;
+		 *
+		 *  02 70 60 44     and     t2,0x3,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0x70; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LHU:
+	case LOAD_TYPE_LH:
+	case LOAD_TYPE_SH:
+		/*
+		 *  if (t2 & 1)		check for misalignment
+		 *	return;
+		 *
+		 *  02 30 60 44     and     t2,0x1,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0x30; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LBU:
+	case LOAD_TYPE_LB:
+	case LOAD_TYPE_SB:
+		break;
+	default:
+		;
+	}
+
+	/*
+	 *  Same virtual page?
+	 *  if (cpu->pc_bintrans_data_virtual_4kpage[0] != (t2 & ~0xfff))
+	 *	return;
+	 *
+	 *  90 08 30 a4     ldq     t0,2192(a0)
+	 *  00 f0 5f 20     lda     t1,-4096
+	 *  02 00 62 44     and     t2,t1,t1
+	 *  1f 04 ff 5f     fnop
+	 *  a1 05 41 40     cmpeq   t1,t0,t0
+	 *  01 00 20 e4     beq     t0,3c <skip>
+	 */
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_virtual_4kpage[0]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
+	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+	*a++ = 0xa1; *a++ = 0x05; *a++ = 0x41; *a++ = 0x40;	/*  cmpeq  */
+	jumppast1c = a;
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq  */
+
+	/*
+	 *  t3 = hostpage + pageoffset;
+	 *  gpr[rt] = load word from t3
+	 *
+	 *  ff 0f 3f 20     lda     t0,4095
+	 *  03 00 61 44     and     t2,t0,t2
+	 *  04 04 83 40     addq    t3,t2,t3
+	 *  1f 04 ff 5f     fnop
+	 *
+	 *  00 00 24 a0     ldl     t0,0(t3)
+	 *  00 00 30 b4     stq     t0,rt(a0)
+	 */
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x3f; *a++ = 0x20;	/*  lda  */
+	*a++ = 0x03; *a++ = 0x00; *a++ = 0x61; *a++ = 0x44;	/*  and  */
+	*a++ = 0x04; *a++ = 0x04; *a++ = 0x83; *a++ = 0x40;	/*  addq  */
+	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+
+/*  TODO: big endian byte order?  */
+
+	switch (load_type) {
+	case LOAD_TYPE_LW:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;			/*  ldl from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LHU:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LH:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
+		*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextw   t0,t0  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LBU:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LB:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextb   t0,t0  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_SW:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
+		break;
+	case LOAD_TYPE_SH:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
+		break;
+	case LOAD_TYPE_SB:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x38;			/*  stb to memory  */
+		break;
+	default:
+		;
+	}
+
+
+
+
+
+	/*  jump past the [1] case:  */
+	/*  00 00 e0 e7     beq     zero,4c <ok>  */
+	jumppast2 = a;
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xe7;
+
+	/*  if skipping the [0] case, we should end up here:  */
+	*jumppast1  = ((size_t)a - (size_t)jumppast1  - 4) / 4;
+	if (jumppast1b != NULL)
+		*jumppast1b = ((size_t)a - (size_t)jumppast1b - 4) / 4;
+	*jumppast1c = ((size_t)a - (size_t)jumppast1c - 4) / 4;
+
+
+
+
+
+
+	/*
+	 *  if (cpu->pc_bintrans_data_host_4kpage[1] == NULL)
 	 *	return;
 	 *
 	 *  98 08 90 a4     ldq     t3,2200(a0)
 	 *  01 00 80 f4     bne     t3,c <ok1>
 	 *  01 80 fa 6b     ret
 	 */
-	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage[1]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
 
-	if (first_load && first_store) {
+	if (1) {  /* first_load && first_store) { */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xf4;
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
 	}
@@ -834,14 +1021,14 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 		case LOAD_TYPE_SH:
 		case LOAD_TYPE_SB:
 			/*
-			 *  if (!cpu->pc_bintrans_data_writeflag)
+			 *  if (!cpu->pc_bintrans_data_writeflag[1])
 			 *	return;
 			 *
 			 *  00 00 30 a0     ldl     t0,0(a0)
 			 *  01 00 20 f4     bne     t0,2c <ok>
 			 *  01 80 fa 6b     ret
 			 */
-			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag[1]) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
 			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
@@ -901,7 +1088,7 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 
 	/*
 	 *  Same virtual page?
-	 *  if (cpu->pc_bintrans_data_virtual_4kpage != (t2 & ~0xfff))
+	 *  if (cpu->pc_bintrans_data_virtual_4kpage[1] != (t2 & ~0xfff))
 	 *	return;
 	 *
 	 *  90 08 30 a4     ldq     t0,2192(a0)
@@ -912,7 +1099,7 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 	 *  01 00 20 f4     bne     t0,3c <ok3>
 	 *  01 80 fa 6b     ret
 	 */
-	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_virtual_4kpage) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_virtual_4kpage[1]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 	*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
@@ -980,6 +1167,13 @@ int bintrans_write_instruction__lw(unsigned char **addrp,
 	default:
 		;
 	}
+
+
+
+	/*  if skipping the [1] case, we should end up here:  */
+	*jumppast2 = ((size_t)a - (size_t)jumppast2 - 4) / 4;
+
+
 
 	*addrp = a;
 	return 1;
@@ -1219,7 +1413,7 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 		 */
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 		    - ((size_t)&dummy_cpu);
-		*a++ = 0xc0; *a++ = 0x00; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x01; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -1298,6 +1492,86 @@ int bintrans_write_instruction__branch(unsigned char **addrp,
 #else
 	(*pc_inc) += 4;
 #endif
+
+	return 2;
+}
+
+
+/*
+ *  bintrans_write_instruction__jal():
+ */
+int bintrans_write_instruction__jal(unsigned char **addrp,
+	int *pc_inc, int imm, int link)
+{
+	unsigned char *a;
+	int ofs;
+	uint64_t subimm;
+
+	/*  Flush both the jal and the delay slot instruction:  */
+	bintrans_write_pcflush(addrp, pc_inc, 1, 1);
+
+	a = *addrp;
+
+	/*
+	 *  gpr[31] = retaddr
+	 *
+	 *  18 09 30 a4     ldq     t0,pc(a0)
+	 *  18 09 30 b4     stq     t0,gpr31(a0)
+	 */
+	if (link) {
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+		ofs = ((size_t)&dummy_cpu.gpr[31]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	}
+
+	/*  Set the lowest 28 bits of pc to imm*4:  */
+
+	/*
+	 *  imm = 4*imm;
+	 *  t0 = pc
+	 *  shift right t0 28 steps.
+	 *  shift left t0 14 steps.
+	 *  OR in 14 bits of part of imm
+	 *  shift left 14 steps.
+	 *  OR in the lowest 14 bits of imm.
+	 *  pc = t0
+	 *
+	 *  18 09 30 a4     ldq     t0,pc(a0)
+	 *  81 96 23 48     srl     t0,0x1c,t0
+	 *  21 d7 21 48     sll     t0,0xe,t0
+	 *  c8 01 5f 20     lda     t1,456
+	 *  01 04 22 44     or      t0,t1,t0
+	 *  21 d7 21 48     sll     t0,0xe,t0
+	 *  c8 01 5f 20     lda     t1,456
+	 *  01 04 22 44     or      t0,t1,t0
+	 *  18 09 30 b4     stq     t0,pc(a0)
+	 */
+
+	imm *= 4;
+
+	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	*a++ = 0x81; *a++ = 0x96; *a++ = 0x23; *a++ = 0x48;
+	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
+
+	subimm = (imm >> 14) & 0x3fff;
+	*a++ = (subimm & 255); *a++ = (subimm >> 8); *a++ = 0x5f; *a++ = 0x20;
+
+	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
+	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
+
+	subimm = imm & 0x3fff;
+	*a++ = (subimm & 255); *a++ = (subimm >> 8); *a++ = 0x5f; *a++ = 0x20;
+
+	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
+
+	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+	*addrp = a;
 
 	return 2;
 }

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.135 2004-11-07 19:58:50 debug Exp $
+ *  $Id: misc.h,v 1.136 2004-11-09 04:28:41 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -553,6 +553,9 @@ struct r4000_cache_line {
 	char		dummy;
 };
 
+#define	N_BINTRANS_DATA		2
+
+
 struct cpu {
 	int		byte_order;
 	int		running;
@@ -620,9 +623,10 @@ struct cpu {
 	unsigned char	*pc_bintrans_host_4kpage;
 
 	/*  Data:  */
-	unsigned char	*pc_bintrans_data_host_4kpage;
-	uint64_t	pc_bintrans_data_virtual_4kpage;
-	int		pc_bintrans_data_writeflag;
+	int		pc_bintrans_data_index;
+	unsigned char	*pc_bintrans_data_host_4kpage[N_BINTRANS_DATA];
+	uint64_t	pc_bintrans_data_virtual_4kpage[N_BINTRANS_DATA];
+	int		pc_bintrans_data_writeflag[N_BINTRANS_DATA];
 #endif
 
 #ifdef ENABLE_MIPS16

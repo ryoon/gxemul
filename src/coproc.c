@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.10 2004-01-05 03:25:26 debug Exp $
+ *  $Id: coproc.c,v 1.11 2004-01-05 05:40:53 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -222,7 +222,9 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R2000:	fpu_rev = MIPS_R2010;	break;
-		case MIPS_R3000:	fpu_rev = MIPS_R3010;	break;
+		case MIPS_R3000:	fpu_rev = MIPS_R3010;
+					other_stuff |= 0x40;
+					break;
 		case MIPS_R6000:	fpu_rev = MIPS_R6010;	break;
 		case MIPS_R4000:	fpu_rev = MIPS_R4010;	break;
 
@@ -424,10 +426,6 @@ void coproc_register_write(struct cpu *cpu,
 	}
 
 	if (cp->coproc_nr==1)	unimpl = 0;
-
-	/*  SGI Origin 3000 stuff (TODO):  */
-	if (cp->coproc_nr==3 && reg_nr==7)
-		unimpl = 0;
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "

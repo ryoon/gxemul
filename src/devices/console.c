@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.4 2003-11-08 14:26:35 debug Exp $
+ *  $Id: console.c,v 1.5 2003-11-20 05:06:30 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -58,6 +58,10 @@ static unsigned char console_fifo[CONSOLE_FIFO_LEN];
 static int console_fifo_head;
 static int console_fifo_tail;
 
+static int console_mouse_x;		/*  absolute x, 0-based  */
+static int console_mouse_y;		/*  absolute y, 0-based  */
+static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
+
 
 /*
  *  console_init():
@@ -82,6 +86,10 @@ void console_init(void)
 
 	console_stdout_pending = 1;
 	console_fifo_head = console_fifo_tail = 0;
+
+	console_mouse_x = 0;
+	console_mouse_y = 0;
+	console_mouse_buttons = 0;
 
 	console_initialized = 1;
 }
@@ -208,4 +216,48 @@ void console_flush(void)
 	console_stdout_pending = 0;
 }
 
+
+/*
+ *  console_mouse_coordinates():
+ *
+ *  Sets mouse coordinates. Called by for example an X11 event handler.
+ *  x and y are absolute coordinates.
+ */
+void console_mouse_coordinates(int x, int y)
+{
+	console_mouse_x = x;
+	console_mouse_y = y;
+}
+
+
+/*
+ *  console_mouse_button():
+ *
+ *  Sets a mouse button to be pressed or released. Called by for example an
+ *  X11 event handler.  button is 1 (left), 2 (middle), or 3 (right), and
+ *  pressed = 1 for pressed, 0 for not pressed.
+ */
+void console_mouse_button(int button, int pressed)
+{
+	int mask = 1 << (3-button);
+
+	if (pressed)
+		console_mouse_buttons |= mask;
+	else
+		console_mouse_buttons &= ~mask;
+}
+
+
+/*
+ *  console_getmouse():
+ *
+ *  Puts current mouse data into the variables pointed to by
+ *  the arguments.
+ */
+void console_getmouse(int *x, int *y, int *buttons)
+{
+	*x = console_mouse_x;
+	*y = console_mouse_y;
+	*buttons = console_mouse_buttons;
+}
 

@@ -1,0 +1,37 @@
+#
+#  Makefile for mips64emul
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
+BIN=mips64emul
+LIBS=-lm $(XLIB)
+
+all:
+	cd src; $(MAKE); cd ..
+	cd devices; $(MAKE); cd ..
+	$(CC) */*.o $(LIBS) -o $(BIN)
+
+test: test_mips test_mips16
+	ls -la test_mips test_mips16
+
+test_mips.o: test_mips.c
+	mips64-unknown-elf-gcc -O3 -fno-builtin -mips4 -mabi=64  -c test_mips.c -o test_mips.o
+
+test_mips16.o: test_mips.c
+	mips64-unknown-elf-gcc -O3 -fno-builtin -mips16 -mabi=64  -c test_mips.c -o test_mips16.o
+
+test_mips: test_mips.o
+	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips.o -o test_mips --oformat=elf64-bigmips
+
+test_mips16: test_mips16.o
+	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips16.o -o test_mips16 --oformat=elf64-bigmips
+
+clean:
+	rm -f $(BIN) *core
+	cd src; $(MAKE) clean; cd ..
+	cd devices; $(MAKE) clean; cd ..
+	rm -f test_mips.o test_mips16.o test_mips test_mips16
+
+clean_all: clean
+	rm -f Makefile src/Makefile devices/Makefile
+

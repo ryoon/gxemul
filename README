@@ -1,0 +1,46 @@
+mips64emul
+==========
+
+mips64emul is a MIPS CPU emulator.  The goal is to simulate a MIPS CPU and
+enough surrounding hardware well enough to run unmodified operating systems
+as if they were running on a real machine.
+
+To compile, type './configure' and then 'make'.
+
+A test program can be rebuilt by typing 'make test', if you have
+a cross-compiler suite set up with the same names as the Makefile
+uses.
+
+Real operating system kernels can be downloaded from various places.
+Here are examples of kernels that can be experimented with:
+
+  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
+  Try running with  -D x  (where x is 1, 2, 3, 4, 7, or 12).
+  NOTE:  When using -D 1 or -D 7, you can also use -X to get a
+  graphical (framebuffer) console.  (You still have to have focus on the
+  xterm where the emulator is running to give keyboard input to
+  the emulator.)
+
+  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
+  Try running with  -E.
+
+  http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
+  gunzip, and then try running with -E.
+
+  ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
+  This is an old OpenBSD kernel in a.out format.
+  Try running with  -D 1.
+
+  Another linux kernel:
+  ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/
+
+  A NetBSD/playstation2 snapshot kernel is available here:
+  ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
+  Try running with  -X -B      (-X is required, for the framebuffer).
+
+NOTE:  Add a  -q  to the command line options to supress debug messages.
+       For X-windows framebuffers, you can add  -Y2  to scale down the
+       framebuffer window a bit.
+
+Send feedback to:  md1gavan at mdstud.chalmers.se.
+

@@ -1,0 +1,21 @@
+#
+#  Makefile for mips64emul src
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE) $(INCLUDE)
+BIN=mips64emul
+D=devices
+OBJS=main.o emul.o machine.o memory.o file.o \
+	cpu.o coproc.o symbol.o \
+	x11.o \
+	dec_prom.o ps2_bios.o arcbios.o
+
+all: $(OBJS)
+
+$(OBJS): Makefile
+
+clean:
+	rm -f $(BIN) $(OBJS) *core
+
+clean_all: clean
+	rm -f Makefile

@@ -1,0 +1,168 @@
+mips64emul TODO
+---------------
+
+Most important stuff:
+
+  o)  DECstations:
+	x)  write 'sii' or 'asc' SCSI interface stuff for pmax so that harddisk images can be used
+	x)  try to install NetBSD/pmax onto a fake SCSI-disk
+	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
+	x)  try to run X inside NetBSD, using framebuffer(s) with mouse support!
+
+  o)  Speed optimizations:
+	x)  memory_rw() cache for recently used pages. (how to invalidate
+	    pages? write-through? invalidate on tlb updates?)
+	    (perhaps place this cache in the src/cpu.c module, so that it can
+	    be inlined or optimized together with that module)
+
+-------------------------------------------------------------------------------------
+
+	Instructions:
+		o)  Add exception support to all instructions!
+		o)  Go through the ENTIRE MIPS64 ISA and VR5432 ISA and make sure that
+		    every instruction is:
+			*  included in the emulator,
+			*  tested using a kind of regression test (ie test code
+			   written in mips assembly language)
+		o)  Floating point instructions. (ISA I and II?)
+		o)  MIPS V (SIMD vector stuff?)
+		o)  MDMX?  (MIPS Digital Media Extension)
+		o)  Warn about mis-used bit fields (ie bits that should be
+			all zeroes, warn about if they are not)!
+			Both for coprocessor registers and for instruction opcodes.
+		o)  warn and/or cause exceptions for unimplemented instructions,
+			at specific ISA levels.
+		o)  MIPS 16 (???)
+		o)  Something radical:  instead of a large switch/case thing,
+			I could implement some kind of tree-structure of masks
+			and comparisions, and arrays of functions to call. Hm.
+			(Performance hack.)
+
+	Framebuffer stuff:
+		o)  "Sprites", or overlays  (useful for cursors...)
+		o)  2D and 3D acceleration
+		o)  Playstation 2 color encoding is not rgb
+		o)  Move the polygon drawing stuff to its own module.
+		o)  Antialiased polygons? :-)
+
+	Code cleanup:
+		o)  Namespace consistency
+		o)  Struct encapsulation:  no global variables, or at least
+			as few as possible
+		o)  No hardcoded values, use #defines
+
+	CPU Emulation:
+		o)  coproc 0 selectors!
+		o)  Nr of instructions per second is NOT the number of cycles
+		    per second, this is CPU dependant.  Several subsystems (CPUs,
+		    other systems) may need to have speeds fixed relative to each
+		    other.
+		o)  R4000:  watchhi/watchlo exceptions, and other exception
+		    handling details
+		o)  r2k/r3k: Make sure that registers (INCLUDING coprocessor registers)
+		    are always sign-extended. (32-bit stuff)
+		o)  R3000 "tri-byte stores"???
+		o)  Delay after R3000 interrupt enabling instructions (write to cop0),
+		    before interrupts are actually enabled. (?)
+		o)  Implement load delays?  Warnings on interlocks.
+		o)  Implement all coprocessor 0 bits / functions.
+			x)  BEV and all exception vectors....
+			x)  Actual 64-bit addressing
+		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
+		o)  5K, r10000: I've printed the manuals, so these should
+			be possible to cover
+		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
+
+	Emulation of specific machines:
+		o)  Separate busses and ROM emulation from machines!
+			x)  TURBOchannel  (many DEC systems)
+			x)  QBus (DECsystem 5400)
+			x)  ARCBIOS (SGI, arc?)
+			x)  PCI  (Cobalt)
+
+		o)  DECstations (pmax):
+			framebuffers:
+				x) programmable cursors?
+				x) overlays?
+				x) 2D/3D accelerated framebuffers?
+				x) more VDACs
+			status words / control words, make this more portable/cleaner
+			scsi controller(s): sii, asc
+			ethernet controller(s): le, fddi?
+			serial controllers: dc (keyboard? mouse?), ssc, scc
+			download the ROM from my DECstation 5000/125 and
+				see if I can get it to run. (add an option to
+				the emulator to be "bare", ie no ROM emulation
+				in software)
+
+		o)  Cobalt:
+			"cpu0 at mainbus0: QED RM5200 CPU Rev. 10.0 with built-in FPU Rev. 10.0
+			 cpu0: L1 cache: 32KB/32B Instruction, 32KB/32B Data, two way set associative
+			 cpu0: No L2 cache", according to NetBSD.
+			Tulip ethernet
+			harddisk controller
+
+		o)  SGI machines (sgimips):
+			More ARCBIOS stuff?
+
+		o)  hpcmips:
+			framebuffer(s)
+			harddisk controller
+
+		o)  Playstation 2:
+			R5900 "weird" instructions
+			Hardware (graphics, sound, dma, ...)
+			Has an R3000A as a subsystem (!)
+			ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/
+
+		o)  Playstation 1? R3000A. Weird hardware?
+			No FPU, but something as coproc 2.
+			(Perhaps the PS1 is a subset of the PS2.)
+
+		o)  Nintendo 64? R4000.  http://www.nintendo.com/systems/n64/n64_specs.jsp
+
+		o)  newsmips, arc?
+
+	Multi-cpu stuff:
+		either do it in a way which emulates a real MP MIPS machine,
+		or I'll just implement my own way, with some structures
+		in memory telling the operating system running what
+		cpus there are available, and how to access them)
+
+	Caches / memory hierarchies:
+		o)  Implement correct cache emulation (per CPU, multiple
+		    levels should be possible)
+		o)  Increase performance of the emulator by caching data on the
+		    host (separately, but in cooperation with the emulated CPUs'
+		    caches).  A small number (say ~ 32) of small cache blocks
+		    (a few KBs at most) might do it.
+		o)  ECC stuff, simulation of memory errors?
+
+	File handling:
+		o)  Read function argument types from binaries? (ELF?)
+		o)  Ability to read raw binary files into any memory location
+			(for ROM images, etc)
+		o)  zlib support (should be optional) for:
+			x)  loading gzipped kernels directly
+			x)  (read-only) disk images
+		o)  'srec' binaries?
+
+	Better X-windows functionality:
+		o)  Multiple framebuffer windows
+		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
+			code to src/x11.c!
+
+	Profile the whole emulator, and try to increase performance. As
+		of now it is utterly slow.
+
+	Statistics:  (this could be interesting)
+		o)  memory accesses (to measure cache efficiency and
+			page coloring efficiency)
+		o)  nr-of-instructions-in-a-row-that-don't-affect-eachother,
+			and make histograms of this data
+
+	Make sure that the emulator compiles and runs on as many Unices as
+	possible.
+
+	Write Documentation (TeX/HTML/manpages) for the whole emulator.
+

@@ -1,0 +1,27 @@
+#
+#  Makefile for mips64emul devices
+#
+
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE) $(INCLUDE)
+OBJS=console.o \
+	dev_cons.o dev_mp.o \
+	dev_gt.o \
+	dev_mc146818.o \
+	dev_dc7085.o dev_ssc.o dev_scc.o dev_ns16550.o \
+	dev_fb.o dev_colorplanemask.o \
+	dev_vdac.o dev_bt459.o \
+	dev_turbochannel.o \
+	dev_kn02.o dev_kn210.o dev_kn230.o \
+	dev_sii.o dev_asc.o \
+	dev_le.o dev_kn01_csr.o \
+	dev_ps2_dmac.o dev_ps2_gs.o dev_ps2_gif.o
+
+all: $(OBJS)
+
+$(OBJS): Makefile
+
+clean:
+	rm -f $(OBJS) *core
+
+clean_all: clean
+	rm -f Makefile

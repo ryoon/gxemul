@@ -23,11 +23,22 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.3 2004-06-22 22:25:33 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.4 2004-06-27 01:08:53 debug Exp $
  *
  *  Alpha specific code for binary translation.
  *
  *  See bintrans.c for more information.  Included from bintrans.c.
  */
 
+
+/*
+ *  bintrans_host_cacheinvalidate()
+ *
+ *  Invalidate the host's instruction cache. On Alpha, we do this by
+ *  executing an imb instruction.
+ */
+void bintrans_host_cacheinvalidate()
+{
+	asm("imb");
+}
 

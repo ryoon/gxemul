@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.455 2005-01-09 02:54:42 debug Exp $
+$Id: HISTORY,v 1.456 2005-01-09 03:41:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1433,3 +1433,4 @@ HISTORY of mips64emul
 		memory_v2p.c is now included separately for MMU10K and
 		MMU8K.
 		Fixing a NS16550 bug, triggered by NetBSD 2.0, but not 1.6.2.
+		Refreshing the UltraSPARC bintrans backend skeleton.

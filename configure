@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.77 2005-01-09 03:18:28 debug Exp $
+#  $Id: configure,v 1.78 2005-01-09 03:41:10 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -505,21 +505,20 @@ else
 #		BINTRANS=YES
 #	fi
 
-# Sparc not yet
-#	#  UltraSPARC:
-#	if [ z"`uname -m`" = zsun4u ]; then
-#		printf "#define SPARCV9\n" >> config.h
-#		printf "#define BINTRANS\n" >> config.h
-#		printf "sparcv9\n"
-#		BINTRANS=YES
-#	else
-#		if [ z"`uname -m`" = zsparc64 ]; then
-#			printf "#define SPARCV9\n" >> config.h
-#			printf "#define BINTRANS\n" >> config.h
-#			printf "sparcv9\n"
-#			BINTRANS=YES
-#		fi
-#	fi
+	#  UltraSPARC:
+	if [ z"`uname -m`" = zsun4u ]; then
+		printf "#define SPARCV9\n" >> config.h
+		printf "#define BINTRANS\n" >> config.h
+		printf "sparcv9\n"
+		BINTRANS=YES
+	else
+		if [ z"`uname -m`" = zsparc64 ]; then
+			printf "#define SPARCV9\n" >> config.h
+			printf "#define BINTRANS\n" >> config.h
+			printf "sparcv9\n"
+			BINTRANS=YES
+		fi
+	fi
 
 	if [ z$BINTRANS = zNO ]; then
 		printf "not supported yet on this arch\n"

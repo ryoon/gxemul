@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,134 +25,212 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.9 2005-01-09 01:55:30 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.10 2005-01-09 03:41:12 debug Exp $
  *
- *  UltraSparc specific code for dynamic binary translation.
+ *  UltraSPARC specific code for dynamic binary translation.
  *
  *  See bintrans.c for more information.  Included from bintrans.c.
  */
 
-
 struct cpu dummy_cpu;
+struct coproc dummy_coproc;
+struct vth32_table dummy_vth32_table;
 
 
 /*
  *  bintrans_host_cacheinvalidate()
  *
  *  Invalidate the host's instruction cache.
- *
- *  TODO.
  */
-void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
+static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
+{
+	/*  TODO  */
+}
+
+
+static uint32_t bintrans_sparcv9_runchunk[2] = {
+	0x81c3e008,
+	0x01000000
+};
+
+static uint32_t bintrans_sparcv9_jump_to_32bit_pc[2] = {
+	0x81c3e008,
+	0x01000000
+};
+
+static uint32_t bintrans_sparcv9_loadstore_32bit[2] = {
+	0x81c3e008,
+	0x01000000
+};
+
+static const void (*bintrans_runchunk)
+    (struct cpu *, unsigned char *) = (void *)bintrans_sparcv9_runchunk;
+
+static void (*bintrans_jump_to_32bit_pc)
+    (struct cpu *) = (void *)bintrans_sparcv9_jump_to_32bit_pc;
+
+static void (*bintrans_loadstore_32bit)
+    (struct cpu *) = (void *)bintrans_sparcv9_loadstore_32bit;
+
+
+/*
+ *  bintrans_write_quickjump():
+ */
+static void bintrans_write_quickjump(unsigned char *quickjump_code,
+	uint32_t chunkoffset)
 {
 	/*  TODO  */
 }
 
 
 /*
- *  bintrans_chunk_header_len():
- *
- *  TODO: Comment.
+ *  bintrans_write_chunkreturn():
  */
-size_t bintrans_chunk_header_len(void)
+static void bintrans_write_chunkreturn(unsigned char **addrp)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+
+	*a++ = 0x81c3e008;	/*  retl  */
+	*a++ = 0x01000000;	/*  nop  */
+
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_write_chunkreturn_fail():
+ */
+static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+
+	/*  TODO:  Or BINTRANS_DONT_RUN_NEXT into nr of instrs  */
+
+	*a++ = 0x81c3e008;	/*  retl  */
+	*a++ = 0x01000000;	/*  nop  */
+
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_write_pc_inc():
+ */
+static void bintrans_write_pc_inc(unsigned char **addrp)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+
+	/*  TODO: add 1 to nr of instrs, and 4 to pc  */
+
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_write_instruction__addiu_etc():
+ */
+static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
+	int rt, int rs, int imm, int instruction_type)
 {
 	return 0;
 }
 
 
 /*
- *  bintrans_write_chunkhead():
- *
- *  TODO: Comment.
+ *  bintrans_write_instruction__addu_etc():
  */
-void bintrans_write_chunkhead(unsigned char *p)
+static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
+	int rd, int rs, int rt, int sa, int instruction_type)
 {
+	return 0;
 }
 
 
 /*
- *  bintrans_write_chunkreturn():
- *
- *  TODO: Comment.
+ *  bintrans_write_instruction__branch():
  */
-void bintrans_write_chunkreturn(unsigned char **addrp)
+static int bintrans_write_instruction__branch(unsigned char **addrp,
+	int instruction_type, int regimm_type, int rt, int rs, int imm)
 {
-	unsigned char *a = *addrp;
-
-	*a++ = 0x81; *a++ = 0xc3; *a++ = 0xe0; *a++ = 0x08;  /*  retl  */
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0x00;  /*  nop  */
-
-	*addrp = a;
+	return 0;
 }
 
 
 /*
- *  bintrans_write_pcflush():
- *
- *  TODO: Comment.
+ *  bintrans_write_instruction__jr():
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
-	int flag_pc, int flag_ninstr)
+static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
 {
-	unsigned char *a = *addrp;
-	int inc = *pc_increment;
-	int ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
-
-	if (inc == 0)
-		return;
-
-	if (flag_pc) {
-		/*  Increment cpu->pc: (assuming %o5 is available for use)  */
-		*a++ = 0xda; *a++ = 0x5a; *a++ = 0x20 + (ofs >> 8);
-		    *a++ = (ofs & 255);		/*  ldx [ %o0 + ofs ], %o5  */
-		*a++ = 0x9a; *a++ = 3; *a++ = 0x60 + (inc >> 8);
-		    *a++ = (inc & 255);		/*  add %o5, inc, %o5  */
-		*a++ = 0xda; *a++ = 0x72; *a++ = 0x20 + (ofs >> 8);
-		    *a++ = (ofs & 255);		/*  stx %o5, [ %o0 + ofs ]  */
-	}
-
-	if (flag_ninstr) {
-		/*  Increment the instruction count:  */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-	            - ((size_t)&dummy_cpu);
-		inc /= 4;	/*  nr of instructions instead of bytes  */
-		*a++ = 0xc4; *a++ = 0x02; *a++ = 0x20 + (ofs >> 8);
-		    *a++ = (ofs & 255);		/*  ld [ %o0 + ofs ], %g2  */
-		*a++ = 0x84; *a++ = 0x00; *a++ = 0xa0 + (inc >> 8);
-		    *a++ = (inc & 255);		/*  add  %g2, inc, %g2  */
-		*a++ = 0xc4; *a++ = 0x22; *a++ = 0x20 + (ofs >> 8);
-		    *a++ = (ofs & 255);		/*  st %g2, [ %o0 + ofs ]  */
-	}
-
-	*pc_increment = 0;
-	*addrp = a;
+	return 0;
 }
 
 
 /*
- *  bintrans_write_instruction():
- *
- *  TODO: Comment.
+ *  bintrans_write_instruction__jal():
  */
-int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment, uint64_t arg_a, uint64_t arg_b, uint64_t arg_c)
+static int bintrans_write_instruction__jal(unsigned char **addrp,
+	int imm, int link)
 {
-	unsigned char *addr = *addrp;
-	int res = 0;
+	return 0;
+}
 
-	switch (instr) {
-	case INSTR_NOP:
-		/*  Add nothing, but succeed.  */
-		res = 1;
-		break;
-	default:
-		fatal("bintrans_write_instruction(): unimplemented "
-		    "instruction %i\n", instr);
-		res = 0;
-	}
 
-	*addrp = addr;
+/*
+ *  bintrans_write_instruction__delayedbranch():
+ */
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
+	uint32_t *potential_chunk_p, uint32_t *chunks,
+	int only_care_about_chunk_p, int p, int forward)
+{
+	return 0;
+}
 
-	return res;
+
+/*
+ *  bintrans_write_instruction__loadstore():
+ */
+static int bintrans_write_instruction__loadstore(unsigned char **addrp,
+	int rt, int imm, int rs, int instruction_type, int bigendian)
+{
+	return 0;
+}
+
+
+/*
+ *  bintrans_write_instruction__lui():
+ */
+static int bintrans_write_instruction__lui(unsigned char **addrp,
+	int rt, int imm)
+{
+	return 0;
+}
+
+
+/*
+ *  bintrans_write_instruction__mfmthilo():
+ */
+static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
+	int rd, int from_flag, int hi_flag)
+{
+	return 0;
+}
+
+
+/*
+ *  bintrans_write_instruction__mfc_mtc():
+ */
+static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
+{
+	return 0;
+}
+
+
+/*
+ *  bintrans_write_instruction__tlb_rfe_etc():
+ */
+static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
+	int itype)
+{
+	return 0;
 }
 

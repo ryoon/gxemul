@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.10 2005-01-23 13:43:02 debug Exp $
+ *  $Id: pci_ahc.c,v 1.11 2005-02-02 09:54:29 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -107,14 +107,21 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-/*	struct ahc_data *d = extra;  */
+	struct ahc_data *d = extra;
 	uint64_t idata, odata = 0;
+	int ok;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 
+	case 0x1d:
+		ok = 1;
+		odata = 0xff;
+		break;
+
 	case 0x84:
+		ok = 1;
 		odata = 4 | 1;
 		break;
 
@@ -124,6 +131,15 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 		else
 			fatal("[ ahc: unimplemented read from address 0x%x ]\n", relative_addr);
 	}
+
+#if 0
+	if (ok) {
+		if (writeflag == MEM_WRITE)
+			fatal("[ ahc: write to address 0x%x, data=0x%02x ]\n", relative_addr, (int)idata);
+		else
+			fatal("[ ahc: read from address 0x%x: 0x%02x ]\n", relative_addr, (int)odata);
+	}
+#endif
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

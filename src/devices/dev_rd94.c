@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.21 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_rd94.c,v 1.22 2005-02-02 09:54:29 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -91,6 +91,16 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case RD94_SYS_CONFIG:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ rd94: write to CONFIG: 0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			odata = 0;
+			fatal("[ rd94: read from CONFIG: 0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
 	case RD94_SYS_INTSTAT1:		/*  LB (Local Bus ???)  */
 		if (writeflag == MEM_WRITE) {
 		} else {

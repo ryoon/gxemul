@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.87 2005-01-26 19:08:23 debug Exp $
+#  $Id: configure,v 1.88 2005-01-29 09:22:15 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -449,11 +449,10 @@ if [ ! -x _tests ]; then
 		fi
 		printf "#define HACK_STRTOLL\n" >> config.h
 	fi
-	rm -f _testlong*
 else
 	printf "yes\n"
 fi
-rm -f _tests.[co] _tests
+rm -f _testlong* _tests.[co] _tests
 
 
 #  fseeko missing?

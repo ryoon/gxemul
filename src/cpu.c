@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.262 2005-01-28 14:58:28 debug Exp $
+ *  $Id: cpu.c,v 1.263 2005-01-29 09:22:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3904,7 +3904,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 				}
 			} else if (max_random_cycles_per_chunk_cached > 0) {
 				for (i=0; i<ncpus; i++)
-					if (cpus[i]->running) {
+					if (cpus[i]->running && !single_step) {
 						a_few_instrs2 = machine->a_few_cycles;
 						if (a_few_instrs2 >= max_random_cycles_per_chunk_cached)
 							a_few_instrs2 = max_random_cycles_per_chunk_cached;
@@ -3914,18 +3914,20 @@ int cpu_run(struct emul *emul, struct machine *machine)
 							int instrs_run = cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
 								cpu0instrs += instrs_run;
+							if (single_step)
+								break;
 						}
 					}
 			} else {
 				/*  CPU 0 is special, cpu0instr must be updated.  */
 				for (j=0; j<machine->a_few_instrs; ) {
 					int instrs_run;
-					if (!cpus[0]->running)
+					if (!cpus[0]->running || single_step)
 						break;
 					do {
 						instrs_run =
 						    cpu_run_instr(emul, cpus[0]);
-						if (instrs_run == 0 &&
+						if (instrs_run == 0 ||
 						    single_step) {
 							j = machine->a_few_instrs;
 							break;
@@ -3944,7 +3946,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 							int instrs_run = 0;
 							while (!instrs_run) {
 								instrs_run = cpu_run_instr(emul, cpus[i]);
-								if (instrs_run == 0 &&
+								if (instrs_run == 0 ||
 								    single_step) {
 									j = a_few_instrs2;
 									break;

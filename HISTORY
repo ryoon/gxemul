@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.529 2005-01-28 14:58:26 debug Exp $
+$Id: HISTORY,v 1.530 2005-01-29 09:22:15 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1571,3 +1571,10 @@ HISTORY of mips64emul
 		options for selecting machine type.
 		Moving global variables from src/x11.c into struct machine (a
 		bit buggy, but it seems to almost work).
+20050129	Removing the Playstation 2 mode (-B) from the command line as
+		well.
+		Changing the -T command line option from meaning "trace on bad
+		address" to meaning "enter the single-step debugger on bad
+		address".
+		More updates to the configuration file parser (nested tuborg
+		comments, more options, ...).

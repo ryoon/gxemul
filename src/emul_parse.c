@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.14 2005-01-28 12:17:57 debug Exp $
+ *  $Id: emul_parse.c,v 1.15 2005-01-29 09:22:17 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -113,11 +113,17 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 		}
 
 		if (ch == '{') {
+			int depth = 1;
+
 			/*  Skip until '}':  */
-			while (ch != '}' && ch != EOF) {
+			while (depth > 0 && ch != EOF) {
 				ch = fgetc(f);
 				if (ch == '\n')
 					(*line) ++;
+				if (ch == '{')
+					depth ++;
+				if (ch == '}')
+					depth --;
 			}
 			continue;
 		}
@@ -194,7 +200,8 @@ static char cur_machine_type[50];
 static char cur_machine_subtype[50];
 static char cur_machine_bootname[150];
 static char cur_machine_bootarg[250];
-static char cur_machine_slow_serial[10];
+static char cur_machine_slowsi[10];
+static char cur_machine_debugger_on_badaddr[10];
 static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
@@ -213,7 +220,7 @@ static int cur_machine_n_load;
 static char *cur_machine_disk[MAX_N_DISK];
 static int cur_machine_n_disk;
 
-#define SIMPLE_WORD(w,var) {					\
+#define WORD(w,var) {						\
 		if (strcmp(word, w) == 0) {			\
 			read_one_word(f, word, maxbuflen,	\
 			    line, EXPECT_LEFT_PARENTHESIS);	\
@@ -311,7 +318,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootname[0] = '\0';
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
-		cur_machine_slow_serial[0] = '\0';
+		cur_machine_slowsi[0] = '\0';
+		cur_machine_debugger_on_badaddr[0] = '\0';
 		cur_machine_prom_emulation[0] = '\0';
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
@@ -362,8 +370,8 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 		return;
 	}
 
-	SIMPLE_WORD("ipv4net", cur_net_ipv4net);
-	SIMPLE_WORD("ipv4len", cur_net_ipv4len);
+	WORD("ipv4net", cur_net_ipv4net);
+	WORD("ipv4len", cur_net_ipv4len);
 
 	fatal("line %i: not expecting '%s' in a 'net' section\n", *line, word);
 	exit(1);
@@ -399,10 +407,15 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_use_x11, "no");
 		m->use_x11 = parse_on_off(cur_machine_use_x11);
 
-		if (!cur_machine_slow_serial[0])
-			strcpy(cur_machine_slow_serial, "no");
+		if (!cur_machine_slowsi[0])
+			strcpy(cur_machine_slowsi, "no");
 		m->slow_serial_interrupts_hack_for_linux =
-		    parse_on_off(cur_machine_slow_serial);
+		    parse_on_off(cur_machine_slowsi);
+
+		if (!cur_machine_debugger_on_badaddr[0])
+			strcpy(cur_machine_debugger_on_badaddr, "no");
+		m->single_step_on_bad_addr =
+		    parse_on_off(cur_machine_debugger_on_badaddr);
 
 		if (!cur_machine_prom_emulation[0])
 			strcpy(cur_machine_prom_emulation, "yes");
@@ -483,22 +496,23 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		return;
 	}
 
-	SIMPLE_WORD("name", cur_machine_name);
-	SIMPLE_WORD("cpu", cur_machine_cpu);
-	SIMPLE_WORD("type", cur_machine_type);
-	SIMPLE_WORD("subtype", cur_machine_subtype);
-	SIMPLE_WORD("bootname", cur_machine_bootname);
-	SIMPLE_WORD("bootarg", cur_machine_bootarg);
-	SIMPLE_WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slow_serial);
-	SIMPLE_WORD("prom_emulation", cur_machine_prom_emulation);
-	SIMPLE_WORD("use_x11", cur_machine_use_x11);
-	SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
-	SIMPLE_WORD("bintrans", cur_machine_bintrans);
-	SIMPLE_WORD("byte_order", cur_machine_byte_order);
-	SIMPLE_WORD("random_mem_contents", cur_machine_random_mem_contents);
-	SIMPLE_WORD("force_netboot", cur_machine_force_netboot);
-	SIMPLE_WORD("ncpus", cur_machine_ncpus);
-	SIMPLE_WORD("memory", cur_machine_memory);
+	WORD("name", cur_machine_name);
+	WORD("cpu", cur_machine_cpu);
+	WORD("type", cur_machine_type);
+	WORD("subtype", cur_machine_subtype);
+	WORD("bootname", cur_machine_bootname);
+	WORD("bootarg", cur_machine_bootarg);
+	WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slowsi);
+	WORD("debugger_on_badaddr", cur_machine_debugger_on_badaddr);
+	WORD("prom_emulation", cur_machine_prom_emulation);
+	WORD("use_x11", cur_machine_use_x11);
+	WORD("x11_scaledown", cur_machine_x11_scaledown);
+	WORD("bintrans", cur_machine_bintrans);
+	WORD("byte_order", cur_machine_byte_order);
+	WORD("random_mem_contents", cur_machine_random_mem_contents);
+	WORD("force_netboot", cur_machine_force_netboot);
+	WORD("ncpus", cur_machine_ncpus);
+	WORD("memory", cur_machine_memory);
 
 	if (strcmp(word, "load") == 0) {
 		read_one_word(f, word, maxbuflen,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.183 2005-01-28 13:47:27 debug Exp $
+ *  $Id: main.c,v 1.184 2005-01-29 09:22:17 debug Exp $
  */
 
 #include <stdio.h>
@@ -171,25 +171,34 @@ static void usage(char *progname, int longusage)
 		goto ret;
 	}
 
-	printf("\nMachine specific options:\n");
+	printf("\nMachine selection options:\n");
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, "
 	    "2=PICA-61, 3=NEC-R94,\n");
 	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, "
 	    "7=Olivetti M700,\n");
 	printf("            8=NEC-R96)\n");
 	printf("  -a        emulate a generic test machine\n");
-	printf("  -B        try to emulate a Playstation 2 machine\n");
-#ifdef BINTRANS
-	printf("  -b        enable dynamic binary translation\n");
-#endif
-	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
-	    "list of types.)\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', "
 	    "where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), "
 	    "4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, "
 	    "12=5100(MIPSMATE)\n");
+	printf("  -E t      try to emulate machine type t. (Use -H to get "
+	    "a list of types.)\n");
+	printf("  -e st     try to emulate machine subtype st. (Use this "
+	    "with -E.)\n");
+	printf("  -F xx     try to emulate an hpcmips machine, where 'xx'"
+	    " may be:\n");
+	printf("                1=Casio BE-300, 2=Casio E-105\n");
+	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
+
+	printf("\nOther machine specific options:\n");
+#ifdef BINTRANS
+	printf("  -b        enable dynamic binary translation\n");
+#endif
+	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
+	    "list of types.)\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
 	    " as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
@@ -201,14 +210,6 @@ static void usage(char *progname, int longusage)
 	    " file)\n");
 	printf("                t     SCSI tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
-	printf("  -E t      try to emulate machine type t. (Use -H to get "
-	    "a list of types.)\n");
-	printf("  -e st     try to emulate machine subtype st. (Use this "
-	    "with -E.)\n");
-	printf("  -F xx     try to emulate an hpcmips machine, where 'xx'"
-	    " may be:\n");
-	printf("                1=Casio BE-300, 2=Casio E-105\n");
-	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects"
 	    " rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic"
@@ -224,7 +225,7 @@ static void usage(char *progname, int longusage)
 	printf("  -N        display nr of instructions/second average, at"
 	    " regular intervals\n");
 	printf("  -n nr     set nr of CPUs\n");
-	printf("  -O        fake netboot (tftp instead of disk), even when"
+	printf("  -O        force netboot (tftp instead of disk), even when"
 	    " a disk image is\n"
 	    "            present (for DECstation, SGI, and ARC emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI"
@@ -239,8 +240,8 @@ static void usage(char *progname, int longusage)
 	printf("  -S        initialize emulated RAM to random bytes, "
 	    "instead of zeroes\n");
 	printf("  -s        show opcode usage statistics after simulation\n");
-	printf("  -T        start -i and -r traces on accesses to invalid"
-	    " memory addresses\n");
+	printf("  -T        enter the single-step debugger on "
+	    "unimplemented memory accesses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef ENABLE_USERLAND
@@ -310,6 +311,8 @@ void show_cpus_and_machine_types(void)
 	debug_indentation(-iadd);
 
 	printf("\n");
+	printf("Use the alias when selecting a machine type or subtype,\n"
+	    "not the real name.\n");
 }
 
 
@@ -472,7 +475,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'T':
-			m->trace_on_bad_address = 1;
+			m->single_step_on_bad_addr = 1;
 			msopts = 1;
 			break;
 		case 't':

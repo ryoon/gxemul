@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.27 2005-04-05 20:33:08 debug Exp $
+$Id: guestoses.html,v 1.28 2005-04-05 23:21:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -303,7 +303,7 @@ difference is regarding the framebuffer.
 		<td></td>
 		<td>640 x 240, 16 bits</td>
 		<td></td>
-		<td>0xa000000</td>
+		<td>0xa000000 (<super>*2</super>)</td>
 	</tr>
 	<tr>
 		<td></td>
@@ -336,6 +336,10 @@ difference is regarding the framebuffer.
 efficiently with the current bintrans system. Using this mode will still
 work, but each load and store will be emulated much more slowly than is
 possible with an aligned framebuffer.
+
+<p>
+(<super>*2</super>) = The MobilePro 770's cursor keys work differently 
+than the other models, for some reason. (This is a known bug.)
 
 <p>
 These instructions show an example of how to install

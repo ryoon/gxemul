@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.163 2005-02-09 20:36:08 debug Exp $
+ *  $Id: emul.c,v 1.164 2005-02-10 07:15:45 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -741,7 +741,7 @@ void emul_dumpinfo(struct emul *e)
  */
 void emul_simple_init(struct emul *emul)
 {
-	int i, iadd=4;
+	int iadd=4;
 	struct machine *m;
 
 	if (emul->n_machines != 1) {

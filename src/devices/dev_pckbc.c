@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.10 2004-06-11 12:43:15 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.11 2004-06-11 15:23:18 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -83,11 +83,11 @@ void pckbc_add_code(struct pckbc_data *d, int code, int port)
 
 
 /*
- *  pckbc_get_key():
+ *  pckbc_get_code():
  *
  *  Reads a byte from a data queue.
  */
-int pckbc_get_key(struct pckbc_data *d, int port)
+int pckbc_get_code(struct pckbc_data *d, int port)
 {
 	if (d->head[port] == d->tail[port])
 		fatal("pckbc: queue empty, port %i!\n", port);
@@ -151,7 +151,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		if (writeflag==MEM_READ) {
 			odata = 0;
 			if (d->head[0] != d->tail[0])
-				odata = pckbc_get_key(d, 0);
+				odata = pckbc_get_code(d, 0);
 			debug("[ pckbc: read from DATA: 0x%02x ]\n", odata);
 		} else {
 			debug("[ pckbc: write to DATA:");
@@ -201,7 +201,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			switch (idata) {
 			/*  These are incorrect, the second byte of commands should be treated better:  */
 			case 0x00:	/*  second byte of 0xed, SGI-IP32's prom  */
-				pckbc_add_code(d, 0x00, port_nr);	/*  ?  */
+				pckbc_add_code(d, 0x03, port_nr);	/*  ack  (?) */
 				break;
 			case 0x14:	/*  second byte of 0xfc, SGI-IP32's prom  */
 			case 0x28:	/*  second byte of 0xf3, SGI-IP32's prom  */
@@ -246,9 +246,9 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	case PS2 + PS2_RXBUF:
 		if (writeflag==MEM_READ) {
-			odata = random() & 0xff;	/*  what to return if no data available? TODO  */
+			odata = random() & 0xff;	/*  what to return if no data is available? TODO  */
 			if (d->head[port_nr] != d->tail[port_nr])
-				odata = pckbc_get_key(d, port_nr);
+				odata = pckbc_get_code(d, port_nr);
 			fatal("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);
 		} else {
 			fatal("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);

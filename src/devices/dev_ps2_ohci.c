@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ohci.c,v 1.1 2004-03-29 23:51:30 debug Exp $
+ *  $Id: dev_ps2_ohci.c,v 1.2 2004-04-01 01:44:21 debug Exp $
  *  
  *  Playstation 2 OHCI USB host controller.
  *
@@ -61,6 +61,14 @@ int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0:
+		if (writeflag==MEM_READ) {
+			odata = 0x10;	/*  to make NetBSD say "OHCI version 1.0"  */
+			debug("[ ps2_ohci: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+		} else {
+			debug("[ ps2_ohci: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+		}
+		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ ps2_ohci: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);

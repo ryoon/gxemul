@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.23 2005-02-13 11:23:32 debug Exp $
+.\" $Id: mips64emul.1,v 1.24 2005-02-15 12:41:54 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -37,11 +37,14 @@
 .Nd a MIPS machine emulator
 .Sh SYNOPSIS
 .Nm
-.Op machine and general options
+.Op machine, other, and general options
 .Op Ar
 .Nm
 .Op general options
 .Op Ar @configfile ...
+.Nm
+.Op userland, other, and general options
+.Ar file Op Ar args ...
 .Sh DESCRIPTION
 .Nm
 is a MIPS machine emulator, which can be used in experiments involving 
@@ -50,11 +53,12 @@ modes, processors and surrounding hardware components are emulated well
 enough to let unmodified operating systems run as if they were running on
 a real machine.
 .Pp
-There are two ways to invoke the emulator: machine settings can be entered 
-directly on the command line, or they can be read from a configuration 
-file. Please read the documentation in the doc/ subdirectory of the
-.Nm
-distribution for more information about the configuration files.
+There are three ways to invoke the emulator. When emulating a 
+complete machine, settings can be entered directly on the command line, or
+they can be read from a configuration file. When emulating a userland 
+environment (syscall-only emulation, not emulating complete machines), 
+then the program name and its argument should be given on the command 
+line.
 .Pp
 The easiest way to use the emulator is to supply settings directly on the 
 command line. The most important thing you need to supply is the
@@ -105,7 +109,7 @@ Use this together with
 .Fl E .
 .El
 .Pp
-Other machine specific options:
+Other options:
 .Bl -tag -width Ds
 .It Fl b
 Enable dynamic binary translation.
@@ -189,10 +193,6 @@ Enter the single-step debugger on unimplemented memory accesses.
 Show a trace tree of all function calls being made.
 .It Fl U
 Enable slow_serial_interrupts_hack_for_linux.
-.It Fl u Ar emul-mode
-Userland-only (syscall) emulation. (Use
-.Fl H
-to get a list of available emulation modes.)
 .It Fl X
 Use X11.
 .It Fl Y Ar n
@@ -214,6 +214,16 @@ Add
 as an X11 display to use for framebuffers.
 .El
 .Pp
+Userland options:
+.Bl -tag -width Ds
+.It Fl u Ar emul-mode
+Userland-only (syscall) emulation. (Use
+.Fl H
+to get a list of available emulation modes.) Some (but not all) of the
+options listed under Other options above can also be used with userland
+emulation.
+.El
+.Pp
 General options:
 .Bl -tag -width Ds
 .It Fl H
@@ -231,6 +241,13 @@ Show opcode usage statistics after the simulation.
 Start up in the single-step debugger, paused.
 .It Fl v
 Verbose debug messages.
+.El
+.Pp
+Configuration file startup:
+.Bl -tag -width Ds
+.It @ Ar configfile
+Start an emulation based on the contents of
+.Ar "configfile".
 .El
 .Pp
 For more information, please read the documentation in the doc/

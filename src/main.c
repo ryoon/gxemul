@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.208 2005-02-12 09:43:14 debug Exp $
+ *  $Id: main.c,v 1.209 2005-02-15 12:41:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -260,10 +260,11 @@ static void usage(int longusage)
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
-	printf("\nusage: %s [machine and general options] [file [...]]\n",
-	    progname);
-	printf("   or  %s [general options] @configfile [...]\n",
-	    progname);
+	printf("\nusage: %s [machine, other, and general options] [file "
+	    "[...]]\n", progname);
+	printf("   or  %s [general options] @configfile [...]\n", progname);
+	printf("   or  %s [userland, other, and general options] file "
+	    "[args ...]\n", progname);
 
 	if (!longusage) {
 		printf("\nRun  %s -h  for help on command line options.\n",
@@ -289,7 +290,7 @@ static void usage(int longusage)
 	printf("  -e st     try to emulate machine subtype st. (Use this "
 	    "with -E.)\n");
 
-	printf("\nOther machine specific options:\n");
+	printf("\nOther options:\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");
 #endif
@@ -339,8 +340,6 @@ static void usage(int longusage)
 	    "unimplemented memory accesses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
-	printf("  -u emul   userland-only (syscall) emulation (use -H to"
-	    " get a list of\n            available emulation modes)\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
@@ -352,6 +351,10 @@ static void usage(int longusage)
 	    "            environment (only for DECstation emulation)\n");
 	printf("  -z disp   add disp as an X11 display to use for "
 	    "framebuffers\n");
+
+	printf("\nUserland options:\n");
+	printf("  -u emul   userland-only (syscall) emulation (use -H to"
+	    " get a list of\n            available emulation modes)\n");
 
 	printf("\nGeneral options:\n");
 	printf("  -H        display a list of possible CPU and "

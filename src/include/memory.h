@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.13 2004-11-17 20:37:41 debug Exp $
+ *  $Id: memory.h,v 1.14 2004-11-18 16:25:42 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -53,7 +53,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 
 #ifdef BINTRANS
 unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
-	uint64_t vaddr, int writeflag, int alignmask);
+	uint64_t vaddr, int writeflag);
 #endif
 
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);

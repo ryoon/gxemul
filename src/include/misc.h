@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.146 2004-11-18 00:41:12 debug Exp $
+ *  $Id: misc.h,v 1.147 2004-11-18 16:25:43 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -512,6 +512,9 @@ struct coproc {
 #define	GPR_A3		7		/*  a3  */
 #define	GPR_T0		8		/*  t0  */
 #define	GPR_T1		9		/*  t1  */
+#define	GPR_T2		10		/*  t2  */
+#define	GPR_T3		11		/*  t3  */
+#define	GPR_T4		12		/*  t4  */
 #define	GPR_K0		26		/*  k0  */
 #define	GPR_K1		27		/*  k1  */
 #define	GPR_GP		28		/*  gp  */
@@ -636,7 +639,7 @@ struct cpu {
 
 	/*  Data:  */
 	unsigned char	*(*bintrans_fast_vaddr_to_hostaddr)(struct cpu *cpu,
-			    uint64_t vaddr, int writeflag, int alignmask);
+			    uint64_t vaddr, int writeflag);
 	uint64_t	bintrans_data_vaddr[N_BINTRANS_VADDR_TO_HOST];
 	unsigned char	*bintrans_data_hostpage[N_BINTRANS_VADDR_TO_HOST];
 	int		bintrans_data_writable[N_BINTRANS_VADDR_TO_HOST];

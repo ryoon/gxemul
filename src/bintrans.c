@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.66 2004-11-18 08:38:11 debug Exp $
+ *  $Id: bintrans.c,v 1.67 2004-11-18 16:25:43 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -479,6 +479,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			n_translated += translated;
 			break;
 
+/*		case HI6_LQ_MDMX:  */
 		case HI6_LD:
 		case HI6_LWU:
 		case HI6_LW:
@@ -486,6 +487,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		case HI6_LH:
 		case HI6_LBU:
 		case HI6_LB:
+/*		case HI6_SQ:  */
 		case HI6_SD:
 		case HI6_SW:
 		case HI6_SH:

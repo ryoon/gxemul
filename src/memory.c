@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.101 2004-11-17 20:37:42 debug Exp $
+ *  $Id: memory.c,v 1.102 2004-11-18 16:25:44 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1067,9 +1067,8 @@ exception:
 /*
  *  fast_vaddr_to_hostaddr():
  *
- *  Used by dynamically translated code.
- *  alignmask should be 0 for bytes, 1 for 16-bit words, 3 for 32-bit
- *  words, and 7 for 64-bit words.
+ *  Used by dynamically translated code. The caller should have made sure
+ *  that the access is aligned correctly.
  *
  *  Return value is a pointer to a host page + offset, if the virtual
  *  address was aligned, if the page was writable (or writeflag was zero),
@@ -1080,18 +1079,15 @@ exception:
  *  generated machine code) must check for this.
  */
 unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
-	uint64_t vaddr, int writeflag, int alignmask)
+	uint64_t vaddr, int writeflag)
 {
 	int ok, i;
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
 
-	if ((vaddr & alignmask) != 0)
-		return NULL;
-
-	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
-	    cpu, (long long)vaddr, writeflag, alignmask);  */
+	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
+	    cpu, (long long)vaddr, writeflag);  */
 
 	vaddr_page = vaddr & ~0xfff;
 	i = cpu->bintrans_next_index;

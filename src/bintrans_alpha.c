@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.37 2004-11-18 08:38:11 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.38 2004-11-18 16:25:43 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -56,28 +56,41 @@
  *
  *	t5		pc (64-bit)
  *	t6		bintrans_instructions_executed (32-bit int)
+ *	t7		cached load/store virtual address (page)
+ *	t8		cached load/store host address (page)
+ *	t9		cached load/store writability (0=load, 1=load/store)
+ *	t10		t3 (mips register 11)  (64-bit)
+ *	t11		t4 (mips register 12)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)
  *	s2		sp (mips register 29)  (64-bit)
  *	s3		ra (mips register 31)  (64-bit)
  *	s4		t0 (mips register 8)  (64-bit)
  *	s5		t1 (mips register 9)  (64-bit)
- *	s6		a0 (mips register 4)  (64-bit)
+ *	s6		t2 (mips register 10)  (64-bit)
  *
- *	t7..t11,	TODO
- *	  a1..a5
+ *	  a1..a5	TODO
  */
 
-#define	MIPSREG_PC			-4
-#define	MIPSREG_N_INSTRS		-3
-#define	MIPSREG_DELAY_SLOT		-2
-#define	MIPSREG_DELAY_JMPADDR		-1
+#define	MIPSREG_PC			-6
+#define	MIPSREG_N_INSTRS		-5
+#define	MIPSREG_DELAY_SLOT		-4
+#define	MIPSREG_DELAY_JMPADDR		-3
+#define	MIPSREG_VIRTUAL_PAGE		-2
+#define	MIPSREG_HOST_PAGE		-1
 
+/*  Temporaries:  */
 #define	ALPHA_T0		1
 #define	ALPHA_T1		2
 #define	ALPHA_T2		3
 #define	ALPHA_T3		4
 #define	ALPHA_T4		5
+/*  Cached values:  */
+#define	ALPHA_T5		6
+#define	ALPHA_T6		7
+#define	ALPHA_T7		8
+#define	ALPHA_T8		22
+#define	ALPHA_T9		23
 
 struct cpu dummy_cpu;
 struct coproc dummy_coproc;
@@ -148,8 +161,10 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_ra	(((size_t)&dummy_cpu.gpr[GPR_RA]) - ((size_t)&dummy_cpu))
 #define ofs_t0	(((size_t)&dummy_cpu.gpr[GPR_T0]) - ((size_t)&dummy_cpu))
 #define ofs_t1	(((size_t)&dummy_cpu.gpr[GPR_T1]) - ((size_t)&dummy_cpu))
-#define ofs_a0	(((size_t)&dummy_cpu.gpr[GPR_A0]) - ((size_t)&dummy_cpu))
-unsigned char bintrans_alpha_runchunk[160] = {
+#define ofs_t2	(((size_t)&dummy_cpu.gpr[GPR_T2]) - ((size_t)&dummy_cpu))
+#define ofs_t3	(((size_t)&dummy_cpu.gpr[GPR_T3]) - ((size_t)&dummy_cpu))
+#define ofs_t4	(((size_t)&dummy_cpu.gpr[GPR_T4]) - ((size_t)&dummy_cpu))
+unsigned char bintrans_alpha_runchunk[192] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
@@ -169,7 +184,14 @@ unsigned char bintrans_alpha_runchunk[160] = {
 	ofs_ra&255,ofs_ra>>8,0x90,0xa5,	/*  ldq     s3,"gpr[ra]"(a0)  */
 	ofs_t0&255,ofs_t0>>8,0xb0,0xa5,	/*  ldq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
-	ofs_a0&255,ofs_a0>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[a0]"(a0)  */
+	ofs_t2&255,ofs_t2>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[t2]"(a0)  */
+#if 0
+	ofs_t3&255,ofs_t3>>8,0x10,0xa7,	/*  ldq     t10,"gpr[t3]"(a0)  */
+#endif
+	ofs_t4&255,ofs_t4>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t4]"(a0)  */
+
+	0xff, 0xff, 0x1f, 0x21,		/*  lda     t7,-1   (last virtual, -1 is an invalid addr)  */
+	0x00, 0x00, 0xdf, 0x22,		/*  lda     t8,0    (last physical = NULL)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
@@ -181,7 +203,11 @@ unsigned char bintrans_alpha_runchunk[160] = {
 	ofs_ra&255,ofs_ra>>8,0x90,0xb5,	/*  stq     s3,"gpr[ra]"(a0)  */
 	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
-	ofs_a0&255,ofs_a0>>8,0xf0,0xb5,	/*  stq     s6,"gpr[a0]"(a0)  */
+	ofs_t2&255,ofs_t2>>8,0xf0,0xb5,	/*  stq     s6,"gpr[t2]"(a0)  */
+#if 0
+	ofs_t3&255,ofs_t3>>8,0x10,0xb7,	/*  stq     t10,"gpr[t3]"(a0)  */
+#endif
+	ofs_t4&255,ofs_t4>>8,0x30,0xb7,	/*  stq     t11,"gpr[t4]"(a0)  */
 
 	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
@@ -248,10 +274,6 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		/*  clr alphareg  */
 		*a++ = 0x47ff0400 | alphareg;
 		break;
-	case GPR_A0:
-		/*  addq s6,0,alphareg  */
-		*a++ = 0x41e01400 | alphareg;
-		break;
 	case GPR_T0:
 		/*  addq s4,0,alphareg  */
 		*a++ = 0x41a01400 | alphareg;
@@ -259,6 +281,20 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 	case GPR_T1:
 		/*  addq s5,0,alphareg  */
 		*a++ = 0x41c01400 | alphareg;
+		break;
+	case GPR_T2:
+		/*  addq s6,0,alphareg  */
+		*a++ = 0x41e01400 | alphareg;
+		break;
+#if 0
+	case GPR_T3:
+		/*  addq t10,0,alphareg  */
+		*a++ = 0x43001400 | alphareg;
+		break;
+#endif
+	case GPR_T4:
+		/*  addq t11,0,alphareg  */
+		*a++ = 0x43201400 | alphareg;
 		break;
 	case GPR_SP:
 		/*  addq s2,0,alphareg  */
@@ -305,10 +341,6 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 		break;
 	case 0:		/*  the zero register  */
 		break;
-	case GPR_A0:
-		/*  addq alphareg,0,s6  */
-		*a++ = 0x4000140f | (alphareg << 21);
-		break;
 	case GPR_T0:
 		/*  addq alphareg,0,s4  */
 		*a++ = 0x4000140d | (alphareg << 21);
@@ -316,6 +348,20 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 	case GPR_T1:
 		/*  addq alphareg,0,s5  */
 		*a++ = 0x4000140e | (alphareg << 21);
+		break;
+	case GPR_T2:
+		/*  addq alphareg,0,s6  */
+		*a++ = 0x4000140f | (alphareg << 21);
+		break;
+#if 0
+	case GPR_T3:
+		/*  addq alphareg,0,t10  */
+		*a++ = 0x40001418 | (alphareg << 21);
+		break;
+#endif
+	case GPR_T4:
+		/*  addq alphareg,0,t11  */
+		*a++ = 0x40001419 | (alphareg << 21);
 		break;
 	case GPR_SP:
 		/*  addq alphareg,0,s2  */
@@ -1078,10 +1124,11 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a;
-	int ofs, writeflag, alignment;
+	unsigned char *a, *cacheskip, *loadjmp = NULL, *manualskip = NULL;
+	int ofs, writeflag, alignment, load=0;
 
 	switch (instruction_type) {
+	case HI6_LQ_MDMX:
 	case HI6_LD:
 	case HI6_LWU:
 	case HI6_LW:
@@ -1089,6 +1136,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	case HI6_LH:
 	case HI6_LBU:
 	case HI6_LB:
+		load = 1;
 		if (rt == 0)
 			return 0;
 	}
@@ -1105,18 +1153,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x21; *a++ = 0x22;
 
-	writeflag = 0;
-	switch (instruction_type) {
-	case HI6_SD:
-	case HI6_SW:
-	case HI6_SH:
-	case HI6_SB:
-		writeflag = 1;
-	}
-	*a++ = writeflag; *a++ = 0x00; *a++ = 0x5f; *a++ = 0x22;	/*  lda a2,writeflag  */
-
 	alignment = 0;
 	switch (instruction_type) {
+	case HI6_LQ_MDMX:
+	case HI6_SQ:
+		alignment = 15;
+		break;
 	case HI6_LD:
 	case HI6_SD:
 		alignment = 7;
@@ -1132,7 +1174,76 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		alignment = 1;
 		break;
 	}
-	*a++ = alignment; *a++ = 0x00; *a++ = 0x7f; *a++ = 0x22;	/*  lda a3,alignment  */
+
+	if (alignment > 0) {
+		/*
+		 *  Check alignment:
+		 *
+		 *  02 30 20 46     and     a1,0x1,t1
+		 *  02 70 20 46     and     a1,0x3,t1	(one of these "and"s)
+		 *  02 f0 20 46     and     a1,0x7,t1
+		 *  02 f0 21 46     and     a1,0xf,t1
+		 *  01 00 40 e4     beq     t1,<okalign>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
+	}
+
+	/*
+	 *  Quick cache:
+	 *
+	 *  If this is a load, and it is on the same virtual page as the last
+	 *  load/store, then we don't have to call the lookup function.
+	 *
+	 *  If (a1 & ~0xfff) == t7, then host address = t8 + (a1 & 0xfff).
+	 *
+	 *  00 f0 7f 20     lda     t2,-4096
+	 *  02 00 23 46     and     a1,t2,t1
+	 *  a4 05 48 40     cmpeq   t1,t7,t3
+	 *  00 00 80 e4     beq     t3,28 <skip>
+	 */
+	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x7f; *a++ = 0x20;
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x23; *a++ = 0x46;
+	*a++ = 0xa4; *a++ = 0x05; *a++ = 0x48; *a++ = 0x40;
+	cacheskip = a;
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
+
+	if (!load) {
+		/*
+		 *  If the cached writeflag was zero, then we can't store
+		 *  without manual lookup.
+		 *  00 00 e0 e6     beq     t9,manual
+		 */
+		manualskip = a;
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xe6;
+	}
+
+	/*
+	 *  Calculate host address:
+	 *
+	 *  ff 0f bf 20     lda     t4,4095
+	 *  01 00 25 46     and     a1,t4,t0
+	 *  04 04 c1 42     addq    t8,t0,t3
+	 */
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0xbf; *a++ = 0x20;
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x25; *a++ = 0x46;
+	*a++ = 0x04; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x42;
+	loadjmp = a;
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br load  */
+
+	*cacheskip = ((size_t)a - (size_t)cacheskip - 4) / 4;
+
+	if (manualskip != NULL)
+		*manualskip = ((size_t)a - (size_t)manualskip - 4) / 4;
+
+	/*
+	 *  Do manual lookup:
+	 */
+
+	writeflag = 1 - load;
+	*a++ = writeflag; *a++ = 0x00; *a++ = 0x5f; *a++ = 0x22;	/*  lda a2,writeflag  */
 
 	/*  Save a0 and the old return address on the stack:  */
 	*a++ = 0x80; *a++ = 0xff; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,-128(sp)  */
@@ -1141,6 +1252,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	*a++ = 0x10; *a++ = 0x00; *a++ = 0xde; *a++ = 0xb4;	/*  stq t5,16(sp)  */
 	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xb0;	/*  stl t6,24(sp)  */
+	*a++ = 0x20; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xb7;	/*  stq t10,32(sp)  */
+	*a++ = 0x28; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xb7;	/*  stq t11,40(sp)  */
+	*a++ = 0x30; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xb6;	/*  stq a1,48(sp)  */
+
+	/*  NOTE: t7,t8,t9 do NOT have to be saved, as they are overwritten
+	    after we've returned from bintrans_fast_vaddr_to_hostaddr anyway  */
 
 	ofs = ((size_t)&dummy_cpu.bintrans_fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa7;	/*  ldq t12,0(a0)  */
@@ -1154,6 +1271,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	*a++ = 0x10; *a++ = 0x00; *a++ = 0xde; *a++ = 0xa4;	/*  ldq t5,16(sp)  */
 	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xa0;	/*  ldl t6,24(sp)  */
+	*a++ = 0x20; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xa7;	/*  ldq t10,32(sp)  */
+	*a++ = 0x28; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xa7;	/*  ldq t11,40(sp)  */
+	*a++ = 0x30; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xa6;	/*  ldq a1,48(sp)  */
 
 	*a++ = 0x80; *a++ = 0x00; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,128(sp)  */
 
@@ -1164,7 +1284,30 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  The rest of this code was written with t3 as the index, not v0:  */
 	*a++ = 0x04; *a++ = 0x04; *a++ = 0x1f; *a++ = 0x40;	/*  addq v0,zero,t3  */
 
+	/*
+	 *  Remember this load/store:
+	 *
+	 *  t3 is the host address (page + offset). a1 is the virtual address.
+	 *
+	 *  ff 0f 7f 20     lda     t2,4095
+	 *  02 00 23 46     and     a1,t2,t1		t1 = offset
+	 *  36 05 82 40     subq    t3,t1,t8		t8(physical page) = hostaddr - offset
+	 *  28 05 22 42     subq    a1,t1,t7		t7(virtual page) = virtualaddr - offset
+	 *  01 00 ff 22     lda     t9,1		t9 = writeflag
+	 */
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x7f; *a++ = 0x20;
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x23; *a++ = 0x46;
+	*a++ = 0x36; *a++ = 0x05; *a++ = 0x82; *a++ = 0x40;
+	*a++ = 0x28; *a++ = 0x05; *a++ = 0x22; *a++ = 0x42;
+	*a++ = writeflag; *a++ = 0x00; *a++ = 0xff; *a++ = 0x22;
+
+	if (loadjmp != NULL)
+		*loadjmp = ((size_t)a - (size_t)loadjmp - 4) / 4;
+
 	switch (instruction_type) {
+	case HI6_LQ_MDMX:
+		/*  TODO  */
+		break;
 	case HI6_LD:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa4;			/*  ldq t0,0(t3)  */
 		if (bigendian) {
@@ -1244,6 +1387,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextb   t0,t0  */
 		}
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
+		break;
+
+	case HI6_SQ:
+		/*  TODO  */
 		break;
 	case HI6_SD:
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);

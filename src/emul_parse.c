@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.5 2005-01-26 16:47:28 debug Exp $
+ *  $Id: emul_parse.c,v 1.6 2005-01-27 23:45:31 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -174,9 +174,25 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 #define	PARSESTATE_NET			2
 #define	PARSESTATE_MACHINE		3
 
-static char cur_machine_name[100];
-static char cur_machine_cpu[100];
-static int cur_machine_type, cur_machine_subtype;
+static char cur_net_ipv4net[50];
+static char cur_net_ipv4len[50];
+
+static char cur_machine_name[50];
+static char cur_machine_cpu[50];
+static char cur_machine_type[50];
+static char cur_machine_subtype[50];
+
+#define ACCEPT_SIMPLE_WORD(w,var) {					\
+		if (strcmp(word, w) == 0) {				\
+			read_one_word(f, word, maxbuflen,		\
+			    line, EXPECT_LEFT_PARENTHESIS);		\
+			read_one_word(f, var, sizeof(var),		\
+			    line, EXPECT_WORD);				\
+			read_one_word(f, word, maxbuflen,		\
+			    line, EXPECT_RIGHT_PARENTHESIS);		\
+			return;						\
+		}							\
+	}
 
 
 /*
@@ -223,6 +239,10 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		*parsestate = PARSESTATE_NET;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_LEFT_PARENTHESIS);
+
+		/*  Default net:  */
+		strcpy(cur_net_ipv4net, "10.0.0.0");
+		strcpy(cur_net_ipv4len, "8");
 		return;
 	}
 
@@ -234,12 +254,13 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		/*  A "zero state":  */
 		cur_machine_name[0] = '\0';
 		cur_machine_cpu[0] = '\0';
-		cur_machine_type = MACHINE_NONE;
-		cur_machine_subtype = 0;
+		cur_machine_type[0] = '\0';
+		cur_machine_subtype[0] = '\0';
 		return;
 	}
 
-	fatal("line %i: not expecting '%s' here\n", *line, word);
+	fatal("line %i: not expecting '%s' in an 'emul' section\n",
+	    *line, word);
 	exit(1);
 }
 
@@ -247,7 +268,9 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 /*
  *  parse__net():
  *
- *  TODO: words? for example an option to disable the gateway? that would
+ *  Simple words: ipv4net, ipv4len
+ *
+ *  TODO: more words? for example an option to disable the gateway? that would
  *  have to be implemented correctly in src/net.c first.
  */
 static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
@@ -261,7 +284,9 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 			exit(1);
 		}
 
-		e->net = net_init(e, NET_INIT_FLAG_GATEWAY, "10.0.0.0", 8);
+		e->net = net_init(e, NET_INIT_FLAG_GATEWAY,
+		    cur_net_ipv4net, atoi(cur_net_ipv4len));
+
 		if (e->net == NULL) {
 			fatal("line %i: fatal error: could not create"
 			    " the net (?)\n", *line);
@@ -272,7 +297,10 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 		return;
 	}
 
-	fatal("line %i: not expecting '%s' here\n", *line, word);
+	ACCEPT_SIMPLE_WORD("ipv4net", cur_net_ipv4net);
+	ACCEPT_SIMPLE_WORD("ipv4len", cur_net_ipv4len);
+
+	fatal("line %i: not expecting '%s' in a 'net' section\n", *line, word);
 	exit(1);
 }
 
@@ -280,13 +308,15 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 /*
  *  parse__machine():
  *
- *  name ( abcdef )
+ *  Simple words: name, cpu, type, subtype
  *
  *  TODO: more words?
  */
 static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	int *parsestate, char *word, size_t maxbuflen)
 {
+	int r;
+
 	if (word[0] == ')') {
 		/*  Finished with the 'machine' section.  */
 		struct machine *m;
@@ -295,9 +325,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_name, "no_name");
 
 		m = emul_add_machine(e, cur_machine_name);
-cur_machine_type = cur_machine_subtype = 2;
-		m->machine_type = cur_machine_type;
-		m->machine_subtype = cur_machine_subtype;
+
+		r = machine_name_to_type(cur_machine_type, cur_machine_subtype,
+		    &m->machine_type, &m->machine_subtype);
+		if (!r)
+			exit(1);
 
 		if (cur_machine_cpu[0])
 			m->cpu_name = strdup(cur_machine_cpu);
@@ -308,27 +340,13 @@ cur_machine_type = cur_machine_subtype = 2;
 		return;
 	}
 
-	if (strcmp(word, "name") == 0) {
-		read_one_word(f, word, maxbuflen,
-		    line, EXPECT_LEFT_PARENTHESIS);
-		read_one_word(f, cur_machine_name, sizeof(cur_machine_name),
-		    line, EXPECT_WORD);
-		read_one_word(f, word, maxbuflen,
-		    line, EXPECT_RIGHT_PARENTHESIS);
-		return;
-	}
+	ACCEPT_SIMPLE_WORD("name", cur_machine_name);
+	ACCEPT_SIMPLE_WORD("cpu", cur_machine_cpu);
+	ACCEPT_SIMPLE_WORD("type", cur_machine_type);
+	ACCEPT_SIMPLE_WORD("subtype", cur_machine_subtype);
 
-	if (strcmp(word, "cpu") == 0) {
-		read_one_word(f, word, maxbuflen,
-		    line, EXPECT_LEFT_PARENTHESIS);
-		read_one_word(f, cur_machine_cpu, sizeof(cur_machine_cpu),
-		    line, EXPECT_WORD);
-		read_one_word(f, word, maxbuflen,
-		    line, EXPECT_RIGHT_PARENTHESIS);
-		return;
-	}
-
-	fatal("line %i: not expecting '%s' here\n", *line, word);
+	fatal("line %i: not expecting '%s' in a 'machine' section\n",
+	    *line, word);
 	exit(1);
 }
 

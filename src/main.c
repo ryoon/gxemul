@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.173 2005-01-26 17:19:57 debug Exp $
+ *  $Id: main.c,v 1.174 2005-01-27 23:45:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -578,15 +578,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		fprintf(stderr, "Bad number of gfx cards (-Z).\n");
 		exit(1);
 	}
-
-#if 0
-	if (m->show_opcode_statistics && m->bintrans_enable) {
-		fprintf(stderr, "Cannot do both dynamic binary "
-		    "translation and exact opcode statistics.\n"
-		    "Aborting.\n");
-		exit(1);
-	}
-#endif
 
 	if (m->bintrans_enable) {
 		m->speed_tricks = 0;

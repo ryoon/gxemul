@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.3 2005-01-26 16:59:15 debug Exp $
+$Id: misc.html,v 1.4 2005-01-27 23:45:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -72,26 +72,34 @@ through an example is good enough:
 
 <p>
 <pre>
-	!!mips64emul     <-- configuration files must start like this
+	<font color="#2020cf">!!mips64emul     <-- configuration files must start like this
 	!
 	!  This is an example configuration file for mips64emul.
 	!  Anything following an exclamation mark (and also the exclamation
 	!  mark itself) is ignored.
 
-	!  Each configuration file should contain one emul entry:
-	emul(
+	!  Each configuration file should contain one emul entry:</font>
+	<b>emul(</b>
 
-		!  This creates a network (ethernet):
-		net()
+	    <font color="#2020cf">!  This creates a network (ethernet):</font>
+	    <b>net(</b>
+		<b>ipv4net("10.2.0.0")</b>  <font color="#2020cf">!  The default is 10.0.0.0/8, but</font>
+		<b>ipv4len(16)</b>          <font color="#2020cf">!  it can be overridden like this.</font>
+	    <b>)</b>
 
-		!  This creates a machine:
-		machine(
-			name("My test machine")
-			cpu(R4000)
+	    <font color="#2020cf">!  This creates a machine:</font>
+	    <b>machine(</b>
+		<b>name("My test machine")</b>
+		<b>type("dec")</b>
+		<b>subtype("5000/200")</b>
 
-			<b><i>... TODO ...</i></b>
-		)
-	)
+		<b>cpu(R4400)</b>      <font color="#2020cf">!  Normally set implicitly to a</font>
+				<font color="#2020cf">!  reasonable value, depending</font>
+				<font color="#2020cf">!  <i>type</i> and <i>subtype</i>.</font>
+
+		<b><i>... TODO ...</i></b>
+	    <b>)</b>
+	<b>)</b>
 </pre>
 
 

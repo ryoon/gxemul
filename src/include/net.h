@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.8 2005-01-22 07:53:50 debug Exp $
+ *  $Id: net.h,v 1.9 2005-01-27 23:45:30 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -109,6 +109,8 @@ struct net {
 	unsigned char	gateway_ipv4_addr[4];
 	unsigned char	gateway_ethernet_addr[6];
 
+	/*  Read from /etc/resolv.conf:  */
+	char		*domain_name;
 	int		nameserver_known;
 	struct in_addr	nameserver_ipv4;
 

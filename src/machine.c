@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.300 2005-01-26 19:08:39 debug Exp $
+ *  $Id: machine.c,v 1.301 2005-01-27 23:45:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -140,6 +140,51 @@ struct machine *machine_new(char *name, struct emul *emul)
 	symbol_init(&m->symbol_context);
 
 	return m;
+}
+
+
+/*
+ *  machine_name_to_type():
+ *
+ *  Take a type and a subtype as strings, and convert them into numeric
+ *  values used internally throughout the code.
+ *
+ *  Return value is 1 on success, 0 if there was no match.
+ *  Also, any errors/warnings are printed using fatal()/debug().
+ */
+int machine_name_to_type(char *stype, char *ssubtype,
+	int *type, int *subtype)
+{
+	*type = MACHINE_NONE;
+	*subtype = 0;
+
+	if (strcasecmp(stype, "dec") == 0 ||
+	    strcasecmp(stype, "decstation") == 0 ||
+	    strcasecmp(stype, "decsystem") == 0) {
+		*type = MACHINE_DEC;
+
+		/*  Numeric:  */
+		if (ssubtype[0] >= '1' && ssubtype[0] <= '9'
+		    && strlen(ssubtype) <= 2) {
+			*subtype = atoi(ssubtype);
+			return 1;
+		}
+
+		if (strcmp(ssubtype, "5000/200") == 0 ||
+		    strcasecmp(ssubtype, "3MAX") == 0) {
+			*subtype = MACHINE_DEC_3MAX_5000;
+			return 1;
+		}
+
+		fatal("unknown DEC subtype '%s'\n", ssubtype);
+		return 0;
+	}
+
+/*  TODO  */
+
+	fatal("unknown emulation type '%s' (subtype '%s')\n",
+	    stype, ssubtype);
+	return 0;
 }
 
 

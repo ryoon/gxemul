@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.57 2005-01-26 09:28:54 debug Exp $
+ *  $Id: net.c,v 1.58 2005-01-27 23:45:31 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1860,12 +1860,12 @@ void net_ethernet_tx(struct net *net, void *extra,
 
 
 /*
- *  get_host_nameserver():
+ *  parse_resolvconf():
  *
  *  This function parses "/etc/resolv.conf" to figure out the nameserver
- *  used by the host.
+ *  and domain used by the host.
  */
-static void get_host_nameserver(struct net *net)
+static void parse_resolvconf(struct net *net)
 {
 	FILE *f;
 	char buf[8000];
@@ -1930,6 +1930,27 @@ static void get_host_nameserver(struct net *net)
 			net->nameserver_known = 1;
 			break;
 		}
+
+	for (i=0; i<len; i++)
+		if (strncmp(buf+i, "domain", 6) == 0) {
+			char *p;
+
+			/*  "domain" (1 or more whitespace) domain_name  */
+			i += 6;
+			while (i<len && (buf[i]==' ' || buf[i]=='\t'))
+				i++;
+			if (i >= len)
+				break;
+
+			start = i;
+			while (i<len && buf[i]!='\n' && buf[i]!='\r')
+				i++;
+			if (i < len)
+				buf[i] = '\0';
+			/*  fatal("DOMAIN='%s'\n", buf + start);  */
+			net->domain_name = strdup(buf + start);
+			break;
+		}
 }
 
 
@@ -1990,15 +2011,19 @@ void net_dumpinfo(struct net *net)
 	net_debugaddr(&net->gateway_ipv4_addr, ADDR_IPV4);
 	debug(" (");
 	net_debugaddr(&net->gateway_ethernet_addr, ADDR_ETHERNET);
-	debug(") ");
+	debug(")\n");
 
+	debug_indentation(iadd);
+	if (net->domain_name != NULL && net->domain_name[0])
+		debug("domain \"%s\", ", net->domain_name);
 	if (!net->nameserver_known) {
 		/*  debug("(could not determine host's nameserver)");  */
 	} else {
-		debug("using ns @ ");
+		debug("nameserver ");
 		net_debugaddr(&net->nameserver_ipv4, ADDR_IPV4);
 	}
 	debug("\n");
+	debug_indentation(-iadd);
 
 	debug_indentation(-iadd);
 }
@@ -2048,7 +2073,8 @@ struct net *net_init(struct emul *emul, int init_flags,
 	net->netmask_ipv4_len = netipv4len;
 
 	net->nameserver_known = 0;
-	get_host_nameserver(net);
+	net->domain_name = "";
+	parse_resolvconf(net);
 
 	if (init_flags & NET_INIT_FLAG_GATEWAY)
 		net_gateway_init(net);

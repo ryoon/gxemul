@@ -16,8 +16,8 @@ Real operating system kernels can be downloaded from various places.
 Here are examples of kernels that can be experimented with:
 
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
-  Suitable command line arguments may be  -D2 -q -XY2 -M16 -I1000000
-  for a graphical framebuffer console, or  -D2 -q -M16 -I1000000 for
+  gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -M16 -I1000000 netbsd-INSTALL
+  for a graphical framebuffer console, or use -D2 -q -M16 -I1000000 for
   serial (stdin/stdout) console.
 
   ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
@@ -41,6 +41,9 @@ NOTE:  Add a  -q  to the command line options to supress debug messages.
        Add  -X  to use a X-windows framebuffer, if the emulated machine
        supports that.  (You can add  -Y2  to scale down the framebuffer
        window a bit.)
+
+MIPS is a registered trademark of MIPS Technologies. This project is not
+affiliated with MIPS Technologies in any way whatsoever.
 
 Send feedback to:  md1gavan at mdstud.chalmers.se.
 

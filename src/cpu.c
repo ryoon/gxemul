@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.90 2004-07-04 03:56:31 debug Exp $
+ *  $Id: cpu.c,v 1.91 2004-07-04 05:30:50 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -87,7 +87,7 @@ static char *special2_names[] = SPECIAL2_NAMES;
 struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 {
 	struct cpu *cpu;
-	int i;
+	int i, tags_size, n_cache_lines, size_per_cache_line;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
 	assert(mem != NULL);
@@ -134,10 +134,12 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 		case MIPS_R3000:
 			cpu->cache_size[i] = 16384;
 			cpu->cache_linesize[i] = 4;
+			size_per_cache_line = sizeof(struct r3000_cache_line);
 			break;
 		default:
 			cpu->cache_size[i] = 32768;
 			cpu->cache_linesize[i] = 32;
+			size_per_cache_line = sizeof(struct r4000_cache_line);
 		}
 
 		cpu->cache_mask[i] = cpu->cache_size[i] - 1;
@@ -147,6 +149,15 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 		if (cpu->cache[i] == NULL) {
 			fprintf(stderr, "out of memory\n");
 		}
+
+		n_cache_lines = cpu->cache_size[i] / cpu->cache_linesize[i];
+		tags_size = n_cache_lines * size_per_cache_line;
+
+		cpu->cache_tags[i] = malloc(tags_size);
+		if (cpu->cache_tags[i] == NULL) {
+			fprintf(stderr, "out of memory\n");
+		}
+		memset(cpu->cache_tags[i], 0, tags_size);
 
 		/*  Set cache_last_paddr to something "impossible":  */
 		cpu->cache_last_paddr[i] = IMPOSSIBLE_PADDR;
@@ -2117,7 +2128,7 @@ int cpu_run_instr(struct cpu *cpu)
 						}
 					else
 						for (i=0; i<wlen; i++) {
-							d[wlen-i] = v & 255;
+							d[wlen-1-i] = v & 255;
 							v >>= 8;
 						}
 				}

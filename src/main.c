@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.75 2004-09-05 02:27:09 debug Exp $
+ *  $Id: main.c,v 1.76 2004-09-05 02:29:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,8 +56,6 @@ int quiet_mode = 0;
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
  */
-
-char *machine_name = NULL;
 
 int random_mem_contents = 0;
 int physical_ram_in_mb = 0;

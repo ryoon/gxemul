@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.171 2004-09-05 02:27:09 debug Exp $
+ *  $Id: machine.c,v 1.172 2004-09-05 02:29:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -67,7 +67,6 @@
 #include "dec_maxine.h"
 
 
-extern char *machine_name;
 extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
@@ -828,7 +827,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	struct cpu *cpu = cpus[emul->bootstrap_cpu];
 
 
-	machine_name = NULL;
+	emul->machine_name = NULL;
 
 	switch (emul->emulation_type) {
 
@@ -839,7 +838,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*
 		 *  A "bare" test machine.
 		 */
-		machine_name = "\"Bare\" test machine";
+		emul->machine_name = "\"Bare\" test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
@@ -859,7 +858,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		switch (emul->machine) {
 		case MACHINE_PMAX_3100:		/*  type  1, KN01  */
 			/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC, R2020 Memory coprocessor  */
-			machine_name = "DEC PMAX 3100 (KN01)";
+			emul->machine_name = "DEC PMAX 3100 (KN01)";
 
 			/*  12 MHz for 2100, 16.67 MHz for 3100  */
 			if (emulated_hz == 0)
@@ -901,7 +900,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		case MACHINE_3MAX_5000:		/*  type  2, KN02  */
 			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
 			/*  and a R3220 Memory coprocessor  */
-			machine_name = "DECstation 5000/200 (3MAX, KN02)";
+			emul->machine_name = "DECstation 5000/200 (3MAX, KN02)";
 
 			if (emulated_hz == 0)
 				emulated_hz = 25000000;
@@ -969,7 +968,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
-			machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
+			emul->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
 			if (emulated_hz == 0)
 				emulated_hz = 33000000;
 			if (physical_ram_in_mb > 128)
@@ -1022,7 +1021,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_3MAXPLUS_5000:	/*  type 4, KN03  */
-			machine_name = "DECsystem 5900 or 5000 (3MAX+) (KN03)";
+			emul->machine_name = "DECsystem 5900 or 5000 (3MAX+) (KN03)";
 
 			/*  5000/240 (KN03-GA, R3000): 40 MHz  */
 			/*  5000/260 (KN05-NB, R4000): 60 MHz  */
@@ -1083,7 +1082,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_5800:		/*  type 5, KN5800  */
-			machine_name = "DECsystem 5800";
+			emul->machine_name = "DECsystem 5800";
 
 /*  TODO: this is incorrect, banks multiply by 8 etc  */
 			if (physical_ram_in_mb < 48)
@@ -1112,7 +1111,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_5400:		/*  type 6, KN210  */
-			machine_name = "DECsystem 5400 (KN210)";
+			emul->machine_name = "DECsystem 5400 (KN210)";
 			/*
 			 *  Misc. info from the KN210 manual:
 			 *
@@ -1145,7 +1144,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
-			machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
+			emul->machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
 			if (emulated_hz == 0)
 				emulated_hz = 33000000;
 
@@ -1205,7 +1204,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_5500:	/*  type 11, KN220  */
-			machine_name = "DECsystem 5500 (KN220)";
+			emul->machine_name = "DECsystem 5500 (KN220)";
 
 			/*
 			 *  According to NetBSD's pmax ports page:
@@ -1247,7 +1246,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
-			machine_name = "DEC MIPSMATE 5100 (KN230)";
+			emul->machine_name = "DEC MIPSMATE 5100 (KN230)";
 			if (emulated_hz == 0)
 				emulated_hz = 20000000;
 			if (physical_ram_in_mb > 128)
@@ -1457,7 +1456,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_COBALT:
-		machine_name = "Cobalt";
+		emul->machine_name = "Cobalt";
 
 		/*
 		 *  Interrupts seem to be the following:
@@ -1505,7 +1504,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_HPCMIPS:
-		machine_name = "hpcmips";
+		emul->machine_name = "hpcmips";
 		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips");
@@ -1546,7 +1545,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_PS2:
-		machine_name = "Playstation 2";
+		emul->machine_name = "Playstation 2";
 
 		if (physical_ram_in_mb != 32)
 			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
@@ -1619,8 +1618,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a pretty
 		 *  detailed list of IP ("Inhouse Processor") model numbers.
 		 */
-		machine_name = malloc(500);
-		if (machine_name == NULL) {
+		emul->machine_name = malloc(500);
+		if (emul->machine_name == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
@@ -1633,7 +1632,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(short_machine_name, "SGI-IP%i", emul->machine);
-			sprintf(machine_name, "SGI-IP%i", emul->machine);
+			sprintf(emul->machine_name, "SGI-IP%i", emul->machine);
 
 			/*  Super-special case for IP24:  */
 			if (emul->machine == 24)
@@ -1655,14 +1654,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		} else {
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
 			sprintf(short_machine_name, "ARC");
-			sprintf(machine_name, "ARC");
+			sprintf(emul->machine_name, "ARC");
 		}
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other machine types?  */
 			switch (emul->machine) {
 			case 19:
-				strcat(machine_name, " (Everest IP19)");
+				strcat(emul->machine_name, " (Everest IP19)");
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				dev_scc_init(cpu, mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
@@ -1678,7 +1677,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 20:
-				strcat(machine_name, " (Indigo)");
+				strcat(emul->machine_name, " (Indigo)");
 
 				/*
 				 *  Guesses based on NetBSD 2.0 beta, 20040606.
@@ -1722,7 +1721,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 21:
-				strcat(machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
+				strcat(emul->machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 
@@ -1732,10 +1731,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 22:
 			case 24:
 				if (emul->machine == 22) {
-					strcat(machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
+					strcat(emul->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9000, 0);
 				} else {
-					strcat(machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
+					strcat(emul->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9880, 1);
 				}
 
@@ -1803,7 +1802,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 25:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine_name, " (Everest IP25)");
+				strcat(emul->machine_name, " (Everest IP25)");
 
 				 /*  serial? irix?  */
 				dev_scc_init(cpu, mem,
@@ -1825,11 +1824,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 26:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
+				strcat(emul->machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				break;
 			case 27:
-				strcat(machine_name, " (Origin 200/2000, Onyx2)");
+				strcat(emul->machine_name, " (Origin 200/2000, Onyx2)");
 				/*  2 cpus per node  */
 
 				/*
@@ -1847,7 +1846,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine_name, " (Impact Indigo2 ?)");
+				strcat(emul->machine_name, " (Impact Indigo2 ?)");
 
 				dev_random_init(mem, 0x1fbe0000ULL, 1);
 
@@ -1857,7 +1856,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 30:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine_name, " (Octane)");
+				strcat(emul->machine_name, " (Octane)");
 
 				/*  This is something unknown:  */
 				dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
@@ -1889,7 +1888,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 32:
-				strcat(machine_name, " (O2)");
+				strcat(emul->machine_name, " (O2)");
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
 				dev_ram_init(mem,    0x40000000ULL,
@@ -1987,7 +1986,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 35:
-				strcat(machine_name, " (Origin 3000)");
+				strcat(emul->machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
@@ -2008,9 +2007,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 */
 
 				if (emul->machine == MACHINE_ARC_NEC_RD94)
-					strcat(machine_name, " (NEC-RD94, NEC RISCstation 2250)");
+					strcat(emul->machine_name, " (NEC-RD94, NEC RISCstation 2250)");
 				else
-					strcat(machine_name, " (NEC-R94; NEC RISCstation 2200)");
+					strcat(emul->machine_name, " (NEC-R94; NEC RISCstation 2200)");
 
 				/*  TODO:  sync devices and component tree  */
 
@@ -2067,7 +2066,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
 				 */
 
-				strcat(machine_name, " (Acer PICA-61)");
+				strcat(emul->machine_name, " (Acer PICA-61)");
 
 				/*  TODO:  lots of stuff  */
 				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x60000003d0ULL);
@@ -2110,7 +2109,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  0x90000000064 written by kbd_cmd() in NetBSD.
 				 */
 
-				strcat(machine_name, " (Deskstation Tyne)");
+				strcat(emul->machine_name, " (Deskstation Tyne)");
 
 				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x900000003d0ULL);
 
@@ -2154,7 +2153,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
 				 */
 
-				strcat(machine_name, " (Microsoft Jazz, MIPS Magnum)");
+				strcat(emul->machine_name, " (Microsoft Jazz, MIPS Magnum)");
 
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
@@ -2334,7 +2333,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
 		 */
 
-		if (machine_name == NULL)
+		if (emul->machine_name == NULL)
 			fatal("ERROR: machine_name == NULL\n");
 		if (short_machine_name == NULL)
 			fatal("ERROR: short_machine_name == NULL\n");
@@ -2628,7 +2627,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_MESHCUBE:
-		machine_name = "MeshCube";
+		emul->machine_name = "MeshCube";
 
 		if (physical_ram_in_mb != 64)
 			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
@@ -2671,7 +2670,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_NETGEAR:
-		machine_name = "NetGear WG602";
+		emul->machine_name = "NetGear WG602";
 
 		if (use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
@@ -2685,8 +2684,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		exit(1);
 	}
 
-	if (machine_name != NULL)
-		debug("machine: %s", machine_name);
+	if (emul->machine_name != NULL)
+		debug("machine: %s", emul->machine_name);
 
 	if (emulated_hz > 0)
 		debug(" (%.2f MHz)", (float)emulated_hz / 1000000);

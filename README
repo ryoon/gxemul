@@ -1,4 +1,4 @@
-$Id: README,v 1.39 2004-09-26 00:21:18 debug Exp $
+$Id: README,v 1.40 2004-09-28 09:12:31 debug Exp $
 
 I'm currently working on post-0.2.1. This was the readme for 0.2.1.
 
@@ -18,8 +18,6 @@ CPUs and enough surrounding hardware to be able to run unmodified
 operating systems (such as NetBSD, Ultrix, Linux, FreeBSD, or OpenBSD) as 
 if they were running on a real machine, and to assist in experiments
 involving MIPS-like code in general.
-
-This is a spare time hobby project, and many things are not implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.)

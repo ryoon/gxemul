@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.4 2003-11-08 13:34:09 debug Exp $
+ *  $Id: x11.c,v 1.5 2003-11-08 14:25:38 debug Exp $
  *
  *  X11-related functions.
  */
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "console.h"
 
 
 #ifndef	WITH_X11
@@ -194,7 +195,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 	XSetStandardProperties(x11_display, fb_windows[fb_number].x11_fb_window, name,
 	    "mips64emul", None, NULL, 0, NULL);
 	XSelectInput(x11_display, fb_windows[fb_number].x11_fb_window, StructureNotifyMask | ExposureMask
-	    | ButtonPressMask | KeyPressMask);
+	    | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | KeyPressMask);
 	fb_windows[fb_number].x11_fb_gc = XCreateGC(x11_display, fb_windows[fb_number].x11_fb_window, 0,0);
 
 	XMapRaised(x11_display, fb_windows[fb_number].x11_fb_window);
@@ -240,31 +241,45 @@ void x11_check_event(void)
 	if (x11_display == NULL)
 		return;
 
-	if (!XPending(x11_display))
-		return;
+	while (XPending(x11_display)) {
+		XNextEvent(x11_display, &event);
 
-	XNextEvent(x11_display, &event);
+		if (event.type==ConfigureNotify) {
+/*			x11_winxsize = event.xconfigure.width;
+			x11_winysize = event.xconfigure.height; */
+			x11_redraw();
+		}
 
-	if (event.type==ConfigureNotify) {
-/*		x11_winxsize = event.xconfigure.width;
-		x11_winysize = event.xconfigure.height; */
-		x11_redraw();
+		if (event.type==Expose && event.xexpose.count==0) {
+/*			x11_winxsize = event.xexpose.width;
+			x11_winysize = event.xexpose.height; */
+			x11_redraw();
+		}
+
+		if (event.type == MotionNotify) {
+			debug("[ X11 MotionNotify: %i,%i ]\n", event.xmotion.x, event.xmotion.y);
+			x11_putpixel_fb(0, event.xmotion.x, event.xmotion.y, 1);
+		}
+
+		if (event.type == ButtonPress) {
+			debug("[ X11 ButtonPress: %i ]\n", event.xbutton.button);
+			/*  TODO:  which button  */
+		}
+
+		if (event.type == ButtonRelease) {
+			debug("[ X11 ButtonRelease: %i ]\n", event.xbutton.button);
+			/*  TODO:  which button  */
+		}
+
+		if (event.type==KeyPress) {
+			char text[10];
+			KeySym key;
+
+			if (XLookupString(&event.xkey,text,10,&key,0)==1) {
+				console_makeavail(text[0]);
+			}
+		}
 	}
-
-	if (event.type==Expose && event.xexpose.count==0) {
-/*		x11_winxsize = event.xexpose.width;
-		x11_winysize = event.xexpose.height; */
-		x11_redraw();
-	}
-
-/*
-if (event.type==ButtonPress) my_redraw();
-if (event.type==KeyPress) {
-	char text[10];
-	if (XLookupString(&event.xkey,text,10,&key,0)==1 &&
-		text[0]=='q') close_x();
-}
-*/
 }
 
 

@@ -89,9 +89,7 @@ mips64emul TODO
 		o)  DECstations (pmax):
 			boot directly from disk/cd-rom images
 			framebuffers:
-				PMAG-AA: VDAC, cursor
-				PMAG-BA: VDAC, cursor?
-				programmable cursors, overlays, 2D/3D acceleration, VDACs
+				better cursor support, overlays?, 2D/3D acceleration
 			status words / control words, make this more portable/cleaner
 			scsi controller(s): sii, asc (+ DMA)
 			ethernet controller(s): le, fddi?

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.70 2004-04-24 22:40:03 debug Exp $
+$Id: HISTORY,v 1.71 2004-05-04 15:58:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -161,7 +161,7 @@ HISTORY of mips64emul
 		code generation when using the DECstation framebuffer.
 		Making various (speed) improvements to the framebuffer
 		device.
-20031027	Playing sound with the sii SCSI controller.
+20031027	Playing around with the sii SCSI controller.
 20031028	Minor fixes.
 		Adding an SGI emulation mode (-G), and some ARCBIOS
 		stuff, which SGIs seem to use.
@@ -473,3 +473,16 @@ HISTORY of mips64emul
 20040424	Adding a BT455 vdac for PMAG-AA. Black and white are now
 		rendered correctly in Xpmax.
 		Adding colormap support to the BT459 device, for PMAG-BA.
+20040425	Fixing a buffer length bug, which caused an Ultrix 4.5
+		install to bug out on an i386 host.
+20040429	FPU experiments.
+20040502	More FPU experiments.
+		Speedup for exception debug messages:  in quiet mode, debug
+		messages were still evaluated, which took a relatively
+		large amount of time.
+20040503	Most FPU stuff fixed, but there is at least one known bug
+		left; ps axu in NetBSD triggers it (ps loops forever).
+20040504	A default install of Ultrix 4.5 succeeded! It boots up with
+		a graphical login.
+		Fixing the keyboard repetition bug (a lk201 "up" (release)
+		scancode is now sent after every key).

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.5 2004-01-11 23:54:37 debug Exp $
+ *  $Id: diskimage.h,v 1.6 2004-03-11 05:30:44 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -43,6 +43,8 @@ void diskimage_dump_info(void);
 /*  SCSI commands:  */
 #define	SCSICMD_TEST_UNIT_READY	0x00
 #define	SCSICMD_INQUIRY		0x12
+
+#define	SCSICMD_READ		0x08
 
 /*  SCSI block device commands:  */
 #define	SCSIBLOCKCMD_READ_CAPACITY	0x25

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.5 2005-02-19 12:41:10 debug Exp $
+ *  $Id: cpu_run.c,v 1.6 2005-02-21 07:55:19 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -114,16 +114,21 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 						debugger();
 					for (i=0; i<ncpus; i++)
 						if (cpus[i]->running) {
-							int instrs_run = CPU_RINSTR(emul, cpus[i]);
+							int instrs_run =
+							    CPU_RINSTR(emul,
+							    cpus[i]);
 							if (i == 0)
-								cpu0instrs += instrs_run;
+								cpu0instrs +=
+								    instrs_run;
 						}
 				}
 			} else if (max_random_cycles_per_chunk_cached > 0) {
 				for (i=0; i<ncpus; i++)
 					if (cpus[i]->running && !single_step) {
-						a_few_instrs2 = machine->a_few_cycles;
-						if (a_few_instrs2 >= max_random_cycles_per_chunk_cached)
+						a_few_instrs2 = machine->
+						    a_few_cycles;
+						if (a_few_instrs2 >=
+						    max_random_cycles_per_chunk_cached)
 							a_few_instrs2 = max_random_cycles_per_chunk_cached;
 						j = (random() % a_few_instrs2) + 1;
 						j *= instrs_per_cycle(cpus[i]);

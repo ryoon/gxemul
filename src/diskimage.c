@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.77 2005-02-09 14:31:30 debug Exp $
+ *  $Id: diskimage.c,v 1.78 2005-02-21 07:55:19 debug Exp $
  *
  *  Disk image support.
  *
@@ -126,7 +126,8 @@ struct scsi_transfer *scsi_transfer_alloc(void)
 	} else {
 		p = malloc(sizeof(struct scsi_transfer));
 		if (p == NULL) {
-			fprintf(stderr, "scsi_transfer_alloc(): out of memory\n");
+			fprintf(stderr, "scsi_transfer_alloc(): out "
+			    "of memory\n");
 			exit(1);
 		}
 	}
@@ -190,7 +191,8 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len,
 
 	(*lenp) = want_len;
 	if ((p = malloc(want_len)) == NULL) {
-		fprintf(stderr, "scsi_transfer_allocbuf(): out of memory trying to allocate %li bytes\n", (long)want_len);
+		fprintf(stderr, "scsi_transfer_allocbuf(): out of "
+		    "memory trying to allocate %li bytes\n", (long)want_len);
 		exit(1);
 	}
 
@@ -520,7 +522,8 @@ if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 		if (xferp->cmd[1] != 0x00)
-			fatal("WARNING: TEST_UNIT_READY with cmd[1]=0x%02x not yet implemented\n");
+			fatal("WARNING: TEST_UNIT_READY with cmd[1]=0x%02x"
+			    " not yet implemented\n", (int)xferp->cmd[1]);
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -530,7 +533,8 @@ if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 		if (xferp->cmd[1] != 0x00) {
-			debug("WARNING: INQUIRY with cmd[1]=0x%02x not yet implemented\n");
+			debug("WARNING: INQUIRY with cmd[1]=0x%02x not yet "
+			    "implemented\n", (int)xferp->cmd[1]);
 
 			break;
 		}
@@ -543,17 +547,18 @@ if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
-		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
-		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
-		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
+		    retlen, 1);
+		xferp->data_in[0] = 0x00;  /*  0x00 = Direct-access disk  */
+		xferp->data_in[1] = 0x00;  /*  0x00 = non-removable  */
+		xferp->data_in[2] = 0x02;  /*  SCSI-2  */
 #if 0
 xferp->data_in[3] = 0x02;	/*  Response data format = SCSI-2  */
 #endif
 		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
 xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
-		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
-		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
+		xferp->data_in[6] = 0x04;  /*  ACKREQQ  */
+		xferp->data_in[7] = 0x60;  /*  WBus32, WBus16  */
 
 		/*  These must be padded with spaces:  */
 		memcpy(xferp->data_in+8,  "FAKE    ", 8);
@@ -566,8 +571,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 */
 
 		if (machine->machine_type == MACHINE_DEC) {
-			/*  DEC, RZ25 (rev 0900) is a 832527 sector large disk:  */
-			/*  DEC, RZ58 (rev 2000) is a 2698061 sector large disk:  */
+			/*  DEC, RZ25 (rev 0900) = 832527 sectors  */
+			/*  DEC, RZ58 (rev 2000) = 2698061 sectors  */
 			memcpy(xferp->data_in+8,  "DEC     ", 8);
 			memcpy(xferp->data_in+16, "RZ58     (C) DEC", 16);
 			memcpy(xferp->data_in+32, "2000", 4);
@@ -575,31 +580,34 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  Some data is different for CD-ROM drives:  */
 		if (d->is_a_cdrom) {
-			xferp->data_in[0] = 0x05;	/*  0x05 = CD-ROM  */
-			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
+			xferp->data_in[0] = 0x05;  /*  0x05 = CD-ROM  */
+			xferp->data_in[1] = 0x80;  /*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "CD-ROM          ", 16);
 
 			if (machine->machine_type == MACHINE_DEC) {
 				/*  SONY, CD-ROM:  */
-				memcpy(xferp->data_in+8,  "SONY    ", 8);
-				memcpy(xferp->data_in+16, "CD-ROM          ", 16);
+				memcpy(xferp->data_in+8, "SONY    ", 8);
+				memcpy(xferp->data_in+16,
+				    "CD-ROM          ", 16);
 
 				/*  ... or perhaps this:  */
-				memcpy(xferp->data_in+8,  "DEC     ", 8);
-				memcpy(xferp->data_in+16, "RRD42   (C) DEC ", 16);
+				memcpy(xferp->data_in+8, "DEC     ", 8);
+				memcpy(xferp->data_in+16,
+				    "RRD42   (C) DEC ", 16);
 				memcpy(xferp->data_in+32, "4.5d", 4);
 			} else {
 				/*  NEC, CD-ROM:  */
-				memcpy(xferp->data_in+8,  "NEC     ", 8);
-				memcpy(xferp->data_in+16, "CD-ROM CDR-210P ", 16);
+				memcpy(xferp->data_in+8, "NEC     ", 8);
+				memcpy(xferp->data_in+16,
+				    "CD-ROM CDR-210P ", 16);
 				memcpy(xferp->data_in+32, "1.0 ", 4);
 			}
 		}
 
 		/*  Data for tape devices:  */
 		if (d->is_a_tape) {
-			xferp->data_in[0] = 0x01;	/*  0x01 = tape  */
-			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
+			xferp->data_in[0] = 0x01;  /*  0x01 = tape  */
+			xferp->data_in[1] = 0x80;  /*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "TAPE            ", 16);
 
 			if (machine->machine_type == MACHINE_DEC) {
@@ -609,8 +617,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				 *  The name might be TZK10, TSZ07, or TLZ04,
 				 *  or something completely different.
 				 */
-				memcpy(xferp->data_in+8,  "DEC     ", 8);
-				memcpy(xferp->data_in+16, "TK50     (C) DEC", 16);
+				memcpy(xferp->data_in+8, "DEC     ", 8);
+				memcpy(xferp->data_in+16,
+				    "TK50     (C) DEC", 16);
 				memcpy(xferp->data_in+32, "2000", 4);
 			}
 		}
@@ -674,7 +683,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		retlen += 100;		/*  Should be enough. (Ugly.)  */
 
 		if ((xferp->cmd[2] & 0xc0) != 0)
-			fatal("WARNING: mode sense, cmd[2] = 0x%02x\n", xferp->cmd[2]);
+			fatal("WARNING: mode sense, cmd[2] = 0x%02x\n",
+			    xferp->cmd[2]);
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,
@@ -686,11 +696,12 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		debug("[ MODE SENSE id %i, pagecode=%i ]\n", scsi_id, pagecode);
 
-		/*  4 bytes of header for 6-byte command, 8 bytes of header for 10-byte command.  */
-		xferp->data_in[0] = retlen;		/*  mode data length  */
+		/*  4 bytes of header for 6-byte command,
+		    8 bytes of header for 10-byte command.  */
+		xferp->data_in[0] = retlen;	/*  mode data length  */
 		xferp->data_in[1] = d->is_a_cdrom? 0x05 : 0x00;		/*  medium type  */
-		xferp->data_in[2] = 0x00;		/*  device specific parameter  */
-		xferp->data_in[3] = 8 * 1;		/*  block descriptor length: 1 page (?)  */
+		xferp->data_in[2] = 0x00;	/*  device specific parameter  */
+		xferp->data_in[3] = 8 * 1;	/*  block descriptor length: 1 page (?)  */
 
 		/*  TODO: update this when implementing 10-byte commands:  */
 		xferp->data_in[4] = 0x00;		/*  density code  */

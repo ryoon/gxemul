@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.11 2004-04-09 05:11:17 debug Exp $
+ *  $Id: x11.c,v 1.12 2004-06-23 13:41:08 debug Exp $
  *
  *  X11-related functions.
  */
@@ -332,6 +332,12 @@ void x11_check_event(void)
 		}
 
 		if (event.type==Expose && event.xexpose.count==0) {
+			/*
+			 *  TODO:  the xexpose struct has x,y,width,height.
+			 *  Those could be used to only redraw the part of
+			 *  the framebuffer that was exposed. Note that
+			 *  the (mouse) cursor must be redrawn too.
+			 */
 /*			x11_winxsize = event.xexpose.width;
 			x11_winysize = event.xexpose.height; */
 			need_redraw = 1;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.12 2003-12-20 21:55:53 debug Exp $
+ *  $Id: machine.c,v 1.13 2003-12-20 22:03:40 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -814,7 +814,7 @@ void machine_init(struct memory *mem)
 
 		addr = SGI_ENV_STRINGS;
 		add_environment_string("ConsoleOut=serial", &addr);
-		add_environment_string("cpufreq=1000000", &addr);
+		add_environment_string("cpufreq=100000", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;

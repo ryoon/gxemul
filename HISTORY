@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.489 2005-01-17 16:12:38 debug Exp $
+$Id: HISTORY,v 1.490 2005-01-17 17:52:51 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1493,3 +1493,5 @@ HISTORY of mips64emul
 		The count and compare registers are now 32-bit in all
 		places, as they should be. (This causes, among other things,
 		OpenBSD/sgi to not hang randomly in userspace anymore.)
+		On breakpoints, the debugger is now entered _at_ the
+		instruction at the breakpoint, not after it.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.239 2005-01-17 16:12:42 debug Exp $
+ *  $Id: cpu.c,v 1.240 2005-01-17 17:52:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1005,7 +1005,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if (bits32)
 				debug("=%08x", (int)cpu->coproc[coprocnr]->reg[i]);
 			else
-				debug("=%016llx", (long long)
+				debug(" = 0x%016llx", (long long)
 				    cpu->coproc[coprocnr]->reg[i]);
 
 			if ((i & nm1) == nm1)
@@ -1288,11 +1288,13 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
 		reg[COP0_BADVADDR] = vaddr;
+#if 1
+/*  TODO: This should be removed.  */
 		/*  sign-extend vaddr, if it is 32-bit  */
 		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
 			reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
-
+#endif
 		if (exc_model == EXC3K) {
 			reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
 			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);
@@ -1307,7 +1309,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
 			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
 
-			/*  TODO: Sign-extend CONTEXT?  */
+			/*  TODO: Sign-extend CONTEXT? No, at least not on 5K.  */
 
 			reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
 			reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
@@ -1407,7 +1409,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 #ifdef BINTRANS
 /*
- *
+ *  cpu_cause_simple_exception():
  *
  *  Useful for causing raw exceptions from bintrans, for example
  *  SYSCALL or BREAK.
@@ -3823,29 +3825,24 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 			if (emul->single_step) {
 				if (emul->single_step == 1) {
-					old_instruction_trace =
-					    emul->instruction_trace;
-					old_quiet_mode =
-					    quiet_mode;
-					old_show_trace_tree =
-					    emul->show_trace_tree;
+					old_instruction_trace = emul->instruction_trace;
+					old_quiet_mode = quiet_mode;
+					old_show_trace_tree = emul->show_trace_tree;
 					emul->instruction_trace = 1;
 					emul->show_trace_tree = 1;
 					quiet_mode = 0;
 					emul->single_step = 2;
 				}
 
-				for (i=0; i<ncpus_cached; i++) {
-				    if (cpus[i]->running)
-					for (j=0;
-					  j<cpus[i]->cpu_type.instrs_per_cycle;
-					    j++) {
-						int instrs_run = cpu_run_instr(cpus[i]);
-						if (i == 0)
-							cpu0instrs += instrs_run;
-						if (emul->single_step)
-							debugger();
-					}
+				for (j=0; j<cpus[0]->cpu_type.instrs_per_cycle; j++) {
+					if (emul->single_step)
+						debugger();
+					for (i=0; i<ncpus_cached; i++)
+						if (cpus[i]->running) {
+							int instrs_run = cpu_run_instr(cpus[i]);
+							if (i == 0)
+								cpu0instrs += instrs_run;
+						}
 				}
 			} else if (max_random_cycles_per_chunk_cached > 0) {
 				for (i=0; i<ncpus_cached; i++)

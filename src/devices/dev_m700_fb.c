@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.2 2004-10-25 01:54:40 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.3 2004-10-25 02:02:03 debug Exp $
  *  
- *  Olivetty M700 framebuffer.
+ *  Olivetti M700 framebuffer.
  *
  *  TODO: This is enough to show the penguin and some text, with Linux,
  *  but that's about it.
@@ -100,7 +100,7 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 	case 0x0150:
 		/*  TODO: This has to do with ysize, but I haven't
 		    figured out exactly how yet.  */
-		odata = d->ysize * 2;
+		odata = d->ysize + 256;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

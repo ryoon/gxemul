@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.72 2004-06-28 03:18:58 debug Exp $
+ *  $Id: cpu.c,v 1.73 2004-06-28 05:21:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -762,8 +762,6 @@ int cpu_run_instr(struct cpu *cpu)
 	} else
 #endif
 	    {
-		int instr_fetched;
-
 		/*
 		 *  Fetch a 32-bit instruction word from memory:
 		 *
@@ -776,31 +774,15 @@ int cpu_run_instr(struct cpu *cpu)
 		if (cpu->pc_last_was_in_host_ram && (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
 			uint64_t paddr = cpu->pc_last_physical_page | (cached_pc & 0xfff);
 			int offset = paddr & ((1 << cpu->mem->bits_per_memblock) - 1);
-			memcpy(instr, cpu->pc_last_host_memblock + offset, sizeof(instr));
+
+			/*  NOTE: This only works on the host if offset is aligned correctly!  (TODO)  */
+			*(uint32_t *)instr = *(uint32_t *)(cpu->pc_last_host_memblock + offset);
 
 			/*  TODO:  Make sure this works with dynamic binary translation...  */
-
-			instr_fetched = MEMORY_ACCESS_OK;
                 } else {
-			instr_fetched = memory_rw(cpu, cpu->mem, cached_pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
-
-			if (!instr_fetched)
+			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 		}
-
-/* ***************************************************************************************** */
-#if 0
-		if (bintrans_enable && cpu->delay_slot==0 && cpu->nullify_next==0) {
-			/*
-			 *  Binary translation:
-			 */
-
-			/*  TODO:  reimplement this  */
-
-			/*  If instr_fetched == INSTR_BINTRANS ...  */
-		}
-#endif
-/* ***************************************************************************************** */
 
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr);

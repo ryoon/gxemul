@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.43 2004-06-28 00:54:21 debug Exp $
+ *  $Id: memory.c,v 1.44 2004-06-28 05:21:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -68,6 +68,7 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 	int i;
 	uint64_t x = 0;
 
+#if 0
 	if (cpu == NULL) {
 		fatal("memory_readmax64(): cpu = NULL\n");
 		exit(1);
@@ -77,6 +78,7 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 		fatal("memory_readmax64(): len = %i\n", len);
 		exit(1);
 	}
+#endif
 
 	/*  Switch byte order for incoming data, if neccessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -107,6 +109,7 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t da
 {
 	int i;
 
+#if 0
 	if (cpu == NULL) {
 		fatal("memory_readmax64(): cpu = NULL\n");
 		exit(1);
@@ -116,6 +119,7 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t da
 		fatal("memory_readmax64(): len = %i\n", len);
 		exit(1);
 	}
+#endif
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		for (i=0; i<len; i++)
@@ -274,9 +278,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	int instr = flags & FLAG_INSTR;
 	int ksu, exl, erl;
 	int x_64;
-	int use_tlb, i, pmask;
+	int use_tlb;
 	uint64_t vaddr_vpn2=0, vaddr_asid=0;
-	uint64_t entry_vpn2, entry_asid, pfn;
 	int g_bit, v_bit, d_bit, pageshift;
 	int exccode, tlb_refill;
 	int mmumodel3k, n_tlbs;
@@ -479,6 +482,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	tlb_refill = 1;
 
 	if (tlb_dump && !no_exceptions) {
+		int i;
 		debug("{ vaddr=%016llx ==> ? }\n", (long long)vaddr);
 		for (i=0; i<n_tlbs; i++) {
 			char *symbol;
@@ -492,6 +496,9 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 	if (use_tlb) {
+		int i;
+		uint64_t entry_vpn2, entry_asid, pfn;
+
 		for (i=0; i<n_tlbs; i++) {
 			if (mmumodel3k) {
 				/*  R3000 or similar:  */
@@ -504,19 +511,24 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 				d_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_D;
 			} else {
 				/*  R4000 or similar:  */
-				pmask = (cp0->tlbs[i].mask & PAGEMASK_MASK) | 0x1fff;
-				switch (pmask) {
-				case 0x0001fff:	pageshift = 12; break;
-				case 0x0007fff:	pageshift = 14; break;
-				case 0x001ffff:	pageshift = 16; break;
-				case 0x007ffff:	pageshift = 18; break;
-				case 0x01fffff:	pageshift = 20; break;
-				case 0x07fffff:	pageshift = 22; break;
-				case 0x1ffffff:	pageshift = 24; break;
-				case 0x7ffffff:	pageshift = 26; break;
-				default:
-					fatal("pmask=%08x\n", i, pmask);
-					exit(1);
+				int pmask = (cp0->tlbs[i].mask & PAGEMASK_MASK) | 0x1fff;
+
+				if (pmask == 0x1fff)
+					pageshift = 12;
+				else {
+					/*  Non-standard page mask:  */
+					switch (pmask) {
+					case 0x0007fff:	pageshift = 14; break;
+					case 0x001ffff:	pageshift = 16; break;
+					case 0x007ffff:	pageshift = 18; break;
+					case 0x01fffff:	pageshift = 20; break;
+					case 0x07fffff:	pageshift = 22; break;
+					case 0x1ffffff:	pageshift = 24; break;
+					case 0x7ffffff:	pageshift = 26; break;
+					default:
+						fatal("pmask=%08x\n", i, pmask);
+						exit(1);
+					}
 				}
 
 				if (cpu->cpu_type.mmu_model == MMU10K) {
@@ -581,7 +593,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 							cpu->translation_instr_cached[cpu->translation_instr_cached_i] = 1 + (writeflag == MEM_WRITE);
 							cpu->translation_instr_cached_vaddr_pfn[cpu->translation_instr_cached_i] = vaddr >> 12;
 							cpu->translation_instr_cached_paddr[cpu->translation_instr_cached_i] = (*return_addr) & ~0xfff;
-							cpu->translation_instr_cached_i = (cpu->translation_instr_cached_i+1) % N_TRANSLATION_CACHE;
+							cpu->translation_instr_cached_i = (cpu->translation_instr_cached_i+1) % N_TRANSLATION_CACHE_INSTR;
 						} else {
 							/*  Data:  */
 							cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
@@ -608,8 +620,10 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	/*  We are here if for example userland code tried to access kernel memory.  */
 
-/*
+#if 0
 	if (!use_tlb) {
+		int i;
+
 		quiet_mode = 0;
 		instruction_trace = register_dump = 1;
 
@@ -628,7 +642,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		}
 		exit(1);
 	}
-*/
+#endif
 
 
 	/*  TLB refill  */
@@ -726,10 +740,10 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
 
 		if (cpu->pc_last_was_in_host_ram) {
-			memblock = cpu->pc_last_host_memblock;
-
 			offset = paddr & ((1 << mem->bits_per_memblock) - 1);
-			memcpy(data, memblock + offset, len);
+
+			/*  Assume that it is aligned ok:  */
+			*(uint32_t *)data = *(uint32_t *)(cpu->pc_last_host_memblock + offset);
 
 			/*  TODO:  Make sure this works with dynamic binary translation...  */
 
@@ -1023,10 +1037,20 @@ no_exception_access:
 
 	offset = paddr & ((1 << bits_per_memblock) - 1);
 
-	if (writeflag == MEM_WRITE)
-		memcpy(memblock + offset, data, len);
-	else {
-		memcpy(data, memblock + offset, len);
+	if (writeflag == MEM_WRITE) {
+		if (len == sizeof(uint32_t))
+			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
+		else if (len == sizeof(uint8_t))
+			*(uint8_t *)(memblock + offset) = *(uint8_t *)data;
+		else
+			memcpy(memblock + offset, data, len);
+	} else {
+		if (len == sizeof(uint32_t))
+			*(uint32_t *)data = *(uint32_t *)(memblock + offset);
+		else if (len == sizeof(uint8_t))
+			*(uint8_t *)data = *(uint8_t *)(memblock + offset);
+		else
+			memcpy(data, memblock + offset, len);
 
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_last_was_in_host_ram = 1;

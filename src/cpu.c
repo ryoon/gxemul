@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.7 2003-11-08 08:44:48 debug Exp $
+ *  $Id: cpu.c,v 1.8 2003-11-24 23:43:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -100,7 +100,7 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	memset(cpu, 0, sizeof(struct cpu));
 	cpu->mem                = mem;
 	cpu->cpu_id             = cpu_id;
-	cpu->byte_order         = EMUL_BIG_ENDIAN;
+	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
 	cpu->gpr[GPR_SP]	= INITIAL_STACK_POINTER;
@@ -697,6 +697,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	 *  and we should return via gpr ra.
 	 */
 	if ((cpu->pc & 0xfff00000) == 0xbfc00000) {
+		int rom_jal = 1;
 		switch (emulation_type) {
 		case EMULTYPE_DEC:
 			decstation_prom_emul(cpu);
@@ -709,15 +710,15 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			arcbios_emul(cpu);
 			break;
 		default:
-			fatal("pc=%08llx ==> unknown PROM emulation\n", (long long)cpu->pc);
-			cpu->running = 0;
-			return 0;
+			rom_jal = 0;
 		}
 
-		cpu->pc = cpu->gpr[GPR_RA];
-		cpu->delay_slot = NOT_DELAYED;
-		cpu->trace_tree_depth --;
-		return 0;
+		if (rom_jal) {
+			cpu->pc = cpu->gpr[GPR_RA];
+			cpu->delay_slot = NOT_DELAYED;
+			cpu->trace_tree_depth --;
+			return 0;
+		}
 	}
 
 	/*  Remember where we are, in case of interrupt or exception:  */

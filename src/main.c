@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.108 2004-10-10 14:07:50 debug Exp $
+ *  $Id: main.c,v 1.109 2004-10-10 14:17:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -156,8 +156,7 @@ void usage(char *progname)
 	printf("  -j name   set the name of the kernel, for example:\n");
 	printf("                -j netbsd          for NetBSD/pmax\n");
 	printf("                -j bsd             for OpenBSD/pmax\n");
-	printf("                -j netbsd.pmax     for the NetBSD/pmax 1.6.2 install CD\n");
-	printf("                -j vmunix          for Ultrix  (REQUIRED to boot Ultrix)\n");
+	printf("                -j vmunix          for Ultrix/RISC\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");

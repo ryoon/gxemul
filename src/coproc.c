@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.45 2004-06-25 01:04:11 debug Exp $
+ *  $Id: coproc.c,v 1.46 2004-06-27 01:07:29 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -78,7 +78,6 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		c->reg[COP0_COMPARE] = (uint64_t)-1;
 
-		/*  For stand alone systems, this should probably be set during bootup:  */
 		if (!prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
 
@@ -112,7 +111,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		    ;
 
 		switch (cpu->cpu_type.rev) {
-		case MIPS_R4000:
+		case MIPS_R4000:	/*  according to the R4000 manual  */
 		case MIPS_R4600:
 		case MIPS_RM5200:	/*  rm5200 is just a wild guess  */
 			c->reg[COP0_CONFIG] =
@@ -139,9 +138,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    ;
 			break;
 		case MIPS_R5000:
-			/*
-			 *  The following settings are just guesses: (comments are incorrect)
-			 */
+			/*  These are just guesses: (the comments are wrong) */
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  Master/Checker present bit  */
 			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
@@ -250,7 +247,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		case MIPS_RM5200:	fpu_rev = cpu->cpu_type.rev;
 					other_stuff |= 0x10;	/*  or cpu->cpu_type.sub ? TODO  */
 					break;
-		case MIPS_R10000:	fpu_rev = MIPS_R10000;	break;
+		case MIPS_R10000:
 		case MIPS_R12000:	fpu_rev = MIPS_R10000;	break;
 		default:		fpu_rev = MIPS_SOFT;
 		}
@@ -1234,22 +1231,24 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				/*
 				 *  ... and the last instruction page:
 				 *
-				 *  Some thoughts about this:  Code running in the
-				 *  kernel's physical address space has the same
-				 *  vaddr->paddr translation, so the last virtual page
-				 *  invalidation only needs to happen if we are for
-				 *  some extremely weird reason NOT running in the
-				 *  kernel's physical address space.
+				 *  Some thoughts about this:  Code running in
+				 *  the kernel's physical address space has the
+				 *  same vaddr->paddr translation, so the last
+				 *  virtual page invalidation only needs to
+				 *  happen if we are for some extremely weird
+				 *  reason NOT running in the kernel's physical
+				 *  address space.
 				 *
-				 *  (An even insaner (but probably useless) optimization
-				 *  would be to only invalidate the last virtual page
-				 *  stuff if the TLB update actually affects the
-				 *  vaddr in question.)
-				 *
-				 *  (3 is an "impossible" value)
+				 *  (An even insaner (but probably useless)
+				 *  optimization would be to only invalidate
+				 *  the last virtual page stuff if the TLB
+				 *  update actually affects the vaddr in
+				 *  question.)
 				 */
-				if (cpu->pc < (uint64_t)0xffffffff80000000 || cpu->pc >= (uint64_t)0xffffffffc0000000)
-					cpu->pc_last_virtual_page = 3;
+				if (cpu->pc < (uint64_t)0xffffffff80000000 ||
+				    cpu->pc >= (uint64_t)0xffffffffc0000000)
+					cpu->pc_last_virtual_page =
+					    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)
@@ -1257,20 +1256,27 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 					else
 						debug("tlbwr");
 
-					debug("\tindex=%08llx", (long long) cp->reg[COP0_INDEX]);
-					debug(", random=%08llx", (long long) cp->reg[COP0_RANDOM]);
-					debug(", mask=%016llx", (long long) cp->reg[COP0_PAGEMASK]);
-					debug(", hi=%016llx", (long long) cp->reg[COP0_ENTRYHI]);
-					debug(", lo0=%016llx", (long long) cp->reg[COP0_ENTRYLO0]);
-					debug(", lo1=%016llx\n", (long long) cp->reg[COP0_ENTRYLO1]);
+					debug("\tindex=%08llx",
+					    (long long)cp->reg[COP0_INDEX]);
+					debug(", random=%08llx",
+					    (long long)cp->reg[COP0_RANDOM]);
+					debug(", mask=%016llx",
+					    (long long)cp->reg[COP0_PAGEMASK]);
+					debug(", hi=%016llx",
+					    (long long)cp->reg[COP0_ENTRYHI]);
+					debug(", lo0=%016llx",
+					    (long long)cp->reg[COP0_ENTRYLO0]);
+					debug(", lo1=%016llx\n",
+					    (long long)cp->reg[COP0_ENTRYLO1]);
 				}
 
 				if (op == COP0_TLBWR) {
 #ifdef LAST_USED_TLB_EXPERIMENT
 					/*
-					 *  This is an experimental thing which finds the index
-					 *  with lowest last_used value, instead of just a random
-					 *  entry:
+					 *  This is an experimental thing which
+					 *  finds the index with lowest
+					 *  last_used value, instead of just a
+					 *  random entry:
 					 */
 					int i, found=-1;
 					uint64_t minimum_last_used;
@@ -1375,8 +1381,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
 				if (instruction_trace)
 					debug("rfe\n");
-				/*  cpu->last_was_rfe = 1;  */
-				/*  TODO: should this be delayed?  */
+				cpu->last_was_rfe = 1;
 				cpu->coproc[0]->reg[COP0_STATUS] =
 				    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 				    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);

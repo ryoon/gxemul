@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.13 2004-06-14 22:50:19 debug Exp $
+ *  $Id: emul.c,v 1.14 2004-06-22 22:26:35 debug Exp $
  *
  *  Emulation startup.
  */
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "bintrans.h"
 #include "memory.h"
 #include "misc.h"
 #include "diskimage.h"
@@ -47,6 +48,7 @@ int extra_argc;
 char **extra_argv;
 
 
+extern int bintrans_enable;
 extern char emul_cpu_name[50];
 extern int emulation_type;
 extern int machine;
@@ -139,6 +141,10 @@ void emul(void)
 	srandom(time(NULL));
 
 	atexit(fix_console);
+
+	/*  Initialize dynamic binary translation, if available:  */
+	if (bintrans_enable)
+		bintrans_init();
 
 	/*
 	 *  Create the system's memory:

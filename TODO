@@ -3,14 +3,15 @@ mips64emul TODO
 
 Most important stuff (but these are all non-trivial tasks):
 
+  o)  Make interrupt sharing more generic!
+
+  o)  finish the WDC (IDE harddisk controller) device
+
   o)  DECstations:
 	x)  write 'sii' or 'asc' SCSI interface stuff for pmax so that harddisk images can be used
-	x)  Make interrupt sharing more generic!
 	x)  try to install NetBSD/pmax onto a fake SCSI-disk
 	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
 	x)  try to run X inside NetBSD, using framebuffer(s) with mouse support!
-
-  o)  PCI: some form of IDE controller would be nice
 
 -------------------------------------------------------------------------------------
 
@@ -105,7 +106,7 @@ Most important stuff (but these are all non-trivial tasks):
 			(Perhaps the PS1 is a subset of the PS2.)
 
 		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
-			(R4300 or R4000? 4MB RAM?)
+			(R4300, 4MB RAM, really weird memory map)
 
 		o)  newsmips?
 

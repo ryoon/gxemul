@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.32 2004-03-04 05:04:12 debug Exp $
+ *  $Id: cpu.c,v 1.33 2004-03-04 06:13:10 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1674,6 +1674,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 					(*instrcount) += cpu->gpr[rt] * 2;
 
+					/*  TODO:  increaste the count register, and cause interrupts!!!  */
+
 					cpu->gpr[rt] = 0;
 					if (instruction_trace)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
@@ -2350,7 +2352,32 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
 
+		/*  Many of these can be found in the R5000 docs.  */
+
 		switch (special6) {
+		case SPECIAL2_MADD:
+			/*
+			 *  The R5000 manual says that rd should be all zeros,
+			 *  but it isn't on R5900.   I'm just guessing here that
+			 *  it uses register rd instead of hi/lo.
+			 *  TODO
+			 */
+			{
+				int32_t a, b;
+				int64_t c;
+				a = cpu->gpr[rs];
+				b = cpu->gpr[rt];
+				c = (int64_t)a * (int64_t)b;
+				if (rd != 0) {
+					c += (int32_t)cpu->gpr[rd];
+					cpu->gpr[rd] = (int64_t)(int32_t)c;
+				} else {
+					c += cpu->lo + (cpu->hi << 32);
+					cpu->lo = (int64_t)((int32_t)c);
+					cpu->hi = (int64_t)((int32_t)(c >> 32));
+				}
+			}
+			break;
 		case SPECIAL2_MOV_XXX:		/*  Undocumented  TODO  */
 			/*  What in the world does this thing do? And what is rs?  */
 			/*  It _SEEMS_ like two 32-bit registers are glued
@@ -2430,6 +2457,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int i, s1, s2;
 	long ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
+	long ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
 	int running;
 	struct rusage rusage;
 	struct timeval starttime;
@@ -2454,13 +2482,17 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 		/*  Check for X11 events:  */
 		if (use_x11) {
-			if ((ncycles & ((1<<16)-1)) == 0)
+			if (ncycles > ncycles_flushx11 + (1<<16)) {
 				x11_check_event();
+				ncycles_flushx11 = ncycles;
+			}
 		}
 
 		/*  If we've done buffered console output, the flush it every now and then:  */
-		if ((ncycles & ((1<<17)-1)) == 0)
+		if (ncycles > ncycles_flush + (1<<17)) {
 			console_flush();
+			ncycles_flush = ncycles;
+		}
 
 		if (show_nr_of_instructions && (ncycles > ncycles_show + (1<<21))) {
 			cpu_show_cycles(&starttime, ncycles);

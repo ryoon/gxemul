@@ -23,9 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.5 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_ssc.c,v 1.6 2004-03-04 04:08:07 debug Exp $
  *  
  *  Serial controller on DECsystem 5400.
+ *  Known as System Support Chip on VAX 3600 (KA650).
  *
  *  Described around page 80 in the kn210tm1.pdf.
  */
@@ -58,7 +59,27 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case 0x0088:
+	case 0x0080:	/*  receive status  */
+		if (writeflag==MEM_READ) {
+			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
+			if (console_charavail())
+				odata = 128;
+		} else {
+			/*  debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+		}
+
+		break;
+	case 0x0084:	/*  receive data  */
+		if (writeflag==MEM_READ) {
+			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
+			if (console_charavail())
+				odata = console_readchar();
+		} else {
+			/*  debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+		}
+
+		break;
+	case 0x0088:	/*  transmit status  */
 		if (writeflag==MEM_READ) {
 			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
 			odata = 128;
@@ -67,7 +88,7 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		}
 
 		break;
-	case 0x008c:
+	case 0x008c:	/*  transmit data  */
 		if (writeflag==MEM_READ) {
 			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
 		} else {

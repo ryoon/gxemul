@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.135 2005-01-09 01:55:31 debug Exp $
+ *  $Id: memory.c,v 1.136 2005-01-10 02:23:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -981,14 +981,19 @@ no_exception_access:
 
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
+#ifdef BINTRANS
 	if (bintrans_cached)
 		update_translation_table(cpu, vaddr & ~0xfff,
 		    memblock + (offset & ~0xfff),
+#if 0
 		    cache == CACHE_INSTRUCTION?
 			(writeflag == MEM_WRITE? 1 : 0)
 			: ok - 1,
-/*		    writeflag == MEM_WRITE? 1 : 0,  */
+#else
+		    writeflag == MEM_WRITE? 1 : 0,
+#endif
 		    paddr & ~0xfff);
+#endif
 
 	if (writeflag == MEM_WRITE) {
 		if (len == sizeof(uint32_t) && (offset & 3)==0)

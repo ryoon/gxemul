@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.137 2005-01-03 01:26:54 debug Exp $
+ *  $Id: coproc.c,v 1.138 2005-01-03 01:49:10 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -548,8 +548,8 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 #endif
 
 		if (paddr < 0x20000000) {
-			invalidate_table_entry(cpu, 0x80000000 + paddr);
-			invalidate_table_entry(cpu, 0xa0000000 + paddr);
+			invalidate_table_entry(cpu, 0xffffffff80000000ULL + paddr);
+			invalidate_table_entry(cpu, 0xffffffffa0000000ULL + paddr);
 		}
 	}
 

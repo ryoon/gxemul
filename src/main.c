@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.19 2004-01-23 22:49:32 debug Exp $
+ *  $Id: main.c,v 1.20 2004-01-24 21:10:43 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -307,7 +307,7 @@ int get_cmd_args(int argc, char *argv[])
 			tlb_dump = 1;
 			break;
 		case 'u':
-			userland_emul = 1;
+			userland_emul = USERLAND_NETBSD_PMAX;
 			break;
 		case 'X':
 			use_x11 = 1;

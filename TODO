@@ -144,6 +144,12 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
 			(using manual swap-out of blocks to disk)
 
+	Interactive/graphical single step debugger?
+
+	Save state of the whole emulated machine, to be able to load it back
+		in later?  (Memory, all device's states, all registers and
+		so on.  Like taking a snapshot)
+
 	Binary translation?
 		o)  How to deal with userland?  Self-modifying code?
 		o)  Multiple target archs (alpha, i386, sparc, ...)
@@ -168,8 +174,6 @@ Most important stuff (but these are all non-trivial tasks):
 
 	Profile the whole emulator, and try to increase performance. As
 		of now it is utterly slow.
-
-	Interactive/graphical single step debugger?
 
 	Statistics:  (this could be interesting)
 		o)  memory accesses (to measure cache efficiency and

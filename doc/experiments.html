@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.26 2005-02-14 22:47:57 debug Exp $
+$Id: experiments.html,v 1.27 2005-02-15 16:49:35 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -639,7 +639,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E walnut -vi netbsd-INSTALL_WALNUT</b>
+	<br>$ <b>./mips64emul -E walnut -vt netbsd-INSTALL_WALNUT</b>
     </ul>
   </li>
 
@@ -650,7 +650,18 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc -vi netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E pmppc -vt netbsd-INSTALL</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Motorola Sandpoint (sandpoint):
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/sandpoint/">NetBSD/sandpoint</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz</a>
+	<br>gunzip, and try the following:
+	<br>$ <b>./mips64emul -E sandpoint -vt netbsd-INSTALL</b>
     </ul>
   </li>
 

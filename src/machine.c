@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.347 2005-02-14 21:44:37 debug Exp $
+ *  $Id: machine.c,v 1.348 2005-02-15 16:45:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3952,6 +3952,14 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_SANDPOINT:
+		/*
+		 *  NetBSD/sandpoint (http://www.netbsd.org/Ports/sandpoint/)
+		 */
+		machine->machine_name = "Motorola Sandpoint";
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4180,6 +4188,15 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_PMPPC:
 		/*  For NetBSD/pmppc.  */
 		m->cpu_name = strdup("PPC750");
+		break;
+	case MACHINE_SANDPOINT:
+		/*
+		 *  For NetBSD/sandpoint. According to NetBSD's page:
+		 *
+		 *  "Unity" module has an MPC8240.
+		 *  "Altimus" module has an MPC7400 (G4) or an MPC107.
+		 */
+		m->cpu_name = strdup("MPC7400");
 		break;
 
 	/*  SPARC:  */
@@ -4500,6 +4517,14 @@ void machine_init(void)
 	me->aliases[0] = "netgear";
 	me->aliases[1] = "wg602";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Motorola Sandpoint: (NetBSD/sandpoint)  */
+	me = machine_entry_new("Motorola Sandpoint",
+	    ARCH_PPC, MACHINE_SANDPOINT, 1, 0);
+	me->aliases[0] = "sandpoint";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.15 2005-01-09 22:37:25 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.16 2005-01-09 22:45:15 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -235,6 +235,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_SRLV:
 	case SPECIAL_SRA:
 	case SPECIAL_SRAV:
+	case SPECIAL_SLT:
+	case SPECIAL_SLTU:
 		break;
 	default:
 		return 0;
@@ -300,6 +302,20 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_SRAV:
 		/*  rd = rt >> (rs&31)  (logical)  */
 		*a++ = 0x9b3b000d;		/*  sra  %o4, %o5, %o5  */
+		break;
+	case SPECIAL_SLT:
+		/*  rd = rs < rt     %o5 = %o5 < %o4  */
+		*a++ = 0x80a3400c;		/*  cmp  %o5, %o4  */
+		*a++ = 0x9a100000;		/*  mov  %g0, %o5  */
+		*a++ = 0x9b64f001;		/*  movl  %xcc, 1, %o5  */
+		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
+		break;
+	case SPECIAL_SLTU:
+		/*  rd = rs < rt (unsigned)     %o5 = %o5 < %o4  */
+		*a++ = 0x80a3400c;		/*  cmp  %o5, %o4  */
+		*a++ = 0x9a100000;		/*  mov  %g0, %o5  */
+		*a++ = 0x9b657001;		/*  movcs  %xcc, 1, %o5  */
+		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
 		break;
 	}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.137 2004-12-14 04:27:07 debug Exp $
+ *  $Id: main.c,v 1.138 2004-12-14 16:39:16 debug Exp $
  */
 
 #include <stdio.h>
@@ -642,6 +642,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->ncpus > 1 && emul->bintrans_enable) {
 		fprintf(stderr, "FATAL: Cannot use bintrans with more than one cpu.\n");
+		exit(1);
+	}
+
+	if (emul->n_breakpoints > 0 && emul->bintrans_enable) {
+		fprintf(stderr, "Breakpoints and dynamic translation don't work too well together right now.\n");
 		exit(1);
 	}
 

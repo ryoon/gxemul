@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.67 2005-02-02 09:29:41 debug Exp $
+ *  $Id: file.c,v 1.68 2005-02-02 09:33:20 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -491,7 +491,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 
 		len = fread(&symhdr, 1, sizeof(symhdr), f);
 		if (len != sizeof(symhdr)) {
-			fprintf(stderr, "%s: not a complete ecoff image: symhdr broken\n", filename);
+			fprintf(stderr, "%s: not a complete "
+			    "ecoff image: symhdr broken\n", filename);
 			exit(1);
 		}
 
@@ -511,6 +512,13 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			int n_real_symbols = 0;
 
 			debug("bad symbol magic, assuming Microsoft format: ");
+
+			/*
+			 *  See http://www.lisoleg.net/lisoleg/elfandlib/
+			 *    Microsoft%20Portable%20Executable%20COFF%20For
+			 *    mat%20Specification.txt
+			 *  for more details.
+			 */
 			ms_sym_buf = malloc(sizeof(struct ms_sym) * f_nsyms);
 			if (ms_sym_buf == NULL) {
 				fprintf(stderr, "out of memory\n");

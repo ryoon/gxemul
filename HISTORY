@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.297 2004-11-06 00:41:10 debug Exp $
+$Id: HISTORY,v 1.298 2004-11-06 02:07:18 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1120,4 +1120,5 @@ HISTORY of mips64emul
 		(-z) adds DISPLAYs that should be used.
 		Update regarding how DECstation BT459 cursors are used;
 		transparency :-) and some other bug fixes.
-20041106	More bt459 updates.
+20041106	More bt459 updates. The color seems to be correct for NetBSD,
+		OpenBSD, Ultrix, and Sprite.

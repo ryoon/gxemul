@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.2 2005-02-06 15:15:05 debug Exp $
+ *  $Id: console.c,v 1.3 2005-02-06 15:39:38 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -204,6 +204,12 @@ Hm...
 	} else if (p == 0) {
 		close(filedes[1]);
 		close(filedesB[0]);
+
+		p = setsid();
+		if (p < 0)
+			printf("[ console_start_slave(): ERROR while trying "
+			    "to do a setsid(): %i ]\n", errno);
+
 		res = execvp(a[0], a);
 		printf("[ console_start_slave(): ERROR while trying to "
 		    "execvp(\"");

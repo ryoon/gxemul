@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.17 2005-02-03 22:33:15 debug Exp $
+ *  $Id: cpu_mips.c,v 1.18 2005-02-06 15:39:38 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1954,10 +1954,10 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  round as well.
 			 *
 			 *  This still has to count as one or more
-			 *  instructions, so 100 is returned. (Ugly.)
+			 *  instructions, so 1000 is returned. (Ugly.)
 			 */
 			if (!res)
-				return 100;
+				return 1000;
 
 			cpu->cd.mips.pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */

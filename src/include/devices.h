@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.137 2005-02-06 15:15:04 debug Exp $
+ *  $Id: devices.h,v 1.138 2005-02-06 15:39:38 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -138,7 +138,7 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned cha
 /*  see dc7085.h for more info  */
 void dev_dc7085_tick(struct cpu *cpu, void *);
 int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_dc7085_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+int dev_dc7085_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
 
 /*  dev_dec5800.c:  */
 #define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */

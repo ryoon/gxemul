@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.47 2005-02-06 15:15:03 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.48 2005-02-06 15:39:37 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -283,7 +283,7 @@ do_return:
  *  if a framebuffer device is used. Channel 0 will then be treated as a
  *  DECstation keyboard, instead of a plain serial console.
  */
-void dev_dc7085_init(struct machine *machine, struct memory *mem,
+int dev_dc7085_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int use_fb)
 {
 	struct dc_data *d;
@@ -307,5 +307,7 @@ void dev_dc7085_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH,
 	    dev_dc7085_access, d, MEM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_dc7085_tick, d, DC_TICK_SHIFT);
+
+	return d->console_handle;
 }
 

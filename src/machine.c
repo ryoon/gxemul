@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.332 2005-02-06 15:15:06 debug Exp $
+ *  $Id: machine.c,v 1.333 2005-02-06 15:39:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1371,7 +1371,8 @@ void machine_setup(struct machine *machine)
 			    "PMAD-AA", KN02_IP_LANCE +8);
 
 			/*  TURBOchannel slot 7 is system stuff.  */
-			dev_dc7085_init(machine, mem,
+			machine->main_console_handle =
+			    dev_dc7085_init(machine, mem,
 			    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
 			dev_mc146818_init(machine, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);

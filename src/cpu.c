@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.39 2004-03-25 20:58:16 debug Exp $
+ *  $Id: cpu.c,v 1.40 2004-03-26 21:42:59 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -518,6 +518,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	int i;
 	int dcount;
 	unsigned char instr[4];
+	uint32_t instrword;
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem = NULL;			/*  for instruction trace  */
@@ -2403,39 +2404,38 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		special6 = instr[0] & 0x3f;
 		cpu->stats__special2[special6] ++;
 
+		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
+
 		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
 
 		/*  Many of these can be found in the R5000 docs.  */
 
-		switch (special6) {
-		case SPECIAL2_MADD:
-			/*
-			 *  The R5000 manual says that rd should be all zeros,
-			 *  but it isn't on R5900.   I'm just guessing here that
-			 *  it uses register rd instead of hi/lo.
-			 *  TODO
-			 */
+		if (special6 == SPECIAL2_MADD) {
 			if (instruction_trace)
 				debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
+
 			{
 				int32_t a, b;
 				int64_t c;
-				a = cpu->gpr[rs];
-				b = cpu->gpr[rt];
-				c = (int64_t)a * (int64_t)b;
-				if (rd != 0) {
-					c += (int32_t)cpu->gpr[rd];
-					cpu->gpr[rd] = (int64_t)(int32_t)c;
-				} else {
-					c += cpu->lo + (cpu->hi << 32);
-					cpu->lo = (int64_t)((int32_t)c);
-					cpu->hi = (int64_t)((int32_t)(c >> 32));
-				}
+				a = (int32_t)cpu->gpr[rs];
+				b = (int32_t)cpu->gpr[rt];
+				c = a * b;
+				c += (cpu->lo & 0xffffffff) + (cpu->hi << 32);
+				cpu->lo = (int64_t)((int32_t)c);
+				cpu->hi = (int64_t)((int32_t)(c >> 32));
+
+				/*
+				 *  The R5000 manual says that rd should be all zeros,
+				 *  but it isn't on R5900.   I'm just guessing here that
+				 *  it stores the value in register rd, in addition to hi/lo.
+				 *  TODO
+				 */
+				if (rd != 0)
+					cpu->gpr[rd] = cpu->lo;
 			}
-			break;
-		case SPECIAL2_PMFHI:
+		} else if ((instrword & 0xffff07ff) == 0x70000209 || (instrword & 0xffff07ff) == 0x70000249) {
 			/*
 			 *  This is just a guess for R5900, I've not found any docs on this one yet.
 			 *
@@ -2456,8 +2456,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					debug("pmfhi\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->hi;
 			}
-			break;
-		case SPECIAL2_POR:
+		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
 			/*
 			 *  This is just a guess for R5900, I've not found any docs on this one yet.
 			 *
@@ -2469,21 +2468,15 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (instruction_trace)
 				debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
-			break;
-		case SPECIAL2_MOV_XXX:		/*  Undocumented  TODO  */
-			/*  What in the world does this thing do? And what is rs?  */
-			/*  It _SEEMS_ like two 32-bit registers are glued
-				together to form a 64-bit register, but it might
-				be doing something else too  */
+		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
+			/*  R5900 "undocumented" pextlw. TODO: find out if this is correct.  */
 			if (instruction_trace)
-				debug("mov_xxx\tr%i,r%i,0x%x\n", rd, rt, rs);
+				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
 
 			cpu->gpr[rd] =
-			    ((cpu->gpr[rt+1] & 0xffffffff) << 32)
+			    ((cpu->gpr[rs] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->gpr[rt] & 0xffffffff);
-
-			break;
-		default:
+		} else {
 			if (!instruction_trace) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 				    cpu->cpu_id, cpu->pc_last,

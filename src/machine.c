@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.10 2003-11-24 04:29:48 debug Exp $
+ *  $Id: machine.c,v 1.11 2003-12-20 21:20:12 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -68,6 +68,39 @@ extern struct memory *GLOBAL_gif_mem;
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
 /*  TODO:  struct kmin_csr *kmin_csr;  */
+
+
+/********************** Helper functions **********************/
+
+
+/*
+ *  read_char_from_memory():
+ */
+unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
+{
+	unsigned char ch;
+	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+	return ch;
+}
+
+
+/*
+ *  dump_mem_string():
+ */
+void dump_mem_string(struct cpu *cpu, uint64_t addr)
+{
+	int i;
+	for (i=0; i<40; i++) {
+		char ch = '\0';
+		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (ch == '\0')
+			return;
+		if (ch >= ' ' && ch < 126)
+			debug("%c", ch);  
+		else
+			debug("[%02x]", ch);
+	}
+}
 
 
 /*
@@ -167,6 +200,9 @@ void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
 	}
 }
+
+
+/**************************************************************/
 
 
 /*
@@ -692,6 +728,9 @@ void machine_init(struct memory *mem)
 		else
 			machine_name = "ARC";
 
+		if (physical_ram_in_mb < 16)
+			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
+
 		/*  ARCBIOS:  */
 		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
@@ -701,10 +740,10 @@ void machine_init(struct memory *mem)
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emulation_type == EMULTYPE_SGI) {
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "fake", 4);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "IP32", 4);	/*  NOTE: max 8 chars  */
 		} else {
 			/*  NEC-RD94 = NEC RISCstation 2250  */
-			strncpy(arcbios_sysid.VendorId,  "NEC", 3);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 		}
 		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
@@ -719,9 +758,38 @@ void machine_init(struct memory *mem)
 
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 8*1048576 / 4096);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 4 * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 4) * 1048576 / 4096);
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+		/*
+		 *  Components:   (this is an example of what a system could look like)
+		 *
+		 *  [System]
+		 *	[CPU]  (one for each cpu)
+		 *	    [FPU]  (one for each cpu)
+		 *	    [CPU Caches]
+		 *	[Memory]
+		 *	[Ethernet]
+		 *	[Serial]
+		 *	[SCSI]
+		 *	    [Disk]
+		 */
+
+		if (emulation_type == EMULTYPE_SGI) {
+			uint32_t system;
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, "SGI-IP32", 0  /*  ROOT  */);
+			debug("SGI system = 0x%x\n", system);
+		} else {
+			uint32_t system;
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+			debug("ARC system = 0x%x\n", system);
+
+			/*  TODO:  sync devices and component tree  */
+			dev_ns16550_init(mem, 0x2000006000, 0);
+		}
 
 		add_symbol_name(0xbfc10000, 0x10000, "[ARCBIOS entry]", 0);
 
@@ -745,7 +813,7 @@ void machine_init(struct memory *mem)
 
 		addr = SGI_ENV_STRINGS;
 		add_environment_string("ConsoleOut=serial", &addr);
-		add_environment_string("cpufreq=1", &addr);
+		add_environment_string("cpufreq=1000000", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.4 2003-11-07 10:32:53 debug Exp $
+ *  $Id: dec_prom.c,v 1.5 2003-12-20 21:20:12 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -50,17 +50,6 @@ extern int instruction_trace;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
-
-
-/*
- *  read_char_from_memory():
- */
-unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
-{
-	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-	return ch;
-}
 
 
 /*

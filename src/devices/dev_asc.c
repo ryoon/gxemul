@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.23 2004-04-13 08:57:39 debug Exp $
+ *  $Id: dev_asc.c,v 1.24 2004-04-14 22:29:15 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -236,7 +236,7 @@ void dev_asc_newxfer(struct asc_data *d)
  */
 int dev_asc_transfer(struct asc_data *d, int dmaflag)
 {
-	int res = 1;
+	int res = 1, all_done = 1;
 	int len, i, ch;
 
 	debug(" { TRANSFER to/from id %i: ", d->reg_wo[NCR_SELID] & 7);
@@ -275,13 +275,38 @@ fatal("TODO..............\n");
 			} else {
 				int len = d->xferp->data_in_len;
 				int len2 = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
-printf("len=%i len2=%i addr=%08x\n", len, len2, d->dma_address_reg);
+				if (len2 == 0)
+					len2 = 65536;
+
+                                if (len < len2) {
+                                        fatal("{ asc: data in, len=%i len2=%i }\n", len, len2);
+                                }
+
+				if (len > len2) {
+					unsigned char *n;
+
+					all_done = 0;
+                                        fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);
+
+					d->xferp->data_in_len -= len2;
+					n = malloc(d->xferp->data_in_len);
+					if (n == NULL) {
+						fprintf(stderr, "out of memory in dev_asc\n");
+						exit(1);
+					}
+					memcpy(n, d->xferp->data_in + len2, d->xferp->data_in_len);
+					free(d->xferp->data_in);
+					d->xferp->data_in = n;
+
+					len = len2;
+				}
+
+				/*  TODO: check len2 in a similar way?  */
 				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
 
-				if (len != len2) {
-					fatal("{ asc: data in, len=%i len2=%i }\n", len, len2);
-				}
+				if (len2 > len)
+					memset(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), 0, len2);
 
 #ifdef ASC_DEBUG
 				if (!quiet_mode)
@@ -381,10 +406,11 @@ fatal("TODO.......asdgasin\n");
 		res = diskimage_scsicommand(d->reg_wo[NCR_SELID] & 7, d->xferp);
 	}
 
-	if (d->cur_phase == PHASE_MSG_OUT) {
-		d->cur_phase = PHASE_COMMAND;
-	} else {
-		d->cur_phase = PHASE_STATUS;
+	if (all_done) {
+		if (d->cur_phase == PHASE_MSG_OUT)
+			d->cur_phase = PHASE_COMMAND;
+		else
+			d->cur_phase = PHASE_STATUS;
 	}
 
 	/*  Cause an interrupt after the transfer:  */
@@ -557,6 +583,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Controller's ID is fixed:  */
 	d->reg_ro[NCR_CFG1] = (d->reg_ro[NCR_CFG1] & ~7) | ASC_SCSI_ID;
+	d->reg_ro[NCR_CFG3] = NCRF9XCFG3_CDB;
 
 	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5)
 	    + d->n_bytes_in_fifo;
@@ -645,8 +672,16 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 	if (regnr == NCR_CMD && writeflag == MEM_WRITE) {
 		debug(" ");
-		if (idata & NCRCMD_DMA)
+
+		if (idata & NCRCMD_DMA) {
 			debug("[DMA] ");
+
+			/*  DMA commands load the transfer count from the
+			    write-only registers to the read-only ones:  */
+			d->reg_ro[NCR_TCL] = d->reg_wo[NCR_TCL];
+			d->reg_ro[NCR_TCM] = d->reg_wo[NCR_TCM];
+			d->reg_ro[NCR_TCH] = d->reg_wo[NCR_TCH];
+		}
 
 		switch (idata & ~NCRCMD_DMA) {
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.19 2004-12-23 03:47:37 debug Exp $
+ *  $Id: debugger.c,v 1.20 2004-12-26 13:38:22 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -111,6 +111,157 @@ void debugger_activate(int x)
 
 	/*  Reactivate the signal handler:  */
 	signal(SIGINT, debugger_activate);
+}
+
+
+/*
+ *  debugger_parse_name():
+ *
+ *  This function reads a string, and tries to match it to a register name,
+ *  a symbol, or treat it as a decimal numeric value.
+ *
+ *  Some examples:
+ *
+ *	"0x7fff1234"		==> numeric value (hex, in this case)
+ *	"pc", "r5", "hi"	==> register
+ *	"memcpy+64"		==> symbol (plus offset)
+ *
+ *  Register names can be preceeded by "x:" where x is the CPU number. (CPU
+ *  0 is assumed by default.)
+ *
+ *  To force detection of different types, a character can be added in front of
+ *  the name: "$" for numeric values, "%" for registers, and "@" for symbols.
+ *
+ *  Return value is:
+ *
+ *	NAME_PARSE_NOMATCH	no match
+ *	NAME_PARSE_MULTIPLE	multiple matches
+ *
+ *  or one of these (and then *valuep is read or written, depending on
+ *  the writeflag):
+ *
+ *	NAME_PARSE_REGISTER	a register
+ *	NAME_PARSE_NUMBER	a hex number
+ *	NAME_PARSE_SYMBOL	a symbol
+ */
+#define	NAME_PARSE_NOMATCH	0
+#define	NAME_PARSE_MULTIPLE	1
+#define	NAME_PARSE_REGISTER	2
+#define	NAME_PARSE_NUMBER	3
+#define	NAME_PARSE_SYMBOL	4
+int debugger_parse_name(struct emul *emul, char *name, int writeflag,
+	uint64_t *valuep)
+{
+	int match_register = 0, match_symbol = 0, match_numeric = 0;
+	int skip_register, skip_numeric, skip_symbol;
+	int cpunr = 0;
+
+	if (emul == NULL || name == NULL) {
+		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");
+		exit(1);
+	}
+
+	skip_register = name[0] == '$' || name[0] == '@';
+	skip_numeric  = name[0] == '%' || name[0] == '@';
+	skip_symbol   = name[0] == '$' || name[0] == '%';
+
+	/*  Check for a register match:  */
+	if (!skip_register && strlen(name) >= 2) {
+		/*  CPU number:  */
+
+		/*  TODO  */
+
+		/*  Register name:  */
+		if (strcasecmp(name, "pc") == 0) {
+			if (writeflag)
+				emul->cpus[cpunr]->pc = *valuep;
+			else
+				*valuep = emul->cpus[cpunr]->pc;
+			match_register = 1;
+		}
+		if (strcasecmp(name, "hi") == 0) {
+			if (writeflag)
+				emul->cpus[cpunr]->hi = *valuep;
+			else
+				*valuep = emul->cpus[cpunr]->hi;
+			match_register = 1;
+		}
+		if (strcasecmp(name, "lo") == 0) {
+			if (writeflag)
+				emul->cpus[cpunr]->lo = *valuep;
+			else
+				*valuep = emul->cpus[cpunr]->lo;
+			match_register = 1;
+		}
+		if (name[0] == 'r' && isdigit((int)name[1])) {
+			int nr = atoi(name + 1);
+			if (nr >= 0 && nr < 32) {
+				if (writeflag) {
+					if (nr != 0)
+						emul->cpus[cpunr]->gpr[nr] = *valuep;
+					else
+						printf("WARNING: Attempt to modify r0.\n");
+				} else
+					*valuep = emul->cpus[cpunr]->gpr[nr];
+				match_register = 1;
+			}
+		}
+	}
+
+	/*  Check for a number match:  */
+	if (!skip_numeric && isdigit((int)name[0])) {
+		uint64_t x;
+		x = strtoull(name, NULL, 0);
+		if (writeflag) {
+			printf("You cannot assign like that.\n");
+		} else
+			*valuep = x;
+		match_numeric = 1;
+	}
+
+	/*  Check for a symbol match:  */
+	if (!skip_symbol) {
+		int res;
+		char *p, *sn;
+		uint64_t newaddr, ofs = 0;
+
+		sn = malloc(strlen(name) + 1);
+		if (sn == NULL) {
+			fprintf(stderr, "out of memory in debugger\n");
+			exit(1);
+		}
+		strcpy(sn, name);
+
+		/*  Is there a '+' in there? Then treat that as an offset:  */
+		p = strchr(sn, '+');
+		if (p != NULL) {
+			*p = '\0';
+			ofs = strtoull(p+1, NULL, 0);
+		}
+
+		res = get_symbol_addr(&emul->symbol_context, sn, &newaddr);
+		if (res) {
+			if (writeflag) {
+				printf("You cannot assign like that.\n");
+			} else
+				*valuep = newaddr + ofs;
+			match_symbol = 1;
+		}
+
+		free(sn);
+	}
+
+	if (match_register + match_symbol + match_numeric > 1)
+		return NAME_PARSE_MULTIPLE;
+
+	if (match_register)
+		return NAME_PARSE_REGISTER;
+	if (match_numeric)
+		return NAME_PARSE_NUMBER;
+	if (match_symbol)
+		return NAME_PARSE_SYMBOL;
+
+	return NAME_PARSE_NOMATCH;
 }
 
 
@@ -275,8 +426,9 @@ static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
 	struct memory *m;
 	int x, r;
 
+	/*  Assuming hex will work both with and with the 0x prefix.  */
 	if (cmd_line[0] != '\0')
-		last_dump_addr = strtoll(cmd_line + 1, NULL, 16);
+		last_dump_addr = strtoull(cmd_line + 1, NULL, 16);
 
 	addr_start = last_dump_addr;
 	addr_end = addr_start + 256;
@@ -367,7 +519,9 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 
 	}
 
-	addr = strtoll(cmd_line + 1, NULL, 16);
+	/*  Addresses never need to be given in decimal form anyway,
+	    so assuming hex here will be ok.  */
+	addr = strtoull(cmd_line + 1, NULL, 16);
 
 	if (addr == 0) {
 		uint64_t newaddr;
@@ -433,6 +587,41 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_print():
+ */
+static void debugger_cmd_print(struct emul *emul, char *cmd_line)
+{
+	int res;
+	uint64_t tmp;
+
+	while (cmd_line[0] != '\0' && cmd_line[0] == ' ')
+		cmd_line ++;
+
+	if (cmd_line[0] == '\0') {
+		printf("usage: print expr\n");
+		return;
+	}
+
+	res = debugger_parse_name(emul, cmd_line, 0, &tmp);
+	switch (res) {
+	case NAME_PARSE_NOMATCH:
+		printf("No match.\n");
+		break;
+	case NAME_PARSE_MULTIPLE:
+		printf("Multiple matches. Try prefixing with %%, $, or @.\n");
+		break;
+	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SYMBOL:
+		printf("%s = 0x%016llx\n", cmd_line, (long long)tmp);
+		break;
+	case NAME_PARSE_NUMBER:
+		printf("0x%016llx\n", (long long)tmp);
+		break;
+	}
+}
+
+
+/*
  *  debugger_cmd_quiet():
  */
 static void debugger_cmd_quiet(struct emul *emul, char *cmd_line)
@@ -464,7 +653,6 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 {
 	uint64_t tmp;
 	int i, cpuid = -1;
-	int dump = 1;
 	int regnr = -1;		/*  -1 means the pc register  */
 	int coprocreg = 0;
 	char *p = cmd_line;
@@ -473,110 +661,16 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 		p++;
 
 	if (*p != '\0') {
-		if (isalpha((int)*p)) {
-			switch (*p) {
-			case 'p':
-			case 'P':
-				break;
-			case 'r':
-			case 'R':
-				while (isalpha((int)*p))
-					p++;
-				regnr = atoi(p);
-				break;
-			case 'c':
-			case 'C':
-				while (isalpha((int)*p))
-					p++;
-				regnr = atoi(p);
-				coprocreg = 1;
-				break;
-			default:
-				printf("usage: reg [ cpuid | name=value ]\n");
-				printf("Possible names are:\n");
-				printf("    pc   rXX   cXX\n");
-				printf("value should be entered in hex.\n");
-				printf("cXX only work with coproc0 registers for now.\n");
-				return;
-			}
-			dump = 0;
-		} else {
-			cpuid = strtoll(cmd_line + 1, NULL, 0);
-			if (cpuid < 0 || cpuid >= emul->ncpus) {
-				printf("cpu%i doesn't exist.\n", cpuid);
-				return;
-			}
+		cpuid = strtoull(cmd_line + 1, NULL, 0);
+		if (cpuid < 0 || cpuid >= emul->ncpus) {
+			printf("cpu%i doesn't exist.\n", cpuid);
+			return;
 		}
 	}
 
-	if (dump) {
-		for (i=0; i<emul->ncpus; i++)
-			if (cpuid == -1 || i == cpuid)
-				cpu_register_dump(emul->cpus[i]);
-		return;
-	}
-
-	if (cpuid < 0)
-		cpuid = 0;
-
-	if (emul->ncpus > 1)
-		printf("cpu%i: ", cpuid);
-
-	/*  Modify a register:  */
-	while (*p != '=' && *p)
-		p++;
-
-	if (regnr >= 0 && regnr < 32) {
-		if (coprocreg) {
-			printf("c0.%i", regnr);
-			tmp = emul->cpus[cpuid]->coproc[0]->reg[regnr];
-		} else {
-			printf("r%i", regnr);
-			tmp = emul->cpus[cpuid]->gpr[regnr];
-		}
-	} else if (regnr == -1) {
-		printf("pc");
-		tmp = emul->cpus[cpuid]->pc;
-	} else {
-		printf("Unimplemented register.\n");
-		return;
-	}
-
-	if (*p == '\0') {
-		/*  Just print the old value:  */
-		printf(" = %016llx\n", (long long)tmp);
-		return;
-	} else
-		printf(": %016llx ==> ", (long long)tmp);
-
-	tmp = strtoll(p+1, NULL, 16);
-
-	/*  Sign-extend, in some cases:  */
-	if (emul->cpus[cpuid]->cpu_type.isa_level < 3 ||
-	    emul->cpus[cpuid]->cpu_type.isa_level == 32) {
-		tmp = (int64_t)(int32_t) tmp;
-	}
-
-	printf("%016llx\n", (long long)tmp);
-
-	/*  Print a warning, in case the user didn't think about
-	    sign-extension:  */
-	if ((tmp >> 32) == 0 && (tmp & 0x80000000ULL))
-		printf("NOTE: Treated as a 64-bit value, not sign-extended.\n");
-
-	if (regnr >= 0 && regnr < 32) {
-		if (coprocreg) {
-			emul->cpus[cpuid]->coproc[0]->reg[regnr] = tmp;
-		} else {
-			emul->cpus[cpuid]->gpr[regnr] = tmp;
-		}
-	} else if (regnr == -1) {
-		emul->cpus[cpuid]->pc = tmp;
-	}
-
-	/*  Note/TODO: this is a bit conservative...  */
-	if (coprocreg)
-		emul->cpus[cpuid]->cached_interrupt_is_possible = 1;
+	for (i=0; i<emul->ncpus; i++)
+		if (cpuid == -1 || i == cpuid)
+			cpu_register_dump(emul->cpus[i]);
 }
 
 
@@ -588,7 +682,7 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 	int n = 1;
 
 	if (cmd_line[0] != '\0') {
-		n = strtoll(cmd_line + 1, NULL, 0);
+		n = strtoull(cmd_line + 1, NULL, 0);
 		if (n < 1) {
 			printf("invalid nr of steps\n");
 			return;
@@ -614,7 +708,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 	int i, j, x = -1;
 
 	if (cmd_line[0] != '\0') {
-		x = strtoll(cmd_line + 1, NULL, 0);
+		x = strtoull(cmd_line + 1, NULL, 0);
 		if (x < 0 || x >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", x);
 			return;
@@ -670,6 +764,11 @@ static void debugger_cmd_trace(struct emul *emul, char *cmd_line)
 {
 	old_show_trace_tree = 1 - old_show_trace_tree;
 	printf("show_trace_tree = %s\n", old_show_trace_tree? "ON" : "OFF");
+
+	if (emul->bintrans_enable && old_show_trace_tree)
+		printf("NOTE: the trace tree functionality doesn't "
+		    "work very well with bintrans!\n");
+
 	/*  TODO: how to preserve quiet_mode?  */
 	old_quiet_mode = 0;
 	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
@@ -688,8 +787,10 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 	struct memory *m;
 	int r;
 
+	/*  Assume hex: (both with and without the 0x prefix will result 
+	    in hex input)  */
 	if (cmd_line[0] != '\0')
-		last_unasm_addr = strtoll(cmd_line + 1, NULL, 16);
+		last_unasm_addr = strtoull(cmd_line + 1, NULL, 16);
 
 	addr_start = last_unasm_addr;
 	addr_end = addr_start + 4 * 16;
@@ -761,6 +862,9 @@ static struct cmd cmds[] = {
 	{ "bintrans", "", 0, debugger_cmd_bintrans,
 		"toggle bintrans on or off" },
 
+	/*  NOTE: Try to keep 'c' down to only one command. Having 'continue'
+	    available as a one-letter command is very convenient.  */
+
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
@@ -785,14 +889,20 @@ static struct cmd cmds[] = {
 	{ "machine", "", 0, debugger_cmd_machine,
 		"print a summary of the machine being emulated" },
 
-	{ "quit", "", 0, debugger_cmd_quit,
-		"quit the emulator" },
+	{ "print", "expr", 0, debugger_cmd_print,
+		"evaluate an expression without side-effects" },
 
 	{ "quiet", "", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off" },
 
-	{ "reg", "[cpuid | name=value]", 0, debugger_cmd_reg,
-		"show or modify register contents" },
+	{ "quit", "", 0, debugger_cmd_quit,
+		"quit the emulator" },
+
+	{ "reg", "[cpuid]", 0, debugger_cmd_reg,
+		"show registers" },
+
+	/*  NOTE: Try to keep 's' down to only one command. Having 'step'
+	    available as a one-letter command is very convenient.  */
 
 	{ "step", "[n]", 0, debugger_cmd_step,
 		"single-step one instruction (or n instructions)" },
@@ -835,6 +945,8 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 		i++;
 	}
 
+	printf("Available commands:\n");
+
 	i = 0;
 	while (cmds[i].name != NULL) {
 		char buf[100];
@@ -853,10 +965,78 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 		printf("    %s\n", cmds[i].description);
 		i++;
 	}
+
+	printf("Generic assignments:   x = y\n");
+	printf("where x must be a register, and y can be a register, a numeric value, or\n"
+	    "a symbol name (+ an optional numeric offset). In case there are multiple\n"
+	    "matches (ie a symbol that has the same name as a register), you may add a\n"
+	    "prefix character as a hint: '%%' for registers, '@' for symbols, and\n"
+	    "'$' for numeric values. Use 0x for hexadecimal values.\n");
 }
 
 
 /****************************************************************************/
+
+
+/*
+ *  debugger_assignment():
+ *
+ *  cmd contains something like "pc=0x80001000", or "r31=memcpy+0x40".
+ */
+void debugger_assignment(struct emul *emul, char *cmd)
+{
+	char *left, *right;
+	int res_left, res_right;
+	uint64_t tmp;
+
+	left  = malloc(strlen(cmd) + 1);
+	if (left == NULL) {
+		fprintf(stderr, "out of memory in debugger_assignment()\n");
+		exit(1);
+	}
+	strcpy(left, cmd);
+	right = strchr(left, '=');
+	if (right == NULL) {
+		fprintf(stderr, "internal error in the debugger\n");
+		exit(1);
+	}
+	*right = '\0';
+
+	/*  Remove trailing spaces in left:  */
+	while (strlen(left) >= 1 && left[strlen(left)-1] == ' ')
+		left[strlen(left)-1] = '\0';
+
+	/*  Remove leading spaces in right:  */
+	right++;
+	while (*right == ' ' && *right != '\0')
+		right++;
+
+	/*  printf("left  = '%s'\nright = '%s'\n", left, right);  */
+
+	res_right = debugger_parse_name(emul, right, 0, &tmp);
+	switch (res_right) {
+	case NAME_PARSE_NOMATCH:
+		printf("No match for the right-hand side of the assignment.\n");
+		break;
+	case NAME_PARSE_MULTIPLE:
+		printf("Multiple matches for the right-hand side of the assignment.\n");
+		break;
+	default:
+		res_left = debugger_parse_name(emul, left, 1, &tmp);
+		switch (res_left) {
+		case NAME_PARSE_NOMATCH:
+			printf("No match for the left-hand side of the assignment.\n");
+			break;
+		case NAME_PARSE_MULTIPLE:
+			printf("Multiple matches for the left-hand side of the assignment.\n");
+			break;
+		default:
+			debugger_cmd_print(emul, left);
+		}
+	}
+
+	free(left);
+}
 
 
 /*
@@ -1100,6 +1280,13 @@ void debugger(void)
 				last_cmd_index = 0;
 
 			repeat_cmd[0] = '\0';
+		}
+
+		/*  Is there a '=' on the command line? Then try to
+		    do an assignment:  */
+		if (strchr(cmd, '=') != NULL) {
+			debugger_assignment(debugger_emul, cmd);
+			continue;
 		}
 
 		i = 0;

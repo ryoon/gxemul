@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.14 2004-01-25 00:14:24 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.15 2004-06-13 09:15:25 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -228,7 +228,7 @@ dev_ns16550_tick(cpu, d);
 			d->dlab = idata & 0x80? 1 : 0;
 
 			debug("[ ns16550 write to lctl: 0x%02x (%s%ssetting mode %i%c%s) ]\n",
-			    idata,
+			    (int)idata,
 			    d->dlab? "Divisor Latch access, " : "",
 			    idata&0x40? "sending BREAK, " : "",
 			    d->databits, d->parity, d->stopbits);

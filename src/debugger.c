@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.3 2004-12-14 03:29:26 debug Exp $
+ *  $Id: debugger.c,v 1.4 2004-12-14 03:43:06 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -196,6 +196,29 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line);
 
 
 /*
+ *  debugger_cmd_itrace():
+ */
+static void debugger_cmd_itrace(struct emul *emul, char *cmd_line)
+{
+	old_instruction_trace = 1 - old_instruction_trace;
+	printf("instruction_trace = %s\n", old_instruction_trace? "ON":"OFF");
+	/*  TODO: how to preserve quiet_mode?  */
+	old_quiet_mode = 0;
+	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+}
+
+
+/*
+ *  debugger_cmd_quiet():
+ */
+static void debugger_cmd_quiet(struct emul *emul, char *cmd_line)
+{
+	old_quiet_mode = 1 - old_quiet_mode;
+	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+}
+
+
+/*
  *  debugger_cmd_quit():
  */
 static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
@@ -235,6 +258,130 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_tlbdump():
+ *
+ *  Dump each CPU's TLB contents.
+ */
+static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
+{
+	int i, j;
+
+	for (i=0; i<emul->ncpus; i++) {
+		printf("cpu%i: (", i);
+		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
+		    emul->cpus[i]->cpu_type.isa_level == 32)
+			printf("index=0x%08x random=0x%08x wired=0x%08x",
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+		else
+			printf("index=0x%016llx random=0x%016llx wired=0x%016llx",
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+		printf(")\n");
+
+		for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
+			if (emul->cpus[i]->cpu_type.mmu_model == MMU3K)
+				printf("%3i: hi=0x%08x lo=0x%08x\n",
+				    j,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0);
+			else if (emul->cpus[i]->cpu_type.isa_level < 3 ||
+			    emul->cpus[i]->cpu_type.isa_level == 32)
+				printf("%3i: hi=0x%08x mask=0x%08x lo0=0x%08x lo1=0x%08x\n",
+				    j,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
+			else
+				printf("%3i: hi=0x%016llx mask=0x%016llx lo0=0x%016llx lo1=0x%016llx\n",
+				    j,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
+		}
+	}
+
+	last_cmd_len = 0;
+}
+
+
+/*
+ *  debugger_cmd_trace():
+ */
+static void debugger_cmd_trace(struct emul *emul, char *cmd_line)
+{
+	old_show_trace_tree = 1 - old_show_trace_tree;
+	printf("show_trace_tree = %s\n", old_show_trace_tree? "ON" : "OFF");
+	/*  TODO: how to preserve quiet_mode?  */
+	old_quiet_mode = 0;
+	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+}
+
+
+/*
+ *  debugger_cmd_unassemble():
+ *
+ *  Dump emulated memory as MIPS instructions.
+ */
+static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
+{
+	uint64_t addr, addr_start, addr_end;
+	struct cpu *c;
+	struct memory *m;
+	int r;
+
+	if (cmd_line[0] != '\0')
+		last_unasm_addr = strtoll(cmd_line + 1, NULL, 16);
+
+	addr_start = last_unasm_addr;
+	addr_end = addr_start + 4 * 16;
+
+	if (emul->cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = emul->cpus[emul->bootstrap_cpu];
+	if (c == NULL) {
+		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		return;
+	}
+	m = emul->cpus[emul->bootstrap_cpu]->mem;
+
+	addr = addr_start;
+
+	if ((addr & 3) != 0)
+		printf("WARNING! You entered an unaligned address.\n");
+
+	while (addr < addr_end) {
+		unsigned char buf[4];
+		memset(buf, 0, sizeof(buf));
+		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		    CACHE_NONE | NO_EXCEPTIONS);
+
+		if (c->byte_order == EMUL_BIG_ENDIAN) {
+			int tmp;
+			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+
+		cpu_disassemble_instr(c, &buf[0], 0, addr, 0);
+
+		addr += sizeof(buf);
+	}
+
+	last_unasm_addr = addr_end;
+
+	/*  Repetition of this command should be done with no args:  */
+	last_cmd_len = 10;
+	strcpy(last_cmd, "unassemble");
+}
+
+
+/*
  *  debugger_cmd_version():
  */
 static void debugger_cmd_version(struct emul *emul, char *cmd_line)
@@ -266,17 +413,29 @@ static struct cmd cmds[] = {
 	"help", "", 0, debugger_cmd_help,
 		"print this help message",
 
+	"itrace", "", 0, debugger_cmd_itrace,
+		"toggle instruction_trace on or off",
+
 	"quit",	"", 0, debugger_cmd_quit,
 		"quit the emulator",
 
-	"quiet", "", 0, NULL /*  TODO  */,
+	"quiet", "", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off",
 
 	"registers", "", 0, debugger_cmd_registers,
-		"dumps all CPUs' register values",
+		"dump each CPUs' register values",
 
 	"step", "", 0, debugger_cmd_step,
 		"single step one instruction",
+
+	"tlbdump", "", 0, debugger_cmd_tlbdump,
+		"dump each CPU's TLB contents",
+
+	"trace", "", 0, debugger_cmd_trace,
+		"toggle show_trace_tree on or off",
+
+	"unassemble", "[addr]", 0, debugger_cmd_unassemble,
+		"dump memory contents as MIPS instructions",
 
 	"version", "", 0, debugger_cmd_version,
 		"print version information",
@@ -331,97 +490,6 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 
 
 /****************************************************************************/
-
-
-/*
- *  debugger_unasm():
- *
- *  Dump emulated memory as MIPS instructions.
- */
-static void debugger_unasm(struct emul *emul, uint64_t addr, int lines)
-{
-	struct cpu *c;
-	struct memory *m;
-	int r;
-
-	if (emul->cpus == NULL) {
-		printf("No cpus (?)\n");
-		return;
-	}
-	c = emul->cpus[emul->bootstrap_cpu];
-	if (c == NULL) {
-		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
-		return;
-	}
-	m = emul->cpus[emul->bootstrap_cpu]->mem;
-
-	while (lines -- > 0) {
-		unsigned char buf[4];
-		memset(buf, 0, sizeof(buf));
-		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
-		    CACHE_NONE | NO_EXCEPTIONS);
-
-		if (c->byte_order == EMUL_BIG_ENDIAN) {
-			int tmp;
-			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
-		}
-
-		cpu_disassemble_instr(c, &buf[0], 0, addr, 0);
-
-		addr += sizeof(buf);
-	}
-}
-
-
-/*
- *  debugger_tlbdump():
- *
- *  Dump each CPU's TLB contents.
- */
-static void debugger_tlbdump(struct emul *emul)
-{
-	int i, j;
-
-	for (i=0; i<emul->ncpus; i++) {
-		printf("cpu%i: (", i);
-		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
-		    emul->cpus[i]->cpu_type.isa_level == 32)
-			printf("index=0x%08x random=0x%08x wired=0x%08x",
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
-		else
-			printf("index=0x%016llx random=0x%016llx wired=0x%016llx",
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
-		printf(")\n");
-
-		for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
-			if (emul->cpus[i]->cpu_type.mmu_model == MMU3K)
-				printf("%3i: hi=0x%08x lo=0x%08x\n",
-				    j,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0);
-			else if (emul->cpus[i]->cpu_type.isa_level < 3 ||
-			    emul->cpus[i]->cpu_type.isa_level == 32)
-				printf("%3i: hi=0x%08x mask=0x%08x lo0=0x%08x lo1=0x%08x\n",
-				    j,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
-			else
-				printf("%3i: hi=0x%016llx mask=0x%016llx lo0=0x%016llx lo1=0x%016llx\n",
-				    j,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
-		}
-	}
-}
 
 
 /*
@@ -559,57 +627,6 @@ void debugger(void)
 		/*  Special hack for the "step" command:  */
 		if (exit_debugger == -1)
 			return;
-
-
-#if 0
-			printf("  itrace              toggles instruction_trace on or off (currently %s)\n",
-			    old_instruction_trace? "ON" : "OFF");
-			printf("  tlbdump             dumps each CPU's TLB contents\n");
-			printf("  trace               toggles show_trace_tree on or off (currently %s)\n",
-			    old_show_trace_tree? "ON" : "OFF");
-			printf("  unassemble [addr]   dumps emulated memory contents as MIPS instructions\n");
-
-		} else if (strcasecmp(cmd, "i") == 0 ||
-		    strcasecmp(cmd, "itrace") == 0) {
-			old_instruction_trace = 1 - old_instruction_trace;
-			printf("instruction_trace = %s\n",
-			    old_instruction_trace? "ON" : "OFF");
-			/*  TODO: how to preserve quiet_mode?  */
-			old_quiet_mode = 0;
-			printf("quiet_mode = %s\n",
-			    old_quiet_mode? "ON" : "OFF");
-		} else if (strcasecmp(cmd, "quiet") == 0) {
-			old_quiet_mode = 1 - old_quiet_mode;
-			printf("quiet_mode = %s\n",
-			    old_quiet_mode? "ON" : "OFF");
-
-		} else if (strcasecmp(cmd, "tl") == 0 ||
-		    strcasecmp(cmd, "tlbdump") == 0) {
-			debugger_tlbdump(debugger_emul);
-		} else if (strcasecmp(cmd, "tr") == 0 ||
-		    strcasecmp(cmd, "trace") == 0) {
-			old_show_trace_tree = 1 - old_show_trace_tree;
-			printf("show_trace_tree = %s\n",
-			    old_show_trace_tree? "ON" : "OFF");
-			/*  TODO: how to preserve quiet_mode?  */
-			old_quiet_mode = 0;
-			printf("quiet_mode = %s\n",
-			    old_quiet_mode? "ON" : "OFF");
-		} else if (strcasecmp(cmd, "u") == 0 ||
-		    strcasecmp(cmd, "unassemble") == 0) {
-			debugger_unasm(debugger_emul, last_unasm_addr, 16);
-			last_unasm_addr += 16 * 4;
-		} else if (strncasecmp(cmd, "u ", 2) == 0 ||
-		    strncasecmp(cmd, "unassemble ", 11) == 0) {
-			last_unasm_addr = strtoll(cmd[1]==' '?
-			    cmd + 2 : cmd + 11, NULL, 16);
-			debugger_unasm(debugger_emul, last_unasm_addr, 16);
-			last_unasm_addr += 16 * 4;
-			/*  Set last cmd to just 'u', so that just pressing
-			    enter will continue from the last address:  */
-			last_cmd_len = 1;
-			strcpy(last_cmd, "u");
-#endif
 	}
 
 	debugger_emul->single_step = 0;

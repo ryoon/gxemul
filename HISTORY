@@ -280,3 +280,14 @@ HISTORY of mips64emul
 		with, but there's no sysinst (?).
 20040103	Trying to get some Irix stuff to work, but it's hard.
 		Fixing some Cobalt/linux problems.
+20040104	Adding a dummy 8250 device, so that Linux/sgimips
+		can output console messages.
+		Adding dmultu (the same as dmult, so I'm not sure
+		it's correct, in fact I've got a feeling that it is
+		really bad).
+		Fixing a bug in unaligned load/stores of 64-bit
+		values (a cast was needed). Linux/sgimips in 64-bit
+		works a bit more than before.
+		Adding simple (polled) input functionality to dev_zs.
+		Making some progress on SGI-IP22 (IP32 still works
+		best, though).

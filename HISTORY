@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.534 2005-01-29 13:14:03 debug Exp $
+$Id: HISTORY,v 1.535 2005-01-29 13:45:40 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1581,3 +1581,5 @@ HISTORY of mips64emul
 		Making -s a global setting, not just affecting one machine.
 		Trying to fix the X11 event stuff... but it's so ugly that it
 		must be rewritten later.
+		Continuing the multi-emul cleanup.
+		Bugfixes and other updates to dev_vga.

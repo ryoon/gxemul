@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.32 2005-01-29 13:29:22 debug Exp $
+ *  $Id: dev_vga.c,v 1.33 2005-01-29 13:45:41 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -82,6 +82,9 @@ struct vga_data {
 	unsigned char	selected_register;
 	unsigned char	reg[256];
 
+	int		palette_index;
+	int		palette_subindex;
+
 	int		cursor_x;
 	int		cursor_y;
 
@@ -111,6 +114,9 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 
 	start &= ~1;
 	end |= 1;
+
+	if (end >= d->videomem_size)
+		end = d->videomem_size - 1;
 
 	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->videomem[i];
@@ -346,6 +352,39 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 	case 0x01:	/*  "Other video attributes"  */
 		odata = 0xff;	/*  ?  */
 		break;
+	case 0x08:
+		if (writeflag == MEM_WRITE) {
+			d->palette_index = idata;
+			d->palette_subindex = 0;
+		} else {
+			odata = d->palette_index;
+		}
+		break;
+	case 0x09:
+		if (writeflag == MEM_WRITE) {
+			int new = (idata & 63) << 2;
+			int old = d->fb->rgb_palette[d->palette_index * 3 +
+			    d->palette_subindex];
+			d->fb->rgb_palette[d->palette_index * 3 +
+			    d->palette_subindex] = new;
+			/*  Redraw whole screen, if the palette changed:  */
+			if (new != old) {
+				d->modified = 1;
+				d->update_x1 = d->update_y1 = 0;
+				d->update_x2 = d->max_x - 1;
+				d->update_y2 = d->max_y - 1;
+			}
+		} else {
+			odata = (d->fb->rgb_palette[d->palette_index * 3 +
+			    d->palette_subindex] >> 2) & 63;
+		}
+		d->palette_subindex ++;
+		if (d->palette_subindex == 3) {
+			d->palette_index ++;
+			d->palette_subindex = 0;
+		}
+		d->palette_index &= 255;
+		break;
 	case 0x0c:	/*  VGA graphics 1 position  */
 		odata = 1;	/*  ?  */
 		break;
@@ -475,7 +514,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "vga_mem", videomem_base, allocsize,
 	    dev_vga_access, d, MEM_BINTRANS_OK
-/* | MEM_BINTRANS_WRITE_OK    <-- This works with OpenBSD/arc, but not 
+/*  | MEM_BINTRANS_WRITE_OK  <-- This works with OpenBSD/arc, but not 
 with Windows NT yet. Why? */
 ,
 	    d->videomem);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.82 2005-01-29 11:50:19 debug Exp $
+ *  $Id: arcbios.c,v 1.83 2005-01-29 13:45:41 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -74,7 +74,7 @@ static int arc_wordlen = sizeof(uint32_t);
 
 static uint64_t scsicontroller = 0;
 
-extern int arc_n_memdescriptors;
+static int arc_n_memdescriptors = 0;
 static uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
 
 static uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;

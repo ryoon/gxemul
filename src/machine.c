@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.311 2005-01-29 11:50:19 debug Exp $
+ *  $Id: machine.c,v 1.312 2005-01-29 13:45:42 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -59,16 +59,15 @@
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
-#include "opcodes.h"
 #include "symbol.h"
 
 /*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
 #include "arcbios_other.h"
 #include "crimereg.h"
+
 #define	ARC_CONSOLE_MAX_X	80
 #define	ARC_CONSOLE_MAX_Y	30
-int arc_n_memdescriptors = 0;
 extern int arcbios_console_curcolor;
 extern int arcbios_console_curx;
 extern int arcbios_console_cury;
@@ -86,6 +85,7 @@ extern int arcbios_console_cury;
 /*  HPC:  */
 #include "hpc_bootinfo.h"
 
+/*  TODO: Move this somewhere else!  */
 uint64_t file_loaded_end_addr = 0;
 
 struct kn230_csr *kn230_csr;
@@ -124,6 +124,7 @@ struct machine_entry {
 	struct machine_entry_subtype **subtype;
 };
 
+/*  This is initialized by machine_init():  */
 static struct machine_entry *first_machine_entry = NULL;
 
 
@@ -2915,8 +2916,6 @@ Why is this here? TODO
 		 *  NOTE:  The region of physical address space between 0x10000000 and 0x1fffffff
 		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
 		 */
-
-		arc_n_memdescriptors = 0;
 
 		arc_reserved = 0x2000;
 		if (machine->machine_type == MACHINE_SGI)

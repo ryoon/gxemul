@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.4 2004-07-03 15:57:56 debug Exp $
+$Id: technical.html,v 1.5 2004-07-09 04:11:45 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -62,6 +62,7 @@ Documentation</a>.
 <ul>
   <li><a href="#overview">Overview</a>
   <li><a href="#optimizations">Optimizations</a>
+  <li><a href="#net">Networking</a>
   <li><a href="#devices">Emulation of hardware device</a>
   <p>
   <li><a href="#feedback">Feedback</a>
@@ -119,6 +120,160 @@ serial controller device may output a character to stdout when written to.
 
 TODO.
 
+
+
+<p><br>
+<a name="net"></a>
+<h3>Networking</h3>
+
+<font color="#ff0000">Networking is experimental stuff, not 
+included in the 0.1.1 release!</font>
+
+<p>
+Running an entire operating system under emulation is very interesting in 
+itself, but for several reasons, running a modern OS without access to 
+TCP/IP networking is a bit akward. Hence, I feel the need to implement TCP/IP 
+(networking) support in the emulator.
+
+<p>
+As far as I have understood it, there seems to be two different ways to go:
+
+<ol>
+  <li>Forward ethernet packets from the emulated ethernet controller to
+	the host machine's ethernet controller, and capture incoming 
+	packets on the host's controller, giving them back to the
+	emulated OS. Characteristics are:
+	<ul>
+	  <li>Requires <i>direct</i> access to the host's NIC, which
+		means on most platforms that the emulator cannot be
+		run as a normal user!
+	  <li>Reduced portability, as not every host operating system
+		uses the same programming interface for dealing with
+		hardware ethernet controllers directly.
+	  <li>When run on a switched network, it might be problematic to
+		connect from the emulated OS to the OS running on the
+		host, as packets sent out on the host's NIC are not
+		received by itself. (?)
+	</ul>
+  <p>
+  or
+  <p>
+  <li>Whenever the emulated ethernet controller wishes to send a packet,
+	the emulator looks at the packet and creates a response. Packets
+	that can have an immediate response never go outside the emulator,
+	other packet types have to be converted into suitable other
+	connection types (UDP, TCP, etc). Characteristics:
+	<ul>
+	  <li>Each packet type sent out on the emulated NIC must be handled.
+		This means that I have to do a lot of coding.
+		(I like this, because it gives me an opportunity to
+		learn about networking protocols.)
+	  <li>By not relying on access to the host's NIC directly,
+		portability is maintained. (It would be sad if the networking
+		portion of a portable emulator isn't as portable as the
+		rest of the emulator.)
+	  <li>Connecting from the emulated OS to the host's OS should
+		not be problematic.
+	  <li>The emulated OS will experience the network just as a single
+		machine behind a NAT gateway/firewall would. The emulated
+		OS is thus automatically protected from the outside world.
+	</ul>
+</ol>
+
+Other emulators that I have heard of seem to use the first one, if they 
+support networking.
+
+<p>
+Since I have choosen the second kind of implementation, I have to write 
+support explicitly for any kind of network protocol that should be
+supported. As of 2004-07-09, the following has been implemented and seems 
+to work under at least NetBSD/pmax under DECstation -D2 emulation:
+
+<ul>
+  <li>ARP requests sent out from the emulated NIC are interpreted,
+	and converted to ARP responses. (This is used by the emulated OS
+	to find out the MAC address of the gateway.)
+  <li>ICMP echo requests (that is the kind of packet produced by the
+	<b>ping</b> program) are interpreted and converted to ICMP echo
+	replies, <i>regardless of the IP address</i>. This means that
+	running ping from within the emulated OS will <i>always</i>
+	receive a response. The ping packets never leave the emulated
+	environment.
+  <li>UDP packets are interpreted and passed along to the outside world.
+	If the emulator receives an UDP packet from the outside world, it
+	is converted into an UDP packet for the emulated OS. (This is not
+	implemented very well yet, but seems to be enough for nameserver
+	lookups and tftp file transfers, see below.)
+  <li><font color="#ff0000">NOTE: TCP is <i>NOT</i> yet working!</font>
+  <li>RARP is not implemented yet. (I haven't needed it so far.)
+</ul>
+
+The gateway machine, which is the only "other" machine that the emulated 
+OS sees on its emulated network, works as a NAT-style firewall/gateway. It 
+has a fixed IPv4 address of 10.0.0.254. An OS running in the emulator 
+can thus have any 10.x.x.x address; a typical choice would be 10.0.0.1.
+
+<p>
+With emulated NetBSD/pmax, running the following commands should enable
+the emulated NIC:
+<pre>
+	# <b>ifconfig le0 10.0.0.1</b>
+	# <b>route add default 10.0.0.254</b>
+	add net default: gateway 10.0.0.254
+</pre>
+
+If you want nameserver lookups to work, you need a valid /etc/resolv.conf 
+as well:
+<pre>
+	# <b>echo nameserver 129.16.1.3 > /etc/resolv.conf</b>
+</pre>
+(But replace 129.16.1.3 with the actual real-world IP address of your
+nearest nameserver.)
+<p>
+Now, host lookups should work:
+<pre>
+	$ <b>host -a www.netbsd.org</b>
+	Trying null domain
+	rcode = 0 (Success), ancount=2
+	The following answer is not authoritative:
+	The following answer is not verified as authentic by the server:
+	www.netbsd.org  86400 IN        AAAA    2001:4f8:4:7:290:27ff:feab:19a7
+	www.netbsd.org  86400 IN        A       204.152.184.116
+	For authoritative answers, see:
+	netbsd.org      83627 IN        NS      uucp-gw-2.pa.dec.com
+	netbsd.org      83627 IN        NS      ns.netbsd.org
+	netbsd.org      83627 IN        NS      adns1.berkeley.edu
+	netbsd.org      83627 IN        NS      adns2.berkeley.edu
+	netbsd.org      83627 IN        NS      uucp-gw-1.pa.dec.com
+	Additional information:
+	ns.netbsd.org   83627 IN        A       204.152.184.164
+	uucp-gw-1.pa.dec.com	172799 IN	A	204.123.2.18
+	uucp-gw-2.pa.dec.com	172799 IN	A	204.123.2.19
+</pre>
+
+As TCP is <i>NOT</i> yet implemented, most normal TCP/IP applications will 
+not work. However, it is possible to transfer files from another host via 
+the network, without having to resort to using .tar files as diskimages.
+The tftp program, for example, uses UDP.
+
+<pre>
+	# <b>tftp 12.34.56.78</b>
+	tftp> <b>get filename</b>
+	Received XXXXXX bytes in X.X seconds
+	tftp> <b>quit</b>
+	# 
+</pre>
+
+or, to do it non-interactively (with ugly output):
+
+<pre>
+	# <b>echo get filename | tftp 12.34.56.78</b>
+	tftp> Received XXXXXX bytes in X.X seconds
+	tftp> #
+</pre>
+
+This, of course, requires that you have put the file <i>filename</i> in 
+the root directory of the tftp server (12.34.56.78).
 
 
 <p><br>

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.49 2004-12-08 23:27:11 debug Exp $
+ *  $Id: arcbios.c,v 1.50 2004-12-09 00:04:12 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -96,7 +96,7 @@ static int arcbios_in_escape_sequence;
 static int arcbios_console_maxx, arcbios_console_maxy;
 int arcbios_console_curx = 0, arcbios_console_cury = 0;
 static int arcbios_console_reverse = 0;
-int arcbios_console_curcolor = 0x0f;
+int arcbios_console_curcolor = 0x1f;
 
 
 /*
@@ -133,29 +133,14 @@ void arcbios_console_init(struct cpu *cpu,
 	arcbios_console_maxy = maxy;
 	arcbios_in_escape_sequence = 0;
 	arcbios_escape_sequence[0] = '\0';
+	arcbios_console_curcolor = 0x1f;
 
-	for (y=0; y<2; y++)
-		for (x=0; x<arcbios_console_maxx; x++) {
-			char ch = ' ';
-			char *s = " mips64emul"
-#ifdef VERSION
-			    "-" VERSION
-#endif
-			    " ARC text console ";
-
-			if (y == 0) {
-				arcbios_console_curcolor = 0x70;
-				if (x < strlen(s))
-					ch = s[x];
-			} else
-				arcbios_console_curcolor = 0x07;
-
-			arcbios_putcell(cpu, ch, x, y);
-		}
+	for (y=1; y<arcbios_console_maxy; y++)
+		for (x=0; x<arcbios_console_maxx; x++)
+			arcbios_putcell(cpu, ' ', x, y);
 
 	arcbios_console_curx = 0;
-	arcbios_console_cury = 18;
-	arcbios_console_curcolor = 0x0f;
+	arcbios_console_cury = 1;
 }
 
 
@@ -181,7 +166,7 @@ static void handle_esc_seq(struct cpu *cpu)
 		color = atoi(arcbios_escape_sequence + 1);
 		switch (color) {
 		case 0:	/*  Default.  */
-			arcbios_console_curcolor = 0x07;
+			arcbios_console_curcolor = 0x1f;
 			arcbios_console_reverse = 0; break;
 		case 1:	/*  "Bold".  */
 			arcbios_console_curcolor |= 0x08; break;
@@ -915,6 +900,7 @@ void arcbios_emul(struct cpu *cpu)
 		/*  Halt all CPUs.  */
 		for (i=0; i<cpu->emul->ncpus; i++)
 			cpu->emul->cpus[i]->running = 0;
+		cpu->emul->exit_without_entering_debugger = 1;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
 		{
@@ -1105,7 +1091,7 @@ void arcbios_emul(struct cpu *cpu)
 							x11_check_event();
 						usleep(1);
 					}
-					if (x == '[')
+					if (x == '[' || x == 'O')
 						x = 0x9b;
 				}
 

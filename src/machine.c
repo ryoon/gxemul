@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.233 2004-12-08 23:27:11 debug Exp $
+ *  $Id: machine.c,v 1.234 2004-12-09 00:04:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2314,7 +2314,7 @@ Why is this here? TODO
 
 				dev_vga_init(cpu, mem,
 				    0x100000b8000ULL, 0x60000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
 
 				arcbios_console_init(cpu, 0x100000b8000ULL,
 				    0x60000003c0ULL, ARC_CONSOLE_MAX_X,
@@ -2399,7 +2399,7 @@ Why is this here? TODO
 
 				dev_vga_init(cpu, mem, 0x100000b8000ULL,
 				    0x900000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
 
 				arcbios_console_init(cpu, 0x100000b8000ULL,
 				    0x900000003c0ULL, ARC_CONSOLE_MAX_X,
@@ -2525,13 +2525,6 @@ Why is this here? TODO
 
 		arcbios_add_memory_descriptor(cpu, 0, 0x2000, ARCBIOS_MEM_FirmwarePermanent);
 		arcbios_add_memory_descriptor(cpu, 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
-
-#if 0
-		arcbios_add_memory_descriptor(cpu, 0x60000, 0x800000-0x60000, ARCBIOS_MEM_LoadedProgram);
-#else
-		/*  For Windows NT's ARCINST.EXE:  */
-		arcbios_add_memory_descriptor(cpu, 0x600000, 0x7f0000-0x600000, ARCBIOS_MEM_LoadedProgram);
-#endif
 
 		mem_base = 8;
 		mem_base += sgi_ram_offset / 1048576;

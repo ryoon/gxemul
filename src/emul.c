@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.90 2004-12-08 17:18:39 debug Exp $
+ *  $Id: emul.c,v 1.91 2004-12-09 00:04:12 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -621,10 +621,14 @@ struct emul *emul_new(void)
 /*
  *  emul():
  *
- *	o) Initialize the hardware (RAM, devices, CPUs, ...) which
- *	   will be emulated.
- *	o) Load ROM code and/or other programs into emulated memory.
- *	o) Start running instructions on the bootstrap cpu.
+ *	o)  Initialize the hardware (RAM, devices, CPUs, ...) which
+ *	    will be emulated.
+ *
+ *	o)  Load ROM code and/or other programs into emulated memory.
+ *
+ *	o)  Special hacks needed after programs have been loaded.
+ *
+ *	o)  Start running instructions on the bootstrap cpu.
  */
 void emul_start(struct emul *emul)
 {
@@ -777,6 +781,17 @@ void emul_start(struct emul *emul)
 	if (emul->max_random_cycles_per_chunk > 0)
 		debug("using random cycle chunks (1 to %i cycles)\n",
 		    emul->max_random_cycles_per_chunk);
+
+	/*  Special hack for ARC emulation:  */
+	if (emul->emulation_type == EMULTYPE_ARC) {
+		uint64_t start = emul->cpus[emul->bootstrap_cpu]->pc & 0x1fffffff;
+		uint64_t len = 0x800000 - start;
+		/*  NOTE/TODO: magic 8MB end of load program area  */
+		arcbios_add_memory_descriptor(emul->cpus[emul->bootstrap_cpu],
+		    0x60000, start-0x60000, ARCBIOS_MEM_FreeMemory);
+		arcbios_add_memory_descriptor(emul->cpus[emul->bootstrap_cpu],
+		    start, len, ARCBIOS_MEM_LoadedProgram);
+	}
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    emul->bootstrap_cpu, emul->cpus[emul->bootstrap_cpu]->pc,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.137 2004-07-07 07:14:25 debug Exp $
+$Id: HISTORY,v 1.138 2004-07-08 00:56:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -691,3 +691,4 @@ HISTORY of mips64emul
 		Sprite boots from a disk image, starting the kernel if the
 		argument "-j vmsprite" is used, but it seems to not like the
 		DBE exceptions caused by reading empty TURBOchannel slots. :-/
+20040708	Minor changes and perhaps some tiny speed improvements.

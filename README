@@ -30,7 +30,7 @@ Here are examples of kernels that can be experimented with:
   Linux/SGI kernels:
   http://www.linux-mips.org/~glaurung/
 
-  NetBSD/arc:  (gunzip, and try running with  -A -q)
+  NetBSD/arc:  (gunzip, and try running with  -Aq  or  -XAq)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz
 
   An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)

@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.25 2004-10-07 15:10:00 debug Exp $
+.\" $Id: mips64emul.1,v 1.26 2004-10-13 16:02:35 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -97,18 +97,6 @@ netbsd-GENERIC) on an emulated Cobalt machine:
 	mips64emul \-E netbsd-GENERIC
 
 .fi
-
-If you have extracted a copy of the PROM from a real SGI O2 machine
-(which is type "32", for IP32),
-then this command will try to run it:
-.nf
-
-	mips64emul \-G32 -Q 0xbfc00000:raw_prom_dump
-
-.fi
-The SGI IP32 emulation is not good enough yet to actually run the
-PROM correctly. You can add -t to the command line; this will let
-you see a call trace.
 
 Please read the documentation for more details.
 .SH AUTHOR

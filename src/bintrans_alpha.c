@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.77 2004-12-03 22:44:25 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.78 2004-12-06 21:47:32 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -806,7 +806,6 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	int instruction_type, int regimm_type, int rt, int rs, int imm)
 {
 	uint32_t *a, *b;
-	int n;
 	int alpha_rs, alpha_rt;
 
 	alpha_rs = map_MIPS_to_Alpha[rs];
@@ -953,7 +952,6 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	int imm, int link)
 {
 	uint32_t *a;
-	uint64_t subimm;
 
 	a = (uint32_t *) *addrp;
 
@@ -977,7 +975,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	 */
 	imm *= 4;
 	*a++ = 0x20260004;
-	*a++ = 0x245f0000 | (imm >> 16) + (imm & 0x8000? 1 : 0);
+	*a++ = 0x245f0000 | ((imm >> 16) + (imm & 0x8000? 1 : 0));
 	*a++ = 0x20420000 | (imm & 0xffff);
 	*a++ = 0x247ff000;
 	*a++ = 0x44230004;
@@ -1887,7 +1885,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	int itype)
 {
 	uint32_t *a;
-	int ofs;
+	int ofs = 0;
 
 	switch (itype) {
 	case TLB_TLBWI:

@@ -1,7 +1,11 @@
-/*  mips64emul: $Id: mc146818reg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: mc146818reg.h,v 1.3 2004-12-06 21:47:31 debug Exp $  */
 
 #ifndef	MC146818_REG_H
 #define	MC146818_REG_H
+
+#ifndef __P
+#define	__P(x)	x
+#endif
 
 /*	$NetBSD: mc146818reg.h,v 1.2 1997/03/12 06:53:42 cgd Exp $	*/
 

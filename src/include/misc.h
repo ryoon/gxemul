@@ -26,13 +26,17 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.170 2004-12-06 13:15:05 debug Exp $
+ *  $Id: misc.h,v 1.171 2004-12-06 21:47:31 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
  *  TODO:  separate into smaller, more orthogonal files.
  *         perhaps cpu.h?
  */
+
+
+#include <sys/types.h>
+#include <inttypes.h>
 
 /*
  *  ../config.h contains #defines set by the configure script. Some of these
@@ -54,36 +58,8 @@
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
 
-
-#include <sys/types.h>
-#include <inttypes.h>
-
 #ifdef WITH_X11
 #include <X11/Xlib.h>
-#endif
-
-#ifdef SOLARIS
-/*  For Solaris:  */
-typedef uint8_t u_int8_t;
-typedef uint16_t u_int16_t;
-typedef uint32_t u_int32_t;
-typedef uint64_t u_int64_t;
-#endif
-
-#ifdef HPUX
-/*  For HP-UX:  */
-typedef uint8_t u_int8_t;
-typedef uint16_t u_int16_t;
-typedef uint32_t u_int32_t;
-typedef uint64_t u_int64_t;
-#endif
-
-#ifdef __osf__
-/*  For OSF/1 (Tru64):  */
-typedef uint8_t u_int8_t;
-typedef uint16_t u_int16_t;
-typedef uint32_t u_int32_t;
-typedef uint64_t u_int64_t;
 #endif
 
 #ifdef NO_MAP_ANON

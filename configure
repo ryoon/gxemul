@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.73 2004-12-06 13:15:04 debug Exp $
+#  $Id: configure,v 1.74 2004-12-06 21:47:30 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -567,6 +567,30 @@ else
 	fi
 fi
 rm -f _testoff.c _testoff
+
+
+#  Check for u_int8_t etc:
+printf "checking for u_int8_t... "
+printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(u_int8_t));return 0;}\n" > _testuint.c
+$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+if [ ! -x _testuint ]; then
+	rm -f _testuint*
+	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+	int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(uint8_t));return 0;}\n" > _testuint.c
+	$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+	if [ ! -x _testuint ]; then
+		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"
+		exit
+	fi
+
+	printf "typedef uint8_t u_int8_t;\ntypedef uint16_t u_int16_t;\n" >> config.h
+	printf "typedef uint32_t u_int32_t;\ntypedef uint64_t u_int64_t;\n" >> config.h
+	printf "uint8_t\n"
+else
+	printf "yes\n"
+fi
+rm -f _testuint.c _testuint
 
 
 if [ z"$COMPAQCC" = zYES ]; then

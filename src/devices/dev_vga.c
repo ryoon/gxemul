@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.16 2004-12-04 12:48:41 debug Exp $
+ *  $Id: dev_vga.c,v 1.17 2004-12-04 12:56:06 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -210,7 +210,12 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 					modified = 1;
 				}
 			}
-modified = 1;
+
+			/*  Ugly hack for the bootup logo: :-)  */
+			/*  (This causes it to be removed on scrolling.  */
+			if ((relative_addr % 160) < 64)
+				modified = 1;
+
 			if (modified)
 				vga_update(cpu, d, relative_addr,
 				    relative_addr + len-1);

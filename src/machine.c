@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.76 2004-04-02 05:46:58 debug Exp $
+ *  $Id: machine.c,v 1.77 2004-04-05 01:08:42 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1140,7 +1140,7 @@ void machine_init(struct memory *mem)
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-#if 1
+#if 0
 		/*  Harddisk controller present flag:  */
 		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 		dev_ps2_spd_init(cpus[bootstrap_cpu], mem, 0x14000000);

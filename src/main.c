@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.10 2004-01-04 21:42:07 debug Exp $
+ *  $Id: main.c,v 1.11 2004-01-05 06:42:18 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -267,7 +267,7 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'P':
 		case 'p':
-			new_pc_dumppoint = strtoll(optarg, NULL, 0);
+			new_pc_dumppoint = strtoull(optarg, NULL, 0);
 			if ((new_pc_dumppoint >> 32) == 0 && (new_pc_dumppoint & 0x80000000))
 				new_pc_dumppoint |= 0xffffffff00000000;
 			if (n_dumppoints >= MAX_PC_DUMPPOINTS) {
@@ -336,6 +336,9 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
+
+	if (emulation_type == EMULTYPE_SGI && machine == 27 && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R10000");
 
 	if (emulation_type == EMULTYPE_SGI && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R5000");

@@ -23,18 +23,18 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.9 2004-07-05 02:33:28 debug Exp $
+ *  $Id: dev_le.c,v 1.10 2004-07-05 02:39:01 debug Exp $
  *  
- *  LANCE ethernet, as used on DECstations.
+ *  LANCE ethernet, as used in DECstations.
  *
- *  This is partly based on "PMAD-AA TURBOchannel Ethernet Module Functional
- *  Specification", and partly on studying the NetBSD header file for
- *  this device.
+ *  This is based on "PMAD-AA TURBOchannel Ethernet Module Functional
+ *  Specification". I've tried to keep symbol names in this file to what
+ *  the specs use.
  *
- *  This is what the memory layout looks like on a DECstation:
+ *  This is what the memory layout looks like on a DECstation 5000/200:
  *
- *	0x000000 - 0x0fffff	Ethernet SRAM buffer
- *	0x100000 - 0x17ffff	LANCE
+ *	0x000000 - 0x0fffff	Ethernet SRAM buffer  (should be 128KB)
+ *	0x100000 - 0x17ffff	LANCE registers
  *	0x1c0000 - 0x1fffff	Ethernet Diagnostic ROM and Station
  *				Address ROM
  *
@@ -57,7 +57,7 @@
 
 
 /*  #define LE_DEBUG  */
-#define debug fatal
+/*  #define debug fatal  */
 
 
 #define	N_REGISTERS	4
@@ -339,7 +339,6 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			odata = d->reg[d->reg_select];
 			debug("[ le: read from register 0x%02x: 0x%02x ]\n",
 			    d->reg_select, (int)odata);
-
 			/*
 			 *  A read from csr1..3 should return "undefined"
 			 *  result if the stop bit is set.  However, Ultrix
@@ -347,9 +346,8 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			 *  a warning here.
 			 */
 		} else {
-			fatal("[ le: write to register 0x%02x: 0x%02x ]\n",
+			debug("[ le: write to register 0x%02x: 0x%02x ]\n",
 			    d->reg_select, (int)idata);
-
 			/*
 			 *  A write to from csr1..3 when the stop bit is
 			 *  set should be ignored. However, Ultrix writes

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.81 2004-06-08 10:58:59 debug Exp $
+$Id: HISTORY,v 1.82 2004-06-09 08:49:20 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -509,3 +509,4 @@ HISTORY of mips64emul
 		Adding some ifdefs around code which is not often used
 		(the mfhi/mflo delay, and the last_used TLB experimental
 		code); this might cause a tiny speedup.
+20040609	Minor fixes.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.58 2004-06-08 10:49:45 debug Exp $
+ *  $Id: cpu.c,v 1.59 2004-06-09 08:49:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2135,11 +2135,17 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 
 			if (linked && st==1) {
-				/*  The store succeeded. Invalidate any other cpu's store
-					near this address, and then return 1 in gpr rt:  */
-				/*  (this is a semi-ugly hack using global 'cpus')  */
+				/*
+				 *  The store succeeded. Invalidate any other cpu's store
+				 *  near this address, and then return 1 in gpr rt:
+				 *
+				 *  (this is a semi-ugly hack using global 'cpus')
+				 */
 				for (i=0; i<ncpus; i++) {
-					/*  TODO:  check length too  */
+					/*
+					 *  TODO:  check length too. I guess the invalidation
+					 *  should encompass an entire cache line.
+					 */
 					if (cpus[i]->rmw_addr == addr) {
 						cpus[i]->rmw = 0;
 						cpus[i]->rmw_addr = 0;

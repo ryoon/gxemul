@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5500_ioboard.c,v 1.1 2004-03-04 03:16:10 debug Exp $
+ *  $Id: dev_dec5500_ioboard.c,v 1.2 2004-03-04 04:08:58 debug Exp $
  *  
  *  DEC 5500 "ioboard" device.
  *
@@ -68,7 +68,7 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 	switch (relative_addr) {
 	case 0:
 		if (writeflag == MEM_READ)
-			odata = 0xffff;		/*  TODO  ?  */
+			odata = 0xffffffff;		/*  TODO  ?  One of these bits indicate I/O board present  */
 		break;
 
 	default:

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.34 2004-02-29 02:00:32 debug Exp $
+ *  $Id: devices.h,v 1.35 2004-03-04 03:15:35 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -41,15 +41,25 @@ struct pci_data;
 #endif */
 
 
+/*  dev_dec5500_ioboard.c:  */
+#define	DEV_DEC5500_IOBOARD_LENGTH		0x100000
+int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
 /*  dev_dec_ioasic.c:  */
 #define	DEV_DEC_IOASIC_LENGTH		0xc0000
 struct dec_ioasic_data {
 	uint32_t	csr;
 	uint32_t	intr;
 	uint32_t	imsk;
+
+	uint32_t	t1_dmaptr;
+	uint32_t	t1_cur_ptr;
+	uint32_t	t2_dmaptr;
+	uint32_t	t2_cur_ptr;
 };
 int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec_ioasic_data *dev_threemin_ioasic_init(struct memory *mem, uint64_t baseaddr);
+struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_8250.c:  */
 #define	DEV_8250_LENGTH		0x0000000000000008

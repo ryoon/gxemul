@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.28 2004-07-05 19:24:02 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.29 2004-07-05 23:10:21 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -80,13 +80,16 @@ struct mc_data {
 
 /*
  *  recalc_interrupt_cycle():
+ *
+ *  If automatic_clock_adjustment is turned on, then try to approach
+ *  automatic_clock_adjustment_curhz cycles per real CPU second.
  */
 void recalc_interrupt_cycle(struct mc_data *mc_data)
 {
 	if (automatic_clock_adjustment &&
-	    automatic_clock_adjustment_curhz > 100000) {
-		emulated_hz = automatic_clock_adjustment_curhz;
-	}
+	    automatic_clock_adjustment_curhz > 200000)
+		emulated_hz = (int64_t)(((int64_t)emulated_hz << 10) -
+		    emulated_hz + automatic_clock_adjustment_curhz) >> 10;
 
 	if (mc_data->interrupt_hz > 0)
 		mc_data->interrupt_every_x_cycles =

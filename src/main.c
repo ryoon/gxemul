@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.186 2005-01-29 09:54:57 debug Exp $
+ *  $Id: main.c,v 1.187 2005-01-29 10:46:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -189,9 +189,6 @@ static void usage(char *progname, int longusage)
 	    "a list of types.)\n");
 	printf("  -e st     try to emulate machine subtype st. (Use this "
 	    "with -E.)\n");
-	printf("  -F xx     try to emulate an hpcmips machine, where 'xx'"
-	    " may be:\n");
-	printf("                1=Casio BE-300, 2=Casio E-105\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 
 	printf("\nOther machine specific options:\n");
@@ -331,7 +328,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:E:e:F:G:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "A:abC:D:d:E:e:G:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -340,10 +337,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'a':
 			m->machine_type = MACHINE_TEST;
-			m->machine_subtype = 0;
-			break;
-		case 'B':
-			m->machine_type = MACHINE_PS2;
 			m->machine_subtype = 0;
 			break;
 		case 'b':
@@ -370,10 +363,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'e':
 			subtype = optarg;
 			msopts = 1;
-			break;
-		case 'F':
-			m->machine_type = MACHINE_HPCMIPS;
-			m->machine_subtype = atoi(optarg);
 			break;
 		case 'G':
 			m->machine_type = MACHINE_SGI;

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.6 2005-01-29 09:22:16 debug Exp $
+$Id: experiments.html,v 1.7 2005-01-29 10:46:13 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -364,10 +364,10 @@ or snapshot of the emulator.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try <b>./mips64emul -X -F2 netbsd-GENERIC</b>
+	<br>Try <b>./mips64emul -X -b -E hpc -e e105 netbsd-GENERIC</b>
       <p>
       <li>Linux for BE300: <a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try <b>./mips64emul -X -F1 vmlinux</b> (and perhaps adding -b might work too)
+	<br>Try <b>./mips64emul -X -b -E hpc -e be300 vmlinux</b>
     </ul>
   </li>
 

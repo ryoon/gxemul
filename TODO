@@ -149,6 +149,8 @@ Most important stuff (but these are all _huge_ tasks):
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images
 		o)  'srec' binaries?
+		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
+			(ELF structure format)
 
 	Better X-windows functionality:
 		o)  Keyboard and mouse events should be handled, translated

@@ -111,11 +111,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
 				(R4300, 4MB RAM, really weird memory map)
 
-	Clock interrupt stuff:
-		o)  Try to adapt clock device interrupts to the actual
-		    runtime speed of the emulator  (TODO: adapt to what?
-		    the current speed or the average?)
-
 	Multi-cpu stuff:
 		o)  SGI's NUMA architecture. Study
 			x)  Linux sources

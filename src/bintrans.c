@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.131 2005-01-10 01:22:25 debug Exp $
+ *  $Id: bintrans.c,v 1.132 2005-01-10 03:06:31 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -502,6 +502,8 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 			case SPECIAL_SLTU:
 			case SPECIAL_MOVZ:
 			case SPECIAL_MOVN:
+			case SPECIAL_DIV:
+			case SPECIAL_DIVU:
 			case SPECIAL_MULT:
 			case SPECIAL_MULTU:
 			case SPECIAL_SYNC:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.62 2005-01-09 01:55:30 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.63 2005-01-10 03:06:32 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -862,6 +862,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	switch (instruction_type) {
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
+	case SPECIAL_DIV:
+	case SPECIAL_DIVU:
 		if (rd != 0)
 			return 0;
 		break;
@@ -898,6 +900,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	switch (instruction_type) {
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
+	case SPECIAL_DIV:
+	case SPECIAL_DIVU:
 		break;
 	default:
 		if (rd == 0)
@@ -1118,7 +1122,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  99                      cltd   */
 		*a++ = 0x99;
 		break;
-
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
 		/*  57    push %edi  */
@@ -1129,6 +1132,45 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		} else {
 			/*  f7 e3                   mul   %ebx  */
 			*a++ = 0xf7; *a++ = 0xe3;
+		}
+		/*  here: edx:eax = hi:lo  */
+		/*  89 d7                   mov    %edx,%edi  */
+		/*  99                      cltd   */
+		*a++ = 0x89; *a++ = 0xd7;
+		*a++ = 0x99;
+		/*  here: edi=hi, edx:eax = sign-extended lo  */
+		store_eax_edx(&a, &dummy_cpu.lo);
+		/*  89 f8                   mov    %edi,%eax  */
+		/*  99                      cltd   */
+		*a++ = 0x89; *a++ = 0xf8;
+		*a++ = 0x99;
+		/*  here: edx:eax = sign-extended hi  */
+		store_eax_edx(&a, &dummy_cpu.hi);
+		/*  5f    pop %edi  */
+		*a++ = 0x5f;
+		do_store = 0;
+		break;
+	case SPECIAL_DIV:
+	case SPECIAL_DIVU:
+		/*
+		 *  In:   edx:eax = rs, ecx:ebx = rt
+		 *  Out:  LO = rs / rt, HI = rs % rt
+		 */
+		/*  Division by zero on MIPS is undefined, but on
+		    i386 it causes an exception, so we'll try to
+		    avoid that.  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;	/*  cmp $0x0,%ebx  */
+		*a++ = 0x75; *a++ = 0x01;		/*  jne skip_inc  */
+		*a++ = 0x43;				/*  inc %ebx  */
+
+		/*  57    push %edi  */
+		*a++ = 0x57;
+		if (instruction_type == SPECIAL_DIV) {
+			*a++ = 0x99;			/*  cltd */
+			*a++ = 0xf7; *a++ = 0xfb;	/*  idiv %ebx  */
+		} else {
+			*a++ = 0x29; *a++ = 0xd2;	/*  sub %edx,%edx  */
+			*a++ = 0xf7; *a++ = 0xf3;	/*  div %ebx  */
 		}
 		/*  here: edx:eax = hi:lo  */
 		/*  89 d7                   mov    %edx,%edi  */

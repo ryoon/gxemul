@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.139 2005-01-28 01:31:08 debug Exp $
+ *  $Id: emul.c,v 1.140 2005-01-28 01:43:18 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -528,8 +528,18 @@ void emul_machine_setup(struct machine *machine, int n_load,
 	diskimage_dump_info(machine);
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
-	if (n_load == 0 && machine->first_diskimage != NULL)
-		load_bootblock(machine, machine->cpus[machine->bootstrap_cpu]);
+	if (n_load == 0) {
+		if (machine->first_diskimage != NULL)
+			load_bootblock(machine,
+			    machine->cpus[machine->bootstrap_cpu]);
+		else {
+			fprintf(stderr, "No executable file(s) loaded, and "
+			    "we are not booting directly from a disk image."
+			    "\nAborting.\n");
+			exit(1);
+		}
+	}
+
 
 	while (n_load > 0) {
 		file_load(machine->memory, *load_names,
@@ -548,12 +558,6 @@ void emul_machine_setup(struct machine *machine, int n_load,
 
 		n_load --;
 		load_names ++;
-	}
-
-	if (n_load == 0 && machine->first_diskimage == NULL) {
-		fprintf(stderr, "No executable file loaded, and we're not "
-		    "booting directly from a disk image.\nAborting.\n");
-		exit(1);
 	}
 
 	if ((machine->cpus[machine->bootstrap_cpu]->pc >> 32) == 0 &&

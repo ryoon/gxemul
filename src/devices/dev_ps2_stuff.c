@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.16 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.17 2005-02-21 09:37:43 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -100,7 +100,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 	 *  The four timers are at offsets 0, 0x800, 0x1000, and 0x1800.
 	 */
 	if (relative_addr < TIMER_REGSIZE) {
-		timer_nr = (relative_addr & 0x1800) >> 11;	/*  0, 1, 2, or 3  */
+		/*  0, 1, 2, or 3  */
+		timer_nr = (relative_addr & 0x1800) >> 11;
 		relative_addr &= (TIMER_OFS-1);
 	}
 
@@ -108,60 +109,79 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 	case 0x0000:	/*  timer count  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_count[timer_nr];
-			if (timer_nr == 0)
-				d->timer_count[timer_nr] ++;	/*  :-)  TODO: remove this?  */
-			debug("[ ps2_stuff: read timer %i count: 0x%llx ]\n", timer_nr, (long long)odata);
+			if (timer_nr == 0) {
+				/*  :-)  TODO: remove this?  */
+				d->timer_count[timer_nr] ++;
+			}
+			debug("[ ps2_stuff: read timer %i count: 0x%llx ]\n",
+			    timer_nr, (long long)odata);
 		} else {
 			d->timer_count[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i count: 0x%llx ]\n", timer_nr, (long long)idata);
+			debug("[ ps2_stuff: write timer %i count: 0x%llx ]\n",
+			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0010:	/*  timer mode  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_mode[timer_nr];
-			debug("[ ps2_stuff: read timer %i mode: 0x%llx ]\n", timer_nr, (long long)odata);
+			debug("[ ps2_stuff: read timer %i mode: 0x%llx ]\n",
+			    timer_nr, (long long)odata);
 		} else {
 			d->timer_mode[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i mode: 0x%llx ]\n", timer_nr, (long long)idata);
+			debug("[ ps2_stuff: write timer %i mode: 0x%llx ]\n",
+			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0020:	/*  timer comp  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_comp[timer_nr];
-			debug("[ ps2_stuff: read timer %i comp: 0x%llx ]\n", timer_nr, (long long)odata);
+			debug("[ ps2_stuff: read timer %i comp: 0x%llx ]\n",
+			    timer_nr, (long long)odata);
 		} else {
 			d->timer_comp[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i comp: 0x%llx ]\n", timer_nr, (long long)idata);
+			debug("[ ps2_stuff: write timer %i comp: 0x%llx ]\n",
+			    timer_nr, (long long)idata);
 		}
 		break;
 	case 0x0030:	/*  timer hold  */
 		if (writeflag == MEM_READ) {
 			odata = d->timer_hold[timer_nr];
-			debug("[ ps2_stuff: read timer %i hold: 0x%llx ]\n", timer_nr, (long long)odata);
+			debug("[ ps2_stuff: read timer %i hold: 0x%llx ]\n",
+			    timer_nr, (long long)odata);
 			if (timer_nr >= 2)
-				fatal("[ WARNING: ps2_stuff: read from non-existant timer %i hold register ]\n");
+				fatal("[ WARNING: ps2_stuff: read from non-"
+				    "existant timer %i hold register ]\n");
 		} else {
 			d->timer_hold[timer_nr] = idata;
-			debug("[ ps2_stuff: write timer %i hold: 0x%llx ]\n", timer_nr, (long long)idata);
+			debug("[ ps2_stuff: write timer %i hold: 0x%llx ]\n",
+			    timer_nr, (long long)idata);
 			if (timer_nr >= 2)
-				fatal("[ WARNING: ps2_stuff: write to non-existant timer %i hold register ]\n");
+				fatal("[ WARNING: ps2_stuff: write to "
+				    "non-existant timer %i hold register ]\n",
+				    timer_nr);
 		}
 		break;
 
 	case 0x8000 + D2_CHCR_REG:
 		if (writeflag==MEM_READ) {
 			odata = d->dmac_reg[regnr];
-			/*  debug("[ ps2_stuff: dmac read from D2_CHCR (0x%llx) ]\n", (long long)d->dmac_reg[regnr]);  */
+			/*  debug("[ ps2_stuff: dmac read from D2_CHCR "
+			    "(0x%llx) ]\n", (long long)d->dmac_reg[regnr]);  */
 		} else {
-			/*  debug("[ ps2_stuff: dmac write to D2_CHCR, data 0x%016llx ]\n", (long long) idata);  */
+			/*  debug("[ ps2_stuff: dmac write to D2_CHCR, "
+			    "data 0x%016llx ]\n", (long long) idata);  */
 			if (idata & D_CHCR_STR) {
 				int length = d->dmac_reg[D2_QWC_REG/0x10] * 16;
-				uint64_t from_addr = d->dmac_reg[D2_MADR_REG/0x10];
-				uint64_t to_addr   = d->dmac_reg[D2_TADR_REG/0x10];
+				uint64_t from_addr = d->dmac_reg[
+				    D2_MADR_REG/0x10];
+				uint64_t to_addr   = d->dmac_reg[
+				    D2_TADR_REG/0x10];
 				unsigned char *copy_buf;
 
-				debug("[ ps2_stuff: dmac [ch2] transfer addr=0x%016llx len=0x%lx ]\n",
-				    (long long)d->dmac_reg[D2_MADR_REG/0x10], (long)length);
+				debug("[ ps2_stuff: dmac [ch2] transfer addr="
+				    "0x%016llx len=0x%lx ]\n", (long long)
+				    d->dmac_reg[D2_MADR_REG/0x10],
+				    (long)length);
 
 				copy_buf = malloc(length);
 				if (copy_buf == NULL) {
@@ -198,17 +218,22 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 		/*  no debug output  */
 		break;
 
-	case 0xe010:	/*  dmac interrupt status (and mask, the upper 16 bits)  */
+	case 0xe010:	/*  dmac interrupt status (and mask,  */
+			/*  the upper 16 bits)  */
 		if (writeflag == MEM_WRITE) {
 			uint32_t oldmask = d->dmac_reg[regnr] & 0xffff0000;
 			/*  Clear out those bits that are set in idata:  */
 			d->dmac_reg[regnr] &= ~idata;
 			d->dmac_reg[regnr] &= 0xffff;
 			d->dmac_reg[regnr] |= oldmask;
-			if (((d->dmac_reg[regnr] & 0xffff) & ((d->dmac_reg[regnr]>>16) & 0xffff)) == 0)
-				cpu_interrupt_ack(cpu, 3);	/*  3 is the DMAC  */
+			if (((d->dmac_reg[regnr] & 0xffff) &
+			    ((d->dmac_reg[regnr]>>16) & 0xffff)) == 0) {
+				/*  irq 3 is the DMAC  */
+				cpu_interrupt_ack(cpu, 3);
+			}
 		} else {
-			/*  Hm... make it seem like the mask bits are (at least as much as) the interrupt assertions:  */
+			/*  Hm... make it seem like the mask bits are (at
+			    least as much as) the interrupt assertions:  */
 			odata = d->dmac_reg[regnr];
 			odata |= (odata << 16);
 		}
@@ -217,20 +242,25 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 	case 0xf000:	/*  interrupt register  */
 		if (writeflag == MEM_READ) {
 			odata = d->intr;
-			debug("[ ps2_stuff: read from Interrupt Register: 0x%llx ]\n", (long long)odata);
+			debug("[ ps2_stuff: read from Interrupt Register:"
+			    " 0x%llx ]\n", (long long)odata);
 
-			/*  TODO: these are possibly not correct, but makes NetBSD run easier.  */
+			/*  TODO: these are possibly not correct,
+			    but makes NetBSD run easier.  */
 			d->intr = 0;
 			cpu_interrupt_ack(cpu, 2);
 		} else {
-			debug("[ ps2_stuff: write to Interrupt Register: 0x%llx ]\n", (long long)idata);
+			debug("[ ps2_stuff: write to Interrupt Register: "
+			    "0x%llx ]\n", (long long)idata);
 			/*  Clear out those bits that are set in idata:  */
 			d->intr &= ~idata;
 			if (idata == 0)
 				d->intr = 0;
 			/*  TODO:  which of the above and below is best?  */
-			if (d->intr == 0)
-				cpu_interrupt_ack(cpu, 2);	/*  idata +8);  */
+			if (d->intr == 0) {
+				/*  Hm...  idata +8);  */
+				cpu_interrupt_ack(cpu, 2);
+			}
 		}
 		break;
 
@@ -244,9 +274,11 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ps2_stuff: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+			debug("[ ps2_stuff: read from addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)odata);
 		} else {
-			debug("[ ps2_stuff: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+			debug("[ ps2_stuff: write to addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)idata);
 		}
 	}
 

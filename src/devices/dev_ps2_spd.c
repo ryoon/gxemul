@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_spd.c,v 1.7 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_ps2_spd.c,v 1.8 2005-02-21 09:37:43 debug Exp $
  *  
  *  Playstation 2 "SPD" harddisk controller.
  *
@@ -87,9 +87,11 @@ int dev_ps2_spd_access(struct cpu *cpu, struct memory *mem,
 		return 1;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ps2_spd: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+			debug("[ ps2_spd: read from addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)odata);
 		} else {
-			debug("[ ps2_spd: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+			debug("[ ps2_spd: write to addr 0x%x: 0x%llx ]\n",
+			    (int)relative_addr, (long long)idata);
 		}
 	}
 

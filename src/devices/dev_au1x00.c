@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.10 2005-02-06 15:15:03 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.11 2005-02-21 09:37:43 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -229,8 +229,9 @@ int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
 			debug("[ au1x00_uart%i: read from 0x%08lx ]\n",
 			    d->uart_nr, (long)relative_addr);
 		} else {
-			debug("[ au1x00_uart%i: write to  0x%08lx: 0x%08llx ]\n",
-			    d->uart_nr, (long)relative_addr, (long long)idata);
+			debug("[ au1x00_uart%i: write to  0x%08lx: 0x%08llx"
+			    " ]\n", d->uart_nr, (long)relative_addr,
+			    (long long)idata);
 		}
 	}
 
@@ -349,17 +350,17 @@ struct au1x00_ic_data *dev_au1x00_init(struct machine *machine,
 	memory_device_register(mem, "au1x00_ic1",
 	    IC1_BASE, 0x100, dev_au1x00_ic_access, d_ic1, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "au1x00_uart0",
-	    UART0_BASE, UART_SIZE, dev_au1x00_uart_access, d0, MEM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart1",
-	    UART1_BASE, UART_SIZE, dev_au1x00_uart_access, d1, MEM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart2",
-	    UART2_BASE, UART_SIZE, dev_au1x00_uart_access, d2, MEM_DEFAULT, NULL);
-	memory_device_register(mem, "au1x00_uart3",
-	    UART3_BASE, UART_SIZE, dev_au1x00_uart_access, d3, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "au1x00_uart0", UART0_BASE, UART_SIZE,
+	    dev_au1x00_uart_access, d0, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "au1x00_uart1", UART1_BASE, UART_SIZE,
+	    dev_au1x00_uart_access, d1, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "au1x00_uart2", UART2_BASE, UART_SIZE,
+	    dev_au1x00_uart_access, d2, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "au1x00_uart3", UART3_BASE, UART_SIZE,
+	    dev_au1x00_uart_access, d3, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "au1x00_pc",
-	    PC_BASE, PC_SIZE + 0x8, dev_au1x00_pc_access, d_pc, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "au1x00_pc", PC_BASE, PC_SIZE + 0x8,
+	    dev_au1x00_pc_access, d_pc, MEM_DEFAULT, NULL);
 	machine_add_tickfunction(machine, dev_au1x00_pc_tick, d_pc, 15);
 
 	return d_ic0;

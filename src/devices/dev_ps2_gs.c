@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.13 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.14 2005-02-21 09:37:43 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -34,9 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 #define	N_GS_REGS	0x108
@@ -92,7 +92,8 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 16;
 	if (relative_addr & 0xf) {
-		debug("[ gs unaligned access, addr 0x%x ]\n", (int)relative_addr);
+		debug("[ gs unaligned access, addr 0x%x ]\n",
+		    (int)relative_addr);
 		return 0;
 	}
 
@@ -103,7 +104,8 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ gs read from addr 0x%x ]\n", (int)relative_addr);
+			debug("[ gs read from addr 0x%x ]\n",
+			    (int)relative_addr);
 			odata = d->reg[regnr];
 		} else {
 			debug("[ gs write to addr 0x%x:", (int)relative_addr);

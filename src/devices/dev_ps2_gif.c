@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.24 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.25 2005-02-21 09:37:43 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -48,7 +48,7 @@
 #include "misc.h"
 
 
-#define	PS2_FB_ADDR	0x60000000ULL 		/*  hopefully nothing else here  */
+#define	PS2_FB_ADDR	0x60000000ULL 	/*  hopefully nothing else here  */
 
 
 struct gif_data {
@@ -141,20 +141,26 @@ void test_triangle(struct gif_data *d,
 		xdir = (xstart < xstop)? 1 : -1;
 		r = rstart; g = gstart; b = bstart;
 
-		rpx = (xstop-xstart)? (rstop-rstart) / ((xstop-xstart) / scale) : 0;
-		gpx = (xstop-xstart)? (gstop-gstart) / ((xstop-xstart) / scale) : 0;
-		bpx = (xstop-xstart)? (bstop-bstart) / ((xstop-xstart) / scale): 0;
+		rpx = (xstop-xstart)? (rstop-rstart) / ((xstop-xstart)
+		    / scale) : 0;
+		gpx = (xstop-xstart)? (gstop-gstart) / ((xstop-xstart)
+		    / scale) : 0;
+		bpx = (xstop-xstart)? (bstop-bstart) / ((xstop-xstart)
+		    / scale): 0;
 
 		x = xstart / scale;
 		while (xlen > 0) {
 			if (x>=0 && x<d->xsize) {
 				int c;
 				c = r/scale;
-				line[x * d->bytes_per_pixel + 0] = c<0? 0 : (c > 255? 255 : c);
+				line[x * d->bytes_per_pixel + 0] = c<0?
+				    0 : (c > 255? 255 : c);
 				c = g/scale;
-				line[x * d->bytes_per_pixel + 1] = c<0? 0 : (c > 255? 255 : c);
+				line[x * d->bytes_per_pixel + 1] = c<0?
+				    0 : (c > 255? 255 : c);
 				c = b/scale;
-				line[x * d->bytes_per_pixel + 2] = c<0? 0 : (c > 255? 255 : c);
+				line[x * d->bytes_per_pixel + 2] = c<0?
+				    0 : (c > 255? 255 : c);
 			}
 			r += rpx;
 			g += gpx;
@@ -209,11 +215,14 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 		return 0;
 
 	if (writeflag==MEM_READ) {
-		debug("[ gif read from addr 0x%x, len=%i ]\n", (int)relative_addr, len);
+		debug("[ gif read from addr 0x%x, len=%i ]\n",
+		    (int)relative_addr, (int)len);
 	} else {
-		if (data[0] == 0x08 && data[1] == 0x80) {					/*  Possibly "initialize 640x480 mode":  */
+		if (data[0] == 0x08 && data[1] == 0x80) {
+			/*  Possibly "initialize 640x480 mode":  */
 			debug("[ gif: initialize video mode (?) ]\n");
-		} else if (data[0] == 0x04 && data[1] == 0x00 && len > 300) {			/*  Possibly "output 8x16 character":  */
+		} else if (data[0] == 0x04 && data[1] == 0x00 && len > 300) {
+			/*  Possibly "output 8x16 character":  */
 			int xbase, ybase, xsize, ysize, x, y;
 
 			xbase = data[9*4 + 0] + (data[9*4 + 1] << 8);
@@ -223,7 +232,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			ysize = data[13*4 + 0] + (data[13*4 + 1] << 8);
 			ysize &= ~0xf;	/*  multple of 16  */
 
-			/*  debug("[ gif: putchar at (%i,%i), size (%i,%i) ]\n", xbase, ybase, xsize, ysize);  */
+			/*  debug("[ gif: putchar at (%i,%i), size (%i,%i) "
+			    "]\n", xbase, ybase, xsize, ysize);  */
 
 			/*
 			 *  NetBSD and Linux:

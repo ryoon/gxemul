@@ -14,6 +14,9 @@ Serious bugs:
         x)  The mouse pointer is a rectangular shape with no transparency, so
 	    it looks a bit funny.
 
+	x)  The emulator doesn't de-accelerate mouse movements yet, so the
+	    mouse feels funny.
+
 
 Less serious bugs / issues:
 
@@ -22,4 +25,7 @@ Less serious bugs / issues:
   o)  hardware device ticks are done at cycle specific intervals, not
       instruction intervals, so sometimes a fraction of a cycle can be
       "lost".
+
+  o)  running Linux/DECstation 2.4.26 with no scsi disks attached causes
+      a warning message to be printed by Linux.
 

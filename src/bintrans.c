@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.3 2004-01-20 23:47:41 debug Exp $
+ *  $Id: bintrans.c,v 1.4 2004-01-26 14:30:57 debug Exp $
  *
  *  Binary translation.
  *
@@ -86,5 +86,31 @@
  *		same results, or something is wrong.
  *
  *	How about loops?
+ */
+
+/*
+The general idea would be something like this:
+A block of code in the host's memory would have to conform with
+the C function calling ABI on that platform, so that the code block
+can be called easily from C. That is, entry and exit code needs to
+be added, in addition to the translated instructions.
+
+	o)  Check for the current PC in the translation cache.
+	o)  If the current PC is not found, then make a decision
+		regarding making a translation attempt, or not.
+		Fallback to normal instruction execution in cpu.c.
+	o)  If there is a code block for the current PC in the
+		translation cache, do a couple of checks and then
+		run the block. Update registers and other values
+		as neccessary.
+
+The checks would include:
+	boundaries for load/store memory accesses  (these must be
+		to pages that are accessible without modifying the TLB,
+		that is, they either have to be to addresses which
+		are in the TLB or to kseg0/1 addresses)
+	no external interrupts should occur for enough number
+		of cycles
+
  */
 

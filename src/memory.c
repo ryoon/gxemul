@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.36 2004-06-17 22:51:50 debug Exp $
+ *  $Id: memory.c,v 1.37 2004-06-22 22:26:09 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -636,75 +636,6 @@ exception:
 
 
 /*
- *  translate_vaddrpage_to_hostpage():
- *
- *  Called by binary translation code, to convert a virtual address (which
- *  must be page aligned) into a physical address on the host.
- *  If no such page is available, then NULL is returned.
- *
- *  NOTE:  In order to not complicate things too much, pages which are not
- *  writeable will not be returned.  The assemly language code which the
- *  translator produces will probably want to be able to load/store to/from
- *  the host's page, without having to care about whether it was writeable
- *  or not.
- */
-unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr, uint64_t *paddr_ret)
-{
-	int res;
-	uint64_t paddr;
-	int bits_per_memblock, bits_per_pagetable;
-	void **table;
-	unsigned char *memblock = NULL;
-	int shrcount, mask;
-	int entry, i;
-	int offset;
-	struct memory *mem = cpu->mem;
-
-	res = translate_address(cpu, vaddr, &paddr, 1, 1);
-	if (!res)
-		return NULL;
-
-	if ((paddr >> 20) >= physical_ram_in_mb)
-		return NULL;
-
-	bits_per_memblock  = mem->bits_per_memblock;
-	bits_per_pagetable = mem->bits_per_pagetable;
-
-	/*
-	 *  Step through the pagetables until we find the correct memory block:
-	 */
-	table = mem->first_pagetable;
-	mask = (1 << bits_per_pagetable) - 1;
-	shrcount = mem->max_bits - bits_per_pagetable;
-
-	while (shrcount >= bits_per_memblock) {
-		/*  printf("  addr = %016llx\n", paddr);  */
-		entry = (paddr >> shrcount) & mask;
-		/*  printf("    entry = %x\n", entry);  */
-
-		if (table[entry] == NULL)
-			return NULL;
-
-		if (shrcount == bits_per_memblock)
-			memblock = (unsigned char *) table[entry];
-		else
-			table = (void **) table[entry];
-
-		shrcount -= bits_per_pagetable;
-	}
-
-        offset = paddr & ((1 << bits_per_memblock) - 1);
-
-	/*  printf("###  vaddr=%016llx paddr=%016llx hostaddr=%p\n",
-	    (long long)vaddr, (long long)paddr, memblock+offset);  */
-
-	*paddr_ret = paddr;
-
-	return memblock + offset;
-}
-
-
-/*
  *  memory_rw():
  *
  *  Read or write data from/to memory.
@@ -1027,31 +958,8 @@ do_return_ok:
 		 *  On writes to physical RAM addresses, invalidate any
 		 *  binary translations for those addresses.
 		 */
-		size_t host4kpage;
-		int chunk_nr = -1;
 
-		mem->bintrans_last_paddr = paddr;
-
-		if (writeflag == MEM_WRITE) {
-#if 0
-			/*  Only invalidate if new data is != old data:  */
-			int i, j = 0;
-			for (i=0; i<len; i++)
-				j += (memblock[offset+i] != data[i])? 1 : 0;
-			if (j > 0)
-#endif
-				bintrans_invalidate(mem, paddr, len);
-		}
-
-		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION)
-			transl_cache_hit = bintrans_check_cache(mem, paddr, &chunk_nr);
-
-		mem->bintrans_last_chunk_nr = chunk_nr;
-
-		host4kpage = (size_t)memblock;
-		host4kpage += (offset & ~0xfff);
-
-		mem->bintrans_last_host4kpage = (void *) host4kpage;
+		/*  TODO:  reimplement this  */
 	}
 
 	if (transl_cache_hit)

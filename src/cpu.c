@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.61 2004-06-14 23:23:40 debug Exp $
+ *  $Id: cpu.c,v 1.62 2004-06-22 22:26:09 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -541,7 +541,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 	int cpnr;					/*  coprocessor nr  */
 
-	uint64_t addr, value, value_hi, result_value;	/*  for load/store  */
+	uint64_t addr, value, value_hi=0, result_value;	/*  for load/store  */
 	int wlen, st, signd, linked, dataflag = 0;
 	unsigned char d[16];				/*  room for at most 128 bits  */
 
@@ -551,13 +551,10 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		return 0;
 	}
 
-	cpu->bintrans_last_was_jump = 0;
-
 	if (cpu->delay_slot) {
 		if (cpu->delay_slot == DELAYED) {
 			cpu->pc = cpu->delay_jmpaddr;
 			cpu->delay_slot = NOT_DELAYED;
-			cpu->bintrans_last_was_jump = 1;
 		}
 		if (cpu->delay_slot == TO_BE_DELAYED) {
 			/*  next instruction will be delayed  */
@@ -748,55 +745,19 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		if (!instr_fetched)
 			return 0;
 
-		if (bintrans_enable && cpu->bintrans_last_was_jump && cpu->delay_slot==0 && cpu->nullify_next==0) {
+/* ***************************************************************************************** */
+#if 0
+		if (bintrans_enable && cpu->delay_slot==0 && cpu->nullify_next==0) {
 			/*
 			 *  Binary translation:
 			 */
-			int result = 0;
-			uint64_t paddr = cpu->mem->bintrans_last_paddr;
-			int chunk_nr = cpu->mem->bintrans_last_chunk_nr;
 
-			if (instr_fetched != INSTR_BINTRANS) {
-				/*  Cache miss:  */
+			/*  TODO:  reimplement this  */
 
-				/*  debug("BINTRANS cache miss (pc = 0x%08llx, paddr = 0x%08llx)\n",
-				    (long long)cpu->pc, (long long)paddr);  */
-
-				result = bintrans_try_to_add(cpu, cpu->mem, paddr, &chunk_nr);
-			}
-
-			if (instr_fetched == INSTR_BINTRANS || result) {
-				/*  Cache hit:  */
-
-				/*  debug("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx, hit chunk_nr = %i)\n",
-				    (long long)cpu->pc, (long long)paddr, chunk_nr);  */
-
-				if (instruction_trace) {
-					int offset;
-					char *symbol = get_symbol_name(cpu->pc_last, &offset);
-					if (symbol != NULL && offset==0)
-						debug("<%s>\n", symbol);
-
-					debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\tbintrans",
-					    cpu->cpu_id, cpu->pc_last,
-					    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
-				}
-
-				result = bintrans_try_to_run(cpu, cpu->mem, paddr, chunk_nr);
-
-				if (result >= 0) {
-					if (instruction_trace)
-						printf("\n");
-
-					/*  TODO: misc stuff?  */
-
-					return result;
-				} else {
-					if (instruction_trace)
-						printf(" (failed)\n");
-				}
-			}
+			/*  If instr_fetched == INSTR_BINTRANS ...  */
 		}
+#endif
+/* ***************************************************************************************** */
 
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.4 2003-11-07 01:40:23 debug Exp $
+ *  $Id: main.c,v 1.5 2003-11-07 10:33:44 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include "misc.h"
+#include "diskimage.h"
 
 
 extern int optind;
@@ -157,6 +158,7 @@ void usage(char *progname)
 			printf("\n");
 	}
 
+	printf("  -d fname  add fname as a disk image\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
@@ -205,7 +207,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:EFGHhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:d:EFGHhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -221,6 +223,9 @@ int get_cmd_args(int argc, char *argv[])
 		case 'D':
 			emulation_type = EMULTYPE_DEC;
 			machine = atoi(optarg);
+			break;
+		case 'd':
+			diskimage_add(optarg);
 			break;
 		case 'E':
 			emulation_type = EMULTYPE_COBALT;

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.204 2005-01-25 19:59:18 debug Exp $
+$Id: index.html,v 1.205 2005-01-25 20:12:20 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1679,10 +1679,14 @@ you do two things:
   <li>Build and install a cross-compiler for MIPS.
   <li>Compile this hello world program, and run it in the emulator.
 </ul>
+
 <p>
-If the emulator is launched without specifying which machine to emulate,
-it will emulate only a CPU and very few devices. One of those devices
-is a console putchar() device, at a fixed address.
+The emulator can be run in a mode where it doesn't emulate a real
+machine. In this "bare" machine mode, only a few simple devices
+are emulated, such as putchar device, and a simple framebuffer
+(for outputing pixels in a simple manner).
+
+<p>
 <pre>
 	/*  Hello world for mips64emul  */
 
@@ -1709,7 +1713,7 @@ is a console putchar() device, at a fixed address.
 This hello world program is available here as well: <a href="hello.c">hello.c</a>
 <p>
 I'd recommend you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
-target, and install it. Other compilers might work too, but GCC is good because
+target, and install it. Other compilers could work too, but GCC is good because
 of its portability. Then try to compile the hello world program:
 <pre>
 	$ <b>mips64-unknown-elf-gcc hello.c -mips4 -mabi=64 -c</b>
@@ -1726,10 +1730,27 @@ of its portability. Then try to compile the hello world program:
 	$ <b>./mips64emul -qa hello</b>
 	Hello world
 </pre>
+
+<p>
 As you can see above, a GCC configured for mips64-unknown-elf can produce
-both 64-bit and 32-bit binaries.
+both 64-bit and 32-bit code. If you don't want to run the entire
+Hello World program, but want to single-step through the execution to
+learn more about how MIPS programs run, then add -V to the command line:
+<pre>
+	$ <b>./mips64emul -Va hello</b>
+</pre>
+
+<p>
+The syntax of the single-step debugger shouldn't be too hard to grasp.
+Type 's' to single-step one instruction. Just pressing enter after that
+will repeat the 's' command. Type 'quit' to quit.
+
 <p>
 Hopefully this is enough to get you inspired. :-)
+
+
+
+
 
 
 <p><br>
@@ -2081,7 +2102,7 @@ then don't hesitate to mail me.
 <img src="maddr.gif">
 
 
-
+</p>
 
 </body>
 </html>

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.16 2004-11-21 08:09:49 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.17 2004-11-21 09:07:56 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -362,12 +362,6 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	unsigned int uimm;
 	int load64 = 0, sign3264 = 1;
 
-	/*  TODO: Not yet  */
-	if (instruction_type == HI6_SLTI || instruction_type == HI6_SLTIU) {
-		bintrans_write_chunkreturn_fail(addrp);
-		return 0;
-	}
-
 	switch (instruction_type) {
 	case HI6_DADDIU:
 	case HI6_ORI:
@@ -427,23 +421,89 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		/*  35 34 12 00 00          xor    $0x1234,%eax  */
 		*a++ = 0x35; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
 		break;
-
-#if 0
- TODO
-	case HI6_SLTI:
 	case HI6_SLTIU:
-		/*  lda t1,4660  */
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
-		switch (instruction_type) {
-		case HI6_SLTI:
-			*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;	/*  cmplt  */
-			break;
-		case HI6_SLTIU:
-			*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;	/*  cmpult  */
-			break;
+		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */
+		/*  ecx:ebx = the immediate value  */
+		/*  bb dc fe ff ff          mov    $0xfffffedc,%ebx  */
+		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
+		/*  or  */
+		/*  29 c9                   sub    %ecx,%ecx  */
+		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
+		if (uimm & 0x8000) {
+			*a++ = 0xff; *a++ = 0xff;
+			*a++ = 0xb9; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff;
+		} else {
+			*a++ = 0; *a++ = 0;
+			*a++ = 0x29; *a++ = 0xc9;
 		}
+
+		/*  if edx <= ecx and eax < ebx then 1, else 0.  */
+		/*  39 ca                   cmp    %ecx,%edx  */
+		/*  77 0b                   ja     <ret0>  */
+		/*  39 d8                   cmp    %ebx,%eax  */
+		/*  73 07                   jae    58 <ret0>  */
+		*a++ = 0x39; *a++ = 0xca;
+		*a++ = 0x77; *a++ = 0x0b;
+		*a++ = 0x39; *a++ = 0xd8;
+		*a++ = 0x73; *a++ = 0x07;
+
+		/*  b8 01 00 00 00          mov    $0x1,%eax  */
+		/*  eb 02                   jmp    <common>  */
+		*a++ = 0xb8; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+		*a++ = 0xeb; *a++ = 0x02;
+
+		/*  ret0:  */
+		/*  29 c0                   sub    %eax,%eax  */
+		*a++ = 0x29; *a++ = 0xc0;
+
+		/*  common:  */
+		/*  99                      cltd   */
+		*a++ = 0x99;
 		break;
-#endif
+	case HI6_SLTI:
+		/*  set if less than, signed. (compare edx:eax to ecx:ebx)  */
+		/*  ecx:ebx = the immediate value  */
+		/*  bb dc fe ff ff          mov    $0xfffffedc,%ebx  */
+		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
+		/*  or  */
+		/*  29 c9                   sub    %ecx,%ecx  */
+		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
+		if (uimm & 0x8000) {
+			*a++ = 0xff; *a++ = 0xff;
+			*a++ = 0xb9; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff;
+		} else {
+			*a++ = 0; *a++ = 0;
+			*a++ = 0x29; *a++ = 0xc9;
+		}
+
+		/*  if edx > ecx then 0.  */
+		/*  if edx < ecx then 1.  */
+		/*  if eax < ebx then 1, else 0.  */
+		/*  39 ca                   cmp    %ecx,%edx  */
+		/*  7c 0a                   jl     <ret1>  */
+		/*  7f 04                   jg     <ret0>  */
+		/*  39 d8                   cmp    %ebx,%eax  */
+		/*  7c 04                   jl     <ret1>  */
+		*a++ = 0x39; *a++ = 0xca;
+		*a++ = 0x7c; *a++ = 0x0a;
+		*a++ = 0x7f; *a++ = 0x04;
+		*a++ = 0x39; *a++ = 0xd8;
+		*a++ = 0x7c; *a++ = 0x04;
+
+		/*  ret0:  */
+		/*  29 c0                   sub    %eax,%eax  */
+		/*  eb 05                   jmp    <common>  */
+		*a++ = 0x29; *a++ = 0xc0;
+		*a++ = 0xeb; *a++ = 0x05;
+
+		/*  ret1:  */
+		/*  b8 01 00 00 00          mov    $0x1,%eax  */
+		*a++ = 0xb8; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+
+		/*  common:  */
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
 	}
 
 	if (sign3264) {
@@ -539,8 +599,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRA32:
 	case SPECIAL_DSRL:
 	case SPECIAL_DSRL32:
-	case SPECIAL_SLT:
-	case SPECIAL_SLTU:
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
 		bintrans_write_chunkreturn_fail(addrp);
@@ -675,7 +733,65 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		}
 		*a++ = 0x99;
 		break;
+	case SPECIAL_SLTU:
+		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */
+		/*  if edx <= ecx and eax < ebx then 1, else 0.  */
+		/*  39 ca                   cmp    %ecx,%edx  */
+		/*  77 0b                   ja     <ret0>  */
+		/*  39 d8                   cmp    %ebx,%eax  */
+		/*  73 07                   jae    58 <ret0>  */
+		*a++ = 0x39; *a++ = 0xca;
+		*a++ = 0x77; *a++ = 0x0b;
+		*a++ = 0x39; *a++ = 0xd8;
+		*a++ = 0x73; *a++ = 0x07;
+
+		/*  b8 01 00 00 00          mov    $0x1,%eax  */
+		/*  eb 02                   jmp    <common>  */
+		*a++ = 0xb8; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+		*a++ = 0xeb; *a++ = 0x02;
+
+		/*  ret0:  */
+		/*  29 c0                   sub    %eax,%eax  */
+		*a++ = 0x29; *a++ = 0xc0;
+
+		/*  common:  */
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+	case SPECIAL_SLT:
+		/*  set if less than, signed. (compare edx:eax to ecx:ebx)  */
+		/*  if edx > ecx then 0.  */
+		/*  if edx < ecx then 1.  */
+		/*  if eax < ebx then 1, else 0.  */
+		/*  39 ca                   cmp    %ecx,%edx  */
+		/*  7c 0a                   jl     <ret1>  */
+		/*  7f 04                   jg     <ret0>  */
+		/*  39 d8                   cmp    %ebx,%eax  */
+		/*  7c 04                   jl     <ret1>  */
+		*a++ = 0x39; *a++ = 0xca;
+		*a++ = 0x7c; *a++ = 0x0a;
+		*a++ = 0x7f; *a++ = 0x04;
+		*a++ = 0x39; *a++ = 0xd8;
+		*a++ = 0x7c; *a++ = 0x04;
+
+		/*  ret0:  */
+		/*  29 c0                   sub    %eax,%eax  */
+		/*  eb 05                   jmp    <common>  */
+		*a++ = 0x29; *a++ = 0xc0;
+		*a++ = 0xeb; *a++ = 0x05;
+
+		/*  ret1:  */
+		/*  b8 01 00 00 00          mov    $0x1,%eax  */
+		*a++ = 0xb8; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+
+		/*  common:  */
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+
 #if 0
+	/*  TODO:  These are from bintrans_alpha.c. Translate them to i386.  */
+
 	case SPECIAL_SLLV:
 		/*  rd = rt << (rs&31)  (logical)     t0 = t1 << (t0&31)  */
 		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
@@ -717,12 +833,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  Note: bits of sa are distributed among two different bytes.  */
 		sa += 32;
 		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
-		break;
-	case SPECIAL_SLT:
-		*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;     /*  cmplt t0,t1,t0  */
-		break;
-	case SPECIAL_SLTU:
-		*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;     /*  cmpult t0,t1,t0  */
 		break;
 #endif
 	}

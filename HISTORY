@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.318 2004-11-21 06:50:07 debug Exp $
+$Id: HISTORY,v 1.319 2004-11-21 09:07:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1162,3 +1162,4 @@ HISTORY of mips64emul
 		when bintrans is enabled.
 20041121	Making tlbwr, tlbwi, tlbp, tlbr callable directly from
 		translated code.
+		Adding sltiu,slti,slt,sltu to the i386 backend.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.16 2005-01-09 22:45:15 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.17 2005-01-09 22:49:27 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -161,6 +161,8 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	case HI6_ANDI:
 	case HI6_ORI:
 	case HI6_XORI:
+	case HI6_SLTI:
+	case HI6_SLTIU:
 		break;
 	default:
 		return 0;
@@ -197,6 +199,24 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 			*a++ = 0x9a0b400c;		/*  and  %o5, %o4, %o5  */
 			break;
 		}
+		break;
+	case HI6_SLTI:
+		*a++ = 0x19000000 | (imm << 6);	/*  sethi %hi(....), %o4  */
+		*a++ = 0x993b2010;		/*  sra %o4, 16, %o4  */
+		/*  rd = rs < rt     %o5 = %o5 < %o4  */
+		*a++ = 0x80a3400c;		/*  cmp  %o5, %o4  */
+		*a++ = 0x9a100000;		/*  mov  %g0, %o5  */
+		*a++ = 0x9b64f001;		/*  movl  %xcc, 1, %o5  */
+		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
+		break;
+	case HI6_SLTIU:
+		*a++ = 0x19000000 | (imm << 6);	/*  sethi %hi(....), %o4  */
+		*a++ = 0x993b2010;		/*  sra %o4, 16, %o4  */
+		/*  rd = rs < rt  (unsigned)     %o5 = %o5 < %o4  */
+		*a++ = 0x80a3400c;		/*  cmp  %o5, %o4  */
+		*a++ = 0x9a100000;		/*  mov  %g0, %o5  */
+		*a++ = 0x9b657001;		/*  movcs  %xcc, 1, %o5  */
+		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
 		break;
 	}
 

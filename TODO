@@ -1,4 +1,4 @@
-$Id: TODO,v 1.112 2005-01-26 09:28:53 debug Exp $
+$Id: TODO,v 1.113 2005-01-26 10:39:14 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -25,7 +25,9 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		    possible.
 
 	Network layer:
-		o)  see src/net.c
+		o)  Multiple networks per emulation, and let different
+		    NICs in machines connect to different networks.
+		o)  many other issues: see src/net.c
 
 	Configure script:
 		o)  Only enable Alpha prefetch on pca56 etc, not on ev4, ev5.

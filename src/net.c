@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.17 2004-07-16 18:19:45 debug Exp $
+ *  $Id: net.c,v 1.18 2004-07-16 23:04:53 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -170,6 +170,69 @@ void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len)
 	sum ^= 0xffff;
 	ip_header[chksumoffset + 0] = sum >> 8;
 	ip_header[chksumoffset + 1] = sum & 0xff;
+}
+
+
+/*
+ *  net_ip_tcp_checksum():
+ *
+ *  Fill in a TCP header checksum. This differs slightly from the IP
+ *  checksum. The checksum is calculated on a pseudo header, the actual
+ *  TCP header, and the data.  This is what the pseudo header looks like:
+ *
+ *	uint32_t srcaddr;
+ *	uint32_t dstaddr;
+ *	uint16_t protocol; (= 6 for tcp)
+ *	uint16_t tcp_len;
+ *
+ *  tcp_len is length of header PLUS data.  The psedo header is created
+ *  internally here, and does not need to be supplied by the caller.
+ */
+void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
+	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr)
+{
+	int i, pad = 0;
+	unsigned char pseudoh[12];
+	uint32_t sum = 0;
+
+	memcpy(pseudoh + 0, srcaddr, 4);
+	memcpy(pseudoh + 4, dstaddr, 4);
+	pseudoh[8] = 0x00;
+	pseudoh[9] = 0x06;
+	pseudoh[10] = tcp_len >> 8;
+	pseudoh[11] = tcp_len & 255;
+
+	for (i=0; i<12; i+=2) {
+		uint16_t w = (pseudoh[i] << 8) + pseudoh[i+1];
+		sum += w;
+		while (sum > 65535) {
+			int to_add = sum >> 16;
+			sum = (sum & 0xffff) + to_add;
+		}
+	}
+
+	if (tcp_len & 1) {
+		tcp_len ++;
+		pad = 1;
+	}
+
+	for (i=0; i<tcp_len; i+=2)
+		if (i != chksumoffset) {
+			uint16_t w;
+			if (!pad || i < tcp_len-2)
+				w = (tcp_header[i] << 8) + tcp_header[i+1];
+			else
+				w = (tcp_header[i] << 8) + 0x00;
+			sum += w;
+			while (sum > 65535) {
+				int to_add = sum >> 16;
+				sum = (sum & 0xffff) + to_add;
+			}
+		}
+
+	sum ^= 0xffff;
+	tcp_header[chksumoffset + 0] = sum >> 8;
+	tcp_header[chksumoffset + 1] = sum & 0xff;
 }
 
 
@@ -333,14 +396,12 @@ void net_ip_tcp_connectionreply(void *extra, int con_id)
 	lp->data[45] = tcp_connections[con_id].outside_acknr & 0xff;
 
 	/*  Control  */
-	lp->data[46] = (option_len / 4) * 0x20;
+	lp->data[46] = (option_len + 20) / 4 * 0x10;
 	lp->data[47] = 0x10 | 0x02;	/*  ACK, SYN  */
 
 	/*  Window  */
 	lp->data[48] = 0x40;
 	lp->data[49] = 0x00;
-
-	/*  no checksum!  */
 
 	/*  no urgent ptr  */
 
@@ -358,16 +419,20 @@ void net_ip_tcp_connectionreply(void *extra, int con_id)
 	lp->data[63] = 0x01;
 	lp->data[64] = 0x08;
 	lp->data[65] = 0x0a;
-	lp->data[66] = 0x00;
-	lp->data[67] = 0x00;
-	lp->data[68] = 0x00;
-	lp->data[69] = 0x00;
+	lp->data[66] = (net_timestamp >> 24) & 0xff;
+	lp->data[67] = (net_timestamp >> 16) & 0xff;
+	lp->data[68] = (net_timestamp >> 8) & 0xff;
+	lp->data[69] = net_timestamp & 0xff;
 	lp->data[70] = (tcp_connections[con_id].inside_timestamp >> 24) & 0xff;
 	lp->data[71] = (tcp_connections[con_id].inside_timestamp >> 16) & 0xff;
 	lp->data[72] = (tcp_connections[con_id].inside_timestamp >> 8) & 0xff;
 	lp->data[73] = tcp_connections[con_id].inside_timestamp & 0xff;
 
 	/*  no data.  */
+
+	/*  Checksum:  */
+	net_ip_tcp_checksum(lp->data + 34, 16, tcp_length,
+	    lp->data + 26, lp->data + 30);
 
 	fatal("[ net_ip_tcp_connectionreply(): ");
 	for (i=0; i<ip_len+14; i++)
@@ -424,7 +489,7 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 	    packet[30], packet[31], packet[32], packet[33], dstport,
 	    (long long)seqnr, (long long)acknr);
 
-	data_offset = (packet[46] >> 5) * 4 + 34 + 20;
+	data_offset = (packet[46] >> 4) * 4 + 34;
 	/*  data_offset is now data offset within packet :-)  */
 
 	urg = packet[47] & 32;
@@ -447,6 +512,10 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 
 	fatal("window=0x%04x checksum=0x%04x urgptr=0x%04x ",
 	    window, checksum, urgptr);
+
+net_ip_tcp_checksum(packet + 34, 16, len - 34,
+	packet + 26, packet + 30);
+fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 
 	fatal("options=");
 	for (i=34+20; i<data_offset; i++)
@@ -601,8 +670,8 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 	 */
 
 	/*  TODO  */
-	fatal("[ %i bytes of tcp data to be sent: TODO ]\n",
-	    len - data_offset);
+	fatal("[ %i bytes of tcp data to be sent, beginning at %u: TODO ]\n",
+	    len - data_offset, seqnr);
 }
 
 
@@ -1062,6 +1131,15 @@ fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED (refused connection)\n");
 			continue;
 		}
 
+		if (errno == ETIMEDOUT) {
+			fatal("[ ETIMEDOUT: TODO ]\n");
+			/*  TODO  */
+			tcp_connections[con_id].state =
+			    TCP_OUTSIDE_DISCONNECTED;
+fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED (timeout)\n");
+			continue;
+		}
+
 		if (tcp_connections[con_id].state ==
 		    TCP_OUTSIDE_TRYINGTOCONNECT && res > 0) {
 			tcp_connections[con_id].state = TCP_OUTSIDE_CONNECTED;
@@ -1092,7 +1170,9 @@ fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED\n");
 			continue;
 
 		res = read(tcp_connections[con_id].socket, buf, sizeof(buf));
-printf("{%lli}", (long long)res);
+
+if (res > 0)
+	printf("{%lli}", (long long)res);
 
 		if (res < 1)
 			continue;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.161 2004-07-16 18:19:30 debug Exp $
+$Id: HISTORY,v 1.162 2004-07-16 23:04:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -788,3 +788,7 @@ HISTORY of mips64emul
 		to make the sources compile out-of-the-box on HP-UX (ia64
 		and HPPA), old OpenBSD/pmax (inside the emulator itself), and
 		Tru64 (OSF/1) on Alpha.
+		A couple of other minor fixes.
+20040717	A little TCP progress; OpenBSD/pmax likes my SYN+ACK replies,
+		and tries to send out data, but NetBSD/pmax just drops the
+		SYN+ACK packets.

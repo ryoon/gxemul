@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.84 2004-06-07 09:17:53 debug Exp $
+ *  $Id: machine.c,v 1.85 2004-06-07 10:35:01 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1715,7 +1715,7 @@ case arc_CacheClass:
 			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
 			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=video()");
 		} else {
-#if 0
+#if 1
 			store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 #else
 			store_string(ARC_ARGV_START + 0x180, "console=d");	/*  Irix  */

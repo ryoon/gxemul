@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.12 2004-01-19 12:49:12 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.13 2004-02-22 13:14:20 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -52,7 +52,7 @@ extern struct cpu **cpus;
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /*  #define MC146818_DEBUG  */
-#define	TICK_STEPS_SHIFT	7
+#define	TICK_STEPS_SHIFT	6
 
 
 #define	N_REGISTERS	256
@@ -88,7 +88,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		mc_data->instructions_left_until_interrupt -= (1 << TICK_STEPS_SHIFT);
 		if (mc_data->instructions_left_until_interrupt < 0 ||
 		    mc_data->instructions_left_until_interrupt >= mc_data->interrupt_every_x_instructions) {
-			/*  debug("[ rtc interrupt ]\n");  */
+			debug("[ rtc interrupt ]\n");
 			cpu_interrupt(cpus[bootstrap_cpu], mc_data->irq_nr);
 
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
@@ -114,12 +114,12 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {
 		int i;
-		debug("[ mc146818: write to addr=0x%04x: ", relative_addr);
+		fatal("[ mc146818: write to addr=0x%04x: ", relative_addr);
 		for (i=0; i<len; i++)
-			debug("%02x ", data[i]);
-		debug("]\n");
+			fatal("%02x ", data[i]);
+		fatal("]\n");
 	} else
-		debug("[ mc146818: read from addr=0x%04x ]\n", relative_addr);
+		fatal("[ mc146818: read from addr=0x%04x ]\n", relative_addr);
 #endif
 
 	relative_addr /= mc_data->addrdiv;
@@ -175,8 +175,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	 *  on and off. Without this code, booting Linux takes forever:
 	 */
 	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
-	if ((random() & 0xfff) == 0)
-		mc_data->reg[MC_REGA*4] |= MC_REGA_UIP;
+	if ((random() & 0xff) == 0)
+		mc_data->reg[MC_REGA*4] ^= MC_REGA_UIP;
 
 	/*  RTC date/time is in binary, not BCD:  */
 	mc_data->reg[MC_REGB*4] |= (1 << 2);
@@ -275,6 +275,11 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		case 0x1c:
 		case 0x20:
 		case 0x24:
+			/*  If the SET bit is set, then we don't automatically update the
+				values.  Otherwise, we update them by reading from the host's clock:  */
+			if (mc_data->reg[MC_REGB*4] & MC_REGB_SET)
+				break;
+
 			timet = time(NULL);
 			tmp = gmtime(&timet);	/*  use to_bcd() for BCD conversion  */
 			mc_data->reg[0x00] = (tmp->tm_sec);

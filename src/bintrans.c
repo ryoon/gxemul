@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.28 2004-10-16 14:48:43 debug Exp $
+ *  $Id: bintrans.c,v 1.29 2004-10-16 15:03:22 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -250,6 +250,9 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_entry *tep;
 	int (*f)(struct cpu *);
+
+	if (cpu->delay_slot || cpu->nullify_next)
+		return -1;
 
 	tep = translation_entry_array[entry_index];
 

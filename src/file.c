@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.72 2005-02-03 06:15:08 debug Exp $
+ *  $Id: file.c,v 1.73 2005-02-03 17:27:34 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -863,7 +863,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 		vaddr += len;
 	}
 
-	debug("RAW: 0x%llx bytes loaded at 0x%08llx",
+	debug("RAW: 0x%llx bytes @ 0x%08llx",
 	    (long long) (ftell(f) - skip), (long long)entry);
 	if (skip != 0)
 		debug(" (0x%llx bytes of header skipped)", (long long)skip);
@@ -1111,8 +1111,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			unencode(p_align,   &phdr32.p_align,   Elf32_Word);
 		}
 
-		if (p_type == PT_LOAD ||
-		    (p_type & PF_MASKPROC) == PT_MIPS_REGINFO) {
+		if (p_memsz != 0 && (p_type == PT_LOAD ||
+		    (p_type & PF_MASKPROC) == PT_MIPS_REGINFO)) {
 			debug("chunk %i (", i);
 			if (p_type == PT_LOAD)
 				debug("load");

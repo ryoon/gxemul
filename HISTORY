@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.274 2004-10-24 07:58:01 debug Exp $
+$Id: HISTORY,v 1.275 2004-10-24 11:00:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1066,3 +1066,4 @@ HISTORY of mips64emul
 		Implementing a R4030 DMA controller for PICA, enough to let
 		OpenBSD/arc and NetBSD/arc be installed on an emulated
 		Pica. :-)
+		Updates to the documentation.

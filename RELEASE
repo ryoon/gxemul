@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.46 2004-10-24 06:29:55 debug Exp $
+$Id: RELEASE,v 1.47 2004-10-24 10:59:16 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -50,14 +50,22 @@ affiliated with MIPS Technologies in any way whatsoever.)
 
 
 In its current form, it is possible to use the emulator to install an
-operating system (NetBSD/pmax, Ultrix/RISC, or OpenBSD/pmax) onto an
-emulated DECstation harddisk image; the "guest" operating system will run
-as if it was running on a real physical machine. It is also possible to
-run Sprite/DECstation this way.
+operating systems onto a harddisk image; the "guest" operating system will run
+as if it was running on a real physical machine.
+
+The following guest operating systems have been verified to work:
+
+    NetBSD/pmax      DECstation 5000/200
+    OpenBSD/pmax     DECstation 5000/200
+    Ultrix/RISC      DECstation 5000/200
+    Sprite           DECstation 5000/200
+    NetBSD/arc       Acer PICA-61
+    OpenBSD/arc      Acer PICA-61
+
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
-Playstation 2, Cobalt, some ARC machines, etc) but these modes are more of
-a curiosity, and should not be considered working yet.
+Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
+of a curiosity, and should not be considered working yet.
 
 
 --------------------------------------------------

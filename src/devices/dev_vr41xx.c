@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.7 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.8 2005-01-12 07:42:38 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -51,7 +51,7 @@
  */
 void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 {
-	struct vr41xx_data *d = extra;
+/*	struct vr41xx_data *d = extra;  */
 
 	{
 		static int x = 0;

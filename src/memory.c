@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.136 2005-01-10 02:23:02 debug Exp $
+ *  $Id: memory.c,v 1.137 2005-01-12 07:42:39 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -468,7 +468,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			memblock = memory_paddr_to_hostaddr(
 			    mem, old_cached_paddr, MEM_WRITE);
 			offset = old_cached_paddr
-			    & (mem->memblock_size - 1)
+			    & ((1 << BITS_PER_MEMBLOCK) - 1)
 			    & ~cpu->cache_mask[which_cache];
 
 			src = cpu->cache[which_cache];
@@ -494,7 +494,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 		/*  Copy from main memory into the cache:  */
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
-		offset = paddr & (mem->memblock_size - 1)
+		offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1)
 		    & ~cpu->cache_mask[which_cache];
 		/*  offset is offset within the memblock:
 		 *  printf("write: offset = 0x%x\n", offset);
@@ -546,7 +546,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		if (memblock != NULL) {
 			cpu->pc_last_host_4k_page = memblock +
-			    (paddr & (mem->memblock_size - 1) & ~0xfff);
+			    (paddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);
 		}
 	}
 

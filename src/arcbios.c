@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.64 2005-01-11 02:49:15 debug Exp $
+ *  $Id: arcbios.c,v 1.65 2005-01-12 07:42:39 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -907,7 +907,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 static void arcbios_get_msdos_partition_size(int scsi_id,
 	int partition_nr, uint64_t *start, uint64_t *size)
 {
-	int res, i, j, partition_type, cur_partition = 0;
+	int res, i, partition_type, cur_partition = 0;
 	unsigned char sector[512];
 	unsigned char buf[16];
 	uint64_t offset = 0, st;
@@ -940,6 +940,7 @@ ugly_goto:
 #if 0
 	/*  Debug dump:  */
 	for (i=0; i<4; i++) {
+		int j;
 		printf("  partition %i: ", i+1);
 		for (j=0; j<16; j++)
 			printf(" %02x", sector[446 + i*16 + j]);
@@ -1321,7 +1322,7 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x50:		/*  GetTime()  */
 		debug("[ ARCBIOS GetTime() ]\n");
-		cpu->gpr[GPR_V0] = 0xffffffff80001000;
+		cpu->gpr[GPR_V0] = 0xffffffff80001000ULL;
 		/*  TODO!  */
 		break;
 	case 0x54:		/*  GetRelativeTime()  */

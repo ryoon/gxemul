@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.77 2004-10-13 18:37:44 debug Exp $
+ *  $Id: emul.c,v 1.78 2004-10-13 23:01:13 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -497,7 +497,7 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 {
 	int boot_disk_id = diskimage_bootdev();
 	unsigned char minibuf[0x20];
-	unsigned char bootblock_buf[65536];
+	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
 	int n_blocks, res;
@@ -522,9 +522,6 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 		res = diskimage_access(boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
 
-		bootblock_offset = (minibuf[0x1c] + (minibuf[0x1d] << 8)
-		  + (minibuf[0x1e] << 16) + (minibuf[0x1f] << 24)) * 512;
-
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
 		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
 
@@ -534,14 +531,29 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 		n_blocks = minibuf[0x18] + (minibuf[0x19] << 8)
 		  + (minibuf[0x1a] << 16) + (minibuf[0x1b] << 24);
 
-		if (n_blocks * 512 > sizeof(bootblock_buf))
-			fatal("\nWARNING! Unusually large bootblock (%i bytes, more than 8KB)\n\n",
+		bootblock_offset = (minibuf[0x1c] + (minibuf[0x1d] << 8)
+		  + (minibuf[0x1e] << 16) + (minibuf[0x1f] << 24)) * 512;
+
+		if (n_blocks < 1) {
+			fatal("\nWARNING! Non-positive number of bootblocks (%i)\n\n",
+			    n_blocks);
+			n_blocks = 1;
+		}
+
+		if (n_blocks * 512 > 65536)
+			fatal("\nWARNING! Unusually large bootblock (%i bytes)\n\n",
 			    n_blocks * 512);
 
+		bootblock_buf = malloc(n_blocks * 512);
+		if (bootblock_buf == NULL) {
+			fprintf(stderr, "out of memory in load_bootblock()\n");
+			exit(1);
+		}
+
 		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
-		    bootblock_buf, sizeof(bootblock_buf));
+		    bootblock_buf, n_blocks * 512);
 		if (!res) {
-			fatal("ERROR: could not load bootblocks from disk offset 0x%16llx\n",
+			fatal("WARNING: could not load bootblocks from disk offset 0x%llx\n",
 			    (long long)bootblock_offset);
 		}
 
@@ -555,11 +567,13 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 		bootblock_loadaddr |= 0xa0000000;
 
 		store_buf(cpu, bootblock_loadaddr, (char *)bootblock_buf,
-		    sizeof(bootblock_buf));
+		    n_blocks * 512);
 
 		bootblock_pc &= 0x0fffffff;
 		bootblock_pc |= 0xa0000000;
 		cpu->pc = bootblock_pc;
+
+		free(bootblock_buf);
 
 		break;
 	default:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.251 2004-10-13 15:58:40 debug Exp $
+$Id: HISTORY,v 1.252 2004-10-13 23:01:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1014,3 +1014,6 @@ HISTORY of mips64emul
 20041013	Minor updates.
 		Hacks to the ASC SCSI controller for Mach/PMAX, hopefully this
 		will not break support for other OSes.
+20041014	Minor fix to src/emul.c for reading bootblocks at the end of
+		a disk or cdrom image (thanks to Alexandru Lazar for making me
+		aware of this).

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.7 2004-07-09 04:46:43 debug Exp $
+$Id: technical.html,v 1.8 2004-07-11 01:58:07 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -50,6 +50,16 @@ SUCH DAMAGE.
 	Technical Documentation
   </font></td></tr>
 </table>
+
+
+<p>
+<h1><font color="#ff0000">
+NOTE: This documentation is for the -current snapshot of mips64emul,
+and does not neccessarily apply to the latest stable release.
+Documentation for a specific release is included in its release tarball.
+</font></h1>
+<p>
+
 
 <p>
 This page describes some of the internals of mips64emul. For more general 
@@ -187,7 +197,8 @@ support networking.
 Since I have choosen the second kind of implementation, I have to write 
 support explicitly for any kind of network protocol that should be
 supported. As of 2004-07-09, the following has been implemented and seems 
-to work under at least NetBSD/pmax under DECstation -D2 emulation:
+to work under at least NetBSD/pmax and OpenBSD/pmax under DECstation -D2
+emulation:
 
 <ul>
   <li>ARP requests sent out from the emulated NIC are interpreted,
@@ -214,7 +225,7 @@ has a fixed IPv4 address of 10.0.0.254. An OS running in the emulator
 can thus have any 10.x.x.x address; a typical choice would be 10.0.0.1.
 
 <p>
-Inside emulated NetBSD/pmax, running the following commands should
+Inside emulated NetBSD or OpenBSD, running the following commands should
 configure the emulated NIC:
 <pre>
 	# <b>ifconfig le0 10.0.0.1</b>

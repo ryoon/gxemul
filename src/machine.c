@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.323 2005-01-31 19:44:13 debug Exp $
+ *  $Id: machine.c,v 1.324 2005-01-31 20:04:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4207,6 +4207,7 @@ static struct machine_entry *machine_entry_new(const char *name,
 	}
 
 	memset(me, 0, sizeof(struct machine_entry));
+
 	me->name = name;
 	me->arch = arch;
 	me->machine_type = oldstyle_type;
@@ -4217,11 +4218,15 @@ static struct machine_entry *machine_entry_new(const char *name,
 		exit(1);
 	}
 	me->n_subtypes = n_subtypes;
-	me->subtype = malloc(sizeof(struct machine_entry_subtype *) *
-	    n_subtypes);
-	if (me->subtype == NULL) {
-		fprintf(stderr, "machine_entry_new(): out of memory (3)\n");
-		exit(1);
+
+	if (n_subtypes > 0) {
+		me->subtype = malloc(sizeof(struct machine_entry_subtype *) *
+		    n_subtypes);
+		if (me->subtype == NULL) {
+			fprintf(stderr, "machine_entry_new(): out of "
+			    "memory (3)\n");
+			exit(1);
+		}
 	}
 
 	return me;

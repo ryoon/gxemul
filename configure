@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.95 2005-01-31 19:31:29 debug Exp $
+#  $Id: configure,v 1.96 2005-01-31 20:04:37 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -356,17 +356,14 @@ if [ z$NOX11 = z ]; then
 fi
 
 
-COPTIM=''
-
-
 if [ z$HPUX = zYES ]; then
-	COPTIM="-D_XOPEN_SOURCE_EXTENDED $COPTIM"
+	CFLAGS="-D_XOPEN_SOURCE_EXTENDED $CFLAGS"
 	printf "#define HPUX\n" >> config.h
 fi
 
 
 if [ z$OSF1 = zYES ]; then
-	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $COPTIM"
+	CFLAGS="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $CFLAGS"
 fi
 
 
@@ -382,7 +379,7 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-$CC $COPTIM _testm.c -o _testm 2> /dev/null
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
 if [ ! -x _testm ]; then
 	printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
 else
@@ -414,7 +411,7 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-$CC $COPTIM _testm.c -o _testm 2> /dev/null
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
 if [ ! -x _testm ]; then
 	printf "\nWARNING! COULD NOT COMPILE ppc define TEST PROGRAM AT ALL!\n"
 else
@@ -454,25 +451,25 @@ rm -f _testprog
 
 if [ z"$COMPAQCC" = zYES ]; then
 	#  -O4 is possible, but is -O3 better?
-	COPTIM="-O4 $COPTIM"
+	CFLAGS="-O4 $CFLAGS"
 else
 	if [ z"`uname`" = zSunOS ]; then
 		#  "cc", the system's default compiler:
 		if [ z"$SUNCC" = zYES ]; then
-			COPTIM="-xO5 -xdepend $COPTIM"
+			CFLAGS="-xO5 -xdepend $CFLAGS"
 		fi
 		printf "#define SOLARIS\n" >> config.h
 		OTHERLIBS="-lsocket $OTHERLIBS"
 	else
 		#  gcc or something else:
-		$CC $COPTIM _testprog.c -o _testprog -O 2> /dev/null
+		$CC $CFLAGS _testprog.c -o _testprog -O 2> /dev/null
 		if [ -x _testprog ]; then
 			rm -f _testprog
-			$CC $COPTIM _testprog.c -o _testprog -O2 2> /dev/null
+			$CC $CFLAGS _testprog.c -o _testprog -O2 2> /dev/null
 			if [ -x _testprog ]; then
-				COPTIM="-O2 $COPTIM"
+				CFLAGS="-O2 $CFLAGS"
 			else
-				COPTIM="-O $COPTIM"
+				CFLAGS="-O $CFLAGS"
 			fi
 		fi
 	fi
@@ -484,9 +481,9 @@ rm -f _testprog
 #  but works OK on my alpha with ccc (compaq's cc).
 if [ z"$COMPAQCC" = zYES ]; then
 	printf "checking whether -fschedule-insns2 can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
+	$CC $CFLAGS _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
 	if [ -x _testprog ]; then
-		COPTIM="-fschedule-insns2 $COPTIM"
+		CFLAGS="-fschedule-insns2 $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -494,9 +491,9 @@ if [ z"$COMPAQCC" = zYES ]; then
 	rm -f _testprog
 
 	printf "checking whether -fschedule-insns can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns 2> /dev/null
+	$CC $CFLAGS _testprog.c -o _testprog -fschedule-insns 2> /dev/null
 	if [ -x _testprog ]; then
-		COPTIM="-fschedule-insns $COPTIM"
+		CFLAGS="-fschedule-insns $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -504,17 +501,17 @@ if [ z"$COMPAQCC" = zYES ]; then
 	rm -f _testprog
 
 #	#  -intrinsics
-#	$CC $COPTIM _testprog.c -o _testprog -intrinsics 2> /dev/null
+#	$CC $CFLAGS _testprog.c -o _testprog -intrinsics 2> /dev/null
 #	if [ -x _testprog ]; then
-#		COPTIM="-intrinsics $COPTIM"
+#		CFLAGS="-intrinsics $CFLAGS"
 #	fi
 #	rm -f _testprog
 
 	#  -fast
 	printf "checking whether -fast can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fast 2> /dev/null
+	$CC $CFLAGS _testprog.c -o _testprog -fast 2> /dev/null
 	if [ -x _testprog ]; then
-		COPTIM="-fast $COPTIM"
+		CFLAGS="-fast $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -525,13 +522,13 @@ fi
 
 #  -fpeephole
 printf "checking whether -fpeephole can be used... "
-$CC $COPTIM -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
+$CC $CFLAGS -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
 if grep peephole _testprog.error > /dev/null 2>&1; then
 	printf "no\n"
 else
 	if [ -x _testprog ]; then
-		COPTIM="-fpeephole $COPTIM"
+		CFLAGS="-fpeephole $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -542,13 +539,13 @@ rm -f _testprog _testprog.error _testprog.stdout
 
 #  -fmove-all-movables
 printf "checking whether -fmove-all-movables can be used... "
-$CC $COPTIM -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
+$CC $CFLAGS -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
 if grep movables _testprog.error > /dev/null 2>&1; then
 	printf "no\n"
 else
 	if [ -x _testprog ]; then
-		COPTIM="-fmove-all-movables $COPTIM"
+		CFLAGS="-fmove-all-movables $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -559,13 +556,13 @@ rm -f _testprog _testprog.error _testprog.stdout
 
 #  -fomit-frame-pointer
 printf "checking whether -fomit-frame-pointer can be used... "
-$CC $COPTIM -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
+$CC $CFLAGS -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
 if grep frame _testprog.error > /dev/null 2>&1; then
 	printf "no\n"
 else
 	if [ -x _testprog ]; then
-		COPTIM="-fomit-frame-pointer $COPTIM"
+		CFLAGS="-fomit-frame-pointer $CFLAGS"
 		printf "yes\n"
 	else
 		printf "no\n"
@@ -707,19 +704,19 @@ rm -f _tests.[co] _tests
 printf "checking for 64-bit off_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
 int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(off_t));return 0;}\n" > _testoff.c
-$CC $COPTIM _testoff.c -o _testoff 2> /dev/null
+$CC $CFLAGS _testoff.c -o _testoff 2> /dev/null
 if [ ! -x _testoff ]; then
 	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
 else
 	if [ z`./_testoff` = z8 ]; then
 		printf "yes\n"
 	else
-		$CC $COPTIM -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
+		$CC $CFLAGS -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
 		if [ ! -x _testoff ]; then
 			printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM!\n"
 		else
 			if [ z`./_testoff` = z8 ]; then
-				COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
+				CFLAGS="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $CFLAGS"
 				printf "using -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE\n"
 			else
 				printf "NO\n"
@@ -735,12 +732,12 @@ rm -f _testoff.c _testoff
 printf "checking for u_int8_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
 int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(u_int8_t));return 0;}\n" > _testuint.c
-$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 if [ ! -x _testuint ]; then
 	rm -f _testuint*
 	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
 	int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(uint8_t));return 0;}\n" > _testuint.c
-	$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+	$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 	if [ ! -x _testuint ]; then
 		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"
 		exit
@@ -840,7 +837,7 @@ printf "checking for prefetch support... "
 if [ z"`uname -m`" = zalpha ]; then
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
-	$CC $COPTIM -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+	$CC $CFLAGS -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
 	if [ -x _alpha_asm_test ]; then
 #		printf "#define HAVE_PREFETCH\n" >> config.h
 		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
@@ -859,13 +856,11 @@ fi
 
 INCLUDE=-I../include/
 
-COPTIM="$COPTIM $CFLAGS"
-
 echo C compiler: $CC
-echo C compiler flags: $COPTIM $CWARNINGS $INCLUDE
+echo C compiler flags: $CFLAGS $CWARNINGS $INCLUDE
 echo Linker flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
-echo "COPTIM=$COPTIM" >> _Makefile.header
+echo "COPTIM=$CFLAGS" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header

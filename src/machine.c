@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.14 2003-12-22 10:13:02 debug Exp $
+ *  $Id: machine.c,v 1.15 2003-12-22 11:46:14 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -648,7 +648,7 @@ void machine_init(struct memory *mem)
 
 		dev_mc146818_init(cpus[0], mem, 0x10000000, 4, 1, emulated_ips);	/*  ???  */
 		dev_gt_init(mem, 0x14000000, 0);			/*  ???  */
-		dev_ns16550_init(mem, 0x1c800000, 5);			/*  ???  */
+		dev_ns16550_init(mem, 0x1c800000, 5, 1);		/*  ???  */
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -783,13 +783,17 @@ void machine_init(struct memory *mem)
 			if (emulation_type == EMULTYPE_SGI) {
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "SGI-IP32", 0  /*  ROOT  */);
+
+				/*  TODO:  sync devices and component tree  */
+				dev_ns16550_init(mem, 0x1f390000, 0, 0x100);	/*  com0  */
+				dev_ns16550_init(mem, 0x1f398000, 0, 0x100);	/*  com1  */
 			} else {
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 
 				/*  TODO:  sync devices and component tree  */
-				dev_pckbc_init(mem, 0x2000005001, 0);
-				dev_ns16550_init(mem, 0x2000006000, 0);
+				dev_pckbc_init(mem, 0x2000005000, 0);
+				dev_ns16550_init(mem, 0x2000006000, 0, 1);	/*  com0  */
 			}
 
 			/*  Common stuff for both SGI and ARC:  */
@@ -824,8 +828,11 @@ void machine_init(struct memory *mem)
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
-		add_environment_string("ConsoleOut=serial", &addr);
-		add_environment_string("cpufreq=100000", &addr);
+		/*  add_environment_string("ConsoleIn=serial(0)", &addr);
+		    add_environment_string("ConsoleOut=serial(0)", &addr);  */
+		add_environment_string("ConsoleOut=arcs", &addr);
+		add_environment_string("cpufreq=300000000", &addr);
+		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;

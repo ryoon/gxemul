@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.43 2005-02-19 13:00:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.44 2005-02-19 16:22:06 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1109,8 +1109,8 @@ static void update_cr0(struct cpu *cpu, uint64_t value)
 	/*  SO bit, copied from XER:  */
 	c |= ((cpu->cd.ppc.xer >> 31) & 1);
 
-	cpu->cd.ppc.cr &= ~(0xf << 28);
-	cpu->cd.ppc.cr |= (c << 28);
+	cpu->cd.ppc.cr &= ~((uint32_t)0xf << 28);
+	cpu->cd.ppc.cr |= ((uint32_t)c << 28);
 }
 
 

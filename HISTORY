@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.490 2005-01-17 17:52:51 debug Exp $
+$Id: HISTORY,v 1.491 2005-01-17 18:17:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1495,3 +1495,4 @@ HISTORY of mips64emul
 		OpenBSD/sgi to not hang randomly in userspace anymore.)
 		On breakpoints, the debugger is now entered _at_ the
 		instruction at the breakpoint, not after it.
+		Some cursor keys now work when inputed via X.

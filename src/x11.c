@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.39 2005-01-17 10:05:03 debug Exp $
+ *  $Id: x11.c,v 1.40 2005-01-17 18:17:58 debug Exp $
  *
  *  X11-related functions.
  */
@@ -550,12 +550,66 @@ void x11_check_event(void)
 			if (event.type==KeyPress) {
 				char text[15];
 				KeySym key;
+				XKeyPressedEvent *ke = &event.xkey;
 
 				memset(text, sizeof(text), 0);
 
 				if (XLookupString(&event.xkey, text,
 				    sizeof(text), &key, 0) == 1) {
 					console_makeavail(text[0]);
+				} else {
+					int x = ke->keycode;
+					/*
+					 *  Special key codes:
+					 *
+					 *  NOTE/TODO: I'm hardcoding these to work with
+					 *  my key map. Maybe they should be read from
+					 *  some file...
+					 */
+					switch (x) {
+					case 9:	/*  Escape  */
+						console_makeavail(27);
+						break;
+#if 0
+					/*  The numeric keypad:  */
+					79=Home    81=PgUp
+					        84
+					87=End     89=PgDn
+					  90=Ins   91=Del
+TODO
+					/*  Above the cursor keys:  */
+					106=Ins  97=Home  99=PgUp
+					107=Del 103=End  105=PgUp
+#endif
+					/*  Cursor keys:  */
+					case 98:	/*  Up  */
+					case 104:	/*  Down  */
+					case 100:	/*  Left  */
+					case 102:	/*  Right  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail(
+						    x == 98? 'A' : (
+						    x == 104? 'B' : (
+						    x == 102? 'C' : (
+						    'D'))));
+						break;
+					/*  Numeric keys:  */
+					case 80:	/*  Up  */
+					case 88:	/*  Down  */
+					case 83:	/*  Left  */
+					case 85:	/*  Right  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail(
+						    x == 80? 'A' : (
+						    x == 88? 'B' : (
+						    x == 85? 'C' : (
+						    'D'))));
+						break;
+					default:
+						debug("[ unimplemented X11 keycode %i ]\n", x);
+					}
 				}
 			}
 		}

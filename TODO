@@ -195,7 +195,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
-			x)  X11 cursor keycodes
+			x)  more X11 cursor keycodes
 			x)  Keys like CTRL, ALT, SHIFT do not get through
 			    by themselves (these are necessary for example
 			    to change the font of an xterm in X in the

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.67 2004-03-15 16:10:24 debug Exp $
+ *  $Id: machine.c,v 1.68 2004-03-22 00:55:37 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1083,6 +1083,11 @@ void machine_init(struct memory *mem)
 		 *  According to NetBSD:
 		 *	Hardware irq 0 is timer/interrupt controller
 		 *	Hardware irq 1 is dma controller
+		 *
+		 *  Some things are not yet emulated (at all), and hence are detected incorrectly:
+		 *	sbus0 at mainbus0: controller type 2
+		 *	ohci0 at sbus0
+		 *	ohci0: OHCI version 1.0
 		 */
 
 		dev_ps2_gs_init(mem, 0x12000000);

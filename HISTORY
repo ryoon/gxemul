@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.451 2005-01-09 00:45:57 debug Exp $
+$Id: HISTORY,v 1.452 2005-01-09 00:57:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1428,3 +1428,4 @@ HISTORY of mips64emul
 20050108	Minor updates.
 20050109	dev_dec5500_ioboard.c and dev_sgec.c => dev_kn220.c.
 		dev_crime.c, _mace.c, and _macepci.c => dev_sgi_ip32.c.
+		Also adding dev_sgi_mec into dev_sgi_ip32.c.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.107 2004-11-24 12:52:03 debug Exp $
+ *  $Id: coproc.c,v 1.108 2004-11-25 07:44:31 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -301,13 +301,14 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
  *  update_translation_table():
  */
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag)
+	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int a, b;
 		struct vth32_table *tbl1;
 		void *p;
+		uint32_t p_paddr;
 
 #if 0
 if ((vaddr_page & 0xc0000000) >= 0xc0000000) {
@@ -342,17 +343,21 @@ if ((vaddr_page & 0xc0000000) >= 0xc0000000) {
 				}
 				cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
 			}
-			p = tbl1->entry[b];
+			p = tbl1->haddr_entry[b];
+			p_paddr = tbl1->paddr_entry[b];
 			/* printf("   p = %p\n", p); */
-			if (p == NULL) {
+			if (p == NULL && p_paddr == 0) {
 				tbl1->refcount ++;
 /*				printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
 				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);
 */			}
 			if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
 				/*  Don't degrade a page from writable to readonly.  */
-			} else
-				tbl1->entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+			} else {
+				if (host_page != NULL || paddr_page == 0)
+					tbl1->haddr_entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+				tbl1->paddr_entry[b] = paddr_page;
+			}
 			break;
 		default:
 			;
@@ -371,6 +376,7 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	int a, b;
 	struct vth32_table *tbl1;
 	void *p;
+	uint32_t p_paddr;
 
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
@@ -381,11 +387,13 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 */
 		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
 /*		printf("tbl1 = %p\n", tbl1); */
-		p = tbl1->entry[b];
+		p = tbl1->haddr_entry[b];
+		p_paddr = tbl1->paddr_entry[b];
 /*		printf("   p = %p\n", p);
-*/		if (p != NULL) {
+*/		if (p != NULL || p_paddr != 0) {
 /*			printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
-*/			tbl1->entry[b] = NULL;
+*/			tbl1->haddr_entry[b] = NULL;
+			tbl1->paddr_entry[b] = 0;
 			tbl1->refcount --;
 			if (tbl1->refcount == 0) {
 				cpu->vaddr_to_hostaddr_table0_kernel[a] =
@@ -447,10 +455,11 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	vaddr >>= 12;
 
 	/*  Invalidate the tiny translation cache...  */
-	for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-		if (all ||
-		    vaddr == (cpu->translation_cache_instr[i].vaddr_pfn))
-			cpu->translation_cache_instr[i].wf = 0;
+	if (!cpu->emul->bintrans_enable)
+		for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
+			if (all ||
+			    vaddr == (cpu->translation_cache_instr[i].vaddr_pfn))
+				cpu->translation_cache_instr[i].wf = 0;
 
 	if (!cpu->emul->bintrans_enable)
 		for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)

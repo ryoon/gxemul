@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.194 2004-11-24 13:35:11 debug Exp $
+ *  $Id: cpu.c,v 1.195 2004-11-25 07:44:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1178,7 +1178,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
  *  Return value is the number of instructions executed during this call
  *  to cpu_run_instr() (0 if no instruction was executed).
  */
-static int cpu_run_instr(struct cpu *cpu)
+int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->emul->instruction_trace;
@@ -1555,16 +1555,17 @@ static int cpu_run_instr(struct cpu *cpu)
 						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					if (res & BINTRANS_DONT_RUN_NEXT)
 						cpu->dont_run_next_bintrans = 1;
+					res &= BINTRANS_N_MASK;
 
 					if (cpu->cpu_type.exc_model != EXC3K) {
 						if (cp0->reg[COP0_COUNT] < cp0->reg[COP0_COMPARE] &&
 						    cp0->reg[COP0_COUNT] + (res-1) >= cp0->reg[COP0_COMPARE])
 							cpu_interrupt(cpu, 7);
-
-						cp0->reg[COP0_COUNT] += (res-1);
 					}
 
-					return res & BINTRANS_N_MASK;
+					cp0->reg[COP0_COUNT] += (res-1);
+
+					return res;
 				}
 			}
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.114 2004-11-24 13:51:49 debug Exp $
+ *  $Id: memory.c,v 1.115 2004-11-25 07:44:31 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -280,6 +280,9 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 #ifdef USE_TINY_CACHE
 	int wf = 1 + (writeflag == MEM_WRITE);
 
+	if (cpu->emul->bintrans_enable)
+		return;
+
 	paddr &= ~0xfff;
 	vaddr >>= 12;
 
@@ -294,9 +297,6 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 		cpu->translation_cache_instr[0].vaddr_pfn = vaddr;
 		cpu->translation_cache_instr[0].paddr = paddr;
 	} else {
-		if (cpu->emul->bintrans_enable)
-			return;
-
 		/*  Data:  */
 		memmove(&cpu->translation_cache_data[1],
 		    &cpu->translation_cache_data[0],
@@ -376,7 +376,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
  *  Return value is 1 if a jump to do_return_ok is supposed to happen directly
  *  after this routine is finished, 0 otherwise.
  */
-static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
+int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data)
 {
 #ifdef ENABLE_CACHE_EMULATION
@@ -650,6 +650,33 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	int pageshift, exccode, tlb_refill, mmumodel3k, n_tlbs;
 	struct coproc *cp0;
 
+
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		int a, b;
+		struct vth32_table *tbl1;
+		void *p;
+		uint32_t p_paddr;
+
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			a = (vaddr >> 22) & 0x3ff;
+			b = (vaddr >> 12) & 0x3ff;
+			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+			p = tbl1->haddr_entry[b];
+			p_paddr = tbl1->paddr_entry[b];
+			/*  printf("p=%p p_paddr=%08x\n", p, p_paddr);  */
+			if (p != NULL) {
+				if ((writeflag && (size_t)p&1) || !writeflag) {
+					*return_addr = p_paddr | (vaddr & 0xfff);
+					return 1 + ((size_t)p & 1);
+				}
+			}
+		}
+	}
+#endif
+
+
 #ifdef USE_TINY_CACHE
 	/*
 	 *  Check the tiny translation cache first:
@@ -660,7 +687,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	 *  will still produce the correct result. At worst, we check the
 	 *  cache in vain, but the result should still be correct.)
 	 */
-	if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
+	if (!cpu->emul->bintrans_enable &&
+	    (vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 		int i, wf = 1 + (writeflag == MEM_WRITE);
 		uint64_t vaddr_shift_12 = vaddr >> 12;
 
@@ -673,7 +701,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 					return cpu->translation_cache_instr[i].wf;
 				}
 			}
-		} else if (!cpu->emul->bintrans_enable) {
+		} else {
 			/*  Data:  */
 			for (i=0; i<N_TRANSLATION_CACHE_DATA; i++) {
 				if (cpu->translation_cache_data[i].wf >= wf &&
@@ -1180,6 +1208,7 @@ into the devices  */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
 		int i, start, res;
 		i = start = mem->last_accessed_device;
+		uint64_t orig_paddr = paddr;
 
 		/*  Scan through all devices:  */
 		do {
@@ -1208,7 +1237,7 @@ into the devices  */
 
 					update_translation_table(cpu, vaddr & ~0xfff,
 					    cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff),
-					    wf);
+					    wf, orig_paddr & ~0xfff);
 				}
 #endif
 
@@ -1397,7 +1426,8 @@ no_exception_access:
 	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
 
 	update_translation_table(cpu, vaddr & ~0xfff,
-	    memblock + (offset & ~0xfff), writeflag == MEM_WRITE? 1 : 0);
+	    memblock + (offset & ~0xfff), writeflag == MEM_WRITE? 1 : 0,
+	    paddr & ~0xfff);
 
 	if (writeflag == MEM_WRITE) {
 #ifdef BINTRANS
@@ -1477,10 +1507,10 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
 				update_translation_table(cpu,
 				    (size_t)mem->dev_baseaddr[i] + s + 0x80000000ULL,
-				    NULL, 0);
+				    NULL, 0, 0x0);
 				update_translation_table(cpu,
 				    (size_t)mem->dev_baseaddr[i] + s + 0xa0000000ULL,
-				    NULL, 0);
+				    NULL, 0, 0x0);
 			}
 
 			return;

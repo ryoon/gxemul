@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.519 2005-01-24 16:02:27 debug Exp $
+$Id: HISTORY,v 1.520 2005-01-25 07:14:32 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1549,3 +1549,4 @@ HISTORY of mips64emul
 		The emulator now compiles under OpenBSD/arc 2.3 without
 		crashing (mostly due to the bintrans fixes, but also some
 		minor updates to the configure script).
+20050125	Continuing the remodelling/cleanup.

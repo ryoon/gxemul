@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.17 2004-09-17 21:32:02 debug Exp $
+.\" $Id: mips64emul.1,v 1.18 2004-09-17 21:34:43 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -84,9 +84,11 @@ doesn't need the kernel as a separate file.)
 .SH EXAMPLE
 The following command will start NetBSD/pmax on an emulated DECstation 
 5000/200:
+.nf
 
-.B		mips64emul -D2 -d netbsddisk.img
+	mips64emul -D2 -d netbsddisk.img
 
+.fi
 if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
 You may wish to add
 .B -XNM64

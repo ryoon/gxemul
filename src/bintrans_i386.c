@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.27 2004-11-28 17:19:12 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.28 2004-11-28 18:03:11 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -619,24 +619,26 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a;
-	int load64 = 0;
+	int load64 = 0, do_store = 1;
 
 	/*  TODO: Not yet  */
 	switch (instruction_type) {
+	case SPECIAL_MULT:
+	case SPECIAL_MULTU:
+		if (rd != 0)
+			return 0;
+		break;
 	case SPECIAL_DSLL:
 	case SPECIAL_DSLL32:
 	case SPECIAL_DSRA:
 	case SPECIAL_DSRA32:
 	case SPECIAL_DSRL:
 	case SPECIAL_DSRL32:
-	case SPECIAL_MULT:
-	case SPECIAL_MULTU:
 	case SPECIAL_MOVZ:
 	case SPECIAL_MOVN:
 		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
 	}
-
 
 	switch (instruction_type) {
 	case SPECIAL_DADDU:
@@ -656,8 +658,14 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		load64 = 1;
 	}
 
-	if (rd == 0)
-		goto rd0;
+	switch (instruction_type) {
+	case SPECIAL_MULT:
+	case SPECIAL_MULTU:
+		break;
+	default:
+		if (rd == 0)
+			goto rd0;
+	}
 
 	a = *addrp;
 
@@ -871,6 +879,30 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x99;
 		break;
 
+	case SPECIAL_MULT:
+	case SPECIAL_MULTU:
+		if (instruction_type == SPECIAL_MULT) {
+			/*  f7 eb                   imul   %ebx  */
+			*a++ = 0xf7; *a++ = 0xeb;
+		} else {
+			/*  f7 e3                   mul   %ebx  */
+			*a++ = 0xf7; *a++ = 0xe3;
+		}
+		/*  here: edx:eax = hi:lo  */
+		/*  89 d7                   mov    %edx,%edi  */
+		/*  99                      cltd   */
+		*a++ = 0x89; *a++ = 0xd7;
+		*a++ = 0x99;
+		/*  here: edi=hi, edx:eax = sign-extended lo  */
+		store_eax_edx(&a, &dummy_cpu.lo);
+		/*  89 f8                   mov    %edi,%eax  */
+		/*  99                      cltd   */
+		*a++ = 0x89; *a++ = 0xf8;
+		*a++ = 0x99;
+		/*  here: edx:eax = sign-extended hi  */
+		store_eax_edx(&a, &dummy_cpu.hi);
+		do_store = 0;
+		break;
 #if 0
 	/*  TODO:  These are from bintrans_alpha.c. Translate them to i386.  */
 
@@ -900,7 +932,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 #endif
 	}
 
-	store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+	if (do_store)
+		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
 
 	*addrp = a;
 rd0:

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.333 2004-11-28 17:19:11 debug Exp $
+$Id: HISTORY,v 1.334 2004-11-28 18:03:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1203,3 +1203,4 @@ HISTORY of mips64emul
 		mtc0 similar to how it is done in the Alpha backend has been
 		added. A full NetBSD/pmax 1.6.2 install can now be done in
 		5 minutes 35 seconds, on a 2.8 GHz Xeon host (with -bD2 -M20).
+		Adding mult and multu to the i386 bintrans backend.

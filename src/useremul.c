@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.37 2005-02-15 06:25:36 debug Exp $
+ *  $Id: useremul.c,v 1.38 2005-02-15 09:10:15 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -832,20 +832,32 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		error_code = 78;  /*  ENOSYS  */
 	}
 
-	/*
-	 *  NetBSD/mips return values:
-	 *
-	 *  a3 is 0 if the syscall was ok, otherwise 1.
-	 *  v0 (and sometimes v1) contain the result value.
-	 */
-	cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
-	if (error_flag)
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
-	else
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
 
-	if (result_high_set)
-		cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
+	switch (cpu->machine->arch) {
+	case ARCH_MIPS:
+		/*
+		 *  NetBSD/mips return values:
+		 *
+		 *  a3 is 0 if the syscall was ok, otherwise 1.
+		 *  v0 (and sometimes v1) contain the result value.
+		 */
+		cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
+		if (error_flag)
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
+		else
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
+
+		if (result_high_set)
+			cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
+		break;
+	case ARCH_PPC:
+		/*
+		 *  NetBSD/powerpc return values:
+		 *
+		 *  TODO
+		 */
+		break;
+	}
 }
 
 

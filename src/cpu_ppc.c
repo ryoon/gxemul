@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.30 2005-02-15 08:28:42 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.31 2005-02-15 09:10:15 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -899,6 +899,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
+	case PPC_HI6_STH:
+	case PPC_HI6_STHU:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STMW:
@@ -914,6 +916,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_HI6_LBZU:	mnem = "lbzu"; break;
 		case PPC_HI6_STW:	mnem = power? "st" : "stw"; break;
 		case PPC_HI6_STWU:	mnem = power? "stu" : "stwu"; break;
+		case PPC_HI6_STH:	mnem = "sth"; break;
+		case PPC_HI6_STHU:	mnem = "sthu"; break;
 		case PPC_HI6_STB:	mnem = "stb"; break;
 		case PPC_HI6_STBU:	mnem = "stbu"; break;
 		case PPC_HI6_LMW:	mnem = power? "lm" : "lmw"; break;
@@ -1145,8 +1149,12 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		ra = (iword >> 16) & 31;
 		rc = hi6 == PPC_HI6_ADDIC_DOT;
 		imm = (int16_t)(iword & 0xffff);
+		tmp = cpu->cd.ppc.gpr[rt];
 		cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] + imm;
-		/*  TODO: CA bit  */
+		/*  TODO: Is this CA bit stuff correct?  */
+		cpu->cd.ppc.xer &= ~PPC_XER_CA;
+		if (((tmp >> 63) & 1) == ((cpu->cd.ppc.gpr[rt] >> 63) & 1))
+			cpu->cd.ppc.xer |= PPC_XER_CA;
 		if (rc)
 			update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 		break;
@@ -1244,8 +1252,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			bi = (iword >> 16) & 31;
 			bh = (iword >> 11) & 3;
 			lk_bit = iword & 1;
-			addr = cpu->cd.ppc.lr;
 			if (xo == PPC_19_BCLR) {
+				addr = cpu->cd.ppc.lr;
 				if (!(bo & 4))
 					cpu->cd.ppc.ctr --;
 				ctr_ok = (bo >> 2) & 1;
@@ -1258,8 +1266,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					cpu->cd.ppc.trace_tree_depth --;
 					/*  TODO: show return value?  */
 				}
-			} else
+			} else {
+				addr = cpu->cd.ppc.ctr;
 				ctr_ok = 1;
+			}
 			cond_ok = (bo >> 4) & 1;
 			cond_ok |= ( ((bo >> 3) & 1) ==
 			    ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
@@ -1928,6 +1938,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
 	case PPC_HI6_STWU:
+	case PPC_HI6_STH:
+	case PPC_HI6_STHU:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 		/*  NOTE: Loads use rt, not rs, but are otherwise similar
@@ -1942,6 +1954,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_HI6_LWZU:
 		case PPC_HI6_LBZU:
 		case PPC_HI6_STBU:
+		case PPC_HI6_STHU:
 		case PPC_HI6_STWU:
 			update = 1;
 		}
@@ -1949,6 +1962,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		switch (hi6) {
 		case PPC_HI6_STW:
 		case PPC_HI6_STWU:
+		case PPC_HI6_STH:
+		case PPC_HI6_STHU:
 		case PPC_HI6_STB:
 		case PPC_HI6_STBU:
 			load = 0;
@@ -1960,6 +1975,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_HI6_STB:
 		case PPC_HI6_STBU:
 			tmp_data_len = 1;
+			break;
+		case PPC_HI6_STH:
+		case PPC_HI6_STHU:
+			tmp_data_len = 2;
+			break;
 		}
 
 		if (ra == 0) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.10 2005-02-14 22:47:57 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.11 2005-02-15 09:10:14 debug Exp $
  *
  *
  *  PPC and POWER opcodes.
@@ -112,6 +112,8 @@
 #define	PPC_HI6_STB		0x26
 #define	PPC_HI6_STBU		0x27
 
+#define	PPC_HI6_STH		0x2c
+#define	PPC_HI6_STHU		0x2d
 #define	PPC_HI6_LMW		0x2e
 #define	PPC_HI6_STMW		0x2f
 

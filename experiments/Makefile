@@ -1,6 +1,6 @@
-# $Id: Makefile,v 1.1 2004-08-26 13:17:50 debug Exp $
+# $Id: Makefile,v 1.2 2005-03-03 06:24:41 debug Exp $
 
-BINS=cp_removeblocks bintrans_eval try_runlen \
+BINS=cp_removeblocks bintrans_eval try_runlen rssb_as \
 	sgiprom_to_bin decprom_dump_txt_to_bin
 
 all: $(BINS)

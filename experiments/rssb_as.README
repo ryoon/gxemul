@@ -1,0 +1,232 @@
+(Sorry, this is still in Swedish.)
+
+Ide:
+
+# Kommentar. Tomma rader ignoreras också.
+
+oaddr			orig
+lnamn			label
+anamn_eller_värde	assemblera värdet "namn_eller_värde"
+s"string"		???
+dnev1 nev2		assemblera värdet "nev1 - nev2 - x" där
+			x = 1 om nev2 < nev1, annars x = 0
+
+En vanlig fil kan t ex börja med:
+
+# PC
+
+o0
+lpc
+amain
+
+# MIPS registers
+
+la0
+a0
+la1
+a0
+la2
+a0
+la3
+a0
+lv0
+a0
+
+
+# Function:  main
+
+lmain
+ar0
+ar0
+ar0
+osv...
+
+
+
+x := 0		Clear contents of x		CLEAR x
+	Ax
+	Ax
+	Ax
+
+x2 := x1	Copy value in x1 to x2		MOVE x1 TO x2
+	Ax2
+	Ax2
+	Ax2		; clear x2
+	Ascratch
+	Ascratch
+	Ax1
+	Ascratch
+	Ascratch
+	Ax2
+	Ascratch
+
+pc := label					JMP label
+	Ascratch
+	Ascratch
+	Ascratch
+	Dl? label
+	Ll?
+	Apc
+
+if acc==0 then pc := label			JZ label
+	Azero
+	Dlabel l?
+	Azero
+	Azero
+	Ll?
+	Apc
+
+if x==0 then pc := label			JRZ x, label
+	Azero
+	Azero
+	Azero
+	Ax
+	Azero
+	Dlabel l?
+	Azero
+	Azero
+	Ll?
+	Apc
+
+x2 -= x1					SUB x1 FROM x2
+	Ascratch
+	Ascratch
+	Ascratch
+	Ax1
+	Ax2
+	Ascratch
+	Ascratch
+	Ascratch	; maybe not neccessary?
+
+x2 += x1					ADD x1 TO x2
+	Ascratch2
+	Ascratch2
+	Ascratch2
+	Ax1
+	Ascratch2	; scratch2 = -x1
+	Ascratch
+	Ascratch
+	Ascratch
+	Ascratch2
+	Ax2		; x2 = x2 - (-x1)
+	Ascratch
+	Ascratch
+	Ascratch	; maybe not neccessary?
+
+*a = data					STORE data AT a
+	Al1
+	Al1
+	Al1		; clear l1
+	Ascratch
+	Ascratch
+	Aa
+	Ascratch
+	Ascratch
+	Al1		; word at l1 = a
+	Ascratch
+
+	Al2
+	Al2
+	Al2		; clear l2
+	Ascratch
+	Ascratch
+	Aa
+	Ascratch
+	Ascratch
+	Al2		; word at l2 = a
+	Ascratch
+
+	Al3
+	Al3
+	Al3		; clear l3
+	Ascratch
+	Ascratch
+	Aa
+	Ascratch
+	Ascratch
+	Al3		; word at l3 = a
+	Ascratch
+
+	Al4
+	Al4
+	Al4		; clear l4
+	Ascratch
+	Ascratch
+	Aa
+	Ascratch
+	Ascratch
+	Al4		; word at l4 = a
+	Ascratch
+
+
+	Ll1
+	A0	; this will be overwritten with 'a'
+	Ll2
+	A0	; this will be overwritten with 'a'
+	Ll3
+	A0	; this will be overwritten with 'a'
+
+	Ascratch
+	Ascratch
+	Adata
+	Ascratch
+	Ascratch
+
+	Ll4
+	A0	; this will be overwritten with 'a'
+
+	Ascratch
+
+reg = *a				LOAD reg FROM ADDRESS a
+	Al1
+	Al1
+	Al1		; clear contents of l1
+	Ascratch
+	Ascratch
+	Aa
+	Ascratch
+	Ascratch
+	Al1		; word at l1 is now 'a'
+	Ascratch
+
+	Areg
+	Areg
+	Areg		; clear reg
+	Ascratch
+	Ascratch
+	Ll1
+	A0		; this will be overwritten with 'a'
+	Ascratch
+	Ascratch
+	Areg
+	Ascratch
+
+
+
+
+
+
+-----------------------------------------------------------------
+Översättning av MIPS-instruktioner till RSSB:
+
+	MIPS:			RSSB:
+
+	b label			JMP label
+	move r1, r2		MOVE
+	load word		LOAD
+	store word		STORE
+	add r1,r2		ADD
+	sub r1,r2		SUB
+
+
+Halvjobbiga:
+	de som kräver indirekta adresser osv
+
+
+Jobbiga:
+	mul
+	and
+	or
+	not (?)
+	xor (?)
+	comparision  < > ==

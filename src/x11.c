@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.8 2003-12-29 01:22:49 debug Exp $
+ *  $Id: x11.c,v 1.9 2004-03-08 03:21:06 debug Exp $
  *
  *  X11-related functions.
  */
@@ -57,7 +57,8 @@ int x11_screen, screen_depth;
 unsigned long fg_COLOR, bg_COLOR;
 
 int x11_using_truecolor;
-XColor x11_graycolor[16];
+#define N_GRAYCOLORS		16
+XColor x11_graycolor[N_GRAYCOLORS];
 
 /*  Framebuffer windows:  */
 #define	MAX_FRAMEBUFFER_WINDOWS		8
@@ -159,7 +160,7 @@ void x11_init(void)
 	XAllocColor(x11_display, DefaultColormap(x11_display, x11_screen), &tmpcolor);
 	bg_COLOR = tmpcolor.pixel;
 
-	for (i=0; i<16; i++) {
+	for (i=0; i<N_GRAYCOLORS; i++) {
 		char cname[8];
 		cname[0] = '#';
 		cname[1] = cname[2] = cname[3] =
@@ -250,6 +251,35 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	}
 
 	x11_putimage_fb(fb_number);
+
+	/*
+	 *  If a "hardware" cursor is to be put onto the framebuffer,
+	 *  it needs to be an XImage as well.
+	 *  TODO: hardcoded to 64x64 pixels.
+	 */
+	{
+		char *cursor_data;
+
+		xsize = ysize = 64;
+
+		cursor_data = malloc(xsize * ysize * bytes_per_pixel);
+		if (cursor_data == NULL) {
+			fprintf(stderr, "out of memory allocating cursor\n");
+			exit(1);
+		}
+
+		fb_windows[fb_number].cursor_ximage = XCreateImage(fb_windows[fb_number].x11_display, CopyFromParent,
+		    8 * bytes_per_pixel, XYPixmap, 0, cursor_data, xsize, ysize, 8, 0);
+		if (fb_windows[fb_number].cursor_ximage == NULL) {
+			fprintf(stderr, "out of memory allocating ximage\n");
+			exit(1);
+		}
+
+		/*  Fill the cursor ximage with white pixels:  */
+		for (y=0; y<ysize; y++)
+			for (x=0; x<xsize; x++)
+				XPutPixel(fb_windows[fb_number].cursor_ximage, x, y, x11_graycolor[N_GRAYCOLORS-1].pixel);
+	}
 
 	return &fb_windows[fb_number];
 }

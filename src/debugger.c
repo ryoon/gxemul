@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.45 2005-01-21 15:22:20 debug Exp $
+ *  $Id: debugger.c,v 1.46 2005-01-21 17:51:23 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -75,6 +75,8 @@ extern int quiet_mode;
  *  Global debugger variables:
  */
 
+static volatile int ctrl_c;
+
 static struct emul *debugger_emul;
 static struct machine *debugger_machine;
 
@@ -108,6 +110,8 @@ static uint64_t last_unasm_addr = 0xffffffff80000000ULL;
  */
 void debugger_activate(int x)
 {
+	ctrl_c = 1;
+
 	if (debugger_emul->single_step) {
 		/*  Already in the debugger. Do nothing.  */
 		int i;
@@ -125,6 +129,9 @@ void debugger_activate(int x)
 		while (console_charavail())
 			console_readchar();
 	}
+
+	/*  Clear the repeat-command buffer:  */
+	repeat_cmd[0] = '\0';
 
 	/*  Reactivate the signal handler:  */
 	signal(SIGINT, debugger_activate);
@@ -178,6 +185,12 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		exit(1);
 	}
 
+	/*  Warn about non-signextended values:  */
+	if (writeflag &&
+	    ((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
+		printf("WARNING: The value is not sign-extended. "
+		    "Is this what you intended?\n");
+
 	skip_register = name[0] == '$' || name[0] == '@';
 	skip_numeric  = name[0] == '%' || name[0] == '@';
 	skip_symbol   = name[0] == '$' || name[0] == '%';
@@ -187,11 +200,6 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 		/*  CPU number:  */
 
 		/*  TODO  */
-
-		/*  Warn about non-signextended values:  */
-		if ( ((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
-			printf("WARNING: The value is not sign-extended. "
-			    "Is this what you intended?\n");
 
 		/*  Register name:  */
 		if (strcasecmp(name, "pc") == 0) {
@@ -562,27 +570,53 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 
 /*
  *  debugger_cmd_dump():
+ *
+ *  Dump emulated memory in hex and ASCII.
+ *
+ *  syntax: unassemble [addr [endaddr]]
  */
 static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 {
 	uint64_t addr, addr_start, addr_end;
 	struct cpu *c;
 	struct memory *mem;
+	char *p = NULL;
 	int x, r;
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		r = debugger_parse_name(m, cmd_line, 0, &tmp);
-		if (r)
+		char *tmps = strdup(cmd_line);
+
+		/*  addr:  */
+		p = strchr(tmps, ' ');
+		if (p != NULL)
+			*p = '\0';
+		r = debugger_parse_name(m, tmps, 0, &tmp);
+		free(tmps);
+
+		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+			printf("Unparsable address: %s\n", cmd_line);
+			return;
+		} else {
 			last_dump_addr = tmp;
-		else {
+		}
+
+		p = strchr(cmd_line, ' ');
+	}
+
+	addr_start = last_unasm_addr;
+	addr_end = addr_start + 4 * 16;
+
+	/*  endaddr:  */
+	if (p != NULL) {
+		while (*p == ' ' && *p)
+			p++;
+		r = debugger_parse_name(m, p, 0, &addr_end);
+		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		}
 	}
-
-	addr_start = last_dump_addr;
-	addr_end = addr_start + 256;
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -596,6 +630,8 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start & ~0xf;
+
+	ctrl_c = 0;
 
 	while (addr < addr_end) {
 		unsigned char buf[16];
@@ -627,6 +663,9 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 			}
 			printf("\n");
 		}
+
+		if (ctrl_c)
+			return;
 
 		addr += sizeof(buf);
 	}
@@ -1274,27 +1313,51 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
  *  debugger_cmd_unassemble():
  *
  *  Dump emulated memory as MIPS instructions.
+ *
+ *  syntax: unassemble [addr [endaddr]]
  */
 static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 {
 	uint64_t addr, addr_start, addr_end;
 	struct cpu *c;
 	struct memory *mem;
+	char *p = NULL;
 	int r;
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		r = debugger_parse_name(m, cmd_line, 0, &tmp);
-		if (r)
-			last_unasm_addr = tmp;
-		else {
+		char *tmps = strdup(cmd_line);
+
+		/*  addr:  */
+		p = strchr(tmps, ' ');
+		if (p != NULL)
+			*p = '\0';
+		r = debugger_parse_name(m, tmps, 0, &tmp);
+		free(tmps);
+
+		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
+		} else {
+			last_unasm_addr = tmp;
 		}
+
+		p = strchr(cmd_line, ' ');
 	}
 
 	addr_start = last_unasm_addr;
 	addr_end = addr_start + 4 * 16;
+
+	/*  endaddr:  */
+	if (p != NULL) {
+		while (*p == ' ' && *p)
+			p++;
+		r = debugger_parse_name(m, p, 0, &addr_end);
+		if (r == NAME_PARSE_NOMATCH || r == NAME_PARSE_MULTIPLE) {
+			printf("Unparsable address: %s\n", cmd_line);
+			return;
+		}
+	}
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -1312,6 +1375,8 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	if ((addr & 3) != 0)
 		printf("WARNING! You entered an unaligned address.\n");
 
+	ctrl_c = 0;
+
 	while (addr < addr_end) {
 		unsigned char buf[4];
 		memset(buf, 0, sizeof(buf));
@@ -1325,6 +1390,9 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		}
 
 		cpu_disassemble_instr(c, &buf[0], 0, addr, 0);
+
+		if (ctrl_c)
+			return;
 
 		addr += sizeof(buf);
 	}
@@ -1375,7 +1443,7 @@ static struct cmd cmds[] = {
 	{ "devices", "", 0, debugger_cmd_devices,
 		"print a list of memory-mapped devices" },
 
-	{ "dump", "[addr]", 0, debugger_cmd_dump,
+	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
 	{ "help", "", 0, debugger_cmd_help,
@@ -1412,7 +1480,7 @@ static struct cmd cmds[] = {
 	    available as a one-letter command is very convenient.  */
 
 	{ "step", "[n]", 0, debugger_cmd_step,
-		"single-step one instruction (or n instructions)" },
+		"single-step one (or n) instruction(s)" },
 
 	{ "tlbdump", "[cpuid][,r]", 0, debugger_cmd_tlbdump,
 		"dump TLB contents (add ',r' for raw data)" },
@@ -1420,7 +1488,7 @@ static struct cmd cmds[] = {
 	{ "trace", "", 0, debugger_cmd_trace,
 		"toggle show_trace_tree on or off" },
 
-	{ "unassemble", "[addr]", 0, debugger_cmd_unassemble,
+	{ "unassemble", "[addr [endaddr]]", 0, debugger_cmd_unassemble,
 		"dump memory contents as MIPS instructions" },
 
 	{ "version", "", 0, debugger_cmd_version,

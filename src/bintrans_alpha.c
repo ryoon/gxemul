@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.71 2004-11-30 19:57:01 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.72 2004-11-30 20:20:05 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -805,18 +805,38 @@ rd0:
 static int bintrans_write_instruction__branch(unsigned char **addrp,
 	int instruction_type, int regimm_type, int rt, int rs, int imm)
 {
-	unsigned char *a, *b, *b2;
+	uint32_t *a, *b;
 	int n;
+	int alpha_rs, alpha_rt;
 
-	a = *addrp;
+	alpha_rs = map_MIPS_to_Alpha[rs];
+	alpha_rt = map_MIPS_to_Alpha[rt];
 
 	/*
 	 *  t0 = gpr[rt]; t1 = gpr[rs];
 	 *
 	 *  50 00 30 a4     ldq     t0,80(a0)
 	 *  58 00 50 a4     ldq     t1,88(a0)
-	 *
-	 *  Compare t0 and t1 for equality (BEQ).
+	 */
+
+	switch (instruction_type) {
+	case HI6_BEQ:
+	case HI6_BNE:
+		if (alpha_rt < 0) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rt, ALPHA_T0);
+			alpha_rt = ALPHA_T0;
+		}
+	}
+
+	if (alpha_rs < 0) {
+		bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_T1);
+		alpha_rs = ALPHA_T1;
+	}
+
+	a = (uint32_t *) *addrp;
+
+	/*
+	 *  Compare alpha_rt (t0) and alpha_rs (t1) for equality (BEQ).
 	 *  If the result was false (equal to zero), then skip a lot
 	 *  of instructions:
 	 *
@@ -825,55 +845,41 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 */
 	b = NULL;
 	if (instruction_type == HI6_BEQ && rt != rs) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
+		/*  cmpeq rt,rs,t0  */
+		*a++ = 0x400005a1 | (alpha_rt << 21) | (alpha_rs << 16);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xe4200001;	/*  beq  */
 	}
 	if (instruction_type == HI6_BNE) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
+		/*  cmpeq rt,rs,t0  */
+		*a++ = 0x400005a1 | (alpha_rt << 21) | (alpha_rs << 16);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xf4200001;	/*  bne  */
 	}
 	if (instruction_type == HI6_BLEZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
+		/*  cmple rs,0,t0  */
+		*a++ = 0x40001da1 | (alpha_rs << 21);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xe4200001;	/*  beq  */
 	}
 	if (instruction_type == HI6_BGTZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
+		/*  cmple rs,0,t0  */
+		*a++ = 0x40001da1 | (alpha_rs << 21);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xf4200001;	/*  bne  */
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BLTZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x19; *a++ = 0x40; *a++ = 0x40;  /*  cmplt t1,0,t0  */
+		/*  cmplt rs,0,t0  */
+		*a++ = 0x400019a1 | (alpha_rs << 21);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xe4200001;	/*  beq  */
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BGEZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xff; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;  /*  lda t2,-1  */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x43; *a++ = 0x40;  /*  cmple t1,t2,t0  */
+		*a++ = 0x207fffff;	/*  lda t2,-1  */
+		/*  cmple rs,t2,t0  */
+		*a++ = 0x40030da1 | (alpha_rs << 21);
 		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		*a++ = 0xf4200001;	/*  bne  */
 	}
 
 	/*
@@ -885,19 +891,17 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  4a 04 41 40     s4addq  t1,t0,s1		s1 = (t1<<2) + t0
 	 */
 
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x26; *a++ = 0x20;  /*  lda  */
-	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
-	*a++ = 0x4a; *a++ = 0x04; *a++ = 0x41; *a++ = 0x40;  /*  s4addq */
+	*a++ = 0x20260004;			/*  lda t0,4(t5)  */
+	*a++ = 0x205f0000 | (imm & 0xffff);	/*  lda  */
+	*a++ = 0x4041044a;			/*  s4addq  */
 
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
+	*a++ = 0x213f0000 | TO_BE_DELAYED;
 
-	b2 = a;
-	n = (size_t)b2 - (size_t)b - 4;
 	if (b != NULL)
-		*b = n/4;	/*  nr of skipped instructions  */
+		*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
 
-	*addrp = a;
+	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }

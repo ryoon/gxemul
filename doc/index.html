@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.140 2004-11-01 12:45:33 debug Exp $
+$Id: index.html,v 1.141 2004-11-01 13:51:56 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -598,7 +598,7 @@ OpenBSD/pmax died at release 2.8 of OpenBSD, so you should be
 aware of the fact that this will not give you an up-to-date OpenBSD
 system. The files are available at this URL:
 <pre>
-	<a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/</a>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</a>
 </pre>
 
 <p>
@@ -617,12 +617,12 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>Download the entire pmax directory from the ftp server: (approx. 99 MB)<pre>
-	$ <b>wget -r ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/</b>
+	$ <b>wget -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</b>
 
 </pre>
 
   <li>Execute the following commands:<pre>
-	$ <b>mv ftp.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .</b>
+	$ <b>mv ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .</b>
 	$ <b>gunzip simpleroot28.fs.gz</b>
 	$ <b>chmod +w simpleroot28.fs</b>		&lt;--- make sure
 
@@ -631,7 +631,7 @@ common sense and imagination to modify them as you see fit.
 	I recommend using <b>mkisofs</b> for that purpose. If you don't already
 	have mkisofs installed on your system, you need to install that in
 	order to do this.<pre>
-	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.openbsd.org/pub/OpenBSD/2.8/pmax</b>
+	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax</b>
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
@@ -1161,7 +1161,7 @@ Here are links to some of the kernels that I usually experiment with.
 	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
-	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
+	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
 	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
 	<br>Read <a href="#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
 	It's a bit more complicated than installing NetBSD/pmax, but might work.

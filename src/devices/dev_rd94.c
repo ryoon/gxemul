@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.23 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_rd94.c,v 1.24 2005-03-18 23:20:52 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -38,7 +38,7 @@
 #include "cop0.h"
 #include "cpu.h"
 #include "cpu_mips.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -47,6 +47,8 @@
 
 
 #define	RD94_TICK_SHIFT		14
+
+#define	DEV_RD94_LENGTH		0x1000
 
 struct rd94_data {
 	struct pci_data *pci_data;
@@ -199,10 +201,9 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_rd94_init():
+ *  devinit_rd94():
  */
-struct pci_data *dev_rd94_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int pciirq)
+int devinit_rd94(struct devinit *devinit)
 {
 	struct rd94_data *d = malloc(sizeof(struct rd94_data));
 	if (d == NULL) {
@@ -210,13 +211,18 @@ struct pci_data *dev_rd94_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct rd94_data));
-	d->pciirq   = pciirq;
-	d->pci_data = bus_pci_init(mem, pciirq);
+	d->pciirq   = devinit->irq_nr;
+	d->pci_data = bus_pci_init(d->pciirq);
 
-	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_RD94_LENGTH,
 	    dev_rd94_access, (void *)d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_rd94_tick, d, RD94_TICK_SHIFT);
 
-	return d->pci_data;
+	machine_add_tickfunction(devinit->machine, dev_rd94_tick,
+	    d, RD94_TICK_SHIFT);
+
+	devinit->return_ptr = d->pci_data;
+
+	return 1;
 }
 

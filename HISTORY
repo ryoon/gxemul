@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.647 2005-03-15 20:18:26 debug Exp $
+$Id: HISTORY,v 1.648 2005-03-18 23:20:51 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1757,3 +1757,5 @@ Changelog for GXemul:
 		NetBSD/hpcmips.
 		Continuing the attempt to get harddisks working with interrupts
 		(pcic, wdc on hpcmips).
+20050318	Minor updates. (Fixing disassembly of MIPS bgtz etc., 
+		continuing on the device cleanup, ...)

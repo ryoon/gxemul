@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.32 2005-03-14 12:13:52 debug Exp $
+ *  $Id: cpu_mips.c,v 1.33 2005-03-18 23:20:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -947,18 +947,26 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	case HI6_BEQ:
 	case HI6_BEQL:
 	case HI6_BNE:
+	case HI6_BNEL:
 	case HI6_BGTZ:
 	case HI6_BGTZL:
 	case HI6_BLEZ:
 	case HI6_BLEZL:
-	case HI6_BNEL:
 		rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 		rt = instr[2] & 31;
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
 		addr = (dumpaddr + 4) + (imm << 2);
-		debug("%s\t%s,", hi6_names[hi6], regname(cpu->machine, rt));
+		debug("%s\t", hi6_names[hi6]);
+
+		switch (hi6) {
+		case HI6_BEQ:
+		case HI6_BEQL:
+		case HI6_BNE:
+		case HI6_BNEL:
+			debug("%s,", regname(cpu->machine, rt));
+		}
 
 		debug("%s,", regname(cpu->machine, rs));
 

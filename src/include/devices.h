@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.156 2005-03-15 18:43:06 debug Exp $
+ *  $Id: devices.h,v 1.157 2005-03-18 23:20:53 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -420,11 +420,6 @@ void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 #define	DEV_RAM_MIRROR		1
 int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mode, uint64_t otheraddr);
-
-/*  dev_rd94.c:  */
-#define	DEV_RD94_LENGTH			0x1000
-int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_rd94_init(struct machine *machien, struct memory *mem, uint64_t baseaddr, int pciirq);
 
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000

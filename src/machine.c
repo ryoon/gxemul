@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.390 2005-03-15 18:43:07 debug Exp $
+ *  $Id: machine.c,v 1.391 2005-03-18 23:20:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2630,7 +2630,7 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 0
+#if 1
 				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
 				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
@@ -2684,7 +2684,8 @@ Why is this here? TODO
 
 				/*  TODO: interrupt controller!  */
 
-				pci_data = dev_rd94_init(machine, mem, 0x80000000ULL, 0);
+				pci_data = device_add(machine,
+				    "rd94 addr=0x80000000, irq=0");
 
 				device_add(machine, "sn addr=0x80001000 irq=0");
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);

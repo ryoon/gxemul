@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.11 2005-02-26 18:00:39 debug Exp $
+ *  $Id: bus_pci.h,v 1.12 2005-03-18 23:20:52 debug Exp $
  */
 
 #include "misc.h"
@@ -66,7 +66,7 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data, struct memo
 	int bus, int device, int function,
 	void (*init)(struct machine *, struct memory *),
 	uint32_t (*read_register)(int reg));
-struct pci_data *bus_pci_init(struct memory *mem, int irq_nr);
+struct pci_data *bus_pci_init(int irq_nr);
 
 
 /*

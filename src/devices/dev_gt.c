@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.20 2005-02-26 18:00:37 debug Exp $
+ *  $Id: dev_gt.c,v 1.21 2005-03-18 23:20:52 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -174,7 +174,7 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct gt_data));
 	d->irqnr    = irq_nr;
 	d->pciirq   = pciirq;
-	d->pci_data = bus_pci_init(mem, pciirq);
+	d->pci_data = bus_pci_init(pciirq);
 
 	/*
 	 *  According to NetBSD/cobalt:

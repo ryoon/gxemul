@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.14 2005-02-26 18:00:38 debug Exp $
+ *  $Id: pci_ahc.c,v 1.15 2005-03-18 23:20:52 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -42,10 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
+#include "cpu.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
-#include "bus_pci.h"
 
 
 #define PCI_VENDOR_ADP  0x9004          /* Adaptec */
@@ -129,9 +130,17 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 		odata = 0xff;
 		break;
 
+	case 0x62:
+		/*  TODO  */
+		break;
+
 	case 0x84:
 		ok = 1;
 		odata = 4 | 1;
+		break;
+
+	case 0x92:
+		odata = random();
 		break;
 
 	default:
@@ -142,6 +151,8 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ ahc: unimplemented read from address 0x%x ]\n",
 			    (int)relative_addr);
 	}
+
+cpu_interrupt(cpu, 0x200);
 
 #if 0
 	if (ok) {

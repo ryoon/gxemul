@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.9 2005-02-11 09:53:48 debug Exp $
+ *  $Id: bus_pci.c,v 1.10 2005-03-18 23:20:52 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -194,10 +194,8 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
  *
  *  This doesn't register a device, but instead returns a pointer to a struct
  *  which should be passed to bus_pci_access() when accessing the PCI bus.
- *
- *  TODO:  Should 'mem' even be an incoming parameter here?
  */
-struct pci_data *bus_pci_init(struct memory *mem, int irq_nr)
+struct pci_data *bus_pci_init(int irq_nr)
 {
 	struct pci_data *d;
 

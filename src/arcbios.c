@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.71 2005-01-19 08:44:53 debug Exp $
+ *  $Id: arcbios.c,v 1.72 2005-01-19 14:24:22 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -47,7 +47,7 @@
 
 #include "console.h"
 #include "diskimage.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "sgi_arcbios.h"
@@ -361,7 +361,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	int addr;
 	unsigned char byte;
 
-	if (!cpu->emul->use_x11) {
+	if (!cpu->machine->use_x11) {
 		/*  Text console output:  */
 
 		/*  Hack for Windows NT, which uses 0x9b instead of ESC + [  */
@@ -476,7 +476,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 /*  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?  */
 /*  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag doesn't care?  */
 #if 1
-	if (cpu->emul->emulation_type == EMULTYPE_SGI) {
+	if (cpu->machine->emulation_type == EMULTYPE_SGI) {
 		/*  arctype is SGI style  */
 		/*  printf("%i => ", arctype); */
 		switch (arctype) {
@@ -1147,9 +1147,9 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x20:		/*  ReturnFromMain()  */
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
-		for (i=0; i<cpu->emul->ncpus; i++)
-			cpu->emul->cpus[i]->running = 0;
-		cpu->emul->exit_without_entering_debugger = 1;
+		for (i=0; i<cpu->machine->ncpus; i++)
+			cpu->machine->cpus[i]->running = 0;
+		cpu->machine->exit_without_entering_debugger = 1;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
 		{
@@ -1418,7 +1418,7 @@ void arcbios_emul(struct cpu *cpu)
 				/*  Read from STDIN is blocking (at least that seems to
 				    be how NetBSD's arcdiag wants it)  */
 				while ((x = console_readchar()) < 0) {
-					if (cpu->emul->use_x11)
+					if (cpu->machine->use_x11)
 						x11_check_event();
 					usleep(1);
 				}
@@ -1431,7 +1431,7 @@ void arcbios_emul(struct cpu *cpu)
 				 */
 				if (x == 27) {
 					while ((x = console_readchar()) < 0) {
-						if (cpu->emul->use_x11)
+						if (cpu->machine->use_x11)
 							x11_check_event();
 						usleep(1);
 					}
@@ -1652,9 +1652,9 @@ void arcbios_emul(struct cpu *cpu)
 
 #if 0
 		/*  Halt all CPUs.  */
-		for (i=0; i<cpu->emul->ncpus; i++)
-			cpu->emul->cpus[i]->running = 0;
-		cpu->emul->exit_without_entering_debugger = 1;
+		for (i=0; i<cpu->machine->ncpus; i++)
+			cpu->machine->cpus[i]->running = 0;
+		cpu->machine->exit_without_entering_debugger = 1;
 #endif
 
 		cpu->gpr[GPR_V0] = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.39 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.40 2005-01-19 14:24:20 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -36,7 +36,7 @@
 
 #include "console.h"
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -104,7 +104,7 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	struct dc_data *d = extra;
 	int avail;
 
-	if (cpu->emul->slow_serial_interrupts_hack_for_linux) {
+	if (cpu->machine->slow_serial_interrupts_hack_for_linux) {
 		/*
 		 *  Special hack to prevent Linux from Oopsing. (This makes
 		 *  interrupts not come as fast as possible.)

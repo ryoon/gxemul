@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.154 2005-01-19 09:48:33 debug Exp $
+ *  $Id: main.c,v 1.155 2005-01-19 14:24:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -40,6 +40,7 @@
 #include "cpu_types.h"
 #include "diskimage.h"
 #include "emul.h"
+#include "machine.h"
 
 
 extern int optind;
@@ -48,12 +49,15 @@ int extra_argc;
 char **extra_argv;
 
 
-/*****************************************************************************/
+/*****************************************************************************
+ *
+ *  NOTE:  debug(), fatal(), and debug_indentation() are not re-entrant.
+ *         The global variable quiet_mode can be used to suppress the output
+ *         of debug(), but not the output of fatal().
+ *
+ *****************************************************************************/
 
-
-/*  NOTE: quiet_mode is global  */
 int quiet_mode = 0;
-
 
 static int debug_indent = 0;
 static int debug_currently_at_start_of_line = 1;
@@ -263,159 +267,160 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int ch, using_switch_d = 0, using_switch_o = 0, using_switch_Z = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
+	struct machine *m = emul_add_machine(emul);
 
-	emul->emul_cpu_name[0] =
-	    emul->emul_cpu_name[CPU_NAME_MAXLEN-1] = '\0';
+	m->cpu_name[0] = m->cpu_name[CPU_NAME_MAXLEN-1] = '\0';
 
-	symbol_init(&emul->symbol_context);
+	symbol_init(&m->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:"
+	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
-			emul->emulation_type = EMULTYPE_ARC;
-			emul->machine = atoi(optarg);
+			m->emulation_type = EMULTYPE_ARC;
+			m->machine_subtype = atoi(optarg);
 			break;
 		case 'a':
-			emul->emulation_type = EMULTYPE_TEST;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_TEST;
+			m->machine_subtype = 0;
 			break;
 		case 'B':
-			emul->emulation_type = EMULTYPE_PS2;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_PS2;
+			m->machine_subtype = 0;
 			break;
 		case 'b':
-			emul->bintrans_enable = 1;
+			m->bintrans_enable = 1;
 			break;
 		case 'C':
-			strncpy(emul->emul_cpu_name, optarg,
-			    CPU_NAME_MAXLEN - 1);
+			strncpy(m->cpu_name, optarg, CPU_NAME_MAXLEN - 1);
 			break;
 		case 'D':
-			emul->emulation_type = EMULTYPE_DEC;
-			emul->machine = atoi(optarg);
+			m->emulation_type = EMULTYPE_DEC;
+			m->machine_subtype = atoi(optarg);
 			break;
 		case 'd':
 			diskimage_add(optarg);
 			using_switch_d = 1;
 			break;
 		case 'E':
-			emul->emulation_type = EMULTYPE_COBALT;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_COBALT;
+			m->machine_subtype = 0;
 			break;
 		case 'e':
-			emul->emulation_type = EMULTYPE_MESHCUBE;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_MESHCUBE;
+			m->machine_subtype = 0;
 			break;
 		case 'F':
-			emul->emulation_type = EMULTYPE_HPCMIPS;
-			emul->machine = atoi(optarg);
+			m->emulation_type = EMULTYPE_HPCMIPS;
+			m->machine_subtype = atoi(optarg);
 			break;
 		case 'f':
-			emul->emulation_type = EMULTYPE_SONYNEWS;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_SONYNEWS;
+			m->machine_subtype = 0;
 			break;
 		case 'G':
-			emul->emulation_type = EMULTYPE_SGI;
-			emul->machine = atoi(optarg);
+			m->emulation_type = EMULTYPE_SGI;
+			m->machine_subtype = atoi(optarg);
 			break;
 		case 'g':
-			emul->emulation_type = EMULTYPE_NETGEAR;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_NETGEAR;
+			m->machine_subtype = 0;
 			break;
 		case 'H':
-			emul->emulation_type = EMULTYPE_WRT54G;
-			emul->machine = 0;
+			m->emulation_type = EMULTYPE_WRT54G;
+			m->machine_subtype = 0;
 			break;
 		case 'h':
 			usage(progname, 1);
 			exit(1);
 		case 'I':
-			emul->emulated_hz = atoi(optarg);
-			emul->automatic_clock_adjustment = 0;
+			m->emulated_hz = atoi(optarg);
+			m->automatic_clock_adjustment = 0;
 			break;
 		case 'i':
-			emul->instruction_trace = 1;
+			m->instruction_trace = 1;
 			break;
 		case 'J':
-			emul->speed_tricks = 0;
+			m->speed_tricks = 0;
 			break;
 		case 'j':
-			emul->boot_kernel_filename = malloc(strlen(optarg) + 1);
-			if (emul->boot_kernel_filename == NULL) {
+			m->boot_kernel_filename = malloc(strlen(optarg) + 1);
+			if (m->boot_kernel_filename == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(emul->boot_kernel_filename, optarg);
+			strcpy(m->boot_kernel_filename, optarg);
 			break;
 		case 'M':
-			emul->physical_ram_in_mb = atoi(optarg);
+			m->physical_ram_in_mb = atoi(optarg);
 			break;
 		case 'm':
-			emul->max_instructions = atoi(optarg);
+			m->max_instructions = atoi(optarg);
 			break;
 		case 'N':
-			emul->show_nr_of_instructions = 1;
+			m->show_nr_of_instructions = 1;
 			break;
 		case 'n':
-			emul->ncpus = atoi(optarg);
+			m->ncpus = atoi(optarg);
 			n_cpus_set = 1;
 			break;
 		case 'O':
-			emul->force_netboot = 1;
+			m->force_netboot = 1;
 			break;
 		case 'o':
-			emul->boot_string_argument = malloc(strlen(optarg) + 1);
-			if (emul->boot_string_argument == NULL) {
+			m->boot_string_argument = malloc(strlen(optarg) + 1);
+			if (m->boot_string_argument == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(emul->boot_string_argument, optarg);
+			strcpy(m->boot_string_argument, optarg);
 			using_switch_o = 1;
 			break;
 		case 'p':
-			if (emul->n_breakpoints >= MAX_BREAKPOINTS) {
+			if (m->n_breakpoints >= MAX_BREAKPOINTS) {
 				fprintf(stderr, "too many breakpoints\n");
 				exit(1);
 			}
-			emul->breakpoint_string[emul->n_breakpoints] =
+			m->breakpoint_string[m->n_breakpoints] =
 			    malloc(strlen(optarg) + 1);
-			if (emul->breakpoint_string[emul->n_breakpoints] == NULL) {
+			if (m->breakpoint_string[m->n_breakpoints] == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(emul->breakpoint_string[emul->n_breakpoints], optarg);
-			emul->breakpoint_flags[emul->n_breakpoints] = 0;
-			emul->n_breakpoints ++;
+			strcpy(m->breakpoint_string[m->n_breakpoints],
+			    optarg);
+			m->breakpoint_flags[m->n_breakpoints] = 0;
+			m->n_breakpoints ++;
 			break;
 		case 'Q':
-			emul->prom_emulation = 0;
+			m->prom_emulation = 0;
 			break;
 		case 'q':
 			quiet_mode = 1;
 			break;
 		case 'R':
-			emul->use_random_bootstrap_cpu = 1;
+			m->use_random_bootstrap_cpu = 1;
 			break;
 		case 'r':
-			emul->register_dump = 1;
+			m->register_dump = 1;
 			break;
 		case 'S':
-			emul->random_mem_contents = 1;
+			m->random_mem_contents = 1;
 			break;
 		case 's':
-			emul->show_opcode_statistics = 1;
+			m->show_opcode_statistics = 1;
 			break;
 		case 'T':
-			emul->trace_on_bad_address = 1;
+			m->trace_on_bad_address = 1;
 			break;
 		case 't':
-			emul->show_trace_tree = 1;
+			m->show_trace_tree = 1;
 			break;
 		case 'U':
-			emul->slow_serial_interrupts_hack_for_linux = 1;
+			m->slow_serial_interrupts_hack_for_linux = 1;
 			break;
 		case 'u':
-			emul->userland_emul = atoi(optarg);
+			m->userland_emul = atoi(optarg);
 			break;
 		case 'V':
 			emul->single_step = 1;
@@ -424,36 +429,36 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->verbose ++;
 			break;
 		case 'X':
-			emul->use_x11 = 1;
+			m->use_x11 = 1;
 			break;
 		case 'Y':
-			emul->x11_scaledown = atoi(optarg);
+			m->x11_scaledown = atoi(optarg);
 			break;
 		case 'y':
-			emul->max_random_cycles_per_chunk = atoi(optarg);
+			m->max_random_cycles_per_chunk = atoi(optarg);
 			break;
 		case 'Z':
-			emul->n_gfx_cards = atoi(optarg);
+			m->n_gfx_cards = atoi(optarg);
 			using_switch_Z = 1;
 			break;
 		case 'z':
-			emul->x11_n_display_names ++;
-			emul->x11_display_names = realloc(
-			    emul->x11_display_names,
-			    emul->x11_n_display_names * sizeof(char *));
-			if (emul->x11_display_names == NULL) {
+			m->x11_n_display_names ++;
+			m->x11_display_names = realloc(
+			    m->x11_display_names,
+			    m->x11_n_display_names * sizeof(char *));
+			if (m->x11_display_names == NULL) {
 				printf("out of memory\n");
 				exit(1);
 			}
-			emul->x11_display_names[emul->x11_n_display_names-1] =
+			m->x11_display_names[m->x11_n_display_names-1] =
 			    malloc(strlen(optarg) + 1);
-			if (emul->x11_display_names
-			    [emul->x11_n_display_names-1] == NULL) {
+			if (m->x11_display_names
+			    [m->x11_n_display_names-1] == NULL) {
 				printf("out of memory\n");
 				exit(1);
 			}
-			strcpy(emul->x11_display_names
-			    [emul->x11_n_display_names-1], optarg);
+			strcpy(m->x11_display_names
+			    [m->x11_n_display_names-1], optarg);
 			break;
 		default:
 			printf("Invalid option.\n");
@@ -471,17 +476,17 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  -i, -r, -t are pretty verbose:  */
 
-	if (emul->instruction_trace && !emul->verbose) {
+	if (m->instruction_trace && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -i\n");
 		emul->verbose = 1;
 	}
 
-	if (emul->register_dump && !emul->verbose) {
+	if (m->register_dump && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -r\n");
 		emul->verbose = 1;
 	}
 
-	if (emul->show_trace_tree && !emul->verbose) {
+	if (m->show_trace_tree && !emul->verbose) {
 		printf("implicitly turning of -q and turning on -v, because of -t\n");
 		emul->verbose = 1;
 	}
@@ -490,178 +495,178 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default nr of CPUs (for SMP systems):  */
 
 	if (!n_cpus_set) {
-		if (emul->emulation_type == EMULTYPE_ARC &&
-		    emul->machine == MACHINE_ARC_NEC_R96)
-			emul->ncpus = 2;
+		if (m->emulation_type == EMULTYPE_ARC &&
+		    m->machine_subtype == MACHINE_ARC_NEC_R96)
+			m->ncpus = 2;
 
-		if (emul->emulation_type == EMULTYPE_ARC &&
-		    emul->machine == MACHINE_ARC_NEC_R98)
-			emul->ncpus = 4;
+		if (m->emulation_type == EMULTYPE_ARC &&
+		    m->machine_subtype == MACHINE_ARC_NEC_R98)
+			m->ncpus = 4;
 	}
 
 
 	/*  Default CPU type:  */
 
-	if (emul->emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R5900");
+	if (m->emulation_type == EMULTYPE_PS2 && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R5900");
 
-	if (emul->emulation_type == EMULTYPE_DEC && emul->machine > 2 &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R3000A");
+	if (m->emulation_type == EMULTYPE_DEC && m->machine_subtype > 2 &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R3000A");
 
-	if (emul->emulation_type == EMULTYPE_DEC && emul->machine > 1 &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R3000");
+	if (m->emulation_type == EMULTYPE_DEC && m->machine_subtype > 1 &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R3000");
 
-	if (emul->emulation_type == EMULTYPE_DEC && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R2000");
+	if (m->emulation_type == EMULTYPE_DEC && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R2000");
 
-	if (emul->emulation_type == EMULTYPE_SONYNEWS
-	    && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R3000");
+	if (m->emulation_type == EMULTYPE_SONYNEWS && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R3000");
 
-	if (emul->emulation_type == EMULTYPE_HPCMIPS
-	    && !emul->emul_cpu_name[0]) {
-		if (emul->machine == HPCMIPS_CASIO_BE300)
-			strcpy(emul->emul_cpu_name, "VR4131");
-		else if (emul->machine == HPCMIPS_CASIO_E105)
-			strcpy(emul->emul_cpu_name, "VR4121");
+	if (m->emulation_type == EMULTYPE_HPCMIPS
+	    && !m->cpu_name[0]) {
+		if (m->machine_subtype == HPCMIPS_CASIO_BE300)
+			strcpy(m->cpu_name, "VR4131");
+		else if (m->machine_subtype == HPCMIPS_CASIO_E105)
+			strcpy(m->cpu_name, "VR4121");
 		else {
 			printf("Unimplemented HPCMIPS model?\n");
 			exit(1);
 		}
 	}
 
-	if (emul->emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "RM5200");
+	if (m->emulation_type == EMULTYPE_COBALT && !m->cpu_name[0])
+		strcpy(m->cpu_name, "RM5200");
 
-	if (emul->emulation_type == EMULTYPE_MESHCUBE &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R4400");
+	if (m->emulation_type == EMULTYPE_MESHCUBE &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R4400");
 		/*  TODO:  Should be AU1500, but Linux doesn't like
 			the absence of caches in the emulator  */
 
-	if (emul->emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "RC32334");
+	if (m->emulation_type == EMULTYPE_NETGEAR && !m->cpu_name[0])
+		strcpy(m->cpu_name, "RC32334");
 
-	if (emul->emulation_type == EMULTYPE_WRT54G && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "BCM4712");
+	if (m->emulation_type == EMULTYPE_WRT54G && !m->cpu_name[0])
+		strcpy(m->cpu_name, "BCM4712");
 
-	if (emul->emulation_type == EMULTYPE_ARC &&
-	    emul->machine == MACHINE_ARC_JAZZ_PICA && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R4000");
+	if (m->emulation_type == EMULTYPE_ARC &&
+	    m->machine_subtype == MACHINE_ARC_JAZZ_PICA && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R4000");
 
-	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R4400");
+	if (m->emulation_type == EMULTYPE_ARC && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R4400");
 
-	if (emul->emulation_type == EMULTYPE_SGI && emul->machine <= 12 &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R3000");
+	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype <= 12 &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R3000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 35 &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R12000");
+	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype == 35 &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R12000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 25 ||
-	    emul->machine == 27 || emul->machine == 28 || emul->machine == 30
-	    || emul->machine == 32) && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R10000");
+	if (m->emulation_type == EMULTYPE_SGI && (m->machine_subtype == 25 ||
+	    m->machine_subtype == 27 || m->machine_subtype == 28 || m->machine_subtype == 30
+	    || m->machine_subtype == 32) && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R10000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 21 ||
-	    emul->machine == 26) && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R8000");
+	if (m->emulation_type == EMULTYPE_SGI && (m->machine_subtype == 21 ||
+	    m->machine_subtype == 26) && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R8000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 24 &&
-	    !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R5000");
+	if (m->emulation_type == EMULTYPE_SGI && m->machine_subtype == 24 &&
+	    !m->cpu_name[0])
+		strcpy(m->cpu_name, "R5000");
 
 	/*  SGIs should probably work with R4000, R4400 or R5000 or similar.  */
-	if (emul->emulation_type == EMULTYPE_SGI && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R4400");
+	if (m->emulation_type == EMULTYPE_SGI && !m->cpu_name[0])
+		strcpy(m->cpu_name, "R4400");
 
-	if (!emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, CPU_DEFAULT);
+	if (!m->cpu_name[0])
+		strcpy(m->cpu_name, CPU_DEFAULT);
 
 
 	/*  Default memory size:  */
 
-	if (emul->emulation_type == EMULTYPE_PS2 && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 32;
+	if (m->emulation_type == EMULTYPE_PS2 && m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 32;
 
-	if (emul->emulation_type == EMULTYPE_SGI) {
-		if (emul->physical_ram_in_mb == 0)
-			emul->physical_ram_in_mb = 64;
+	if (m->emulation_type == EMULTYPE_SGI) {
+		if (m->physical_ram_in_mb == 0)
+			m->physical_ram_in_mb = 64;
 
 		/*  Special SGI memory offsets:  */
-		switch (emul->machine) {
+		switch (m->machine_subtype) {
 		case 20:
 		case 22:
 		case 24:
 		case 26:
-			emul->memory_offset_in_mb = 128;
+			m->memory_offset_in_mb = 128;
 			break;
 		case 28:
 		case 30:
-			emul->memory_offset_in_mb = 512;
+			m->memory_offset_in_mb = 512;
 			break;
 		}
 	}
 
-	if (emul->emulation_type == EMULTYPE_HPCMIPS &&
-	    emul->physical_ram_in_mb == 0) {
-		switch (emul->machine) {
+	if (m->emulation_type == EMULTYPE_HPCMIPS &&
+	    m->physical_ram_in_mb == 0) {
+		switch (m->machine_subtype) {
 		case HPCMIPS_CASIO_BE300:
-			emul->physical_ram_in_mb = 16;
+			m->physical_ram_in_mb = 16;
 			break;
 		case HPCMIPS_CASIO_E105:
-			emul->physical_ram_in_mb = 32;
+			m->physical_ram_in_mb = 32;
 			break;
 		}
 	}
 
-	if (emul->emulation_type == EMULTYPE_MESHCUBE && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 64;
+	if (m->emulation_type == EMULTYPE_MESHCUBE && m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 64;
 
-	if (emul->emulation_type == EMULTYPE_NETGEAR && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 16;
+	if (m->emulation_type == EMULTYPE_NETGEAR && m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 16;
 
-	if (emul->emulation_type == EMULTYPE_WRT54G) {
-		emul->dbe_on_nonexistant_memaccess = 0;
-		if (emul->physical_ram_in_mb == 0)
-			emul->physical_ram_in_mb = 32;
+	if (m->emulation_type == EMULTYPE_WRT54G) {
+		m->dbe_on_nonexistant_memaccess = 0;
+		if (m->physical_ram_in_mb == 0)
+			m->physical_ram_in_mb = 32;
 	}
 
-	if (emul->emulation_type == EMULTYPE_ARC &&
-	    emul->machine == MACHINE_ARC_JAZZ_PICA &&
-	    emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 64;
+	if (m->emulation_type == EMULTYPE_ARC &&
+	    m->machine_subtype == MACHINE_ARC_JAZZ_PICA &&
+	    m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 64;
 
-	if (emul->emulation_type == EMULTYPE_ARC &&
-	    emul->machine == MACHINE_ARC_JAZZ_M700 &&
-	    emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 64;
+	if (m->emulation_type == EMULTYPE_ARC &&
+	    m->machine_subtype == MACHINE_ARC_JAZZ_M700 &&
+	    m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 64;
 
-	if (emul->emulation_type == EMULTYPE_ARC && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 32;
+	if (m->emulation_type == EMULTYPE_ARC && m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 32;
 
-	if (emul->emulation_type == EMULTYPE_DEC &&
-	    emul->machine == MACHINE_PMAX_3100 && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 24;
+	if (m->emulation_type == EMULTYPE_DEC &&
+	    m->machine_subtype == MACHINE_DEC_PMAX_3100 &&
+	    m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = 24;
 
-	if (emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
+	if (m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
 
 
 	/*  Default Boot string arguments:  */
 
-	if (emul->emulation_type == EMULTYPE_ARC &&
+	if (m->emulation_type == EMULTYPE_ARC &&
 	    !using_switch_o) {
-		emul->boot_string_argument = "-aN";
+		m->boot_string_argument = "-aN";
 	}
 
-	if (emul->emulation_type == EMULTYPE_DEC &&
+	if (m->emulation_type == EMULTYPE_DEC &&
 	    !using_switch_o) {
-		emul->boot_string_argument = "-a";
+		m->boot_string_argument = "-a";
 	}
 
 
@@ -674,14 +679,14 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 *  from that.
 	 */
 	if (extra_argc == 0) {
-		if (emul->emulation_type == EMULTYPE_DEC && using_switch_d) {
-			emul->booting_from_diskimage = 1;
+		if (m->emulation_type == EMULTYPE_DEC && using_switch_d) {
+			m->booting_from_diskimage = 1;
 		} else {
 			usage(progname, 0);
 			printf("\nNo filename given. Aborting.\n");
 			exit(1);
 		}
-	} else if (emul->boot_kernel_filename[0] == '\0') {
+	} else if (m->boot_kernel_filename[0] == '\0') {
 		/*
 		 *  Default boot_kernel_filename is "", which can be overriden
 		 *  by the -j command line option.  If it is still "" here,
@@ -699,26 +704,26 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		else
 			s2 ++;
 
-		emul->boot_kernel_filename = malloc(strlen(s2) + 1);
-		if (emul->boot_kernel_filename == NULL) {
+		m->boot_kernel_filename = malloc(strlen(s2) + 1);
+		if (m->boot_kernel_filename == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
-		strcpy(emul->boot_kernel_filename, s2);
+		strcpy(m->boot_kernel_filename, s2);
 	}
 
-	if (emul->n_gfx_cards < 0 || emul->n_gfx_cards > 3) {
+	if (m->n_gfx_cards < 0 || m->n_gfx_cards > 3) {
 		fprintf(stderr, "Bad number of gfx cards (-Z).\n");
 		exit(1);
 	}
 
-	if (emul->ncpus < 1) {
+	if (m->ncpus < 1) {
 		fprintf(stderr, "Too few cpus (-n).\n");
 		exit(1);
 	}
 
 #if 0
-	if (emul->show_opcode_statistics && emul->bintrans_enable) {
+	if (emul->show_opcode_statistics && m->bintrans_enable) {
 		fprintf(stderr,
 		    "Cannot do both dynamic binary translation and exact opcode statistics.\n"
 		    "Aborting.\n");
@@ -726,48 +731,46 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 #endif
 
-	if (emul->bintrans_enable) {
-		emul->speed_tricks = 0;
+	if (m->bintrans_enable) {
+		m->speed_tricks = 0;
 		/*  TODO: Print a warning about this?  */
 	}
 
-	if (emul->ncpus > 1 && emul->bintrans_enable) {
+	if (m->ncpus > 1 && m->bintrans_enable) {
 		fprintf(stderr, "FATAL: Cannot use bintrans with more than one cpu.\n");
 		exit(1);
 	}
 
-	if (emul->n_breakpoints > 0 && emul->bintrans_enable) {
+	if (m->n_breakpoints > 0 && m->bintrans_enable) {
 		fprintf(stderr, "Breakpoints and dynamic translation don't work too well together right now.\n");
 		exit(1);
 	}
 
 #ifndef BINTRANS
-	if (emul->bintrans_enable) {
+	if (m->bintrans_enable) {
 		fprintf(stderr, "WARNING: %s was compiled without bintrans support. Ignoring -b.\n", progname);
-		emul->bintrans_enable = 0;
+		m->bintrans_enable = 0;
 	}
 #endif
 
 #ifndef ENABLE_USERLAND
-	if (emul->userland_emul) {
+	if (m->userland_emul) {
 		fprintf(stderr, "FATAL: Userland emulation must be enabled at configure time (--userland).\n");
 		exit(1);
 	}
 #endif
 
 #ifndef WITH_X11
-	if (emul->use_x11) {
+	if (m->use_x11) {
 		fprintf(stderr, "WARNING: %s was compiled without X11 support. Ignoring -X.\n", progname);
-		emul->use_x11 = 0;
+		m->use_x11 = 0;
 	}
 #endif
 
-	if (!using_switch_Z && !emul->use_x11)
-		emul->n_gfx_cards = 0;
+	if (!using_switch_Z && !m->use_x11)
+		m->n_gfx_cards = 0;
 
-	emul->bintrans_enabled_from_start = emul->bintrans_enable;
-
-	emul->n_machines = 1;
+	m->bintrans_enabled_from_start = m->bintrans_enable;
 
 	return 0;
 }

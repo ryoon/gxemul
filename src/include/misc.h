@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.201 2005-01-19 08:44:52 debug Exp $
+ *  $Id: misc.h,v 1.202 2005-01-19 14:24:21 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -94,6 +94,7 @@ static void *no_map_anon_mmap(void *addr, size_t len, int prot, int flags,
 
 
 struct emul;
+struct machine;
 
 
 /*
@@ -293,7 +294,7 @@ struct cpu {
 	int		bootstrap_cpu_flag;
 	int		cpu_id;
 
-	struct emul	*emul;
+	struct machine	*machine;
 
 	struct cpu_type_def cpu_type;
 
@@ -524,18 +525,21 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 
 
 /*  cpu.c:  */
-struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu_type_name);
-void cpu_show_full_statistics(struct emul *emul);
-void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *), void *extra, int clockshift);
+struct cpu *cpu_new(struct memory *mem, struct machine *machine,
+	int cpu_id, char *cpu_type_name);
+void cpu_show_full_statistics(struct machine *m);
+void cpu_add_tickfunction(struct cpu *cpu,
+	void (*func)(struct cpu *, void *), void *extra, int clockshift);
 void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
 void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t addr, int bintrans);
 int cpu_interrupt(struct cpu *cpu, int irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64);
+	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
+	int vaddr_asid, int x_64);
 void cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
-int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus);
+int cpu_run(struct emul *emul, struct machine *machine);
 
 
 /*  debugger:  */
@@ -551,20 +555,6 @@ void decstation_prom_emul(struct cpu *cpu);
 /*  file.c:  */
 int file_n_executables_loaded(void);
 void file_load(struct memory *mem, char *filename, struct cpu *cpu);
-
-
-/*  machine.c:  */
-unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
-void dump_mem_string(struct cpu *cpu, uint64_t addr);
-void store_string(struct cpu *cpu, uint64_t addr, char *s);
-int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
-int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
-int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16);
-void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
-void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
-uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
-void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
-void machine_init(struct emul *emul, struct memory *mem);
 
 
 /*  mips16.c:  */
@@ -634,9 +624,9 @@ void x11_putpixel_fb(int, int x, int y, int color);
 #ifdef WITH_X11
 void x11_putimage_fb(int);
 #endif
-void x11_init(struct emul *);
+void x11_init(struct machine *);
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
-	int scaledown, struct emul *emul);
+	int scaledown, struct machine *);
 void x11_check_event(void);
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.79 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_fb.c,v 1.80 2005-01-19 14:24:20 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -52,7 +52,7 @@
 
 #include "console.h"
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -535,7 +535,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	int need_to_redraw_cursor = 0;
 #endif
 
-	if (!cpu->emul->use_x11)
+	if (!cpu->machine->use_x11)
 		return;
 
 #ifdef BINTRANS
@@ -734,7 +734,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	 *  of which area(s) we modify, so that the display isn't updated
 	 *  unnecessarily.
 	 */
-	if (writeflag == MEM_WRITE && cpu->emul->use_x11) {
+	if (writeflag == MEM_WRITE && cpu->machine->use_x11) {
 		int x, y, x2,y2;
 
 		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
@@ -852,7 +852,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
 
-	d->vfb_scaledown = cpu->emul->x11_scaledown;
+	d->vfb_scaledown = cpu->machine->x11_scaledown;
 
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
 	size = d->ysize * d->bytes_per_line;
@@ -897,9 +897,9 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	title[sizeof(title)-1] = '\0';
 
 #ifdef WITH_X11
-	if (cpu->emul->use_x11)
+	if (cpu->machine->use_x11)
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    title, cpu->emul->x11_scaledown, cpu->emul);
+		    title, cpu->machine->x11_scaledown, cpu->machine);
 	else
 #endif
 		d->fb_window = NULL;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.58 2005-01-17 18:52:00 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.59 2005-01-19 14:24:20 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -44,7 +44,7 @@
 #include <time.h>
 
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -92,7 +92,7 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 {
 	if (d->interrupt_hz > 0)
 		d->interrupt_every_x_cycles =
-		    cpu->emul->emulated_hz / d->interrupt_hz;
+		    cpu->machine->emulated_hz / d->interrupt_hz;
 	else
 		d->interrupt_every_x_cycles = 0;
 }
@@ -437,9 +437,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			if (data[0] & 8) {
 				/*  Used on SGI to power off the machine.  */
 				fatal("[ md146818: power off ]\n");
-				for (i=0; i<cpu->emul->ncpus; i++)
-					cpu->emul->cpus[i]->running = 0;
-				cpu->emul->exit_without_entering_debugger = 1;
+				for (i=0; i<cpu->machine->ncpus; i++)
+					cpu->machine->cpus[i]->running = 0;
+				cpu->machine->exit_without_entering_debugger = 1;
 			}
 			break;
 		default:

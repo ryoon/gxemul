@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.17 2005-01-17 11:27:31 debug Exp $
+ *  $Id: dev_mp.c,v 1.18 2005-01-19 14:24:20 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -37,7 +37,7 @@
 #include <string.h>
 
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "mp.h"
@@ -76,7 +76,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_NCPUS:
-		odata = cpu->emul->ncpus;
+		odata = cpu->machine->ncpus;
 		break;
 
 	case DEV_MP_STARTUPCPU:
@@ -102,7 +102,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		/*  Pause all cpus except our selves:  */
 		which_cpu = idata;
 
-		for (i=0; i<cpu->emul->ncpus; i++)
+		for (i=0; i<cpu->machine->ncpus; i++)
 			if (i!=which_cpu)
 				d->cpus[i]->running = 0;
 		break;
@@ -110,7 +110,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case DEV_MP_UNPAUSE_CPU:
 		/*  Unpause all cpus except our selves:  */
 		which_cpu = idata;
-		for (i=0; i<cpu->emul->ncpus; i++)
+		for (i=0; i<cpu->machine->ncpus; i++)
 			if (i!=which_cpu)
 				d->cpus[i]->running = 1;
 		break;
@@ -133,10 +133,10 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		 *  Return the number of bytes of memory in the system.
 		 *
 		 *  (It is assumed to be located at physical address 0.
-		 *  It is actually located at emul->memory_offset_in_mb
+		 *  It is actually located at machine->memory_offset_in_mb
 		 *  but that is only used for SGI emulation so far.)
 		 */
-		odata = cpu->emul->physical_ram_in_mb * 1048576;
+		odata = cpu->machine->physical_ram_in_mb * 1048576;
 		break;
 
 	default:

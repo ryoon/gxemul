@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.45 2005-01-19 08:44:53 debug Exp $
+ *  $Id: file.c,v 1.46 2005-01-19 14:24:23 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -47,10 +47,10 @@
 
 #include "misc.h"
 
-#include "emul.h"
 #include "exec_aout.h"
 #include "exec_ecoff.h"
 #include "exec_elf.h"
+#include "machine.h"
 #include "memory.h"
 #include "symbol.h"
 
@@ -109,7 +109,7 @@ extern uint64_t file_loaded_end_addr;
  *  TODO:  This has to be rewritten / corrected to support multiple a.out
  *         formats, where text/data are aligned differently.
  */
-static void file_load_aout(struct emul *emul, struct memory *mem,
+static void file_load_aout(struct machine *m, struct memory *mem,
 	char *filename, struct cpu *cpu, int osf1_hack)
 {
 	struct exec aout_header;
@@ -223,7 +223,7 @@ static void file_load_aout(struct emul *emul, struct memory *mem,
 
 			/* debug("symbol type 0x%04x @ 0x%08x: %s\n", type, addr, string_symbols + str_index); */
 			if (type != 0 && addr != 0)
-				add_symbol_name(&emul->symbol_context,
+				add_symbol_name(&m->symbol_context,
 				    addr, 0, string_symbols + str_index, 0);
 			i++;
 		}
@@ -251,7 +251,7 @@ static void file_load_aout(struct emul *emul, struct memory *mem,
  *  Loads an ecoff binary image into the emulated memory.  The entry point
  *  (read from the ecoff header) is stored in the specified CPU's registers.
  */
-static void file_load_ecoff(struct emul *emul, struct memory *mem,
+static void file_load_ecoff(struct machine *m, struct memory *mem,
 	char *filename, struct cpu *cpu)
 {
 	struct ecoff_exechdr exechdr;
@@ -518,7 +518,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 			    sym_nr, (int)extsyms[sym_nr].es_value,
 			    symbol_data + extsyms[sym_nr].es_strindex);  */
 
-			add_symbol_name(&emul->symbol_context,
+			add_symbol_name(&m->symbol_context,
 			    extsyms[sym_nr].es_value, 0,
 			    symbol_data + extsyms[sym_nr].es_strindex, 0);
 		}
@@ -769,7 +769,7 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
  *  ELF files. :-/   Hopefully it will be able to recognize most valid MIPS
  *  executables.
  */
-static void file_load_elf(struct emul *emul, struct memory *mem,
+static void file_load_elf(struct machine *m, struct memory *mem,
 	char *filename, struct cpu *cpu)
 {
 	Elf32_Ehdr hdr32;
@@ -1177,7 +1177,7 @@ static void file_load_elf(struct emul *emul, struct memory *mem,
 				size ++;
 
 			if (addr != 0)
-				add_symbol_name(&emul->symbol_context,
+				add_symbol_name(&m->symbol_context,
 				    addr, size, symbol_strings + st_name, 0);
 
 			if (strcmp(symbol_strings + st_name, "_gp") == 0) {
@@ -1267,17 +1267,17 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	/*  Is it an ELF?  */
 	if (minibuf[1]=='E' && minibuf[2]=='L' && minibuf[3]=='F') {
-		file_load_elf(cpu->emul, mem, filename, cpu);
+		file_load_elf(cpu->machine, mem, filename, cpu);
 		goto ret;
 	}
 
 	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
 	if (minibuf[0]==0x00 && minibuf[1]==0x8b && minibuf[2]==0x01 && minibuf[3]==0x07) {
-		file_load_aout(cpu->emul, mem, filename, cpu, 0);
+		file_load_aout(cpu->machine, mem, filename, cpu, 0);
 		goto ret;
 	}
 	if (minibuf[0]==0x00 && minibuf[2]==0x00 && minibuf[8]==0x7a && minibuf[9]==0x75) {
-		file_load_aout(cpu->emul, mem, filename, cpu, 1);
+		file_load_aout(cpu->machine, mem, filename, cpu, 1);
 		goto ret;
 	}
 
@@ -1299,7 +1299,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL2 ||
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB3 ||
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL3) {
-		file_load_ecoff(cpu->emul, mem, filename, cpu);
+		file_load_ecoff(cpu->machine, mem, filename, cpu);
 		goto ret;
 	}
 
@@ -1330,7 +1330,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 				exit(1);
 			}
 
-	symbol_readfile(&cpu->emul->symbol_context, filename);
+	symbol_readfile(&cpu->machine->symbol_context, filename);
 
 ret:
 	debug_indentation(-iadd);

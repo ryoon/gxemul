@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.136 2005-01-19 09:48:33 debug Exp $
+ *  $Id: bintrans.c,v 1.137 2005-01-19 14:24:22 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -98,7 +98,7 @@
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu_types.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "opcodes.h"
@@ -898,7 +898,7 @@ run_it:
 #if 1
 			/*  We have no translation.  */
 			if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
-			    cpu->emul->prom_emulation)
+			    cpu->machine->prom_emulation)
 				return cpu->bintrans_instructions_executed;
 
 			/*  This special hack might make the time spent

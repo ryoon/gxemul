@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.243 2005-01-18 12:26:33 debug Exp $
+ *  $Id: cpu.c,v 1.244 2005-01-19 14:24:22 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -43,8 +43,9 @@
 #include "console.h"
 #include "cop0.h"
 #include "cpu_types.h"
-#include "emul.h"
 #include "devices.h"
+#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "opcodes.h"
 #include "symbol.h"
@@ -70,18 +71,18 @@ static char *cop0_names[] = COP0_NAMES;
  *  regname():
  *
  *  Convert a register number into either 'r0', 'r31' etc, or a symbolic
- *  name, depending on emul->show_symbolic_register_names.
+ *  name, depending on machine->show_symbolic_register_names.
  *
  *  NOTE: _NOT_ reentrant.
  */
-static char *regname(struct emul *emul, int r)
+static char *regname(struct machine *machine, int r)
 {
 	static char ch[4];
 	ch[3] = ch[2] = '\0';
 
 	if (r<0 || r>=32)
 		strcpy(ch, "xx");
-	else if (emul->show_symbolic_register_names)
+	else if (machine->show_symbolic_register_names)
 		strcpy(ch, regnames[r]);
 	else
 		sprintf(ch, "r%i", r);
@@ -95,7 +96,7 @@ static char *regname(struct emul *emul, int r)
  *
  *  Create a new cpu object.
  */
-struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
+struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 	char *cpu_type_name)
 {
 	struct cpu *cpu;
@@ -112,7 +113,7 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 
 	memset(cpu, 0, sizeof(struct cpu));
 	cpu->mem                = mem;
-	cpu->emul               = emul;
+	cpu->machine            = machine;
 	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
@@ -151,35 +152,35 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	x = DEFAULT_PCACHE_SIZE;
 	if (cpu->cpu_type.default_pdcache)
 		x = cpu->cpu_type.default_pdcache;
-	if (emul->cache_pdcache == 0)
-		emul->cache_pdcache = x;
+	if (machine->cache_pdcache == 0)
+		machine->cache_pdcache = x;
 
 	x = DEFAULT_PCACHE_SIZE;
 	if (cpu->cpu_type.default_picache)
 		x = cpu->cpu_type.default_picache;
-	if (emul->cache_picache == 0)
-		emul->cache_picache = x;
+	if (machine->cache_picache == 0)
+		machine->cache_picache = x;
 
-	if (emul->cache_secondary == 0)
-		emul->cache_secondary = cpu->cpu_type.default_scache;
+	if (machine->cache_secondary == 0)
+		machine->cache_secondary = cpu->cpu_type.default_scache;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
 	if (cpu->cpu_type.default_pdlinesize)
 		linesize = cpu->cpu_type.default_pdlinesize;
-	if (emul->cache_pdcache_linesize == 0)
-		emul->cache_pdcache_linesize = linesize;
+	if (machine->cache_pdcache_linesize == 0)
+		machine->cache_pdcache_linesize = linesize;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
 	if (cpu->cpu_type.default_pilinesize)
 		linesize = cpu->cpu_type.default_pilinesize;
-	if (emul->cache_picache_linesize == 0)
-		emul->cache_picache_linesize = linesize;
+	if (machine->cache_picache_linesize == 0)
+		machine->cache_picache_linesize = linesize;
 
 	linesize = 0;
 	if (cpu->cpu_type.default_slinesize)
 		linesize = cpu->cpu_type.default_slinesize;
-	if (emul->cache_secondary_linesize == 0)
-		emul->cache_secondary_linesize = linesize;
+	if (machine->cache_secondary_linesize == 0)
+		machine->cache_secondary_linesize = linesize;
 
 
 	/*
@@ -188,12 +189,12 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
 		switch (i) {
 		case CACHE_DATA:
-			x = 1 << emul->cache_pdcache;
-			linesize = 1 << emul->cache_pdcache_linesize;
+			x = 1 << machine->cache_pdcache;
+			linesize = 1 << machine->cache_pdcache_linesize;
 			break;
 		case CACHE_INSTRUCTION:
-			x = 1 << emul->cache_picache;
-			linesize = 1 << emul->cache_picache_linesize;
+			x = 1 << machine->cache_picache;
+			linesize = 1 << machine->cache_picache_linesize;
 			break;
 		}
 
@@ -250,8 +251,8 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	 *  Secondary cache:
 	 */
 	secondary_cache_size = 0;
-	if (emul->cache_secondary)
-		secondary_cache_size = 1 << emul->cache_secondary;
+	if (machine->cache_secondary)
+		secondary_cache_size = 1 << machine->cache_secondary;
 	/*  TODO: linesize...  */
 
 	if (cpu_id == 0) {
@@ -310,36 +311,37 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
  *
  *  Show detailed statistics on opcode usage on each cpu.
  */
-void cpu_show_full_statistics(struct emul *emul)
+void cpu_show_full_statistics(struct machine *m)
 {
 	int i, s1, s2;
 
-	if (emul->bintrans_enable)
+	if (m->bintrans_enable)
 		printf("\nNOTE: Dynamic binary translation is used; this list"
 		    " of opcode usage\n      only includes instructions that"
 		    " were interpreted manually!\n");
 
-	for (i=0; i<emul->ncpus; i++) {
+	for (i=0; i<m->ncpus; i++) {
 		printf("cpu%i opcode statistics:\n", i);
 		for (s1=0; s1<N_HI6; s1++) {
-			if (emul->cpus[i]->stats_opcode[s1] > 0)
+			if (m->cpus[i]->stats_opcode[s1] > 0)
 				printf("  opcode %02x (%7s): %li\n", s1,
-				    hi6_names[s1], emul->cpus[i]->stats_opcode[s1]);
+				    hi6_names[s1],
+				    m->cpus[i]->stats_opcode[s1]);
 			if (s1 == HI6_SPECIAL)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (emul->cpus[i]->stats__special[s2] > 0)
+					if (m->cpus[i]->stats__special[s2] > 0)
 						printf("      special %02x (%7s): %li\n",
-						    s2, special_names[s2], emul->cpus[i]->stats__special[s2]);
+						    s2, special_names[s2], m->cpus[i]->stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
-					if (emul->cpus[i]->stats__regimm[s2] > 0)
+					if (m->cpus[i]->stats__regimm[s2] > 0)
 						printf("      regimm %02x (%7s): %li\n",
-						    s2, regimm_names[s2], emul->cpus[i]->stats__regimm[s2]);
+						    s2, regimm_names[s2], m->cpus[i]->stats__regimm[s2]);
 			if (s1 == HI6_SPECIAL2)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (emul->cpus[i]->stats__special2[s2] > 0)
+					if (m->cpus[i]->stats__special2[s2] > 0)
 						printf("      special2 %02x (%7s): %li\n",
-						    s2, special2_names[s2], emul->cpus[i]->stats__special2[s2]);
+						    s2, special2_names[s2], m->cpus[i]->stats__special2[s2]);
 		}
 	}
 }
@@ -425,11 +427,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (running)
 		dumpaddr = cpu->pc_last;
 
-	symbol = get_symbol_name(&cpu->emul->symbol_context, dumpaddr, &offset);
+	symbol = get_symbol_name(&cpu->machine->symbol_context, dumpaddr, &offset);
 	if (symbol != NULL && offset==0)
 		debug("<%s>\n", symbol);
 
-	if (cpu->emul->ncpus > 1 && running)
+	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
 	if (cpu->cpu_type.isa_level < 3 ||
@@ -490,8 +492,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			} else
 				debug("%s\t%s,",
 				    special_names[special6],
-				    regname(cpu->emul, rd));
-				debug("%s,%i", regname(cpu->emul, rt), sa);
+				    regname(cpu->machine, rd));
+				debug("%s,%i", regname(cpu->machine, rt), sa);
 			break;
 		case SPECIAL_DSRLV:
 		case SPECIAL_DSRAV:
@@ -503,25 +505,25 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 			debug("%s\t%s",
-			    special_names[special6], regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rt));
-			debug(",%s", regname(cpu->emul, rs));
+			    special_names[special6], regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rt));
+			debug(",%s", regname(cpu->machine, rs));
 			break;
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			symbol = get_symbol_name(&cpu->emul->symbol_context,
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    cpu->gpr[rs], &offset);
-			debug("jr\t%s", regname(cpu->emul, rs));
+			debug("jr\t%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
 				debug("\t\t<%s>", symbol);
 			break;
 		case SPECIAL_JALR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
-			symbol = get_symbol_name(&cpu->emul->symbol_context,
+			symbol = get_symbol_name(&cpu->machine->symbol_context,
 			    cpu->gpr[rs], &offset);
-			debug("jalr\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
+			debug("jalr\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
 				debug("<%s>", symbol);
 			break;
@@ -529,13 +531,13 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
 			debug("%s\t%s", special_names[special6],
-			    regname(cpu->emul, rd));
+			    regname(cpu->machine, rd));
 			break;
 		case SPECIAL_MTLO:
 		case SPECIAL_MTHI:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			debug("%s\t%s", special_names[special6],
-			    regname(cpu->emul, rs));
+			    regname(cpu->machine, rs));
 			break;
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
@@ -557,9 +559,9 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 			debug("%s\t%s", special_names[special6],
-			    regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			    regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 			break;
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
@@ -581,15 +583,15 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			if (special6 == SPECIAL_MULT) {
 				if (rd != 0) {
 					debug("mult_xx\t%s",
-					    regname(cpu->emul, rd));
-					debug(",%s", regname(cpu->emul, rs));
-					debug(",%s", regname(cpu->emul, rt));
+					    regname(cpu->machine, rd));
+					debug(",%s", regname(cpu->machine, rs));
+					debug(",%s", regname(cpu->machine, rt));
 					goto disasm_ret;
 				}
 			}
 			debug("%s\t%s", special_names[special6],
-			    regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			    regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 			break;
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
@@ -609,11 +611,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case SPECIAL_MFSA:
 			rd = (instr[1] >> 3) & 31;
-			debug("mfsa\t%s", regname(cpu->emul, rd));
+			debug("mfsa\t%s", regname(cpu->machine, rd));
 			break;
 		case SPECIAL_MTSA:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			debug("mtsa\t%s", regname(cpu->emul, rs));
+			debug("mtsa\t%s", regname(cpu->machine, rs));
 			break;
 		default:
 			debug("unimplemented special6 = 0x%02x", special6);
@@ -633,9 +635,9 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (imm >= 32768)
 			imm -= 65536;
 		addr = (dumpaddr + 4) + (imm << 2);
-		debug("%s\t%s,", hi6_names[hi6], regname(cpu->emul, rt));
+		debug("%s\t%s,", hi6_names[hi6], regname(cpu->machine, rt));
 
-		debug("%s,", regname(cpu->emul, rs));
+		debug("%s,", regname(cpu->machine, rs));
 
 		if (cpu->cpu_type.isa_level < 3 ||
 		    cpu->cpu_type.isa_level == 32)
@@ -643,7 +645,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		else
 			debug("0x%016llx", (long long)addr);
 
-		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
 		if (symbol != NULL && offset != addr)
 			debug("\t<%s>", symbol);
@@ -662,8 +664,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
-		debug("%s\t%s,", hi6_names[hi6], regname(cpu->emul, rt));
-		debug("%s,", regname(cpu->emul, rs));
+		debug("%s\t%s,", hi6_names[hi6], regname(cpu->machine, rt));
+		debug("%s,", regname(cpu->machine, rs));
 		if (hi6 == HI6_ANDI || hi6 == HI6_ORI || hi6 == HI6_XORI)
 			debug("0x%04x", imm & 0xffff);
 		else
@@ -672,7 +674,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case HI6_LUI:
 		rt = instr[2] & 31;
 		imm = (instr[1] << 8) + instr[0];
-		debug("lui\t%s,0x%x", regname(cpu->emul, rt), imm);
+		debug("lui\t%s,0x%x", regname(cpu->machine, rt), imm);
 		break;
 	case HI6_LB:
 	case HI6_LBU:
@@ -714,22 +716,22 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
-		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->gpr[rs] + imm, &offset);
 
 		/*  LWC3 is PREF in the newer ISA levels:  */
 		/*  TODO: Which ISAs? cpu->cpu_type.isa_level >= 4?  */
 		if (hi6 == HI6_LWC3) {
 			debug("pref\t0x%x,%i(%s)\t\t[0x%016llx = %s]",
-			    rt, imm, regname(cpu->emul, rs),
+			    rt, imm, regname(cpu->machine, rs),
 			    (long long)(cpu->gpr[rs] + imm),
 			    symbol);
 			/*  TODO: only use gpr[rs] when running  */
 			goto disasm_ret;
 		}
 
-		debug("%s\t%s", hi6_names[hi6], regname(cpu->emul, rt));
-		debug(",%i(%s)", imm, regname(cpu->emul, rs));
+		debug("%s\t%s", hi6_names[hi6], regname(cpu->machine, rt));
+		debug(",%i(%s)", imm, regname(cpu->machine, rs));
 
 		if (running) {
 			debug("\t\t[");
@@ -756,7 +758,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		    (instr[1] << 8) + instr[0]) << 2;
 		addr = (dumpaddr + 4) & ~((1 << 28) - 1);
 		addr |= imm;
-		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
 		debug("%s\t0x", hi6_names[hi6]);
 		if (cpu->cpu_type.isa_level < 3 ||
@@ -787,7 +789,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		which_cache = copz & 3;
 		showtag = 0;
 		debug("cache\t0x%02x,0x%04x(%s)", copz, imm,
-		    regname(cpu->emul, rt));
+		    regname(cpu->machine, rt));
 		if (which_cache==0)	debug("  [ primary I-cache");
 		if (which_cache==1)	debug("  [ primary D-cache");
 		if (which_cache==2)	debug("  [ secondary I-cache");
@@ -801,7 +803,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (cache_op==5)	debug("fill OR hit writeback invalidate");
 		if (cache_op==6)	debug("hit writeback");
 		if (cache_op==7)	debug("hit set virtual");
-		debug(", %s=0x%016llx", regname(cpu->emul, rt),
+		debug(", %s=0x%016llx", regname(cpu->machine, rt),
 		    (long long)cpu->gpr[rt]);
 		if (showtag)
 		debug(", taghi=%08lx lo=%08lx",
@@ -817,51 +819,51 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
 		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
-			debug("madd\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			debug("madd\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 		} else if (special6 == SPECIAL2_MUL) {
 			/*  TODO: this is just a guess, I don't have the
 				docs in front of me  */
-			debug("mul\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			debug("mul\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 		} else if (special6 == SPECIAL2_CLZ) {
-			debug("clz\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
+			debug("clz\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
 		} else if (special6 == SPECIAL2_CLO) {
-			debug("clo\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
+			debug("clo\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
 		} else if (special6 == SPECIAL2_DCLZ) {
-			debug("dclz\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
+			debug("dclz\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
 		} else if (special6 == SPECIAL2_DCLO) {
-			debug("dclo\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
+			debug("dclo\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
 		} else if ((instrword & 0xffff07ffULL) == 0x70000209
 		    || (instrword & 0xffff07ffULL) == 0x70000249) {
 			if (instr[0] == 0x49) {
-				debug("pmflo\t%s", regname(cpu->emul, rd));
-				debug("  (rs=%s)", regname(cpu->emul, rs));
+				debug("pmflo\t%s", regname(cpu->machine, rd));
+				debug("  (rs=%s)", regname(cpu->machine, rs));
 			} else {
-				debug("pmfhi\t%s", regname(cpu->emul, rd));
-				debug("  (rs=%s)", regname(cpu->emul, rs));
+				debug("pmfhi\t%s", regname(cpu->machine, rd));
+				debug("  (rs=%s)", regname(cpu->machine, rs));
 			}
 		} else if ((instrword & 0xfc1fffff) == 0x70000269 
 		    || (instrword & 0xfc1fffff) == 0x70000229) {
 			if (instr[0] == 0x69) {
-				debug("pmtlo\t%s", regname(cpu->emul, rs));
+				debug("pmtlo\t%s", regname(cpu->machine, rs));
 			} else {
-				debug("pmthi\t%s", regname(cpu->emul, rs));
+				debug("pmthi\t%s", regname(cpu->machine, rs));
 			} 
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
-			debug("por\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			debug("por\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
-			debug("pextlw\t%s", regname(cpu->emul, rd));
-			debug(",%s", regname(cpu->emul, rs));
-			debug(",%s", regname(cpu->emul, rt));
+			debug("pextlw\t%s", regname(cpu->machine, rd));
+			debug(",%s", regname(cpu->machine, rs));
+			debug(",%s", regname(cpu->machine, rt));
 		} else {
 			debug("unimplemented special2 = 0x%02x", special6);
 		}
@@ -883,7 +885,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				imm -= 65536;
 
 			debug("%s\t%s,", regimm_names[regimm5],
-			    regname(cpu->emul, rs));
+			    regname(cpu->machine, rs));
 
 			addr = (dumpaddr + 4) + (imm << 2);
 
@@ -925,7 +927,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 	if (gprs) {
 		/*  Special registers (pc, hi/lo) first:  */
-		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->pc, &offset);
 
 		if (bits32)
@@ -952,7 +954,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
 				debug(" %3s=%016llx%016llx",
-				    regname(cpu->emul, i),
+				    regname(cpu->machine, i),
 				    (long long)cpu->gpr_quadhi[i],
 				    (long long)cpu->gpr[i]);
 				if ((i & 1) == 1)
@@ -963,7 +965,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 3) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug(" %3s = %08x", regname(cpu->emul, i),
+				debug(" %3s = %08x", regname(cpu->machine, i),
 				    (int)cpu->gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
@@ -974,7 +976,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
 				debug("   %3s = %016llx",
-				    regname(cpu->emul, i),
+				    regname(cpu->machine, i),
 				    (long long)cpu->gpr[i]);
 				if ((i & 1) == 1)
 					debug("\n");
@@ -1003,7 +1005,7 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			if ((i & nm1) == 0)
 				debug("cpu%i:", cpu->cpu_id);
 
-			if (cpu->emul->show_symbolic_register_names &&
+			if (cpu->machine->show_symbolic_register_names &&
 			    coprocnr == 0)
 				debug(" %8s", cop0_names[i]);
 			else
@@ -1061,10 +1063,10 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 
 	cpu->trace_tree_depth ++;
 
-	if (cpu->emul->ncpus > 1)
+	if (cpu->machine->ncpus > 1)
 		debug("cpu%i:", cpu->cpu_id);
 
-	symbol = get_symbol_name(&cpu->emul->symbol_context, addr, &offset);
+	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
 
 	for (x=0; x<cpu->trace_tree_depth; x++)
 		debug("  ");
@@ -1218,10 +1220,10 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		uint64_t offset;
 		int x;
 		char *symbol = get_symbol_name(
-		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
+		    &cpu->machine->symbol_context, cpu->pc_last, &offset);
 
 		debug("[ ");
-		if (cpu->emul->ncpus > 1)
+		if (cpu->machine->ncpus > 1)
 			debug("cpu%i: ", cpu->cpu_id);
 
 		debug("exception %s%s",
@@ -1256,7 +1258,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb && vaddr < 0x1000) {
 		uint64_t offset;
 		char *symbol = get_symbol_name(
-		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
+		    &cpu->machine->symbol_context, cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 	}
@@ -1452,10 +1454,10 @@ void cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *  Return value is the number of instructions executed during this call
  *  to cpu_run_instr() (0 if no instruction was executed).
  */
-int cpu_run_instr(struct cpu *cpu)
+int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
-	int instruction_trace_cached = cpu->emul->instruction_trace;
+	int instruction_trace_cached = cpu->machine->instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
 	int i, tmp, ninstrs_executed;
 	unsigned char instr[4];
@@ -1538,9 +1540,9 @@ int cpu_run_instr(struct cpu *cpu)
 		cpu->last_was_jumptoself --;
 
 	/*  Check PC against breakpoints:  */
-	if (!cpu->emul->single_step)
-		for (i=0; i<cpu->emul->n_breakpoints; i++)
-			if (cached_pc == cpu->emul->breakpoint_addr[i]) {
+	if (!emul->single_step)
+		for (i=0; i<cpu->machine->n_breakpoints; i++)
+			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
 				fatal("Breakpoint reached, pc=0x");
 				if (cpu->cpu_type.isa_level < 3 ||
 				    cpu->cpu_type.isa_level == 32)
@@ -1548,7 +1550,7 @@ int cpu_run_instr(struct cpu *cpu)
 				else
 					fatal("%016llx", (long long)cached_pc);
 				fatal("\n");
-				cpu->emul->single_step = 1;
+				emul->single_step = 1;
 				return 0;
 			}
 
@@ -1607,9 +1609,9 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  and we should return via gpr ra.
 	 */
 	if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
-	    cpu->emul->prom_emulation) {
+	    cpu->machine->prom_emulation) {
 		int rom_jal;
-		switch (cpu->emul->emulation_type) {
+		switch (cpu->machine->emulation_type) {
 		case EMULTYPE_DEC:
 			decstation_prom_emul(cpu);
 			rom_jal = 1;
@@ -1633,7 +1635,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->delay_slot = NOT_DELAYED;
 
 			if (!quiet_mode_cached &&
-			    cpu->emul->show_trace_tree)
+			    cpu->machine->show_trace_tree)
 				cpu->trace_tree_depth --;
 
 			/*  TODO: how many instrs should this count as?  */
@@ -1667,7 +1669,7 @@ int cpu_run_instr(struct cpu *cpu)
 			if (x != cpu->gpr[i]) {
 				fatal("\nWARNING: r%i (%s) was not sign-"
 				    "extended correctly (%016llx != "
-				    "%016llx)\n\n", i, regname(cpu->emul, i),
+				    "%016llx)\n\n", i, regname(cpu->machine, i),
 				    (long long)x, (long long)cpu->gpr[i]);
 				warning = 1;
 			}
@@ -1755,13 +1757,13 @@ int cpu_run_instr(struct cpu *cpu)
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */
-		if (cpu->emul->register_dump) {
+		if (cpu->machine->register_dump) {
 			debug("\n");
 			cpu_register_dump(cpu, 1, 0x1);
 		}
 
 		/*  Trace tree:  */
-		if (cpu->emul->show_trace_tree && cpu->show_trace_delay > 0) {
+		if (cpu->machine->show_trace_tree && cpu->show_trace_delay > 0) {
 			cpu->show_trace_delay --;
 			if (cpu->show_trace_delay == 0)
 				show_trace(cpu, cpu->show_trace_addr);
@@ -1832,7 +1834,7 @@ int cpu_run_instr(struct cpu *cpu)
 		if (instruction_trace_cached) {
 			uint64_t offset;
 			char *symbol = get_symbol_name(
-			    &cpu->emul->symbol_context, cpu->pc_last ^ 1,
+			    &cpu->machine->symbol_context, cpu->pc_last ^ 1,
 			    &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
@@ -1876,7 +1878,7 @@ int cpu_run_instr(struct cpu *cpu)
 #ifdef BINTRANS
 		if (cpu->dont_run_next_bintrans) {
 			cpu->dont_run_next_bintrans = 0;
-		} else if (cpu->emul->bintrans_enable &&
+		} else if (cpu->machine->bintrans_enable &&
 		    cpu->pc_bintrans_paddr_valid) {
 			int res;
 			cpu->bintrans_instructions_executed = 0;
@@ -1955,14 +1957,14 @@ int cpu_run_instr(struct cpu *cpu)
 	/*  Get the top 6 bits of the instruction:  */
 	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
-	if (cpu->emul->show_opcode_statistics)
+	if (cpu->machine->show_opcode_statistics)
 		cpu->stats_opcode[hi6] ++;
 
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
 
-		if (cpu->emul->show_opcode_statistics)
+		if (cpu->machine->show_opcode_statistics)
 			cpu->stats__special[special6] ++;
 
 		switch (special6) {
@@ -2136,7 +2138,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
 
-			if (!quiet_mode_cached && cpu->emul->show_trace_tree
+			if (!quiet_mode_cached && cpu->machine->show_trace_tree
 			    && rs == 31) {
 				cpu->trace_tree_depth --;
 			}
@@ -2156,7 +2158,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->gpr[rd] = cached_pc + 4;
 			    /*  already increased by 4 earlier  */
 
-			if (!quiet_mode_cached && cpu->emul->show_trace_tree
+			if (!quiet_mode_cached && cpu->machine->show_trace_tree
 			    && rd == 31) {
 				cpu->show_trace_delay = 2;
 				cpu->show_trace_addr = tmpvalue;
@@ -2540,7 +2542,7 @@ int cpu_run_instr(struct cpu *cpu)
 			    (instr[1] << 8) + instr[0]) >> 6;
 			imm &= 0xfffff;
 
-			if (cpu->emul->userland_emul)
+			if (cpu->machine->userland_emul)
 				useremul_syscall(cpu, imm);
 			else
 				cpu_exception(cpu, EXCEPTION_SYS,
@@ -2693,7 +2695,7 @@ int cpu_run_instr(struct cpu *cpu)
 			 *  executed 1 instruction.
 			 */
 			ninstrs_executed = 1;
-			if (cpu->emul->speed_tricks && cpu->delay_slot &&
+			if (cpu->machine->speed_tricks && cpu->delay_slot &&
 			    cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt &&
 			    cpu->jump_to_self_reg == rs) {
@@ -3150,20 +3152,20 @@ int cpu_run_instr(struct cpu *cpu)
 				 *  stores to this cache line, even if this
 				 *  was _NOT_ a linked store?
 				 */
-				for (i=0; i<cpu->emul->ncpus; i++) {
-					if (cpu->emul->cpus[i]->rmw) {
+				for (i=0; i<cpu->machine->ncpus; i++) {
+					if (cpu->machine->cpus[i]->rmw) {
 						uint64_t yaddr = addr;
 						uint64_t xaddr =
-						    cpu->emul->cpus[i]->rmw_addr;
+						    cpu->machine->cpus[i]->rmw_addr;
 						uint64_t mask;
-						mask = ~(cpu->emul->cpus[i]->
+						mask = ~(cpu->machine->cpus[i]->
 						    cache_linesize[CACHE_DATA]
 						    - 1);
 						xaddr &= mask;
 						yaddr &= mask;
 						if (xaddr == yaddr) {
-							cpu->emul->cpus[i]->rmw = 0;
-							cpu->emul->cpus[i]->rmw_addr = 0;
+							cpu->machine->cpus[i]->rmw = 0;
+							cpu->machine->cpus[i]->rmw_addr = 0;
 						}
 					}
 				}
@@ -3324,7 +3326,7 @@ int cpu_run_instr(struct cpu *cpu)
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 
-		if (cpu->emul->show_opcode_statistics)
+		if (cpu->machine->show_opcode_statistics)
 			cpu->stats__regimm[regimm5] ++;
 
 		switch (regimm5) {
@@ -3403,7 +3405,7 @@ int cpu_run_instr(struct cpu *cpu)
 		cpu->delay_slot = TO_BE_DELAYED;
 		cpu->delay_jmpaddr = addr;
 
-		if (!quiet_mode_cached && cpu->emul->show_trace_tree &&
+		if (!quiet_mode_cached && cpu->machine->show_trace_tree &&
 		    hi6 == HI6_JAL) {
 			cpu->show_trace_delay = 2;
 			cpu->show_trace_addr = addr;
@@ -3512,7 +3514,7 @@ Remove this...
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
-		if (cpu->emul->show_opcode_statistics)
+		if (cpu->machine->show_opcode_statistics)
 			cpu->stats__special2[special6] ++;
 
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
@@ -3678,7 +3680,7 @@ Remove this...
  *  line to stdout about how many instructions/cycles have been executed so
  *  far.
  */
-void cpu_show_cycles(struct emul *emul,
+void cpu_show_cycles(struct machine *machine,
 	struct timeval *starttime, int64_t ncycles, int forced)
 {
 	uint64_t offset;
@@ -3700,41 +3702,41 @@ void cpu_show_cycles(struct emul *emul,
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = ncycles * emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+	ninstrs = ncycles * machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
-	if (emul->automatic_clock_adjustment) {
+	if (machine->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
 
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+		    / machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 		if (cur_cycles_per_second < 1500000)
 			cur_cycles_per_second = 1500000;
 
 		if (first_adjustment) {
-			emul->emulated_hz = cur_cycles_per_second;
+			machine->emulated_hz = cur_cycles_per_second;
 			first_adjustment = 0;
 		} else {
-			emul->emulated_hz = (15 * emul->emulated_hz +
+			machine->emulated_hz = (15 * machine->emulated_hz +
 			    cur_cycles_per_second) / 16;
 		}
 
 		debug("[ updating emulated_hz to %lli Hz ]\n",
-		    (long long)emul->emulated_hz);
+		    (long long)machine->emulated_hz);
 	}
 
 
 	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
-	if (!emul->show_nr_of_instructions && !forced)
+	if (!machine->show_nr_of_instructions && !forced)
 		goto do_return;
 
 
 	printf("[ ");
 
-	if (!emul->automatic_clock_adjustment) {
-		d = emul->emulated_hz / 1000;
+	if (!machine->automatic_clock_adjustment) {
+		d = machine->emulated_hz / 1000;
 		if (d < 1)
 			d = 1;
 		ms = ncycles / d;
@@ -3750,7 +3752,7 @@ void cpu_show_cycles(struct emul *emul,
 
 	printf("cycles=%lli", (long long) ncycles);
 
-	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
+	if (machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instrs)", (long long) ninstrs);
 
 	/*  Instructions per second, and average so far:  */
@@ -3759,16 +3761,16 @@ void cpu_show_cycles(struct emul *emul,
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	symbol = get_symbol_name(&emul->symbol_context,
-	    emul->cpus[emul->bootstrap_cpu]->pc, &offset);
+	symbol = get_symbol_name(&machine->symbol_context,
+	    machine->cpus[machine->bootstrap_cpu]->pc, &offset);
 
-	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level < 3 ||
-	    emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level == 32)
+	if (machine->cpus[machine->bootstrap_cpu]->cpu_type.isa_level < 3 ||
+	    machine->cpus[machine->bootstrap_cpu]->cpu_type.isa_level == 32)
 		printf("; pc=%08x",
-		    (int)emul->cpus[emul->bootstrap_cpu]->pc);
+		    (int)machine->cpus[machine->bootstrap_cpu]->pc);
 	else
 		printf("; pc=%016llx",
-		    (long long)emul->cpus[emul->bootstrap_cpu]->pc);
+		    (long long)machine->cpus[machine->bootstrap_cpu]->pc);
 
 	printf(" <%s> ]\n", symbol? symbol : "no symbol");
 
@@ -3783,12 +3785,14 @@ do_return:
  *
  *  Run instructions from all CPUs, until all CPUs have halted.
  */
-int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
+int cpu_run(struct emul *emul, struct machine *machine)
 {
+	struct cpu **cpus = machine->cpus;
+	int ncpus = machine->ncpus;
 	int te;
-	int64_t max_instructions_cached = emul->max_instructions;
+	int64_t max_instructions_cached = machine->max_instructions;
 	int64_t max_random_cycles_per_chunk_cached =
-	    emul->max_random_cycles_per_chunk;
+	    machine->max_random_cycles_per_chunk;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */
@@ -3845,11 +3849,11 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 			if (emul->single_step) {
 				if (emul->single_step == 1) {
-					old_instruction_trace = emul->instruction_trace;
+					old_instruction_trace = machine->instruction_trace;
 					old_quiet_mode = quiet_mode;
-					old_show_trace_tree = emul->show_trace_tree;
-					emul->instruction_trace = 1;
-					emul->show_trace_tree = 1;
+					old_show_trace_tree = machine->show_trace_tree;
+					machine->instruction_trace = 1;
+					machine->show_trace_tree = 1;
 					quiet_mode = 0;
 					emul->single_step = 2;
 				}
@@ -3859,7 +3863,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						debugger();
 					for (i=0; i<ncpus_cached; i++)
 						if (cpus[i]->running) {
-							int instrs_run = cpu_run_instr(cpus[i]);
+							int instrs_run = cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
 								cpu0instrs += instrs_run;
 						}
@@ -3873,7 +3877,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						j = (random() % a_few_instrs2) + 1;
 						j *= cpus[i]->cpu_type.instrs_per_cycle;
 						while (j-- >= 1 && cpus[i]->running) {
-							int instrs_run = cpu_run_instr(cpus[i]);
+							int instrs_run = cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
 								cpu0instrs += instrs_run;
 						}
@@ -3886,7 +3890,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						break;
 					do {
 						instrs_run =
-						    cpu_run_instr(cpus[0]);
+						    cpu_run_instr(emul, cpus[0]);
 						if (instrs_run == 0 &&
 						    emul->single_step) {
 							j = a_few_instrs;
@@ -3905,7 +3909,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						if (cpus[i]->running) {
 							int instrs_run = 0;
 							while (!instrs_run) {
-								instrs_run = cpu_run_instr(cpus[i]);
+								instrs_run = cpu_run_instr(emul, cpus[i]);
 								if (instrs_run == 0 &&
 								    emul->single_step) {
 									j = a_few_instrs2;
@@ -3959,7 +3963,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 			/*  All CPUs have died?  */
 			if (!running) {
-				if (emul->exit_without_entering_debugger == 0)
+				if (machine->exit_without_entering_debugger == 0)
 					emul->single_step = 1;
 			}
 
@@ -3967,7 +3971,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		} while (running && (ncycles < ncycles_chunk_end));
 
 		/*  Check for X11 events:  */
-		if (emul->use_x11) {
+		if (machine->use_x11) {
 			if (ncycles > ncycles_flushx11 + (1<<17)) {
 				x11_check_event();
 				ncycles_flushx11 = ncycles;
@@ -3982,7 +3986,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		}
 
 		if (ncycles > ncycles_show + (1<<23)) {
-			cpu_show_cycles(emul, &starttime, ncycles, 0);
+			cpu_show_cycles(machine, &starttime, ncycles, 0);
 			ncycles_show = ncycles;
 		}
 
@@ -4004,11 +4008,11 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 	debug("All CPUs halted.\n");
 
-	if (emul->show_nr_of_instructions || !quiet_mode)
-		cpu_show_cycles(emul, &starttime, ncycles, 1);
+	if (machine->show_nr_of_instructions || !quiet_mode)
+		cpu_show_cycles(machine, &starttime, ncycles, 1);
 
-	if (emul->show_opcode_statistics)
-		cpu_show_full_statistics(emul);
+	if (machine->show_opcode_statistics)
+		cpu_show_full_statistics(machine);
 
 	fflush(stdout);
 

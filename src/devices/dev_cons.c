@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.16 2005-01-09 01:55:24 debug Exp $
+ *  $Id: dev_cons.c,v 1.17 2005-01-19 14:24:20 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -38,7 +38,7 @@
 
 #include "console.h"
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -53,21 +53,21 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	/*  Exit the emulator:  */
 	if (relative_addr == DEV_CONS_HALT) {
 		cpu->running = 0;
-		cpu->emul->exit_without_entering_debugger = 1;
+		cpu->machine->exit_without_entering_debugger = 1;
 		return 1;
 	}
 
 	if (writeflag == MEM_WRITE) {
 		for (i=0; i<len; i++) {
 			if (data[i] != 0) {
-				if (cpu->emul->register_dump ||
-				    cpu->emul->instruction_trace)
+				if (cpu->machine->register_dump ||
+				    cpu->machine->instruction_trace)
 					debug("putchar '");
 
 				console_putchar(data[i]);
 
-				if (cpu->emul->register_dump ||
-				    cpu->emul->instruction_trace)
+				if (cpu->machine->register_dump ||
+				    cpu->machine->instruction_trace)
 					debug("'\n");
 				fflush(stdout);
 			}

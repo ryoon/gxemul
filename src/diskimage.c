@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.65 2005-01-19 10:00:06 debug Exp $
+ *  $Id: diskimage.c,v 1.66 2005-01-19 14:24:22 debug Exp $
  *
  *  Disk image support.
  *
@@ -50,7 +50,7 @@
 #include "misc.h"
 
 #include "diskimage.h"
-#include "emul.h"
+#include "machine.h"
 
 
 extern int quiet_mode;
@@ -331,7 +331,7 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 	uint64_t size;
 	int64_t ofs;
 	int pagecode;
-	struct emul *emul = cpu->emul;
+	struct machine *machine = cpu->machine;
 
 	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
 		return 0;
@@ -425,7 +425,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *  the drives.
 		 */
 
-		if (emul->emulation_type == EMULTYPE_DEC) {
+		if (machine->emulation_type == EMULTYPE_DEC) {
 			/*  DEC, RZ25 (rev 0900) is a 832527 sector large disk:  */
 			/*  DEC, RZ58 (rev 2000) is a 2698061 sector large disk:  */
 			memcpy(xferp->data_in+8,  "DEC     ", 8);
@@ -439,7 +439,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "CD-ROM          ", 16);
 
-			if (emul->emulation_type == EMULTYPE_DEC) {
+			if (machine->emulation_type == EMULTYPE_DEC) {
 				/*  SONY, CD-ROM:  */
 				memcpy(xferp->data_in+8,  "SONY    ", 8);
 				memcpy(xferp->data_in+16, "CD-ROM          ", 16);
@@ -462,7 +462,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "TAPE            ", 16);
 
-			if (emul->emulation_type == EMULTYPE_DEC) {
+			if (machine->emulation_type == EMULTYPE_DEC) {
 				/*
 				 *  TODO:  find out if these are correct.
 				 *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.8 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.9 2005-01-19 14:24:20 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -72,7 +72,7 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 			debug("[ sgi_ip19: unimplemented write to address 0x%x (cpu available mask), data=0x%08x ]\n", relative_addr, (int)idata);
 		} else {
 			/*  Max 16 cpus?  */
-			odata = ((1 << cpu->emul->ncpus) - 1)<< 16;
+			odata = ((1 << cpu->machine->ncpus) - 1) << 16;
 		}
 		break;
 	case 0x20000:	/*  cycle counter or clock  */

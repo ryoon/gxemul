@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.285 2005-01-19 08:44:53 debug Exp $
+ *  $Id: machine.c,v 1.286 2005-01-19 14:24:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -56,6 +56,7 @@
 #include "devices.h"
 #include "diskimage.h"
 #include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "opcodes.h"
 #include "symbol.h"
@@ -99,6 +100,40 @@ struct mace_data *mace_data;
 struct sgi_ip20_data *sgi_ip20_data;
 struct sgi_ip22_data *sgi_ip22_data;
 struct sgi_ip30_data *sgi_ip30_data;
+
+
+/*
+ *  machine_new():
+ *
+ *  Returns a reasonably initialized struct machine.
+ */
+struct machine *machine_new(void)
+{
+	struct machine *m;
+	m = malloc(sizeof(struct machine));
+	if (m == NULL) {
+		fprintf(stderr, "machine_new(): out of memory\n");
+		exit(1);
+	}
+
+	memset(m, 0, sizeof(struct machine));
+
+	/*  Sane default values:  */
+	m->emulation_type = EMULTYPE_NONE;
+	m->machine_subtype = MACHINE_NONE;
+	m->prom_emulation = 1;
+	m->speed_tricks = 1;
+	m->boot_kernel_filename = "";
+	m->boot_string_argument = "";
+	m->ncpus = DEFAULT_NCPUS;
+	m->automatic_clock_adjustment = 1;
+	m->x11_scaledown = 1;
+	m->n_gfx_cards = 1;
+	m->dbe_on_nonexistant_memaccess = 1;
+	m->show_symbolic_register_names = 1;
+
+	return m;
+}
 
 
 /****************************************************************************
@@ -996,10 +1031,11 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *  This (rather large) function initializes memory, registers, and/or
  *  devices required by specific machine emulations.
  */
-void machine_init(struct emul *emul, struct memory *mem)
+void machine_init(struct machine *machine)
 {
 	uint64_t addr, addr2;
 	int i;
+	struct memory *mem;
 
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
@@ -1047,12 +1083,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 	struct vfb_data *fb;
 
 	/*  Abreviation:  :-)  */
-	struct cpu *cpu = emul->cpus[emul->bootstrap_cpu];
+	struct cpu *cpu = machine->cpus[machine->bootstrap_cpu];
 
 
-	emul->machine_name = NULL;
+	mem = cpu->mem;
 
-	switch (emul->emulation_type) {
+	machine->machine_name = NULL;
+
+	switch (machine->emulation_type) {
 
 	case EMULTYPE_NONE:
 		printf("\nNo emulation type specified.\n\n"
@@ -1065,14 +1103,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*
 		 *  A "bare" test machine.
 		 */
-		emul->machine_name = "\"Bare\" test machine";
+		machine->machine_name = "\"Bare\" test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 
 		/*  This works with 'mmon':  */
 		dev_ns16550_init(cpu, mem, 0x10800000, 0, 4, 1);
 
-		dev_mp_init(mem, emul->cpus);
+		dev_mp_init(mem, machine->cpus);
 
 		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
@@ -1087,19 +1125,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 		framebuffer_console_name = "osconsole=0,3";
 		serial_console_name      = "osconsole=1";
 
-		switch (emul->machine) {
-		case MACHINE_PMAX_3100:		/*  type  1, KN01  */
+		switch (machine->machine_subtype) {
+		case MACHINE_DEC_PMAX_3100:		/*  type  1, KN01  */
 			/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC, R2020 Memory coprocessor  */
-			emul->machine_name = "DEC PMAX 3100 (KN01)";
+			machine->machine_name = "DEC PMAX 3100 (KN01)";
 
 			/*  12 MHz for 2100, 16.67 MHz for 3100  */
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 16670000;
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 16670000;
 
-			if (emul->physical_ram_in_mb > 24)
+			if (machine->physical_ram_in_mb > 24)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines cannot have more than 24MB RAM. Continuing anyway.\n");
 
-			if ((emul->physical_ram_in_mb % 4) != 0)
+			if ((machine->physical_ram_in_mb % 4) != 0)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines have an integer multiple of 4 MBs of RAM. Continuing anyway.\n");
 
 			color_fb_flag = 1;	/*  1 for color, 0 for mono. TODO: command line option?  */
@@ -1121,7 +1159,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
 			dev_le_init(cpu, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
 			dev_sii_init(cpu, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, emul->use_x11);
+			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, machine->use_x11);
 			dev_mc146818_init(cpu, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
@@ -1129,17 +1167,17 @@ void machine_init(struct emul *emul, struct memory *mem)
 			serial_console_name      = "osconsole=3";	/*  3  */
 			break;
 
-		case MACHINE_3MAX_5000:		/*  type  2, KN02  */
+		case MACHINE_DEC_3MAX_5000:		/*  type  2, KN02  */
 			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
 			/*  and a R3220 Memory coprocessor  */
-			emul->machine_name = "DECstation 5000/200 (3MAX, KN02)";
+			machine->machine_name = "DECstation 5000/200 (3MAX, KN02)";
 
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 25000000;
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 25000000;
 
-			if (emul->physical_ram_in_mb < 8)
+			if (machine->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
-			if (emul->physical_ram_in_mb > 480)
+			if (machine->physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
@@ -1171,19 +1209,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
-			    emul->n_gfx_cards >= 1?
+			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KN02_IP_SLOT0 +8);
 
 			dev_turbochannel_init(cpu, mem, 1,
 			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
-			    emul->n_gfx_cards >= 2?
+			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KN02_IP_SLOT1 +8);
 
 			dev_turbochannel_init(cpu, mem, 2,
 			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
-			    emul->n_gfx_cards >= 3?
+			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
 			    KN02_IP_SLOT2 +8);
 
@@ -1201,7 +1239,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*  TURBOchannel slot 7 is system stuff.  */
 			dev_dc7085_init(cpu, mem,
-			    KN02_SYS_DZ, KN02_IP_DZ +8, emul->use_x11);
+			    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
 			dev_mc146818_init(cpu, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
@@ -1214,11 +1252,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 			boot_net_boardnumber = 6;	/*  TODO: 3?  */
 			break;
 
-		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
-			emul->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 33000000;
-			if (emul->physical_ram_in_mb > 128)
+		case MACHINE_DEC_3MIN_5000:		/*  type 3, KN02BA  */
+			machine->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 33000000;
+			if (machine->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*  KMIN interrupts:  */
@@ -1240,8 +1278,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
 			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, emul->use_x11, 0, 1);
-			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, emul->use_x11, 1, 1);
+			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8,
 			    NULL, DEV_ASC_DEC, NULL, NULL);
@@ -1255,19 +1293,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    0x10000000, 0x103fffff,
-			    emul->n_gfx_cards >= 1?
+			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KMIN_INT_TC0);
 
 			dev_turbochannel_init(cpu, mem, 1,
 			    0x14000000, 0x143fffff,
-			    emul->n_gfx_cards >= 2?
+			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KMIN_INT_TC1);
 
 			dev_turbochannel_init(cpu, mem, 2,
 			    0x18000000, 0x183fffff,
-			    emul->n_gfx_cards >= 3?
+			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
 			    KMIN_INT_TC2);
 
@@ -1278,15 +1316,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 			serial_console_name      = "osconsole=3";	/*  ?  */
 			break;
 
-		case MACHINE_3MAXPLUS_5000:	/*  type 4, KN03  */
-			emul->machine_name = "DECsystem 5900 or 5000 (3MAX+) (KN03)";
+		case MACHINE_DEC_3MAXPLUS_5000:	/*  type 4, KN03  */
+			machine->machine_name = "DECsystem 5900 or 5000 (3MAX+) (KN03)";
 
 			/*  5000/240 (KN03-GA, R3000): 40 MHz  */
 			/*  5000/260 (KN05-NB, R4000): 60 MHz  */
 			/*  TODO: are both these type 4?  */
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 40000000;
-			if (emul->physical_ram_in_mb > 480)
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 40000000;
+			if (machine->physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  KN03 interrupts:  */
@@ -1309,9 +1347,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_le_init(cpu, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 
 			dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
+			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
+			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
 			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, KN03_SYS_SCSI,
@@ -1326,19 +1364,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
-			    emul->n_gfx_cards >= 1?
+			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_0 +8);
 
 			dev_turbochannel_init(cpu, mem, 1,
 			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END,
-			    emul->n_gfx_cards >= 2?
+			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_1 +8);
 
 			dev_turbochannel_init(cpu, mem, 2,
 			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END,
-			    emul->n_gfx_cards >= 3?
+			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_2 +8);
 
@@ -1349,11 +1387,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 			serial_console_name      = "osconsole=3";	/*  ?  */
 			break;
 
-		case MACHINE_5800:		/*  type 5, KN5800  */
-			emul->machine_name = "DECsystem 5800";
+		case MACHINE_DEC_5800:		/*  type 5, KN5800  */
+			machine->machine_name = "DECsystem 5800";
 
 /*  TODO: this is incorrect, banks multiply by 8 etc  */
-			if (emul->physical_ram_in_mb < 48)
+			if (machine->physical_ram_in_mb < 48)
 				fprintf(stderr, "WARNING! 5800 will probably not run with less than 48MB RAM. Continuing anyway.\n");
 
 			/*
@@ -1372,14 +1410,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			dec5800_csr = dev_dec5800_init(cpu, mem, 0x10000000);
 			dev_decbi_init(cpu, mem, 0x10000000);
-			dev_ssc_init(cpu, mem, 0x10140000, 2, emul->use_x11, &dec5800_csr->csr);
+			dev_ssc_init(cpu, mem, 0x10140000, 2, machine->use_x11, &dec5800_csr->csr);
 			dev_decxmi_init(cpu, mem, 0x11800000);
 			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
 
 			break;
 
-		case MACHINE_5400:		/*  type 6, KN210  */
-			emul->machine_name = "DECsystem 5400 (KN210)";
+		case MACHINE_DEC_5400:		/*  type 6, KN210  */
+			machine->machine_name = "DECsystem 5400 (KN210)";
 			/*
 			 *  Misc. info from the KN210 manual:
 			 *
@@ -1408,17 +1446,17 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
 			dev_kn210_init(cpu, mem, 0x10080000);
-			dev_ssc_init(cpu, mem, 0x10140000, 0, emul->use_x11, NULL);	/*  TODO:  not irq 0  */
+			dev_ssc_init(cpu, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
-		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
-			emul->machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 33000000;
+		case MACHINE_DEC_MAXINE_5000:	/*  type 7, KN02CA  */
+			machine->machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 33000000;
 
-			if (emul->physical_ram_in_mb < 8)
+			if (machine->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02CA machines do not have less than 8MB RAM. Continuing anyway.\n");
-			if (emul->physical_ram_in_mb > 40)
+			if (machine->physical_ram_in_mb > 40)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
 			/*  Maxine interrupts:  */
@@ -1446,12 +1484,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(cpu, mem, 0,
 			    0x10000000, 0x103fffff,
-			    emul->n_gfx_cards >= 2?
+			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    XINE_INTR_TC_0 +8);
 			dev_turbochannel_init(cpu, mem, 1,
 			    0x14000000, 0x143fffff,
-			    emul->n_gfx_cards >= 3?
+			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
 			    XINE_INTR_TC_1 +8);
 
@@ -1468,7 +1506,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, XINE_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpu, mem, 0x1c100000,
-			    XINE_INTR_SCC_0 +8, emul->use_x11, 0, 1);
+			    XINE_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000,
@@ -1478,16 +1516,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 			serial_console_name      = "osconsole=3";
 			break;
 
-		case MACHINE_5500:	/*  type 11, KN220  */
-			emul->machine_name = "DECsystem 5500 (KN220)";
+		case MACHINE_DEC_5500:	/*  type 11, KN220  */
+			machine->machine_name = "DECsystem 5500 (KN220)";
 
 			/*
 			 *  According to NetBSD's pmax ports page:
 			 *  KN220-AA is a "30 MHz R3000 CPU with R3010 FPU"
 			 *  with "512 kBytes of Prestoserve battery backed RAM."
 			 */
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 30000000;
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 30000000;
 
 			/*
 			 *  See KN220 docs for more info.
@@ -1502,7 +1540,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  asc (scsi) at 0x17100000.
 			 */
 
-			dev_ssc_init(cpu, mem, 0x10140000, 0, emul->use_x11, NULL);		/*  TODO:  not irq 0  */
+			dev_ssc_init(cpu, mem, 0x10140000, 0, machine->use_x11, NULL);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
 			dev_dec5500_ioboard_init(cpu, mem, 0x17000000);
@@ -1520,14 +1558,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 			serial_console_name      = "osconsole=0";
 			break;
 
-		case MACHINE_MIPSMATE_5100:	/*  type 12  */
-			emul->machine_name = "DEC MIPSMATE 5100 (KN230)";
-			if (emul->emulated_hz == 0)
-				emul->emulated_hz = 20000000;
-			if (emul->physical_ram_in_mb > 128)
+		case MACHINE_DEC_MIPSMATE_5100:	/*  type 12  */
+			machine->machine_name = "DEC MIPSMATE 5100 (KN230)";
+			if (machine->emulated_hz == 0)
+				machine->emulated_hz = 20000000;
+			if (machine->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
-			if (emul->use_x11)
+			if (machine->use_x11)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
 			/*  KN230 interrupts:  */
@@ -1540,9 +1578,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
 			dev_mc146818_init(cpu, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
-			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, emul->use_x11);		/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, emul->use_x11); */	/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, emul->use_x11); */	/*  NOTE: CSR_INTR  */
+			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, machine->use_x11);		/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, machine->use_x11); */	/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
 			dev_le_init(cpu, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(cpu, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
 			kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
@@ -1623,13 +1661,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 			char bootpath[200];
 
 #if 0
-			if (emul->machine == MACHINE_PMAX_3100)
+			if (machine->machine_subtype == MACHINE_DEC_PMAX_3100)
 				strcpy(bootpath, "rz(0,0,0)");
 			else
 #endif
 				strcpy(bootpath, "5/rz1/");
 
-			if (bootdev_id < 0 || emul->force_netboot) {
+			if (bootdev_id < 0 || machine->force_netboot) {
 				/*  tftp boot:  */
 				strcpy(bootpath, "5/tftp/");
 				bootpath[0] = '0' + boot_net_boardnumber;
@@ -1645,26 +1683,26 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		bootarg = malloc(strlen(init_bootpath) +
-		    strlen(emul->boot_kernel_filename) + 1 +
-		    strlen(emul->boot_string_argument) + 1);
+		    strlen(machine->boot_kernel_filename) + 1 +
+		    strlen(machine->boot_string_argument) + 1);
 		strcpy(bootarg, init_bootpath);
-		strcat(bootarg, emul->boot_kernel_filename);
+		strcat(bootarg, machine->boot_kernel_filename);
 
 		bootstr = "boot";
 
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
-		    emul->boot_string_argument);
+		    machine->boot_string_argument);
 
 		/*  Decrease the nr of args, if there are no args :-)  */
-		if (emul->boot_string_argument == NULL ||
-		    emul->boot_string_argument[0] == '\0')
+		if (machine->boot_string_argument == NULL ||
+		    machine->boot_string_argument[0] == '\0')
 			cpu->gpr[GPR_A0] --;
 
-		if (emul->boot_string_argument[0] != '\0') {
+		if (machine->boot_string_argument[0] != '\0') {
 			strcat(bootarg, " ");
-			strcat(bootarg, emul->boot_string_argument);
+			strcat(bootarg, machine->boot_string_argument);
 		}
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
@@ -1693,7 +1731,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			unsigned int i;
 			for (i=0; i<sizeof(memmap.bitmap); i++)
 				memmap.bitmap[i] = ((int)i * 4096*8 <
-				    1048576*emul->physical_ram_in_mb)?
+				    1048576*machine->physical_ram_in_mb)?
 				    0xff : 0x00;
 		}
 		store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
@@ -1701,7 +1739,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  Environment variables:  */
 		addr = DEC_PROM_STRINGS;
 
-		if (emul->use_x11 && emul->n_gfx_cards > 0)
+		if (machine->use_x11 && machine->n_gfx_cards > 0)
 			/*  (0,3)  Keyboard and Framebuffer  */
 			add_environment_string(cpu, framebuffer_console_name, &addr);
 		else
@@ -1732,7 +1770,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmaplen=0x%x",
-			    emul->physical_ram_in_mb * 1048576 / 4096 / 8);
+			    machine->physical_ram_in_mb * 1048576 / 4096 / 8);
 			add_environment_string(cpu, tmps, &addr);
 		}
 
@@ -1756,7 +1794,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_COBALT:
-		emul->machine_name = "Cobalt";
+		machine->machine_name = "Cobalt";
 
 		/*
 		 *  Interrupts seem to be the following:
@@ -1769,7 +1807,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *	6	VIA southbridge PIC
 		 *	7	PCI
 		 */
-/*		dev_XXX_init(cpu, mem, 0x10000000, emul->emulated_hz);	*/
+/*		dev_XXX_init(cpu, mem, 0x10000000, machine->emulated_hz);	*/
 		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
 		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1, 1);
 
@@ -1797,11 +1835,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  The bootstring should be stored starting 512 bytes before end
 		 *  of physical ram.
 		 */
-		cpu->gpr[GPR_A0] = emul->physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->gpr[GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
 		store_string(cpu, 0xffffffff80000000ULL +
-		    emul->physical_ram_in_mb * 1048576 - 512, bootstr);
+		    machine->physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
 	case EMULTYPE_HPCMIPS:
@@ -1820,10 +1858,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 		#define PLATID_VENDOR_SHIFT             22
 		*/
 
-		switch (emul->machine) {
+		switch (machine->machine_subtype) {
 		case HPCMIPS_CASIO_BE300:
 			/*  166MHz VR4131  */
-			emul->machine_name = "Casio Cassiopeia BE-300";
+			machine->machine_name = "Casio Cassiopeia BE-300";
 			hpcmips_fb_addr = 0x0a200000;
 			hpcmips_fb_xsize = 240;
 			hpcmips_fb_ysize = 320;
@@ -1833,7 +1871,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
 			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
-			    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
 			vr41xx_data = dev_vr41xx_init(cpu, mem, 4131);
 			cpu->md_interrupt = vr41xx_interrupt;
 
@@ -1853,7 +1891,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 		case HPCMIPS_CASIO_E105:
 			/*  131MHz VR4121  */
-			emul->machine_name = "Casio Cassiopeia E-105";
+			machine->machine_name = "Casio Cassiopeia E-105";
 			hpcmips_fb_addr = 0x0a200000;	/*  TODO?  */
 			hpcmips_fb_xsize = 240;
 			hpcmips_fb_ysize = 320;
@@ -1863,7 +1901,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
 			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
-			    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
 			vr41xx_data = dev_vr41xx_init(cpu, mem, 4121);
 			cpu->md_interrupt = vr41xx_interrupt;
 
@@ -1888,15 +1926,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  NetBSD/hpcmips and possibly others expects the following:  */
 
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
-		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576
+		cpu->gpr[GPR_A1] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 512;	/*  argv  */
-		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576
+		cpu->gpr[GPR_A2] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
-		bootstr = emul->boot_kernel_filename;
-		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8);
-		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-		store_string(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
+		bootstr = machine->boot_kernel_filename;
+		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8);
+		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
+		store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
 
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
@@ -1910,7 +1948,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
 		    printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);  */
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
-		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
+		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		if (hpcmips_fb_addr != 0)
 			dev_fb_init(cpu, mem, hpcmips_fb_addr, VFB_HPCMIPS,
@@ -1921,11 +1959,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_PS2:
-		emul->machine_name = "Playstation 2";
+		machine->machine_name = "Playstation 2";
 
-		if (emul->physical_ram_in_mb != 32)
+		if (machine->physical_ram_in_mb != 32)
 			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
-		if (!emul->use_x11)
+		if (!machine->use_x11)
 			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
 
 		/*
@@ -1946,18 +1984,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		cpu->md_interrupt = ps2_interrupt;
 
-		add_symbol_name(&emul->symbol_context,
+		add_symbol_name(&machine->symbol_context,
 		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
 #if 0
 		/*  Harddisk controller present flag:  */
-		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 		dev_ps2_spd_init(cpu, mem, 0x14000000);
 #endif
 
-		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
+		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
 		store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
 
@@ -1970,16 +2008,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
 			tmp = gmtime(&timet);
 			/*  TODO:  are these 0- or 1-based?  */
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
-			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
+			store_byte(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
 		}
 
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
+		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this necessary?  */
 		cpu->gpr[GPR_SP] = 0x80007f00;
@@ -1996,8 +2034,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  detailed list of IP ("Inhouse Processor") model numbers.
 		 *  (Or http://hardware.majix.org/computers/sgi/iptable.shtml)
 		 */
-		emul->machine_name = malloc(500);
-		if (emul->machine_name == NULL) {
+		machine->machine_name = malloc(500);
+		if (machine->machine_name == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
@@ -2007,40 +2045,40 @@ void machine_init(struct emul *emul, struct memory *mem)
 			exit(1);
 		}
 
-		if (emul->emulation_type == EMULTYPE_SGI) {
+		if (machine->emulation_type == EMULTYPE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
-			sprintf(short_machine_name, "SGI-IP%i", emul->machine);
-			sprintf(emul->machine_name, "SGI-IP%i", emul->machine);
+			sprintf(short_machine_name, "SGI-IP%i", machine->machine_subtype);
+			sprintf(machine->machine_name, "SGI-IP%i", machine->machine_subtype);
 
 			/*  Super-special case for IP24:  */
-			if (emul->machine == 24)
+			if (machine->machine_subtype == 24)
 				sprintf(short_machine_name, "SGI-IP22");
 
-			sgi_ram_offset = 1048576 * emul->memory_offset_in_mb;
+			sgi_ram_offset = 1048576 * machine->memory_offset_in_mb;
 
 			/*  Special cases for IP20,22,24,26 memory offset:  */
-			if (emul->machine == 20 || emul->machine == 22 ||
-			    emul->machine == 24 || emul->machine == 26) {
+			if (machine->machine_subtype == 20 || machine->machine_subtype == 22 ||
+			    machine->machine_subtype == 24 || machine->machine_subtype == 26) {
 				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
 				dev_ram_init(mem, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
 			}
 
 			/*  Special cases for IP28,30 memory offset:  */
-			if (emul->machine == 28 || emul->machine == 30) {
+			if (machine->machine_subtype == 28 || machine->machine_subtype == 30) {
 				/*  TODO: length below should maybe not be 128MB?  */
 				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
 		} else {
 			cpu->byte_order = EMUL_LITTLE_ENDIAN;
 			sprintf(short_machine_name, "ARC");
-			sprintf(emul->machine_name, "ARC");
+			sprintf(machine->machine_name, "ARC");
 		}
 
-		if (emul->emulation_type == EMULTYPE_SGI) {
+		if (machine->emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other SGI machine types?  */
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case 12:
-				strcat(emul->machine_name, " (Iris Indigo IP12)");
+				strcat(machine->machine_name, " (Iris Indigo IP12)");
 
 				/*  TODO  */
 				/*  33 MHz R3000, according to http://www.irisindigo.com/  */
@@ -2048,9 +2086,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 19:
-				strcat(emul->machine_name, " (Everest IP19)");
+				strcat(machine->machine_name, " (Everest IP19)");
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
-				dev_scc_init(cpu, mem, 0x10086000, 0, emul->use_x11, 0, 8);	/*  serial? irix?  */
+				dev_scc_init(cpu, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpu, mem, 0x18000000);
 
@@ -2063,11 +2101,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
 				store_32bit_word(cpu, 0xa0000000 + 0x26d0,
-				    30000);  /* (emul->physical_ram_in_mb - 16) * (1048576 / 256));  */
+				    30000);  /* (machine->physical_ram_in_mb - 16) * (1048576 / 256));  */
 
 				break;
 			case 20:
-				strcat(emul->machine_name, " (Indigo)");
+				strcat(machine->machine_name, " (Indigo)");
 
 				/*
 				 *  Guesses based on NetBSD 2.0 beta, 20040606.
@@ -2111,7 +2149,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 			case 21:
-				strcat(emul->machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
+				strcat(machine->machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 
@@ -2120,11 +2158,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 				break;
 			case 22:
 			case 24:
-				if (emul->machine == 22) {
-					strcat(emul->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
+				if (machine->machine_subtype == 22) {
+					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9000, 0);
 				} else {
-					strcat(emul->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
+					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9880, 1);
 				}
 
@@ -2168,7 +2206,7 @@ Why is this here? TODO
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				dev_pckbc_init(cpu, mem, 0x1fbd9840, PCKBC_8242,
-				    0, 0, emul->use_x11);  /*  TODO: irq numbers  */
+				    0, 0, machine->use_x11);  /*  TODO: irq numbers  */
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
@@ -2194,11 +2232,11 @@ Why is this here? TODO
 			case 25:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(emul->machine_name, " (Everest IP25)");
+				strcat(machine->machine_name, " (Everest IP25)");
 
 				 /*  serial? irix?  */
 				dev_scc_init(cpu, mem,
-				    0x400086000ULL, 0, emul->use_x11, 0, 8);
+				    0x400086000ULL, 0, machine->use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
 				dev_sgi_ip19_init(cpu, mem,
@@ -2209,18 +2247,18 @@ Why is this here? TODO
 				 *  bytes?  (16 is size of kernel... approx)
 				 */
 				store_32bit_word(cpu, 0xa0000000ULL + 0x26d0,
-				    30000);  /* (emul->physical_ram_in_mb - 16)
+				    30000);  /* (machine->physical_ram_in_mb - 16)
 						 * (1048576 / 256));  */
 
 				break;
 			case 26:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(emul->machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
+				strcat(machine->machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				break;
 			case 27:
-				strcat(emul->machine_name, " (Origin 200/2000, Onyx2)");
+				strcat(machine->machine_name, " (Origin 200/2000, Onyx2)");
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
@@ -2229,7 +2267,7 @@ Why is this here? TODO
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(emul->machine_name, " (Impact Indigo2 ?)");
+				strcat(machine->machine_name, " (Impact Indigo2 ?)");
 
 				dev_random_init(mem, 0x1fbe0000ULL, 1);
 
@@ -2239,7 +2277,7 @@ Why is this here? TODO
 			case 30:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(emul->machine_name, " (Octane)");
+				strcat(machine->machine_name, " (Octane)");
 
 				sgi_ip30_data = dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
 				cpu->md_interrupt = sgi_ip30_interrupt;
@@ -2264,7 +2302,7 @@ Why is this here? TODO
 				 *  readable text.  (TODO)
 				 */
 				dev_ns16550_init(cpu, mem, 0x1f620170, 0, 1,
-				    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+				    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
 				dev_ns16550_init(cpu, mem, 0x1f620178, 0, 1,
 				    0);  /*  TODO: irq?  */
 
@@ -2273,7 +2311,7 @@ Why is this here? TODO
 
 				break;
 			case 32:
-				strcat(emul->machine_name, " (O2)");
+				strcat(machine->machine_name, " (O2)");
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
 				dev_ram_init(mem, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
@@ -2284,7 +2322,7 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
-				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, emul->use_x11);	/*  crime0  */
+				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpu, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
@@ -2329,7 +2367,7 @@ Why is this here? TODO
 
 				dev_pckbc_init(cpu, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
-				    0x800 + MACE_PERIPH_MISC, emul->use_x11);
+				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
 				dev_sgi_mec_init(cpu, mem, 0x1f280000, MACE_ETHERNET);
@@ -2338,7 +2376,7 @@ Why is this here? TODO
 
 				dev_ns16550_init(cpu, mem, 0x1f390000,
 				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
-				    emul->use_x11? 0 : 1);	/*  com0  */
+				    machine->use_x11? 0 : 1);	/*  com0  */
 				dev_ns16550_init(cpu, mem, 0x1f398000,
 				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
 				    0);				/*  com1  */
@@ -2363,13 +2401,13 @@ Why is this here? TODO
 
 				break;
 			case 35:
-				strcat(emul->machine_name, " (Origin 3000)");
+				strcat(machine->machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
 				break;
 			case 53:
-				strcat(emul->machine_name, " (Origin 350)");
+				strcat(machine->machine_name, " (Origin 350)");
 				/*
 				 *  According to http://kumba.drachentekh.net/xml/myguide.html
 				 *  Origin 350, Tezro IP53 R16000
@@ -2377,11 +2415,11 @@ Why is this here? TODO
 				break;
 			default:
 				fatal("unimplemented SGI machine type IP%i\n",
-				    emul->machine);
+				    machine->machine_subtype);
 				exit(1);
 			}
 		} else {
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 
 			case MACHINE_ARC_NEC_RD94:
 			case MACHINE_ARC_NEC_R94:
@@ -2394,15 +2432,15 @@ Why is this here? TODO
 				 *  http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out (NEC-R96)
 				 */
 
-				switch (emul->machine) {
+				switch (machine->machine_subtype) {
 				case MACHINE_ARC_NEC_RD94:
-					strcat(emul->machine_name, " (NEC-RD94, NEC RISCstation 2250)");
+					strcat(machine->machine_name, " (NEC-RD94, NEC RISCstation 2250)");
 					break;
 				case MACHINE_ARC_NEC_R94:
-					strcat(emul->machine_name, " (NEC-R94; NEC RISCstation 2200)");
+					strcat(machine->machine_name, " (NEC-R94; NEC RISCstation 2200)");
 					break;
 				case MACHINE_ARC_NEC_R96:
-					strcat(emul->machine_name, " (NEC-R96; NEC Express RISCserver)");
+					strcat(machine->machine_name, " (NEC-R96; NEC Express RISCserver)");
 					break;
 				}
 
@@ -2412,13 +2450,13 @@ Why is this here? TODO
 
 				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
 				dev_mc146818_init(cpu, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
-				dev_pckbc_init(cpu, mem, 0x80005000ULL, PCKBC_8042, 0, 0, emul->use_x11);
-				dev_ns16550_init(cpu, mem, 0x80006000ULL, 3, 1, emul->use_x11? 0 : 1);  /*  com0  */
+				dev_pckbc_init(cpu, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
+				dev_ns16550_init(cpu, mem, 0x80006000ULL, 3, 1, machine->use_x11? 0 : 1);  /*  com0  */
 				dev_ns16550_init(cpu, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
 				/*  lpt at 0x80008000  */
 				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
-				switch (emul->machine) {
+				switch (machine->machine_subtype) {
 				case MACHINE_ARC_NEC_RD94:
 				case MACHINE_ARC_NEC_R94:
 					/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
@@ -2446,7 +2484,7 @@ Why is this here? TODO
 				 *  Parallel at "start: 0x 0 18c10278, length: 0x1000, level: 5, vector: 5"
 				 */
 
-				strcat(emul->machine_name, " (NEC-R98; NEC RISCserver 4200)");
+				strcat(machine->machine_name, " (NEC-R98; NEC RISCserver 4200)");
 
 				/*
 				 *  Windows NT access stuff at these addresses:
@@ -2500,12 +2538,12 @@ Why is this here? TODO
 				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
 				 */
 
-				switch (emul->machine) {
+				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
-					strcat(emul->machine_name, " (Microsoft Jazz, Acer PICA-61)");
+					strcat(machine->machine_name, " (Microsoft Jazz, Acer PICA-61)");
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
-					strcat(emul->machine_name, " (Microsoft Jazz, MIPS Magnum)");
+					strcat(machine->machine_name, " (Microsoft Jazz, MIPS Magnum)");
 					break;
 				default:
 					fatal("error in machine.c. jazz\n");
@@ -2516,11 +2554,11 @@ Why is this here? TODO
 				    cpu, mem, 0x80000000ULL);
 				cpu->md_interrupt = jazz_interrupt;
 
-				switch (emul->machine) {
+				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
 					dev_vga_init(cpu, mem,
 					    0x400b8000ULL, 0x600003c0ULL,
-					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
+					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
 					arcbios_console_init(cpu, 0x400b8000ULL,
 					    0x600003c0ULL, ARC_CONSOLE_MAX_X,
 					    ARC_CONSOLE_MAX_Y);
@@ -2550,11 +2588,11 @@ Why is this here? TODO
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 				dev_pckbc_init(cpu, mem, 0x80005000ULL,
-				    PCKBC_JAZZ, 8 + 6, 8 + 7, emul->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 
 				dev_ns16550_init(cpu, mem,
 				    0x80006000ULL, 8 + 8, 1,
-				    emul->use_x11? 0 : 1);
+				    machine->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
 				    0x80007000ULL, 8 + 9, 1, 0);
 
@@ -2570,7 +2608,7 @@ Why is this here? TODO
 				 *  See http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html.
 				 */
 
-				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
+				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
 				jazz_data = dev_jazz_init(
 				    cpu, mem, 0x80000000ULL);
@@ -2581,11 +2619,11 @@ Why is this here? TODO
 
 #if 0
 				dev_pckbc_init(cpu, mem, 0x80005000ULL,
-				    PCKBC_JAZZ, 8 + 6, 8 + 7, emul->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 #endif
 				dev_ns16550_init(cpu, mem,
 				    0x80006000ULL, 8 + 8, 1,
-				    emul->use_x11? 0 : 1);
+				    machine->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
 				    0x80007000ULL, 8 + 9, 1, 0);
 
@@ -2602,16 +2640,16 @@ Why is this here? TODO
 				 *  http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html
 				 */
 
-				strcat(emul->machine_name, " (Deskstation Tyne)");
+				strcat(machine->machine_name, " (Deskstation Tyne)");
 
 				dev_vga_init(cpu, mem, 0x1000b8000ULL, 0x9000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
+				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
 
 				arcbios_console_init(cpu, 0x1000b8000ULL,
 				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
-				dev_ns16550_init(cpu, mem, 0x9000003f8ULL, 0, 1, emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem, 0x9000002f8ULL, 0, 1, 0);
 				dev_ns16550_init(cpu, mem, 0x9000003e8ULL, 0, 1, 0);
 				dev_ns16550_init(cpu, mem, 0x9000002e8ULL, 0, 1, 0);
@@ -2625,19 +2663,19 @@ Why is this here? TODO
 #endif
 				/*  PC kbd  */
 				dev_pckbc_init(cpu, mem, 0x900000060ULL,
-				    PCKBC_8042, 0, 0, emul->use_x11);
+				    PCKBC_8042, 0, 0, machine->use_x11);
 
 				break;
 
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
-				    emul->machine);
+				    machine->machine_subtype);
 				exit(1);
 			}
 		}
 
 
-		if (!emul->prom_emulation)
+		if (!machine->prom_emulation)
 			goto no_arc_prom_emulation;	/*  TODO: ugly  */
 
 
@@ -2650,16 +2688,16 @@ Why is this here? TODO
 		if (arc_wordlen == sizeof(uint64_t))
 			arcbios_set_64bit_mode(1);
 
-		if (emul->physical_ram_in_mb < 16)
+		if (machine->physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
 		arcbios_set_default_exception_handler(cpu);
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
-		if (emul->emulation_type == EMULTYPE_SGI) {
+		if (machine->emulation_type == EMULTYPE_SGI) {
 			/*  Vendor ID, max 8 chars:  */
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case 22:
 				strncpy(arcbios_sysid.ProductId,
 				    "87654321", 8);	/*  some kind of ID?  */
@@ -2670,10 +2708,10 @@ Why is this here? TODO
 				break;
 			default:
 				snprintf(arcbios_sysid.ProductId, 8, "IP%i",
-				    emul->machine);
+				    machine->machine_subtype);
 			}
 		} else {
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case MACHINE_ARC_NEC_RD94:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
@@ -2735,7 +2773,7 @@ Why is this here? TODO
 		arc_n_memdescriptors = 0;
 
 		arc_reserved = 0x2000;
-		if (emul->emulation_type == EMULTYPE_SGI)
+		if (machine->emulation_type == EMULTYPE_SGI)
 			arc_reserved = 0x4000;
 
 		arcbios_add_memory_descriptor(cpu, 0, arc_reserved, ARCBIOS_MEM_FirmwarePermanent);
@@ -2744,8 +2782,8 @@ Why is this here? TODO
 		mem_base = 12;
 		mem_base += sgi_ram_offset / 1048576;
 
-		while (mem_base < emul->physical_ram_in_mb + sgi_ram_offset/1048576) {
-			mem_count = emul->physical_ram_in_mb + sgi_ram_offset/1048576
+		while (mem_base < machine->physical_ram_in_mb + sgi_ram_offset/1048576) {
+			mem_count = machine->physical_ram_in_mb + sgi_ram_offset/1048576
 			    - mem_base;
 
 			/*  Skip the 256-512MB region (for devices)  */
@@ -2786,19 +2824,19 @@ Why is this here? TODO
 		 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
 		 */
 
-		if (emul->machine_name == NULL)
+		if (machine->machine_name == NULL)
 			fatal("ERROR: machine_name == NULL\n");
 		if (short_machine_name == NULL)
 			fatal("ERROR: short_machine_name == NULL\n");
 
-		switch (emul->emulation_type) {
+		switch (machine->emulation_type) {
 		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 2, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */ , NULL, 0);
 			break;
 		default:
 			/*  ARC:  */
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */ , NULL, 0);
@@ -2833,7 +2871,7 @@ Why is this here? TODO
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
-				    emul->machine);
+				    machine->machine_subtype);
 				exit(1);
 			}
 		}
@@ -2844,7 +2882,7 @@ Why is this here? TODO
 		 */
 		debug("ARC system @ 0x%llx\n", (long long)system);
 
-		for (i=0; i<emul->ncpus; i++) {
+		for (i=0; i<machine->ncpus; i++) {
 			uint64_t cpuaddr, fpu=0, picache, pdcache, sdcache=0;
 			int cache_size, cache_line_size;
 			unsigned int jj;
@@ -2852,13 +2890,13 @@ Why is this here? TODO
 			char arc_fpc_name[105];
 
 			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
-			    "MIPS-%s", emul->emul_cpu_name);
+			    "MIPS-%s", machine->cpu_name);
 
-			if (emul->emulation_type == EMULTYPE_ARC &&
-			    emul->machine == MACHINE_ARC_NEC_R96)
+			if (machine->emulation_type == EMULTYPE_ARC &&
+			    machine->machine_subtype == MACHINE_ARC_NEC_R96)
 				snprintf(arc_cpu_name, sizeof(arc_cpu_name),
 				    "MIPS-%s - Pr 4/5.0, Fp 5/0",
-				    emul->emul_cpu_name);
+				    machine->cpu_name);
 
 			arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
 			for (jj=0; jj<strlen(arc_cpu_name); jj++)
@@ -2876,19 +2914,19 @@ Why is this here? TODO
 			 *  really used by ARC implementations?
 			 *  At least SGI-IP32 uses it.
 			 */
-			if (emul->emulation_type == EMULTYPE_SGI)
+			if (machine->emulation_type == EMULTYPE_SGI)
 				fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
 				    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
-			if (emul->cache_picache)
-				cache_size = emul->cache_picache - 12;
+			if (machine->cache_picache)
+				cache_size = machine->cache_picache - 12;
 			if (cache_size < 0)
 				cache_size = 0;
 
 			cache_line_size = DEFAULT_PCACHE_LINESIZE;
-			if (emul->cache_picache_linesize)
-				cache_line_size = emul->cache_picache_linesize;
+			if (machine->cache_picache_linesize)
+				cache_line_size = machine->cache_picache_linesize;
 			if (cache_line_size < 0)
 				cache_line_size = 0;
 
@@ -2905,14 +2943,14 @@ Why is this here? TODO
 			    0xffffffff, NULL, cpuaddr, NULL, 0);
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
-			if (emul->cache_pdcache)
-				cache_size = emul->cache_pdcache - 12;
+			if (machine->cache_pdcache)
+				cache_size = machine->cache_pdcache - 12;
 			if (cache_size < 0)
 				cache_size = 0;
 
 			cache_line_size = DEFAULT_PCACHE_LINESIZE;
-			if (emul->cache_pdcache_linesize)
-				cache_line_size = emul->cache_pdcache_linesize;
+			if (machine->cache_pdcache_linesize)
+				cache_line_size = machine->cache_pdcache_linesize;
 			if (cache_line_size < 0)
 				cache_line_size = 0;
 
@@ -2927,12 +2965,12 @@ Why is this here? TODO
 				/*  32 bytes per line, default = 32 KB total  */
 			    0xffffffff, NULL, cpuaddr, NULL, 0);
 
-			if (emul->cache_secondary >= 12) {
-				cache_size = emul->cache_secondary - 12;
+			if (machine->cache_secondary >= 12) {
+				cache_size = machine->cache_secondary - 12;
 
 				cache_line_size = 6;	/*  64 bytes default  */
-				if (emul->cache_secondary_linesize)
-					cache_line_size = emul->cache_secondary_linesize;
+				if (machine->cache_secondary_linesize)
+					cache_line_size = machine->cache_secondary_linesize;
 				if (cache_line_size < 0)
 					cache_line_size = 0;
 
@@ -2958,11 +2996,11 @@ Why is this here? TODO
 			debug("    picache @ 0x%llx, pdcache @ 0x%llx\n",
 			    (long long)picache, (long long)pdcache);
 
-			if (emul->cache_secondary >= 12)
+			if (machine->cache_secondary >= 12)
 				debug("    sdcache @ 0x%llx\n",
 				    (long long)sdcache);
 
-			if (emul->emulation_type == EMULTYPE_SGI) {
+			if (machine->emulation_type == EMULTYPE_SGI) {
 				/*  TODO:  Memory amount (and base address?)!  */
 				uint64_t memory = arcbios_addchild_manual(cpu, COMPONENT_CLASS_MemoryClass,
 				    COMPONENT_TYPE_MemoryUnit,
@@ -2979,7 +3017,7 @@ Why is this here? TODO
 		 *  the rest of device initialization?
 		 */
 
-		if (emul->emulation_type == EMULTYPE_SGI) {
+		if (machine->emulation_type == EMULTYPE_SGI) {
 			/*  TODO: On which models is this required?  */
 			coproc_tlb_set_entry(cpu, 0, 1048576*16,
 			    0xc000000000000000ULL,
@@ -2987,10 +3025,10 @@ Why is this here? TODO
 			    1, 1, 1, 1, 1, 0, 2, 2);
 		}
 
-		if (emul->emulation_type == EMULTYPE_ARC &&
-		    ( emul->machine == MACHINE_ARC_NEC_RD94 ||
-		    emul->machine == MACHINE_ARC_NEC_R94 ||
-		    emul->machine == MACHINE_ARC_NEC_R96 )) {
+		if (machine->emulation_type == EMULTYPE_ARC &&
+		    ( machine->machine_subtype == MACHINE_ARC_NEC_RD94 ||
+		    machine->machine_subtype == MACHINE_ARC_NEC_R94 ||
+		    machine->machine_subtype == MACHINE_ARC_NEC_R96 )) {
 			uint64_t jazzbus, eisa, other;
 
 			jazzbus = arcbios_addchild_manual(cpu,
@@ -2999,10 +3037,10 @@ Why is this here? TODO
 			    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
 			    system, NULL, 0);
 
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case MACHINE_ARC_NEC_RD94:
 			case MACHINE_ARC_NEC_R94:
-				if (emul->use_x11)
+				if (machine->use_x11)
 					arcbios_addchild_manual(cpu,
 					    COMPONENT_CLASS_ControllerClass,
 					    COMPONENT_TYPE_DisplayController,
@@ -3010,7 +3048,7 @@ Why is this here? TODO
 					    system, NULL, 0);
 				break;
 			case MACHINE_ARC_NEC_R96:
-				if (emul->use_x11) {
+				if (machine->use_x11) {
 					uint64_t x;
 					x = arcbios_addchild_manual(cpu,
 					    COMPONENT_CLASS_ControllerClass,
@@ -3045,9 +3083,9 @@ Why is this here? TODO
 			}
 		}
 
-		if (emul->emulation_type == EMULTYPE_ARC &&
-		    (emul->machine == MACHINE_ARC_JAZZ_PICA
-		    || emul->machine == MACHINE_ARC_JAZZ_MAGNUM)) {
+		if (machine->emulation_type == EMULTYPE_ARC &&
+		    (machine->machine_subtype == MACHINE_ARC_JAZZ_PICA
+		    || machine->machine_subtype == MACHINE_ARC_JAZZ_MAGNUM)) {
 			uint64_t jazzbus, ali_s3, vxl;
 			uint64_t diskcontroller, floppy, kbdctl, kbd;
 			uint64_t ptrctl, ptr, paral, audio;
@@ -3064,7 +3102,7 @@ Why is this here? TODO
 			 *  DisplayController, needed by NetBSD:
 			 *  TODO: NetBSD still doesn't use it :(
 			 */
-			switch (emul->machine) {
+			switch (machine->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
 				/*  Default TLB entries on PICA-61:  */
 
@@ -3125,7 +3163,7 @@ Why is this here? TODO
 				    0x090000000ULL, 0x091000000ULL,
 				    1, 1, 1, 1, 1, 0, 2, 2);
 
-				if (emul->use_x11) {
+				if (machine->use_x11) {
 					ali_s3 = arcbios_addchild_manual(cpu,
 					    COMPONENT_CLASS_ControllerClass,
 					    COMPONENT_TYPE_DisplayController,
@@ -3144,7 +3182,7 @@ Why is this here? TODO
 				}
 				break;
 			case MACHINE_ARC_JAZZ_MAGNUM:
-				if (emul->use_x11) {
+				if (machine->use_x11) {
 					vxl = arcbios_addchild_manual(cpu,
 					    COMPONENT_CLASS_ControllerClass,
 					    COMPONENT_TYPE_DisplayController,
@@ -3322,7 +3360,7 @@ config[77] = 0x30;
 		}
 
 
-		add_symbol_name(&emul->symbol_context,
+		add_symbol_name(&machine->symbol_context,
 		    ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
 
 		switch (arc_wordlen) {
@@ -3363,7 +3401,7 @@ config[77] = 0x30;
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBLength, sizeof(arcbios_spb));
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Version, 1);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, machine->emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
@@ -3379,7 +3417,7 @@ config[77] = 0x30;
 		 */
 		init_bootpath = malloc(200);
 
-		if (bootdev_id < 0 || emul->force_netboot) {
+		if (bootdev_id < 0 || machine->force_netboot) {
 			snprintf(init_bootpath, 200, "tftp()\\");
 		} else {
 			if (diskimage_is_a_cdrom(bootdev_id))
@@ -3391,18 +3429,18 @@ config[77] = 0x30;
 		}
 
 		bootstr = malloc(strlen(init_bootpath) +
-		    strlen(emul->boot_kernel_filename) + 1);
+		    strlen(machine->boot_kernel_filename) + 1);
 		strcpy(bootstr, init_bootpath);
-		strcat(bootstr, emul->boot_kernel_filename);
+		strcat(bootstr, machine->boot_kernel_filename);
 
 		/*  Boot args., eg "-a"  */
-		bootarg = emul->boot_string_argument;
+		bootarg = machine->boot_string_argument;
 
 		/*  argc, argv, envp in a0, a1, a2:  */
 		cpu->gpr[GPR_A0] = 0;	/*  note: argc is increased later  */
 
 		/*  TODO:  not needed?  */
-		cpu->gpr[GPR_SP] = emul->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->gpr[GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		/*  Set up argc/argv:  */
 		addr = ARC_ENV_STRINGS;
@@ -3428,8 +3466,8 @@ config[77] = 0x30;
 		 *  as a string using add_environment_string(), and add a
 		 *  pointer to it to the ARC_ENV_POINTERS array.
 		 */
-		if (emul->use_x11) {
-			if (emul->emulation_type == EMULTYPE_ARC) {
+		if (machine->use_x11) {
+			if (machine->emulation_type == EMULTYPE_ARC) {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -3446,7 +3484,7 @@ config[77] = 0x30;
 				add_environment_string(cpu, "console=g", &addr);
 			}
 		} else {
-			if (emul->emulation_type == EMULTYPE_ARC) {
+			if (machine->emulation_type == EMULTYPE_ARC) {
 				/*  TODO: serial console for ARC?  */
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=multi()serial(0)", &addr);
@@ -3464,7 +3502,7 @@ config[77] = 0x30;
 			}
 		}
 
-		if (emul->emulation_type == EMULTYPE_SGI) {
+		if (machine->emulation_type == EMULTYPE_SGI) {
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "AutoLoad=No", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -3546,11 +3584,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case EMULTYPE_MESHCUBE:
-		emul->machine_name = "MeshCube";
+		machine->machine_name = "MeshCube";
 
-		if (emul->physical_ram_in_mb != 64)
+		if (machine->physical_ram_in_mb != 64)
 			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
-		if (emul->use_x11)
+		if (machine->use_x11)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
@@ -3589,11 +3627,11 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case EMULTYPE_NETGEAR:
-		emul->machine_name = "NetGear WG602";
+		machine->machine_name = "NetGear WG602";
 
-		if (emul->use_x11)
+		if (machine->use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
-		if (emul->physical_ram_in_mb != 16)
+		if (machine->physical_ram_in_mb != 16)
 			fprintf(stderr, "WARNING! Real NetGear WG602 boxes have exactly 16 MB RAM. Continuing anyway.\n");
 
 		/*
@@ -3606,14 +3644,14 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		break;
 
 	case EMULTYPE_WRT54G:
-		emul->machine_name = "Linksys WRT54G";
+		machine->machine_name = "Linksys WRT54G";
 
-		if (emul->use_x11)
+		if (machine->use_x11)
 			fprintf(stderr, "WARNING! Linksys WRT54G with -X is meaningless. Continuing anyway.\n");
 
 		/*  200 MHz default  */
-		if (emul->emulated_hz == 0)
-			emul->emulated_hz = 200000000;
+		if (machine->emulated_hz == 0)
+			machine->emulated_hz = 200000000;
 
 		/*
 		 *  Linux should be loaded at 0x80001000.
@@ -3666,7 +3704,7 @@ for (i=0; i<32; i++)
 		 *  See http://katsu.watanabe.name/doc/sonynews/model.html
 		 *  for more details.
 		 */
-		emul->machine_name = "Sony NeWS (NET WORK STATION)";
+		machine->machine_name = "Sony NeWS (NET WORK STATION)";
 
 {
 int i;
@@ -3679,19 +3717,19 @@ for (i=0; i<32; i++)
 		break;
 
 	default:
-		fatal("Unknown emulation type %i\n", emul->emulation_type);
+		fatal("Unknown emulation type %i\n", machine->emulation_type);
 		exit(1);
 	}
 
-	if (emul->machine_name != NULL)
-		debug("machine: %s", emul->machine_name);
+	if (machine->machine_name != NULL)
+		debug("machine: %s", machine->machine_name);
 
-	if (emul->emulated_hz > 0)
-		debug(" (%.2f MHz)", (float)emul->emulated_hz / 1000000);
+	if (machine->emulated_hz > 0)
+		debug(" (%.2f MHz)", (float)machine->emulated_hz / 1000000);
 	debug("\n");
 
-	if (emul->emulated_hz < 1)
-		emul->emulated_hz = 1500000;
+	if (machine->emulated_hz < 1)
+		machine->emulated_hz = 1500000;
 
 	if (bootstr != NULL) {
 		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)",

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.20 2005-01-18 14:44:13 debug Exp $
+ *  $Id: memory_v2p.c,v 1.21 2005-01-19 14:24:23 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -53,7 +53,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	uint64_t vaddr_vpn2=0, vaddr_asid=0;
 	int exccode, tlb_refill;
 	struct coproc *cp0;
-	int bintrans_cached = cpu->emul->bintrans_enable;
+	int bintrans_cached = cpu->machine->bintrans_enable;
 
 #ifdef V2P_MMU3K
 	const int x_64 = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.42 2005-01-18 14:44:13 debug Exp $
+ *  $Id: debugger.c,v 1.43 2005-01-19 14:24:22 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -55,6 +55,7 @@
 #include "cop0.h"
 #include "cpu_types.h"
 #include "emul.h"
+#include "machine.h"
 #include "memory.h"
 
 #ifdef HACK_STRTOLL
@@ -74,6 +75,7 @@ extern int quiet_mode;
  */
 
 static struct emul *debugger_emul;
+static struct machine *debugger_machine;
 
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -163,14 +165,14 @@ void debugger_activate(int x)
 #define	NAME_PARSE_REGISTER	2
 #define	NAME_PARSE_NUMBER	3
 #define	NAME_PARSE_SYMBOL	4
-static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
+static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	uint64_t *valuep)
 {
 	int match_register = 0, match_symbol = 0, match_numeric = 0;
 	int skip_register, skip_numeric, skip_symbol;
 	int cpunr = 0;
 
-	if (emul == NULL || name == NULL) {
+	if (m == NULL || name == NULL) {
 		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");
 		exit(1);
 	}
@@ -193,42 +195,42 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 		/*  Register name:  */
 		if (strcasecmp(name, "pc") == 0) {
 			if (writeflag) {
-				emul->cpus[cpunr]->pc = *valuep;
-				if (emul->cpus[cpunr]->delay_slot) {
+				m->cpus[cpunr]->pc = *valuep;
+				if (m->cpus[cpunr]->delay_slot) {
 					printf("NOTE: Clearing the delay slot"
 					    " flag! (It was set before.)\n");
-					emul->cpus[cpunr]->delay_slot = 0;
+					m->cpus[cpunr]->delay_slot = 0;
 				}
-				if (emul->cpus[cpunr]->nullify_next) {
+				if (m->cpus[cpunr]->nullify_next) {
 					printf("NOTE: Clearing the nullify-ne"
 					    "xt flag! (It was set before.)\n");
-					emul->cpus[cpunr]->nullify_next = 0;
+					m->cpus[cpunr]->nullify_next = 0;
 				}
 			} else
-				*valuep = emul->cpus[cpunr]->pc;
+				*valuep = m->cpus[cpunr]->pc;
 			match_register = 1;
 		} else if (strcasecmp(name, "hi") == 0) {
 			if (writeflag)
-				emul->cpus[cpunr]->hi = *valuep;
+				m->cpus[cpunr]->hi = *valuep;
 			else
-				*valuep = emul->cpus[cpunr]->hi;
+				*valuep = m->cpus[cpunr]->hi;
 			match_register = 1;
 		} else if (strcasecmp(name, "lo") == 0) {
 			if (writeflag)
-				emul->cpus[cpunr]->lo = *valuep;
+				m->cpus[cpunr]->lo = *valuep;
 			else
-				*valuep = emul->cpus[cpunr]->lo;
+				*valuep = m->cpus[cpunr]->lo;
 			match_register = 1;
 		} else if (name[0] == 'r' && isdigit((int)name[1])) {
 			int nr = atoi(name + 1);
 			if (nr >= 0 && nr < 32) {
 				if (writeflag) {
 					if (nr != 0)
-						emul->cpus[cpunr]->gpr[nr] = *valuep;
+						m->cpus[cpunr]->gpr[nr] = *valuep;
 					else
 						printf("WARNING: Attempt to modify r0.\n");
 				} else
-					*valuep = emul->cpus[cpunr]->gpr[nr];
+					*valuep = m->cpus[cpunr]->gpr[nr];
 				match_register = 1;
 			}
 		} else {
@@ -238,11 +240,11 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 				if (strcmp(name, regnames[nr]) == 0) {
 					if (writeflag) {
 						if (nr != 0)
-							emul->cpus[cpunr]->gpr[nr] = *valuep;
+							m->cpus[cpunr]->gpr[nr] = *valuep;
 						else
 							printf("WARNING: Attempt to modify r0.\n");
 					} else
-						*valuep = emul->cpus[cpunr]->gpr[nr];
+						*valuep = m->cpus[cpunr]->gpr[nr];
 					match_register = 1;
 				}
 		}
@@ -253,12 +255,12 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 			for (nr=0; nr<32; nr++)
 				if (strcmp(name, cop0_names[nr]) == 0) {
 					if (writeflag) {
-						coproc_register_write(emul->cpus[cpunr],
-						    emul->cpus[cpunr]->coproc[0], nr,
+						coproc_register_write(m->cpus[cpunr],
+						    m->cpus[cpunr]->coproc[0], nr,
 						    valuep, 1);
 					} else {
 						/*  TODO: Use coproc_register_read instead?  */
-						*valuep = emul->cpus[cpunr]->coproc[0]->reg[nr];
+						*valuep = m->cpus[cpunr]->coproc[0]->reg[nr];
 					}
 					match_register = 1;
 				}
@@ -298,7 +300,7 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 			ofs = strtoull(p+1, NULL, 0);
 		}
 
-		res = get_symbol_addr(&emul->symbol_context, sn, &newaddr);
+		res = get_symbol_addr(&m->symbol_context, sn, &newaddr);
 		if (res) {
 			if (writeflag) {
 				printf("You cannot assign like that.\n");
@@ -327,14 +329,14 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 /*
  *  show_breakpoint():
  */
-static void show_breakpoint(struct emul *emul, int i)
+static void show_breakpoint(struct machine *m, int i)
 {
 	printf("%3i: 0x%016llx", i,
-	    (long long)emul->breakpoint_addr[i]);
-	if (emul->breakpoint_string[i] != NULL)
-		printf(" (%s)", emul->breakpoint_string[i]);
-	if (emul->breakpoint_flags[i])
-		printf(": flags=0x%x", emul->breakpoint_flags[i]);
+	    (long long)m->breakpoint_addr[i]);
+	if (m->breakpoint_string[i] != NULL)
+		printf(" (%s)", m->breakpoint_string[i]);
+	if (m->breakpoint_flags[i])
+		printf(": flags=0x%x", m->breakpoint_flags[i]);
 	printf("\n");
 }
 
@@ -347,7 +349,7 @@ static void show_breakpoint(struct emul *emul, int i)
  *
  *  TODO: automagic "expansion" for the subcommand names (s => show).
  */
-static void debugger_cmd_breakpoint(struct emul *emul, char *cmd_line)
+static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 {
 	int i, res;
 
@@ -364,66 +366,66 @@ static void debugger_cmd_breakpoint(struct emul *emul, char *cmd_line)
 	}
 
 	if (strcmp(cmd_line, "show") == 0) {
-		if (emul->n_breakpoints == 0)
+		if (m->n_breakpoints == 0)
 			printf("No breakpoints set.\n");
-		for (i=0; i<emul->n_breakpoints; i++)
-			show_breakpoint(emul, i);
+		for (i=0; i<m->n_breakpoints; i++)
+			show_breakpoint(m, i);
 		return;
 	}
 
 	if (strncmp(cmd_line, "delete ", 7) == 0) {
 		int x = atoi(cmd_line + 7);
 
-		if (emul->n_breakpoints == 0) {
+		if (m->n_breakpoints == 0) {
 			printf("No breakpoints set.\n");
 			return;
 		}
-		if (x < 0 || x >= emul->n_breakpoints) {
+		if (x < 0 || x >= m->n_breakpoints) {
 			printf("Invalid breakpoint nr %i. Use 'breakpoint "
 			    "show' to see the current breakpoints.\n", x);
 			return;
 		}
 
-		free(emul->breakpoint_string[x]);
+		free(m->breakpoint_string[x]);
 
-		for (i=x; i<emul->n_breakpoints-1; i++) {
-			emul->breakpoint_addr[i]   = emul->breakpoint_addr[i+1];
-			emul->breakpoint_string[i] = emul->breakpoint_string[i+1];
-			emul->breakpoint_flags[i]  = emul->breakpoint_flags[i+1];
+		for (i=x; i<m->n_breakpoints-1; i++) {
+			m->breakpoint_addr[i]   = m->breakpoint_addr[i+1];
+			m->breakpoint_string[i] = m->breakpoint_string[i+1];
+			m->breakpoint_flags[i]  = m->breakpoint_flags[i+1];
 		}
-		emul->n_breakpoints --;
+		m->n_breakpoints --;
 		return;
 	}
 
 	if (strncmp(cmd_line, "add ", 4) == 0) {
 		uint64_t tmp;
 
-		if (emul->n_breakpoints >= MAX_BREAKPOINTS) {
+		if (m->n_breakpoints >= MAX_BREAKPOINTS) {
 			printf("Too many breakpoints. (You need to recompile"
 			    " mips64emul to increase this. Max = %i.)\n",
 			    MAX_BREAKPOINTS);
 			return;
 		}
 
-		i = emul->n_breakpoints;
+		i = m->n_breakpoints;
 
-		res = debugger_parse_name(emul, cmd_line + 4, 0, &tmp);
+		res = debugger_parse_name(m, cmd_line + 4, 0, &tmp);
 		if (!res) {
 			printf("Couldn't parse '%s'\n", cmd_line + 4);
 			return;
 		}
 
-		emul->breakpoint_string[i] = malloc(strlen(cmd_line+4) + 1);
-		if (emul->breakpoint_string[i] == NULL) {
+		m->breakpoint_string[i] = malloc(strlen(cmd_line+4) + 1);
+		if (m->breakpoint_string[i] == NULL) {
 			printf("out of memory in debugger_cmd_breakpoint()\n");
 			exit(1);
 		}
-		strcpy(emul->breakpoint_string[i], cmd_line+4);
-		emul->breakpoint_addr[i] = tmp;
-		emul->breakpoint_flags[i] = 0;
+		strcpy(m->breakpoint_string[i], cmd_line+4);
+		m->breakpoint_addr[i] = tmp;
+		m->breakpoint_flags[i] = 0;
 
-		emul->n_breakpoints ++;
-		show_breakpoint(emul, i);
+		m->n_breakpoints ++;
+		show_breakpoint(m, i);
 		return;
 	}
 
@@ -434,23 +436,23 @@ static void debugger_cmd_breakpoint(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_bintrans():
  */
-static void debugger_cmd_bintrans(struct emul *emul, char *cmd_line)
+static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 {
-	if (!emul->bintrans_enabled_from_start) {
+	if (!m->bintrans_enabled_from_start) {
 		printf("You must have enabled bintrans from the start of the simulation.\n"
 		    "It is not possible to turn on afterwards.\n");
 		return;
 	}
 
-	emul->bintrans_enable = !emul->bintrans_enable;
-	printf("bintrans_enable = %s\n", emul->bintrans_enable? "ON" : "OFF");
+	m->bintrans_enable = !m->bintrans_enable;
+	printf("bintrans_enable = %s\n", m->bintrans_enable? "ON" : "OFF");
 }
 
 
 /*
  *  debugger_cmd_continue():
  */
-static void debugger_cmd_continue(struct emul *emul, char *cmd_line)
+static void debugger_cmd_continue(struct machine *m, char *cmd_line)
 {
 	exit_debugger = 1;
 }
@@ -459,36 +461,36 @@ static void debugger_cmd_continue(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_devices():
  */
-static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
+static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 {
 	int i;
-	struct memory *m;
+	struct memory *mem;
 	struct cpu *c;
 
-	if (emul->cpus == NULL) {
+	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = emul->cpus[emul->bootstrap_cpu];
+	c = m->cpus[m->bootstrap_cpu];
 	if (c == NULL) {
-		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = emul->cpus[emul->bootstrap_cpu]->mem;
+	mem = m->cpus[m->bootstrap_cpu]->mem;
 
-	if (m->n_mmapped_devices == 0)
+	if (mem->n_mmapped_devices == 0)
 		printf("No memory-mapped devices\n");
 
-	for (i=0; i<m->n_mmapped_devices; i++) {
+	for (i=0; i<mem->n_mmapped_devices; i++) {
 		printf("%2i: %25s @ 0x%011llx, len = 0x%llx",
-		    i, m->dev_name[i],
-		    (long long)m->dev_baseaddr[i],
-		    (long long)m->dev_length[i]);
-		if (m->dev_flags[i]) {
+		    i, mem->dev_name[i],
+		    (long long)mem->dev_baseaddr[i],
+		    (long long)mem->dev_length[i]);
+		if (mem->dev_flags[i]) {
 			printf(" (");
-			if (m->dev_flags[i] & MEM_BINTRANS_OK)
+			if (mem->dev_flags[i] & MEM_BINTRANS_OK)
 				printf("BINTRANS R");
-			if (m->dev_flags[i] & MEM_BINTRANS_WRITE_OK)
+			if (mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK)
 				printf("+W");
 			printf(")");
 		}
@@ -500,10 +502,10 @@ static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_devstate():
  */
-static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
+static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 {
 	int i, j;
-	struct memory *m;
+	struct memory *mem;
 	struct cpu *c;
 
 	if (cmd_line[0] == '\0') {
@@ -514,23 +516,23 @@ static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 
 	i = strtoll(cmd_line, NULL, 0);
 
-	if (emul->cpus == NULL) {
+	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = emul->cpus[emul->bootstrap_cpu];
+	c = m->cpus[m->bootstrap_cpu];
 	if (c == NULL) {
-		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = emul->cpus[emul->bootstrap_cpu]->mem;
+	mem = m->cpus[m->bootstrap_cpu]->mem;
 
-	if (i < 0 || i >= m->n_mmapped_devices) {
+	if (i < 0 || i >= mem->n_mmapped_devices) {
 		printf("No devices with that id.\n");
 		return;
 	}
 
-	if (m->dev_f_state[i] == NULL) {
+	if (mem->dev_f_state[i] == NULL) {
 		printf("No state function has been implemented yet for that device type.\n");
 		return;
 	}
@@ -540,7 +542,7 @@ static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 		char *name;
 		void *data;
 		size_t len;
-		int res = m->dev_f_state[i](c, m, m->dev_extra[i], 0,
+		int res = mem->dev_f_state[i](c, mem, mem->dev_extra[i], 0,
 		    j, &type, &name, &data, &len);
 		if (!res)
 			break;
@@ -560,16 +562,16 @@ static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_dump():
  */
-static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
+static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 {
 	uint64_t addr, addr_start, addr_end;
 	struct cpu *c;
-	struct memory *m;
+	struct memory *mem;
 	int x, r;
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		r = debugger_parse_name(emul, cmd_line, 0, &tmp);
+		r = debugger_parse_name(m, cmd_line, 0, &tmp);
 		if (r)
 			last_dump_addr = tmp;
 		else {
@@ -581,23 +583,23 @@ static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
 	addr_start = last_dump_addr;
 	addr_end = addr_start + 256;
 
-	if (emul->cpus == NULL) {
+	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = emul->cpus[emul->bootstrap_cpu];
+	c = m->cpus[m->bootstrap_cpu];
 	if (c == NULL) {
-		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = emul->cpus[emul->bootstrap_cpu]->mem;
+	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start & ~0xf;
 
 	while (addr < addr_end) {
 		unsigned char buf[16];
 		memset(buf, 0, sizeof(buf));
-		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		r = memory_rw(c, mem, addr, &buf[0], sizeof(buf), MEM_READ,
 		    CACHE_NONE | NO_EXCEPTIONS);
 
 		printf("0x%016llx  ", (long long)addr);
@@ -635,13 +637,13 @@ static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
 
 
 /*  This is defined below.  */
-static void debugger_cmd_help(struct emul *emul, char *cmd_line);
+static void debugger_cmd_help(struct machine *m, char *cmd_line);
 
 
 /*
  *  debugger_cmd_itrace():
  */
-static void debugger_cmd_itrace(struct emul *emul, char *cmd_line)
+static void debugger_cmd_itrace(struct machine *m, char *cmd_line)
 {
 	old_instruction_trace = 1 - old_instruction_trace;
 	printf("instruction_trace = %s\n", old_instruction_trace? "ON":"OFF");
@@ -654,7 +656,7 @@ static void debugger_cmd_itrace(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_lookup():
  */
-static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
+static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
 {
 	uint64_t addr;
 	int res;
@@ -673,7 +675,7 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 
 	if (addr == 0) {
 		uint64_t newaddr;
-		res = get_symbol_addr(&emul->symbol_context,
+		res = get_symbol_addr(&m->symbol_context,
 		    cmd_line, &newaddr);
 		if (!res) {
 			printf("lookup for '%s' failed\n", cmd_line);
@@ -683,7 +685,7 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 		return;
 	}
 
-	symbol = get_symbol_name(&emul->symbol_context, addr, &offset);
+	symbol = get_symbol_name(&m->symbol_context, addr, &offset);
 
 	if (symbol != NULL)
 		printf("0x%016llx = %s\n", (long long)addr, symbol);
@@ -695,66 +697,79 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_machine():
  */
-static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
+static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int i;
+	int i, j, nm = debugger_emul->n_machines, iadd = 4;
 
-	printf("ram: %i MB", emul->physical_ram_in_mb);
-	if (emul->memory_offset_in_mb != 0)
-		printf(" (offset by %i MB)", emul->memory_offset_in_mb);
-	printf("\n");
-
-	for (i=0; i<emul->ncpus; i++) {
-		struct cpu_type_def *ct = &emul->cpus[i]->cpu_type;
-
-		printf("cpu%i: %s, %s",
-		    i, ct->name, emul->cpus[i]->running? "running" : "stopped");
-
-		printf(" (%i-bit ",
-		    (ct->isa_level < 3 || ct->isa_level == 32)? 32 : 64);
-
-		printf("%s, ", emul->cpus[i]->byte_order
-		    == EMUL_BIG_ENDIAN? "BE" : "LE");
-
-		printf("%i TLB entries", ct->nr_of_tlb_entries);
-
-		if (ct->default_picache || ct->default_pdcache)
-			printf(", I+D = %i+%i KB",
-			    (1 << ct->default_picache) / 1024,
-			    (1 << ct->default_pdcache) / 1024);
-
-		if (ct->default_scache) {
-			int kb = (1 << ct->default_scache) / 1024;
-			printf(", L2 = %i %cB",
-			    kb >= 1024? kb / 1024 : kb,
-			    kb >= 1024? 'M' : 'K');
+	for (j=0; j<nm; j++) {
+		if (nm > 1) {
+			debug("machine %i:", j);
+			if (debugger_machine == debugger_emul->machines[j])
+				debug(" [ FOCUSED ]");
+			debug("\n");
+			debug_indentation(iadd);
 		}
 
-		printf(")\n");
-	}
+		debug("ram: %i MB", m->physical_ram_in_mb);
+		if (m->memory_offset_in_mb != 0)
+			debug(" (offset by %i MB)", m->memory_offset_in_mb);
+		debug("\n");
 
-	if (emul->ncpus > 1)
-		printf("Bootstrap cpu is nr %i\n", emul->bootstrap_cpu);
+		for (i=0; i<m->ncpus; i++) {
+			struct cpu_type_def *ct = &m->cpus[i]->cpu_type;
+
+			debug("cpu%i: %s, %s", i, ct->name,
+			    m->cpus[i]->running? "running" : "stopped");
+
+			debug(" (%i-bit ", (ct->isa_level < 3 ||
+			    ct->isa_level == 32)? 32 : 64);
+
+			debug("%s, ", m->cpus[i]->byte_order
+			    == EMUL_BIG_ENDIAN? "BE" : "LE");
+
+			debug("%i TLB entries", ct->nr_of_tlb_entries);
+
+			if (ct->default_picache || ct->default_pdcache)
+				debug(", I+D = %i+%i KB",
+				    (1 << ct->default_picache) / 1024,
+				    (1 << ct->default_pdcache) / 1024);
+
+			if (ct->default_scache) {
+				int kb = (1 << ct->default_scache) / 1024;
+				debug(", L2 = %i %cB",
+				    kb >= 1024? kb / 1024 : kb,
+				    kb >= 1024? 'M' : 'K');
+			}
+
+			debug(")\n");
+		}
+
+		if (m->ncpus > 1)
+			debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
+
+		if (nm > 1)
+			debug_indentation(-iadd);
+	}
 }
 
 
 /*
  *  debugger_cmd_opcodestats():
  */
-static void debugger_cmd_opcodestats(struct emul *emul, char *cmd_line)
+static void debugger_cmd_opcodestats(struct machine *m, char *cmd_line)
 {
-	if (!emul->show_opcode_statistics) {
+	if (!m->show_opcode_statistics) {
 		printf("You need to start the emulator "
 		    "with -s, if you want to gather statistics.\n");
 	} else
-		cpu_show_full_statistics(emul);
+		cpu_show_full_statistics(m);
 }
 
 
 /*
  *  debugger_cmd_print():
  */
-static void debugger_cmd_print(struct emul *emul, char *cmd_line)
+static void debugger_cmd_print(struct machine *m, char *cmd_line)
 {
 	int res;
 	uint64_t tmp;
@@ -767,7 +782,7 @@ static void debugger_cmd_print(struct emul *emul, char *cmd_line)
 		return;
 	}
 
-	res = debugger_parse_name(emul, cmd_line, 0, &tmp);
+	res = debugger_parse_name(m, cmd_line, 0, &tmp);
 	switch (res) {
 	case NAME_PARSE_NOMATCH:
 		printf("No match.\n");
@@ -789,7 +804,7 @@ static void debugger_cmd_print(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_put():
  */
-static void debugger_cmd_put(struct emul *emul, char *cmd_line)
+static void debugger_cmd_put(struct machine *m, char *cmd_line)
 {
 	static char put_type = ' ';  /*  Remembered across multiple calls.  */
 	char copy[200];
@@ -848,7 +863,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 
 	/*  here: q is the address, p is the data.  */
 
-	res = debugger_parse_name(emul, q, 0, &addr);
+	res = debugger_parse_name(m, q, 0, &addr);
 	switch (res) {
 	case NAME_PARSE_NOMATCH:
 		printf("Couldn't parse the address.\n");
@@ -866,7 +881,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		return;
 	}
 
-	res = debugger_parse_name(emul, p, 0, &data);
+	res = debugger_parse_name(m, p, 0, &data);
 	switch (res) {
 	case NAME_PARSE_NOMATCH:
 		printf("Couldn't parse the data.\n");
@@ -892,7 +907,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		printf("0x%016llx: %02x", (long long)addr, a_byte);
 		if (data > 255)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
-		res = memory_rw(emul->cpus[0], emul->cpus[0]->mem, addr,
+		res = memory_rw(m->cpus[0], m->cpus[0]->mem, addr,
 		    &a_byte, 1, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		if (!res)
 			printf("  FAILED!\n");
@@ -904,7 +919,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		printf("0x%016llx: %04x", (long long)addr, (int)data);
 		if (data > 0xffff)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
-		res = store_16bit_word(emul->cpus[0], addr, data);
+		res = store_16bit_word(m->cpus[0], addr, data);
 		if (!res)
 			printf("  FAILED!\n");
 		printf("\n");
@@ -916,7 +931,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		if (data > 0xffffffff && (data >> 32) != 0
 		    && (data >> 32) != 0xffffffff)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
-		res = store_32bit_word(emul->cpus[0], addr, data);
+		res = store_32bit_word(m->cpus[0], addr, data);
 		if (!res)
 			printf("  FAILED!\n");
 		printf("\n");
@@ -925,7 +940,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		if ((data & 7) != 0)
 			printf("WARNING: address isn't aligned\n");
 		printf("0x%016llx: %016llx", (long long)addr, (long long)data);
-		res = store_64bit_word(emul->cpus[0], addr, data);
+		res = store_64bit_word(m->cpus[0], addr, data);
 		if (!res)
 			printf("  FAILED!\n");
 		printf("\n");
@@ -944,7 +959,7 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_quiet():
  */
-static void debugger_cmd_quiet(struct emul *emul, char *cmd_line)
+static void debugger_cmd_quiet(struct machine *m, char *cmd_line)
 {
 	int toggle = 1;
 	int previous_mode = old_quiet_mode;
@@ -992,14 +1007,15 @@ static void debugger_cmd_quiet(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_quit():
  */
-static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
+static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 {
 	int i;
 
-	for (i=0; i<emul->ncpus; i++)
-		emul->cpus[i]->running = 0;
-	emul->exit_without_entering_debugger = 1;
-	emul->single_step = 0;
+	for (i=0; i<m->ncpus; i++)
+		m->cpus[i]->running = 0;
+
+	m->exit_without_entering_debugger = 1;
+	debugger_emul->single_step = 0;
 	exit_debugger = 1;
 }
 
@@ -1007,7 +1023,7 @@ static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_reg():
  */
-static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
+static void debugger_cmd_reg(struct machine *m, char *cmd_line)
 {
 	int i, cpuid = -1, coprocnr = -1;
 	int gprs, coprocs;
@@ -1017,7 +1033,7 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 	if (cmd_line[0] != '\0') {
 		if (cmd_line[0] != ',') {
 			cpuid = strtoull(cmd_line, NULL, 0);
-			if (cpuid < 0 || cpuid >= emul->ncpus) {
+			if (cpuid < 0 || cpuid >= m->ncpus) {
 				printf("cpu%i doesn't exist.\n", cpuid);
 				return;
 			}
@@ -1035,16 +1051,16 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 	gprs = (coprocnr == -1)? 1 : 0;
 	coprocs = (coprocnr == -1)? 0x0 : (1 << coprocnr);
 
-	for (i=0; i<emul->ncpus; i++)
+	for (i=0; i<m->ncpus; i++)
 		if (cpuid == -1 || i == cpuid)
-			cpu_register_dump(emul->cpus[i], gprs, coprocs);
+			cpu_register_dump(m->cpus[i], gprs, coprocs);
 }
 
 
 /*
  *  debugger_cmd_step():
  */
-static void debugger_cmd_step(struct emul *emul, char *cmd_line)
+static void debugger_cmd_step(struct machine *m, char *cmd_line)
 {
 	int n = 1;
 
@@ -1070,7 +1086,7 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
  *
  *  Dump each CPU's TLB contents.
  */
-static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
+static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
 {
 	int i, j, x = -1;
 	int rawflag = 0;
@@ -1079,7 +1095,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 		char *p;
 		if (cmd_line[0] != ',') {
 			x = strtoull(cmd_line, NULL, 0);
-			if (x < 0 || x >= emul->ncpus) {
+			if (x < 0 || x >= m->ncpus) {
 				printf("cpu%i doesn't exist.\n", x);
 				return;
 			}
@@ -1101,50 +1117,50 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 
 	/*  Nicely formatted output:  */
 	if (!rawflag) {
-		for (i=0; i<emul->ncpus; i++) {
+		for (i=0; i<m->ncpus; i++) {
 			int pageshift = 12;
 
 			if (x >= 0 && i != x)
 				continue;
 
-			if (emul->cpus[i]->cpu_type.rev == MIPS_R4100)
+			if (m->cpus[i]->cpu_type.rev == MIPS_R4100)
 				pageshift = 10;
 
 			/*  Print index, random, and wired:  */
 			printf("cpu%i: (", i);
-			switch (emul->cpus[i]->cpu_type.isa_level) {
+			switch (m->cpus[i]->cpu_type.isa_level) {
 			case 1:
 			case 2:
 				printf("index=0x%x random=0x%x",
-				    (int) ((emul->cpus[i]->coproc[0]->
+				    (int) ((m->cpus[i]->coproc[0]->
 				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
 				    >> R2K3K_INDEX_SHIFT),
-				    (int) ((emul->cpus[i]->coproc[0]->
+				    (int) ((m->cpus[i]->coproc[0]->
 				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
 				    >> R2K3K_RANDOM_SHIFT));
 				break;
 			default:
 				printf("index=0x%x random=0x%x",
-				    (int) (emul->cpus[i]->coproc[0]->
+				    (int) (m->cpus[i]->coproc[0]->
 				    reg[COP0_INDEX] & INDEX_MASK),
-				    (int) (emul->cpus[i]->coproc[0]->
+				    (int) (m->cpus[i]->coproc[0]->
 				    reg[COP0_RANDOM] & RANDOM_MASK));
 				printf(" wired=0x%llx", (long long)
-				    emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+				    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
 			}
 
 			printf(")\n");
 
-			for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries;
+			for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries;
 			    j++) {
 				uint64_t hi,lo0,lo1,mask;
-				hi = emul->cpus[i]->coproc[0]->tlbs[j].hi;
-				lo0 = emul->cpus[i]->coproc[0]->tlbs[j].lo0;
-				lo1 = emul->cpus[i]->coproc[0]->tlbs[j].lo1;
-				mask = emul->cpus[i]->coproc[0]->tlbs[j].mask;
+				hi = m->cpus[i]->coproc[0]->tlbs[j].hi;
+				lo0 = m->cpus[i]->coproc[0]->tlbs[j].lo0;
+				lo1 = m->cpus[i]->coproc[0]->tlbs[j].lo1;
+				mask = m->cpus[i]->coproc[0]->tlbs[j].mask;
 
 				printf("%3i: ", j);
-				switch (emul->cpus[i]->cpu_type.mmu_model) {
+				switch (m->cpus[i]->cpu_type.mmu_model) {
 				case MMU3K:
 					if (!(lo0 & R2K3K_ENTRYLO_V)) {
 						printf("(invalid)\n");
@@ -1168,7 +1184,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 					break;
 				default:
 					/*  TODO: MIPS32 doesn't need 0x16llx  */
-					if (emul->cpus[i]->cpu_type.mmu_model == MMU10K)
+					if (m->cpus[i]->cpu_type.mmu_model == MMU10K)
 						printf("vaddr=0x%1x..%011llx ",
 						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
@@ -1220,51 +1236,51 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 	}
 
 	/*  Raw output:  */
-	for (i=0; i<emul->ncpus; i++) {
+	for (i=0; i<m->ncpus; i++) {
 		if (x >= 0 && i != x)
 			continue;
 
 		/*  Print index, random, and wired:  */
 		printf("cpu%i: (", i);
 
-		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
-		    emul->cpus[i]->cpu_type.isa_level == 32)
+		if (m->cpus[i]->cpu_type.isa_level < 3 ||
+		    m->cpus[i]->cpu_type.isa_level == 32)
 			printf("index=0x%08x random=0x%08x",
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
+			    (int)m->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (int)m->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
 		else
 			printf("index=0x%016llx random=0x%016llx", (long long)
-			    emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)emul->cpus[i]->coproc[0]->reg
+			    m->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)m->cpus[i]->coproc[0]->reg
 			    [COP0_RANDOM]);
 
-		if (emul->cpus[i]->cpu_type.isa_level >= 3)
+		if (m->cpus[i]->cpu_type.isa_level >= 3)
 			printf(" wired=0x%llx", (long long)
-			    emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
 
 		printf(")\n");
 
-		for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
-			if (emul->cpus[i]->cpu_type.mmu_model == MMU3K)
+		for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
+			if (m->cpus[i]->cpu_type.mmu_model == MMU3K)
 				printf("%3i: hi=0x%08x lo=0x%08x\n",
 				    j,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0);
-			else if (emul->cpus[i]->cpu_type.isa_level < 3 ||
-			    emul->cpus[i]->cpu_type.isa_level == 32)
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0);
+			else if (m->cpus[i]->cpu_type.isa_level < 3 ||
+			    m->cpus[i]->cpu_type.isa_level == 32)
 				printf("%3i: hi=0x%08x mask=0x%08x "
 				    "lo0=0x%08x lo1=0x%08x\n", j,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo1);
 			else
 				printf("%3i: hi=0x%016llx mask=0x%016llx "
 				    "lo0=0x%016llx lo1=0x%016llx\n", j,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
 	}
 }
@@ -1273,12 +1289,12 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_trace():
  */
-static void debugger_cmd_trace(struct emul *emul, char *cmd_line)
+static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 {
 	old_show_trace_tree = 1 - old_show_trace_tree;
 	printf("show_trace_tree = %s\n", old_show_trace_tree? "ON" : "OFF");
 
-	if (emul->bintrans_enable && old_show_trace_tree)
+	if (m->bintrans_enable && old_show_trace_tree)
 		printf("NOTE: the trace tree functionality doesn't "
 		    "work very well with bintrans!\n");
 
@@ -1293,16 +1309,16 @@ static void debugger_cmd_trace(struct emul *emul, char *cmd_line)
  *
  *  Dump emulated memory as MIPS instructions.
  */
-static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
+static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 {
 	uint64_t addr, addr_start, addr_end;
 	struct cpu *c;
-	struct memory *m;
+	struct memory *mem;
 	int r;
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
-		r = debugger_parse_name(emul, cmd_line, 0, &tmp);
+		r = debugger_parse_name(m, cmd_line, 0, &tmp);
 		if (r)
 			last_unasm_addr = tmp;
 		else {
@@ -1314,16 +1330,16 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 	addr_start = last_unasm_addr;
 	addr_end = addr_start + 4 * 16;
 
-	if (emul->cpus == NULL) {
+	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = emul->cpus[emul->bootstrap_cpu];
+	c = m->cpus[m->bootstrap_cpu];
 	if (c == NULL) {
-		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = emul->cpus[emul->bootstrap_cpu]->mem;
+	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start;
 
@@ -1333,7 +1349,7 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 	while (addr < addr_end) {
 		unsigned char buf[4];
 		memset(buf, 0, sizeof(buf));
-		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		r = memory_rw(c, mem, addr, &buf[0], sizeof(buf), MEM_READ,
 		    CACHE_NONE | NO_EXCEPTIONS);
 
 		if (c->byte_order == EMUL_BIG_ENDIAN) {
@@ -1356,7 +1372,7 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 /*
  *  debugger_cmd_version():
  */
-static void debugger_cmd_version(struct emul *emul, char *cmd_line)
+static void debugger_cmd_version(struct machine *m, char *cmd_line)
 {
 #ifdef VERSION
 	printf("%s, %s\n", VERSION, COMPILE_DATE);
@@ -1370,7 +1386,7 @@ struct cmd {
 	char	*name;
 	char	*args;
 	int	tmp_flag;
-	void	(*f)(struct emul *, char *cmd_line);
+	void	(*f)(struct machine *, char *cmd_line);
 	char	*description;
 };
 
@@ -1456,7 +1472,7 @@ static struct cmd cmds[] = {
  *  NOTE: This is placed after the cmds[] array, because it needs to
  *  access it.
  */
-static void debugger_cmd_help(struct emul *emul, char *cmd_line)
+static void debugger_cmd_help(struct machine *m, char *cmd_line)
 {
 	int i, j, max_name_len = 0;
 
@@ -1508,7 +1524,7 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
  *
  *  cmd contains something like "pc=0x80001000", or "r31=memcpy+0x40".
  */
-void debugger_assignment(struct emul *emul, char *cmd)
+void debugger_assignment(struct machine *m, char *cmd)
 {
 	char *left, *right;
 	int res_left, res_right;
@@ -1538,7 +1554,7 @@ void debugger_assignment(struct emul *emul, char *cmd)
 
 	/*  printf("left  = '%s'\nright = '%s'\n", left, right);  */
 
-	res_right = debugger_parse_name(emul, right, 0, &tmp);
+	res_right = debugger_parse_name(m, right, 0, &tmp);
 	switch (res_right) {
 	case NAME_PARSE_NOMATCH:
 		printf("No match for the right-hand side of the assignment.\n");
@@ -1547,7 +1563,7 @@ void debugger_assignment(struct emul *emul, char *cmd)
 		printf("Multiple matches for the right-hand side of the assignment.\n");
 		break;
 	default:
-		res_left = debugger_parse_name(emul, left, 1, &tmp);
+		res_left = debugger_parse_name(m, left, 1, &tmp);
 		switch (res_left) {
 		case NAME_PARSE_NOMATCH:
 			printf("No match for the left-hand side of the assignment.\n");
@@ -1556,7 +1572,7 @@ void debugger_assignment(struct emul *emul, char *cmd)
 			printf("Multiple matches for the left-hand side of the assignment.\n");
 			break;
 		default:
-			debugger_cmd_print(emul, left);
+			debugger_cmd_print(m, left);
 		}
 	}
 
@@ -1849,7 +1865,7 @@ void debugger(void)
 		/*  Is there a '=' on the command line? Then try to
 		    do an assignment:  */
 		if (strchr(cmd, '=') != NULL) {
-			debugger_assignment(debugger_emul, cmd);
+			debugger_assignment(debugger_machine, cmd);
 			continue;
 		}
 
@@ -1901,7 +1917,7 @@ void debugger(void)
 				p++;
 
 			/*  ... and run the command:  */
-			cmds[i_match].f(debugger_emul, p);
+			cmds[i_match].f(debugger_machine, p);
 		} else
 			printf("FATAL ERROR: internal error in debugger.c:"
 			    " no handler for this command?\n");
@@ -1912,8 +1928,8 @@ void debugger(void)
 	}
 
 	debugger_emul->single_step = 0;
-	debugger_emul->instruction_trace = old_instruction_trace;
-	debugger_emul->show_trace_tree = old_show_trace_tree;
+	debugger_machine->instruction_trace = old_instruction_trace;
+	debugger_machine->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;
 }
 
@@ -1928,6 +1944,14 @@ void debugger_init(struct emul *emul)
 	int i;
 
 	debugger_emul = emul;
+	debugger_machine = emul->machines[0];
+
+	/*  TODO  */
+	if (emul->n_machines > 1) {
+		fprintf(stderr, "\nEmulating multiple machines"
+		    " simultaneously isn't supported yet.\n\n");
+		exit(1);
+	}
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {
 		last_cmd[i] = malloc(MAX_CMD_LEN + 1);

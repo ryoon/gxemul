@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.21 2005-01-09 01:55:24 debug Exp $
+ *  $Id: console.c,v 1.22 2005-01-19 14:24:20 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -89,6 +89,7 @@ void console_init(struct emul *emul)
 
 	console_curtermios.c_lflag &= ~ECHO;
 
+#if 0
 	/*
 	 *  Most guest OSes seem to work ok without this, but Linux/DECstation
 	 *  requires it to be usable.  Unfortunately, clearing out ICRNL
@@ -99,6 +100,7 @@ void console_init(struct emul *emul)
 	if (!emul->show_trace_tree && !emul->instruction_trace &&
 	    !emul->register_dump)
 		console_curtermios.c_iflag &= ~ICRNL;
+#endif
 
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 

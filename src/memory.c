@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.142 2005-01-18 07:28:50 debug Exp $
+ *  $Id: memory.c,v 1.143 2005-01-19 14:24:23 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -283,7 +283,7 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 #ifdef USE_TINY_CACHE
 	int wf = 1 + (writeflag == MEM_WRITE);
 
-	if (cpu->emul->bintrans_enable)
+	if (cpu->machine->bintrans_enable)
 		return;
 
 	paddr &= ~0xfff;
@@ -691,7 +691,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	int cache, no_exceptions, ok = 1, offset;
 	unsigned char *memblock;
 #ifdef BINTRANS
-	int bintrans_cached = cpu->emul->bintrans_enable;
+	int bintrans_cached = cpu->machine->bintrans_enable;
 #endif
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
@@ -707,7 +707,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifdef ENABLE_USERLAND
-	if (cpu->emul->userland_emul) {
+	if (cpu->machine->userland_emul) {
 		paddr = vaddr & 0x7fffffff;
 		goto have_paddr;
 	}
@@ -916,7 +916,7 @@ into the devices  */
 	 */
 	if (paddr >= mem->physical_max
 #ifdef ENABLE_USERLAND
-	    && !cpu->emul->userland_emul
+	    && !cpu->machine->userland_emul
 #endif
 	    ) {
 		if ((paddr & 0xffff000000ULL) == 0x1f000000) {
@@ -952,15 +952,15 @@ into the devices  */
 						debug("}");
 					}
 					symbol = get_symbol_name(
-					    &cpu->emul->symbol_context,
+					    &cpu->machine->symbol_context,
 					    cpu->pc_last, &offset);
 					fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
 					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
 
-				if (cpu->emul->trace_on_bad_address) {
-					cpu->emul->instruction_trace =
-					    cpu->emul->register_dump = 1;
+				if (cpu->machine->trace_on_bad_address) {
+					cpu->machine->instruction_trace =
+					    cpu->machine->register_dump = 1;
 					quiet_mode = 0;
 				}
 			}
@@ -974,7 +974,7 @@ into the devices  */
 				 *  an exceptions on an illegal read:
 				 */
 				if (cache != CACHE_NONE &&
-				    cpu->emul->dbe_on_nonexistant_memaccess) {
+				    cpu->machine->dbe_on_nonexistant_memaccess) {
 					if (paddr >= mem->physical_max &&
 					    paddr < mem->physical_max+1048576)
 						cpu_exception(cpu,

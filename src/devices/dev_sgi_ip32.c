@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.8 2005-01-18 06:22:57 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.9 2005-01-19 14:24:20 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -44,7 +44,7 @@
 #include "bus_pci.h"
 #include "console.h"
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
@@ -176,9 +176,9 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 			}
 			if (idata & 0x800) {
 				/*  This is used by the IP32 PROM's "reboot" command:  */
-				for (i=0; i<cpu->emul->ncpus; i++)
-					cpu->emul->cpus[i]->running = 0;
-				cpu->emul->exit_without_entering_debugger = 1;
+				for (i=0; i<cpu->machine->ncpus; i++)
+					cpu->machine->cpus[i]->running = 0;
+				cpu->machine->exit_without_entering_debugger = 1;
 				idata &= ~0x800;
 			}
 			if (idata != 0)

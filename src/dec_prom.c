@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.40 2005-01-09 01:55:30 debug Exp $
+ *  $Id: dec_prom.c,v 1.41 2005-01-19 14:24:22 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -41,7 +41,7 @@
 
 #include "console.h"
 #include "diskimage.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 
 #include "dec_prom.h"
@@ -84,17 +84,17 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	switch (vector) {
 	case 0x0:	/*  reset()  */
 		/*  TODO  */
-		cpu->emul->exit_without_entering_debugger = 1;
+		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0x10:	/*  restart()  */
 		/*  TODO  */
-		cpu->emul->exit_without_entering_debugger = 1;
+		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0x18:	/*  reinit()  */
 		/*  TODO  */
-		cpu->emul->exit_without_entering_debugger = 1;
+		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x30:	/*  open()  */
@@ -301,7 +301,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x30:		/*  printf()  */
-		if (cpu->emul->register_dump || cpu->emul->instruction_trace)
+		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
 			debug("PROM printf(0x%08lx): \n",
 			    (long)cpu->gpr[GPR_A0]);
 
@@ -373,7 +373,7 @@ void decstation_prom_emul(struct cpu *cpu)
 				printf("%c", ch);
 			}
 		}
-		if (cpu->emul->register_dump || cpu->emul->instruction_trace)
+		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
 			debug("\n");
 		fflush(stdout);
 		cpu->gpr[GPR_V0] = 0;
@@ -459,20 +459,20 @@ void decstation_prom_emul(struct cpu *cpu)
 		debug("[ DEC PROM slot_address(%i) ]\n", (int)cpu->gpr[GPR_A0]);
 		/*  TODO:  This is too hardcoded.  */
 		/*  TODO 2:  Should these be physical or virtual addresses?  */
-		switch (cpu->emul->machine) {
-		case MACHINE_3MAX_5000:
+		switch (cpu->machine->machine_subtype) {
+		case MACHINE_DEC_3MAX_5000:
 			slot_base = KN02_PHYS_TC_0_START;	/*  0x1e000000  */
 			slot_size = 4*1048576;		/*  4 MB  */
 			break;
-		case MACHINE_3MIN_5000:
+		case MACHINE_DEC_3MIN_5000:
 			slot_base = 0x10000000;
 			slot_size = 0x4000000;		/*  64 MB  */
 			break;
-		case MACHINE_3MAXPLUS_5000:
+		case MACHINE_DEC_3MAXPLUS_5000:
 			slot_base = 0x1e000000;
 			slot_size = 0x800000;		/*  8 MB  */
 			break;
-		case MACHINE_MAXINE_5000:
+		case MACHINE_DEC_MAXINE_5000:
 			slot_base = 0x10000000;
 			slot_size = 0x4000000;		/*  64 MB  */
 			break;
@@ -495,7 +495,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		/*  debug("[ DEC PROM getsysid() ]\n");  */
 		/*  TODO:  why did I add the 0x82 stuff???  */
 		cpu->gpr[GPR_V0] = ((uint32_t)0x82 << 24)
-		    + (cpu->emul->machine << 16) + (0x3 << 8);
+		    + (cpu->machine->machine_subtype << 16) + (0x3 << 8);
 		cpu->gpr[GPR_V0] = (int64_t)(int32_t)cpu->gpr[GPR_V0];
 		break;
 	case 0x84:		/*  getbitmap()  */
@@ -515,7 +515,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x9c:		/*  halt()  */
 		debug("[ DEC PROM halt() ]\n");
-		cpu->emul->exit_without_entering_debugger = 1;
+		cpu->machine->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0xa4:		/*  gettcinfo()  */
@@ -542,12 +542,12 @@ void decstation_prom_emul(struct cpu *cpu)
 		switch (cpu->gpr[GPR_A0]) {
 		case 'h':
 			debug("DEC PROM: rex('h') ==> halt\n");
-			cpu->emul->exit_without_entering_debugger = 1;
+			cpu->machine->exit_without_entering_debugger = 1;
 			cpu->running = 0;
 			break;
 		case 'b':
 			debug("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
-			cpu->emul->exit_without_entering_debugger = 1;
+			cpu->machine->exit_without_entering_debugger = 1;
 			cpu->running = 0;
 			break;
 		default:

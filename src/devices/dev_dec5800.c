@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.8 2005-01-09 04:17:18 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.9 2005-01-19 14:24:20 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -45,7 +45,7 @@
 
 #include "console.h"
 #include "devices.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -306,16 +306,16 @@ int dev_deccca_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 8:
 		if (writeflag == MEM_READ)
-			odata = cpu->emul->ncpus;
+			odata = cpu->machine->ncpus;
 		break;
 	case 20:
 		if (writeflag == MEM_READ)
-			odata = (1 << cpu->emul->ncpus) - 1;
+			odata = (1 << cpu->machine->ncpus) - 1;
 			    /*  one bit for each cpu  */
 		break;
 	case 28:
 		if (writeflag == MEM_READ)
-			odata = (1 << cpu->emul->ncpus) - 1;
+			odata = (1 << cpu->machine->ncpus) - 1;
 			    /*  one bit for each enabled(?) cpu  */
 		break;
 	default:
@@ -382,7 +382,7 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem,
 	node_nr = relative_addr / XMI_NODESIZE;
 	relative_addr &= (XMI_NODESIZE - 1);
 
-	if (node_nr >= cpu->emul->ncpus+1 || node_nr >= NNODEXMI)
+	if (node_nr >= cpu->machine->ncpus + 1 || node_nr >= NNODEXMI)
 		return 0;
 
 	switch (relative_addr) {

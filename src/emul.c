@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.115 2005-01-19 09:48:33 debug Exp $
+ *  $Id: emul.c,v 1.116 2005-01-19 14:24:22 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -43,6 +43,7 @@
 #include "emul.h"
 #include "console.h"
 #include "diskimage.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
@@ -69,15 +70,15 @@ extern struct diskimage *diskimages[];
  *  Take the strings breakpoint_string[] and convert to addresses
  *  (and store them in breakpoint_addr[]).
  */
-static void add_dump_points(struct emul *emul)
+static void add_dump_points(struct machine *m)
 {
 	int i;
 	int string_flag;
 	uint64_t dp;
 
-	for (i=0; i<emul->n_breakpoints; i++) {
+	for (i=0; i<m->n_breakpoints; i++) {
 		string_flag = 0;
-		dp = strtoull(emul->breakpoint_string[i], NULL, 0);
+		dp = strtoull(m->breakpoint_string[i], NULL, 0);
 
 		/*
 		 *  If conversion resulted in 0, then perhaps it is a
@@ -85,12 +86,13 @@ static void add_dump_points(struct emul *emul)
 		 */
 		if (dp == 0) {
 			uint64_t addr;
-			int res = get_symbol_addr(&emul->symbol_context,
-			    emul->breakpoint_string[i], &addr);
+			int res = get_symbol_addr(&m->symbol_context,
+			    m->breakpoint_string[i], &addr);
 			if (!res)
 				fprintf(stderr,
-				    "WARNING! Breakpoint '%s' could not be parsed\n",
-				    emul->breakpoint_string[i]);
+				    "WARNING! Breakpoint '%s' could not be"
+					" parsed\n",
+				    m->breakpoint_string[i]);
 			else {
 				dp = addr;
 				string_flag = 1;
@@ -104,11 +106,11 @@ static void add_dump_points(struct emul *emul)
 
 		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
 			dp |= 0xffffffff00000000ULL;
-		emul->breakpoint_addr[i] = dp;
+		m->breakpoint_addr[i] = dp;
 
 		debug("breakpoint %i: 0x%016llx", i, (long long)dp);
 		if (string_flag)
-			debug(" (%s)", emul->breakpoint_string[i]);
+			debug(" (%s)", m->breakpoint_string[i]);
 		debug("\n");
 	}
 }
@@ -131,7 +133,7 @@ static void fix_console(void)
  *  that, instead of requiring a separate kernel file.  It is then up to the
  *  bootblock to load a kernel.
  */
-static void load_bootblock(struct emul *emul, struct cpu *cpu)
+static void load_bootblock(struct machine *m, struct cpu *cpu)
 {
 	int boot_disk_id = diskimage_bootdev();
 	unsigned char minibuf[0x20];
@@ -143,7 +145,7 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 	if (boot_disk_id < 0)
 		return;
 
-	switch (emul->emulation_type) {
+	switch (m->emulation_type) {
 	case EMULTYPE_DEC:
 		/*
 		 *  The first few bytes of a disk contains information about
@@ -251,21 +253,35 @@ struct emul *emul_new(void)
 	/*  Sane default values:  */
 	e->n_machines = 0;
 
-	/*  TODO: move these into struct machine  */
-	e->emulation_type = EMULTYPE_NONE;
-	e->machine = MACHINE_NONE;
-	e->prom_emulation = 1;
-	e->speed_tricks = 1;
-	e->boot_kernel_filename = "";
-	e->boot_string_argument = "";
-	e->ncpus = DEFAULT_NCPUS;
-	e->automatic_clock_adjustment = 1;
-	e->x11_scaledown = 1;
-	e->n_gfx_cards = 1;
-	e->dbe_on_nonexistant_memaccess = 1;
-	e->show_symbolic_register_names = 1;
-
 	return e;
+}
+
+
+/*
+ *  emul_add_machine():
+ *
+ *  Calls machine_new(), adds the new machine into the emul
+ *  struct, and returns a pointer to the new machine.
+ *
+ *  This function should be used instead of manually calling
+ *  machine_new().
+ */
+struct machine *emul_add_machine(struct emul *e)
+{
+	struct machine *m;
+
+	m = machine_new();
+
+	e->n_machines ++;
+	e->machines = realloc(e->machines,
+	    sizeof(struct machine *) * e->n_machines);
+	if (e->machines == NULL) {
+		fprintf(stderr, "emul_add_machine(): out of memory\n");
+		exit(1);
+	}
+
+	e->machines[e->n_machines - 1] = m;
+	return m;
 }
 
 
@@ -275,9 +291,9 @@ struct emul *emul_new(void)
  *  This function adds ARCBIOS memory descriptors for the loaded program,
  *  and ARCBIOS components for SCSI devices.
  */
-static void add_arc_components(struct emul *emul)
+static void add_arc_components(struct machine *m)
 {
-	struct cpu *cpu = emul->cpus[emul->bootstrap_cpu];
+	struct cpu *cpu = m->cpus[m->bootstrap_cpu];
 	uint64_t start = cpu->pc & 0x1fffffff;
 	uint64_t len = 0xc00000 - start;
 	int i;
@@ -288,12 +304,12 @@ static void add_arc_components(struct emul *emul)
 		len = 0xc00000 - start;
 	}
 
-	len += 1048576 * emul->memory_offset_in_mb;
+	len += 1048576 * m->memory_offset_in_mb;
 
 	/*  NOTE/TODO: magic 12MB end of load program area  */
 	arcbios_add_memory_descriptor(cpu,
-	    0x60000 + emul->memory_offset_in_mb * 1048576,
-	    start-0x60000 - emul->memory_offset_in_mb * 1048576,
+	    0x60000 + m->memory_offset_in_mb * 1048576,
+	    start-0x60000 - m->memory_offset_in_mb * 1048576,
 	    ARCBIOS_MEM_FreeMemory);
 	arcbios_add_memory_descriptor(cpu,
 	    start, len, ARCBIOS_MEM_LoadedProgram);
@@ -368,99 +384,102 @@ static void add_arc_components(struct emul *emul)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-static void emul_machine_start(struct emul *emul)
+static void emul_machine_start(struct emul *emul, int machine_nr)
 {
+	struct machine *m;
 	struct memory *mem;
 	int i, iadd=4;
 	uint64_t addr, memory_amount;
 
+	m = emul->machines[machine_nr];
+
 	if (emul->n_machines > 1) {
 		/*  TODO: multiple machines  */
-		debug("machine 0:\n");
+		debug("machine %i:\n", machine_nr);
 		debug_indentation(iadd);
 	}
 
 	/*  Create the system's memory:  */
-	debug("adding main memory: %i MB", emul->physical_ram_in_mb);
-	memory_amount = (uint64_t)emul->physical_ram_in_mb * 1048576;
-	if (emul->memory_offset_in_mb > 0) {
+	debug("adding main memory: %i MB", m->physical_ram_in_mb);
+	memory_amount = (uint64_t)m->physical_ram_in_mb * 1048576;
+	if (m->memory_offset_in_mb > 0) {
 		/*
 		 *  A special hack is used for some SGI models,
 		 *  where memory is offset by 128MB to leave room for
 		 *  EISA space and other things.
 		 */
-		debug(" (offset by %iMB)", emul->memory_offset_in_mb);
-		memory_amount += 1048576 * emul->memory_offset_in_mb;
+		debug(" (offset by %iMB)", m->memory_offset_in_mb);
+		memory_amount += 1048576 * m->memory_offset_in_mb;
 	}
 	mem = memory_new(memory_amount);
 	debug("\n");
 
 	/*  Create CPUs:  */
-	emul->cpus = malloc(sizeof(struct cpu *) * emul->ncpus);
-	if (emul->cpus == NULL) {
+	m->cpus = malloc(sizeof(struct cpu *) * m->ncpus);
+	if (m->cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(emul->cpus, 0, sizeof(struct cpu *) * emul->ncpus);
+	memset(m->cpus, 0, sizeof(struct cpu *) * m->ncpus);
 
 	/*  Initialize dynamic binary translation, if available:  */
-	if (emul->bintrans_enable)
+	if (m->bintrans_enable)
 		bintrans_init(mem);
 
 	debug("adding cpu0");
-	if (emul->ncpus > 1)
-		debug(" .. cpu%i", emul->ncpus-1);
-	debug(": %s", emul->emul_cpu_name);
-	for (i=0; i<emul->ncpus; i++) {
-		emul->cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
-		if (emul->bintrans_enable)
-			bintrans_init_cpu(emul->cpus[i]);
+	if (m->ncpus > 1)
+		debug(" .. cpu%i", m->ncpus-1);
+	debug(": %s", m->cpu_name);
+	for (i=0; i<m->ncpus; i++) {
+		m->cpus[i] = cpu_new(mem, m, i, m->cpu_name);
+		if (m->bintrans_enable)
+			bintrans_init_cpu(m->cpus[i]);
 	}
 	debug("\n");
 
-	if (emul->use_random_bootstrap_cpu)
-		emul->bootstrap_cpu = random() % emul->ncpus;
+	if (m->use_random_bootstrap_cpu)
+		m->bootstrap_cpu = random() % m->ncpus;
 	else
-		emul->bootstrap_cpu = 0;
+		m->bootstrap_cpu = 0;
 
-	if (emul->use_x11)
-		x11_init(emul);
+	if (m->use_x11)
+		x11_init(m);
 
 	/*  Fill memory with random bytes:  */
-	if (emul->random_mem_contents) {
-		for (i=0; i<emul->physical_ram_in_mb*1048576; i+=256) {
+	if (m->random_mem_contents) {
+		for (i=0; i<m->physical_ram_in_mb*1048576; i+=256) {
 			unsigned char data[256];
 			unsigned int j;
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0xffffffff80000000ULL + i;
-			memory_rw(emul->cpus[emul->bootstrap_cpu], mem,
+			memory_rw(m->cpus[m->bootstrap_cpu], mem,
 			    addr, data, sizeof(data), MEM_WRITE,
 			    CACHE_NONE | NO_EXCEPTIONS);
 		}
 	}
 
-	if ((emul->emulation_type == EMULTYPE_ARC ||
-	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
+	if ((m->emulation_type == EMULTYPE_ARC ||
+	    m->emulation_type == EMULTYPE_SGI) && m->prom_emulation)
 		arcbios_init();
 
-	if (emul->userland_emul) {
+	if (m->userland_emul) {
 		/*
 		 *  For userland-only emulation, no machine emulation
 		 *  is needed.
 		 */
 	} else {
-		machine_init(emul, mem);
+		machine_init(m);
 	}
 
 	diskimage_dump_info();
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
-	if (emul->booting_from_diskimage)
-		load_bootblock(emul, emul->cpus[emul->bootstrap_cpu]);
+	if (m->booting_from_diskimage)
+		load_bootblock(m, m->cpus[m->bootstrap_cpu]);
 
 	while (extra_argc > 0) {
-		file_load(mem, extra_argv[0], emul->cpus[emul->bootstrap_cpu]);
+		file_load(mem, extra_argv[0], m->cpus[m->bootstrap_cpu]);
 
 		/*
 		 *  For userland emulation, the remainding items
@@ -470,55 +489,55 @@ static void emul_machine_start(struct emul *emul)
 		 *  The program's name will be in argv[0], and the
 		 *  rest of the parameters in argv[1] and up.
 		 */
-		if (emul->userland_emul)
+		if (m->userland_emul)
 			break;
 
 		extra_argc --;  extra_argv ++;
 	}
 
-	if (file_n_executables_loaded() == 0 && !emul->booting_from_diskimage) {
+	if (file_n_executables_loaded() == 0 && !m->booting_from_diskimage) {
 		fprintf(stderr, "No executable file loaded, and we're not "
 		    "booting directly from a disk image.\nAborting.\n");
 		exit(1);
 	}
 
-	if ((emul->cpus[emul->bootstrap_cpu]->pc >> 32) == 0 &&
-	    (emul->cpus[emul->bootstrap_cpu]->pc & 0x80000000ULL))
-		emul->cpus[emul->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
+	if ((m->cpus[m->bootstrap_cpu]->pc >> 32) == 0 &&
+	    (m->cpus[m->bootstrap_cpu]->pc & 0x80000000ULL))
+		m->cpus[m->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
 
-	if ((emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
-	    (emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
-		emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
+	if ((m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
+	    (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
+		m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
-	for (i=0; i<emul->ncpus; i++)
-		if (i != emul->bootstrap_cpu)
-			emul->cpus[i]->byte_order =
-			    emul->cpus[emul->bootstrap_cpu]->byte_order;
+	for (i=0; i<m->ncpus; i++)
+		if (i != m->bootstrap_cpu)
+			m->cpus[i]->byte_order =
+			    m->cpus[m->bootstrap_cpu]->byte_order;
 
-	if (emul->userland_emul)
-		useremul_init(emul->cpus[emul->bootstrap_cpu],
+	if (m->userland_emul)
+		useremul_init(m->cpus[m->bootstrap_cpu],
 		    extra_argc, extra_argv);
 
 	/*  Startup the bootstrap CPU:  */
-	emul->cpus[emul->bootstrap_cpu]->bootstrap_cpu_flag = 1;
-	emul->cpus[emul->bootstrap_cpu]->running            = 1;
+	m->cpus[m->bootstrap_cpu]->bootstrap_cpu_flag = 1;
+	m->cpus[m->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
-	add_dump_points(emul);
+	add_dump_points(m);
 
-	add_symbol_name(&emul->symbol_context,
+	add_symbol_name(&m->symbol_context,
 	    0x9fff0000, 0x10000, "r2k3k_cache", 0);
-	symbol_recalc_sizes(&emul->symbol_context);
+	symbol_recalc_sizes(&m->symbol_context);
 
-	if (emul->max_random_cycles_per_chunk > 0)
+	if (m->max_random_cycles_per_chunk > 0)
 		debug("using random cycle chunks (1 to %i cycles)\n",
-		    emul->max_random_cycles_per_chunk);
+		    m->max_random_cycles_per_chunk);
 
 	/*  Special hack for ARC/SGI emulation:  */
-	if ((emul->emulation_type == EMULTYPE_ARC ||
-	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
-		add_arc_components(emul);
+	if ((m->emulation_type == EMULTYPE_ARC ||
+	    m->emulation_type == EMULTYPE_SGI) && m->prom_emulation)
+		add_arc_components(m);
 
 	if (emul->n_machines > 1)
 		debug_indentation(-iadd);
@@ -537,6 +556,7 @@ static void emul_machine_start(struct emul *emul)
 void emul_start(struct emul *emul)
 {
 	int i, iadd=4;
+	struct machine *m;
 
 	/*  Print startup message:  */
 	debug("mips64emul");
@@ -553,32 +573,40 @@ void emul_start(struct emul *emul)
 	atexit(fix_console);
 
 	/*  Create a network:  */
-	if (emul->userland_emul) {
-		/*  For userland-only, no network emulation is used.  */
-	} else {
-		net_init();
-	}
+	net_init();
 
-	/*  TODO: call this for _each_ machine  */
-	emul_machine_start(emul);
+	/*  Create machines:  */
+	for (i=0; i<emul->n_machines; i++)
+		emul_machine_start(emul, i);
 
 	debug_indentation(-iadd);
 
+
+	/*  TODO:  */
+	if (emul->n_machines > 1) {
+		fprintf(stderr, "\nEmulating multiple machines"
+		    " simultaneously isn't supported yet.\n\n");
+		exit(1);
+	}
+
+
+	m = emul->machines[0];
+
 	i = 0;
-	debug("Starting emulation: cpu%i ", emul->bootstrap_cpu);
-	if (emul->bootstrap_cpu >= 10)  i++;
-	if (emul->bootstrap_cpu >= 100)  i++;
-	if (emul->bootstrap_cpu >= 1000)  i++;
-	if (emul->bootstrap_cpu >= 10000)  i++;
-	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level < 3 ||
-	    emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level == 32)
+	debug("Starting emulation: cpu%i ", m->bootstrap_cpu);
+	if (m->bootstrap_cpu >= 10)  i++;
+	if (m->bootstrap_cpu >= 100)  i++;
+	if (m->bootstrap_cpu >= 1000)  i++;
+	if (m->bootstrap_cpu >= 10000)  i++;
+	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
+	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32)
 		debug("pc=0x%08x gp=0x%08x",
-		    (int)emul->cpus[emul->bootstrap_cpu]->pc,
-		    (int)emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+		    (int)m->cpus[m->bootstrap_cpu]->pc,
+		    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
 	else {
 		debug("pc=0x%016llx gp=0x%016llx",
-		    (long long)emul->cpus[emul->bootstrap_cpu]->pc,
-		    (long long)emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+		    (long long)m->cpus[m->bootstrap_cpu]->pc,
+		    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
 		i += 16;
 	}
 	debug("\n");
@@ -608,10 +636,10 @@ void emul_start(struct emul *emul)
 		quiet_mode = 1;
 
 
-	cpu_run(emul, emul->cpus, emul->ncpus);
+	cpu_run(emul, m);
 
 
-	if (emul->use_x11) {
+	if (m->use_x11) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail()) {
 			x11_check_event();

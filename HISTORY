@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.500 2005-01-19 09:48:32 debug Exp $
+$Id: HISTORY,v 1.501 2005-01-19 14:24:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1514,4 +1514,5 @@ HISTORY of mips64emul
 20050119	Correcting the R4100 config register in src/coproc.c, and
 		a minor update to dev_vr41xx.
 		Finally began a redesign/remodelling/cleanup that I have had
-		in mind for quite some time...
+		in mind for quite some time... moving many things that were
+		in struct emul into a new struct machine.

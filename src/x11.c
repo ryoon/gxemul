@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.42 2005-01-19 08:44:53 debug Exp $
+ *  $Id: x11.c,v 1.43 2005-01-19 14:24:23 debug Exp $
  *
  *  X11-related functions.
  */
@@ -37,7 +37,7 @@
 #include "misc.h"
 
 #include "console.h"
-#include "emul.h"
+#include "machine.h"
 
 
 #ifndef	WITH_X11
@@ -46,9 +46,9 @@
 void x11_redraw_cursor(int i) { }
 void x11_redraw(int x) { }
 void x11_putpixel_fb(int fb_number, int x, int y, int color) { }
-void x11_init(struct emul *emul) { }
+void x11_init(struct machine *machine) { }
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
-	int scaledown, struct emul *emul)
+	int scaledown, struct machine *machine)
     { return NULL; }
 void x11_check_event(void) { }
 /* int x11_fb_winxsize = 0, x11_fb_winysize = 0; */
@@ -279,19 +279,19 @@ void x11_putimage_fb(int i)
  *  It is then up to individual drivers, for example framebuffer devices,
  *  to initialize their own windows.
  */
-void x11_init(struct emul *emul)
+void x11_init(struct machine *machine)
 {
 	n_framebuffer_windows = 0;
 	memset(&fb_windows, 0, sizeof(fb_windows));
 
-	if (emul->x11_n_display_names > 0) {
+	if (machine->x11_n_display_names > 0) {
 		int i;
-		for (i=0; i<emul->x11_n_display_names; i++)
+		for (i=0; i<machine->x11_n_display_names; i++)
 			printf("X11 display: %s\n",
-			    emul->x11_display_names[i]);
+			    machine->x11_display_names[i]);
 	}
 
-	emul->x11_current_display_name_nr = 0;
+	machine->x11_current_display_name_nr = 0;
 }
 
 
@@ -301,7 +301,7 @@ void x11_init(struct emul *emul)
  *  Initialize a framebuffer window.
  */
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
-	int scaledown, struct emul *emul)
+	int scaledown, struct machine *machine)
 {
 	Display *x11_display;
 	int x, y, fb_number = 0;
@@ -333,11 +333,11 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 
 	/*  Which display name?  */
 	display_name = NULL;
-	if (emul->x11_n_display_names > 0) {
-		display_name = emul->x11_display_names[
-		    emul->x11_current_display_name_nr];
-		emul->x11_current_display_name_nr ++;
-		emul->x11_current_display_name_nr %= emul->x11_n_display_names;
+	if (machine->x11_n_display_names > 0) {
+		display_name = machine->x11_display_names[
+		    machine->x11_current_display_name_nr];
+		machine->x11_current_display_name_nr ++;
+		machine->x11_current_display_name_nr %= machine->x11_n_display_names;
 	}
 
 	debug("[ x11_fb_init(): framebuffer window %i, %ix%i, DISPLAY=%s ]\n",

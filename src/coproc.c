@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.148 2005-01-19 07:46:51 debug Exp $
+ *  $Id: coproc.c,v 1.149 2005-01-19 14:24:22 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -40,7 +40,7 @@
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu_types.h"
-#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "opcodes.h"
 
@@ -92,19 +92,19 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		c->reg[COP0_STATUS] = 0;
 
 		/*  For userland emulation, enable all four coprocessors:  */
-		if (cpu->emul->userland_emul)
+		if (cpu->machine->userland_emul)
 			c->reg[COP0_STATUS] |=
 			    ((uint32_t)0xf << STATUS_CU_SHIFT);
 
 		/*  Hm. Enable coprocessors 0 and 1 even if we're not just
 		    emulating userland? TODO: Think about this.  */
-		if (cpu->emul->prom_emulation)
+		if (cpu->machine->prom_emulation)
 			c->reg[COP0_STATUS] |=
 			    ((uint32_t)0x3 << STATUS_CU_SHIFT);
 
 		c->reg[COP0_COMPARE] = (uint64_t) -1;
 
-		if (!cpu->emul->prom_emulation)
+		if (!cpu->machine->prom_emulation)
 			c->reg[COP0_STATUS] |= STATUS_BEV;
 
 		/*  Note: .rev may contain the company ID as well!  */
@@ -140,17 +140,17 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R4000:	/*  according to the R4000 manual  */
 		case MIPS_R4600:
-			IB = cpu->emul->cache_picache_linesize - 4;
+			IB = cpu->machine->cache_picache_linesize - 4;
 			IB = IB < 0? 0 : (IB > 1? 1 : IB);
-			DB = cpu->emul->cache_pdcache_linesize - 4;
+			DB = cpu->machine->cache_pdcache_linesize - 4;
 			DB = DB < 0? 0 : (DB > 1? 1 : DB);
-			SB = cpu->emul->cache_secondary_linesize - 4;
+			SB = cpu->machine->cache_secondary_linesize - 4;
 			SB = SB < 0? 0 : (SB > 3? 3 : SB);
-			IC = cpu->emul->cache_picache - 12;
+			IC = cpu->machine->cache_picache - 12;
 			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->emul->cache_pdcache - 12;
+			DC = cpu->machine->cache_pdcache - 12;
 			DC = DC < 0? 0 : (DC > 7? 7 : DC);
-			SC = cpu->emul->cache_secondary? 0 : 1;
+			SC = cpu->machine->cache_secondary? 0 : 1;
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  Master/Checker present bit  */
 			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
@@ -175,13 +175,13 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    ;
 			break;
 		case MIPS_R4100:	/*  According to the VR4131 manual:  */
-			IB = cpu->emul->cache_picache_linesize - 4;
+			IB = cpu->machine->cache_picache_linesize - 4;
 			IB = IB < 0? 0 : (IB > 1? 1 : IB);
-			DB = cpu->emul->cache_pdcache_linesize - 4;
+			DB = cpu->machine->cache_pdcache_linesize - 4;
 			DB = DB < 0? 0 : (DB > 1? 1 : DB);
-			IC = cpu->emul->cache_picache - 10;
+			IC = cpu->machine->cache_picache - 10;
 			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->emul->cache_pdcache - 10;
+			DC = cpu->machine->cache_pdcache - 10;
 			DC = DC < 0? 0 : (DC > 7? 7 : DC);
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  IS: Instruction Streaming bit  */
@@ -230,11 +230,11 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		case MIPS_R10000:
 		case MIPS_R12000:
 		case MIPS_R14000:
-			IC = cpu->emul->cache_picache - 12;
+			IC = cpu->machine->cache_picache - 12;
 			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->emul->cache_pdcache - 12;
+			DC = cpu->machine->cache_pdcache - 12;
 			DC = DC < 0? 0 : (DC > 7? 7 : DC);
-			SC = cpu->emul->cache_secondary - 19;
+			SC = cpu->machine->cache_secondary - 19;
 			SC = SC < 0? 0 : (SC > 7? 7 : SC);
 			/*  According to the R10000 User's Manual:  */
 			c->reg[COP0_CONFIG] =
@@ -418,7 +418,7 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 #ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
+	if (cpu->machine->bintrans_enable) {
 		int a, b;
 		struct vth32_table *tbl1;
 		void *p;
@@ -566,7 +566,7 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 #ifdef BINTRANS
 	paddr &= ~0xfff;
 
-	if (cpu->emul->bintrans_enable) {
+	if (cpu->machine->bintrans_enable) {
 #if 0
 		int i;
 		uint64_t tlb_paddr0, tlb_paddr1;
@@ -643,7 +643,7 @@ static void invalidate_translation_caches(struct cpu *cpu,
 /* printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
 */
 #ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
+	if (cpu->machine->bintrans_enable) {
 		if (all) {
 			int i;
 			uint64_t tlb_vaddr;
@@ -700,13 +700,13 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	vaddr >>= 12;
 
 	/*  Invalidate the tiny translation cache...  */
-	if (!cpu->emul->bintrans_enable)
+	if (!cpu->machine->bintrans_enable)
 		for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
 			if (all ||
 			    vaddr == (cpu->translation_cache_instr[i].vaddr_pfn))
 				cpu->translation_cache_instr[i].wf = 0;
 
-	if (!cpu->emul->bintrans_enable)
+	if (!cpu->machine->bintrans_enable)
 		for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
 			if (all ||
 			    vaddr == (cpu->translation_cache_data[i].vaddr_pfn))
@@ -1488,7 +1488,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (nd == 1 && tf == 0)  instr_mnem = "bc1fl";
 		if (nd == 1 && tf == 1)  instr_mnem = "bc1tl";
 
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("%s\t%i,0x%016llx\n", instr_mnem, cc, (long long) (cpu->pc + (imm << 2)));
 		if (unassemble_only)
 			return 1;
@@ -1522,7 +1522,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  add.fmt: Floating-point add  */
 	if ((function & 0x0000003f) == 0x00000000) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("add.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 		if (unassemble_only)
 			return 1;
@@ -1533,7 +1533,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  sub.fmt: Floating-point subtract  */
 	if ((function & 0x0000003f) == 0x00000001) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("sub.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 		if (unassemble_only)
 			return 1;
@@ -1544,7 +1544,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  mul.fmt: Floating-point multiply  */
 	if ((function & 0x0000003f) == 0x00000002) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("mul.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 		if (unassemble_only)
 			return 1;
@@ -1555,7 +1555,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  div.fmt: Floating-point divide  */
 	if ((function & 0x0000003f) == 0x00000003) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("div.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 		if (unassemble_only)
 			return 1;
@@ -1566,7 +1566,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  sqrt.fmt: Floating-point square-root  */
 	if ((function & 0x001f003f) == 0x00000004) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("sqrt.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1577,7 +1577,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  abs.fmt: Floating-point absolute value  */
 	if ((function & 0x001f003f) == 0x00000005) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("abs.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1588,7 +1588,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  mov.fmt: Floating-point (non-arithmetic) move  */
 	if ((function & 0x0000003f) == 0x00000006) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("mov.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1599,7 +1599,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  neg.fmt: Floating-point negate  */
 	if ((function & 0x001f003f) == 0x00000007) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("neg.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1610,7 +1610,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  trunc.l.fmt: Truncate  */
 	if ((function & 0x001f003f) == 0x00000009) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("trunc.l.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1623,7 +1623,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  trunc.w.fmt: Truncate  */
 	if ((function & 0x001f003f) == 0x0000000d) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("trunc.w.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1639,7 +1639,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		int cond_true;
 		int bit;
 
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
 		if (unassemble_only)
 			return 1;
@@ -1673,7 +1673,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  cvt.s.fmt: Convert to single floating-point  */
 	if ((function & 0x001f003f) == 0x00000020) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1684,7 +1684,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  cvt.d.fmt: Convert to double floating-point  */
 	if ((function & 0x001f003f) == 0x00000021) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("cvt.d.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;
@@ -1695,7 +1695,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  cvt.w.fmt: Convert to word fixed-point  */
 	if ((function & 0x001f003f) == 0x00000024) {
-		if (cpu->emul->instruction_trace || unassemble_only)
+		if (cpu->machine->instruction_trace || unassemble_only)
 			debug("cvt.w.%i\tr%i,r%i\n", fmt, fd, fs);
 		if (unassemble_only)
 			return 1;

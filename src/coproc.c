@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.76 2004-10-30 06:17:51 debug Exp $
+ *  $Id: coproc.c,v 1.77 2004-11-01 07:58:21 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -881,13 +881,15 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	if (fs >= 0) {
 		uint64_t v = cp->reg[fs];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
-		v = (v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
+		if (fmt == FMT_D || fmt == FMT_L)
+			v = (v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
 		fpu_interpret_float_value(v, &float_value[0], fmt);
 	}
 	if (ft >= 0) {
 		uint64_t v = cp->reg[ft];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
-		v = (v & 0xffffffffULL) + (cp->reg[(ft + 1) & 31] << 32);
+		if (fmt == FMT_D || fmt == FMT_L)
+			v = (v & 0xffffffffULL) + (cp->reg[(ft + 1) & 31] << 32);
 		fpu_interpret_float_value(v, &float_value[1], fmt);
 	}
 
@@ -965,7 +967,7 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 
 		switch (cond) {
 		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
-#if 1
+#if 0
 		case 4:		return 1;
 #else
 case 4:
@@ -974,6 +976,8 @@ return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less
 		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
 		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
 
+		/*  The following are not commonly used, so I'll move these out
+		    of the if-0 on a case-by-case basis.  */
 #if 0
 		case 0:		return 0;					/*  False  */
 		case 1:		return 0;					/*  Unordered  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.11 2004-02-19 10:26:23 debug Exp $
+ *  $Id: dev_asc.c,v 1.12 2004-03-05 13:06:23 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -183,8 +183,9 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
  *
  *  Transfer data from one scsi device to another.
  */
-void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes)
+int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes)
 {
+	int res = 1;
 	int ok, len, i, retlen, ch;
 	unsigned char *buf, *retbuf;
 
@@ -258,7 +259,8 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 		/*  Data coming into the controller from external device:  */
 		if (!dmaflag) {
 			if (d->incoming_data == NULL) {
-				fatal("no incoming DMA data?\n");
+				fatal("no incoming data?\n");
+				res = 0;
 			} else {
 				len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
 
@@ -281,6 +283,7 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 			/*  Copy from the incoming buf into dma memory:  */
 			if (d->incoming_data == NULL) {
 				fatal("no incoming DMA data?\n");
+				res = 0;
 			} else {
 				int len = d->incoming_len;
 				if (len > sizeof(d->dma))
@@ -295,11 +298,17 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 
 				d->reg_ro[NCR_TCL] = len & 255;
 				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
+
+				/*  Successful DMA transfer:  */
+				d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
+d->reg_ro[NCR_TCL] = 0;
+d->reg_ro[NCR_TCM] = 0;
 			}
 		}
 	}
 
 	debug("}");
+	return res;
 }
 
 
@@ -429,6 +438,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				debug("; Accepting message");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;	/*  ?  */
 			d->cur_state = STATE_TARGET;
 			break;
 		case NCRCMD_SETATN:
@@ -465,13 +475,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				/*
 				 *  Selecting a scsi device:
 				 */
+				int ok;
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 				d->reg_ro[NCR_STAT] &= ~7;
 				d->reg_ro[NCR_STAT] |= 3;	/*  ?  */
 				d->cur_state = STATE_TARGET;		/*  ?  */
-				dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
+				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, n_messagebytes);
 				d->reg_ro[NCR_STEP] &= ~7;
 				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
@@ -522,27 +533,33 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			/*  TODO  */
 
 			if (d->cur_state == STATE_TARGET) {
-				dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
-				dev_asc_fifo_write(d, 0x00);
+				int ok;
 
-				dev_asc_transfer(d, d->reg_wo[NCR_SELID] & 7, d->reg_ro[NCR_CFG1] & 0x7,
+				ok = dev_asc_transfer(d, d->reg_wo[NCR_SELID] & 7, d->reg_ro[NCR_CFG1] & 0x7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-				d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;	/*  ?  */
-
+				if (ok) {
+					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
+					dev_asc_fifo_write(d, 0x00);
+					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
+				}
 				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ?  */
 				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 				d->cur_state = STATE_INITIATOR;		/*  ?  */
 			} else {
-				dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
+				int ok;
+				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-				d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;	/*  ?  */
-
+				if (ok) {
+					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
+					dev_asc_fifo_write(d, 0x00);
+					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
+				}
 				d->reg_ro[NCR_STEP] &= ~7;
 				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
 			}

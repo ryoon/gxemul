@@ -23,11 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.1 2004-01-11 23:51:23 debug Exp $
+ *  $Id: dev_wdc.c,v 1.2 2004-01-14 06:10:33 debug Exp $
  *  
  *  Standard IDE controller.
  *
- *  TODO.
+ *  TODO:  Most read/write related stuff and interrupts.
  */
 
 #include <stdio.h>
@@ -144,6 +144,7 @@ void wdc_initialize_identify_struct(struct wdc_data *d)
 
 	/*  27-46: Model number  */
 	memcpy(&d->identify_struct[2 * 27], "Fake mips64emul disk                    ", 40);
+	/*  TODO:  Use the diskimage's filename instead?  */
 
 	/*  47: max sectors per multitransfer  */
 	d->identify_struct[2 * 47 + 0] = 0x80;
@@ -235,6 +236,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag==MEM_READ) {
 			odata = d->error;
 			debug("[ wdc: read from ERROR: 0x%02x ]\n", odata);
+			/*  TODO:  is the error value cleared on read?  */
+			d->error = 0;
 		} else {
 			d->precomp = idata;
 			debug("[ wdc: write to PRECOMP: 0x%02x ]\n", idata);
@@ -304,6 +307,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				odata |= WDCS_DRDY;
 			if (d->inbuf_head != d->inbuf_tail)
 				odata |= WDCS_DRQ;
+			if (d->error)
+				odata |= WDCS_ERR;
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
@@ -315,6 +320,44 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 			/*  Handle the command:  */
 			switch (d->cur_command) {
+			case WDCC_READ:
+				debug("[ wdc: READ from drive %i, head %i, cylinder %i, sector %i, nsecs %i ]\n",
+				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo, d->sector, d->seccnt);
+				/*  TODO:  HAHA! This should be removed quickly  */
+				{
+					unsigned char buf[512*256];
+					int cyl = d->cyl_hi * 256+ d->cyl_lo;
+					int count = d->seccnt? d->seccnt : 256;
+					uint64_t offset = 512 * (d->sector + d->head * 63 + 16*63*cyl);
+					diskimage_access(d->drive + d->base_drive, 0, offset, buf, 512 * count);
+					/*  TODO: result code  */
+					for (i=0; i<512 * count; i++)
+						wdc_addtoinbuf(d, buf[i]);
+				}
+				cpu_interrupt(cpu, d->irq_nr);
+				break;
+			case WDCC_IDP:	/*  Initialize drive parameters  */
+				debug("[ wdc: IDP drive %i (TODO) ]\n", d->drive);
+				/*  TODO  */
+				cpu_interrupt(cpu, d->irq_nr);
+				break;
+			case SET_FEATURES:
+				fatal("[ wdc: SET_FEATURES drive %i (TODO), feature 0x%02x ]\n", d->drive, d->precomp);
+				/*  TODO  */
+				switch (d->precomp) {
+				case WDSF_SET_MODE:
+					fatal("[ wdc: WDSF_SET_MODE drive %i, pio/dma flags 0x%02x ]\n", d->drive, d->seccnt);
+					break;
+				default:
+					d->error |= WDCE_ABRT;
+				}
+				/*  TODO: always interrupt?  */
+				cpu_interrupt(cpu, d->irq_nr);
+				break;
+			case WDCC_RECAL:
+				debug("[ wdc: RECAL drive %i ]\n", d->drive);
+				cpu_interrupt(cpu, d->irq_nr);
+				break;
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
 				wdc_initialize_identify_struct(d);

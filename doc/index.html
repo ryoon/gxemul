@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.165 2004-12-14 07:15:06 debug Exp $
+$Id: index.html,v 1.166 2004-12-14 12:00:11 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1093,9 +1093,17 @@ a clean solution to this yet.)
 </font>
 
 <p>
+Once the first phase of the install has finished, the following command 
+should let you boot into Debian, and perform post-install configuration:<pre>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
+
+</pre>
+
+<p>
 It seems that there's a problem with getting a login prompt on serial 
 console (at least when I've done test installs), so when the installation 
-is finished you need to do the following:
+is finished and you're supposed to get a login prompt, you need to press 
+CTRL-C and type <b>quit</b>, and then:
 
 <p>
 <ol start="5">
@@ -1117,17 +1125,14 @@ is finished you need to do the following:
 </ol>
 
 <p>
-Once the install has finished, the following command should let you
-boot Debian:<pre>
+The system should now be ready for everyday use.
+
+<p>
+Use this command to boot from the completely installed disk image:<pre>
 	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
 
-<p>
-The first time you boot Debian, some post-install configuration programs 
-will run, so don't log in at the first login prompt. Everything is really
-slow, so you need a lot of patience, but once everything is configured, you
-should be able to log in.
 
 
 

@@ -8,7 +8,15 @@ Serious bugs:
       uncommon with -CR3000, a bit more common with -CR4000. Reason and
       solution are unknown at this point.
 
-  x)  Linux/DECstation (Debian) cannot be installed. Why? Not sure yet.
+  x)  Linux/DECstation (Debian) oopses extremely often unless
+      -DSLOWSERIALINTERRUPTS is supplied to CFLAGS at build time. Why?
+      I'm not sure yet. With -DSLOWSERIALINTERRUPTS, the risk is lowered.
+      _Maybe_ this is a bug in Linux. Why? Because the oops message contains
+      things like ANSI escape codes and characters in registers (including
+      the pc and return address register); this looks like a buffer overflow
+      in the serial driver. (Another thing that gives weight to this theory
+      is that the serial driver in Linux is still being developed.)
+      But this is just a guess.
 
   x)  Newer NetBSD 2.0_BETA snapshots from releng.netbsd.org sometimes crash.
           Host\Snapshot:       20040606 20040707

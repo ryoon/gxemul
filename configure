@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.99 2005-02-02 22:04:33 debug Exp $
+#  $Id: configure,v 1.100 2005-02-08 20:30:49 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -763,7 +763,7 @@ rm -f _tests.[co] _tests
 #  Check for 64-bit off_t:
 printf "checking for 64-bit off_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(off_t));return 0;}\n" > _testoff.c
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(off_t));return 0;}\n" > _testoff.c
 $CC $CFLAGS _testoff.c -o _testoff 2> /dev/null
 if [ ! -x _testoff ]; then
 	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
@@ -791,12 +791,12 @@ rm -f _testoff.c _testoff
 #  Check for u_int8_t etc:
 printf "checking for u_int8_t... "
 printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(u_int8_t));return 0;}\n" > _testuint.c
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(u_int8_t));return 0;}\n" > _testuint.c
 $CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 if [ ! -x _testuint ]; then
 	rm -f _testuint*
 	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-	int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(uint8_t));return 0;}\n" > _testuint.c
+	int main(int argc, char *argv[]){printf(\"%%i\\\n\", (int)sizeof(uint8_t));return 0;}\n" > _testuint.c
 	$CC $CFLAGS _testuint.c -o _testuint 2> /dev/null
 	if [ ! -x _testuint ]; then
 		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.23 2004-06-11 13:40:15 debug Exp $
+ *  $Id: file.c,v 1.24 2004-06-14 22:47:50 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1157,6 +1157,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	/*  Is it an ecoff?  */
 	if ((minibuf[0]==0x42 && minibuf[1]==0x01) ||
+	    (minibuf[0]==0x01 && minibuf[1]==0x60) ||
 	    (minibuf[0]==0x60 && minibuf[1]==0x01) ||
 	    (minibuf[0]==0x62 && minibuf[1]==0x01)) {
 		file_load_ecoff(mem, filename, cpu);

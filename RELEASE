@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.79 2005-01-13 07:20:56 debug Exp $
+$Id: RELEASE,v 1.80 2005-01-17 08:40:44 debug Exp $
 
 I'm now working on post-0.2.4.
 
@@ -10,6 +10,7 @@ Some of the features I'd like to have time to implement:
 	x)  stable bintrans for 64-bit CPUs (R4000 etc)
 		o)  everything that works without bintrans should work 
 		    with bintrans
+	x)  R4000 and R10000 caches (and hopefully working with bintrans)
 	x)  fix the Linux-related problems for good, if at all possible
 
 
@@ -72,7 +73,7 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
-Here is a short summary of the changes from version 0.2.4 to 0.X.X:
+Here is a short summary of the changes from version 0.2.4 to 0.2.X:
 
 	x)  TODO
 

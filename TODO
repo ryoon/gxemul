@@ -43,7 +43,10 @@ mips64emul TODO
 
 	Userland ABI emulation  (to run on any Unix-ish host)
 		o)  NetBSD
-		o)  System V?
+		o)  Big endian vs little endian?
+		o)  32-bit vs 64-bit?
+		o)  System V? IRIX?
+		o)  Dynamic ELFs?
 
 	CPU Emulation:
 		o)  Instructions:

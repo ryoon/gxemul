@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.9 2003-12-30 03:06:55 debug Exp $
+ *  $Id: devices.h,v 1.10 2003-12-30 03:47:30 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -118,6 +118,11 @@ void dev_fb_tick(struct cpu *, void *);
 int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,
 	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name);
+
+/*  dev_fdc.c:  */
+#define	DEV_FDC_LENGTH		0x0000000000000100
+int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.48 2004-10-29 15:22:53 debug Exp $
+ *  $Id: dev_asc.c,v 1.49 2004-11-03 16:01:26 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -385,6 +385,10 @@ fatal("TODO.......asdgasin\n");
 			/*  TODO: Make sure that len2 doesn't go outside of the dma memory?  */
 
 			/*  fatal("    data out offset=%5i len=%5i\n", d->xferp->data_out_offset, len2);  */
+
+			if (d->xferp->data_out_offset + len2 > d->xferp->data_out_len) {
+				len2 = d->xferp->data_out_len - d->xferp->data_out_offset;
+			}
 
 			/*
 			 *  Are we using an external DMA controller?

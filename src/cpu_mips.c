@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.12 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu_mips.c,v 1.13 2005-02-02 22:32:48 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1732,6 +1732,10 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
 	mips_cpu_exception(cpu, exc_code, 0, 0, 0, 0, 0, 0);
 }
 #endif
+
+
+/*  Included here for better cache characteristics:  */
+#include "memory.c"
 
 
 /*

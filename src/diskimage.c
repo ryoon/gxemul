@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.75 2005-01-30 13:14:13 debug Exp $
+ *  $Id: diskimage.c,v 1.76 2005-01-31 08:15:52 debug Exp $
  *
  *  Disk image support.
  *
@@ -1429,13 +1429,19 @@ int diskimage_add(struct machine *machine, char *fname)
 			 *  per sector, but NetBSD 2.0_BETA suddenly ignores
 			 *  this value and uses 2048 instead.
 			 *
+			 *  OpenBSD/arc doesn't like 2048, it requires 512
+			 *  to work correctly.
+			 *
 			 *  TODO
 			 */
 
+#if 0
 			if (machine->machine_type == MACHINE_DEC)
 				d->logical_block_size = 512;
 			else
 				d->logical_block_size = 2048;
+#endif
+			d->logical_block_size = 512;
 		}
 	}
 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.92 2005-01-30 13:18:14 debug Exp $
+#  $Id: configure,v 1.93 2005-01-31 08:15:51 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -368,6 +368,69 @@ fi
 if [ z$OSF1 = zYES ]; then
 	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $COPTIM"
 fi
+
+
+#  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
+printf "checking for weird 'mips' define... "
+printf "#include <stdio.h>\n
+int main(int argc, char *argv[]){
+#ifdef mips
+printf(\"1\");
+#undef mips
+#ifdef mips
+printf(\"2\");
+#endif
+#endif
+printf(\"\\\n\");return 0;}\n" > _testm.c
+$CC $COPTIM _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z12 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef mips" >> config.h
+	else
+		if [ z`./_testm` = z1 ]; then
+			printf "yes, but workaround not possible\n"
+			exit
+		else
+			printf "no\n"
+		fi
+	fi
+fi
+rm -f _testm*
+
+
+#  Similar to the mips define check above, although I don't know if
+#  any OS actually defined ppc like this.
+printf "checking for weird 'ppc' define... "
+printf "#include <stdio.h>\n
+int main(int argc, char *argv[]){
+#ifdef ppc
+printf(\"1\");
+#undef ppc
+#ifdef ppc
+printf(\"2\");
+#endif
+#endif
+printf(\"\\\n\");return 0;}\n" > _testm.c
+$CC $COPTIM _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE ppc define TEST PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z12 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef ppc" >> config.h
+	else
+		if [ z`./_testm` = z1 ]; then
+			printf "yes, but workaround not possible\n"
+			exit
+		else
+			printf "no\n"
+		fi
+	fi
+fi
+rm -f _testm*
 
 
 #  CWARNINGS:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.10 2004-10-25 00:39:50 debug Exp $
+ *  $Id: dev_pica.c,v 1.11 2004-10-25 02:25:52 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -290,7 +290,7 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 			idata = ((idata ^ 0xff) & 0xff) << 8;
 			d->isa_int_enable_mask =
 			    (d->isa_int_enable_mask & 0xff) | idata;
-			fatal("[ pica_a0: setting isa_int_enable_mask "
+			debug("[ pica_a0: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
 			/*  Recompute interrupt stuff:  */
 			cpu_interrupt_ack(cpu, 8 + 0);
@@ -342,7 +342,7 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 			idata = (idata ^ 0xff) & 0xff;
 			d->isa_int_enable_mask =
 			    (d->isa_int_enable_mask & 0xff00) | idata;
-			fatal("[ pica_20: setting isa_int_enable_mask "
+			debug("[ pica_20: setting isa_int_enable_mask "
 			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
 			/*  Recompute interrupt stuff:  */
 			cpu_interrupt_ack(cpu, 8 + 0);

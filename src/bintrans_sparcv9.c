@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.14 2005-01-09 06:38:18 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.15 2005-01-09 22:37:25 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -152,7 +152,61 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	int rt, int rs, int imm, int instruction_type)
 {
-	return 0;
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	switch (instruction_type) {
+	case HI6_ADDIU:
+	case HI6_DADDIU:
+	case HI6_ANDI:
+	case HI6_ORI:
+	case HI6_XORI:
+		break;
+	default:
+		return 0;
+	}
+
+	if (rt == 0)
+		goto rt_0;
+
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = 0xda5a2000 + ofs;		/*  ldx [ %o0 + ofs ], %o5  */
+
+	switch (instruction_type) {
+	case HI6_ADDIU:
+	case HI6_DADDIU:
+		*a++ = 0x19000000 | (imm << 6);	/*  sethi %hi(....), %o4  */
+		*a++ = 0x993b2010;		/*  sra %o4, 16, %o4  */
+		*a++ = 0x9a03400c;
+		if (instruction_type == HI6_ADDIU)
+			*a++ = 0x9b3b6000;
+		break;
+	case HI6_ANDI:
+	case HI6_ORI:
+	case HI6_XORI:
+		*a++ = 0x19000000 | (imm & 0xffff);	/*  sethi %hi(....), %o4  */
+		*a++ = 0x993b200a;			/*  sra %o4, 10, %o4  */
+		switch (instruction_type) {
+		case HI6_ORI:
+			*a++ = 0x9a13400c;		/*  or  %o5, %o4, %o5  */
+			break;
+		case HI6_XORI:
+			*a++ = 0x9a1b400c;		/*  xor  %o5, %o4, %o5  */
+			break;
+		case HI6_ANDI:
+			*a++ = 0x9a0b400c;		/*  and  %o5, %o4, %o5  */
+			break;
+		}
+		break;
+	}
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = 0xda722000 + ofs;		/*  stx %o5, [ %o0 + ofs ]  */
+
+rt_0:
+	*addrp = (unsigned char *) a;
+	bintrans_write_pc_inc(addrp);
+	return 1;
 }
 
 
@@ -175,9 +229,12 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_NOR:
 	case SPECIAL_XOR:
 	case SPECIAL_SLL:
+	case SPECIAL_SLLV:
 	case SPECIAL_DSLL:
 	case SPECIAL_SRL:
+	case SPECIAL_SRLV:
 	case SPECIAL_SRA:
+	case SPECIAL_SRAV:
 		break;
 	default:
 		return 0;
@@ -232,6 +289,18 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x9b332000 | sa;		/*  srl  %o4, sa, %o5  */
 		*a++ = 0x9b3b6000;		/*  sra  %o5, 0, %o5  */
 		break;
+	case SPECIAL_SLLV:
+		/*  rd = rt >> (rs&31)  (logical)  */
+		*a++ = 0x9b2b000d;		/*  sll  %o4, %o5, %o5  */
+		break;
+	case SPECIAL_SRLV:
+		/*  rd = rt << (rs&31)  (logical)  */
+		*a++ = 0x9b33000d;		/*  srl  %o4, %o5, %o5  */
+		break;
+	case SPECIAL_SRAV:
+		/*  rd = rt >> (rs&31)  (logical)  */
+		*a++ = 0x9b3b000d;		/*  sra  %o4, %o5, %o5  */
+		break;
 	}
 
 	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
@@ -272,24 +341,24 @@ return 0;
 
 	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0x9a102000 | TO_BE_DELAYED;	/*  mov TO_BE_DELAYED, %o5  */
-	*a++ = 0xda222000 | ofs;		/*  st %o5, [ %o5 + ofs ]   */
+	*a++ = 0xda222000 | ofs;		/*  st %o5, [ %o0 + ofs ]   */
 
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
 	*a++ = 0xda5a2000 + ofs;		/*  ldx [ %o0 + ofs ], %o5  */
 	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
 	*a++ = 0xda722000 + ofs;		/*  stx %o5, [ %o0 + ofs ]  */
 
-#if 0
-        if (special == SPECIAL_JALR && rd != 0) {
+	if (special == SPECIAL_JALR && rd != 0) {
                 /*  gpr[rd] = retaddr    (pc + 8)  */
-                a = (uint32_t *) *addrp;
-                /*  lda alpha_rd,8(t5)  */
-                *a++ = 0x20060008 | (alpha_rd << 21);
-                *addrp = (unsigned char *) a;
-                if (alpha_rd == ALPHA_T0)
-                        bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
-        } 
-#endif
+
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		*a++ = 0xda5a2000 + ofs;	/*  ldx [ %o0 + ofs ], %o5  */
+
+		*a++ = 0x9a036008;		/*  add %o5, 8, %o5  */
+
+		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+		*a++ = 0xda722000 + ofs;	/*  stx %o5, [ %o0 + ofs ]  */
+	}
 
 	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp);
@@ -346,7 +415,6 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 	 *  do a sll by 1 to sign-extend it. :-)  (Hm,
 	 *  it doesn't seem to work without an sra too.)
 	 */
-
 	if (imm & 0x8000) {
 		*a++ = 0x1b000000 | ((imm & 0xffff) << 5);	/*  sethi %hi(0xXXXX0000), %o5  */
 		*a++ = 0x9b2b6001;				/*  sll  %o5, 1, %o5  */

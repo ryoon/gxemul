@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.459 2005-01-09 06:38:17 debug Exp $
+$Id: HISTORY,v 1.460 2005-01-09 22:37:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1438,3 +1438,5 @@ HISTORY of mips64emul
 		Sparc backend instructions done so far: mthi/mtlo/mfhi/mflo,
 		lui, addu, daddu, subu, dsubu, and, or, nor, xor, sll, dsll,
 		srl, and sra.
+		Adding more sparc backend instructions: addiu, daddiu, xori,
+		ori, andi, srlv, srav, sllv.

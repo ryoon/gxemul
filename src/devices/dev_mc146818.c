@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.27 2004-07-03 18:38:10 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.28 2004-07-05 19:24:02 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -44,9 +44,14 @@
 
 extern int register_dump;
 extern int instruction_trace;
+
 extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
+
+extern int emulated_hz;
+extern int automatic_clock_adjustment;
+extern int64_t automatic_clock_adjustment_curhz;
 
 
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
@@ -66,12 +71,29 @@ struct mc_data {
 
 	int	timebase_hz;
 	int	interrupt_hz;
-	int	emulated_hz;
 	int	irq_nr;
 
-	int	interrupt_every_x_instructions;
-	int	instructions_left_until_interrupt;
+	int	interrupt_every_x_cycles;
+	int	cycles_left_until_interrupt;
 };
+
+
+/*
+ *  recalc_interrupt_cycle():
+ */
+void recalc_interrupt_cycle(struct mc_data *mc_data)
+{
+	if (automatic_clock_adjustment &&
+	    automatic_clock_adjustment_curhz > 100000) {
+		emulated_hz = automatic_clock_adjustment_curhz;
+	}
+
+	if (mc_data->interrupt_hz > 0)
+		mc_data->interrupt_every_x_cycles =
+		    emulated_hz / mc_data->interrupt_hz;
+	else
+		mc_data->interrupt_every_x_cycles = 0;
+}
 
 
 /*
@@ -84,22 +106,24 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 	if (mc_data == NULL)
 		return;
 
+	recalc_interrupt_cycle(mc_data);
+
 	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) &&
-	     mc_data->interrupt_every_x_instructions > 0) {
-		mc_data->instructions_left_until_interrupt -=
+	     mc_data->interrupt_every_x_cycles > 0) {
+		mc_data->cycles_left_until_interrupt -=
 		    (1 << TICK_STEPS_SHIFT);
-		if (mc_data->instructions_left_until_interrupt < 0 ||
-		    mc_data->instructions_left_until_interrupt >=
-		    mc_data->interrupt_every_x_instructions) {
+		if (mc_data->cycles_left_until_interrupt < 0 ||
+		    mc_data->cycles_left_until_interrupt >=
+		    mc_data->interrupt_every_x_cycles) {
 			debug("[ rtc interrupt (every %i cycles) ]\n",
-			    mc_data->interrupt_every_x_instructions);
+			    mc_data->interrupt_every_x_cycles);
 			cpu_interrupt(cpus[bootstrap_cpu], mc_data->irq_nr);
 
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 
-			/*  Reset the instruction countdown:  */
-			mc_data->instructions_left_until_interrupt =
-			    mc_data->interrupt_every_x_instructions;
+			/*  Reset the cycle countdown:  */
+			mc_data->cycles_left_until_interrupt =
+			    mc_data->interrupt_every_x_cycles;
 		}
 	}
 }
@@ -289,31 +313,26 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				;
 			}
 
-			if (mc_data->interrupt_hz > 0)
-				mc_data->interrupt_every_x_instructions =
-				    mc_data->emulated_hz /
-				    mc_data->interrupt_hz;
-			else
-				mc_data->interrupt_every_x_instructions = 0;
+			recalc_interrupt_cycle(mc_data);
 
-			mc_data->instructions_left_until_interrupt =
-				mc_data->interrupt_every_x_instructions;
+			mc_data->cycles_left_until_interrupt =
+				mc_data->interrupt_every_x_cycles;
 
 			mc_data->reg[MC_REGA*4] =
 			    data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
 
-			debug("[ rtc set to interrupt every %i:th instruction ]\n",
-			    mc_data->interrupt_every_x_instructions);
+			debug("[ rtc set to interrupt every %i:th cycle ]\n",
+			    mc_data->interrupt_every_x_cycles);
 			return 1;
 		case MC_REGB*4:
 			if (((data[0] ^ mc_data->reg[MC_REGB*4]) & MC_REGB_PIE))
-				mc_data->instructions_left_until_interrupt =
-				    mc_data->interrupt_every_x_instructions;
+				mc_data->cycles_left_until_interrupt =
+				    mc_data->interrupt_every_x_cycles;
 			mc_data->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
 				cpu_interrupt_ack(cpus[bootstrap_cpu],
 				    mc_data->irq_nr);
-				/*  mc_data->instructions_left_until_interrupt = mc_data->interrupt_every_x_instructions;  */
+				/*  mc_data->cycles_left_until_interrupt = mc_data->interrupt_every_x_cycles;  */
 			}
 			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
 			return 1;
@@ -398,8 +417,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 		if (relative_addr == MC_REGC*4) {
 			cpu_interrupt_ack(cpus[bootstrap_cpu], mc_data->irq_nr);
-			/*  mc_data->instructions_left_until_interrupt =
-			    mc_data->interrupt_every_x_instructions;  */
+			/*  mc_data->cycles_left_until_interrupt =
+			    mc_data->interrupt_every_x_cycles;  */
 			mc_data->reg[MC_REGC * 4] = 0x00;
 		}
 
@@ -415,7 +434,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
  *  so it contains both rtc related stuff and the station's Ethernet address.
  */
 void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int access_style, int addrdiv, int emulated_hz)
+	int irq_nr, int access_style, int addrdiv)
 {
 	unsigned char ether_address[6];
 	int i;
@@ -430,7 +449,6 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memset(mc_data, 0, sizeof(struct mc_data));
 	mc_data->irq_nr        = irq_nr;
 	mc_data->access_style  = access_style;
-	mc_data->emulated_hz   = emulated_hz;
 	mc_data->addrdiv       = addrdiv;
 
 	/*  Station Ethernet Address:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.94 2004-07-04 16:11:24 debug Exp $
+ *  $Id: cpu.c,v 1.95 2004-07-05 19:24:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -65,6 +65,9 @@ extern int max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
+
+extern int automatic_clock_adjustment;
+extern int64_t automatic_clock_adjustment_curhz;
 
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
@@ -2737,7 +2740,7 @@ int cpu_run_instr(struct cpu *cpu)
 /*
  *  cpu_show_cycles():
  */
-void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
+void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 {
 	int offset;
 	char *symbol;
@@ -2747,8 +2750,6 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
-
-	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
 
 	getrusage(RUSAGE_SELF, &rusage);
 	mseconds = (rusage.ru_utime.tv_sec -
@@ -2760,6 +2761,26 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
+
+	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
+
+	if (automatic_clock_adjustment) {
+		/*  Current nr of cycles per second:  */
+		int64_t cur_cycles_per_second = 1000 *
+		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
+		    / cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
+
+		if (cur_cycles_per_second < 500000)
+			cur_cycles_per_second = 500000;
+
+		automatic_clock_adjustment_curhz = cur_cycles_per_second;
+	}
+
+
+	/*  RETURN here, unless show_nr_of_instructions (-N) is turned on:  */
+	if (!show_nr_of_instructions && !forced)
+		goto do_return;
+
 
 	d = emulated_hz / 1000;
 	if (d < 1)
@@ -2774,9 +2795,6 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	ms -= 1000 * s;
 
 	printf("[ emulated time = %02i:%02i:%02i.%03i", h, m, s, ms);
-
-	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
-
 	printf(" (total nr of cycles = %lli", (long long) ncycles);
 
 	if (cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
@@ -2787,11 +2805,12 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	printf(" pc=%016llx <%s>",
+	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
+
+	printf(" pc=%016llx <%s> ]\n",
 	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
 
-	printf(" ]\n");
-
+do_return:
 	ninstrs_last = ninstrs;
 	mseconds_last = mseconds;
 }
@@ -2962,9 +2981,8 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			ncycles_flush = ncycles;
 		}
 
-		if (show_nr_of_instructions &&
-		    ncycles > ncycles_show + (1<<22)) {
-			cpu_show_cycles(&starttime, ncycles);
+		if (ncycles > ncycles_show + (1<<22)) {
+			cpu_show_cycles(&starttime, ncycles, 0);
 			ncycles_show = ncycles;
 		}
 
@@ -2986,7 +3004,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	debug("All CPUs halted.\n");
 
 	if (show_nr_of_instructions || !quiet_mode)
-		cpu_show_cycles(&starttime, ncycles);
+		cpu_show_cycles(&starttime, ncycles, 1);
 
 	if (show_opcode_statistics)
 		cpu_show_full_statistics(cpus);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.44 2004-10-21 04:54:33 debug Exp $
+ *  $Id: dev_asc.c,v 1.45 2004-10-22 06:41:50 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -648,7 +648,10 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 
-#if 1
+#if 0
+	/*  Debug stuff useful when trying to make dev_asc compatible
+	    with the 'arc' emulation mode, which is different from
+	    the DECstation mode.  */
 	fatal("[ asc: writeflag=%i addr=%08x idata=%016llx ]\n",
 	    writeflag, (int)relative_addr, (long long)idata);
 #endif

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.119 2004-10-25 03:26:24 debug Exp $
+ *  $Id: main.c,v 1.120 2004-10-27 03:22:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -112,7 +112,7 @@ void usage(char *progname)
 
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz, 6=NEC-R98, 7=Olivetti M700)\n");
+	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700)\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");
@@ -431,7 +431,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		strcpy(emul->emul_cpu_name, "BCM4712");
 
 	if (emul->emulation_type == EMULTYPE_ARC &&
-	    emul->machine == MACHINE_ARC_PICA && !emul->emul_cpu_name[0])
+	    emul->machine == MACHINE_ARC_JAZZ_PICA && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4000");
 
 	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])

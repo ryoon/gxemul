@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.9 2004-10-23 19:38:34 debug Exp $
+ *  $Id: dev_vga.c,v 1.10 2004-10-27 03:22:33 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -40,7 +40,6 @@
 
 
 #define	VGA_FB_ADDR	0x123000000000ULL
-
 
 struct vga_data {
 	uint64_t	videomem_base;

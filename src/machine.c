@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.210 2004-10-25 03:21:23 debug Exp $
+ *  $Id: machine.c,v 1.211 2004-10-27 03:22:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2129,10 +2129,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 				else
 					strcat(emul->machine_name, " (NEC-R94; NEC RISCstation 2200)");
 
-				/*  TODO:  sync devices and component tree  */
+				/*  TODO: interrupt controller!  */
 
 				pci_data = dev_rd94_init(cpu,
 				    mem, 0x2000000000ULL, 0);
+				dev_sn_init(cpu, mem, 0x2000001000ULL, 0);
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 0, MC146818_ARC_NEC, 1);
 				dev_pckbc_init(cpu, mem,
@@ -2169,7 +2170,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				break;
 
-			case MACHINE_ARC_PICA:
+			case MACHINE_ARC_JAZZ_PICA:
+			case MACHINE_ARC_JAZZ_MAGNUM:
 				/*
 				 *  "PICA-61"
 				 *
@@ -2196,9 +2198,38 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
 				 *  jazzisabr0 at mainbus0
 				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
+				 *
+				 *  "Microsoft-Jazz", "MIPS Magnum"
+				 *
+				 *  timer0 at jazzio0 addr 0xe0000228
+				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
+				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
+				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
+				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
+				 *  VXL at jazzio0 addr 0xe0800000 intr 3 not configured
+				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
+				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
+				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
+				 *  scsibus0 at asc0: 8 targets, 8 luns per target
+				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
+				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
+				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
+				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
+				 *  jazzisabr0 at mainbus0
+				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
 				 */
 
-				strcat(emul->machine_name, " (Acer PICA-61)");
+				switch (emul->machine) {
+				case MACHINE_ARC_JAZZ_PICA:
+					strcat(emul->machine_name, " (Microsoft Jazz, Acer PICA-61)");
+					break;
+				case MACHINE_ARC_JAZZ_MAGNUM:
+					strcat(emul->machine_name, " (Microsoft Jazz, MIPS Magnum)");
+					break;
+				default:
+					fatal("error in machine.c. jazz\n");
+					exit(1);
+				}
 
 				pica_data = dev_pica_init(
 				    cpu, mem, 0x2000000000ULL);
@@ -2225,6 +2256,40 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
 				    0x2000007000ULL, 8 + 9, 1, 0);
+
+				break;
+
+			case MACHINE_ARC_JAZZ_M700:
+				/*
+				 *  "Microsoft-Jazz", "Olivetti M700"
+				 *
+				 *  Different enough from Pica and Magnum to be
+				 *  separate here.
+				 *
+				 *  See http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html.
+				 */
+
+				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
+
+				pica_data = dev_pica_init(
+				    cpu, mem, 0x800000000ULL);
+				cpu->md_interrupt = pica_interrupt;
+
+				dev_mc146818_init(cpu, mem,
+				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
+
+#if 0
+				dev_pckbc_init(cpu, mem, 0x800005000ULL,
+				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
+#endif
+				dev_ns16550_init(cpu, mem,
+				    0x800006000ULL, 8 + 8, 1,
+				    emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem,
+				    0x800007000ULL, 8 + 9, 1, 0);
+
+				dev_m700_fb_init(cpu, mem,
+				    0x18000080000ULL, 0x10000000000ULL);
 
 				break;
 
@@ -2265,73 +2330,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  PC kbd  */
 				dev_pckbc_init(cpu, mem, 0x90000000060ULL,
 				    PCKBC_8042, 0, 0, emul->use_x11);
-
-				break;
-
-			case MACHINE_ARC_JAZZ:
-				/*
-				 *  "Microsoft-Jazz", "MIPS Magnum"
-				 *
-				 *  timer0 at jazzio0 addr 0xe0000228
-				 *  mcclock0 at jazzio0 addr 0xe0004000: mc146818 or compatible
-				 *  lpt at jazzio0 addr 0xe0008000 intr 0 not configured
-				 *  fdc at jazzio0 addr 0xe0003000 intr 1 not configured
-				 *  MAGNUM at jazzio0 addr 0xe000c000 intr 2 not configured
-				 *  VXL at jazzio0 addr 0xe0800000 intr 3 not configured
-				 *  sn0 at jazzio0 addr 0xe0001000 intr 4: SONIC Ethernet
-				 *  sn0: Ethernet address 69:6a:6b:6c:00:00
-				 *  asc0 at jazzio0 addr 0xe0002000 intr 5: NCR53C94, target 0
-				 *  scsibus0 at asc0: 8 targets, 8 luns per target
-				 *  pckbd at jazzio0 addr 0xe0005000 intr 6 not configured
-				 *  pms at jazzio0 addr 0xe0005000 intr 7 not configured
-				 *  com0 at jazzio0 addr 0xe0006000 intr 8: ns16550a, working fifo
-				 *  com at jazzio0 addr 0xe0007000 intr 9 not configured
-				 *  jazzisabr0 at mainbus0
-				 *  isa0 at jazzisabr0 isa_io_base 0xe2000000 isa_mem_base 0xe3000000
-				 */
-
-				strcat(emul->machine_name, " (Microsoft Jazz, MIPS Magnum)");
-
-				dev_mc146818_init(cpu, mem,
-				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
-
-				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
-
-				dev_ns16550_init(cpu, mem, 0x2000006000ULL,
-				    8 + 8, 1, emul->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
-				    8 + 9, 1, 0);
-
-				break;
-
-			case MACHINE_ARC_M700:
-				/*
-				 *  "Microsoft-Jazz", "Olivetti M700"
-				 *
-				 *  See http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html.
-				 */
-
-				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
-
-				pica_data = dev_pica_init(
-				    cpu, mem, 0x800000000ULL);
-				cpu->md_interrupt = pica_interrupt;
-
-				dev_mc146818_init(cpu, mem,
-				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
-
-#if 0
-				dev_pckbc_init(cpu, mem, 0x800005000ULL,
-				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
-#endif
-				dev_ns16550_init(cpu, mem,
-				    0x800006000ULL, 8 + 8, 1,
-				    emul->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem,
-				    0x800007000ULL, 8 + 9, 1, 0);
-
-				dev_m700_fb_init(cpu, mem,
-				    0x18000080000ULL, 0x10000000000ULL);
 
 				break;
 
@@ -2377,26 +2375,33 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 				break;
-			case MACHINE_ARC_PICA:
-				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
-				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
-				break;
 			case MACHINE_ARC_NEC_R94:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
-				break;
-			case MACHINE_ARC_DESKTECH_TYNE:
-				strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
-				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
-				break;
-			case MACHINE_ARC_JAZZ:
-				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
 			case MACHINE_ARC_NEC_R98:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "R98", 4);	/*  NOTE: max 8 chars  */
 				break;
+			case MACHINE_ARC_JAZZ_PICA:
+				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_JAZZ_MAGNUM:
+				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_JAZZ_M700:
+				strncpy(arcbios_sysid.VendorId,  "OLI00000", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_DESKTECH_TYNE:
+				strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			default:
+				fatal("error in machine.c sysid\n");
+				exit(1);
 			}
 		}
 		store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
@@ -2524,29 +2529,29 @@ void machine_init(struct emul *emul, struct memory *mem)
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */);
 				break;
-			case MACHINE_ARC_PICA:
-				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
-				break;
 			case MACHINE_ARC_NEC_R94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */);
-				break;
-			case MACHINE_ARC_DESKTECH_TYNE:
-				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
-				break;
-			case MACHINE_ARC_JAZZ:
-				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_NEC_R98:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
 				break;
-			case MACHINE_ARC_M700:
+			case MACHINE_ARC_JAZZ_PICA:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 2, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_JAZZ_MAGNUM:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_JAZZ_M700:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_DESKTECH_TYNE:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 2, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
@@ -2679,7 +2684,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
-		    emul->machine == MACHINE_ARC_PICA) {
+		    emul->machine == MACHINE_ARC_JAZZ_PICA) {
 			uint32_t jazzbus;
 			jazzbus = arcbios_addchild_manual(cpu,
 			    3 /*  Adapter  */,

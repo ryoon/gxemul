@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.154 2004-09-26 00:55:58 debug Exp $
+ *  $Id: cpu.c,v 1.155 2004-09-26 19:33:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2184,20 +2184,25 @@ static int cpu_run_instr(struct cpu *cpu)
 			    cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt &&
 			    cpu->jump_to_self_reg == rs) {
-				if ((int64_t)cpu->gpr[rt] > 1 && imm == -1) {
+				if ((int64_t)cpu->gpr[rt] > 1 && imm <= -1) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
-					cpu->gpr[rt] = 0;
+					while ((int64_t)cpu->gpr[rt] > 0)
+						cpu->gpr[rt] += (int64_t)imm;
+
 					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
 
 					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
-				if ((int64_t)cpu->gpr[rt] < -1 && imm == 1) {
+				if ((int64_t)cpu->gpr[rt] < -1 && imm >= 1) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
-					cpu->gpr[rt] = 0;
+
+					while ((int64_t)cpu->gpr[rt] > 0)
+						cpu->gpr[rt] += (int64_t)imm;
+
 					if (instruction_trace_cached)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
 
@@ -2250,6 +2255,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			}
 
 			if (imm==-1 && (hi6 == HI6_BGTZ || hi6 == HI6_BLEZ ||
+			    (hi6 == HI6_BGTZL && cond) ||
+			    (hi6 == HI6_BLEZL && cond) ||
 			    (hi6 == HI6_BNE && (rt==0 || rs==0)) ||
 			    (hi6 == HI6_BEQ && (rt==0 || rs==0)))) {
 				cpu->last_was_jumptoself = 2;

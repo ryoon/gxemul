@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.8 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.9 2005-01-30 00:37:05 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -38,12 +38,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc.h"
-
 #include "console.h"
+#include "cpu.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 
 #include "aureg.h"
 

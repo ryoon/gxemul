@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.315 2005-01-29 20:58:52 debug Exp $
+ *  $Id: machine.c,v 1.316 2005-01-30 00:37:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -52,6 +52,7 @@
 
 #include "arcbios.h"
 #include "bus_pci.h"
+#include "cpu.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "emul.h"

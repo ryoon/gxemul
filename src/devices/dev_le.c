@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.33 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_le.c,v 1.34 2005-01-30 00:37:06 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -53,6 +53,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "emul.h"
 #include "machine.h"

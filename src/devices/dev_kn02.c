@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.14 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_kn02.c,v 1.15 2005-01-30 00:37:06 debug Exp $
  *  
  *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
  *  details.
@@ -35,9 +35,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.145 2005-01-29 10:30:31 debug Exp $
+ *  $Id: emul.c,v 1.146 2005-01-30 00:37:09 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -40,6 +40,7 @@
 
 #include "arcbios.h"
 #include "bintrans.h"
+#include "cpu.h"
 #include "emul.h"
 #include "console.h"
 #include "debugger.h"

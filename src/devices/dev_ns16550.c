@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.26 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.27 2005-01-30 00:37:06 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -36,11 +36,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
+#include "cpu.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
 #include "comreg.h"
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.64 2005-01-29 10:30:31 debug Exp $
+ *  $Id: debugger.c,v 1.65 2005-01-30 00:37:09 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -55,6 +55,7 @@
 
 #include "console.h"
 #include "cop0.h"
+#include "cpu.h"
 #include "debugger.h"
 #include "diskimage.h"
 #include "emul.h"
@@ -1134,7 +1135,7 @@ static void debugger_cmd_step(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
 {
-	int i, j, x = -1;
+	int x = -1;
 	int rawflag = 0;
 
 	if (cmd_line[0] != '\0') {
@@ -1161,174 +1162,7 @@ static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
 		}
 	}
 
-	/*  Nicely formatted output:  */
-	if (!rawflag) {
-		for (i=0; i<m->ncpus; i++) {
-			int pageshift = 12;
-
-			if (x >= 0 && i != x)
-				continue;
-
-			if (m->cpus[i]->cpu_type.rev == MIPS_R4100)
-				pageshift = 10;
-
-			/*  Print index, random, and wired:  */
-			printf("cpu%i: (", i);
-			switch (m->cpus[i]->cpu_type.isa_level) {
-			case 1:
-			case 2:
-				printf("index=0x%x random=0x%x",
-				    (int) ((m->cpus[i]->coproc[0]->
-				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
-				    >> R2K3K_INDEX_SHIFT),
-				    (int) ((m->cpus[i]->coproc[0]->
-				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
-				    >> R2K3K_RANDOM_SHIFT));
-				break;
-			default:
-				printf("index=0x%x random=0x%x",
-				    (int) (m->cpus[i]->coproc[0]->
-				    reg[COP0_INDEX] & INDEX_MASK),
-				    (int) (m->cpus[i]->coproc[0]->
-				    reg[COP0_RANDOM] & RANDOM_MASK));
-				printf(" wired=0x%llx", (long long)
-				    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
-			}
-
-			printf(")\n");
-
-			for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries;
-			    j++) {
-				uint64_t hi,lo0,lo1,mask;
-				hi = m->cpus[i]->coproc[0]->tlbs[j].hi;
-				lo0 = m->cpus[i]->coproc[0]->tlbs[j].lo0;
-				lo1 = m->cpus[i]->coproc[0]->tlbs[j].lo1;
-				mask = m->cpus[i]->coproc[0]->tlbs[j].mask;
-
-				printf("%3i: ", j);
-				switch (m->cpus[i]->cpu_type.mmu_model) {
-				case MMU3K:
-					if (!(lo0 & R2K3K_ENTRYLO_V)) {
-						printf("(invalid)\n");
-						continue;
-					}
-					printf("vaddr=0x%08x ",
-					    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
-					if (lo0 & R2K3K_ENTRYLO_G)
-						printf("(global), ");
-					else
-						printf("(asid %02x),",
-						    (int) ((hi & R2K3K_ENTRYHI_ASID_MASK)
-						    >> R2K3K_ENTRYHI_ASID_SHIFT));
-					printf(" paddr=0x%08x ",
-					    (int) (lo0&R2K3K_ENTRYLO_PFN_MASK));
-					if (lo0 & R2K3K_ENTRYLO_N)
-						printf("N");
-					if (lo0 & R2K3K_ENTRYLO_D)
-						printf("D");
-					printf("\n");
-					break;
-				default:
-					/*  TODO: MIPS32 doesn't need 0x16llx  */
-					if (m->cpus[i]->cpu_type.mmu_model == MMU10K)
-						printf("vaddr=0x%1x..%011llx ",
-						    (int) (hi >> 60),
-						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
-					else
-						printf("vaddr=0x%1x..%010llx ",
-						    (int) (hi >> 60),
-						    (long long) (hi&ENTRYHI_VPN2_MASK));
-					if (hi & TLB_G)
-						printf("(global): ");
-					else
-						printf("(asid %02x):",
-						    (int) (hi & ENTRYHI_ASID));
-
-					/*  TODO: Coherency bits  */
-
-					if (!(lo0 & ENTRYLO_V))
-						printf(" p0=(invalid)   ");
-					else
-						printf(" p0=0x%09llx ", (long long)
-						    (((lo0&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
-					printf(lo0 & ENTRYLO_D? "D" : " ");
-
-					if (!(lo1 & ENTRYLO_V))
-						printf(" p1=(invalid)   ");
-					else
-						printf(" p1=0x%09llx ", (long long)
-						    (((lo1&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
-					printf(lo1 & ENTRYLO_D? "D" : " ");
-					mask |= (1 << (pageshift+1)) - 1;
-					switch (mask) {
-					case 0x7ff:	printf(" (1KB)"); break;
-					case 0x1fff:	printf(" (4KB)"); break;
-					case 0x7fff:	printf(" (16KB)"); break;
-					case 0x1ffff:	printf(" (64KB)"); break;
-					case 0x7ffff:	printf(" (256KB)"); break;
-					case 0x1fffff:	printf(" (1MB)"); break;
-					case 0x7fffff:	printf(" (4MB)"); break;
-					case 0x1ffffff:	printf(" (16MB)"); break;
-					case 0x7ffffff:	printf(" (64MB)"); break;
-					default:
-						printf(" (mask=%08x?)", (int)mask);
-					}
-					printf("\n");
-				}
-			}
-		}
-
-		return;
-	}
-
-	/*  Raw output:  */
-	for (i=0; i<m->ncpus; i++) {
-		if (x >= 0 && i != x)
-			continue;
-
-		/*  Print index, random, and wired:  */
-		printf("cpu%i: (", i);
-
-		if (m->cpus[i]->cpu_type.isa_level < 3 ||
-		    m->cpus[i]->cpu_type.isa_level == 32)
-			printf("index=0x%08x random=0x%08x",
-			    (int)m->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)m->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
-		else
-			printf("index=0x%016llx random=0x%016llx", (long long)
-			    m->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)m->cpus[i]->coproc[0]->reg
-			    [COP0_RANDOM]);
-
-		if (m->cpus[i]->cpu_type.isa_level >= 3)
-			printf(" wired=0x%llx", (long long)
-			    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
-
-		printf(")\n");
-
-		for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
-			if (m->cpus[i]->cpu_type.mmu_model == MMU3K)
-				printf("%3i: hi=0x%08x lo=0x%08x\n",
-				    j,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0);
-			else if (m->cpus[i]->cpu_type.isa_level < 3 ||
-			    m->cpus[i]->cpu_type.isa_level == 32)
-				printf("%3i: hi=0x%08x mask=0x%08x "
-				    "lo0=0x%08x lo1=0x%08x\n", j,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo1);
-			else
-				printf("%3i: hi=0x%016llx mask=0x%016llx "
-				    "lo0=0x%016llx lo1=0x%016llx\n", j,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo1);
-		}
-	}
+	cpu_tlbdump(m, x, rawflag);
 }
 
 
@@ -1353,7 +1187,7 @@ static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 /*
  *  debugger_cmd_unassemble():
  *
- *  Dump emulated memory as MIPS instructions.
+ *  Dump emulated memory as instructions.
  *
  *  syntax: unassemble [addr [endaddr]]
  */
@@ -1533,7 +1367,7 @@ static struct cmd cmds[] = {
 		"toggle show_trace_tree on or off" },
 
 	{ "unassemble", "[addr [endaddr]]", 0, debugger_cmd_unassemble,
-		"dump memory contents as MIPS instructions" },
+		"dump memory contents as instructions" },
 
 	{ "version", "", 0, debugger_cmd_version,
 		"print version information" },

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.160 2005-01-26 17:19:57 debug Exp $
+ *  $Id: coproc.c,v 1.161 2005-01-30 00:37:08 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -832,7 +832,8 @@ void coproc_register_read(struct cpu *cpu,
 		    " register %i (%s)\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?");
 
-		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0,
+		    cp->coproc_nr, 0, 0, 0);
 		return;
 	}
 
@@ -933,7 +934,7 @@ void coproc_register_write(struct cpu *cpu,
 		case COP0_COMPARE:
 			/*  Clear the timer interrupt bit (bit 7):  */
 			cpu->compare_register_set = 1;
-			cpu_interrupt_ack(cpu, 7);
+			mips_cpu_interrupt_ack(cpu, 7);
 			if (tmp != (int64_t)(int32_t)tmp)
 				fatal("WARNING: trying to write a 64-bit value to the COMPARE register!\n");
 			tmp = (int64_t)(int32_t)tmp;
@@ -1063,7 +1064,8 @@ void coproc_register_write(struct cpu *cpu,
 		    "register %i (%s), data = 0x%016llx\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
 
-		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
+		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0,
+		    cp->coproc_nr, 0, 0, 0);
 		return;
 	}
 
@@ -2435,7 +2437,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
 #if 1
 	single_step = 1;
 #else
-	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
+	mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 #endif
 }
 

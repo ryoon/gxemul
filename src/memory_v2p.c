@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.21 2005-01-19 14:24:23 debug Exp $
+ *  $Id: memory_v2p.c,v 1.22 2005-01-30 00:37:09 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -426,7 +426,7 @@ exception:
 	vaddr_vpn2 >>= 12;
 #endif
 
-	cpu_exception(cpu, exccode, tlb_refill, vaddr,
+	mips_cpu_exception(cpu, exccode, tlb_refill, vaddr,
 	    0, vaddr_vpn2, vaddr_asid, x_64);
 
 	/*  Return failure:  */

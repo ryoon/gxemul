@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.267 2005-01-29 12:56:32 debug Exp $
+ *  $Id: cpu.c,v 1.268 2005-01-30 00:37:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -95,11 +95,11 @@ static char *regname(struct machine *machine, int r)
 
 
 /*
- *  cpu_new():
+ *  mips_cpu_new():
  *
- *  Create a new cpu object.
+ *  Create a new MIPS cpu object.
  */
-struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
+struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 	char *cpu_type_name)
 {
 	struct cpu *cpu;
@@ -316,11 +316,11 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 
 
 /*
- *  cpu_show_full_statistics():
+ *  mips_cpu_show_full_statistics():
  *
  *  Show detailed statistics on opcode usage on each cpu.
  */
-void cpu_show_full_statistics(struct machine *m)
+void mips_cpu_show_full_statistics(struct machine *m)
 {
 	int i, s1, s2, iadd = 4;
 
@@ -364,6 +364,190 @@ void cpu_show_full_statistics(struct machine *m)
 
 
 /*
+ *  mips_cpu_tlbdump():
+ *
+ *  Called from the debugger to dump the TLB in a readable format.
+ *  x is the cpu number to dump, or -1 to dump all CPUs.
+ *
+ *  If rawflag is nonzero, then the TLB contents isn't formated nicely,
+ *  just dumped.
+ */
+void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
+{
+	int i, j;
+
+	/*  Nicely formatted output:  */
+	if (!rawflag) {
+		for (i=0; i<m->ncpus; i++) {
+			int pageshift = 12;
+
+			if (x >= 0 && i != x)
+				continue;
+
+			if (m->cpus[i]->cpu_type.rev == MIPS_R4100)
+				pageshift = 10;
+
+			/*  Print index, random, and wired:  */
+			printf("cpu%i: (", i);
+			switch (m->cpus[i]->cpu_type.isa_level) {
+			case 1:
+			case 2:
+				printf("index=0x%x random=0x%x",
+				    (int) ((m->cpus[i]->coproc[0]->
+				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
+				    >> R2K3K_INDEX_SHIFT),
+				    (int) ((m->cpus[i]->coproc[0]->
+				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+				    >> R2K3K_RANDOM_SHIFT));
+				break;
+			default:
+				printf("index=0x%x random=0x%x",
+				    (int) (m->cpus[i]->coproc[0]->
+				    reg[COP0_INDEX] & INDEX_MASK),
+				    (int) (m->cpus[i]->coproc[0]->
+				    reg[COP0_RANDOM] & RANDOM_MASK));
+				printf(" wired=0x%llx", (long long)
+				    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			}
+
+			printf(")\n");
+
+			for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries;
+			    j++) {
+				uint64_t hi,lo0,lo1,mask;
+				hi = m->cpus[i]->coproc[0]->tlbs[j].hi;
+				lo0 = m->cpus[i]->coproc[0]->tlbs[j].lo0;
+				lo1 = m->cpus[i]->coproc[0]->tlbs[j].lo1;
+				mask = m->cpus[i]->coproc[0]->tlbs[j].mask;
+
+				printf("%3i: ", j);
+				switch (m->cpus[i]->cpu_type.mmu_model) {
+				case MMU3K:
+					if (!(lo0 & R2K3K_ENTRYLO_V)) {
+						printf("(invalid)\n");
+						continue;
+					}
+					printf("vaddr=0x%08x ",
+					    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
+					if (lo0 & R2K3K_ENTRYLO_G)
+						printf("(global), ");
+					else
+						printf("(asid %02x),",
+						    (int) ((hi & R2K3K_ENTRYHI_ASID_MASK)
+						    >> R2K3K_ENTRYHI_ASID_SHIFT));
+					printf(" paddr=0x%08x ",
+					    (int) (lo0&R2K3K_ENTRYLO_PFN_MASK));
+					if (lo0 & R2K3K_ENTRYLO_N)
+						printf("N");
+					if (lo0 & R2K3K_ENTRYLO_D)
+						printf("D");
+					printf("\n");
+					break;
+				default:
+					/*  TODO: MIPS32 doesn't need 0x16llx  */
+					if (m->cpus[i]->cpu_type.mmu_model == MMU10K)
+						printf("vaddr=0x%1x..%011llx ",
+						    (int) (hi >> 60),
+						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
+					else
+						printf("vaddr=0x%1x..%010llx ",
+						    (int) (hi >> 60),
+						    (long long) (hi&ENTRYHI_VPN2_MASK));
+					if (hi & TLB_G)
+						printf("(global): ");
+					else
+						printf("(asid %02x):",
+						    (int) (hi & ENTRYHI_ASID));
+
+					/*  TODO: Coherency bits  */
+
+					if (!(lo0 & ENTRYLO_V))
+						printf(" p0=(invalid)   ");
+					else
+						printf(" p0=0x%09llx ", (long long)
+						    (((lo0&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
+					printf(lo0 & ENTRYLO_D? "D" : " ");
+
+					if (!(lo1 & ENTRYLO_V))
+						printf(" p1=(invalid)   ");
+					else
+						printf(" p1=0x%09llx ", (long long)
+						    (((lo1&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
+					printf(lo1 & ENTRYLO_D? "D" : " ");
+					mask |= (1 << (pageshift+1)) - 1;
+					switch (mask) {
+					case 0x7ff:	printf(" (1KB)"); break;
+					case 0x1fff:	printf(" (4KB)"); break;
+					case 0x7fff:	printf(" (16KB)"); break;
+					case 0x1ffff:	printf(" (64KB)"); break;
+					case 0x7ffff:	printf(" (256KB)"); break;
+					case 0x1fffff:	printf(" (1MB)"); break;
+					case 0x7fffff:	printf(" (4MB)"); break;
+					case 0x1ffffff:	printf(" (16MB)"); break;
+					case 0x7ffffff:	printf(" (64MB)"); break;
+					default:
+						printf(" (mask=%08x?)", (int)mask);
+					}
+					printf("\n");
+				}
+			}
+		}
+
+		return;
+	}
+
+	/*  Raw output:  */
+	for (i=0; i<m->ncpus; i++) {
+		if (x >= 0 && i != x)
+			continue;
+
+		/*  Print index, random, and wired:  */
+		printf("cpu%i: (", i);
+
+		if (m->cpus[i]->cpu_type.isa_level < 3 ||
+		    m->cpus[i]->cpu_type.isa_level == 32)
+			printf("index=0x%08x random=0x%08x",
+			    (int)m->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (int)m->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
+		else
+			printf("index=0x%016llx random=0x%016llx", (long long)
+			    m->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)m->cpus[i]->coproc[0]->reg
+			    [COP0_RANDOM]);
+
+		if (m->cpus[i]->cpu_type.isa_level >= 3)
+			printf(" wired=0x%llx", (long long)
+			    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+
+		printf(")\n");
+
+		for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
+			if (m->cpus[i]->cpu_type.mmu_model == MMU3K)
+				printf("%3i: hi=0x%08x lo=0x%08x\n",
+				    j,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0);
+			else if (m->cpus[i]->cpu_type.isa_level < 3 ||
+			    m->cpus[i]->cpu_type.isa_level == 32)
+				printf("%3i: hi=0x%08x mask=0x%08x "
+				    "lo0=0x%08x lo1=0x%08x\n", j,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo1);
+			else
+				printf("%3i: hi=0x%016llx mask=0x%016llx "
+				    "lo0=0x%016llx lo1=0x%016llx\n", j,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo1);
+		}
+	}
+}
+
+
+/*
  *  cpu_flags():
  *
  *  Returns a pointer to a string containing "(d)" "(j)" "(dj)" or "",
@@ -387,7 +571,7 @@ static const char *cpu_flags(struct cpu *cpu)
 
 
 /*
- *  cpu_disassemble_instr():
+ *  mips_cpu_disassemble_instr():
  *
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
@@ -401,7 +585,7 @@ static const char *cpu_flags(struct cpu *cpu)
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, special6, regimm5;
@@ -910,14 +1094,14 @@ disasm_ret:
 
 
 /*
- *  cpu_register_dump():
+ *  mips_cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
  *
  *  gprs: set to non-zero to dump GPRs and hi/lo/pc
  *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
  */
-void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
 	int coprocnr, i, bits32;
 	uint64_t offset;
@@ -1151,7 +1335,7 @@ int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 		if (cpu->md_interrupt != NULL)
 			cpu->md_interrupt(cpu, irq_nr, 1);
 		else
-			fatal("cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+			fatal("mips_cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
 	}
 
@@ -1179,7 +1363,7 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 		if (cpu->md_interrupt != NULL)
 			cpu->md_interrupt(cpu, irq_nr, 0);
 		else
-			fatal("cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
+			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
 	}
 
@@ -1195,7 +1379,7 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 
 
 /*
- *  cpu_exception():
+ *  mips_cpu_exception():
  *
  *  Cause an exception in a CPU.  This sets a couple of coprocessor 0
  *  registers, and the program counter.
@@ -1209,7 +1393,7 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
  *	vaddr_asid	asid (for some exceptions)
  *	x_64		non-zero for 64-bit mode for R4000-style tlb misses
  */
-void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
+void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
 	uint64_t base;
@@ -1431,20 +1615,20 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 #ifdef BINTRANS
 /*
- *  cpu_cause_simple_exception():
+ *  mips_cpu_cause_simple_exception():
  *
  *  Useful for causing raw exceptions from bintrans, for example
  *  SYSCALL or BREAK.
  */
-void cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
+void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
 {
-	cpu_exception(cpu, exc_code, 0, 0, 0, 0, 0, 0);
+	mips_cpu_exception(cpu, exc_code, 0, 0, 0, 0, 0, 0);
 }
 #endif
 
 
 /*
- *  cpu_run_instr():
+ *  mips_cpu_run_instr():
  *
  *  Execute one instruction on a cpu.
  *
@@ -1454,7 +1638,7 @@ void cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *  Return value is the number of instructions executed during this call
  *  to cpu_run_instr() (0 if no instruction was executed).
  */
-int cpu_run_instr(struct emul *emul, struct cpu *cpu)
+int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->machine->instruction_trace;
@@ -1510,7 +1694,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		if (cpu->compare_register_set &&
 		    cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE]) {
-			cpu_interrupt(cpu, 7);
+			mips_cpu_interrupt(cpu, 7);
 			cpu->compare_register_set = 0;
 		}
 	}
@@ -1571,9 +1755,9 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *
 	 *  NOTE: cached_interrupt_is_possible is set to 1 whenever an
 	 *  interrupt bit in the cause register is set to one (in
-	 *  cpu_interrupt()) and set to 0 whenever all interrupt bits are
-	 *  cleared (in cpu_interrupt_ack()), so we don't need to do a full
-	 *  check each time.
+	 *  mips_cpu_interrupt()) and set to 0 whenever all interrupt bits are
+	 *  cleared (in mips_cpu_interrupt_ack()), so we don't need to do a
+	 *  full check each time.
 	 */
 	if (cpu->cached_interrupt_is_possible && !cpu->nullify_next) {
 		if (cpu->cpu_type.exc_model == EXC3K) {
@@ -1584,7 +1768,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			enabled = status & MIPS_SR_INT_IE;
 			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
 			if (enabled && mask) {
-				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 				return 0;
 			}
 		} else {
@@ -1598,7 +1782,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
 			if (enabled && mask) {
-				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				mips_cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 				return 0;
 			}
 		}
@@ -1789,7 +1973,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  Dump CPU registers for debugging:  */
 		if (cpu->machine->register_dump) {
 			debug("\n");
-			cpu_register_dump(cpu, 1, 0x1);
+			mips_cpu_register_dump(cpu, 1, 0x1);
 		}
 
 		/*  Trace tree:  */
@@ -1920,7 +2104,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    " pc = %016llx\n", (long long)cached_pc);  */
 				if (res > 0 || cpu->pc != cached_pc) {
 					if (instruction_trace_cached)
-						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
+						mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					if (res & BINTRANS_DONT_RUN_NEXT)
 						cpu->dont_run_next_bintrans = 1;
 					res &= BINTRANS_N_MASK;
@@ -1931,7 +2115,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						int diff = x - y;
 						if (diff < 0 && diff + (res-1) >= 0
 						    && cpu->compare_register_set) {
-							cpu_interrupt(cpu, 7);
+							mips_cpu_interrupt(cpu, 7);
 							cpu->compare_register_set = 0;
 						}
 
@@ -1966,7 +2150,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (instruction_trace_cached)
-			cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+			mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 	}
 
 
@@ -2293,7 +2477,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				temp1 = temp & 0x100000000ULL;
 				temp2 = temp & 0x80000000ULL;
 				if ((temp1 && !temp2) || (!temp1 && temp2)) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
 #endif
@@ -2320,7 +2504,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				temp1 = temp & 0x100000000ULL;
 				temp2 = temp & 0x80000000ULL;
 				if ((temp1 && !temp2) || (!temp1 && temp2)) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
 #endif
@@ -2506,32 +2690,32 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			if (special6 == SPECIAL_TGE) {
 				if ((int64_t)cpu->gpr[rs] >= (int64_t)cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TGEU) {
 				if (cpu->gpr[rs] >= cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TLT) {
 				if ((int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TLTU) {
 				if (cpu->gpr[rs] < cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TEQ) {
 				if (cpu->gpr[rs] == cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TNE) {
 				if (cpu->gpr[rs] != cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_DADD) {
@@ -2578,11 +2762,11 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (cpu->machine->userland_emul)
 				useremul_syscall(cpu, imm);
 			else
-				cpu_exception(cpu, EXCEPTION_SYS,
+				mips_cpu_exception(cpu, EXCEPTION_SYS,
 				    0, 0, 0, 0, 0, 0);
 			return 1;
 		case SPECIAL_BREAK:
-			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
+			mips_cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			return 1;
 		case SPECIAL_MFSA:
 			/*  R5900? What on earth does this thing do?  */
@@ -2692,7 +2876,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    || ((hi6 == HI6_DADDI && (result_value &
 					    0x8000000000000000ULL) && (tmpvalue &
 					    0x8000000000000000ULL)==0)) ) {
-						cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+						mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 						break;
 					}
 				} else {
@@ -2703,7 +2887,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					    || ((hi6 == HI6_DADDI && (result_value &
 					    0x8000000000000000ULL)==0 && (tmpvalue &
 					    0x8000000000000000ULL))) ) {
-						cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+						mips_cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 						break;
 					}
 				}
@@ -2930,7 +3114,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			/*  Check for natural alignment:  */
 			if ((addr & (wlen - 1)) != 0) {
-				cpu_exception(cpu, st? EXCEPTION_ADES : EXCEPTION_ADEL,
+				mips_cpu_exception(cpu, st? EXCEPTION_ADES : EXCEPTION_ADEL,
 				    0, addr, 0, 0, 0, 0);
 				break;
 			}
@@ -2999,7 +3183,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					case HI6_SDC1:
 					case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
 							    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
-								cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+								mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 								cpnr = -1;
 								break;
 							} else {
@@ -3141,7 +3325,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				case HI6_LDC1:
 				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
 						    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
-							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+							mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 						} else {
 							/*  Special handling of 64-bit loads
 							    on 32-bit CPUs, and on newer CPUs
@@ -3495,7 +3679,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (instruction_trace_cached)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);
 
-			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
+			mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		} else {
 			/*
 			 *  Execute the coprocessor function. The
@@ -3707,14 +3891,14 @@ Remove this...
 
 
 /*
- *  cpu_show_cycles():
+ *  mips_cpu_show_cycles():
  *
  *  If automatic adjustment of clock interrupts is turned on, then recalculate
  *  emulated_hz.  Also, if show_nr_of_instructions is on, then print a
  *  line to stdout about how many instructions/cycles have been executed so
  *  far.
  */
-void cpu_show_cycles(struct machine *machine,
+void mips_cpu_show_cycles(struct machine *machine,
 	struct timeval *starttime, int64_t ncycles, int forced)
 {
 	uint64_t offset;
@@ -3815,12 +3999,12 @@ do_return:
 
 
 /*
- *  cpu_run_init():
+ *  mips_cpu_run_init():
  *
  *  Prepare to run instructions on all CPUs in this machine. (This function
  *  should only need to be called once for each machine.)
  */
-void cpu_run_init(struct emul *emul, struct machine *machine)
+void mips_cpu_run_init(struct emul *emul, struct machine *machine)
 {
 	int ncpus = machine->ncpus;
 	int te;
@@ -3857,14 +4041,14 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
 
 
 /*
- *  cpu_run():
+ *  mips_cpu_run():
  *
  *  Run instructions on all CPUs in this machine, for a "medium duration"
  *  (or until all CPUs have halted).
  *
  *  Return value is 1 if anything happened, 0 if all CPUs are stopped.
  */
-int cpu_run(struct emul *emul, struct machine *machine)
+int mips_cpu_run(struct emul *emul, struct machine *machine)
 {
 	struct cpu **cpus = machine->cpus;
 	int ncpus = machine->ncpus;
@@ -3915,7 +4099,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						debugger();
 					for (i=0; i<ncpus; i++)
 						if (cpus[i]->running) {
-							int instrs_run = cpu_run_instr(emul, cpus[i]);
+							int instrs_run = mips_cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
 								cpu0instrs += instrs_run;
 						}
@@ -3929,7 +4113,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						j = (random() % a_few_instrs2) + 1;
 						j *= cpus[i]->cpu_type.instrs_per_cycle;
 						while (j-- >= 1 && cpus[i]->running) {
-							int instrs_run = cpu_run_instr(emul, cpus[i]);
+							int instrs_run = mips_cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
 								cpu0instrs += instrs_run;
 							if (single_step)
@@ -3944,7 +4128,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						break;
 					do {
 						instrs_run =
-						    cpu_run_instr(emul, cpus[0]);
+						    mips_cpu_run_instr(emul, cpus[0]);
 						if (instrs_run == 0 ||
 						    single_step) {
 							j = machine->a_few_instrs;
@@ -3963,7 +4147,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						if (cpus[i]->running) {
 							int instrs_run = 0;
 							while (!instrs_run) {
-								instrs_run = cpu_run_instr(emul, cpus[i]);
+								instrs_run = mips_cpu_run_instr(emul, cpus[i]);
 								if (instrs_run == 0 ||
 								    single_step) {
 									j = a_few_instrs2;
@@ -4032,7 +4216,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 		}
 
 		if (machine->ncycles > machine->ncycles_show + (1<<23)) {
-			cpu_show_cycles(machine, &machine->starttime,
+			mips_cpu_show_cycles(machine, &machine->starttime,
 			    machine->ncycles, 0);
 			machine->ncycles_show = machine->ncycles;
 		}
@@ -4052,12 +4236,12 @@ int cpu_run(struct emul *emul, struct machine *machine)
 
 
 /*
- *  cpu_run_deinit():
+ *  mips_cpu_run_deinit():
  *
  *  Shuts down all CPUs in a machine when ending a simulation. (This function
  *  should only need to be called once for each machine.)
  */
-void cpu_run_deinit(struct emul *emul, struct machine *machine)
+void mips_cpu_run_deinit(struct emul *emul, struct machine *machine)
 {
 	int te;
 
@@ -4076,11 +4260,11 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 	debug("cpu_run_deinit(): All CPUs halted.\n");
 
 	if (machine->show_nr_of_instructions || !quiet_mode)
-		cpu_show_cycles(machine, &machine->starttime,
+		mips_cpu_show_cycles(machine, &machine->starttime,
 		    machine->ncycles, 1);
 
 	if (show_opcode_statistics)
-		cpu_show_full_statistics(machine);
+		mips_cpu_show_full_statistics(machine);
 
 	fflush(stdout);
 }
@@ -4117,4 +4301,5 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 
 	debug(")\n");
 }
+
 

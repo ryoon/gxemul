@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.46 2005-01-29 13:14:05 debug Exp $
+ *  $Id: dec_prom.c,v 1.47 2005-01-30 00:37:09 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -156,7 +156,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	case 0x108:	/*  getenv2()  */
 		return 0x64;
 	default:
-		cpu_register_dump(cpu, 1, 0x1);
+		mips_cpu_register_dump(cpu, 1, 0x1);
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
@@ -561,7 +561,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		}
 		break;
 	default:
-		cpu_register_dump(cpu, 1, 0x1);
+		mips_cpu_register_dump(cpu, 1, 0x1);
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';

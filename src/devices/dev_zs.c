@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.17 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_zs.c,v 1.18 2005-01-30 00:37:06 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -39,11 +39,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
+#include "cpu.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
 
 #define	ZS_TICK_SHIFT		14

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.149 2005-01-29 09:22:08 debug Exp $
+ *  $Id: memory.c,v 1.150 2005-01-30 00:37:09 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -845,7 +845,7 @@ into the devices  */
 					    writeflag? "writing to" : "reading from",
 					    mem->dev_name[i], (long)paddr);
 
-					cpu_exception(cpu, EXCEPTION_DBE, 0,
+					mips_cpu_exception(cpu, EXCEPTION_DBE, 0,
 					    vaddr, 0, 0, 0, 0);
 					return MEMORY_ACCESS_FAILED;
 				}
@@ -979,7 +979,7 @@ into the devices  */
 				    cpu->machine->dbe_on_nonexistant_memaccess) {
 					if (paddr >= mem->physical_max &&
 					    paddr < mem->physical_max+1048576)
-						cpu_exception(cpu,
+						mips_cpu_exception(cpu,
 						    EXCEPTION_DBE, 0, vaddr, 0,
 						    0, 0, 0);
 				}

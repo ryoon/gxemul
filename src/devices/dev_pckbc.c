@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.33 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.34 2005-01-30 00:37:06 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -38,11 +38,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
+#include "cpu.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
 #include "kbdreg.h"
 

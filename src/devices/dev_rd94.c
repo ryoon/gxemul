@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.18 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_rd94.c,v 1.19 2005-01-30 00:37:06 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -36,6 +36,7 @@
 
 #include "bus_pci.h"
 #include "cop0.h"
+#include "cpu.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"

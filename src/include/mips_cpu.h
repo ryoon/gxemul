@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.5 2005-01-28 18:07:54 debug Exp $
+ *  $Id: mips_cpu.h,v 1.6 2005-01-30 00:37:07 debug Exp $
  */
 
 #include "misc.h"
@@ -395,21 +395,22 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
 
 
 /*  cpu.c:  */
-struct cpu *cpu_new(struct memory *mem, struct machine *machine,
+struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
-void cpu_show_full_statistics(struct machine *m);
-void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+void mips_cpu_show_full_statistics(struct machine *m);
+void mips_cpu_tlbdump(struct machine *m, int x, int rawflag);
+void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
+void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t addr, int bintrans);
 int mips_cpu_interrupt(struct cpu *cpu, int irq_nr);
 int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
-void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
+void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
         /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
         int vaddr_asid, int x_64);
-void cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
-void cpu_run_init(struct emul *emul, struct machine *machine);
-int cpu_run(struct emul *emul, struct machine *machine);
-void cpu_run_deinit(struct emul *emul, struct machine *machine);
+void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
+void mips_cpu_run_init(struct emul *emul, struct machine *machine);
+int mips_cpu_run(struct emul *emul, struct machine *machine);
+void mips_cpu_run_deinit(struct emul *emul, struct machine *machine);
 void mips_cpu_dumpinfo(struct cpu *cpu);
 
 

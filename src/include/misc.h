@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.216 2005-01-29 11:50:18 debug Exp $
+ *  $Id: misc.h,v 1.217 2005-01-30 00:37:07 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -100,12 +100,6 @@ struct memory;
 #define	NO_BYTE_ORDER_OVERRIDE		-1
 #define	EMUL_LITTLE_ENDIAN		0
 #define	EMUL_BIG_ENDIAN			1
-
-
-/*  cpu_common.c:  */
-int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
-int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
-void cpu_dumpinfo(struct cpu *cpu);
 
 
 /*  dec_prom.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.144 2005-01-29 13:14:05 debug Exp $
+ *  $Id: bintrans.c,v 1.145 2005-01-30 00:37:08 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -922,7 +922,7 @@ void bintrans_init_cpu(struct cpu *cpu)
 	cpu->bintrans_fast_tlbpr       = coproc_tlbpr;
 	cpu->bintrans_fast_rfe         = coproc_rfe;
 	cpu->bintrans_fast_eret        = coproc_eret;
-	cpu->bintrans_simple_exception = cpu_cause_simple_exception;
+	cpu->bintrans_simple_exception = mips_cpu_cause_simple_exception;
 	cpu->fast_vaddr_to_hostaddr    = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */

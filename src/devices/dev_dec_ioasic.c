@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.9 2005-01-25 07:14:49 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.10 2005-01-30 00:37:05 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -36,9 +36,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 #include "dec_kn03.h"
 #include "tc_ioasicreg.h"

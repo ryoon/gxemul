@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.64 2005-01-29 14:34:21 debug Exp $
+ *  $Id: dev_asc.c,v 1.65 2005-01-30 00:37:05 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -56,6 +56,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "machine.h"

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.61 2004-06-12 12:14:54 debug Exp $
+ *  $Id: devices.h,v 1.62 2004-06-12 14:30:06 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -405,8 +405,14 @@ void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 /*  dev_sgi_ip22.c:  */
 #define	DEV_SGI_IP22_LENGTH		0x100
 #define	DEV_SGI_IP22_MEMCTL_LENGTH	0x100
+struct sgi_ip22_data {
+	uint32_t	reg[DEV_SGI_IP22_LENGTH / 4];
+
+	uint32_t	imc_cpuctrl0;
+	uint32_t	imc_wdog;
+};
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip30.c:  */
 #define	DEV_SGI_IP30_LENGTH		0x80000
@@ -470,7 +476,7 @@ void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 #define	DEV_WDSC_NREGS			0x100		/*  8-bit register select  */
 #define	DEV_WDSC_LENGTH			0x10
 int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_wdsc_init(struct memory *mem, uint64_t baseaddr);
+void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_zs.c:  */
 #define	DEV_ZS_LENGTH			0x8

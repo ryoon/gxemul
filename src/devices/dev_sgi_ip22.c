@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.9 2004-06-10 04:23:04 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.10 2004-06-12 14:30:07 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -37,14 +37,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
-
-
-struct sgi_ip22_data {
-	uint32_t	reg[DEV_SGI_IP22_LENGTH / 4];
-
-	uint32_t	imc_cpuctrl0;
-	uint32_t	imc_wdog;
-};
 
 
 /*
@@ -168,6 +160,53 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 	/*  Read from/write to the sgi_ip22:  */
 	switch (relative_addr) {
+	case 0x00:	/*  local0 irq stat  */
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22: write to local0 IRQ STAT, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from local0 IRQ STAT, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x04:	/*  local0 irq mask  */
+		if (writeflag == MEM_WRITE) {
+			/*
+			 *  Ugly hack:  if an interrupt is asserted, and someone writes
+			 *  to this mask register, the interrupt should be masked.
+			 *  That is, sgi_ip22_interrupt() in src/machine.c has to be
+			 *  called to deal with this. The ugly solution I choose here is
+			 *  to deassert some interrupt which should never be used
+			 *  anyway.  (TODO: Fix this.)
+			 */
+			cpu_interrupt_ack(cpu, 8 + 63);
+			debug("[ sgi_ip22: write to local0 IRQ MASK, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from local0 IRQ MASK, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x08:	/*  local1 irq stat  */
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22: write to local1 IRQ STAT, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from local1 IRQ STAT, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x0c:	/*  local1 irq mask  */
+		if (writeflag == MEM_WRITE) {
+			/*  See commen above, about local0 irq mask.  */
+			cpu_interrupt_ack(cpu, 8 + 63);
+			debug("[ sgi_ip22: write to local1 IRQ MASK, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from local1 IRQ MASK, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
 	case 0x38:	/*  timer count  */
 		if (writeflag == MEM_WRITE) {
 			/*  Two byte values are written to this address, sequentially...  TODO  */
@@ -195,7 +234,7 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_sgi_ip22_init():
  */
-void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 {
 	struct sgi_ip22_data *d = malloc(sizeof(struct sgi_ip22_data));
 	if (d == NULL) {
@@ -210,5 +249,7 @@ void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8, dev_sgi_ip22_sysid_access, (void *)d);
 
 	memory_device_register(mem, "sgi_ip22_memctl", 0x1fa00000, DEV_SGI_IP22_MEMCTL_LENGTH, dev_sgi_ip22_memctl_access, (void *)d);
+
+	return d;
 }
 

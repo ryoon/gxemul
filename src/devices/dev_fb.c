@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.67 2004-12-03 20:03:45 debug Exp $
+ *  $Id: dev_fb.c,v 1.68 2004-12-04 12:48:41 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -841,13 +841,17 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 
 	/*  A nice bootup logo:  */
 	if (logo) {
+		int logo_bottom_margin = LOGO_BOTTOM_MARGIN;
+		if (logo == 2) 	/*  Ugly, hardcoded for dev_vga :-)  */
+			logo_bottom_margin = 200;
+
 		d->update_x1 = 0;
 		d->update_x2 = LOGO_XSIZE-1;
-		d->update_y1 = d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN;
-		d->update_y2 = d->visible_ysize-LOGO_BOTTOM_MARGIN;
+		d->update_y1 = d->visible_ysize-LOGO_YSIZE-logo_bottom_margin;
+		d->update_y2 = d->visible_ysize-logo_bottom_margin;
 		for (y=0; y<LOGO_YSIZE; y++)
 			for (x=0; x<LOGO_XSIZE; x++) {
-				int s, a = ((y+d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN)*d->xsize
+				int s, a = ((y+d->visible_ysize-LOGO_YSIZE-logo_bottom_margin)*d->xsize
 				    + x) * d->bit_depth / 8;
 				int b = fb_logo[(y*LOGO_XSIZE+x) / 8] & (128 >> (x&7));
 				for (s=0; s<d->bit_depth / 8; s++)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.144 2005-02-19 11:51:34 debug Exp $
+ *  $Id: devices.h,v 1.145 2005-02-23 15:00:06 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -618,7 +618,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 void dev_vga_init(struct machine *machine, struct memory *mem, uint64_t videomem_base, uint64_t control_base, int max_x, int max_y, char *name);
 
 /*  dev_vr41xx.c:  */
-#define	DEV_VR41XX_LENGTH		0x1000		/*  TODO?  */
+#define	DEV_VR41XX_LENGTH		0x800		/*  TODO?  */
 struct vr41xx_data {
 	int		cpumodel;
 

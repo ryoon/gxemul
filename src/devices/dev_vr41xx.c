@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.13 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.14 2005-02-23 15:00:05 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -215,6 +215,10 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 
 	memory_device_register(mem, "vr41xx", baseaddr, DEV_VR41XX_LENGTH,
 	    dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
+
+	/*  At least on VR4131:  */
+	dev_ns16550_init(machine, mem, baseaddr + 0x800, 0, 1,
+	    0, "vr41xx siu");
 
 	machine_add_tickfunction(machine, dev_vr41xx_tick, d,
 	    DEV_VR41XX_TICKSHIFT);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.16 2004-06-29 08:27:18 debug Exp $
+ *  $Id: x11.c,v 1.17 2004-06-30 05:21:16 debug Exp $
  *
  *  X11-related functions.
  */
@@ -53,10 +53,9 @@ int x11_fb_winxsize = 0, x11_fb_winysize = 0;
 
 
 Display *x11_display = NULL;
-int x11_screen, screen_depth;
+int x11_screen, x11_screen_depth;
 unsigned long fg_COLOR, bg_COLOR;
 
-int x11_using_truecolor;
 #define N_GRAYCOLORS		16
 XColor x11_graycolor[N_GRAYCOLORS];
 
@@ -161,20 +160,17 @@ void x11_init(void)
 	}
 
 	x11_screen = DefaultScreen(x11_display);
-	screen_depth = DefaultDepth(x11_display, x11_screen);
+	x11_screen_depth = DefaultDepth(x11_display, x11_screen);
 
-	if (screen_depth != 8 && screen_depth != 24) {
-		fatal("\n***\n***  WARNING! Your X server is running %i-bit color mode. This is not really\n", screen_depth);
-		fatal("***  supported yet.  8-bit server gives grayscale output,\n");
+	if (x11_screen_depth != 8 && x11_screen_depth != 15 &&
+	    x11_screen_depth != 16 && x11_screen_depth != 24) {
+		fatal("\n***\n***  WARNING! Your X server is running %i-bit color mode. This is not really\n", x11_screen_depth);
+		fatal("***  supported yet.  8, 15, 16, and 24 bits should work.\n");
 		fatal("***  24-bit server gives color.  Any other bit depth gives undefined result!\n***\n\n");
-
-		/*  Round up to nearest 8:  */
-		screen_depth = ((screen_depth - 1) | 7) + 1;
 	}
 
-	x11_using_truecolor = screen_depth==24? 1 : 0;
-	if (!x11_using_truecolor)
-		debug("WARNING! default visual is not 24-bit truecolor; "
+	if (x11_screen_depth <= 8)
+		debug("WARNING! X11 screen depth is not enough for color; "
 		    "using only 16 grayscales instead\n");
 
 	strcpy(bg, "Black");
@@ -212,7 +208,7 @@ void x11_init(void)
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 {
 	int x, y, fb_number = 0;
-	int bytes_per_pixel = screen_depth / 8;
+	size_t alloclen;
 
 	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
 		if (fb_windows[fb_number].x11_fb_winxsize == 0)
@@ -255,22 +251,24 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	fb_windows[fb_number].x11_display = x11_display;
 	fb_windows[fb_number].scaledown   = scaledown;
 
-	fb_windows[fb_number].ximage_data = malloc(bytes_per_pixel * xsize * ysize);
+	/*  Use x11_screen_depth, but round up to nearest 8:  */
+	alloclen = xsize * ysize * (((x11_screen_depth - 1) | 7) + 1) / 8;
+	fb_windows[fb_number].ximage_data = malloc(alloclen);
 	if (fb_windows[fb_number].ximage_data == NULL) {
 		fprintf(stderr, "out of memory allocating ximage_data\n");
 		exit(1);
 	}
 
 	fb_windows[fb_number].fb_ximage = XCreateImage(fb_windows[fb_number].x11_display, CopyFromParent,
-	    8 * bytes_per_pixel, XYPixmap, 0, (char *)fb_windows[fb_number].ximage_data, xsize, ysize, 8, 0);
+	    x11_screen_depth, XYPixmap, 0, (char *)fb_windows[fb_number].ximage_data, xsize, ysize, 8, 0);
 	if (fb_windows[fb_number].fb_ximage == NULL) {
 		fprintf(stderr, "out of memory allocating ximage\n");
 		exit(1);
 	}
 
 	/*  Fill the ximage with black pixels:  */
-	if (x11_using_truecolor)
-		memset(fb_windows[fb_number].ximage_data, 0, bytes_per_pixel * xsize * ysize);
+	if (x11_screen_depth > 8)
+		memset(fb_windows[fb_number].ximage_data, 0, alloclen);
 	else {
 		debug("x11_fb_init(): clearing the XImage\n");
 		for (y=0; y<ysize; y++)
@@ -291,7 +289,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 
 		xsize = ysize = 64;
 
-		cursor_data = malloc(xsize * ysize * bytes_per_pixel);
+		cursor_data = malloc(xsize * ysize * x11_screen_depth / 8);
 		if (cursor_data == NULL) {
 			fprintf(stderr, "out of memory allocating cursor\n");
 			exit(1);
@@ -299,7 +297,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 
 		fb_windows[fb_number].cursor_ximage =
 		    XCreateImage(fb_windows[fb_number].x11_display,
-		    CopyFromParent, 8 * bytes_per_pixel, XYPixmap, 0,
+		    CopyFromParent, x11_screen_depth, XYPixmap, 0,
 		    cursor_data, xsize, ysize, 8, 0);
 		if (fb_windows[fb_number].cursor_ximage == NULL) {
 			fprintf(stderr, "out of memory allocating ximage\n");

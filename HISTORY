@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.113 2004-06-29 08:29:18 debug Exp $
+$Id: HISTORY,v 1.114 2004-06-30 05:21:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -624,3 +624,5 @@ HISTORY of mips64emul
 		way into userland and be interacted with), and -A4
 		(Deskstation Tyne).
 		Some more minor fixes.
+20040630	Adding support for 15 and 16 bits little endian X servers.
+		(Not tested on bigendian servers yet.)

@@ -1,8 +1,5 @@
 Please report any bugs you find to me.  Here is a list of KNOWN bugs:
 
-  o)  X11 framebuffer support for bit-depths other than 24-bit and 8-bit
-      displays has _NOT_ been implemented yet.
-
   o)  PMAG-BA / BT459 issues (for example when running DECstation "-D2 -X"
       emulation):
 

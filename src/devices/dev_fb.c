@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.40 2004-06-28 23:40:22 debug Exp $
+ *  $Id: dev_fb.c,v 1.41 2004-06-30 05:21:17 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -65,7 +65,7 @@ extern int use_x11;
 
 #ifdef WITH_X11
 extern XColor x11_graycolor[16];
-extern int x11_using_truecolor;
+extern int x11_screen_depth;
 #endif
 
 
@@ -129,6 +129,7 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 {
 #ifdef WITH_X11
+#ifdef EXPERIMENTAL_PUTPIXEL
 	int ofs, ofs2, bit, bits, t;
 
 	ofs = (fbw->x11_fb_winxsize * y + x) >> 3;
@@ -140,10 +141,34 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 		t = 1 << (x & 7);
 
 	/*  TODO: other bitdepths?  */
-	bits = x11_using_truecolor? 24 : 8;
-	if (x11_using_truecolor) {
+	bits = x11_screen_depth;
+	switch (bits) {
+	case 24:
 		color = ((color & 255) << 16)
 		    + (color & 0xff00) + ((color >> 16) & 255);
+		break;
+	case 16:
+		color = ((color & 0x1f) << 8)		/*  5 blue  */
+		    + (((color >> 11) & 0x1f) << 3)	/*  5 red  */
+		    + ((color >> 8) & 0x7)		/*  high 3 green bits  */
+		    + (((color >> 5) & 0x7) << 13);	/*  low 3 green bits  */
+		break;
+	case 15:
+		color = ((color & 0x1f) << 9)		/*  5 blue  */
+		    + (((color >> 10) & 0x1f) << 3)	/*  5 red  */
+		    + ((color >> 7) & 0x7)		/*  high 3 green bits  */
+		    + (((color >> 5) & 0x3) << 14);	/*  low 2 green bits  */
+		break;
+	case 8:	/*
+		 *  when using XYPixmap, the experimental (fast)
+		 *  putpixel works, but XYPixmap seem to be
+		 *  slow in other ways.
+		 */
+		break;
+	default:
+		/*  Fallback on X11's putpixel:  */
+		XPutPixel(fbw->fb_ximage, x, y, color);
+		return;
 	}
 
 	for (bit = 0; bit < bits; bit++) {
@@ -152,7 +177,11 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 		else
 			fbw->ximage_data[ofs + bit*ofs2] &= ~t;
 	}
-#endif
+
+#else	/*  !EXPERIMENTAL_PUTPIXEL  */
+	XPutPixel(fbw->fb_ximage, x, y, color);
+#endif	/*  EXPERIMENTAL_PUTPIXEL  */
+#endif	/*  WITH_X11  */
 }
 
 
@@ -256,6 +285,59 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 }
 
 
+#ifdef WITH_X11
+#define macro_put_pixel() {	\
+			/*  Combine the color into an X11 long and display it:  */	\
+			/*  TODO:  construct color in a more portable way:  */		\
+			switch (x11_screen_depth) {					\
+			case 24:							\
+				if (d->fb_window->fb_ximage->byte_order)		\
+					color = (b << 16) + (g << 8) + r;		\
+				else							\
+					color = (r << 16) + (g << 8) + b;		\
+				break;							\
+			case 16:							\
+				r >>= 3; g >>= 2; b >>= 3;				\
+				if (d->fb_window->fb_ximage->byte_order) {		\
+					/*  Big endian 16-bit X server:  */		\
+					static int first = 1;				\
+					if (first) {					\
+						fprintf(stderr, "\n*** Please report to the author whether 16-bit X11 colors are rendered correctly or not!\n\n"); \
+						first = 0;				\
+					}						\
+					color = (b << 11) + (g << 5) + r;		\
+				} else {						\
+					/*  Little endian (eg PC) X servers:  */	\
+					color = (r << 11) + (g << 5) + b;		\
+				}							\
+				break;							\
+			case 15:							\
+				r >>= 3; g >>= 3; b >>= 3;				\
+				if (d->fb_window->fb_ximage->byte_order) {		\
+					/*  Big endian 15-bit X server:  */		\
+					static int first = 1;				\
+					if (first) {					\
+						fprintf(stderr, "\n*** Please report to the author whether 15-bit X11 colors are rendered correctly or not!\n\n"); \
+						first = 0;				\
+					}						\
+					color = (b << 10) + (g << 5) + r;		\
+				} else {						\
+					/*  Little endian (eg PC) X servers:  */	\
+					color = (r << 10) + (g << 5) + b;		\
+				}							\
+				break;							\
+			default:							\
+				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel; \
+			}								\
+			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)		\
+				experimental_PutPixel(d->fb_window, x, y, color);	\
+		}
+#else
+/*  If not WITH_X11:  */
+#define macro_put_pixel() { }
+#endif
+
+
 /*
  *  update_framebuffer():
  *
@@ -318,24 +400,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				}
 			}
 
-#ifdef WITH_X11
-			/*  Combine the color into an X11 long and display it:  */
-			/*  TODO:  construct color in a more portable way:  */
-			if (x11_using_truecolor) {
-				if (d->fb_window->fb_ximage->byte_order)
-					color = (b << 16) + (g << 8) + r;
-				else
-					color = (r << 16) + (g << 8) + b;
-			} else
-				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel;
+			macro_put_pixel();
 
-			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
-#ifdef EXPERIMENTAL_PUTPIXEL
-				experimental_PutPixel(d->fb_window, x, y, color);
-#else
-				XPutPixel(d->fb_window->fb_ximage, x, y, color);
-#endif
-#endif
 			x++;
 		}
 		return;
@@ -364,11 +430,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 		npixels = 1;
 
 	for (pixel=0; pixel<npixels; pixel++) {
-		int subx, suby;
+		int subx, suby, r, g, b;
 		color_r = color_g = color_b = 0;
 		for (suby=0; suby<scaledown; suby++)
 		    for (subx=0; subx<scaledown; subx++) {
-			int fb_x, fb_y, fb_addr, c, r, g, b;
+			int fb_x, fb_y, fb_addr, c;
 
 			fb_x = x * scaledown + subx;
 			fb_y = y * scaledown + suby;
@@ -410,30 +476,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 			color_b += b;
 		    }
 
-#ifdef WITH_X11
-		/*  Average out the pixel color, and combine it to a RGB long:  */
-		/*  TODO:  construct color in a more portable way:  */
-		if (x11_using_truecolor)
-			if (d->fb_window->fb_ximage->byte_order)
-				color = ((color_b / scaledownXscaledown) << 16) +
-					((color_g / scaledownXscaledown) << 8) +
-					(color_r / scaledownXscaledown);
-			else
-				color = ((color_r / scaledownXscaledown) << 16) +
-					((color_g / scaledownXscaledown) << 8) +
-					(color_b / scaledownXscaledown);
-		else {
-			color = 15 * (color_r + color_g + color_b) / (scaledownXscaledown * 255 * 3);
-			color = x11_graycolor[color < 0? 0 : (color > 15? 15 : color)].pixel;
-		}
+		r = color_r / scaledownXscaledown;
+		g = color_g / scaledownXscaledown;
+		b = color_b / scaledownXscaledown;
 
-		if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
-#ifdef EXPERIMENTAL_PUTPIXEL
-			experimental_PutPixel(d->fb_window, x, y, color);
-#else
-			XPutPixel(d->fb_window->fb_ximage, x, y, color);
-#endif
-#endif
+		macro_put_pixel();
 
 		x++;
 	}

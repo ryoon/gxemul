@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.107 2004-06-25 01:04:12 debug Exp $
+ *  $Id: machine.c,v 1.108 2004-06-25 03:49:20 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1816,6 +1816,7 @@ void machine_init(struct memory *mem)
 
 			default:
 				fatal("Unimplemented ARC machine type %i\n", machine);
+				exit(1);
 			}
 		}
 

@@ -141,12 +141,12 @@ Don't trust it to be up-to-date.
 		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
+		o)  Support 15-bit color! (And 16-bit as well?)
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
 			x)  How about multiple framebuffer windows?
 		o)  Non-resizable windows
-		o)  Color support for non-24-bit modes?
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 

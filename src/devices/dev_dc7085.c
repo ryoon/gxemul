@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.5 2003-11-08 14:42:25 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.6 2003-11-20 05:07:50 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -57,6 +57,9 @@ struct dc_data {
 
 	int			irqnr;
 	int			use_fb;
+
+	int			mouse_mode;
+	int			mouse_x, mouse_y, mouse_buttons;
 };
 
 
@@ -131,6 +134,48 @@ void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 
 
 /*
+ *  send_mouse_update_sequence():
+ *
+ *  mouse_x,y,buttons contains the "goal", d->mouse_* contains the
+ *  current state.
+ */
+void send_mouse_update_sequence(struct dc_data *d, int mouse_x, int mouse_y, int mouse_buttons)
+{
+	int xsign, xdelta, ysign, ydelta;
+
+	xdelta = mouse_x - d->mouse_x;
+	ydelta = mouse_y - d->mouse_y;
+	if (xdelta > 127)
+		xdelta = 127;
+	if (xdelta < -127)	/*  TODO:  128 would probably be OK too  */
+		xdelta = -127;
+	if (ydelta > 127)
+		ydelta = 127;
+	if (ydelta < -127)	/*  TODO:  128 would probably be OK too  */
+		ydelta = -127;
+
+	xsign = xdelta < 0? 1 : 0;
+	ysign = ydelta < 0? 1 : 0;
+
+	d->mouse_x += xdelta;
+	d->mouse_y += ydelta;
+	d->mouse_buttons = mouse_buttons;
+
+	switch (d->mouse_mode) {
+	case MOUSE_INCREMENTAL:
+fatal("new: %i %i %i\n", d->mouse_x, d->mouse_y, d->mouse_buttons);
+		add_to_rx_queue(d, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + mouse_buttons & 7, DCMOUSE_PORT);
+		add_to_rx_queue(d, xdelta, DCMOUSE_PORT);
+		add_to_rx_queue(d, ydelta, DCMOUSE_PORT);
+		break;
+	/*  TODO:  prompt mode?  */
+	default:
+		/*  Do nothing  */
+	}
+}
+
+
+/*
  *  dev_dc7085_tick():
  *
  *  This function is called "every now and then".
@@ -141,6 +186,7 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 {
 	struct dc_data *d = extra;
 	int avail;
+	int mouse_x, mouse_y, mouse_buttons;
 
 	if (console_charavail()) {
 		unsigned char ch = console_readchar();
@@ -159,6 +205,12 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 			add_to_rx_queue(d, ch, DCPRINTER_PORT);	/*  DECstation 3100 (PMAX)  */
 		}
 	}
+
+	/*  Check for mouse updates:  */
+	console_getmouse(&mouse_x, &mouse_y, &mouse_buttons);
+	if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
+	    mouse_buttons != d->mouse_buttons)
+		send_mouse_update_sequence(d, mouse_x, mouse_y, mouse_buttons);
 
 	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
 
@@ -298,7 +350,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			case DCMOUSE_PORT:		/*  port 1  */
 				debug("[ dc7085 writing data to MOUSE: 0x%x", idata);
 				if (idata == MOUSE_INCREMENTAL) {
-					/*  TODO  */
+					d->mouse_mode = MOUSE_INCREMENTAL;
 				}
 				if (idata == MOUSE_SELF_TEST) {
 					/*
@@ -384,6 +436,8 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 
 	d->regs.dc_csr = CSR_TRDY | CSR_MSE;
 	d->regs.dc_tcr = 0x00;
+
+	d->mouse_mode = 0;
 
 	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH, dev_dc7085_access, d);
 	cpu_add_tickfunction(cpu, dev_dc7085_tick, d, 9);		/*  every 512:th cycle  */

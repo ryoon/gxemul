@@ -1,136 +1,30 @@
 mips64emul TODO
 ---------------
 
-Most important stuff (but these are all non-trivial tasks):
-
-  o)  Make interrupt sharing more generic!
-
-  o)  finish the WDC (IDE harddisk controller) device
-
-  o)  DECstations:
-	x)  write 'sii' or 'asc' SCSI interface stuff for pmax so that harddisk images can be used
-	x)  try to install NetBSD/pmax onto a fake SCSI-disk
-	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
-	x)  try to run X inside NetBSD, using framebuffer(s) with mouse support!
-
--------------------------------------------------------------------------------------
-
-	CPU Emulation:
-		o)  Instructions:
-			x)  Add exception support to all instructions!
-			x)  Go through the ENTIRE MIPS64 ISA and VR5432 ISA and make sure that
-			    every instruction is:
-				*  included in the emulator,
-				*  tested using a kind of regression test (ie test code
-				   written in mips assembly language)
-			x)  Floating point instructions. (ISA I and II?)
-			x)  MIPS16:
-				x)  implement all instructions
-			x)  MIPS V (SIMD vector stuff?)
-			x)  MDMX?  (MIPS Digital Media Extension)
-			x)  Warn about mis-used bit fields (ie bits that should be
-				all zeroes, warn about if they are not)!
-				Both for coprocessor registers and for instruction opcodes.
-			x)  warn and/or cause exceptions for unimplemented instructions,
-				at specific ISA levels.
-			x)  Something radical:  instead of a large switch/case thing,
-				I could implement some kind of tree-structure of masks
-				and comparisions, and arrays of functions to call. Hm.
-				(Performance hack.)
-		o)  coproc 0 selectors!
-		o)  Nr of instructions per second is NOT the number of cycles
-		    per second, this is CPU dependant.  Several subsystems (CPUs,
-		    other systems) may need to have speeds fixed relative to each
-		    other.
-		o)  R4000:  watchhi/watchlo exceptions, and other exception
-		    handling details
-		o)  R10000:  memory space, exceptions, ...
-		o)  r2k/r3k: Make sure that registers (INCLUDING coprocessor registers)
-		    are always sign-extended. (32-bit stuff)
-		o)  R3000 "tri-byte stores"???
-		o)  Delay after R3000 interrupt enabling instructions (write to cop0),
-		    before interrupts are actually enabled. (?)
-		o)  Implement load delays?  Warnings on interlocks.
-		o)  Implement all coprocessor 0 bits / functions.
-			x)  BEV and all exception vectors....
-			x)  Actual 64-bit addressing
-		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
-		o)  R4300:  mmu? nintendo64
-		o)  5K (note: NOT R5000)
-		o)  actually use the R10K framemask for tlb lookups
-			http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html
-		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
-
-	Emulation of specific machines and devices:
-		o)  Binary tree for memory mapped devices!
-		o)  Separate RAM as yet another device (a "RAM device"), replacing the
-			'memory' system with a more generic 'memory controller'.
-
-		o)  Busses, interrupt systems, and ROM emulation:
-			x)  Make interrupt sharing more generic!
-			x)  PCI:  i/o and interrupts
-			x)  TURBOchannel  (many DEC systems)
-			x)  ARCBIOS (SGI, arc?)
-			x)  QBus (DECsystem 5400)
-
-		o)  DECstations (pmax):
-			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
-			status words / control words, make this more portable/cleaner
-			scsi controller(s): sii, asc
-			ethernet controller(s): le, fddi?
-			serial controllers: dc, ssc, scc
-			download the ROM from my DECstation 5000/125 and see if I can get it to run.
-			DECstation 5840? "xbi-based SMP"
-
-		o)  Cobalt:  PCI and interrupt system, ethernet, harddisk controller(s)
-
-		o)  SGI and ARC machines (sgimips, arc):
-			x)  More ARCBIOS stuff must be implemented
-			x)  finish the PCI stuff (ARC and SGI)
-			x)  Jazz (ARC)
-			x)  SMP?
-			x)  Interrupts (both ARC and SGI)
-
-		o)  hpcmips:
-			framebuffer(s)
-			harddisk controller
-
-		o)  Playstation 2:
-			R5900 "weird" instructions
-			Hardware (graphics, sound, dma, ...)
-			Has an R3000A as a subsystem (!)
-			ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/
-
-		o)  Playstation 1? R3000A. Weird hardware?
-			No FPU, but something as coproc 2.
-			(Perhaps the PS1 is a subset of the PS2.)
-
-		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
-			(R4300, 4MB RAM, really weird memory map)
-
-		o)  newsmips?
-
-		o)  mipsco?
-
-	Framebuffer stuff:
-		o)  "Sprites", or overlays  (useful for cursors...)
-		o)  2D and 3D acceleration
-		o)  Playstation 2 color encoding is not rgb
-		o)  Move the polygon drawing stuff to its own module.
-		o)  Antialiased polygons? :-)
-
 	Code cleanup:
 		o)  Namespace consistency
-		o)  Struct encapsulation:  no global variables, or at least
-			as few as possible
-		o)  No hardcoded values, use #defines
+		o)  Struct encapsulation:
+			x)  no global variables, or at least as few as possible
+			    (this will simplify adding a GUI immensely)
 
-	Multi-cpu stuff:
-		Linux and Irix can run SMP/NUMA on SGI's machines. Study the
-		Linux sources for more info.
-		Ultrix could be SMP too, perhaps.  NetBSD is not SMP yet on
-		any MIPS platform, it seems.  And I could try with my own
-		ycx2.
+	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
+		o)  Breakpoints (complex expressions? combinations of register states,
+			memory accesses and so on)
+		o)  Instruction trace
+		o)  Disassembly of RAM (_NOT_ the same as instruction trace)
+		o)  Function call trace
+		o)  Inspection of CPU registers/state, coprocessor registers/state,
+			any device registers/state/contents
+			o)  Framebuffers in windows / tabs.
+			o)  Contents of RAM
+		o)  "Start new emulation" should allow amount of
+			RAM and nr of cpus to easily be specified. Multiple simultaneous
+			machines should be possible.
+		o)  Disk images.
+
+	Save state of the whole emulated machine, to be able to load it back
+		in later?  (Memory, all device's states, all registers and
+		so on.  Like taking a snapshot)
 
 	Caches / memory hierarchies:
 		o)  Implement correct cache emulation (per CPU, multiple
@@ -141,22 +35,108 @@ Most important stuff (but these are all non-trivial tasks):
 		    (a few KBs at most) might do it.
 		o)  Move the -H (fill mem with random) functionality into the
 			memory.c subsystem, not machine.c or wherever it is now
-		o)  ECC stuff, simulation of memory errors?
+		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
-			(using manual swap-out of blocks to disk)
+			(using manual swap-out of blocks to disk, ugly)
 
-	Interactive/graphical single step debugger?
+	Binary translation:  src/bintrans.c
 
-	Save state of the whole emulated machine, to be able to load it back
-		in later?  (Memory, all device's states, all registers and
-		so on.  Like taking a snapshot)
+	CPU Emulation:
+		o)  Instructions:
+			o)  Step through the entire MIPS64, MIPS32, VR5432 and other
+			    ISA specs, and make sure that every instruction is:
+				*  included in the emulator,
+				*  tested using a kind of regression test (ie test code
+				   written in mips assembly language)
+					x)  correct results
+					x)  causes exceptions correctly
+			o)  Floating point instructions!
+			o)  Finish the MIPS16 translator, and test it!
+			o)  MIPS V (SIMD vector stuff?)
+			o)  MDMX?  (MIPS Digital Media Extension)
+			o)  Warn about mis-used bit fields (ie bits that should be
+			    all zeroes, warn about if they are not)!
+			    Both for coprocessor registers and for instruction opcodes.
+			o)  warn and/or cause exceptions for unimplemented instructions
+			    (depending on CPU type)
+		o)  Nr of instructions per second is NOT the number of cycles
+		    per second, this is CPU dependant.  Several subsystems (CPUs,
+		    other systems) may need to have speeds fixed relative to each
+		    other.
+		o)  R2000/R3000:
+			x)  Make sure that registers (INCLUDING coprocessor registers)
+			    are always sign-extended. (32-bit stuff)
+			x)  R3000 "tri-byte stores"???
+			x)  Delay after R3000 interrupt enabling instructions (write to cop0),
+			    before interrupts are actually enabled. (?)
+		o)  R4000 and others: (R4*, R5* ?)
+			x)  watchhi/watchlo exceptions, and other exception handling details
+		o)  R10000 and others:  (R12000, R14000 ?)
+			x)  memory space, exceptions, ...
+			x)  use cop0 framemask for tlb lookups
+			    (http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html)
+		o)  Implement load delays?  Warnings on interlocks.
+		o)  Implement all coprocessor 0 bits / functions.
+			x)  coproc 0 selectors! (R4000 ?)
+			x)  BEV and all exception vectors....
+		o)  R4300:  mmu? nintendo64
+		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
+		o)  5K (note: NOT R5000)
+		o)  R6000 (ISA II), R8000, R20000 ?
 
-	Binary translation?
-		o)  How to deal with userland?  Self-modifying code?
-		o)  Multiple target archs (alpha, i386, sparc, ...)
+	Emulation of specific machines and devices:
+		o)  Binary tree for memory mapped devices!
+		o)  Separate RAM as yet another device (a "RAM device"), replacing the
+			'memory' system with a more generic 'memory controller'.
+		o)  "wdc" IDE controller!
+		o)  SCSI controllers!
+		o)  Busses, interrupt systems, and ROM emulation:
+			x)  Make interrupt sharing more generic!
+			x)  PCI:  i/o and interrupts
+			x)  TURBOchannel  (many DEC systems)
+			x)  ARCBIOS (SGI, arc?)
+			x)  QBus (DECsystem 5400)
+		o)  DECstations (pmax):
+			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
+			status words / control words, make this more portable/cleaner
+			scsi controller(s): sii, asc
+			ethernet controller(s): le, fddi?
+			serial controllers: dc, ssc, scc
+			download the ROM from my DECstation 5000/125 and see if I can get it to run.
+			DECstation 5840? "xbi-based SMP"
+		o)  SGI and ARC machines (sgimips, arc):
+			x)  Finish the SGI O2 framebuffer and keyboard support
+			x)  SMP / NUMA?
+			x)  Jazz (ARC)
+			x)  Interrupts (PCI and others) (both ARC and SGI)
+		o)  Cobalt:  PCI and interrupt system, ethernet, harddisk controller(s)
+		o)  Playstation 2:
+			R5900 "weird" instructions
+			Hardware (graphics, sound, dma, ...)
+			Has an R3000A as a subsystem (!)
+			ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/
+		o)  Playstation 1? R3000A. Weird hardware? No FPU, but something as coproc 2.
+		o)  hpcmips:  framebuffer(s) and harddisk controller, among other things
+		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp  (R4300, 4MB RAM, really weird memory map)
+		o)  newsmips?
+		o)  mipsco?
+
+	Multi-cpu stuff:
+		o)  SGI's NUMA architecture. Study
+			x)  Linux sources
+			x)  SGI's specs on NUMA address space
+		o)  Ultrix?  (NetBSD is not SMP yet on any MIPS platform, it seems.)
+		o)  Own experiments with ycx2.
+
+	Framebuffer stuff:
+		o)  "Sprites", or overlays  (useful for cursors...)
+		o)  2D and 3D acceleration
+		o)  Playstation 2 color encoding is not rgb
+		o)  Move the polygon drawing stuff to its own module.
+		o)  Antialiased polygons? :-)
 
 	File handling:
-		o)  Read function argument types from binaries? (ELF?)
+		o)  Read function argument count and types from binaries? (ELF?)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images (?)
@@ -164,12 +144,11 @@ Most important stuff (but these are all non-trivial tasks):
 			(ELF structure format)
 
 	Better X-windows functionality:
-		o)  Keyboard and mouse events should be handled, translated
-			into whatever the current emulated machine wants,
-			for example turning those events into data sent into
-			the machine on a serial port...
+		o)  Keyboard and mouse events:
+			x)  Do this for more machines than just DECstation
+			x)  How about multiple framebuffer windows?
 		o)  Non-resizable windows
-		o)  Fix color support for non-24-bit modes
+		o)  Color support for non-24-bit modes?
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 
@@ -186,5 +165,5 @@ Most important stuff (but these are all non-trivial tasks):
 	possible, with different compilers and compiler settings. (Maybe on
 	non-Unix-like systems too, if the X11 stuff is separated well enough.)
 
-	Write Documentation (TeX/HTML/manpages) for the whole emulator.
+	Write Documentation (TeX/HTML/manpages, or DocBook?) for the whole emulator.
 

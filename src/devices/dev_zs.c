@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.4 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_zs.c,v 1.5 2004-06-12 12:36:55 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -46,6 +46,11 @@ struct zs_data {
 };
 
 
+/*  From NetBSD:  */
+#define	ZSRR0_RX_READY		1
+#define	ZSRR0_TX_READY		4
+
+
 /*
  *  dev_zs_access():
  *
@@ -62,19 +67,21 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	switch (relative_addr) {
 	case 3:
 		if (writeflag==MEM_READ) {
-			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
-			odata = 0x04;	/*  ??? 0x04 allows transmission  */
+			odata = ZSRR0_TX_READY;
+			if (console_charavail())
+				odata |= ZSRR0_RX_READY;
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
 		} else {
 			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
 		}
 		break;
 	case 7:
 		if (writeflag==MEM_READ) {
-			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
 			if (console_charavail())
 				odata = console_readchar();
 			else
 				odata = 0;
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
 		} else {
 			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
 			console_putchar(idata & 255);

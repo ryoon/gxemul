@@ -121,8 +121,9 @@ release, but will most probably work anyway.
 		gcc version 2.96 20000731 (Debian GNU/Linux IA64 experimental)
 		gcc version 3.3.3 (Linux 2.4.17 (Debian))
 
-	NetBSD/i386 2.0/-current
-		gcc 3.3.3
+	NetBSD/i386
+		1.6: gcc version 2.95.3 20010315 (release) (NetBSD nb3)
+		2.0/-current: gcc 3.3.3
 
 	NetBSD/pmax 1.6.2  (inside the emulator)
 		gcc 2.95.3 20010315 (release) (NetBSD nb3)
@@ -130,11 +131,9 @@ release, but will most probably work anyway.
 	OpenBSD/i386 3.2
 		gcc 2.95.3 20010125 (prerelease)
 
-	OpenBSD/pmax 2.7  (inside the emulator)
-		gcc 2.95.2 19991024 (release)
-
-	OpenBSD/pmax 2.8-beta  (inside the emulator)
-		gcc 2.95.3 19991030 (prerelease)
+	OpenBSD/pmax (inside the emulator)
+		2.7: gcc 2.95.2 19991024 (release)
+		2.8-beta: gcc 2.95.3 19991030 (prerelease)
 
 	OpenBSD/sparc64
 		gcc 2.95.3 20010125 (prerelease, propolice)
@@ -145,6 +144,7 @@ release, but will most probably work anyway.
 
 	Tru64/alpha v5.1 (OSF/1)
 		Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
+		gcc version 3.3 (TWW)
 
 
 Platforms/compilers that have been tried and did NOT work when they were 

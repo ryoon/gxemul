@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.17 2005-01-09 01:55:31 debug Exp $
+ *  $Id: symbol.c,v 1.18 2005-01-18 14:55:17 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -251,6 +251,8 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 	char b4[80];
 	int cur_n_symbols = sc->n_symbols;
 
+	debug("\n");
+
 	f = fopen(fname, "r");
 	if (f == NULL) {
 		perror(fname);
@@ -285,8 +287,7 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 
 	fclose(f);
 
-	debug("'%s': %i symbols\n", fname, sc->n_symbols - cur_n_symbols,
-	    fname);
+	debug("    %i symbols\n", sc->n_symbols - cur_n_symbols);
 }
 
 

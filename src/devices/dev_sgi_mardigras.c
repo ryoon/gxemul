@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.4 2004-07-26 00:24:40 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.5 2004-07-30 10:31:15 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
- *  Most of this is just guesses based on the behaviour of Linux/Octane and
- *  definitions in mgras.h.
+ *  Most of this is just guesses based on the behaviour of Linux/Octane.
  *
  *  TODO
  */
@@ -41,7 +40,6 @@
 #include "memory.h"
 #include "devices.h"
 
-#include "mgras.h"
 
 #define debug fatal
 
@@ -85,13 +83,15 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 	g = d->fb->rgb_palette[d->color * 3 + 1];
 	b = d->fb->rgb_palette[d->color * 3 + 2];
 
-	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_COLOR) {
+	/*  Set color:  */
+	if ((idata & 0x00ffffff00000000ULL) == 0x00185C0400000000ULL) {
 		int color = (idata >> 12) & 0xff;
 		d->color = color;
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_STARTXY) {
+	/*  Set start XY:  */
+	if ((idata & 0x00ffffff00000000ULL) == 0x0018460400000000ULL) {
 		d->startx = (idata >> 16) & 0xffff;
 		d->starty = idata & 0xffff;
 		if (d->startx >= mardigras_xsize)
@@ -103,7 +103,8 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SET_STOPXY) {
+	/*  Set stop XY:  */
+	if ((idata & 0x00ffffff00000000ULL) == 0x0018470400000000ULL) {
 		d->stopx = (idata >> 16) & 0xffff;
 		d->stopy = idata & 0xffff;
 		if (d->stopx >= mardigras_xsize)
@@ -113,14 +114,18 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	if (idata == MGRAS_DRAW_RECT || idata == MGRAS_DRAW_BITMAP) {
+	/*  Draw modes: (Rectangle or Bitmap, respectively)  */
+	if (idata == 0x0019100400018000ULL ||
+	    idata == 0x0019100400418008ULL) {
 		d->draw_mode = idata;
 		return;
 	}
 
-	if (idata == MGRAS_SEND_CMD) {
+	/*  Send command:  */
+	if (idata == 0x001C130400000018ULL) {
 		switch (d->draw_mode) {
-		case MGRAS_DRAW_RECT:
+		/*  Rectangle:  */
+		case 0x0019100400018000ULL:
 			/*  Fill pixels[] with pixels:  */
 			len = 0;
 			for (x=d->startx; x<=d->stopx; x++) {
@@ -141,7 +146,8 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 				    addr, pixels, len, MEM_WRITE, d->fb);
 			}
 			break;
-		case MGRAS_DRAW_BITMAP:
+		/*  Bitmap:  */
+		case 0x0019100400418008ULL:
 			break;
 		default:
 			fatal("[ sgi_mardigras: unknown draw mode ]\n");
@@ -149,7 +155,8 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		return;
 	}
 
-	if ((idata & 0x00ffffff00000000ULL) == MGRAS_SEND_LINE) {
+	/*  Send a line of bitmap data:  */
+	if ((idata & 0x00ffffff00000000ULL) == 0x001C700400000000ULL) {
 		addr = (mardigras_xsize * (mardigras_ysize - 1 - d->currenty)
 		    + d->currentx) * 3;
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.78 2005-03-09 07:27:00 debug Exp $
+ *  $Id: file.c,v 1.79 2005-03-09 09:12:38 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1188,10 +1188,27 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			if ((p_vaddr & 0x3f)==0)	align_len = 0x40;
 			if ((p_vaddr & 0xff)==0)	align_len = 0x100;
 			if ((p_vaddr & 0xfff)==0)	align_len = 0x1000;
+			if ((p_vaddr & 0x3fff)==0)	align_len = 0x4000;
+			if ((p_vaddr & 0xffff)==0)	align_len = 0x10000;
 			ofs = 0;  len = chunk_len = align_len;
 			while (ofs < (int64_t)p_filesz && len==chunk_len) {
 				unsigned char *ch = malloc(chunk_len);
 				int i = 0;
+
+				/*  Switch to larger size, if possible:  */
+				if (align_len < 0x10000 &&
+				    ((p_vaddr + ofs) & 0xffff)==0) {
+					align_len = 0x10000;
+					len = chunk_len = align_len;
+					free(ch);
+					ch = malloc(chunk_len);
+				} else if (align_len < 0x1000 &&
+				    ((p_vaddr + ofs) & 0xfff)==0) {
+					align_len = 0x1000;
+					len = chunk_len = align_len;
+					free(ch);
+					ch = malloc(chunk_len);
+				}
 
 				if (ch == NULL) {
 					fprintf(stderr, "out of memory\n");

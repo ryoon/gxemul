@@ -28,9 +28,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.3 2005-01-30 12:54:50 debug Exp $
+ *  $Id: cpu.h,v 1.4 2005-01-30 12:59:07 debug Exp $
  *
- *  See cpu_common.c.
+ *  See cpu.c.
  */
 
 
@@ -69,7 +69,7 @@ struct cpu {
 };
 
 
-/*  cpu_common.c:  */
+/*  cpu.c:  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
 void cpu_show_full_statistics(struct machine *m);

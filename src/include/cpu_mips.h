@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.1 2005-01-30 12:54:50 debug Exp $
+ *  $Id: cpu_mips.h,v 1.2 2005-01-30 12:59:07 debug Exp $
  */
 
 #include "misc.h"
@@ -390,7 +390,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
         uint32_t function, int unassemble_only, int running);
 
 
-/*  cpu.c:  */
+/*  cpu_mips.c:  */
 struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
 void mips_cpu_show_full_statistics(struct machine *m);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.36 2004-12-12 16:28:08 debug Exp $
+ *  $Id: net.c,v 1.37 2004-12-15 06:08:32 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -40,8 +40,8 @@
  *		o)  remove the netbsd-specific options in the tcp header (?)
  *		o)  Outgoing UDP packet fragment support.
  *		o)  IPv6
- *		o)  Make sure it works with Sprite too
  *		o)  DHCP? (Just return the 10.x.x.x default values.)
+ *		o)  Incoming connections
  *
  *
  *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.

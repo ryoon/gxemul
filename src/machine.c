@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.240 2004-12-15 05:55:52 debug Exp $
+ *  $Id: machine.c,v 1.241 2004-12-15 06:07:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2118,7 +2118,7 @@ Why is this here? TODO
 				 *	1f100000	vin1
 				 *	1f180000	vin2
 				 *	1f200000	vout
-				 *	1f280000	enet
+				 *	1f280000	enet (mec0, MAC-110 Ethernet)
 				 *	1f300000	perif:
 				 *	  1f300000	  audio
 				 *	  1f310000	  isa

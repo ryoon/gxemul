@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.18 2004-01-08 10:34:34 debug Exp $
+ *  $Id: cpu.c,v 1.19 2004-01-09 04:19:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1622,10 +1622,20 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			 *  62 and 63 differ.   The destination register should
 			 *  not be modified on overflow.
 			 */
-			if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000) != (tmpvalue & 0x80000000)))
-			    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000) != (tmpvalue & 0x8000000000000000))) ) {
-				cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
-				break;
+			if (imm >= 0) {
+				/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */
+				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000) && (tmpvalue & 0x80000000)==0))
+				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000) && (tmpvalue & 0x8000000000000000)==0)) ) {
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
+					break;
+				}
+			} else {
+				/*  Turn around from 0x8000.. to 0x7fff.. ?  Then overflow.  */
+				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000)==0 && (tmpvalue & 0x80000000)))
+				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000)==0 && (tmpvalue & 0x8000000000000000))) ) {
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
+					break;
+				}
 			}
 			cpu->gpr[rt] = result_value;
 

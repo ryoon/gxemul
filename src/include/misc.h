@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.122 2004-10-21 01:07:14 debug Exp $
+ *  $Id: misc.h,v 1.123 2004-10-21 03:32:06 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -223,15 +223,15 @@ struct cpu_type_def {
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, \
 	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
 	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192, 2, 0, 0, 0, 0, 0, 0 }, /*  192 tlb entries? or 384? instrs/cycle?  */ \
-	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
-	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
+	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,23, 6 }, \
+	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,22, 6 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4,15,15, 5, 5, 0, 0 }, /*  2way I,D; instrs/cycle?  */ \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4,14,13, 6, 6, 0, 0 }, /*  instrs/cycle?  */ \
 	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
-	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  instrs/cycle?  */ \
+	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,14, 5, 5,18, 6 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \
 	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0 }, \
 	{ "5K",		0x100+MIPS_5K, 1,	0,	EXC4K, MMU4K,	5,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \

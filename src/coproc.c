@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.72 2004-10-20 03:22:27 debug Exp $
+ *  $Id: coproc.c,v 1.73 2004-10-21 03:32:07 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -182,12 +182,20 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    ;
 			break;
 		case MIPS_R10000:
+		case MIPS_R12000:
+		case MIPS_R14000:
+			IC = cpu->emul->cache_picache - 12;
+			IC = IC < 0? 0 : (IC > 7? 7 : IC);
+			DC = cpu->emul->cache_pdcache - 12;
+			DC = DC < 0? 0 : (DC > 7? 7 : DC);
+			SC = cpu->emul->cache_secondary - 19;
+			SC = SC < 0? 0 : (SC > 7? 7 : SC);
 			/*  According to the R10000 User's Manual:  */
 			c->reg[COP0_CONFIG] =
-			      (   3 << 29)	/*  Primary instruction cache size, hardwired to 32KB  */
-			    | (   3 << 26)	/*  Primary data cache size, hardwired to 32KB  */
+			      (  IC << 29)	/*  Primary instruction cache size (3 = 32KB)  */
+			    | (  DC << 26)	/*  Primary data cache size (3 = 32KB)  */
 			    | (   0 << 19)	/*  SCClkDiv  */
-			    | (   0 << 16)	/*  SCSize, secondary cache size. 0 = 512KB. powers of two  */
+			    | (  SC << 16)	/*  SCSize, secondary cache size. 0 = 512KB. powers of two  */
 			    | (   0 << 15)	/*  MemEnd  */
 			    | (   0 << 14)	/*  SCCorEn  */
 			    | (   1 << 13)	/*  SCBlkSize. 0=16 words, 1=32 words  */
@@ -266,8 +274,8 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		case MIPS_RM5200:	fpu_rev = cpu->cpu_type.rev;
 					other_stuff |= 0x10;	/*  or cpu->cpu_type.sub ? TODO  */
 					break;
-		case MIPS_R10000:
-		case MIPS_R12000:	fpu_rev = MIPS_R10000;	break;
+		case MIPS_R10000:	fpu_rev = MIPS_R10000;	break;
+		case MIPS_R12000:	fpu_rev = 0x9;	break;
 		default:		fpu_rev = MIPS_SOFT;
 		}
 

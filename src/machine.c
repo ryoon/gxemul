@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.195 2004-10-20 03:22:27 debug Exp $
+ *  $Id: machine.c,v 1.196 2004-10-21 03:32:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2050,6 +2050,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  4 cpus per node  */
 
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
+				break;
+			case 53:
+				strcat(emul->machine_name, " (Origin 350)");
+				/*
+				 *  According to http://kumba.drachentekh.net/xml/myguide.html
+				 *  Origin 350, Tezro IP53 R16000
+				 */
 				break;
 			default:
 				fatal("unimplemented SGI machine type IP%i\n",

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.265 2004-10-21 02:38:52 debug Exp $
+$Id: HISTORY,v 1.266 2004-10-21 03:32:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1040,3 +1040,5 @@ HISTORY of mips64emul
 		is good or bad, I'm not sure.
 20041020	Adding a Linksys WRT54G emulation skeleton (-H).
 20041021	Minor updates.
+		R1[024]000 cache size bits in the config register should now
+		be ok.

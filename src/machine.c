@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.103 2004-06-22 23:49:55 debug Exp $
+ *  $Id: machine.c,v 1.104 2004-06-24 03:55:21 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1136,6 +1136,8 @@ void machine_init(struct memory *mem)
 		 *  (although that crashes Ultrix :-/), and "5/rz0a/netbsd" for alll
 		 *  others.  The number '5' is the slot number of the boot device.
 		 *
+		 *  'rz' for disks, 'tz' for tapes.
+		 *
 		 *  TODO:  Make this nicer.
 		 */
 {
@@ -1152,6 +1154,8 @@ void machine_init(struct memory *mem)
 		bootdev_id = diskimage_bootdev();
 
 		bootpath[0] = '0' + boot_boardnumber;
+		if (diskimage_is_a_tape(bootdev_id))
+			bootpath[2] = 't';
 		bootpath[4] = '0' + bootdev_id;
 
 		init_bootpath = bootpath;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.97 2004-06-24 01:41:34 debug Exp $
+$Id: HISTORY,v 1.98 2004-06-24 03:55:18 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -577,3 +577,5 @@ HISTORY of mips64emul
 		Increasing performance by a few percent by running as many
 		instructions in a row as possible, before checking for
 		hardware ticks.
+		When booting from SCSI tapes on DECstation, the bootstring
+		now contains 'tz' instead of 'rz'.

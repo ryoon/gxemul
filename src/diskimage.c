@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.29 2004-06-22 22:08:22 debug Exp $
+ *  $Id: diskimage.c,v 1.30 2004-06-24 03:55:21 debug Exp $
  *
  *  Disk image support.
  *
@@ -1142,6 +1142,22 @@ int diskimage_bootdev(void)
 	}
 
 	return bootdev;
+}
+
+
+/*
+ *  diskimage_is_a_tape():
+ *
+ *  Returns 1 if a disk image is a SCSI tape, 0 otherwise.
+ *  (Used in src/machine.c, to select 'rz' vs 'tz' for DECstation
+ *  boot strings.)
+ */
+int diskimage_is_a_tape(int i)
+{
+	if (diskimages[i] == NULL)
+		return 0;
+
+	return diskimages[i]->is_a_tape;
 }
 
 

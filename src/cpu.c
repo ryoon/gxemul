@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.150 2004-09-06 05:22:21 debug Exp $
+ *  $Id: cpu.c,v 1.151 2004-09-16 22:56:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -592,11 +592,10 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (instr[3] << 24) + (instr[2] << 16) +
 		     (instr[1] << 8) + instr[0];
 		imm &= ((1 << 26) - 1);
-		if (!running) {
-			debug("%s\t0x%08x", hi6_names[hi6], imm);
-			break;
-		}
-		/*  TODO: call coprocessor specific disasm routine here  */
+
+		/*  Call coproc_function(), but ONLY disassembly, no exec:  */
+		coproc_function(cpu, cpu->coproc[hi6 - HI6_COP0], imm,
+		    1, running);
 		return;
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
@@ -2839,9 +2838,12 @@ static int cpu_run_instr(struct cpu *cpu)
 
 			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		} else {
-			/*  The coproc_function code should output instruction trace.  */
-
-			coproc_function(cpu, cpu->coproc[cpnr], imm);
+			/*
+			 *  Execute the coprocessor function. The
+			 *  coproc_function code outputs instruction
+			 *  trace, if neccessary.
+			 */
+			coproc_function(cpu, cpu->coproc[cpnr], imm, 0, 1);
 		}
 		return 1;
 	case HI6_CACHE:

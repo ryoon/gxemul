@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.107 2004-09-05 04:56:01 debug Exp $
+ *  $Id: misc.h,v 1.108 2004-09-16 22:56:32 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -921,7 +921,8 @@ void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
-void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function);
+void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
+	int unassemble_only, int running);
 
 
 /*  cpu.c:  */

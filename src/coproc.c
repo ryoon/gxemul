@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.67 2004-09-05 05:06:56 debug Exp $
+ *  $Id: coproc.c,v 1.68 2004-09-16 22:56:33 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -604,7 +604,8 @@ struct internal_float_value {
  *  Interprets a float value from binary IEEE format into
  *  a internal_float_value struct.
  */
-void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, int fmt)
+static void fpu_interpret_float_value(uint64_t reg,
+	struct internal_float_value *fvp, int fmt)
 {
 	int n_frac = 0, n_exp = 0;
 	int i;
@@ -700,7 +701,8 @@ void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, i
  *
  *  Stores a float value (actually a double) in fmt format.
  */
-void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
+static void fpu_store_float_value(struct coproc *cp, int fd,
+	double nf, int fmt)
 {
 	int n_frac = 0, n_exp = 0, signofs=0;
 	int i, exponent;
@@ -812,7 +814,7 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
  *  Only FPU_OP_C (compare) returns anything of interest, 1 for
  *  true, 0 for false.
  */
-int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
+static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	int ft, int fs, int cc, int fd, int cond, int output_fmt)
 {
 	/*  Potentially two input registers, fs and ft  */
@@ -921,7 +923,8 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
  *  Returns 1 if function was implemented, 0 otherwise.
  *  Debug trace should be printed for known instructions.
  */
-int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
+static int fpu_function(struct cpu *cpu, struct coproc *cp,
+	uint32_t function, int unassemble_only)
 {
 	int fd, fs, ft, fmt, cond, cc;
 
@@ -952,8 +955,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		if (nd == 1 && tf == 0)  instr_mnem = "bc1fl";
 		if (nd == 1 && tf == 1)  instr_mnem = "bc1tl";
 
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("%s\t%i,0x%016llx\n", instr_mnem, cc, (long long) (cpu->pc + (imm << 2)));
+		if (unassemble_only)
+			return 1;
 
 		if (cpu->delay_slot) {
 			fatal("%s: jump inside a jump's delay slot, or similar. TODO\n", instr_mnem);
@@ -981,8 +986,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  add.fmt: Floating-point add  */
 	if ((function & 0x0000003f) == 0x00000000) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("add.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_ADD, fmt, ft, fs, -1, fd, -1, fmt);
 		return 1;
@@ -990,8 +997,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  sub.fmt: Floating-point subtract  */
 	if ((function & 0x0000003f) == 0x00000001) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("sub.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_SUB, fmt, ft, fs, -1, fd, -1, fmt);
 		return 1;
@@ -999,8 +1008,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  mul.fmt: Floating-point multiply  */
 	if ((function & 0x0000003f) == 0x00000002) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("mul.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_MUL, fmt, ft, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1008,8 +1019,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  div.fmt: Floating-point divide  */
 	if ((function & 0x0000003f) == 0x00000003) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("div.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_DIV, fmt, ft, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1017,8 +1030,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  sqrt.fmt: Floating-point square-root  */
 	if ((function & 0x001f003f) == 0x00000004) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("sqrt.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_SQRT, fmt, -1, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1026,8 +1041,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  abs.fmt: Floating-point absolute value  */
 	if ((function & 0x001f003f) == 0x00000005) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("abs.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_ABS, fmt, -1, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1035,8 +1052,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  mov.fmt: Floating-point move  */
 	if ((function & 0x0000003f) == 0x00000006) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("mov.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1044,8 +1063,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  neg.fmt: Floating-point negate  */
 	if ((function & 0x001f003f) == 0x00000007) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("neg.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_NEG, fmt, -1, fs, -1, fd, -1, fmt);
 		return 1;
@@ -1055,8 +1076,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	if ((function & 0x000000f0) == 0x00000030) {
 		int cond_true;
 
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
+		if (unassemble_only)
+			return 1;
 
 		cond_true = fpu_op(cpu, cp, FPU_OP_C, fmt, ft, fs, -1, -1, cond, fmt);
 
@@ -1084,8 +1107,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  cvt.s.fmt: Convert to single floating-point  */
 	if ((function & 0x001f003f) == 0x00000020) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_S);
 		return 1;
@@ -1093,8 +1118,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  cvt.d.fmt: Convert to double floating-point  */
 	if ((function & 0x001f003f) == 0x00000021) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("cvt.d.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_D);
 		return 1;
@@ -1102,8 +1129,10 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  cvt.w.fmt: Convert to word fixed-point  */
 	if ((function & 0x001f003f) == 0x00000024) {
-		if (cpu->emul->instruction_trace)
+		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("cvt.w.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
 
 		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_W);
 		return 1;
@@ -1116,13 +1145,14 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 /*
  *  coproc_function():
  *
- *  Execute a coprocessor specific instruction.
- *  cp must be != NULL.
- *  Debug trace should be printed for known instructions.
+ *  Execute a coprocessor specific instruction. cp must be != NULL.
+ *  Debug trace should be printed for known instructions, if
+ *  unassemble_only is non-zero. (This will NOT execute the instruction.)
  *
  *  TODO:  This is a mess and should be restructured (again).
  */
-void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
+void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
+	int unassemble_only, int running)
 {
 	int co_bit, op, rt, rd, fs, g_bit, index, found, i;
 	int copz;
@@ -1136,9 +1166,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MFCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMFCz << 21)))) {
-		if (cpu->emul->instruction_trace)
+		if (unassemble_only) {
 			debug("%s%i\tr%i,r%i\n", copz==COPz_DMFCz? "dmfc" : "mfc", cpnr, rt, rd);
-
+			return;
+		}
 		coproc_register_read(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
 		cpu->gpr[rt] = tmpvalue;
 		if (copz == COPz_MFCz) {
@@ -1152,9 +1183,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MTCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMTCz << 21)))) {
-		if (cpu->emul->instruction_trace)
+		if (unassemble_only) {
 			debug("%s%i\tr%i,r%i\n", copz==COPz_DMTCz? "dmtc" : "mtc", cpnr, rt, rd);
-
+			return;
+		}
 		tmpvalue = cpu->gpr[rt];
 		if (copz == COPz_MTCz) {
 			/*  Sign-extend:  */
@@ -1172,16 +1204,21 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		case COPz_CFCz:		/*  Copy from FPU control register  */
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
-			if (cpu->emul->instruction_trace)
+			if (unassemble_only) {
 				debug("cfc%i\tr%i,r%i\n", cpnr, rt, fs);
+				return;
+			}
 			cpu->gpr[rt] = cp->fcr[fs];
+
 			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
 			return;
 		case COPz_CTCz:		/*  Copy to FPU control register  */
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
-			if (cpu->emul->instruction_trace)
+			if (unassemble_only) {
 				debug("ctc%i\tr%i,r%i\n", cpnr, rt, fs);
+				return;
+			}
 			if (fs == 0)
 				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
 			else
@@ -1195,17 +1232,18 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		}
 	}
 
-#if 1
+	/*  Math (Floating point) coprocessor calls:  */
 	if (cpnr==1) {
-		if (fpu_function(cpu, cp, function))
+		if (fpu_function(cpu, cp, function, unassemble_only))
 			return;
 	}
-#endif
 
 	/*  For AU1500 and probably others:  deret  */
 	if (function == 0x0200001f) {
-		if (cpu->emul->instruction_trace)
+		if (unassemble_only) {
 			debug("deret\n");
+			return;
+		}
 
 		/*
 		 *  According to the MIPS64 manual, deret loads PC from the
@@ -1227,29 +1265,36 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	/*  Ugly R59000 hacks:  */
 	if ((function & 0xfffff) == 0x38) {		/*  ei  */
-		if (cpu->emul->instruction_trace)
+		if (unassemble_only) {
 			debug("ei\n");
+			return;
+		}
 		cpu->coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
 		return;
 	}
 
 	if ((function & 0xfffff) == 0x39) {		/*  di  */
-		if (cpu->emul->instruction_trace)
+		if (unassemble_only) {
 			debug("di\n");
+			return;
+		}
 		cpu->coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
 		return;
 	}
 
 	co_bit = (function >> 25) & 1;
 
+	/*  TLB operations and other things:  */
 	if (cp->coproc_nr == 0) {
 		op = (function) & 31;
 		switch (co_bit) {
 		case 1:
 			switch (op) {
 			case COP0_TLBR:		/*  Read indexed TLB entry  */
-				if (cpu->emul->instruction_trace)
+				if (unassemble_only) {
 					debug("tlbr\n");
+					return;
+				}
 				if (cpu->cpu_type.mmu_model == MMU3K) {
 					i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
 					if (i >= cp->nr_of_tlbs) {
@@ -1308,11 +1353,16 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				/*  Translation caches must be invalidated:  */
 				invalidate_translation_caches(cpu);
 
-				if (cpu->emul->instruction_trace) {
+				if (unassemble_only) {
 					if (op == COP0_TLBWI)
 						debug("tlbwi");
 					else
 						debug("tlbwr");
+
+					if (!running) {
+						debug("\n");
+						return;
+					}
 
 					debug("\tindex=%08llx",
 					    (long long)cp->reg[COP0_INDEX]);
@@ -1393,8 +1443,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 				return;
 			case COP0_TLBP:		/*  Probe TLB for matching entry  */
-				if (cpu->emul->instruction_trace)
+				if (unassemble_only) {
 					debug("tlbp\n");
+					return;
+				}
 				if (cpu->cpu_type.mmu_model == MMU3K) {
 					vpn2 = cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
 					found = -1;
@@ -1439,16 +1491,20 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 				return;
 			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
-				if (cpu->emul->instruction_trace)
+				if (unassemble_only) {
 					debug("rfe\n");
+					return;
+				}
 				cpu->last_was_rfe = 1;
 				cpu->coproc[0]->reg[COP0_STATUS] =
 				    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 				    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 				return;
 			case COP0_ERET:		/*  R4000: Return from exception  */
-				if (cpu->emul->instruction_trace)
+				if (unassemble_only) {
 					debug("eret\n");
+					return;
+				}
 				if (cp->reg[COP0_STATUS] & STATUS_ERL) {
 					cpu->pc = cpu->pc_last = cp->reg[COP0_ERROREPC];
 					cp->reg[COP0_STATUS] &= ~STATUS_ERL;
@@ -1474,11 +1530,20 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		return;
 
 	/*  TODO: RM5200 idle (?)  */
-	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
-		return;
+	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020) {
+		if (unassemble_only) {
+			debug("idle(?)\n");	/*  TODO  */
+			return;
+		}
 
-	if (cpu->emul->instruction_trace)
+		/*  Idle? TODO  */
+		return;
+	}
+
+	if (unassemble_only) {
 		debug("cop%i\t%08lx\n", cpnr, function);
+		return;
+	}
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);

@@ -413,6 +413,9 @@ struct cpu {
 	uint64_t	hi;
 	uint64_t	lo;
 
+	int		mips16;			/*  non-zero when running MIPS16 code  */
+	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
+
 	int		trace_tree_depth;
 	int		instruction_delay;
 
@@ -727,6 +730,10 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, 
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
 void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
 	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *);
+
+
+/*  mips16.c:  */
+int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
 
 
 /*  ps2_bios.c:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: file.c,v 1.3 2003-11-07 05:09:45 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -462,7 +462,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	FILE *f;
 	uint64_t eentry;
 	int len, i;
-	int elf64, encoding;
+	int elf64, encoding, eflags;
 	int etype, emachine;
 	int ephnum, ephentsize, eshnum, eshentsize;
 	off_t ephoff, eshoff;
@@ -522,6 +522,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 
 	if (elf64) {
 		unencode(etype,      &hdr64.e_type,      Elf64_Quarter);
+		unencode(eflags,     &hdr64.e_flags,     Elf64_Half);
 		unencode(emachine,   &hdr64.e_machine,   Elf64_Quarter);
 		unencode(eentry,     &hdr64.e_entry,     Elf64_Addr);
 		unencode(ephnum,     &hdr64.e_phnum,     Elf64_Quarter);
@@ -542,6 +543,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 		}
 	} else {
 		unencode(etype,      &hdr32.e_type,      Elf32_Half);
+		unencode(eflags,     &hdr32.e_flags,     Elf32_Word);
 		unencode(emachine,   &hdr32.e_machine,   Elf32_Half);
 		unencode(eentry,     &hdr32.e_entry,     Elf32_Addr);
 		unencode(ephnum,     &hdr32.e_phnum,     Elf32_Half);
@@ -572,7 +574,19 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 		exit(1);
 	}
 
-	debug("'%s': ELF%i, entry point 0x%016llx\n", filename, elf64? 64 : 32, (long long)eentry);
+	debug("'%s': ELF%i %s, entry point 0x%016llx\n", filename, elf64? 64 : 32,
+	    encoding == ELFDATA2LSB? "LSB (LE)" : "MSB (BE)", (long long)eentry);
+
+	/*
+	 *  MIPS16 encoding?
+	 *
+	 *  TODO:  Find out what e_flag actually contains.
+	 */
+
+	if (((eflags >> 24) & 0xff) == 0x24) {
+		debug("'%s': MIPS16 encoding (e_flags = 0x%08x)\n", filename, eflags);
+		cpu->mips16 = 1;
+	}
 
 	/*  Read the program headers:  */
 
@@ -813,6 +827,10 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	cpu->pc = eentry;
+
+	/*  Clear the lowest bit if MIPS16, as it is (sometimes? or always?) set to 1 in the ELF header  */
+	if (cpu->mips16)
+		cpu->pc = eentry & ~1;
 
 	if (encoding == ELFDATA2LSB)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;

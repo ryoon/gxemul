@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.145 2004-11-17 20:37:41 debug Exp $
+ *  $Id: misc.h,v 1.146 2004-11-18 00:41:12 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -510,6 +510,8 @@ struct coproc {
 #define	GPR_A1		5		/*  a1  */
 #define	GPR_A2		6		/*  a2  */
 #define	GPR_A3		7		/*  a3  */
+#define	GPR_T0		8		/*  t0  */
+#define	GPR_T1		9		/*  t1  */
 #define	GPR_K0		26		/*  k0  */
 #define	GPR_K1		27		/*  k1  */
 #define	GPR_GP		28		/*  gp  */

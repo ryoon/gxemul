@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.64 2004-11-16 20:50:36 debug Exp $
+ *  $Id: bintrans.c,v 1.65 2004-11-18 00:41:13 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -569,7 +569,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			    (size_t)translation_code_chunk_space);
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 10 &&
+		if (translated && try_to_translate && n_translated > 20 &&
 		    prev_p < 1020 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(

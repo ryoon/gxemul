@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.311 2004-11-17 20:37:38 debug Exp $
+$Id: HISTORY,v 1.312 2004-11-18 00:41:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1141,3 +1141,5 @@ HISTORY of mips64emul
 20041117	Working on dev_dec_ioasic and related issues.
 		Adding support for letting translated code access devices in
 		some cases (such as framebuffers).
+20041118	Moving some MIPS registers into Alpha registers, which gives
+		a speed improvement.

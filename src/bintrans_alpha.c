@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.35 2004-11-16 20:50:36 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.36 2004-11-18 00:41:13 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -54,15 +54,30 @@
  *	Alpha:		MIPS:
  *	------		-----
  *
- *	t5		pc  (64-bit)
- *
+ *	t5		pc (64-bit)
  *	t6		bintrans_instructions_executed (32-bit int)
+ *	s0		delay_slot (32-bit int)
+ *	s1		delay_jmpaddr (64-bit)
+ *	s2		sp (mips register 29)  (64-bit)
+ *	s3		ra (mips register 31)  (64-bit)
+ *	s4		t0 (mips register 8)  (64-bit)
+ *	s5		t1 (mips register 9)  (64-bit)
+ *	s6		a0 (mips register 4)  (64-bit)
  *
  *	t7..t11,	TODO
- *	  s0..s6,
  *	  a1..a5
  */
 
+#define	MIPSREG_PC			-4
+#define	MIPSREG_N_INSTRS		-3
+#define	MIPSREG_DELAY_SLOT		-2
+#define	MIPSREG_DELAY_JMPADDR		-1
+
+#define	ALPHA_T0		1
+#define	ALPHA_T1		2
+#define	ALPHA_T2		3
+#define	ALPHA_T3		4
+#define	ALPHA_T4		5
 
 struct cpu dummy_cpu;
 struct coproc dummy_coproc;
@@ -127,7 +142,14 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
  */
 #define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 #define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-unsigned char bintrans_alpha_runchunk[104] = {
+#define ofs_ds	(((size_t)&dummy_cpu.delay_slot) - ((size_t)&dummy_cpu))
+#define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
+#define ofs_sp	(((size_t)&dummy_cpu.gpr[GPR_SP]) - ((size_t)&dummy_cpu))
+#define ofs_ra	(((size_t)&dummy_cpu.gpr[GPR_RA]) - ((size_t)&dummy_cpu))
+#define ofs_t0	(((size_t)&dummy_cpu.gpr[GPR_T0]) - ((size_t)&dummy_cpu))
+#define ofs_t1	(((size_t)&dummy_cpu.gpr[GPR_T1]) - ((size_t)&dummy_cpu))
+#define ofs_a0	(((size_t)&dummy_cpu.gpr[GPR_A0]) - ((size_t)&dummy_cpu))
+unsigned char bintrans_alpha_runchunk[160] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
@@ -141,11 +163,25 @@ unsigned char bintrans_alpha_runchunk[104] = {
 
 	ofs_pc&255,ofs_pc>>8,0xd0,0xa4,	/*  ldq     t5,"pc"(a0)  */
 	ofs_n&255,ofs_n>>8,0xf0,0xa0,	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
+	ofs_ds&255,ofs_ds>>8,0x30,0xa1,	/*  ldl     s0,"delay_slot"(a0)  */
+	ofs_ja&255,ofs_ja>>8,0x50,0xa5,	/*  ldq     s1,"delay_jmpaddr"(a0)  */
+	ofs_sp&255,ofs_sp>>8,0x70,0xa5,	/*  ldq     s2,"gpr[sp]"(a0)  */
+	ofs_ra&255,ofs_ra>>8,0x90,0xa5,	/*  ldq     s3,"gpr[ra]"(a0)  */
+	ofs_t0&255,ofs_t0>>8,0xb0,0xa5,	/*  ldq     s4,"gpr[t0]"(a0)  */
+	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
+	ofs_a0&255,ofs_a0>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[a0]"(a0)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
 	ofs_pc&255,ofs_pc>>8,0xd0,0xb4,	/*  stq     t5,"pc"(a0)  */
 	ofs_n&255,ofs_n>>8,0xf0,0xb0,	/*  stl     t6,"bintrans_instructions_executed"(a0)  */
+	ofs_ds&255,ofs_ds>>8,0x30,0xb1,	/*  stl     s0,"delay_slot"(a0)  */
+	ofs_ja&255,ofs_ja>>8,0x50,0xb5,	/*  stq     s1,"delay_jmpaddr"(a0)  */
+	ofs_sp&255,ofs_sp>>8,0x70,0xb5,	/*  stq     s2,"gpr[sp]"(a0)  */
+	ofs_ra&255,ofs_ra>>8,0x90,0xb5,	/*  stq     s3,"gpr[ra]"(a0)  */
+	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
+	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
+	ofs_a0&255,ofs_a0>>8,0xf0,0xb5,	/*  stq     s6,"gpr[a0]"(a0)  */
 
 	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
@@ -162,7 +198,7 @@ unsigned char bintrans_alpha_runchunk[104] = {
 
 
 /*
- *
+ *  bintrans_runchunk():
  */
 static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 {
@@ -179,6 +215,121 @@ static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 	*a++ = 0x6bfa8001;	/*  ret  */
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_move_MIPS_reg_into_Alpha_reg():
+ */
+static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mipsreg, int alphareg)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	switch (mipsreg) {
+	case MIPSREG_PC:
+		/*  addq t5,0,alphareg  */
+		*a++ = 0x40c01400 | alphareg;
+		break;
+	case MIPSREG_N_INSTRS:
+		/*  addq t6,0,alphareg  */
+		*a++ = 0x40e01400 | alphareg;
+		break;
+	case MIPSREG_DELAY_SLOT:
+		/*  addq s0,0,alphareg  */
+		*a++ = 0x41201400 | alphareg;
+		break;
+	case MIPSREG_DELAY_JMPADDR:
+		/*  addq s1,0,alphareg  */
+		*a++ = 0x41401400 | alphareg;
+		break;
+	case 0:
+		/*  clr alphareg  */
+		*a++ = 0x47ff0400 | alphareg;
+		break;
+	case GPR_A0:
+		/*  addq s6,0,alphareg  */
+		*a++ = 0x41e01400 | alphareg;
+		break;
+	case GPR_T0:
+		/*  addq s4,0,alphareg  */
+		*a++ = 0x41a01400 | alphareg;
+		break;
+	case GPR_T1:
+		/*  addq s5,0,alphareg  */
+		*a++ = 0x41c01400 | alphareg;
+		break;
+	case GPR_SP:
+		/*  addq s2,0,alphareg  */
+		*a++ = 0x41601400 | alphareg;
+		break;
+	case GPR_RA:
+		/*  addq s3,0,alphareg  */
+		*a++ = 0x41801400 | alphareg;
+		break;
+
+	default:
+		/*  ldq alphareg,gpr[mipsreg](a0)  */
+		ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+		*a++ = 0xa4100000 | (alphareg << 21) | ofs;
+	}
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_move_Alpha_reg_into_MIPS_reg():
+ */
+static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alphareg, int mipsreg)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	switch (mipsreg) {
+	case MIPSREG_PC:
+		/*  addq alphareg,0,t5  */
+		*a++ = 0x40001406 | (alphareg << 21);
+		break;
+	case MIPSREG_N_INSTRS:
+		/*  addq alphareg,0,t6  */
+		*a++ = 0x40001407 | (alphareg << 21);
+		break;
+	case MIPSREG_DELAY_SLOT:
+		/*  addq alphareg,0,s0  */
+		*a++ = 0x40001409 | (alphareg << 21);
+		break;
+	case MIPSREG_DELAY_JMPADDR:
+		/*  addq alphareg,0,s1  */
+		*a++ = 0x4000140a | (alphareg << 21);
+		break;
+	case 0:		/*  the zero register  */
+		break;
+	case GPR_A0:
+		/*  addq alphareg,0,s6  */
+		*a++ = 0x4000140f | (alphareg << 21);
+		break;
+	case GPR_T0:
+		/*  addq alphareg,0,s4  */
+		*a++ = 0x4000140d | (alphareg << 21);
+		break;
+	case GPR_T1:
+		/*  addq alphareg,0,s5  */
+		*a++ = 0x4000140e | (alphareg << 21);
+		break;
+	case GPR_SP:
+		/*  addq alphareg,0,s2  */
+		*a++ = 0x4000140b | (alphareg << 21);
+		break;
+	case GPR_RA:
+		/*  addq alphareg,0,s3  */
+		*a++ = 0x4000140c | (alphareg << 21);
+		break;
+	default:
+		/*  stq alphareg,gpr[mipsreg](a0)  */
+		ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+		*a++ = 0xb4100000 | (alphareg << 21) | ofs;
+	}
 	*addrp = (unsigned char *) a;
 }
 
@@ -217,7 +368,6 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 {
 	unsigned char *a;
 	unsigned int uimm;
-	int ofs;
 	int load64 = 0, sign3264 = 1;
 
 	switch (instruction_type) {
@@ -243,14 +393,14 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		goto rt0;
 
 	uimm = imm & 0xffff;
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
 
 	if (load64) {
 		/*  ldq t0,rs(a0)  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
 	} else {
 		/*  ldl t0,rs(a0)  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
 	}
 
 	switch (instruction_type) {
@@ -301,10 +451,7 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	}
 
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-
-	/*  stq t0,2184(a0)		store rt (64-bit)  */
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 
 rt0:
 	*addrp = a;
@@ -320,7 +467,6 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a;
-	int ofs;
 	int load64 = 0;
 
 	switch (instruction_type) {
@@ -346,17 +492,15 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	a = *addrp;
 
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-
 	/*  t0 = rs, t1 = rt  */
 	if (load64) {
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T1);
 	} else {
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T1);
+		*a++ = 0x02; *a++ = 0x10; *a++ = 0x40; *a++ = 0x40;	/*  addl t1,0,t1  */
 	}
 
 	switch (instruction_type) {
@@ -450,9 +594,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	}
 
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-
-	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq t0,rd(a0)  */
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 
 	*addrp = a;
 rd0:
@@ -469,7 +611,6 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 {
 	unsigned char *a, *b, *b2;
 	int n;
-	int ofs;
 
 	a = *addrp;
 
@@ -488,10 +629,8 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 */
 	b = NULL;
 	if (instruction_type == HI6_BEQ && rt != rs) {
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
 		b = a;
@@ -499,10 +638,8 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
 	}
 	if (instruction_type == HI6_BNE) {
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
 		b = a;
@@ -510,8 +647,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
 	}
 	if (instruction_type == HI6_BLEZ) {
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
 		b = a;
@@ -519,8 +655,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
 	}
 	if (instruction_type == HI6_BGTZ) {
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
 		b = a;
@@ -528,8 +663,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BLTZ) {
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xa1; *a++ = 0x19; *a++ = 0x40; *a++ = 0x40;  /*  cmplt t1,0,t0  */
 		b = a;
@@ -537,8 +671,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BGEZ) {
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
 
 		*a++ = 0xff; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;  /*  lda t2,-1  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x43; *a++ = 0x40;  /*  cmple t1,t2,t0  */
@@ -559,18 +692,15 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  88 08 30 b4     stq     t0,2184(a0)		store pc
 	 */
 
-	*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;  /*  addq    t5,0,t0  */
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x21; *a++ = 0x20;  /*  lda  */
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
 	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
 	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
 
-	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
 
 	b2 = a;
 	n = (size_t)b2 - (size_t)b - 4;
@@ -589,7 +719,6 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
 {
 	unsigned char *a;
-	int ofs;
 
 	a = *addrp;
 
@@ -598,22 +727,17 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	 *  and cpu->delay_jmpaddr = gpr[rs].
 	 */
 
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
 
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
-
-		*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq    t5,0,t0  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
 		*a++ = 8; *a++ = 0; *a++ = 0x21; *a++ = 0x20;  /*  lda t0,8(t0)  */
-		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 	}
 
 	*addrp = a;
@@ -629,7 +753,6 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	int imm, int link)
 {
 	unsigned char *a;
-	int ofs;
 	uint64_t subimm;
 
 	a = *addrp;
@@ -641,15 +764,12 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	 *  08 00 84 20     lda     t3,8(t3)
 	 *  18 09 90 b4     stq     t3,gpr31(a0)
 	 */
-	*a++ = 0x04; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;
-
-	/*  NOTE: t3 is used further down again  */
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);
 
 	if (link) {
 		*a++ = 8; *a++ = 0; *a++ = 0x84; *a++ = 0x20;	/*  lda t3,8(t3)  */
-
-		ofs = ((size_t)&dummy_cpu.gpr[31]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xb4;
+		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T3, 31);
 	}
 
 	/*  Set the jmpaddr to top 4 bits of pc + lowest 28 bits of imm*4:  */
@@ -678,7 +798,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 
 	imm *= 4;
 
-	*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
 
 	*a++ = 4; *a++ = 0; *a++ = 0x21; *a++ = 0x20;	/*  lda t0,4(t0)  */
 
@@ -696,12 +816,10 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 
 	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
 
-	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
 
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
+	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
 
 	/*  If the machine continues executing here, it will return
 	    to the main loop, which is fine.  */
@@ -726,8 +844,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 
 	if (!only_care_about_chunk_p) {
 		/*  Skip all of this if there is no branch:  */
-		ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa0;	/*  ldl t2,delay_slot(a0)  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_SLOT, ALPHA_T2);
 		skip = a;
 		*a++ = 0; *a++ = 0; *a++ = 0x60; *a++ = 0xe4;  /*  beq t2,skip  */
 
@@ -735,15 +852,12 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  Perform the jump by setting cpu->delay_slot = 0
 		 *  and pc = cpu->delay_jmpaddr.
 		 */
-		ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 		*a++ = 0; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,0 */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
 
-		ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-		*a++ = 0x04; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq t5,0,t3  */
-		*a++ = 0x06; *a++ = 0x14; *a++ = 0x20; *a++ = 0x40;	/*  addq t0,0,t5  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_T0);
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_PC);
 	}
 
 	if (potential_chunk_p == NULL) {
@@ -773,8 +887,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 		/*  Don't execute too many instructions.  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
 		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0x01; *a++ = 0x10; *a++ = 0xe0; *a++ = 0x40;	/*  addl t6,0,t0  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
@@ -819,7 +933,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  02 00 62 44     and     t2,t1,t1
 		 *  01 04 22 40     addq    t0,t1,t0
 		 */
-		*a++ = 0x03; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq t5,0,t2  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T2);
 		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
 		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
@@ -861,8 +975,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  a1 0d 22 40     cmple   t0,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
 		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0x01; *a++ = 0x10; *a++ = 0xe0; *a++ = 0x40;	/*  addl t6,0,t0  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
@@ -987,8 +1101,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  88 08 30 a4     ldq     t0,2184(a0)
 	 *  34 12 21 22     lda     a1,4660(t0)
 	 */
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x21; *a++ = 0x22;
 
 	writeflag = 0;
@@ -1050,8 +1164,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  The rest of this code was written with t3 as the index, not v0:  */
 	*a++ = 0x04; *a++ = 0x04; *a++ = 0x1f; *a++ = 0x40;	/*  addq v0,zero,t3  */
 
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-
 	switch (instruction_type) {
 	case HI6_LD:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa4;			/*  ldq t0,0(t3)  */
@@ -1089,7 +1201,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			/*  or the results together:  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0xa1; *a++ = 0x44;		/*  or t4,t0,t0  */
 		}
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 	case HI6_LW:
 	case HI6_LWU:
@@ -1110,7 +1222,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			/*  Use only lowest 32 bits:  */
 			*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot t0,0xf,t0  */
 		}
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 	case HI6_LHU:
 	case HI6_LH:
@@ -1123,7 +1235,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		if (instruction_type == HI6_LH) {
 			*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextw   t0,t0  */
 		}
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 	case HI6_LBU:
 	case HI6_LB:
@@ -1131,10 +1243,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		if (instruction_type == HI6_LB) {
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextb   t0,t0  */
 		}
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 	case HI6_SD:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;	/*  ldq gpr[rt]  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
 		if (bigendian) {
 			/*  remember original 8 bytes of t0:  */
 			*a++ = 0x05; *a++ = 0x04; *a++ = 0x3f; *a++ = 0x40;		/*  addq t0,zero,t4  */
@@ -1172,7 +1284,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb4;			/*  stq to memory  */
 		break;
 	case HI6_SW:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
 		if (bigendian) {
 			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
 			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
@@ -1187,7 +1299,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
 		break;
 	case HI6_SH:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0x30;	/*  ldwu t0,gpr[rt](a0)  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
 		if (bigendian) {
 			*a++ = 0x62; *a++ = 0x31; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,1,t1  */
 			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
@@ -1196,7 +1308,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
 		break;
 	case HI6_SB:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x38;			/*  stb to memory  */
 		break;
 	default:
@@ -1216,7 +1328,6 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 	int rt, int imm)
 {
 	uint32_t *a;
-	int ofs;
 
 	/*
 	 *  dc fe 3f 24     ldah    t0,-292
@@ -1225,11 +1336,10 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 	 */
 	if (rt != 0) {
 		a = (uint32_t *) *addrp;
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 		*a++ = 0x243f0000 | ((uint32_t)imm & 0xffff);
 		*a++ = 0x5fff041f;
-		*a++ = 0xb4300000 | (ofs & 0xffff);
 		*addrp = (unsigned char *) a;
+		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rt);
 	}
 
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
@@ -1268,13 +1378,11 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 				ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
-			ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+			bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 		}
 	} else {
 		/*  mthi or mtlo  */
-		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rd, ALPHA_T0);
 
 		if (hi_flag)
 			ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
@@ -1378,8 +1486,7 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 		*a++ = 0x40401002;		/*  addl t1,0,t1  */
 	}
 
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = 0xb4500000 | (ofs & 0xffff);		/*  stq t1,rt(a0)  */
+	bintrans_move_Alpha_reg_into_MIPS_reg((unsigned char **)&a, ALPHA_T1, rt);
 
 	*addrp = (unsigned char *) a;
 

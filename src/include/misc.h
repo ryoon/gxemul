@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.37 2004-03-08 03:21:42 debug Exp $
+ *  $Id: misc.h,v 1.38 2004-03-10 02:09:49 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -87,7 +87,6 @@ typedef uint64_t u_int64_t;
 #define	DEC_PROM_INITIAL_ARGV		(INITIAL_STACK_POINTER + 0x80)
 #define	DEC_PROM_STRINGS		0xffffffffbfc20000
 #define	DEC_PROM_TCINFO			0xffffffffbfc2c000
-#define	DEC_PROM_CCA			0xffffffffbfc2f000
 #define	DEC_MEMMAP_ADDR			0xffffffffbfc30000
 
 

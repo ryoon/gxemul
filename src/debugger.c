@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.75 2005-01-31 21:56:42 debug Exp $
+ *  $Id: debugger.c,v 1.76 2005-02-01 06:48:53 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1422,7 +1422,7 @@ void debugger_assignment(struct machine *m, char *cmd)
  */
 static char *debugger_readline(void)
 {
-	int ch, i, n, i_match, reallen, cmd_len, cursor_pos;
+	int ch, i, j, n, i_match, reallen, cmd_len, cursor_pos;
 	int read_from_index = last_cmd_index;
 	char *cmd = last_cmd[last_cmd_index];
 
@@ -1587,15 +1587,31 @@ static char *debugger_readline(void)
 				break;
 			default:
 				/*  Show all possible commands:  */
-				printf("\n  ");
-				i = 0;
+				printf("\a\n");	/*  Beep. :-)  */
+				i = 0;		/*  i = cmds index  */
+				j = 0;		/*  j = # of cmds printed  */
 				while (cmds[i].name != NULL) {
-					if (cmds[i].tmp_flag)
-						printf("  %s",
+					if (cmds[i].tmp_flag) {
+						int q;
+						if (j == 0)
+							printf("  ");
+						printf("%s",
 						    cmds[i].name);
+						j++;
+						if (j != 6)
+							for (q=0; q<13-strlen(
+							    cmds[i].name); q++)
+								printf(" ");
+						if (j == 6) {
+							printf("\n");
+							j = 0;
+						}
+					}
 					i++;
 				}
-				printf("\nmips64emul> ");
+				if (j != 0)
+					printf("\n");
+				printf("mips64emul> ");
 				for (i=0; i<cmd_len; i++)
 					printf("%c", cmd[i]);
 			}

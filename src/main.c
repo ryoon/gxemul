@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.198 2005-02-01 06:17:44 debug Exp $
+ *  $Id: main.c,v 1.199 2005-02-01 06:48:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,7 +35,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "cpu.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
@@ -353,37 +352,6 @@ static void usage(char *progname, int longusage)
 
 
 /*
- *  show_cpus_and_machine_types():
- *
- *  Show a list of available CPU and machine types.
- */
-void show_cpus_and_machine_types(void)
-{
-	int iadd = 8;
-
-	printf("Available CPU types:\n\n");
-
-	debug_indentation(iadd);
-	cpu_list_available_types();
-	debug_indentation(-iadd);
-
-	printf("\nMost of the CPU types are bogus, and not"
-	    " really implemented.\nAvailable machine types (with "
-	    "aliases) and their subtypes:\n\n");
-
-	debug_indentation(iadd);
-	machine_list_available_types();
-	debug_indentation(-iadd);
-
-	printf("\n");
-	printf("Most of the machine types are bogus too. Please read the "
-	    "mips64emul\ndocumentation for information about which machine"
-	    " types that actually\nwork. Use the alias when selecting a "
-	    "machine type or subtype, not the\nreal name.\n");
-}
-
-
-/*
  *  get_cmd_args():
  *
  *  Reads command line arguments.
@@ -442,7 +410,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'H':
-			show_cpus_and_machine_types();
+			machine_list_available_types_and_cpus();
 			exit(1);
 		case 'h':
 			usage(progname, 1);

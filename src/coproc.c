@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.163 2005-01-30 12:54:52 debug Exp $
+ *  $Id: coproc.c,v 1.164 2005-02-01 06:48:53 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2409,7 +2409,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	/*  TODO: coprocessor R2020 on DECstation?  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff) {
 		if (unassemble_only) {
-			debug("decstation_R2020_thing\n");
+			debug("decstation_r2020_writeback\n");
 			return;
 		}
 		/*  TODO  */

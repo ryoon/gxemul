@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.325 2005-01-31 21:10:34 debug Exp $
+ *  $Id: machine.c,v 1.326 2005-02-01 06:48:53 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4255,20 +4255,31 @@ static struct machine_entry_subtype *machine_entry_subtype_new(
 
 
 /*
- *  machine_list_available_types():
+ *  machine_list_available_types_and_cpus():
  *
  *  List all available machine types (for example when running the emulator
  *  with just -H as command line argument).
  */
-void machine_list_available_types(void)
+void machine_list_available_types_and_cpus(void)
 {
 	struct machine_entry *me;
-	int iadd = 4;
+	int iadd = 8;
 
+	debug("Available CPU types:\n\n");
+
+	debug_indentation(iadd);
+	cpu_list_available_types();
+	debug_indentation(-iadd);  
+
+	debug("\nMost of the CPU types are bogus, and not"
+	    " really implemented.\nAvailable machine types (with "
+	    "aliases) and their subtypes:\n\n");
+
+	debug_indentation(iadd);
 	me = first_machine_entry;
 
 	while (me != NULL) {
-		int i, j;
+		int i, j, iadd = 4;
 
 		debug("%s", me->name);
 		debug(" (");
@@ -4291,6 +4302,12 @@ void machine_list_available_types(void)
 
 		me = me->next;
 	}
+	debug_indentation(-iadd);
+
+	debug("\nMost of the machine types are bogus too. Please read the "
+	    "mips64emul\ndocumentation for information about which machine"
+	    " types that actually\nwork. Use the alias when selecting a "  
+	    "machine type or subtype, not the\nreal name.\n");
 }
 
 

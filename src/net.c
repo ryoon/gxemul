@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.11 2004-07-09 04:12:47 debug Exp $
+ *  $Id: net.c,v 1.12 2004-07-11 13:51:01 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -632,6 +632,14 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 		debug("%02x", packet[i]);
 	debug(" ]\n");
 #endif
+
+	/*  Sprite:  */
+	if (packet[12] == 0x05 && packet[13] == 0x00) {
+		/*  TODO.  */
+		fatal("[ net: TX: UNIMPLEMENTED Sprite packet ]\n");
+		return;
+	}
+
 	/*  ARP:  */
 	if (len == 60 && packet[12] == 0x08 && packet[13] == 0x06) {
 		net_arp(extra, packet + 14, len - 14);
@@ -645,9 +653,17 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 		return;
 	}
 
+	/*  RARP:  */
+	if (packet[12] == 0x80 && packet[13] == 0x35) {
+		/*  TODO.  */
+		fatal("[ net: TX: UNIMPLEMENTED RARP packet ]\n");
+		return;
+	}
+
 	/*  IPv6:  */
 	if (packet[12] == 0x86 && packet[13] == 0xdd) {
-		/*  TODO. Ignore for now.  */
+		/*  TODO.  */
+		fatal("[ net: TX: UNIMPLEMENTED IPv6 packet ]\n");
 		return;
 	}
 

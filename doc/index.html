@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.146 2004-11-29 14:14:53 debug Exp $
+$Id: index.html,v 1.147 2004-11-30 11:02:35 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1058,7 +1058,7 @@ in mips64emul:
 	$ <b>./configure; make</b>
 
 </pre>
-  <li>Download a kernel, such as this one:<pre>
+  <li>Download a kernel. This is a Debian kernel, but it works fine:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
 	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
 	3223460 bytes, md5 = dc44f6501040e04d6fa5151681565434
@@ -1074,8 +1074,8 @@ in mips64emul:
 	the filesystem tree you just downloaded. The disk image should have a MS-DOS
 	partition table (!), and then one or more ext2 partitions.
 	(Use loopback mount, or similar. This is probably easiest to do on a Linux host.)
-	However, in order to actually boot the system you need to modify /etc/fstab
-	in the filesystem, as it was intended to work via nfs. Change<pre>
+	However, in order to actually boot the system you need to modify /etc/fstab.
+	Change<pre>
 	/dev/root               /               nfs     defaults        1 1
 	#/dev/sdc1              /               ext2    defaults        1 1
 	none                    /proc           proc    defaults        0 0

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.39 2004-06-24 22:17:01 debug Exp $
+$Id: index.html,v 1.40 2004-06-26 21:46:37 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -258,11 +258,11 @@ NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1
 http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
 running on an emulated DECstation 5000 supports this:
 <pre>
-	$ <b>./mips64emul -D2 -X -Y2 -q -I4000000 -M12 netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -X -Y2 -I4000000 -M12 netbsd-INSTALL</b>
 </pre>
 -D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
-framebuffer; -Y2 is used to scale down the window by a factor 2x2; -q supresses
-debug output; -I4000000 lets the emulated clock chip on DECstations have
+framebuffer; -Y2 is used to scale down the window by a factor 2x2;
+-I4000000 lets the emulated clock chip on DECstations have
 a more realistic pace; and -M12 sets the amount of emulated memory to 12 MB.
 The result should looks something like this:
 <p>
@@ -306,7 +306,7 @@ Here are links to some kernels that can be experimented with:
       <li>NetBSD/sgimips:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>gunzip, and try running with  <b>-G32 -CR5000 -q</b>
+	<br>gunzip, and try running with  <b>-G32 -CR5000</b>
       <p>
       <li>Linux/SGI:
 	<br><a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
@@ -324,7 +324,7 @@ Here are links to some kernels that can be experimented with:
       <li>NetBSD/arc:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
-	<br>gunzip, and try with <b>-A1 q</b>. Add <b>-X -N</b> for a graphical framebuffer.
+	<br>gunzip, and try with <b>-A1</b>. Add <b>-X -N</b> for a graphical framebuffer.
 
       <p>
       <li>Linux:
@@ -339,11 +339,11 @@ Here are links to some kernels that can be experimented with:
     <ul>
       <li>NetBSD/cobalt:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>gunzip, and run with <b>-E -q</b>
+	<br>gunzip, and run with <b>-E</b>
       <p>
       <li>Linux:
 	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
-	<br>gunzip, and run with <b>-E -q</b>
+	<br>gunzip, and run with <b>-E</b>
     </ul>
   </li>
 
@@ -355,13 +355,13 @@ Here are links to some kernels that can be experimented with:
 	<br>A NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try running with <b>-XBqN</b>  (<b>-X</b> is required, for the framebuffer).
+	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
 
       <p>
       <li>Linux:
 	<br>A Linux kernel (2.2.21-pre1-xr7) is available from
 	<a href="http://playstation2-linux.com/projects/xrhino-kernel/">http://playstation2-linux.com/projects/xrhino-kernel/</a>
-	<br>Try running with <b>-XBqN</b>  (<b>-X</b> is required, for the framebuffer).
+	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
     </ul>
   </li>
 </pre>
@@ -394,7 +394,7 @@ You need to do the following:
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -N -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 	Alternatively, if you don't want to use a graphical framebuffer:<pre>
 	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
@@ -463,7 +463,7 @@ of harddisk image and be interacted with similar to a real machine:
     <tr>
       <td>DECstation</td>
       <td>NetBSD/pmax</td>
-      <td>-D2 -M32 -q -d rootdisk_name name_of_netbsd_pmax_kernel
+      <td>-D2 -M32 -d rootdisk_name name_of_netbsd_pmax_kernel
 	<br>(add -NX for graphical framebuffer, -Y2 to scale down the framebuffer)
 	</td>
     </tr>
@@ -471,7 +471,7 @@ of harddisk image and be interacted with similar to a real machine:
     <tr>
       <td>DECstation</td>
       <td>Ultrix/pmax</td>
-      <td>-j -D2 -M32 -q -d rootdisk_name name_of_ultrix_kernel
+      <td>-j -D2 -M32 -d rootdisk_name name_of_ultrix_kernel
 	<br>(add -NX for graphical framebuffer, -Y2 to scale down the framebuffer)
 	</td>
     </tr>
@@ -587,14 +587,14 @@ arguments to get a list of possible options.
 Here are some examples. If you want to run a NetBSD/pmax kernel on an
 emulated DECstation machine, you would use a command line such as this:
 <pre>
-	$ <b>./mips64emul -D2 -q -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
+	$ <b>./mips64emul -D2 -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
 <p>
 It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on,
 unless you specify explicitly which ID number the devices should have.
 <pre>
-	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
+	$ <b>./mips64emul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
 Note: In the example above, disk2.raw will get scsi id 5.
 </p>
@@ -603,17 +603,17 @@ a CDROM device (this can be overridden with a 'd' prefix, to force a read/write 
 For example, the following command would start the emulator with two
 CDROM images, and one harddisk image:
 <pre>
-	$ <b>./mips64emul -D2 -q -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
+	$ <b>./mips64emul -D2 -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
 </pre>
 Usually, the device with the lowest id becomes the boot device. To override
 this, add a 'b' prefix to one of the devices:
 <pre>
-	$ <b>./mips64emul -qD2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
+	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
 </pre>
 If you have a physical CD-ROM drive on the host machine, say /dev/cd0c, you can
 use it as a CD-ROM directly accessible from within the emulator:
 <pre>
-	$ <b>./mips64emul -qD2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
+	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
 </pre>
 It is probably possible to use harddisks as well this way, but I would not
 recommend it.

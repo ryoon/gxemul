@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.9 2004-01-24 21:10:09 debug Exp $
+ *  $Id: emul.c,v 1.10 2004-01-25 14:15:37 debug Exp $
  *
  *  Emulation startup.
  */
@@ -186,6 +186,18 @@ void emul(void)
 		debug("loading files into emulation memory:\n");
 	while (extra_argc > 0) {
 		file_load(mem, extra_argv[0], cpus[bootstrap_cpu]);
+
+		/*
+		 *  For userland emulation, the remainding items
+		 *  on the command line will be passed as parameters
+		 *  to the emulated program, and will not be treated
+		 *  as filenames to load into the emulator.
+		 *  The program's name will be in argv[0], and the
+		 *  rest of the parameters in argv[1] and up.
+		 */
+		if (userland_emul)
+			break;
+
 		extra_argc --;  extra_argv ++;
 	}
 
@@ -198,7 +210,7 @@ void emul(void)
 		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000;
 
 	if (userland_emul)
-		useremul_init(cpus[bootstrap_cpu], mem);
+		useremul_init(cpus[bootstrap_cpu], mem, extra_argc, extra_argv);
 
 	/*  Startup the bootstrap CPU:  */
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;

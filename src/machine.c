@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.59 2004-03-05 13:05:17 debug Exp $
+ *  $Id: machine.c,v 1.60 2004-03-06 17:10:36 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -72,6 +72,7 @@ extern struct memory *GLOBAL_gif_mem;
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
 struct dec_ioasic_data *dec_ioasic_data;
+struct ps2_data *ps2_data;
 
 
 /********************** Helper functions **********************/
@@ -361,6 +362,27 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 			if ((kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		}
+	}
+}
+
+
+void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	irq_nr -= 8;
+	debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+
+	if (assrt) {
+		/*  OR into the INTR:  */
+		ps2_data->intr |= irq_nr;
+
+		/*  Assert interrupt (which one? TODO):  */
+		cpu_interrupt(cpu, 2);
+	} else {
+		/*  AND out of the INTR:  */
+		ps2_data->intr &= ~irq_nr;
+
+		if (ps2_data->intr == 0)
+			cpu_interrupt_ack(cpu, 2);
 	}
 }
 
@@ -1043,18 +1065,27 @@ void machine_init(struct memory *mem)
 		if (!use_x11)
 			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
 
+		/*
+		 *  According to NetBSD:
+		 *	Hardware irq 0 is timer/interrupt controller
+		 *	Hardware irq 1 is dma controller
+		 */
+
 		dev_ps2_gs_init(mem, 0x12000000);
-		dev_ps2_dmac_init(mem, 0x10008000, GLOBAL_gif_mem);
+		ps2_data = dev_ps2_stuff_init(cpus[bootstrap_cpu], mem, 0x10000000, GLOBAL_gif_mem);
+
+		cpus[bootstrap_cpu]->md_interrupt = ps2_interrupt;
 
 		add_symbol_name(PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-		/*  RTC data given by the BIOS:  */
+		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
 		{
 			time_t timet;
 			struct tm *tmp;
 
+			/*  RTC data given by the BIOS:  */
 			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
 			tmp = gmtime(&timet);
 			/*  TODO:  are these 0- or 1-based?  */

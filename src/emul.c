@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.15 2004-06-25 01:04:12 debug Exp $
+ *  $Id: emul.c,v 1.16 2004-06-25 03:42:46 debug Exp $
  *
  *  Emulation startup.
  */
@@ -62,7 +62,7 @@ extern int userland_emul;
 extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
-
+extern int verbose;
 extern int n_dumppoints;
 extern char *dumppoint_string[];
 extern uint64_t dumppoint_pc[];
@@ -253,9 +253,12 @@ void emul(void)
 
 	console_init();
 
+	if (!verbose)
+		quiet_mode = 1;
+
+
 	cpu_run(cpus, ncpus);
 
-	debug("done\n");
 
 	if (use_x11) {
 		printf("Press enter to quit.\n");

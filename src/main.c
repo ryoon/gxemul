@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.40 2004-06-24 15:47:04 debug Exp $
+ *  $Id: main.c,v 1.41 2004-06-25 03:42:46 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -86,7 +86,7 @@ struct cpu **cpus = NULL;
 
 int show_trace_tree = 0;
 int tlb_dump = 0;
-
+int verbose = 0;
 int use_x11 = 0;
 int x11_scaledown = 1;
 int quiet_mode = 0;
@@ -212,6 +212,7 @@ void usage(char *progname)
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
 	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
+	printf("  -v        verbose debug messages\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
@@ -233,7 +234,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -331,6 +332,9 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'u':
 			userland_emul = atoi(optarg);
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		case 'X':
 			use_x11 = 1;

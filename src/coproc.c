@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.29 2004-05-02 14:41:00 debug Exp $
+ *  $Id: coproc.c,v 1.30 2004-05-04 10:46:05 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -43,6 +43,14 @@ extern int register_dump;
 extern int prom_emulation;
 
 char *cop0_names[32] = COP0_NAMES;
+
+
+/*  FPU control registers:  */
+#define	FPU_FCIR	0
+#define	FPU_FCCR	25
+#define	FPU_FCSR	31
+#define	  FCSR_FCC0_SHIFT	  23
+#define	  FCSR_FCC1_SHIFT	  25
 
 
 /*
@@ -247,6 +255,14 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		}
 
 		c->fcr[COP1_REVISION] = (fpu_rev << 8) | other_stuff;
+
+#if 0
+		/*  These are mentioned in the MIPS64 documentation:  */
+		    + (1 << 16)		/*  single  */
+		    + (1 << 17)		/*  double  */
+		    + (1 << 18)		/*  paired-single  */
+		    + (1 << 19)		/*  3d  */
+#endif
 	}
 
 	return c;
@@ -531,12 +547,6 @@ fatal("xcontext 0x%016llx\n", tmp);
 /*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W, RSQRT, TRUNC.L, TRUNC.W  */
 
 
-/*  FPU control registers:  */
-#define	FPU_FCCR	25
-#define	FPU_FCSR	31
-#define	  FCSR_FCC0_SHIFT	  23
-#define	  FCSR_FCC1_SHIFT	  25
-
 struct internal_float_value {
 	double f;
 };
@@ -555,7 +565,6 @@ void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, i
 	int sign, exponent;
 	double fraction;
 
-	/*  fatal("reg=%016llx fmt = %i\n", (long long)reg, fmt);  */
 	memset(fvp, 0, sizeof(struct internal_float_value));
 
 	/*  sign:  */
@@ -680,11 +689,11 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 		 *  This method is very slow but should work:
 		 */
 		exponent = 0;
-		while (nf < 1.0) {
+		while (nf < 1.0 && exponent > -1023) {
 			nf *= 2.0;
 			exponent --;
 		}
-		while (nf >= 2.0) {
+		while (nf >= 2.0 && exponent < 1023) {
 			nf /= 2.0;
 			exponent ++;
 		}
@@ -710,6 +719,10 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 			exponent = ((uint64_t)1 << n_exp) - 1;
 		r |= (uint64_t)exponent << n_frac;
 
+		/*  Special case for 0.0:  */
+		if (exponent == 0)
+			r = 0;
+
 		/*  fatal(" exp=%i, r = %016llx\n", exponent, (long long)r);  */
 
 		break;
@@ -717,7 +730,6 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 		/*  TODO  */
 		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
 	}
-
 
 	/*  TODO:  this is for 32-bit mode:  */
 	if (fmt == FMT_D || fmt == FMT_L) {
@@ -746,8 +758,6 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	struct internal_float_value float_value[2];
 	double nf;
 
-/*  printf("op = %i\n", op);  */
-
 	if (fs >= 0) {
 		uint64_t v = cp->reg[fs];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
@@ -764,44 +774,53 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	switch (op) {
 	case FPU_OP_ADD:
 		nf = float_value[0].f + float_value[1].f;
+		debug("  add: %f + %f = %f\n", float_value[0].f, float_value[1].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_SUB:
 		nf = float_value[0].f - float_value[1].f;
+		debug("  sub: %f - %f = %f\n", float_value[0].f, float_value[1].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_MUL:
 		nf = float_value[0].f * float_value[1].f;
+		debug("  mul: %f * %f = %f\n", float_value[0].f, float_value[1].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_DIV:
-		if (fabs(float_value[1].f) > 0.00000001)
+		if (fabs(float_value[1].f) > 0.000001)
 			nf = float_value[0].f / float_value[1].f;
 		else
 			nf = 0.0;	/*  TODO  */
+		debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_SQRT:
-		if (float_value[0].f > 0.0)
+		if (float_value[0].f >= 0.0)
 			nf = sqrt(float_value[0].f);
 		else
 			nf = 0.0;	/*  TODO  */
+		debug("  sqrt: %f => %f\n", float_value[0].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_ABS:
 		nf = fabs(float_value[0].f);
+		debug("  abs: %f => %f\n", float_value[0].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_NEG:
 		nf = - float_value[0].f;
+		debug("  neg: %f => %f\n", float_value[0].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_MOV:
 		nf = float_value[0].f;
+		debug("  mov: %f => %f\n", float_value[0].f, nf);
 		fpu_store_float_value(cp, fd, nf, output_fmt);
 		break;
 	case FPU_OP_C:
 		/*  TODO: how to detect unordered-ness and such?  */
+fatal("  c: %f, %f cond=%i\n", float_value[0].f, float_value[1].f, cond);
 		switch (cond) {
 		case 0:		return 0;					/*  False  */
 		case 1:		return 0;					/*  Unordered  */
@@ -981,16 +1000,16 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		 *	FCSR:  bits 31..25 and 23
 		 */
 		cp->fcr[FPU_FCCR] &= ~(1 << cc);
-		if (cond)
+		if (cond_true)
 			cp->fcr[FPU_FCCR] |= (1 << cc);
 
 		if (cc == 0) {
 			cp->fcr[FPU_FCSR] &= ~(1 << FCSR_FCC0_SHIFT);
-			if (cond)
+			if (cond_true)
 				cp->fcr[FPU_FCSR] |= (1 << FCSR_FCC0_SHIFT);
 		} else {
 			cp->fcr[FPU_FCSR] &= ~((cc-1) << FCSR_FCC1_SHIFT);
-			if (cond)
+			if (cond_true)
 				cp->fcr[FPU_FCSR] |= ((cc-1) << FCSR_FCC1_SHIFT);
 		}
 
@@ -1081,7 +1100,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		return;
 	}
 
-	if (cpnr == 1 || cpnr == 2) {
+	if (cpnr < 2 && (((function & 0x03e007ff) == (COPz_CFCz << 21))
+	              || ((function & 0x03e007ff) == (COPz_CTCz << 21)))) {
 		switch (copz) {
 		case COPz_CFCz:		/*  Copy from FPU control register  */
 			rt = (function >> 16) & 31;
@@ -1108,6 +1128,14 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 			;
 		}
 	}
+
+#if 1
+	if (cpnr==1) {
+		if (fpu_function(cpu, cp, function))
+			return;
+	}
+#endif
+
 
 	/*  Ugly R59000 hacks:  */
 	if ((function & 0xfffff) == 0x38) {		/*  ei  */
@@ -1328,11 +1356,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	/*  TODO: RM5200 idle (?)  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
-
-#if 1
-	if (fpu_function(cpu, cp, function))
-		return;
-#endif
 
 	if (instruction_trace)
 		debug("cop%i\t%08lx\n", cpnr, function);

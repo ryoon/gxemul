@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.110 2005-01-16 09:39:09 debug Exp $
+ *  $Id: emul.c,v 1.111 2005-01-17 07:58:56 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -260,7 +260,7 @@ struct emul *emul_new(void)
 	e->x11_scaledown = 1;
 	e->n_gfx_cards = 1;
 	e->dbe_on_nonexistant_memaccess = 1;
-
+	e->show_symbolic_register_names = 1;
 	return e;
 }
 

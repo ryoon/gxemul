@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.232 2005-01-16 03:46:45 debug Exp $
+ *  $Id: cpu.c,v 1.233 2005-01-17 07:58:56 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -55,12 +55,38 @@ extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
 
-char *exception_names[] = EXCEPTION_NAMES;
+static char *exception_names[] = EXCEPTION_NAMES;
 
 static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
+
+static char *regnames[] = MIPS_REGISTER_NAMES;
+
+
+/*
+ *  regname():
+ *
+ *  Convert a register number into either 'r0', 'r31' etc, or a symbolic
+ *  name, depending on emul->show_symbolic_register_names.
+ *
+ *  NOTE: _NOT_ reentrant.
+ */
+static char *regname(struct emul *emul, int r)
+{
+	static char ch[4];
+	ch[3] = ch[2] = '\0';
+
+	if (r<0 || r>=32)
+		strcpy(ch, "xx");
+	else if (emul->show_symbolic_register_names)
+		strcpy(ch, regnames[r]);
+	else
+		sprintf(ch, "r%i", r);
+
+	return ch;
+}
 
 
 /*
@@ -399,10 +425,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (symbol != NULL && offset==0)
 		debug("<%s>\n", symbol);
 
-	if (running)
+	if (cpu->emul->ncpus > 1 && running)
 		debug("cpu%i @ ", cpu->cpu_id);
-	else
-		debug("0x");
 
 	if (cpu->cpu_type.isa_level < 3 ||
 	    cpu->cpu_type.isa_level == 32)
@@ -460,8 +484,10 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 					debug("nop (weird, sa=%i)", sa);
 				goto disasm_ret;
 			} else
-				debug("%s\tr%i,r%i,%i",
-				    special_names[special6], rd, rt, sa);
+				debug("%s\t%s,",
+				    special_names[special6],
+				    regname(cpu->emul, rd));
+				debug("%s,%i", regname(cpu->emul, rt), sa);
 			break;
 		case SPECIAL_DSRLV:
 		case SPECIAL_DSRAV:
@@ -472,14 +498,16 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\tr%i,r%i,r%i",
-			    special_names[special6], rd, rt, rs);
+			debug("%s\t%s",
+			    special_names[special6], regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rt));
+			debug(",%s", regname(cpu->emul, rs));
 			break;
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			symbol = get_symbol_name(&cpu->emul->symbol_context,
 			    cpu->gpr[rs], &offset);
-			debug("jr\tr%i", rs);
+			debug("jr\t%s", regname(cpu->emul, rs));
 			if (running && symbol != NULL)
 				debug("\t\t<%s>", symbol);
 			break;
@@ -488,19 +516,22 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rd = (instr[1] >> 3) & 31;
 			symbol = get_symbol_name(&cpu->emul->symbol_context,
 			    cpu->gpr[rs], &offset);
-			debug("jalr\tr%i,r%i", rd, rs);
+			debug("jalr\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
 			if (running && symbol != NULL)
 				debug("<%s>", symbol);
 			break;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\tr%i", special_names[special6], rd);
+			debug("%s\t%s", special_names[special6],
+			    regname(cpu->emul, rd));
 			break;
 		case SPECIAL_MTLO:
 		case SPECIAL_MTHI:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			debug("%s\tr%i", special_names[special6], rs);
+			debug("%s\t%s", special_names[special6],
+			    regname(cpu->emul, rs));
 			break;
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
@@ -521,8 +552,10 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
-			debug("%s\tr%i,r%i,r%i", special_names[special6],
-			    rd, rs, rt);
+			debug("%s\t%s", special_names[special6],
+			    regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 			break;
 		case SPECIAL_MULT:
 		case SPECIAL_MULTU:
@@ -543,13 +576,16 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rd = (instr[1] >> 3) & 31;
 			if (special6 == SPECIAL_MULT) {
 				if (rd != 0) {
-					debug("mult_xx\tr%i,r%i,r%i",
-					    rd, rs, rt);
+					debug("mult_xx\t%s",
+					    regname(cpu->emul, rd));
+					debug(",%s", regname(cpu->emul, rs));
+					debug(",%s", regname(cpu->emul, rt));
 					goto disasm_ret;
 				}
 			}
-			debug("%s\tr%i,r%i", special_names[special6],
-			    rs, rt);
+			debug("%s\t%s", special_names[special6],
+			    regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 			break;
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
@@ -558,18 +594,22 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case SPECIAL_SYSCALL:
 			imm = (((instr[3] << 24) + (instr[2] << 16) +
 			    (instr[1] << 8) + instr[0]) >> 6) & 0xfffff;
-			debug("syscall\t0x%05x", imm);
+			if (imm != 0)
+				debug("syscall\t0x%05x", imm);
+			else
+				debug("syscall");
 			break;
 		case SPECIAL_BREAK:
+			/*  TODO: imm, as in 'syscall'?  */
 			debug("break");
 			break;
 		case SPECIAL_MFSA:
 			rd = (instr[1] >> 3) & 31;
-			debug("mfsa\tr%i", rd);
+			debug("mfsa\t%s", regname(cpu->emul, rd));
 			break;
 		case SPECIAL_MTSA:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			debug("mtsa\tr%i", rs);
+			debug("mtsa\t%s", regname(cpu->emul, rs));
 			break;
 		default:
 			debug("unimplemented special6 = 0x%02x", special6);
@@ -589,8 +629,16 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (imm >= 32768)
 			imm -= 65536;
 		addr = (dumpaddr + 4) + (imm << 2);
-		debug("%s\tr%i,r%i,%016llx", hi6_names[hi6], rt, rs,
-		    (long long)addr);
+		debug("%s\t%s,", hi6_names[hi6], regname(cpu->emul, rt));
+
+		debug("%s,", regname(cpu->emul, rs));
+
+		if (cpu->cpu_type.isa_level < 3 ||
+		    cpu->cpu_type.isa_level == 32)
+			debug("0x%8x", (int)addr);
+		else
+			debug("0x%016llx", (long long)addr);
+
 		symbol = get_symbol_name(&cpu->emul->symbol_context,
 		    addr, &offset);
 		if (symbol != NULL && offset != addr)
@@ -610,14 +658,13 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
-		debug("%s\tr%i,r%i,%i", hi6_names[hi6], rt, rs, imm);
+		debug("%s\t%s,", hi6_names[hi6], regname(cpu->emul, rt));
+		debug("%s,%i", regname(cpu->emul, rs), imm);
 		break;
 	case HI6_LUI:
 		rt = instr[2] & 31;
 		imm = (instr[1] << 8) + instr[0];
-		if (imm >= 32768)
-			imm -= 65536;
-		debug("lui\tr%i,0x%x", rt, imm & 0xffff);
+		debug("lui\t%s,0x%x", regname(cpu->emul, rt), imm);
 		break;
 	case HI6_LB:
 	case HI6_LBU:
@@ -665,22 +712,31 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		/*  LWC3 is PREF in the newer ISA levels:  */
 		/*  TODO: Which ISAs? cpu->cpu_type.isa_level >= 4?  */
 		if (hi6 == HI6_LWC3) {
-			debug("pref\t0x%x,%i(r%i)\t\t[0x%016llx = %s]",
-			    rt, imm, rs, (long long)(cpu->gpr[rs] + imm),
+			debug("pref\t0x%x,%i(%s)\t\t[0x%016llx = %s]",
+			    rt, imm, regname(cpu->emul, rs),
+			    (long long)(cpu->gpr[rs] + imm),
 			    symbol);
+			/*  TODO: only use gpr[rs] when running  */
 			goto disasm_ret;
 		}
 
-		debug("%s\tr%i,%i(r%i)",
-		    hi6_names[hi6], rt, imm, rs);
+		debug("%s\t%s", hi6_names[hi6], regname(cpu->emul, rt));
+		debug(",%i(%s)", imm, regname(cpu->emul, rs));
 
 		if (running) {
-			if (symbol != NULL)
-				debug("\t\t[0x%016llx = %s, data=",
-				    (long long)(cpu->gpr[rs] + imm), symbol);
+			debug("\t\t[");
+
+			if (cpu->cpu_type.isa_level < 3 ||
+			    cpu->cpu_type.isa_level == 32)
+				debug("0x%08x", (int)(cpu->gpr[rs] + imm));
 			else
-				debug("\t\t[0x%016llx, data=",
+				debug("0x%016llx",
 				    (long long)(cpu->gpr[rs] + imm));
+
+			if (symbol != NULL)
+				debug(" = %s", symbol);
+
+			debug(", data=");
 		} else
 			break;
 		/*  NOTE: No break here (if we are running) as it is up
@@ -694,11 +750,15 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		addr |= imm;
 		symbol = get_symbol_name(&cpu->emul->symbol_context,
 		    addr, &offset);
-		if (symbol != NULL)
-			debug("%s\t0x%016llx\t<%s>",
-			    hi6_names[hi6], (long long)addr, symbol);
+		debug("%s\t0x", hi6_names[hi6]);
+		if (cpu->cpu_type.isa_level < 3 ||
+		    cpu->cpu_type.isa_level == 32)
+			debug("%08x", (int)addr);
 		else
-			debug("%s\t0x%016llx", hi6_names[hi6], (long long)addr);
+			debug("%016llx", (long long)addr);
+		if (symbol != NULL)
+			debug("\t<%s>", symbol);
+		else
 		break;
 	case HI6_COP0:
 	case HI6_COP1:
@@ -719,7 +779,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		cache_op    = copz >> 2;
 		which_cache = copz & 3;
 		showtag = 0;
-		debug("cache\t0x%02x,0x%04x(r%i)", copz, imm, rt);
+		debug("cache\t0x%02x,0x%04x(%s)", copz, imm,
+		    regname(cpu->emul, rt));
 		if (which_cache==0)	debug("  [ primary I-cache");
 		if (which_cache==1)	debug("  [ primary D-cache");
 		if (which_cache==2)	debug("  [ secondary I-cache");
@@ -733,7 +794,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (cache_op==5)	debug("fill OR hit writeback invalidate");
 		if (cache_op==6)	debug("hit writeback");
 		if (cache_op==7)	debug("hit set virtual");
-		debug(", r%i=0x%016llx", rt, (long long)cpu->gpr[rt]);
+		debug(", %s=0x%016llx", regname(cpu->emul, rt),
+		    (long long)cpu->gpr[rt]);
 		if (showtag)
 		debug(", taghi=%08lx lo=%08lx",
 		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
@@ -748,37 +810,51 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
 		if ((instrword & 0xfc0007ffULL) == 0x70000000) {
-			debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
+			debug("madd\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 		} else if (special6 == SPECIAL2_MUL) {
 			/*  TODO: this is just a guess, I don't have the
 				docs in front of me  */
-			debug("mul\tr%i,r%i,r%i\n", rd, rs, rt);
+			debug("mul\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 		} else if (special6 == SPECIAL2_CLZ) {
-			debug("clz\tr%i,r%i", rd, rs);
+			debug("clz\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
 		} else if (special6 == SPECIAL2_CLO) {
-			debug("clo\tr%i,r%i", rd, rs);
+			debug("clo\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
 		} else if (special6 == SPECIAL2_DCLZ) {
-			debug("dclz\tr%i,r%i", rd, rs);
+			debug("dclz\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
 		} else if (special6 == SPECIAL2_DCLO) {
-			debug("dclo\tr%i,r%i", rd, rs);
+			debug("dclo\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
 		} else if ((instrword & 0xffff07ffULL) == 0x70000209
 		    || (instrword & 0xffff07ffULL) == 0x70000249) {
 			if (instr[0] == 0x49) {
-			debug("pmflo\tr%i rs=%i\n", rd);
+				debug("pmflo\t%s", regname(cpu->emul, rd));
+				debug("  (rs=%s)", regname(cpu->emul, rs));
 			} else {
-			debug("pmfhi\tr%i rs=%i\n", rd);
+				debug("pmfhi\t%s", regname(cpu->emul, rd));
+				debug("  (rs=%s)", regname(cpu->emul, rs));
 			}
 		} else if ((instrword & 0xfc1fffff) == 0x70000269 
 		    || (instrword & 0xfc1fffff) == 0x70000229) {
 			if (instr[0] == 0x69) {
-				debug("pmtlo\tr%i rs=%i\n", rs);
+				debug("pmtlo\t%s", regname(cpu->emul, rs));
 			} else {
-				debug("pmthi\tr%i rs=%i\n", rs);
+				debug("pmthi\t%s", regname(cpu->emul, rs));
 			} 
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
-			debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
+			debug("por\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
-			debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
+			debug("pextlw\t%s", regname(cpu->emul, rd));
+			debug(",%s", regname(cpu->emul, rs));
+			debug(",%s", regname(cpu->emul, rt));
 		} else {
 			debug("unimplemented special2 = 0x%02x", special6);
 		}
@@ -798,8 +874,17 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)               
 				imm -= 65536;
-			debug("%s\tr%i,%016llx", regimm_names[regimm5],
-			    rs, (dumpaddr + 4) + (imm << 2));
+
+			debug("%s\t%s,", regimm_names[regimm5],
+			    regname(cpu->emul, rs));
+
+			addr = (dumpaddr + 4) + (imm << 2);
+
+			if (cpu->cpu_type.isa_level < 3 ||
+			    cpu->cpu_type.isa_level == 32)
+				debug("0x%8x", (int)addr);
+			else
+				debug("0x%016llx", (long long)addr);
 			break;
 		default:
 			debug("unimplemented regimm5 = 0x%02x", regimm5);
@@ -837,20 +922,19 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    cpu->pc, &offset);
 
 		if (bits32)
-			debug("cpu%i:  pc  = %08x", cpu->cpu_id, (int)cpu->pc);
+			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->pc);
 		else
-			debug("cpu%i:    pc  = %016llx",
+			debug("cpu%i:    pc = %016llx",
 			    cpu->cpu_id, (long long)cpu->pc);
 
-		if (symbol != NULL)
-			debug(" <%s>", symbol);
-		debug("\n");
+		debug("    <%s>\n", symbol != NULL? symbol :
+		    " no symbol ");
 
 		if (bits32)
-			debug("cpu%i:  hi  = %08x  lo  = %08x\n",
+			debug("cpu%i:  hi = %08x  lo = %08x\n",
 			    cpu->cpu_id, (int)cpu->hi, (int)cpu->lo);
 		else
-			debug("cpu%i:    hi  = %016llx    lo  = %016llx\n",
+			debug("cpu%i:    hi = %016llx    lo = %016llx\n",
 			    cpu->cpu_id, (long long)cpu->hi,
 			    (long long)cpu->lo);
 
@@ -860,7 +944,8 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug(" r%02i=%016llx%016llx", i,
+				debug(" %3s=%016llx%016llx",
+				    regname(cpu->emul, i),
 				    (long long)cpu->gpr_quadhi[i],
 				    (long long)cpu->gpr[i]);
 				if ((i & 1) == 1)
@@ -871,7 +956,8 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 3) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
+				debug(" %3s = %08x", regname(cpu->emul, i),
+				    (int)cpu->gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
 			}
@@ -880,7 +966,9 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++) {
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
-				debug("    r%02i = %016llx", i, (long long)cpu->gpr[i]);
+				debug("   %3s = %016llx",
+				    regname(cpu->emul, i),
+				    (long long)cpu->gpr[i]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -969,8 +1057,15 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 
 	if (symbol != NULL)
 		debug("<%s(", symbol);
-	else
-		debug("<0x%016llx(", (long long)addr);
+	else {
+		debug("<0x");
+		if (cpu->cpu_type.isa_level < 3 ||
+		    cpu->cpu_type.isa_level == 32)
+			debug("%08x", (int)addr);
+		else
+			debug("%016llx", (long long)addr);
+		debug("(");
+	}
 
 	/*
 	 *  TODO:  The number of arguments and the symbol type of each
@@ -993,8 +1088,13 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
 			debug("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
-		else
-			debug("0x%llx", (long long)d);
+		else {
+			if (cpu->cpu_type.isa_level < 3 ||
+			    cpu->cpu_type.isa_level == 32)
+				debug("0x%x", (int)d);
+			else
+				debug("0x%llx", (long long)d);
+		}
 
 		if (x < n_args_to_print - 1)
 			debug(",");
@@ -1407,8 +1507,13 @@ int cpu_run_instr(struct cpu *cpu)
 	if (!cpu->emul->single_step)
 		for (i=0; i<cpu->emul->n_breakpoints; i++)
 			if (cached_pc == cpu->emul->breakpoint_addr[i]) {
-				fatal("Breakpoint reached, pc=0x%016llx\n",
-				    (long long)cached_pc);
+				fatal("Breakpoint reached, pc=0x");
+				if (cpu->cpu_type.isa_level < 3 ||
+				    cpu->cpu_type.isa_level == 32)
+					fatal("%08x", (int)cached_pc);
+				else
+					fatal("%016llx", (long long)cached_pc);
+				fatal("\n");
 				cpu->emul->single_step = 1;
 				return 0;
 			}
@@ -1526,8 +1631,10 @@ int cpu_run_instr(struct cpu *cpu)
 			if (cpu->gpr[i] & 0x80000000ULL)
 				cpu->gpr[i] |= 0xffffffff00000000ULL;
 			if (x != cpu->gpr[i]) {
-				fatal("\nWARNING: r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->gpr[i]);
+				fatal("\nWARNING: r%i (%s) was not sign-"
+				    "extended correctly (%016llx != "
+				    "%016llx)\n\n", i, regname(cpu->emul, i),
+				    (long long)x, (long long)cpu->gpr[i]);
 				warning = 1;
 			}
 		}
@@ -3037,16 +3144,16 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 
 			if (instruction_trace_cached) {
-				char *t;
 				switch (wlen) {
-				case 2:		t = "0x%04llx"; break;
-				case 4:		t = "0x%08llx"; break;
-				case 8:		t = "0x%016llx"; break;
-				case 16:	debug("0x%016llx", (long long)value_hi);
-						t = "%016llx"; break;
-				default:	t = "0x%02llx";
+				case 2:	debug("0x%04x", (int)value); break;
+				case 4:	debug("0x%08x", (int)value); break;
+				case 8:	debug("0x%016llx", (long long)value);
+					break;
+				case 16:debug("0x%016llx", (long long)value_hi);
+					debug("%016llx", (long long)value); 
+					break;
+				default:debug("0x%02x", (int)value);
 				}
-				debug(t, (long long)value);
 				debug("]\n");
 			}
 			return 1;

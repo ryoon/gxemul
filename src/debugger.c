@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.33 2005-01-15 07:33:11 debug Exp $
+ *  $Id: debugger.c,v 1.34 2005-01-17 07:58:56 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -36,8 +36,8 @@
  *
  *	Add more functionality that already exists elsewhere in the emulator.
  *
- *	Nicer looking output of register dumps, floating point
- *	registers etc. Warn about weird/invalid register contents.
+ *	Nicer looking output of register dumps (coprocessor 0 and 1 registers,
+ *	etc). Warn about weird/invalid register contents.
  *
  *	Many other TODOs.
  */

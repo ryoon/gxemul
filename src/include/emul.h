@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.20 2005-01-16 09:09:32 debug Exp $
+ *  $Id: emul.h,v 1.21 2005-01-17 07:58:55 debug Exp $
  */
 
 #include "misc.h"
@@ -77,6 +77,7 @@ struct emul {
 	int	single_step;
 	int	trace_on_bad_address;
 	int	show_nr_of_instructions;
+	int	show_symbolic_register_names;
 	int64_t	max_instructions;
 	int	emulated_hz;
 	int	max_random_cycles_per_chunk;

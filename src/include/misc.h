@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.197 2005-01-15 08:37:05 debug Exp $
+ *  $Id: misc.h,v 1.198 2005-01-17 07:58:55 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -198,6 +198,13 @@ struct coproc {
 
 #define	NGPRS		32			/*  General purpose registers  */
 #define	NFPUREGS	32			/*  Floating point registers  */
+
+/*  These should all be 2 characters wide:  */
+#define MIPS_REGISTER_NAMES	{ \
+	"z0", "at", "v0", "v1", "a0", "a1", "a2", "a3", \
+	"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", \
+	"s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", \
+	"t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"  }
 
 #define	GPR_ZERO	0		/*  zero  */
 #define	GPR_AT		1		/*  at  */

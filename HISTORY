@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.522 2005-01-26 08:22:55 debug Exp $
+$Id: HISTORY,v 1.523 2005-01-26 11:30:47 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1555,4 +1555,7 @@ HISTORY of mips64emul
 20050126	Continuing the remodelling/cleanup. Moving around stuff in
 		the header files, etc. Adding a '-K' command line option, which
 		forces the debugger to be entered at the exit of a simulation,
-		regardless of failure or success.
+		regardless of failure or success. Beginning on the config file
+		parser.
+		Splitting doc/index.html into experiments.html, guestoses.html,
+		intro.html, and misc.html.

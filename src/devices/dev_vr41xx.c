@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.20 2005-03-15 18:43:06 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.21 2005-03-28 21:52:04 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -130,7 +130,10 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		keychange = 1;
 
 	/*  Release all keys:  */
-	d->d0 = d->d1 = d->d2 = d->d3 = d->d4 = d->d5 = 0;
+	if (!d->dont_clear_next) {
+		d->d0 = d->d1 = d->d2 = d->d3 = d->d4 = d->d5 = 0;
+	} else
+		d->dont_clear_next = 0;
 
 	if (console_charavail(d->kiu_console_handle)) {
 		char ch = console_readchar(d->kiu_console_handle);
@@ -230,6 +233,7 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 
 		case '\r':
 		case '\n':	d->d0 = 0x40; break;
+		case ' ':	d->d0 = 0x01; break;
 		case '\b':	d->d4 = 0x10; break;
 
 		default:
@@ -238,14 +242,16 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 				console_makeavail(d->kiu_console_handle,
 				    ch + 32);
 				d->d5 = 0x800;
+				d->dont_clear_next = 1;
 				break;
 			}
 
 			/*  CTRLed:  */
 			if (ch >= 1 && ch <= 26) {
 				console_makeavail(d->kiu_console_handle,
-				    ch + 64);
+				    ch + 96);
 				d->d5 = 0x4;
+				d->dont_clear_next = 1;
 				break;
 			}
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.9 2003-12-28 21:33:17 debug Exp $
+ *  $Id: cpu.c,v 1.10 2003-12-29 00:53:04 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -291,6 +291,9 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 		/*  OR in the orig_irq_nr mask into the CSR:  */
 		kn230_csr->csr |= orig_irq_nr;
 	}
+
+	if (irq_nr < 0 || irq_nr >= 8)
+		return 0;
 
 	cpu->coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
 	return 1;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.91 2004-06-21 10:54:48 debug Exp $
+$Id: HISTORY,v 1.92 2004-06-22 01:12:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -552,4 +552,10 @@ HISTORY of mips64emul
 		IP22 PROM to work better in the emulator.
 20040621	Removing the Nintendo 64 emulation mode, as it is too
 		uninteresting to support.
-		Adding some SCSI tape device support.
+		Adding SCSI tape device support (read-only, so far).
+		Fixing a bug which caused the cursor to be corrupted if new
+		data was written to the framebuffer, but the cursor wasn't
+		moved.
+20040622(early)	Finally! After many many hours of trial and error, I got
+		the SCSI tape stuff to work; when going past the end of a
+		file, automagically switch to the beginning of the next.

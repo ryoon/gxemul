@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.24 2004-06-21 10:54:57 debug Exp $
+ *  $Id: diskimage.c,v 1.25 2004-06-22 01:12:10 debug Exp $
  *
  *  Disk image support.
  *
@@ -53,6 +53,7 @@ struct diskimage {
 	int		is_a_tape;
 	uint64_t	tape_offset;
 	int		tape_filenr;
+	int		filemark;
 
 	int		rpms;
 	int		ncyls;
@@ -61,6 +62,7 @@ struct diskimage {
 };
 
 
+extern int quiet_mode;
 extern int emulation_type;
 
 
@@ -241,6 +243,29 @@ void diskimage__return_default_status_and_message(struct scsi_transfer *xferp)
 
 
 /*
+ *  diskimage__switch_tape():
+ *
+ *  Used by the SPACE command.
+ */
+void diskimage__switch_tape(int disk_id)
+{
+	char tmpfname[1000];
+
+	snprintf(tmpfname, sizeof(tmpfname), "%s.%i",
+	    diskimages[disk_id]->fname, diskimages[disk_id]->tape_filenr);
+	tmpfname[sizeof(tmpfname)-1] = '\0';
+
+	fclose(diskimages[disk_id]->f);
+	diskimages[disk_id]->f = fopen(tmpfname, diskimages[disk_id]->writable? "r+" : "r");
+	if (diskimages[disk_id]->f == NULL) {
+		fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n", tmpfname);
+		/*  TODO: return error  */
+	}
+	diskimages[disk_id]->tape_offset = 0;
+}
+
+
+/*
  *  diskimage_scsicommand():
  *
  *  Perform a SCSI command on a disk image.
@@ -369,7 +394,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				 *  or something completely different.
 				 */
 				memcpy(xferp->data_in+8,  "DEC     ", 8);
-				memcpy(xferp->data_in+16, "TZK10    (C) DEC", 16);
+				memcpy(xferp->data_in+16, "TK50     (C) DEC", 16);
 				memcpy(xferp->data_in+32, "2000", 4);
 			}
 		}
@@ -424,6 +449,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
 
 		pagecode = xferp->cmd[2] & 0x3f;
+
+fatal("[ MODE SENSE id %i, pagecode=%i ]\n", disk_id, pagecode);
 
 		/*  4 bytes of header for 6-byte command, 8 bytes of header for 10-byte command.  */
 		xferp->data_in[0] = retlen;		/*  mode data length  */
@@ -518,8 +545,6 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			       (xferp->cmd[3] <<  8) +
 				xferp->cmd[4];
 
-			/*  debug("[ READ cmd[1]=%02x size=%i ]\n", xferp->cmd[1], (int)size);  */
-
 			/*  Bit 1 of cmd[1] is the SILI bit (TODO), and
 			    bit 0 is the "use fixed length" bit.  */
 
@@ -529,6 +554,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			}
 
 			ofs = diskimages[disk_id]->tape_offset;
+
+			fatal("[ READ tape, cmd[1]=%02x size=%i, ofs=%lli ]\n",
+			    xferp->cmd[1], (int)size, (long long)ofs);
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
@@ -567,15 +595,39 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 
-		debug("READ  ofs=%lli size=%i\n", (long long)ofs, (int)size);
-
-		diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
-		/*  TODO: how about return code?  */
-
-		if (diskimages[disk_id]->is_a_tape)
-			diskimages[disk_id]->tape_offset = ftell(diskimages[disk_id]->f);
+		debug(" READ  ofs=%lli size=%i\n", (long long)ofs, (int)size);
 
 		diskimage__return_default_status_and_message(xferp);
+
+		diskimages[disk_id]->filemark = 0;
+
+		/*
+		 *  Failure? Then set check condition.
+		 *  For tapes, error should only occur at the end of a file.
+		 *
+		 *  "If the logical unit encounters a filemark during
+		 *   a READ command, CHECK CONDITION status shall be
+		 *   returned and the filemark and valid bits shall be
+		 *   set to one in the sense data. The sense key shall
+		 *   be set to NO SENSE"..
+		 */
+		if (diskimages[disk_id]->is_a_tape && diskimages[disk_id]->f != NULL
+		    && feof(diskimages[disk_id]->f)) {
+			debug(" feof id=%i\n", disk_id);
+			xferp->status[0] = 0x02;	/*  CHECK CONDITION  */
+
+			diskimages[disk_id]->filemark = 1;
+
+			/*  At end of file, switch to the next automagically:  */
+			diskimages[disk_id]->tape_filenr ++;
+			diskimage__switch_tape(disk_id);
+		} else
+			diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
+
+		if (diskimages[disk_id]->is_a_tape && diskimages[disk_id]->f != NULL)
+			diskimages[disk_id]->tape_offset = ftell(diskimages[disk_id]->f);
+
+		/*  TODO: other errors?  */
 		break;
 
 	case SCSICMD_WRITE:
@@ -677,6 +729,16 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
 
 		xferp->data_in[0] = 0x80 + 0x70;	/*  0x80 = valid, 0x70 = "current errors"  */
+		xferp->data_in[2] = 0x00;		/*  SENSE KEY!  */
+
+		if (diskimages[disk_id]->filemark) {
+			xferp->data_in[2] = 0x80;
+
+			/*  TODO: when to clear filemark?  */
+			diskimages[disk_id]->filemark = 0;
+		}
+		debug(": [2]=0x%02x ", xferp->data_in[2]);
+
 		/*  TODO  */
 		xferp->data_in[7] = retlen - 7;		/*  additional sense length  */
 		/*  TODO  */
@@ -767,19 +829,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			    (xferp->cmd[3] << 8) + xferp->cmd[4]);
 
 			debug("{ switching to tape file %i }", diskimages[disk_id]->tape_filenr);
-			{
-				char tmpfname[1000];
-				snprintf(tmpfname, sizeof(tmpfname), "%s.%i",
-				    diskimages[disk_id]->fname, diskimages[disk_id]->tape_filenr);
-				tmpfname[sizeof(tmpfname)-1] = '\0';
-
-				fclose(diskimages[disk_id]->f);
-				diskimages[disk_id]->f = fopen(tmpfname, diskimages[disk_id]->writable? "r+" : "r");
-				if (diskimages[disk_id]->f == NULL) {
-					fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n", tmpfname);
-					/*  TODO: return error  */
-				}
-			}
+			diskimage__switch_tape(disk_id);
 			break;
 		default:
 			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n", xferp->cmd[1] & 7);
@@ -837,7 +887,7 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 		exit(1);
 	}
 
-	if (len == 0)
+	if (len == 0 || buf == NULL)
 		return 1;
 
 	if (diskimages[disk_id]->f == NULL)
@@ -858,7 +908,7 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 
 	/*  Warn about non-complete data transfers:  */
 	if (len_done != len) {
-		fatal("diskimage_access(): disk_id %i, offset %lli, transfer not completed. len=%i, len_done=%i\n",
+		debug("diskimage_access(): disk_id %i, offset %lli, transfer not completed. len=%i, len_done=%i\n",
 		    disk_id, (long long)offset, len, len_done);
 		return 0;
 	}
@@ -981,10 +1031,10 @@ int diskimage_add(char *fname)
 
 
 	/*
-	 *  Is this a CD-ROM or a normal disk?
+	 *  Is this a tape, CD-ROM or a normal disk?
 	 *
-	 *  An intelligent guess would be that filenames ending with .iso
-	 *  are CD-ROM images.
+	 *  An intelligent guess, if no prefixes are used, would be that
+	 *  filenames ending with .iso are CD-ROM images.
 	 */
 	if (prefix_t) {
 		diskimages[id]->is_a_tape = 1;
@@ -1086,7 +1136,11 @@ void diskimage_dump_info(void)
 			    i, diskimages[i]->fname,
 			    diskimages[i]->writable? "read/write" : "read-only",
 			    (long int) diskimages[i]->total_size,
-			    diskimages[i]->is_a_cdrom? "CD-ROM, " : "DISK, ",
+
+			    diskimages[i]->is_a_tape? "TAPE, " : (
+				diskimages[i]->is_a_cdrom? "CD-ROM, " : "DISK, "
+				),
+
 			    (long int) (diskimages[i]->total_size / 512),
 			    diskimages[i]->is_boot_device? ", BOOT DEVICE" : "");
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.39 2004-12-02 20:59:15 debug Exp $
+ *  $Id: arcbios.c,v 1.40 2004-12-02 22:09:35 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -43,11 +43,16 @@
 
 #include "misc.h"
 
-#include "memory.h"
 #include "console.h"
+#include "diskimage.h"
+#include "memory.h"
 
 
 extern int quiet_mode;
+
+
+/*  For reading from the boot partition.  */
+static uint64_t arcbios_current_seek_offset = 0;
 
 
 struct emul_arc_child {
@@ -520,7 +525,12 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x2c	GetParent(node)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
+ *	0x54	GetRelativeTime()
+ *	0x5c	Open(path, mode, &fileid)
+ *	0x60	Close(handle)
+ *	0x64	Read(handle, &buf, len, &actuallen)
  *	0x6c	Write(handle, buf, len, &returnlen)
+ *	0x70	Seek(handle, &offset, len)
  *	0x78	GetEnvironmentVariable(char *)
  *	0x88	FlushAllCaches()
  *	0x90	GetDisplayStatus(uint32_t handle)
@@ -660,11 +670,29 @@ void arcbios_emul(struct cpu *cpu)
 				cpu->gpr[GPR_V0] = 0;
 		}
 		break;
+	case 0x54:		/*  GetRelativeTime()  */
+		debug("[ ARCBIOS GetRelativeTime() ]\n");
+		cpu->gpr[GPR_V0] = time(NULL);
+		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
 		debug("[ ARCBIOS Open(0x%x,0x%x,0x%x) ]\n", (int)cpu->gpr[GPR_A0],
 		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
-		cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;
+		/*  cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;  */
+
+		/*
+		 *  TODO: This is hardcoded to successfully open
+		 *  anything, and return it as descriptor 3.
+		 *  It is used by the Windows NT SETUPLDR program
+		 *  to load stuff from the boot partition.
+		 */
+
+		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+		store_32bit_word(cpu, cpu->gpr[GPR_A2], 3);
+		break;
+	case 0x60:		/*  Close(uint32_t handle)  */
+		debug("[ ARCBIOS Close(0x%x) ]\n", (int)cpu->gpr[GPR_A0]);
 		/*  TODO  */
+		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
 		break;
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
@@ -688,10 +716,32 @@ void arcbios_emul(struct cpu *cpu)
 			store_32bit_word(cpu, cpu->gpr[GPR_A3], nread);
 			cpu->gpr[GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
 		} else {
-			fatal("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
+			int disk_id = diskimage_bootdev();
+			int res;
+			unsigned char *tmp_buf;
+
+			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
 			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
-			/*  TODO  */
-			cpu->gpr[GPR_V0] = 0;
+
+			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			if (tmp_buf == NULL) {
+				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				break;
+			}
+
+			res = diskimage_access(disk_id, 0, arcbios_current_seek_offset,
+			    tmp_buf, cpu->gpr[GPR_A2]);
+
+			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			if (res) {
+				uint64_t dst = cpu->gpr[GPR_A1];
+				store_buf(cpu, dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
+				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
+				arcbios_current_seek_offset += cpu->gpr[GPR_A2];
+				cpu->gpr[GPR_V0] = 0;
+			} else
+				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
+			free(tmp_buf);
 		}
 		break;
 	case 0x68:		/*  GetReadStatus(handle)  */
@@ -732,6 +782,38 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
 		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+		break;
+	case 0x70:		/*  Seek(uint32_t handle, int64_t *offset, uint32_t whence): uint32_t  */
+		debug("[ ARCBIOS Seek(%i,0x%08llx,%i): ",
+		    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
+		    (int)cpu->gpr[GPR_A2]);
+
+		if (cpu->gpr[GPR_A2] != 0) {
+			fatal("[ ARCBIOS Seek(%i,0x%08llx,%i): UNIMPLEMENTED whence=%i ]\n",
+			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
+			    (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A2]);
+		}
+
+		{
+			unsigned char buf[8];
+			uint64_t ofs;
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1], &buf[0], sizeof(buf), MEM_READ, CACHE_NONE);
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				unsigned char tmp;
+				tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
+				tmp = buf[1]; buf[1] = buf[6]; buf[6] = tmp;
+				tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
+				tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
+			}
+			ofs = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24) +
+			    ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40) +
+			    ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
+			arcbios_current_seek_offset = ofs;
+			debug("%016llx ]\n", (long long)ofs);
+		}
+
+		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+
 		break;
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */

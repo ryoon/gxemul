@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.347 2004-12-02 20:59:14 debug Exp $
+$Id: HISTORY,v 1.348 2004-12-02 22:09:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1231,3 +1231,6 @@ HISTORY of mips64emul
 		Minor updates to work better with Windows NT's ARCINST.EXE;
 		printing 0x9b via arcbios becomes ESC + '[', and the ARC
 		memory descriptor stuff has been generalized a bit more.
+		Adding arbios hacks for Open(), Seek(), GetRelativeTime(),
+		and Read() to allow WinNT's SETUPLDR to read the filesystem
+		on the diskimage used for booting.

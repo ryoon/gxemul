@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.28 2005-01-04 16:49:20 debug Exp $
+ *  $Id: debugger.c,v 1.29 2005-01-04 16:59:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1453,6 +1453,20 @@ static char *debugger_readline(void)
 				while ((ch = console_readchar()) < 0)
 					usleep(1);
 				switch (ch) {
+				case '2':	/*  2~ = ins  */
+				case '5':	/*  5~ = pgup  */
+				case '6':	/*  6~ = pgdn  */
+					/*  TODO: Ugly hack, but might work.  */
+					while ((ch = console_readchar()) < 0)
+						usleep(1);
+					/*  Do nothing for these keys.  */
+					break;
+				case '3':	/*  3~ = delete  */
+					/*  TODO: Ugly hack, but might work.  */
+					while ((ch = console_readchar()) < 0)
+						usleep(1);
+					console_makeavail('\b');
+					break;
 				case 'A':	/*  Up.  */
 				case 'B':	/*  Down.  */
 					if (ch == 'B' &&
@@ -1507,6 +1521,14 @@ static char *debugger_readline(void)
 						printf("\b");
 						cursor_pos --;
 					}
+					break;
+				case 'F':
+					/*  End ==> CTRL-E  */
+					console_makeavail(5);
+					break;
+				case 'H':
+					/*  Home ==> CTRL-A  */
+					console_makeavail(1);
 					break;
 				}
 			}

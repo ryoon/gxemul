@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.73 2004-11-21 22:09:07 debug Exp $
+ *  $Id: bintrans.c,v 1.74 2004-11-21 23:29:48 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -124,12 +124,13 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr);
 static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);
+static void bintrans_write_quickjump(unsigned char *quickjump_code, uint32_t chunkoffset);
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, int rs, int rt, int sa, int instruction_type);
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p);
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p);
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
@@ -179,7 +180,26 @@ struct translation_page_entry {
 };
 #define	UNTRANSLATABLE		0x01
 
-struct translation_page_entry **translation_page_entry_array;
+static struct translation_page_entry **translation_page_entry_array;
+
+
+#define	MAX_QUICK_JUMPS		20
+static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
+static int quick_jump_page_offset[MAX_QUICK_JUMPS];
+static int n_quick_jumps;
+static int quick_jumps_index;		/*  where to write the next quick jump  */
+
+static void bintrans_register_potential_quick_jump(unsigned char *a, int p)
+{
+	/*  printf("%02i: a=%016llx p=%i\n", quick_jumps_index, a, p);  */
+	quick_jump_host_address[quick_jumps_index] = a;
+	quick_jump_page_offset[quick_jumps_index] = p;
+	quick_jumps_index ++;
+	if (quick_jumps_index > n_quick_jumps)
+		n_quick_jumps = quick_jumps_index;
+	if (quick_jumps_index >= MAX_QUICK_JUMPS)
+		quick_jumps_index = 0;
+}
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -359,6 +379,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	res = 0;
 	delayed_branch = 0;
 	stop_after_delayed_branch = 0;
+
+	n_quick_jumps = quick_jumps_index = 0;
 
 	while (try_to_translate) {
 		ca_justdid = ca;
@@ -624,24 +646,37 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				else
 					potential_chunk_p = NULL;
 				bintrans_write_instruction__delayedbranch(&ca,
-				    potential_chunk_p, &tep->chunk[0], 0);
+				    potential_chunk_p, &tep->chunk[0], 0,
+				    delayed_branch_new_p & 0xfff);
 
 				if (stop_after_delayed_branch)
 					try_to_translate = 0;
 			}
 		}
 
-		if (translated && tep->chunk[prev_p] == 0)
-			tep->chunk[prev_p] = (uint32_t)
-			    ((size_t)ca_justdid -
-			    (size_t)translation_code_chunk_space);
+		if (translated) {
+			int i;
+
+			if (tep->chunk[prev_p] == 0)
+				tep->chunk[prev_p] = (uint32_t)
+				    ((size_t)ca_justdid -
+				    (size_t)translation_code_chunk_space);
+
+			/*  Quickjump to the translated instruction from some
+			    previous instruction?  */
+			for (i=0; i<n_quick_jumps; i++)
+				if (quick_jump_page_offset[i] == p)
+					bintrans_write_quickjump(
+					    quick_jump_host_address[i],
+					    tep->chunk[prev_p]);
+		}
 
 		/*  Glue together with previously translated code, if any:  */
 		if (translated && try_to_translate && n_translated > 30 &&
 		    prev_p < 1020 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
-			    &ca, &tep->chunk[prev_p+1], NULL, 1);
+			    &ca, &tep->chunk[prev_p+1], NULL, 1, prev_p+1);
 			try_to_translate = 0;
 		}
 

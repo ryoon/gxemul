@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_tlb.c,v 1.1 2004-11-21 22:09:07 debug Exp $
+ *  $Id: memory_fast_tlb.c,v 1.2 2004-11-21 23:29:48 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  *
@@ -62,12 +62,14 @@ unsigned char *FAST_VADDR_TO_HOSTADDR(struct cpu *cpu,
 #endif
 
 #ifndef FAST_VADDR_R3000
+#if 0
 	int kernel_mode = 0;
 	if ((cpu->coproc[0]->reg[COP0_STATUS] & MIPS3_SR_KSU_MASK)
 			!= MIPS3_SR_KSU_USER
 	    || (cpu->coproc[0]->reg[COP0_STATUS] & (STATUS_EXL | STATUS_ERL))
 	    || (cpu->coproc[0]->reg[COP0_STATUS] & 1) == 0)
 		kernel_mode = 1;
+#endif
 #endif
 
 	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
@@ -85,10 +87,12 @@ unsigned char *FAST_VADDR_TO_HOSTADDR(struct cpu *cpu,
 			int tmpwf;
 
 #ifndef FAST_VADDR_R3000
+#if 0
 			if (vaddr > 0x7fffffff && !kernel_mode) {
 				printf("bug: vaddr=%016llx in usermode\n", (long long)vaddr);
 				goto urk_fulkod;
 			}
+#endif
 #endif
 			if (n < 4)
 				return cpu->bintrans_data_hostpage[i]
@@ -114,7 +118,9 @@ unsigned char *FAST_VADDR_TO_HOSTADDR(struct cpu *cpu,
 		}
 
 #ifndef FAST_VADDR_R3000
+#if 0
 urk_fulkod:
+#endif
 #endif
 
 		n ++;

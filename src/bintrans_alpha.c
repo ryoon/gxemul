@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.47 2004-11-21 08:09:49 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.48 2004-11-21 23:29:48 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -231,6 +231,28 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 	void (*f)(struct cpu *, unsigned char *);
 	f = (void *)&bintrans_alpha_runchunk[0];
 	f(cpu, code);
+}
+
+
+/*
+ *  bintrans_write_quickjump():
+ */
+static void bintrans_write_quickjump(unsigned char *quickjump_code,
+	uint32_t chunkoffset)
+{
+	int ofs;
+	uint64_t alpha_addr = chunkoffset +
+	    (size_t)translation_code_chunk_space;
+	unsigned char *a = quickjump_code;
+
+	ofs = (alpha_addr - ((size_t)a+4)) / 4;
+
+	/*  printf("chunkoffset=%i, %016llx %016llx %i\n",
+	    chunkoffset, (long long)alpha_addr, (long long)a, ofs);  */
+
+	if (ofs > -0xfffff && ofs < 0xfffff) {
+		*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + (ofs >> 16) & 0x1f; *a++ = 0xc3;	/*  br <chunk>  */
+	}
 }
 
 
@@ -931,7 +953,8 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
  *  bintrans_write_instruction__delayedbranch():
  */
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
-	uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p)
+	uint32_t *potential_chunk_p, uint32_t *chunks,
+	int only_care_about_chunk_p, int p)
 {
 	unsigned char *a, *skip=NULL;
 	int ofs;
@@ -1104,6 +1127,9 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 			*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + (ofs >> 16) & 0x1f; *a++ = 0xc3;	/*  br <chunk>  */
 		} else {
 			/*  Case 2:  */
+
+			bintrans_register_potential_quick_jump(a, p);
+
 			/*  15 bits at a time, which means max 60 bits, but
 			    that should be enough. the top 4 bits are probably
 			    not used by userland alpha code. (TODO: verify this)  */

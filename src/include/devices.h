@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.30 2004-02-23 23:11:28 debug Exp $
+ *  $Id: devices.h,v 1.31 2004-02-24 00:16:52 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -96,6 +96,11 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 #define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_decxmi.c:  */
+#define	DEV_DECXMI_LENGTH			0x800000
+int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_decxmi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_fb.c:  */
 #define	DEV_FB_LENGTH			0x3c0000	/*  3c0000 to not colide with turbochannel rom, otherwise size = (4*1024*1024)  */

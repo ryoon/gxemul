@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.48 2004-02-23 23:10:53 debug Exp $
+ *  $Id: machine.c,v 1.49 2004-02-24 00:16:53 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -600,12 +600,14 @@ void machine_init(struct memory *mem)
 			 *  Ultrix might support SMP on this machine type.
 			 *
 			 *  Something at 0x10000000.
-			 *  ssc serial console at 0x10140000.
-			 *  Something at 0x11800000.
+			 *  ssc serial console at 0x10140000, interrupt 2.
+			 *  xmi 0 at address 0x11800000   (node x at offset x*0x80000)
+			 *  Clock uses interrupt 3.
 			 */
 
 			dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  TODO:  not irq 0  */
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11);
+			dev_decxmi_init(cpus[bootstrap_cpu], mem, 0x11800000);
 
 			break;
 
@@ -818,10 +820,18 @@ void machine_init(struct memory *mem)
 		else
 			add_environment_string(serial_console_name, &addr);	/*  Serial console  */
 
+		/*
+		 *  The KN5800 (SMP system) uses a CCA (console communications area):
+		 *  (VAX documentation might prove useful for this.)
+		 */
 		{
 			char tmps[300];
 			sprintf(tmps, "cca=%x", (int)DEC_PROM_CCA);
 			add_environment_string(tmps, &addr);
+
+			/*  These are needed, or Ultrix complains:  */
+			store_byte(DEC_PROM_CCA + 6, 67);
+			store_byte(DEC_PROM_CCA + 7, 67);
 		}
 
 		add_environment_string("scsiid0=7", &addr);

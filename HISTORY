@@ -332,6 +332,9 @@ HISTORY of mips64emul
 		broken TURBOchannel ROMs.
 		Working some more on the machine-dependant interrupt stuff.
 20040219	Trying out some Linux/DECstation kernels (semi-successfully).
-20040222	YES! I finally found the bug that caused Linux/R10000 to only
+20040222	YES! I finally found the bug that caused Linux/SGI-IP32 to only
 		work on Alpha, not on 32-bit machines.  It was a shift left,
 		probably done using 6 bits on alpha, 5 bits on 32-bit machines.
+20040223	Some minimal DEC KN5800 progress; Ultrix prints some boot
+		messages, detect 16 XMI R3000 cpus, and get a NULL panic.
+		Still, better than nothing :-)

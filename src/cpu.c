@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.80 2004-07-03 18:45:04 debug Exp $
+ *  $Id: cpu.c,v 1.81 2004-07-03 19:26:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2702,7 +2702,8 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 
 	printf(" (%lli cycles = %lli instrs, instr/sec: %lli cur, %lli avg)",
 	    (long long) ncycles, (long long) ninstrs,
-	    (long long) ((long long)1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last)),
+	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
+		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
 	printf(" pc=%016llx <%s>",
@@ -2873,13 +2874,15 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			}
 		}
 
-		/*  If we've done buffered console output, the flush it every now and then:  */
+		/*  If we've done buffered console output,
+		    the flush stdout every now and then:  */
 		if (ncycles > ncycles_flush + (1<<16)) {
 			console_flush();
 			ncycles_flush = ncycles;
 		}
 
-		if (show_nr_of_instructions && (ncycles > ncycles_show + (1<<21))) {
+		if (show_nr_of_instructions &&
+		    ncycles > ncycles_show + (1<<22)) {
 			cpu_show_cycles(&starttime, ncycles);
 			ncycles_show = ncycles;
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.60 2004-07-08 22:49:18 debug Exp $
+ *  $Id: memory.c,v 1.61 2004-07-10 14:57:51 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -311,7 +311,7 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
  *  Return value is a pointer to a host memblock, or NULL on failure.
  *  On reads, a NULL return value should be interpreted as reading all zeroes.
  */
-unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag)
 {
 	unsigned char *memblock;
@@ -384,7 +384,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
  *  Return value is 1 if a jump to do_return_ok is supposed to happen directly
  *  after this routine is finished, 0 otherwise.
  */
-int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
+static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data)
 {
 #ifdef ENABLE_CACHE_EMULATION
@@ -855,7 +855,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	if (use_tlb) {
 		int g_bit, v_bit, d_bit, pmask = 0xfff, odd = 0;
-		uint64_t cached_hi, cached_lo0, cached_lo1;
+		uint64_t cached_hi, cached_lo0, cached_lo1 = 0;
 		uint64_t entry_vpn2 = 0, entry_asid, pfn;
 
 		for (i=0; i<n_tlbs; i++) {
@@ -867,8 +867,6 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 				entry_vpn2 = (cached_hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
 				entry_asid = (cached_hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
 				g_bit = cached_lo0 & R2K3K_ENTRYLO_G;
-
-				pfn = (cached_lo0 & R2K3K_ENTRYLO_PFN_MASK) >> R2K3K_ENTRYLO_PFN_SHIFT;
 				v_bit = cached_lo0 & R2K3K_ENTRYLO_V;
 				d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
 			} else {
@@ -914,7 +912,6 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 				}
 
 				/*  Assume even virtual page...  */
-				pfn = (cached_lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
 				v_bit = cached_lo0 & ENTRYLO_V;
 				d_bit = cached_lo0 & ENTRYLO_D;
 
@@ -946,7 +943,6 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 				/*  ... reload pfn, v_bit, d_bit if
 				    it was the odd virtual page:  */
 				if (odd) {
-					pfn = (cached_lo1 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
 					v_bit = cached_lo1 & ENTRYLO_V;
 					d_bit = cached_lo1 & ENTRYLO_D;
 				}
@@ -964,6 +960,15 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 						    writeflag, (long long)vaddr, d_bit?1:0, v_bit?1:0, (long long) *return_addr);
 						    debug(", tlb entry %2i: mask=%016llx hi=%016llx lo0=%016llx lo1=%016llx\n",
 							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);  */
+
+						if (mmumodel3k)
+							pfn = (cached_lo0 &
+							    R2K3K_ENTRYLO_PFN_MASK)
+							    >> R2K3K_ENTRYLO_PFN_SHIFT;
+						else
+							pfn = ((odd? cached_lo1 : cached_lo0)
+							    & ENTRYLO_PFN_MASK)
+							    >> ENTRYLO_PFN_SHIFT;
 
 						paddr = (pfn << pageshift) |
 						    (vaddr & pmask);

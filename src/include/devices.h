@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.42 2004-03-10 01:08:31 debug Exp $
+ *  $Id: devices.h,v 1.43 2004-03-10 02:09:32 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -111,6 +111,12 @@ struct dec5800_data {
 };
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_deccca.c:  */
+#define	DEV_DECCCA_LENGTH			0x10000	/*  ?  */
+#define	DEC_DECCCA_BASEADDR			0x19000000	/*  ?  I just made this up  */
+int dev_deccca_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_deccca_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_decxmi.c:  */
 #define	DEV_DECXMI_LENGTH			0x800000

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.63 2004-03-09 00:05:51 debug Exp $
+ *  $Id: machine.c,v 1.64 2004-03-10 02:09:35 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -684,6 +684,7 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 
 			dec5800_csr = dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
 			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
+			dev_deccca_init(cpus[bootstrap_cpu], mem, DEC_DECCCA_BASEADDR);
 			dev_decxmi_init(cpus[bootstrap_cpu], mem, 0x11800000);
 
 			break;
@@ -957,15 +958,8 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 		 */
 		{
 			char tmps[300];
-			sprintf(tmps, "cca=%x", (int)DEC_PROM_CCA);
+			sprintf(tmps, "cca=%x", (int)DEC_DECCCA_BASEADDR + 0xa0000000);
 			add_environment_string(tmps, &addr);
-
-			/*  These are needed, or Ultrix complains:  */
-			store_byte(DEC_PROM_CCA + 6, 67);
-			store_byte(DEC_PROM_CCA + 7, 67);
-
-			store_byte(DEC_PROM_CCA + 8, ncpus);
-			store_32bit_word(DEC_PROM_CCA + 20, (1 << ncpus) - 1);	/*  one bit for each cpu  */
 		}
 
 		add_environment_string("scsiid0=7", &addr);

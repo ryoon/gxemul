@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.63 2004-11-25 10:53:29 debug Exp $
+ *  $Id: dev_fb.c,v 1.64 2004-11-25 11:19:58 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -346,7 +346,7 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 			}
 		} else {	/*  d->bit_depth > 8  */
 			for (pixel=0; pixel<npixels; pixel++) {
-				int fb_addr, c, r, g, b;
+				int fb_addr, r, g, b;
 				color_r = color_g = color_b = 0;
 
 				fb_addr = (y * d->xsize + x) * d->bit_depth;

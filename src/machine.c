@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.9 2003-11-11 14:23:15 debug Exp $
+ *  $Id: machine.c,v 1.10 2003-11-24 04:29:48 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -453,8 +453,9 @@ void machine_init(struct memory *mem)
 			dev_turbochannel_init(cpus[0], mem, 0, 0x10000000, 0x103fffff, "", 0);
 			dev_turbochannel_init(cpus[0], mem, 1, 0x14000000, 0x143fffff, "", 0);
 
-			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer:  */
-			fb = dev_fb_init(cpus[0], mem, 0xa000000, VFB_DEC_MAXINE, 0,0,0,0,0, "Maxine");
+			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer: (NOTE: 0x8000000, not 0x18000000)  */
+			dev_turbochannel_init(cpus[0], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
+/*			fb = dev_fb_init(cpus[0], mem, 0xa000000, VFB_DEC_MAXINE, 0,0,0,0,0, "Maxine");  */
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
 			dev_scc_init(cpus[0], mem, 0x1c100000, 0, use_x11);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.6 2004-03-25 12:39:58 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.7 2004-06-11 12:43:27 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -175,8 +175,6 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 #ifdef GBE_DEBUG
 	if (writeflag == MEM_WRITE)
 		debug("[ sgi_gbe: DEBUG: write to address 0x%llx, data=0x%llx ]\n", (long long)relative_addr, (long long)idata);
-	else
-		debug("[ sgi_gbe: DEBUG: read from address 0x%llx ]\n", (long long)relative_addr);
 #endif
 
 	switch (relative_addr) {
@@ -294,8 +292,12 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			debug("[ sgi_gbe: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
 	}
 
-	if (writeflag == MEM_READ)
+	if (writeflag == MEM_READ) {
+#ifdef GBE_DEBUG
+		debug("[ sgi_gbe: DEBUG: read from address 0x%llx: 0x%llx ]\n", (long long)relative_addr, (long long)odata);
+#endif
 		memory_writemax64(cpu, data, len, odata);
+	}
 
 	return 1;
 }

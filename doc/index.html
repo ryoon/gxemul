@@ -20,8 +20,10 @@
   <li><a href="#overview">Overview</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#use">How to use the emulator</a>
+  <li><a href="#hello">Hello world</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#userland">Running userland binaries</a>
+  <li><a href="#decrom">Using a PROM image from a DECstation</a>
   <li><a href="#feedback">Feedback</a>
 </ul>
 
@@ -30,8 +32,15 @@
 <a name="overview"></a>
 <h4>Overview:</h4>
 
-Sorry, there is almost no documentation for mips64emul at this point in time,
-except for reading the <a href="../">source code</a> itself.
+mips64emul is a MIPS machine emulator. It tries to emulate a MIPS CPU
+and enough additional hardware to be able to run real (unmodified)
+operation systems, such as NetBSD, Linux, Irix, Ultrix, or OpenBSD.
+<p>
+The emulator might also be useful as a help when porting operating systems
+to MIPS, or for academic purposes (experimenting with MIPS).
+One of the reasons for writing mips64emul in the first place was to
+be able to experiment with large-scale SMP systems.
+Emulation of SMP systems is still experimental, though.
 
 
 <p><br>
@@ -44,7 +53,8 @@ Uncompress the .tar.gz file, and run
 	$ <b>make</b>
 </pre>
 This should work on any Unix-like system. If not, please report that as
-a bug to me.
+a bug to me.  (Specific snapshots of mips64emul might have problems on
+different platforms.)
 
 
 <p><br>
@@ -112,6 +122,70 @@ The result should looks something like this:
 
 
 <p><br>
+<a name="hello"></a>
+<h4>Hello world:</h4>
+
+You might want to use the emulator to develop programs on your own,
+not just run precompiled kernels such as NetBSD. To get started, I'd recommend
+you do two things:
+<ul>
+  <li>Build and install a cross-compiler for MIPS.
+  <li>Compile this hello world program, and run it in the emulator.
+</ul>
+<p>
+If the emulator is launched without specifying which machine to emulate,
+it will emulate only a CPU and very few devices. One of those devices
+is a console putchar() device, at a fixed address.
+<pre>
+	/*  Hello world for mips64emul  */
+
+	#define	PUTCHAR_ADDRESS		0xb0000000
+
+	void printchar(char ch)
+	{
+		*((volatile unsigned char *) PUTCHAR_ADDRESS) = ch;
+	}
+
+	void printstr(char *s)
+	{
+		while (*s)
+			printchar(*s++);
+	}
+
+	void f(void)
+	{
+		printstr("Hello world\n");
+		for (;;)
+			;
+	}
+</pre>
+This hello world program is available here as well: <a href="hello.c">hello.c</a>
+<p>
+I'd recommend you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
+target, and install it. Other compilers might work too, but GCC is good because
+of its portability. Then try to compile the hello world program:
+<pre>
+	$ <b>mips64-unknown-elf-gcc hello.c -mips4 -mabi=64 -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
+	$ <b>file hello</b>
+	hello: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -q hello</b>
+	Hello world
+
+	$ <b>mips64-unknown-elf-gcc hello.c -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello</b>
+	$ <b>file hello</b>
+	hello: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -q hello</b>
+	Hello world
+</pre>
+As you can see above, a GCC configured for mips64-unknown-elf can produce
+both 64-bit and 32-bit binaries.
+<p>
+Hopefully this is enough to get you inspired to start. :-)
+
+
+<p><br>
 <a name="disk"></a>
 <h4>How to start the emulator with a disk image:</h4>
 
@@ -164,6 +238,123 @@ There's also an Ultrix4 emulation mode:
 </pre>
 Userland syscall emulation is still in its beginning stages, so almost
 nothing works.
+
+
+<p><br>
+<a name="decrom"></a>
+<h4>Using a PROM image from a DECstation:</h4>
+
+<i>(The general ideas in this section applies to using ROM images from other machines as well.)</i>
+<p>
+Raw PROM images from real machines can, in a few cases, be used. One
+case which I've tried is to use a DECstation 5000/125 PROM image.
+ROM images from other machines might work as well, but ROM code is
+usually much more sensitive to correctness of the emulator than
+operating system kernels or userland programs are.
+<p>
+The image first needs to be extracted from the machine. (I presume
+that these PROMs are not legal to redistribute, so you really need
+to get your dump from a real machine in your possession.) There are
+several ways to do this.
+<ul>
+  <li>Use hardware to read the PROM chip directly. (Not easy if you
+	don't have such a hardware reader.)
+  <li>Copy the PROM memory range into a file, from a running
+	operating system. (You need a running OS, and it must
+	have access to the PROM memory range. NetBSD, for example,
+	doesn't allow that from userland.)
+  <li>Hook up a serial console and dump using the PROM's own dump
+	command.
+</ul>
+<p>
+The easiest way is to hook up a serial console. The terminal must be
+able to capture output to a file.
+<p>
+These are approximately the commands that I used:
+<pre>
+        >><b>cnfg</b>                             <i>Show machine configuration</i>
+
+        >><b>printenv</b>                         <i>Show environment variables</i>
+
+        >><b>setenv more 0</b>                    <i>This turns off the More messages</i>
+
+        >><b>e -x 0xbfc00000:0xbfffffff</b>       <i>Dump the PROM data</i>
+</pre>
+<p>
+Remember that DECstations are little endian, so if the dump data
+looks like this:
+<pre>
+        bfc00000:  0x0bf0007e
+</pre>
+then the bytes in memory are actually 0x7e, 0x00, 0xf0, and 0x0b.
+<p>
+At 9600 bps, about 10KB can be dumped per minute, so it takes a while.
+Once enough of the PROM has been dumped, you can press CTRL-C to break out.
+Then, restore the more environment variable:
+<pre>
+        >><b>setenv more 24</b>
+</pre>
+<p>
+Now, convert the data you just saved (little-endian words -> bytes),
+and store in a file. Let's call this file DECstation5000_125_promdump.bin.
+<pre>
+        $ <b>./decprom_dump_txt_to_bin DECstation5000_125_promdump.txt DECstation5000_125_promdump.bin</b>
+</pre>
+This binary image can now be used in the emulator:
+<pre>
+	$ <b>./mips64emul -D3 -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
+
+	KN02-BA V5.7e   
+	?ROM: 1 (pttrn err)
+	?ROM: 2 (pttrn err)
+	?TFL:  3/scc/access (1:Ln1 reg-12: actual=0x00 xpctd=0x01) [KN02-BA]
+	?TFL:  3/scc/io (1:Ln0 tx bfr not empty. status=0X 0) [KN02-BA]
+	...
+	--More--?TFL: 3/scsi/cntl (CUX, cause= 1000002C)
+	>><b>?</b>
+	 ? [cmd]
+	 boot [[-z #] [-n] #/path [ARG...]]
+	 cat SCRPT
+	 cnfg [#]
+	 d [-bhw] [-S #] RNG VAL
+	 e [-bhwcdoux] [-S #] RNG
+	 erl [-c]
+	 go [ADR]
+	 init [#] [-m] [ARG...]
+	 ls [#]
+	 passwd [-c] [-s]
+	 printenv [EVN]
+	 restart
+	 script SCRPT
+	 setenv EVN STR
+	 sh [-belvS] [SCRPT] [ARG..]
+	 t [-l] #/STR [ARG..]
+	 unsetenv EVN
+	>><b>cnfg</b>
+	 3: KN02-BA  DEC      V5.7e    TCF0  (128 MB)
+	                                     (enet: 00-00-00-00-00-00)
+	                                     (SCSI = 7)
+	 0: PMAG-BA  DEC      V5.3a    TCF0
+	>><b>printenv</b>
+	 boot=
+	 testaction=q
+	 haltaction=h
+	 more=24
+	 #=3
+	 console=*
+	 osconsole=3
+	>>
+</pre>
+During bootup, the PROM complains <i>a lot</i> about hardware failures.
+That's because the emulator doesn't emulate the hardware well enough yet.
+<p>
+The command line options used are:
+-D3 for DECstation model 3 (5000/xxx), -Q to supress the emulator's own PROM
+call emulation, -M128 for 128MB RAM (because mips64emul doesn't correctly
+emulate memory detection good enough for the PROM to accept, so it will
+always believe there is 128MB ram anyway), and -q to supress debug messages.
+The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
+binary file which should be loaded at a specific virtual address.
 
 
 <p><br>

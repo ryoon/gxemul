@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.83 2004-11-09 04:28:42 debug Exp $
+ *  $Id: coproc.c,v 1.84 2004-11-11 00:45:16 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -328,7 +328,7 @@ static void invalidate_translation_caches(struct cpu *cpu)
  *
  *  Read a value from a coprocessor register.
  */
-void coproc_register_read(struct cpu *cpu,
+static void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr)
 {
 	int unimpl = 1;
@@ -385,7 +385,7 @@ void coproc_register_read(struct cpu *cpu,
  *
  *  Write a value to a coprocessor register.
  */
-void coproc_register_write(struct cpu *cpu,
+static void coproc_register_write(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64)
 {
 	int unimpl = 1;
@@ -1282,8 +1282,8 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
  *
  *  TODO:  This is a mess and should be restructured (again).
  */
-void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
-	int unassemble_only, int running)
+static void coproc_function(struct cpu *cpu, struct coproc *cp,
+	uint32_t function, int unassemble_only, int running)
 {
 	int co_bit, op, rt, rd, fs, g_bit, index, found, i;
 	int copz;

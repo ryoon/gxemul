@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.179 2004-11-10 15:41:34 debug Exp $
+ *  $Id: cpu.c,v 1.180 2004-11-11 00:45:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -916,6 +916,13 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 
 
 /*
+ *  NOTE:  coproc.c is included here, so as to lie close to the often
+ *         used CPU routines in the [host's] cache.
+ */
+#include "coproc.c"
+
+
+/*
  *  NOTE:  memory.c is included here, so as to lie close to the often
  *         used CPU routines in the [host's] cache.
  */
@@ -1525,7 +1532,9 @@ static int cpu_run_instr(struct cpu *cpu)
 		}
 
 #ifdef BINTRANS
-		if (cpu->emul->bintrans_enable &&
+		if (cpu->dont_run_next_bintrans) {
+			cpu->dont_run_next_bintrans = 0;
+		} else if (cpu->emul->bintrans_enable &&
 		    cpu->pc_bintrans_paddr_valid) {
 			int res;
 			res = bintrans_runchunk(cpu, cpu->pc_bintrans_paddr);
@@ -1533,10 +1542,12 @@ static int cpu_run_instr(struct cpu *cpu)
 			if (res >= 0) {
 				/*  debug("BINTRANS cache hit,"
 				    "  pc = %016llx\n", (long long)cached_pc);  */
-				if (instruction_trace_cached)
-					cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-				if (res > 0)
+				if (res > 0) {
+					if (instruction_trace_cached)
+						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
+					cpu->dont_run_next_bintrans = 1;
 					return res;
+				}
 			} else {
 				/*  Bintrans cache miss: try to translate
 				    the code chunk and run it:  */
@@ -1546,10 +1557,12 @@ static int cpu_run_instr(struct cpu *cpu)
 				if (res >= 0) {
 					/*  debug("BINTRANS translation + hit,"
 					    " pc = %016llx\n", (long long)cached_pc);  */
-					if (instruction_trace_cached)
-						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-					if (res > 0)
+					if (res > 0) {
+						if (instruction_trace_cached)
+							cpu_disassemble_instr(cpu, instr, 1, 0, 1);
+						cpu->dont_run_next_bintrans = 1;
 						return res;
+					}
 				}
 			}
 		}

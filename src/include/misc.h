@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.137 2004-11-10 15:41:33 debug Exp $
+ *  $Id: misc.h,v 1.138 2004-11-11 00:45:15 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -616,6 +616,7 @@ struct cpu {
 	unsigned char	*pc_last_host_4k_page;
 
 #ifdef BINTRANS
+	int		dont_run_next_bintrans;
 	int		bintrans_instructions_executed;  /*  set to the
 				number of bintranslated instructions executed
 				when running a bintrans codechunk  */
@@ -946,11 +947,11 @@ void arcbios_set_64bit_mode(int enable);
 
 /*  coproc.c:  */
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
-void coproc_register_read(struct cpu *cpu,
+static void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
-void coproc_register_write(struct cpu *cpu,
+static void coproc_register_write(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
-void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
+static void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 	int unassemble_only, int running);
 
 

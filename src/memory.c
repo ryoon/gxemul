@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.92 2004-11-09 04:28:42 debug Exp $
+ *  $Id: memory.c,v 1.93 2004-11-11 00:45:16 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -652,6 +652,10 @@ static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
  *  Also, it needs to be rewritten for each CPU (?)
  *
  *  TODO:  vpn2 is a bad name for R2K/R3K, as it is the actual framenumber
+ *
+ *  Return values:
+ *	0  Failure
+ *	1  Success
  */
 static int translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
@@ -991,7 +995,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 						 *  and return:
 						 */
 						insert_into_tiny_cache(cpu,
-						    instr, writeflag,
+						    instr, d_bit? MEM_WRITE : MEM_READ,
 						    vaddr, paddr);
 
 						*return_addr = paddr;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.23 2004-11-10 15:41:34 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.24 2004-11-11 00:45:16 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -374,6 +374,46 @@ static int bintrans_write_instruction__xori(unsigned char **addrp,
 		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 	}
+
+	*addrp = a;
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__slti():
+ */
+static int bintrans_write_instruction__slti(unsigned char **addrp,
+	int *pc_inc, int rt, int rs, int imm, int unsigned_flag)
+{
+	unsigned char *a;
+	unsigned int uimm;
+	int ofs;
+
+	a = *addrp;
+	uimm = imm & 0xffff;
+
+	/*
+	 *   34 12 5f 20     lda     t1,4660
+	 *   88 08 30 a4     ldq     t0,2184(a0)
+	 *   a1 09 22 40     cmplt   t0,t1,t0
+	 *   1f 04 ff 5f     fnop
+	 *   88 08 30 b4     stq     t0,2184(a0)
+	 */
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	if (unsigned_flag) {
+		*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;	/*  cmpult  */
+	} else {
+		*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;	/*  cmplt  */
+	}
+
+	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 
 	*addrp = a;
 	return 1;
@@ -794,7 +834,8 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 static int bintrans_write_instruction__lw(unsigned char **addrp,
 	int *pc_inc, int rt, int imm, int rs, int load_type)
 {
-	unsigned char *jumppast1, *jumppast1b=NULL, *jumppast1c, *jumppast2;
+	unsigned char *jumppast1, *jumppast1b=NULL, *jumppast1c,
+	    *jumppast2;
 	unsigned char *a;
 	int ofs;
 
@@ -969,7 +1010,6 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 
 
 
-
 	/*  jump past the [1] case:  */
 	/*  00 00 e0 e7     beq     zero,4c <ok>  */
 	jumppast2 = a;
@@ -980,9 +1020,6 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 	if (jumppast1b != NULL)
 		*jumppast1b = ((size_t)a - (size_t)jumppast1b - 4) / 4;
 	*jumppast1c = ((size_t)a - (size_t)jumppast1c - 4) / 4;
-
-
-
 
 
 

@@ -78,10 +78,7 @@ Most important stuff (but these are all non-trivial tasks):
 			scsi controller(s): sii, asc
 			ethernet controller(s): le, fddi?
 			serial controllers: dc, ssc, scc
-			download the ROM from my DECstation 5000/125 and
-				see if I can get it to run. (add an option to
-				the emulator to be "bare", ie no ROM emulation
-				in software)
+			download the ROM from my DECstation 5000/125 and see if I can get it to run.
 			DECstation 5840? "xbi-based SMP"
 
 		o)  Cobalt:  PCI and interrupt system, ethernet, harddisk controller(s)

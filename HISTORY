@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.603 2005-02-23 06:54:47 debug Exp $
+$Id: HISTORY,v 1.604 2005-02-23 21:09:27 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1694,3 +1694,5 @@ HISTORY of mips64emul
 		Making the pc register common for all cpu families.
 		Adding some more PPC instructions and fixing some bugs.
 20050223	Continuing on the BeBox stuff, and adding more instructions.
+		Adding an ns16550 to the VR4131 emulation (which is probably
+		a close enough fake to the VR4131's SIU unit).

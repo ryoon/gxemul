@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.11 2004-03-30 01:01:25 debug Exp $
+ *  $Id: ps2_bios.c,v 1.12 2004-04-24 23:21:57 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -112,7 +112,7 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
 		break;
 	case 64:
-		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n", cpu->gpr[GPR_A1], cpu->gpr[GPR_A2], cpu->gpr[GPR_A3]);
+		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n", (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
 
 		/*
 		 *  This is really really ugly:   TODO
@@ -148,7 +148,7 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 65:
-		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n", cpu->gpr[GPR_A1]);
+		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n", (int)cpu->gpr[GPR_A1]);
 
 		/*
 		 *  Linux uses this to allocate "heap" for the OHCI USB controller.

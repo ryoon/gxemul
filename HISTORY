@@ -316,3 +316,7 @@ HISTORY of mips64emul
 		numeric values.
 		Experimenting with adding a PCIIDE (dev_wdc) controller to the
 		Cobalt emulation.
+20040120	Adding src/bintrans.c. No code yet, but this is a place for
+		ideas to be written down.
+		Increasing performance a little bit by inlining the check for
+		interrupts (which occurs for every instruction).

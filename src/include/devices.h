@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.19 2004-01-06 09:07:25 debug Exp $
+ *  $Id: devices.h,v 1.20 2004-01-06 10:32:55 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -233,8 +233,10 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 void dev_ps2_gs_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ram.c:  */
+#define	DEV_RAM_RAM		0
+#define	DEV_RAM_MIRROR		1
 int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length);
+void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mode, uint64_t otheraddr);
 
 /*  dev_rd94.c:  */
 #define	DEV_RD94_LENGTH			0x1000

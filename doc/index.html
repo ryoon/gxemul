@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.184 2005-01-02 14:59:57 debug Exp $
+$Id: index.html,v 1.185 2005-01-04 16:45:01 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -863,17 +863,11 @@ instructions:
 
 </pre>
 
-<!-- TODO: maybe change the mkisofs ... .../pub/OpenBSD/2.3/arc
-                       into mkisofs ... .../pub/OpenBSD
-only. The default behaviour of the openbsd installer is to look for
-files in "/2.3/arc" on the cdrom, not "/".  Verify that this works
-before making the change!  -->
-
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	I recommend using <b>mkisofs</b> for that purpose. If you don't already
 	have mkisofs installed on your system, you need to install that in
 	order to do this.<pre>
-	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
+	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
 
 </pre>
   <li>Start the emulator using this command line:<pre>
@@ -881,7 +875,8 @@ before making the change!  -->
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
-	on a real Acer PICA-61.
+	on a real Acer PICA-61. (Answer 'no' when asked if you want to
+	configure networking, and then install from CD-ROM.)
 </ol>
 
 <p>

@@ -1,4 +1,9 @@
-/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.3 2004-06-25 04:31:04 debug Exp $  */
+/*
+ *  Magic addition, ECOFF_MAGIC_MIPSEB2:
+ *    "MIPSEB MIPS-II COFF executable (impure) not stripped", 0x0163
+ */
+
 /*	$NetBSD: ecoff_machdep.h,v 1.18 2002/03/05 14:12:29 simonb Exp $	*/
 
 /*
@@ -39,7 +44,7 @@
 
 #define ECOFF_PAD
 
-/*  NOTE: Original types in NetBSD were 'u_long', not uint32_t  */
+/*  mips64emul NOTE: Original types in NetBSD were 'u_long', not uint32_t  */
 
 #define ECOFF_MACHDEP \
         uint32_t gprmask; \
@@ -55,6 +60,7 @@
 
 #define ECOFF_MAGIC_MIPSEB	0x0160	/* mips1, big-endian */
 #define ECOFF_MAGIC_MIPSEL	0x0162	/* mips1, little-endian */
+#define ECOFF_MAGIC_MIPSEB2	0x6301	/* mips2, big-endian  (mips64emul addition) */
 #define ECOFF_MAGIC_MIPSEL3	0x0142	/* mips3, little-endian */
 
 #if BYTE_ORDER == LITTLE_ENDIAN

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.26 2004-06-25 01:04:12 debug Exp $
+ *  $Id: file.c,v 1.27 2004-06-25 04:31:02 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -271,12 +271,16 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 		format_name = "MIPS1 LSB";
 		encoding = ELFDATA2LSB;
 		break;
+	case ECOFF_MAGIC_MIPSEB2:
+		format_name = "MIPS2 MSB";
+		encoding = ELFDATA2MSB;
+		break;
 	case ECOFF_MAGIC_MIPSEL3:
 		format_name = "MIPS3 LSB";
 		encoding = ELFDATA2LSB;
 		break;
 	default:
-		fprintf(stderr, "%s: unknown ecoff format\n", filename);
+		fprintf(stderr, "%s: unknown ecoff format, magic = 0x%04x\n", filename, f_magic);
 		exit(1);
 	}
 
@@ -1170,6 +1174,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	/*  Is it an ecoff?  */
 	if ((minibuf[0]==0x42 && minibuf[1]==0x01) ||
 	    (minibuf[0]==0x01 && minibuf[1]==0x60) ||
+	    (minibuf[0]==0x01 && minibuf[1]==0x63) ||
 	    (minibuf[0]==0x60 && minibuf[1]==0x01) ||
 	    (minibuf[0]==0x62 && minibuf[1]==0x01)) {
 		file_load_ecoff(mem, filename, cpu);

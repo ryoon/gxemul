@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.25 2004-07-11 03:17:03 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.26 2004-07-11 04:57:45 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -212,12 +212,14 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
 	} else if (strcmp(device_name, "PMAGB-BA")==0) {
 		/*  sfb in NetBSD  */
-		/*  TODO: This is not working yet.  */
+		/*  TODO: This is not working with Ultrix yet.  */
 		fb = dev_fb_init(cpu, mem, baseaddr + SFB_OFFSET_VRAM,
 		    VFB_GENERIC, 1280,1024, 1280,1024,8, device_name);
 		dev_sfb_init(cpu, mem, baseaddr + SFB_ASIC_OFFSET, fb);
+		/*  TODO: the CLEAR doesn't get through, as the address
+			range is already in use by the asic  */
 		dev_bt459_init(cpu, mem, baseaddr + SFB_OFFSET_BT459,
-		    baseaddr + SFB_CLEAR, fb, 8, irq, BT459_BA);
+		    baseaddr + SFB_CLEAR, fb, 8, irq, BT459_BBA);
 		rom_offset = 0x0;	/*  ? TODO  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */

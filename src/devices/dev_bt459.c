@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.25 2004-07-07 02:44:27 debug Exp $
+ *  $Id: dev_bt459.c,v 1.26 2004-07-11 04:57:45 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -69,6 +69,10 @@ struct bt459_data {
 	int		interrupt_time;
 	int		interrupt_time_reset_value;
 
+	int		cursor_x_add;
+	int		cursor_y_add;
+
+	int		need_to_update_cursor_shape;
 	int		cursor_on;
 	int		cursor_x;
 	int		cursor_y;
@@ -92,32 +96,6 @@ struct bt459_data {
 	unsigned char	*rgb_palette;		/*  256 * 3 (r,g,b)  */
 	unsigned char	local_rgb_palette[256 * 3];
 };
-
-
-/*
- *  dev_bt459_tick():
- */
-void dev_bt459_tick(struct cpu *cpu, void *extra)
-{
-	struct bt459_data *d = extra;
-
-	/*
-	 *  Vertical retrace interrupts. (This hack is kind of ugly.)
-	 *  Once ever 'interrupt_time_reset_value', the interrupt is
-	 *  asserted. It is acked either manually (by someone reading
-	 *  a normal BT459 register or the Interrupt ack register),
-	 *  or after another tick has passed.  (This is to prevent
-	 *  lockups from unhandled interrupts.)
-	 */
-	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0) {
-		d->interrupt_time --;
-		if (d->interrupt_time < 0) {
-			d->interrupt_time = d->interrupt_time_reset_value;
-			cpu_interrupt(cpu, d->irq_nr);
-		} else
-			cpu_interrupt_ack(cpu, d->irq_nr);
-	}
-}
 
 
 /*
@@ -198,6 +176,37 @@ void bt459_update_X_cursor(struct bt459_data *d)
 			}
 	}
 #endif
+}
+
+
+/*
+ *  dev_bt459_tick():
+ */
+void dev_bt459_tick(struct cpu *cpu, void *extra)
+{
+	struct bt459_data *d = extra;
+
+	if (d->need_to_update_cursor_shape) {
+		d->need_to_update_cursor_shape = 0;
+		bt459_update_X_cursor(d);	/*  or  bt459_sync_xysize(d);  */
+	}
+
+	/*
+	 *  Vertical retrace interrupts. (This hack is kind of ugly.)
+	 *  Once ever 'interrupt_time_reset_value', the interrupt is
+	 *  asserted. It is acked either manually (by someone reading
+	 *  a normal BT459 register or the Interrupt ack register),
+	 *  or after another tick has passed.  (This is to prevent
+	 *  lockups from unhandled interrupts.)
+	 */
+	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0) {
+		d->interrupt_time --;
+		if (d->interrupt_time < 0) {
+			d->interrupt_time = d->interrupt_time_reset_value;
+			cpu_interrupt(cpu, d->irq_nr);
+		} else
+			cpu_interrupt_ack(cpu, d->irq_nr);
+	}
 }
 
 
@@ -343,7 +352,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 			/*  Write to cursor bitmap:  */
 			if (btaddr >= BT459_REG_CRAM_BASE)
-				bt459_update_X_cursor(d);	/*  or  bt459_sync_xysize(d);  */
+				d->need_to_update_cursor_shape = 1;
 		} else {
 			odata = d->bt459_reg[btaddr];
 
@@ -407,17 +416,10 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		}
 	}
 
-	/*  NetBSD uses 370,37 as magic values. (For the PX[G] cards.)  */
 	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) +
-	    ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
+	    ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - d->cursor_x_add;
 	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) +
-	    ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
-
-	if (d->type == BT459_BA) {
-		/*  For PMAG-BA: (found by empirical testing with Ultrix)  */
-		new_cursor_x += 150;
-		new_cursor_y += 14;
-	}
+	    ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - d->cursor_y_add;
 
 	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y ||
 	    d->cursor_on != old_cursor_on) {
@@ -441,11 +443,12 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		 *  TODO:  Find out why? Is it because of special BT459
 		 *  commands?
 		 */
+#if 0
 		if (!(d->bt459_reg[BT459_REG_CCR] & 1)) {
 /*			ysize_mul = 4; */
 			d->cursor_y += 5 - (d->cursor_ysize * ysize_mul);
 		}
-
+#endif
 		debug("[ bt459: cursor = %03i,%03i ]\n",
 		    d->cursor_x, d->cursor_y);
 		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y,
@@ -477,7 +480,9 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
+
 	memset(d, 0, sizeof(struct bt459_data));
+
 	d->vfb_data     = vfb_data;
 	d->rgb_palette  = vfb_data->rgb_palette;
 	d->planes       = planes;
@@ -487,6 +492,33 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 	d->video_on     = 1;
+
+	/*
+	 *  These offsets are based on those mentioned in NetBSD,
+	 *  and then adjusted to look good with both NetBSD and
+	 *  Ultrix:
+	 */
+	switch (d->type) {
+	case BT459_PX:
+		d->cursor_x_add = 370;
+		d->cursor_y_add =  37;
+		break;
+	case BT459_BA:
+		d->cursor_x_add = 220;
+		d->cursor_y_add =  34;
+		break;
+	case BT459_BBA:
+		if (vfb_data->xsize == 1280) {
+			/*  1280x1024:  */
+			d->cursor_x_add = 368;
+			d->cursor_y_add =  38;
+		} else {
+			/*  1024x864:  */
+			d->cursor_x_add = 220;
+			d->cursor_y_add =  35;
+		}
+		break;
+	}
 
 	d->interrupt_time_reset_value = 10000;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.82 2004-04-24 22:37:50 debug Exp $
+ *  $Id: machine.c,v 1.83 2004-06-07 07:21:12 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1469,6 +1469,18 @@ void machine_init(struct memory *mem)
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Octane)");
 				dev_ram_init(mem, 0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0);
+
+				/*  This is something unknown:  */
+				dev_sgi_ip30_init(cpus[bootstrap_cpu], mem, 0x0ff00000);
+
+				/*  Something at paddr=1f022004: TODO  */
+
+				/*
+				 *  16550 serial port at paddr=1f620178, addr mul 1
+				 *  (Error messages are printed to this serial port by the PROM.)
+				 */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
+
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");

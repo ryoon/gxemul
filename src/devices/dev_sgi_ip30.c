@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.1 2004-06-07 07:08:29 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.2 2004-06-07 07:21:10 debug Exp $
  *  
  *  SGI IP30 stuff.
  */
@@ -41,6 +41,7 @@
 struct sgi_ip30_data {
 	/*  ip30:  */
 	uint64_t		reg_0x10018;
+	uint64_t		reg_0x20000;
 
 	/*  ip30_2:  */
 	uint64_t		reg_0x0029c;
@@ -50,6 +51,9 @@ struct sgi_ip30_data {
 
 	/*  ip30_4:  */
 	uint64_t		reg_0x000b0;
+
+	/*  ip30_5:  */
+	uint64_t		reg_0x00000;
 };
 
 
@@ -62,10 +66,8 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
 	case 0x10018:
@@ -80,6 +82,15 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		} else {
 			odata = d->reg_0x10018;
 		}
+		break;
+	case 0x20000:
+		/*  Some kind of timer?  */
+		if (writeflag == MEM_WRITE) {
+			d->reg_0x20000 = idata;
+		} else {
+			odata = d->reg_0x20000;
+		}
+		d->reg_0x20000 += 10000;	/*  ?  */
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
@@ -105,10 +116,8 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
 	case 0x0029c:
@@ -148,10 +157,8 @@ int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
 	case 0x00104:
@@ -198,10 +205,8 @@ int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
 	case 0x000b0:
@@ -233,6 +238,41 @@ int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 
 
 /*
+ *  dev_sgi_ip30_5_access():
+ *
+ *  Returns 1 if ok, 0 on error.
+ */
+int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+{
+	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
+	uint64_t idata = 0, odata = 0;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr) {
+	case 0x00000:
+		if (writeflag == MEM_WRITE) {
+			d->reg_0x00000 = idata;
+		} else {
+			odata = d->reg_0x00000;
+		}
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip30_5: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+		} else {
+			debug("[ sgi_ip30_5: unimplemented read from address 0x%x ]\n", relative_addr);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_sgi_ip30_init():
  */
 void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
@@ -248,5 +288,6 @@ void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memory_device_register(mem, "sgi_ip30_2", 0x10000000, 0x10000, dev_sgi_ip30_2_access, (void *)d);
 	memory_device_register(mem, "sgi_ip30_3", 0x1f000000, 0x10000, dev_sgi_ip30_3_access, (void *)d);
 	memory_device_register(mem, "sgi_ip30_4", 0x1f600000, 0x10000, dev_sgi_ip30_4_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000, 0x10000, dev_sgi_ip30_5_access, (void *)d);
 }
 

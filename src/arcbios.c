@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.58 2004-12-29 12:04:17 debug Exp $
+ *  $Id: arcbios.c,v 1.59 2005-01-06 00:27:11 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -324,8 +324,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	if (!cpu->emul->use_x11) {
 		/*  Text console output:  */
 
-		/*  SUPER-ugly hack for Windows NT, which uses
-		    0x9b instead of ESC + [  */
+		/*  Hack for Windows NT, which uses 0x9b instead of ESC + [  */
 		if (ch == 0x9b) {
 			console_putchar(27);
 			ch = '[';

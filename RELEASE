@@ -1,122 +1,3 @@
-$Id: RELEASE,v 1.10 2004-06-29 06:28:10 debug Exp $
-
-
-	    =====================================================
-
-	        THERE IS NO ACTUAL RELEASE OF mips64emul YET!
-
-	    =====================================================
-
-
-Only development snapshots of what I have in CVS.  However, I plan to make
-an official release some time in the future.
-
-The following things have to work before a release to become a reality:
-
-	o)  Diskimages need to be usable under at least some emulation modes,
-	    preferably DECstations (the 'asc' SCSI controller), but others
-	    would be nice as well,
-		DONE: Partly. It needs to be fixed to work on more DECstation
-		models, and with more OSes
-
-	o)  it must be possible to install an entire operating system within
-	    the emulator, and possibly even compile and run mips64emul
-	    _inside_ the emulated environment,
-		DONE: NetBSD/pmax and Ultrix 4.5 both seem to install
-		without errors on the -D2 model.
-		The emulator compiles just fine inside NetBSD/pmax, and
-		runs (although very slowly).
-
-	o)  regression tests  (yes, the skeleton is there, but it isn't used
-	    yet),
-		NO, I guess I'll skip this.
-
-	o)  the code needs to stabilize in general.
-
-
-The following will most definitely NOT be included in the first release:
-
-	o)  binary translation
-
-	o)  GUI
-
-
-Then, to make an official release:
-
-	o)  Try mips64emul on as many combinations as possible of the
-	    following variables:
-
-		x)  Host OS  (Linux, *BSD, Solaris, others?)
-		x)  Host hardware (alpha, i386, mips :-), sparc, ...)
-		x)  emulation mode   (DECstation, SGI?, ..)
-		    and regression tests (if possible)
-		x)  OSes running under emulation (NetBSD, OpenBSD,
-		    Linux, Ultrix?, Irix?, ..)
-
-		For each Host platform:
-			o)  does it configure correctly?  (try multiple
-				compilers)
-			o)  does it build?  (make)
-			o)  does it run?  (try multiple guest kernels/OSes)
-			o)  does it support X11?
-			o)  any bugs while running?
-
-	o)  Documentation.
-		x)  doc/
-		x)  release file
-		x)  man page?
-
-	o)  Make sure all URLs on the project homepage and in the
-	    documentation are valid.
-
-	o)  General clean-up.
-
-:-)
-
-------------------------------------------------------------------------------
-
-These platforms were tested at one time or another, and should be tested
-again before a release is made:
-
-	FreeBSD/alpha 4.9
-		gcc version 2.95.4 20020320 [FreeBSD]
-		gcc version 3.3.1 [FreeBSD]
-		ccc 6.4.9.005-1
-
-	Linux/i386
-		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
-		gcc 3.3.4 (Linux-2.6.7, Slackware)
-
-	OpenBSD/i386 3.2
-		gcc (which version?)
-
-	OpenBSD/sparc64
-		gcc (which version?)
-
-	Solaris/sparc (SunOS 5.9)
-		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
-		gcc version 2.95.3 20010315 (release)
-
-	NetBSD/pmax 1.6.2  (inside the emulator itself)
-		default gcc (2.9x.y) seems to work
-
-	NetBSD/i386 2.0/-current
-		gcc 3.3.3
-
-	Ultrix/MIPS  (inside the emulator itself)
-		(default cc doesn't seem to work)
-
-	HP-UX B.11.00
-		gcc 3.3.2
-		(default cc doesn't seem to work)
-
--------------------------------------------------------------------------------
-
-After this follows the preliminary RELEASE notes for the first release:
-
-12345678901234567890123456789012345678901234567890123456789012345678901234567890
--------------------------------------------------------------------------------
-
 Release notes for mips64emul 0.1
 ================================
 
@@ -133,8 +14,17 @@ Linux.
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
-Please report bugs to me.  This release has a number of known bugs, listed
-in the BUGS file, but feel free to drop me a line regarding other bugs.
+In mips64emul's current state, it is possible to emulate a DECstation well
+enough to let NetBSD/pmax install itself onto a harddisk image, in a manner
+very similar to how an install is performed on a real physical DECstation.
+(Ultrix/RISC is also possible to install this way.)
+
+Other machine types are also emulated, but not well enough yet to let an
+entire OS be installed.
+
+
+This release has a number of known bugs, listed in the BUGS file, but feel
+free to drop me a line regarding other bugs.
 
 
 Files included in this release are:
@@ -143,7 +33,7 @@ Files included in this release are:
 
   README             Contains quick start instructions, for the impatient ones.
 
-  LICENSE            Copyright message.
+  LICENSE            Copyright message / license.
 
   HISTORY            Revision history/changelog.
 
@@ -163,6 +53,42 @@ Files included in this release are:
 
 and a configure + Makefile.skel combination for configuring and building the
 emulator.
+
+The following platforms and compilers have been used to build the emulator; not
+all of them have been tested for this specific release, but will most probably
+work anyway.
+
+	FreeBSD/alpha 4.9
+		gcc version 2.95.4 20020320 [FreeBSD]
+		gcc version 3.3.1 [FreeBSD]
+		gcc version 3.4 20030730 (experimental)
+		ccc 6.4.9.005-1
+
+	Linux/i386
+		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
+		gcc 3.3.4 (Linux-2.6.7, Slackware)
+
+	OpenBSD/i386 3.2
+		gcc 2.95.3 20010125 (prerelease)
+
+	OpenBSD/sparc64
+		gcc 2.95.3 20010125 (prerelease, propolice)
+
+	Solaris/sparc (SunOS 5.9)
+		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
+		gcc version 2.95.3 20010315 (release)
+
+	NetBSD/pmax 1.6.2  (inside the emulator itself)
+		default gcc (2.9x.y) seems to work
+
+	NetBSD/i386 2.0/-current
+		gcc 3.3.3
+
+	HP-UX B.11.00
+		gcc 3.3.2  (this works, but HP-UX default cc doesn't work)
+
+	Ultrix/MIPS  (inside the emulator itself)
+		(default cc does NOT work)
 
 
 Only a few files in the include/ directory are written by me, the rest are

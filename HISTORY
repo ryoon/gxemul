@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.118 2004-06-30 08:32:32 debug Exp $
+$Id: HISTORY,v 1.119 2004-06-30 09:09:37 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -634,3 +634,6 @@ HISTORY of mips64emul
 		English:  the mouse cursor is no longer just a white solid
 		square, you can actually see the mouse cursor image
 		on the white square.)
+
+==============  RELEASE 0.1  ==============
+

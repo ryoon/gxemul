@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.10 2004-01-25 14:15:37 debug Exp $
+ *  $Id: emul.c,v 1.11 2004-02-12 15:55:11 debug Exp $
  *
  *  Emulation startup.
  */
@@ -208,6 +208,11 @@ void emul(void)
 	if ((cpus[bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
 	    (cpus[bootstrap_cpu]->gpr[GPR_GP] & 0x80000000))
 		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000;
+
+	/*  Same byte order for all CPUs:  */
+	for (i=0; i<ncpus; i++)
+		if (i != bootstrap_cpu)
+			cpus[i]->byte_order = cpus[bootstrap_cpu]->byte_order;
 
 	if (userland_emul)
 		useremul_init(cpus[bootstrap_cpu], mem, extra_argc, extra_argv);

@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.31 2004-11-30 22:47:24 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.32 2004-12-01 08:02:50 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
  *
- *  Translated code uses the following:
+ *  Translated code uses the following conventions at all time:
  *
  *	esi		points to the cpu struct
  *	ebp		contains cpu->bintrans_instructions_executed
@@ -45,7 +45,7 @@ struct coproc dummy_coproc;
  *  Invalidate the host's instruction cache. On i386, this isn't neccessary,
  *  so this is an empty function.
  */
-void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
+static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 {
 	/*  Do nothing.  */
 }
@@ -54,23 +54,32 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_i	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 
 
-unsigned char bintrans_i386_runchunk[27] = {
+unsigned char bintrans_i386_runchunk[29] = {
+	0x57,					/*  push   %edi  */
+	0x56,					/*  push   %esi  */
 	0x55,					/*  push   %ebp  */
-	0x89, 0xe5,				/*  mov    %esp,%ebp  */
-	0x60,					/*  pusha  */
+	0x53,					/*  push   %ebx  */
 
-	/*  In all translated code, esi points to the cpu struct.  */
+	/*
+	 *  In all translated code, esi points to the cpu struct, and
+	 *  ebp is the nr of executed (translated) instructions.
+	 */
 
-	0x8b, 0x75, 0x08,			/*  mov    0x8(%ebp),%esi  */
-	0x8b, 0x5d, 0x0c,			/*  mov    0xc(%ebp),%ebx  */
+	/*  0=ebx, 4=ebp, 8=esi, 0xc=edi, 0x10=retaddr, 0x14=arg0, 0x18=arg1  */
+
+	0x8b, 0x74, 0x24, 0x14,			/*  mov    0x8(%esp,1),%esi  */
 	0x8b, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
 						/*  mov    nr_instr(%esi),%ebp  */
-	0xff, 0xd3,				/*  call   *%ebx  */
+
+	0xff, 0x54, 0x24, 0x18,			/*  call   *0x18(%esp,1)  */
+
 	0x89, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
 						/*  mov    %ebp,0x1234(%esi)  */
 
-	0x61,					/*  popa  */
-	0xc9,					/*  leave  */
+	0x5b,					/*  pop    %ebx  */
+	0x5d,					/*  pop    %ebp  */
+	0x5e,					/*  pop    %esi  */
+	0x5f,					/*  pop    %edi  */
 	0xc3					/*  ret  */
 };
 
@@ -1147,22 +1156,31 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*  75 01                   jne    155 <skip>  */
 		*a++ = 0x39; *a++ = 0xc3;
 		*a++ = 0x75; skip1 = a; *a++ = 0x00;
-		*a++ = 0x39; *a++ = 0xd1;
-		*a++ = 0x75; skip2 = a; *a++ = 0x00;
+		if (!bintrans_32bit_only) {
+			*a++ = 0x39; *a++ = 0xd1;
+			*a++ = 0x75; skip2 = a; *a++ = 0x00;
+		}
 	}
 
 	if (instruction_type == HI6_BNE) {
 		/*  If rt != rs, then ok. Otherwise skip.  */
-		/*  39 c3                   cmp    %eax,%ebx  */
-		/*  75 06                   jne    156 <bra>  */
-		/*  39 d1                   cmp    %edx,%ecx  */
-		/*  75 02                   jne    156 <bra>  */
-		/*  eb 01                   jmp    157 <skip>  */
-		*a++ = 0x39; *a++ = 0xc3;
-		*a++ = 0x75; *a++ = 0x06;
-		*a++ = 0x39; *a++ = 0xd1;
-		*a++ = 0x75; *a++ = 0x02;
-		*a++ = 0xeb; skip2 = a; *a++ = 0x00;
+		if (bintrans_32bit_only) {
+			/*  39 c3                   cmp    %eax,%ebx  */
+			/*  74 xx                   je     <skip>  */
+			*a++ = 0x39; *a++ = 0xc3;
+			*a++ = 0x74; skip2 = a; *a++ = 0x00;
+		} else {
+			/*  39 c3                   cmp    %eax,%ebx  */
+			/*  75 06                   jne    156 <bra>  */
+			/*  39 d1                   cmp    %edx,%ecx  */
+			/*  75 02                   jne    156 <bra>  */
+			/*  eb 01                   jmp    157 <skip>  */
+			*a++ = 0x39; *a++ = 0xc3;
+			*a++ = 0x75; *a++ = 0x06;
+			*a++ = 0x39; *a++ = 0xd1;
+			*a++ = 0x75; *a++ = 0x02;
+			*a++ = 0xeb; skip2 = a; *a++ = 0x00;
+		}
 	}
 
 	if (instruction_type == HI6_BLEZ) {
@@ -1508,13 +1526,17 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		/*  83 d2 ff                adc    $0xffffffff,%edx  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
-		*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
+		if (!bintrans_32bit_only) {
+			*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
+		}
 	} else {
 		/*  05 34 12 00 00          add    $0x1234,%eax  */
 		/*  83 d2 00                adc    $0x0,%edx  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0; *a++ = 0;
-		*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+		if (!bintrans_32bit_only) {
+			*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+		}
 	}
 
 	alignment = 0;

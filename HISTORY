@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.340 2004-11-30 22:38:40 debug Exp $
+$Id: HISTORY,v 1.341 2004-12-01 08:02:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1214,4 +1214,7 @@ HISTORY of mips64emul
 		A couple of other minor fixes.
 		Minor updates to the Alpha backend (directly using Alpha
 		registers in some cases, instead of loading into temporaries).
-		Updates to the i386 backend.
+		Updates to the i386 backend (special hacks for 32-bit
+		MIPS emulation, which are fast on i386, for example only
+		updating half of the pc register).
+20041201	More updates to the i386 backend, similar to those yesterday.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.8 2003-11-08 11:38:04 debug Exp $
+ *  $Id: misc.h,v 1.9 2003-11-09 03:58:35 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -61,12 +61,6 @@
 
 /*  Specific machines:  */
 /*  DEC:  */
-/*
-#include "dec_5100.h"
-#include "dec_kn01.h"
-#include "dec_kn02.h"
-#include "dec_kn03.h"
-*/
 #define	MACHINE_NONE		0
 #define	MACHINE_PMAX_3100	1
 #define	MACHINE_3MAX_5000	2

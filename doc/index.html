@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.61 2004-07-10 04:22:51 debug Exp $
+$Id: index.html,v 1.62 2004-07-10 06:36:02 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -59,6 +59,7 @@ SUCH DAMAGE.
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax inside the emulator</a>
+  <li><a href="#openbsdinstall">How to install OpenBSD/pmax inside the emulator</a>
   <li><a href="#ultrixinstall">How to install Ultrix/RISC inside the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#hello">Hello world</a>
@@ -78,8 +79,10 @@ SUCH DAMAGE.
 mips64emul is a MIPS machine emulator.
 
 The goals are to emulate 64-bit and 32-bit MIPS-like CPUs and enough surrounding hardware
-to fake real machines, capable of running real (unmodified) operating systems,
-such as <a href="http://www.netbsd.org/">NetBSD</a> or <a href="http://www.linux-mips.org/">Linux</a>.
+to fake real machines, capable of running real (unmodified) operating systems
+(such as <a href="http://www.netbsd.org/">NetBSD</a>, <a href="http://www.linux-mips.org/">Linux</a>, 
+or <a href="http://www.openbsd.org/pmax.html">OpenBSD</a>),
+and to assist in experimenting with MIPS in general.
 This is a spare time hobby project, and many things are not implemented yet.
 <p> 
 The emulator could be of interest for academic research and experiments, such as
@@ -231,7 +234,13 @@ of harddisk image and be interacted with similar to a real machine:
 	    </tr>
 
 	    <tr>
-	      <td valign=top>NetBSD/pmax</td>
+	      <td valign=top><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a></td>
+	      <td></td>
+	      <td valign=top>DECstation</td>
+	    </tr>
+
+	    <tr>
+	      <td valign=top><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a></td>
 	      <td></td>
 	      <td valign=top>DECstation</td>
 	    </tr>
@@ -355,7 +364,7 @@ the network instead of from the pmax cdrom image.
 </ul>
 <p><br>
 
-</td></td></tr>
+</td></tr>
 </table>
 
 
@@ -370,12 +379,109 @@ If you want to run without the X framebuffer, use this instead:<pre>
 </pre>
 
 
+
+
+<p><br>
+<a name="openbsdinstall"></a>
+<h3>How to install OpenBSD/pmax inside the emulator</h3>
+
+Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
+You should first read the section above on how to install NetBSD,
+before continuing here. If you have never installed OpenBSD on any
+architecture, then you need a great deal of patience to do this.
+If, on the other hand you are used to installing OpenBSD, then
+this should be no problem for you.
+
+<p>
+OpenBSD/pmax died at release 2.8 of OpenBSD, so you should be
+aware of the fact that this will not give you an up-to-date OpenBSD
+system. The files are available at this URL:
+<pre>
+	<a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/</a>
+</pre>
+
+<p>
+Following these instructions <i>might</i> work. If not, then use
+common sense and imagination to modify them as you see fit.
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=openbsddisk.img bs=1 count=512 seek=900000000</b>
+
+</pre>
+  <li>Download the entire pmax directory from the ftp server: (approx. 99 MB)<pre>
+	$ <b>wget -r ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/</b>
+
+</pre>
+
+  <li>Execute the following commands:<pre>
+	$ <b>mv ftp.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .</b>
+	$ <b>gunzip simpleroot28.fs.gz</b>
+
+</pre>
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	I recommend using <b>mkisofs</b> for that purpose. If you don't already
+	have mkisofs installed on your system, you need to install that in
+	order to do this.<pre>
+	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.openbsd.org/pub/OpenBSD/2.8/pmax</b>
+
+</pre>
+  <li>Start the emulator with all three (!) disk images:<pre>
+	$ <b>./mips64emul -D2 -d openbsddisk.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+
+</pre>
+	(If you add -X, you will run with the graphical framebuffer. This is <i>REALLY</i> slow
+	because the console has to scroll a lot during the install. I don't recommend it.)
+  <p>
+  <li>Go on with the installation as you would do if you were installing on a real machine.
+	If you are not used to the OpenBSD installer, then this will most likely
+	be a very uncomfortable experience. Some important things to keep in mind are:
+	<ul>
+	  <li>rz0 is the rootdisk you wish to install onto.
+	  <li>rz1 is the simpleroot image.
+	  <li>rz2 is the CDROM containing the "install sets".
+	</ul>
+	<p>Some hints to get you going:
+	<ul>
+	  <li>When asked for the "<b>root device?</b>", enter <b>rz1</b>.
+	  <li>At "<b>Enter pathname of shell or RETURN for sh:</b>", press enter.
+	  <li>At the # prompt, do the following:<pre>
+	$ <b>fsck /dev/rz1a</b>        (and mark the filesystem as clean)
+	$ <b>mount /dev/rz1a /</b>
+	$ <b>mount -t kernfs kern kern</b>
+	$ <b>./install</b>
+
+</pre>
+		and proceed with the install. Good luck. :-)
+	  <li>Answer "<b>n</b>" when asked if you wish to configure the network.
+	  <li>Install from "<b>c</b>" (cdrom), choose "<b>rz2</b>" as the cdrom device, and "<b>/</b>" as
+		the directory containing the install sets.
+	</ul>
+</ol>
+
+<p>
+The time required to do a full install is about an hours on a 2.8GHz Xeon PC.
+
+<p>
+When you have finished installing OpenBSD/pmax, the following command will
+let you boot from the new rootdisk image:
+<pre>
+	$ <b>./mips64emul -D2 -X -d openbsddisk.img -j bsd</b>
+</pre>
+
+
 <p><br>
 <a name="ultrixinstall"></a>
 <h3>How to install Ultrix/RISC inside the emulator</h3>
 
-The instructions for installing NetBSD/pmax can be used to install Ultrix as
-well, with a slight modification (the <b>-j</b> argument differs).
+The instructions for installing NetBSD/pmax can be used to install Ultrix
+as well, with a slight modification (the <b>-j</b> argument differs).
 <ol>
   <li>Compile mips64emul:<pre>
 	$ <b>./configure; make</b>
@@ -408,6 +514,14 @@ Ultrix from the harddisk image:<pre>
 	$ <b>./mips64emul -X -D2 -j vmunix -d rootdisk.img</b>
 </pre>
 
+<p>
+A note for the historically interested out there:
+OSF/1 for MIPS is quite similar to Ultrix, so that is possible to run
+as well.  If you are unsuccessful in installing Ultrix
+or OSF/1 directly in the emulator, you can always install it on your real 
+machine onto a real SCSI disk, and then copy the contents of that SCSI
+disk into a file (using <b>dd(1)</b>), and use that file as a disk image
+file in the emulator.
 
 
 <p><br>
@@ -500,11 +614,13 @@ Here are links to some of the kernels that I usually experiment with.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
-	Read <a href="#netbsdinstall">here</a> about how to install NetBSD/pmax onto a harddisk image.
+	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
       <li>OpenBSD/pmax:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
 	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
+	<br>Read <a href="#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
+	It's a bit more complicated than installing NetBSD/pmax, but might work.
       <p>
       <li>Linux for DECstation:
 	<br>Here is a Debian package containing a Linux 2.4.26 kernel for

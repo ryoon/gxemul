@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.14 2004-03-26 21:51:02 debug Exp $
+ *  $Id: dev_asc.c,v 1.15 2004-04-02 05:50:25 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -439,19 +439,21 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				debug("; Accepting message");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
+
 			if (d->cur_state == STATE_INITIATOR)
 				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ? probably 0  */
 			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 5;	/*  ?  */
+
+			d->cur_state = STATE_DISCONNECTED;	/*  ?  */
 			break;
 		case NCRCMD_SETATN:
 			debug("SETATN");
 			d->atn = 1;
-			/*  TODO: interrupt?  */
 			break;
 		case NCRCMD_RSTATN:
 			debug("RSTATN");
 			d->atn = 0;
-			/*  TODO: interrupt?  */
 			break;
 		case NCRCMD_SELNATN:
 		case NCRCMD_SELATN:
@@ -492,7 +494,11 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, n_messagebytes);
 				d->reg_ro[NCR_STEP] &= ~7;
+#if 0
 				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
+#else
+				d->reg_ro[NCR_STEP] |= 2;	/*  ?  */
+#endif
 				d->cur_state = STATE_INITIATOR;
 			} else {
 				/*
@@ -583,13 +589,13 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		/*  Reading the interrupt register de-asserts the interrupt pin:  */
 		cpu_interrupt_ack(cpu, d->irq_nr);
 
-		if (d->reg_ro[NCR_STAT] & NCRSTAT_INT) {
+/*		if (d->reg_ro[NCR_STAT] & NCRSTAT_INT) {  */
 			/*  INTR, STEP, and STAT are all cleared, according
 				to page 64 of the LSI53CF92A manual.  */
 			d->reg_ro[NCR_INTR] = 0;
 			d->reg_ro[NCR_STEP] = 0;
 			d->reg_ro[NCR_STAT] = 0;
-		}
+/*		}  */
 	}
 
 	if (regnr == NCR_CFG1) {

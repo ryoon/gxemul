@@ -20,18 +20,6 @@ Serious bugs:
       that gives weight to this theory is that the serial driver in Linux is
       still being developed.)  But this is just a guess.
 
-  x)  Newer NetBSD/pmax 2.0_BETA snapshots from releng.netbsd.org, and the
-      official 2.0 release, sometimes crash.
-          Host\Snapshot:       20040606 20040707
-            Linux/i386:        ok       crash
-            FreeBSD/Alpha:     ok       ok
-            OpenBSD/sparc64:   ok       ok
-      crash = core dump when doing malloc(), so maybe some memory control
-      blocks are overwritten by some code.
-      This only seems to affect Linux. By doing a 'setenv MALLOC_CHECK_ 1'
-      before running the emulator, it seems that the bug isn't triggered.
-      (OpenBSD/arc 2.3 on an i386 host also triggers this bug sometimes.)
-
   o)  bintrans bugs.  (For example, NetBSD/sgimips for IP22/24 hangs during
       boot with bintrans enabled.)
 

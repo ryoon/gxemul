@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.58 2005-01-09 01:55:24 debug Exp $
+ *  $Id: dev_asc.c,v 1.59 2005-01-20 08:08:36 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -314,8 +314,10 @@ fatal("TODO..............\n");
 				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
 
-				if (len2 > len)
+				if (len2 > len) {
 					memset(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), 0, len2);
+					len2 = len;
+				}
 
 #ifdef ASC_DEBUG
 				if (!quiet_mode) {

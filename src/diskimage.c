@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.66 2005-01-19 14:24:22 debug Exp $
+ *  $Id: diskimage.c,v 1.67 2005-01-20 08:08:37 debug Exp $
  *
  *  Disk image support.
  *
@@ -482,14 +482,19 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		debug("READ_CAPACITY");
 
 		if (xferp->cmd_len != 10)
-			debug(" (weird len=%i)", xferp->cmd_len);
-		if (xferp->cmd[8] & 1) {
-			/*  Partial Medium Indicator bit...  TODO  */
-			fatal("WARNING: READ_CAPACITY with PMI bit set not yet implemented\n");
+			fatal(" (weird READ_CAPACITY len=%i, should be 10)",
+			    xferp->cmd_len);
+		else {
+			if (xferp->cmd[8] & 1) {
+				/*  Partial Medium Indicator bit...  TODO  */
+				fatal("WARNING: READ_CAPACITY with PMI bit"
+				    " set not yet implemented\n");
+			}
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, 8, 1);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
+		    8, 1);
 
 		diskimage_recalc_size(disk_id);
 
@@ -521,11 +526,23 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		retlen = xferp->cmd[4];
 
+		/*
+		 *  NOTE/TODO: This code doesn't handle too short retlens
+		 *  very well. A quick hack around this is that I allocate
+		 *  a bit too much memory, so that nothing is actually
+		 *  written outside of xferp->data_in[].
+		 */
+
+		retlen += 100;		/*  Should be enough. (Ugly.)  */
+
 		if ((xferp->cmd[2] & 0xc0) != 0)
 			fatal("WARNING: mode sense, cmd[2] = 0x%02x\n", xferp->cmd[2]);
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen, 1);
+
+		xferp->data_in_len -= 100;	/*  Restore size.  */
 
 		pagecode = xferp->cmd[2] & 0x3f;
 

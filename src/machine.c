@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.279 2005-01-16 09:20:09 debug Exp $
+ *  $Id: machine.c,v 1.280 2005-01-16 14:05:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -98,6 +98,7 @@ struct crime_data *crime_data;
 struct mace_data *mace_data;
 struct sgi_ip20_data *sgi_ip20_data;
 struct sgi_ip22_data *sgi_ip22_data;
+struct sgi_ip30_data *sgi_ip30_data;
 
 
 /****************************************************************************
@@ -737,6 +738,57 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
+ *  SGI "IP30" interrupt routine:
+ *
+ *  irq_nr = 8 + 1 + nr, where nr is:
+ *	0..49		HEART irqs	hardware irq 2,3,4
+ *	50		HEART timer	hardware irq 5
+ *	51..63		HEART errors	hardware irq 6
+ *
+ *  according to Linux/IP30.
+ */
+void sgi_ip30_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	uint64_t newmask;
+	uint64_t stat, mask;
+
+	irq_nr -= 8;
+	if (irq_nr == 0)
+		goto just_assert_and_such;
+	irq_nr --;
+
+	newmask = (int64_t)1 << irq_nr;
+
+	if (assrt)
+		sgi_ip30_data->isr |= newmask;
+	else
+		sgi_ip30_data->isr &= ~newmask;
+
+just_assert_and_such:
+
+	cpu_interrupt_ack(cpu, 2);
+	cpu_interrupt_ack(cpu, 3);
+	cpu_interrupt_ack(cpu, 4);
+	cpu_interrupt_ack(cpu, 5);
+	cpu_interrupt_ack(cpu, 6);
+
+	stat = sgi_ip30_data->isr;
+	mask = sgi_ip30_data->imask0;
+
+	if ((stat & mask) & 0x000000000000ffffULL)
+		cpu_interrupt(cpu, 2);
+	if ((stat & mask) & 0x00000000ffff0000ULL)
+		cpu_interrupt(cpu, 3);
+	if ((stat & mask) & 0x0003ffff00000000ULL)
+		cpu_interrupt(cpu, 4);
+	if ((stat & mask) & 0x0004000000000000ULL)
+		cpu_interrupt(cpu, 5);
+	if ((stat & mask) & 0xfff8000000000000ULL)
+		cpu_interrupt(cpu, 6);
+}
+
+
+/*
  *  SGI "IP32" interrupt routine:
  */
 void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
@@ -956,6 +1008,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	uint64_t mem_base, mem_count;
 	uint64_t system = 0;
 	uint64_t sgi_ram_offset = 0;
+	uint64_t arc_reserved;
 	int arc_wordlen = sizeof(uint32_t);
 	char *short_machine_name = NULL;
 
@@ -2176,8 +2229,8 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(emul->machine_name, " (Octane)");
 
-				/*  This is something unknown:  */
-				dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
+				sgi_ip30_data = dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
+				cpu->md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(mem,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
@@ -2669,8 +2722,12 @@ Why is this here? TODO
 
 		arc_n_memdescriptors = 0;
 
-		arcbios_add_memory_descriptor(cpu, sgi_ram_offset +      0,         0x2000, ARCBIOS_MEM_FirmwarePermanent);
-		arcbios_add_memory_descriptor(cpu, sgi_ram_offset + 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
+		arc_reserved = 0x2000;
+		if (emul->emulation_type == EMULTYPE_SGI)
+			arc_reserved = 0x4000;
+
+		arcbios_add_memory_descriptor(cpu, 0, arc_reserved, ARCBIOS_MEM_FirmwarePermanent);
+		arcbios_add_memory_descriptor(cpu, sgi_ram_offset + arc_reserved, 0x60000-arc_reserved, ARCBIOS_MEM_FirmwareTemporary);
 
 		mem_base = 12;
 		mem_base += sgi_ram_offset / 1048576;
@@ -3269,8 +3326,8 @@ config[77] = 0x30;
 			 */
 			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Version, 1);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Version, 64);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, 0);
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
 			break;

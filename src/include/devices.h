@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.131 2005-01-10 23:22:22 debug Exp $
+ *  $Id: devices.h,v 1.132 2005-01-16 14:05:32 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -479,8 +479,28 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uin
 
 /*  dev_sgi_ip30.c:  */
 #define	DEV_SGI_IP30_LENGTH		0x80000
+struct sgi_ip30_data {
+	/*  ip30:  */
+	uint64_t		imask0;		/*  0x10000  */
+	uint64_t		reg_0x10018;
+	uint64_t		isr;		/*  0x10030  */
+	uint64_t		reg_0x20000;
+	uint64_t		reg_0x30000;
+
+	/*  ip30_2:  */
+	uint64_t		reg_0x0029c;
+
+	/*  ip30_3:  */
+	uint64_t		reg_0x00284;
+
+	/*  ip30_4:  */
+	uint64_t		reg_0x000b0;
+
+	/*  ip30_5:  */
+	uint64_t		reg_0x00000;
+};
 int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip32.c:  */
 #define	DEV_CRIME_LENGTH		0x0000000000001000

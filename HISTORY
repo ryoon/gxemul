@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.480 2005-01-16 10:39:43 debug Exp $
+$Id: HISTORY,v 1.481 2005-01-16 14:05:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1478,3 +1478,6 @@ HISTORY of mips64emul
 		Trying to revert the ARCS64 changes (OpenBSD/sgi does
 		seem to be aware of 64-bit vs 32-bit data structures in
 		_some_ places, but not all), to make Linux/IP30 work again.
+		Adding "power off" capability to the RTC, as used on IP32
+		(and possibly IP30 and others).
+		Some IP30 updates.

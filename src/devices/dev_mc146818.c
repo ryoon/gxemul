@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.56 2005-01-16 06:14:02 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.57 2005-01-16 14:05:31 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -251,7 +251,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	struct tm *tmp;
 	time_t timet;
 	struct mc_data *mc_data = extra;
-	int relative_addr = r;
+	int i, relative_addr = r;
 
 	relative_addr /= mc_data->addrdiv;
 
@@ -308,7 +308,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {
-		int i;
 		fatal("[ mc146818: write to addr=0x%04x (len %i): ",
 		    (int)relative_addr, (int)len);
 		for (i=0; i<len; i++)
@@ -453,11 +452,24 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			mc_data->reg[MC_REGC*4] = data[0];
 			debug("[ mc146818: write to MC_REGC, data[0] = 0x%02x ]\n", data[0]);
 			break;
+		case 0x128:
+			mc_data->reg[relative_addr] = data[0];
+			if (data[0] & 8) {
+				/*  Used on SGI to power off the machine.  */
+				fatal("[ md146818: power off ]\n");
+				for (i=0; i<cpu->emul->ncpus; i++)
+					cpu->emul->cpus[i]->running = 0;
+				cpu->emul->exit_without_entering_debugger = 1;
+			}
+			break;
 		default:
 			mc_data->reg[relative_addr] = data[0];
-			/*  fatal("[ mc146818: unimplemented write to "
-			    "relative_addr = %08lx ]\n",
-			    (long)relative_addr);  */
+
+			debug("[ mc146818: unimplemented write to "
+			    "relative_addr = %08lx: ", (long)relative_addr);
+			for (i=0; i<len; i++)
+				debug("%02x ", data[i]);
+			debug("]\n");
 		}
 	} else {
 		/*  READ:  */
@@ -505,7 +517,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_READ) {
-		int i;
 		fatal("[ mc146818: read from addr=0x%04x (len %i): ",
 		    (int)relative_addr, (int)len);
 		for (i=0; i<len; i++)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.10 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.11 2005-01-16 14:05:31 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -36,28 +36,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
-struct sgi_ip30_data {
-	/*  ip30:  */
-	uint64_t		reg_0x10018;
-	uint64_t		reg_0x20000;
+void dev_sgi_ip30_tick(struct cpu *cpu, void *extra)
+{
+	struct sgi_ip30_data *d = extra;
 
-	/*  ip30_2:  */
-	uint64_t		reg_0x0029c;
-
-	/*  ip30_3:  */
-	uint64_t		reg_0x00284;
-
-	/*  ip30_4:  */
-	uint64_t		reg_0x000b0;
-
-	/*  ip30_5:  */
-	uint64_t		reg_0x00000;
-};
+	if (d->imask0 & ((int64_t)1<<50))
+		cpu_interrupt(cpu, 8+1 + 50);
+}
 
 
 /*
@@ -77,6 +67,13 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 		/*  Memory bank configuration:  */
 		odata = 0x80010000ULL;
 		break;
+	case 0x10000:	/*  Interrupt mask register 0:  */
+		if (writeflag == MEM_WRITE) {
+			d->imask0 = idata;
+		} else {
+			odata = d->imask0;
+		}
+		break;
 	case 0x10018:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during bootup:
@@ -90,14 +87,41 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 			odata = d->reg_0x10018;
 		}
 		break;
+	case 0x10020:	/*  Set ISR, according to Linux/IP30  */
+		d->isr = idata;
+		/*  Recalculate CPU interrupt assertions:  */
+		cpu_interrupt(cpu, 8);
+		break;
+	case 0x10028:	/*  Clear ISR, according to Linux/IP30  */
+		d->isr &= ~idata;
+		/*  Recalculate CPU interrupt assertions:  */
+		cpu_interrupt(cpu, 8);
+		break;
+	case 0x10030:	/*  Interrupt Status Register  */
+		if (writeflag == MEM_WRITE) {
+			/*  Clear-on-write  (TODO: is this correct?)  */
+			d->isr &= ~idata;
+			/*  Recalculate CPU interrupt assertions:  */
+			cpu_interrupt(cpu, 8);
+		} else {
+			odata = d->isr;
+		}
+		break;
 	case 0x20000:
-		/*  Some kind of timer?  */
+		/*  A counter  */
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x20000 = idata;
 		} else {
 			odata = d->reg_0x20000;
 		}
 		d->reg_0x20000 += 10000;	/*  ?  */
+		break;
+	case 0x30000:
+		if (writeflag == MEM_WRITE) {
+			d->reg_0x30000 = idata;
+		} else {
+			odata = d->reg_0x30000;
+		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
@@ -289,7 +313,7 @@ int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgi_ip30_init():
  */
-void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 {
 	struct sgi_ip30_data *d = malloc(sizeof(struct sgi_ip30_data));
 	if (d == NULL) {
@@ -308,5 +332,9 @@ void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	    0x10000, dev_sgi_ip30_4_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
 	    0x10000, dev_sgi_ip30_5_access, (void *)d, MEM_DEFAULT, NULL);
+
+	cpu_add_tickfunction(cpu, dev_sgi_ip30_tick, d, 14);
+
+	return d;
 }
 

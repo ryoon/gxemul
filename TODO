@@ -41,11 +41,7 @@ mips64emul TODO
 
 	Binary translation:  src/bintrans.c
 
-	Userland ABI emulation  (to run on any Unix-ish host)
-		o)  NetBSD
-		o)  System V? IRIX?
-		o)  Big endian vs little endian? 32-bit vs 64-bit? n32/o32 on SGI?
-		o)  Dynamic ELFs?
+	Userland ABI emulation: src/useremul.c
 
 	CPU Emulation:
 		o)  Instructions:

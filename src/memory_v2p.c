@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.6 2004-12-07 12:41:52 debug Exp $
+ *  $Id: memory_v2p.c,v 1.7 2004-12-14 00:30:45 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -159,7 +159,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 	/*  These are needed later:  */
 	vaddr_asid = cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK;
-	vaddr_vpn2 = (vaddr & R2K3K_ENTRYHI_VPN_MASK) >> 12;
+	vaddr_vpn2 = vaddr & R2K3K_ENTRYHI_VPN_MASK;
 #else
 	/*
 	 *  R4000 and others:
@@ -277,7 +277,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			cached_hi = cp0->tlbs[i].hi;
 			cached_lo0 = cp0->tlbs[i].lo0;
 
-			entry_vpn2 = (cached_hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
+			entry_vpn2 = cached_hi & R2K3K_ENTRYHI_VPN_MASK;
 			entry_asid = cached_hi & R2K3K_ENTRYHI_ASID_MASK;
 			g_bit = cached_lo0 & R2K3K_ENTRYLO_G;
 			v_bit = cached_lo0 & R2K3K_ENTRYLO_V;
@@ -375,17 +375,15 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);  */
 
 #ifdef V2P_MMU3K
-						pfn = (cached_lo0 &
-						    R2K3K_ENTRYLO_PFN_MASK)
-						    >> R2K3K_ENTRYLO_PFN_SHIFT;
+						pfn = cached_lo0 & R2K3K_ENTRYLO_PFN_MASK;
+						paddr = pfn | (vaddr & pmask);
 #else
 						pfn = ((odd? cached_lo1 : cached_lo0)
 						    & ENTRYLO_PFN_MASK)
 						    >> ENTRYLO_PFN_SHIFT;
-#endif
-
 						paddr = (pfn << pageshift) |
 						    (vaddr & pmask);
+#endif
 
 						/*
 						 *  Enter into the tiny trans-
@@ -460,6 +458,7 @@ exception:
 
 #ifdef V2P_MMU3K
 	vaddr_asid >>= R2K3K_ENTRYHI_ASID_SHIFT;
+	vaddr_vpn2 >>= 12;
 #endif
 
 	cpu_exception(cpu, exccode, tlb_refill, vaddr,

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.180 2004-12-13 05:35:51 debug Exp $
+ *  $Id: misc.h,v 1.181 2004-12-14 00:30:43 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -248,10 +248,10 @@ struct memory {
 #define	MAX_NR_OF_TLBS		192
 
 struct tlb {
-	uint64_t	mask;
 	uint64_t	hi;
-	uint64_t	lo1;
 	uint64_t	lo0;
+	uint64_t	lo1;
+	uint64_t	mask;
 };
 
 struct coproc {

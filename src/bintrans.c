@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.7 2004-02-06 06:12:09 debug Exp $
+ *  $Id: bintrans.c,v 1.8 2004-02-09 06:27:28 debug Exp $
  *
  *  Binary translation.
  *
@@ -657,7 +657,10 @@ void bintrans__codechunk_addtail(struct cpu *cpu, void *codechunk, size_t *curle
 	(*curlengthp) = curlength;
 
 	/*  On alpha, flush the instruction cache:  */
+#ifdef ALPHA
+	/*  Haha, actually this whole file should be ifdef Alpha  */
 	asm("imb");
+#endif
 }
 
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.38 2004-03-06 17:10:51 debug Exp $
+ *  $Id: devices.h,v 1.39 2004-03-07 03:55:38 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -283,6 +283,25 @@ struct ps2_data {
 #define	DEV_PS2_STUFF_LENGTH		0x10000
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct memory *mem_gif);
+
+/*  dev_px.c:  */
+struct px_data {
+	struct memory	*fb_mem;
+	struct vfb_data	*vfb_data;
+	int		type;
+	int		irq_nr;
+	int		bitdepth;
+
+	uint32_t	intr;
+};
+/*  TODO: perhaps these types are wrong?  */
+#define	DEV_PX_TYPE_PX			0
+#define	DEV_PX_TYPE_PXG			1
+#define	DEV_PX_TYPE_PXGPLUS		2
+#define	DEV_PX_TYPE_PXGPLUSTURBO	3
+#define	DEV_PX_LENGTH			0x3c0000
+int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_type, int irq_nr);
 
 /*  dev_ram.c:  */
 #define	DEV_RAM_RAM		0

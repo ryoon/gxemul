@@ -23,13 +23,23 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.1 2004-03-07 02:10:39 debug Exp $
+ *  $Id: dev_px.c,v 1.2 2004-03-07 03:55:40 debug Exp $
  *  
  *  TURBOchannel Pixelstamp ("PX", "PXG") graphics device.
  *
- *  See include/pxreg.h for more information.
+ *  See include/pxreg.h (and NetBSD's arch/pmax/dev/px.c) for more information.
  *
- *  TODO:  This is just a skeleton so far.
+ *  NetBSD recognizes this device as px0, Ultrix as ga0.
+ *
+ *  TODO:  A lot of stuff:
+ *	Scroll/block copy.
+ *	Cursor.
+ *	Color.
+ *	24-bit vs 8-bit.
+ *	Make sure that everything works with both NetBSD and Ultrix.
+ *	3D?
+ *	Don't use so many hardcoded values.
+ *	Interrupts?
  */
 
 #include <stdio.h>
@@ -145,10 +155,79 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 	debug(" ]\n");
 #endif	/*  PX_DEBUG  */
 
-	/*  NetBSD erasecols/eraserows  */
+	/*  NetBSD and Ultrix copyspans  */
+	if (cmdword == 0x405) {
+		uint32_t nspans, lw;
+		int spannr, ofs;
+		uint32_t span_len, span_src, span_dst;
+		unsigned char pixels[1280];
+
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			nspans = dma_buf[4] + (dma_buf[5] << 8) + (dma_buf[6] << 16) + (dma_buf[7] << 24);
+		else
+			nspans = dma_buf[7] + (dma_buf[6] << 8) + (dma_buf[5] << 16) + (dma_buf[4] << 24);
+
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			lw = dma_buf[16] + (dma_buf[17] << 8) + (dma_buf[18] << 16) + (dma_buf[19] << 24);
+		else
+			lw = dma_buf[19] + (dma_buf[18] << 8) + (dma_buf[17] << 16) + (dma_buf[16] << 24);
+
+		nspans >>= 24;
+		/*  Why not this?  lw = (lw + 1) >> 2;  */
+		debug("px: copyspans:  nspans = %i, lw = %i\n", nspans, lw);
+
+		/*  Reread copyspans command if it wasn't completely read:  */
+		if (dma_len < 4*(5 + nspans*3)) {
+			dma_len = 4 * (5+nspans*3);
+			memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+		}
+
+		ofs = 4*5;
+		for (spannr=0; spannr<nspans; spannr++) {
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				span_len = dma_buf[ofs+0] + (dma_buf[ofs+1] << 8) + (dma_buf[ofs+2] << 16) + (dma_buf[ofs+3] << 24);
+			else
+				span_len = dma_buf[ofs+3] + (dma_buf[ofs+2] << 8) + (dma_buf[ofs+1] << 16) + (dma_buf[ofs+0] << 24);
+			ofs += 4;
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				span_src = dma_buf[ofs+0] + (dma_buf[ofs+1] << 8) + (dma_buf[ofs+2] << 16) + (dma_buf[ofs+3] << 24);
+			else
+				span_src = dma_buf[ofs+3] + (dma_buf[ofs+2] << 8) + (dma_buf[ofs+1] << 16) + (dma_buf[ofs+0] << 24);
+			ofs += 4;
+
+			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+				span_dst = dma_buf[ofs+0] + (dma_buf[ofs+1] << 8) + (dma_buf[ofs+2] << 16) + (dma_buf[ofs+3] << 24);
+			else
+				span_dst = dma_buf[ofs+3] + (dma_buf[ofs+2] << 8) + (dma_buf[ofs+1] << 16) + (dma_buf[ofs+0] << 24);
+			ofs += 4;
+
+			span_len >>= 3;
+			span_dst >>= 3;
+			span_src >>= 3;
+
+			if (span_len > 1280)
+				span_len = 1280;
+
+			/*  debug("    span %i: len=%i src=%i dst=%i\n", spannr, span_len, span_src, span_dst);  */
+
+			dev_fb_access(cpu, cpu->mem, span_src * 1280, pixels, span_len, MEM_READ, d->vfb_data);
+			dev_fb_access(cpu, cpu->mem, span_dst * 1280, pixels, span_len, MEM_WRITE, d->vfb_data);
+		}
+	}
+
+	/*  NetBSD and Ultrix erasecols/eraserows  */
 	if (cmdword == 0x411) {
-		uint32_t v1, v2;
+		uint32_t v1, v2, lw;
 		int x,y,x2,y2;
+		int fb_y;
+		unsigned char pixels[1280];
+		memset(pixels, 0, sizeof(pixels));	/*  TODO: other colors  */
+
+		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+			lw = dma_buf[16] + (dma_buf[17] << 8) + (dma_buf[18] << 16) + (dma_buf[19] << 24);
+		else
+			lw = dma_buf[19] + (dma_buf[18] << 8) + (dma_buf[17] << 16) + (dma_buf[16] << 24);
 
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			v1 = dma_buf[24] + (dma_buf[25] << 8) + (dma_buf[26] << 16) + (dma_buf[27] << 24);
@@ -160,15 +239,24 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		else
 			v2 = dma_buf[31] + (dma_buf[30] << 8) + (dma_buf[29] << 16) + (dma_buf[28] << 24);
 
+		v1 -= lw;
+		v2 -= lw;
+
 		x = (v1 >> 19) & 2047;
 		y = (v1 >> 3) & 1023;
 		x2 = (v2 >> 19) & 2047;
 		y2 = (v2 >> 3) & 1023;
 
-		debug("v1 = 0x%08x  v2 = 0x%08x x=%i y=%i\n", (int)v1, (int)v2, x,y, x2,y2);
+		lw = (lw + 1) >> 2;
+
+		debug("px: clear/fill: v1 = 0x%08x  v2 = 0x%08x lw=%i x=%i y=%i x2=%i y2=%i\n", (int)v1, (int)v2, lw, x,y, x2,y2);
+
+		for (fb_y=y; fb_y < y2 + lw; fb_y ++) {
+			dev_fb_access(cpu, cpu->mem, fb_y * 1280 + x, pixels, x2-x, MEM_WRITE, d->vfb_data);
+		}
 	}
 
-	/*  NetBSD putchar  */
+	/*  NetBSD and Ultrix putchar  */
 	if (cmdword == 0xa21) {
 		/*  Ugly test code:  */
 		unsigned char pixels[16];
@@ -193,7 +281,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		x2 = (v2 >> 19) & 2047;
 		y2 = ((v2 - 63) >> 3) & 1023;
 
-		debug("v1 = 0x%08x  v2 = 0x%08x x=%i y=%i\n", (int)v1, (int)v2, x,y, x2,y2);
+		debug("px putchar: v1 = 0x%08x  v2 = 0x%08x x=%i y=%i\n", (int)v1, (int)v2, x,y, x2,y2);
 
 		x %= 1280;
 		y %= 1024;
@@ -392,6 +480,7 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 		break;
 	case DEV_PX_TYPE_PXG:
 		dev_bt459_init(mem, baseaddr + 0x300000, d->vfb_data->rgb_palette, 8);
+		fatal("PXG: TODO\n");
 		break;
 	default:
 		fatal("dev_px_init(): unimplemented px_type\n");

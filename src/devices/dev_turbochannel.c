@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.8 2004-02-23 23:11:45 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.9 2004-03-07 03:55:49 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -183,11 +183,22 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, "PMAG-BA");
 		dev_bt459_init(mem, baseaddr + VFB_CFB_BT459, fb->rgb_palette, 8);
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
+	} else if (strcmp(device_name, "PMAG-CA")==0) {
+		/*  px in NetBSD  */
+		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PX, irq);
+		rom_offset = 0x3c0000;
+	} else if (strcmp(device_name, "PMAG-DA")==0) {
+		/*  pxg in NetBSD  */
+		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PXG, irq);
+		rom_offset = 0x3c0000;
+	} else if (strcmp(device_name, "PMAG-EA")==0) {
+		/*  pxg+ in NetBSD: TODO  (not supported by the kernel I've tried)  */
+		fb = dev_fb_init(cpu, mem, baseaddr + 0, VFB_GENERIC, 1280, 1024, 1280, 1024, 24, "PMAG-EA");
+		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-FA")==0) {
-		/*  px in NetBSD: TODO  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0, VFB_GENERIC, 1024, 768, 1024, 768, 24, "PMAG-FA");
-		/*  dev_bt459_init(mem, baseaddr + 0x200000, fb->rgb_palette, 24);  */
-		rom_offset = 0x300000;
+		/*  "pxg+ Turbo" in NetBSD: TODO  */
+		fb = dev_fb_init(cpu, mem, baseaddr + 0, VFB_GENERIC, 1280, 1024, 1280, 1024, 24, "PMAG-FA");
+		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DV")==0) {
 		/*  xcfb in NetBSD: TODO  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV");

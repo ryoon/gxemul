@@ -25,12 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.24 2005-01-22 07:53:49 debug Exp $
+ *  $Id: console.c,v 1.25 2005-01-22 07:56:10 debug Exp $
  *
  *  Generic console support functions.
  *
  *  This is used by individual device drivers, for example serial controllers,
  *  to attach stdin/stdout of the host system to a specific device.
+ *
+ *  NOTE: This stuff is non-reentrant.
  */
 
 #include <signal.h>
@@ -62,11 +64,13 @@ static int console_fifo_tail;
 /*  Mouse coordinates:  */
 static int console_framebuffer_mouse_x;		/*  absolute x, 0-based  */
 static int console_framebuffer_mouse_y;		/*  absolute y, 0-based  */
-static int console_framebuffer_mouse_fb_nr;	/*  fb_number of last framebuffer cursor update  */
+static int console_framebuffer_mouse_fb_nr;	/*  fb_number of last
+						    framebuffer cursor update */
 
 static int console_mouse_x;		/*  absolute x, 0-based  */
 static int console_mouse_y;		/*  absolute y, 0-based  */
-static int console_mouse_fb_nr;		/*  framebuffer number of host movement, 0-based  */
+static int console_mouse_fb_nr;		/*  framebuffer number of
+					    host movement, 0-based  */
 static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
 
 
@@ -208,7 +212,8 @@ int console_charavail(void)
 
 		for (i=0; i<len; i++) {
 			/*  printf("[ %i: %i ]\n", i, ch[i]);  */
-			/*  Ugly hack: convert ctrl-b into ctrl-c.  (TODO: fix)  */
+			/*  Ugly hack: convert ctrl-b into ctrl-c.
+			    (TODO: fix)  */
 			if (ch[i] == 2)
 				ch[i] = 3;
 			console_makeavail(ch[i]);
@@ -347,5 +352,4 @@ void console_getmouse(int *x, int *y, int *buttons, int *fb_nr)
 	*buttons = console_mouse_buttons;
 	*fb_nr = console_mouse_fb_nr;
 }
-
 

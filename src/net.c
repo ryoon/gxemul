@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.49 2005-01-22 07:43:09 debug Exp $
+ *  $Id: net.c,v 1.50 2005-01-22 07:53:51 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1674,7 +1674,7 @@ static void get_host_nameserver(struct net *net)
  */
 static void net_gateway_init(struct net *net)
 {
-	unsigned char *p = &net->netmask_ipv4;
+	unsigned char *p = (void *) &net->netmask_ipv4;
 	uint32_t x;
 	int xl, iadd = 4;
 
@@ -1711,6 +1711,23 @@ static void net_gateway_init(struct net *net)
 	}
 	debug("\n");
 	debug_indentation(-iadd);
+}
+
+
+/*
+ *  net_dumpinfo():
+ *
+ *  Called from the debugger's "machine" command, to print some info about
+ *  a network.
+ */
+void net_dumpinfo(struct net *net)
+{
+	debug("net: ");
+
+	net_debugaddr(&net->netmask_ipv4, ADDR_IPV4);
+	debug("/%i", net->netmask_ipv4_len);
+
+	debug("\n");
 }
 
 
@@ -1752,7 +1769,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 
 	if (netipv4len < 1 || netipv4len > 30) {
 		fprintf(stderr, "net_init(): extremely weird ipv4 "
-		    "network length\n", ipv4addr);
+		    "network length (%i)\n", netipv4len);
 		exit(1);
 	}
 	net->netmask_ipv4_len = netipv4len;

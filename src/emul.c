@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.126 2005-01-22 07:19:02 debug Exp $
+ *  $Id: emul.c,v 1.127 2005-01-22 07:53:51 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -560,14 +560,16 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
 
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
-	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32)
-		debug("0x%08x (gp=0x%08x)",
-		    (int)m->cpus[m->bootstrap_cpu]->pc,
-		    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
-	else {
-		debug("0x%016llx (gp=0x%016llx)",
-		    (long long)m->cpus[m->bootstrap_cpu]->pc,
-		    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32) {
+		debug("0x%08x", (int)m->cpus[m->bootstrap_cpu]->pc);
+		if (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] != 0)
+			debug(" (gp=0x%08x)",
+			    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+	} else {
+		debug("0x%016llx", (long long)m->cpus[m->bootstrap_cpu]->pc);
+		if (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] != 0)
+			debug(" (gp=0x%016llx)",
+			    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
 	}
 	debug("\n");
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.19 2004-07-16 18:19:32 debug Exp $
+ *  $Id: dev_le.c,v 1.20 2004-07-20 01:08:03 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -720,14 +720,18 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->rx_packet = NULL;
 
 	/*  ROM (including the MAC address):  */
-	d->rom[0] = 0x11;
-	d->rom[1] = 0x22;
-	d->rom[2] = 0x33;
-	d->rom[3] = 0x44;
-	d->rom[4] = 0x55;
-	d->rom[5] = 0x66;
+	d->rom[0] = 0x10;
+	d->rom[1] = 0x20;
+	d->rom[2] = 0x30;
+	d->rom[3] = 0x40;
+	d->rom[4] = 0x50;
+	d->rom[5] = 0x60;
 
-	/*  Low order bit of a physical MAC address should be clear:  */
+	/*
+	 *  NOTE:  According to the Lance documentation, the low order bit of
+	 *  a physical MAC address should be clear.
+	 */
+	d->rom[0] &= ~1;
 	d->rom[5] &= ~1;
 
 	/*  Copies of the MAC address and a test pattern:  */

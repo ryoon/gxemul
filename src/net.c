@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.18 2004-07-16 23:04:53 debug Exp $
+ *  $Id: net.c,v 1.19 2004-07-20 01:08:08 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -32,10 +32,10 @@
  *		Internet networking up and running for the guest OS.
  *
  *
- *  The emulated NIC has a MAC address of (for example) 11:22:33:44:55:66.
+ *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.
  *  From the emulated environment, the only other machine existing on the
  *  network is a "gateway" or "firewall", which has an address of
- *  55:44:33:22:11:00. This module (net.c) contains the emulation of that
+ *  60:50:40:30:20:10. This module (net.c) contains the emulation of that
  *  gateway. It works like a NAT firewall, but emulated in userland software.
  *
  *  The gateway uses IPv4 address 10.0.0.254, the guest OS (inside the
@@ -87,7 +87,7 @@ struct ethernet_packet_link {
 static struct ethernet_packet_link *first_ethernet_packet = NULL;
 static struct ethernet_packet_link *last_ethernet_packet = NULL;
 
-unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
+unsigned char gateway_addr[6] = { 0x60, 0x50, 0x40, 0x30, 0x20, 0x10 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.57 2004-12-22 16:12:58 debug Exp $
+ *  $Id: arcbios.c,v 1.58 2004-12-29 12:04:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -868,7 +868,7 @@ void arcbios_private_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	default:
-		cpu_register_dump(cpu);
+		cpu_register_dump(cpu, 1, 0x1);
 		debug("a0 points to: ");
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
 		debug("\n");
@@ -1357,12 +1357,12 @@ cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
 		 */
 		fatal("EXCEPTION, but no exception handler installed yet.\n");
 		quiet_mode = 0;
-		cpu_register_dump(cpu);
+		cpu_register_dump(cpu, 1, 0x1);
 		cpu->running = 0;
 		break;
 	default:
 		quiet_mode = 0;
-		cpu_register_dump(cpu);
+		cpu_register_dump(cpu, 1, 0x1);
 		debug("a0 points to: ");
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
 		debug("\n");

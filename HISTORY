@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.422 2004-12-28 20:38:54 debug Exp $
+$Id: HISTORY,v 1.423 2004-12-29 12:04:15 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1390,3 +1390,5 @@ HISTORY of mips64emul
 20041227	Some hacks to the VR41xx code to allow Linux for BE300 to
 		get far enough to show the penguin on the framebuffer.
 20041228	Merging dev_kn01_csr.c and dev_vdac.c into dev_kn01.c.
+20041229	Various updates to the debugger (nicer tlb output and other
+		things).

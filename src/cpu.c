@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.220 2004-12-22 16:12:58 debug Exp $
+ *  $Id: cpu.c,v 1.221 2004-12-29 12:04:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -42,8 +42,6 @@
 #include "cop0.h"
 #include "cpu_types.h"
 #include "emul.h"
-#include "dec_5100.h"
-#include "dec_kn02.h"
 #include "devices.h"
 #include "memory.h"
 #include "opcodes.h"
@@ -279,8 +277,9 @@ static void cpu_show_full_statistics(struct emul *emul, struct cpu **cpus)
 	int i, s1, s2;
 
 	if (emul->bintrans_enable)
-		printf("\nNOTE: Dynamic binary translation is used; this list of opcode usage\n"
-		    "      only includes instructions that were interpreted manually!\n");
+		printf("\nNOTE: Dynamic binary translation is used; this list"
+		    " of opcode usage\n      only includes instructions that"
+		    " were interpreted manually!\n");
 
 	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i opcode statistics:\n", i);
@@ -345,7 +344,7 @@ void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
  *  depending on the cpu's current delay_slot and last_was_jumptoself
  *  flags.
  */
-const char *cpu_flags(struct cpu *cpu)
+static const char *cpu_flags(struct cpu *cpu)
 {
 	if (cpu->delay_slot) {
 		if (cpu->last_was_jumptoself)
@@ -809,84 +808,106 @@ disasm_ret:
  *  cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
+ *
+ *  gprs: set to non-zero to dump GPRs and hi/lo/pc
+ *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
  */
-void cpu_register_dump(struct cpu *cpu)
+void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 {
-	int i;
+	int coprocnr, i, bits32;
 	uint64_t offset;
 	char *symbol;
 
-	symbol = get_symbol_name(&cpu->emul->symbol_context, cpu->pc, &offset);
+	bits32 = (cpu->cpu_type.isa_level < 3 ||
+	    cpu->cpu_type.isa_level == 32)? 1 : 0;
 
-	/*  Special registers:  */
-	if (cpu->cpu_type.isa_level < 3 ||
-	    cpu->cpu_type.isa_level == 32)
-		debug("cpu%i:  hi  = %08x  lo  = %08x  pc  = %08x",
-		    cpu->cpu_id, (int)cpu->hi, (int)cpu->lo, (int)cpu->pc);
-	else
-		debug("cpu%i:  hi  = %016llx  lo  = %016llx  pc  = %016llx",
-		    cpu->cpu_id, (long long)cpu->hi,
-		    (long long)cpu->lo, (long long)cpu->pc);
+	if (gprs) {
+		/*  Special registers (pc, hi/lo) first:  */
+		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		    cpu->pc, &offset);
 
-	if (symbol != NULL)
-		debug(" <%s>", symbol);
-	debug("\n");
+		if (bits32)
+			debug("cpu%i:  pc  = %08x", cpu->cpu_id, (int)cpu->pc);
+		else
+			debug("cpu%i:    pc  = %016llx",
+			    cpu->cpu_id, (long long)cpu->pc);
 
-	/*  General registers:  */
-	if (cpu->cpu_type.rev == MIPS_R5900) {
-		/*  128-bit:  */
-		for (i=0; i<32; i++) {
-			if ((i & 1) == 0)
-				debug("cpu%i:", cpu->cpu_id);
-			debug(" r%02i=%016llx%016llx", i,
-			    (long long)cpu->gpr_quadhi[i],
-			    (long long)cpu->gpr[i]);
-			if ((i & 1) == 1)
-				debug("\n");
-		}
-	} else if (cpu->cpu_type.isa_level < 3 ||
-	    cpu->cpu_type.isa_level == 32) {
-		/*  32-bit:  */
-		for (i=0; i<32; i++) {
-			if ((i & 3) == 0)
-				debug("cpu%i:", cpu->cpu_id);
-			debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
-			if ((i & 3) == 3)
-				debug("\n");
-		}
-	} else {
-		/*  64-bit:  */
-		for (i=0; i<32; i++) {
-			if ((i & 1) == 0)
-				debug("cpu%i:", cpu->cpu_id);
-			debug("    r%02i = %016llx", i, (long long)cpu->gpr[i]);
-			if ((i & 1) == 1)
-				debug("\n");
+		if (symbol != NULL)
+			debug(" <%s>", symbol);
+		debug("\n");
+
+		if (bits32)
+			debug("cpu%i:  hi  = %08x  lo  = %08x\n",
+			    cpu->cpu_id, (int)cpu->hi, (int)cpu->lo);
+		else
+			debug("cpu%i:    hi  = %016llx    lo  = %016llx\n",
+			    cpu->cpu_id, (long long)cpu->hi,
+			    (long long)cpu->lo);
+
+		/*  General registers:  */
+		if (cpu->cpu_type.rev == MIPS_R5900) {
+			/*  128-bit:  */
+			for (i=0; i<32; i++) {
+				if ((i & 1) == 0)
+					debug("cpu%i:", cpu->cpu_id);
+				debug(" r%02i=%016llx%016llx", i,
+				    (long long)cpu->gpr_quadhi[i],
+				    (long long)cpu->gpr[i]);
+				if ((i & 1) == 1)
+					debug("\n");
+			}
+		} else if (bits32) {
+			/*  32-bit:  */
+			for (i=0; i<32; i++) {
+				if ((i & 3) == 0)
+					debug("cpu%i:", cpu->cpu_id);
+				debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
+				if ((i & 3) == 3)
+					debug("\n");
+			}
+		} else {
+			/*  64-bit:  */
+			for (i=0; i<32; i++) {
+				if ((i & 1) == 0)
+					debug("cpu%i:", cpu->cpu_id);
+				debug("    r%02i = %016llx", i, (long long)cpu->gpr[i]);
+				if ((i & 1) == 1)
+					debug("\n");
+			}
 		}
 	}
 
-	/*  Coprocessor 0 registers:  */
-	/*  TODO: multiple selections per register?  */
-	if (cpu->cpu_type.isa_level < 3 ||
-	    cpu->cpu_type.isa_level == 32) {
-		/*  32-bit:  */
-		for (i=0; i<32; i++) {
-			if ((i & 3) == 0)
-				debug("cpu%i:", cpu->cpu_id);
-			debug("  c0,%02i = %08x", i,
-			    (int)cpu->coproc[0]->reg[i]);
-			if ((i & 3) == 3)
-				debug("\n");
+	for (coprocnr=0; coprocnr<4; coprocnr++) {
+		if (!(coprocs & (1<<coprocnr)))
+			continue;
+		if (cpu->coproc[coprocnr] == NULL) {
+			debug("cpu%i: no coprocessor %i\n",
+			    cpu->cpu_id, coprocnr);
+			continue;
 		}
-	} else {
-		/*  64-bit:  */
-		for (i=0; i<32; i++) {
-			if ((i & 1) == 0)
-				debug("cpu%i:", cpu->cpu_id);
-			debug("  c0,%02i = %016llx", i,
-			    (long long)cpu->coproc[0]->reg[i]);
-			if ((i & 1) == 1)
-				debug("\n");
+
+		/*  Coprocessor registers:  */
+		/*  TODO: multiple selections per register?  */
+		if (bits32) {
+			/*  32-bit:  */
+			for (i=0; i<32; i++) {
+				if ((i & 3) == 0)
+					debug("cpu%i:", cpu->cpu_id);
+				debug("  c%i,%02i = %08x", coprocnr, i,
+				    (int)cpu->coproc[coprocnr]->reg[i]);
+				if ((i & 3) == 3)
+					debug("\n");
+			}
+		} else {
+			/*  64-bit:  */
+			for (i=0; i<32; i++) {
+				if ((i & 1) == 0)
+					debug("cpu%i:", cpu->cpu_id);
+				debug("  c%i,%02i = %016llx", coprocnr, i,
+				    (long long)cpu->coproc[coprocnr]->reg[i]);
+				if ((i & 1) == 1)
+					debug("\n");
+			}
 		}
 	}
 }
@@ -901,7 +922,7 @@ void cpu_register_dump(struct cpu *cpu)
  *
  *  Note:  This function should not be called if show_trace_tree == 0.
  */
-void show_trace(struct cpu *cpu, uint64_t addr)
+static void show_trace(struct cpu *cpu, uint64_t addr)
 {
 	uint64_t offset;
 	int x, n_args_to_print;
@@ -1566,7 +1587,7 @@ int cpu_run_instr(struct cpu *cpu)
 		/*  Dump CPU registers for debugging:  */
 		if (cpu->emul->register_dump) {
 			debug("\n");
-			cpu_register_dump(cpu);
+			cpu_register_dump(cpu, 1, 0x1);
 		}
 
 		/*  Trace tree:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.23 2004-12-26 18:16:51 debug Exp $
+ *  $Id: debugger.c,v 1.24 2004-12-29 12:04:17 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -180,16 +180,23 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 
 		/*  TODO  */
 
+		/*  Warn about non-signextended values:  */
+		if ( ((*valuep) >> 32) == 0 && (*valuep) & 0x80000000ULL)
+			printf("WARNING: The value is not sign-extended. "
+			    "Is this what you intended?\n");
+
 		/*  Register name:  */
 		if (strcasecmp(name, "pc") == 0) {
 			if (writeflag) {
 				emul->cpus[cpunr]->pc = *valuep;
 				if (emul->cpus[cpunr]->delay_slot) {
-					printf("NOTE: Clearing the delay slot flag! (It was set before.)\n");
+					printf("NOTE: Clearing the delay slot"
+					    " flag! (It was set before.)\n");
 					emul->cpus[cpunr]->delay_slot = 0;
 				}
 				if (emul->cpus[cpunr]->nullify_next) {
-					printf("NOTE: Clearing the nullify-next flag! (It was set before.)\n");
+					printf("NOTE: Clearing the nullify-ne"
+					    "xt flag! (It was set before.)\n");
 					emul->cpus[cpunr]->nullify_next = 0;
 				}
 			} else
@@ -758,19 +765,35 @@ static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 {
-	int i, cpuid = -1;
+	int i, cpuid = -1, coprocnr = -1;
+	int gprs, coprocs;
+	char *p;
 
+	/*  [cpuid][,c]  */
 	if (cmd_line[0] != '\0') {
-		cpuid = strtoull(cmd_line, NULL, 0);
-		if (cpuid < 0 || cpuid >= emul->ncpus) {
-			printf("cpu%i doesn't exist.\n", cpuid);
-			return;
+		if (cmd_line[0] != ',') {
+			cpuid = strtoull(cmd_line, NULL, 0);
+			if (cpuid < 0 || cpuid >= emul->ncpus) {
+				printf("cpu%i doesn't exist.\n", cpuid);
+				return;
+			}
+		}
+		p = strchr(cmd_line, ',');
+		if (p != NULL) {
+			coprocnr = atoi(p + 1);
+			if (coprocnr < 0 || coprocnr >= 4) {
+				printf("Invalid coprocessor number.\n");
+				return;
+			}
 		}
 	}
 
+	gprs = (coprocnr == -1)? 1 : 0;
+	coprocs = (coprocnr == -1)? 0x0 : (1 << coprocnr);
+
 	for (i=0; i<emul->ncpus; i++)
 		if (cpuid == -1 || i == cpuid)
-			cpu_register_dump(emul->cpus[i]);
+			cpu_register_dump(emul->cpus[i], gprs, coprocs);
 }
 
 
@@ -806,29 +829,166 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 {
 	int i, j, x = -1;
+	int rawflag = 0;
 
 	if (cmd_line[0] != '\0') {
-		x = strtoull(cmd_line, NULL, 0);
-		if (x < 0 || x >= emul->ncpus) {
-			printf("cpu%i doesn't exist.\n", x);
-			return;
+		char *p;
+		if (cmd_line[0] != ',') {
+			x = strtoull(cmd_line, NULL, 0);
+			if (x < 0 || x >= emul->ncpus) {
+				printf("cpu%i doesn't exist.\n", x);
+				return;
+			}
+		}
+		p = strchr(cmd_line, ',');
+		if (p != NULL) {
+			switch (p[1]) {
+			case 'r':
+			case 'R':
+				rawflag = 1;
+				break;
+			default:
+				printf("Unknown tlbdump flag.\n");
+				printf("usage: tlbdump [cpuid][,r]\n");
+				return;
+			}
 		}
 	}
 
-	for (i=0; i<emul->ncpus; i++)
-	    if (x == -1 || i == x) {
+	/*  Nicely formatted output:  */
+	if (!rawflag) {
+		for (i=0; i<emul->ncpus; i++) {
+			if (x >= 0 && i != x)
+				continue;
+
+			/*  Print index, random, and wired:  */
+			printf("cpu%i: (", i);
+			switch (emul->cpus[i]->cpu_type.isa_level) {
+			case 1:
+			case 2:
+				printf("index=0x%x random=0x%x",
+				    (int) ((emul->cpus[i]->coproc[0]->
+				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
+				    >> R2K3K_INDEX_SHIFT),
+				    (int) ((emul->cpus[i]->coproc[0]->
+				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+				    >> R2K3K_RANDOM_SHIFT));
+				break;
+			default:
+				printf("index=0x%x random=0x%x",
+				    (int) (emul->cpus[i]->coproc[0]->
+				    reg[COP0_INDEX] & INDEX_MASK),
+				    (int) (emul->cpus[i]->coproc[0]->
+				    reg[COP0_RANDOM] & RANDOM_MASK));
+				printf(" wired=0x%llx", (long long)
+				    emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			}
+
+			printf(")\n");
+
+			for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries;
+			    j++) {
+				uint64_t hi,lo0,lo1,mask;
+				hi = emul->cpus[i]->coproc[0]->tlbs[j].hi;
+				lo0 = emul->cpus[i]->coproc[0]->tlbs[j].lo0;
+				lo1 = emul->cpus[i]->coproc[0]->tlbs[j].lo1;
+				mask = emul->cpus[i]->coproc[0]->tlbs[j].mask;
+
+				printf("%3i: ", j);
+				switch (emul->cpus[i]->cpu_type.mmu_model) {
+				case MMU3K:
+					if (!(lo0 & R2K3K_ENTRYLO_V)) {
+						printf("(invalid)\n");
+						continue;
+					}
+					printf("vaddr=0x%08x ",
+					    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
+					if (lo0 & R2K3K_ENTRYLO_G)
+						printf("(global),   ");
+					else
+						printf("(asid 0x%02x),",
+						    (int) ((hi & R2K3K_ENTRYHI_ASID_MASK)
+						    >> R2K3K_ENTRYHI_ASID_SHIFT));
+					printf(" paddr=0x%08x ",
+					    (int) (lo0&R2K3K_ENTRYLO_PFN_MASK));
+					if (lo0 & R2K3K_ENTRYLO_N)
+						printf("N");
+					if (lo0 & R2K3K_ENTRYLO_D)
+						printf("D");
+					printf("\n");
+					break;
+				default:
+					/*  TODO: MIPS32 doesn't need 0x16llx  */
+					if (emul->cpus[i]->cpu_type.mmu_model == MMU10K)
+						printf("vaddr=0x%011llx ",
+						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
+					else
+						printf("vaddr=0x%010llx ",
+						    (long long) (hi&ENTRYHI_VPN2_MASK));
+					if (hi & TLB_G)
+						printf("(global):   ");
+					else
+						printf("(asid 0x%02x):",
+						    (int) (hi & ENTRYHI_ASID));
+
+					/*  TODO: Coherency bits  */
+
+					if (!(lo0 & ENTRYLO_V))
+						printf(" p0=(invalid)   ");
+					else
+						printf(" p0=0x%09llx ", (long long)
+						    ((lo0&ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT));
+					printf(lo0 & ENTRYLO_D? "D" : " ");
+
+					if (!(lo1 & ENTRYLO_V))
+						printf(" p1=(invalid)   ");
+					else
+						printf(" p1=0x%09llx ", (long long)
+						    ((lo1&ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT));
+					printf(lo1 & ENTRYLO_D? "D" : " ");
+					switch (mask | 0x1fff) {
+					case 0x1fff:	break;
+					case 0x7fff:	printf(" (16KB)"); break;
+					case 0x1ffff:	printf(" (64KB)"); break;
+					case 0x7ffff:	printf(" (256KB)"); break;
+					case 0x1fffff:	printf(" (1MB)"); break;
+					case 0x7fffff:	printf(" (4MB)"); break;
+					case 0x1ffffff:	printf(" (16MB)"); break;
+					case 0x7ffffff:	printf(" (64MB)"); break;
+					default:
+						printf(" (mask=%08x?)", (int)mask);
+					}
+					printf("\n");
+				}
+			}
+		}
+
+		return;
+	}
+
+	/*  Raw output:  */
+	for (i=0; i<emul->ncpus; i++) {
+		if (x >= 0 && i != x)
+			continue;
+
+		/*  Print index, random, and wired:  */
 		printf("cpu%i: (", i);
+
 		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
 		    emul->cpus[i]->cpu_type.isa_level == 32)
-			printf("index=0x%08x random=0x%08x wired=0x%08x",
+			printf("index=0x%08x random=0x%08x",
 			    (int)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (int)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
 		else
-			printf("index=0x%016llx random=0x%016llx wired=0x%016llx",
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			printf("index=0x%016llx random=0x%016llx", (long long)
+			    emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)emul->cpus[i]->coproc[0]->reg
+			    [COP0_RANDOM]);
+
+		if (emul->cpus[i]->cpu_type.isa_level >= 3)
+			printf(" wired=0x%llx", (long long)
+			    emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+
 		printf(")\n");
 
 		for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
@@ -839,21 +999,21 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0);
 			else if (emul->cpus[i]->cpu_type.isa_level < 3 ||
 			    emul->cpus[i]->cpu_type.isa_level == 32)
-				printf("%3i: hi=0x%08x mask=0x%08x lo0=0x%08x lo1=0x%08x\n",
-				    j,
+				printf("%3i: hi=0x%08x mask=0x%08x "
+				    "lo0=0x%08x lo1=0x%08x\n", j,
 				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
 				    (int)emul->cpus[i]->coproc[0]->tlbs[j].mask,
 				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
 				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 			else
-				printf("%3i: hi=0x%016llx mask=0x%016llx lo0=0x%016llx lo1=0x%016llx\n",
-				    j,
+				printf("%3i: hi=0x%016llx mask=0x%016llx "
+				    "lo0=0x%016llx lo1=0x%016llx\n", j,
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].hi,
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].mask,
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
-	    }
+	}
 }
 
 
@@ -1004,8 +1164,8 @@ static struct cmd cmds[] = {
 	{ "quit", "", 0, debugger_cmd_quit,
 		"quit the emulator" },
 
-	{ "reg", "[cpuid]", 0, debugger_cmd_reg,
-		"show registers" },
+	{ "reg", "[cpuid][,c]", 0, debugger_cmd_reg,
+		"show GPRs (or coprocessor registers)" },
 
 	/*  NOTE: Try to keep 's' down to only one command. Having 'step'
 	    available as a one-letter command is very convenient.  */
@@ -1013,8 +1173,8 @@ static struct cmd cmds[] = {
 	{ "step", "[n]", 0, debugger_cmd_step,
 		"single-step one instruction (or n instructions)" },
 
-	{ "tlbdump", "[cpuid]", 0, debugger_cmd_tlbdump,
-		"dump all CPU's TLB contents (or a specific one's)" },
+	{ "tlbdump", "[cpuid][,r]", 0, debugger_cmd_tlbdump,
+		"dump TLB contents (add ',r' for raw data)" },
 
 	{ "trace", "", 0, debugger_cmd_trace,
 		"toggle show_trace_tree on or off" },

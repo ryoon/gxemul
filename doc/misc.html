@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.21 2005-02-01 07:21:51 debug Exp $
+$Id: misc.html,v 1.22 2005-02-01 07:26:04 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -154,11 +154,20 @@ through an example is good enough:
 		}</font>
 
 	    <b>)</b>
+
+	    <font color="#2020cf">!  Multiple machine are allowed.</font>
+	    <b>machine(</b>
+		<b>name("another machine")</b>
+		<b>type("hpcmips")</b>
+		<b>subtype("be300")</b>
+
+		<i>...</i>
+	    <b>)</b>
 	<b>)</b>
 </pre>
 
 <p>
-Starting the emulator with a configuration file should be as simple as
+Starting the emulator with a configuration file is as simple as
 
 <pre>
 	$ <b>./mips64emul @myconfig</b>

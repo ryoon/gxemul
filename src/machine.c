@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.41 2004-01-19 12:52:01 debug Exp $
+ *  $Id: machine.c,v 1.42 2004-01-24 21:10:58 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -171,6 +171,28 @@ void store_32bit_word(uint64_t addr, uint32_t data32)
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+}
+
+
+/*
+ *  load_32bit_word():
+ *
+ *  Helper function.  Prints a warning and returns 0, if
+ *  the read failed.
+ */
+uint32_t load_32bit_word(uint64_t addr)
+{
+	unsigned char data[4];
+
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data),
+	    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+
+	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
+		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
+	}
+
+	return (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3];
 }
 
 
@@ -415,6 +437,7 @@ void machine_init(struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
+			dev_threemin_ioasic_init(mem, 0x1c000000);
 			dev_scc_init(cpus[0], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
 			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, 0x1c300000, KMIN_INTR_SCSI +8);

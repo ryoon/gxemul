@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.142 2005-01-28 13:47:27 debug Exp $
+ *  $Id: emul.c,v 1.143 2005-01-28 14:58:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -642,15 +642,10 @@ void emul_dumpinfo(struct emul *e)
 
 	nm = e->n_machines;
 	for (j=0; j<nm; j++) {
-		if (nm > 1) {
-			debug("machine %i: \"%s\"\n", j, e->machines[j]->name);
-			debug_indentation(iadd);
-		}
-
+		debug("machine %i: \"%s\"\n", j, e->machines[j]->name);
+		debug_indentation(iadd);
 		machine_dumpinfo(e->machines[j]);
-
-		if (nm > 1)
-			debug_indentation(-iadd);
+		debug_indentation(-iadd);
 	}
 }
 
@@ -829,7 +824,9 @@ void emul_run(struct emul **emuls, int n_emuls)
 	if (n > 0) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail()) {
-			x11_check_event();
+			for (i=0; i<n_emuls; i++)
+				for (j=0; j<emuls[i]->n_machines; j++)
+					x11_check_event(emuls[i]->machines[j]);
 			usleep(1);
 		}
 		console_readchar();

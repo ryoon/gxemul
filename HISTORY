@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.528 2005-01-28 10:19:59 debug Exp $
+$Id: HISTORY,v 1.529 2005-01-28 14:58:26 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1569,3 +1569,5 @@ HISTORY of mips64emul
 		Removing some command line options for the least working
 		emulation modes (-e, -f, -g, -E, -H), adding new -E and -e
 		options for selecting machine type.
+		Moving global variables from src/x11.c into struct machine (a
+		bit buggy, but it seems to almost work).

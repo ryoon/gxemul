@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.h,v 1.1 2005-01-26 08:22:57 debug Exp $
+ *  $Id: x11.h,v 1.2 2005-01-28 14:58:28 debug Exp $
  *
  *  Headerfile for src/x11.c.
  */
@@ -86,16 +86,16 @@ struct fb_window {
 	Pixmap		host_cursor_pixmap;
 #endif
 };
-void x11_redraw_cursor(int);
-void x11_redraw(int);
-void x11_putpixel_fb(int, int x, int y, int color);
+void x11_redraw_cursor(struct machine *, int);
+void x11_redraw(struct machine *, int);
+void x11_putpixel_fb(struct machine *, int, int x, int y, int color);
 #ifdef WITH_X11
-void x11_putimage_fb(int);
+void x11_putimage_fb(struct machine *, int);
 #endif
 void x11_init(struct machine *);
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int scaledown, struct machine *);
-void x11_check_event(void);
+void x11_check_event(struct machine *);
 
 
 #endif	/*  X11_H  */

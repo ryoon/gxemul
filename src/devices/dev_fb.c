@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.84 2005-01-26 08:22:56 debug Exp $
+ *  $Id: dev_fb.c,v 1.85 2005-01-28 14:58:27 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -677,7 +677,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (need_to_redraw_cursor) {
 		/*  Paint new cursor:  */
 		if (d->fb_window->cursor_on) {
-			x11_redraw_cursor(d->fb_window->fb_number);
+			x11_redraw_cursor(cpu->machine, d->fb_window->fb_number);
 			d->fb_window->OLD_cursor_on = d->fb_window->cursor_on;
 			d->fb_window->OLD_cursor_x = d->fb_window->cursor_x;
 			d->fb_window->OLD_cursor_y = d->fb_window->cursor_y;

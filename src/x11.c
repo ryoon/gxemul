@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.46 2005-01-26 08:27:09 debug Exp $
+ *  $Id: x11.c,v 1.47 2005-01-28 14:58:29 debug Exp $
  *
  *  X11-related functions.
  */
@@ -42,16 +42,16 @@
 
 #ifndef	WITH_X11
 
+
 /*  Dummy functions:  */
-void x11_redraw_cursor(int i) { }
-void x11_redraw(int x) { }
-void x11_putpixel_fb(int fb_number, int x, int y, int color) { }
+void x11_redraw_cursor(struct machine *m, int i) { }
+void x11_redraw(struct machine *m, int x) { }
+void x11_putpixel_fb(struct machine *m, int fb, int x, int y, int color) { }
 void x11_init(struct machine *machine) { }
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int scaledown, struct machine *machine)
     { return NULL; }
-void x11_check_event(void) { }
-/* int x11_fb_winxsize = 0, x11_fb_winysize = 0; */
+void x11_check_event(struct machine *m) { }
 
 
 #else	/*  WITH_X11  */
@@ -62,59 +62,55 @@ void x11_check_event(void) { }
 #include <X11/cursorfont.h>
 
 
-/*  Framebuffer windows:  */
-#define	MAX_FRAMEBUFFER_WINDOWS		8
-struct fb_window fb_windows[MAX_FRAMEBUFFER_WINDOWS];
-int n_framebuffer_windows = 0;
-
-
 /*
  *  x11_redraw_cursor():
  *
  *  Redraw a framebuffer's X11 cursor.
  */
-void x11_redraw_cursor(int i)
+void x11_redraw_cursor(struct machine *m, int i)
 {
 	int last_color_used = 0;
 	int n_colors_used = 0;
 
 	/*  Remove old cursor, if any:  */
-	if (fb_windows[i].x11_display != NULL && fb_windows[i].OLD_cursor_on) {
-		XPutImage(fb_windows[i].x11_display,
-		    fb_windows[i].x11_fb_window,
-		    fb_windows[i].x11_fb_gc, fb_windows[i].fb_ximage,
-		    fb_windows[i].OLD_cursor_x/fb_windows[i].scaledown,
-		    fb_windows[i].OLD_cursor_y/fb_windows[i].scaledown,
-		    fb_windows[i].OLD_cursor_x/fb_windows[i].scaledown,
-		    fb_windows[i].OLD_cursor_y/fb_windows[i].scaledown,
-		    fb_windows[i].OLD_cursor_xsize/fb_windows[i].scaledown + 1,
-		    fb_windows[i].OLD_cursor_ysize/fb_windows[i].scaledown + 1);
+	if (m->fb_windows[i]->x11_display != NULL &&
+	    m->fb_windows[i]->OLD_cursor_on) {
+		XPutImage(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_window,
+		    m->fb_windows[i]->x11_fb_gc, m->fb_windows[i]->fb_ximage,
+		    m->fb_windows[i]->OLD_cursor_x/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->OLD_cursor_y/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->OLD_cursor_x/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->OLD_cursor_y/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->OLD_cursor_xsize/m->fb_windows[i]->scaledown + 1,
+		    m->fb_windows[i]->OLD_cursor_ysize/m->fb_windows[i]->scaledown + 1);
 	}
 
-	if (fb_windows[i].x11_display != NULL && fb_windows[i].cursor_on) {
+	if (m->fb_windows[i]->x11_display != NULL &&
+	    m->fb_windows[i]->cursor_on) {
 		int x, y, subx, suby;
 		XImage *xtmp;
 
-		xtmp = XSubImage(fb_windows[i].fb_ximage,
-		    fb_windows[i].cursor_x/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_y/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_xsize/fb_windows[i].scaledown + 1,
-		    fb_windows[i].cursor_ysize/fb_windows[i].scaledown + 1);
+		xtmp = XSubImage(m->fb_windows[i]->fb_ximage,
+		    m->fb_windows[i]->cursor_x/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->cursor_y/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->cursor_xsize/m->fb_windows[i]->scaledown + 1,
+		    m->fb_windows[i]->cursor_ysize/m->fb_windows[i]->scaledown + 1);
 		if (xtmp == NULL) {
 			fatal("out of memory in x11_redraw_cursor()\n");
 			return;
 		}
 
-		for (y=0; y<fb_windows[i].cursor_ysize; y+=fb_windows[i].scaledown)
-			for (x=0; x<fb_windows[i].cursor_xsize; x+=fb_windows[i].scaledown) {
-				int px = x/fb_windows[i].scaledown;
-				int py = y/fb_windows[i].scaledown;
+		for (y=0; y<m->fb_windows[i]->cursor_ysize; y+=m->fb_windows[i]->scaledown)
+			for (x=0; x<m->fb_windows[i]->cursor_xsize; x+=m->fb_windows[i]->scaledown) {
+				int px = x/m->fb_windows[i]->scaledown;
+				int py = y/m->fb_windows[i]->scaledown;
 				int p = 0, n = 0, c = 0;
 				unsigned long oldcol;
 
-				for (suby=0; suby<fb_windows[i].scaledown; suby++)
-					for (subx=0; subx<fb_windows[i].scaledown; subx++) {
-						c = fb_windows[i].cursor_pixels[y+suby][x+subx];
+				for (suby=0; suby<m->fb_windows[i]->scaledown; suby++)
+					for (subx=0; subx<m->fb_windows[i]->scaledown; subx++) {
+						c = m->fb_windows[i]->cursor_pixels[y+suby][x+subx];
 						if (c >= 0) {
 							p += c;
 							n++;
@@ -137,80 +133,80 @@ void x11_redraw_cursor(int i)
 					break;
 				case CURSOR_COLOR_INVERT:
 					oldcol = XGetPixel(xtmp, px, py);
-					if (oldcol != fb_windows[i].
+					if (oldcol != m->fb_windows[i]->
 					    x11_graycolor[N_GRAYCOLORS-1].pixel)
-						oldcol = fb_windows[i].
+						oldcol = m->fb_windows[i]->
 						    x11_graycolor[N_GRAYCOLORS-1].pixel;
 					else
-						oldcol = fb_windows[i].
+						oldcol = m->fb_windows[i]->
 						    x11_graycolor[0].pixel;
 					XPutPixel(xtmp, px, py, oldcol);
 					break;
 				default:	/*  Normal grayscale:  */
-					XPutPixel(xtmp, px, py, fb_windows[i].
+					XPutPixel(xtmp, px, py, m->fb_windows[i]->
 					    x11_graycolor[p].pixel);
 				}
 			}
 
-		XPutImage(fb_windows[i].x11_display,
-		    fb_windows[i].x11_fb_window,
-		    fb_windows[i].x11_fb_gc,
-		    xtmp,
-		    0, 0,
-		    fb_windows[i].cursor_x/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_y/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_xsize/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_ysize/fb_windows[i].scaledown);
+		XPutImage(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_window,
+		    m->fb_windows[i]->x11_fb_gc,
+		    xtmp, 0, 0,
+		    m->fb_windows[i]->cursor_x/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->cursor_y/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->cursor_xsize/m->fb_windows[i]->scaledown,
+		    m->fb_windows[i]->cursor_ysize/m->fb_windows[i]->scaledown);
 
 		XDestroyImage(xtmp);
 
-		fb_windows[i].OLD_cursor_on = fb_windows[i].cursor_on;
-		fb_windows[i].OLD_cursor_x = fb_windows[i].cursor_x;
-		fb_windows[i].OLD_cursor_y = fb_windows[i].cursor_y;
-		fb_windows[i].OLD_cursor_xsize = fb_windows[i].cursor_xsize;
-		fb_windows[i].OLD_cursor_ysize = fb_windows[i].cursor_ysize;
-		XFlush(fb_windows[i].x11_display);
+		m->fb_windows[i]->OLD_cursor_on = m->fb_windows[i]->cursor_on;
+		m->fb_windows[i]->OLD_cursor_x = m->fb_windows[i]->cursor_x;
+		m->fb_windows[i]->OLD_cursor_y = m->fb_windows[i]->cursor_y;
+		m->fb_windows[i]->OLD_cursor_xsize = m->fb_windows[i]->cursor_xsize;
+		m->fb_windows[i]->OLD_cursor_ysize = m->fb_windows[i]->cursor_ysize;
+		XFlush(m->fb_windows[i]->x11_display);
 	}
 
 	/*  printf("n_colors_used = %i\n", n_colors_used);  */
 
-	if (fb_windows[i].host_cursor != 0 && n_colors_used < 2) {
+	if (m->fb_windows[i]->host_cursor != 0 && n_colors_used < 2) {
 		/*  Remove the old X11 host cursor:  */
-		XUndefineCursor(fb_windows[i].x11_display, fb_windows[i].x11_fb_window);
-		XFlush(fb_windows[i].x11_display);
-		XFreeCursor(fb_windows[i].x11_display, fb_windows[i].host_cursor);
-		fb_windows[i].host_cursor = 0;
+		XUndefineCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window);
+		XFlush(m->fb_windows[i]->x11_display);
+		XFreeCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor);
+		m->fb_windows[i]->host_cursor = 0;
 	}
 
-	if (n_colors_used >= 2 && fb_windows[i].host_cursor == 0) {
+	if (n_colors_used >= 2 && m->fb_windows[i]->host_cursor == 0) {
 		GC tmpgc;
 
 		/*  Create a new X11 host cursor:  */
-		/*  cursor = XCreateFontCursor(fb_windows[i].x11_display, XC_coffee_mug);  */
-		if (fb_windows[i].host_cursor_pixmap != 0) {
-			XFreePixmap(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap);
-			fb_windows[i].host_cursor_pixmap = 0;
+		/*  cursor = XCreateFontCursor(m->fb_windows[i]->x11_display, XC_coffee_mug);  :-)  */
+		if (m->fb_windows[i]->host_cursor_pixmap != 0) {
+			XFreePixmap(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor_pixmap);
+			m->fb_windows[i]->host_cursor_pixmap = 0;
 		}
-		fb_windows[i].host_cursor_pixmap = XCreatePixmap(fb_windows[i].x11_display, fb_windows[i].x11_fb_window, 1, 1, 1);
-		XSetForeground(fb_windows[i].x11_display, fb_windows[i].x11_fb_gc,
-		    fb_windows[i].x11_graycolor[0].pixel);
+		m->fb_windows[i]->host_cursor_pixmap = XCreatePixmap(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window, 1, 1, 1);
+		XSetForeground(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_gc,
+		    m->fb_windows[i]->x11_graycolor[0].pixel);
 
-		tmpgc = XCreateGC(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap, 0,0);
+		tmpgc = XCreateGC(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor_pixmap, 0,0);
 
-		XDrawPoint(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap,
+		XDrawPoint(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->host_cursor_pixmap,
 		    tmpgc, 0, 0);
 
-		XFreeGC(fb_windows[i].x11_display, tmpgc);
+		XFreeGC(m->fb_windows[i]->x11_display, tmpgc);
 
-		fb_windows[i].host_cursor = XCreatePixmapCursor(fb_windows[i].x11_display,
-		    fb_windows[i].host_cursor_pixmap, fb_windows[i].host_cursor_pixmap,
-		    &fb_windows[i].x11_graycolor[N_GRAYCOLORS-1],
-		    &fb_windows[i].x11_graycolor[N_GRAYCOLORS-1],
+		m->fb_windows[i]->host_cursor = XCreatePixmapCursor(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->host_cursor_pixmap, m->fb_windows[i]->host_cursor_pixmap,
+		    &m->fb_windows[i]->x11_graycolor[N_GRAYCOLORS-1],
+		    &m->fb_windows[i]->x11_graycolor[N_GRAYCOLORS-1],
 		    0, 0);
-		if (fb_windows[i].host_cursor != 0) {
-			XDefineCursor(fb_windows[i].x11_display, fb_windows[i].x11_fb_window,
-			    fb_windows[i].host_cursor);
-			XFlush(fb_windows[i].x11_display);
+		if (m->fb_windows[i]->host_cursor != 0) {
+			XDefineCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window,
+			    m->fb_windows[i]->host_cursor);
+			XFlush(m->fb_windows[i]->x11_display);
 		}
 	}
 }
@@ -221,11 +217,15 @@ void x11_redraw_cursor(int i)
  *
  *  Redraw X11 windows.
  */
-void x11_redraw(int i)
+void x11_redraw(struct machine *m, int i)
 {
-	x11_putimage_fb(i);
-	x11_redraw_cursor(i);
-	XFlush(fb_windows[i].x11_display);
+	if (i < 0 || i >= m->n_fb_windows == 0 ||
+	    m->fb_windows[i]->x11_fb_winxsize <= 0)
+		return;
+
+	x11_putimage_fb(m, i);
+	x11_redraw_cursor(m, i);
+	XFlush(m->fb_windows[i]->x11_display);
 }
 
 
@@ -234,22 +234,23 @@ void x11_redraw(int i)
  *
  *  Output a framebuffer pixel. i is the framebuffer number.
  */
-void x11_putpixel_fb(int i, int x, int y, int color)
+void x11_putpixel_fb(struct machine *m, int i, int x, int y, int color)
 {
-	if (n_framebuffer_windows == 0 || fb_windows[i].x11_fb_winxsize <= 0)
+	if (i < 0 || i >= m->n_fb_windows == 0 ||
+	    m->fb_windows[i]->x11_fb_winxsize <= 0)
 		return;
 
 	if (color)
-		XSetForeground(fb_windows[i].x11_display,
-		    fb_windows[i].x11_fb_gc, fb_windows[i].fg_color);
+		XSetForeground(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_gc, m->fb_windows[i]->fg_color);
 	else
-		XSetForeground(fb_windows[i].x11_display,
-		    fb_windows[i].x11_fb_gc, fb_windows[i].bg_color);
+		XSetForeground(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_gc, m->fb_windows[i]->bg_color);
 
-	XDrawPoint(fb_windows[i].x11_display, fb_windows[i].x11_fb_window,
-	    fb_windows[i].x11_fb_gc, x, y);
+	XDrawPoint(m->fb_windows[i]->x11_display,
+	    m->fb_windows[i]->x11_fb_window, m->fb_windows[i]->x11_fb_gc, x, y);
 
-	XFlush(fb_windows[i].x11_display);
+	XFlush(m->fb_windows[i]->x11_display);
 }
 
 
@@ -259,15 +260,17 @@ void x11_putpixel_fb(int i, int x, int y, int color)
  *  Output an entire XImage to a framebuffer window. i is the
  *  framebuffer number.
  */
-void x11_putimage_fb(int i)
+void x11_putimage_fb(struct machine *m, int i)
 {
-	if (n_framebuffer_windows == 0 || fb_windows[i].x11_fb_winxsize <= 0)
+	if (i < 0 || i >= m->n_fb_windows == 0 ||
+	    m->fb_windows[i]->x11_fb_winxsize <= 0)
 		return;
 
-	XPutImage(fb_windows[i].x11_display, fb_windows[i].x11_fb_window,
-	    fb_windows[i].x11_fb_gc, fb_windows[i].fb_ximage, 0,0, 0,0,
-	    fb_windows[i].x11_fb_winxsize, fb_windows[i].x11_fb_winysize);
-	XFlush(fb_windows[i].x11_display);
+	XPutImage(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window,
+	    m->fb_windows[i]->x11_fb_gc, m->fb_windows[i]->fb_ximage, 0,0, 0,0,
+	    m->fb_windows[i]->x11_fb_winxsize,
+	    m->fb_windows[i]->x11_fb_winysize);
+	XFlush(m->fb_windows[i]->x11_display);
 }
 
 
@@ -279,19 +282,18 @@ void x11_putimage_fb(int i)
  *  It is then up to individual drivers, for example framebuffer devices,
  *  to initialize their own windows.
  */
-void x11_init(struct machine *machine)
+void x11_init(struct machine *m)
 {
-	n_framebuffer_windows = 0;
-	memset(&fb_windows, 0, sizeof(fb_windows));
+	m->n_fb_windows = 0;
 
-	if (machine->x11_n_display_names > 0) {
+	if (m->x11_n_display_names > 0) {
 		int i;
-		for (i=0; i<machine->x11_n_display_names; i++)
-			printf("X11 display: %s\n",
-			    machine->x11_display_names[i]);
+		for (i=0; i<m->x11_n_display_names; i++)
+			fatal("Using X11 display: %s\n",
+			    m->x11_display_names[i]);
 	}
 
-	machine->x11_current_display_name_nr = 0;
+	m->x11_current_display_name_nr = 0;
 }
 
 
@@ -301,7 +303,7 @@ void x11_init(struct machine *machine)
  *  Initialize a framebuffer window.
  */
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
-	int scaledown, struct machine *machine)
+	int scaledown, struct machine *m)
 {
 	Display *x11_display;
 	int x, y, fb_number = 0;
@@ -311,33 +313,34 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	char fg[80], bg[80];
 	char *display_name;
 
+	fb_number = m->n_fb_windows;
 
-	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
-		if (fb_windows[fb_number].x11_fb_winxsize == 0)
-			break;
-		fb_number ++;
+	m->fb_windows = realloc(m->fb_windows,
+	    sizeof(struct fb_window *) * (m->n_fb_windows + 1));
+	if (m->fb_windows == NULL) {
+		fprintf(stderr, "x11_fb_init(): out of memory\n");
+		exit(1);
 	}
-
-	if (fb_number == MAX_FRAMEBUFFER_WINDOWS) {
-		fprintf(stderr, "x11_fb_init(): too many framebuffer windows\n");
+	m->fb_windows[fb_number] = malloc(sizeof(struct fb_window));
+	if (m->fb_windows[fb_number] == NULL) {
+		fprintf(stderr, "x11_fb_init(): out of memory\n");
 		exit(1);
 	}
 
-	if (fb_number + 1 >= n_framebuffer_windows)
-		n_framebuffer_windows = fb_number + 1;
+	m->n_fb_windows ++;
 
-	memset(&fb_windows[fb_number], 0, sizeof(struct fb_window));
+	memset(m->fb_windows[fb_number], 0, sizeof(struct fb_window));
 
-	fb_windows[fb_number].x11_fb_winxsize = xsize;
-	fb_windows[fb_number].x11_fb_winysize = ysize;
+	m->fb_windows[fb_number]->x11_fb_winxsize = xsize;
+	m->fb_windows[fb_number]->x11_fb_winysize = ysize;
 
 	/*  Which display name?  */
 	display_name = NULL;
-	if (machine->x11_n_display_names > 0) {
-		display_name = machine->x11_display_names[
-		    machine->x11_current_display_name_nr];
-		machine->x11_current_display_name_nr ++;
-		machine->x11_current_display_name_nr %= machine->x11_n_display_names;
+	if (m->x11_n_display_names > 0) {
+		display_name = m->x11_display_names[
+		    m->x11_current_display_name_nr];
+		m->x11_current_display_name_nr ++;
+		m->x11_current_display_name_nr %= m->x11_n_display_names;
 	}
 
 	debug("[ x11_fb_init(): framebuffer window %i, %ix%i, DISPLAY=%s ]\n",
@@ -350,21 +353,21 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 		exit(1);
 	}
 
-	fb_windows[fb_number].x11_screen = DefaultScreen(x11_display);
-	fb_windows[fb_number].x11_screen_depth = DefaultDepth(x11_display,
-	    fb_windows[fb_number].x11_screen);
+	m->fb_windows[fb_number]->x11_screen = DefaultScreen(x11_display);
+	m->fb_windows[fb_number]->x11_screen_depth = DefaultDepth(x11_display,
+	    m->fb_windows[fb_number]->x11_screen);
 
-	if (fb_windows[fb_number].x11_screen_depth != 8 &&
-	    fb_windows[fb_number].x11_screen_depth != 15 &&
-	    fb_windows[fb_number].x11_screen_depth != 16 &&
-	    fb_windows[fb_number].x11_screen_depth != 24) {
+	if (m->fb_windows[fb_number]->x11_screen_depth != 8 &&
+	    m->fb_windows[fb_number]->x11_screen_depth != 15 &&
+	    m->fb_windows[fb_number]->x11_screen_depth != 16 &&
+	    m->fb_windows[fb_number]->x11_screen_depth != 24) {
 		fatal("\n***\n***  WARNING! Your X server is running %i-bit color mode. This is not really\n",
-		    fb_windows[fb_number].x11_screen_depth);
+		    m->fb_windows[fb_number]->x11_screen_depth);
 		fatal("***  supported yet.  8, 15, 16, and 24 bits should work.\n");
 		fatal("***  24-bit server gives color.  Any other bit depth gives undefined result!\n***\n\n");
 	}
 
-	if (fb_windows[fb_number].x11_screen_depth <= 8)
+	if (m->fb_windows[fb_number]->x11_screen_depth <= 8)
 		debug("WARNING! X11 screen depth is not enough for color; "
 		    "using only 16 grayscales instead\n");
 
@@ -372,15 +375,15 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	strcpy(fg, "White");
 
 	XParseColor(x11_display, DefaultColormap(x11_display,
-	    fb_windows[fb_number].x11_screen), fg, &tmpcolor);
+	    m->fb_windows[fb_number]->x11_screen), fg, &tmpcolor);
 	XAllocColor(x11_display, DefaultColormap(x11_display,
-	    fb_windows[fb_number].x11_screen), &tmpcolor);
-	fb_windows[fb_number].fg_color = tmpcolor.pixel;
+	    m->fb_windows[fb_number]->x11_screen), &tmpcolor);
+	m->fb_windows[fb_number]->fg_color = tmpcolor.pixel;
 	XParseColor(x11_display, DefaultColormap(x11_display,
-	    fb_windows[fb_number].x11_screen), bg, &tmpcolor);
+	    m->fb_windows[fb_number]->x11_screen), bg, &tmpcolor);
 	XAllocColor(x11_display, DefaultColormap(x11_display,
-	    fb_windows[fb_number].x11_screen), &tmpcolor);
-	fb_windows[fb_number].bg_color = tmpcolor.pixel;
+	    m->fb_windows[fb_number]->x11_screen), &tmpcolor);
+	m->fb_windows[fb_number]->bg_color = tmpcolor.pixel;
 
 	for (i=0; i<N_GRAYCOLORS; i++) {
 		char cname[8];
@@ -390,89 +393,89 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 		    "0123456789ABCDEF"[i];
 		cname[7] = '\0';
 		XParseColor(x11_display, DefaultColormap(x11_display,
-		    fb_windows[fb_number].x11_screen), cname,
-		    &fb_windows[fb_number].x11_graycolor[i]);
+		    m->fb_windows[fb_number]->x11_screen), cname,
+		    &m->fb_windows[fb_number]->x11_graycolor[i]);
 		XAllocColor(x11_display, DefaultColormap(x11_display,
-		    fb_windows[fb_number].x11_screen),
-		    &fb_windows[fb_number].x11_graycolor[i]);
+		    m->fb_windows[fb_number]->x11_screen),
+		    &m->fb_windows[fb_number]->x11_graycolor[i]);
 	}
 
         XFlush(x11_display);
 
-	alloc_depth = fb_windows[fb_number].x11_screen_depth;
+	alloc_depth = m->fb_windows[fb_number]->x11_screen_depth;
 
 	if (alloc_depth == 24)
 		alloc_depth = 32;
 	if (alloc_depth == 15)
 		alloc_depth = 16;
 
-	fb_windows[fb_number].x11_fb_window = XCreateWindow(
+	m->fb_windows[fb_number]->x11_fb_window = XCreateWindow(
 	    x11_display, DefaultRootWindow(x11_display),
-	    0, 0, fb_windows[fb_number].x11_fb_winxsize,
-	    fb_windows[fb_number].x11_fb_winysize,
+	    0, 0, m->fb_windows[fb_number]->x11_fb_winxsize,
+	    m->fb_windows[fb_number]->x11_fb_winysize,
 	    0, CopyFromParent, InputOutput, CopyFromParent, 0,0);
 
 	XSetStandardProperties(x11_display,
-	    fb_windows[fb_number].x11_fb_window, name,
+	    m->fb_windows[fb_number]->x11_fb_window, name,
 #ifdef VERSION
 	    "mips64emul-" VERSION,
 #else
 	    "mips64emul",
 #endif
 	    None, NULL, 0, NULL);
-	XSelectInput(x11_display, fb_windows[fb_number].x11_fb_window,
+	XSelectInput(x11_display, m->fb_windows[fb_number]->x11_fb_window,
 	    StructureNotifyMask | ExposureMask | ButtonPressMask |
 	    ButtonReleaseMask | PointerMotionMask | KeyPressMask);
-	fb_windows[fb_number].x11_fb_gc = XCreateGC(x11_display,
-	    fb_windows[fb_number].x11_fb_window, 0,0);
+	m->fb_windows[fb_number]->x11_fb_gc = XCreateGC(x11_display,
+	    m->fb_windows[fb_number]->x11_fb_window, 0,0);
 
 	/*  Make sure the window is mapped:  */
-	XMapRaised(x11_display, fb_windows[fb_number].x11_fb_window);
+	XMapRaised(x11_display, m->fb_windows[fb_number]->x11_fb_window);
 
-	XSetBackground(x11_display, fb_windows[fb_number].x11_fb_gc,
-	    fb_windows[fb_number].bg_color);
-	XSetForeground(x11_display, fb_windows[fb_number].x11_fb_gc,
-	    fb_windows[fb_number].bg_color);
-	XFillRectangle(x11_display, fb_windows[fb_number].x11_fb_window,
-	    fb_windows[fb_number].x11_fb_gc, 0,0,
-	    fb_windows[fb_number].x11_fb_winxsize,
-	    fb_windows[fb_number].x11_fb_winysize);
+	XSetBackground(x11_display, m->fb_windows[fb_number]->x11_fb_gc,
+	    m->fb_windows[fb_number]->bg_color);
+	XSetForeground(x11_display, m->fb_windows[fb_number]->x11_fb_gc,
+	    m->fb_windows[fb_number]->bg_color);
+	XFillRectangle(x11_display, m->fb_windows[fb_number]->x11_fb_window,
+	    m->fb_windows[fb_number]->x11_fb_gc, 0,0,
+	    m->fb_windows[fb_number]->x11_fb_winxsize,
+	    m->fb_windows[fb_number]->x11_fb_winysize);
 
-	fb_windows[fb_number].x11_display = x11_display;
-	fb_windows[fb_number].scaledown   = scaledown;
+	m->fb_windows[fb_number]->x11_display = x11_display;
+	m->fb_windows[fb_number]->scaledown   = scaledown;
 
-	fb_windows[fb_number].fb_number = fb_number;
+	m->fb_windows[fb_number]->fb_number = fb_number;
 
 	alloclen = xsize * ysize * alloc_depth / 8;
-	fb_windows[fb_number].ximage_data = malloc(alloclen);
-	if (fb_windows[fb_number].ximage_data == NULL) {
+	m->fb_windows[fb_number]->ximage_data = malloc(alloclen);
+	if (m->fb_windows[fb_number]->ximage_data == NULL) {
 		fprintf(stderr, "out of memory allocating ximage_data\n");
 		exit(1);
 	}
 
-	fb_windows[fb_number].fb_ximage = XCreateImage(
-	    fb_windows[fb_number].x11_display, CopyFromParent,
-	    fb_windows[fb_number].x11_screen_depth, ZPixmap, 0,
-	    (char *)fb_windows[fb_number].ximage_data,
+	m->fb_windows[fb_number]->fb_ximage = XCreateImage(
+	    m->fb_windows[fb_number]->x11_display, CopyFromParent,
+	    m->fb_windows[fb_number]->x11_screen_depth, ZPixmap, 0,
+	    (char *)m->fb_windows[fb_number]->ximage_data,
 	    xsize, ysize, 8, xsize * alloc_depth / 8);
-	if (fb_windows[fb_number].fb_ximage == NULL) {
+	if (m->fb_windows[fb_number]->fb_ximage == NULL) {
 		fprintf(stderr, "out of memory allocating ximage\n");
 		exit(1);
 	}
 
 	/*  Fill the ximage with black pixels:  */
-	if (fb_windows[fb_number].x11_screen_depth > 8)
-		memset(fb_windows[fb_number].ximage_data, 0, alloclen);
+	if (m->fb_windows[fb_number]->x11_screen_depth > 8)
+		memset(m->fb_windows[fb_number]->ximage_data, 0, alloclen);
 	else {
 		debug("x11_fb_init(): clearing the XImage\n");
 		for (y=0; y<ysize; y++)
 			for (x=0; x<xsize; x++)
-				XPutPixel(fb_windows[fb_number].fb_ximage,
-				    x, y, fb_windows[fb_number].
+				XPutPixel(m->fb_windows[fb_number]->fb_ximage,
+				    x, y, m->fb_windows[fb_number]->
 				    x11_graycolor[0].pixel);
 	}
 
-	x11_putimage_fb(fb_number);
+	x11_putimage_fb(m, fb_number);
 
 	/*  Fill the 64x64 "hardware" cursor with white pixels:  */
 	xsize = ysize = 64;
@@ -480,10 +483,10 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	/*  Fill the cursor ximage with white pixels:  */
 	for (y=0; y<ysize; y++)
 		for (x=0; x<xsize; x++)
-			fb_windows[fb_number].cursor_pixels[y][x] =
+			m->fb_windows[fb_number]->cursor_pixels[y][x] =
 			    N_GRAYCOLORS-1;
 
-	return &fb_windows[fb_number];
+	return m->fb_windows[fb_number];
 }
 
 
@@ -491,17 +494,20 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
  *  x11_check_event():
  *
  *  Check for X11 events.
+ *
+ *  TODO: Do _NOT_ check only on a specific machine,
+ *        it doesn't work!
  */
-void x11_check_event(void)
+void x11_check_event(struct machine *m)
 {
 	int fb_nr;
 
-	for (fb_nr=0; fb_nr<n_framebuffer_windows; fb_nr++) {
+	for (fb_nr=0; fb_nr<m->n_fb_windows; fb_nr++) {
 		XEvent event;
 		int need_redraw = 0, i, found;
 
-		while (XPending(fb_windows[fb_nr].x11_display)) {
-			XNextEvent(fb_windows[fb_nr].x11_display, &event);
+		while (XPending(m->fb_windows[fb_nr]->x11_display)) {
+			XNextEvent(m->fb_windows[fb_nr]->x11_display, &event);
 
 			if (event.type==ConfigureNotify) {
 				need_redraw = 1;
@@ -525,13 +531,13 @@ void x11_check_event(void)
 
 				/*  Which window?  */
 				found = -1;
-				for (i=0; i<n_framebuffer_windows; i++)
-					if (fb_windows[fb_nr].x11_display == fb_windows[i].x11_display &&
-					    event.xmotion.window == fb_windows[i].x11_fb_window)
+				for (i=0; i<m->n_fb_windows; i++)
+					if (m->fb_windows[fb_nr]->x11_display == m->fb_windows[i]->x11_display &&
+					    event.xmotion.window == m->fb_windows[i]->x11_fb_window)
 						found = i;
 
-				console_mouse_coordinates(event.xmotion.x * fb_windows[found].scaledown,
-				    event.xmotion.y * fb_windows[found].scaledown, found);
+				console_mouse_coordinates(event.xmotion.x * m->fb_windows[found]->scaledown,
+				    event.xmotion.y * m->fb_windows[found]->scaledown, found);
 			}
 
 			if (event.type == ButtonPress) {
@@ -687,7 +693,7 @@ void x11_check_event(void)
 		}
 
 		if (need_redraw)
-			x11_redraw(fb_nr);
+			x11_redraw(m, fb_nr);
 	}
 }
 

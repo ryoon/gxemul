@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.13 2005-01-28 13:47:26 debug Exp $
+ *  $Id: machine.h,v 1.14 2005-01-28 14:58:28 debug Exp $
  */
 
 #include <sys/types.h>
@@ -44,6 +44,7 @@
 
 struct diskimage;
 struct emul;
+struct fb_window;
 struct memory;
 
 struct machine {
@@ -144,11 +145,15 @@ struct machine {
 
 	int	n_gfx_cards;
 
+	/*  X11/framebuffer stuff:  */
 	int	use_x11;
 	int	x11_scaledown;
 	int	x11_n_display_names;
 	char	**x11_display_names;
 	int	x11_current_display_name_nr;	/*  updated by x11.c  */
+
+	int	n_fb_windows;
+	struct fb_window **fb_windows;
 };
 
 

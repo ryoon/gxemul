@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.79 2005-01-26 09:03:53 debug Exp $
+ *  $Id: arcbios.c,v 1.80 2005-01-28 14:58:28 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1414,7 +1414,7 @@ void arcbios_emul(struct cpu *cpu)
 				    be how NetBSD's arcdiag wants it)  */
 				while ((x = console_readchar()) < 0) {
 					if (cpu->machine->use_x11)
-						x11_check_event();
+						x11_check_event(cpu->machine);
 					usleep(1);
 				}
 
@@ -1427,7 +1427,8 @@ void arcbios_emul(struct cpu *cpu)
 				if (x == 27) {
 					while ((x = console_readchar()) < 0) {
 						if (cpu->machine->use_x11)
-							x11_check_event();
+							x11_check_event(
+							    cpu->machine);
 						usleep(1);
 					}
 					if (x == '[' || x == 'O')

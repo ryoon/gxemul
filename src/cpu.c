@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.261 2005-01-28 09:13:47 debug Exp $
+ *  $Id: cpu.c,v 1.262 2005-01-28 14:58:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4007,7 +4007,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 		/*  Check for X11 events:  */
 		if (machine->use_x11) {
 			if (machine->ncycles > machine->ncycles_flushx11 + (1<<17)) {
-				x11_check_event();
+				x11_check_event(machine);
 				machine->ncycles_flushx11 = machine->ncycles;
 			}
 		}
@@ -4031,7 +4031,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 4)
+		if (rounds > 16)
 			break;
 	}
 
@@ -4080,7 +4080,6 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
 	struct mips_cpu_type_def *ct = &cpu->cpu_type;
-	int i;
 
 	debug("cpu%i: %s, %s", cpu->cpu_id, ct->name,
 	    cpu->running? "running" : "stopped");

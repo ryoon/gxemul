@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.314 2005-01-29 18:23:41 debug Exp $
+ *  $Id: machine.c,v 1.315 2005-01-29 20:58:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3696,10 +3696,10 @@ config[77] = 0x30;
 			add_environment_string(cpu, tmp, &addr);
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLOADPARTITION=scsi()cdrom(6)fdisk();scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+			add_environment_string(cpu, "OSLOADPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "SYSTEMPARTITION=scsi()cdrom(6)fdisk();scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+			add_environment_string(cpu, "SYSTEMPARTITION=scsi(0)cdrom(6)fdisk(0);scsi(0)disk(0)rdisk(0)partition(1)", &addr);
 		}
 
 		/*  End the environment strings with an empty zero-terminated

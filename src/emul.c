@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.177 2005-03-13 09:36:08 debug Exp $
+ *  $Id: emul.c,v 1.178 2005-03-13 22:23:14 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -825,8 +825,8 @@ struct emul *emul_create_from_configfile(char *fname)
 	}
 
 	/*  Read header: (must be !!gxemul)  */
-	len = fread(buf, 1, 12, f);
-	if (len != 12 || strncmp(buf, "!!gxemul", 12) != 0) {
+	len = fread(buf, 1, 8, f);
+	if (len != 8 || strncmp(buf, "!!gxemul", 8) != 0) {
 		fprintf(stderr, "%s: must start with '!!gxemul'\n", fname);
 		exit(1);
 	}

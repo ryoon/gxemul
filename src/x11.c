@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.18 2004-06-30 06:29:52 debug Exp $
+ *  $Id: x11.c,v 1.19 2004-06-30 06:58:20 debug Exp $
  *
  *  X11-related functions.
  */
@@ -294,7 +294,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 
 		xsize = ysize = 64;
 
-		cursor_data = malloc(xsize * ysize * x11_screen_depth / 8);
+		cursor_data = malloc(xsize * ysize * alloc_depth / 8);
 		if (cursor_data == NULL) {
 			fprintf(stderr, "out of memory allocating cursor\n");
 			exit(1);
@@ -303,7 +303,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 		fb_windows[fb_number].cursor_ximage =
 		    XCreateImage(fb_windows[fb_number].x11_display,
 		    CopyFromParent, x11_screen_depth, ZPixmap, 0,
-		    cursor_data, xsize, ysize, 8, 0);
+		    cursor_data, xsize, ysize, 8, xsize * alloc_depth / 8);
+
 		if (fb_windows[fb_number].cursor_ximage == NULL) {
 			fprintf(stderr, "out of memory allocating ximage\n");
 			exit(1);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.28 2004-05-24 17:58:13 debug Exp $
+ *  $Id: memory.c,v 1.29 2004-06-07 07:08:56 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -368,9 +368,11 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		case 0xa:		/*  like 0xa8...  */
 			*return_addr = vaddr;
 			return 1;
+#if 0
 		case 0xc:
 			*return_addr = vaddr & 0xffffffffff;
 			return 1;
+#endif
 		default:
 			;
 		}
@@ -878,7 +880,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	 */
 
 	if (paddr >= mem->physical_max && !userland_emul) {
-		if ((vaddr & 0xffc00000) == 0xbfc00000) {
+		if ((paddr & 0xffffc00000) == 0x1fc00000) {
 			/*  Ok, this is PROM stuff  */
 		} else {
 			/*  Semi-ugly hack:  allow for 1KB more, without giving a warning.

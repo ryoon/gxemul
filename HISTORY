@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.378 2004-12-11 15:54:38 debug Exp $
+$Id: HISTORY,v 1.379 2004-12-12 10:59:12 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1298,6 +1298,9 @@ HISTORY of mips64emul
 		store_buf() now copies data 8 or 4 bytes at a time, when
 		possible. (This speeds up emulated ROM disk reads, etc.)
 		Tiny bug fix: coprocessor unusable exceptions are now also
-		generated (for coproc 1..3) even when in kernel mode, if they
-		are not enabled. This allows a Debian installation to
-		proceed further than before.
+		generated (for coproc 1..3) even when in kernel mode, if the
+		coprocessors are not enabled. This allows a Debian installation
+		to proceed further than before. (It's still very unstable,
+		though.)
+20041212	Updating doc/index.html with better Debian installation
+		instructions.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.33 2004-11-03 00:36:49 debug Exp $
+ *  $Id: net.c,v 1.34 2004-12-12 10:59:24 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -108,8 +108,8 @@ static struct in_addr nameserver_ipv4;
 
 static int64_t net_timestamp = 0;
 
-#define	MAX_TCP_CONNECTIONS	40
-#define	MAX_UDP_CONNECTIONS	15
+#define	MAX_TCP_CONNECTIONS	4000
+#define	MAX_UDP_CONNECTIONS	4000
 
 struct udp_connection {
 	int		in_use;
@@ -627,7 +627,7 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 	 *  TODO:  Send back RST?
 	 */
 	if (con_id < 0 && !syn) {
-		fatal("[ net: TCP: dropping packet from unknown connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i %s%s%s%s%s]\n",
+		debug("[ net: TCP: dropping packet from unknown connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i %s%s%s%s%s]\n",
 		    packet[26], packet[27], packet[28], packet[29], srcport,
 		    packet[30], packet[31], packet[32], packet[33], dstport,
 		    fin? "FIN ": "", syn? "SYN ": "", ack? "ACK ": "",

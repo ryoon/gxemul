@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.153 2004-12-11 15:54:39 debug Exp $
+$Id: index.html,v 1.154 2004-12-12 10:59:23 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1038,14 +1038,14 @@ onto a harddisk image:
 
 </pre>
   <li>For a text-mode installation, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
+	$ <b>./mips64emul -D2 -b -M128 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
 </pre>
 </ol>
 
 <p>
-Debian GNU/Linux on DECstation in R3000 mode should work fine with dynamic binary
-translation, enabled by the <b>-b</b> command line. (Without this
+Debian GNU/Linux on DECstation in R3000 mode should work fine with dynamic
+binary translation, enabled by the <b>-b</b> command line. (Without this
 option, the emulator is very slow.)
 
 <p>
@@ -1061,19 +1061,33 @@ You need to enter some values during the installation procedure, for example
 network settings. The following should work:
 <p>
 <pre>
-    Language:                         English
-    Country or Region:                United States   (Sweden doesn't seem to be available?)
-    DHCP:                             No, choose "Configure network manually"
-    IP address:                       10.0.0.1
-    Netmask:                          255.0.0.0
-    Gateway:                          10.0.0.254
-    Name server addresses:            10.0.0.254
+    Language:                   English
+    Country or Region:          United States   (Sweden doesn't seem to be available?)
+    DHCP:                       No, choose "Configure network manually"
+    IP address:                 10.0.0.1
+    Netmask:                    255.0.0.0
+    Gateway:                    10.0.0.254
+    Name server addresses:      10.0.0.254
 </pre>
 
-<font color="#ff0000">NOTE: This is experimental, and does not work yet.
-The install usually Oopses.
+<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+unstable. During my tests, even pressing the wrong key during the install
+(for example the wrong cursor key) can cause a kernel Oops.
 </font>
 
+<ol start="5">
+  <li>Download a kernel. (Not an install RAMDISK kernel, but a normal one.)<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
+	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
+	3223460 bytes, md5 = dc44f6501040e04d6fa5151681565434
+
+</pre>
+  <li>Boot Debian using the following command line:<pre>
+	$ <b>./mips64emul -D2 -b -M128 -o 'console=ttyS3 root=/dev/sda1 ro' \
+	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
+
+</pre>
+</ol>
 
 
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.117 2004-12-22 17:49:59 debug Exp $
+ *  $Id: devices.h,v 1.118 2004-12-27 10:26:15 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -576,6 +576,8 @@ struct vr41xx_data {
 	/*  See icureg.h in NetBSD for more info.  */
 	uint16_t	sysint1;
 	uint16_t	msysint1;
+	uint16_t	sysint2;
+	uint16_t	msysint2;
 };
 
 int dev_vr41xx_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

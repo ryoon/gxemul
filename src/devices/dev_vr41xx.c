@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.2 2004-12-22 17:49:57 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.3 2004-12-27 10:26:16 debug Exp $
  *  
- *  VR41xx misc functions.
+ *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
  *  TODO
  */
@@ -49,7 +49,13 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 {
 	struct vr41xx_data *d = extra;
 
-	/*  TODO: Timer interrupts.  */
+	{
+		static int x = 0;
+		/*  TODO:  */
+		x++;
+		if (x > 100 && x&1)
+			cpu_interrupt(cpu, 8 + 3);
+	}
 }
 
 
@@ -68,6 +74,7 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint64_t);
 
 	switch (relative_addr) {
+	/*  BCU:  0x00 .. 0x1c  */
 	case 0x14:
 		/*
 		 *  TODO?  Linux seems to read this. The lowest bits are
@@ -76,12 +83,22 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		 */
 		odata = 0x0000020c;
 		break;
-	case 0x80:
+
+	/*  DMAAU:  0x20 .. 0x3c  */
+
+	/*  DCU:  0x40 .. 0x5c  */
+
+	/*  CMU:  0x60 .. 0x7c  */
+
+	/*  ICU:  0x80 .. 0xbc  */
+	case 0x80:	/*  Level 1 system interrupt reg 1...  */
 		if (writeflag == MEM_READ)
 			odata = d->sysint1;
-		else
+		else {
 			/*  TODO: clear-on-write-one?  */
-			d->sysint1 = idata;
+			d->sysint1 &= ~idata;
+			d->sysint1 &= 0xffff;
+		}
 		break;
 	case 0x8c:
 		if (writeflag == MEM_READ)
@@ -89,14 +106,44 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		else
 			d->msysint1 = idata;
 		break;
+	case 0xa0:	/*  Level 1 system interrupt reg 2...  */
+		if (writeflag == MEM_READ)
+			odata = d->sysint2;
+		else {
+			/*  TODO: clear-on-write-one?  */
+			d->sysint2 &= ~idata;
+			d->sysint2 &= 0xffff;
+		}
+		break;
+	case 0xa6:
+		if (writeflag == MEM_READ)
+			odata = d->msysint2;
+		else
+			d->msysint2 = idata;
+		break;
+
+	/*  PMU:  0xc0 .. 0xfc  */
+	/*  RTC:  0x100 .. ?  */
+
+	case 0x13e:
+		/*  RTC interrupt register...  */
+		/*  Ack. timer interrupts?  */
+		cpu_interrupt_ack(cpu, 8 + 3);
+		break;
+
 	default:
+#if 0
 		if (writeflag == MEM_WRITE)
 			fatal("[ vr41xx: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
 			fatal("[ vr41xx: unimplemented read from address 0x%llx ]\n",
 			    (long long)relative_addr);
+#endif
 	}
+
+	/*  Recalculate interrupt assertions:  */
+	cpu_interrupt_ack(cpu, 8 + 32);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

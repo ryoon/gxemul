@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,9 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_gt.c,v 1.4 2004-01-03 03:11:31 debug Exp $
  *  
- *  The "gt" device used in Cobalt machines.  (TODO)
+ *  The "gt" device used in Cobalt machines.
+ *
+ *  TODO:  This more or less just a dummy device, so far.
  */
 
 #include <stdio.h>
@@ -35,6 +37,7 @@
 #include "misc.h"
 #include "devices.h"
 
+#define	TICK_STEPS_SHIFT	16
 
 struct gt_data {
 	int	reg[8];
@@ -55,6 +58,17 @@ struct gt_data {
 
 #define	PCI_VENDOR_VIATECH			0x1106
 #define	PCI_PRODUCT_VIATECH_VT82C586_ISA	0x0586
+
+
+/*
+ *  dev_gt_tick():
+ */
+void dev_gt_tick(struct cpu *cpu, void *extra)
+{
+	struct gt_data *gt_data = extra;
+
+	cpu_interrupt(cpu, gt_data->irqnr);
+}
 
 
 /*
@@ -81,6 +95,18 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		}
 
 	switch (relative_addr) {
+	case 0xc18:
+		if (writeflag == MEM_WRITE) {
+			debug("[ gt write to  0xc18: data = 0x%08lx ]\n", (long)idata);
+			d->pci_addr = idata;
+			return 1;
+		} else {
+			odata = 0xffffffff;	/*  ???  interrupt something...  */
+cpu_interrupt_ack(cpu, d->irqnr);
+			odata_set = 1;
+			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n", (long)odata);
+		}
+		break;
 	case 0xcf8:	/*  PCI ADDR  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ gt write to  PCI ADDR: data = 0x%08lx ]\n", (long)idata);
@@ -179,7 +205,7 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 /*
  *  dev_gt_init():
  */
-void dev_gt_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
 	struct gt_data *d;
 
@@ -192,5 +218,6 @@ void dev_gt_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	d->irqnr = irq_nr;
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH, dev_gt_access, d);
+	cpu_add_tickfunction(cpu, dev_gt_tick, d, TICK_STEPS_SHIFT);
 }
 

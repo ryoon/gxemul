@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.119 2004-12-02 19:33:56 debug Exp $
+ *  $Id: coproc.c,v 1.120 2004-12-05 15:47:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1717,15 +1717,13 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 
-			/*  bintrans_invalidate(cpu, paddr);  */
-
-			/*  TODO: Hahaha, this is even uglier than the thing
-				above. Some OSes seem to map code pages read/write,
-				which causes the bintrans cache to be invalidated
-				even when it doesn't have to be. By only mapping
-				pages below a "commonly used" address which separates
-				code from data, we gain a tiny bit performance.  */
-			if (vaddr < 0x10000000)
+			/*
+			 *  TODO: Hahaha, this is even uglier than the thing
+			 *  above. Some OSes seem to map code pages read/write,
+			 *  which causes the bintrans cache to be invalidated
+			 *  even when it doesn't have to be.
+			 */
+/*			if (vaddr < 0x10000000)  */
 				wf = 0;
 
 			update_translation_table(cpu, vaddr, memblock, wf, paddr);

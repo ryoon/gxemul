@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.17 2004-12-04 12:56:06 debug Exp $
+ *  $Id: dev_vga.c,v 1.18 2004-12-05 15:47:02 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -109,7 +109,7 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 		for (line = 0; line < d->font_size; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
-				int line2readfrom = line;
+				int addr, line2readfrom = line;
 				int actualfontheight = d->font_size;
 
 				if (d->font_size == 11) {
@@ -118,7 +118,7 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 						line2readfrom = 9;
 				}
 
-				int addr = (d->max_x*8 * (line+y) + x + subx)
+				addr = (d->max_x*8 * (line+y) + x + subx)
 				    * 3;
 
 				pixel[0] = d->fb->rgb_palette[bg * 3 + 0];

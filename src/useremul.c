@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.9 2004-02-25 01:07:39 debug Exp $
+ *  $Id: useremul.c,v 1.10 2004-04-06 02:30:39 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -231,7 +231,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 	case USERLAND_NETBSD_PMAX:
 		sysnr = cpu->gpr[GPR_V0];
 
-		if (sysnr == SYS___syscall) {
+		if (sysnr == NETBSD_SYS___syscall) {
 			sysnr = cpu->gpr[GPR_A0] + (cpu->gpr[GPR_A1] << 32);
 			arg0 = cpu->gpr[GPR_A2];
 			arg1 = cpu->gpr[GPR_A3];
@@ -254,12 +254,12 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 		switch (sysnr) {
 
-		case SYS_exit:
+		case NETBSD_SYS_exit:
 			debug("useremul_syscall(): netbsd exit()\n");
 			cpu->running = 0;
 			break;
 
-		case SYS_read:
+		case NETBSD_SYS_read:
 			debug("useremul_syscall(): netbsd read(%i,0x%llx,%lli)\n",
 			    (int)arg0, (long long)arg1, (long long)arg2);
 
@@ -283,7 +283,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_write:
+		case NETBSD_SYS_write:
 			descr   = arg0;
 			mipsbuf = arg1;
 			length  = arg2;
@@ -310,7 +310,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_open:
+		case NETBSD_SYS_open:
 			charbuf = get_userland_string(cpu, arg0);
 			debug("useremul_syscall(): netbsd open(\"%s\", 0x%llx, 0x%llx)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
@@ -322,7 +322,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_close:
+		case NETBSD_SYS_close:
 			descr   = arg0;
 			debug("useremul_syscall(): netbsd close(%i)\n", (int)descr);
 
@@ -331,7 +331,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				error_flag = 1;
 			break;
 
-		case SYS_access:
+		case NETBSD_SYS_access:
 			charbuf = get_userland_string(cpu, arg0);
 			debug("useremul_syscall(): netbsd access(\"%s\", 0x%llx)\n",
 			    charbuf, (long long) arg1);
@@ -343,27 +343,27 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_getuid:
+		case NETBSD_SYS_getuid:
 			debug("useremul_syscall(): netbsd getuid()\n");
 			result_low = getuid();
 			break;
 
-		case SYS_geteuid:
+		case NETBSD_SYS_geteuid:
 			debug("useremul_syscall(): netbsd geteuid()\n");
 			result_low = geteuid();
 			break;
 
-		case SYS_getgid:
+		case NETBSD_SYS_getgid:
 			debug("useremul_syscall(): netbsd getgid()\n");
 			result_low = getgid();
 			break;
 
-		case SYS_getegid:
+		case NETBSD_SYS_getegid:
 			debug("useremul_syscall(): netbsd getegid()\n");
 			result_low = getegid();
 			break;
 
-		case SYS_getfsstat:
+		case NETBSD_SYS_getfsstat:
 			mipsbuf = arg0;
 			length  = arg1;
 			flags   = arg2;
@@ -398,12 +398,12 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 #endif
 			break;
 
-		case SYS_break:
+		case NETBSD_SYS_break:
 			debug("useremul_syscall(): netbsd break(0x%llx): TODO\n", (long long)arg0);
 			/*  TODO  */
 			break;
 
-		case SYS_readlink:
+		case NETBSD_SYS_readlink:
 			charbuf = get_userland_string(cpu, arg0);
 			debug("useremul_syscall(): netbsd readlink(\"%s\",0x%lli,%lli)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
@@ -419,12 +419,12 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_sync:
+		case NETBSD_SYS_sync:
 			debug("useremul_syscall(): netbsd sync()\n");
 			sync();
 			break;
 
-		case SYS_gettimeofday:
+		case NETBSD_SYS_gettimeofday:
 			debug("useremul_syscall(): netbsd gettimeofday(0x%llx,0x%llx)\n",
 			    (long long)arg0, (long long)arg1);
 			result_low = gettimeofday(&tv, &tz);
@@ -445,7 +445,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_mmap:
+		case NETBSD_SYS_mmap:
 			debug("useremul_syscall(): netbsd mmap(0x%x,%i,%i,%i,%i,0x%llx): TODO\n",
 			    arg0, arg1, arg2, arg3, stack0, (long long)stack1);
 
@@ -470,7 +470,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_dup:
+		case NETBSD_SYS_dup:
 			debug("useremul_syscall(): netbsd dup(%i)\n", (int)arg0);
 			result_low = dup(arg0);
 			if ((int64_t)result_low < 0) {
@@ -479,7 +479,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_socket:
+		case NETBSD_SYS_socket:
 			debug("useremul_syscall(): netbsd socket(%i,%i,%i)\n", (int)arg0, (int)arg1, (int)arg2);
 			result_low = socket(arg0,arg1,arg2);
 			if ((int64_t)result_low < 0) {
@@ -488,12 +488,12 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS_issetugid:
+		case NETBSD_SYS_issetugid:
 			debug("useremul_syscall(): netbsd issetugid()\n");
 			/*  TODO: actually call the real issetugid?  */
 			break;
 
-		case SYS_nanosleep:
+		case NETBSD_SYS_nanosleep:
 			debug("useremul_syscall(): netbsd nanosleep(0x%llx,0x%llx)\n",
 			    (long long)arg0, (long long)arg1);
 
@@ -513,7 +513,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
-		case SYS___fstat13:
+		case NETBSD_SYS___fstat13:
 			debug("useremul_syscall(): netbsd __fstat13(%lli,0x%llx): TODO\n",
 			    (long long)arg0, (long long)arg1);
 
@@ -521,7 +521,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			error_code = 9;  /*  EBADF  */
 			break;
 
-		case SYS___getcwd:
+		case NETBSD_SYS___getcwd:
 			debug("useremul_syscall(): netbsd __getcwd(0x%llx,%lli): TODO\n",
 			    (long long)arg0, (long long)arg1);
 			if (arg1 > 0 && arg1 < 500000) {
@@ -542,7 +542,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			result_low = arg0;
 			break;
 
-		case SYS___sigaction14:
+		case NETBSD_SYS___sigaction14:
 			debug("useremul_syscall(): netbsd __sigaction14(%lli,0x%llx,0x%llx): TODO\n",
 			    (long long)arg0, (long long)arg1, (long long)arg2);
 
@@ -550,7 +550,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			error_code = 9;  /*  EBADF  */
 			break;
 
-		case SYS___sysctl:
+		case NETBSD_SYS___sysctl:
 			sysctl_name    = arg0;
 			sysctl_namelen = arg1;
 			sysctl_oldp    = arg2;

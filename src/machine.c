@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.25 2004-01-03 03:10:31 debug Exp $
+ *  $Id: machine.c,v 1.26 2004-01-03 04:05:15 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -877,6 +877,7 @@ void machine_init(struct memory *mem)
 				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
+				/*  lpt at 0x2000008000  */
 				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
 			}
 

@@ -1,4 +1,6 @@
 #
+#  $Id: Makefile.skel,v 1.17 2004-10-16 14:25:58 debug Exp $
+#
 #  Makefile for mips64emul
 #
 

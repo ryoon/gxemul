@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.12 2005-01-16 14:13:44 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.13 2005-01-16 15:30:01 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -45,8 +45,13 @@ void dev_sgi_ip30_tick(struct cpu *cpu, void *extra)
 {
 	struct sgi_ip30_data *d = extra;
 
-	if (d->imask0 & ((int64_t)1<<50))
+	d->reg_0x20000 += 1000;
+
+	if (d->imask0 & ((int64_t)1<<50)) {
+		/*  TODO: Only interrupt if reg 0x20000 (the counter)
+			has passed the compare (0x30000).  */
 		cpu_interrupt(cpu, 8+1 + 50);
+	}
 }
 
 
@@ -114,7 +119,6 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			odata = d->reg_0x20000;
 		}
-		d->reg_0x20000 += 10000;	/*  ?  */
 		break;
 	case 0x30000:
 		if (writeflag == MEM_WRITE) {

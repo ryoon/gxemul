@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.259 2004-12-22 17:50:00 debug Exp $
+ *  $Id: machine.c,v 1.260 2004-12-22 17:57:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1700,6 +1700,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_HPCMIPS:
+		/*
+		 *  TODO: Make all this nicer and more generic.
+		 */
+
 		switch (emul->machine) {
 		case HPCMIPS_CASIO_BE300:
 			emul->machine_name = "Casio BE-300";
@@ -1717,6 +1721,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			cpu->md_interrupt = vr41xx_interrupt;
 			break;
 		default:
+			printf("Unimplemented hpcmips machine number.\n");
+			exit(1);
 		}
 
 		/*  NetBSD/hpcmips and possibly others expects the following:  */

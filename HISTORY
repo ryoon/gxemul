@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.188 2004-08-03 02:25:09 debug Exp $
+$Id: HISTORY,v 1.189 2004-08-03 13:10:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -864,11 +864,20 @@ HISTORY of mips64emul
 
 ==============  RELEASE 0.2  ==============
 
-20040803	Adding a -y option, used to set how many (random) instructions
+20040803	A post-3.5 OpenBSD/sgimips kernel snapshot with ramdisk seems
+		to boot fine in the emulator, all the way to userland, and
+		can be interacted with.
+		Adding a -y option, used to set how many (random) instructions
 		to run from each CPU at max (useful for SMP instruction
 		interleave experiments).
-		Importing a 8x16 consoel font from FreeBSD (vt220l.816).
+		Importing a 8x16 console font from FreeBSD (vt220l.816).
 		Adding a skeleton for a 80x25 text console device (dev_vga),
 		useful for some ARC modes. (Character output is possible, but
 		no cursor yet.)
 		Adding a dev_zero device (returns zeroes on read).
+		OpenBSD/arc 2.3 can get all the way to userland with -A4 (if
+		the wdc devices are commented out) but bugs out there, probably
+		because of interrupt issues.
+		Adding a -A5 ARC emulation mode (Microsoft-Jazz, "MIPS Magnum")
+		which NetBSD seems to like. No interrupt specifics yet, so
+		it hangs while waiting for SCSI.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.255 2004-12-20 02:48:42 debug Exp $
+ *  $Id: machine.c,v 1.256 2004-12-20 03:26:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2853,9 +2853,9 @@ Why is this here? TODO
 		    || emul->machine == MACHINE_ARC_JAZZ_MAGNUM)) {
 			uint64_t jazzbus, ali_s3, vxl;
 			uint64_t diskcontroller, floppy, kbdctl, kbd;
-			uint64_t ptrctl, ptr;
-			uint64_t serial1, serial2, paral, audio;
+			uint64_t ptrctl, ptr, paral, audio;
 			uint64_t eisa, scsi;
+			/*  uint64_t serial1, serial2;  */
 
 			jazzbus = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_AdapterClass,

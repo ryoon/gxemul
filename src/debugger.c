@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.14 2004-12-20 02:48:42 debug Exp $
+ *  $Id: debugger.c,v 1.15 2004-12-20 03:26:57 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -210,7 +210,7 @@ static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 {
-	int i, j, ok;
+	int i, j;
 	struct memory *m;
 	struct cpu *c;
 
@@ -1002,7 +1002,7 @@ void debugger(void)
 
 		/*  How many chars in cmd to match against:  */
 		matchlen = 0;
-		while (isalpha(cmd[matchlen]))
+		while (isalpha((int)cmd[matchlen]))
 			matchlen ++;
 
 		/*  Check for a command name match:  */

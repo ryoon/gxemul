@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.152 2004-07-11 07:02:24 debug Exp $
+$Id: HISTORY,v 1.153 2004-07-11 07:11:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -748,5 +748,7 @@ HISTORY of mips64emul
 		Parts of the 1280x1024x8 PMAGB-BA graphics card has been
 		implemented, it works (unaccelerated) in NetBSD and OpenBSD,
 		but Ultrix does not seem to like it.
+		Cleaned up the BT459 cursor offset stuff a bit.
 		Trying to make the emulated mouse coordinates follow the host's
-		mouse' coordinates (for lk201, DECstation).
+		mouse' coordinates (for lk201, DECstation), by
+		"de-accelerating" the data sent to the emulated OS.

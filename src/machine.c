@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.134 2004-07-10 07:50:58 debug Exp $
+ *  $Id: machine.c,v 1.135 2004-07-11 07:11:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -736,7 +736,7 @@ void machine_init(struct memory *mem)
 	int color_fb_flag;
 	int boot_boardnumber = 3;
 	char *turbochannel_default_gfx_card = "PMAG-BA";
-		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA(TODO)  */
+		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
 
 	/*  HPCmips:  */
 	struct xx {

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.8 2004-06-27 01:29:15 debug Exp $
+$Id: RELEASE,v 1.9 2004-06-27 13:29:27 debug Exp $
 
 
 	    =====================================================
@@ -129,8 +129,8 @@ Linux.
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
-Please report bugs to me.  This release has a number of known bugs, but
-my guess is that there are lots of bugs that are not known to me as well.
+Please report bugs to me.  This release has a number of known bugs, listed
+in the BUGS file, but feel free to drop me a line regarding other bugs.
 
 
 Files included in this release are:
@@ -144,6 +144,8 @@ Files included in this release are:
   HISTORY            Revision history/changelog.
 
   TODO               TODO notes.
+
+  BUGS               A list of known bugs.
 
   src/, devices/,    Source code.
   and include/

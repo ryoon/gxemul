@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.103 2004-06-27 01:09:59 debug Exp $
+$Id: HISTORY,v 1.104 2004-06-27 13:29:26 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -596,8 +596,11 @@ HISTORY of mips64emul
 		it starts to execute MIPS code.
 20040627	The configure script now adds -fomit-frame-pointer to the
 		compile flags if the $CC seems to be able to handle that.
-		Fixed a serious interrupt bug in BT459 (Ultrix' behaviour
+		Found a serious interrupt bug in BT459 (Ultrix' behaviour
 		required a hack, which was incorrect), so performance for
 		machines using the PMAG-BA framebuffer is now improved.
+		(Unfortunately, the fix doesn't work with all versions
+		of Ultrix yet.)
 		A number of other minor fixes, optimizations, updated
 		comments and so on.
+		Adding a BUGS file, a list of known bugs.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.1 2003-12-30 03:47:09 debug Exp $
+ *  $Id: dev_fdc.c,v 1.2 2003-12-30 04:32:32 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -54,7 +54,7 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 {
 	int i;
 	int idata = 0, odata=0, odata_set=0;
-	struct ns_data *d = extra;
+	struct fdc_data *d = extra;
 
 	/*  Switch byte order for incoming data, if neccessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -71,6 +71,14 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	/*  TODO:  this is 100% dummy  */
 
 	switch (relative_addr) {
+	case 0x04:
+		/*  no debug warning  */
+		if (writeflag==MEM_READ) {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+		} else
+			d->reg[relative_addr] = idata;
+		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ fdc: read from reg %i ]\n", (int)relative_addr);
@@ -82,7 +90,6 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				debug(" %02x", data[i]);
 			debug(" ]\n");
 			d->reg[relative_addr] = idata;
-			return 1;
 		}
 	}
 
@@ -97,7 +104,7 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		return 1;
 	}
 
-	return 0;
+	return 1;
 }
 
 

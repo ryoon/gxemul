@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.1 2003-12-20 21:34:24 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.2 2003-12-30 04:32:24 debug Exp $
  *  
  *  Standard PC Keyboard Controller.
  *
@@ -39,7 +39,7 @@
 #include "devices.h"
 
 
-struct ns_data {
+struct pckbc_data {
 	int	reg[DEV_PCKBC_LENGTH];
 	int	irqnr;
 };
@@ -54,7 +54,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	int i;
 	int idata = 0, odata=0, odata_set=0;
-	struct ns_data *d = extra;
+	struct pckbc_data *d = extra;
 
 	/*  Switch byte order for incoming data, if neccessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -71,6 +71,14 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	/*  TODO:  this is 100% dummy  */
 
 	switch (relative_addr) {
+	case 0x01:
+		/*  no debug warning  */
+		if (writeflag==MEM_READ) {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+		} else
+			d->reg[relative_addr] = idata;
+		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ pckbc read from reg %i ]\n", (int)relative_addr);
@@ -82,7 +90,6 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				debug(" %02x", data[i]);
 			debug(" ]\n");
 			d->reg[relative_addr] = idata;
-			return 1;
 		}
 	}
 
@@ -97,7 +104,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		return 1;
 	}
 
-	return 0;
+	return 1;
 }
 
 
@@ -106,14 +113,14 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
  */
 void dev_pckbc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
-	struct ns_data *d;
+	struct pckbc_data *d;
 
-	d = malloc(sizeof(struct ns_data));
+	d = malloc(sizeof(struct pckbc_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct ns_data));
+	memset(d, 0, sizeof(struct pckbc_data));
 	d->irqnr = irq_nr;
 
 	memory_device_register(mem, "pckbc", baseaddr, DEV_PCKBC_LENGTH, dev_pckbc_access, d);

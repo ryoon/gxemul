@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.5 2004-01-05 01:07:55 debug Exp $
+ *  $Id: memory.c,v 1.6 2004-01-05 03:27:28 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -275,6 +275,12 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 			exit(1);
 		}
 
+		/*  Another ugly (incorrect) hack:  (TODO:  Fix)  */
+		if ((vaddr >> 60) == 0xc) {
+			*return_addr = vaddr & 0xffffffffff;
+			return 1;
+		}
+
 		/*  Sign-extend vaddr, if neccessary:  */
 		if ((vaddr >> 32) == 0 && vaddr & 0x80000000) {
 			vaddr |= 0xffffffff00000000;
@@ -420,7 +426,6 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 		exit(1);
 	}
 */
-	/*  TLB refill  */
 
 	/*
 	 *  Special case for SGI IP22 machines:
@@ -431,11 +436,13 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 	 *
 	 *  TODO:  Make this correct.
 	 */
-
 	if ((vaddr >> 60) == 9) {
 		*return_addr = 0x1fcffff0;
 		return 1;
 	}
+
+
+	/*  TLB refill  */
 
 exception:
 	if (no_exceptions)

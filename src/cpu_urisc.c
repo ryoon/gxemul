@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.5 2005-03-01 14:09:45 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.6 2005-04-04 20:08:58 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -98,7 +98,7 @@ struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
 {
 	struct cpu *cpu;
 
-	if (cpu_type_name == NULL)
+	if (cpu_type_name == NULL || strcmp(cpu_type_name, "URISC") != 0)
 		return NULL;
 
 	cpu = malloc(sizeof(struct cpu));

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare136.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.16 2005-03-30 22:57:32 debug Exp $
+ *  $Id: pci_ahc.c,v 1.17 2005-04-04 20:08:56 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -51,14 +51,19 @@
 #include "aic7xxx_reg.h"
 
 
+/* #define	AHC_DEBUG
+   #define debug fatal */
+
+
 #define PCI_VENDOR_ADP  0x9004          /* Adaptec */
 #define PCI_VENDOR_ADP2 0x9005          /* Adaptec (2nd PCI Vendor ID) */
 #define PCI_PRODUCT_ADP_2940U   0x8178          /* AHA-2940 Ultra */
 #define PCI_PRODUCT_ADP_2940UP  0x8778          /* AHA-2940 Ultra Pro */
 
+#define	DEV_AHC_LENGTH		0x100
 
 struct ahc_data {
-	int		dummy;
+	unsigned char	reg[DEV_AHC_LENGTH];
 };
 
 
@@ -119,51 +124,104 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	/*  struct ahc_data *d = extra;  */
+	struct ahc_data *d = extra;
 	uint64_t idata, odata = 0;
-	int ok;
+	int ok = 0;
+	char *name = NULL;
 
 	idata = memory_readmax64(cpu, data, len);
 
+	/*  YUCK! SGI uses reversed order inside 32-bit words:  */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		relative_addr = (relative_addr & ~0x3)
+		    | (3 - (relative_addr & 3));
+
+	relative_addr %= DEV_AHC_LENGTH;
+
+	if (len != 1)
+		fatal("[ ahc: ERROR! Unimplemented len %i ]\n", len);
+
+	if (writeflag == MEM_READ)
+		odata = d->reg[relative_addr];
+
 	switch (relative_addr) {
 
-	case 0x1d:
-		ok = 1;
-		odata = 0xff;
+	case SCSIID:
+		if (writeflag == MEM_READ) {
+			ok = 1; name = "SCSIID";
+			odata = 0;
+		} else {
+			fatal("[ ahc: write to SCSIOFFSET, data = 0x"
+			    "%02x: TODO ]\n", (int)idata);
+		}
 		break;
 
-	case 0x62:
-		/*  TODO  */
+	case SEECTL:
+		ok = 1; name = "SEECTL";
+		if (writeflag == MEM_WRITE)
+			d->reg[relative_addr] = idata;
+		odata |= SEERDY;
 		break;
 
-	case 0x84:
-		ok = 1;
-		odata = 4 | 1;
+	case SCSICONF:
+		ok = 1; name = "SCSICONF";
+		if (writeflag == MEM_READ) {
+			odata = 0;
+		} else {
+			fatal("[ ahc: write to SCSICONF, data = 0x%02x:"
+			    " TODO ]\n", (int)idata);
+		}
 		break;
 
-	case 0x92:
-		odata = random();
+	case SEQRAM:
+	case SEQADDR0:
+	case SEQADDR1:
+		/*  TODO: This is just a dummy.  */
+		break;
+
+	case HCNTRL:
+		ok = 1; name = "HCNTRL";
+		if (writeflag == MEM_WRITE)
+			d->reg[relative_addr] = idata;
+		break;
+
+	case INTSTAT:
+		ok = 1; name = "INTSTAT";
+		if (writeflag == MEM_WRITE)
+			fatal("[ ahc: write to INTSTAT? data = 0x%02x ]\n",
+			    (int)idata);
 		break;
 
 	default:
 		if (writeflag == MEM_WRITE)
-			fatal("[ ahc: unimplemented write to address 0x%x, "
+			fatal("[ ahc: UNIMPLEMENTED write to address 0x%x, "
 			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		else
-			fatal("[ ahc: unimplemented read from address 0x%x ]\n",
+			fatal("[ ahc: UNIMPLEMENTED read from address 0x%x ]\n",
 			    (int)relative_addr);
 	}
 
-cpu_interrupt(cpu, 0x200);
-
 #if 0
+cpu_interrupt(cpu, 0x200);
+#endif
+
+#ifdef AHC_DEBUG
 	if (ok) {
-		if (writeflag == MEM_WRITE)
-			fatal("[ ahc: write to address 0x%x, data=0x%02x ]\n",
-			    (int)relative_addr, (int)idata);
-		else
-			fatal("[ ahc: read from address 0x%x: 0x%02x ]\n",
-			    (int)relative_addr, (int)odata);
+		if (name == NULL) {
+			if (writeflag == MEM_WRITE)
+				debug("[ ahc: write to address 0x%x: 0x"
+				    "%02x ]\n", (int)relative_addr, (int)idata);
+			else
+				debug("[ ahc: read from address 0x%x: 0x"
+				    "%02x ]\n", (int)relative_addr, (int)odata);
+		} else {
+			if (writeflag == MEM_WRITE)
+				debug("[ ahc: write to %s: 0x%02x ]\n",
+				    name, (int)idata);
+			else
+				debug("[ ahc: read from %s: 0x%02x ]\n",
+				    name, (int)odata);
+		}
 	}
 #endif
 
@@ -188,9 +246,9 @@ void pci_ahc_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct ahc_data));
 
-	/*  TODO:  this address is based on what NetBSD/sgimips uses...
-	    fix this  */
-	memory_device_register(mem, "ahc", 0x18000000, 0x100,
+	/*  TODO:  this address is based on what NetBSD/sgimips uses
+	    on SGI IP32 (O2). Fix this.  */
+	memory_device_register(mem, "ahc", 0x18000000, DEV_AHC_LENGTH,
 	    dev_ahc_access, d, MEM_DEFAULT, NULL);
 }
 

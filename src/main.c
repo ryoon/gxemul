@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.223 2005-04-03 00:04:46 debug Exp $
+ *  $Id: main.c,v 1.224 2005-04-04 20:08:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -383,8 +383,8 @@ static void usage(int longusage)
 	    "    0xbfc00000:rom.bin                  for a raw ROM image\n"
 	    "    0xbfc00000:0x100:rom.bin            for an image with "
 	    "0x100 bytes header\n"
-	    "    0xbfc00000:0x100:0xbfc0888:rom.bin  start with pc=0xbfc0888\n"
-	    );
+	    "    0xbfc00000:0x100:0xbfc00884:rom.bin  "
+	    "start with pc=0xbfc00884\n");
 }
 
 

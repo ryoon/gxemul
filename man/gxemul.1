@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.9 2005-04-02 11:23:06 debug Exp $
+.\" $Id: gxemul.1,v 1.10 2005-04-04 20:08:58 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -66,6 +66,9 @@ command line. The most important thing you need to supply is the
 file argument. This is the name of a binary file (an ELF, a.out, ECOFF,
 SREC, or a raw binary image) which you wish to run in the emulator. This file
 might be an operating system kernel, or perhaps a ROM image file.
+.Pp
+If more than one filename is supplied, all files are loaded into memory, 
+and the entry point (if available) is taken from the last file.
 .Pp
 Apart from the name of a binary file, it is also necessary to select
 which specific emulation mode to use. For example, a MIPS-based machine
@@ -275,8 +278,8 @@ The following command will start NetBSD/pmax on an emulated DECstation
 .Pp
 .Dl "gxemul -E dec -e 3max -d netbsddisk.img"
 .Pp
-netbsddisk.img should be a raw disk image containing a NetBSD/pmax
-filesystem.
+netbsddisk.img should be a raw disk image containing a bootable 
+NetBSD/pmax filesystem.
 .Pp
 The following command will start an emulation session based on settings in 
 the configuration file "mysession". The -v option tells gxemul to be

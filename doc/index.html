@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.193 2005-01-09 22:37:07 debug Exp $
+$Id: index.html,v 1.194 2005-01-12 09:59:07 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -650,6 +650,11 @@ image, using the following command:
 
 </pre>
 
+<p>
+Using <b>-b</b> (enabling dynamic binary translation), as in the instructions
+above, is not 100% stable. If you experiment weird crashes, try removing that
+option and try again.
+
 
 
 
@@ -859,6 +864,10 @@ boot from the harddisk image:
 
 </pre>
 
+<p>
+You can experiment with adding <b>-b</b> to the command line, to enable
+dynamic binary translation. This is not 100% stable yet, but sometimes works.
+
 
 
 
@@ -978,7 +987,7 @@ The following instructions should let you run Sprite in the emulator:
 
 </pre>
   <li>Start the emulator with the following command line:<pre>
-	$ <b>./mips64emul -X -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
+	$ <b>./mips64emul -X -b -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
 
 </pre>
 </ol>

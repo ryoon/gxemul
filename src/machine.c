@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.346 2005-02-14 09:22:51 debug Exp $
+ *  $Id: machine.c,v 1.347 2005-02-14 21:44:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3945,7 +3945,11 @@ for (i=0; i<32; i++)
 		 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
 		 */
 		machine->machine_name = "Artesyn's PM/PPC board";
+
 		dev_pmppc_init(mem);
+
+		/*  com0 = 0xff600300, com1 = 0xff600400 ?  */
+
 		break;
 
 	case MACHINE_ULTRA1:

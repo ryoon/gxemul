@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.48 2004-08-26 14:27:28 debug Exp $
+ *  $Id: emul.c,v 1.49 2004-08-28 14:04:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -238,7 +238,7 @@ void debugger_unasm(uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
-	int x, r;
+	int r;
 
 	if (cpus == NULL) {
 		printf("No cpus (?)\n");

@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.71 2004-11-19 06:58:02 debug Exp $
+#  $Id: configure,v 1.72 2004-11-20 03:14:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -360,12 +360,26 @@ int main(int argc, char *argv[]) {
   long long x = strtoll(argv[1], NULL, 0); return 0;}\n" > _tests.c
 $CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
-	printf "missing\n"
-	printf "WARNING! strtoll missing from libc. Hack: using strtoll = strtol and
-strtoull = strtoul. This will only work correctly on a machine where
-sizeof(long long) = sizeof(long)  (luckily, for most 64-bit archs, this is
-the case.\n"
-	printf "#define HACK_STRTOLL\n" >> config.h
+	#  No strtoll, but let's check the size of long:
+	printf "#include <stdio.h>\nint main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(long));return 0;}\n" > _testlong.c
+	$CC $COPTIM _testlong.c -o _testlong 2> /dev/null
+	if [ ! -x _testlong ]; then
+		printf "\nWARNING! COULD NOT COMPILE sizeof(long) TEST PROGRAM!\n\n"
+		printf "Something is broken.\n\n"
+		exit
+	else
+		XX=`./_testlong`
+		if [ z$XX = z8 ]; then
+			printf "missing (but OK, because sizeof(long) = 8)\n"
+		else
+			printf "missing\n"
+			printf "WARNING! strtoll missing from libc. Hack: using strtoll = strtol and\n"
+			printf "strtoull = strtoul. This will only work correctly on a machine where\n"
+			printf "sizeof(long long) = sizeof(long), which does not seem to be the case here.\n\n"
+		fi
+		printf "#define HACK_STRTOLL\n" >> config.h
+	fi
+	rm -f _testlong*
 else
 	printf "yes\n"
 fi

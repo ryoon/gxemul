@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.97 2004-08-10 02:33:41 debug Exp $
+ *  $Id: misc.h,v 1.98 2004-08-11 02:58:30 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -856,10 +856,10 @@ struct cpu {
 #define	    SPECIAL2_MSUBU		    0x05    /*  000001  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_MOV_XXX		    0x08    /*  001000  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_PMFHI		    0x09    /*  001001  */  /*  Undocumented R5900 ?  */
-#define	    SPECIAL2_CLZ		    0x20    /*  100100  */  /*  MIPS32 (?) TODO  */
-#define	    SPECIAL2_CLO		    0x21    /*  100101  */  /*  MIPS32 (?) TODO  */
-#define	    SPECIAL2_DCLZ		    0x24    /*  100100  */  /*  MIPS64 (?) TODO  */
-#define	    SPECIAL2_DCLO		    0x25    /*  100101  */  /*  MIPS64 (?) TODO  */
+#define	    SPECIAL2_CLZ		    0x20    /*  100100  */  /*  MIPS32  */
+#define	    SPECIAL2_CLO		    0x21    /*  100101  */  /*  MIPS32  */
+#define	    SPECIAL2_DCLZ		    0x24    /*  100100  */  /*  MIPS64  */
+#define	    SPECIAL2_DCLO		    0x25    /*  100101  */  /*  MIPS64  */
 #define	    SPECIAL2_POR		    0x29    /*  101001  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_SDBBP		    0x3f    /*  111111  */  /*  EJTAG (?)  TODO  */
 /*	JALX (TODO)			0x1d	    011101  */

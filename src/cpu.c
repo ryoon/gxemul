@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.117 2004-08-05 21:22:18 debug Exp $
+ *  $Id: cpu.c,v 1.118 2004-08-11 02:58:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -622,6 +622,14 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 			/*  TODO: this is just a guess, I don't have the
 				docs in front of me  */
 			debug("mul\tr%i,r%i,r%i\n", rd, rs, rt);
+		} else if (special6 == SPECIAL2_CLZ) {
+			debug("clz\tr%i,r%i", rd, rs);
+		} else if (special6 == SPECIAL2_CLO) {
+			debug("clo\tr%i,r%i", rd, rs);
+		} else if (special6 == SPECIAL2_DCLZ) {
+			debug("dclz\tr%i,r%i", rd, rs);
+		} else if (special6 == SPECIAL2_DCLO) {
+			debug("dclo\tr%i,r%i", rd, rs);
 		} else if ((instrword & 0xffff07ffULL) == 0x70000209
 		    || (instrword & 0xffff07ffULL) == 0x70000249) {
 			if (instr[0] == 0x49) {
@@ -2902,6 +2910,46 @@ static int cpu_run_instr(struct cpu *cpu)
 		} else if (special6 == SPECIAL2_MUL) {
 			cpu->gpr[rd] = (int64_t)cpu->gpr[rt] *
 			    (int64_t)cpu->gpr[rs];
+		} else if (special6 == SPECIAL2_CLZ) {
+			/*  clz: count leading zeroes  */
+			int i, n=0;
+			for (i=31; i>=0; i--) {
+				if (cpu->gpr[rs] & ((uint32_t)1 << i))
+					break;
+				else
+					n++;
+			}
+			cpu->gpr[rd] = n;
+		} else if (special6 == SPECIAL2_CLO) {
+			/*  clo: count leading ones  */
+			int i, n=0;
+			for (i=31; i>=0; i--) {
+				if (cpu->gpr[rs] & ((uint32_t)1 << i))
+					n++;
+				else
+					break;
+			}
+			cpu->gpr[rd] = n;
+		} else if (special6 == SPECIAL2_DCLZ) {
+			/*  dclz: count leading zeroes  */
+			int i, n=0;
+			for (i=63; i>=0; i--) {
+				if (cpu->gpr[rs] & ((uint64_t)1 << i))
+					break;
+				else
+					n++;
+			}
+			cpu->gpr[rd] = n;
+		} else if (special6 == SPECIAL2_DCLO) {
+			/*  dclo: count leading ones  */
+			int i, n=0;
+			for (i=63; i>=0; i--) {
+				if (cpu->gpr[rs] & ((uint64_t)1 << i))
+					n++;
+				else
+					break;
+			}
+			cpu->gpr[rd] = n;
 		} else {
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",

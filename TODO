@@ -61,6 +61,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			    should be all zeroes, warn about if they are not)!
 			    Both for coprocessor registers and for instruction
 			    opcodes.
+			o)  the special2 stuff is a mess right now
 			o)  warn and/or cause exceptions for unimplemented
 			    instructions (depending on CPU type)
 		o)  R2000/R3000:

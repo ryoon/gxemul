@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.8 2004-10-20 03:22:26 debug Exp $
+ *  $Id: emul.h,v 1.9 2004-11-01 09:26:09 debug Exp $
  */
 
 #include "misc.h"
@@ -93,6 +93,9 @@ struct emul {
 	int	show_trace_tree;
 	int	tlb_dump;
 	int	verbose;
+
+	int	n_gfx_cards;
+
 	int	use_x11;
 	int	x11_scaledown;
 };

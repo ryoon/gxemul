@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.214 2004-10-29 09:48:24 debug Exp $
+ *  $Id: machine.c,v 1.215 2004-11-01 09:26:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1005,18 +1005,32 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  KN02 interrupts:  */
 			cpu->md_interrupt = kn02_interrupt;
 
-			/*  TURBOchannel slots 0, 1, and 2 are free for   */
-			/*  option cards.  Let's put in a graphics card:  */
+			/*
+			 *  TURBOchannel slots 0, 1, and 2 are free for
+			 *  option cards.  Let's put in zero or more graphics
+			 *  boards:
+			 *
+			 *  TODO: It's also possible to have larger graphics
+			 *  cards that occupy several slots. How to solve
+			 *  this nicely?
+			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
-			    turbochannel_default_gfx_card, KN02_IP_SLOT0 +8);
+			    emul->n_gfx_cards >= 1?
+				turbochannel_default_gfx_card : "",
+			    KN02_IP_SLOT0 +8);
 
 			dev_turbochannel_init(cpu, mem, 1,
 			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
-			    "", KN02_IP_SLOT1 +8);
+			    emul->n_gfx_cards >= 2?
+				turbochannel_default_gfx_card : "",
+			    KN02_IP_SLOT1 +8);
+
 			dev_turbochannel_init(cpu, mem, 2,
 			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
-			    "", KN02_IP_SLOT2 +8);
+			    emul->n_gfx_cards >= 3?
+				turbochannel_default_gfx_card : "",
+			    KN02_IP_SLOT2 +8);
 
 			/*  TURBOchannel slots 3 and 4 are reserved.  */
 

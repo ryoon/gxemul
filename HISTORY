@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.285 2004-10-30 06:17:50 debug Exp $
+$Id: HISTORY,v 1.286 2004-11-01 09:26:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1087,3 +1087,11 @@ HISTORY of mips64emul
 		the are probably not really tested yet.
 		Changes to how floating point values are handled in
 		src/coproc.c, but right now it is probably very unstable.
+20041101	I had accidentally removed the instructions on how to install
+		Ultrix from doc/index.html. They are back now.
+		Adding a -Z option for making it easier to run dual- or
+		tripple-head with Ultrix.
+		Minor update which makes it possible to switch to the left
+		monitor when running tripple-head, not just right as before.
+		(The mouse still feels weird, because it can be used in any
+		of the host's windows.)

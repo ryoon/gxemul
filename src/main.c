@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.123 2004-10-29 07:45:23 debug Exp $
+ *  $Id: main.c,v 1.124 2004-11-01 09:26:10 debug Exp $
  */
 
 #include <stdio.h>
@@ -186,7 +186,8 @@ void usage(char *progname)
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
 	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
-
+	printf("  -Z n      set nr of graphics cards, for emulating a dual-head or tripple-head\n"
+	       "            environment (only for DECstation emulation)\n");
 	printf("You must specify one or more names of files that you wish to load into memory.\n");
 	printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
 	printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
@@ -213,7 +214,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -366,6 +367,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'y':
 			emul->max_random_cycles_per_chunk = atoi(optarg);
+			break;
+		case 'Z':
+			emul->n_gfx_cards = atoi(optarg);
 			break;
 		case 'h':
 		default:
@@ -566,8 +570,13 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		strcpy(emul->boot_kernel_filename, s2);
 	}
 
+	if (emul->n_gfx_cards < 0 || emul->n_gfx_cards > 3) {
+		fprintf(stderr, "Bad number of gfx cards (-Z).\n");
+		exit(1);
+	}
+
 	if (emul->ncpus < 1) {
-		printf("Too few cpus (-n).\n");
+		fprintf(stderr, "Too few cpus (-n).\n");
 		exit(1);
 	}
 

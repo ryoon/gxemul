@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.14 2004-01-11 23:54:03 debug Exp $
+ *  $Id: coproc.c,v 1.15 2004-01-20 22:13:07 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -66,6 +66,8 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		c->nr_of_tlbs = cpu->cpu_type.nr_of_tlb_entries;
 
 		c->reg[COP0_STATUS] = 0;
+
+		c->reg[COP0_COMPARE] = (uint64_t)-1;
 
 		/*  For stand alone systems, this should probably be set during bootup:  */
 		if (!prom_emulation)

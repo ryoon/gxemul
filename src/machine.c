@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.69 2004-03-23 02:30:56 debug Exp $
+ *  $Id: machine.c,v 1.70 2004-03-24 02:44:47 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -158,6 +158,32 @@ void store_buf(uint64_t addr, char *s, size_t len)
 {
 	while (len-- != 0)
 		store_byte(addr++, *s++);
+}
+
+
+/*
+ *  store_64bit_word():
+ *
+ *  Helper function.
+ */
+void store_64bit_word(uint64_t addr, uint64_t data64)
+{
+	unsigned char data[8];
+	data[0] = (data64 >> 56) & 255;
+	data[1] = (data64 >> 48) & 255;
+	data[2] = (data64 >> 40) & 255;
+	data[3] = (data64 >> 32) & 255;
+	data[4] = (data64 >> 24) & 255;
+	data[5] = (data64 >> 16) & 255;
+	data[6] = (data64 >> 8) & 255;
+	data[7] = (data64) & 255;
+	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[7]; data[7] = tmp;
+		tmp = data[1]; data[1] = data[6]; data[6] = tmp;
+		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
+		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
+	}
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 }
 
 
@@ -440,6 +466,7 @@ void machine_init(struct memory *mem)
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
 	uint32_t system;
+	int arc_wordlen = sizeof(uint32_t);
 
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
@@ -598,8 +625,8 @@ void machine_init(struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
@@ -644,8 +671,8 @@ void machine_init(struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
 
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
@@ -762,7 +789,7 @@ void machine_init(struct memory *mem)
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11, 0);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, XINE_INTR_SCSI +8);
 
@@ -1273,10 +1300,24 @@ void machine_init(struct memory *mem)
 
 			/*  TODO:  Other machine types?  */
 			switch (machine) {
+			case 19:
+				strcat(machine_name, " (uknown SGI-IP19 ?)");	/*  TODO  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
+				dev_scc_init(cpus[bootstrap_cpu], mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
+
+				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
+
+				/*  Irix' get_mpconf() looks for this:  (TODO)  */
+				store_32bit_word(0xa0000000 + 0x3000, 0xbaddeed2);
+
+				break;
 			case 20:
 				strcat(machine_name, " (Indigo2)");
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
+				break;
+			case 21:
+				strcat(machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
 				break;
 			case 22:
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
@@ -1326,6 +1367,21 @@ void machine_init(struct memory *mem)
 
 				dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
 				break;
+			case 25:
+				/*  NOTE:  Special case for arc_wordlen:  */
+				arc_wordlen = sizeof(uint64_t);
+				strcat(machine_name, " (uknown SGI-IP25 ?)");	/*  TODO  */
+				dev_scc_init(cpus[bootstrap_cpu], mem, 0x400086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
+
+				/*  NOTE:  ip19! (perhaps not really the same)  */
+				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
+
+				break;
+			case 26:
+				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
+				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
+				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");
 				/*  2 cpus per node  */
@@ -1343,10 +1399,16 @@ void machine_init(struct memory *mem)
 				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 				break;
 			case 28:
+				/*  NOTE:  Special case for arc_wordlen:  */
+				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Impact Indigo2 ?)");
+				dev_ram_init(mem, 0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0);
 				break;
 			case 30:
+				/*  NOTE:  Special case for arc_wordlen:  */
+				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Octane)");
+				dev_ram_init(mem, 0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0);
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");
@@ -1492,16 +1554,31 @@ case arc_CacheClass:
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 9;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
-		store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
-		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
-		store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
-		store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x220);
-		store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x240);
-		store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x260);
-		store_32bit_word(ARC_ARGV_START + 0x18, ARC_ARGV_START + 0x280);
-		store_32bit_word(ARC_ARGV_START + 0x1c, ARC_ARGV_START + 0x2a0);
-		store_32bit_word(ARC_ARGV_START + 0x20, ARC_ARGV_START + 0x2c0);
-		store_32bit_word(ARC_ARGV_START + 0x24, 0);
+		switch (arc_wordlen) {
+		case sizeof(uint64_t):
+			store_64bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
+			store_64bit_word(ARC_ARGV_START + 0x4 * 2, ARC_ARGV_START + 0x180);
+			store_64bit_word(ARC_ARGV_START + 0x8 * 2, ARC_ARGV_START + 0x200);
+			store_64bit_word(ARC_ARGV_START + 0xc * 2, ARC_ARGV_START + 0x220);
+			store_64bit_word(ARC_ARGV_START + 0x10 * 2, ARC_ARGV_START + 0x240);
+			store_64bit_word(ARC_ARGV_START + 0x14 * 2, ARC_ARGV_START + 0x260);
+			store_64bit_word(ARC_ARGV_START + 0x18 * 2, ARC_ARGV_START + 0x280);
+			store_64bit_word(ARC_ARGV_START + 0x1c * 2, ARC_ARGV_START + 0x2a0);
+			store_64bit_word(ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
+			store_64bit_word(ARC_ARGV_START + 0x24 * 2, 0);
+			break;
+		default:	/*  32-bit  */
+			store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
+			store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
+			store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
+			store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x220);
+			store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x240);
+			store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x260);
+			store_32bit_word(ARC_ARGV_START + 0x18, ARC_ARGV_START + 0x280);
+			store_32bit_word(ARC_ARGV_START + 0x1c, ARC_ARGV_START + 0x2a0);
+			store_32bit_word(ARC_ARGV_START + 0x20, ARC_ARGV_START + 0x2c0);
+			store_32bit_word(ARC_ARGV_START + 0x24, 0);
+		}
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mte.c,v 1.2 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_sgi_mte.c,v 1.3 2004-02-18 09:35:36 debug Exp $
  *  
  *  SGI "mte". This device seems to be an accelerator for copying/clearing
  *  memory.  Used in SGI-IP32.
@@ -128,7 +128,7 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 				/*  TODO:  is there a better way to implement this?  */
 				memset(zerobuf, 0, sizeof(zerobuf));
 				fill_addr = first_addr;
-				while (zerobuflen > 0) {
+				while (zerobuflen != 0) {
 					if (zerobuflen > sizeof(zerobuf))
 						fill_len = sizeof(zerobuf);
 					else

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.5 2004-02-12 15:55:37 debug Exp $
+ *  $Id: dev_mp.c,v 1.6 2004-06-09 08:43:02 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -102,6 +102,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 				struct cpu **cpus = (struct cpu **) extra;
 				cpus[i]->running = 0;
 			}
+		return 1;
 	}
 
 	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_UNPAUSE_CPU) {
@@ -113,6 +114,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 				struct cpu **cpus = (struct cpu **) extra;
 				cpus[i]->running = 1;
 			}
+		return 1;
 	}
 
 	return 0;

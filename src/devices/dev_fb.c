@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.25 2004-03-22 00:55:09 debug Exp $
+ *  $Id: dev_fb.c,v 1.26 2004-03-25 20:57:51 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -139,6 +139,10 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 
 	/*  TODO: other bitdepths?  */
 	bits = x11_using_truecolor? 24 : 8;
+	if (x11_using_truecolor) {
+		color = ((color & 255) << 16)
+		    + (color & 0xff00) + ((color >> 16) & 255);
+	}
 
 	for (bit = 0; bit < bits; bit++) {
 		if (color & (1 << ((bit&(~7)) + 7-(bit&7)) ))

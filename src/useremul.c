@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.13 2004-06-25 01:04:12 debug Exp $
+ *  $Id: useremul.c,v 1.14 2004-07-01 11:46:03 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -72,7 +72,6 @@
 #include "syscall_ultrix.h"
 
 extern int userland_emul;
-extern char *last_filename;
 
 /*  Max length of strings passed using syscall parameters:  */
 #define	MAXLEN		8192

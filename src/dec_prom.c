@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.9 2004-04-12 08:18:56 debug Exp $
+ *  $Id: dec_prom.c,v 1.10 2004-07-01 11:46:03 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "diskimage.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -58,6 +59,8 @@ extern int use_x11;
  *
  *  DECstation PROM emulation.
  *
+ *	0x0c	strcmp()
+ *	0x14	strlen()
  *	0x24	getchar()
  *	0x30	printf()
  *	0x54	bootinit()
@@ -67,18 +70,41 @@ extern int use_x11;
  *	0x7c	clear_cache()
  *	0x80	getsysid()
  *	0x84	getbitmap()
+ *	0x9c	halt()
  *	0xa4	gettcinfo()
  *	0xac	rex()
  */
 void decstation_prom_emul(struct cpu *cpu)
 {
-	int i, j, ch, argreg;
+	int i, j, ch, argreg, argdata;
 	int vector = cpu->pc & 0xffff;
 	unsigned char buf[100];
-	unsigned char ch2;
+	unsigned char ch1, ch2;
 	uint64_t slot_base = 0x10000000, slot_size = 0;
 
 	switch (vector) {
+	case 0x0c:		/*  strcmp():  */
+		i = j = 0;
+		do {
+			ch1 = read_char_from_memory(cpu, GPR_A0, i++);
+			ch2 = read_char_from_memory(cpu, GPR_A1, j++);
+		} while (ch1 == ch2 && ch1 != '\0');
+
+		/*  If ch1=='\0', then strings are equal.  */
+		if (ch1 == '\0')
+			cpu->gpr[GPR_V0] = 0;
+		if ((signed char)ch1 > (signed char)ch2)
+			cpu->gpr[GPR_V0] = 1;
+		if ((signed char)ch1 < (signed char)ch2)
+			cpu->gpr[GPR_V0] = -1;
+		break;
+	case 0x14:		/*  strlen():  */
+		i = 0;
+		do {
+			ch2 = read_char_from_memory(cpu, GPR_A0, i++);
+		} while (ch2 != 0);
+		cpu->gpr[GPR_V0] = i - 1;
+		break;
 	case 0x24:		/*  getchar()  */
 		/*  debug("[ DEC PROM getchar() ]\n");  */
 		cpu->gpr[GPR_V0] = console_readchar();
@@ -98,17 +124,28 @@ void decstation_prom_emul(struct cpu *cpu)
 					printf("%%");
 					break;
 				case 'c':
+				case 'd':
 				case 's':
+				case 'x':
 					/*  Get argument:  */
 					if (argreg > GPR_A3) {
 						printf("[ decstation_prom_emul(): too many arguments ]");
 						argreg = GPR_A3;	/*  This reuses the last argument,
 								which is utterly incorrect. (TODO)  */
 					}
-					ch2 = cpu->gpr[argreg];
-					if (ch == 'c')
+					ch2 = argdata = cpu->gpr[argreg];
+
+					switch (ch) {
+					case 'c':
 						printf("%c", ch2);
-					else {
+						break;
+					case 'd':
+						printf("%d", argdata);
+						break;
+					case 'x':
+						printf("%x", argdata);
+						break;
+					case 's':
 						/*  Print a "%s" string.  */
 						while (ch2) {
 							ch2 = read_char_from_memory(cpu, argreg, i++);
@@ -117,6 +154,7 @@ void decstation_prom_emul(struct cpu *cpu)
 						}
 						/*  TODO:  without this newline, output looks ugly  */
 						printf("\n");
+						break;
 					}
 					argreg ++;
 					break;
@@ -135,13 +173,44 @@ void decstation_prom_emul(struct cpu *cpu)
 		fflush(stdout);
 		break;
 	case 0x54:		/*  bootinit()  */
-		debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->gpr[GPR_A0]);
+		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->gpr[GPR_A0]);  */
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x58:		/*  bootread(int b, void *buffer, int n)  */
-		debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
-		    (int)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
+		/*
+		 *  Read data from the boot device.
+		 *  b is a sector number (512 bytes per sector),
+		 *  buffer is the destination address, and n
+		 *  is the number of _bytes_ to read.
+		 *
+		 *  TODO: Return value? NetBSD thinks that 0 is ok.
+		 */
+		/*  debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
+		    (int)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);  */
+
 		cpu->gpr[GPR_V0] = 0;
+
+		if ((int32_t)cpu->gpr[GPR_A2] > 0) {
+			int disk_id = diskimage_bootdev();
+			int res;
+			unsigned char *tmp_buf;
+
+			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			if (tmp_buf == NULL) {
+				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				break;
+			}
+
+			res = diskimage_access(disk_id, 0, cpu->gpr[GPR_A0] * 512, tmp_buf, cpu->gpr[GPR_A2]);
+
+			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			if (res) {
+				store_buf(cpu->gpr[GPR_A1], tmp_buf, cpu->gpr[GPR_A2]);
+				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
+			}
+
+			free(tmp_buf);
+		}
 		break;
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
@@ -199,7 +268,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;	/*  ?  */
 		break;
 	case 0x80:		/*  getsysid()  */
-		debug("[ DEC PROM getsysid() ]\n");
+		/*  debug("[ DEC PROM getsysid() ]\n");  */
 		/*  TODO:  why did I add the 0x82 stuff???  */
 		cpu->gpr[GPR_V0] = (0x82 << 24) + (machine << 16) + (0x3 << 8);
 		break;
@@ -211,6 +280,10 @@ void decstation_prom_emul(struct cpu *cpu)
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0], buf, sizeof(buf), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		}
 		cpu->gpr[GPR_V0] = sizeof((memmap.bitmap));
+		break;
+	case 0x9c:		/*  halt()  */
+		debug("[ DEC PROM halt() ]\n");
+		cpu->running = 0;
 		break;
 	case 0xa4:		/*  gettcinfo()  */
 		/*  These are just bogus values...  TODO  */

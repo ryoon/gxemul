@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.45 2004-06-29 16:27:20 debug Exp $
+$Id: index.html,v 1.46 2004-07-01 11:46:02 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -457,10 +457,10 @@ You need to do the following:
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -N -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -N -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d bc:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img -d bc:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 	but then make sure you choose 'vt100' when prompted with which terminal
 	type to use, and not 'rcons'.
@@ -473,13 +473,6 @@ you should expect the installation to take quite some time. On a
 2.8 GHz Xeon-based PC, a full install takes approximately an hour.
 
 <p>
-<font color="#ff0000">
-IMPORTANT:</font>
-Once the installation is completed, you might want to take a backup
-copy of the rootdisk image. The reason for this is that if you make
-some mistake later on, you probably don't want to go through serveral
-hours of re-installing again.
-<p>
 Then, following these steps should boot the OS from the root disk image:
 <ol>
   <li>Download a NetBSD GENERIC kernel and gunzip it:<pre>
@@ -491,11 +484,25 @@ Then, following these steps should boot the OS from the root disk image:
 </ol>
 <p>
 <font color="#ff0000">
-TODO:  As there are boot programs and kernels on both the CDROM image and 
-on the harddisk image (after installation), it should not be neccessary to 
-have separate kernels in addition to the CDROM/disk images.  It should be 
-possible to boot right of the disk image.  As of right now, that
-functionality has not been implemented.
+Update 2004-07-01:
+It is now possible to boot directly from a DECstation harddisk image,
+without supplying the name of the kernel on the command line. (You 
+don't need the kernel as a separate file at all.) That means
+that booting is very much simpler than before. To install NetBSD/pmax,
+use the following:
+<pre>
+	$ <b>./mips64emul -D2 -I4000000 -d diskimage -j netbsd.pmax -d bc:pmaxcd.iso</b>
+</pre>
+(The reason why you need <b>-j netbsd.pmax</b> is because the kernel on
+the ISO image is called /netbsd.pmax, there is no file called /netbsd.)
+After install, this should be enough to boot from the disk image:
+<pre>
+	$ <b>./mips64emul -D2 -I4000000 -d diskimage</b>
+</pre>
+The same is true for Ultrix, but then <b>-j vmunix</b> must be used as well.
+<b>-j <i>name</i></b> makes the bootstring contain <i>/name</i> as the
+filename to boot, instead of <i>/netbsd</i>, which is the default name.
+<p>Note: This is was not implemented in the 0.1 release.
 </font>
 <p>
 Other OSes, such as Ultrix, may be installed in a way similar to NetBSD.

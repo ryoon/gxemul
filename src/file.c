@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.27 2004-06-25 04:31:02 debug Exp $
+ *  $Id: file.c,v 1.28 2004-07-01 11:46:03 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -63,8 +63,6 @@ struct aout_symbol {
 
 
 extern uint64_t file_loaded_end_addr;
-
-char *last_filename = "not_yet_set";
 
 
 #define	unencode(var,dataptr,typ)	{				\
@@ -1137,8 +1135,6 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	assert(mem != NULL);
 	assert(filename != NULL);
-
-	last_filename = filename;
 
 	f = fopen(filename, "r");
 	if (f == NULL) {

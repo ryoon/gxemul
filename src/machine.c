@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.117 2004-06-29 15:43:24 debug Exp $
+ *  $Id: machine.c,v 1.118 2004-07-01 11:46:03 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -78,10 +78,8 @@ extern int emulated_ips;
 extern int machine;
 extern char *machine_name;
 extern int physical_ram_in_mb;
-extern int ultrixboot_emul;
 extern int use_x11;
-
-extern char *last_filename;
+extern char *boot_kernel_filename;
 
 uint64_t file_loaded_end_addr = 0;
 
@@ -757,9 +755,9 @@ void machine_init(struct memory *mem)
 	char *short_machine_name = NULL;
 
 	/*  Generic bootstring stuff:  */
+	int bootdev_id = diskimage_bootdev();
 	char *bootstr = NULL;
 	char *bootarg = NULL;
-	char *tmp_ptr;
 	char *init_bootpath;
 
 	/*  PCI stuff:  */
@@ -1258,60 +1256,44 @@ void machine_init(struct memory *mem)
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
 
 		/*
-		 *  NOTE:  NetBSD and Ultrix expect their bootargs in different ways.
+		 *  NetBSD and Ultrix expect the boot args to be like this:
 		 *
-		 *	NetBSD:  "bootdev" "-a"
-		 *	Ultrix:  "ultrixboot" [args?] "bootdev" [args?]
+		 *	"boot" "bootdev" [args?]
 		 *
-		 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for 3100/2100
-		 *  (although that crashes Ultrix :-/), and "5/rz0a/netbsd" for alll
-		 *  others.  The number '5' is the slot number of the boot device.
+		 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for
+		 *  3100/2100 (although that crashes Ultrix :-/), and
+		 *  "5/rz0a/netbsd" for all others.  The number '5' is the
+		 *  slot number of the boot device.
 		 *
 		 *  'rz' for disks, 'tz' for tapes.
 		 *
 		 *  TODO:  Make this nicer.
 		 */
-{
-		int bootdev_id;
-		char bootpath[200];
+		{
+			char bootpath[200];
 
 #if 0
-		if (machine == MACHINE_PMAX_3100)
-			strcpy(bootpath, "rz(0,0,0)");
-		else
+			if (machine == MACHINE_PMAX_3100)
+				strcpy(bootpath, "rz(0,0,0)");
+			else
 #endif
-			strcpy(bootpath, "5/rz1/");
+				strcpy(bootpath, "5/rz1/");
 
-		bootdev_id = diskimage_bootdev();
+			bootpath[0] = '0' + boot_boardnumber;
+			if (diskimage_is_a_tape(bootdev_id))
+				bootpath[2] = 't';
+			bootpath[4] = '0' + bootdev_id;
 
-		bootpath[0] = '0' + boot_boardnumber;
-		if (diskimage_is_a_tape(bootdev_id))
-			bootpath[2] = 't';
-		bootpath[4] = '0' + bootdev_id;
-
-		init_bootpath = bootpath;
-}
-
-		tmp_ptr = rindex(last_filename, '/');
-		if (tmp_ptr == NULL)
-			tmp_ptr = last_filename;
-		else
-			tmp_ptr ++;
-
-		bootstr = malloc(strlen(init_bootpath) + strlen(tmp_ptr) + 1);
-		strcpy(bootstr, init_bootpath);
-		strcat(bootstr, tmp_ptr);
-
-		if (ultrixboot_emul) {
-			/*  For Ultrixboot emulation:  */
-			bootarg = bootstr;
-			bootstr = "ultrixboot";
-		} else {
-			/*  NetBSD's second stage bootloader:  */
-			bootarg = "-a";
+			init_bootpath = bootpath;
 		}
 
-		/*  TODO: make this nicer  */
+		/*  TODO: this should be the name of the booting kernel  */
+		bootarg = malloc(strlen(init_bootpath) +
+		    strlen(boot_kernel_filename) + 1);
+		strcpy(bootarg, init_bootpath);
+		strcat(bootarg, boot_kernel_filename);
+
+		bootstr = "boot";
 
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
 		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootarg);
@@ -2270,14 +2252,11 @@ void machine_init(struct memory *mem)
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
-		tmp_ptr = rindex(last_filename, '/');
-		if (tmp_ptr == NULL)
-			tmp_ptr = last_filename;
-		else
-			tmp_ptr ++;
-		bootstr = malloc(strlen(init_bootpath) + strlen(tmp_ptr) + 1);
+
+		bootstr = malloc(strlen(init_bootpath) +
+		    strlen(boot_kernel_filename) + 1);
 		strcpy(bootstr, init_bootpath);
-		strcat(bootstr, tmp_ptr);
+		strcat(bootstr, boot_kernel_filename);
 
 		bootarg = "-a";
 

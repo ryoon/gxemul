@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.31 2004-06-25 01:04:12 debug Exp $
+ *  $Id: diskimage.c,v 1.32 2004-07-01 11:46:03 debug Exp $
  *
  *  Disk image support.
  *
@@ -906,12 +906,14 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
  *
  *  Returns 1 if the access completed successfully, 0 otherwise.
  */
-int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *buf, size_t len)
+int diskimage_access(int disk_id, int writeflag, off_t offset,
+	unsigned char *buf, size_t len)
 {
 	int len_done;
 
 	if (disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL) {
-		fatal("trying to access a non-existant disk image (%i)\n", disk_id);
+		fatal("trying to access a non-existant disk image (%i)\n",
+		    disk_id);
 		exit(1);
 	}
 
@@ -1138,8 +1140,6 @@ int diskimage_bootdev(void)
 
 		if (bootdev < 0)
 			bootdev = 0;	/*  Just accept that there's no boot device.  */
-		else
-			debug("No disk marked as boot device; booting from id %i\n", bootdev);
 	}
 
 	return bootdev;

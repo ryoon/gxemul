@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.119 2004-06-30 09:09:37 debug Exp $
+$Id: HISTORY,v 1.120 2004-07-01 11:46:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -637,3 +637,10 @@ HISTORY of mips64emul
 
 ==============  RELEASE 0.1  ==============
 
+20040701	The -j option now takes a name, the of the kernel as passed
+		on to the bootloader.  ("netbsd" is the default name.)
+		Adding support to load bootstrap code directly from a disk
+		image, for DECstation.  Both NetBSD/pmax and Ultrix boot
+		straight of a disk image now, with no need to supply a
+		kernel filename on the command line.  (Ultrix still needs
+		-j vmunix, though, to boot from /vmunix instead of /netbsd.)

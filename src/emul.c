@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.16 2004-06-25 03:42:46 debug Exp $
+ *  $Id: emul.c,v 1.17 2004-07-01 11:46:03 debug Exp $
  *
  *  Emulation startup.
  */
@@ -47,6 +47,7 @@ extern char *optarg;
 int extra_argc;
 char **extra_argv;
 
+extern int booting_from_diskimage;
 
 extern int bintrans_enable;
 extern char emul_cpu_name[50];
@@ -120,6 +121,61 @@ void add_pc_dump_points(void)
 void fix_console(void)
 {
 	console_deinit();
+}
+
+
+/*
+ *  load_bootblock():
+ *
+ *  For some emulation modes, it is possible to boot from a harddisk image by
+ *  loading a bootblock from a specific disk offset into memory, and executing
+ *  that, instead of requiring a separate kernel file.  It is then up to the
+ *  bootblock to load a kernel.
+ */
+void load_bootblock(void)
+{
+	int boot_disk_id = diskimage_bootdev();
+	int res;
+	unsigned char bootblock_buf[8192];
+
+	switch (emulation_type) {
+	case EMULTYPE_DEC:
+		/*
+		 *  The FFS bootblock is located at offset 0x200, and is 8KB
+		 *  large.  Ultrix seems to expect two
+		 *  copies, one at 0x80600000 and one at 0x80700000.
+		 *  We start running at 0x80700000 though, because
+		 *  that works with both NetBSD and Ultrix.
+		 *
+		 *  NetBSD uses FFS for normal SCSI disks, but on the install
+		 *  CDROM for NetBSD/pmax 1.6.2, there is no bootblock at
+		 *  offset 0x200. (The CDROM uses a CD9660 file system.)
+		 *  Instead, the bootblock is found at offset 0x4a10000.
+		 *
+		 *  TODO:  Find out how to find the bootblock for CD9660
+		 *         in the general case!
+		 */
+		res = diskimage_access(boot_disk_id, 0, 0x200,
+		    bootblock_buf, sizeof(bootblock_buf));
+
+		/*  Hack for NetBSD/pmax 1.6.2 install CDROM:  */
+		if (bootblock_buf[0] == 0 && bootblock_buf[1] == 0) {
+			res = diskimage_access(boot_disk_id, 0, 0x4a10000,
+			    bootblock_buf, sizeof(bootblock_buf));
+		}
+
+		/*  Ultrix boots at 0x80600000:  */
+		store_buf(0x80600000, bootblock_buf, sizeof(bootblock_buf));
+
+		/*  NetBSD boots at 0x80700000:  */
+		store_buf(0x80700000, bootblock_buf, sizeof(bootblock_buf));
+
+		cpus[bootstrap_cpu]->pc = 0x80700000;
+		break;
+	default:
+		fatal("Booting from disk without a separate kernel doesn't work in this emulation mode.\n");
+		exit(1);
+	}
 }
 
 
@@ -204,6 +260,10 @@ void emul(void)
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (extra_argc > 0)
 		debug("loading files into emulation memory:\n");
+
+	if (booting_from_diskimage)
+		load_bootblock();
+
 	while (extra_argc > 0) {
 		file_load(mem, extra_argv[0], cpus[bootstrap_cpu]);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.47 2004-06-29 06:28:04 debug Exp $
+ *  $Id: main.c,v 1.48 2004-07-01 11:46:03 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -58,6 +58,7 @@ char *machine_name = NULL;
 
 int random_mem_contents = 0;
 int physical_ram_in_mb = 0;
+int booting_from_diskimage = 0;
 
 int quiet_mode = 0;
 int show_opcode_statistics = 0;
@@ -79,7 +80,7 @@ int max_instructions = 0;
 int emulated_ips = 0;
 int speed_tricks = 1;
 int userland_emul = 0;
-int ultrixboot_emul = 0;
+char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
 
 int bootstrap_cpu;
 int use_random_bootstrap_cpu = 0;
@@ -196,7 +197,9 @@ void usage(char *progname)
 	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
-	printf("  -j        ultrixboot-style emulation, instead of NetBSD-style, for DECstation\n");
+	printf("  -j name   set the name of the kernel  (default = \"netbsd\")\n");
+	printf("                -j netbsd.pmax     for the NetBSD/pmax 1.6.2 install CD\n");
+	printf("                -j vmunix          for Ultrix  (REQUIRED to boot Ultrix)\n");
 	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
@@ -229,14 +232,14 @@ void usage(char *progname)
  */
 int get_cmd_args(int argc, char *argv[])
 {
-	int ch;
+	int ch, using_switch_d = 0;
 	char *progname = argv[0];
 
 	emul_cpu_name[0] = emul_cpu_name[sizeof(emul_cpu_name)-1] = '\0';
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -258,6 +261,7 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'd':
 			diskimage_add(optarg);
+			using_switch_d = 1;
 			break;
 		case 'E':
 			emulation_type = EMULTYPE_COBALT;
@@ -281,7 +285,7 @@ int get_cmd_args(int argc, char *argv[])
 			speed_tricks = 0;
 			break;
 		case 'j':
-			ultrixboot_emul = 1;
+			boot_kernel_filename = optarg;
 			break;
 		case 'M':
 			physical_ram_in_mb = atoi(optarg);
@@ -429,16 +433,30 @@ int get_cmd_args(int argc, char *argv[])
 	if (physical_ram_in_mb == 0)
 		physical_ram_in_mb = DEFAULT_RAM_IN_MB;
 
+	/*
+	 *  Usually, an executable filename must be supplied.
+	 *
+	 *  However, it is possible to boot directly from a harddisk
+	 *  image file.  If no kernel is supplied, and the emulation
+	 *  mode is DECstation and there is a diskimage, then try to
+	 *  boot from that.
+	 */
+
 	if (extra_argc == 0) {
-		usage(progname);
-		printf("You must specify one or more names of files that you wish to load into memory.\n");
-		printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
-		printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
-		printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
-		printf("or \"address:skiplen:\".\n");
-		printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");
-		printf("           0xbfc00000:0x100:rom.bin   for an image with 0x100 bytes header\n");
-		exit(1);
+		if (emulation_type == EMULTYPE_DEC && using_switch_d) {
+			debug("EXPERIMENTAL: Booting directly from a diskimage.\n");
+			booting_from_diskimage = 1;
+		} else {
+			usage(progname);
+			printf("You must specify one or more names of files that you wish to load into memory.\n");
+			printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
+			printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
+			printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
+			printf("or \"address:skiplen:\".\n");
+			printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");
+			printf("           0xbfc00000:0x100:rom.bin   for an image with 0x100 bytes header\n");
+			exit(1);
+		}
 	}
 
 	if (ncpus < 1) {

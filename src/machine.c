@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.56 2004-03-04 03:13:37 debug Exp $
+ *  $Id: machine.c,v 1.57 2004-03-04 06:12:40 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -732,11 +732,32 @@ void machine_init(struct memory *mem)
 		case MACHINE_5500:	/*  type 11, KN220  */
 			machine_name = "DECsystem 5500 (KN220)";
 
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  A wild guess. TODO:  not irq 0  */
+			/*
+			 *  See KN220 docs for more info.
+			 *
+			 *  scc at 0x10140000
+			 *  qbus at (or around) 0x10080000
+			 *  dssi (disk controller) buffers at 0x10100000, registers at 0x10160000.
+			 *  sgec (ethernet) registers at 0x10008000, station addresss at 0x10120000.
+			 *  asc (scsi) at 0x17100000.
+			 */
+
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
 			dev_dec5500_ioboard_init(cpus[bootstrap_cpu], mem, 0x17000000);
 
+			dev_sgec_init(mem, 0x10008000, 0);		/*  irq?  */
+
+			/*  The asc controller might be TURBOchannel-ish?  */
+#if 0
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
+#else
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x17100000, 0);		/*  irq?  */
+#endif
+
+			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
+			serial_console_name      = "osconsole=0";
 			break;
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
@@ -1010,6 +1031,8 @@ void machine_init(struct memory *mem)
 
 		if (physical_ram_in_mb != 32)
 			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
+		if (!use_x11)
+			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
 
 		dev_ps2_gs_init(mem, 0x12000000);
 		dev_ps2_dmac_init(mem, 0x10008000, GLOBAL_gif_mem);

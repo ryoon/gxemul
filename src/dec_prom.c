@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.8 2004-03-04 03:14:13 debug Exp $
+ *  $Id: dec_prom.c,v 1.9 2004-04-12 08:18:56 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -254,7 +254,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		}
 		printf("\n");
 		fatal("PROM emulation: unimplemented callback vector 0x%x\n", vector);
-		exit(1);
+		cpu->running = 0;
 	}
 }
 

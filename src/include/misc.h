@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.119 2004-10-19 03:40:33 debug Exp $
+ *  $Id: misc.h,v 1.120 2004-10-19 03:58:13 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -225,7 +225,7 @@ struct cpu_type_def {
 	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
 	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  instrs/cycle?  */ \
-	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  instrs/cycle?  */ \
+	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4,14,13, 6, 6, 0, 0 }, /*  instrs/cycle?  */ \
 	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \

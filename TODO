@@ -6,7 +6,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Caches / memory hierarchies:
 		o)  Implement correct cache emulation (per CPU, multiple
-		    levels should be possible)
+		    levels should be possible, associativity etc!)
 		o)  Move the -S (fill mem with random) functionality into the
 			memory.c subsystem, not machine.c or wherever it is now
 		o)  ECC stuff, simulation of memory errors?  (Machine dependant)

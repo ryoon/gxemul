@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.8 2004-02-18 09:35:54 debug Exp $
+#  $Id: configure,v 1.9 2004-02-22 13:57:16 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -168,12 +168,12 @@ if [ z"$CC" = zccc ]; then
 	fi
 	rm -f _testprog
 
-	#  -intrinsics
-	$CC _testprog.c -o _testprog -intrinsics 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-intrinsics $COPTIM"
-	fi
-	rm -f _testprog
+#	#  -intrinsics
+#	$CC _testprog.c -o _testprog -intrinsics 2> /dev/null
+#	if [ -x _testprog ]; then
+#		COPTIM="-intrinsics $COPTIM"
+#	fi
+#	rm -f _testprog
 
 	#  -fast
 	$CC _testprog.c -o _testprog -fast 2> /dev/null

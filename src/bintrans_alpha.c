@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.91 2005-01-02 19:47:59 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.92 2005-01-02 19:55:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1187,7 +1187,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p, int forward)
 {
-	unsigned char *a, *skip=NULL;
+	unsigned char *a, *skip=NULL, *generic64bit;
 	int ofs;
 	uint64_t alpha_addr, subaddr;
 
@@ -1219,6 +1219,35 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 			/*  00 00 fb 6b     jmp     (t12)  */
 			*a++ = 0; *a++ = 0; *a++ = 0xfb; *a++ = 0x6b;
 		} else {
+			/*
+			 *  If the highest 32 bits of the address are either
+			 *  0x00000000 or 0xffffffff, then the tables used for
+			 *  32-bit load/stores can be used.
+			 *
+			 *  81 16 24 4a     srl     a1,0x20,t0
+			 *  03 00 20 e4     beq     t0,14 <ok1>
+			 *  01 30 20 40     addl    t0,0x1,t0
+			 *  01 00 20 e4     beq     t0,14 <ok1>
+			 *  01 00 e0 c3     br      18 <nook>
+			 */
+			*a++ = 0x81; *a++ = 0x16; *a++ = 0x24; *a++ = 0x4a;
+			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+			*a++ = 0x01; *a++ = 0x30; *a++ = 0x20; *a++ = 0x40;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+			generic64bit = a;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+			/*  34 12 70 a7     ldq     t12,4660(a0)  */
+			ofs = (size_t)&dummy_cpu.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
+
+			/*  00 00 fb 6b     jmp     (t12)  */
+			*a++ = 0; *a++ = 0; *a++ = 0xfb; *a++ = 0x6b;
+
+
+			if (generic64bit != NULL)
+				*generic64bit = ((size_t)a - (size_t)generic64bit - 4) / 4;
+
 			/*  Not much we can do here if this wasn't to the same
 			    physical page...  */
 

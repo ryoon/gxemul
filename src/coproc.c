@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.59 2004-07-17 20:10:22 debug Exp $
+ *  $Id: coproc.c,v 1.60 2004-07-18 13:05:39 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -41,6 +41,7 @@
 extern int instruction_trace;
 extern int register_dump;
 extern int prom_emulation;
+extern int userland_emul;
 
 char *cop0_names[32] = COP0_NAMES;
 
@@ -80,6 +81,10 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		 *  disabled.
 		 */
 		c->reg[COP0_STATUS] = 0;
+
+		/*  For userland emulation, enable all coprocessors:  */
+		if (userland_emul)
+			c->reg[COP0_STATUS] |= (0xf << STATUS_CU_SHIFT);
 
 		c->reg[COP0_COMPARE] = (uint64_t)-1;
 

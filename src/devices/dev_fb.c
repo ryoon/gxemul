@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.39 2004-06-28 20:33:20 debug Exp $
+ *  $Id: dev_fb.c,v 1.40 2004-06-28 23:40:22 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -639,7 +639,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		/*  Is this far away from the previous updates? Then update:  */
 		if (d->update_y1 != -1) {
 			int diff1, diff2;
-			int fhmult = 8 * 22;	/*  an integer multiple of the (assumed) font height  */
+			int fhmult = 6 * 22;	/*  an integer multiple of the (assumed) font height  */
 
 			diff1 = y - d->update_y1;
 			diff2 = y - d->update_y2;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.74 2004-06-28 20:49:45 debug Exp $
+ *  $Id: cpu.c,v 1.75 2004-06-28 23:40:22 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -76,10 +76,6 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
-
-/*  Ugly, but needed for kn230 and kn02 "shared" interrupts:  */
-extern struct kn230_csr *kn230_csr;
-extern struct kn02_csr *kn02_csr;
 
 
 

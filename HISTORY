@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.109 2004-06-28 05:41:07 debug Exp $
+$Id: HISTORY,v 1.110 2004-06-28 23:40:29 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -612,3 +612,9 @@ HISTORY of mips64emul
 		before rx interrupts, not the other way around as it was
 		before. (This speeds up NetBSD boot on DECstation, and
 		fixes a bug which Ultrix triggered on heavy keyboard input.)
+		A couple of other minor fixes.
+		Framebuffer fix: there was a bug which caused the rightmost/
+		bottom pixel to sometimes not be updated, when running in
+		scaledown mode. This is now fixed.
+		Adding a small program which removes "zero holes" from
+		harddisk image files.

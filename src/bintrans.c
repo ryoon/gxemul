@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.106 2004-12-07 12:41:51 debug Exp $
+ *  $Id: bintrans.c,v 1.107 2004-12-07 12:56:47 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -109,8 +109,7 @@
 
 int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	int run_flag) { return 0; }
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
 void bintrans_init(void)
 {
@@ -279,11 +278,11 @@ struct translation_page_entry *prev = NULL;
  *  bintrans_attempt_translate():
  *
  *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
- *  and "run_flag" is non-zero, then the code chunk is run.
+ *  the code chunk is run.
  *
  *  Returns the number of executed instructions.
  */
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 {
 	uint64_t paddr_page;
 	int offset_within_page;
@@ -318,16 +317,13 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
-			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-				return cpu->bintrans_instructions_executed;
 			if (tep->chunk[offset_within_page] != 0) {
-				if (!run_flag)
-					return cpu->bintrans_instructions_executed;
-
 				f = (size_t)tep->chunk[offset_within_page] +
 				    translation_code_chunk_space;
 				goto run_it;	/*  see further down  */
 			}
+			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+				return cpu->bintrans_instructions_executed;
 			break;
 		}
 		tep = tep->next;
@@ -753,9 +749,6 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	/*  Align the code chunk space:  */
 	translation_code_chunk_space_head =
 	    ((translation_code_chunk_space_head - 1) | 63) + 1;
-
-	if (!run_flag)
-		return cpu->bintrans_instructions_executed;
 
 
 	/*  RUN the code chunk:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.209 2004-12-06 13:15:06 debug Exp $
+ *  $Id: cpu.c,v 1.210 2004-12-07 12:56:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1655,7 +1655,7 @@ int cpu_run_instr(struct cpu *cpu)
 			int res;
 			cpu->bintrans_instructions_executed = 0;
 			res = bintrans_attempt_translate(cpu,
-			    cpu->pc_bintrans_paddr, 1);
+			    cpu->pc_bintrans_paddr);
 
 			if (res >= 0) {
 				/*  debug("BINTRANS translation + hit,"

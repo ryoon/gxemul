@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.232 2004-12-08 19:55:45 debug Exp $
+ *  $Id: machine.c,v 1.233 2004-12-08 23:27:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2526,15 +2526,11 @@ Why is this here? TODO
 		arcbios_add_memory_descriptor(cpu, 0, 0x2000, ARCBIOS_MEM_FirmwarePermanent);
 		arcbios_add_memory_descriptor(cpu, 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
 
-#if 1
+#if 0
 		arcbios_add_memory_descriptor(cpu, 0x60000, 0x800000-0x60000, ARCBIOS_MEM_LoadedProgram);
 #else
-		/*  For Windows NT on ARC, needs to be generalized...  TODO  */
-		arcbios_add_memory_descriptor(cpu, 0x60000, 0x100000-0x60000, ARCBIOS_MEM_FreeMemory);
-		arcbios_add_memory_descriptor(cpu, 0x100000, 0x600000-0x100000, ARCBIOS_MEM_FreeMemory);
+		/*  For Windows NT's ARCINST.EXE:  */
 		arcbios_add_memory_descriptor(cpu, 0x600000, 0x7f0000-0x600000, ARCBIOS_MEM_LoadedProgram);
-		arcbios_add_memory_descriptor(cpu, 0x7f0000, 0xf000, ARCBIOS_MEM_FirmwareTemporary);
-		arcbios_add_memory_descriptor(cpu, 0x7ff000, 0x1000, ARCBIOS_MEM_FirmwareTemporary);
 #endif
 
 		mem_base = 8;

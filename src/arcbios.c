@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.48 2004-12-08 17:23:21 debug Exp $
+ *  $Id: arcbios.c,v 1.49 2004-12-08 23:27:11 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1075,6 +1075,7 @@ void arcbios_emul(struct cpu *cpu)
 			 *  is flushed.  If we're using an X11 VGA console,
 			 *  then it needs to be flushed as well.
 			 */
+			fflush(stdin);
 			fflush(stdout);
 			/*  NOTE/TODO: This gives a tick to _everything_  */
 			for (i=0; i<cpu->n_tick_entries; i++)
@@ -1090,6 +1091,22 @@ void arcbios_emul(struct cpu *cpu)
 					if (cpu->emul->use_x11)
 						x11_check_event();
 					usleep(1);
+				}
+
+				/*
+				 *  ESC + '[' should be transformed into 0x9b:
+				 *
+				 *  NOTE/TODO: This makes the behaviour of just pressing
+				 *  ESC a bit harder to define.
+				 */
+				if (x == 27) {
+					while ((x = console_readchar()) < 0) {
+						if (cpu->emul->use_x11)
+							x11_check_event();
+						usleep(1);
+					}
+					if (x == '[')
+						x = 0x9b;
 				}
 
 				ch = x;

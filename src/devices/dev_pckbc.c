@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.28 2004-11-20 08:57:13 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.29 2004-12-08 23:27:10 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -64,6 +64,7 @@
 
 struct pckbc_data {
 	int		in_use;
+	int		any_command_used;
 
 	int		reg[DEV_PCKBC_LENGTH];
 	int		keyboard_irqnr;
@@ -268,7 +269,7 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	int port_nr;
 	int ch;
 
-	if (d->in_use && console_charavail()) {
+	if (d->in_use && d->any_command_used && console_charavail()) {
 		ch = console_readchar();
 		if (ch >= 0)
 			ascii_to_pc_scancodes(ch, d);
@@ -296,6 +297,8 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 static void dev_pckbc_command(struct pckbc_data *d, int port_nr)
 {
 	int cmd = d->reg[PC_CMD];
+
+	d->any_command_used = 1;
 
 	if (d->type == PCKBC_8242)
 		cmd = d->reg[PS2_TXBUF];

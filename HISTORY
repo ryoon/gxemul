@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.367 2004-12-08 19:55:40 debug Exp $
+$Id: HISTORY,v 1.368 2004-12-08 23:27:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1276,3 +1276,4 @@ HISTORY of mips64emul
 		the single-step debugger.
 		Adding a node about 'mmon' to the documentation
 		(http://www.brouhaha.com/~eric/software/mmon/).
+20041209

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.118 2005-02-03 23:36:20 debug Exp $
+$Id: TODO,v 1.119 2005-02-04 12:07:01 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -27,7 +27,7 @@ a mess. Order is random. Don't trust it to be up-to-date.
 	Network layer:
 		o)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
-		o)  All NICs should use net_generate_unique_mac().
+		o)  Fixed MAC addresses for NICs (?)
 		o)  many other issues: see src/net.c
 
 	Configure script:

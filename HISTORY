@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.562 2005-02-04 09:50:46 debug Exp $
+$Id: HISTORY,v 1.563 2005-02-04 12:07:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1626,3 +1626,6 @@ HISTORY of mips64emul
 		outside world using ftp :-)
 		Continuing on the cleanup of the networking subsystem.
 20050204	Continuing the cleanup.
+		Working on a way to use separate xterms for serial ports and
+		other console input, when emulating multiple machines (or one
+		machine with multiple serial lines active).

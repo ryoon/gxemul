@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.26 2005-02-04 11:36:45 debug Exp $
+ *  $Id: console.c,v 1.27 2005-02-04 12:07:02 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -209,10 +209,10 @@ void console_slave(char *arg)
 	int inputd, outputd;
 	int len;
 	char *p;
-	char buf[200];
+	char buf[400];
 
-	printf("console_slave(): arg = '%s'\n", arg);
 	/*  arg = '3,6' or similar, input and output descriptors  */
+	/*  printf("console_slave(): arg = '%s'\n", arg);  */
 
 	inputd = atoi(arg);
 	p = strchr(arg, ',');
@@ -441,4 +441,79 @@ void console_getmouse(int *x, int *y, int *buttons, int *fb_nr)
 	*buttons = console_mouse_buttons;
 	*fb_nr = console_mouse_fb_nr;
 }
+
+
+
+
+#if 0
+
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+
+int main(int argc, char *argv[], char **envp)
+{
+	int res;
+	char *a[15];
+	pid_t p;
+
+	int filedes[2];
+	int filedesB[2];
+
+	res = pipe(filedes);
+	if (res) {
+		printf("pipe(): %i\n", errno);
+		exit(1);
+	}
+
+	printf("filedes = %i,%i\n", filedes[0], filedes[1]);
+
+	res = pipe(filedesB);
+	if (res) {
+		printf("pipe(): %i\n", errno);
+		exit(1);
+	}
+
+	printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);
+
+	a[0] = "xterm";
+	a[1] = "-title";
+	a[2] = "mips64emul: 'other machine' serial 0";
+	a[3] = "-e";
+	a[4] = "./mips64emul";
+	a[5] = malloc(50);
+	sprintf(a[5], "-WW@S%i,%i", filedes[0], filedesB[1]);
+	a[6] = NULL;
+
+	p = fork();
+	if (p == 0) {
+		close(filedes[1]);
+		close(filedesB[0]);
+		res = execvp("xterm", a);
+		printf("res=%i errno=%i\n", res, errno);
+		exit(1);
+	}
+
+	printf("Parent, p = %i\n", p);
+	sleep(2);
+
+	write(filedes[1], "hejsan hoppsan", 14);
+	sleep(2);
+	write(filedes[1], "\nHohi\n", 6);
+
+{
+char buf[200];
+int len;
+memset(buf, 0,200);
+len = read(filedesB[0], buf, 100);
+printf("len = %i, buf = '%s'\n", len, buf);
+}
+
+	sleep(5);
+}
+
+#endif
 

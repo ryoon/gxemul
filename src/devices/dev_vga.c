@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.8 2004-10-22 06:30:16 debug Exp $
+ *  $Id: dev_vga.c,v 1.9 2004-10-23 19:38:34 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -125,14 +125,24 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
+	int modified, i;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	if (relative_addr < d->videomem_size) {
 		if (writeflag == MEM_WRITE) {
-			memcpy(d->videomem + relative_addr, data, len);
-			vga_update(cpu, d, relative_addr,
-			    relative_addr + len-1);
+			modified = 0;
+			for (i=0; i<len; i++) {
+				int old = d->videomem[relative_addr + i];
+				if (old != data[i]) {
+					d->videomem[relative_addr + i] =
+					    data[i];
+					modified = 1;
+				}
+			}
+			if (modified)
+				vga_update(cpu, d, relative_addr,
+				    relative_addr + len-1);
 		} else
 			memcpy(data, d->videomem + relative_addr, len);
 		return 1;

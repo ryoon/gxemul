@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.360 2005-02-24 13:54:21 debug Exp $
+ *  $Id: machine.c,v 1.361 2005-02-24 14:26:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4033,6 +4033,22 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_MACPPC:
+		/*
+		 *  NetBSD/macppc (http://www.netbsd.org/Ports/macppc/)
+		 *  OpenBSD/macppc (http://www.openbsd.org/macppc.html)
+		 */
+		machine->machine_name = "Macintosh (PPC)";
+
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.ppc.gpr[i] =
+				    0x12340000 + (i << 8) + 0x55;
+		}
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4281,6 +4297,9 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_PREP:
 		/*  For NetBSD/prep. TODO  */
 		m->cpu_name = strdup("PPC603e");
+		break;
+	case MACHINE_MACPPC:
+		m->cpu_name = strdup("G4e");
 		break;
 
 	/*  SPARC:  */
@@ -4624,6 +4643,14 @@ void machine_init(void)
 	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
 	me->aliases[0] = "meshcube";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Macintosh (PPC):  */
+	me = machine_entry_new("Macintosh (PPC)", ARCH_PPC,
+	    MACHINE_MACPPC, 1, 0);
+	me->aliases[0] = "macppc";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

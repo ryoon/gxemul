@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.34 2004-07-02 08:08:27 debug Exp $
+ *  $Id: diskimage.c,v 1.35 2004-07-03 15:38:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -57,6 +57,8 @@ struct diskimage {
 	int		is_a_cdrom;
 	int		is_boot_device;
 
+	int		logical_block_size;
+
 	int		is_a_tape;
 	uint64_t	tape_offset;
 	int		tape_filenr;
@@ -77,8 +79,6 @@ extern int emulation_type;
 
 static struct diskimage *diskimages[MAX_DISKIMAGES];
 static int n_diskimages = 0;
-
-int logical_block_size = 512;
 
 
 /**************************************************************************/
@@ -427,8 +427,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		diskimage_recalc_size(disk_id);
 
-		size = diskimages[disk_id]->total_size / logical_block_size;
-		if (diskimages[disk_id]->total_size & (logical_block_size-1))
+		size = diskimages[disk_id]->total_size /
+		    diskimages[disk_id]->logical_block_size;
+		if (diskimages[disk_id]->total_size &
+		    (diskimages[disk_id]->logical_block_size-1))
 			size ++;
 
 		xferp->data_in[0] = (size >> 24) & 255;
@@ -436,10 +438,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[2] = (size >> 8) & 255;
 		xferp->data_in[3] = size & 255;
 
-		xferp->data_in[4] = (logical_block_size >> 24) & 255;
-		xferp->data_in[5] = (logical_block_size >> 16) & 255;
-		xferp->data_in[6] = (logical_block_size >> 8) & 255;
-		xferp->data_in[7] = logical_block_size & 255;
+		xferp->data_in[4] = (diskimages[disk_id]->logical_block_size >> 24) & 255;
+		xferp->data_in[5] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
+		xferp->data_in[6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
+		xferp->data_in[7] = diskimages[disk_id]->logical_block_size & 255;
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -474,9 +476,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x00;		/*  nr of blocks, mid  */
 		xferp->data_in[7] = 0x00;		/*  nr of blocks, low */
 		xferp->data_in[8] = 0x00;		/*  reserved  */
-		xferp->data_in[9] = (logical_block_size >> 16) & 255;
-		xferp->data_in[10] = (logical_block_size >> 8) & 255;
-		xferp->data_in[11] = logical_block_size & 255;
+		xferp->data_in[9] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
+		xferp->data_in[10] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
+		xferp->data_in[11] = diskimages[disk_id]->logical_block_size & 255;
 
 		/*  descriptors, 8 bytes (each)  */
 
@@ -495,8 +497,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 11] = 1;	/*  TODO  */
 
 			/*  12,13 = physical sector size  */
-			xferp->data_in[12 + 12] = (logical_block_size >> 8) & 255;
-			xferp->data_in[12 + 13] = logical_block_size & 255;
+			xferp->data_in[12 + 12] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 13] = diskimages[disk_id]->logical_block_size & 255;
 			break;
 		case 4:		/*  rigid disk geometry page  */
 			xferp->data_in[12 + 0] = pagecode;
@@ -521,8 +523,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 5] = 18;	/*  sectors per track  */
 
 			/*  6,7 = data bytes per sector  */
-			xferp->data_in[12 + 6] = (logical_block_size >> 8) & 255;
-			xferp->data_in[12 + 7] = logical_block_size & 255;
+			xferp->data_in[12 + 6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 7] = diskimages[disk_id]->logical_block_size & 255;
 
 			xferp->data_in[12 + 8] = (diskimages[disk_id]->ncyls >> 8) & 255;
 			xferp->data_in[12 + 9] = diskimages[disk_id]->ncyls & 255;
@@ -560,7 +562,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			if (xferp->cmd[1] & 0x01) {
 				/*  Fixed block length:  */
-				size *= logical_block_size;
+				size *= diskimages[disk_id]->logical_block_size;
 			}
 
 			if (diskimages[disk_id]->filemark) {
@@ -606,8 +608,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 			}
 
-			size = retlen * logical_block_size;
-			ofs *= logical_block_size;
+			size = retlen * diskimages[disk_id]->logical_block_size;
+			ofs *= diskimages[disk_id]->logical_block_size;
 		}
 
 		/*  Return data:  */
@@ -680,8 +682,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 		}
 
-		size = retlen * logical_block_size;
-		ofs *= logical_block_size;
+		size = retlen * diskimages[disk_id]->logical_block_size;
+		ofs *= diskimages[disk_id]->logical_block_size;
 
 		if (xferp->data_out_offset != size) {
 			debug(", data_out == NULL, wanting %i bytes, \n\n", (int)size);
@@ -1124,6 +1126,7 @@ int diskimage_add(char *fname)
 	}
 	strcpy(diskimages[id]->fname, fname);
 
+	diskimages[id]->logical_block_size = 512;
 
 	/*
 	 *  Is this a tape, CD-ROM or a normal disk?
@@ -1138,8 +1141,19 @@ int diskimage_add(char *fname)
 		    ((strlen(diskimages[id]->fname) > 4 &&
 		    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
 		    && !prefix_d)
-		   )
+		   ) {
 			diskimages[id]->is_a_cdrom = 1;
+
+			/*
+			 *  This is tricky. Should I use 512 or 2048 here?
+			 *  NetBSD/pmax 1.6.2 and Ultrix likes 512 bytes
+			 *  per sector, but NetBSD 2.0_BETA suddenly ignores
+			 *  this value and uses 2048 instead.
+			 *
+			 *  TODO
+			 */
+			diskimages[id]->logical_block_size = 512;
+		}
 	}
 
 	/*  Measure total_size:  */
@@ -1247,11 +1261,13 @@ void diskimage_dump_info(void)
 			    (long int) diskimages[i]->total_size,
 
 			    diskimages[i]->is_a_tape? "TAPE, " : (
-				diskimages[i]->is_a_cdrom? "CD-ROM, " : "DISK, "
+				diskimages[i]->is_a_cdrom?
+					"CD-ROM, " : "DISK, "
 				),
 
 			    (long int) (diskimages[i]->total_size / 512),
-			    diskimages[i]->is_boot_device? ", BOOT DEVICE" : "");
+			    diskimages[i]->is_boot_device?
+					", BOOT DEVICE" : "");
 		}
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.159 2004-07-14 19:55:25 debug Exp $
+$Id: HISTORY,v 1.160 2004-07-14 21:12:21 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -781,6 +781,6 @@ HISTORY of mips64emul
 		"MMU4K" now. (This needs to be fixed some better way.)
 		Adding a hack which allows Linux/Octane to use ARC write()
 		and getchild() on IP30. Linux uses ARCBIOS_SPB_SIGNATURE as a
-		64-bit field, it was 32-bit before. Unfortunately the data
-		returned by getchild() is still in 32-bit form, so Linux
-		crashes while it tries to access the child struct.
+		64-bit field, it was 32-bit before.
+		Making ugly hacks to the arcbios emulation to semi-support
+		64-bit equivalents of 32-bit structures.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.137 2004-07-14 19:55:18 debug Exp $
+ *  $Id: machine.c,v 1.138 2004-07-14 21:12:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2036,6 +2036,15 @@ void machine_init(struct memory *mem)
 			}
 		}
 
+		/*
+		 *  This is important:  :-)
+		 *
+		 *  TODO:  There should not be any use of
+		 *  ARCBIOS before this statement.
+		 */
+		if (arc_wordlen == sizeof(uint64_t))
+			arcbios_set_64bit_mode(1);
+
 		if (physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
@@ -2253,6 +2262,7 @@ void machine_init(struct memory *mem)
 			store_64bit_word(ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
 			store_64bit_word(ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
 			store_64bit_word(ARC_ARGV_START + 0x28 * 2, 0);
+
 
 			/*
 			 *  Super-ugly test hack, to fool arcs_getenv() in 64-bit Irix:

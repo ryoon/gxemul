@@ -1,4 +1,6 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.6 2004-07-14 19:55:59 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.7 2004-07-14 21:12:22 debug Exp $  */
+/*  This file has been modified from the NetBSD version, the additions
+    are mostly guesses for 64-bit SGI stuff.  */
 
 #ifndef SGI_ARCBIOS_H
 #define	SGI_ARCBIOS_H
@@ -161,6 +163,20 @@ struct arcbios_component {
 	uint32_t	ConfigurationDataSize;
 	uint32_t	IdentifierLength;
 	uint32_t	Identifier;			/*  was:  char *  */
+};
+
+/*  mips64emul addition: guess for a 64-bit version of arcbios_component:  */
+struct arcbios_component64 {
+	uint64_t	Class;
+	uint64_t	Type;
+	uint64_t	Flags;
+	uint32_t	Version;
+	uint32_t	Revision;
+	uint64_t	Key;
+	uint64_t	AffinityMask;
+	uint64_t	ConfigurationDataSize;
+	uint64_t	IdentifierLength;
+	uint64_t	Identifier;			/*  was:  char *  */
 };
 
 /* 

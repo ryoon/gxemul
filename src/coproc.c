@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.98 2004-11-23 16:11:11 debug Exp $
+ *  $Id: coproc.c,v 1.99 2004-11-23 20:00:55 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1500,7 +1500,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 #if 0
 	/*  Debug dump of the previous entry at that index:  */
-	debug("                old entry at index = %04x", index);
+	debug(" old entry at index = %04x", index);
 	debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
 	debug(" hi = %016llx", (long long) cp->tlbs[index].hi);
 	debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
@@ -1567,6 +1567,16 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		}
 	}
 #endif
+
+	if (randomflag) {
+		if (cpu->cpu_type.exc_model == EXC3K) {
+			cp->reg[COP0_RANDOM] =
+			    ((random() % (cp->nr_of_tlbs - 8)) + 8) << R2K3K_RANDOM_SHIFT;
+		} else {
+			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] +
+			    (random() % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
+		}
+	}
 }
 
 

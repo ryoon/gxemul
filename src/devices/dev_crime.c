@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.1 2003-12-28 20:56:15 debug Exp $
+ *  $Id: dev_crime.c,v 1.2 2003-12-29 00:51:21 debug Exp $
  *  
  *  SGI "crime".
  */
@@ -61,6 +61,11 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		memcpy(data, &d->reg[relative_addr], len);
 
 	switch (relative_addr) {
+	case 0x18:
+	case 0x1c:
+	case 0x34:
+		/*  don't dump debug info for these  */
+		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ crime: read from 0x%x, len=%i ]\n", (int)relative_addr, len);

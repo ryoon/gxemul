@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.2 2004-03-27 05:44:28 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.3 2004-03-27 19:26:15 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -43,7 +43,7 @@
 #include "ps2_dmacreg.h"
 #include "ee_timerreg.h"
 
-#define	TICK_STEPS_SHIFT	17
+#define	TICK_STEPS_SHIFT	16
 
 
 /*
@@ -171,6 +171,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 				/*  Done with the transfer:  */
 				d->dmac_reg[D2_QWC_REG/0x10] = 0;
 				idata &= ~D_CHCR_STR;
+
+				cpu_interrupt(cpu, (1 << 18) +8);		/*  1<<18 is dma2  */
 			} else
 				debug("[ ps2_stuff: dmac [ch2] stopping transfer ]\n");
 			d->dmac_reg[regnr] = idata;
@@ -184,21 +186,39 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 		/*  no debug output  */
 		break;
 
-	case 0xe010:	/*  dmac interrupt status  */
+	case 0xe010:	/*  dmac interrupt status (and mask, the upper 16 bits)  */
 		if (writeflag == MEM_WRITE) {
+			uint32_t oldmask = d->dmac_reg[regnr] & 0xffff0000;
 			/*  Clear out those bits that are set in idata:  */
 			d->dmac_reg[regnr] &= ~idata;
+			d->dmac_reg[regnr] &= 0xffff;
+			d->dmac_reg[regnr] |= oldmask;
+			if (((d->dmac_reg[regnr] & 0xffff) & ((d->dmac_reg[regnr]>>16) & 0xffff)) == 0)
+				cpu_interrupt_ack(cpu, 3);	/*  3 is the DMAC  */
+		} else {
+			/*  Hm... make it seem like the mask bits are (at least as much as) the interrupt assertions:  */
+			odata = d->dmac_reg[regnr];
+			odata |= (odata << 16);
 		}
 		break;
 
 	case 0xf000:	/*  interrupt register  */
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->intr;
-		else {
+			debug("[ ps2_stuff: read from Interrupt Register: 0x%llx ]\n", (long long)odata);
+
+			/*  TODO: these are possibly not correct, but makes NetBSD run easier.  */
+			d->intr = 0;
+			cpu_interrupt_ack(cpu, 2);
+		} else {
+			debug("[ ps2_stuff: write to Interrupt Register: 0x%llx ]\n", (long long)idata);
 			/*  Clear out those bits that are set in idata:  */
-			/*  d->intr &= ~idata;  */
+			d->intr &= ~idata;
+			if (idata == 0)
+				d->intr = 0;
 			/*  TODO:  which of the above and below is best?  */
-			cpu_interrupt_ack(cpu, idata +8);
+			if (d->intr == 0)
+				cpu_interrupt_ack(cpu, 2);	/*  idata +8);  */
 		}
 		break;
 

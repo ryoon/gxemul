@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.7 2004-03-04 20:05:26 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.8 2004-03-27 19:26:15 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  */
@@ -196,23 +196,6 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	} else {
 		if (data[0] == 0x08 && data[1] == 0x80) {					/*  Possibly "initialize 640x480 mode":  */
 			debug("[ gif: initialize video mode (?) ]\n");
-			d->xsize = 640; d->ysize = 480;
-			d->bytes_per_pixel = 3;
-
-			/*  Deinitialize the old framebuffer, if any:  */
-			if (d->fb_mem != NULL) {
-				fatal("dev_ps2_gif_access(): trying to switch video modes... TODO\n");
-				exit(1);
-			}
-
-			d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
-			d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
-
-#if 0
-			test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
-			test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
-			test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
-#endif
 		} else if (data[0] == 0x04 && data[1] == 0x00 && len > 300) {			/*  Possibly "output 8x16 character":  */
 			int xbase, ybase, x, y;
 
@@ -283,7 +266,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
  *
  *  Attached to separate memory by dev_ps2_gs_init().
  */
-void dev_ps2_gif_init(struct memory *mem, uint64_t baseaddr)
+void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 {
 	struct gif_data *d;
 
@@ -295,6 +278,26 @@ void dev_ps2_gif_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct gif_data));
 
 	d->transparent_text = 0;
+
+	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
+	if (d->fb_mem == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	d->xsize = 640; d->ysize = 480;
+	d->bytes_per_pixel = 3;
+	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
+	if (d->vfb_data == NULL) {
+		fprintf(stderr, "could not initialize fb, out of memory\n");
+		exit(1);
+	}
+
+#if 0
+	test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
+	test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
+	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
+#endif
 
 	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH, dev_ps2_gif_access, d);
 }

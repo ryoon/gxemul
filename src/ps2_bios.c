@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.8 2004-03-25 12:39:47 debug Exp $
+ *  $Id: ps2_bios.c,v 1.9 2004-03-27 19:26:14 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -112,12 +112,38 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
 		break;
 	case 64:
-		fatal("[ SIFBIOS 64(0x%x): TODO ]\n", cpu->gpr[GPR_A1]);
-		/*  TODO This is probably netbsd specific  */
+		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n", cpu->gpr[GPR_A1], cpu->gpr[GPR_A2], cpu->gpr[GPR_A3]);
+
+		/*
+		 *  This is really really ugly:   TODO
+		 *
+		 *  Linux and NetBSD seem to work, but it's an ugly hack.
+		 *  This should really be a callback thingy...
+		 *
+		 *  NetBSD has a done-word which should be set to 1.
+		 *  Linux has one done-word which should be set to 1, and one which should be set to 0.
+		 *
+		 *  The code as it is right now probably overwrites stuff in memory
+		 *  that shouldn't be touched. Not good.
+		 *
+		 *  Linux:     err = sbios_rpc(SBR_IOPH_INIT, NULL, &result);
+		 *		err should be 0 (just as NetBSD),  and result should be set to 0 as well.
+		 */
 		{
-			uint32_t tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
+			uint32_t tmpaddr;
+
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x\n", tmpaddr);
+
+			/*  TODO: This is probably netbsd specific  */
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
 			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
-			store_32bit_word(tmpaddr, 1);		/*  "done" word  */
+			store_32bit_word(tmpaddr, 1);		/*  "done" word for NetBSD  */
+			store_32bit_word(tmpaddr + 4, 1);		/*  "done" word A for Linux */
+
+			store_32bit_word(cpu->gpr[GPR_A1] + 0, 0);		/*  "done" word B for Linux */
 		}
 		cpu->gpr[GPR_V0] = 0;
 		break;

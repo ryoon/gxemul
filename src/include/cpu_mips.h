@@ -1,5 +1,5 @@
-#ifndef	MIPS_CPU_H
-#define	MIPS_CPU_H
+#ifndef	CPU_MIPS_H
+#define	CPU_MIPS_H
 
 /*
  *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.3 2005-01-30 13:39:44 debug Exp $
+ *  $Id: cpu_mips.h,v 1.4 2005-01-30 14:06:43 debug Exp $
  */
 
 #include "misc.h"
@@ -43,7 +43,7 @@ struct emul;
 struct machine;
 
 /*
- *  CPU type definitions:  See cpu_types.h.
+ *  CPU type definitions:  See mips_cpu_types.h.
  */
 
 struct mips_cpu_type_def {
@@ -410,10 +410,11 @@ void mips_cpu_run_init(struct emul *emul, struct machine *machine);
 int mips_cpu_run(struct emul *emul, struct machine *machine);
 void mips_cpu_run_deinit(struct emul *emul, struct machine *machine);
 void mips_cpu_dumpinfo(struct cpu *cpu);
+void mips_cpu_list_available_types(void);
 
 
 /*  mips16.c:  */
 int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
 
 
-#endif	/*  MIPS_CPU_H  */
+#endif	/*  CPU_MIPS_H  */

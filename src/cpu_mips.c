@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.2 2005-01-30 13:39:45 debug Exp $
+ *  $Id: cpu_mips.c,v 1.3 2005-01-30 14:06:44 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4397,4 +4397,25 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 	debug(")\n");
 }
 
+
+/*
+ *  mips_cpu_list_available_types():
+ *
+ *  Print a list of available MIPS CPU types.
+ */
+void mips_cpu_list_available_types(void)
+{
+	int i, j;
+	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+
+	i = 0;
+	while (cpu_type_defs[i].name != NULL) {
+		debug("%s", cpu_type_defs[i].name);
+		for (j=10 - strlen(cpu_type_defs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
+			debug("\n");
+	}
+}
 

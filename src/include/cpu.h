@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.4 2005-01-30 12:59:07 debug Exp $
+ *  $Id: cpu.h,v 1.5 2005-01-30 14:06:43 debug Exp $
  *
  *  See cpu.c.
  */
@@ -38,6 +38,7 @@
 #include <inttypes.h>
 
 #include "cpu_mips.h"
+#include "cpu_ppc.h"
 
 struct cpu;
 struct emul;
@@ -64,7 +65,8 @@ struct cpu {
 
 	/*  CPU-family dependant:  */
 	union {
-		struct mips_cpu mips;
+		struct mips_cpu	mips;
+		struct ppc_cpu	ppc;
 	} cd;
 };
 
@@ -85,6 +87,7 @@ void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);
 void cpu_dumpinfo(struct cpu *cpu);
+void cpu_list_available_types(void);
 
 
 #endif	/*  CPU_H  */

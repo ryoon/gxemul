@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.191 2005-01-30 13:14:13 debug Exp $
+ *  $Id: main.c,v 1.192 2005-01-30 14:06:44 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,12 +35,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "cpu.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
-#include "mips_cpu_types.h"
 #include "misc.h"
 
 
@@ -290,31 +289,12 @@ ret:
  */
 void show_cpus_and_machine_types(void)
 {
-	int i, j, iadd = 8;
-	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+	int iadd = 8;
 
 	printf("Available CPU types:\n\n");
 
 	debug_indentation(iadd);
-
-	debug("MIPS:\n");
-	debug_indentation(4);
-	i = 0;
-	while (cpu_type_defs[i].name != NULL) {
-		debug("%s", cpu_type_defs[i].name);
-		for (j=10 - strlen(cpu_type_defs[i].name); j>0; j--)
-			debug(" ");
-		i++;
-		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
-			debug("\n");
-	}
-	debug_indentation(-4);
-
-	debug("PPC:\n");
-	debug_indentation(4);
-	debug("TODO\n");
-	debug_indentation(-4);
-
+	cpu_list_available_types();
 	debug_indentation(-iadd);
 
 	printf("\nMost of the CPU types are bogus, and not"

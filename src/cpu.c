@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.272 2005-01-30 12:59:08 debug Exp $
+ *  $Id: cpu.c,v 1.273 2005-01-30 14:06:44 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -33,8 +33,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <string.h>
 
+#include "cpu.h"
 #include "cpu_mips.h"
+#include "cpu_ppc.h"
 #include "misc.h"
 
 
@@ -185,5 +188,26 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 void cpu_dumpinfo(struct cpu *cpu)
 {
 	mips_cpu_dumpinfo(cpu);
+}
+
+
+/*
+ *  cpu_list_available_types():
+ *
+ *  Print a list of available CPU types for each cpu family.
+ */
+void cpu_list_available_types(void)
+{
+	int iadd = 4;
+
+	debug("MIPS:\n");
+	debug_indentation(iadd);
+	mips_cpu_list_available_types();
+	debug_indentation(-iadd);
+
+	debug("PPC:\n");
+	debug_indentation(iadd);
+	ppc_cpu_list_available_types();
+	debug_indentation(-iadd);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cp_removeblocks.c,v 1.3 2004-07-03 16:58:15 debug Exp $
+ *  $Id: cp_removeblocks.c,v 1.4 2004-07-11 00:42:37 debug Exp $
  *
  *  This program copies a file, but only those blocks that are not zero-
  *  filled.  Typical usage would be if you have a harddisk image stored
@@ -43,6 +43,14 @@
  *            using less disk space.  ('ls -l diskimage_compact' should
  *            return the same size as for diskimage, but 'du -k' will
  *            print only how many kb the file takes up on your disk.)
+ *
+ *	      You don't even need to gunzip the file to be 1 GB first,
+ *            you can pipe it through cp_removeblocks directly.
+ *
+ *		  gunzip -c file.gz | ./cp_removeblocks /dev/stdin output
+ *
+ *	      but then the filesize might be wrong. If it is, then you might
+ *	      want to write the last byte manually using 'dd' or such.
  */
 
 #include <stdio.h>

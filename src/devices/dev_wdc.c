@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.20 2005-03-15 20:18:27 debug Exp $
+ *  $Id: dev_wdc.c,v 1.21 2005-03-28 23:04:49 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -49,7 +49,7 @@
 
 extern int single_step;
 
-#define	WDC_INBUF_SIZE		4096
+#define	WDC_INBUF_SIZE		(512*257)
 
 #define	debug fatal
 /*  #define  DATA_DEBUG  */
@@ -432,6 +432,7 @@ printf("WDC read from offset %lli\n", (long long)offset);
 				    " nsecs %i) ]\n", d->cur_command, d->drive,
 				    d->head, d->cyl_hi*256+d->cyl_lo,
 				    d->sector, d->seccnt);
+				exit(1);
 			}
 		}
 		break;

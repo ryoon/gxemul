@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.21 2004-07-02 13:35:23 debug Exp $
+#  $Id: configure,v 1.22 2004-07-02 14:28:18 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -180,6 +180,11 @@ if [ z"`uname -m`" = zalpha ]; then
 	fi
 	rm -f _alpha_asm_test.c _alpha_asm_test
 fi
+
+#  Uncomment this when bintrans is available for i386:
+#if [ z"`uname -m`" = zi386 ]; then
+#	COPTIM="-DBINTRANS $COPTIM"
+#fi
 
 #############################################################################
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.51 2005-02-22 14:29:40 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.52 2005-02-22 14:38:42 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -773,6 +773,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_LWZUX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
+		case PPC_31_STHX:
+		case PPC_31_STHUX:
 		case PPC_31_STWX:
 		case PPC_31_STWUX:
 			/*  rs for stores, rt for loads, actually  */
@@ -786,12 +788,10 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_LWZUX:
 				mnem = power? "lux" : "lwzux";
 				break;
-			case PPC_31_STBX:
-				mnem = "stbx";
-				break;
-			case PPC_31_STBUX:
-				mnem = "stbux";
-				break;
+			case PPC_31_STBX:  mnem = "stbx"; break;
+			case PPC_31_STBUX: mnem = "stbux"; break;
+			case PPC_31_STHX:  mnem = "sthx"; break;
+			case PPC_31_STHUX: mnem = "sthux"; break;
 			case PPC_31_STWX:
 				mnem = power? "stx" : "stwx";
 				break;
@@ -831,6 +831,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
 			break;
+		case PPC_31_ADDC:
+		case PPC_31_ADDCO:
 		case PPC_31_ADDE:
 		case PPC_31_ADDEO:
 		case PPC_31_ADD:
@@ -848,6 +850,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
 			switch (xo) {
+			case PPC_31_ADDC:
+				mnem = power? "a" : "addc";
+				break;
+			case PPC_31_ADDCO:
+				mnem = power? "ao" : "addco";
+				break;
 			case PPC_31_ADDE:
 				mnem = power? "ae" : "adde";
 				break;
@@ -1169,7 +1177,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	char *mnem = NULL;
 	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
 	int c, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
-	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag;
+	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag, old_ca;
 	uint64_t tmp=0, tmp2, addr;
 	uint64_t cached_pc;
 
@@ -1732,6 +1740,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_31_LWZUX:
 		case PPC_31_STBX:
 		case PPC_31_STBUX:
+		case PPC_31_STHX:
+		case PPC_31_STHUX:
 		case PPC_31_STWX:
 		case PPC_31_STWUX:
 			rs = (iword >> 21) & 31;
@@ -1741,6 +1751,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			switch (xo) {
 			case PPC_31_LWZUX:
 			case PPC_31_STBUX:
+			case PPC_31_STHUX:
 			case PPC_31_STWUX:
 				update = 1;
 			}
@@ -1768,6 +1779,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_STBX:
 			case PPC_31_STBUX:
 				tmp_data_len = 1;
+				break;
+			case PPC_31_STHX:
+			case PPC_31_STHUX:
+				tmp_data_len = 2;
 				break;
 			}
 
@@ -1865,15 +1880,16 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->running = 0;
 				return 0;
 			}
+			old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 			cpu->cd.ppc.xer &= PPC_XER_CA;
 			if (cpu->cd.ppc.bits == 32) {
 				tmp = (uint32_t)cpu->cd.ppc.gpr[ra];
 				tmp2 = tmp;
-				/*  printf("adde: tmp2 = %016llx\n",
+				/*  printf("addze: tmp2 = %016llx\n",
 				    (long long)tmp2);  */
-				if (cpu->cd.ppc.xer & PPC_XER_CA)
+				if (old_ca)
 					tmp ++;
-				/*  printf("adde: tmp  = %016llx\n\n",
+				/*  printf("addze: tmp  = %016llx\n\n",
 				    (long long)tmp);  */
 				/*  TODO: is this CA correct?  */
 				if ((tmp >> 32) != (tmp2 >> 32))
@@ -1882,12 +1898,14 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				    in 32-bit mode (I hope)  */
 				cpu->cd.ppc.gpr[rt] = tmp;
 			} else {
-				fatal("ADDE 64-bit, TODO\n");
+				fatal("ADDZE 64-bit, TODO\n");
 			}
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
 			break;
 
+		case PPC_31_ADDC:
+		case PPC_31_ADDCO:
 		case PPC_31_ADDE:
 		case PPC_31_ADDEO:
 		case PPC_31_ADD:
@@ -1915,8 +1933,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] +
 				    cpu->cd.ppc.gpr[rb];
 				break;
+			case PPC_31_ADDC:
+			case PPC_31_ADDCO:
 			case PPC_31_ADDE:
 			case PPC_31_ADDEO:
+				old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 				cpu->cd.ppc.xer &= PPC_XER_CA;
 				if (cpu->cd.ppc.bits == 32) {
 					tmp = (uint32_t)cpu->cd.ppc.gpr[ra];
@@ -1924,7 +1945,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					/*  printf("adde: tmp2 = %016llx\n",
 					    (long long)tmp2);  */
 					tmp += (uint32_t)cpu->cd.ppc.gpr[rb];
-					if (cpu->cd.ppc.xer & PPC_XER_CA)
+					if ((xo == PPC_31_ADDE ||
+					    xo == PPC_31_ADDEO) && old_ca)
 						tmp ++;
 					/*  printf("adde: tmp  = %016llx\n\n",
 					    (long long)tmp);  */
@@ -1957,6 +1979,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case PPC_31_SUBFE:
 			case PPC_31_SUBFEO:
+				old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 				cpu->cd.ppc.xer &= PPC_XER_CA;
 				if (cpu->cd.ppc.bits == 32) {
 					tmp = (~cpu->cd.ppc.gpr[ra])
@@ -1964,7 +1987,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					tmp2 = tmp;
 					tmp += (cpu->cd.ppc.gpr[rb] &
 					    0xffffffff);
-					if (cpu->cd.ppc.xer & PPC_XER_CA)
+					if (old_ca)
 						tmp ++;
 					/*  printf("subfe: tmp2 = %016llx\n",
 					    (long long)tmp2);

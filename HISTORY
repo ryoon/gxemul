@@ -305,3 +305,4 @@ HISTORY of mips64emul
 		this card and use it as a framebuffer console.
 20040107	Adding a fix (partly incorrect) to daddi, to allow Linux/sgimips
 		to boot in 64-bit mode.
+20040108	Fixing a sll/nop bug (rd==0 for nop, not sa==0 as before).

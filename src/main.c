@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.88 2004-09-05 03:21:11 debug Exp $
+ *  $Id: main.c,v 1.89 2004-09-05 03:35:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,7 +64,6 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int instruction_trace = 0;
 int single_step = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
@@ -292,7 +291,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->automatic_clock_adjustment = 0;
 			break;
 		case 'i':
-			instruction_trace = 1;
+			emul->instruction_trace = 1;
 			break;
 		case 'J':
 			emul->speed_tricks = 0;
@@ -393,7 +392,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  -i, -r, -t are pretty verbose:  */
 
-	if (instruction_trace) {
+	if (emul->instruction_trace) {
 		printf("implicitly turning of -q and turning on -v, because of -i\n");
 		verbose = 1;
 	}

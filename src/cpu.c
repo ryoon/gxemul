@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.138 2004-09-05 03:21:11 debug Exp $
+ *  $Id: cpu.c,v 1.139 2004-09-05 03:35:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -49,7 +49,6 @@
 
 extern int show_trace_tree;
 extern int old_show_trace_tree;
-extern int instruction_trace;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int single_step;
@@ -1073,7 +1072,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 static int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
-	int instruction_trace_cached = instruction_trace;
+	int instruction_trace_cached = cpu->emul->instruction_trace;
 	struct coproc *cp0 = cpu->coproc[0];
 	int i;
 	unsigned char instr[4];
@@ -1194,7 +1193,8 @@ static int cpu_run_instr(struct cpu *cpu)
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
 		if (cached_pc == dumppoint_pc[i]) {
-			instruction_trace = instruction_trace_cached = 1;
+			cpu->emul->instruction_trace =
+			    instruction_trace_cached = 1;
 			quiet_mode = quiet_mode_cached = 0;
 			if (dumppoint_flag_r[i])
 				cpu->emul->register_dump = 1;
@@ -3191,12 +3191,12 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 			if (single_step) {
 				if (single_step == 1) {
 					old_instruction_trace =
-					    instruction_trace;
+					    emul->instruction_trace;
 					old_quiet_mode =
 					    quiet_mode;
 					old_show_trace_tree =
 					    show_trace_tree;
-					instruction_trace = 1;
+					emul->instruction_trace = 1;
 					show_trace_tree = 1;
 					quiet_mode = 0;
 					single_step = 2;

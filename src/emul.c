@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.60 2004-09-05 03:21:11 debug Exp $
+ *  $Id: emul.c,v 1.61 2004-09-05 03:35:39 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -56,7 +56,6 @@ extern char *optarg;
 int extra_argc;
 char **extra_argv;
 
-extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
@@ -478,7 +477,7 @@ void debugger(void)
 	}
 
 	single_step = 0;
-	instruction_trace = old_instruction_trace;
+	debugger_emul->instruction_trace = old_instruction_trace;
 	show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;
 }

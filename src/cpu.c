@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.205 2004-11-30 21:47:43 debug Exp $
+ *  $Id: cpu.c,v 1.206 2004-11-30 23:09:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3398,8 +3398,8 @@ void cpu_show_cycles(struct emul *emul,
 			emul->emulated_hz = cur_cycles_per_second;
 			first_adjustment = 0;
 		} else {
-			emul->emulated_hz = (31 * emul->emulated_hz +
-			    cur_cycles_per_second) / 32;
+			emul->emulated_hz = (15 * emul->emulated_hz +
+			    cur_cycles_per_second) / 16;
 		}
 
 		debug("[ updating emulated_hz to %lli Hz ]\n",
@@ -3503,7 +3503,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 	/*  The main loop:  */
 	running = 1;
 	while (running) {
-		ncycles_chunk_end = ncycles + (1 << 15);
+		ncycles_chunk_end = ncycles + (1 << 16);
 
 		a_few_instrs = a_few_cycles *
 		    cpus[0]->cpu_type.instrs_per_cycle;
@@ -3636,7 +3636,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 		/*  Check for X11 events:  */
 		if (emul->use_x11) {
-			if (ncycles > ncycles_flushx11 + (1<<16)) {
+			if (ncycles > ncycles_flushx11 + (1<<17)) {
 				x11_check_event();
 				ncycles_flushx11 = ncycles;
 			}
@@ -3644,12 +3644,12 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 		/*  If we've done buffered console output,
 		    the flush stdout every now and then:  */
-		if (ncycles > ncycles_flush + (1<<16)) {
+		if (ncycles > ncycles_flush + (1<<17)) {
 			console_flush();
 			ncycles_flush = ncycles;
 		}
 
-		if (ncycles > ncycles_show + (1<<22)) {
+		if (ncycles > ncycles_show + (1<<23)) {
 			cpu_show_cycles(emul, &starttime, ncycles, 0);
 			ncycles_show = ncycles;
 		}

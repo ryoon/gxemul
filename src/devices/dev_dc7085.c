@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.16 2004-04-11 08:29:04 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.17 2004-06-07 09:17:38 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -89,7 +89,6 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 {
 	struct dc_data *d = extra;
 	int avail;
-	int mouse_x, mouse_y, mouse_buttons;
 
 	lk201_tick(&d->lk201);
 

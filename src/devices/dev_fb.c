@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.41 2004-06-30 05:21:17 debug Exp $
+ *  $Id: dev_fb.c,v 1.42 2004-06-30 06:30:26 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -71,14 +71,18 @@ extern int x11_screen_depth;
 
 /*
  *  FB_DEBUG enables lots of debug output.
+ *
  *  FB_TICK_EVERYOTHER tries to improve overall performance by lagging behind
  *     in the updates, but this might make the framebuffer seem less responsive.
+ *
  *  EXPERIMENTAL_PUTPIXEL is my own inlined replacement for XPutPixel.
+ *     It only works for XYPixmap, and should probably not be used anymore.
  */
 
 /*  #define FB_DEBUG  */
 /*  #define FB_TICK_EVERYOTHER  */
-#define EXPERIMENTAL_PUTPIXEL
+
+/*  #define EXPERIMENTAL_PUTPIXEL  */
 
 
 /*

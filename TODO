@@ -90,8 +90,10 @@ Most important stuff (but these are all non-trivial tasks):
 
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  More ARCBIOS stuff must be implemented
-			x)  PCI
+			x)  PCI (ARC and SGI)
+			x)  Jazz (ARC)
 			x)  SMP?
+			x)  Interrupts (both ARC and SGI)
 			x)  ARC: NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
 
 		o)  hpcmips:

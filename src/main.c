@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.24 2004-02-26 15:13:41 debug Exp $
+ *  $Id: main.c,v 1.25 2004-03-09 00:05:02 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -347,8 +347,8 @@ int get_cmd_args(int argc, char *argv[])
 	if (emulation_type == EMULTYPE_NINTENDO64 && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4300");
 
-	if (emulation_type == EMULTYPE_DEC && machine == 5 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R3000");
+	if (emulation_type == EMULTYPE_DEC && machine > 1 && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R3000A");
 
 	if (emulation_type == EMULTYPE_DEC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R2000");

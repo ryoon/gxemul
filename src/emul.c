@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.151 2005-01-31 06:02:20 debug Exp $
+ *  $Id: emul.c,v 1.152 2005-01-31 19:31:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -52,11 +52,6 @@
 #include "net.h"
 #include "sgi_arcbios.h"
 #include "x11.h"
-
-#ifdef HACK_STRTOLL
-#define strtoll strtol
-#define strtoull strtoul
-#endif
 
 
 extern int force_debugger_at_exit;

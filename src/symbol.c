@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.19 2005-01-19 08:44:53 debug Exp $
+ *  $Id: symbol.c,v 1.20 2005-01-31 19:31:32 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -41,11 +41,6 @@
 #include "misc.h"
 
 #include "symbol.h"
-
-#ifdef HACK_STRTOLL
-#define strtoll strtol
-#define strtoull strtoul
-#endif
 
 
 #define	SYMBOLBUF_MAX	100

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.49 2005-01-29 13:45:42 debug Exp $
+ *  $Id: x11.c,v 1.50 2005-01-31 19:31:32 debug Exp $
  *
  *  X11-related functions.
  */
@@ -542,7 +542,7 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 						    machines[j];
 						for (i=0; i<m2->n_fb_windows; i++)
 							if (m->fb_windows[fb_nr]->x11_display == m2->fb_windows[i]->x11_display &&
-							    event.xmotion.window == m->fb_windows[i]->x11_fb_window)
+							    event.xmotion.window == m2->fb_windows[i]->x11_fb_window)
 								found = i;
 					}
 				if (found < 0) {

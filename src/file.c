@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.59 2005-01-31 05:45:52 debug Exp $
+ *  $Id: file.c,v 1.60 2005-01-31 19:31:31 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -53,12 +53,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "symbol.h"
-
-
-#ifdef HACK_STRTOLL
-#define strtoll strtol
-#define strtoull strtoul
-#endif
 
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
@@ -755,13 +749,13 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 		exit(1);
 	}
 
-	entry = strtoll(filename, NULL, 0);
+	entry = strtoull(filename, NULL, 0);
 	p2 = p+1;
 
 	/*  A second value? That's the optional skip value  */
 	p = strchr(p2, ':');
 	if (p != NULL) {
-		skip = strtoll(p2, NULL, 0);
+		skip = strtoull(p2, NULL, 0);
 		p = p+1;
 	} else
 		p = p2;

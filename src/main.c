@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.196 2005-01-31 06:38:04 debug Exp $
+ *  $Id: main.c,v 1.197 2005-01-31 19:31:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -139,6 +139,76 @@ void fatal(char *fmt, ...)
 	va_start(argp, fmt);
 	va_debug(argp, fmt);
 	va_end(argp);
+}
+
+
+/*****************************************************************************/
+
+
+/*
+ *  mystrtoull():
+ *
+ *  This function is used on OSes that don't have strtoull() in libc.
+ */
+unsigned long long mystrtoull(const char *s, char **endp, int base)
+{
+	unsigned long long res = 0;
+	int minus_sign = 0;
+
+	if (s == NULL)
+		return 0;
+
+	/*  TODO: Implement endp?  */
+	if (endp != NULL) {
+		fprintf(stderr, "mystrtoull(): endp isn't implemented\n");
+		exit(1);
+	}
+
+	if (s[0] == '-') {
+		minus_sign = 1;
+		s++;
+	}
+
+	/*  Guess base:  */
+	if (base == 0) {
+		if (s[0] == '0') {
+			/*  Just "0"? :-)  */
+			if (!s[1])
+				return 0;
+			if (s[1] == 'x' || s[1] == 'X') {
+				base = 16;
+				s += 2;
+			} else {
+				base = 8;
+				s ++;
+			}
+		} else if (s[0] >= '1' && s[0] <= '9')
+			base = 10;
+	}
+
+	while (s[0]) {
+		int c = s[0];
+		if (c >= '0' && c <= '9')
+			c -= '0';
+		else if (c >= 'a' && c <= 'f')
+			c = c - 'a' + 10;
+		else if (c >= 'A' && c <= 'F')
+			c = c - 'A' + 10;
+		else
+			break;
+		switch (base) {
+		case 8:	res = (res << 3) | c;
+			break;
+		case 16:res = (res << 4) | c;
+			break;
+		default:res = (res * base) + c;
+		}
+		s++;
+	}
+
+	if (minus_sign)
+		res = (uint64_t) -(int64_t)res;
+	return res;
 }
 
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.18 2005-01-31 18:33:35 debug Exp $
+$Id: misc.html,v 1.19 2005-01-31 19:31:30 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -119,6 +119,9 @@ through an example is good enough:
 		<font color="#2020cf">! n_gfx_cards(2)         !  for DECstation dual/tripple-head</font>
 		<font color="#2020cf">! emulated_hz(10000000)  !  for fixing the emulated clock speed</font>
 
+		<font color="#2020cf">! add_x11_display("otherbox:0")  !  for dual/tripple-head etc</font>
+		<font color="#2020cf">! add_x11_display("thisbox:0")</font>
+
 		<font color="#2020cf">! force_netboot(yes)</font>
 
 		<b>disk("nbsd.img")</b>
@@ -138,7 +141,18 @@ through an example is good enough:
 		    with tuborg parentheses.
 		}</font>
 
-		<b><i>... TODO ...</i></b>
+		<b><i>... TODO ...
+		  -i        display each instruction as it is executed
+		  -J        disable some speed tricks
+		  -m nr     run at most nr instructions (on any cpu)
+		  -N        display nr of instructions/second average, at regular intervals
+		  -p pc     add a breakpoint (remember to use the '0x' prefix for hex!)
+		  -r        register dumps before every instruction
+		  -t        show function trace tree
+		  -y x      set max_random_cycles_per_chunk to x (experimental)
+		  -z disp   add disp as an X11 display to use for framebuffers
+		</i></b>
+
 	    <b>)</b>
 	<b>)</b>
 </pre>

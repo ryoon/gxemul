@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.73 2005-01-31 06:31:53 debug Exp $
+ *  $Id: debugger.c,v 1.74 2005-01-31 19:31:31 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -64,11 +64,6 @@
 #include "misc.h"
 #include "net.h"
 #include "x11.h"
-
-#ifdef HACK_STRTOLL
-#define strtoll strtol
-#define strtoull strtoul
-#endif
 
 
 extern int extra_argc;
@@ -459,7 +454,7 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 		return;
 	}
 
-	i = strtoll(cmd_line, NULL, 0);
+	i = atoi(cmd_line);
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.19 2005-01-30 22:42:01 debug Exp $
+ *  $Id: emul_parse.c,v 1.20 2005-01-31 19:31:31 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -219,14 +219,18 @@ static char cur_machine_ncpus[10];
 static char cur_machine_n_gfx_cards[10];
 static char cur_machine_emulated_hz[10];
 static char cur_machine_memory[10];
-#define	MAX_N_LOAD	20
-#define	MAX_LOAD_LEN	4000
+#define	MAX_N_LOAD		15
+#define	MAX_LOAD_LEN		4000
 static char *cur_machine_load[MAX_N_LOAD];
 static int cur_machine_n_load;
-#define	MAX_N_DISK	20
-#define	MAX_DISK_LEN	4000
+#define	MAX_N_DISK		10
+#define	MAX_DISK_LEN		4000
 static char *cur_machine_disk[MAX_N_DISK];
 static int cur_machine_n_disk;
+#define	MAX_N_X11_DISP		5
+#define	MAX_X11_DISP_LEN	4000
+static char *cur_machine_x11_disp[MAX_N_X11_DISP];
+static int cur_machine_n_x11_disp;
 
 #define WORD(w,var) {						\
 		if (strcmp(word, w) == 0) {			\
@@ -500,13 +504,33 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		for (i=0; i<cur_machine_n_disk; i++) {
 			diskimage_add(m, cur_machine_disk[i]);
 			free(cur_machine_disk[i]);
-			cur_machine_load[i] = NULL;
+			cur_machine_disk[i] = NULL;
 		}
 
 		m->boot_kernel_filename = strdup(cur_machine_bootname);
 
 		if (cur_machine_bootarg[0])
 			m->boot_string_argument = strdup(cur_machine_bootarg);
+
+		for (i=0; i<cur_machine_n_x11_disp; i++) {
+			m->x11_n_display_names ++;
+			m->x11_display_names = realloc(
+			    m->x11_display_names, m->x11_n_display_names
+			    * sizeof(char *));
+			if (m->x11_display_names == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			m->x11_display_names[m->x11_n_display_names-1] =
+			    strdup(cur_machine_x11_disp[i]);
+			if (m->x11_display_names
+			   [m->x11_n_display_names-1] == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			free(cur_machine_x11_disp[i]);
+			cur_machine_x11_disp[i] = NULL;
+		}
 
 		emul_machine_setup(m, cur_machine_n_load,
 		    cur_machine_load);
@@ -576,6 +600,27 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		read_one_word(f, cur_machine_disk[cur_machine_n_disk],
 		    MAX_DISK_LEN, line, EXPECT_WORD);
 		cur_machine_n_disk ++;
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
+		return;
+	}
+
+	if (strcmp(word, "add_x11_display") == 0) {
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		if (cur_machine_n_disk >= MAX_N_DISK) {
+			fprintf(stderr, "too many disks\n");
+			exit(1);
+		}
+		cur_machine_x11_disp[cur_machine_n_x11_disp] =
+		    malloc(MAX_X11_DISP_LEN);
+		if (cur_machine_x11_disp[cur_machine_n_x11_disp] == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		read_one_word(f, cur_machine_x11_disp[cur_machine_n_x11_disp],
+		    MAX_DISK_LEN, line, EXPECT_WORD);
+		cur_machine_n_x11_disp ++;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_RIGHT_PARENTHESIS);
 		return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.321 2005-01-31 05:45:52 debug Exp $
+ *  $Id: machine.c,v 1.322 2005-01-31 19:31:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -190,7 +190,7 @@ int machine_name_to_type(char *stype, char *ssubtype,
 				/*  Found a type:  */
 				*type = me->machine_type;
 				*arch = me->arch;
-printf("ARCH = %i\n", me->arch);
+
 				if (me->n_subtypes == 0)
 					return 1;
 

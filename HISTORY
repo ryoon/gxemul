@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.545 2005-01-31 18:33:34 debug Exp $
+$Id: HISTORY,v 1.546 2005-01-31 19:31:29 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1598,3 +1598,7 @@ HISTORY of mips64emul
 		A couple of other minor fixes.
 		Removing the "Changing framebuffer resolution" section from
 		doc/misc.h (because it's buggy and not very useful anway).
+		Adding a mystrtoull(), used on systems where there is no
+		strtoull() in libc.
+		Adding 'add_x11_display' to the configure file parser 
+		(corresponding to the -z command line option).

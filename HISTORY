@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.552 2005-02-02 09:29:40 debug Exp $
+$Id: HISTORY,v 1.553 2005-02-02 18:45:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1613,3 +1613,5 @@ HISTORY of mips64emul
 		for linux-ppc64 can be disassembled :-)
 20050202	Adding a hack for reading symbols from Microsoft's variant of
 		COFF files.
+		Adding a dummy cpu_sparc.c and include/cpu_sparc.h.
+		Cleaning up more to support multiple cpu families.

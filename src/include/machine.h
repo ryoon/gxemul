@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.22 2005-02-01 06:48:52 debug Exp $
+ *  $Id: machine.h,v 1.23 2005-02-02 18:45:24 debug Exp $
  */
 
 #include <sys/types.h>
@@ -42,6 +42,7 @@
 
 #define	MAX_TICK_FUNCTIONS	14
 
+struct cpu_family;
 struct diskimage;
 struct emul;
 struct fb_window;
@@ -74,6 +75,8 @@ struct machine {
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
 	char	*machine_name;
+
+	struct cpu_family *cpu_family;
 
 	/*
 	 *  The "mainbus":
@@ -194,6 +197,7 @@ struct machine {
 #define	ARCH_NOARCH		0
 #define	ARCH_MIPS		1
 #define	ARCH_PPC		2
+#define	ARCH_SPARC		3
 
 /*  MIPS:  */
 #define	MACHINE_MIPSTEST	1
@@ -212,6 +216,9 @@ struct machine {
 #define	MACHINE_PPCTEST		100
 #define	MACHINE_WALNUT		101
 #define	MACHINE_PMPPC		102
+
+/*  SPARC:  */
+#define	MACHINE_ULTRA1		200
 
 
 /*  Specific machines:  */

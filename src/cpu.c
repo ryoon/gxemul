@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.278 2005-02-01 17:22:07 debug Exp $
+ *  $Id: cpu.c,v 1.279 2005-02-02 18:45:24 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -38,6 +38,7 @@
 #include "cpu.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
+#include "cpu_sparc.h"
 #include "machine.h"
 #include "misc.h"
 
@@ -46,28 +47,37 @@ extern int quiet_mode;
 extern int show_opcode_statistics;
 
 
+static struct cpu_family *first_cpu_family = NULL;
+
+
 /*
  *  cpu_new():
  *
- *  Create a new cpu object.
+ *  Create a new cpu object.  Each family is tried in sequence until a
+ *  CPU family recognizes the cpu_type_name.
  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name)
 {
 	struct cpu *c;
+	struct cpu_family *fp;
 
 	if (cpu_type_name == NULL) {
 		fprintf(stderr, "cpu_new(): cpu name = NULL?\n");
 		exit(1);
 	}
 
-	c = mips_cpu_new(mem, machine, cpu_id, cpu_type_name);
-	if (c != NULL)
-		return c;
+	fp = first_cpu_family;
 
-	c = ppc_cpu_new(mem, machine, cpu_id, cpu_type_name);
-	if (c != NULL)
-		return c;
+	while (fp != NULL) {
+		if (fp->cpu_new != NULL) {
+			c = fp->cpu_new(mem, machine, cpu_id, cpu_type_name);
+			if (c != NULL)
+				return c;
+		}
+
+		fp = fp->next;
+	}
 
 	fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n", cpu_type_name);
 	exit(1);
@@ -81,13 +91,11 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
  */
 void cpu_show_full_statistics(struct machine *m)
 {
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_show_full_statistics(m);
-		break;
-	default:
-		fatal("cpu_show_full_statistics(): not for PPC yet\n");
-	}
+	if (m->cpu_family == NULL ||
+	    m->cpu_family->show_full_statistics == NULL)
+		fatal("cpu_show_full_statistics(): NULL\n");
+	else
+		m->cpu_family->show_full_statistics(m);
 }
 
 
@@ -102,13 +110,10 @@ void cpu_show_full_statistics(struct machine *m)
  */
 void cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_tlbdump(m, x, rawflag);
-		break;
-	default:
-		fatal("cpu_tlbdump(): not for PPC yet\n");
-	}
+	if (m->cpu_family == NULL || m->cpu_family->tlbdump == NULL)
+		fatal("cpu_tlbdump(): NULL\n");
+	else
+		m->cpu_family->tlbdump(m, x, rawflag);
 }
 
 
@@ -120,18 +125,11 @@ void cpu_tlbdump(struct machine *m, int x, int rawflag)
 void cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_register_match(m, name, writeflag,
+	if (m->cpu_family == NULL || m->cpu_family->register_match == NULL)
+		fatal("cpu_register_match(): NULL\n");
+	else
+		m->cpu_family->register_match(m, name, writeflag,
 		    valuep, match_register);
-		break;
-	case ARCH_PPC:
-		ppc_cpu_register_match(m, name, writeflag,
-		    valuep, match_register);
-		break;
-	default:
-		fatal("cpu_register_match(): ?\n");
-	}
 }
 
 
@@ -144,16 +142,11 @@ void cpu_register_match(struct machine *m, char *name,
 void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans)
 {
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
-		break;
-	case ARCH_PPC:
-		ppc_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
-		break;
-	default:
-		fatal("cpu_disassemble_instr(): ?\n");
-	}
+	if (m->cpu_family == NULL || m->cpu_family->disassemble_instr == NULL)
+		fatal("cpu_disassemble_instr(): NULL\n");
+	else
+		m->cpu_family->disassemble_instr(cpu, instr,
+		    running, addr, bintrans);
 }
 
 
@@ -168,16 +161,10 @@ void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs)
 {
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_register_dump(cpu, gprs, coprocs);
-		break;
-	case ARCH_PPC:
-		ppc_cpu_register_dump(cpu, gprs, coprocs);
-		break;
-	default:
-		fatal("cpu_register_dump(): ?\n");
-	}
+	if (m->cpu_family == NULL || m->cpu_family->register_dump == NULL)
+		fatal("cpu_register_dump(): NULL\n");
+	else
+		m->cpu_family->register_dump(cpu, gprs, coprocs);
 }
 
 
@@ -207,6 +194,8 @@ int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
+	/*  TODO: use m->cpu_family-> ...  */
+
 	switch (cpu->machine->arch) {
 	case ARCH_MIPS:
 		return mips_cpu_interrupt_ack(cpu, irq_nr);
@@ -225,19 +214,13 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  *
  *  Return value is 1 if anything happened, 0 if all CPUs are stopped.
  */
-int cpu_run(struct emul *emul, struct machine *machine)
+int cpu_run(struct emul *emul, struct machine *m)
 {
-	switch (machine->arch) {
-	case ARCH_MIPS:
-		return mips_cpu_run(emul, machine);
-		break;
-	case ARCH_PPC:
-		return ppc_cpu_run(emul, machine);
-		break;
-	default:
-		fatal("cpu_run(): ?\n");
+	if (m->cpu_family == NULL || m->cpu_family->run == NULL) {
+		fatal("cpu_run(): NULL\n");
 		return 0;
-	}
+	} else
+		return m->cpu_family->run(emul, m);
 }
 
 
@@ -252,16 +235,10 @@ void cpu_dumpinfo(struct machine *m, struct cpu *cpu)
 	debug("cpu%i: %s, %s", cpu->cpu_id, cpu->name,
 	    cpu->running? "running" : "stopped");
 
-	switch (m->arch) {
-	case ARCH_MIPS:
-		mips_cpu_dumpinfo(cpu);
-		break;
-	case ARCH_PPC:
-		ppc_cpu_dumpinfo(cpu);
-		break;
-	default:
-		fatal("cpu_dumpinfo(): ?\n");
-	}
+	if (m->cpu_family == NULL || m->cpu_family->dumpinfo == NULL)
+		fatal("cpu_dumpinfo(): NULL\n");
+	else
+		m->cpu_family->dumpinfo(cpu);
 }
 
 
@@ -272,17 +249,22 @@ void cpu_dumpinfo(struct machine *m, struct cpu *cpu)
  */
 void cpu_list_available_types(void)
 {
+	struct cpu_family *fp;
 	int iadd = 4;
 
-	debug("MIPS:\n");
-	debug_indentation(iadd);
-	mips_cpu_list_available_types();
-	debug_indentation(-iadd);
+	fp = first_cpu_family;
+	while (fp != NULL) {
+		debug("%s:\n", fp->name);
+		debug_indentation(iadd);
+		if (fp->list_available_types != NULL)
+			fp->list_available_types();
+		else
+			debug("(internal error: list_available_types"
+			    " = NULL)\n");
+		debug_indentation(-iadd);
 
-	debug("PPC:\n");
-	debug_indentation(iadd);
-	ppc_cpu_list_available_types();
-	debug_indentation(-iadd);
+		fp = fp->next;
+	}
 }
 
 
@@ -473,5 +455,87 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
 
 	/*  For performance measurement:  */
 	gettimeofday(&machine->starttime, NULL);
+}
+
+
+/*
+ *  add_cpu_family():
+ *
+ *  Allocates a cpu_family struct and calls an init function for the
+ *  family to fill in reasonable data and pointers.
+ */
+static void add_cpu_family(int (*family_init)(struct cpu_family *))
+{
+	struct cpu_family *fp, *tmp;
+	int res;
+
+	fp = malloc(sizeof(struct cpu_family));
+	if (fp == NULL) {
+		fprintf(stderr, "add_cpu_family(): out of memory\n");
+		exit(1);
+	}
+	memset(fp, 0, sizeof(struct cpu_family));
+
+	/*
+	 *  family_init() returns 1 if the struct has been filled with
+	 *  valid data, 0 if suppor for the cpu family isn't compiled
+	 *  into the emulator.
+	 */
+	res = family_init(fp);
+	if (!res) {
+		free(fp);
+		return;
+	}
+
+	fp->next = NULL;
+
+	/*  Add last in family chain:  */
+	tmp = first_cpu_family;
+	if (tmp == NULL) {
+		first_cpu_family = fp;
+	} else {
+		while (tmp->next != NULL)
+			tmp = tmp->next;
+		tmp->next = fp;
+	}
+}
+
+
+/*
+ *  cpu_family_ptr_by_number():
+ *
+ *  Returns a pointer to a CPU family based on the ARCH_* integers.
+ */
+struct cpu_family *cpu_family_ptr_by_number(int arch)
+{
+	struct cpu_family *fp;
+	fp = first_cpu_family;
+
+	/*  YUCK! This is too hardcoded! TODO  */
+
+	while (fp != NULL) {
+		if (arch == ARCH_MIPS && strcmp("MIPS", fp->name) == 0)
+			return fp;
+		if (arch == ARCH_PPC && strcmp("PPC", fp->name) == 0)
+			return fp;
+		if (arch == ARCH_SPARC && strcmp("SPARC", fp->name) == 0)
+			return fp;
+		fp = fp->next;
+	}
+
+	return NULL;
+}
+
+
+/*
+ *  cpu_init():
+ *
+ *  Should be called before any other cpu_*() function.
+ */
+void cpu_init(void)
+{
+	add_cpu_family(mips_cpu_family_init);
+	add_cpu_family(ppc_cpu_family_init);
+	add_cpu_family(sparc_cpu_family_init);
 }
 

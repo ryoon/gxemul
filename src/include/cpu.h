@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.8 2005-02-01 14:20:37 debug Exp $
+ *  $Id: cpu.h,v 1.9 2005-02-02 18:45:24 debug Exp $
  *
  *  See cpu.c.
  */
@@ -43,6 +43,7 @@
 
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
+#include "cpu_sparc.h"
 
 struct cpu;
 struct emul;
@@ -52,6 +53,31 @@ struct memory;
 #define	NO_BYTE_ORDER_OVERRIDE		-1
 #define	EMUL_LITTLE_ENDIAN		0
 #define	EMUL_BIG_ENDIAN			1
+
+
+struct cpu_family {
+	struct cpu_family	*next;
+
+	char			*name;
+	struct cpu		*(*cpu_new)(struct memory *mem,
+				    struct machine *machine,
+				    int cpu_id, char *cpu_type_name);
+	void			(*list_available_types)(void);
+	void			(*register_match)(struct machine *m,
+				    char *name, int writeflag,
+				    uint64_t *valuep, int *match_register);
+	void			(*disassemble_instr)(struct cpu *cpu,
+				    unsigned char *instr, int running,
+				    uint64_t dumpaddr, int bintrans);
+	void			(*register_dump)(struct cpu *cpu,
+				    int gprs, int coprocs);
+	int			(*run)(struct emul *emul,
+				    struct machine *machine);
+	void			(*dumpinfo)(struct cpu *cpu);
+	void			(*show_full_statistics)(struct machine *m);
+	void			(*tlbdump)(struct machine *m, int x,
+				    int rawflag);
+};
 
 
 struct cpu {
@@ -70,8 +96,9 @@ struct cpu {
 
 	/*  CPU-family dependant:  */
 	union {
-		struct mips_cpu	mips;
-		struct ppc_cpu	ppc;
+		struct mips_cpu   mips;
+		struct ppc_cpu    ppc;
+		struct sparc_cpu  sparc;
 	} cd;
 };
 
@@ -96,6 +123,8 @@ void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
 void cpu_show_cycles(struct machine *machine,
 	struct timeval *starttime, int64_t ncycles, int forced);
+struct cpu_family *cpu_family_ptr_by_number(int arch);
+void cpu_init(void);
 
 
 #endif	/*  CPU_H  */

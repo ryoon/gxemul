@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.6 2005-02-01 14:20:37 debug Exp $
+ *  $Id: cpu_mips.h,v 1.7 2005-02-02 18:45:24 debug Exp $
  */
 
 #include "misc.h"
@@ -39,6 +39,7 @@
  */
 /*  #define MFHILO_DELAY  */
 
+struct cpu_family;
 struct emul;
 struct machine;
 
@@ -406,6 +407,7 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
 int mips_cpu_run(struct emul *emul, struct machine *machine);
 void mips_cpu_dumpinfo(struct cpu *cpu);
 void mips_cpu_list_available_types(void);
+int mips_cpu_family_init(struct cpu_family *);
 
 
 /*  mips16.c:  */

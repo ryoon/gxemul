@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.327 2005-02-01 08:26:36 debug Exp $
+ *  $Id: machine.c,v 1.328 2005-02-02 18:45:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4329,21 +4329,34 @@ void machine_init(void)
 	    MACHINE_WALNUT, 2, 0);
 	me->aliases[0] = "walnut";
 	me->aliases[1] = "evbppc";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Sun Ultra1:  */
+	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
+	me->aliases[0] = "ultra1";
+	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Sony Playstation 2:  */
 	me = machine_entry_new("Sony Playstation 2", ARCH_MIPS,
 	    MACHINE_PS2, 2, 0);
 	me->aliases[0] = "playstation2";
 	me->aliases[1] = "ps2";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Sony NeWS:  */
 	me = machine_entry_new("Sony NeWS", ARCH_MIPS,
 	    MACHINE_SONYNEWS, 2, 0);
 	me->aliases[0] = "sonynews";
 	me->aliases[1] = "news";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  SGI:  */
 	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 9);
@@ -4372,26 +4385,34 @@ void machine_init(void)
 	me->subtype[7]->aliases[1] = "o2";
 	me->subtype[8] = machine_entry_subtype_new("IP35", 35, 1);
 	me->subtype[8]->aliases[0] = "ip35";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  NetGear:  */
 	me = machine_entry_new("NetGear WG602", ARCH_MIPS,
 	    MACHINE_NETGEAR, 2, 0);
 	me->aliases[0] = "netgear";
 	me->aliases[1] = "wg602";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Meshcube:  */
 	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
 	me->aliases[0] = "meshcube";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Linksys:  */
 	me = machine_entry_new("Linksys WRT54G", ARCH_MIPS,
 	    MACHINE_WRT54G, 2, 0);
 	me->aliases[0] = "linksys";
 	me->aliases[1] = "wrt54g";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  HPCmips:  */
 	me = machine_entry_new("Handheld MIPS (HPC)",
@@ -4406,19 +4427,25 @@ void machine_init(void)
 	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
 	me->subtype[1]->aliases[0] = "e-105";
 	me->subtype[1]->aliases[1] = "e105";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Generic PPC test machine:  */
 	me = machine_entry_new("Generic PPC test machine", ARCH_PPC,
 	    MACHINE_PPCTEST, 1, 0);
 	me->aliases[0] = "testppc";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Generic MIPS test machine:  */
 	me = machine_entry_new("Generic MIPS test machine", ARCH_MIPS,
 	    MACHINE_MIPSTEST, 1, 0);
 	me->aliases[0] = "testmips";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  DECstation:  */
 	me = machine_entry_new("DECstation/DECsystem",
@@ -4469,18 +4496,24 @@ void machine_init(void)
 	me->subtype[8]->aliases[0] = "5100";
 	me->subtype[8]->aliases[1] = "mipsmate";
 
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Cobalt:  */
 	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  Artesyn's PM/PPC board: (NetBSD/pmppc)  */
 	me = machine_entry_new("Artesyn's PM/PPC board", ARCH_PPC,
 	    MACHINE_PMPPC, 1, 0);
 	me->aliases[0] = "pmppc";
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 
 	/*  ARC:  */
 	me = machine_entry_new("ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);
@@ -4528,6 +4561,8 @@ void machine_init(void)
 	me->subtype[7]->aliases[0] = "olivetti";
 	me->subtype[7]->aliases[1] = "m700";
 
-	me->next = first_machine_entry; first_machine_entry = me;
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
 }
 

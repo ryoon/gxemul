@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.36 2005-01-30 13:39:45 debug Exp $
+#  $Id: Makefile.skel,v 1.37 2005-02-02 18:45:24 debug Exp $
 #
 #  Makefile for mips64emul src
 #
@@ -11,6 +11,7 @@ OBJS=main.o \
 	net.o machine.o symbol.o x11.o cpu.o \
 	cpu_mips.o coproc.o memory_fast_v2h.o useremul.o bintrans.o \
 	cpu_ppc.o \
+	cpu_sparc.o \
 	dec_prom.o ps2_bios.o arcbios.o
 
 

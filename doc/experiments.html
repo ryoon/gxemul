@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.12 2005-02-02 05:25:47 debug Exp $
+$Id: experiments.html,v 1.13 2005-02-02 18:45:23 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -364,7 +364,7 @@ or snapshot of the emulator.
 
   <li>HPCmips:
     <ul>
-      <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>.
+      <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
 	<br>Try <b>./mips64emul -X -b -E hpc -e e105 netbsd-GENERIC</b>
       <p>
@@ -401,7 +401,7 @@ or snapshot of the emulator.
 
   <p>
 
-  <li>Linksys WRT54G
+  <li>Linksys WRT54G:
     <ul>
       <li>Linux:
 	<br><a href="http://openwrt.org/">OpenWRT</a> is a Linux
@@ -421,27 +421,45 @@ or snapshot of the emulator.
 
   <p>
 
-  <li>Walnut (evbppc)
+<!--
+  <li>Walnut (evbppc):
     <ul>
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E walnut netbsd-INSTALL_WALNUT</b>
+	<br>$ <b>./mips64emul -E walnut -v netbsd-INSTALL_WALNUT</b>
     </ul>
   </li>
 
   <p>
 
-  <li>PM/PPC (pmppc)
+  <li>PM/PPC (pmppc):
     <ul>
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E pmppc -v netbsd-INSTALL</b>
     </ul>
   </li>
 
   <p>
+
+  <li>SPARC64:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/sparc64/">NetBSD/sparc64</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz</a>
+	<br>gunzip, and try the following:
+	<br>$ <b>./mips64emul -E sparc64 -v netbsd-INSTALL</b>
+      <p>
+      <li><a href="http://www.openbsd.org/sparc64.html">OpenBSD/sparc64</a>:
+	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd</a>
+	<br>rename to bsd.rd.gz, gunzip, and try the following:
+	<br>$ <b>./mips64emul -E sparc64 -v bsd.rd</b>
+    </ul>
+  </li>
+
+  <p>
+-->
 
   <li>Generic "bare" emulation:
     <ul>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.68 2005-02-02 09:33:20 debug Exp $
+ *  $Id: file.c,v 1.69 2005-02-02 18:45:25 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -410,7 +410,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		/*  Read a section header:  */
 		len = fread(&scnhdr, 1, sizeof(scnhdr), f);
 		if (len != sizeof(scnhdr)) {
-			fprintf(stderr, "%s: incomplete section header %i\n", filename, secn);
+			fprintf(stderr, "%s: incomplete section "
+			    "header %i\n", filename, secn);
 			exit(1);
 		}
 
@@ -439,7 +440,12 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		end_addr = s_vaddr + s_size;
 
 		if (s_relptr != 0) {
-			fprintf(stderr, "%s: relocatable code/data in section nr %i: not yet implemented\n",
+			/*
+			 *  TODO: Read this url, or similar:
+			 *  http://www.iecc.com/linker/linker07.html
+			 */
+			fprintf(stderr, "%s: relocatable code/data in "
+			    "section nr %i: not yet implemented\n",
 			    filename, secn);
 			exit(1);
 		}
@@ -463,7 +469,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					len = s_size - total_len;
 				len = fread(buf, 1, chunk_size, f);
 				if (len == 0) {
-					debug("!!! total_len = %i, chunk_size = %i, len = %i\n",
+					debug("!!! total_len = %i, "
+					    "chunk_size = %i, len = %i\n",
 					    total_len, chunk_size, len);
 					break;
 				}

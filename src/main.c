@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.200 2005-02-01 07:21:53 debug Exp $
+ *  $Id: main.c,v 1.201 2005-02-02 18:45:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "cpu.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
@@ -719,6 +720,7 @@ int main(int argc, char *argv[])
 	int i;
 
 	srandom(time(NULL));
+	cpu_init();
 	machine_init();
 
 	emuls = malloc(sizeof(struct emul *));

@@ -28,11 +28,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.5 2005-02-01 16:19:08 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.6 2005-02-02 18:45:24 debug Exp $
  */
 
 #include "misc.h"
 
+
+struct cpu_family;
 
 #define	MODE_PPC		0
 #define	MODE_POWER		1
@@ -98,6 +100,7 @@ void ppc_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 int ppc_cpu_run(struct emul *emul, struct machine *machine);
 void ppc_cpu_dumpinfo(struct cpu *cpu);
 void ppc_cpu_list_available_types(void);
+int ppc_cpu_family_init(struct cpu_family *);
 
 
 #endif	/*  CPU_PPC_H  */

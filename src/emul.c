@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.156 2005-02-01 14:20:38 debug Exp $
+ *  $Id: emul.c,v 1.157 2005-02-02 18:45:25 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -442,6 +442,8 @@ void emul_machine_setup(struct machine *m, int n_load,
 		fatal("No machine type specified?\n");
 		exit(1);
 	}
+
+	m->cpu_family = cpu_family_ptr_by_number(m->arch);
 
 	machine_memsize_fix(m);
 

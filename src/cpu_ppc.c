@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.10 2005-02-02 05:25:48 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.11 2005-02-02 18:45:25 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -36,6 +36,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "../config.h"
+
+
+#ifndef ENABLE_PPC
+
+
+#include "cpu_ppc.h"
+
+
+/*
+ *  ppc_cpu_family_init():
+ *
+ *  Bogus function.
+ */
+int ppc_cpu_family_init(struct cpu_family *fp)
+{
+	return 0;
+}
+
+
+#else	/*  ENABLE_PPC  */
+
 
 #include "cpu.h"
 #include "cpu_ppc.h"
@@ -600,3 +623,26 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #undef CPU_RUN_PPC
 #undef CPU_RUN
 
+
+/*
+ *  ppc_cpu_family_init():
+ *
+ *  Fill in the cpu_family struct for PPC.
+ */
+int ppc_cpu_family_init(struct cpu_family *fp)
+{
+	fp->name = "PPC";
+	fp->cpu_new = ppc_cpu_new;
+	fp->list_available_types = ppc_cpu_list_available_types;
+	fp->register_match = ppc_cpu_register_match;
+	fp->disassemble_instr = ppc_cpu_disassemble_instr;
+	fp->register_dump = ppc_cpu_register_dump;
+	fp->run = ppc_cpu_run;
+	fp->dumpinfo = ppc_cpu_dumpinfo;
+	/*  fp->show_full_statistics = ppc_cpu_show_full_statistics;  */
+	/*  fp->tlbdump = ppc_cpu_tlbdump;  */
+	return 1;
+}
+
+
+#endif	/*  ENABLE_PPC  */

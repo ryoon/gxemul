@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.188 2004-12-19 08:36:54 debug Exp $
+ *  $Id: misc.h,v 1.189 2004-12-20 02:13:00 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -613,6 +613,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus);
 /*  debugger:  */
 void debugger_activate(int x);
 void debugger(void);
+void debugger_init(struct emul *);
 
 
 /*  dec_prom.c:  */

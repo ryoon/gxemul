@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.12 2004-12-19 07:16:06 debug Exp $
+ *  $Id: debugger.c,v 1.13 2004-12-20 02:13:01 debug Exp $
  *
  *  Single-step debugger.
+ *
+ *
+ *  TODO: This entire module is very much non-reentrant. :-/
  */
 
 #include <ctype.h>
@@ -56,11 +59,9 @@ extern int quiet_mode;
 
 /*
  *  Global debugger variables:
- *
- *  (TODO: How to make these non-global in a nice way?)
  */
 
-struct emul *debugger_emul;
+static struct emul *debugger_emul;
 
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -69,9 +70,12 @@ int old_show_trace_tree = 0;
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
 
-#define	MAX_CMD_LEN	60
-static char last_cmd[MAX_CMD_LEN];
-static int last_cmd_len = 0;
+#define	MAX_CMD_LEN		63
+#define	N_PREVIOUS_CMDS		50
+static char *last_cmd[N_PREVIOUS_CMDS];
+static int last_cmd_index;
+
+static char repeat_cmd[MAX_CMD_LEN + 1];
 
 static uint64_t last_dump_addr = 0xffffffff80000000ULL;
 static uint64_t last_unasm_addr = 0xffffffff80000000ULL;
@@ -131,8 +135,6 @@ static void debugger_cmd_breakpoints(struct emul *emul, char *cmd_line)
 			printf(": flags=0x%x", emul->breakpoint_flags[i]);
 		printf("\n");
 	}
-
-	last_cmd_len = 0;
 }
 
 
@@ -144,7 +146,6 @@ static void debugger_cmd_bintrans(struct emul *emul, char *cmd_line)
 	if (!emul->bintrans_enabled_from_start) {
 		printf("ERROR: You must have enabled bintrans from the start of the simulation.\n");
 		printf("It is not possible to turn on afterwards.\n");
-		last_cmd_len = 0;
 		return;
 	}
 
@@ -200,8 +201,6 @@ static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
 		}
 		printf("\n");
 	}
-
-	last_cmd_len = 0;
 }
 
 
@@ -330,9 +329,7 @@ static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
 
 	last_dump_addr = addr_end;
 
-	/*  Repetition of this command should be done with no args:  */
-	last_cmd_len = 4;
-	strcpy(last_cmd, "dump");
+	strcpy(repeat_cmd, "dump");
 }
 
 
@@ -427,8 +424,6 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 
 		printf(")\n");
 	}
-
-	last_cmd_len = 0;
 }
 
 
@@ -468,7 +463,7 @@ static void debugger_cmd_registers(struct emul *emul, char *cmd_line)
 		x = strtoll(cmd_line + 1, NULL, 0);
 		if (x < 0 || x >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", x);
-			last_cmd_len = 0;
+			return;
 		}
 	}
 
@@ -497,6 +492,8 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 
 	/*  Special hack, see debugger() for more info.  */
 	exit_debugger = -1;
+
+	strcpy(repeat_cmd, "step");
 }
 
 
@@ -513,7 +510,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 		x = strtoll(cmd_line + 1, NULL, 0);
 		if (x < 0 || x >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", x);
-			last_cmd_len = 0;
+			return;
 		}
 	}
 
@@ -625,9 +622,7 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 
 	last_unasm_addr = addr_end;
 
-	/*  Repetition of this command should be done with no args:  */
-	last_cmd_len = 10;
-	strcpy(last_cmd, "unassemble");
+	strcpy(repeat_cmd, "unassemble");
 }
 
 
@@ -641,7 +636,6 @@ static void debugger_cmd_version(struct emul *emul, char *cmd_line)
 #else
 	printf("(no version), %s\n", COMPILE_DATE);
 #endif
-	last_cmd_len = 0;
 }
 
 
@@ -752,8 +746,6 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 		printf("    %s\n", cmds[i].description);
 		i++;
 	}
-
-	last_cmd_len = 0;
 }
 
 
@@ -764,18 +756,21 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
  *  debugger_readline():
  *
  *  Read a line from the terminal.
- *
- *  TODO: Cursor keys for line editing? Tab-completion?
  */
-static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
+static char *debugger_readline(void)
 {
-	int ch, i, n, i_match, reallen;
+	int ch, i, n, i_match, reallen, cmd_len, cursor_pos;
+	int read_from_index = last_cmd_index;
+	char *cmd = last_cmd[last_cmd_index];
 
-	*cmd_len = 0; cmd[0] = '\0';
+	cmd_len = 0; cmd[0] = '\0';
 	printf("mips64emul> ");
 	fflush(stdout);
 
 	ch = '\0';
+	cmd_len = 0;
+	cursor_pos = 0;
+
 	while (ch != '\n') {
 		/*
 		 *  TODO: This uses up 100% CPU, maybe that isn't too good.
@@ -785,15 +780,59 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 		while ((ch = console_readchar()) < 0)
 			usleep(1);
 
-		if (ch == '\b' && *cmd_len > 0) {
-			(*cmd_len) --;
-			cmd[*cmd_len] = '\0';
-			printf("\b \b");
-		} else if (ch >= ' ' && (*cmd_len) < max_cmd_len - 1) {
-			cmd[*cmd_len] = ch;
-			(*cmd_len) ++;
-			cmd[*cmd_len] = '\0';
+		if (ch == '\b' && cursor_pos > 0) {
+			/*  Backspace.  */
+			cursor_pos --;
+			cmd_len --;
+			memmove(cmd + cursor_pos, cmd + cursor_pos + 1,
+			    cmd_len);
+			cmd[cmd_len] = '\0';
+			printf("\b");
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("%c", cmd[i]);
+			printf(" \b");
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("\b");
+		} else if (ch == 4 && cmd_len > 0 && cursor_pos < cmd_len) {
+			/*  CTRL-D: Delete.  */
+			cmd_len --;
+			memmove(cmd + cursor_pos, cmd + cursor_pos + 1,
+			    cmd_len);
+			cmd[cmd_len] = '\0';
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("%c", cmd[i]);
+			printf(" \b");
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("\b");
+		} else if (ch == 1) {
+			/*  CTRL-A: Start of line.  */
+			while (cursor_pos > 0) {
+				cursor_pos --;
+				printf("\b");
+			}
+		} else if (ch == 5) {
+			/*  CTRL-E: End of line.  */
+			while (cursor_pos < cmd_len) {
+				printf("%c", cmd[cursor_pos]);
+				cursor_pos ++;
+			}
+		} else if (ch == 11) {
+			/*  CTRL-K: Kill to end of line.  */
+			for (i=0; i<MAX_CMD_LEN; i++)
+				console_makeavail(4);	/*  :-)  */
+		} else if (ch >= ' ' && cmd_len < MAX_CMD_LEN) {
+			/*  Visible character:  */
+			memmove(cmd + cursor_pos + 1, cmd + cursor_pos,
+			    cmd_len - cursor_pos);
+			cmd[cursor_pos] = ch;
+			cmd_len ++;
+			cursor_pos ++;
+			cmd[cmd_len] = '\0';
 			printf("%c", ch);
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("%c", cmd[i]);
+			for (i=cursor_pos; i<cmd_len; i++)
+				printf("\b");
 		} else if (ch == '\r' || ch == '\n') {
 			ch = '\n';
 			printf("\n");
@@ -807,7 +846,7 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 			n = i = i_match = 0;
 			while (cmds[i].name != NULL) {
 				if (strncasecmp(cmds[i].name, cmd,
-				    *cmd_len) == 0) {
+				    cmd_len) == 0) {
 					cmds[i].tmp_flag = 1;
 					i_match = i;
 					n++;
@@ -821,7 +860,7 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 				break;
 			case 1:	/*  Add the rest of the command:  */
 				reallen = strlen(cmds[i_match].name);
-				for (i=*cmd_len; i<reallen; i++)
+				for (i=cmd_len; i<reallen; i++)
 					console_makeavail(
 					    cmds[i_match].name[i]);
 				break;
@@ -836,28 +875,71 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 					i++;
 				}
 				printf("\nmips64emul> ");
-				for (i=0; i<*cmd_len; i++)
+				for (i=0; i<cmd_len; i++)
 					printf("%c", cmd[i]);
 			}
 		} else if (ch == 27) {
+			/*  Escape codes: (cursor keys etc)  */
 			while ((ch = console_readchar()) < 0)
 				usleep(1);
-			if (ch == '[') {
+			if (ch == '[' || ch == 'O') {
 				while ((ch = console_readchar()) < 0)
 					usleep(1);
 				switch (ch) {
 				case 'A':	/*  Up.  */
-					for (i=0; i<MAX_CMD_LEN; i++)
-						console_makeavail('\b');
-					for (i=0; i<last_cmd_len; i++)
-						console_makeavail(last_cmd[i]);
-					break;
 				case 'B':	/*  Down.  */
-					for (i=0; i<MAX_CMD_LEN; i++)
-						console_makeavail('\b');
+					if (ch == 'B' &&
+					    read_from_index == last_cmd_index)
+						break;
+
+					if (ch == 'A')
+						i = read_from_index - 1;
+					else
+						i = read_from_index + 1;
+
+					if (i < 0)
+						i = N_PREVIOUS_CMDS - 1;
+					if (i >= N_PREVIOUS_CMDS)
+						i = 0;
+
+					/*  Special case: pressing 'down'
+					    to reach last_cmd_index:  */
+					if (i == last_cmd_index) {
+						read_from_index = i;
+						for (i=cursor_pos; i<cmd_len;
+						    i++)
+							printf(" ");
+						for (i=cmd_len-1; i>=0; i--)
+							printf("\b \b");
+						cmd[0] = '\0';
+						cmd_len = cursor_pos = 0;
+					} else if (last_cmd[i][0] != '\0') {
+						/*  Copy from old line:  */
+						read_from_index = i;
+						for (i=cursor_pos; i<cmd_len;
+						    i++)
+							printf(" ");
+						for (i=cmd_len-1; i>=0; i--)
+							printf("\b \b");
+						strcpy(cmd,
+						    last_cmd[read_from_index]);
+						cmd_len = strlen(cmd);
+						printf("%s", cmd);
+						cursor_pos = cmd_len;
+					}
+					break;
+				case 'C':	/*  Right  */
+					if (cursor_pos < cmd_len) {
+						printf("%c",
+						    cmd[cursor_pos]);
+						cursor_pos ++;
+					}
 					break;
 				case 'D':	/*  Left  */
-					console_makeavail('\b');
+					if (cursor_pos > 0) {
+						printf("\b");
+						cursor_pos --;
+					}
 					break;
 				}
 			}
@@ -865,6 +947,8 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 
 		fflush(stdout);
 	}
+
+	return cmd;
 }
 
 
@@ -875,8 +959,8 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
  */
 void debugger(void)
 {
-	int i, n, i_match, cmd_len, matchlen;
-	char cmd[MAX_CMD_LEN + 1];
+	int i, n, i_match, matchlen, cmd_len;
+	char *cmd;
 
 	if (n_steps_left_before_interaction > 0) {
 		n_steps_left_before_interaction --;
@@ -887,13 +971,8 @@ void debugger(void)
 
 	while (!exit_debugger) {
 		/*  Read a line from the terminal:  */
-		debugger_readline(&cmd[0], MAX_CMD_LEN, &cmd_len);
-
-		/*  Just pressing Enter will repeat the last cmd:  */
-		if (cmd_len == 0 && last_cmd_len != 0) {
-			cmd_len = last_cmd_len;
-			memcpy(cmd, last_cmd, cmd_len + 1);
-		}
+		cmd = debugger_readline();
+		cmd_len = strlen(cmd);
 
 		/*  Remove spaces:  */
 		while (cmd_len > 0 && cmd[0]==' ')
@@ -901,15 +980,20 @@ void debugger(void)
 		while (cmd_len > 0 && cmd[cmd_len-1] == ' ')
 			cmd[(cmd_len--)-1] = '\0';
 
-		/*  Remember this cmd:  */
-		if (cmd_len > 0) {
-			memcpy(last_cmd, cmd, cmd_len + 1);
-			last_cmd_len = cmd_len;
-		}
+		/*  No command? Then try reading another line.  */
+		if (cmd_len == 0) {
+			/*  Special case for repeated commands:  */
+			if (repeat_cmd[0] != '\0')
+				strcpy(cmd, repeat_cmd);
+			else
+				continue;
+		} else {
+			last_cmd_index ++;
+			if (last_cmd_index >= N_PREVIOUS_CMDS)
+				last_cmd_index = 0;
 
-		/*  No command? Then read a new line.  */
-		if (cmd_len == 0)
-			continue;
+			repeat_cmd[0] = '\0';
+		}
 
 		i = 0;
 		while (cmds[i].name != NULL)
@@ -935,8 +1019,6 @@ void debugger(void)
 		if (n == 0) {
 			printf("Unknown command '%s'. "
 			    "Type 'help' for help.\n", cmd);
-			last_cmd[0] = cmd[0] = '\0';
-			last_cmd_len = cmd_len = 0;
 			continue;
 		}
 
@@ -950,8 +1032,6 @@ void debugger(void)
 				i++;
 			}
 			printf("\n");
-			last_cmd[0] = cmd[0] = '\0';
-			last_cmd_len = cmd_len = 0;
 			continue;
 		}
 
@@ -971,5 +1051,30 @@ void debugger(void)
 	debugger_emul->instruction_trace = old_instruction_trace;
 	debugger_emul->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;
+}
+
+
+/*
+ *  debugger_init():
+ *
+ *  Must be called before any other debugger function is used.
+ */
+void debugger_init(struct emul *emul)
+{
+	int i;
+
+	debugger_emul = emul;
+
+	for (i=0; i<N_PREVIOUS_CMDS; i++) {
+		last_cmd[i] = malloc(MAX_CMD_LEN + 1);
+		if (last_cmd[i] == NULL) {
+			fprintf(stderr, "debugger_init(): out of memory\n");
+			exit(1);
+		}
+		last_cmd[i][0] = '\0';
+	}
+
+	last_cmd_index = 0;
+	repeat_cmd[0] = '\0';
 }
 

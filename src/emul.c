@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.99 2004-12-19 12:12:42 debug Exp $
+ *  $Id: emul.c,v 1.100 2004-12-20 02:13:01 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -504,6 +504,8 @@ void emul_start(struct emul *emul)
 	    emul->bootstrap_cpu, emul->cpus[emul->bootstrap_cpu]->pc,
 	    emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
 
+	debugger_init(emul);
+
 	/*
 	 *  console_init() makes sure that the terminal is in a good state.
 	 *
@@ -513,7 +515,6 @@ void emul_start(struct emul *emul)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-	debugger_emul = emul;
 
 	console_init(emul);
 	signal(SIGINT, debugger_activate);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.125 2004-07-04 13:18:02 debug Exp $
+ *  $Id: machine.c,v 1.126 2004-07-04 15:51:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -159,7 +159,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 void store_byte(uint64_t addr, uint8_t data)
 {
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
 

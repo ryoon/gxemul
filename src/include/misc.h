@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.59 2004-06-18 12:19:42 debug Exp $
+ *  $Id: misc.h,v 1.60 2004-06-21 09:38:09 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -74,7 +74,6 @@ typedef uint64_t u_int64_t;
 #define	EMULTYPE_PS2		4
 #define	EMULTYPE_SGI		5
 #define	EMULTYPE_ARC		6
-#define	EMULTYPE_NINTENDO64	7
 
 /*  Specific machines:  */
 /*  DEC:  */
@@ -130,9 +129,6 @@ typedef uint64_t u_int64_t;
 #define	FIRST_ARC_COMPONENT	0xffffffffbfca8000
 #define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000
 #define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000
-
-/*  Nintendo 64:  */
-/*  nothing yet  */
 
 
 /*  CPU types:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.100 2004-06-17 22:52:17 debug Exp $
+ *  $Id: machine.c,v 1.101 2004-06-21 09:38:28 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -2073,77 +2073,6 @@ case arc_CacheClass:
 		add_environment_string("verbose=istrue", &addr);
 		add_environment_string("showconfig=istrue", &addr);
 		add_environment_string("", &addr);	/*  the end  */
-
-		break;
-
-	case EMULTYPE_NINTENDO64:
-		machine_name = "Nintendo 64";
-		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
-
-		/*
-		 *  Nintendo 64 emulation is not very important:
-		 *
-		 *	o)  There isn't that much software out there to run
-		 *	    in the emulator, except for games. :-/
-		 *
-		 *	o)  There are already other emulators out there,
-		 *	    specific for Nintendo 64, which are capable of
-		 *	    playing games (which is what the N64 is supposed to do)
-		 *
-		 *  The N64 is supposed to have 4MB SDRAM, some kind of ROM,
-		 *  and some surrounding chips.  Games are loaded via cartridges.
-		 *
-		 *	List according to http://n64.icequake.net/mirror/www.cd64.com/cd64_circuit.htm
-		 *
-		 *	0xb0??????	bios
-		 *	0xb1??????	reserved
-		 *	0xb2??????	cartridge
-		 *	0xb3??????	cartridge
-		 *	0xb4??????	dram
-		 *	0xb5??????	dram
-		 *	0xb6??????	reserved
-		 *	0xb7??????	srom i/o, reg
-		 *
-		 *  TODO:  This emulation is 99.999% non-functional.
-		 */
-
-		/*  Numbers from Mupen64:  */
-		cpus[bootstrap_cpu]->gpr[ 1] = 0x0000000000000001;
-		cpus[bootstrap_cpu]->gpr[ 2] = 0x000000000EBDA536;
-		cpus[bootstrap_cpu]->gpr[ 3] = 0x000000000EBDA536;
-		cpus[bootstrap_cpu]->gpr[ 4] = 0x000000000000A536;
-		cpus[bootstrap_cpu]->gpr[ 5] = 0xFFFFFFFFC0F1D859;
-		cpus[bootstrap_cpu]->gpr[ 6] = 0xFFFFFFFFA4001F0C;
-		cpus[bootstrap_cpu]->gpr[ 7] = 0xFFFFFFFFA4001F08;
-		cpus[bootstrap_cpu]->gpr[ 8] = 0x00000000000000C0;
-		cpus[bootstrap_cpu]->gpr[10] = 0x0000000000000040;
-		cpus[bootstrap_cpu]->gpr[11] = 0xFFFFFFFFA4000040;
-		cpus[bootstrap_cpu]->gpr[12] = 0xFFFFFFFFED10D0B3;
-		cpus[bootstrap_cpu]->gpr[13] = 0x000000001402A4CC;
-		cpus[bootstrap_cpu]->gpr[14] = 0x000000002DE108EA;
-		cpus[bootstrap_cpu]->gpr[15] = 0x000000003103E121;
-		cpus[bootstrap_cpu]->gpr[22] = 0x000000000000003F;
-		cpus[bootstrap_cpu]->gpr[23] = 0x0000000000000006;
-		cpus[bootstrap_cpu]->gpr[25] = 0xFFFFFFFF9DEBB54F;
-		cpus[bootstrap_cpu]->gpr[29] = 0xFFFFFFFFA4001FF0;
-		cpus[bootstrap_cpu]->gpr[31] = 0xFFFFFFFFA4001554;
-
-		/*  TODO:  DEV_RAM_MIRROR instead of copying  */
-		dev_ram_init(mem, 0x04000000, 2048, DEV_RAM_RAM, 0);
-		dev_ram_init(mem, 0x10000000, 2048, DEV_RAM_RAM, 0);
-
-		/*  Copy 1KB from 0x80000000 to 0xa4000000 and to 0xb0000000.  */
-
-		for (i=0; i<1024; i++) {
-			unsigned char byte;
-			byte = read_char_from_memory(cpus[bootstrap_cpu], 0, 0x80000000 + i);
-			store_byte(0xa4000000 + i, byte);
-			store_byte(0xb0000000 + i, byte);
-		}
-
-		cpus[bootstrap_cpu]->pc = 0xa4000040;
-
-		dev_n64_bios_init(mem, 0x03f00000);
 
 		break;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.217 2004-09-02 02:13:53 debug Exp $
+$Id: HISTORY,v 1.218 2004-09-02 14:40:20 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -926,3 +926,4 @@ HISTORY of mips64emul
 		Adding a section on regression testing to doc/technical.html.
 20040902	Finally beginning the work on separating out the stuff from
 		main.c into a "struct emul". Very time-consuming.
+		Some minor fixes for LL/SC on R10000.

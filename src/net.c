@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.26 2004-07-25 22:54:26 debug Exp $
+ *  $Id: net.c,v 1.27 2004-08-01 01:13:44 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -964,6 +964,19 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	remote_ip.sin_family = AF_INET;
 	memcpy((unsigned char *)&remote_ip.sin_addr,
 	    udp_connections[con_id].outside_ip_address, 4);
+
+	/*
+	 *  Special case for the nameserver:  If a UDP packet is sent to
+	 *  the gateway, it will be forwarded to the nameserver, if it is
+	 *  known.
+	 */
+	if (net_nameserver_known &&
+	    memcmp(udp_connections[con_id].outside_ip_address,
+	    &gateway_ipv4[0], 4) == 0) {
+		memcpy((unsigned char *)&remote_ip.sin_addr,
+		    &nameserver_ipv4, 4);
+	}
+
 	remote_ip.sin_port = htons(udp_connections[con_id].outside_udp_port);
 
 	res = sendto(udp_connections[con_id].socket, packet + 42, len - 42,

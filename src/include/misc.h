@@ -26,12 +26,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.171 2004-12-06 21:47:31 debug Exp $
+ *  $Id: misc.h,v 1.172 2004-12-06 21:47:46 debug Exp $
  *
  *  Misc. definitions for mips64emul.
- *
- *  TODO:  separate into smaller, more orthogonal files.
- *         perhaps cpu.h?
  */
 
 

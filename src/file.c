@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.40 2004-12-02 19:33:56 debug Exp $
+ *  $Id: file.c,v 1.41 2004-12-06 21:47:32 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -527,7 +527,9 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 
 		free(extsyms);
 		free(symbol_data);
+
 unknown_coff_symbols:
+		;
 	}
 
 	fclose(f);

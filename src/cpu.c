@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.237 2005-01-17 13:01:49 debug Exp $
+ *  $Id: cpu.c,v 1.238 2005-01-17 13:03:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -443,7 +443,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	debug("\t");
 
-	if (bintrans) {
+	if (bintrans && !running) {
 		debug("(bintrans)");
 		goto disasm_ret;
 	}

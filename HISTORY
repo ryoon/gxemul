@@ -310,3 +310,9 @@ HISTORY of mips64emul
 20040110	Faking R10000 cache things.
 		The PROM image boots, although it takes almost forever for it
 		to realize that there is no keyboard.
+		The 'gbe' SGI-IP32 graphics device works enough to display the
+		Linux framebuffer penguin in the upper left corner :-)
+20040111	-p and -P addresses can now be given as symbol names, not just
+		numeric values.
+		Experimenting with adding a PCIIDE (dev_wdc) controller to the
+		Cobalt emulation.

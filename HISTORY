@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.95 2004-06-23 02:01:40 debug Exp $
+$Id: HISTORY,v 1.96 2004-06-23 14:17:37 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -570,3 +570,5 @@ HISTORY of mips64emul
 		Increasing performance by assuming that instruction loads
 		(reading from memory) will be at the same page as the last
 		load.  (Several percent speedup.)
+		Moving the list of kernels that can be found on the net from
+		README to doc/.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.17 2004-03-23 02:30:56 debug Exp $
+ *  $Id: arcbios.c,v 1.18 2004-06-06 10:22:58 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -361,6 +361,42 @@ void arcbios_emul(struct cpu *cpu)
 			}
 
 			cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
+		}
+		break;
+	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
+		if (cpu->gpr[GPR_A0] == 0) {	/*  0 = stdin?  */
+			int i, nread = 0;
+			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
+				unsigned char ch;
+
+				if (!console_charavail())
+					break;
+
+				ch = console_readchar();
+				nread ++;
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+			}
+			store_32bit_word(cpu->gpr[GPR_A3], nread);
+			cpu->gpr[GPR_V0] = nread? 0: 1;	/*  TODO ?  */
+		} else {
+			fatal("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
+			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
+			/*  TODO  */
+			cpu->gpr[GPR_V0] = 0;
+		}
+		break;
+	case 0x68:		/*  GetReadStatus(handle)  */
+		/*
+		 *  According to arcbios_tty_getchar() in NetBSD's
+		 *  dev/arcbios/arcbios_tty.c, GetReadStatus should
+		 *  return 0 if there is something available.
+		 */
+		if (cpu->gpr[GPR_A0] == 0) {	/*  0 = stdin?  */
+			cpu->gpr[GPR_V0] = console_charavail()? 0 : 1;
+		} else {
+			fatal("[ ARCBIOS GetReadStatus(%i) ]\n", (int)cpu->gpr[GPR_A0]);
+			/*  TODO  */
+			cpu->gpr[GPR_V0] = 1;
 		}
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.21 2004-07-16 23:04:20 debug Exp $
+$Id: RELEASE,v 1.22 2004-07-17 19:37:56 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -203,6 +203,8 @@ freely available, so I guess thanking them like this is in order:
 
     This product includes software developed at Ludd, University of
     Luleå, Sweden and its contributors.
+
+    mgras.h is Copyright (C) 2004 by Stanislaw Skowronek.
 
 
 See individual files for details.

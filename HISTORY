@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.164 2004-07-17 12:00:13 debug Exp $
+$Id: HISTORY,v 1.165 2004-07-17 19:37:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -798,3 +798,9 @@ HISTORY of mips64emul
 		More 64-bit ARCS updates (memory descriptors etc).
 		Better memory offset fix for IP30. (Hopefully this doesn't
 		break anything else.)
+		Adding a MardiGras graphics controller skeleton
+		(dev_sgi_mardigras.c).
+		Thanks to Stanislaw Skowronek for dual-licensing mgras.h.
+		Finally rewrote get_symbol_name() to O(log n) instead of O(n)
+		(Stanislaw's Linux kernel had so many symbols that tracing
+		with the old get_symbol_name() was unbareably slow).

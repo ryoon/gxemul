@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.8 2004-06-28 23:00:04 debug Exp $
+ *  $Id: memory.h,v 1.9 2004-08-04 17:00:22 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -49,7 +49,6 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, 
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
 #define	MEMORY_ACCESS_FAILED	0
 #define	MEMORY_ACCESS_OK	1
-#define	INSTR_BINTRANS		2
 
 void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
 	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.67 2004-08-03 14:26:52 debug Exp $
+ *  $Id: memory.c,v 1.68 2004-08-04 17:00:21 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1091,7 +1091,6 @@ exception:
  *  Returns one of the following:
  *	MEMORY_ACCESS_FAILED
  *	MEMORY_ACCESS_OK
- *	INSTR_BINTRANS		(TODO)
  *
  *  (MEMORY_ACCESS_FAILED is 0.)
  */

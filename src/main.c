@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.153 2005-01-19 08:44:53 debug Exp $
+ *  $Id: main.c,v 1.154 2005-01-19 09:48:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -766,6 +766,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		emul->n_gfx_cards = 0;
 
 	emul->bintrans_enabled_from_start = emul->bintrans_enable;
+
+	emul->n_machines = 1;
 
 	return 0;
 }

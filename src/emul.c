@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.114 2005-01-19 08:44:53 debug Exp $
+ *  $Id: emul.c,v 1.115 2005-01-19 09:48:33 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -249,6 +249,9 @@ struct emul *emul_new(void)
 	memset(e, 0, sizeof(struct emul));
 
 	/*  Sane default values:  */
+	e->n_machines = 0;
+
+	/*  TODO: move these into struct machine  */
 	e->emulation_type = EMULTYPE_NONE;
 	e->machine = MACHINE_NONE;
 	e->prom_emulation = 1;
@@ -261,6 +264,7 @@ struct emul *emul_new(void)
 	e->n_gfx_cards = 1;
 	e->dbe_on_nonexistant_memaccess = 1;
 	e->show_symbolic_register_names = 1;
+
 	return e;
 }
 
@@ -355,36 +359,26 @@ static void add_arc_components(struct emul *emul)
 
 
 /*
- *  emul():
+ *  emul_machine_start():
  *
  *	o)  Initialize the hardware (RAM, devices, CPUs, ...) which
- *	    will be emulated.
+ *	    will be emulated in this machine.
  *
  *	o)  Load ROM code and/or other programs into emulated memory.
  *
  *	o)  Special hacks needed after programs have been loaded.
- *
- *	o)  Start running instructions on the bootstrap cpu.
  */
-void emul_start(struct emul *emul)
+static void emul_machine_start(struct emul *emul)
 {
 	struct memory *mem;
 	int i, iadd=4;
 	uint64_t addr, memory_amount;
 
-	/*  Print startup message:  */
-	debug("mips64emul");
-#ifdef VERSION
-	debug("-" VERSION);
-#endif
-	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the documentation and/or source code for other Copyright notices.\n");
-
-	debug("Setting up...\n");
-	debug_indentation(iadd);
-
-	srandom(time(NULL));
-	atexit(fix_console);
+	if (emul->n_machines > 1) {
+		/*  TODO: multiple machines  */
+		debug("machine 0:\n");
+		debug_indentation(iadd);
+	}
 
 	/*  Create the system's memory:  */
 	debug("adding main memory: %i MB", emul->physical_ram_in_mb);
@@ -452,12 +446,11 @@ void emul_start(struct emul *emul)
 
 	if (emul->userland_emul) {
 		/*
-		 *  For userland-only emulation, no machine emulation or
-		 *  network emulation is needed.
+		 *  For userland-only emulation, no machine emulation
+		 *  is needed.
 		 */
 	} else {
 		machine_init(emul, mem);
-		net_init();
 	}
 
 	diskimage_dump_info();
@@ -526,6 +519,48 @@ void emul_start(struct emul *emul)
 	if ((emul->emulation_type == EMULTYPE_ARC ||
 	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
 		add_arc_components(emul);
+
+	if (emul->n_machines > 1)
+		debug_indentation(-iadd);
+}
+
+
+/*
+ *  emul():
+ *
+ *	o)  Initialize networks.
+ *
+ *	o)  Initialize machines to be simulated.
+ *
+ *	o)  Start running instructions on the bootstrap cpu(s).
+ */
+void emul_start(struct emul *emul)
+{
+	int i, iadd=4;
+
+	/*  Print startup message:  */
+	debug("mips64emul");
+#ifdef VERSION
+	debug("-" VERSION);
+#endif
+	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("Read the documentation and/or source code for other Copyright notices.\n");
+
+	debug("Setting up...\n");
+	debug_indentation(iadd);
+
+	srandom(time(NULL));
+	atexit(fix_console);
+
+	/*  Create a network:  */
+	if (emul->userland_emul) {
+		/*  For userland-only, no network emulation is used.  */
+	} else {
+		net_init();
+	}
+
+	/*  TODO: call this for _each_ machine  */
+	emul_machine_start(emul);
 
 	debug_indentation(-iadd);
 

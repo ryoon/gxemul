@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.135 2005-01-19 08:44:53 debug Exp $
+ *  $Id: bintrans.c,v 1.136 2005-01-19 09:48:33 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -218,15 +218,19 @@ static int bintrans_32bit_only = 0;
 /*  Include host architecture specific bintrans code:  */
 
 #ifdef ALPHA
+#define BACKEND_NAME "Alpha"
 #include "bintrans_alpha.c"
 #else
 #ifdef I386
+#define BACKEND_NAME "i386"
 #include "bintrans_i386.c"
 #else
 #ifdef MIPS
+#define BACKEND_NAME "MIPS"
 #include "bintrans_mips.c"
 #else
 #ifdef SPARCV9
+#define BACKEND_NAME "UltraSPARC"
 #include "bintrans_sparcv9.c"
 #else
 #error Unsupported host architecture for bintrans.
@@ -1037,7 +1041,7 @@ void bintrans_init(struct memory *mem)
 		}
 	}
 
-	debug("bintrans: %i MB translation cache at %p\n",
+	debug("bintrans: "BACKEND_NAME", %i MB translation cache at %p\n",
 	    (int)(s/1048576), translation_code_chunk_space);
 
 	/*

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.21 2005-01-17 07:58:55 debug Exp $
+ *  $Id: emul.h,v 1.22 2005-01-19 09:48:32 debug Exp $
  */
 
 #include "misc.h"
@@ -41,6 +41,12 @@
 #include "symbol.h"
 
 struct emul {
+	int	n_machines;
+	int	verbose;
+
+
+	/*  TODO: move these into a new struct, struct machine  */
+
 	char	emul_cpu_name[CPU_NAME_MAXLEN];
 	int	emulation_type;
 	int	machine;
@@ -63,6 +69,7 @@ struct emul {
 	int	breakpoint_flags[MAX_BREAKPOINTS];
 
 	/*  Cache sizes: (1 << x) x=0 for default values  */
+	/*  TODO: these are _PER CPU_!  */
 	int	cache_picache;
 	int	cache_pdcache;
 	int	cache_secondary;
@@ -99,7 +106,6 @@ struct emul {
 	int	exit_without_entering_debugger;
 
 	int	show_trace_tree;
-	int	verbose;
 
 	int	n_gfx_cards;
 

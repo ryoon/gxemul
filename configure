@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.59 2004-09-16 11:45:22 debug Exp $
+#  $Id: configure,v 1.60 2004-09-17 20:50:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -263,6 +263,11 @@ if [ z$NOX11 = z ]; then
 			XOK=1
 		fi
 		rm -f _test_x11 _test_x11.o
+	fi
+
+	if [ z`uname` = zNetBSD ]; then
+		echo "Using NetBSD hack for X11 libs..."
+		XLIB="$XLIB -Wl,-rpath,/usr/X11R6/lib"
 	fi
 
 	if [ z$XOK = z0 ]; then

@@ -39,7 +39,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  inet_ntoa detection on HP-UX is probably broken
 		o)  Use getopts?
 		o)  X11 libs and headers via command line option?
-		o)  NetBSD X11 linking vs runtime issue?
 
 	Command line option parsing:
 		o)  Use only one letter for selecting machine type (followed

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_mips.h,v 1.1 2005-02-01 14:39:37 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.2 2005-03-15 06:52:15 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  */
@@ -178,6 +178,9 @@
 #define	    COP0_TLBP			    0x08    /*  01000  */
 #define	    COP0_RFE			    0x10    /*  10000  */
 #define	    COP0_ERET			    0x18    /*  11000  */
+#define	    COP0_STANDBY		    0x21
+#define	    COP0_SUSPEND		    0x22
+#define	    COP0_HIBERNATE		    0x23
 #define	HI6_COP1			0x11	/*  010001  */
 #define	HI6_COP2			0x12	/*  010010  */
 #define	HI6_COP3			0x13	/*  010011  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.10 2005-03-14 12:49:17 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.11 2005-03-15 06:52:14 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2585,7 +2585,7 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 
 	/*  TLB operations and other things:  */
 	if (cp->coproc_nr == 0) {
-		op = (function) & 31;
+		op = (function) & 0xff;
 		switch (co_bit) {
 		case 1:
 			switch (op) {
@@ -2644,6 +2644,27 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 					return;
 				}
 				coproc_eret(cpu);
+				return;
+			case COP0_STANDBY:
+				if (unassemble_only) {
+					debug("standby\n");
+					return;
+				}
+				/*  TODO: Hm. Do something here?  */
+				return;
+			case COP0_SUSPEND:
+				if (unassemble_only) {
+					debug("suspend\n");
+					return;
+				}
+				/*  TODO: Hm. Do something here?  */
+				return;
+			case COP0_HIBERNATE:
+				if (unassemble_only) {
+					debug("hibernate\n");
+					return;
+				}
+				/*  TODO: Hm. Do something here?  */
 				return;
 			default:
 				;

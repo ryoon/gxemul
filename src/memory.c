@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.33 2004-06-10 04:23:06 debug Exp $
+ *  $Id: memory.c,v 1.34 2004-06-13 10:31:52 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -368,6 +368,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 *  TODO:  Make this correct.
 		 */
 		switch (vaddr >> 60) {
+		case 8:
 		case 9:		/*  0x9000...  */
 			/*
 			 *  On IP30, addresses such as 0x900000001f600050 are used,

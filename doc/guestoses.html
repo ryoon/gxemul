@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.7 2005-02-09 21:02:36 debug Exp $
+$Id: guestoses.html,v 1.8 2005-02-09 21:29:47 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
   <li><a href="#netbsdarcinstall">How to install NetBSD/arc in the emulator</a>
+  <li><a href="#netbsdsgimips">How to run NetBSD/sgimips in the emulator</a>
   <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
   <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in the emulator</a>
   <li><a href="#openbsdsgiinstall">How to run OpenBSD/sgi in the emulator</a>
@@ -278,6 +279,29 @@ option and try again.
 
 
 
+
+
+
+<p><br>
+<a name="netbsdsgimips"></a>
+<h3>How to run NetBSD/sgimips in the emulator:</h3>
+
+<a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
+can theoretically run in mips64emul on an emulated O2 (SGI-IP32)
+with root on nfs.
+
+<p>
+<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+
+<p>
+See the section on <a href="#openbsdsgiinstall">how to run OpenBSD/sgi</a>
+for more information.
+
+
+
+
+
+
 <p><br>
 <a name="openbsdinstall"></a>
 <h3>How to install OpenBSD/pmax in the emulator:</h3>
@@ -498,15 +522,17 @@ to try to remove that from the command line.)
 <a name="openbsdsgiinstall"></a>
 <h3>How to run OpenBSD/sgi in the emulator:</h3>
 
-OpenBSD/sgi for SGI-IP32 ("O2") can theoretically run with root on nfs.
+<a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
+can theoretically run in mips64emul on an emulated O2 (SGI-IP32)
+with root on nfs.
 
 <p>
 <font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
 
 <p>
-[&nbsp;2005-02-06: OpenBSD/sgi has not had an official release yet, but
--current snapshots are available. See <a href="http://www.openbsd.org/sgi.html">http://www.openbsd.org/sgi.html</a>
-for more information about OpenBSD on SGI machines.&nbsp;]
+<font color="#0000f0">
+[&nbsp;2005-02-09: There is no stable release yet of OpenBSD/sgi, but there
+are -current snapshots available on ftp sites.&nbsp;]</font>
 
 <p>
 mips64emul does not yet emulate the AHC PCI SCSI controller in the O2, so 
@@ -544,14 +570,19 @@ client. Performing this setup is very time consuming, but necessary.
 	# <b>for a in base* etc* misc*; do tar vzxfp $a; done</b>
 	# <b>dd if=/dev/zero of=swap bs=1024 count=16384</b>
 
-	If you really want to check that the export works, try this too:
+	If you want to check that the export works, try this:
 
 	# <b>mount -v localhost:/x /mnt; ls /mnt; umount /mnt</b>
 
 </pre>
   <p>
   <li>Create a configuration file along these lines:<pre>
-	<font color="#2020cf">!!mips64emul</font>
+	<font color="#2020cf">!!mips64emul
+	!
+	!  Configuration file for running OpenBSD/sgi diskless with
+	!  a NetBSD/pmax machine as the nfs server.
+	!
+	!  Change the filenames to suit your setup.</font>
 
 	<b>emul(
 	    net()
@@ -575,8 +606,6 @@ client. Performing this setup is very time consuming, but necessary.
 	)</b>
 
 </pre>
-	Of course, you will need to change it to suit your system.
-  <p>
   <li>Boot the nfs server and the OpenBSD/sgi client machine like this:<pre>
 	$ <b>./mips64emul @myconf</b>
 

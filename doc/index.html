@@ -19,6 +19,7 @@
 <ul>
   <li><a href="#overview">Overview</a>
   <li><a href="#build">How to compile/build the emulator</a>
+  <li><a href="#use">How to use the emulator</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#feedback">Feedback</a>
 </ul>
@@ -41,6 +42,70 @@ Uncompress the .tar.gz file, and run
 	$ <b>./configure</b>
 	$ <b>make</b>
 </pre>
+
+
+<p><br>
+<a name="use"></a>
+<h4>How to use the emulator:</h4>
+
+The emulator contains code which tries to emulate the workings of MIPS-like CPUs
+and surrounding hardware found in real machines, but no actual ROM code or program
+code.  You will need some form of program to run in the emulator.  You can use
+pre-compiled kernels (for example NetBSD or Linux), ROM images, or programs that
+you have compiled from source. A couple of different file formats are supported
+(ELF, a.out, SREC, raw binaries).
+<p>
+As an example, let's say you want to emulate a Silicon Graphics O2 machine.
+This machine type is also known as IP32, in the SGI namespace. Let's also
+say that you want to run NetBSD on this emulated machine. A pre-compiled kernel
+for NetBSD/sgimips can be found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz">netbsd-INSTALL.gz</a>
+<p>
+Once you have downloaded the kernel and gunzip'd it, you can try it out in the
+emulator like this:
+<pre>
+	$ <b>./mips64emul -G32 -q netbsd-INSTALL</b>
+</pre>
+-G signifies that we want SGI emulation, and 32 is the SGI-specific machine type.
+-q supresses debug messages. If everything works like it should, you should see NetBSD's boot messages...
+<pre>
+	$ <b>./mips64emul -G32 -q netbsd-INSTALL</b>
+	zs channel 0 had address 0xbfbd9830
+	 [ no symbols available ]
+	CPU clock speed = 3.00Mhz
+	Copyright (c) 1996, 1997, 1998, 1999, 2000, 2001, 2002
+	    The NetBSD Foundation, Inc.  All rights reserved.
+	Copyright (c) 1982, 1986, 1989, 1991, 1993
+	    The Regents of the University of California.  All rights reserved.
+
+	NetBSD 1.6.1 (RAMDISK) #0: Wed Apr  9 00:56:44 UTC 2003
+	    autobuild@tgm.daemon.org:/autobuild/netbsd-1-6/sgimips/OBJ/autobuild/netbsd-1-6/src/sys/arch/sgimips/compile/RAMDISK
+	32768 KB memory, 29988 KB free, 0 for ARCS, 1740 KB in 435 buffers
+	mainbus0 (root): SGI-IP32 [SGI, 8], 1 processor
+	cpu0 at mainbus0: MIPS R5000 CPU (0x2321) Rev. 2.1 with built-in FPU Rev. 2.1
+	cpu0: 32KB/32B 2-way set-associative L1 Instruction cache, 48 TLB entries
+	cpu0: 32KB/32B 2-way set-associative write-back L1 Data cache
+	...
+</pre>
+... and after a while be able to interact with sysinst, NetBSD's install program.
+<p>
+To exit the emulator, type CTRL-C. By typing CTRL-B instead, a CTRL-C is sent to
+the emulated program.
+<p>
+For some emulated machine types, a graphical framebuffer console is supported.
+NetBSD/pmax (kernel found <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz">here</a>)
+running on an emulated DECstation 5000 supports this:
+<pre>
+	$ <b>./mips64emul -D2 -X -Y2 -q -I500000 -M12 netbsd-INSTALL</b>
+</pre>
+-D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
+framebuffer; -Y2 is used to scale down the window by a factor 2x2; -q supresses
+debug output; -I500000 lets the emulated clock chip on DECstations have
+a more realistic pace; and -M12 sets the amount of emulated memory to 12 MB.
+The result should looks something like this:
+<p>
+<center>
+<img src="netbsd-pmax-framebuffer.gif">
+</center>
 
 
 <p><br>

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.19 2004-06-06 10:32:33 debug Exp $
+ *  $Id: arcbios.c,v 1.20 2004-06-06 10:37:08 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -390,6 +390,8 @@ void arcbios_emul(struct cpu *cpu)
 		 *  According to arcbios_tty_getchar() in NetBSD's
 		 *  dev/arcbios/arcbios_tty.c, GetReadStatus should
 		 *  return 0 if there is something available.
+		 *
+		 *  TODO: Error codes are things like ARCBIOS_EAGAIN.
 		 */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			cpu->gpr[GPR_V0] = console_charavail()? 0 : 1;

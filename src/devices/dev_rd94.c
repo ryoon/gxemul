@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.1 2003-12-30 03:08:57 debug Exp $
+ *  $Id: dev_rd94.c,v 1.2 2003-12-30 04:32:14 debug Exp $
  *  
- *  RD94 "Jazz".
+ *  RD94 jazzio.
  */
 
 #include <math.h>
@@ -42,7 +42,9 @@
 struct rd94_data {
 	uint32_t	reg[DEV_RD94_LENGTH / 4];
 
+	int		intmask;
 	int		interval;
+	int		interval_start;
 };
 
 
@@ -53,11 +55,11 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 {
 	struct rd94_data *d = extra;
 
-	if (d->interval > 0) {
+	if (d->interval_start > 0 && d->interval > 0 && d->intmask!=0) {		/*  ??? !=0  */
 		d->interval --;
-		if (d->interval < 1) {
+		if (d->interval <= 0) {
+			debug("[ rd94: interval timer interrupt ]\n");
 			cpu_interrupt(cpu, 5);
-			d->interval = 0;
 		}
 	}
 }
@@ -89,12 +91,43 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case RD94_SYS_INTSTAT1:		/*  LB (Local Bus ???)  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			/*  Return value is (irq level + 1) << 2  */
+			odata = 9 << 2;
+		}
+		debug("[ rd94: intstat1 ]\n");
+/*		cpu_interrupt_ack(cpu, 3); */
+		break;
+	case RD94_SYS_INTSTAT2:		/*  PCI/EISA  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0;	/*  TODO  */
+		}
+		debug("[ rd94: intstat2 ]\n");
+/*		cpu_interrupt_ack(cpu, 4); */
+		break;
 	case RD94_SYS_INTSTAT3:		/*  IT (Interval Timer)  */
 		if (writeflag == MEM_WRITE) {
 		} else {
 			odata_set = 1;
-			odata = d->interval==0? 1 : 0;
+			odata = 0;	/*  return value does not matter?  */
 		}
+		debug("[ rd94: intstat3 ]\n");
+		cpu_interrupt_ack(cpu, 5);
+		d->interval = d->interval_start;
+		break;
+	case RD94_SYS_INTSTAT4:		/*  IPI  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata_set = 1;
+			odata = 0;	/*  return value does not matter?  */
+		}
+		debug("[ rd94: intstat4 ]\n");
+		cpu_interrupt_ack(cpu, 6);
 		break;
 	case RD94_SYS_CPUID:
 		if (writeflag == MEM_WRITE) {
@@ -103,14 +136,21 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			odata = cpu->cpu_id;
 		}
 		break;
-	case RD94_SYS_IT_VALUE:
+	case RD94_SYS_EXT_IMASK:
 		if (writeflag == MEM_WRITE) {
-			d->interval = idata;
-			debug("[ rd94: setting Interval Timer value to %i ]\n", idata);
-			cpu_interrupt_ack(cpu, 5);
+			d->intmask = idata;
 		} else {
 			odata_set = 1;
-			odata = d->interval;
+			odata = d->intmask;
+		}
+		break;
+	case RD94_SYS_IT_VALUE:
+		if (writeflag == MEM_WRITE) {
+			d->interval = d->interval_start = idata;
+			debug("[ rd94: setting Interval Timer value to %i ]\n", idata);
+		} else {
+			odata_set = 1;
+			odata = d->interval_start;	/*  TODO: or d->interval ?  */;
 		}
 		break;
 	case RD94_SYS_PCI_CONFADDR:
@@ -126,6 +166,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
 		} else {
 			debug("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
+			odata_set = 1;
 		}
 	}
 
@@ -156,6 +197,6 @@ void dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct rd94_data));
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH, dev_rd94_access, (void *)d);
-	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);		/*  every 1024:th cycle  */
+	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);
 }
 

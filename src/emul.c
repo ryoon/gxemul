@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.32 2004-07-16 18:19:45 debug Exp $
+ *  $Id: emul.c,v 1.33 2004-07-17 12:00:14 debug Exp $
  *
  *  Emulation startup.
  */
@@ -255,6 +255,10 @@ void emul(void)
 	    || machine == 24 || machine == 26)) {
 		debug(" (offset by 128MB, SGI hack)");
 		memory_amount += 128 * 1048576;
+	}
+	if (emulation_type == EMULTYPE_SGI && (machine == 28 || machine == 30)) {
+		debug(" (offset by 512MB, SGI hack)");
+		memory_amount += 0x20000000;
 	}
 	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK,
 	    memory_amount, DEFAULT_MAX_BITS);

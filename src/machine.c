@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.140 2004-07-17 10:27:19 debug Exp $
+ *  $Id: machine.c,v 1.141 2004-07-17 12:00:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -230,7 +230,7 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
 
@@ -253,7 +253,7 @@ void store_32bit_word(uint64_t addr, uint64_t data32)
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
-	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
 
@@ -268,7 +268,7 @@ uint32_t load_32bit_word(uint64_t addr)
 	unsigned char data[4];
 
 	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr,
-	    data, sizeof(data), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+	    data, sizeof(data), MEM_READ, CACHE_DATA);
 
 	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
@@ -383,7 +383,7 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-	debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
+	/*  debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt) {
 		/*  OR into the INTR:  */
@@ -1590,9 +1590,15 @@ void machine_init(struct memory *mem)
 			/*  Special cases for IP20,22,24,26 memory offset:  */
 			if (machine == 20 || machine == 22 ||
 			    machine == 24 || machine == 26) {
-				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, 128*1048576);
-				dev_ram_init(mem, 0x00050000, 128*1048576-0x50000, DEV_RAM_MIRROR, 128*1048576 + 0x50000);
 				sgi_ram_offset = 128*1048576;
+				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
+				dev_ram_init(mem, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
+			}
+
+			/*  Special cases for IP28,30 memory offset:  */
+			if (machine == 28 || machine == 30) {
+				sgi_ram_offset = 0x20000000;	/*  TODO: length below should maybe not be 128MB?  */
+				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
 		} else {
 			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
@@ -1779,19 +1785,19 @@ void machine_init(struct memory *mem)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Impact Indigo2 ?)");
-				dev_ram_init(mem, 0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0);
 				break;
 			case 30:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Octane)");
-				dev_ram_init(mem, 0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
 				/*  This is something unknown:  */
 				dev_sgi_ip30_init(cpus[bootstrap_cpu], mem, 0x0ff00000);
 
 				/*
 				 *  Something at paddr=1f022004: TODO
+				 *  Something at paddr=813f0510 - paddr=813f0570 ?
+				 *  Something at paddr=813f04b8
 				 *  Something at paddr=f8000003c  used by Linux/Octane
 				 *
 				 *  16550 serial port at paddr=1f620178, addr mul 1

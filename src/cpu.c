@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.51 2004-05-04 11:11:20 debug Exp $
+ *  $Id: cpu.c,v 1.52 2004-05-06 03:51:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -544,10 +544,13 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		return 0;
 	}
 
+	cpu->bintrans_last_was_jump = 0;
+
 	if (cpu->delay_slot) {
 		if (cpu->delay_slot == DELAYED) {
 			cpu->pc = cpu->delay_jmpaddr;
 			cpu->delay_slot = NOT_DELAYED;
+			cpu->bintrans_last_was_jump = 1;
 		}
 		if (cpu->delay_slot == TO_BE_DELAYED) {
 			/*  next instruction will be delayed  */
@@ -733,7 +736,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		if (!instr_fetched)
 			return 0;
 
-		if (bintrans_enable && (cpu->delay_slot==0 && cpu->nullify_next==0)) {
+		if (bintrans_enable && cpu->bintrans_last_was_jump && cpu->delay_slot==0 && cpu->nullify_next==0) {
 			/*
 			 *  Binary translation:
 			 */

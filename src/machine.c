@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.38 2004-01-10 11:38:25 debug Exp $
+ *  $Id: machine.c,v 1.39 2004-01-12 00:17:12 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -66,6 +66,8 @@ extern char *last_filename;
 uint64_t file_loaded_end_addr = 0;
 
 extern struct memory *GLOBAL_gif_mem;
+
+int (*machine_irq)(int, int) = NULL;
 
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
@@ -200,6 +202,34 @@ void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
 	data[1] = (data16) & 255;
 	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
+	}
+}
+
+
+/**************************************************************/
+
+
+/*  TODO:  how should all this be done nicely?  */
+int sgi_mace_machine_irq(int assrt, int irqnr)
+{
+	static uint32_t mace_interrupts = 0;
+
+/*	printf("sgi_mace_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irqnr, mace_interrupts);  */
+	if (assrt)
+		mace_interrupts |= irqnr;
+	else
+		mace_interrupts &= ~irqnr;
+
+	if (assrt) {
+		if (mace_interrupts == 0)
+			return 0;
+		else
+			return 2;
+	} else {
+		if (mace_interrupts == 0)
+			return 2;
+		else
+			return 0;
 	}
 }
 
@@ -686,12 +716,12 @@ void machine_init(struct memory *mem)
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
-		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);
-		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);
+		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, 7);
+		/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
 		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
 		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
-		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);
+		/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -901,6 +931,9 @@ void machine_init(struct memory *mem)
 		 *	[Serial]
 		 *	[SCSI]
 		 *	    [Disk]
+		 *
+		 *  Here's a good list of what hardware is in different IP-models:
+		 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
 		 */
 
 		if (emulation_type == EMULTYPE_SGI) {
@@ -942,6 +975,8 @@ void machine_init(struct memory *mem)
 				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");
+				/*  2 cpus per node  */
+
 				/*
 				 *  IRIX reads from the following addresses, so there's probably
 				 *  something interesting there:
@@ -954,25 +989,30 @@ void machine_init(struct memory *mem)
 				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
 				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 				break;
+			case 28:
+				strcat(machine_name, " (Impact Indigo2 ?)");
+				break;
 			case 30:
 				strcat(machine_name, " (Octane)");
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");
 
-
-dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
+/*
 dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-
+*/
 				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
-				dev_sgi_mte_init(mem, 0x15000000);		/*  mte ??? memory thing  */
-				dev_sgi_gbe_init(mem, 0x16000000);		/*  gbe?  framebuffer?  */
+				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
+				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
+				/*  0x17000000: something called 'VICE' in linux  */
 				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
-				pci_data = dev_macepci_init(mem, 0x1f080000);	/*  macepci0  */
-				/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */
+				pci_data = dev_macepci_init(mem, 0x1f080000, 8);	/*  macepci0  */
+				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
 				/*
 				 *  A combination of NetBSD and Linux info:
 				 *
@@ -993,8 +1033,9 @@ dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 				 * 	  1f398000	  com1 (serial)
 				 * 	  1f3a0000	  mcclock0
 				 */
-				dev_mace_init(mem, 0x1f310000);						/*  mace0  */
-				dev_pckbc_init(mem, 0x1f320000, 0);					/*  ???  */
+				dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
+				machine_irq = sgi_mace_machine_irq;
+				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200, 0x800);	/*  keyb+mouse (mace irq numbers)  */
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
@@ -1004,21 +1045,19 @@ dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
 				 *
-				 *	# PCI network devices
 				 *	ne*             at pci? dev ? function ?
-				 *
-				 *	# O2 SCSI
 				 *	ahc0            at pci0 dev 1 function ?
 				 *	ahc1            at pci0 dev 2 function ?
 				 */
 
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
+				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;
 			case 35:
 				strcat(machine_name, " (Origin 3000)");
+				/*  4 cpus per node  */
 				break;
 			default:
 				fatal("unimplemented SGI machine type IP%i\n", machine);
@@ -1030,9 +1069,9 @@ dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 
 			/*  TODO:  sync devices and component tree  */
 			/*  TODO 2: These are model dependant!!!  */
-			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000);
+			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 8);
 			dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
-			dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
+			dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
 			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
 			/*  lpt at 0x2000008000  */
@@ -1109,15 +1148,23 @@ case arc_CacheClass:
 		 */
 
 		store_string(ARC_ARGV_START + 0x100, bootstr);
+
+		if (use_x11) {
+			store_string(ARC_ARGV_START + 0x180, "console=g");
+			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
+			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=video()");
+		} else {
 #if 1
-		store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
+			store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 #else
-		store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
+			store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
 #endif
-		store_string(ARC_ARGV_START + 0x200, "root=nfs");
-		store_string(ARC_ARGV_START + 0x220, "cpufreq=3");
-		store_string(ARC_ARGV_START + 0x240, "dbaud=9600");
-		store_string(ARC_ARGV_START + 0x260, "OSLOADOPTIONS=-v");
+			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
+			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");
+		}
+
+		store_string(ARC_ARGV_START + 0x240, "cpufreq=3");
+		store_string(ARC_ARGV_START + 0x260, "dbaud=9600");
 		store_string(ARC_ARGV_START + 0x280, "verbose=istrue");
 		store_string(ARC_ARGV_START + 0x2a0, "showconfig=istrue");
 		store_string(ARC_ARGV_START + 0x2c0, bootarg);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.145 2005-01-21 19:50:19 debug Exp $
+ *  $Id: memory.c,v 1.146 2005-01-23 11:19:39 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -42,6 +42,7 @@
 #include "bintrans.h"
 #include "cop0.h"
 #include "memory.h"
+#include "mips_cpu.h"
 
 
 extern int quiet_mode;

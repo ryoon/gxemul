@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.165 2005-01-23 10:47:18 debug Exp $
+ *  $Id: main.c,v 1.166 2005-01-23 11:19:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -41,6 +41,7 @@
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
+#include "mips_cpu.h"
 
 
 extern int optind;

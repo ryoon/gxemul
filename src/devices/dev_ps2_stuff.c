@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.10 2005-01-12 08:45:49 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.11 2005-01-23 11:19:36 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -38,12 +38,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
-#include "ps2_dmacreg.h"
 #include "ee_timerreg.h"
+#include "ps2_dmacreg.h"
 
 #define	TICK_STEPS_SHIFT	16
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.17 2005-01-15 05:53:59 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.18 2005-01-23 11:19:36 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -35,10 +35,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
 
 /*  Let's hope nothing is there already...  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.10 2005-01-21 15:22:18 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.11 2005-01-23 11:19:36 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -47,6 +47,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
 #include "net.h"
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.25 2005-01-18 07:28:49 debug Exp $
+ *  $Id: dev_vga.c,v 1.26 2005-01-23 11:19:36 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -44,10 +44,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
+/*  These are generated from binary font files:  */
 #include "fonts/font8x8.c"
 #include "fonts/font8x10.c"
 #include "fonts/font8x16.c"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.14 2005-01-09 04:17:18 debug Exp $
+ *  $Id: dev_ssc.c,v 1.15 2005-01-23 11:19:36 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -37,10 +37,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
 
 #define	RX_INT_ENABLE	0x40

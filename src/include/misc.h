@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.207 2005-01-23 10:47:17 debug Exp $
+ *  $Id: misc.h,v 1.208 2005-01-23 11:19:37 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -46,16 +46,12 @@
 #include "../config.h"
 
 /*  
- *  ENABLE_MIPS16 should be defined on the cc commandline using -D, if you 
- *  want it. (This is done by ./configure --mips16)
- *
  *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using
  *  -D if you want it. (This is done by ./configure --delays)
  */
 #define USE_TINY_CACHE
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
-/*  #define MFHILO_DELAY  */
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>
@@ -146,9 +142,6 @@ struct memory {
 
 #define	MAX_TICK_FUNCTIONS	12
 
-
-#include "mips_cpu.h"
-
 #define	CACHE_DATA			0
 #define	CACHE_INSTRUCTION		1
 #define	CACHE_NONE			2
@@ -181,53 +174,12 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
 	uint64_t revision, uint64_t key, uint64_t affinitymask,
-	char *identifier, uint64_t parent, void *config_data, size_t config_len);
+	char *identifier, uint64_t parent, void *config_data,
+	size_t config_len);
 void arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
 void arcbios_init(void);
-
-
-/*  coproc.c:  */
-struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
-void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
-	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
-	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
-	int cachealgo0, int cachealgo1);
-void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-	unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void clear_all_chunks_from_all_tables(struct cpu *cpu);
-void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
-void coproc_register_read(struct cpu *cpu,
-	struct coproc *cp, int reg_nr, uint64_t *ptr);
-void coproc_register_write(struct cpu *cpu,
-	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
-void coproc_tlbpr(struct cpu *cpu, int readflag);
-void coproc_tlbwri(struct cpu *cpu, int randomflag);
-void coproc_rfe(struct cpu *cpu);
-void coproc_eret(struct cpu *cpu);
-void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
-	uint32_t function, int unassemble_only, int running);
-
-
-/*  cpu.c:  */
-struct cpu *cpu_new(struct memory *mem, struct machine *machine,
-	int cpu_id, char *cpu_type_name);
-void cpu_show_full_statistics(struct machine *m);
-void cpu_add_tickfunction(struct cpu *cpu,
-	void (*func)(struct cpu *, void *), void *extra, int clockshift);
-void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-	int running, uint64_t addr, int bintrans);
-int cpu_interrupt(struct cpu *cpu, int irq_nr);
-int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
-void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
-	int vaddr_asid, int x_64);
-void cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
-void cpu_run_init(struct emul *emul, struct machine *machine);
-int cpu_run(struct emul *emul, struct machine *machine);
-void cpu_run_deinit(struct emul *emul, struct machine *machine);
 
 
 /*  debugger:  */
@@ -319,4 +271,3 @@ void x11_check_event(void);
 
 
 #endif	/*  MISC_H  */
-

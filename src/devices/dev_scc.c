@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.17 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_scc.c,v 1.18 2005-01-23 11:19:36 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -46,10 +46,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
 #include "sccreg.h"
 

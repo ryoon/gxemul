@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.31 2005-01-21 15:22:18 debug Exp $
+ *  $Id: dev_le.c,v 1.32 2005-01-23 11:19:36 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -57,6 +57,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
 #include "net.h"
 
@@ -601,8 +602,9 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 /*
  *  dev_le_sram_access():
  */
-int dev_le_sram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_le_sram_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	int i, retval;
 	struct le_data *d = extra;

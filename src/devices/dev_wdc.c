@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.11 2005-01-20 14:25:17 debug Exp $
+ *  $Id: dev_wdc.c,v 1.12 2005-01-23 11:19:36 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -36,13 +36,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "cop0.h"
 #include "devices.h"
-
 #include "diskimage.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
+
 #include "wdcreg.h"
 
 #define	WDC_INBUF_SIZE		4096

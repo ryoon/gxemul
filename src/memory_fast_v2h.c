@@ -25,16 +25,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.5 2005-01-09 01:55:31 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.6 2005-01-23 11:19:39 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "misc.h"
+
 #include "bintrans.h"
 #include "memory.h"
+#include "mips_cpu.h"
 
 
 #ifdef BINTRANS

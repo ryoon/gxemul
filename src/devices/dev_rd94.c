@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.16 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_rd94.c,v 1.17 2005-01-23 11:19:36 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -38,7 +38,9 @@
 #include "cop0.h"
 #include "devices.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
+
 #include "rd94.h"
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.291 2005-01-23 10:47:18 debug Exp $
+ *  $Id: machine.c,v 1.292 2005-01-23 11:19:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -58,6 +58,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "opcodes.h"
 #include "symbol.h"
 

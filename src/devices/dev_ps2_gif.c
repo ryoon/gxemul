@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.21 2005-01-12 08:45:49 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.22 2005-01-23 11:19:36 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -41,9 +41,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
 
 #define	PS2_FB_ADDR	0x60000000ULL 		/*  hopefully nothing else here  */

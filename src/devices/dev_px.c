@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.20 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_px.c,v 1.21 2005-01-23 11:19:36 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -76,9 +76,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "devices.h"
+#include "memory.h"
+#include "mips_cpu.h"
+#include "misc.h"
 
 #include "pxreg.h"
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.74 2005-01-23 10:47:17 debug Exp $
+ *  $Id: arcbios.c,v 1.75 2005-01-23 11:19:38 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -49,6 +49,7 @@
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
 #include "sgi_arcbios.h"
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.17 2005-01-19 14:24:20 debug Exp $
+ *  $Id: dev_cons.c,v 1.18 2005-01-23 11:19:36 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -40,6 +40,7 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
 
 

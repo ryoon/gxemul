@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.31 2005-01-29 11:50:17 debug Exp $
+ *  $Id: dev_vga.c,v 1.32 2005-01-29 13:29:22 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -201,7 +201,7 @@ void dev_vga_tick(struct cpu *cpu, void *extra)
 
 	if (d->modified) {
 		vga_update(cpu->machine, d,
-		    d->update_x1, d->update_y1, d->update_x2, d->update_x2);
+		    d->update_x1, d->update_y1, d->update_x2, d->update_y2);
 
 		d->modified = 0;
 		d->update_x1 = 999999;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.73 2004-11-30 20:47:12 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.74 2004-11-30 20:55:23 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -913,14 +913,20 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
 {
 	uint32_t *a;
+	int alpha_rd;
+
+	alpha_rd = map_MIPS_to_Alpha[rd];
+	if (alpha_rd < 0)
+		alpha_rd = ALPHA_T0;
 
 	/*
 	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED
 	 *  and cpu->delay_jmpaddr = gpr[rs].
 	 */
-	bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_S1);
-	a = (uint32_t *) *addrp;
 
+	bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_S1);
+
+	a = (uint32_t *) *addrp;
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
 	*a++ = 0x213f0000 | TO_BE_DELAYED;
 	*addrp = (unsigned char *) a;
@@ -928,9 +934,11 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
 		a = (uint32_t *) *addrp;
-		*a++ = 0x20260008;	/*  lda t0,8(t5)  */
+		/*  lda alpha_rd,8(t5)  */
+		*a++ = 0x20060008 | (alpha_rd << 21);
 		*addrp = (unsigned char *) a;
-		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
+		if (alpha_rd == ALPHA_T0)
+			bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
 	}
 
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);

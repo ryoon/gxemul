@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.12 2004-07-02 13:43:28 debug Exp $
+ *  $Id: dec_prom.c,v 1.13 2004-07-03 18:45:04 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -307,7 +307,7 @@ void decstation_prom_emul(struct cpu *cpu)
 			cpu->running = 0;
 			break;
 		case 'b':
-			fatal("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
+			debug("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
 			cpu->running = 0;
 			break;
 		default:

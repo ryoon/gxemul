@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.40 2005-02-18 08:07:59 debug Exp $
+ *  $Id: useremul.c,v 1.41 2005-02-19 13:18:31 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -405,7 +405,7 @@ static void useremul__linux(struct cpu *cpu, uint32_t code)
 static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 {
 	int error_flag = 0, result_high_set = 0;
-	uint64_t arg0,arg1,arg2,arg3,stack0=0,stack1=0,stack2;
+	uint64_t arg0=0,arg1=0,arg2=0,arg3=0,stack0=0,stack1=0,stack2=0;
 	int sysnr = 0;
 	uint64_t error_code = 0;
 	uint64_t result_low = 0;

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.108 2005-02-19 13:00:36 debug Exp $
+#  $Id: configure,v 1.109 2005-02-19 13:18:31 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -809,8 +809,8 @@ else
 			if [ z`./_testoff` = z8 ]; then
 				CFLAGS="-D_FILE_OFFSET_BITS=64 $CFLAGS"
 				CFLAGS="-D_LARGEFILE_SOURCE $CFLAGS"
-				printf "using -D_FILE_OFFSET_BITS=64 "
-				printf "-D_LARGEFILE_SOURCE\n"
+				printf "using -D_FILE_OFFSET_BITS=64"
+				printf " -D_LARGEFILE_SOURCE\n"
 			else
 				printf "NO\n"
 				printf "Warning! No 64-bit off_t. Continuing "

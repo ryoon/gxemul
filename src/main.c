@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.210 2005-02-19 10:45:33 debug Exp $
+ *  $Id: main.c,v 1.211 2005-02-19 13:18:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -383,19 +383,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "A:abC:D:d:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "bC:d:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
 		switch (ch) {
-		case 'A':
-			m->arch = ARCH_MIPS;
-			m->machine_type = MACHINE_ARC;
-			m->machine_subtype = atoi(optarg);
-			break;
-		case 'a':
-			m->arch = ARCH_MIPS;
-			m->machine_type = MACHINE_MIPSTEST;
-			m->machine_subtype = 0;
-			break;
 		case 'b':
 			m->bintrans_enable = 1;
 			msopts = 1;
@@ -403,11 +393,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
-			break;
-		case 'D':
-			m->arch = ARCH_MIPS;
-			m->machine_type = MACHINE_DEC;
-			m->machine_subtype = atoi(optarg);
 			break;
 		case 'd':
 			diskimage_add(m, optarg);

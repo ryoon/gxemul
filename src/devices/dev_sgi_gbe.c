@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.4 2004-01-11 16:32:57 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.5 2004-03-01 15:55:38 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -263,19 +263,28 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		/*  RGB Palette:  */
 		if (relative_addr >= 0x50000 && relative_addr <= 0x503ff) {
 			int color_nr, r, g, b;
+			int old_r, old_g, old_b;
+
 			color_nr = (relative_addr & 0x3ff) / 4;
 			r = (idata >> 24) & 0xff;
 			g = (idata >> 16) & 0xff;
 			b = (idata >>  8) & 0xff;
+
+			old_r = d->fb_data->rgb_palette[color_nr * 3 + 0];
+			old_g = d->fb_data->rgb_palette[color_nr * 3 + 1];
+			old_b = d->fb_data->rgb_palette[color_nr * 3 + 2];
+
 			d->fb_data->rgb_palette[color_nr * 3 + 0] = r;
 			d->fb_data->rgb_palette[color_nr * 3 + 1] = g;
 			d->fb_data->rgb_palette[color_nr * 3 + 2] = b;
 
-			/*  If the palette has been touched, the entire image needs to be redrawn...  :-/  */
-			d->fb_data->update_x1 = 0;
-			d->fb_data->update_x2 = d->fb_data->xsize - 1;
-			d->fb_data->update_y1 = 0;
-			d->fb_data->update_y2 = d->fb_data->ysize - 1;
+			if (r != old_r || g != old_g || b != old_b) {
+				/*  If the palette has been changed, the entire image needs to be redrawn...  :-/  */
+				d->fb_data->update_x1 = 0;
+				d->fb_data->update_x2 = d->fb_data->xsize - 1;
+				d->fb_data->update_y1 = 0;
+				d->fb_data->update_y2 = d->fb_data->ysize - 1;
+			}
 			break;
 		}
 

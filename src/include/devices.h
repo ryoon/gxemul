@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.13 2004-01-04 21:44:06 debug Exp $
+ *  $Id: devices.h,v 1.14 2004-01-05 01:24:15 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -251,6 +251,11 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_gbe_init(struct memory *mem, uint64_t baseaddr);
 
+/*  dev_sgi_ip22.c:  */
+#define	DEV_SGI_IP22_LENGTH		0x100
+int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000
 int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -273,8 +278,13 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
 
+/*  dev_wdsc.c:  */
+#define	DEV_WDSC_LENGTH			0x1000
+int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_wdsc_init(struct memory *mem, uint64_t baseaddr);
+
 /*  dev_zs.c:  */
-#define	DEV_ZS_LENGTH			0x40
+#define	DEV_ZS_LENGTH			0x8
 int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 

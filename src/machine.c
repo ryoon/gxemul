@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.122 2004-07-03 19:49:35 debug Exp $
+ *  $Id: machine.c,v 1.123 2004-07-04 03:28:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1424,7 +1424,7 @@ void machine_init(struct memory *mem)
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
-		store_string(0x80000000 + physical_ram_in_mb * 1048576 - 512, bootstr);
+		store_string(0xffffffff80000000ULL + physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
 	case EMULTYPE_HPCMIPS:
@@ -1436,8 +1436,8 @@ void machine_init(struct memory *mem)
 		 *  NetBSD/hpcmips expects the following:
 		 */
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 1;	/*  argc  */
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = physical_ram_in_mb * 1048576 + 0x80000000 - 512;	/*  argv  */
-		cpus[bootstrap_cpu]->gpr[GPR_A2] = physical_ram_in_mb * 1048576 + 0x80000000 - 256;	/*  ptr to hpc_bootinfo  */
+		cpus[bootstrap_cpu]->gpr[GPR_A1] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
+		cpus[bootstrap_cpu]->gpr[GPR_A2] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 		bootstr = "netbsd";
 		store_32bit_word(0x80000000 + physical_ram_in_mb * 1048576 - 512, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8);
 		store_32bit_word(0x80000000 + physical_ram_in_mb * 1048576 - 512 + 4, 0);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.250 2004-10-11 17:59:09 debug Exp $
+$Id: HISTORY,v 1.251 2004-10-13 15:58:40 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1009,3 +1009,8 @@ HISTORY of mips64emul
 20041011	Adding cache size variables to the emul struct, so that these
 		can be set on a per-machine basis (or potentially manually
 		on the command line).
+20041012	Mach/PMAX now passes the LK201 keyboard self-test (although
+		the keyboard ID is still bogus).
+20041013	Minor updates.
+		Hacks to the ASC SCSI controller for Mach/PMAX, hopefully this
+		will not break support for other OSes.

@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.37 2004-10-10 12:29:25 debug Exp $
+ *  $Id: dev_asc.c,v 1.38 2004-10-13 15:58:40 debug Exp $
  *
- *  'asc' SCSI controller for some DECsystems.
+ *  'asc' SCSI controller for some DECstation/DECsystem models.
  *
  *  Supposed to support SCSI-1 and SCSI-2. I've not yet found any docs
  *  on NCR53C9X, so I'll try to implement this device from LSI53CF92A docs
@@ -39,7 +39,7 @@
  *
  *  TODO:  This module needs a clean-up, and some testing to see that
  *         it works will all OSes that might use it (NetBSD, OpenBSD,
- *         Ultrix, Linux, Mach(?), OSF/1?, Sprite, ...)
+ *         Ultrix, Linux, Mach, OSF/1, Sprite, ...)
  */
 
 #include <stdio.h>
@@ -53,8 +53,8 @@
 
 #include "ncr53c9xreg.h"
 
-
-/* #define ASC_DEBUG */
+#define ASC_DEBUG
+#define ASC_FULL_REGISTER_ACCESS_DEBUG
 
 #define	ASC_FIFO_LEN		16
 #define	STATE_DISCONNECTED	0
@@ -414,15 +414,34 @@ fatal("TODO.......asdgasin\n");
 				ch = dev_asc_fifo_read(d);
 				d->xferp->msg_out[i++] = ch;
 #ifdef ASC_DEBUG
-				debug("%02x ", ch);
+				debug("0x%02x ", ch);
 #endif
+			}
+
+			/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
+			if (d->xferp->msg_out_len == 6 &&
+			    d->xferp->msg_out[0] == 0x80 &&
+			    d->xferp->msg_out[1] == 0x01 &&
+			    d->xferp->msg_out[2] == 0x03 &&
+			    d->xferp->msg_out[3] == 0x01 &&
+			    d->xferp->msg_out[4] == 0x32 &&
+			    d->xferp->msg_out[5] == 0x0f) {
+				fatal(" !! Mach/PMAX hack !! ");
+				all_done = 0;
+				d->cur_phase = PHASE_MSG_IN;
 			}
 		} else {
 			/*  Copy data from DMA to msg_out:  */
-
+			fatal("[ DMA MSG OUT: xxx TODO! ]");
 			/*  TODO  */
 			res = 0;
 		}
+	} else if (d->cur_phase == PHASE_MSG_IN) {
+		debug(" MSG IN");
+		/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
+		dev_asc_fifo_write(d, 0x07);
+		dev_asc_fifo_write(d, 0x07);
+		d->cur_phase = PHASE_STATUS;
 	} else if (d->cur_phase == PHASE_COMMAND) {
 		debug(" COMMAND ==> select ");
 		res = dev_asc_select(cpu, d, d->reg_ro[NCR_CFG1] & 7,
@@ -432,7 +451,7 @@ fatal("TODO.......asdgasin\n");
 		fatal("!!! TODO: unknown/unimplemented phase in transfer: %i\n", d->cur_phase);
 	}
 
-	/*  Redo the command if data was just send using DATA_OUT:  */
+	/*  Redo the command if data was just sent using DATA_OUT:  */
 	if (d->cur_phase == PHASE_DATA_OUT) {
 		res = diskimage_scsicommand(cpu,
 		    d->reg_wo[NCR_SELID] & 7, d->xferp);
@@ -638,6 +657,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 				odata = d->reg_ro[regnr];
 		}
 
+#ifdef ASC_FULL_REGISTER_ACCESS_DEBUG
 		if (!quiet_mode) {
 			if (writeflag==MEM_READ) {
 				debug("[ asc: read from %s: 0x%02x",
@@ -647,6 +667,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 				    asc_reg_names[regnr], (int)idata);
 			}
 		}
+#endif
 	} else if (relative_addr >= 0x300 && relative_addr < 0x600
 	    && d->turbochannel != NULL) {
 		debug("[ asc: offset 0x%x, redirecting to turbochannel access ]\n", relative_addr);
@@ -781,8 +802,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			/*  Reveice a status byte + a message byte.  */
 
 			/*  TODO: how about other status and message bytes?  */
-			dev_asc_fifo_write(d, d->xferp->status[0]);
-			dev_asc_fifo_write(d, d->xferp->msg_in[0]);
+			if (d->xferp != NULL && d->xferp->status != NULL)
+				dev_asc_fifo_write(d, d->xferp->status[0]);
+			else
+				dev_asc_fifo_write(d, 0x00);
+
+			if (d->xferp != NULL && d->xferp->msg_in != NULL)
+				dev_asc_fifo_write(d, d->xferp->msg_in[0]);
+			else
+				dev_asc_fifo_write(d, 0x00);
 
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
@@ -802,12 +830,16 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 /*			d->reg_ro[NCR_INTR] |= NCRINTR_FC; */
 			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 
-			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ? probably 0  */
+/*  Mach/PMAX test:  */
+d->cur_phase = PHASE_STATUS;
+dev_asc_fifo_flush(d);
+			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;	/*  6?  */
 			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 
 			d->cur_state = STATE_DISCONNECTED;
 
-			scsi_transfer_free(d->xferp);
+			if (d->xferp != NULL)
+				scsi_transfer_free(d->xferp);
 			d->xferp = NULL;
 			break;
 
@@ -871,7 +903,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
-					scsi_transfer_free(d->xferp);
+					if (d->xferp != NULL)
+						scsi_transfer_free(d->xferp);
 					d->xferp = NULL;
 				}
 			} else {
@@ -934,7 +967,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
-					scsi_transfer_free(d->xferp);
+					if (d->xferp != NULL)
+						scsi_transfer_free(d->xferp);
 					d->xferp = NULL;
 				}
 			}
@@ -963,6 +997,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			d->reg_ro[NCR_INTR] = 0;
 			d->reg_ro[NCR_STEP] = 0;
 			d->reg_ro[NCR_STAT] = 0;
+d->reg_ro[NCR_STAT] = PHASE_STATUS;
 		}
 
 		cpu_interrupt_ack(cpu, d->irq_nr);
@@ -974,8 +1009,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		debug(" scsi_id %i", d->reg_ro[regnr] & 0x7);
 	}
 
+#ifdef ASC_FULL_REGISTER_ACCESS_DEBUG
 	debug(" ]\n");
-
+#endif
 	dev_asc_tick(cpu, extra);
 
 	if (writeflag == MEM_READ)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.112 2004-12-10 01:32:55 debug Exp $
+ *  $Id: bintrans.c,v 1.113 2004-12-10 02:11:32 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -132,7 +132,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, i
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p);
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p, int forward);
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
@@ -145,6 +145,8 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int it
 #define	TLB_TLBR	3
 #define	TLB_RFE		4
 #define	TLB_ERET	5
+#define	TLB_BREAK	6
+#define	TLB_SYSCALL	7
 
 
 #define	BINTRANS_CACHE_N_INDEX_BITS	15
@@ -466,6 +468,13 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				if (special6 == SPECIAL_JR)
 					stop_after_delayed_branch = 1;
 				break;
+			case SPECIAL_SYSCALL:
+			case SPECIAL_BREAK:
+				translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
+				    special6 == SPECIAL_BREAK? TLB_BREAK : TLB_SYSCALL);
+				n_translated += translated;
+ 				try_to_translate = 0;
+				break;
 			case SPECIAL_ADDU:
 			case SPECIAL_DADDU:
 			case SPECIAL_SUBU:
@@ -687,6 +696,8 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		if (translated && delayed_branch) {
 			delayed_branch --;
 			if (delayed_branch == 0) {
+				int forward;
+
 				/*
 				 *  p is 0x000 .. 0xffc. If the jump is to
 				 *  within the same page, then we can use
@@ -699,9 +710,11 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				else
 					potential_chunk_p = NULL;
 
+				forward = delayed_branch_new_p > p;
+
 				bintrans_write_instruction__delayedbranch(&ca,
 				    potential_chunk_p, &tep->chunk[0], 0,
-				    delayed_branch_new_p & 0xfff);
+				    delayed_branch_new_p & 0xfff, forward);
 
 				if (stop_after_delayed_branch)
 					try_to_translate = 0;
@@ -730,15 +743,20 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
 		    && !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
-			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4);
+			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 			try_to_translate = 0;
 		}
 
 		if (translated && try_to_translate && n_translated > 80
 		    && prev_p < 1023 && !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
-			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4);
+			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 			try_to_translate = 0;
+		}
+
+		if (translated && try_to_translate && tep->flags[prev_p+1] & UNTRANSLATABLE
+		    && prev_p < 1023 && !delayed_branch) {
+			bintrans_write_chunkreturn_fail(&ca);
 		}
 
 		p += sizeof(instr);
@@ -909,7 +927,7 @@ void bintrans_init_cpu(struct cpu *cpu)
 	cpu->bintrans_fast_tlbpr  = coproc_tlbpr;
 	cpu->bintrans_fast_rfe    = coproc_rfe;
 	cpu->bintrans_fast_eret   = coproc_eret;
-
+	cpu->bintrans_simple_exception = cpu_cause_simple_exception;
 	cpu->fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.43 2004-12-10 01:32:56 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.44 2004-12-10 02:11:32 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -53,8 +53,9 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-#define ofs_i	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-#define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
+#define ofs_i		(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+#define ofs_pc		(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
+#define ofs_pc_last	(((size_t)&dummy_cpu.pc_last) - ((size_t)&dummy_cpu))
 
 
 unsigned char bintrans_i386_runchunk[41] = {
@@ -1384,7 +1385,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
  */
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
-	int only_care_about_chunk_p, int p)
+	int only_care_about_chunk_p, int p, int forward)
 {
 	unsigned char *a, *skip=NULL, *failskip, *fail;
 	int ofs;
@@ -1613,7 +1614,7 @@ try_chunk_p:
 		/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
 		/*  7c 01                jl     <okk>  */
 		/*  c3                   ret    */
-		if (!only_care_about_chunk_p) {
+		if (!only_care_about_chunk_p && !forward) {
 			*a++ = 0x81; *a++ = 0xfd;
 			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
 			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
@@ -2008,11 +2009,6 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	unsigned char *a;
 	int ofs = 0;	/*  avoid a compiler warning  */
 
-/*  TODO: ERET modifies the PC register  */
-if (itype == TLB_ERET)
-        return 0;
-
-
 	switch (itype) {
 	case TLB_TLBP:
 	case TLB_TLBR:
@@ -2026,6 +2022,14 @@ if (itype == TLB_ERET)
 	}
 
 	a = *addrp;
+
+	/*  Put back PC into the cpu struct, both as pc and pc_last  */
+	*a++ = 0x89; *a++ = 0xbe; *a++ = ofs_pc&255;
+	*a++ = (ofs_pc>>8)&255; *a++ = (ofs_pc>>16)&255;
+	*a++ = (ofs_pc>>24)&255;	/*  mov    %edi,pc(%esi)  */
+	*a++ = 0x89; *a++ = 0xbe; *a++ = ofs_pc_last&255;
+	*a++ = (ofs_pc_last>>8)&255; *a++ = (ofs_pc_last>>16)&255;
+	*a++ = (ofs_pc_last>>24)&255;	/*  mov    %edi,pc_last(%esi)  */
 
 	switch (itype) {
 	case TLB_TLBP:
@@ -2072,6 +2076,11 @@ if (itype == TLB_ERET)
 		*a++ = 0x83; *a++ = 0xc4; *a++ = 4;
 		break;
 	}
+
+	/*  Load PC from the cpu struct.  */
+	*a++ = 0x8b; *a++ = 0xbe; *a++ = ofs_pc&255;
+	*a++ = (ofs_pc>>8)&255; *a++ = (ofs_pc>>16)&255;
+	*a++ = (ofs_pc>>24)&255;	/*  mov    pc(%esi),%edi  */
 
 	*addrp = a;
 

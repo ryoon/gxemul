@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.213 2004-12-10 00:39:53 debug Exp $
+ *  $Id: cpu.c,v 1.214 2004-12-10 02:11:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1225,6 +1225,20 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 }
 
 
+#ifdef BINTRANS
+/*
+ *
+ *
+ *  Useful for causing raw exceptions from bintrans, for example
+ *  SYSCALL or BREAK.
+ */
+void cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
+{
+	cpu_exception(cpu, exc_code, 0, 0, 0, 0, 0, 0);
+}
+#endif
+
+
 /*
  *  cpu_run_instr():
  *
@@ -1503,7 +1517,6 @@ int cpu_run_instr(struct cpu *cpu)
 
 
 #ifdef BINTRANS
-
         /*  Caches are not very coozy to handle in bintrans:  */
         switch (cpu->cpu_type.mmu_model) {
         case MMU3K:
@@ -1522,8 +1535,6 @@ int cpu_run_instr(struct cpu *cpu)
                 break;
         /*  TODO: other cache types  */
         }
-
-
 #endif
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.82 2004-12-10 01:32:55 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.83 2004-12-10 02:11:32 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -178,6 +178,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
  *  ret
  */
 #define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
+#define ofs_pc_last	(((size_t)&dummy_cpu.pc_last) - ((size_t)&dummy_cpu))
 #define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 #define ofs_ds	(((size_t)&dummy_cpu.delay_slot) - ((size_t)&dummy_cpu))
 #define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
@@ -1037,7 +1038,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
  */
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
-	int only_care_about_chunk_p, int p)
+	int only_care_about_chunk_p, int p, int forward)
 {
 	unsigned char *a, *skip=NULL, *fail;
 	int ofs;
@@ -1266,7 +1267,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  a1 0d c2 40     cmple   t6,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
-		if (!only_care_about_chunk_p) {
+		if (!only_care_about_chunk_p && !forward) {
 			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
 				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
 			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
@@ -2024,18 +2025,12 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	case TLB_TLBR:
 	case TLB_RFE:
 	case TLB_ERET:
+	case TLB_BREAK:
+	case TLB_SYSCALL:
 		break;
 	default:
 		return 0;
 	}
-
-
-/*  TODO: ERET modifies the PC register, so we shouldn't
-	save and restore it here.  */
-if (itype == TLB_ERET)
-	return 0;
-
-
 
 	a = (uint32_t *) *addrp;
 
@@ -2052,14 +2047,21 @@ if (itype == TLB_ERET)
 		/*  a1 = 0 for probe, 1 for read  */
 		*a++ = 0x223f0000 | (itype == TLB_TLBR);
 		break;
+	case TLB_BREAK:
+	case TLB_SYSCALL:
+		*a++ = 0x223f0000 | (itype == TLB_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
+		break;
 	}
+
+	/*  Put PC into the cpu struct (both pc and pc_last).  */
+	*a++ = 0xb4d00000 | ofs_pc;	/*  stq t5,"pc"(a0)  */
+	*a++ = 0xb4d00000 | ofs_pc_last;/*  stq t5,"pc_last"(a0)  */
 
 	/*  Save a0 and the old return address on the stack:  */
 	*a++ = 0x23deff80;		/*  lda sp,-128(sp)  */
 
 	*a++ = 0xb75e0000;		/*  stq ra,0(sp)  */
 	*a++ = 0xb61e0008;		/*  stq a0,8(sp)  */
-	*a++ = 0xb4de0010;		/*  stq t5,16(sp)  */
 	*a++ = 0xb0fe0018;		/*  stl t6,24(sp)  */
 	*a++ = 0xb71e0020;		/*  stq t10,32(sp)  */
 	*a++ = 0xb73e0028;		/*  stq t11,40(sp)  */
@@ -2082,6 +2084,10 @@ if (itype == TLB_ERET)
 	case TLB_ERET:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
 		break;
+	case TLB_BREAK:
+	case TLB_SYSCALL:
+		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
+		break;
 	}
 
 	*a++ = 0xa7700000 | ofs;	/*  ldq t12,0(a0)  */
@@ -2092,7 +2098,6 @@ if (itype == TLB_ERET)
 	/*  Restore the old return address and a0 from the stack:  */
 	*a++ = 0xa75e0000;		/*  ldq ra,0(sp)  */
 	*a++ = 0xa61e0008;		/*  ldq a0,8(sp)  */
-	*a++ = 0xa4de0010;		/*  ldq t5,16(sp)  */
 	*a++ = 0xa0fe0018;		/*  ldl t6,24(sp)  */
 	*a++ = 0xa71e0020;		/*  ldq t10,32(sp)  */
 	*a++ = 0xa73e0028;		/*  ldq t11,40(sp)  */
@@ -2102,10 +2107,19 @@ if (itype == TLB_ERET)
 
 	*a++ = 0x23de0080;		/*  lda sp,128(sp)  */
 
+	/*  Load PC from the cpu struct.  */
+	*a++ = 0xa4d00000 | ofs_pc;	/*  ldq t5,"pc"(a0)  */
+
 	*addrp = (unsigned char *) a;
 
-	if (itype != TLB_ERET)
+	switch (itype) {
+	case TLB_ERET:
+	case TLB_BREAK:
+	case TLB_SYSCALL:
+		break;
+	default:
 		bintrans_write_pc_inc(addrp);
+	}
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.35 2004-12-09 01:39:22 debug Exp $
+ *  $Id: x11.c,v 1.36 2004-12-10 03:53:50 debug Exp $
  *
  *  X11-related functions.
  */
@@ -181,6 +181,8 @@ void x11_redraw_cursor(int i)
 	}
 
 	if (n_colors_used >= 2 && fb_windows[i].host_cursor == 0) {
+		GC tmpgc;
+
 		/*  Create a new X11 host cursor:  */
 		/*  cursor = XCreateFontCursor(fb_windows[i].x11_display, XC_coffee_mug);  */
 		if (fb_windows[i].host_cursor_pixmap != 0) {
@@ -188,7 +190,16 @@ void x11_redraw_cursor(int i)
 			fb_windows[i].host_cursor_pixmap = 0;
 		}
 		fb_windows[i].host_cursor_pixmap = XCreatePixmap(fb_windows[i].x11_display, fb_windows[i].x11_fb_window, 1, 1, 1);
-		/*  TODO: put a black pixel in the pixmap :)  The default is undefined.  */
+		XSetForeground(fb_windows[i].x11_display, fb_windows[i].x11_fb_gc,
+		    fb_windows[i].x11_graycolor[0].pixel);
+
+		tmpgc = XCreateGC(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap, 0,0);
+
+		XDrawPoint(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap,
+		    tmpgc, 0, 0);
+
+		XFreeGC(fb_windows[i].x11_display, tmpgc);
+
 		fb_windows[i].host_cursor = XCreatePixmapCursor(fb_windows[i].x11_display,
 		    fb_windows[i].host_cursor_pixmap, fb_windows[i].host_cursor_pixmap,
 		    &fb_windows[i].x11_graycolor[N_GRAYCOLORS-1],

@@ -1,3 +1,6 @@
+#ifndef	MISC_H
+#define	MISC_H
+
 /*
  *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
  *
@@ -21,10 +24,16 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
+ *
+ *
+ *  $Id: misc.h,v 1.7 2003-11-08 08:45:16 debug Exp $
+ *
+ *  Misc. definitions for mips64emul.
+ *
+ *  TODO:  separate into smaller, more orthogonal files.
+ *         perhaps cpu.h, opcodes.h (all the opcodes),
+ *         memory.h?
  */
-
-#ifndef	MISC_H
-#define	MISC_H
 
 #include <inttypes.h>
 #include <sys/types.h>
@@ -36,7 +45,7 @@
 /*  These can be defined, but they reduce speed of the emulator.
     Don't enable them unless you need them.  */
 
-/*  #define SUPPORT_MIPS16  */
+#define SUPPORT_MIPS16
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 
@@ -421,7 +430,7 @@ struct cpu {
 	uint64_t	hi;
 	uint64_t	lo;
 
-	int		mips16;			/*  non-zero when running MIPS16 code  */
+	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
 	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
 
 	int		trace_tree_depth;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.27 2004-01-04 21:42:25 debug Exp $
+ *  $Id: machine.c,v 1.28 2004-01-05 03:26:38 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -297,7 +297,7 @@ void machine_init(struct memory *mem)
 			dev_le_init(mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE);
 			dev_sii_init(cpus[0], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
 			dev_dc7085_init(cpus[0], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -341,7 +341,7 @@ void machine_init(struct memory *mem)
 
 			/*  TURBOchannel slot 7 is system stuff.  */
 			dev_dc7085_init(cpus[0], mem, KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
 
 			/*  (kn02 shared irq numbers (IP) are offset by +8 in the emulator)  */
 			kn02_csr = dev_kn02_init(cpus[0], mem, KN02_SYS_CSR);
@@ -372,7 +372,7 @@ void machine_init(struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dev_scc_init(cpus[0], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards. TODO: irqs  */
@@ -407,7 +407,7 @@ void machine_init(struct memory *mem)
 			 */
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);
 			dev_scc_init(cpus[0], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
@@ -497,7 +497,7 @@ void machine_init(struct memory *mem)
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
 			dev_scc_init(cpus[0], mem, 0x1c100000, 0, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, 3, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, 0x1c200000, 3, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, 0x1c300000, 0);	/*  (?)  SCSI  */
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
@@ -528,7 +528,7 @@ void machine_init(struct memory *mem)
 			 *  The KN230 cpu board has several devices sharing the same IRQ, so
 			 *  the kn230 CSR contains info about which devices have caused interrupts.
 			 */
-			dev_mc146818_init(cpus[0], mem, KN230_SYS_CLOCK, 4, 0, 1, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_ips);
 			dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
@@ -778,9 +778,21 @@ void machine_init(struct memory *mem)
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emulation_type == EMULTYPE_SGI) {
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
-			sprintf(arcbios_sysid.ProductId, "IP%i", machine);	/*  NOTE: max 8 chars  */
+			switch (machine) {
+			case 22:
+				strncpy(arcbios_sysid.ProductId, "87654321", 8);	/*  some kind of ID?  */
+				break;
+			case 32:
+				strncpy(arcbios_sysid.ProductId, "8", 1);		/*  6 or 8 (?)  */
+				break;
+			default:
+				snprintf(arcbios_sysid.ProductId, 8, "IP%i", machine);
+			}
 		} else {
-			/*  NEC-RD94 = NEC RISCstation 2250  */
+			/*
+			 *  ARC:  TODO:  Support other machine types. Right now,
+			 *  the "NEC-RD94" (NEC RISCstation 2250) is the only supported one.
+			 */
 			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 		}
@@ -851,20 +863,51 @@ void machine_init(struct memory *mem)
 
 				/*  TODO:  Other machine types?  */
 				switch (machine) {
+				case 20:
+					strcat(machine_name, " (Indigo2)");
+					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+					break;
+				case 22:
+					strcat(machine_name, " (Indy, Indigo2, Challenge S)");
+					/*
+					 *  According to NetBSD:
+					 *  imc0 at mainbus0 addr 0x1fa00000, revision 0
+					 *  gio0 at imc0
+					 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC3
+					 *  wdsc0 at hpc0 offset 0x44000  (SCSI)
+					 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03  (ethernet)
+					 *  zsc0 at hpc0 offset 0x59830  (serial console, 2 channels)
+					 *  dsclock0 at hpc0 offset 0x60000
+					 */
+					dev_wdsc_init(mem, 0x1fbc4000); 	 	/*  wdsc0  */
+					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+					dev_sgi_ip22_init(cpus[0], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
+					break;
+				case 27:
+					strcat(machine_name, " (Origin 200)");
+					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+					break;
+				case 30:
+					strcat(machine_name, " (Octane)");
+					break;
 				case 32:
+					strcat(machine_name, " (O2)");
 					dev_crime_init(mem, 0x14000000);		/*  crime0  */
 					/*  mte (?) at 0x15000000  */
 					dev_sgi_gbe_init(mem, 0x16000000);
-					/*  serial at 0x18000000 ???  */
 					dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
 					dev_macepci_init(mem, 0x1f080000);		/*  macepci0  */
-					/*  mec0 (ethernet) at 0x1f280000  */
+					/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */
 					dev_mace_init(mem, 0x1f310000);			/*  mace0  */
 					dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
 					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
-					dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
+					dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
 					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+					break;
+				case 35:
+					strcat(machine_name, " (Origin 3000)");
+					cpus[0]->coproc[3] = coproc_new(cpus[0], 3);	/*  ??  */
 					break;
 				default:
 					fatal("unimplemented SGI machine type IP%i\n", machine);
@@ -877,7 +920,7 @@ void machine_init(struct memory *mem)
 				/*  TODO:  sync devices and component tree  */
 				/*  TODO 2: These are model dependant!!!  */
 				dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000);
-				dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, 0, 1, emulated_ips);	/*  ???  */
+				dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
 				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
@@ -888,6 +931,7 @@ void machine_init(struct memory *mem)
 			/*  Common stuff for both SGI and ARC:  */
 			debug("system = 0x%x\n", system);
 
+			/*  TODO:  Use correct CPU identification  */
 			for (i=0; i<ncpus; i++) {
 				uint32_t cpu, fpu;
 				cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
@@ -905,13 +949,16 @@ void machine_init(struct memory *mem)
 		for (i=0; i<100; i++)
 			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 6;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
 		store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
 		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
 		store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
-		store_32bit_word(ARC_ARGV_START + 0xc, 0);
+		store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x240);
+		store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x280);
+		store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x2c0);
+		store_32bit_word(ARC_ARGV_START + 0x18, 0);
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
@@ -927,8 +974,18 @@ void machine_init(struct memory *mem)
 		bootarg = "-a";
 
 		store_string(ARC_ARGV_START + 0x100, bootstr);
-store_string(ARC_ARGV_START + 0x180, "console=ttyS0");
-		store_string(ARC_ARGV_START + 0x200, bootarg);
+#if 1
+		store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
+		store_string(ARC_ARGV_START + 0x200, "root=nfs");
+		store_string(ARC_ARGV_START + 0x240, "cpufreq=3");
+		store_string(ARC_ARGV_START + 0x280, "c=c");
+#else
+		store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
+		store_string(ARC_ARGV_START + 0x200, "dbaud=9600");
+		store_string(ARC_ARGV_START + 0x240, "nogfxkbd=Yes");
+		store_string(ARC_ARGV_START + 0x280, "diagmode=Yes");
+#endif
+		store_string(ARC_ARGV_START + 0x2c0, bootarg);
 
 		/*  TODO:  not needed?  */
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;

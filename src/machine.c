@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.399 2005-04-04 21:50:05 debug Exp $
+ *  $Id: machine.c,v 1.400 2005-04-04 22:59:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2248,13 +2248,21 @@ void machine_setup(struct machine *machine)
 				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
 				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
 				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
+#if 0
 				    "init=/sbin/restore_defaults");
+#else
+				    );
+#endif
 			else
 				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
 				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
 				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
 				    "console=ttyS0,115200 "
+#if 0
 				    "init=/sbin/restore_defaults");
+#else
+				    );
+#endif
 		}
 
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));

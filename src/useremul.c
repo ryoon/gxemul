@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.36 2005-02-11 09:29:51 debug Exp $
+ *  $Id: useremul.c,v 1.37 2005-02-15 06:25:36 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -152,41 +152,57 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 	int i, i2;
 	int envc = 1;
 
-	/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
-	cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-	cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
+	switch (cpu->machine->arch) {
+	case ARCH_MIPS:
+		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
+		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
 
-	/*  The userland stack:  */
-	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
-	add_symbol_name(&cpu->machine->symbol_context,
-	    stack_top - stacksize, stacksize, "userstack", 0);
+		/*  The userland stack:  */
+		cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
+		add_symbol_name(&cpu->machine->symbol_context,
+		    stack_top - stacksize, stacksize, "userstack", 0);
 
-	/*  Stack contents:  (TODO: is this correct?)  */
-	store_32bit_word(cpu, stack_top - stack_margin, argc);
+		/*  Stack contents:  (TODO: is this correct?)  */
+		store_32bit_word(cpu, stack_top - stack_margin, argc);
 
-	cur_argv = stack_top - stack_margin + 128 + (argc + envc)
-	    * sizeof(uint32_t);
-	for (i=0; i<argc; i++) {
-		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
+		cur_argv = stack_top - stack_margin + 128 + (argc + envc)
+		    * sizeof(uint32_t);
+		for (i=0; i<argc; i++) {
+			debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
 
+			store_32bit_word(cpu, stack_top - stack_margin +
+			    4 + i*sizeof(uint32_t), cur_argv);
+			store_string(cpu, cur_argv, host_argv[i]);
+			cur_argv += strlen(host_argv[i]) + 1;
+		}
+
+		/*  Store a NULL value between the args and the environment strings:  */
 		store_32bit_word(cpu, stack_top - stack_margin +
-		    4 + i*sizeof(uint32_t), cur_argv);
-		store_string(cpu, cur_argv, host_argv[i]);
-		cur_argv += strlen(host_argv[i]) + 1;
-	}
+		    4 + i*sizeof(uint32_t), 0);  i++;
 
-	/*  Store a NULL value between the args and the environment strings:  */
-	store_32bit_word(cpu, stack_top - stack_margin +
-	    4 + i*sizeof(uint32_t), 0);  i++;
+		/*  TODO: get environment strings from somewhere  */
 
-	/*  TODO: get environment strings from somewhere  */
+		/*  Store all environment strings:  */
+		for (i2 = 0; i2 < envc; i2 ++) {
+			store_32bit_word(cpu, stack_top - stack_margin + 4
+			    + (i+i2)*sizeof(uint32_t), cur_argv);
+			store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
+			cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
+		}
+		break;
 
-	/*  Store all environment strings:  */
-	for (i2 = 0; i2 < envc; i2 ++) {
-		store_32bit_word(cpu, stack_top - stack_margin + 4
-		    + (i+i2)*sizeof(uint32_t), cur_argv);
-		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
-		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
+	case ARCH_PPC:
+		debug("useremul__netbsd_setup(): TODO\n");
+
+		/*  What is a good stack pointer? TODO  */
+		cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
+
+		break;
+
+	default:
+		fatal("useremul__netbsd_setup(): unimplemented arch\n");
+		exit(1);
 	}
 }
 
@@ -402,35 +418,54 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 	    sysctl_oldlenp, sysctl_newp, sysctl_newlen;
 	uint32_t name0, name1, name2, name3;
 
-	sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
+	switch (cpu->machine->arch) {
+	case ARCH_MIPS:
+		sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
+		if (sysnr == NETBSD_SYS___syscall) {
+			sysnr = cpu->cd.mips.gpr[MIPS_GPR_A0] +
+			    (cpu->cd.mips.gpr[MIPS_GPR_A1] << 32);
+			arg0 = cpu->cd.mips.gpr[MIPS_GPR_A2];
+			arg1 = cpu->cd.mips.gpr[MIPS_GPR_A3];
+			/*  TODO:  stack arguments? Are these correct?  */
+			arg2 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
+			arg3 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 16);
+			stack0 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 24);
+			stack1 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 32);
+			stack2 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 40);
+		} else {
+			arg0 = cpu->cd.mips.gpr[MIPS_GPR_A0];
+			arg1 = cpu->cd.mips.gpr[MIPS_GPR_A1];
+			arg2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
+			arg3 = cpu->cd.mips.gpr[MIPS_GPR_A3];
+			/*  TODO:  stack arguments? Are these correct?  */
+			stack0 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 4);
+			stack1 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
+			stack2 = load_32bit_word(cpu,
+			    cpu->cd.mips.gpr[MIPS_GPR_SP] + 12);
+		}
+		break;
 
-	if (sysnr == NETBSD_SYS___syscall) {
-		sysnr = cpu->cd.mips.gpr[MIPS_GPR_A0] +
-		    (cpu->cd.mips.gpr[MIPS_GPR_A1] << 32);
-		arg0 = cpu->cd.mips.gpr[MIPS_GPR_A2];
-		arg1 = cpu->cd.mips.gpr[MIPS_GPR_A3];
-		/*  TODO:  stack arguments? Are these correct?  */
-		arg2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
-		arg3 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 16);
-		stack0 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 24);
-		stack1 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 32);
-		stack2 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 40);
-	} else {
-		arg0 = cpu->cd.mips.gpr[MIPS_GPR_A0];
-		arg1 = cpu->cd.mips.gpr[MIPS_GPR_A1];
-		arg2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
-		arg3 = cpu->cd.mips.gpr[MIPS_GPR_A3];
-		/*  TODO:  stack arguments? Are these correct?  */
-		stack0 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 4);
-		stack1 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
-		stack2 = load_32bit_word(cpu,
-		    cpu->cd.mips.gpr[MIPS_GPR_SP] + 12);
+	case ARCH_PPC:
+		sysnr = cpu->cd.ppc.gpr[0];
+		arg0 = cpu->cd.ppc.gpr[3];
+		arg1 = cpu->cd.ppc.gpr[4];
+		arg2 = cpu->cd.ppc.gpr[5];
+		arg3 = cpu->cd.ppc.gpr[6];
+		/*  TODO:  More arguments? Stack arguments?  */
+		break;
 	}
+
+	/*
+	 *  NOTE: The following code should not be CPU arch dependant!
+	 *  (TODO)
+	 */
 
 	switch (sysnr) {
 
@@ -1338,6 +1373,9 @@ void useremul_init(void)
 	    useremul__linux, useremul__linux_setup);
 
 	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
+	    useremul__netbsd, useremul__netbsd_setup);
+
+	add_useremul("NetBSD/powerpc", ARCH_PPC, "PPC750",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("Ultrix", ARCH_MIPS, "R3000",

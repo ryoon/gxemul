@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmppc.c,v 1.1 2005-02-14 09:22:49 debug Exp $
+ *  $Id: dev_pmppc.c,v 1.2 2005-02-15 06:25:34 debug Exp $
  *  
  *  PM/PPC devices.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
@@ -47,6 +48,8 @@
 struct pmppc_data {
 	uint8_t		config0;
 	uint8_t		config1;
+
+	uint8_t		reset_reg;
 };
 
 
@@ -79,6 +82,19 @@ int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			debug("[ pmppc: UNIMPLEMENTED write to PMPPC_CONFIG1:"
 			    " 0x%02x ]\n", (int)idata);
+		}
+		break;
+	case PMPPC_RESET:
+		if (writeflag==MEM_READ) {
+			odata = d->reset_reg;
+		} else {
+			if (d->reset_reg == PMPPC_RESET_SEQ_STEP1 &&
+			    idata == PMPPC_RESET_SEQ_STEP2) {
+				cpu->running = 0;
+				cpu->machine->
+				    exit_without_entering_debugger = 1;
+			}
+			d->reset_reg = idata;
 		}
 		break;
 	default:

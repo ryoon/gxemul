@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.28 2005-02-14 22:47:58 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.29 2005-02-15 06:25:36 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -936,6 +936,82 @@ disasm_ret_nonewline:
 
 
 /*
+ *  show_trace():
+ *
+ *  Show trace tree.   This function should be called every time
+ *  a function is called.  cpu->cd.ppc.trace_tree_depth is increased here
+ *  and should not be increased by the caller.
+ *
+ *  Note:  This function should not be called if show_trace_tree == 0.
+ */
+static void show_trace(struct cpu *cpu)
+{
+	uint64_t offset, addr = cpu->cd.ppc.lr;
+	int x, n_args_to_print;
+	char strbuf[60];
+	char *symbol;
+
+	cpu->cd.ppc.trace_tree_depth ++;
+
+	if (cpu->machine->ncpus > 1)
+		debug("cpu%i:", cpu->cpu_id);
+
+	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
+
+	for (x=0; x<cpu->cd.ppc.trace_tree_depth; x++)
+		debug("  ");
+
+	/*  debug("<%s>\n", symbol!=NULL? symbol : "no symbol");  */
+
+	if (symbol != NULL)
+		debug("<%s(", symbol);
+	else {
+		debug("<0x");
+		if (cpu->cd.ppc.bits == 32)
+			debug("%08x", (int)addr);
+		else
+			debug("%016llx", (long long)addr);
+		debug("(");
+	}
+
+	/*
+	 *  TODO:  The number of arguments and the symbol type of each
+	 *  argument should be taken from the symbol table, in some way.
+	 */
+	n_args_to_print = 5;
+
+	for (x=0; x<n_args_to_print; x++) {
+		int64_t d = cpu->cd.ppc.gpr[x + 3];
+
+		if (d > -256 && d < 256)
+			debug("%i", (int)d);
+		else if (memory_points_to_string(cpu, cpu->mem, d, 1)) {
+			debug("\"%s\"", memory_conv_to_string(cpu,
+			    cpu->mem, d, strbuf, sizeof(strbuf)));
+			if (strlen(strbuf) >= sizeof(strbuf)-1)
+				debug("..");
+		} else {
+			if (cpu->cd.ppc.bits == 32)
+				debug("0x%x", (int)d);
+			else
+				debug("0x%llx", (long long)d);
+		}
+
+		if (x < n_args_to_print - 1)
+			debug(",");
+
+		if (x == n_args_to_print - 1)
+			break;
+	}
+
+	if (n_args_to_print > 9)
+		debug("..");
+
+	debug(")>\n");
+}
+
+
+/*
  *  update_cr0():
  *
  *  Sets the top 4 bits of the CR register.
@@ -1116,8 +1192,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cond_ok |= ( ((bo >> 3) & 1) ==
 		    ((cpu->cd.ppc.cr >> (31-bi)) & 1)  );
 
-		if (lk_bit)
+		if (lk_bit) {
 			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+			if (cpu->machine->show_trace_tree)
+				show_trace(cpu);
+		}
 		if (ctr_ok && cond_ok) {
 			cpu->cd.ppc.pc = addr & ~3;
 			if (cpu->cd.ppc.bits == 32)
@@ -1150,8 +1229,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		if (cpu->cd.ppc.bits == 32)
 			addr &= 0xffffffff;
 
-		if (lk_bit)
+		if (lk_bit) {
 			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+			if (cpu->machine->show_trace_tree)
+				show_trace(cpu);
+		}
 		cpu->cd.ppc.pc = addr;
 		break;
 
@@ -1174,13 +1256,21 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				if (cpu->cd.ppc.bits == 32)
 					tmp &= 0xffffffff;
 				ctr_ok |= ( (tmp == 0) ^ ((bo >> 1) & 1) );
+				if (!quiet_mode && !lk_bit &&
+				    cpu->machine->show_trace_tree) {
+					cpu->cd.ppc.trace_tree_depth --;
+					/*  TODO: show return value?  */
+				}
 			} else
 				ctr_ok = 1;
 			cond_ok = (bo >> 4) & 1;
 			cond_ok |= ( ((bo >> 3) & 1) ==
 			    ((cpu->cd.ppc.cr >> (31-bi)) & 1) );
-			if (lk_bit)
+			if (lk_bit) {
 				cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+				if (cpu->machine->show_trace_tree)
+					show_trace(cpu);
+			}
 			if (ctr_ok && cond_ok) {
 				cpu->cd.ppc.pc = addr & ~3;
 				if (cpu->cd.ppc.bits == 32)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.15 2005-02-14 21:44:36 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.16 2005-02-15 06:25:35 debug Exp $
  */
 
 #include "misc.h"
@@ -43,6 +43,7 @@ struct cpu_family;
 struct ppc_cpu_type_def { 
 	char		*name;
 	int		bits;
+	int		flags;
 	int		icache_shift;
 	int		iway;
 	int		dcache_shift;
@@ -50,17 +51,19 @@ struct ppc_cpu_type_def {
 	int		l2cache_shift;
 	int		l2way;
 
-	/*  TODO: 64-bit-ness? POWER vs PowerPC?  */
+	/*  TODO: POWER vs PowerPC?  */
 };
 
+/*  Flags:  */
+#define	PPC_NOFP		1
 /*  TODO: Most of these just bogus  */
 
-#define PPC_CPU_TYPE_DEFS	{				\
-	{ "G4e", 32, 15, 8, 15, 8, 18, 8 },			\
-	{ "PPC405GP", 32, 15, 2, 15, 2, 20, 1, },	 	\
-	{ "PPC750", 32, 15, 2, 15, 2, 20, 1 },			\
-	{ "PPC970", 64, 16, 1, 15, 2, 19, 1 },			\
-	{ NULL, 0, 0,0, 0,0, 0,0 }				\
+#define PPC_CPU_TYPE_DEFS	{					\
+	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8 },				\
+	{ "PPC405GP", 32, PPC_NOFP, 15, 2, 15, 2, 20, 1, },	 	\
+	{ "PPC750", 32, 0, 15, 2, 15, 2, 20, 1 },			\
+	{ "PPC970", 64, 0, 16, 1, 15, 2, 19, 1 },			\
+	{ NULL, 0, 0, 0,0, 0,0, 0,0 }					\
 	};
 
 #define	PPC_NGPRS		32
@@ -68,6 +71,8 @@ struct ppc_cpu_type_def {
 
 struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
+
+	int		trace_tree_depth;
 
 	uint64_t	pc;		/*  Program Counter (TODO: CIA?)  */
 	uint64_t	pc_last;

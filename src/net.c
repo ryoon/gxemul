@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.39 2004-12-18 08:51:19 debug Exp $
+ *  $Id: net.c,v 1.40 2004-12-18 09:17:45 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1557,7 +1557,7 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 {
 	int i, n;
 
-#if 1
+#if 0
 	fatal("[ net: ethernet: ");
 	for (i=0; i<6; i++)
 		fatal("%02x", packet[i]);

@@ -23,12 +23,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mec.c,v 1.4 2004-12-18 09:12:49 debug Exp $
+ *  $Id: dev_sgi_mec.c,v 1.5 2004-12-18 09:17:44 debug Exp $
  *  
  *  SGI "mec" ethernet. Used in SGI-IP32.
  *
- *  TODO. Study http://www.openbsd.org/cgi-bin/cvsweb/src/sys/arch/sgi/dev/if_mec.c
- *  and/or NetBSD.
+ *  Study http://www.openbsd.org/cgi-bin/cvsweb/src/sys/arch/sgi/dev/if_mec.c
+ *  and/or NetBSD.  TODO:
+ *
+ *	x)  tx and rx interrupts/ring/slot stuff
  */
 
 #include <stdio.h>
@@ -48,7 +50,7 @@
 
 #define	MEC_TICK_SHIFT		14
 
-#define	MAX_TX_PACKET_LEN	1600
+#define	MAX_TX_PACKET_LEN	1700
 #define	N_RX_ADDRESSES		32
 
 struct sgi_mec_data {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.80 2005-01-28 14:58:28 debug Exp $
+ *  $Id: arcbios.c,v 1.81 2005-01-29 10:30:31 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1413,8 +1413,10 @@ void arcbios_emul(struct cpu *cpu)
 				/*  Read from STDIN is blocking (at least that seems to
 				    be how NetBSD's arcdiag wants it)  */
 				while ((x = console_readchar()) < 0) {
+/*  TODO: How to check for x11 events in a nice way?
 					if (cpu->machine->use_x11)
 						x11_check_event(cpu->machine);
+*/
 					usleep(1);
 				}
 
@@ -1426,9 +1428,11 @@ void arcbios_emul(struct cpu *cpu)
 				 */
 				if (x == 27) {
 					while ((x = console_readchar()) < 0) {
+/* See above
 						if (cpu->machine->use_x11)
 							x11_check_event(
 							    cpu->machine);
+*/
 						usleep(1);
 					}
 					if (x == '[' || x == 'O')

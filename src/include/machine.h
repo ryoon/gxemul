@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.16 2005-01-29 09:54:56 debug Exp $
+ *  $Id: machine.h,v 1.17 2005-01-29 10:30:30 debug Exp $
  */
 
 #include <sys/types.h>
@@ -88,7 +88,6 @@ struct machine {
 	int64_t ncycles;
 	int64_t	ncycles_show;
 	int64_t	ncycles_flush;
-	int64_t	ncycles_flushx11;
 	int	a_few_cycles;
 	int	a_few_instrs;
 

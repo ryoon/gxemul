@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.309 2005-01-28 13:47:27 debug Exp $
+ *  $Id: machine.c,v 1.310 2005-01-29 10:30:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4381,7 +4381,7 @@ void machine_init(void)
 	me->aliases[0] = "arc";
 
 	me->subtype[0] = machine_entry_subtype_new(
-	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 2);
+	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 3);
 	me->subtype[0]->aliases[0] = "pica-61";
 	me->subtype[0]->aliases[1] = "acer pica";
 	me->subtype[0]->aliases[2] = "pica";

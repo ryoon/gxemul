@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.531 2005-01-29 09:54:55 debug Exp $
+$Id: HISTORY,v 1.532 2005-01-29 10:30:29 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1579,3 +1579,4 @@ HISTORY of mips64emul
 		More updates to the configuration file parser (nested tuborg
 		comments, more options, ...).
 		Making -s a global setting, not just affecting one machine.
+		Trying to fix the X11 event stuff...

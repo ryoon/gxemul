@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.264 2005-01-29 09:54:57 debug Exp $
+ *  $Id: cpu.c,v 1.265 2005-01-29 10:30:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -50,7 +50,6 @@
 #include "mips_cpu_types.h"
 #include "opcodes.h"
 #include "symbol.h"
-#include "x11.h"
 
 
 extern volatile int single_step;
@@ -3815,7 +3814,6 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
 
 	machine->a_few_cycles = 1048576;
 	machine->ncycles_flush = 0;
-	machine->ncycles_flushx11 = 0;
 	machine->ncycles = 0;
 	machine->ncycles_show = 0;
 
@@ -4013,14 +4011,6 @@ int cpu_run(struct emul *emul, struct machine *machine)
 			machine->ncycles += cpu0instrs;
 		} while (running && (machine->ncycles < ncycles_chunk_end));
 
-		/*  Check for X11 events:  */
-		if (machine->use_x11) {
-			if (machine->ncycles > machine->ncycles_flushx11 + (1<<17)) {
-				x11_check_event(machine);
-				machine->ncycles_flushx11 = machine->ncycles;
-			}
-		}
-
 		/*  If we've done buffered console output,
 		    the flush stdout every now and then:  */
 		if (machine->ncycles > machine->ncycles_flush + (1<<16)) {
@@ -4040,7 +4030,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 16)
+		if (rounds > 4)
 			break;
 	}
 

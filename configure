@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.88 2005-01-29 09:22:15 debug Exp $
+#  $Id: configure,v 1.89 2005-01-29 10:30:29 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -827,7 +827,12 @@ echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
 
+
 printf "Regression test setup:\n"
+
+
+#  MIPS cross-compiler:
+
 printf "Checking for a GNU CC cross-compiler for 64-bit MIPS... "
 echo 'int f(int x) { return x; }' > _testprog.c
 
@@ -844,7 +849,6 @@ done
 
 if [ z$MIPS_CC = z ]; then
 	echo "none"
-	echo '("make regtest" will not work)'
 else
 	echo $MIPS_CC"-gcc"
 fi
@@ -856,6 +860,43 @@ echo "MIPS_AS="$MIPS_CC"-as -mabi=64 -mips64" >> _Makefile.header
 echo "MIPS_LD="$MIPS_CC"-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
 echo "" >> _Makefile.header
 
+
+##  PPC64 cross-compiler:
+#
+#printf "Checking for a GNU CC cross-compiler for 64-bit PPC... "
+#echo 'int f(int x) { return x; }' > _testprog.c
+#
+#PPC_CC=''
+#for a in ppc64 powerpc64; do
+#  for b in unknown; do
+#    for c in elf elf64 linux linux64 aix aix5; do
+#	PPC_TRY=$a-$b-$c
+#	printf '#!/bin/sh\n'$PPC_TRY'-gcc _testprog.c -c\n' > _test.sh
+#	chmod 755 _test.sh
+#	./_test.sh > /dev/null 2> /dev/null
+#	if [ -f _testprog.o ]; then
+#		PPC_CC=$PPC_TRY
+#		break
+#	fi
+#    done
+#  done
+#done
+#
+#if [ z$PPC_CC = z ]; then
+#	echo "none"
+#else
+#	echo $PPC_CC"-gcc"
+#fi
+#
+#rm -f _testprog* _test.sh
+#
+#echo "PPC_CC="$PPC_CC"-gcc -g -O3 -fno-builtin" >> _Makefile.header
+#echo "PPC_AS="$PPC_CC"-as" >> _Makefile.header
+#echo "PPC_LD="$PPC_CC"-ld -e main" >> _Makefile.header
+#echo "" >> _Makefile.header
+
+
+#  Create the Makefiles:
 
 for a in . src devices devices/fonts tests; do
 	echo "creating $a/Makefile"

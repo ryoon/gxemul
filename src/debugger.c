@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.63 2005-01-29 09:54:57 debug Exp $
+ *  $Id: debugger.c,v 1.64 2005-01-29 10:30:31 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1684,7 +1684,7 @@ static char *debugger_readline(void)
 		 *  running processes, but it is still very ugly.
 		 */
 		while ((ch = console_readchar()) < 0) {
-			x11_check_event(debugger_machine);
+			x11_check_event(debugger_emuls, debugger_n_emuls);
 			usleep(1);
 		}
 

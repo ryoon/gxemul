@@ -28,13 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.h,v 1.2 2005-01-28 14:58:28 debug Exp $
+ *  $Id: x11.h,v 1.3 2005-01-29 10:30:30 debug Exp $
  *
  *  Headerfile for src/x11.c.
  */
 
 #include "misc.h"
 
+struct emul;
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>
@@ -95,7 +96,7 @@ void x11_putimage_fb(struct machine *, int);
 void x11_init(struct machine *);
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int scaledown, struct machine *);
-void x11_check_event(struct machine *);
+void x11_check_event(struct emul **emuls, int n_emuls);
 
 
 #endif	/*  X11_H  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.135 2004-07-11 07:11:16 debug Exp $
+ *  $Id: machine.c,v 1.136 2004-07-11 15:25:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -352,21 +352,27 @@ void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
  */
 void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
+	int current;
+
 	irq_nr -= 8;
+	irq_nr &= 0xff;
 
 	if (assrt) {
-		/*  OR in the irq_nr mask into the CSR:  */
+		/*  OR in the irq_nr into the CSR:  */
 		kn02_csr->csr |= irq_nr;
-
-		/*  Assert MIPS interrupt 2:  */
-		cpu_interrupt(cpu, 2);
 	} else {
-		/*  AND out the irq_nr mask from the CSR:  */
-		kn02_csr->csr &= ~irq_nr;
-
-		if ((kn02_csr->csr & KN02_CSR_IOINT) == 0)
-			cpu_interrupt_ack(cpu, 2);
+		/*  AND out the irq_nr from the CSR:  */
+		kn02_csr->csr = (kn02_csr->csr & 0xffffff00ULL)
+		    | ((kn02_csr->csr & 0xff) & ~irq_nr);
 	}
+
+	current = (kn02_csr->csr & KN02_CSR_IOINT) &
+	    ((kn02_csr->csr & KN02_CSR_IOINTEN) >> KN02_CSR_IOINTEN_SHIFT);
+
+	if (current == 0)
+		cpu_interrupt_ack(cpu, 2);
+	else
+		cpu_interrupt(cpu, 2);
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.20 2004-04-09 05:13:02 debug Exp $
+ *  $Id: dev_asc.c,v 1.21 2004-04-11 15:47:18 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -106,6 +106,10 @@ char *asc_reg_names[0x10] = {
 	"NCR_CFG1", "NCR_CCF", "NCR_TEST", "NCR_CFG2",
 	"NCR_CFG3", "reg_0xd", "NCR_TCH", "reg_0xf"
 };
+
+
+/*  This is referenced below.  */
+int dev_asc_select(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes);
 
 
 /*
@@ -197,35 +201,6 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
 }
 
 
-#if 0
-/*
- *  dev_asc_get_data_out():
- *
- *  Called from a SCSI disk when it wants to get the data_out stuff
- *  from the controller.
- */
-void dev_asc_get_data_out(struct scsi_transfer *xp, size_t len)
-{
-	struct asc_data *d = xp->gdo_extra;
-	size_t i;
-	unsigned char ch;
-
-	printf("\n{{ get_data_out(len %i): ", (int)len);
-
-	scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
-
-	for (i=0; i<len; i++) {
-		int ofs = d->dma_address_reg + i;
-		ch = d->dma[ofs & (sizeof(d->dma)-1)];
-		d->xferp->data_out[i] = ch;
-		printf(" %02x", ch);
-	}
-
-	printf(" }}\n\n");
-}
-#endif
-
-
 /*
  *  dev_asc_newxfer():
  *
@@ -304,11 +279,8 @@ fatal("TODO..............\n");
 					for (i=0; i<len; i++)
 						debug(" %02x", d->xferp->data_in[i]);
 
-				memcpy(d->dma + d->dma_address_reg, d->xferp->data_in, len);
+				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len);
 
-/*				free(d->incoming_data);
-				d->incoming_data = NULL;
-*/
 				len = 0;
 
 				d->reg_wo[NCR_TCL] = len & 255;
@@ -349,22 +321,64 @@ fatal("TODO.......asdgasin\n");
 			/*  Successful DMA transfer:  */
 			d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
 		}
+	} else if (d->cur_phase == PHASE_MSG_OUT) {
+		debug("MSG OUT: ");
+		/*  Data going from the controller to an external device:  */
+		if (!dmaflag) {
+			/*  There should already be one byte in msg_out, so we
+			    just extend the message:  */
+			int oldlen = d->xferp->msg_out_len;
+			int newlen;
+
+			if (oldlen != 1) {
+				fatal(" (PHASE OUT MSG len == %i, should be 1)\n",
+				    oldlen);
+			}
+
+			newlen = oldlen + d->n_bytes_in_fifo;
+			d->xferp->msg_out = realloc(d->xferp->msg_out, newlen);
+			d->xferp->msg_out_len = newlen;
+			if (d->xferp->msg_out == NULL) {
+				fprintf(stderr, "out of memory realloc'ing msg_out\n");
+				exit(1);
+			}
+
+			i = oldlen;
+			while (d->fifo_in != d->fifo_out) {
+				ch = dev_asc_fifo_read(d);
+				d->xferp->msg_out[i++] = ch;
+				debug("%02x ", ch);
+			}
+		} else {
+			/*  Copy data from DMA to msg_out:  */
+
+			/*  TODO  */
+			res = 0;
+		}
+	} else if (d->cur_phase == PHASE_COMMAND) {
+		debug(" COMMAND ==> select ");
+		res = dev_asc_select(d, d->reg_ro[NCR_CFG1] & 7, d->reg_wo[NCR_SELID] & 7, dmaflag, 0);
+		return res;
 	} else {
 		fatal("!!! TODO: unknown/unimplemented phase in transfer: %i\n", d->cur_phase);
 	}
 
 	/*  Redo the command if data was just send using DATA_OUT:  */
 	if (d->cur_phase == PHASE_DATA_OUT) {
-		int ok = diskimage_scsicommand(d->reg_wo[NCR_SELID] & 7, d->xferp);
+		res = diskimage_scsicommand(d->reg_wo[NCR_SELID] & 7, d->xferp);
 	}
 
-	d->cur_phase = PHASE_STATUS;
+	if (d->cur_phase == PHASE_MSG_OUT) {
+		d->cur_phase = PHASE_COMMAND;
+	} else {
+		d->cur_phase = PHASE_STATUS;
+	}
 
 	/*  Cause an interrupt after the transfer:  */
 	d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
-	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
+	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  4?  */
 
 	debug("}");
 	return res;
@@ -383,7 +397,6 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 		int dmaflag, int n_messagebytes)
 {
 	int ok, len, i, ch;
-	unsigned char *buf, *retbuf;
 
 	debug(" { SELECT id %i: ", to_id);
 
@@ -421,6 +434,28 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 		}
 	} else {
 		debug(" none");
+	}
+
+	/*  Special case: SELATNS (with STOP sequence):  */
+	if (d->cur_phase == PHASE_MSG_OUT) {
+		debug(" MSG OUT DEBUG");
+		if (d->xferp->msg_out_len != 1) {
+			fatal(" (SELATNS: msg out len == %i, should be 1)",
+			    d->xferp->msg_out_len);
+			return 0;
+		}
+
+/* d->cur_phase = PHASE_COMMAND; */
+
+		/*  According to the LSI manual:  */
+		d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+		d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+		d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+		d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
+		d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 1;
+
+		debug("}");
+		return 1;
 	}
 
 	/*
@@ -477,11 +512,8 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 	else
 		d->cur_phase = PHASE_STATUS;
 
-	d->reg_ro[NCR_STAT] &= ~7;
-	d->reg_ro[NCR_STAT] |= d->cur_phase;
-
-	d->reg_ro[NCR_STEP] &= ~7;
-	d->reg_ro[NCR_STEP] |= 4;	/*  DONE (?)  */
+	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
+	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  DONE (?)  */
 
 	debug("}");
 
@@ -505,7 +537,6 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 
 
-/*	dev_asc_tick(cpu, extra);  */
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 4;
 
@@ -589,7 +620,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	d->reg_ro[11] = d->reg_wo[11];
 	d->reg_ro[12] = d->reg_wo[12];
 
-	if (regnr == NCR_CMD && writeflag==MEM_WRITE) {
+	if (regnr == NCR_CMD && writeflag == MEM_WRITE) {
 		debug(" ");
 		if (idata & NCRCMD_DMA)
 			debug("[DMA] ");
@@ -676,13 +707,16 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		case NCRCMD_SELATN:
 		case NCRCMD_SELATNS:
 		case NCRCMD_SELATN3:
+			d->cur_phase = PHASE_COMMAND;
 			switch (idata & ~NCRCMD_DMA) {
 			case NCRCMD_SELATN:
 			case NCRCMD_SELATNS:
-				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATNS)
-					debug("SELATNS: select with atn and stop (TODO: stop), id %i", d->reg_wo[NCR_SELID] & 7);
-				else
+				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATNS) {
+					debug("SELATNS: select with atn and stop, id %i", d->reg_wo[NCR_SELID] & 7);
+					d->cur_phase = PHASE_MSG_OUT;
+				} else {
 					debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+				}
 				n_messagebytes = 1;
 				break;
 			case NCRCMD_SELATN3:
@@ -791,13 +825,16 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		/*
 		 *  Reading the interrupt register de-asserts the
 		 *  interrupt pin.  Also, INTR, STEP, and STAT are all
-		 *  cleared, according to page 64 of the LSI53CF92A manual.
+		 *  cleared, according to page 64 of the LSI53CF92A manual,
+		 *  if "interrupt output is true".
 		 */
-		cpu_interrupt_ack(cpu, d->irq_nr);
+		if (d->reg_ro[NCR_STAT] & NCRSTAT_INT) {
+			d->reg_ro[NCR_INTR] = 0;
+			d->reg_ro[NCR_STEP] = 0;
+			d->reg_ro[NCR_STAT] = 0;
+		}
 
-		d->reg_ro[NCR_INTR] = 0;
-		d->reg_ro[NCR_STEP] = 0;
-		d->reg_ro[NCR_STAT] = 0;
+		cpu_interrupt_ack(cpu, d->irq_nr);
 	}
 
 	if (regnr == NCR_CFG1) {
@@ -838,7 +875,6 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH,
 	    dev_asc_access, d);
 
-	/*  Tick every 2048th cycle:  */
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 16);
 }
 

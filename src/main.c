@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.29 2004-04-06 10:46:03 debug Exp $
+ *  $Id: main.c,v 1.30 2004-04-11 15:47:17 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -164,8 +164,13 @@ void usage(char *progname)
 			printf("\n");
 	}
 
-	printf("  -d fname  add fname as a disk image. (For a CD-ROM, use a \"C:\" prefix\n");
-	printf("            on the filename)\n");
+	printf("  -d fname  add fname as a disk image. You can add \"xxx:\" as a prefix\n");
+	printf("            where xxx is one or more of the following:\n");
+	printf("                b     specifies that this is the boot device\n");
+	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
+	printf("                d     SCSI DISK (this is the default)\n");
+	printf("                r     read-only (don't allow changes to the file)\n");
+	printf("                0-7   force a specific SCSI ID number\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");

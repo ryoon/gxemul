@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.14 2004-04-09 05:12:17 debug Exp $
+ *  $Id: diskimage.c,v 1.15 2004-04-11 15:47:17 debug Exp $
  *
  *  Disk image support.
  *
@@ -47,6 +47,10 @@ struct diskimage {
 
 	int		writable;
 	int		is_a_cdrom;
+	int		is_boot_device;
+
+	int		rpms;
+	int		ncyls;
 
 	FILE		*f;
 };
@@ -156,7 +160,7 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len)
  */
 int diskimage_exist(int disk_id)
 {
-	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
+	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
 		return 0;
 
 	return 1;
@@ -171,7 +175,7 @@ int diskimage_exist(int disk_id)
  */
 int64_t diskimage_getsize(int disk_id)
 {
-	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
+	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
 		return -1;
 
 	return diskimages[disk_id]->total_size;
@@ -197,8 +201,9 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 {
 	int retlen;
 	int64_t size, ofs;
+	int pagecode;
 
-	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
+	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
 		return 0;
 
 	if (xferp->cmd == NULL) {
@@ -223,6 +228,8 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 			debug(" (weird len=%i)", xferp->cmd_len);
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
+		if (xferp->cmd[1] != 0x00)
+			fatal("WARNING: TEST_UNIT_READY with cmd[1]=0x%02x not yet implemented\n");
 
 		/*  Return msg and status:  */
 		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
@@ -264,11 +271,17 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		memcpy(xferp->data_in+16, "DISK            ", 16);
 		memcpy(xferp->data_in+32, "V0.0", 4);
 
+memcpy(xferp->data_in+8,  "DEC     ", 8);
+memcpy(xferp->data_in+16, "RZ58            ", 16);
+
 		/*  Some data is different for CD-ROM drives:  */
 		if (diskimages[disk_id]->is_a_cdrom) {
 			xferp->data_in[0] = 0x05;	/*  0x05 = CD-ROM  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "CDROM           ", 16);
+
+memcpy(xferp->data_in+8,  "SONY    ", 8);
+memcpy(xferp->data_in+16, "CD-ROM          ", 16);
 		}
 
 
@@ -322,14 +335,73 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 
-		/*  TODO: check more cmd fields  */
-
 		retlen = xferp->cmd[4];
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
 
-		/*  TODO: fill in page codes and whatever...  */
+		pagecode = xferp->cmd[2] & 0x3f;
+
+		/*  4 or 8 bytes of header  */
+		xferp->data_in[0] = retlen;		/*  ?  */
+		xferp->data_in[3] = 8 * 1;		/*  ?: 1 page  */
+
+		/*  descriptors, 8 bytes (each)  */
+
+		/*  page, n bytes (each)  */
+		switch (pagecode) {
+		case 1:		/*  read-write error recovery page  */
+			xferp->data_in[12 + 0] = pagecode;
+			xferp->data_in[12 + 1] = 10;
+			break;
+		case 3:		/*  format device page  */
+			xferp->data_in[12 + 0] = pagecode;
+			xferp->data_in[12 + 1] = 22;
+
+			/*  10,11 = sectors per track  */
+			xferp->data_in[12 + 10] = 0;
+			xferp->data_in[12 + 11] = 1;	/*  TODO  */
+
+			/*  12,13 = physical sector size  */
+			xferp->data_in[12 + 12] = (logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 13] = logical_block_size & 255;
+			break;
+		case 4:		/*  rigid disk geometry page  */
+			xferp->data_in[12 + 0] = pagecode;
+			xferp->data_in[12 + 1] = 22;
+			xferp->data_in[12 + 2] = (diskimages[disk_id]->ncyls >> 16) & 255;
+			xferp->data_in[12 + 3] = (diskimages[disk_id]->ncyls >> 8) & 255;
+			xferp->data_in[12 + 4] = diskimages[disk_id]->ncyls & 255;
+			xferp->data_in[12 + 5] = 15;	/*  nr of heads  */
+
+			xferp->data_in[12 + 20] = (diskimages[disk_id]->rpms >> 8) & 255;
+			xferp->data_in[12 + 21] = diskimages[disk_id]->rpms & 255;
+			break;
+		case 5:		/*  flexible disk page  */
+			xferp->data_in[12 + 0] = pagecode;
+			xferp->data_in[12 + 1] = 0x1e;
+
+			/*  2,3 = transfer rate  */
+			xferp->data_in[12 + 2] = ((5000) >> 8) & 255;
+			xferp->data_in[12 + 3] = (5000) & 255;
+
+			xferp->data_in[12 + 4] = 2;	/*  nr of heads  */
+			xferp->data_in[12 + 5] = 18;	/*  sectors per track  */
+
+			/*  6,7 = data bytes per sector  */
+			xferp->data_in[12 + 6] = (logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 7] = logical_block_size & 255;
+
+			xferp->data_in[12 + 8] = (diskimages[disk_id]->ncyls >> 8) & 255;
+			xferp->data_in[12 + 9] = diskimages[disk_id]->ncyls & 255;
+
+			xferp->data_in[12 + 28] = (diskimages[disk_id]->rpms >> 8) & 255;
+			xferp->data_in[12 + 29] = diskimages[disk_id]->rpms & 255;
+			break;
+		default:
+			fatal("MODE_SENSE for page %i is not yet implemented!!!\n", pagecode);
+		}
+
 
 		/*  Return status and message:  */
 		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
@@ -340,23 +412,40 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		break;
 
 	case SCSICMD_READ:
+	case SCSICMD_READ_10:
 		debug("READ");
 
-		if (xferp->cmd_len != 6)
-			debug(" (weird len=%i)", xferp->cmd_len);
+		if (xferp->cmd[0] == SCSICMD_READ) {
+			if (xferp->cmd_len != 6)
+				debug(" (weird len=%i)", xferp->cmd_len);
 
-		/*
-		 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
-		 *  logical block address.
-		 *
-		 *  cmd[4] holds the number of logical blocks to transfer.
-		 *  (special case if the value is 0, actually means 256.)
-		 */
-		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
-		      (xferp->cmd[2] << 8) + xferp->cmd[3];
-		retlen = xferp->cmd[4];
-		if (retlen == 0)
-			retlen = 256;
+			/*
+			 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
+			 *  logical block address.
+			 *
+			 *  cmd[4] holds the number of logical blocks to transfer.
+			 *  (special case if the value is 0, actually means 256.)
+			 */
+			ofs = ((xferp->cmd[1] & 0x1f) << 16) +
+			      (xferp->cmd[2] << 8) + xferp->cmd[3];
+			retlen = xferp->cmd[4];
+			if (retlen == 0)
+				retlen = 256;
+		} else {
+			if (xferp->cmd_len != 10)
+				debug(" (weird len=%i)", xferp->cmd_len);
+
+			/*
+			 *  cmd[2..5] hold the logical block address.
+			 *  cmd[7..8] holds the number of logical blocks to transfer.
+			 *  (special case if the value is 0, actually means 65536.)
+			 */
+			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
+			      (xferp->cmd[4] << 8) + xferp->cmd[5];
+			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
+			if (retlen == 0)
+				retlen = 65536;
+		}
 
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
@@ -376,23 +465,40 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		break;
 
 	case SCSICMD_WRITE:
+	case SCSICMD_WRITE_10:
 		debug("WRITE");
 
-		if (xferp->cmd_len != 6)
-			debug(" (weird len=%i)", xferp->cmd_len);
+		if (xferp->cmd[0] == SCSICMD_WRITE) {
+			if (xferp->cmd_len != 6)
+				debug(" (weird len=%i)", xferp->cmd_len);
 
-		/*
-		 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
-		 *  logical block address.
-		 *
-		 *  cmd[4] holds the number of logical blocks to transfer.
-		 *  (special case if the value is 0, actually means 256.)
-		 */
-		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
-		      (xferp->cmd[2] << 8) + xferp->cmd[3];
-		retlen = xferp->cmd[4];
-		if (retlen == 0)
-			retlen = 256;
+			/*
+			 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
+			 *  logical block address.
+			 *
+			 *  cmd[4] holds the number of logical blocks to transfer.
+			 *  (special case if the value is 0, actually means 256.)
+			 */
+			ofs = ((xferp->cmd[1] & 0x1f) << 16) +
+			      (xferp->cmd[2] << 8) + xferp->cmd[3];
+			retlen = xferp->cmd[4];
+			if (retlen == 0)
+				retlen = 256;
+		} else {
+			if (xferp->cmd_len != 10)
+				debug(" (weird len=%i)", xferp->cmd_len);
+
+			/*
+			 *  cmd[2..5] hold the logical block address.
+			 *  cmd[7..8] holds the number of logical blocks to transfer.
+			 *  (special case if the value is 0, actually means 65536.)
+			 */
+			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
+			      (xferp->cmd[4] << 8) + xferp->cmd[5];
+			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
+			if (retlen == 0)
+				retlen = 65536;
+		}
 
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
@@ -456,9 +562,21 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		retlen = xferp->cmd[4];
 
+		/*  TODO: bits 765 of buf[1] contains the LUN  */
+		if (xferp->cmd[1] != 0x00)
+			fatal("WARNING: REQUEST_SENSE with cmd[1]=0x%02x not yet implemented\n");
+
+		if (retlen < 18) {
+			fatal("WARNING: SCSI request sense len=%i, <18!\n", retlen);
+			retlen = 18;
+		}
+
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
 
+		xferp->data_in[0] = 0x80 + 0x70;	/*  0x80 = valid, 0x70 = "current errors"  */
+		/*  TODO  */
+		xferp->data_in[7] = retlen - 7;		/*  additional sense length  */
 		/*  TODO  */
 
 		/*  Return status and message:  */
@@ -490,7 +608,6 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 	case SCSICMD_MODE_SELECT:
 	case 0x1e:
-	case 0x28:
 		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 
 		/*  TODO  */
@@ -524,7 +641,7 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 {
 	int len_done;
 
-	if (disk_id >= n_diskimages || diskimages[disk_id]==NULL) {
+	if (disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL) {
 		fatal("trying to access a non-existant disk image (%i)\n", disk_id);
 		exit(1);
 	}
@@ -557,8 +674,14 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
  *  diskimage_add():
  *
  *  Add a disk image.  fname is the filename of the disk image.
- *  If the filename begins with "C:", it is treated as a CDROM
- *  instead of a normal disk (and the "C:" part is skipped).
+ *  The filename may be prefixed with one or more modifiers, followed
+ *  by a colon.
+ *
+ *	b	specifies that this is the boot device
+ *	c	CD-ROM (instead of normal SCSI DISK)
+ *	d	SCSI DISK (this is the default)
+ *	r       read-only (don't allow changes to the file)
+ *	0-7	force a specific SCSI ID number
  *
  *  Returns an integer >= 0 identifying the disk image.
  */
@@ -566,13 +689,79 @@ int diskimage_add(char *fname)
 {
 	int id;
 	FILE *f;
+	char *cp;
+	int prefix_b = 0;
+	int prefix_c = 0;
+	int prefix_d = 0;
+	int prefix_id = -1;
+	int prefix_r = 0;
 
-	if (n_diskimages >= MAX_DISKIMAGES) {
-		fprintf(stderr, "too many disk images\n");
-		exit(1);
+	if (fname == NULL) {
+		fprintf(stderr, "diskimage_add(): NULL ptr\n");
+		return 0;
 	}
 
-	id = n_diskimages;
+	/*  Get prefix from fname:  */
+	cp = strchr(fname, ':');
+	if (cp != NULL) {
+		while (fname <= cp) {
+			char c = *fname++;
+			switch (c) {
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+				prefix_id = c - '0';
+				break;
+			case 'b':
+				prefix_b = 1;
+				break;
+			case 'c':
+				prefix_c = 1;
+				break;
+			case 'd':
+				prefix_d = 1;
+				break;
+			case 'r':
+				prefix_r = 1;
+				break;
+			case ':':
+				break;
+			default:
+				fprintf(stderr, "diskimage_add(): invalid prefix char '%c'\n", c);
+				exit(1);
+			}
+		}
+	}
+
+	/*  Calculate which ID to use:  */
+	if (prefix_id == -1) {
+		/*  Find first free ID:  */
+		for (id = 0; id < MAX_DISKIMAGES; id++) {
+			if (diskimages[id] == NULL)
+				break;
+		}
+
+		if (id >= MAX_DISKIMAGES) {
+			fprintf(stderr, "too many disk images\n");
+			exit(1);
+		}
+	} else {
+		id = prefix_id;
+		if (id < 0 || id >= MAX_DISKIMAGES) {
+			fprintf(stderr, "invalid id\n");
+			exit(1);
+		}
+		if (diskimages[id] != NULL) {
+			fprintf(stderr, "disk image id %i already in use\n", id);
+			exit(1);
+		}
+	}
+
 
 	diskimages[id] = malloc(sizeof(struct diskimage));
 	if (diskimages[id] == NULL) {
@@ -581,21 +770,26 @@ int diskimage_add(char *fname)
 	}
 	memset(diskimages[id], 0, sizeof(struct diskimage));
 
-	diskimages[id]->is_a_cdrom = 0;
-
 	diskimages[id]->fname = malloc(strlen(fname) + 1);
 	if (diskimages[id]->fname == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-
-	/*  If the filename begins with "C:" then it is a CD-ROM image:  */
-	if (strlen(fname) > 2 && strncasecmp(fname, "C:", 2) == 0) {
-		diskimages[id]->is_a_cdrom = 1;
-		fname += 2;
-	}
-
 	strcpy(diskimages[id]->fname, fname);
+
+
+	/*
+	 *  Is this a CD-ROM or a normal disk?
+	 *
+	 *  An intelligent guess would be that filenames ending with .iso
+	 *  are CD-ROM images.
+	 */
+	if (prefix_c ||
+	    ((strlen(diskimages[id]->fname) > 4 &&
+	    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
+	    && !prefix_d)
+	   )
+		diskimages[id]->is_a_cdrom = 1;
 
 	/*  Measure total_size:  */
 	f = fopen(fname, "r");
@@ -607,17 +801,15 @@ int diskimage_add(char *fname)
 	diskimages[id]->total_size = ftell(f);
 	fclose(f);
 
+	diskimages[id]->ncyls = diskimages[id]->total_size / 1048576;
+	diskimages[id]->rpms = 3600;
+
+	if (prefix_b)
+		diskimages[id]->is_boot_device = 1;
+
 	diskimages[id]->writable = access(fname, W_OK) == 0? 1 : 0;
 
-	/*
-	 *  Make an intelligent guess that filenames ending with .iso
-	 *  mean CD-ROM images.
-	 */
-	if (strlen(diskimages[id]->fname) > 4 &&
-	    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
-		diskimages[id]->is_a_cdrom = 1;
-
-	if (diskimages[id]->is_a_cdrom)
+	if (diskimages[id]->is_a_cdrom || prefix_r)
 		diskimages[id]->writable = 0;
 
 	diskimages[id]->f = fopen(fname, diskimages[id]->writable? "r+" : "r");
@@ -633,6 +825,44 @@ int diskimage_add(char *fname)
 
 
 /*
+ *  diskimage_bootdev():
+ *
+ *  Returns the disk id (0..7) of the device which we're booting from.
+ */
+int diskimage_bootdev(void)
+{
+	int i;
+	int first_dev = -1;
+	int bootdev = -1;
+
+	for (i=0; i<MAX_DISKIMAGES; i++) {
+		if (diskimages[i] != NULL && first_dev < 0)
+			first_dev = i;
+
+		if (diskimages[i] != NULL && diskimages[i]->is_boot_device) {
+			if (bootdev == -1)
+				bootdev = i;
+			else {
+				fprintf(stderr, "more than one boot device? id %i and id %i\n",
+				    bootdev, i);
+			}
+		}
+	}
+
+	if (bootdev < 0) {
+		bootdev = first_dev;
+
+		if (bootdev < 0)
+			bootdev = 0;	/*  Just accept that there's no boot device.  */
+		else
+			debug("No disk marked as boot device; booting from id %i\n", bootdev);
+	}
+
+	return bootdev;
+}
+
+
+/*
  *  diskimage_dump_info():
  *
  *  Debug dump of all diskimages that are loaded.
@@ -644,13 +874,15 @@ void diskimage_dump_info(void)
 {
 	int i;
 
-	for (i=0; i<n_diskimages; i++) {
-		debug("adding diskimage %i: '%s', %s, %li bytes (%s%li sectors)\n",
-		    i, diskimages[i]->fname,
-		    diskimages[i]->writable? "read/write" : "read-only",
-		    (long int) diskimages[i]->total_size,
-		    diskimages[i]->is_a_cdrom? "CD-ROM, " : "",
-		    (long int) (diskimages[i]->total_size / 512));
-	}
+	for (i=0; i<MAX_DISKIMAGES; i++)
+		if (diskimages[i] != NULL) {
+			debug("adding diskimage id=%i: '%s', %s, %li bytes (%s%li sectors)%s\n",
+			    i, diskimages[i]->fname,
+			    diskimages[i]->writable? "read/write" : "read-only",
+			    (long int) diskimages[i]->total_size,
+			    diskimages[i]->is_a_cdrom? "CD-ROM, " : "DISK, ",
+			    (long int) (diskimages[i]->total_size / 512),
+			    diskimages[i]->is_boot_device? ", BOOT DEVICE" : "");
+		}
 }
 

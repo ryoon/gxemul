@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.31 2004-02-06 06:11:32 debug Exp $
+ *  $Id: misc.h,v 1.32 2004-02-18 09:29:28 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -34,8 +34,8 @@
  *         perhaps cpu.h, opcodes.h (all the opcodes)?
  */
 
-#include <inttypes.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>

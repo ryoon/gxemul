@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.48 2004-04-15 15:05:58 debug Exp $
+ *  $Id: cpu.c,v 1.49 2004-04-17 20:55:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2313,38 +2313,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		if (hi6 == HI6_COP2)	cpnr = 2;
 		if (hi6 == HI6_COP3)	cpnr = 3;
 
-		instr_mnem = NULL;
-
-		copz = ((instr[3] & 3) << 3) + (instr[2] >> 5);
-		rt = instr[2] & 31;
-		rd = (instr[1] >> 3) & 31;
-		if (copz == COPz_MFCz)	instr_mnem = "mfc";
-		if (copz == COPz_DMFCz)	instr_mnem = "dmfc";
-		if (copz == COPz_MTCz)	instr_mnem = "mtc";
-		if (copz == COPz_DMTCz)	instr_mnem = "dmtc";
-
-		if (cpnr == 1) {
-			if (copz == COPz_CFCz)	instr_mnem = "cfc";
-			if (copz == COPz_CTCz)	instr_mnem = "ctc";
-		}
-
-		if (instruction_trace && instr_mnem!=NULL)
-			debug("%s%i\tr%i,r%i\n", instr_mnem, cpnr, rt, rd);
-
-		if (instruction_trace && instr_mnem == NULL) {
-			if ((imm & 0xff) == COP0_TLBR)   instr_mnem = "tlbr";
-			if ((imm & 0xff) == COP0_TLBWI)  instr_mnem = "tlbwi";
-			if ((imm & 0xff) == COP0_TLBWR)  instr_mnem = "tlbwr";
-			if ((imm & 0xff) == COP0_TLBP)   instr_mnem = "tlbp";
-			if ((imm & 0xff) == COP0_RFE)    instr_mnem = "rfe";
-			if ((imm & 0xff) == COP0_ERET)   instr_mnem = "eret";
-
-			if (instr_mnem==NULL)
-				debug("cop%i\t%08lx\n", cpnr, imm);
-			else
-				debug("%s\n", instr_mnem);
-		}
-
 		/*
 		 *  If there is no coprocessor nr cpnr, or we are running in
 		 *  userland and the coprocessor is not marked as Useable in
@@ -2355,34 +2323,14 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		if (cpu->coproc[cpnr] == NULL ||
 		    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 		    ) {
+			if (instruction_trace)
+				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);
+
 			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 		} else {
-			switch (copz) {
-			case COPz_MFCz:
-			case COPz_DMFCz:
-				coproc_register_read(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
-				cpu->gpr[rt] = tmpvalue;
-				if (copz == COPz_MFCz) {
-					/*  Sign-extend:  */
-					cpu->gpr[rt] &= 0xffffffff;
-					if (cpu->gpr[rt] & 0x80000000)
-						cpu->gpr[rt] |= 0xffffffff00000000;
-				}
-				break;
-			case COPz_MTCz:
-			case COPz_DMTCz:
-				tmpvalue = cpu->gpr[rt];
-				if (copz == COPz_MTCz) {
-					/*  Sign-extend:  */
-					tmpvalue &= 0xffffffff;
-					if (tmpvalue & 0x80000000)
-						tmpvalue |= 0xffffffff00000000;
-				}
-				coproc_register_write(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
-				break;
-			default:
-				coproc_function(cpu, cpu->coproc[cpnr], imm);
-			}
+			/*  The coproc_function code should output instruction trace.  */
+
+			coproc_function(cpu, cpu->coproc[cpnr], imm);
 		}
 		break;
 	case HI6_CACHE:

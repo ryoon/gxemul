@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.26 2004-04-15 03:59:21 debug Exp $
+ *  $Id: coproc.c,v 1.27 2004-04-17 20:55:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -508,25 +508,131 @@ fatal("xcontext 0x%016llx\n", tmp);
 
 
 /*
- *  coproc_function();
+ *  fpu_function():
+ *
+ *  Returns 1 if function was implemented, 0 otherwise.
+ *  Debug trace should be printed for known instructions.
+ */
+int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
+{
+	int fd, fs, fmt;
+
+	fmt = (function >> 21) & 31;
+	fs = (function >> 11) & 31;
+	fd = (function >> 6) & 31;
+
+	/*  cvt.s.fmt: Convert to single floating-point  */
+	if ((function & 0x001f003f) == 0x00000020) {
+		if (instruction_trace)
+			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
+
+		/*  TODO: convert from fs (format fmt) to fd  */
+
+		cp->reg[fd] = cp->reg[fs];	/*  TODO...  */
+
+		return 1;
+	}
+
+	return 0;
+}
+
+
+/*
+ *  coproc_function():
  *
  *  Execute a coprocessor specific instruction.
+ *  cp must be != NULL.
+ *  Debug trace should be printed for known instructions.
+ *
+ *  TODO:  This is a mess and should be restructured (again).
  */
 void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 {
-	int co_bit, op, rt, fs, g_bit, index, found, i;
-	uint64_t vpn2, xmask;
+	int co_bit, op, rt, rd, fs, g_bit, index, found, i;
+	int copz;
+	uint64_t vpn2, xmask, tmpvalue;
+	char *instr_mnem = NULL;
+	int cpnr = cp->coproc_nr;
 
-/*  Ugly R59000 hacks:  */
-if ((function & 0xfffff) == 0x38) {		/*  ei  */
-	cpu->coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
-	return;
-}
-if ((function & 0xfffff) == 0x39) {		/*  di  */
-	cpu->coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
-	return;
-}
+	/*  For quick reference:  */
+	copz = (function >> 21) & 31;
+	rt = (function >> 16) & 31;
+	rd = (function >> 11) & 31;
 
+	if (cpnr < 2 && ((function & 0x03e007f8) == (COPz_MFCz << 21))
+	             || ((function & 0x03e007f8) == (COPz_DMFCz << 21))) {
+		if (instruction_trace)
+			debug("%s%i\tr%i,r%i\n", copz==COPz_DMFCz? "dmfc" : "mfc", cpnr, rt, rd);
+
+		coproc_register_read(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
+		cpu->gpr[rt] = tmpvalue;
+		if (copz == COPz_MFCz) {
+			/*  Sign-extend:  */
+			cpu->gpr[rt] &= 0xffffffff;
+			if (cpu->gpr[rt] & 0x80000000)
+				cpu->gpr[rt] |= 0xffffffff00000000;
+		}
+		return;
+	}
+
+	if (cpnr < 2 && ((function & 0x03e007f8) == (COPz_MTCz << 21))
+	             || ((function & 0x03e007f8) == (COPz_DMTCz << 21))) {
+		if (instruction_trace)
+			debug("%s%i\tr%i,r%i\n", copz==COPz_DMTCz? "dmtc" : "mtc", cpnr, rt, rd);
+
+		tmpvalue = cpu->gpr[rt];
+		if (copz == COPz_MTCz) {
+			/*  Sign-extend:  */
+			tmpvalue &= 0xffffffff;
+			if (tmpvalue & 0x80000000)
+				tmpvalue |= 0xffffffff00000000;
+		}
+		coproc_register_write(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
+		return;
+	}
+
+	if (cpnr == 1 || cpnr == 2) {
+		switch (copz) {
+		case COPz_CFCz:		/*  Copy from FPU control register  */
+			rt = (function >> 16) & 31;
+			fs = (function >> 11) & 31;
+			if (instruction_trace)
+				debug("cfc%i\tr%i,r%i\n", cpnr, rt, fs);
+			cpu->gpr[rt] = cp->fcr[fs];
+			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
+			return;
+		case COPz_CTCz:		/*  Copy to FPU control register  */
+			rt = (function >> 16) & 31;
+			fs = (function >> 11) & 31;
+			if (instruction_trace)
+				debug("ctc%i\tr%i,r%i\n", cpnr, rt, fs);
+			if (fs == 0)
+				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
+			else
+				cp->fcr[fs] = cpu->gpr[rt];
+			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
+			/*  TODO: writing to control register 31 should cause
+				exceptions, depending on status bits!  */
+			return;
+		default:
+			;
+		}
+	}
+
+	/*  Ugly R59000 hacks:  */
+	if ((function & 0xfffff) == 0x38) {		/*  ei  */
+		if (instruction_trace)
+			debug("ei\n");
+		cpu->coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
+		return;
+	}
+
+	if ((function & 0xfffff) == 0x39) {		/*  di  */
+		if (instruction_trace)
+			debug("di\n");
+		cpu->coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
+		return;
+	}
 
 	co_bit = (function >> 25) & 1;
 
@@ -536,6 +642,8 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 		case 1:
 			switch (op) {
 			case COP0_TLBR:		/*  Read indexed TLB entry  */
+				if (instruction_trace)
+					debug("tlbr\n");
 				if (cpu->cpu_type.mmu_model == MMU3K) {
 					i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
 					if (i >= cp->nr_of_tlbs) {
@@ -569,11 +677,13 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
+				if (instruction_trace) {
+					if (op == COP0_TLBWI)
+						debug("tlbwi");
+					else
+						debug("tlbwr");
+				}
 #if 0
-				if (op == COP0_TLBWI)
-					debug("TLBWI");
-				else
-					debug("TLBWR");
 				debug(": index = %08llx", (long long) cp->reg[COP0_INDEX]);
 				debug(" random = %08llx", (long long) cp->reg[COP0_RANDOM]);
 				debug(" mask = %016llx", (long long) cp->reg[COP0_PAGEMASK]);
@@ -646,6 +756,8 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 
 				return;
 			case COP0_TLBP:		/*  Probe TLB for matching entry  */
+				if (instruction_trace)
+					debug("tlbp\n");
 				if (cpu->cpu_type.mmu_model == MMU3K) {
 					vpn2 = cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
 					found = -1;
@@ -688,6 +800,8 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 
 				return;
 			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
+				if (instruction_trace)
+					debug("rfe\n");
 				/*  cpu->last_was_rfe = 1;  */
 				/*  TODO: should this be delayed?  */
 				cpu->coproc[0]->reg[COP0_STATUS] =
@@ -695,6 +809,8 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 				    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 				return;
 			case COP0_ERET:		/*  R4000: Return from exception  */
+				if (instruction_trace)
+					debug("eret\n");
 				if (cp->reg[COP0_STATUS] & STATUS_ERL) {
 					cpu->pc = cpu->pc_last = cp->reg[COP0_ERROREPC];
 					cp->reg[COP0_STATUS] &= ~STATUS_ERL;
@@ -715,33 +831,6 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 		}
 	}
 
-	if (cp->coproc_nr == 1) {
-		op = (function >> 21) & 31;
-		switch (op) {
-		case COPz_CFCz:		/*  Copy from FPU control register  */
-			rt = (function >> 16) & 31;
-			fs = (function >> 11) & 31;
-			cpu->gpr[rt] = cp->fcr[fs];
-			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
-			return;
-		case COPz_CTCz:		/*  Copy to FPU control register  */
-			rt = (function >> 16) & 31;
-			fs = (function >> 11) & 31;
-			if (fs == 0)
-				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
-			else
-				cp->fcr[fs] = cpu->gpr[rt];
-			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
-			/*  TODO: writing to control register 31 should cause
-				exceptions, depending on status bits!  */
-			return;
-		default:
-			fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
-			    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
-			return;
-		}
-	}
-
 	/*  TODO: coprocessor R2020 on DECstation?  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff)
 		return;
@@ -749,6 +838,12 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 	/*  TODO: RM5200 idle (?)  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
+
+	if (fpu_function(cpu, cp, function))
+		return;
+
+	if (instruction_trace)
+		debug("cop%i\t%08lx\n", cpnr, function);
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);

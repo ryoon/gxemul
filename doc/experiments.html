@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.48 2005-03-08 22:58:58 debug Exp $
+$Id: experiments.html,v 1.49 2005-03-19 09:36:16 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -458,15 +458,15 @@ probably doesn't work in GXemul.
       <p>
       <li>Sprite:
 	<br>The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
-		has a copy of a harddisk image for a DECstation 5000/200:
-		<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
-			(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
+		has preserved a copy of a harddisk image for a DECstation 5000/200:
+		<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/">http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite</a>/<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/ds5000.bt">ds5000.bt</a>
+	<br>(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
 	<br>Read <a href="guestoses.html#sprite">this section</a> for more information
 		about running this harddisk image in the emulator.
       <p>
       <li><a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">Mach</a>:
 	<br>Important! Run <b>./configure --caches; make</b>
-	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
+	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release</a>/<a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">pmax.tar.Z</a>
 	<br>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY
 	<br><b>gxemul -E dec -e 3max -X pmax_mach/special/mach.boot.MK83.STD+ANY</b>
     </ul>
@@ -492,8 +492,8 @@ probably doesn't work in GXemul.
 	<br>(You need to add <b>-CR5000</b> if you're trying to run
 		a kernel compiled for R5000, because Linux
 		doesn't autodetect CPU at runtime.)
-	<br>Also: <a href="http://www.tal.org/~milang/o2/patches/vmlinux.ip32-2.6.10rc3-misc">http://www.tal.org/~milang/o2/patches/vmlinux.ip32-2.6.10rc3-misc</a>
-	<br>Try <b>-E sgi -e ip32 -b -X -CR5000 vmlinux.ip32-2.6.10rc3-misc</b>.
+	<br>Also: <a href="http://www.tal.org/~milang/o2/kernels/">http://www.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux64-2.6.8.1-IP32">vmlinux64-2.6.8.1-IP32</a>
+	<br>Try <b>-E sgi -e ip32 -b -X -CR5000 vmlinux64-2.6.8.1-IP32</b>.
 	<br>And also some IP27 kernels:
 		<a href="http://www.total-knowledge.com/progs/mips/kernels/vmlinux.ip27-20040428">http://www.total-knowledge.com/progs/mips/kernels/vmlinux.ip27-20040428</a>
 		and

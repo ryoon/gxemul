@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.97 2005-03-05 08:43:39 debug Exp $
+$Id: RELEASE,v 1.98 2005-03-05 09:17:39 debug Exp $
 
 I'm now working on post-0.3.
 
@@ -45,9 +45,9 @@ other experiments with MIPS-like code.
 
 Summary of changes from version 0.3 to 0.3.X:
 
-	x)  A fix which allows the i386 backend to compile with old GCC.
-	    (This is similar to the 0.2.4 -> 0.2.4.1 fix for old GCC on
-	    Alpha.)
+	x)  A fix which allows the i386 bintrans backend to compile with
+	    GCC 2.x. (This is similar to the 0.2.4 -> 0.2.4.1 fix for GCC
+	    2.x on Alpha.)
 
 	x)  ...
 

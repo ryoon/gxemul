@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.6 2005-01-28 00:35:22 debug Exp $
+$Id: misc.html,v 1.7 2005-01-28 01:31:07 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -99,6 +99,11 @@ through an example is good enough:
 				<font color="#2020cf">!  value, depending on <i>type</i> and <i>subtype</i></font>
 
 		<b>load("netbsd-INSTALL")</b>
+		<b>bootname("netbsd")</b>
+		<b>bootarg("-a")</b>
+
+		<b>disk("nbsd.img")</b>
+		<b>disk("6c:cdrom.iso")</b>
 
 		<b>use_x11(yes)</b>
 		<b>x11_scaledown(2)</b>

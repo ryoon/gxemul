@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.138 2005-01-28 00:23:26 debug Exp $
+ *  $Id: emul.c,v 1.139 2005-01-28 01:31:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -194,6 +194,9 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		bootblock_pc |= 0xffffffffa0000000ULL;
 		cpu->pc = bootblock_pc;
 
+		debug("DEC boot: loadaddr=0x%08x, pc=0x%08x",
+		    (int)bootblock_loadaddr, (int)bootblock_pc);
+
 		readofs = 0x18;
 
 		for (;;) {
@@ -212,6 +215,8 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 
 			if (n_blocks < 1)
 				break;
+
+			debug(readofs == 0x18? ": %i" : " + %i", n_blocks);
 
 			if (n_blocks * 512 > 65536)
 				fatal("\nWARNING! Unusually large bootblock "
@@ -240,6 +245,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 			readofs += 8;
 		}
 
+		debug(readofs == 0x18? ": no blocks?\n" : " blocks\n");
 		break;
 	default:
 		fatal("Booting from disk without a separate kernel "
@@ -522,7 +528,7 @@ void emul_machine_setup(struct machine *machine, int n_load,
 	diskimage_dump_info(machine);
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
-	if (machine->booting_from_diskimage)
+	if (n_load == 0 && machine->first_diskimage != NULL)
 		load_bootblock(machine, machine->cpus[machine->bootstrap_cpu]);
 
 	while (n_load > 0) {
@@ -544,8 +550,7 @@ void emul_machine_setup(struct machine *machine, int n_load,
 		load_names ++;
 	}
 
-	if (file_n_executables_loaded() == 0 &&
-	    !machine->booting_from_diskimage) {
+	if (n_load == 0 && machine->first_diskimage == NULL) {
 		fprintf(stderr, "No executable file loaded, and we're not "
 		    "booting directly from a disk image.\nAborting.\n");
 		exit(1);
@@ -645,7 +650,7 @@ void emul_dumpinfo(struct emul *e)
 /*
  *  emul_simple_init():
  *
- *	o)  Initialize networks.
+ *	o)  Initialize a network.
  *
  *	o)  Initialize one machine.
  */
@@ -682,7 +687,7 @@ struct emul *emul_create_from_configfile(char *fname)
 	int iadd = 4;
 	struct emul *e = emul_new();
 	FILE *f;
-	char buf[4096];
+	char buf[128];
 	size_t len;
 
 	debug("Creating emulation from configfile \"%s\":\n", fname);

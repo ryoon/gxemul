@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.175 2005-01-28 00:23:05 debug Exp $
+ *  $Id: main.c,v 1.176 2005-01-28 01:31:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -275,7 +275,7 @@ ret:
  */
 int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
-	int ch, using_switch_d = 0, using_switch_o = 0, using_switch_Z = 0;
+	int ch, using_switch_d = 0, using_switch_Z = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
 	int msopts = 0;		/*  Machine-specific options used  */
@@ -395,7 +395,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			using_switch_o = 1;
 			msopts = 1;
 			break;
 		case 'p':
@@ -543,8 +542,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 *  from that.
 	 */
 	if (extra_argc == 0) {
-		if (m->machine_type == MACHINE_DEC && using_switch_d) {
-			m->booting_from_diskimage = 1;
+		if (using_switch_d) {
+			/*  Booting directly from a disk image...  */
 		} else {
 			usage(progname, 0);
 			printf("\nNo filename given. Aborting.\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.8 2005-01-28 00:35:23 debug Exp $
+ *  $Id: emul_parse.c,v 1.9 2005-01-28 01:31:08 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "misc.h"
@@ -191,6 +192,8 @@ static char cur_machine_name[50];
 static char cur_machine_cpu[50];
 static char cur_machine_type[50];
 static char cur_machine_subtype[50];
+static char cur_machine_bootname[150];
+static char cur_machine_bootarg[250];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
@@ -198,6 +201,10 @@ static char cur_machine_bintrans[10];
 #define	MAX_LOAD_LEN	4000
 static char *cur_machine_load[MAX_N_LOAD];
 static int cur_machine_n_load;
+#define	MAX_N_DISK	20
+#define	MAX_DISK_LEN	4000
+static char *cur_machine_disk[MAX_N_DISK];
+static int cur_machine_n_disk;
 
 #define ACCEPT_SIMPLE_WORD(w,var) {					\
 		if (strcmp(word, w) == 0) {				\
@@ -294,6 +301,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_cpu[0] = '\0';
 		cur_machine_type[0] = '\0';
 		cur_machine_subtype[0] = '\0';
+		cur_machine_bootname[0] = '\0';
+		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
@@ -351,7 +360,7 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
  *  parse__machine():
  *
  *  Simple words: name, cpu, type, subtype, load, use_x11, x11_scaledown,
- *                bintrans
+ *                bintrans, disk, bootname, bootarg
  *
  *  TODO: more words?
  */
@@ -397,6 +406,17 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			}
 		}
 
+		for (i=0; i<cur_machine_n_disk; i++) {
+			diskimage_add(m, cur_machine_disk[i]);
+			free(cur_machine_disk[i]);
+			cur_machine_load[i] = NULL;
+		}
+
+		m->boot_kernel_filename = strdup(cur_machine_bootname);
+
+		if (cur_machine_bootarg[0])
+			m->boot_string_argument = strdup(cur_machine_bootarg);
+
 		emul_machine_setup(m, cur_machine_n_load,
 		    cur_machine_load);
 
@@ -413,6 +433,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	ACCEPT_SIMPLE_WORD("cpu", cur_machine_cpu);
 	ACCEPT_SIMPLE_WORD("type", cur_machine_type);
 	ACCEPT_SIMPLE_WORD("subtype", cur_machine_subtype);
+	ACCEPT_SIMPLE_WORD("bootname", cur_machine_bootname);
+	ACCEPT_SIMPLE_WORD("bootarg", cur_machine_bootarg);
 	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
 	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
 	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);
@@ -432,6 +454,26 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		read_one_word(f, cur_machine_load[cur_machine_n_load],
 		    MAX_LOAD_LEN, line, EXPECT_WORD);
 		cur_machine_n_load ++;
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
+		return;
+	}
+
+	if (strcmp(word, "disk") == 0) {
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		if (cur_machine_n_disk >= MAX_N_DISK) {
+			fprintf(stderr, "too many disks\n");
+			exit(1);
+		}
+		cur_machine_disk[cur_machine_n_disk] = malloc(MAX_DISK_LEN);
+		if (cur_machine_disk[cur_machine_n_disk] == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		read_one_word(f, cur_machine_disk[cur_machine_n_disk],
+		    MAX_DISK_LEN, line, EXPECT_WORD);
+		cur_machine_n_disk ++;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_RIGHT_PARENTHESIS);
 		return;

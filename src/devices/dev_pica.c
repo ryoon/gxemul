@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.9 2004-10-24 07:58:03 debug Exp $
+ *  $Id: dev_pica.c,v 1.10 2004-10-25 00:39:50 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -124,12 +124,22 @@ void dev_pica_tick(struct cpu *cpu, void *extra)
 {
 	struct pica_data *d = extra;
 
+	/*  Used by NetBSD/arc and OpenBSD/arc:  */
 	if (d->interval_start > 0 && d->interval > 0
 	    && (d->int_enable_mask & 2) /* Hm? */ ) {
 		d->interval --;
 		if (d->interval <= 0) {
 			debug("[ pica: interval timer interrupt ]\n");
 			cpu_interrupt(cpu, 8 + PICA_TIMER_IRQ);
+		}
+	}
+
+	/*  Linux?  */
+	if (d->pica_timer_value != 0) {
+		d->pica_timer_current -= 5;
+		if (d->pica_timer_current < 1) {
+			d->pica_timer_current = d->pica_timer_value;
+			cpu_interrupt(cpu, 6);
 		}
 	}
 }
@@ -197,8 +207,9 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case R4030_SYS_ISA_VECTOR:
 		/*  ?  */
+printf("R4030_SYS_ISA_VECTOR\n");
 		{
-			uint32_t x = d->int_asserted
+			uint32_t x = d->isa_int_asserted
 			    /* & d->int_enable_mask */;
 			odata = 0;
 			while (odata < 16) {
@@ -237,10 +248,10 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ pica: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", relative_addr, idata);
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
 			fatal("[ pica: unimplemented read from address 0x%x"
-			    " ]\n", relative_addr);
+			    " ]\n", (int)relative_addr);
 		}
 	}
 
@@ -253,18 +264,48 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_pica_access_a0():
+ *
+ *  ISA interrupt stuff, high 8 interrupts.
  */
 int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-/*	struct pica_data *d = (struct pica_data *) extra;  */
+	struct pica_data *d = (struct pica_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 	odata = 0;
 
-/*  TODO  */
+	switch (relative_addr) {
+	case 0:
+		if (writeflag == MEM_WRITE) {
+			/*  TODO: only if idata == 0x20?  */
+			d->isa_int_asserted &= 0xff;
+			cpu_interrupt_ack(cpu, 8 + 0);
+		}
+		break;
+	case 1:
+		if (writeflag == MEM_WRITE) {
+			idata = ((idata ^ 0xff) & 0xff) << 8;
+			d->isa_int_enable_mask =
+			    (d->isa_int_enable_mask & 0xff) | idata;
+			fatal("[ pica_a0: setting isa_int_enable_mask "
+			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
+			/*  Recompute interrupt stuff:  */
+			cpu_interrupt_ack(cpu, 8 + 0);
+		} else
+			odata = d->isa_int_enable_mask;
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ pica_a0: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+		} else {
+			fatal("[ pica_a0: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
+		}
+	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -275,18 +316,85 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_pica_access_20():
+ *
+ *  ISA interrupt stuff, low 8 interrupts.
  */
 int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-/*	struct pica_data *d = (struct pica_data *) extra;  */
+	struct pica_data *d = (struct pica_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 	odata = 0;
 
-/*  TODO  */
+	switch (relative_addr) {
+	case 0:
+		if (writeflag == MEM_WRITE) {
+			/*  TODO: only if idata == 0x20?  */
+			d->isa_int_asserted &= 0xff00;
+			cpu_interrupt_ack(cpu, 8 + 0);
+		}
+		break;
+	case 1:
+		if (writeflag == MEM_WRITE) {
+			idata = (idata ^ 0xff) & 0xff;
+			d->isa_int_enable_mask =
+			    (d->isa_int_enable_mask & 0xff00) | idata;
+			fatal("[ pica_20: setting isa_int_enable_mask "
+			    "to 0x%04x ]\n", (int)d->isa_int_enable_mask);
+			/*  Recompute interrupt stuff:  */
+			cpu_interrupt_ack(cpu, 8 + 0);
+		} else
+			odata = d->isa_int_enable_mask;
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ pica_20: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+		} else {
+			fatal("[ pica_20: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  dev_pica_access_timer():
+ */
+int dev_pica_access_timer(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct pica_data *d = (struct pica_data *) extra;
+	uint64_t idata = 0, odata = 0;
+
+	idata = memory_readmax64(cpu, data, len);
+	odata = 0;
+
+	switch (relative_addr) {
+	case 2:
+		if (writeflag == MEM_WRITE)
+			d->pica_timer_value = idata;
+		else
+			odata = d->pica_timer_value;
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ pica_timer: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+		} else {
+			fatal("[ pica_timer: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
+		}
+	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -343,8 +451,13 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 
 	d->cpu = cpu;
 
+	d->isa_int_enable_mask = 0xffff;
+
 	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
 	    dev_pica_access, (void *)d);
+
+	memory_device_register(mem, "pica_timer", 0xf00000000ULL, 4,
+	    dev_pica_access_timer, (void *)d);
 
 	memory_device_register(mem, "pica_20", 0x90000000020ULL, 2,
 	    dev_pica_access_20, (void *)d);

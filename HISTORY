@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.170 2004-07-20 01:10:09 debug Exp $
+$Id: HISTORY,v 1.171 2004-07-20 15:43:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -815,4 +815,13 @@ HISTORY of mips64emul
 		and to make it easier to add a GUI later on).
 20040720	Finally found and fixed the ethernet/tcp bug. The hardware
 		address is comprised of 6 bytes, where the _first_ byte should
-		have a zero as the lowest bit, not the last byte.
+		have a zero as the lowest bit, not the last byte. (This causes
+		NetBSD and Linux running in the emulator to accept my SYN+ACK
+		packets.)
+		Getting the first nameserver address from /etc/resolv.conf.
+		(This is not used yet, but could be useful if/when I add
+		internal DHCP support.)
+		Working more on the TCP stuff; TCP seems to be almost working,
+		the only immediate problem left is that the guest OS gets
+		stuck in the closing and last-ack states, when it shouldn't.
+		It is now possible to install NetBSD and OpenBSD via ftp.

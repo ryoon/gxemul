@@ -21,7 +21,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 	Binary translation:  src/bintrans.c
 
 	Network layer:  src/net.c
-		o)  TCP :-)
+		o)  TCP: fin/ack stuff, and connection time-outs and
+			connection refused (reset on connect?)
 		o)  Outgoing UDP packet fragment support.
 		o)  Make it work with Ultrix and Sprite too, not just
 		    with NetBSD/OpenBSD/Linux.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.17 2004-01-25 00:57:36 debug Exp $
+ *  $Id: file.c,v 1.18 2004-02-22 13:12:48 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -475,7 +475,7 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 	/*  Load file contents:  */
 	while (!feof(f)) {
 		memset(buf, 0, sizeof(buf));
-		fgets(buf, sizeof(buf)-1, f);
+		fgets((char *)buf, sizeof(buf)-1, f);
 
 		if (buf[0] == 0 || buf[0]=='\r' || buf[0]=='\n')
 			continue;
@@ -487,7 +487,7 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 			continue;
 		}
 
-		buf_len = strlen(buf);
+		buf_len = strlen((char *)buf);
 
 		if (buf_len < 10) {
 			if (!warning_len)

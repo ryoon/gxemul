@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.181 2004-09-29 05:35:17 debug Exp $
+ *  $Id: machine.c,v 1.182 2004-09-29 06:28:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -240,6 +240,27 @@ void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 	}
 	memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  store_pointer_and_advance():
+ *
+ *  Stores a 32-bit or 64-bit pointer in emulated RAM, and advances the
+ *  target address. (Used by ARC and SGI initialization.)
+ */
+void store_pointer_and_advance(struct cpu *cpu, uint64_t *addrp,
+	uint64_t data, int flag64)
+{
+	uint64_t addr = *addrp;
+	if (flag64) {
+		store_64bit_word(cpu, addr, data);
+		addr += 8;
+	} else {
+		store_32bit_word(cpu, addr, data);
+		addr += 4;
+	}
+	*addrp = addr;
 }
 
 
@@ -2336,30 +2357,30 @@ void machine_init(struct emul *emul, struct memory *mem)
 		switch (emul->emulation_type) {
 		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
+			    0, 1, 20, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */);
 			break;
 		default:
 			/*  ARC:  */
 			switch (emul->machine) {
 			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_PICA:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "PICA-61", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_NEC_R94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "NEC-R94", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_DESKTECH_TYNE:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "DESKTECH-TYNE", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_JAZZ:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "Microsoft-Jazz", 0  /*  ROOT  */);
+				    0, 1, 20, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
@@ -2391,9 +2412,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			strcat(arc_fpc_name, "FPC");
 
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-			    0, 1, 20, 0, 0x0, arc_cpu_name, system);
+			    0, 1, 20, 0, 0xffffffff, arc_cpu_name, system);
 			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 20, 0, 0x0, arc_fpc_name, cpuaddr);
+			    0, 1, 20, 0, 0xffffffff, arc_fpc_name, cpuaddr);
 
 			cache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
 			    COMPONENT_TYPE_SecondaryCache, 0, 1, 20,
@@ -2403,7 +2424,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			     *  Cache size is 4KB << ZZZZ.
 			     */
 			    0x40008,	/*  16 bytes per line, 1 MB total  */
-			    0x0, "Cache", system);
+			    0xffffffff, "Cache", system);
 
 			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x, cache%i = 0x%x\n",
 			    i, cpuaddr, i, fpu, i, cache);
@@ -2448,19 +2469,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64,
 			    sizeof(arcbios_spb_64));
-
-			store_64bit_word(cpu, ARC_ARGV_START, ARC_ARGV_START + 0x100);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x4 * 2, ARC_ARGV_START + 0x180);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x8 * 2, ARC_ARGV_START + 0x200);
-			store_64bit_word(cpu, ARC_ARGV_START + 0xc * 2, ARC_ARGV_START + 0x220);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x10 * 2, ARC_ARGV_START + 0x240);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x14 * 2, ARC_ARGV_START + 0x260);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x18 * 2, ARC_ARGV_START + 0x280);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x1c * 2, ARC_ARGV_START + 0x2a0);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
-			store_64bit_word(cpu, ARC_ARGV_START + 0x28 * 2, 0);
-
 
 			/*
 			 *  Super-ugly test hack, to fool arcs_getenv() in
@@ -2541,18 +2549,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
-
-			store_32bit_word(cpu, ARC_ARGV_START, (ARC_ARGV_START + 0x100));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x4, (ARC_ARGV_START + 0x180));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x8, (ARC_ARGV_START + 0x200));
-			store_32bit_word(cpu, ARC_ARGV_START + 0xc, (ARC_ARGV_START + 0x220));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x10, (ARC_ARGV_START + 0x240));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x14, (ARC_ARGV_START + 0x260));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x18, (ARC_ARGV_START + 0x280));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x1c, (ARC_ARGV_START + 0x2a0));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x20, (ARC_ARGV_START + 0x2c0));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x24, (ARC_ARGV_START + 0x2e0));
-			store_32bit_word(cpu, ARC_ARGV_START + 0x28, 0);
 		}
 
 		/*  Boot string in ARC format:  */
@@ -2569,41 +2565,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  Boot args., eg "-a"  */
 		bootarg = emul->boot_string_argument;
 
-		/*
-		 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
-		 *  for more options.  It seems that on SGI machines, _ALL_
-		 *  environment variables are passed on the command line,
-		 *  but NOT on generic ARC.
-		 */
-
-		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
-
-		if (emul->use_x11) {
-			store_string(cpu, ARC_ARGV_START + 0x180, "console=g");
-			store_string(cpu, ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
-			store_string(cpu, ARC_ARGV_START + 0x220, "ConsoleOut=video()");
-		} else {
-#if 0
-			store_string(cpu, ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
-#else
-			store_string(cpu, ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
-#endif
-			store_string(cpu, ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
-			store_string(cpu, ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");
-		}
-
-		store_string(cpu, ARC_ARGV_START + 0x240, "cpufreq=3");
-		store_string(cpu, ARC_ARGV_START + 0x260, "dbaud=9600");
-		store_string(cpu, ARC_ARGV_START + 0x280, "verbose=istrue");
-		store_string(cpu, ARC_ARGV_START + 0x2a0, "showconfig=istrue");
-		store_string(cpu, ARC_ARGV_START + 0x2c0, "diagmode=istrue");
-		store_string(cpu, ARC_ARGV_START + 0x2e0, bootarg);
-
 		/*  argc, argv, envp in a0, a1, a2:  */
-		if (emul->emulation_type == EMULTYPE_SGI)
-			cpu->gpr[GPR_A0] = 10;
-		else
-			cpu->gpr[GPR_A0] = 1;
+		cpu->gpr[GPR_A0] = 0;	/*  note: argc is increased later  */
 		cpu->gpr[GPR_A1] = ARC_ARGV_START;
 		cpu->gpr[GPR_A2] = ARC_ENV_POINTERS;
 
@@ -2614,60 +2577,103 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  Add environment variables.  For each variable, add it
 		 *  as a string using add_environment_string(), and add a
 		 *  pointer to it to the ARC_ENV_POINTERS array.
-		 *
-		 *  TODO: 64-bit pointers for some SGI modes?
 		 */
 		addr = ARC_ENV_STRINGS;
 		addr2 = ARC_ENV_POINTERS;
 
 		if (emul->use_x11) {
 			if (emul->emulation_type == EMULTYPE_ARC) {
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEOUT=multi()video()monitor()console()", &addr);
 			} else {
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "ConsoleIn=keyboard()", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "ConsoleOut=video()", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+
+				/*  g for graphical mode. G for graphical mode
+				    with SGI logo visible on Irix?  */
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "console=g", &addr);
 			}
 		} else {
 			if (emul->emulation_type == EMULTYPE_ARC) {
 				/*  TODO: serial console for ARC?  */
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=serial(0)", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEOUT=serial(0)", &addr);
 			} else {
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
-				store_32bit_word(cpu, addr2, addr); addr2 += 4;
-				add_environment_string(cpu, "console=d2", &addr);		/*  d2 = serial?  */
+
+				/*  'd' or 'd2' in Irix, 'ttyS0' in Linux?  */
+				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+				add_environment_string(cpu, "console=d", &addr);		/*  d2 = serial?  */
 			}
 		}
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
-			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "cpufreq=3", &addr);
-			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "dbaud=9600", &addr);
-			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "rbaud=9600", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "nogfxkbd=1", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "eaddr=00:00:00:00:00:00", &addr);
-			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "verbose=istrue", &addr);
-			store_32bit_word(cpu, addr2, addr); addr2 += 4;
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "showconfig=istrue", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "diagmode=v", &addr);
 		}
 
 		/*  End the environment strings with an empty zero-terminated
 		    string, and the envp array with a NULL pointer.  */
 		add_environment_string(cpu, "", &addr);	/*  the end  */
-		store_32bit_word(cpu, addr2, 0);
+		store_pointer_and_advance(cpu, &addr2,
+		    0, arc_wordlen==sizeof(uint64_t));
+
+		/*  Set up argc/argv:  */
+		addr = ARC_ARGV_START;
+		addr2 = ARC_ENV_POINTERS;
+
+		/*  bootstr:  */
+		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
+		cpu->gpr[GPR_A0] ++;
+		store_pointer_and_advance(cpu, &addr,
+		    ARC_ARGV_START + 0x100, arc_wordlen==sizeof(uint64_t));
+
+		if (emul->emulation_type == EMULTYPE_SGI) {
+			/*  bootarg:  (only for SGI, or for ARC as well? TODO)  */
+			store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
+			cpu->gpr[GPR_A0] ++;
+			store_pointer_and_advance(cpu, &addr,
+			    ARC_ARGV_START + 0x200,
+			    arc_wordlen==sizeof(uint64_t));
+
+			/*
+			 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
+			 *  for more options.  It seems that on SGI machines,
+			 *  _ALL_ environment variables are passed on the
+			 *  command line, but NOT on generic ARC.
+			 */
+
+			/*  Copy envp into end of argv:  */
+			/*  TODO: Is this actually correct? Maybe not.  */
+		}
+
+		/*  End of arguments, an extra NULL pointer:  */
+		store_pointer_and_advance(cpu, &addr,
+		    0, arc_wordlen==sizeof(uint64_t));
 
 		break;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.19 2004-06-25 04:19:46 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.20 2004-06-27 15:13:25 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -84,17 +84,22 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 	if (mc_data == NULL)
 		return;
 
-	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) && mc_data->interrupt_every_x_instructions > 0) {
-		mc_data->instructions_left_until_interrupt -= (1 << TICK_STEPS_SHIFT);
+	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) &&
+	     mc_data->interrupt_every_x_instructions > 0) {
+		mc_data->instructions_left_until_interrupt -=
+		    (1 << TICK_STEPS_SHIFT);
 		if (mc_data->instructions_left_until_interrupt < 0 ||
-		    mc_data->instructions_left_until_interrupt >= mc_data->interrupt_every_x_instructions) {
-			debug("[ rtc interrupt (every %i instructions) ]\n", mc_data->interrupt_every_x_instructions);
+		    mc_data->instructions_left_until_interrupt >=
+		    mc_data->interrupt_every_x_instructions) {
+			debug("[ rtc interrupt (every %i instructions) ]\n",
+			    mc_data->interrupt_every_x_instructions);
 			cpu_interrupt(cpus[bootstrap_cpu], mc_data->irq_nr);
 
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 
 			/*  Reset the instruction countdown:  */
-			mc_data->instructions_left_until_interrupt = mc_data->interrupt_every_x_instructions;
+			mc_data->instructions_left_until_interrupt =
+			    mc_data->interrupt_every_x_instructions;
 		}
 	}
 }
@@ -105,7 +110,9 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct tm *tmp;
 	time_t timet;
@@ -159,8 +166,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	case MC146818_DEC:
 	case MC146818_SGI:
 		/*
-		 *  This device was originally written for DECstation emulation,
-		 *  so no changes are neccessary for that access style.
+		 *  This device was originally written for DECstation
+		 *  emulation, so no changes are neccessary for that access
+		 *  style.
 		 *
 		 *  SGI access bytes 0x0..0xd at offsets 0x0yz..0xdyz, where yz
 		 *  should be ignored. It works _almost_ as DEC, if offsets are
@@ -198,47 +206,80 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			if ((data[0] & MC_REGA_DVMASK) == MC_BASE_4_MHz)
 				mc_data->timebase_hz = 4000000;
 			switch (data[0] & MC_REGA_RSMASK) {
-			case MC_RATE_NONE:	mc_data->interrupt_hz = 0;
-						break;
-			case MC_RATE_1:		if (mc_data->timebase_hz == 32000)
-							mc_data->interrupt_hz = 256;
-						else
-							mc_data->interrupt_hz = 32768;
-						break;
-			case MC_RATE_2:		if (mc_data->timebase_hz == 32000)
-							mc_data->interrupt_hz = 128;
-						else
-							mc_data->interrupt_hz = 16384;
-						break;
-			case MC_RATE_8192_Hz:	mc_data->interrupt_hz = 8192;	break;
-			case MC_RATE_4096_Hz:	mc_data->interrupt_hz = 4096;	break;
-			case MC_RATE_2048_Hz:	mc_data->interrupt_hz = 2048;	break;
-			case MC_RATE_1024_Hz:	mc_data->interrupt_hz = 1024;	break;
-			case MC_RATE_512_Hz:	mc_data->interrupt_hz = 512;	break;
-			case MC_RATE_256_Hz:	mc_data->interrupt_hz = 256;	break;
-			case MC_RATE_128_Hz:	mc_data->interrupt_hz = 128;	break;
-			case MC_RATE_64_Hz:	mc_data->interrupt_hz = 64;	break;
-			case MC_RATE_32_Hz:	mc_data->interrupt_hz = 32;	break;
-			case MC_RATE_16_Hz:	mc_data->interrupt_hz = 16;	break;
-			case MC_RATE_8_Hz:	mc_data->interrupt_hz = 8;	break;
-			case MC_RATE_4_Hz:	mc_data->interrupt_hz = 4;	break;
-			case MC_RATE_2_Hz:	mc_data->interrupt_hz = 2;	break;
+			case MC_RATE_NONE:
+				mc_data->interrupt_hz = 0;
+				break;
+			case MC_RATE_1:
+				if (mc_data->timebase_hz == 32000)
+					mc_data->interrupt_hz = 256;
+				else
+					mc_data->interrupt_hz = 32768;
+				break;
+			case MC_RATE_2:
+				if (mc_data->timebase_hz == 32000)
+					mc_data->interrupt_hz = 128;
+				else
+					mc_data->interrupt_hz = 16384;
+				break;
+			case MC_RATE_8192_Hz:
+				mc_data->interrupt_hz = 8192;
+				break;
+			case MC_RATE_4096_Hz:
+				mc_data->interrupt_hz = 4096;
+				break;
+			case MC_RATE_2048_Hz:
+				mc_data->interrupt_hz = 2048;
+				break;
+			case MC_RATE_1024_Hz:
+				mc_data->interrupt_hz = 1024;
+				break;
+			case MC_RATE_512_Hz:
+				mc_data->interrupt_hz = 512;
+				break;
+			case MC_RATE_256_Hz:
+				mc_data->interrupt_hz = 256;
+				break;
+			case MC_RATE_128_Hz:
+				mc_data->interrupt_hz = 128;
+				break;
+			case MC_RATE_64_Hz:
+				mc_data->interrupt_hz = 64;
+				break;
+			case MC_RATE_32_Hz:
+				mc_data->interrupt_hz = 32;
+				break;
+			case MC_RATE_16_Hz:
+				mc_data->interrupt_hz = 16;
+				break;
+			case MC_RATE_8_Hz:
+				mc_data->interrupt_hz = 8;
+				break;
+			case MC_RATE_4_Hz:
+				mc_data->interrupt_hz = 4;
+				break;
+			case MC_RATE_2_Hz:
+				mc_data->interrupt_hz = 2;
+				break;
 			default:
 				/*  debug("[ mc146818: unimplemented MC_REGA RS: %i ]\n", data[0] & MC_REGA_RSMASK);  */
 				;
 			}
 
 			if (mc_data->interrupt_hz > 0)
-				mc_data->interrupt_every_x_instructions = mc_data->emulated_ips / mc_data->interrupt_hz;
+				mc_data->interrupt_every_x_instructions =
+				    mc_data->emulated_ips /
+				    mc_data->interrupt_hz;
 			else
 				mc_data->interrupt_every_x_instructions = 0;
 
 			mc_data->instructions_left_until_interrupt =
 				mc_data->interrupt_every_x_instructions;
 
-			mc_data->reg[MC_REGA*4] = data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
+			mc_data->reg[MC_REGA*4] =
+			    data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
 
-			debug("[ rtc set to interrupt every %i:th instruction ]\n", mc_data->interrupt_every_x_instructions);
+			debug("[ rtc set to interrupt every %i:th instruction ]\n",
+			    mc_data->interrupt_every_x_instructions);
 			return 1;
 		case MC_REGB*4:
 			if (((data[0] ^ mc_data->reg[MC_REGB*4]) & MC_REGB_PIE))
@@ -246,7 +287,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 				    mc_data->interrupt_every_x_instructions;
 			mc_data->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
-				cpu_interrupt_ack(cpus[bootstrap_cpu], mc_data->irq_nr);
+				cpu_interrupt_ack(cpus[bootstrap_cpu],
+				    mc_data->irq_nr);
 				/*  mc_data->instructions_left_until_interrupt = mc_data->interrupt_every_x_instructions;  */
 			}
 			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
@@ -263,8 +305,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	} else {
 		/*  READ:  */
 		switch (relative_addr) {
-		case MC_REGC*4:		/*  Interrupt ack.  */
-		case 0x01:		/*  Station's ethernet address (6 bytes)  */
+		case MC_REGC*4:	/*  Interrupt ack.  */
+		case 0x01:	/*  Station's ethernet address (6 bytes)  */
 		case 0x05:
 		case 0x09:
 		case 0x0d:
@@ -278,17 +320,21 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		case 0x1c:
 		case 0x20:
 		case 0x24:
-			/*  If the SET bit is set, then we don't automatically update the
-				values.  Otherwise, we update them by reading from the host's clock:  */
+			/*
+			 *  If the SET bit is set, then we don't automatically
+			 *  update the values.  Otherwise, we update them by
+			 *  reading from the host's clock:
+			 */
 			if (mc_data->reg[MC_REGB*4] & MC_REGB_SET)
 				break;
 
 			timet = time(NULL);
-			tmp = gmtime(&timet);	/*  use to_bcd() for BCD conversion  */
+			tmp = gmtime(&timet);
+			/*  use to_bcd() for BCD conversion  */
 			mc_data->reg[0x00] = (tmp->tm_sec);
 			mc_data->reg[0x08] = (tmp->tm_min);
 			mc_data->reg[0x10] = (tmp->tm_hour);
-			mc_data->reg[0x18] = (tmp->tm_wday + 1);	/*  ?  */
+			mc_data->reg[0x18] = (tmp->tm_wday + 1);
 			mc_data->reg[0x1c] = (tmp->tm_mday);
 			mc_data->reg[0x20] = (tmp->tm_mon + 1);
 			mc_data->reg[0x24] = (tmp->tm_year);
@@ -300,16 +346,20 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			case MC146818_SGI:
 				mc_data->reg[0x24] += (100 - 104);
 				/*
-				 *  TODO:  The thing above only works for NetBSD/sgimips,
-				 *  not for the IP32 PROM.  For example, it interprets
-				 *  a host date of 'Sun Jan 11 19:10:39 CET 2004'
-				 *  as 'January 11 64, 12:10:13 GMT'.   TODO: Fix this.
+				 *  TODO:  The thing above only works for
+				 *  NetBSD/sgimips, not for the IP32 PROM. For
+				 *  example, it interprets a host date of 'Sun
+				 *  Jan 11 19:10:39 CET 2004' as 'January 11
+				 *  64, 12:10:13 GMT'.   TODO: Fix this.
+				 *
 				 *  Perhaps it is a ds17287, not a mc146818.
 				 */
-
 				break;
 			case MC146818_DEC:
-				/*  DECstations must have 72 or 73 in the Year field, or Ultrix screems  */
+				/*
+				 *  DECstations must have 72 or 73 in the
+				 *  Year field, or Ultrix screems.  (Weird.)
+				 */
 				mc_data->reg[0x24] = 72;
 			default:
 				;
@@ -324,7 +374,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 		if (relative_addr == MC_REGC*4) {
 			cpu_interrupt_ack(cpus[bootstrap_cpu], mc_data->irq_nr);
-			/*  mc_data->instructions_left_until_interrupt = mc_data->interrupt_every_x_instructions;  */
+			/*  mc_data->instructions_left_until_interrupt =
+			    mc_data->interrupt_every_x_instructions;  */
 			mc_data->reg[MC_REGC * 4] = 0x00;
 		}
 
@@ -336,10 +387,11 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_mc146818_init():
  *
- *  Hopefully this will work both on the DECstation 3100/2100, and
- *  on other systems.
+ *  This needs to work for both DECstation emulation and other machine types,
+ *  so it contains both rtc related stuff and the station's Ethernet address.
  */
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv, int emulated_ips)
+void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int access_style, int addrdiv, int emulated_ips)
 {
 	unsigned char ether_address[6];
 	int i;
@@ -390,13 +442,18 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->reg[0x79] = 0x55;
 	mc_data->reg[0x7d] = 0xaa;
 
-	if (access_style == MC146818_DEC)
-		mc_data->reg[0xf8] = 1;		/*  Battery valid, for DECstations  */
+	if (access_style == MC146818_DEC) {
+		/*  Battery valid, for DECstations  */
+		mc_data->reg[0xf8] = 1;
+	}
 
 	if (access_style == MC146818_PC_CMOS)
-		memory_device_register(mem, "mc146818", baseaddr, 2, dev_mc146818_access, (void *)mc_data);
+		memory_device_register(mem, "mc146818", baseaddr,
+		    2, dev_mc146818_access, (void *)mc_data);
 	else
-		memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access, (void *)mc_data);
+		memory_device_register(mem, "mc146818", baseaddr,
+		    DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access,
+		    (void *)mc_data);
 	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
 }
 

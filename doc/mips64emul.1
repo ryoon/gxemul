@@ -1,0 +1,28 @@
+.\" $Id: mips64emul.1,v 1.1 2004-06-27 15:30:44 debug Exp $
+.\" 
+.\" This is a minimal man page for mips64emul.
+.\" Process this file with
+.\"       groff -man -Tascii ppg2.1
+.\" or    nroff -man ppg2.1
+.\"
+.TH mips64emul 1 "JUNE 2004" mips64emul "User commands"
+.SH NAME
+.B mips64emul
+-- a MIPS machine emulator
+.SH SYNOPSIS
+.B mips64emul
+[options]
+.I file
+.I ...
+.SH DESCRIPTION
+.B mips64emul
+is a MIPS machine emulator. The goals are to emulate
+32-bit and 64-bit MIPS-like CPUs and enough surrounding hardware
+to fake real machines, capable of running real (unmodified)
+operating systems, such as NetBSD or Linux.
+
+Run
+.B mips64emul
+without arguments to get a list of available command line options.
+.SH AUTHOR
+Anders Gavare <md1gavan@mdstud.chalmers.se>

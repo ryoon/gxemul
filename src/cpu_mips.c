@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.27 2005-02-19 11:57:44 debug Exp $
+ *  $Id: cpu_mips.c,v 1.28 2005-02-19 18:39:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -819,7 +819,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			    cpu->cd.mips.gpr[rs], &offset);
 			debug("jr\t%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
-				debug("\t\t<%s>", symbol);
+				debug("\t<%s>", symbol);
 			break;
 		case SPECIAL_JALR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
@@ -829,7 +829,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			debug("jalr\t%s", regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
-				debug("<%s>", symbol);
+				debug("\t<%s>", symbol);
 			break;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:

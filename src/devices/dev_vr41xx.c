@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.23 2005-03-29 01:02:40 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.24 2005-04-02 23:02:15 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -81,7 +81,7 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		x++;
 
 		if (x > 100 && (x&3)==0) {
-			if (d->cpumodel == 4121)
+			if (d->cpumodel == 4121 || d->cpumodel == 4181)
 				cpu_interrupt(cpu, 3);
 			else
 				cpu_interrupt(cpu, 8 + 3);
@@ -536,6 +536,8 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 		break;
 	case 4181:
 		baseaddr = 0xa000000;
+		dev_ram_init(mem, 0xb000000, 0x1000000, DEV_RAM_MIRROR,
+		    0xa000000);
 		break;
 	case 4122:
 	case 4131:

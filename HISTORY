@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.666 2005-04-02 11:23:05 debug Exp $
+$Id: HISTORY,v 1.667 2005-04-02 23:02:14 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1788,3 +1788,7 @@ Changelog for GXemul:
 20050401	Minor updates.
 20050402	Minor updates. (The standby and suspend instructions are
 		bintransed as NOPs, and some minor documentation updates.)
+20050403	Adding an Agenda VR3 mode, and playing around with a Linux
+		kernel image, but not much success yet.
+		Changing BIFB_D16_FFFF -> BIFB_D16_0000 for the hpcmips 
+		framebuffers, causing NetBSD to boot with correct colors.

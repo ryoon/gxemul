@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.42 2005-03-31 06:14:58 debug Exp $
+ *  $Id: machine.h,v 1.43 2005-04-02 23:02:17 debug Exp $
  */
 
 #include <sys/types.h>
@@ -283,6 +283,7 @@ struct machine {
 #define	MACHINE_HPCMIPS_NEC_MOBILEPRO_770	3
 #define	MACHINE_HPCMIPS_NEC_MOBILEPRO_780	4
 #define	MACHINE_HPCMIPS_NEC_MOBILEPRO_800	5
+#define	MACHINE_HPCMIPS_AGENDA_VR3		6
 
 /*  Playstation 2:  */
 #define	PLAYSTATION2_BDA	0xffffffffa0001000ULL

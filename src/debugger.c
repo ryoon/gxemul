@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.89 2005-02-18 07:47:26 debug Exp $
+ *  $Id: debugger.c,v 1.90 2005-02-18 08:07:59 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -36,7 +36,7 @@
  *
  *	Add more functionality that already exists elsewhere in the emulator.
  *
- *	More generic expression evaluator (for example +-*/ between multiple
+ *	More generic expression evaluator (for example + - * / between multiple
  *	terms).
  *
  *	Nicer looking output of register dumps, floating point registers,

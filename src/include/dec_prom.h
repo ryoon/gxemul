@@ -1,6 +1,13 @@
-/*  mips64emul: $Id: dec_prom.h,v 1.3 2005-02-11 22:48:20 debug Exp $  */
+/*  mips64emul: $Id: dec_prom.h,v 1.4 2005-02-18 08:07:58 debug Exp $  */
+#ifndef _PMAX_DEC_PROM_H_
+#define _PMAX_DEC_PROM_H_
+
 #ifndef __P
 #define	__P(x)		x
+#endif
+
+#ifndef _NO_PROM_DEFINES
+#define _NO_PROM_DEFINES
 #endif
 
 /*	$NetBSD: dec_prom.h,v 1.17 2001/08/24 15:33:17 mhitch Exp $	*/
@@ -57,9 +64,6 @@
  * from: Header: /sprite/src/kernel/mach/ds3100.md/RCS/machMon.h,
  *	v 9.3 90/02/20 14:34:07 shirriff Exp  SPRITE (Berkeley)
  */
-
-#ifndef _PMAX_DEC_PROM_H_
-#define _PMAX_DEC_PROM_H_
 
 /*
  * This file was created based on information from the document
@@ -187,7 +191,7 @@ extern const struct callback callvec;
 #define disableintr (*callv -> _disableintr)
 #define enableintr (*callv -> _enableintr)
 #define testintr (*callv -> _testintr)
-/* #define console_init (*callv -> _console_init) */
+#define console_init (*callv -> _console_init)
 #define halt (*callv -> _halt)
 #define showfault (*callv -> _showfault)
 #define gettcinfo (*callv -> _gettcinfo)

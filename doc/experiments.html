@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.29 2005-02-18 06:51:56 debug Exp $
+$Id: experiments.html,v 1.30 2005-02-18 08:07:57 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -80,36 +80,39 @@ are emulated, such as putchar device, and a simple framebuffer
 (for outputing pixels in a simple manner).
 
 <p>
+<table border="0"><tr><td width="40">&nbsp;</td><td>
 <pre>
-	/*  Hello world for mips64emul  */
+<font color=#f00000>/*  Hello world for mips64emul  */
 
-	/*  Note: The cast to a signed int causes the address to be sign-extended
-	    correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
-	#define PUTCHAR_ADDRESS         ((signed int)0xb0000000)
-	#define HALT_ADDRESS            ((signed int)0xb0000010)
+/*  Note: The cast to a signed int causes the address to be sign-extended
+    correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
+</font><font color=#a0a0a0>#define	PUTCHAR_ADDRESS		((signed int)0xb0000000)
+#define	HALT_ADDRESS		((signed int)0xb0000010)
 
-	void printchar(char ch)
-	{
-		*((volatile unsigned char *) PUTCHAR_ADDRESS) = ch;
-	}
+</font><font color=#c000c0>void </font><font color=#000000><a name="printchar">printchar</a>(</font><font color=#c000c0>char </font><font color=#000000>ch)
+{
+	*((</font><font color=#c000c0>volatile unsigned char </font><font color=#000000>*) PUTCHAR_ADDRESS) = ch;
+}
 
-	void halt(void)
-	{
-		*((volatile unsigned char *) HALT_ADDRESS) = 0;
-	}
+</font><font color=#c000c0>void </font><font color=#000000><a name="halt">halt</a>(</font><font color=#c000c0>void</font><font color=#000000>)
+{
+	*((</font><font color=#c000c0>volatile unsigned char </font><font color=#000000>*) HALT_ADDRESS) = 0;
+}
 
-	void printstr(char *s)
-	{
-		while (*s)
-			printchar(*s++);
-	}
+</font><font color=#c000c0>void </font><font color=#000000><a name="printstr">printstr</a>(</font><font color=#c000c0>char </font><font color=#000000>*s)
+{
+	</font><font color=#c000c0>while </font><font color=#000000>(*s)
+		printchar(*s++);
+}
 
-	void f(void)
-	{
-		printstr("Hello world\n");
-		halt();
-	}
-</pre>
+</font><font color=#c000c0>void </font><font color=#000000>f(</font><font color=#c000c0>void</font><font color=#000000>)
+{
+	printstr(</font><font color=#00c000>"Hello world\n"</font><font color=#000000>);
+	halt();
+}
+</font></pre>
+</td></tr></table>
+
 This hello world program is available here as well:
 <a href="hello_mips.c">hello_mips.c</a>
 <p>

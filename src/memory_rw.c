@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.6 2005-02-18 06:01:18 debug Exp $
+ *  $Id: memory_rw.c,v 1.7 2005-02-18 08:07:59 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -334,8 +334,9 @@ have_paddr:
 		} else {
 			if (paddr >= mem->physical_max + 0 * 1024) {
 				char *symbol;
+#ifdef MEM_MIPS
 				uint64_t offset;
-
+#endif
 				if (!quiet_mode) {
 					fatal("[ memory_rw(): writeflag=%i ",
 					    writeflag);

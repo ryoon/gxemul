@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.24 2004-01-19 12:50:47 debug Exp $
+ *  $Id: cpu.c,v 1.25 2004-01-20 22:15:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -551,55 +551,6 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 
 /*
- *  cpu_pending_interrupts():
- *
- *  If interrupts are enabled, and any interrupt has arrived (ie its
- *  bit in the cause register is set) and corresponding enable bits
- *  in the status register are set, then cause an interrupt exception
- *  and return 1.  Otherwise, return 0.
- */
-int cpu_pending_interrupts(struct cpu *cpu)
-{
-	int enabled, mask, statusmask;
-
-	if (cpu->cpu_type.exc_model == EXC3K) {
-		enabled = cpu->coproc[0]->reg[COP0_STATUS] & MIPS_SR_INT_IE;
-		statusmask = 0xff01;
-	} else {
-		/*  R4000:  */
-		enabled = (cpu->coproc[0]->reg[COP0_STATUS] & STATUS_IE)
-		    && !(cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
-		    && !(cpu->coproc[0]->reg[COP0_STATUS] & STATUS_ERL);
-		statusmask = 0xff07;
-	}
-
-#if 0
-	if (enabled && (cpu->old_status == (cpu->coproc[0]->reg[COP0_STATUS] & statusmask)))
-		cpu->time_since_intr_enabling ++;
-	else
-		cpu->time_since_intr_enabling = 0;
-
-	cpu->old_status = cpu->coproc[0]->reg[COP0_STATUS] & statusmask;
-
-	if (!enabled || cpu->time_since_intr_enabling < 3)
-		return 0;
-#else
-	if (!enabled)
-		return 0;
-#endif
-
-	mask  = cpu->coproc[0]->reg[COP0_STATUS] & cpu->coproc[0]->reg[COP0_CAUSE];
-
-	if ((mask & STATUS_IM_MASK) != 0) {
-		cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0, 0);
-		return 1;
-	}
-
-	return 0;
-}
-
-
-/*
  *  cpu_flags():
  *
  *  Returns a pointer to a string containing "(d)" "(j)" "(dj)" or "",
@@ -630,13 +581,18 @@ const char *cpu_flags(struct cpu *cpu)
  */
 int cpu_run_instr(struct cpu *cpu, int instrcount)
 {
+	struct coproc *cp0 = cpu->coproc[0];
 	int i;
 	int dcount;
 	unsigned char instr[4];
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
-	char *instr_mnem = NULL;
+	char *instr_mnem = NULL;			/*  for instruction trace  */
+
+	int enabled, mask, statusmask;			/*  interrupt delivery  */
+
 	int cond=0, likely, and_link;
+
 	uint64_t dir, is_left, reg_ofs, reg_dir;	/*  for unaligned load/store  */
 	uint64_t tmpvalue, tmpaddr;
 
@@ -646,6 +602,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	int wlen, st, signd, linked, dataflag = 0;
 	unsigned char d[8];
 
+
 	/*
 	 *  Hardware 'ticks':  (clocks, interrupt sources...)
 	 */
@@ -653,6 +610,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	for (i=0; i<cpu->n_tick_entries; i++)
 		if ((instrcount & ((1 << (cpu->tick_shift[i] + dcount))-1)) == 0)
 			cpu->tick_func[i](cpu, cpu->tick_extra[i]);
+
 
 	if (cpu->instruction_delay > 0) {
 		cpu->instruction_delay --;
@@ -675,6 +633,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 	/*  Hardwire the zero register to 0:  */
 	cpu->gpr[GPR_ZERO] = 0;
+
 
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
@@ -728,13 +687,14 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 #endif
 
+
 	/*
 	 *  ROM emulation:
 	 *
 	 *  This assumes that a jal was made to a ROM address,
 	 *  and we should return via gpr ra.
 	 */
-	if (prom_emulation && (cpu->pc & 0xfff00000) == 0xbfc00000) {
+	if ((cpu->pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
 		int rom_jal = 1;
 		switch (emulation_type) {
 		case EMULTYPE_DEC:
@@ -768,7 +728,13 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			show_trace(cpu, cpu->show_trace_addr);
 	}
 
-	/*  Read an instruction:  */
+	/*  Decrease the MFHI/MFLO delays:  */
+	if (cpu->mfhi_delay > 0)
+		cpu->mfhi_delay--;
+	if (cpu->mflo_delay > 0)
+		cpu->mflo_delay--;
+
+	/*  Read an instruction from memory:  */
 #ifdef SUPPORT_MIPS16
 	if (cpu->mips16 && (cpu->pc & 1)) {
 		/*  16-bit instruction word:  */
@@ -862,6 +828,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		}
 	}
 
+
 	/*
 	 *  Update Coprocessor 0 registers:
 	 *
@@ -870,31 +837,26 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	 */
 
 	if (cpu->cpu_type.exc_model == EXC3K) {
-		int r = (cpu->coproc[0]->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
+		int r = (cp0->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
 		r --;
-		if (r >= cpu->coproc[0]->nr_of_tlbs || r < 8)
-			r = cpu->coproc[0]->nr_of_tlbs-1;
-		cpu->coproc[0]->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
-		cpu->coproc[0]->reg[COP0_COUNT] ++;
+		if (r >= cp0->nr_of_tlbs || r < 8)
+			r = cp0->nr_of_tlbs-1;
+		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
+		cp0->reg[COP0_COUNT] ++;
 	} else {
 		/*  TODO: &1 ==> double count blah blah  */
 		if (instrcount & 1)
-			cpu->coproc[0]->reg[COP0_COUNT] ++;
+			cp0->reg[COP0_COUNT] ++;
 
-		cpu->coproc[0]->reg[COP0_RANDOM] --;
-		if ((int64_t)cpu->coproc[0]->reg[COP0_RANDOM] >= cpu->coproc[0]->nr_of_tlbs ||
-		    (int64_t)cpu->coproc[0]->reg[COP0_RANDOM] < (int64_t) cpu->coproc[0]->reg[COP0_WIRED])
-			cpu->coproc[0]->reg[COP0_RANDOM] = cpu->coproc[0]->nr_of_tlbs-1;
+		cp0->reg[COP0_RANDOM] --;
+		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
+		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
+			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
 	}
 
-	if (cpu->coproc[0]->reg[COP0_COUNT] == cpu->coproc[0]->reg[COP0_COMPARE])
+	if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
 		cpu_interrupt(cpu, 7);
 
-	/*  Decrease the MFHI/MFLO delays:  */
-	if (cpu->mfhi_delay > 0)
-		cpu->mfhi_delay--;
-	if (cpu->mflo_delay > 0)
-		cpu->mflo_delay--;
 
 	/*  Nullify this instruction?  (Set by previous instruction)  */
 	if (cpu->nullify_next) {
@@ -904,9 +866,44 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		return 0;
 	}
 
-	/*  Any pending interrupts?  */
-	if (cpu_pending_interrupts(cpu))
+
+	/*
+	 *  Any pending interrupts?
+	 *
+	 *  If interrupts are enabled, and any interrupt has arrived (ie its
+	 *  bit in the cause register is set) and corresponding enable bits
+	 *  in the status register are set, then cause an interrupt exception
+	 *  instead of executing the current instruction.
+	 */
+
+	if (cpu->cpu_type.exc_model == EXC3K) {
+		enabled = cp0->reg[COP0_STATUS] & MIPS_SR_INT_IE;
+		statusmask = 0xff01;
+	} else {
+		/*  R4000:  */
+		enabled = (cp0->reg[COP0_STATUS] & STATUS_IE)
+		    && !(cp0->reg[COP0_STATUS] & STATUS_EXL)
+		    && !(cp0->reg[COP0_STATUS] & STATUS_ERL);
+		statusmask = 0xff07;
+	}
+
+#if 0
+	if (enabled && (cpu->old_status == (cpu->coproc[0]->reg[COP0_STATUS] & statusmask)))
+		cpu->time_since_intr_enabling ++;
+	else
+		cpu->time_since_intr_enabling = 0;
+
+	cpu->old_status = cpu->coproc[0]->reg[COP0_STATUS] & statusmask;
+
+	if (cpu->time_since_intr_enabling < 3)
+		enabled = 0;
+#endif
+	mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE];
+
+	if (enabled && (mask & STATUS_IM_MASK) != 0) {
+		cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0, 0);
 		return 0;
+	}
 
 
 	/*
@@ -1879,7 +1876,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 					/*  COP0_LLADDR is updated for diagnostic purposes.  */
 					/*  (On R10K, this does not happen.)  */
 					if (cpu->cpu_type.exc_model != MMU10K)
-						cpu->coproc[0]->reg[COP0_LLADDR] = (addr >> 4) & 0xffffffff;
+						cp0->reg[COP0_LLADDR] = (addr >> 4) & 0xffffffff;
 				} else {
 					/*  st == 1:  Store  */
 					/*  If rmw is 0, then the store failed. (Cache collision.)  */
@@ -2325,8 +2322,8 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 			if (showtag)
 				debug(", taghi=%08lx lo=%08lx",
-				    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
-				    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+				    (long)cp0->reg[COP0_TAGDATA_HI],
+				    (long)cp0->reg[COP0_TAGDATA_LO]);
 
 			debug(" ]\n");
 		}
@@ -2338,11 +2335,11 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 /*		if (cpu->cpu_type.mmu_model == MMU10K) {  */
 /*			printf("taghi=%08lx taglo=%08lx\n",
-			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
-			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+			    (long)cp0->reg[COP0_TAGDATA_HI],
+			    (long)cp0->reg[COP0_TAGDATA_LO]);
 */
-			if (cpu->coproc[0]->reg[COP0_TAGDATA_HI] == 0 &&
-			    cpu->coproc[0]->reg[COP0_TAGDATA_LO] == 0) {
+			if (cp0->reg[COP0_TAGDATA_HI] == 0 &&
+			    cp0->reg[COP0_TAGDATA_LO] == 0) {
 				/*  Normal cache operation:  */
 				cpu->r10k_cache_disable_TODO = 0;
 			} else {

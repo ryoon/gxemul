@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.35 2005-01-10 01:22:24 debug Exp $
+$Id: technical.html,v 1.36 2005-01-10 22:40:19 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -139,6 +139,8 @@ code into machine code that can be executed on the host machine
 on-the-fly. The translation itself obviously takes some time, but this is 
 usually made up for by the fact that the translated code chunks are 
 executed multiple times.
+To run the emulator with binary translation enabled, just add <b>-b</b>
+to the command line.
 
 <p>
 Only small pieces of MIPS machine code are translated, usually the size of 
@@ -149,12 +151,6 @@ all translations are done directly from MIPS to host machine code.
 The default bintrans cache size is 16 MB, but you can change this by adding
 -DBINTRANS_SIZE_IN_MB=<i>xx</i> to your CFLAGS environment variable before 
 running the configure script.
-
-<p>
-To run the emulator with binary translation enabled, just add <b>-b</b>
-to the command line. It should work when emulating R3000-style CPUs.
-(For R4000-style CPUs, there is no efficient load/store implementation 
-yet, and some other bugs.)
 
 <p>
 By default, an emulated OS running under DECstation emulation which listens to

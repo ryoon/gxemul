@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.77 2004-04-05 01:08:42 debug Exp $
+ *  $Id: machine.c,v 1.78 2004-04-09 05:11:55 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -31,7 +31,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifdef SOLARIS
+#include <strings.h>
+#else
 #include <string.h>
+#endif
 #include <time.h>
 #include <unistd.h>
 

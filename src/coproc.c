@@ -23,14 +23,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.3 2003-11-07 01:45:50 debug Exp $
+ *  $Id: coproc.c,v 1.4 2003-11-07 10:32:53 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
  *  TODO: separate out math coprocessor stuff (?)
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

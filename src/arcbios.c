@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.4 2003-11-07 08:48:24 debug Exp $
+ *  $Id: arcbios.c,v 1.5 2003-11-07 10:33:06 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -31,7 +31,6 @@
  *         be used with both SGI machines and other types of machines.
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

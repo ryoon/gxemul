@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.3 2003-11-07 08:48:24 debug Exp $
+ *  $Id: dec_prom.c,v 1.4 2003-11-07 10:32:53 debug Exp $
  *
  *  DECstation PROM emulation.
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.2 2003-11-07 08:48:24 debug Exp $
+ *  $Id: mips16.c,v 1.3 2003-11-07 10:32:53 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.4 2003-12-22 11:40:28 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.5 2003-12-29 00:53:41 debug Exp $
  *  
  *  NS16550 serial controller.
  */
@@ -41,9 +41,40 @@
 
 struct ns_data {
 	int	reg[8];
+	int	irq_enable;
 	int	irqnr;
 	int	addrmult;
 };
+
+
+/*
+ *  dev_ns16550_tick():
+ *
+ */
+void dev_ns16550_tick(struct cpu *cpu, void *extra)
+{
+	struct ns_data *d = extra;
+
+	d->reg[com_iir] |= IIR_NOPEND;
+	cpu_interrupt_ack(cpu, d->irqnr);
+
+	if (console_charavail())
+		d->reg[com_iir] |= IIR_RXRDY;
+	else
+		d->reg[com_iir] &= ~IIR_RXRDY;
+
+	if (d->reg[com_mcr] & MCR_IENABLE) {
+		if (d->irq_enable & IER_ETXRDY && d->reg[com_iir] & IIR_TXRDY) {
+			cpu_interrupt(cpu, d->irqnr);
+			d->reg[com_iir] &= ~IIR_NOPEND;
+		}
+
+		if (d->irq_enable & IER_ERXRDY && d->reg[com_iir] & IIR_RXRDY) {
+			cpu_interrupt(cpu, d->irqnr);
+			d->reg[com_iir] &= ~IIR_NOPEND;
+		}
+	}
+}
 
 
 /*
@@ -71,30 +102,83 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 
 	/*  Always ready to transmit:  */
 	d->reg[com_lsr] |= LSR_TXRDY;
-
 	d->reg[com_lsr] &= ~LSR_RXRDY;
-	if (console_charavail())
+	d->reg[com_msr] = MSR_DCD | MSR_DSR | MSR_CTS;
+
+	if (console_charavail()) {
 		d->reg[com_lsr] |= LSR_RXRDY;
+	}
 
 	relative_addr /= d->addrmult;
 
 	switch (relative_addr) {
 	case com_data:	/*  com_data or com_dlbl  */
 		if (writeflag == MEM_WRITE) {
-			console_putchar(idata);
-			d->reg[com_lsr] |= LSR_TSRE;
+			/*  Ugly hack: don't show form feeds:  */
+			if (idata != 12)
+				console_putchar(idata);
+
+			dev_ns16550_tick(cpu, d);
+/*			cpu_interrupt_ack(cpu, d->irqnr); */
 			return 1;
 		} else {
 			odata = console_readchar();
+			/*  Ugly hack:  CTRL-B ==> CTRL-C  */
+			if (odata == 2)
+				odata = 3;
+
 			odata_set = 1;
+			dev_ns16550_tick(cpu, d);
+/*			cpu_interrupt_ack(cpu, d->irqnr); */
+		}
+		break;
+	case com_ier:	/*  interrupt enable  */
+		if (writeflag == MEM_WRITE) {
+			debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
+			d->irq_enable = idata;
+/* cpu_interrupt_ack(cpu, d->irqnr); */
+			dev_ns16550_tick(cpu, d);
+		} else {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+		}
+		break;
+	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
+		if (writeflag == MEM_WRITE) {
+			debug("[ ns16550 write to fifo control ]\n");
+			d->reg[relative_addr] = idata;
+		} else {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+			debug("[ ns16550 read from iir: 0x%02x ]\n", odata);
 		}
 		break;
 	case com_lsr:
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550 write to lsr ]\n");
+			d->reg[relative_addr] = idata;
 		} else {
 			odata = d->reg[relative_addr];
 			odata_set = 1;
+		}
+		break;
+	case com_msr:
+		if (writeflag == MEM_WRITE) {
+			debug("[ ns16550 write to msr ]\n");
+			d->reg[relative_addr] = idata;
+		} else {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+		}
+		break;
+	case com_mcr:
+		if (writeflag == MEM_WRITE) {
+			debug("[ ns16550 write to mcr: 0x%02x ]\n", idata);
+			d->reg[relative_addr] = idata;
+		} else {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+			debug("[ ns16550 read from mcr: 0x%02x ]\n", odata);
 		}
 		break;
 	default:
@@ -123,14 +207,14 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		return 1;
 	}
 
-	return 0;
+	return 1;
 }
 
 
 /*
  *  dev_ns16550_init():
  */
-void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
+void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
 {
 	struct ns_data *d;
 
@@ -144,5 +228,6 @@ void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int add
 	d->addrmult = addrmult;
 
 	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
+	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 9);	/*  every 512:th cycle  */
 }
 

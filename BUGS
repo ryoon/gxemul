@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.29 2005-02-12 09:18:03 debug Exp $
+$Id: BUGS,v 1.30 2005-02-18 08:16:43 debug Exp $
 
 
 Serious bugs:
@@ -21,12 +21,6 @@ Serious bugs:
 
 Less serious bugs / issues:
 
-  o)  building on Debian/Alpha seems to run into the same problems as
-      on my FreeBSD/Alpha box earlier (which was the reason for a 0.2.4.1
-      release).
-
-  o)  the ssnop instruction doesn't align on a cycle boundary
-
   o)  hardware device ticks are done at cycle specific intervals, not
       instruction intervals, so sometimes a fraction of a cycle can be
       "lost".
@@ -34,8 +28,7 @@ Less serious bugs / issues:
   o)  running Linux/DECstation 2.4.26 with no scsi disks attached causes
       a warning message to be printed by Linux.
 
-  o)  UDP packets that are too large are not handled well by the Lance
-      device.
+  o)  UDP packets that are too large are not handled well by the Lance device.
 
   o)  Colors in X11 framebuffers on MacOS X hosts are wrong. (I'm not sure
       how to solve this; the code works on both little-endian (Alpha) and
@@ -43,7 +36,8 @@ Less serious bugs / issues:
 
   o)  bintranslated 64-bit stuff checks to see if the top 32 bits are
       all zeroes or all ones, and then uses 32-bit tables and such. This
-      is a bug. It should check the top 33 bits, not 32.
+      is a bug. It should check the top 33 bits, not 32. (Alpha only, already
+      fixed for i386?)
 
   o)  NetBSD/arc 2.0 uses the ASC controller in a way which mips64emul
       cannot yet handle. (NetBSD 1.6.2 works ok.)

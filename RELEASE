@@ -1,21 +1,11 @@
-$Id: RELEASE,v 1.89 2005-02-13 11:23:31 debug Exp $
+$Id: RELEASE,v 1.90 2005-02-18 08:16:44 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
-Some of the features I'd like to have time to implement:
-
-	x)  better support for non-DECstation modes
-		o)  for example, netbooting OpenBSD/sgi snapshots,
-		    or work more on ARC modes (NetBSD/arc 2.0 scsi problems)
-	x)  stable bintrans for 64-bit CPUs (R4000 etc)
-		o)  everything that works without bintrans should work 
-		    with bintrans
-	x)  R4000 and R10000 caches (and hopefully working with bintrans)
-
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.X
-==================================
+Release notes for mips64emul 0.3
+================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -53,17 +43,18 @@ Apart from running guest operating systems, the emulator can also be used for
 other experiments with MIPS-like code.
 
 
-Summary of changes from version 0.2.4.1 to 0.2.X:
+Summary of changes from version 0.2.4.1 to 0.3:
 
 	x)  I've performed a major code clean-up.
 
-	x)  Support for using "configuration files" has been added, instead
-	    of entering all emulation parameters on the command line. This
-	    has two advantages: shorter command lines, and the ability to
-	    emulate multiple machines simulatenously.
+	x)  Support for using "configuration files" has been added, so
+	    settings do not have to be entered on the command line anymore.
+	    (Useful for complex emulation setups.)
+
+	x)  Multiple machines can be emulated simultaneously.
 
 	x)  Some seldomly used command line options have been changed or
-	    removed, but 0.2.X should be mostly backward compatible with
+	    removed, but 0.3 should be mostly backward compatible with
 	    0.2.4.1.
 
 	x)  Many other bugfixes, too many to mention here.
@@ -83,7 +74,7 @@ Files included in this release are:
   TODO                        TODO notes.
   configure, Makefile.skel    sh and make scripts for building mips64emul
   doc                         Documentation.
-  experiments                 Experimental code (not usually needed).
+  experiments                 Experimental code. (Usually not needed.)
   src, devices, and include   Source code.
   tests                       Regression tests.
 
@@ -100,7 +91,7 @@ me, the rest are from other sources (such as NetBSD). The license text says
 that "All advertising materials mentioning features or use of this software"
 must display acknowledgements. Even though I do NOT feel I mention features or
 use of the header files (the "software") in any advertising materials, I am
-still very greatful for the fact that these people have made their files
+still very grateful for the fact that these people have made their files
 available for re-use, so regardless of legal requirements, I guess thanking
 them like this is in order:
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.10 2004-12-15 01:59:59 debug Exp $
+ *  $Id: debugger.c,v 1.11 2004-12-19 00:01:57 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -67,6 +67,7 @@ int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
 
 static int exit_debugger;
+static int n_steps_left_before_interaction = 0;
 
 #define	MAX_CMD_LEN	60
 static char last_cmd[MAX_CMD_LEN];
@@ -442,6 +443,18 @@ static void debugger_cmd_registers(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 {
+	int n = 1;
+
+	if (cmd_line[0] != '\0') {
+		n = strtoll(cmd_line + 1, NULL, 0);
+		if (n < 1) {
+			printf("invalid nr of steps\n");
+			return;
+		}
+	}
+
+	n_steps_left_before_interaction = n - 1;
+
 	/*  Special hack, see debugger() for more info.  */
 	exit_debugger = -1;
 }
@@ -637,8 +650,8 @@ static struct cmd cmds[] = {
 	{ "registers", "[cpuid]", 0, debugger_cmd_registers,
 		"dump all CPUs' register values (or a specific one's)" },
 
-	{ "step", "", 0, debugger_cmd_step,
-		"single step one instruction" },
+	{ "step", "[n]", 0, debugger_cmd_step,
+		"single-step one instruction (or n instructions)" },
 
 	{ "tlbdump", "[cpuid]", 0, debugger_cmd_tlbdump,
 		"dump all CPU's TLB contents (or a specific one's)" },
@@ -821,6 +834,11 @@ void debugger(void)
 {
 	int i, n, i_match, cmd_len, matchlen;
 	char cmd[MAX_CMD_LEN + 1];
+
+	if (n_steps_left_before_interaction > 0) {
+		n_steps_left_before_interaction --;
+		return;
+	}
 
 	exit_debugger = 0;
 

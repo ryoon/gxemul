@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.51 2004-11-17 20:55:50 debug Exp $
+ *  $Id: dev_asc.c,v 1.52 2004-11-20 05:27:00 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -112,6 +112,7 @@ struct asc_data {
 
 	/*  Built-in DMA memory (for DECstation 5000/200):  */
 	uint32_t	dma_address_reg;
+	unsigned char	dma_address_reg_memory[4096];	/*  NOTE: full page, for bintrans  */
 	unsigned char	dma[128 * 1024];
 
 	void		*dma_controller_data;
@@ -688,6 +689,28 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 
 
 /*
+ *  dev_asc_address_reg_access():
+ */
+int dev_asc_address_reg_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct asc_data *d = extra;
+
+	if (relative_addr + len > 4)
+		return 0;
+
+	if (writeflag==MEM_READ) {
+		memcpy(data, d->dma_address_reg_memory + relative_addr, len);
+	} else {
+		memcpy(d->dma_address_reg_memory + relative_addr, data, len);
+	}
+
+	return 1;
+}
+
+
+/*
  *  dev_asc_dma_access():
  */
 int dev_asc_dma_access(struct cpu *cpu, struct memory *mem,
@@ -768,6 +791,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5)
 	    + d->n_bytes_in_fifo;
 
+	d->dma_address_reg =
+	    d->dma_address_reg_memory[0] +
+	    (d->dma_address_reg_memory[1] << 8) +
+	    (d->dma_address_reg_memory[2] << 16) +
+	    (d->dma_address_reg_memory[3] << 24);
+
 	if (regnr < 0x10) {
 		if (regnr == NCR_FIFO) {
 			if (writeflag == MEM_WRITE)
@@ -798,50 +827,6 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		return dev_turbochannel_access(cpu, mem,
 		    relative_addr, data, len, writeflag,
 		    d->turbochannel);
-	} else if (relative_addr == 0x40000) {
-		if (writeflag==MEM_READ) {
-			odata = d->dma_address_reg;
-			if (!quiet_mode)
-				debug("[ asc: read from DMA address reg: 0x%08x",
-				    (int)odata);
-		} else {
-			d->dma_address_reg = idata;
-			if (!quiet_mode)
-				debug("[ asc: write to  DMA address reg: 0x%08x",
-				    (int)idata);
-		}
-	} else if (relative_addr >= 0x80000 && relative_addr+len-1 <= 0x9ffff) {
-		if (writeflag==MEM_READ) {
-			memcpy(data, d->dma + (relative_addr - 0x80000), len);
-#ifdef ASC_DEBUG
-			{
-				int i;
-				debug("[ asc: read from DMA addr 0x%05x:",
-				    (int) (relative_addr - 0x80000));
-				for (i=0; i<len; i++)
-					debug(" %02x", data[i]);
-				debug(" ]\n");
-			}
-#endif
-
-			/*  Don't return the common way, as that would overwrite data.  */
-			return 1;
-		} else {
-			memcpy(d->dma + (relative_addr - 0x80000), data, len);
-#ifdef ASC_DEBUG
-			{
-				int i;
-				debug("[ asc: write to  DMA addr 0x%05x:",
-				    (int) (relative_addr - 0x80000));
-				for (i=0; i<len; i++)
-					debug(" %02x", data[i]);
-				debug(" ]\n");
-			}
-#endif
-
-			/*  Quick return.  */
-			return 1;
-		}
 	} else {
 		if (writeflag==MEM_READ) {
 			fatal("[ asc: read from 0x%04x: 0x%02x ]\n",
@@ -1188,11 +1173,16 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 		DEV_ASC_PICA_LENGTH : DEV_ASC_DEC_LENGTH,
 	    dev_asc_access, d, MEM_DEFAULT, NULL);
 
-	if (mode == DEV_ASC_DEC)
+	if (mode == DEV_ASC_DEC) {
+		memory_device_register(mem, "asc_dma_address_reg",
+		    baseaddr + 0x40000, 4, dev_asc_address_reg_access, d,
+		    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
+		    d->dma_address_reg_memory);
 		memory_device_register(mem, "asc_dma", baseaddr + 0x80000,
 		    128*1024, dev_asc_dma_access, d,
 		    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->dma);
+	}
 
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 16);
 }
 

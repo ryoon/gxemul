@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.10 2005-01-09 03:41:12 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.11 2005-01-09 03:52:24 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -119,8 +119,20 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 static void bintrans_write_pc_inc(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
 
-	/*  TODO: add 1 to nr of instrs, and 4 to pc  */
+	/*  Add 1 to instruction count:  */
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	    - ((size_t)&dummy_cpu);
+	*a++ = 0xc4022000 + ofs;	/*  ld [ %o0 + ofs ], %g2  */
+	*a++ = 0x8400a001;		/*  add %g2, 1, %g2        */
+	*a++ = 0xc4222000 + ofs;	/*  st %g2, [ %o0 + ofs ]  */
+
+	/*  Add 4 to pc:  */
+	ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
+	*a++ = 0xda5a2000 + ofs;	/*  ldx [ %o0 + ofs ], %o5  */
+	*a++ = 0x9a036004;		/*  add %o5, 4, %o5         */
+	*a++ = 0xda722000 + ofs;	/*  stx %o5, [ %o0 + ofs ]  */
 
 	*addrp = (unsigned char *) a;
 }
@@ -142,6 +154,11 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
+	if (instruction_type == SPECIAL_SLL && rd == 0) {
+		bintrans_write_pc_inc(addrp);
+		return 1;
+	}
+
 	return 0;
 }
 

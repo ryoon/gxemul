@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.15 2004-06-13 09:15:25 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.16 2004-06-24 00:39:34 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -289,6 +289,6 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 	d->stopbits = "1";
 
 	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
-	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 9);	/*  every 512:th cycle  */
+	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 10);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.2 2004-12-01 14:57:45 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.3 2004-12-01 22:08:41 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -34,6 +34,8 @@
 #include "bintrans.h"
 #include "memory.h"
 
+
+#ifdef BINTRANS
 
 /*
  *  fast_vaddr_to_hostaddr():
@@ -156,3 +158,4 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	return memblock + offset;
 }
 
+#endif	/*  BINTRANS  */

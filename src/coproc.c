@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.116 2004-12-01 14:57:45 debug Exp $
+ *  $Id: coproc.c,v 1.117 2004-12-01 22:08:41 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -447,11 +447,11 @@ static void invalidate_translation_caches(struct cpu *cpu,
 		} else
 			invalidate_table_entry(cpu, vaddr);
 	}
-#endif
 
 	/*  TODO: Don't invalidate everything.  */
 	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
 		cpu->bintrans_data_hostpage[i] = NULL;
+#endif
 
 	if (kernelspace)
 		all = 1;

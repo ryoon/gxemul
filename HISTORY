@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.177 2004-07-25 23:56:34 debug Exp $
+$Id: HISTORY,v 1.178 2004-07-26 00:43:38 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -837,4 +837,4 @@ HISTORY of mips64emul
 		(an instruction cache invalidation). This allows the same
 		invalidation code to be used regardless of compiler.
 		Some other minor changes.
-20040726	Minor updates.
+20040726	Minor updates. The configure script is now more verbose.

@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.42 2004-07-26 00:20:11 debug Exp $
+#  $Id: configure,v 1.43 2004-07-26 00:39:36 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -141,6 +141,7 @@ if [ z"$CC" = z ]; then
 	CC=cc
 
 	printf "#!/bin/sh\ngcc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC=gcc
@@ -148,6 +149,7 @@ if [ z"$CC" = z ]; then
 	rm -f _testprog
 
 	printf "#!/bin/sh\ncc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC=cc
@@ -155,6 +157,7 @@ if [ z"$CC" = z ]; then
 	rm -f _testprog
 
 	printf "#!/bin/sh\nccc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC="ccc"
@@ -165,7 +168,7 @@ if [ z"$CC" = z ]; then
 fi
 
 
-printf "$CC\n"
+printf "$CC $CFLAGS\n"
 
 
 if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
@@ -334,12 +337,19 @@ if [ z"`uname -m`" = zi386 ]; then
 	printf "#define BINTRANS\n" >> config.h
 	printf "i386\n"
 else
+#  TODO: interpret all i?86 as i386!
+if [ z"`uname -m`" = zi686 ]; then
+	printf "#define I386\n" >> config.h
+	printf "#define BINTRANS\n" >> config.h
+	printf "i386\n"
+else
 if [ z"`uname -m`" = zsun4u ]; then
 	printf "#define SPARCV9\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
 	printf "sparcv9\n"
 else
 	printf "not supported on this arch\n"
+fi
 fi
 fi
 fi
@@ -422,15 +432,23 @@ rm -f _testprog
 #  -fschedule-insns causes bugs on i386 with gcc,
 #  but works OK on my alpha with ccc (compaq's cc).
 if [ z"$COMPAQCC" = zYES ]; then
+	printf "checking whether -fschedule-insns2 can be used... "
 	$CC _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
 	if [ -x _testprog ]; then
 		COPTIM="-fschedule-insns2 $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 	rm -f _testprog
 
+	printf "checking whether -fschedule-insns can be used... "
 	$CC _testprog.c -o _testprog -fschedule-insns 2> /dev/null
 	if [ -x _testprog ]; then
 		COPTIM="-fschedule-insns $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 	rm -f _testprog
 
@@ -442,9 +460,13 @@ if [ z"$COMPAQCC" = zYES ]; then
 #	rm -f _testprog
 
 	#  -fast
+	printf "checking whether -fast can be used... "
 	$CC _testprog.c -o _testprog -fast 2> /dev/null
 	if [ -x _testprog ]; then
 		COPTIM="-fast $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 	rm -f _testprog
 fi

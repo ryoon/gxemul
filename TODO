@@ -186,7 +186,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Mouse clicks can be "missed" in the current system;
 			this is not good.
 		o)  More 2D and 3D framebuffer acceleration
-		o)  Hide the host's mouse cursor.
 		o)  Non-resizable windows?  Or choose scaledown depending
 			on size (and center the image, with a black border)
 		o)  Different scaledown on different windows?

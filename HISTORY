@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.372 2004-12-09 14:31:22 debug Exp $
+$Id: HISTORY,v 1.373 2004-12-10 00:39:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1286,3 +1286,4 @@ HISTORY of mips64emul
 		A bintrans update (for 32-bit emulation) which speeds up
 		jumps between pages, if code is already translated.
 		Changing the default bintrans cache from 20 to 24 MB.
+20041210	Optimizing unaligned load/stores a little bit.

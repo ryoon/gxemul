@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.127 2004-12-07 09:49:34 debug Exp $
+ *  $Id: memory.c,v 1.128 2004-12-10 00:39:53 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -783,10 +783,10 @@ into the devices  */
 					len = mem->dev_length[i] - paddr;
 
 #ifdef BINTRANS
-				if (mem->dev_flags[i] & MEM_BINTRANS_OK) {
+				if (bintrans_cached && mem->dev_flags[i] & MEM_BINTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
-					if (bintrans_cached && writeflag) {
+					if (writeflag) {
 						if (paddr < mem->dev_bintrans_write_low[i])
 						    mem->dev_bintrans_write_low[i] = paddr & ~0xfff;
 						if (paddr > mem->dev_bintrans_write_high[i])

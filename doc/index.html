@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.116 2004-10-09 11:07:08 debug Exp $
+$Id: index.html,v 1.117 2004-10-13 11:50:54 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -938,6 +938,12 @@ Here are links to some of the kernels that I usually experiment with.
 			(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
 	<br>Read <a href="#sprite">this section</a> for more information
 		about running this harddisk image in the emulator.
+      <p>
+      <li>Mach/PMAX:
+	<br>Important! Run <b>./configure --caches; make</b>
+	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
+	<br>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY
+	<br>./mips64emul -D2 -X pmax_mach/special/mach.boot.MK83.STD+ANY
     </ul>
   </li>
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.392 2005-03-22 09:12:04 debug Exp $
+ *  $Id: machine.c,v 1.393 2005-03-29 07:08:48 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2155,11 +2155,17 @@ void machine_setup(struct machine *machine)
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
 		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
-		if (hpcmips_fb_addr != 0)
+		if (hpcmips_fb_addr != 0) {
 			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
 			    hpcmips_fb_xsize, hpcmips_fb_ysize,
 			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
 			    hpcmips_fb_bits, "HPCmips", 0);
+
+			/*  NetBSD/hpcmips uses framebuffer at physical
+			    address 0x8.......:  */
+			dev_ram_init(mem, 0x80000000, 0x20000000,
+			    DEV_RAM_MIRROR, 0x0);
+		}
 
 		break;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.656 2005-03-29 06:45:47 debug Exp $
+$Id: HISTORY,v 1.657 2005-03-29 07:08:46 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1772,3 +1772,6 @@ Changelog for GXemul:
 		NetBSD/hpcmips, once it is working.
 		Adding delays before wdc interrupts; this allows NetBSD
 		2.0/hpcmips to be successfully installed!
+		Mirroring physical addresses 0x8....... to 0x00000000 on
+		hpcmips; this makes it possible to run X11 inside
+		NetBSD/hpcmips :-)

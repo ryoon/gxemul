@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.159 2005-01-20 06:38:45 debug Exp $
+ *  $Id: main.c,v 1.160 2005-01-20 08:33:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -537,6 +537,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				printf("Unimplemented HPCMIPS model?\n");
 				exit(1);
 			}
+			break;
 		case EMULTYPE_COBALT:
 			m->cpu_name = strdup("RM5200");
 			break;

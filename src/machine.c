@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.96 2004-06-14 22:50:33 debug Exp $
+ *  $Id: machine.c,v 1.97 2004-06-14 23:23:34 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1570,7 +1570,7 @@ void machine_init(struct memory *mem)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");

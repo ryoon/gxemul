@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.17 2004-07-09 07:51:03 debug Exp $
+ *  $Id: dev_le.c,v 1.18 2004-07-09 08:14:41 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -37,6 +37,10 @@
  *	0x100000 - 0x17ffff	LANCE registers
  *	0x1c0000 - 0x1fffff	Ethernet Diagnostic ROM and Station
  *				Address ROM
+ *
+ *  The length of the device is set to 0x1c0200, however, because Sprite
+ *  tries to read TURBOchannel rom data from 0x1c03f0, and that is provided
+ *  by the turbochannel device, not this device.
  *
  *  TODO:  Make sure that this device works with both NetBSD and Ultrix
  *         and on as many DECstation models as possible.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.20 2004-07-09 07:51:03 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.21 2004-07-09 08:14:41 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -68,7 +68,7 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 	if (writeflag == MEM_READ) {
 		debug("[ turbochannel: read from slot %i addr 0x%08lx (", d->slot_nr, (long)relative_addr);
 
-		switch (relative_addr) {
+		switch (relative_addr & 0xffff) {
 		case 0x3e0:  odata = 0x00000001; debug("ROM width"); break;
 		case 0x3e4:  odata = 0x00000004; debug("ROM stride"); break;
 		case 0x3e8:  odata = 0x00000001; debug("ROM size"); break;	/*  8KB * romsize  */
@@ -107,11 +107,9 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 		 *  around offset 0x0 or 0x3c0000.  This code seems to work
 		 *  with all of the those OS kernels:
 		 */
+		relative_addr &= 0xffff;
 		if (d->card_module_name[0] ==  ' ' &&
-			(relative_addr < 0x3e0 ||
-				relative_addr >= 0x1000) &&
-			(relative_addr < 0x3803e0 ||
-				relative_addr >= 0x381000))
+			(relative_addr < 0x3e0 || relative_addr >= 0x500))
 			return 0;
 
 		debug(") ]\n");

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.80 2004-07-30 12:34:12 debug Exp $
+$Id: index.html,v 1.81 2004-08-01 00:50:06 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -1179,13 +1179,13 @@ large disk image without using up much space at all.
 Using gzip and gunzip on disk images can be <i>very</i> slow, as these 
 files can be multiple gigabytes large, but this is usually neccessary for
 transfering disk images over the internet. If you receive a gzipped disk 
-image, say disk.img, and run a naive
+image, say disk.img.gz, and run a naive
 <p>
 <pre>
 	$ <b>gunzip disk.img.gz</b>
 </pre>
 <p>
-on it, you will not neccessarily end up with an optimized file unless 
+on it, you will not end up with an optimized file unless 
 gunzip supports that. (In my experiments, it doesn't.)  In plain English, 
 if you type <b>ls -l</b> and the filesize is 9 GB, it will actually occupy 
 9 GB of disk space! This is often unacceptable.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.141 2005-01-28 12:17:57 debug Exp $
+ *  $Id: emul.c,v 1.142 2005-01-28 13:47:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -522,7 +522,7 @@ void emul_machine_setup(struct machine *machine, int n_load,
 		 *  is needed.
 		 */
 	} else {
-		machine_init(machine);
+		machine_setup(machine);
 	}
 
 	diskimage_dump_info(machine);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.182 2005-01-28 12:32:43 debug Exp $
+ *  $Id: main.c,v 1.183 2005-01-28 13:47:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,7 +152,6 @@ void fatal(char *fmt, ...)
  */
 static void usage(char *progname, int longusage)
 {
-#if 0
 	printf("mips64emul");
 #ifdef VERSION
 	printf("-" VERSION);
@@ -160,7 +159,7 @@ static void usage(char *progname, int longusage)
 	printf("   Copyright (C) 2003-2005  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
-#endif
+
 	printf("\nusage: %s [machine and general options] [ file [file ..] ]\n",
 	    progname);
 	printf("   or  %s [general options] @configfile [@configfile ..]\n",
@@ -290,7 +289,7 @@ ret:
  */
 void show_cpus_and_machine_types(void)
 {
-	int i;
+	int i, iadd = 8;
 	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
 	printf("Available CPU names:\n");
@@ -303,10 +302,14 @@ void show_cpus_and_machine_types(void)
 	}
 
 	printf("Most of these are bogus, and not really implemented.\n");
+	printf("\nAvailable machine types (with aliases) and "
+	    "their subtypes:\n");
 
-	printf("\nAvailable machine types (and subtypes):\n");
+	debug_indentation(iadd);
+	machine_list_available_types();
+	debug_indentation(-iadd);
 
-	/*  TODO  */
+	printf("\n");
 }
 
 
@@ -682,15 +685,6 @@ int main(int argc, char *argv[])
 	int n_emuls;
 	int i;
 
-	/*  Print startup message:  */
-	debug("mips64emul");
-#ifdef VERSION
-	debug("-" VERSION);
-#endif
-	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the source code and/or documentation for "
-	    "other Copyright messages.\n");
-
 	machine_init();
 
 	emuls = malloc(sizeof(struct emul *));
@@ -708,6 +702,15 @@ int main(int argc, char *argv[])
 	}
 
 	get_cmd_args(argc, argv, emuls[0]);
+
+	/*  Print startup message:  */
+	debug("mips64emul");
+#ifdef VERSION
+	debug("-" VERSION);
+#endif
+	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("Read the source code and/or documentation for "
+	    "other Copyright messages.\n\n");
 
 	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE)
 		n_emuls --;
@@ -731,7 +734,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (n_emuls == 0) {
-		usage(argv[0], 1);
+		fprintf(stderr, "No emulations defined.\n");
 		exit(1);
 	}
 

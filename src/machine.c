@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.308 2005-01-28 12:17:57 debug Exp $
+ *  $Id: machine.c,v 1.309 2005-01-28 13:47:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -103,6 +103,30 @@ struct sgi_ip22_data *sgi_ip22_data;
 struct sgi_ip30_data *sgi_ip30_data;
 
 
+struct machine_entry_subtype {
+	int			machine_subtype;/*  Old-style subtype  */
+	const char		*name;		/*  Official name  */
+	int			n_aliases;
+	char			**aliases;	/*  Aliases  */
+};
+
+struct machine_entry {
+	struct machine_entry	*next;
+
+	/*  Machine type:  */
+	int			machine_type;	/*  Old-style type  */
+	const char		*name;		/*  Official name  */
+	int			n_aliases;
+	char			**aliases;	/*  Aliases  */
+
+	/*  Machine subtypes:  */
+	int			n_subtypes;
+	struct machine_entry_subtype **subtype;
+};
+
+static struct machine_entry *first_machine_entry = NULL;
+
+
 /*
  *  machine_new():
  *
@@ -156,61 +180,40 @@ struct machine *machine_new(char *name, struct emul *emul)
 int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype)
 {
+	struct machine_entry *me;
+	int i, j, k;
+
 	*type = MACHINE_NONE;
 	*subtype = 0;
 
-	if (strcasecmp(stype, "dec") == 0 ||
-	    strcasecmp(stype, "decstation") == 0 ||
-	    strcasecmp(stype, "decsystem") == 0) {
-		*type = MACHINE_DEC;
+	me = first_machine_entry;
+	while (me != NULL) {
+		for (i=0; i<me->n_aliases; i++)
+			if (strcasecmp(me->aliases[i], stype) == 0) {
+				/*  Found a type:  */
+				*type = me->machine_type;
+				if (me->n_subtypes == 0)
+					return 1;
 
-		/*  Numeric:  */
-		if (ssubtype[0] >= '1' && ssubtype[0] <= '9'
-		    && strlen(ssubtype) <= 2) {
-			*subtype = atoi(ssubtype);
-			return 1;
-		}
+				/*  Check for subtype:  */
+				for (j=0; j<me->n_subtypes; j++)
+					for (k=0; k<me->subtype[j]->n_aliases;
+					    k++)
+						if (strcasecmp(ssubtype,
+						    me->subtype[j]->aliases[k]
+						    ) == 0) {
+							*subtype = me->subtype[
+							    j]->machine_subtype;
+							return 1;
+						}
 
-		if (strcmp(ssubtype, "5000/200") == 0 ||
-		    strcasecmp(ssubtype, "3MAX") == 0) {
-			*subtype = MACHINE_DEC_3MAX_5000;
-			return 1;
-		}
+				fatal("unknown subtype '%s' for emulation"
+				    " '%s'\n", ssubtype, stype);
+				exit(1);
+			}
 
-		fatal("unknown DEC subtype '%s'\n", ssubtype);
-		return 0;
+		me = me->next;
 	}
-
-	if (strcasecmp(stype, "Linksys") == 0 ||
-	    strcasecmp(stype, "WRT54G") == 0) {
-		*type = MACHINE_WRT54G;
-		return 1;
-	}
-
-	if (strcasecmp(stype, "Cobalt") == 0 ||
-	    strcasecmp(stype, "Raq") == 0) {
-		*type = MACHINE_COBALT;
-		return 1;
-	}
-
-	if (strcasecmp(stype, "SonyNeWS") == 0 ||
-	    strcasecmp(stype, "NeWS") == 0) {
-		*type = MACHINE_SONYNEWS;
-		return 1;
-	}
-
-	if (strcasecmp(stype, "NetGear") == 0 ||
-	    strcasecmp(stype, "WG602") == 0) {
-		*type = MACHINE_NETGEAR;
-		return 1;
-	}
-
-	if (strcasecmp(stype, "MeshCube") == 0) {
-		*type = MACHINE_MESHCUBE;
-		return 1;
-	}
-
-/*  TODO  */
 
 	fatal("unknown emulation type '%s' (", stype);
 	if (ssubtype == NULL)
@@ -1147,12 +1150,12 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
- *  machine_init():
+ *  machine_setup():
  *
  *  This (rather large) function initializes memory, registers, and/or
  *  devices required by specific machine emulations.
  */
-void machine_init(struct machine *machine)
+void machine_setup(struct machine *machine)
 {
 	uint64_t addr, addr2;
 	int i;
@@ -4122,5 +4125,303 @@ void machine_dumpinfo(struct machine *m)
 
 	if (m->force_netboot)
 		debug("Forced netboot\n");
+}
+
+
+/*
+ *  machine_entry_new():
+ */
+static struct machine_entry *machine_entry_new(const char *name,
+	int oldstyle_type, int n_aliases, int n_subtypes)
+{
+	struct machine_entry *me;
+
+	me = malloc(sizeof(struct machine_entry));
+	if (me == NULL) {
+		fprintf(stderr, "machine_entry_new(): out of memory (1)\n");
+		exit(1);
+	}
+
+	memset(me, 0, sizeof(struct machine_entry));
+	me->name = name;
+	me->machine_type = oldstyle_type;
+	me->n_aliases = n_aliases;
+	me->aliases = malloc(sizeof(char *) * n_aliases);
+	if (me->aliases == NULL) {
+		fprintf(stderr, "machine_entry_new(): out of memory (2)\n");
+		exit(1);
+	}
+	me->n_subtypes = n_subtypes;
+	me->subtype = malloc(sizeof(struct machine_entry_subtype *) *
+	    n_subtypes);
+	if (me->subtype == NULL) {
+		fprintf(stderr, "machine_entry_new(): out of memory (3)\n");
+		exit(1);
+	}
+
+	return me;
+}
+
+
+/*
+ *  machine_entry_subtype_new():
+ */
+static struct machine_entry_subtype *machine_entry_subtype_new(
+	const char *name, int oldstyle_type, int n_aliases)
+{
+	struct machine_entry_subtype *mes;
+
+	mes = malloc(sizeof(struct machine_entry_subtype));
+	if (mes == NULL) {
+		fprintf(stderr, "machine_entry_subtype_new(): out "
+		    "of memory (1)\n");
+		exit(1);
+	}
+
+	memset(mes, 0, sizeof(struct machine_entry_subtype));
+	mes->name = name;
+	mes->machine_subtype = oldstyle_type;
+	mes->n_aliases = n_aliases;
+	mes->aliases = malloc(sizeof(char *) * n_aliases);
+	if (mes->aliases == NULL) {
+		fprintf(stderr, "machine_entry_subtype_new(): "
+		    "out of memory (2)\n");
+		exit(1);
+	}
+
+	return mes;
+}
+
+
+/*
+ *  machine_list_available_types():
+ *
+ *  List all available machine types (for example when running the emulator
+ *  with just -H as command line argument).
+ */
+void machine_list_available_types(void)
+{
+	struct machine_entry *me;
+	int iadd = 4;
+
+	me = first_machine_entry;
+
+	while (me != NULL) {
+		int i, j;
+
+		debug("%s", me->name);
+		debug(" (");
+		for (i=0; i<me->n_aliases; i++)
+			debug("%s\"%s\"", i? ", " : "", me->aliases[i]);
+		debug(")\n");
+
+		debug_indentation(iadd);
+		for (i=0; i<me->n_subtypes; i++) {
+			struct machine_entry_subtype *mes;
+			mes = me->subtype[i];
+			debug("- %s", mes->name);
+			debug(" (");
+			for (j=0; j<mes->n_aliases; j++)
+				debug("%s\"%s\"", j? ", " : "",
+				    mes->aliases[j]);
+			debug(")\n");
+		}
+		debug_indentation(-iadd);
+
+		me = me->next;
+	}
+}
+
+
+/*
+ *  machine_init():
+ *
+ *  This function should be called before any other machine_*() function
+ *  is used.
+ */
+void machine_init(void)
+{
+	struct machine_entry *me;
+
+	/*  NOTE: This list is in reverse order, so that the
+	    entries will appear in normal order when listed. :-)  */
+
+	/*  Sony Playstation 2:  */
+	me = machine_entry_new("Sony Playstation 2", MACHINE_PS2, 2, 0);
+	me->aliases[0] = "playstation2";
+	me->aliases[1] = "ps2";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Sony NeWS:  */
+	me = machine_entry_new("Sony NeWS", MACHINE_SONYNEWS, 2, 0);
+	me->aliases[0] = "sonynews";
+	me->aliases[1] = "news";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  SGI:  */
+	me = machine_entry_new("SGI", MACHINE_SGI, 2, 8);
+	me->aliases[0] = "silicon graphics";
+	me->aliases[1] = "sgi";
+	me->subtype[0] = machine_entry_subtype_new("IP19", 19, 1);
+	me->subtype[0]->aliases[0] = "ip19";
+	me->subtype[1] = machine_entry_subtype_new("IP20", 20, 1);
+	me->subtype[1]->aliases[0] = "ip20";
+	me->subtype[2] = machine_entry_subtype_new("IP22", 22, 2);
+	me->subtype[2]->aliases[0] = "ip22";
+	me->subtype[2]->aliases[1] = "indy";
+	me->subtype[3] = machine_entry_subtype_new("IP27", 27, 3);
+	me->subtype[3]->aliases[0] = "ip27";
+	me->subtype[3]->aliases[1] = "origin 200";
+	me->subtype[3]->aliases[2] = "origin 2000";
+	me->subtype[4] = machine_entry_subtype_new("IP28", 28, 1);
+	me->subtype[4]->aliases[0] = "ip28";
+	me->subtype[5] = machine_entry_subtype_new("IP30", 30, 2);
+	me->subtype[5]->aliases[0] = "ip30";
+	me->subtype[5]->aliases[1] = "octane";
+	me->subtype[6] = machine_entry_subtype_new("IP32", 32, 2);
+	me->subtype[6]->aliases[0] = "ip32";
+	me->subtype[6]->aliases[1] = "o2";
+	me->subtype[7] = machine_entry_subtype_new("IP35", 35, 1);
+	me->subtype[7]->aliases[0] = "ip35";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  NetGear:  */
+	me = machine_entry_new("NetGear WG602", MACHINE_NETGEAR, 2, 0);
+	me->aliases[0] = "netgear";
+	me->aliases[1] = "wg602";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Meshcube:  */
+	me = machine_entry_new("Meshcube", MACHINE_MESHCUBE, 1, 0);
+	me->aliases[0] = "meshcube";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Linksys:  */
+	me = machine_entry_new("Linksys WRT54G", MACHINE_WRT54G, 2, 0);
+	me->aliases[0] = "linksys";
+	me->aliases[1] = "wrt54g";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  HPCmips:  */
+	me = machine_entry_new("Handheld MIPS (HPC)", MACHINE_HPCMIPS, 2, 2);
+	me->aliases[0] = "hpcmips";
+	me->aliases[1] = "hpc";
+	me->subtype[0] = machine_entry_subtype_new(
+	    "Casio Cassiopeia BE-300", MACHINE_HPCMIPS_CASIO_BE300, 2);
+	me->subtype[0]->aliases[0] = "be-300";
+	me->subtype[0]->aliases[1] = "be300";
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Casio Cassiopeia E-105", MACHINE_HPCMIPS_CASIO_E105, 2);
+	me->subtype[1]->aliases[0] = "e-105";
+	me->subtype[1]->aliases[1] = "e105";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Generic test machine:  */
+	me = machine_entry_new("Generic test machine", MACHINE_TEST, 1, 0);
+	me->aliases[0] = "test";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  DECstation:  */
+	me = machine_entry_new("DECstation/DECsystem", MACHINE_DEC, 3, 9);
+	me->aliases[0] = "decstation";
+	me->aliases[1] = "decsystem";
+	me->aliases[2] = "dec";
+	me->subtype[0] = machine_entry_subtype_new(
+	    "DECstation 3100 (PMAX)", MACHINE_DEC_PMAX_3100, 3);
+	me->subtype[0]->aliases[0] = "pmax";
+	me->subtype[0]->aliases[1] = "3100";
+	me->subtype[0]->aliases[2] = "2100";
+
+	me->subtype[1] = machine_entry_subtype_new(
+	    "DECstation 5000/200 (3MAX)", MACHINE_DEC_3MAX_5000, 2);
+	me->subtype[1]->aliases[0] = "3max";
+	me->subtype[1]->aliases[1] = "5000/200";
+
+	me->subtype[2] = machine_entry_subtype_new(
+	    "DECstation 5000/1xx (3MIN)", MACHINE_DEC_3MIN_5000, 2);
+	me->subtype[2]->aliases[0] = "3min";
+	me->subtype[2]->aliases[1] = "5000/1xx";
+
+	me->subtype[3] = machine_entry_subtype_new(
+	    "DECstation 5000 (3MAXPLUS)", MACHINE_DEC_3MAXPLUS_5000, 2);
+	me->subtype[3]->aliases[0] = "3maxplus";
+	me->subtype[3]->aliases[1] = "3max+";
+
+	me->subtype[4] = machine_entry_subtype_new(
+	    "DECsystem 58x0", MACHINE_DEC_5800, 2);
+	me->subtype[4]->aliases[0] = "5800";
+	me->subtype[4]->aliases[1] = "58x0";
+
+	me->subtype[5] = machine_entry_subtype_new(
+	    "DECsystem 5400", MACHINE_DEC_5400, 1);
+	me->subtype[5]->aliases[0] = "5400";
+
+	me->subtype[6] = machine_entry_subtype_new(
+	    "DECstation Maxine (5000)", MACHINE_DEC_MAXINE_5000, 1);
+	me->subtype[6]->aliases[0] = "maxine";
+
+	me->subtype[7] = machine_entry_subtype_new(
+	    "DECsystem 5500", MACHINE_DEC_5500, 1);
+	me->subtype[7]->aliases[0] = "5500";
+
+	me->subtype[8] = machine_entry_subtype_new(
+	    "DECstation MipsMate (5100)", MACHINE_DEC_MIPSMATE_5100, 2);
+	me->subtype[8]->aliases[0] = "5100";
+	me->subtype[8]->aliases[1] = "mipsmate";
+
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Cobalt:  */
+	me = machine_entry_new("Cobalt", MACHINE_COBALT, 1, 0);
+	me->aliases[0] = "cobalt";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  ARC:  */
+	me = machine_entry_new("ARC", MACHINE_ARC, 1, 8);
+	me->aliases[0] = "arc";
+
+	me->subtype[0] = machine_entry_subtype_new(
+	    "Acer PICA-61", MACHINE_ARC_JAZZ_PICA, 2);
+	me->subtype[0]->aliases[0] = "pica-61";
+	me->subtype[0]->aliases[1] = "acer pica";
+	me->subtype[0]->aliases[2] = "pica";
+
+	me->subtype[1] = machine_entry_subtype_new(
+	    "Deskstation Tyne", MACHINE_ARC_DESKTECH_TYNE, 3);
+	me->subtype[1]->aliases[0] = "deskstation tyne";
+	me->subtype[1]->aliases[1] = "desktech";
+	me->subtype[1]->aliases[2] = "tyne";
+
+	me->subtype[2] = machine_entry_subtype_new(
+	    "Jazz Magnum", MACHINE_ARC_JAZZ_MAGNUM, 2);
+	me->subtype[2]->aliases[0] = "magnum";
+	me->subtype[2]->aliases[1] = "jazz magnum";
+
+	me->subtype[3] = machine_entry_subtype_new(
+	    "NEC-R94", MACHINE_ARC_NEC_R94, 2);
+	me->subtype[3]->aliases[0] = "nec-r94";
+	me->subtype[3]->aliases[1] = "r94";
+
+	me->subtype[4] = machine_entry_subtype_new(
+	    "NEC-RD94", MACHINE_ARC_NEC_RD94, 2);
+	me->subtype[4]->aliases[0] = "nec-rd94";
+	me->subtype[4]->aliases[1] = "rd94";
+
+	me->subtype[5] = machine_entry_subtype_new(
+	    "NEC-R96", MACHINE_ARC_NEC_R96, 2);
+	me->subtype[5]->aliases[0] = "nec-r96";
+	me->subtype[5]->aliases[1] = "r96";
+
+	me->subtype[6] = machine_entry_subtype_new(
+	    "NEC-R98", MACHINE_ARC_NEC_R98, 2);
+	me->subtype[6]->aliases[0] = "nec-r98";
+	me->subtype[6]->aliases[1] = "r98";
+
+	me->subtype[7] = machine_entry_subtype_new(
+	    "Olivetti M700", MACHINE_ARC_JAZZ_M700, 2);
+	me->subtype[7]->aliases[0] = "olivetti";
+	me->subtype[7]->aliases[1] = "m700";
+
+	me->next = first_machine_entry; first_machine_entry = me;
 }
 

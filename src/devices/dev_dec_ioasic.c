@@ -23,9 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.1 2004-02-26 15:14:07 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.2 2004-03-04 03:15:50 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
+ *
+ *  TODO:  Lots of stuff, such as DMA and all bits in the control registers.
  */
 
 #include <math.h>
@@ -61,15 +63,76 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 #endif
 
 	switch (relative_addr) {
+
+	case IOASIC_SCC_T1_DMAPTR:
+		if (writeflag == MEM_WRITE) {
+			/*  TODO: some left-over bits, see tc_ioasicreg.h  */
+			d->t1_dmaptr = idata >> 3;
+			d->t1_cur_ptr = d->t1_dmaptr;
+		}
+		break;
+
+	case IOASIC_SCC_T2_DMAPTR:
+		if (writeflag == MEM_WRITE) {
+			/*  TODO: some left-over bits, see tc_ioasicreg.h  */
+			d->t2_dmaptr = idata >> 3;
+			d->t2_cur_ptr = d->t2_dmaptr;
+		}
+		break;
+
 	case IOASIC_CSR:
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			d->csr = idata;
-		else
+
+			if (d->csr & IOASIC_CSR_DMAEN_T1) {
+				/*
+				 *  Transmit all data here:
+				 */
+
+				while ((d->t1_cur_ptr & 0xffc) != 0) {
+					unsigned char word[4];
+					memory_rw(cpu, mem, d->t1_cur_ptr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+
+					/*  TODO:  this is hardcoded for scc  */
+					printf("%c", word[1]);
+
+					d->t1_cur_ptr += 4;
+				}
+
+				/*  and signal the end of page:  */
+				d->intr |= IOASIC_INTR_T1_PAGE_END;
+			} else
+				d->intr &= ~IOASIC_INTR_T1_PAGE_END;
+
+			if (d->csr & IOASIC_CSR_DMAEN_T2) {
+				/*
+				 *  Transmit all data here:
+				 */
+
+				while ((d->t2_cur_ptr & 0xffc) != 0) {
+					unsigned char word[4];
+					memory_rw(cpu, mem, d->t2_cur_ptr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+
+					/*  TODO:  this is hardcoded for scc  */
+					printf("%c", word[1]);
+
+					d->t2_cur_ptr += 4;
+				}
+
+				/*  and signal the end of page:  */
+				d->intr |= IOASIC_INTR_T2_PAGE_END;
+			} else
+				d->intr &= ~IOASIC_INTR_T2_PAGE_END;
+		} else
 			odata = d->csr;
 		break;
 	case IOASIC_INTR:
 		if (writeflag == MEM_READ)
 			odata = d->intr;
+		else {
+			/*  Clear bits on write.  */
+			d->intr &= ~idata;
+		}
 		break;
 	case IOASIC_IMSK:
 		if (writeflag == MEM_WRITE)

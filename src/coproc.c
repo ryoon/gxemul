@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.35 2004-06-10 03:33:13 debug Exp $
+ *  $Id: coproc.c,v 1.36 2004-06-10 04:22:49 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1201,18 +1201,17 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)
-						debug("tlbwi\n");
+						debug("tlbwi");
 					else
-						debug("tlbwr\n");
+						debug("tlbwr");
+
+					debug("\tindex=%08llx", (long long) cp->reg[COP0_INDEX]);
+					debug(", random=%08llx", (long long) cp->reg[COP0_RANDOM]);
+					debug(", mask=%016llx", (long long) cp->reg[COP0_PAGEMASK]);
+					debug(", hi=%016llx", (long long) cp->reg[COP0_ENTRYHI]);
+					debug(", lo0=%016llx", (long long) cp->reg[COP0_ENTRYLO0]);
+					debug(", lo1=%016llx\n", (long long) cp->reg[COP0_ENTRYLO1]);
 				}
-#if 0
-				debug(": index = %08llx", (long long) cp->reg[COP0_INDEX]);
-				debug(" random = %08llx", (long long) cp->reg[COP0_RANDOM]);
-				debug(" mask = %016llx", (long long) cp->reg[COP0_PAGEMASK]);
-				debug(" hi = %016llx", (long long) cp->reg[COP0_ENTRYHI]);
-				debug(" lo0 = %016llx", (long long) cp->reg[COP0_ENTRYLO0]);
-				debug(" lo1 = %016llx\n", (long long) cp->reg[COP0_ENTRYLO1]);
-#endif
 
 				if (op == COP0_TLBWR) {
 #ifdef LAST_USED_TLB_EXPERIMENT

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.281 2005-02-03 05:56:58 debug Exp $
+ *  $Id: cpu.c,v 1.282 2005-02-06 16:11:49 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -345,8 +345,8 @@ void cpu_show_cycles(struct machine *machine,
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
 		    / machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
 
-		if (cur_cycles_per_second < 1500000)
-			cur_cycles_per_second = 1500000;
+		if (cur_cycles_per_second < 1000000)
+			cur_cycles_per_second = 1000000;
 
 		if (first_adjustment) {
 			machine->emulated_hz = cur_cycles_per_second;

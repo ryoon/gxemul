@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.88 2005-02-06 15:15:05 debug Exp $
+ *  $Id: arcbios.c,v 1.89 2005-02-06 16:11:49 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -39,19 +39,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/time.h>
 #include <time.h>
-#include <sys/resource.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/resource.h>
 
 #include "arcbios.h"
 #include "console.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 
 
@@ -1435,7 +1435,8 @@ int arcbios_emul(struct cpu *cpu)
 				/*  Read from STDIN is blocking (at least
 				    that seems to be how NetBSD's arcdiag
 				    wants it)  */
-				x = console_readchar(cpu->machine->main_console_handle);
+				x = console_readchar(cpu->machine->
+				    main_console_handle);
 				if (x < 0)
 					return 0;
 
@@ -1446,14 +1447,17 @@ int arcbios_emul(struct cpu *cpu)
 				 *  pressing ESC a bit harder to define.
 				 */
 				if (x == 27) {
-					x = console_readchar(cpu->machine->main_console_handle);
+					x = console_readchar(cpu->
+					    machine->main_console_handle);
 					if (x == '[' || x == 'O')
 						x = 0x9b;
 				}
 
 				ch = x;
 				nread ++;
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+				memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
+				    &ch, 1, MEM_WRITE, CACHE_NONE);
 
 				/*  NOTE: Only one char at a time, from STDIN:  */
 				i = cpu->cd.mips.gpr[MIPS_GPR_A2];  /*  :-)  */

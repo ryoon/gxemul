@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.333 2005-02-06 15:39:39 debug Exp $
+ *  $Id: machine.c,v 1.334 2005-02-06 16:11:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3922,7 +3922,7 @@ for (i=0; i<32; i++)
 	debug("\n");
 
 	if (machine->emulated_hz < 1)
-		machine->emulated_hz = 1500000;
+		machine->emulated_hz = 1000000;
 
 	if (bootstr != NULL) {
 		debug("bootstring%s: %s", (bootarg!=NULL &&
@@ -4167,8 +4167,9 @@ void machine_dumpinfo(struct machine *m)
 	if (m->single_step_on_bad_addr)
 		debug("single-step on bad addresses\n");
 
-	debug("bintrans %s, other speedtricks %s\n",
+	debug("bintrans %s (%i MB cache), other speedtricks %s\n",
 	    m->bintrans_enable? "enabled" : "disabled",
+	    (int) (m->bintrans_size / 1048576),
 	    m->speed_tricks? "enabled" : "disabled");
 
 	debug("clock: ");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.18 2005-02-06 15:39:38 debug Exp $
+ *  $Id: cpu_mips.c,v 1.19 2005-02-06 16:11:49 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1968,7 +1968,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.mips.trace_tree_depth --;
 
 			/*  TODO: how many instrs should this count as?  */
-			return 100;
+			return 10;
 		}
 	}
 

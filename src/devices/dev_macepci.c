@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.6 2004-01-06 09:07:23 debug Exp $
+ *  $Id: dev_macepci.c,v 1.7 2004-01-12 00:17:39 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -105,7 +105,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 /*
  *  dev_macepci_init():
  */
-struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr)
+struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq)
 {
 	struct macepci_data *d = malloc(sizeof(struct macepci_data));
 	if (d == NULL) {
@@ -114,7 +114,7 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct macepci_data));
 
-	d->pci_data = bus_pci_init(mem);
+	d->pci_data = bus_pci_init(mem, pciirq);
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH, dev_macepci_access, (void *)d);
 

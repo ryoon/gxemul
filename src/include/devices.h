@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.25 2004-01-11 23:54:23 debug Exp $
+ *  $Id: devices.h,v 1.26 2004-01-12 00:17:41 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -136,7 +136,7 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
+struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
 
 /*  dev_gt.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
@@ -197,7 +197,7 @@ void dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
 /*  dev_macepci.c:  */
 #define	DEV_MACEPCI_LENGTH		0x1000
 int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr);
+struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
@@ -247,7 +247,7 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mo
 /*  dev_rd94.c:  */
 #define	DEV_RD94_LENGTH			0x1000
 int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int pciirq);
 
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000

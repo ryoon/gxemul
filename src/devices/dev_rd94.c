@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.6 2004-01-06 09:05:57 debug Exp $
+ *  $Id: dev_rd94.c,v 1.7 2004-01-12 00:17:39 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -44,6 +44,7 @@
 struct rd94_data {
 	struct pci_data *pci_data;
 	uint32_t	reg[DEV_RD94_LENGTH / 4];
+	int		pciirq;
 
 	int		intmask;
 	int		interval;
@@ -169,7 +170,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_rd94_init():
  */
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int pciirq)
 {
 	struct rd94_data *d = malloc(sizeof(struct rd94_data));
 	if (d == NULL) {
@@ -177,8 +178,8 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct rd94_data));
-
-	d->pci_data = bus_pci_init(mem);
+	d->pciirq   = pciirq;
+	d->pci_data = bus_pci_init(mem, pciirq);
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH, dev_rd94_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);

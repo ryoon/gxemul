@@ -39,6 +39,7 @@ struct pci_device {
 };
 
 struct pci_data {
+	int		irq_nr;
 	uint32_t	pci_addr;
 	int		last_was_write_ffffffff;
 
@@ -58,7 +59,7 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
 	int bus, int device, int function,
 	void (*init)(struct cpu *, struct memory *), uint32_t (*read_register)(int reg));
-struct pci_data *bus_pci_init(struct memory *mem);
+struct pci_data *bus_pci_init(struct memory *mem, int irq_nr);
 
 
 /*

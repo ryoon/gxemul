@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.36 2004-11-05 23:41:42 debug Exp $
+ *  $Id: dev_bt459.c,v 1.37 2004-11-06 00:00:41 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -49,7 +49,7 @@ extern int quiet_mode;
 
 
 /*  #define BT459_DEBUG  */
-#define BT459_TICK_SHIFT	10
+#define BT459_TICK_SHIFT	12
 
 struct bt459_data {
 	uint32_t	bt459_reg[DEV_BT459_NREGS];

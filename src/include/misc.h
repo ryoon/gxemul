@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.64 2004-06-24 05:21:56 debug Exp $
+ *  $Id: misc.h,v 1.65 2004-06-24 15:05:52 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -63,6 +63,7 @@ typedef uint64_t u_int64_t;
  */
 
 /*  ENABLE_MIPS16 should be defined on the commandline using -D, if you want it  */
+/*  #define ENABLE_INSTRUCTION_DELAYS  */
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
@@ -477,6 +478,18 @@ struct cpu {
 
 	void		(*md_interrupt)(struct cpu *, int irq_nr, int);
 
+	struct memory	*mem;
+
+	/*
+	 *  The translation_cached stuff is used to speed up the
+	 *  most recent lookups into the TLB.  Whenever the TLB is
+	 *  written to, translation_cached[] must be filled with zeros.
+	 */
+	int		translation_cached_i;
+	int		translation_cached[N_TRANSLATION_CACHE];
+	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
+	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
+
 	/*  Special purpose registers:  */
 	uint64_t	pc;
 	uint64_t	pc_last;		/*  PC of last instruction   */
@@ -507,26 +520,30 @@ struct cpu {
 	unsigned char	*pc_last_host_memblock;
 	int		pc_last_was_in_host_ram;
 
+	/*  General purpose registers:  */
+	uint64_t	gpr[NGPRS];
+
 #ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
 	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
 #endif
 
-	int		trace_tree_depth;
+#ifdef ENABLE_INSTRUCTION_DELAYS
 	int		instruction_delay;
+#endif
+
+	int		trace_tree_depth;
 
 	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
 	int		delay_slot;
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 
-	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
 	uint64_t	show_trace_addr;
+	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
 
-	long		time_since_intr_enabling;
 	uint64_t	old_status;
-
-	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
+	long		time_since_intr_enabling;
 
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
@@ -540,9 +557,6 @@ struct cpu {
 	uint64_t	rmw_addr;		/*  Address of rmw modification  */
 	int		rmw_len;		/*  Length of rmw modification  */
 
-	/*  General purpose registers:  */
-	uint64_t	gpr[NGPRS];
-
 	/*
 	 *  TODO:  The R5900 has 128-bit registers. I'm not really
 	 *  sure whether they are used a lot or not, at least with
@@ -555,17 +569,8 @@ struct cpu {
 	 */
 	uint64_t	gpr_quadhi[NGPRS];
 
-	/*
-	 *  The translation_cached stuff is used to speed up the
-	 *  most recent lookups into the TLB.  Whenever the TLB is
-	 *  written to, translation_cached[] must be filled with zeros.
-	 */
-	int		translation_cached_i;
-	int		translation_cached[N_TRANSLATION_CACHE];
-	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
-	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
 
-	struct memory	*mem;
+	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
 
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];

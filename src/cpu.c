@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.68 2004-06-24 02:02:11 debug Exp $
+ *  $Id: cpu.c,v 1.69 2004-06-24 15:06:03 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -532,6 +532,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	int i;
 	unsigned char instr[4];
 	uint32_t instrword;
+	uint64_t cached_pc;
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem = NULL;			/*  for instruction trace  */
@@ -550,10 +551,12 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	unsigned char d[16];				/*  room for at most 128 bits  */
 
 
+#ifdef ENABLE_INSTRUCTION_DELAYS
 	if (cpu->instruction_delay > 0) {
 		cpu->instruction_delay --;
 		return 0;
 	}
+#endif
 
 	if (cpu->delay_slot) {
 		if (cpu->delay_slot == DELAYED) {
@@ -566,6 +569,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		}
 	}
 
+	cached_pc = cpu->pc;
+
 	if (cpu->last_was_jumptoself > 0)
 		cpu->last_was_jumptoself --;
 
@@ -574,7 +579,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
-		if (cpu->pc == dumppoint_pc[i]) {
+		if (cached_pc == dumppoint_pc[i]) {
 			instruction_trace = 1;
 			quiet_mode = quiet_mode_cached = 0;
 			if (dumppoint_flag_r[i])
@@ -620,7 +625,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 #ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */
-	if (cpu->pc == 0) {
+	if (cached_pc == 0) {
 		debug("cpu%i: pc=0, halting\n", cpu->cpu_id);
 		cpu->running = 0;
 		return 0;
@@ -634,7 +639,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	 *  This assumes that a jal was made to a ROM address,
 	 *  and we should return via gpr ra.
 	 */
-	if ((cpu->pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
+	if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
 		int rom_jal = 1;
 		switch (emulation_type) {
 		case EMULTYPE_DEC:
@@ -653,6 +658,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 		if (rom_jal) {
 			cpu->pc = cpu->gpr[GPR_RA];
+			/*  no need to update cached_pc, as we're returning  */
 			cpu->delay_slot = NOT_DELAYED;
 			cpu->trace_tree_depth --;
 			return 0;
@@ -660,7 +666,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	}
 
 	/*  Remember where we are, in case of interrupt or exception:  */
-	cpu->pc_last = cpu->pc;
+	cpu->pc_last = cached_pc;
 
 	if (!quiet_mode_cached) {
 		if (cpu->show_trace_delay > 0) {
@@ -680,12 +686,12 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 	/*  Read an instruction from memory:  */
 #ifdef ENABLE_MIPS16
-	if (cpu->mips16 && (cpu->pc & 1)) {
+	if (cpu->mips16 && (cached_pc & 1)) {
 		/*  16-bit instruction word:  */
 		unsigned char instr16[2];
 		int mips16_offset = 0;
 
-		if (!memory_rw(cpu, cpu->mem, cpu->pc ^ 1, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+		if (!memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 			return 0;
 
 		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
@@ -716,7 +722,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 			/*  instruction with extend:  */
 			mips16_offset += 2;
-			if (!memory_rw(cpu, cpu->mem, (cpu->pc ^ 1) + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+			if (!memory_rw(cpu, cpu->mem, (cached_pc ^ 1) + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -727,6 +733,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr16) + mips16_offset;
+		cached_pc = cpu->pc;
 
 		if (instruction_trace) {
 			int offset;
@@ -752,8 +759,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		 *
 		 *  2)  Fallback to reading from memory the usual way.
 		 */
-		if (cpu->pc_last_was_in_host_ram && (cpu->pc & ~0xfff) == cpu->pc_last_virtual_page) {
-			uint64_t paddr = cpu->pc_last_physical_page | (cpu->pc & 0xfff);
+		if (cpu->pc_last_was_in_host_ram && (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
+			uint64_t paddr = cpu->pc_last_physical_page | (cached_pc & 0xfff);
 			int offset = paddr & ((1 << cpu->mem->bits_per_memblock) - 1);
 			memcpy(instr, cpu->pc_last_host_memblock + offset, sizeof(instr));
 
@@ -761,7 +768,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 			instr_fetched = MEMORY_ACCESS_OK;
                 } else {
-			instr_fetched = memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
+			instr_fetched = memory_rw(cpu, cpu->mem, cached_pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
 
 			if (!instr_fetched)
 				return 0;
@@ -783,6 +790,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 		/*  Advance the program counter:  */
 		cpu->pc += sizeof(instr);
+		cached_pc = cpu->pc;
 
 		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
 			we are in usermode, then reverse endianness!  */
@@ -1143,9 +1151,9 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 
 			tmpvalue = cpu->gpr[rs];
-			cpu->gpr[rd] = cpu->pc + 4;	/*  already increased by 4 earlier  */
+			cpu->gpr[rd] = cached_pc + 4;	/*  already increased by 4 earlier  */
 
-			if (rd == 31) {
+			if (!quiet_mode_cached && rd == 31) {
 				cpu->show_trace_delay = 2;
 				cpu->show_trace_addr = tmpvalue;
 			}
@@ -1627,7 +1635,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (hi6 == HI6_BLEZL)	instr_mnem = "blezl";
 			if (hi6 == HI6_BNEL)	instr_mnem = "bnel";
 			if (instr_mnem != NULL)
-				debug("%s\tr%i,r%i,%016llx\n", instr_mnem, rt, rs, cpu->pc + (imm << 2));
+				debug("%s\tr%i,r%i,%016llx\n", instr_mnem, rt, rs, cached_pc + (imm << 2));
 
 			instr_mnem = NULL;
 			if (hi6 == HI6_ADDI)	instr_mnem = "addi";
@@ -1815,7 +1823,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 			if (cond) {
 				cpu->delay_slot = TO_BE_DELAYED;
-				cpu->delay_jmpaddr = cpu->pc + (imm << 2);
+				cpu->delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
 					cpu->nullify_next = 1;		/*  nullify delay slot  */
@@ -1973,6 +1981,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 						 *  of their own, so this code should NOT be used:
 						 *
 						 *	cpu->instruction_delay = random() % (ncpus + 1);
+						 *
+						 *  Search for ENABLE_INSTRUCTION_DELAYS.
 						 */
 						break;
 					}
@@ -1995,7 +2005,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				case HI6_SWC2:	cpnr++;
 				case HI6_SDC1:
 				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
-						    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 						    ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 							cpnr = -1;
@@ -2111,7 +2121,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				case HI6_LWC2:	cpnr++;
 				case HI6_LDC1:
 				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
-						    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 						    ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 						} else {
@@ -2306,7 +2316,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				if (regimm5 == REGIMM_BLTZALL)	instr_mnem = "bltzall";
 				if (regimm5 == REGIMM_BGEZAL)	instr_mnem = "bgezal";
 				if (regimm5 == REGIMM_BGEZALL)	instr_mnem = "bgezall";
-				debug("%s\tr%i,%016llx\n", instr_mnem, rs, cpu->pc + (imm << 2));
+				debug("%s\tr%i,%016llx\n", instr_mnem, rs, cached_pc + (imm << 2));
 			}
 
 			cond = 0;
@@ -2332,11 +2342,11 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 
 			if (and_link)
-				cpu->gpr[31] = cpu->pc + 4;
+				cpu->gpr[31] = cached_pc + 4;
 
 			if (cond) {
 				cpu->delay_slot = TO_BE_DELAYED;
-				cpu->delay_jmpaddr = cpu->pc + (imm << 2);
+				cpu->delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
 					cpu->nullify_next = 1;		/*  nullify delay slot  */
@@ -2365,9 +2375,9 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		imm <<= 2;
 
 		if (hi6 == HI6_JAL)
-			cpu->gpr[31] = cpu->pc + 4;		/*  pc already increased by 4 earlier  */
+			cpu->gpr[31] = cached_pc + 4;		/*  pc already increased by 4 earlier  */
 
-		addr = cpu->pc & ~((1 << 28) - 1);
+		addr = cached_pc & ~((1 << 28) - 1);
 		addr |= imm;
 
 		if (instruction_trace) {
@@ -2387,7 +2397,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		cpu->delay_slot = TO_BE_DELAYED;
 		cpu->delay_jmpaddr = addr;
 
-		if (hi6 == HI6_JAL) {
+		if (!quiet_mode_cached && hi6 == HI6_JAL) {
 			cpu->show_trace_delay = 2;
 			cpu->show_trace_addr = addr;
 		}
@@ -2414,7 +2424,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		 *  TODO:  More robust checking for user code (ie R4000 stuff)
 		 */
 		if (cpu->coproc[cpnr] == NULL ||
-		    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+		    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 		    ) {
 			if (instruction_trace)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);

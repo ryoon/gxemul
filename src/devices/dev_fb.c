@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.23 2004-03-10 01:08:28 debug Exp $
+ *  $Id: dev_fb.c,v 1.24 2004-03-14 22:25:19 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -429,7 +429,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		 */
 		if (d->updated_last_tick == 1) {
 			d->updated_last_tick = 0;
-			return;
+			goto skip_update;
 		}
 #endif
 		d->updated_last_tick = 1;
@@ -467,6 +467,9 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	} else
 		d->updated_last_tick = 0;
 
+skip_update:
+
+#ifdef WITH_X11
 	if (d->cursor_on != d->OLD_cursor_on ||
 	    d->cursor_x != d->OLD_cursor_x || d->cursor_y != d->OLD_cursor_y ||
 	    d->cursor_xsize != d->OLD_cursor_xsize || d->cursor_ysize != d->OLD_cursor_ysize) {
@@ -494,6 +497,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 
 		need_to_flush_x11 = 1;
 	}
+#endif
 
 #ifdef WITH_X11
 	if (need_to_flush_x11)

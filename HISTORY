@@ -393,3 +393,6 @@ HISTORY of mips64emul
 		device file (devices/dev_deccca.c).
 		An ugly hack added to allow some more OSF/1 kernels (almost
 		a.out, but without many of the header fields) to load.
+20040314	Adding PMAG-JA and PMAG-RO (1280x1024 x 8-bit) TURBOchannel
+		graphics devices. They work in Ultrix, but only monochrome
+		and no cursor, because there are no ramdacs or such yet.

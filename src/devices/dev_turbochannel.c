@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.10 2004-03-08 03:22:42 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.11 2004-03-14 22:25:19 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -158,8 +158,9 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	 *  PMAD-AA:  le1 at tc0 slot 2 offset 0x0: address 00:00:00:00:00:00  (ethernet)
 	 *  PMAG-AA:  mfb0 at tc0 slot 2 offset 0x0: 1280x1024x8
 	 *  PMAG-BA:  cfb0 at tc0 slot 2 offset 0x0cfb0: 1024x864x8            (vdac init failed)
-	 *  PMAG-CA:  px0 at tc0 slot 2 offset 0x0: 2D, 4x1 stamp, 8 plane     (PMAG-DA,FA,FB are the same)
+	 *  PMAG-CA:  px0 at tc0 slot 2 offset 0x0: 2D, 4x1 stamp, 8 plane     (PMAG-DA,EA,FA,FB are also pixelstamps)
 	 *  PMAG-DV:  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8
+	 *  PMAG-JA:  "truecolor" in Ultrix
 	 *  PMAGB-VA: sfb0 at tc0 slot 2 offset 0x0: 0x0x8
 	 *  PMAZ-AA:  asc0 at tc0 slot 2 offset 0x0: NCR53C94, 25MHz, SCSI ID 7
 	 */
@@ -203,6 +204,17 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		/*  xcfb in NetBSD: TODO  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV");
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
+		rom_offset = 0x3c0000;
+	} else if (strcmp(device_name, "PMAG-JA")==0) {
+		/*  This works at least B/W in Ultrix, so far.  It's supposed to be "true color"?  */
+		/*  I though that meant 24-bit, but Ultrix output pixels as if it were an 8-bit device.  */
+		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
+		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-JA");
+		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
+	} else if (strcmp(device_name, "PMAG-RO")==0) {
+		/*  This works at least B/W in Ultrix, so far.  */
+		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
+		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO");
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {
 		/*  If this slot is empty, then occupy the entire 4MB slot address range:  */

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.21 2004-12-13 02:51:18 debug Exp $
+#  $Id: Makefile.skel,v 1.22 2004-12-26 17:47:42 debug Exp $
 #
 #  Makefile for mips64emul
 #
@@ -19,7 +19,7 @@ do_src:
 do_devices:
 	cd devices; $(MAKE); cd ..
 
-regtest:
+regtest: mips64emul
 	cd tests; $(MAKE) run_tests; cd ..
 
 install: all

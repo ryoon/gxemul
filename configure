@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.74 2004-12-06 21:47:30 debug Exp $
+#  $Id: configure,v 1.75 2004-12-26 17:47:42 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -717,8 +717,6 @@ rm -f _testprog _testprog.error _testprog.stdout
 
 #############################################################################
 
-rm -f _testprog.c
-
 INCLUDE=-I../include/
 
 echo C compiler: $CC
@@ -730,9 +728,34 @@ echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
-echo "MIPS_CC=mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips64 -mabi=64" >> _Makefile.header
-echo "MIPS_AS=mips64-unknown-elf-as -mabi=64 -mips64" >> _Makefile.header
-echo "MIPS_LD=mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
+
+printf "Regression test setup:\n"
+printf "Checking for a GNU CC cross-compiler for 64-bit MIPS... "
+echo 'int f(int x) { return x; }' > _testprog.c
+
+MIPS_CC=''
+for MIPS_TRY in mips64-unknown-elf mips-unknown-elf64; do
+	printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
+	chmod 755 _test.sh
+	./_test.sh > /dev/null 2> /dev/null
+	if [ -e _testprog.o ]; then
+		MIPS_CC=$MIPS_TRY
+		break
+	fi
+done
+
+if [ z$MIPS_CC = z ]; then
+	echo "none"
+	echo '("make regtest" will not work)'
+else
+	echo $MIPS_CC"-gcc"
+fi
+
+rm -f _testprog* _test.sh
+
+echo "MIPS_CC="$MIPS_CC"-gcc -g -O3 -fno-builtin -fschedule-insns -mips64 -mabi=64" >> _Makefile.header
+echo "MIPS_AS="$MIPS_CC"-as -mabi=64 -mips64" >> _Makefile.header
+echo "MIPS_LD="$MIPS_CC"-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
 echo "" >> _Makefile.header
 
 

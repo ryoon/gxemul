@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.34 2004-12-08 13:27:46 debug Exp $
+ *  $Id: x11.c,v 1.35 2004-12-09 01:39:22 debug Exp $
  *
  *  X11-related functions.
  */
@@ -73,7 +73,7 @@ int n_framebuffer_windows = 0;
  */
 void x11_redraw_cursor(int i)
 {
-	int last_color_used;
+	int last_color_used = 0;
 	int n_colors_used = 0;
 
 	/*  Remove old cursor, if any:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.4 2003-11-07 05:20:12 debug Exp $
+ *  $Id: cpu.c,v 1.5 2003-11-07 05:31:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -757,6 +757,16 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		 *  caused, it will appear as if it was caused when reading the extend instruction.
 		 */
 		while (mips16_to_32(cpu, instr16, instr) == 0) {
+			if (instruction_trace) {
+				int offset;
+				char *symbol = get_symbol_name(cpu->pc_last, &offset);
+				if (symbol != NULL && offset==0)
+					debug("<%s>\n", symbol);
+				debug("cpu%i @ %016llx: %02x%02x\t\t\textend\n",
+				    cpu->cpu_id, cpu->pc_last + mips16_offset,
+				    instr16[1], instr16[0]);
+			}
+
 			/*  instruction with extend:  */
 			mips16_offset += 2;
 			if (!memory_rw(cpu, cpu->mem, cpu->pc + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
@@ -773,7 +783,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				debug("<%s>\n", symbol);
 
 			debug("cpu%i @ %016llx: %02x%02x => %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, cpu->pc_last,
+			    cpu->cpu_id, cpu->pc_last + mips16_offset,
 			    instr16[1], instr16[0],
 			    instr[3], instr[2], instr[1], instr[0],
 			    cpu_flags(cpu));

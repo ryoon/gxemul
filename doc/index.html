@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.156 2004-12-12 22:22:29 debug Exp $
+$Id: index.html,v 1.157 2004-12-13 00:43:39 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -458,6 +458,11 @@ To run NetBSD/pmax in the emulator (on an emulated DECstation machine),
 you first need to install NetBSD onto a disk image. To NetBSD, the disk 
 image looks and acts like a real SCSI disk, but it is just a normal 
 file in the host's filesystem.
+
+<p>
+I've done most of the testing with NetBSD 1.6.2, but the following 
+instructions should hopefully work for NetBSD 2.0 as well.
+
 <p>
 You need to do the following:
 <ol start="1">
@@ -480,12 +485,14 @@ steps:
 <p>
 <ol start="3">
 
-  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
+  <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+	or
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>./mips64emul -X -D2 -d netbsddisk.img -d bc:pmaxcd.iso</b>
+	$ <b>./mips64emul -X -b -D2 -d netbsddisk.img -d bc:pmaxcd.iso</b>
 </pre>
 </ol>
 <p>
@@ -495,13 +502,14 @@ For an ftp install, substitute steps 3 and 4 above with these:
 
   <li>Download a NetBSD pmax INSTALL kernel (1.3 MB), and gunzip it:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
-	MD5 (netbsd-INSTALL.gz) = 14254f73996e8c1abccdcf5e0a0b6521
+	or
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 
 	$ <b>gunzip netbsd-INSTALL.gz</b>
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>./mips64emul -X -D2 -d netbsddisk.img -O netbsd-INSTALL</b>
+	$ <b>./mips64emul -X -b -D2 -d netbsddisk.img -O netbsd-INSTALL</b>
 </pre>
 </ol>
 
@@ -524,39 +532,38 @@ parameters are as follows:<pre>
 	Your IPv4 number: <b>10.0.0.1</b>
 	IPv4 Netmask [0xff000000]: <b>0xff000000</b>
 	IPv4 gateway: <b>10.0.0.254</b>
-	IPv4 name server: <b>129.16.1.3</b>       <i>&lt;--- replace this with your actual real-world nameserver</i>
+	IPv4 name server: <b>10.0.0.254</b>
 </pre>
+
+<p>
+(If using 10.0.0.254 as the nameserver fails, then try entering the
+IP number of a real-world nameserver instead.)
 
 <p>
 When the installation is completed, the following command should start
 NetBSD from the harddisk image:<pre>
-	$ <b>./mips64emul -X -M64 -D2 -d netbsddisk.img</b>
+	$ <b>./mips64emul -X -b -M64 -D2 -d netbsddisk.img</b>
 </pre>
+
 <p>
 Use <b>startx</b> to start X windows.
+
+<p>
+<font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0 doesn't
+work with X out-of-the-box on pmax. It seems that this has to do with a 
+switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
+
 <p>
 If you want to run without the X framebuffer, use this instead:<pre>
-	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
+	$ <b>./mips64emul -D2 -b -d netbsddisk.img</b>
 </pre>
 
 <p>
-NetBSD/pmax should work fine with dynamic binary translation (enabled by 
-adding <b>-b</b> to the command line).
+NetBSD/pmax seems to work fine with dynamic binary translation (enabled 
+by the <b>-b</b> command line option) in R3000 mode. NetBSD also
+supports R4000-like CPUs on pmax, but the bintrans support for R4000 in
+the emulator is less stable than for R3000.
 
-<!--
-<p>
-If you are serious about running NetBSD/pmax, you might want to try
-adding one or more pre-compiled packages. The following command, for example,
-will install an old version of the Dillo web browser: (run these
-commands as root inside the emulator)
-<pre>
-        # <b>setenv FTP_PASSIVE_MODE YES</b>
-        # <b>pkg_add -v ftp://ftp.netbsd.org/pub/NetBSD/packages/1.6.1/pmax/All/dillo-0.8.0.tgz</b>
-</pre>
-<p>
-Adding packages this way is <i>really</i> slow, and sometimes does not
-work if the host isn't fast enough. (The ftp connections time out.)
--->
 
 
 

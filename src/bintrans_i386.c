@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.36 2004-12-06 23:10:02 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.37 2004-12-06 23:29:45 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1652,11 +1652,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		/*
 		 *  ecx = vaddr_to_hostaddr_table0[a]
 		 *
-		 *  01 df                   add    %ebx,%edi
-		 *  8b 0f                   mov    (%edi),%ecx
+		 *  8b 0c 1f                mov    (%edi,%ebx,1),%ecx
 		 */
-		*a++ = 0x01; *a++ = 0xdf;
-		*a++ = 0x8b; *a++ = 0x0f;
+		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x1f;
 
 		/*
 		 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
@@ -1670,31 +1668,22 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 		/*
-		 *  ecx = vaddr_to_hostaddr_table0[a][b]
+		 *  edi = vaddr_to_hostaddr_table0[a][b]
 		 *
-		 *  01 d9                   add    %ebx,%ecx
-		 *  8b 09                   mov    (%ecx),%ecx
+		 *  8b 3c 19                mov    (%ecx,%ebx,1),%edi
 		 */
-		*a++ = 0x01; *a++ = 0xd9;
-		*a++ = 0x8b; *a++ = 0x09;
+		*a++ = 0x8b; *a++ = 0x3c;  *a++ = 0x19;
 
 		/*
-		 *  ecx = NULL? Then return with failure.
+		 *  edi = NULL? Then return with failure.
 		 *
-		 *  83 f9 00                cmp    $0x0,%ecx
+		 *  83 ff 00                cmp    $0x0,%edi
 		 *  75 01                   jne    <okzzz>
 		 */
-		*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
+		*a++ = 0x83; *a++ = 0xff; *a++ = 0x00;
 		*a++ = 0x75; retfail = a; *a++ = 0x00;
 		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;
-
-		/*
-		 *  edi = ecx   (this is the host page)
-		 *
-		 *  89 cf                   mov    %ecx,%edi
-		 */
-		*a++ = 0x89; *a++ = 0xcf;
 
 		/*
 		 *  If the lowest bit is zero, and we're storing, then fail.
@@ -1711,22 +1700,20 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		}
 
 		/*
-		 *  ebx = offset within page = vaddr & 0xfff
+		 *  eax = offset within page = vaddr & 0xfff
 		 *
-		 *  89 c3                   mov    %eax,%ebx
-		 *  81 e3 ff 0f 00 00       and    $0xfff,%ebx
+		 *  25 ff 0f 00 00       and    $0xfff,%eax
 		 */
-		*a++ = 0x89; *a++ = 0xc3;
-		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 		/*
 		 *  edi = host address   ( = host page + offset)
 		 *
 		 *  83 e7 fe                and    $0xfffffffe,%edi	clear the lowest bit
-		 *  01 df                   add    %ebx,%edi
+		 *  01 c7                   add    %eax,%edi
 		 */
 		*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfe;
-		*a++ = 1; *a++ = 0xdf;
+		*a++ = 0x01; *a++ = 0xc7;
 
 	} else {
 		/*  64-bit generic case:  */

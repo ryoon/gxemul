@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.359 2004-12-06 23:10:14 debug Exp $
+$Id: HISTORY,v 1.360 2004-12-06 23:29:44 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1254,3 +1254,4 @@ HISTORY of mips64emul
 		Separating out opcodes.h, cop0.h, and cpu_types.h from misc.h.
 20041207	Minor bintrans update. (In some cases, it isn't neccessary
 		to return to the main loop, when translating from a new page.)
+		Some other minor i386 bintrans backend optimizations.

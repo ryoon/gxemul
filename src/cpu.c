@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.83 2004-07-03 19:48:15 debug Exp $
+ *  $Id: cpu.c,v 1.84 2004-07-03 20:06:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2704,8 +2704,12 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 
 	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
-	printf(" (%lli cycles = %lli instrs, instr/sec: %lli cur, %lli avg)",
-	    (long long) ncycles, (long long) ninstrs,
+	printf(" (total nr of cycles = %lli", (long long) ncycles);
+
+	if (cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
+		printf(" (%lli instructions)", (long long) ninstrs);
+
+	printf(", instr/sec: %lli cur, %lli avg)",
 	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));

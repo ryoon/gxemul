@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.241 2005-01-18 06:23:00 debug Exp $
+ *  $Id: cpu.c,v 1.242 2005-01-18 08:26:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -663,7 +663,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (imm >= 32768)
 			imm -= 65536;
 		debug("%s\t%s,", hi6_names[hi6], regname(cpu->emul, rt));
-		debug("%s,%i", regname(cpu->emul, rs), imm);
+		debug("%s,", regname(cpu->emul, rs));
+		if (hi6 == HI6_ANDI || hi6 == HI6_ORI || hi6 == HI6_XORI)
+			debug("0x%04x", imm & 0xffff);
+		else
+			debug("%i", imm);
 		break;
 	case HI6_LUI:
 		rt = instr[2] & 31;

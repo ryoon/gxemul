@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.496 2005-01-18 12:43:47 debug Exp $
+$Id: HISTORY,v 1.497 2005-01-18 14:44:12 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1510,3 +1510,4 @@ HISTORY of mips64emul
 		configure-script update for HP-UX, and switching from using
 		inet_aton() to inet_pton() (as suggested by Nils Weller).
 		Also adding -lnsl on Solaris, if required by inet_pton().
+		Lots of minor R4100-related updates.

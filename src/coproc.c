@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.146 2005-01-18 13:08:32 debug Exp $
+ *  $Id: coproc.c,v 1.147 2005-01-18 14:44:12 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1706,18 +1706,24 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 			if (i >= cp->nr_of_tlbs)	/*  TODO:  exception  */
 				return;
 
-			g_bit = cp->tlbs[i].hi & TLB_G;
-
 			cp->reg[COP0_PAGEMASK] = cp->tlbs[i].mask;
-			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi & ~TLB_G;
+			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi;
 			cp->reg[COP0_ENTRYLO1] = cp->tlbs[i].lo1;
 			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;
 
-			cp->reg[COP0_ENTRYLO0] &= ~ENTRYLO_G;
-			cp->reg[COP0_ENTRYLO1] &= ~ENTRYLO_G;
-			if (g_bit) {
-				cp->reg[COP0_ENTRYLO0] |= ENTRYLO_G;
-				cp->reg[COP0_ENTRYLO1] |= ENTRYLO_G;
+			if (cpu->cpu_type.rev == MIPS_R4100) {
+				/*  R4100 don't have the G bit in entryhi  */
+			} else {
+				/*  R4000 etc:  */
+				cp->reg[COP0_ENTRYHI] &= ~TLB_G;
+				g_bit = cp->tlbs[i].hi & TLB_G;
+
+				cp->reg[COP0_ENTRYLO0] &= ~ENTRYLO_G;
+				cp->reg[COP0_ENTRYLO1] &= ~ENTRYLO_G;
+				if (g_bit) {
+					cp->reg[COP0_ENTRYLO0] |= ENTRYLO_G;
+					cp->reg[COP0_ENTRYLO1] |= ENTRYLO_G;
+				}
 			}
 		}
 
@@ -1745,13 +1751,21 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 		vpn2 = cp->reg[COP0_ENTRYHI] & xmask;
 		found = -1;
-		for (i=0; i<cp->nr_of_tlbs; i++)
+		for (i=0; i<cp->nr_of_tlbs; i++) {
+			int gbit = cp->tlbs[i].hi & TLB_G;
+			if (cpu->cpu_type.rev == MIPS_R4100)
+				gbit = (cp->tlbs[i].lo0 & ENTRYLO_G) && (cp->tlbs[i].lo1 & ENTRYLO_G);
+
 			if ( ((cp->tlbs[i].hi & ENTRYHI_ASID) == (cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID))
-			    || cp->tlbs[i].hi & TLB_G)
-				if ((cp->tlbs[i].hi & xmask) == vpn2) {
+			    || gbit) {
+				uint64_t a = vpn2 & ~cp->tlbs[i].mask;
+				uint64_t b = (cp->tlbs[i].hi & xmask) & ~cp->tlbs[i].mask;
+				if (a == b) {
 					found = i;
 					break;
 				}
+			}
+		}
 	}
 	if (found == -1)
 		cp->reg[COP0_INDEX] = INDEX_P;
@@ -1902,11 +1916,21 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
-		cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1] & ~ENTRYLO_G;
-		cp->tlbs[index].lo0  = cp->reg[COP0_ENTRYLO0] & ~ENTRYLO_G;
-		cp->tlbs[index].hi &= ~TLB_G;
-		if (g_bit)
-			cp->tlbs[index].hi |= TLB_G;
+		cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1];
+		cp->tlbs[index].lo0  = cp->reg[COP0_ENTRYLO0];
+
+		if (cpu->cpu_type.rev == MIPS_R4100) {
+			/*  NOTE: The VR4131 (and possibly others) don't have
+			    a Global bit in entryhi  */
+			cp->tlbs[index].hi &= ~cp->reg[COP0_PAGEMASK];
+		} else {
+			cp->tlbs[index].lo0 &= ~ENTRYLO_G;
+			cp->tlbs[index].lo1 &= ~ENTRYLO_G;
+
+			cp->tlbs[index].hi &= ~TLB_G;
+			if (g_bit)
+				cp->tlbs[index].hi |= TLB_G;
+		}
 	}
 
 	if (randomflag) {

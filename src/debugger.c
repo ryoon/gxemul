@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.41 2005-01-17 18:46:33 debug Exp $
+ *  $Id: debugger.c,v 1.42 2005-01-18 14:44:13 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1102,8 +1102,13 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 	/*  Nicely formatted output:  */
 	if (!rawflag) {
 		for (i=0; i<emul->ncpus; i++) {
+			int pageshift = 12;
+
 			if (x >= 0 && i != x)
 				continue;
+
+			if (emul->cpus[i]->cpu_type.rev == MIPS_R4100)
+				pageshift = 10;
 
 			/*  Print index, random, and wired:  */
 			printf("cpu%i: (", i);
@@ -1183,17 +1188,19 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 						printf(" p0=(invalid)   ");
 					else
 						printf(" p0=0x%09llx ", (long long)
-						    ((lo0&ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT));
+						    (((lo0&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
 					printf(lo0 & ENTRYLO_D? "D" : " ");
 
 					if (!(lo1 & ENTRYLO_V))
 						printf(" p1=(invalid)   ");
 					else
 						printf(" p1=0x%09llx ", (long long)
-						    ((lo1&ENTRYLO_PFN_MASK) << ENTRYLO_PFN_SHIFT));
+						    (((lo1&ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT) << pageshift));
 					printf(lo1 & ENTRYLO_D? "D" : " ");
-					switch (mask | 0x1fff) {
-					case 0x1fff:	break;
+					mask |= (1 << (pageshift+1)) - 1;
+					switch (mask) {
+					case 0x7ff:	printf(" (1KB)"); break;
+					case 0x1fff:	printf(" (4KB)"); break;
 					case 0x7fff:	printf(" (16KB)"); break;
 					case 0x1ffff:	printf(" (64KB)"); break;
 					case 0x7ffff:	printf(" (256KB)"); break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.19 2005-01-18 13:08:32 debug Exp $
+ *  $Id: memory_v2p.c,v 1.20 2005-01-18 14:44:13 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -288,7 +288,7 @@ bugs are triggered.  */
 				entry_vpn2 = (cached_hi & vpn2_mask) >> pagemask_shift;
 				vaddr_vpn2 = (vaddr & vpn2_mask) >> pagemask_shift;
 				pmask = (1 << (pagemask_shift-1)) - 1;
-				odd = vaddr & (1 << (pagemask_shift-1));
+				odd = (vaddr >> (pagemask_shift-1)) & 1;
 			} else {
 				/*  Non-standard page mask:  */
 				switch (pmask | ((1 << pagemask_shift) - 1)) {
@@ -336,7 +336,6 @@ bugs are triggered.  */
 #endif
 
 			entry_asid = cached_hi & ENTRYHI_ASID;
-			g_bit = cached_hi & TLB_G;
 
 			/*  ... reload pfn, v_bit, d_bit if
 			    it was the odd virtual page:  */
@@ -344,21 +343,27 @@ bugs are triggered.  */
 				v_bit = cached_lo1 & ENTRYLO_V;
 				d_bit = cached_lo1 & ENTRYLO_D;
 			}
+#ifdef V2P_MMU4100
+			g_bit = cached_lo1 & cached_lo0 & ENTRYLO_G;
+#else
+			g_bit = cached_hi & TLB_G;
+#endif
+
 #endif
 
 			/*  Is there a VPN and ASID match?  */
 			if (entry_vpn2 == vaddr_vpn2 &&
 			    (entry_asid == vaddr_asid || g_bit)) {
-				/*  debug("OK MAP 1!!! { vaddr=%016llx ==> paddr %016llx v=%i d=%i asid=0x%02x }\n",
-				    (long long)vaddr, (long long) *return_addr, v_bit?1:0, d_bit?1:0, vaddr_asid);  */
+				/*  debug("OK MAP 1, i=%i { vaddr=%016llx ==> paddr %016llx v=%i d=%i asid=0x%02x }\n",
+				    i, (long long)vaddr, (long long) *return_addr, v_bit?1:0, d_bit?1:0, vaddr_asid);  */
 				if (v_bit) {
 					if (d_bit || (!d_bit && writeflag==MEM_READ)) {
 						uint64_t paddr;
 						/*  debug("OK MAP 2!!! { w=%i vaddr=%016llx ==> d=%i v=%i paddr %016llx ",
 						    writeflag, (long long)vaddr, d_bit?1:0, v_bit?1:0, (long long) *return_addr);
 						    debug(", tlb entry %2i: mask=%016llx hi=%016llx lo0=%016llx lo1=%016llx\n",
-							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);  */
-
+							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);
+						*/
 #ifdef V2P_MMU3K
 						pfn = cached_lo0 & R2K3K_ENTRYLO_PFN_MASK;
 						paddr = pfn | (vaddr & pmask);

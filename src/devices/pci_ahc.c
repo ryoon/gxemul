@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.17 2005-04-04 20:08:56 debug Exp $
+ *  $Id: pci_ahc.c,v 1.18 2005-04-04 20:50:59 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -156,6 +156,15 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 		}
 		break;
 
+	case KERNEL_QINPOS:
+		if (writeflag == MEM_WRITE) {
+
+			/*  TODO  */
+
+			d->reg[INTSTAT] |= SEQINT;
+		}
+		break;
+
 	case SEECTL:
 		ok = 1; name = "SEECTL";
 		if (writeflag == MEM_WRITE)
@@ -190,6 +199,20 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE)
 			fatal("[ ahc: write to INTSTAT? data = 0x%02x ]\n",
 			    (int)idata);
+		break;
+
+	case CLRINT:
+		if (writeflag == MEM_READ) {
+			ok = 1; name = "ERROR";
+			/*  TODO  */
+		} else {
+			ok = 1; name = "CLRINT";
+			if (idata & ~0xf)
+				fatal("[ ahc: write to CLRINT: 0x%02x "
+				    "(TODO) ]\n", (int)idata);
+			/*  Clear the lowest 4 bits of intstat:  */
+			d->reg[INTSTAT] &= ~(idata & 0xf);
+		}
 		break;
 
 	default:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.207 2005-02-11 22:03:49 debug Exp $
+ *  $Id: main.c,v 1.208 2005-02-12 09:43:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -627,18 +627,21 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -i\n");
 		verbose = 1;
+		quiet_mode = 0;
 	}
 
 	if (m->register_dump && !verbose) {
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -r\n");
 		verbose = 1;
+		quiet_mode = 0;
 	}
 
 	if (m->show_trace_tree && !verbose) {
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -t\n");
 		verbose = 1;
+		quiet_mode = 0;
 	}
 
 

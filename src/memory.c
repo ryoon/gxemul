@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.125 2004-12-06 13:15:07 debug Exp $
+ *  $Id: memory.c,v 1.126 2004-12-07 09:42:31 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -669,13 +669,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, ok = 1, offset;
 	unsigned char *memblock;
-
+	int bintrans_cached = cpu->emul->bintrans_enable;
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
 
 #ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
+	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_bintrans_host_4kpage = NULL;
 			cpu->pc_bintrans_paddr_valid = 0;
@@ -740,7 +740,7 @@ have_paddr:
 
 	/*  TODO: How about bintrans vs cache emulation?  */
 #ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
+	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_bintrans_paddr_valid = 1;
 			cpu->pc_bintrans_paddr = paddr;
@@ -786,7 +786,7 @@ into the devices  */
 				if (mem->dev_flags[i] & MEM_BINTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
-					if (cpu->emul->bintrans_enable && writeflag) {
+					if (bintrans_cached && writeflag) {
 						if (paddr < cpu->mem->dev_bintrans_write_low[i])
 						    cpu->mem->dev_bintrans_write_low[i] = paddr & ~0xfff;
 						if (paddr > cpu->mem->dev_bintrans_write_high[i])
@@ -986,7 +986,7 @@ no_exception_access:
 
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
-	if (cpu->emul->bintrans_enable)
+	if (bintrans_cached)
 		update_translation_table(cpu, vaddr & ~0xfff,
 		    memblock + (offset & ~0xfff),
 		    cache == CACHE_INSTRUCTION?
@@ -1014,7 +1014,7 @@ no_exception_access:
 			cpu->pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
 #ifdef BINTRANS
-			if (cpu->emul->bintrans_enable) {
+			if (bintrans_cached) {
 				cpu->pc_bintrans_host_4kpage =
 				    cpu->pc_last_host_4k_page;
 			}

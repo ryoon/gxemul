@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.7 2004-06-22 22:27:07 debug Exp $
+ *  $Id: memory.h,v 1.8 2004-06-28 23:00:04 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -34,7 +34,7 @@
 #include <sys/types.h>
 #include <inttypes.h>
 
-struct cpu;
+#include "misc.h"
 
 
 /*  memory.c:  */

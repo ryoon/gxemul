@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.1 2005-03-08 22:59:00 debug Exp $
+ *  $Id: of.c,v 1.2 2005-03-09 08:35:49 debug Exp $
  *
  *  OpenFirmware emulation.
  */
@@ -47,6 +47,10 @@
 #define	ARG_MAX_LEN	4096
 
 extern int quiet_mode;
+
+/*  TODO: IMPORTANT! Change this into something else, to allow multiple
+	opens of the same device:  */
+#define	HANDLE_MEMORY	3
 
 
 /*
@@ -81,10 +85,12 @@ static void readstr(struct cpu *cpu, uint64_t addr, char *strbuf,
  */
 int of_emul(struct cpu *cpu)
 {
-	int i, nargs, nret, ofs;
+	int i, nargs, nret, ofs, handle;
 	char service[50];
 	char arg[N_MAX_ARGS][ARG_MAX_LEN];
+	char tmpstr[ARG_MAX_LEN];
 	uint64_t base, ptr;
+	uint64_t buf, buflen;
 
 	/*
 	 *  r3 points to "prom_args":
@@ -104,45 +110,72 @@ int of_emul(struct cpu *cpu)
 
 	readstr(cpu, ptr, service, sizeof(service));
 
-	debug("[ of: %s ]\n", service);
+	debug("[ of: %s(", service);
 	ofs = 12;
 	for (i=0; i<nargs; i++) {
+		if (i > 0)
+			debug(", ");
 		if (i >= N_MAX_ARGS) {
-			fatal("[ of: too many args! ]\n");
+			fatal("TOO MANY ARGS!");
 			continue;
 		}
 		ptr = load_32bit_word(cpu, base + ofs);
 		readstr(cpu, ptr, arg[i], ARG_MAX_LEN);
 		if (arg[i][0])
-			debug("[ of: arg[%i] = \"%s\" ]\n", i, arg[i]);
+			debug("\"%s\"", arg[i]);
 		else
-			debug("[ of: arg[%i] = 0x%08x ]\n", i, (uint32_t)ptr);
+			debug("0x%x", (uint32_t)ptr);
 		ofs += sizeof(uint32_t);
 	}
-	for (i=0; i<nret; i++) {
-		ptr = load_32bit_word(cpu, base + ofs);
-		debug("[ of: ret[%i] = 0x%08x ]\n", i, (uint32_t)ptr);
-		ofs += sizeof(uint32_t);
-	}
+	debug(") ]\n");
 
 	/*  Return value:  */
 	cpu->cd.ppc.gpr[3] = 0;
 
+	/*  Note: base + ofs points to the first return slot.  */
+
 	if (strcmp(service, "exit") == 0) {
 		cpu->running = 0;
 	} else if (strcmp(service, "finddevice") == 0) {
-		if (strcmp(arg[0], "/memory") == 0) {
-			/*  TODO  */
+		/*  Return a handle in ret[0]:  */
+		if (nret < 1) {
+			fatal("[ of: finddevice(\"%s\"): nret < 1! ]\n",
+			    arg[0]);
+		} else if (strcmp(arg[0], "/memory") == 0) {	
+			store_32bit_word(cpu, base + ofs, HANDLE_MEMORY);
 		} else {
 			/*  Device not found.  */
 			fatal("[ of: finddevice(\"%s\"): not yet"
 			    " implemented ]\n", arg[0]);
-			cpu->cd.ppc.gpr[3] = 2;		/*  Hm. TODO  */
+			cpu->cd.ppc.gpr[3] = -1;
 		}
 	} else if (strcmp(service, "getprop") == 0) {
-		fatal("[ of: getprop(\"%s\"): not yet"
-		    " implemented ]\n", arg[1]);
-		cpu->cd.ppc.gpr[3] = 2;		/*  Hm. TODO  */
+		handle = load_32bit_word(cpu, base + 12 + 4*0);
+		ptr    = load_32bit_word(cpu, base + 12 + 4*1);
+		buf    = load_32bit_word(cpu, base + 12 + 4*2);
+		buflen = load_32bit_word(cpu, base + 12 + 4*3);
+		readstr(cpu, ptr, tmpstr, sizeof(tmpstr));
+
+		/*  TODO: rewrite this  */
+		switch (handle) {
+		case HANDLE_MEMORY:
+			if (strcmp(tmpstr, "available") == 0) {
+				/*  TODO  */
+				store_32bit_word(cpu, base + ofs, 33*4);
+			} else if (strcmp(tmpstr, "reg") == 0) {
+				/*  TODO  */
+				store_32bit_word(cpu, base + ofs, 33*4);
+			} else {
+				fatal("[ of: getprop(%i,\"%s\"): not yet"
+				    " implemented ]\n", (int)handle, arg[1]);
+				cpu->cd.ppc.gpr[3] = -1;
+			}
+			break;
+		default:
+			fatal("[ of: getprop(%i,\"%s\"): not yet"
+			    " implemented ]\n", (int)handle, arg[1]);
+			cpu->cd.ppc.gpr[3] = -1;
+		}
 	} else {
 		quiet_mode = 0;
 		cpu_register_dump(cpu->machine, cpu, 1, 0x1);

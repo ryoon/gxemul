@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.5 2003-11-07 08:48:24 debug Exp $
+ *  $Id: machine.c,v 1.6 2003-11-08 11:31:24 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -307,7 +307,7 @@ void machine_init(struct memory *mem)
 			kn02_csr = dev_kn02_init(cpus[0], mem, KN02_SYS_CSR);
 
 			framebuffer_console_name = "osconsole=0,7";	/*  fb,keyb  */
-			serial_console_name      = "osconsole=0";	/*  ?  */
+			serial_console_name      = "osconsole=2";
 			break;
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */

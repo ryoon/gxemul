@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.35 2004-06-19 11:58:06 debug Exp $
+ *  $Id: main.c,v 1.36 2004-06-21 09:38:49 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -181,6 +181,7 @@ void usage(char *progname)
 	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
 	printf("                d     SCSI DISK (this is the default)\n");
 	printf("                r     read-only (don't allow changes to the file)\n");
+	printf("                t     SCSI tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
@@ -188,7 +189,6 @@ void usage(char *progname)
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
 	printf("  -G ss     try to emulate an SGI machine (-G 32 for IP32), CPU = R5000\n");
-	printf("  -H        try to emulate a Nintendo 64 machine (default CPU = R4300)\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
 	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
@@ -268,10 +268,6 @@ int get_cmd_args(int argc, char *argv[])
 		case 'G':
 			emulation_type = EMULTYPE_SGI;
 			machine = atoi(optarg);
-			break;
-		case 'H':
-			emulation_type = EMULTYPE_NINTENDO64;
-			machine = 0;
 			break;
 		case 'I':
 			emulated_ips = atoi(optarg);
@@ -360,9 +356,6 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_PS2 && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R5900");
-
-	if (emulation_type == EMULTYPE_NINTENDO64 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4300");
 
 	if (emulation_type == EMULTYPE_DEC && machine > 1 && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R3000A");

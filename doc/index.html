@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.98 2004-09-08 00:57:01 debug Exp $
+$Id: index.html,v 1.99 2004-09-23 16:30:59 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -351,7 +351,7 @@ good starting point for someone who wants to experiment.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>How to install NetBSD/pmax in the emulator</h3>
+<h3>How to install NetBSD/pmax in the emulator:</h3>
 
 To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
 you first need to install NetBSD onto a disk image. To NetBSD, the disk 
@@ -443,7 +443,7 @@ If you want to run without the X framebuffer, use this instead:<pre>
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>How to install OpenBSD/pmax in the emulator</h3>
+<h3>How to install OpenBSD/pmax in the emulator:</h3>
 
 Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
 You should first read the section above on how to install NetBSD,
@@ -581,7 +581,7 @@ enter <b>rcons</b>.
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>How to install Ultrix/RISC in the emulator</h3>
+<h3>How to install Ultrix/RISC in the emulator:</h3>
 
 The instructions for installing NetBSD/pmax can be used to install Ultrix
 as well, with a slight modification (the <b>-j</b> argument differs).
@@ -631,7 +631,7 @@ file in the emulator.
 
 <p><br>
 <a name="sprite"></a>
-<h3>How to run Sprite for DECstation in the emulator</h3>
+<h3>How to run Sprite for DECstation in the emulator:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
 Read this if you want to find out more about it:
@@ -642,7 +642,8 @@ http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>
 The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
 has a copy of a Sprite harddisk image for a DECstation 5000/200:<pre>
 	<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
-	MD5 = ec84eeeb20fe77b758370d5e312e4a5e
+	or <a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt">http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt</a>
+	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
 </pre>
 <p>
 Once you have compiled the emulator (<b>./configure; make</b>) and 
@@ -651,6 +652,7 @@ following command:
 <pre>
 	$ <b>./mips64emul -X -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
 </pre>
+<p>
 The first time you boot up with the disk image, you will be asked a number 
 of questions regarding network settings. If you feel like entering correct 
 values, then you should use the following:
@@ -665,6 +667,9 @@ values, then you should use the following:
  </table>
 </center>
 <p>
+Unfortunately I'm not really familiar with Sprite, so I don't know how to 
+actually use the network.
+<p>
 Once you are logged in as root, running <b>xinit</b> will start the X11 
 environment.
 
@@ -673,7 +678,7 @@ environment.
 
 <p><br>
 <a name="declinux"></a>
-<h3>How to run Linux (Debian) for DECstation in the emulator</h3>
+<h3>How to run Linux (Debian) for DECstation in the emulator:</h3>
 
 <font color="#ff0000">NOTE: This is experimental, and does not really work yet!</font>
 <p>
@@ -715,10 +720,6 @@ Linux gets support for the keyboard controller.
 some kind of panic or exception while trying to download/run 
 "parted_devices".
 </font>
-(This might be a bug in Linux, according to
-<a href="http://www.debian.org/ports/mips/">http://www.debian.org/ports/mips/</a>:
-"R3000 Decstation does crash with current cvs kernel")
-<p>
 You could also try this kernel, with <b>-X -CR4400 -D4</b>:
 <pre>
 	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r4k-kn04/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
@@ -815,14 +816,14 @@ Here are links to some of the kernels that I usually experiment with.
 <ul>
   <li>DECstation:
     <ul>
-      <li>NetBSD/pmax:
+      <li><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
 	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
-      <li>OpenBSD/pmax:
+      <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
 	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
 	<br>Read <a href="#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
@@ -860,7 +861,7 @@ Here are links to some of the kernels that I usually experiment with.
 
   <li>SGI:
     <ul>
-      <li>NetBSD/sgimips:
+      <li><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>gunzip, and try running with  <b>-G32 -CR5000</b>,
@@ -873,9 +874,12 @@ Here are links to some of the kernels that I usually experiment with.
 		doesn't autodetect CPU at runtime, and <b>-X</b> for a graphical
 		framebuffer.
       <p>
-      <li>There is an <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi web page</a>
-		but it didn't contain much last time I checked, and there's also a
-		<a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS Project</a>.
+      <li><a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>:
+	<br>Snapshots can be found at <a href="ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/">ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/</a>.
+		Try running the bsd.rd kernel with <b>-G32</b>.
+      <p>
+      <li><a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS</a>:
+		I don't think public snapshots are available yet.
     </ul>
   </li>
 
@@ -883,7 +887,7 @@ Here are links to some of the kernels that I usually experiment with.
 
   <li>ARC:
     <ul>
-      <li>NetBSD/arc:
+      <li><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
 	<br>gunzip, and try with <b>-A1</b> (NEC RISCstation 2250, add <b>-X -N</b> for a graphical framebuffer),
@@ -894,7 +898,7 @@ Here are links to some of the kernels that I usually experiment with.
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
 	<br>gunzip, and run with <b>-A2</b> (Acer PICA-61)
       <p>
-      <li>OpenBSD/arc:
+      <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
 	<br>This is a very old OpenBSD kernel. Try running with <b>-X -A2</b> or <b>-X -A4</b>.
       <p>
@@ -909,7 +913,7 @@ Here are links to some of the kernels that I usually experiment with.
 
   <li>Cobalt:
     <ul>
-      <li>NetBSD/cobalt:
+      <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
 	<br>gunzip, and run with <b>-E</b>
       <p>
@@ -923,7 +927,7 @@ Here are links to some of the kernels that I usually experiment with.
 
   <li>Playstation 2:
     <ul>
-      <li>NetBSD/playstation2:
+      <li><a href="http://www.netbsd.org/Ports/playstation2/">NetBSD/playstation2</a>:
 	<br>A NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
@@ -970,7 +974,7 @@ Here are links to some of the kernels that I usually experiment with.
 
 <p><br>
 <a name="fbres"></a>
-<h3>Changing the framebuffer resolution</h3>
+<h3>Changing the framebuffer resolution:</h3>
 
 Running the emulator with the <b>-X</b> option turns on the X11 framebuffer.
 If the framebuffer device for the specific machine mode you are running is
@@ -1036,7 +1040,7 @@ by adding <b>-Y2</b> to the command line.
 
 <p><br>
 <a name="networking"></a>
-<h3>Networking</h3>
+<h3>Networking:</h3>
 
 It is possible to let the guest OS running inside the emulator get access to
 the Internet. If you are interested in the technical details, and the 
@@ -1285,7 +1289,11 @@ count.)
 
 You can run (some) userland programs as well. This will not emulate any
 particular machine, but instead try to translate syscalls from for example
-NetBSD/pmax into the host's OS' syscalls. For example, running /bin/hostname
+NetBSD/pmax into the host's OS' syscalls. For this to work, you have
+to add <b>--userland</b> to the command line when running ./configure.
+
+<p>
+For example, running /bin/hostname
 or /bin/date and similarly trivial programs from the NetBSD/pmax distribution
 works:
 <pre>
@@ -1307,10 +1315,10 @@ There's also an Ultrix4 emulation mode:
 	$ <b>./mips64emul -qu2 ultrix4_bin_hostname</b>
 	tab.csbnet.se
 </pre>
-Userland syscall emulation is still in its beginning stages, so almost
+NOTE: Userland syscall emulation is still in its beginning stages, so almost
 nothing works.
 <p>
-Irix userland emulation might also be possible to add.
+Irix userland emulation might theoretically also be possible to add.
 
 
 <p><br>

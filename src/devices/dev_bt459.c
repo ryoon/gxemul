@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.13 2004-06-27 01:06:16 debug Exp $
+ *  $Id: dev_bt459.c,v 1.14 2004-06-27 01:57:50 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -71,8 +71,10 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 {
 	struct bt459_data *d = extra;
 
-	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0)
+	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0) {
 		cpu_interrupt(cpu, d->irq_nr);
+		d->interrupts_enable = 0;
+	}
 }
 
 
@@ -137,7 +139,6 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	/*  Every interrupt enabling must be done manually.  */
 	if (d->irq_nr > 0)
 		cpu_interrupt_ack(cpu, d->irq_nr);
-	d->interrupts_enable = 0;
 
 	/*  ID register is read-only, should always be 0x4a or 0x4a4a4a:  */
 	if (d->planes == 24)

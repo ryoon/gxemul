@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.202 2004-11-29 14:14:55 debug Exp $
+ *  $Id: cpu.c,v 1.203 2004-11-30 11:57:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1138,10 +1138,16 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);
 
 			reg[COP0_ENTRYHI] = (vaddr & R2K3K_ENTRYHI_VPN_MASK)
-			    + (vaddr_asid << R2K3K_ENTRYHI_ASID_SHIFT);
+			    | (vaddr_asid << R2K3K_ENTRYHI_ASID_SHIFT);
+
+			/*  Sign-extend:  */
+			reg[COP0_CONTEXT] = (int64_t)(int32_t)reg[COP0_CONTEXT];
+			reg[COP0_ENTRYHI] = (int64_t)(int32_t)reg[COP0_ENTRYHI];
 		} else {
 			reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
 			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
+
+			/*  TODO: Sign-extend CONTEXT?  */
 
 			reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
 			reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
@@ -1166,9 +1172,12 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		 */
 		/*  debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
-		if (cpu->delay_slot) {
+		if (cpu->delay_slot || cpu->nullify_next) {
 			reg[COP0_EPC] = cpu->pc_last - 4;
 			reg[COP0_CAUSE] |= CAUSE_BD;
+
+			/*  TODO: Should the BD flag actually be set
+			    on nullified slots?  */
 		} else {
 			reg[COP0_EPC] = cpu->pc_last;
 			reg[COP0_CAUSE] &= ~CAUSE_BD;
@@ -1206,6 +1215,10 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  R4000:  */
 		reg[COP0_STATUS] |= STATUS_EXL;
 	}
+
+	/*  Sign-extend:  */
+	reg[COP0_CAUSE] = (int64_t)(int32_t)reg[COP0_CAUSE];
+	reg[COP0_STATUS] = (int64_t)(int32_t)reg[COP0_STATUS];
 }
 
 
@@ -1408,27 +1421,56 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
 	if (cpu->cpu_type.mmu_model == MMU3K) {
+		uint64_t x;
+
+		if (cpu->gpr[0] != 0) {
+			fatal("\nWARNING: r0 was not zero! (%016llx)\n\n",
+			    (long long)cpu->gpr[0]);
+			cpu->gpr[0] = 0;
+		}
+
 		/*  Sign-extend ALL registers, including coprocessor registers and tlbs:  */
-		for (i=0; i<32; i++) {
+		for (i=1; i<32; i++) {
+			x = cpu->gpr[i];
 			cpu->gpr[i] &= 0xffffffff;
 			if (cpu->gpr[i] & 0x80000000ULL)
 				cpu->gpr[i] |= 0xffffffff00000000ULL;
+			if (x != cpu->gpr[i]) {
+				fatal("\nWARNING: r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
+				    i, (long long)x, (long long)cpu->gpr[i]);
+			}
 		}
 		for (i=0; i<32; i++) {
+			x = cpu->coproc[0]->reg[i];
 			cpu->coproc[0]->reg[i] &= 0xffffffffULL;
 			if (cpu->coproc[0]->reg[i] & 0x80000000ULL)
 				cpu->coproc[0]->reg[i] |=
 				    0xffffffff00000000ULL;
+			if (x != cpu->coproc[0]->reg[i]) {
+				fatal("\nWARNING: cop0,r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
+				    i, (long long)x, (long long)cpu->coproc[0]->reg[i]);
+			}
 		}
 		for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
+			x = cpu->coproc[0]->tlbs[i].hi;
 			cpu->coproc[0]->tlbs[i].hi &= 0xffffffffULL;
 			if (cpu->coproc[0]->tlbs[i].hi & 0x80000000ULL)
 				cpu->coproc[0]->tlbs[i].hi |=
 				    0xffffffff00000000ULL;
+			if (x != cpu->coproc[0]->tlbs[i].hi) {
+				fatal("\nWARNING: tlb[%i].hi was not sign-extended correctly (%016llx != %016llx)\n\n",
+				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].hi);
+			}
+
+			x = cpu->coproc[0]->tlbs[i].lo0;
 			cpu->coproc[0]->tlbs[i].lo0 &= 0xffffffffULL;
 			if (cpu->coproc[0]->tlbs[i].lo0 & 0x80000000ULL)
 				cpu->coproc[0]->tlbs[i].lo0 |=
 				    0xffffffff00000000ULL;
+			if (x != cpu->coproc[0]->tlbs[i].lo0) {
+				fatal("\nWARNING: tlb[%i].lo0 was not sign-extended correctly (%016llx != %016llx)\n\n",
+				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].lo0);
+			}
 		}
 	}
 #endif
@@ -1460,6 +1502,8 @@ int cpu_run_instr(struct cpu *cpu)
 		} else {
 			cpu->vaddr_to_hostaddr_table0 =
 			    cpu->vaddr_to_hostaddr_table0_kernel;
+
+			/*  TODO: cpu->vaddr_to_hostaddr_table0_user;  */
 		}
                 break;
         /*  TODO: other cache types  */
@@ -1581,6 +1625,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->pc_bintrans_paddr_valid = 1;
 			cpu->pc_bintrans_paddr =
 			    cpu->pc_last_physical_page | (cached_pc & 0xfff);
+			cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
 #endif
                 } else {
 			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
@@ -2813,7 +2858,8 @@ int cpu_run_instr(struct cpu *cpu)
 							    hi6==HI6_LDC1 || hi6==HI6_LDC2);
 						}
 						break;
-				default:	cpu->gpr[rt] = value;
+				default:	if (rt != 0)
+							cpu->gpr[rt] = value;
 				}
 			}
 
@@ -2848,7 +2894,8 @@ int cpu_run_instr(struct cpu *cpu)
 					}
 				}
 
-				cpu->gpr[rt] = 1;
+				if (rt != 0)
+					cpu->gpr[rt] = 1;
 				cpu->rmw = 0;
 			}
 
@@ -2884,8 +2931,8 @@ int cpu_run_instr(struct cpu *cpu)
 				is_left = 1;
 
 			wlen = 0; st = 0;
-			signd = 0;	/*  sign extend after Load Word Left only  */
-			if (hi6 == HI6_LWL)
+			signd = 0;
+			if (hi6 == HI6_LWL || hi6 == HI6_LWR)
 				signd = 1;
 
 			if (hi6 == HI6_LWL || hi6 == HI6_LWR)	{ wlen = 4; st = 0; }
@@ -2961,7 +3008,7 @@ int cpu_run_instr(struct cpu *cpu)
 				reg_ofs += reg_dir;
 			}
 
-			if (!st)
+			if (!st && rt != 0)
 				cpu->gpr[rt] = result_value;
 
 			/*  Sign extend for 32-bit load lefts:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.114 2004-08-01 10:41:32 debug Exp $
+ *  $Id: cpu.c,v 1.115 2004-08-02 23:55:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -66,6 +66,7 @@ extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
+extern int max_random_instructions_per_chunk;
 extern int automatic_clock_adjustment;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
@@ -714,6 +715,9 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 	char *symbol;
 
 	cpu->trace_tree_depth ++;
+
+	if (ncpus > 1)
+		debug("cpu%i:", cpu->cpu_id);
 
 	symbol = get_symbol_name(addr, &offset);
 
@@ -3024,6 +3028,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int te;
 	int64_t max_instructions_cached = max_instructions;
+	int64_t max_random_instructions_per_chunk_cached = max_random_instructions_per_chunk;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */
@@ -3071,28 +3076,44 @@ int cpu_run(struct cpu **cpus, int ncpus)
 				if (cpus[i]->running)
 					running = 1;
 
-			/*  CPU 0 is special, cpu0instr must be updated.  */
-			for (j=0; j<a_few_instrs; j++) {
-				int instrs_run;
-				if (!cpus[0]->running)
-					break;
-				do {
-					instrs_run =
-					    cpu_run_instr(cpus[0]);
-				} while (instrs_run == 0);
-				cpu0instrs += instrs_run;
-			}
-
-			/*  CPU 1 and up:  */
-			for (i=1; i<ncpus_cached; i++) {
-				a_few_instrs2 = a_few_cycles *
-				    cpus[i]->cpu_type.instrs_per_cycle;
-				for (j=0; j<a_few_instrs2; j++)
+			if (max_random_instructions_per_chunk_cached > 0) {
+				for (i=0; i<ncpus_cached; i++)
 					if (cpus[i]->running) {
-						int instrs_run = 0;
-						while (!instrs_run)
-							instrs_run = cpu_run_instr(cpus[i]);
+						a_few_instrs2 = a_few_cycles *
+						    cpus[i]->cpu_type.instrs_per_cycle;
+						if (a_few_instrs2 >= max_random_instructions_per_chunk_cached)
+							a_few_instrs2 = max_random_instructions_per_chunk_cached + 1;
+						j = random() % a_few_instrs2;
+						while (j-- >= 1 && cpus[i]->running) {
+							int instrs_run = cpu_run_instr(cpus[i]);
+							if (i == 0)
+								cpu0instrs += instrs_run;
+						}
 					}
+			} else {
+				/*  CPU 0 is special, cpu0instr must be updated.  */
+				for (j=0; j<a_few_instrs; j++) {
+					int instrs_run;
+					if (!cpus[0]->running)
+						break;
+					do {
+						instrs_run =
+						    cpu_run_instr(cpus[0]);
+					} while (instrs_run == 0);
+					cpu0instrs += instrs_run;
+				}
+
+				/*  CPU 1 and up:  */
+				for (i=1; i<ncpus_cached; i++) {
+					a_few_instrs2 = a_few_cycles *
+					    cpus[i]->cpu_type.instrs_per_cycle;
+					for (j=0; j<a_few_instrs2; j++)
+						if (cpus[i]->running) {
+							int instrs_run = 0;
+							while (!instrs_run)
+								instrs_run = cpu_run_instr(cpus[i]);
+						}
+				}
 			}
 
 			/*

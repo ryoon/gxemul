@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.8 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_mp.c,v 1.9 2004-08-02 23:55:44 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -52,6 +52,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	static uint64_t startup_addr = INITIAL_PC;
+	static uint64_t stack_addr = INITIAL_STACK_POINTER;
 	static uint64_t pause_addr;
 	int i;
 	uint64_t addr = 0;
@@ -74,6 +75,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		int which_cpu = data[0];
 		struct cpu **cpus = (struct cpu **) extra;
 		cpus[which_cpu]->pc = startup_addr;
+		cpus[which_cpu]->gpr[GPR_SP] = stack_addr;
 		cpus[which_cpu]->running = 1;
 		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", which_cpu, (long long)startup_addr);  */
 		return 1;
@@ -113,6 +115,13 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 				struct cpu **cpus = (struct cpu **) extra;
 				cpus[i]->running = 1;
 			}
+		return 1;
+	}
+
+	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_STARTUPSTACK) {
+		if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
+			addr |= 0xffffffff00000000ULL;
+		stack_addr = addr;
 		return 1;
 	}
 

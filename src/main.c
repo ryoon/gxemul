@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.58 2004-07-30 12:34:14 debug Exp $
+ *  $Id: main.c,v 1.59 2004-08-02 23:55:46 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -79,6 +79,7 @@ int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
 int emulated_hz = 0;
+int max_random_instructions_per_chunk = 0;
 int speed_tricks = 1;
 int userland_emul = 0;
 char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
@@ -229,6 +230,7 @@ void usage(char *progname)
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
 #endif /*  WITH_X11  */
+	printf("  -y x      set max_random_instructions_per_chunk to x (experimental)\n");
 }
 
 
@@ -246,7 +248,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -359,6 +361,9 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'Y':
 			x11_scaledown = atoi(optarg);
+			break;
+		case 'y':
+			max_random_instructions_per_chunk = atoi(optarg);
 			break;
 		case 'h':
 		default:

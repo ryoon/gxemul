@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.145 2004-07-26 02:15:55 debug Exp $
+ *  $Id: machine.c,v 1.146 2004-08-02 23:55:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1790,6 +1790,9 @@ void machine_init(struct memory *mem)
 
 				/*  This is something unknown:  */
 				dev_sgi_ip30_init(cpus[bootstrap_cpu], mem, 0x0ff00000);
+
+				dev_ram_init(mem,    0xa0000000ULL,
+				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 
 				/*
 				 *  Something at paddr=1f022004: TODO

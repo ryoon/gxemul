@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.93 2004-08-01 10:02:00 debug Exp $
+ *  $Id: misc.h,v 1.94 2004-08-02 23:55:45 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -242,10 +242,6 @@ struct memory {
 	int		memblock_size;
 
 	void		*first_pagetable;
-
-	/*  EXPERIMENTAL exception tag stuff, see (struct cpu)  */
-	unsigned char	*last_load_host_page;
-	unsigned char	*last_store_host_page;
 
 	int		n_mmapped_devices;
 	int		last_accessed_device;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.272 2005-01-10 23:22:23 debug Exp $
+ *  $Id: machine.c,v 1.273 2005-01-11 02:41:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3497,6 +3497,9 @@ config[77] = 0x30;
 		    0, arc_wordlen==sizeof(uint64_t));
 
 no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
+
+		/*  Return address:  (0x20 = ReturnFromMain())  */
+		cpu->gpr[GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
 
 		break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.105 2005-01-10 22:30:29 debug Exp $
+ *  $Id: emul.c,v 1.106 2005-01-11 02:41:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -328,13 +328,19 @@ static void add_arc_components(struct emul *emul)
 			 *  "scsi(0)disk(0)rdisk(0)partition(0)"
 			 */
 
-			snprintf(component_string, sizeof(component_string),
-			    "scsi(0)disk(%i)", i);
-			arcbios_add_string_to_component(component_string, scsidevice);
+			if (diskimages[i]->is_a_cdrom) {
+				snprintf(component_string, sizeof(component_string), "scsi(0)cdrom(%i)", i);
+				arcbios_add_string_to_component(component_string, scsidevice);
 
-			snprintf(component_string, sizeof(component_string),
-			    "scsi(0)disk(%i)rdisk(0)", i);
-			arcbios_add_string_to_component(component_string, scsidevice);
+				snprintf(component_string, sizeof(component_string), "scsi(0)cdrom(%i)fdisk(0)", i);
+				arcbios_add_string_to_component(component_string, scsidisk);
+			} else {
+				snprintf(component_string, sizeof(component_string), "scsi(0)disk(%i)", i);
+				arcbios_add_string_to_component(component_string, scsidevice);
+
+				snprintf(component_string, sizeof(component_string), "scsi(0)disk(%i)rdisk(0)", i);
+				arcbios_add_string_to_component(component_string, scsidisk);
+			}
 		}
 }
 

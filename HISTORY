@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.466 2005-01-10 23:22:20 debug Exp $
+$Id: HISTORY,v 1.467 2005-01-11 02:41:27 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1448,3 +1448,5 @@ HISTORY of mips64emul
 		bintrans mode.
 20050111	Moving around some Playstation 2 stuff, but I haven't found
 		the bug yet. It is triggered by load/stores.
+		More ARCBIOS updates, enough to let Windows NT partition
+		disks in some rudimentary fashion.

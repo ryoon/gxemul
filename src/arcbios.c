@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.62 2005-01-10 22:30:29 debug Exp $
+ *  $Id: arcbios.c,v 1.63 2005-01-11 02:41:29 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -55,9 +55,8 @@
 
 extern int quiet_mode;
 
-
-/*  For reading from the boot partition.  */
-static uint64_t arcbios_current_seek_offset = 0;
+extern struct diskimage *diskimages[MAX_DISKIMAGES];
+extern int n_diskimages;
 
 
 struct emul_arc_child {
@@ -108,6 +107,7 @@ int arcbios_console_curcolor = 0x1f;
 #define	MAX_HANDLES	10
 static int file_handle_in_use[MAX_HANDLES];
 static unsigned char *file_handle_string[MAX_HANDLES];
+static uint64_t arcbios_current_seek_offset[MAX_HANDLES];
 
 #define	MAX_STRING_TO_COMPONENT		20
 static unsigned char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
@@ -884,6 +884,182 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 
 
 /*
+ *  arcbios_get_msdos_partition_size():
+ *
+ *  This function tries to parse MSDOS-style partition tables on a disk
+ *  image, and return the starting offset (counted in bytes), and the
+ *  size, of a specific partition.
+ *
+ *  NOTE: partition_nr is 1-based!
+ *
+ *  TODO: This is buggy, it doesn't really handle extended partitions.
+ *
+ *  See http://www.nondot.org/sabre/os/files/Partitions/Partitions.html
+ *  for more info.
+ */
+static void arcbios_get_msdos_partition_size(int scsi_id,
+	int partition_nr, uint64_t *start, uint64_t *size)
+{
+	int res, i, j, partition_type, cur_partition = 0;
+	unsigned char sector[512];
+	unsigned char buf[16];
+	uint64_t offset = 0, st;
+
+	/*  Partition 0 is the entire disk image:  */
+	*start = 0;
+	*size = diskimages[scsi_id]->total_size;
+	if (partition_nr == 0)
+		return;
+
+ugly_goto:
+	*start = 0; *size = 0;
+
+	/*  printf("reading MSDOS partition from offset 0x%llx\n",
+	    (long long)offset);  */
+
+	res = diskimage_access(scsi_id, 0, offset, sector, sizeof(sector));
+	if (!res) {
+		fatal("[ arcbios_get_msdos_partition_size(): couldn't "
+		    "read the disk image, id %i, offset 0x%llx ]\n",
+		    scsi_id, (long long)offset);
+		return;
+	}
+
+	if (sector[510] != 0x55 || sector[511] != 0xaa) {
+		fatal("[ arcbios_get_msdos_partition_size(): not an "
+		    "MSDOS partition table ]\n");
+	}
+
+#if 0
+	/*  Debug dump:  */
+	for (i=0; i<4; i++) {
+		printf("  partition %i: ", i+1);
+		for (j=0; j<16; j++)
+			printf(" %02x", sector[446 + i*16 + j]);
+		printf("\n");
+	}
+#endif
+
+	for (i=0; i<4; i++) {
+		memmove(buf, sector + 446 + 16*i, 16);
+
+		partition_type = buf[4];
+
+		if (partition_type == 0)
+			continue;
+
+		st = (buf[8] + (buf[9] << 8) + (buf[10] << 16) +
+		    (buf[11] << 24)) * 512;
+
+		if (start != NULL)
+			*start = st;
+		if (size != NULL)
+			*size = (buf[12] + (buf[13] << 8) + (buf[14] << 16) +
+			    (buf[15] << 24)) * 512;
+
+		/*  Extended DOS partition:  */
+		if (partition_type == 5) {
+			offset += st;
+			goto ugly_goto;
+		}
+
+		/*  Found the right partition? Then return.  */
+		cur_partition ++;
+		if (cur_partition == partition_nr)
+			return;
+	}
+
+	fatal("[ partition(%i) NOT found ]\n", partition_nr);
+}
+
+
+/*
+ *  arcbios_handle_to_scsi_id():
+ */
+static int arcbios_handle_to_scsi_id(int handle)
+{
+	int id, cdrom;
+	char *s;
+
+	if (handle < 0 || handle >= MAX_HANDLES)
+		return -1;
+
+	s = (char *)file_handle_string[handle];
+	if (s == NULL)
+		return -1;
+
+	/*
+	 *  s is something like "scsi(0)disk(0)rdisk(0)partition(0)".
+	 *  TODO: This is really ugly and hardcoded.
+	 */
+
+	if (strncmp(s, "scsi(", 5) != 0 || strlen(s) < 13)
+		return -1;
+
+	cdrom = (s[7] == 'c');
+	id = cdrom? atoi(s + 13) : atoi(s + 12);
+
+	return id;
+}
+
+
+/*
+ *  arcbios_handle_to_start_and_size():
+ */
+static void arcbios_handle_to_start_and_size(int handle, uint64_t *start,
+	uint64_t *size)
+{
+	char *s = (char *)file_handle_string[handle];
+	char *s2;
+	int scsi_id = arcbios_handle_to_scsi_id(handle);
+
+	if (scsi_id < 0)
+		return;
+
+	/*  This works for "partition(0)":  */
+	*start = 0;
+	*size = diskimages[scsi_id]->total_size;
+
+	s2 = strstr(s, "partition(");
+	if (s2 != NULL) {
+		int partition_nr = atoi(s2 + 10);
+		/*  printf("partition_nr = %i\n", partition_nr);  */
+		if (partition_nr != 0)
+			arcbios_get_msdos_partition_size(scsi_id,
+			    partition_nr, start, size);
+	}
+}
+
+
+/*
+ *  arcbios_getfileinformation():
+ *
+ *  Fill in a GetFileInformation struct in emulated memory,
+ *  for a specific file handle. (This is used to get the size
+ *  and offsets of partitions on disk images.)
+ */
+static int arcbios_getfileinformation(struct cpu *cpu)
+{
+	int handle = cpu->gpr[GPR_A0];
+	uint64_t addr = cpu->gpr[GPR_A1];
+	uint64_t start, size;
+
+	arcbios_handle_to_start_and_size(handle, &start, &size);
+
+	store_64bit_word(cpu, addr + 0, 0);
+	store_64bit_word(cpu, addr + 8, size);
+	store_64bit_word(cpu, addr + 16, 0);
+	store_32bit_word(cpu, addr + 24, 1);
+	store_32bit_word(cpu, addr + 28, 0);
+	store_32bit_word(cpu, addr + 32, 0);
+
+	/*  printf("\n!!! size=0x%x start=0x%x\n", (int)size, (int)start);  */
+
+	return ARCBIOS_ESUCCESS;
+}
+
+
+/*
  *  arcbios_private_emul():
  *
  *  TODO:  This is probably SGI specific. (?)
@@ -1092,7 +1268,7 @@ void arcbios_emul(struct cpu *cpu)
 			buf[sizeof(buf) - 1] = '\0';
 
 			/*  "scsi(0)disk(0)rdisk(0)partition(0)" and such.  */
-			printf("GetComponent(\"%s\")\n", buf);
+			/*  printf("GetComponent(\"%s\")\n", buf);  */
 
 			/*  Default to NULL return value.  */
 			cpu->gpr[GPR_V0] = 0;
@@ -1110,7 +1286,7 @@ void arcbios_emul(struct cpu *cpu)
 			}
 
 			if (match_index >= 0) {
-				printf("Longest match: '%s'\n", arcbios_string_to_component[match_index]);
+				/*  printf("Longest match: '%s'\n", arcbios_string_to_component[match_index]);  */
 				cpu->gpr[GPR_V0] = arcbios_string_to_component_value[match_index];
 			}
 		}
@@ -1186,6 +1362,7 @@ void arcbios_emul(struct cpu *cpu)
 			}
 			buf[MAX_OPEN_STRINGLEN - 1] = '\0';
 			file_handle_string[handle] = buf;
+			arcbios_current_seek_offset[handle] = 0;
 			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 
@@ -1259,9 +1436,14 @@ void arcbios_emul(struct cpu *cpu)
 			store_32bit_word(cpu, cpu->gpr[GPR_A3], nread);
 			cpu->gpr[GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
 		} else {
-			int disk_id = diskimage_bootdev();
+			int handle = cpu->gpr[GPR_A0];
+			int disk_id = arcbios_handle_to_scsi_id(handle);
+			uint64_t partition_offset = 0;
 			int res;
+			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
+
+			arcbios_handle_to_start_and_size(handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
 			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
@@ -1272,7 +1454,8 @@ void arcbios_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(disk_id, 0, arcbios_current_seek_offset,
+			res = diskimage_access(disk_id, 0,
+			    partition_offset + arcbios_current_seek_offset[handle],
 			    tmp_buf, cpu->gpr[GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data to emulated memory:  */
@@ -1280,7 +1463,7 @@ void arcbios_emul(struct cpu *cpu)
 				uint64_t dst = cpu->gpr[GPR_A1];
 				store_buf(cpu, dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
 				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
-				arcbios_current_seek_offset += cpu->gpr[GPR_A2];
+				arcbios_current_seek_offset[handle] += cpu->gpr[GPR_A2];
 				cpu->gpr[GPR_V0] = 0;
 			} else
 				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
@@ -1309,11 +1492,16 @@ void arcbios_emul(struct cpu *cpu)
 			/*
 			 *  TODO: this is just a test
 			 */
-			int disk_id = 0;
+			int handle = cpu->gpr[GPR_A0];
+			int disk_id = arcbios_handle_to_scsi_id(handle);
+			uint64_t partition_offset = 0;
 			int res, i;
+			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
 
-			fatal("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
+			arcbios_handle_to_start_and_size(handle, &partition_offset, &size);
+
+			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
 			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
 			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
 
@@ -1329,12 +1517,12 @@ void arcbios_emul(struct cpu *cpu)
 				    CACHE_NONE);
 
 			res = diskimage_access(disk_id, 1,
-			    arcbios_current_seek_offset, tmp_buf,
+			    partition_offset + arcbios_current_seek_offset[handle], tmp_buf,
 			    cpu->gpr[GPR_A2]);
 
 			if (res) {
 				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
-				arcbios_current_seek_offset += cpu->gpr[GPR_A2];
+				arcbios_current_seek_offset[handle] += cpu->gpr[GPR_A2];
 				cpu->gpr[GPR_V0] = 0;
 			} else
 				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
@@ -1375,7 +1563,7 @@ void arcbios_emul(struct cpu *cpu)
 			ofs = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24) +
 			    ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40) +
 			    ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
-			arcbios_current_seek_offset = ofs;
+			arcbios_current_seek_offset[cpu->gpr[GPR_A0]] = ofs;
 			debug("%016llx ]\n", (long long)ofs);
 		}
 
@@ -1412,22 +1600,22 @@ void arcbios_emul(struct cpu *cpu)
 		dump_mem_string(cpu, cpu->gpr[GPR_A1]);
 		debug("\") ]\n");
 		/*  TODO: This is a dummy.  */
-		cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
 		break;
 	case 0x80:		/*  GetFileInformation()  */
-		debug("[ ARCBIOS GetFileInformation(%i,0x%x) ]\n",
+		debug("[ ARCBIOS GetFileInformation(%i,0x%x): ",
 		    cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1]);
 
-		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 0, 0);
-		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 8, 100000000);
-		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 16, 0);
-		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 24, 1);
-		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 28, 0);
-		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 32, 0);
-		/*  TODO  */
-		/*  this doesn't work yet  */
-		cpu->gpr[GPR_V0] = 0;
-
+		if (cpu->gpr[GPR_A0] >= MAX_HANDLES) {
+			debug("invalid file handle ]\n");
+			cpu->gpr[GPR_V0] = ARCBIOS_EINVAL;
+		} else if (!file_handle_in_use[cpu->gpr[GPR_A0]]) {
+			debug("file handle not in use! ]\n");
+			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
+		} else {
+			debug("'%s' ]\n", file_handle_string[cpu->gpr[GPR_A0]]);
+			cpu->gpr[GPR_V0] = arcbios_getfileinformation(cpu);
+		}
 		break;
 	case 0x88:		/*  FlushAllCaches()  */
 		debug("[ ARCBIOS FlushAllCaches(): TODO ]\n");
@@ -1515,6 +1703,7 @@ void arcbios_init(void)
 	for (i=0; i<MAX_HANDLES; i++) {
 		file_handle_in_use[i] = i<3? 1 : 0;
 		file_handle_string[i] = NULL;
+		arcbios_current_seek_offset[i] = 0;
 	}
 }
 

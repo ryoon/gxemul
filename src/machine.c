@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.393 2005-03-29 07:08:48 debug Exp $
+ *  $Id: machine.c,v 1.394 2005-03-29 09:46:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2040,7 +2040,7 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_ysize = 320;
 			hpcmips_fb_xsize_mem = 256;
 			hpcmips_fb_ysize_mem = 320;
-			hpcmips_fb_bits = 16;
+			hpcmips_fb_bits = 15;
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
 			machine->main_console_handle = dev_ns16550_init(
@@ -2144,7 +2144,7 @@ void machine_setup(struct machine *machine)
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * hpcmips_fb_bits / 8);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * (((hpcmips_fb_bits-1)|7)+1) / 8);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpcmips_fb_xsize);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.159 2005-03-28 22:22:45 debug Exp $
+ *  $Id: devices.h,v 1.160 2005-03-29 09:46:08 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -180,6 +180,7 @@ struct vfb_data {
 	int		xsize;
 	int		ysize;
 	int		bit_depth;
+	int		color32k;
 
 	unsigned char	color_plane_mask;
 

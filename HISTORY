@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.658 2005-03-29 07:29:00 debug Exp $
+$Id: HISTORY,v 1.659 2005-03-29 09:46:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1776,3 +1776,4 @@ Changelog for GXemul:
 		hpcmips; this makes it possible to run X11 inside
 		NetBSD/hpcmips :-)
 		Updating the documentation regarding NetBSD/hpcmips.
+		Fixing 16-bit vs 15-bit color in dev_fb.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.89 2005-03-12 09:13:43 debug Exp $
+ *  $Id: dev_fb.c,v 1.90 2005-03-29 09:46:06 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -370,17 +370,23 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 					g = d->framebuffer[fb_addr + 1];
 					b = d->framebuffer[fb_addr + 2];
 					break;
-				/*  TODO: 15 and 16.  */
-				/*  Also copy to the scaledown code below  */
+				/*  TODO: copy to the scaledown code below  */
 				case 16:
 					if (d->vfb_type == VFB_HPCMIPS) {
 						b = d->framebuffer[fb_addr] +
 						    (d->framebuffer[fb_addr+1] << 8);
-						r = b >> 11;
-						g = b >> 5;
-						r = r & 31;
-						g = (g & 31) * 2;
-						b = b & 31;
+
+						if (d->color32k) {
+							r = b >> 11;
+							g = b >> 5;
+							r = r & 31;
+							g = (g & 31) * 2;
+							b = b & 31;
+						} else {
+							r = (b >> 11) & 0x1f;
+							g = (b >>  5) & 0x3f;
+							b = b & 0x1f;
+						}
 					} else {
 						r = d->framebuffer[fb_addr] >> 3;
 						g = (d->framebuffer[fb_addr] << 5) +
@@ -854,7 +860,13 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	/*  Defaults:  */
 	d->xsize = xsize;  d->visible_xsize = visible_xsize;
 	d->ysize = ysize;  d->visible_ysize = visible_ysize;
+
 	d->bit_depth = bit_depth;
+
+	if (bit_depth == 15) {
+		d->color32k = 1;
+		bit_depth = d->bit_depth = 16;
+	}
 
 	/*  Specific types:  */
 	switch (vfb_type) {

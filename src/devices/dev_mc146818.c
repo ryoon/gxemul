@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.60 2005-01-20 08:57:31 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.61 2005-01-21 21:42:21 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -95,6 +95,7 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 
 	emulated_hz = cpu->machine->emulated_hz;
 
+#if 0
 	/*
 	 *  A hack to make Ultrix run, even on very fast host machines.
 	 *
@@ -116,6 +117,7 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 
 		emulated_hz = 30000000;
 	}
+#endif
 
 	if (d->interrupt_hz > 0)
 		d->interrupt_every_x_cycles =

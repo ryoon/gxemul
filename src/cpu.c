@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.8 2003-11-24 23:43:56 debug Exp $
+ *  $Id: cpu.c,v 1.9 2003-12-28 21:33:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -839,13 +839,18 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		cpu->coproc[0]->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
 		cpu->coproc[0]->reg[COP0_COUNT] ++;
 	} else {
+		/*  TODO: &1 ==> double count blah blah  */
 		if (instrcount & 1)
 			cpu->coproc[0]->reg[COP0_COUNT] ++;
+
 		cpu->coproc[0]->reg[COP0_RANDOM] --;
 		if ((int64_t)cpu->coproc[0]->reg[COP0_RANDOM] >= cpu->coproc[0]->nr_of_tlbs ||
 		    (int64_t)cpu->coproc[0]->reg[COP0_RANDOM] < (int64_t) cpu->coproc[0]->reg[COP0_WIRED])
 			cpu->coproc[0]->reg[COP0_RANDOM] = cpu->coproc[0]->nr_of_tlbs-1;
 	}
+
+	if (cpu->coproc[0]->reg[COP0_COUNT] == cpu->coproc[0]->reg[COP0_COMPARE])
+		cpu_interrupt(cpu, 7);
 
 	/*  Decrease the MFHI/MFLO delays:  */
 	if (cpu->mfhi_delay > 0)

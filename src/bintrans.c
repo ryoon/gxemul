@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.75 2004-11-22 00:13:55 debug Exp $
+ *  $Id: bintrans.c,v 1.76 2004-11-22 01:23:18 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -309,7 +309,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		for (i=0; i<n; i++)
 			translation_page_entry_array[i] = NULL;
 		translation_code_chunk_space_head = 0;
-		fatal("bintrans: Starting over!\n");
+		debug("bintrans: Starting over!\n");
 	}
 
 

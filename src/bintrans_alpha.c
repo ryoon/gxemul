@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.48 2004-11-21 23:29:48 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.49 2004-11-22 01:23:18 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -277,7 +277,6 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 	/*  07 04 27 44     or      t0,t6,t6  */
 	*a++ = 0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16);
 	*a++ = 0x44270407;
-
 	*a++ = 0x6bfa8001;	/*  ret  */
 	*addrp = (unsigned char *) a;
 }
@@ -1736,9 +1735,31 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 
 		case COP0_EPC:
 			break;
-#if 0
 
-This is supposed to work, but doesn't.  TODO
+		case COP0_ENTRYHI:
+			/*
+			 *  Entryhi is ok to write to, as long as the
+			 *  ASID isn't changed. (That would require
+			 *  cache invalidations etc. Instead of checking
+			 *  for MMU3K vs others, we just assume that all the
+			 *  lowest 12 bits must be the same.
+			 */
+			/*  ff 0f bf 20     lda     t4,0x0fff  */
+			/*  03 00 25 44     and     t0,t4,t2  */
+			/*  04 00 45 44     and     t1,t4,t3  */
+			/*  a3 05 64 40     cmpeq   t2,t3,t2  */
+			/*  01 00 60 f4     bne     t2,<ok>  */
+			*a++ = 0x20bf0fff;
+			*a++ = 0x44250003;
+			*a++ = 0x44450004;
+			*a++ = 0x406405a3;
+			jump = a;
+			*a++ = 0;	/*  later  */
+			*addrp = (unsigned char *) a;
+			bintrans_write_chunkreturn_fail(addrp);
+			a = (uint32_t *) *addrp;
+			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+			break;
 
 		case COP0_STATUS:
 			/*  Only allow updates to the status register if
@@ -1758,31 +1779,42 @@ This is supposed to work, but doesn't.  TODO
 			*a++ = 0x406405a3;
 			jump = a;
 			*a++ = 0;	/*  later  */
-			bintrans_write_chunkreturn_fail((unsigned char **)&a);
+			*addrp = (unsigned char *) a;
+			bintrans_write_chunkreturn_fail(addrp);
+			a = (uint32_t *) *addrp;
 			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
 
-			/*  Also, no interrupts bits should have been
-			    ENABLED, only disabling is ok. We check for this
-			    by ORing the old and new values together. If
-			    the result is the old value, then we're ok.  */
-			/*  03 04 22 44     or      t0,t1,t2  */
-			/*  a4 05 43 40     cmpeq   t1,t2,t3  */
-			/*  01 00 80 f4     bne     t3,<ok>  */
-			*a++ = 0x44220403;
-			*a++ = 0x404305a4;
+			/*  If enabling interrupt bits would cause an
+			    exception, then don't do it:  */
+			ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+			*a++ = 0xa4900000 | (ofs & 0xffff);		/*  ldq t3,coproc[0](a0)  */
+			ofs = ((size_t)&dummy_coproc.reg[COP0_CAUSE]) - (size_t)&dummy_coproc;
+			*a++ = 0xa4a40000 | (ofs & 0xffff);		/*  ldq t4,reg_rd(t3)  */
+
+			/*  02 00 a1 44     and     t4,t0,t1  */
+			/*  83 16 41 48     srl     t1,0x8,t2  */
+			/*  04 f0 7f 44     and     t2,0xff,t3  */
+			*a++ = 0x44a10002;
+			*a++ = 0x48411683;
+			*a++ = 0x447ff004;
+			/*  01 00 80 e4     beq     t3,<ok>  */
 			jump = a;
 			*a++ = 0;	/*  later  */
-			bintrans_write_chunkreturn_fail((unsigned char **)&a);
-			*jump = 0xf4800000 | (((size_t)a - (size_t)jump - 4) / 4);
+			*addrp = (unsigned char *) a;
+			bintrans_write_chunkreturn_fail(addrp);
+			a = (uint32_t *) *addrp;
+			*jump = 0xe4800000 | (((size_t)a - (size_t)jump - 4) / 4);
 			break;
-#endif
+
 		default:
 			/*  a3 05 22 40     cmpeq   t0,t1,t2  */
 			/*  01 00 60 f4     bne     t2,<ok>  */
 			*a++ = 0x402205a3;
 			jump = a;
 			*a++ = 0;	/*  later  */
-			bintrans_write_chunkreturn_fail((unsigned char **)&a);
+			*addrp = (unsigned char *) a;
+			bintrans_write_chunkreturn_fail(addrp);
+			a = (uint32_t *) *addrp;
 			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
 		}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.78 2005-02-01 07:22:28 debug Exp $
+ *  $Id: debugger.c,v 1.79 2005-02-01 07:26:05 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -653,6 +653,12 @@ static void debugger_cmd_focus(struct machine *m, char *cmd_line)
 
 	x = atoi(cmd_line);
 	p = strchr(cmd_line, ',');
+	if (p == cmd_line) {
+		printf("No machine number specified?\n");
+		printf("syntax: focus x[,y]\n");
+		return;
+	}
+
 	if (p != NULL)
 		y = atoi(p + 1);
 

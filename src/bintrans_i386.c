@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.67 2005-01-20 18:14:34 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.68 2005-01-25 08:14:48 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -250,13 +250,13 @@ static void (*bintrans_loadstore_32bit)
 /*
  *  bintrans_write_quickjump():
  */
-static void bintrans_write_quickjump(unsigned char *quickjump_code,
-	uint32_t chunkoffset)
+static void bintrans_write_quickjump(struct memory *mem,
+	unsigned char *quickjump_code, uint32_t chunkoffset)
 {
 	uint32_t i386_addr;
 	unsigned char *a = quickjump_code;
 
-	i386_addr = chunkoffset + (size_t)translation_code_chunk_space;
+	i386_addr = chunkoffset + (size_t)mem->translation_code_chunk_space;
 	i386_addr = i386_addr - ((size_t)a + 5);
 
         /*  printf("chunkoffset=%i, %08x %08x %i\n",
@@ -1579,8 +1579,8 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__delayedbranch():
  */
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
-	uint32_t *potential_chunk_p, uint32_t *chunks,
+static int bintrans_write_instruction__delayedbranch(struct memory *mem,
+	unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p, int forward)
 {
 	unsigned char *a, *skip=NULL, *failskip;
@@ -1847,7 +1847,8 @@ try_chunk_p:
 
 		/*  Case 1:  */
 		/*  printf("%08x ", *potential_chunk_p);  */
-		i386_addr = *potential_chunk_p + (size_t)translation_code_chunk_space;
+		i386_addr = *potential_chunk_p +
+		    (size_t)mem->translation_code_chunk_space;
 		i386_addr = i386_addr - ((size_t)a + 5);
 		if ((*potential_chunk_p) != 0) {
 			*a++ = 0xe9;
@@ -1858,7 +1859,7 @@ try_chunk_p:
 		} else {
 			/*  Case 2:  */
 
-			bintrans_register_potential_quick_jump(a, p);
+			bintrans_register_potential_quick_jump(mem, a, p);
 
 			i386_addr = (size_t)potential_chunk_p;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.141 2005-01-23 13:43:06 debug Exp $
+ *  $Id: bintrans.c,v 1.142 2005-01-25 08:14:48 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -106,6 +106,7 @@
 
 
 #ifndef BINTRANS
+
 /*
  *  No bintrans, then let's supply dummy functions:
  */
@@ -129,14 +130,13 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
 static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp);
-/*  static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);  */
-static void bintrans_write_quickjump(unsigned char *quickjump_code, uint32_t chunkoffset);
+static void bintrans_write_quickjump(struct memory *mem, unsigned char *quickjump_code, uint32_t chunkoffset);
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, int rs, int rt, int sa, int instruction_type);
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p, int forward);
+static int bintrans_write_instruction__delayedbranch(struct memory *mem, unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p, int forward);
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
@@ -147,72 +147,28 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int it
 #define	CALL_TLBWR	1
 #define	CALL_TLBP	2
 #define	CALL_TLBR	3
-#define	CALL_RFE		4
+#define	CALL_RFE	4
 #define	CALL_ERET	5
 #define	CALL_BREAK	6
 #define	CALL_SYSCALL	7
 
 
-#define	BINTRANS_CACHE_N_INDEX_BITS	15
-#define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
-#define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
-
-#ifndef BINTRANS_SIZE_IN_MB
-#define BINTRANS_SIZE_IN_MB		16
-#endif
-
-#define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
-#define	CODE_CHUNK_SPACE_MARGIN		65536
-
-/*
- *  translation_code_chunk_space is a large chunk of (linear) memory where
- *  translated code chunks and translation_entrys are stored. When this is
- *  filled, we restart from scratch (by resetting
- *  translation_code_chunk_space_head to 0, and removing all translation
- *  entries).
- *
- *  (Using a static memory region like this is somewhat inspired by the QEMU
- *  web pages, http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
- */
-unsigned char *translation_code_chunk_space;
-size_t translation_code_chunk_space_head;
-
-struct translation_page_entry {
-	struct translation_page_entry	*next;
-
-	uint64_t			paddr;
-
-	int				page_is_potentially_in_use;
-
-	uint32_t			chunk[1024];
-	char				flags[1024];
-};
-#define	UNTRANSLATABLE		0x01
-
-static struct translation_page_entry *translation_page_entry_array[
-    (1 << BINTRANS_CACHE_N_INDEX_BITS) ];
-
-
-#define	MAX_QUICK_JUMPS		8
-static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
-static int quick_jump_page_offset[MAX_QUICK_JUMPS];
-static int n_quick_jumps;
-static int quick_jumps_index;		/*  where to write the next quick jump  */
-
-static void bintrans_register_potential_quick_jump(unsigned char *a, int p)
+static void bintrans_register_potential_quick_jump(struct memory *mem,
+	unsigned char *a, int p)
 {
-	/*  printf("%02i: a=%016llx p=%i\n", quick_jumps_index, a, p);  */
-	quick_jump_host_address[quick_jumps_index] = a;
-	quick_jump_page_offset[quick_jumps_index] = p;
-	quick_jumps_index ++;
-	if (quick_jumps_index > n_quick_jumps)
-		n_quick_jumps = quick_jumps_index;
-	if (quick_jumps_index >= MAX_QUICK_JUMPS)
-		quick_jumps_index = 0;
+	/*  printf("%02i: a=%016llx p=%i\n", mem->quick_jumps_index, a, p);  */
+	mem->quick_jump_host_address[mem->quick_jumps_index] = a;
+	mem->quick_jump_page_offset[mem->quick_jumps_index] = p;
+	mem->quick_jumps_index ++;
+	if (mem->quick_jumps_index > mem->n_quick_jumps)
+		mem->n_quick_jumps = mem->quick_jumps_index;
+	if (mem->quick_jumps_index >= MAX_QUICK_JUMPS)
+		mem->quick_jumps_index = 0;
 }
 
 
 /*  Set to non-zero for R3000 and similar cpus.  */
+/*  TODO: MOVE THIS!  */
 static int bintrans_32bit_only = 0;
 
 
@@ -255,7 +211,7 @@ struct translation_page_entry *prev = NULL;
 #endif
 	uint64_t paddr_page = paddr & ~0xfff;
 
-	tep = translation_page_entry_array[entry_index];
+	tep = cpu->mem->translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page)
 #if 1
@@ -263,7 +219,7 @@ struct translation_page_entry *prev = NULL;
 #else
 {
 			if (prev == NULL)
-				translation_page_entry_array[entry_index] = tep->next;
+				cpu->mem->translation_page_entry_array[entry_index] = tep->next;
 			else
 				prev->next = tep->next;
 			return;
@@ -350,12 +306,12 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	paddr_page = paddr & ~0xfff;
 	offset_within_page = (paddr & 0xfff) / 4;
 	entry_index = PADDR_TO_INDEX(paddr);
-	tep = translation_page_entry_array[entry_index];
+	tep = cpu->mem->translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
 			if (tep->chunk[offset_within_page] != 0) {
 				f = (size_t)tep->chunk[offset_within_page] +
-				    translation_code_chunk_space;
+				    cpu->mem->translation_code_chunk_space;
 				goto run_it;	/*  see further down  */
 			}
 			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
@@ -380,12 +336,12 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	 *  If the chunk space is all used up, we need to start over from
 	 *  an empty chunk space.
 	 */
-	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+	if (cpu->mem->translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
 		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 		for (i=0; i<n; i++)
-			translation_page_entry_array[i] = NULL;
-		translation_code_chunk_space_head = 0;
-		n_quick_jumps = 0;
+			cpu->mem->translation_page_entry_array[i] = NULL;
+		cpu->mem->translation_code_chunk_space_head = 0;
+		cpu->mem->n_quick_jumps = 0;
 		tep = NULL;
 		debug("bintrans: Starting over!\n");
 		clear_all_chunks_from_all_tables(cpu);
@@ -399,27 +355,27 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 
 	if (tep == NULL) {
 		/*  Allocate a new translation page entry:  */
-		tep = (void *)(size_t) (translation_code_chunk_space +
-		    translation_code_chunk_space_head);
-		translation_code_chunk_space_head += sizeof(struct translation_page_entry);
+		tep = (void *)(size_t) (cpu->mem->translation_code_chunk_space +
+		    cpu->mem->translation_code_chunk_space_head);
+		cpu->mem->translation_code_chunk_space_head += sizeof(struct translation_page_entry);
 
 		/*  ... and align again:  */
-		translation_code_chunk_space_head =
-		    ((translation_code_chunk_space_head - 1) | 63) + 1;
+		cpu->mem->translation_code_chunk_space_head =
+		    ((cpu->mem->translation_code_chunk_space_head - 1) | 63) + 1;
 
 		/*  Add the entry to the array:  */
 		memset(tep, 0, sizeof(struct translation_page_entry));
-		tep->next = translation_page_entry_array[entry_index];
-		translation_page_entry_array[entry_index] = tep;
+		tep->next = cpu->mem->translation_page_entry_array[entry_index];
+		cpu->mem->translation_page_entry_array[entry_index] = tep;
 		tep->paddr = paddr_page;
 	}
 
 	/*  printf("translation_page_entry_array[%i] = %p, ofs = %i\n",
-	    entry_index, translation_page_entry_array[entry_index], offset_within_page);  */
+	    entry_index, cpu->mem->translation_page_entry_array[entry_index], offset_within_page);  */
 
 	/*  ca is the "chunk address"; where to start generating a chunk:  */
-	ca = translation_code_chunk_space
-	    + translation_code_chunk_space_head;
+	ca = cpu->mem->translation_code_chunk_space
+	    + cpu->mem->translation_code_chunk_space_head;
 
 
 	/*
@@ -439,7 +395,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	stop_after_delayed_branch = 0;
 	delayed_branch_new_p = 0;
 	rt = 0;
-	n_quick_jumps = quick_jumps_index = 0;
+	cpu->mem->n_quick_jumps = cpu->mem->quick_jumps_index = 0;
 
 	while (try_to_translate) {
 		ca_justdid = ca;
@@ -740,7 +696,8 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 
 				forward = delayed_branch_new_p > p;
 
-				bintrans_write_instruction__delayedbranch(&ca,
+				bintrans_write_instruction__delayedbranch(
+				    cpu->mem, &ca,
 				    potential_chunk_p, &tep->chunk[0], 0,
 				    delayed_branch_new_p & 0xfff, forward);
 
@@ -755,14 +712,14 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 			if (tep->chunk[prev_p] == 0)
 				tep->chunk[prev_p] = (uint32_t)
 				    ((size_t)ca_justdid -
-				    (size_t)translation_code_chunk_space);
+				    (size_t)cpu->mem->translation_code_chunk_space);
 
 			/*  Quickjump to the translated instruction from some
 			    previous instruction?  */
-			for (i=0; i<n_quick_jumps; i++)
-				if (quick_jump_page_offset[i] == p)
-					bintrans_write_quickjump(
-					    quick_jump_host_address[i],
+			for (i=0; i<cpu->mem->n_quick_jumps; i++)
+				if (cpu->mem->quick_jump_page_offset[i] == p)
+					bintrans_write_quickjump(cpu->mem,
+					    cpu->mem->quick_jump_host_address[i],
 					    tep->chunk[prev_p]);
 		}
 
@@ -770,14 +727,14 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		if (translated && try_to_translate &&
 		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
 		    && !delayed_branch) {
-			bintrans_write_instruction__delayedbranch(
+			bintrans_write_instruction__delayedbranch(cpu->mem,
 			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 			try_to_translate = 0;
 		}
 
 		if (translated && try_to_translate && n_translated > 80
 		    && prev_p < 1023 && !delayed_branch) {
-			bintrans_write_instruction__delayedbranch(
+			bintrans_write_instruction__delayedbranch(cpu->mem,
 			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 			try_to_translate = 0;
 		}
@@ -803,8 +760,8 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	}
 
 	/*  ca2 = ptr to the head of the new code chunk  */
-	ca2 = translation_code_chunk_space +
-	    translation_code_chunk_space_head;
+	ca2 = cpu->mem->translation_code_chunk_space +
+	    cpu->mem->translation_code_chunk_space_head;
 
 	/*  Add return code:  */
 	bintrans_write_chunkreturn(&ca);
@@ -815,11 +772,11 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	/*  Invalidate the host's instruction cache, if necessary:  */
 	bintrans_host_cacheinvalidate(ca2, chunk_len);
 
-	translation_code_chunk_space_head += chunk_len;
+	cpu->mem->translation_code_chunk_space_head += chunk_len;
 
 	/*  Align the code chunk space:  */
-	translation_code_chunk_space_head =
-	    ((translation_code_chunk_space_head - 1) | 63) + 1;
+	cpu->mem->translation_code_chunk_space_head =
+	    ((cpu->mem->translation_code_chunk_space_head - 1) | 63) + 1;
 
 
 	/*  RUN the code chunk:  */
@@ -887,12 +844,12 @@ run_it:
 			paddr_page = paddr & ~0xfff;
 			offset_within_page = (paddr & 0xfff) / 4;
 			entry_index = PADDR_TO_INDEX(paddr);
-			tep = translation_page_entry_array[entry_index];
+			tep = cpu->mem->translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
-						    translation_code_chunk_space;
+						    cpu->mem->translation_code_chunk_space;
 						goto run_it;
 					}
 					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
@@ -961,7 +918,7 @@ void bintrans_init_cpu(struct cpu *cpu)
 {
 	int i, offset;
 
-	cpu->chunk_base_address        = translation_code_chunk_space;
+	cpu->chunk_base_address        = cpu->mem->translation_code_chunk_space;
 	cpu->bintrans_loadstore_32bit  = bintrans_loadstore_32bit;
 	cpu->bintrans_jump_to_32bit_pc = bintrans_jump_to_32bit_pc;
 	cpu->bintrans_fast_tlbwri      = coproc_tlbwri;
@@ -1027,29 +984,37 @@ void bintrans_init(struct memory *mem)
 	int res, i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	size_t s;
 
+	mem->translation_page_entry_array = malloc(sizeof(
+	    struct translation_page_entry *) *
+	    (1 << BINTRANS_CACHE_N_INDEX_BITS));
+	if (mem->translation_page_entry_array == NULL) {
+		fprintf(stderr, "bintrans_init(): out of memory\n");
+		exit(1);
+	}
+
 	/*
 	 *  The entry array must be NULLed, as these are pointers to
 	 *  translation page entries.
 	 */
 	for (i=0; i<n; i++)
-		translation_page_entry_array[i] = NULL;
+		mem->translation_page_entry_array[i] = NULL;
 
 	/*  Allocate the large code chunk space:  */
 	s = CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN;
-	translation_code_chunk_space = (unsigned char *) mmap(NULL, s,
+	mem->translation_code_chunk_space = (unsigned char *) mmap(NULL, s,
 	    PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 
 	/*  If mmap() failed, try malloc():  */
-	if (translation_code_chunk_space == NULL) {
-		translation_code_chunk_space = malloc(s);
-		if (translation_code_chunk_space == NULL) {
+	if (mem->translation_code_chunk_space == NULL) {
+		mem->translation_code_chunk_space = malloc(s);
+		if (mem->translation_code_chunk_space == NULL) {
 			fprintf(stderr, "bintrans_init(): out of memory (2)\n");
 			exit(1);
 		}
 	}
 
 	debug("bintrans: "BACKEND_NAME", %i MB translation cache at %p\n",
-	    (int)(s/1048576), translation_code_chunk_space);
+	    (int)(s/1048576), mem->translation_code_chunk_space);
 
 	/*
 	 *  The translation_code_chunk_space does not need to be zeroed,
@@ -1057,7 +1022,7 @@ void bintrans_init(struct memory *mem)
 	 *  add new chunks must be initialized to the beginning of the
 	 *  chunk space.
 	 */
-	translation_code_chunk_space_head = 0;
+	mem->translation_code_chunk_space_head = 0;
 
 	/*
 	 *  Some operating systems (for example OpenBSD using the default
@@ -1070,7 +1035,7 @@ void bintrans_init(struct memory *mem)
 	 *  of memory obtained from mmap(2).".  If malloc() isn't implemented
 	 *  using mmap(), then this could be a problem.
 	 */
-	res = mprotect((void *)translation_code_chunk_space,
+	res = mprotect((void *)mem->translation_code_chunk_space,
 	    s, PROT_READ | PROT_WRITE | PROT_EXEC);
 	if (res)
 		debug("warning: mprotect() failed with errno %i."

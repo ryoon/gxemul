@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.209 2005-01-23 13:43:05 debug Exp $
+ *  $Id: misc.h,v 1.210 2005-01-25 08:14:47 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -103,6 +103,10 @@ struct machine;
 #define	DEVICE_STATE_TYPE_UINT64_T	2
 
 struct cpu;
+struct translation_page_entry;
+
+/*  For bintrans:  */
+#define	MAX_QUICK_JUMPS			8
 
 struct memory {
 	uint64_t	physical_max;
@@ -126,9 +130,32 @@ struct memory {
 			    struct memory *, void *extra, int wf, int nr,
 			    int *type, char **namep, void **data, size_t *len);
 	unsigned char	*dev_bintrans_data[MAX_DEVICES];
+
 #ifdef BINTRANS
 	uint64_t	dev_bintrans_write_low[MAX_DEVICES];
 	uint64_t	dev_bintrans_write_high[MAX_DEVICES];
+
+	/*
+	 *  translation_code_chunk_space is a large chunk of (linear) memory
+	 *  where translated code chunks and translation_entrys are stored.
+	 *  When this is filled, translation is restart from scratch (by
+	 *  resetting translation_code_chunk_space_head to 0, and removing all
+	 *  translation entries).
+	 *
+	 *  (Using a static memory region like this is somewhat inspired by
+	 *  the QEMU web pages,
+	 *  http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
+	 */
+
+	unsigned char	*translation_code_chunk_space;
+	size_t		translation_code_chunk_space_head;
+
+	struct translation_page_entry **translation_page_entry_array;
+
+	unsigned char	*quick_jump_host_address[MAX_QUICK_JUMPS];
+	int		quick_jump_page_offset[MAX_QUICK_JUMPS];
+	int		n_quick_jumps;
+	int		quick_jumps_index;
 #endif
 };
 

@@ -2,7 +2,7 @@
 #define	BINTRANS_H
 
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.16 2005-01-19 08:44:52 debug Exp $
+ *  $Id: bintrans.h,v 1.17 2005-01-25 08:14:47 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */
@@ -37,9 +37,31 @@
 
 #include "misc.h"
 
+struct translation_page_entry {
+	struct translation_page_entry	*next;
+	uint64_t			paddr;
 
-#define	MAX_TRANSLATE_DEPTH	3
+	int				page_is_potentially_in_use;
 
+	uint32_t			chunk[1024];
+	char				flags[1024];
+};
+
+#define	UNTRANSLATABLE		0x01
+
+#define	BINTRANS_CACHE_N_INDEX_BITS	15
+#define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
+#define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
+
+#ifndef	BINTRANS_SIZE_IN_MB
+#define	BINTRANS_SIZE_IN_MB		16
+#endif
+
+#define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
+#define	CODE_CHUNK_SPACE_MARGIN		65536
+
+
+/*  bintrans.c:  */
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr);
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr);
 void bintrans_init_cpu(struct cpu *cpu);

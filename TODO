@@ -1,37 +1,11 @@
 mips64emul TODO
 ---------------
 
-This file is a mess. Don't trust it to be up-to-date.
+This file is a mess. Order is random.
+Don't trust it to be up-to-date.
 
 
 	Binary translation:  src/bintrans.c
-		o)  invalidate pages written to
-		o)  invalidate "parent" cache entries
-		o)  jump to other cache entry
-		o)  Interrupts, exact not shifted
-		o)  Nr of instructions executed
-		o)  add i386 host support
-
-	Userland ABI emulation: src/useremul.c
-
-	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
-		o)  Breakpoints (complex expressions? combinations of register states,
-			memory accesses and so on)
-		o)  Instruction trace
-		o)  Disassembly of RAM (_NOT_ the same as instruction trace)
-		o)  Function call trace
-		o)  Inspection of CPU registers/state, coprocessor registers/state,
-			any device registers/state/contents
-			o)  Framebuffers in windows / tabs.
-			o)  Contents of RAM
-		o)  "Start new emulation" should allow amount of
-			RAM and nr of cpus to easily be specified. Multiple simultaneous
-			machines should be possible.
-		o)  Disk images.
-
-	Save state of the whole emulated machine, to be able to load it back
-		in later?  (Memory, all device's states, all registers and
-		so on.  Like taking a snapshot)
 
 	Caches / memory hierarchies:
 		o)  Implement correct cache emulation (per CPU, multiple
@@ -47,6 +21,8 @@ This file is a mess. Don't trust it to be up-to-date.
 			(using manual swap-out of blocks to disk, ugly)
 
 	CPU Emulation:
+		o)  Factor out the MIPS dependant parts of the cpu, so that (in theory)
+			the emulator could support other architectures as well.
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info)
 			o)  Floating point instructions!
@@ -68,7 +44,7 @@ This file is a mess. Don't trust it to be up-to-date.
 			x)  R3000 "tri-byte stores"???
 			x)  Delay after R3000 interrupt enabling instructions (write to cop0),
 			    before interrupts are actually enabled. (?)
-		o)  R4000 and others: (R4*, R5* ?)
+		o)  R4000 and others:
 			x)  watchhi/watchlo exceptions, and other exception handling details
 		o)  R10000 and others:  (R12000, R14000 ?)
 			x)  memory space, exceptions, ...
@@ -78,13 +54,11 @@ This file is a mess. Don't trust it to be up-to-date.
 		o)  Implement all coprocessor 0 bits / functions.
 			x)  coproc 0 selectors! (R4000 ?)
 			x)  BEV and all exception vectors....
-		o)  R4300:  mmu? nintendo64
-		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
-		o)  5K (note: NOT R5000)
-		o)  R6000 (ISA II), R8000, R20000 ?
+		o)  R4300 (nintendo64, no mmu?), R5900 (playstation2, weird TLB/cache? 128-bit GPRs, new instructions),
+			4K (note: NOT R4000), 5K (note: NOT R5000), R6000 (ISA II), R8000
 
 	Emulation of specific machines and devices:
-		o)  Binary tree for memory mapped devices!
+		o)  Binary tree for memory mapped devices?
 		o)  Separate RAM as yet another device (a "RAM device"), replacing the
 			'memory' system with a more generic 'memory controller'.
 		o)  "wdc" IDE controller!
@@ -144,6 +118,27 @@ This file is a mess. Don't trust it to be up-to-date.
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)
 		o)  Better handling of tape files
+
+	Userland ABI emulation: src/useremul.c
+
+	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
+		o)  Breakpoints (complex expressions? combinations of register states,
+			memory accesses and so on)
+		o)  Instruction trace
+		o)  Disassembly of RAM (_NOT_ the same as instruction trace)
+		o)  Function call trace
+		o)  Inspection of CPU registers/state, coprocessor registers/state,
+			any device registers/state/contents
+			o)  Framebuffers in windows / tabs.
+			o)  Contents of RAM
+		o)  "Start new emulation" should allow amount of
+			RAM and nr of cpus to easily be specified. Multiple simultaneous
+			machines should be possible.
+		o)  Disk images.
+
+	Save state of the whole emulated machine, to be able to load it back
+		in later?  (Memory, all device's states, all registers and
+		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.17 2004-11-23 09:20:45 debug Exp $
+ *  $Id: dev_pica.c,v 1.18 2004-12-08 11:51:20 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -74,7 +74,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 
 	if (!(d->dma0_enable & R4030_DMA_ENAB_RUN)) {
 		fatal("[ dev_pica_dma_controller(): dma not enabled? ]\n");
-		return 0;
+		/*  return 0;  */
 	}
 
 	/*  R4030 "write" means write to the device, writeflag as the
@@ -419,15 +419,29 @@ int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 
-	v = 0;
-	for (i=0; i<15; i++) {
-		if (d->int_asserted & (1<<i)) {
-			v = i+1;
-			break;
+	switch (relative_addr) {
+	case 0:
+		v = 0;
+		for (i=0; i<15; i++) {
+			if (d->int_asserted & (1<<i)) {
+				v = i+1;
+				break;
+			}
+		}
+		odata = v << 2;
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ pica int: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+		} else {
+			fatal("[ pica int: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
 		}
 	}
 
-	odata = v << 2;
+	/*  This is needed by Windows NT during startup:  */
+	cpu_interrupt_ack(cpu, 3);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -465,7 +479,7 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 	memory_device_register(mem, "pica_a0", 0x900000000a0ULL, 2,
 	    dev_pica_access_a0, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_jazzio", 0x3c00000000ULL, 1,
+	memory_device_register(mem, "pica_jazzio", 0xf0000000ULL, 4,
 	    dev_pica_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);

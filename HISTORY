@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.362 2004-12-07 11:46:56 debug Exp $
+$Id: HISTORY,v 1.363 2004-12-08 11:51:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1258,3 +1258,7 @@ HISTORY of mips64emul
 		And some other minor updates.
 		i386 backend update: the lowest 32 bits of the pc register
 		are now placed in an i386 register.
+20041208	Adding GetConfigurationData() and some support for config
+		data, to src/arcbios.c.
+		Adding a bogus 0xbd SCSI command (used by Windows NT). It is
+		not listed in http://www.danbbs.dk/~dino/SCSI/SCSI2-D.html.

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.62 2004-12-06 06:49:39 debug Exp $
+$Id: RELEASE,v 1.63 2004-12-08 11:51:19 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -161,6 +161,8 @@ them like this is in order:
 
     This product includes software developed for the NetBSD Project by
     Wasabi Systems, Inc.  [by Simon Burge]
+
+    arcbios_other.h is Copyright (c) 1996 M. Warner Losh.
 
 
 See individual files for license details, if you plan to redistribute

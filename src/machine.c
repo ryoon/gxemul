@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.228 2004-12-06 13:15:06 debug Exp $
+ *  $Id: machine.c,v 1.229 2004-12-08 11:51:21 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -59,6 +59,7 @@
 
 /*  For SGI emulation:  */
 #include "sgi_arcbios.h"
+#include "arcbios_other.h"
 #include "crimereg.h"
 
 /*  For ARC emulation:  */
@@ -552,7 +553,7 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	/*  debug("   %08x %08x\n", pica_data->isa_int_asserted,
 		pica_data->isa_int_enable_mask);  */
 
-	if (pica_data->int_asserted /* & pica_data->int_enable_mask */
+	if (pica_data->int_asserted /* & pica_data->int_enable_mask  */
 	    & ~0x8000 )
 		cpu_interrupt(cpu, 3);
 	else
@@ -2151,7 +2152,9 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(cpu, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-/*				bus_pci_add(cpu, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
+#if 0
+				bus_pci_add(cpu, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
+#endif
 				/*  bus_pci_add(cpu, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;
@@ -2300,6 +2303,10 @@ Why is this here? TODO
 				    cpu, mem, 0x2000000000ULL);
 				cpu->md_interrupt = pica_interrupt;
 
+				/*  BSD uses interrupt source at 0x3c.....  */
+				dev_ram_init(mem, 0x3c00000000ULL,
+				    0x1000, DEV_RAM_MIRROR, 0xf0000000ULL);
+
 				dev_vga_init(cpu, mem,
 				    0x100000b8000ULL, 0x60000003c0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
@@ -2314,20 +2321,8 @@ Why is this here? TODO
 				    0x10000, DEV_RAM_MIRROR, 0x100000b8000ULL);
 				dev_ram_init(mem, 0x0600003c0ULL,
 				    0x20, DEV_RAM_MIRROR, 0x60000003c0ULL);
-
-				dev_ram_init(mem, 0x80004000,
-				    0x1000, DEV_RAM_MIRROR, 0x2000004000ULL);
-/*
-600003da (ram dac)
-90000021
-900000a1
-9000000f
-900000de
-90000070
-90000240 - 900002f7
-900001f2
-90000172
- */
+				dev_ram_init(mem, 0x80000000,
+				    0x10000, DEV_RAM_MIRROR, 0x2000000000ULL);
 
 				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
 
@@ -2577,38 +2572,38 @@ Why is this here? TODO
 		switch (emul->emulation_type) {
 		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 2, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */);
+			    0, 1, 2, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */ , NULL, 0);
 			break;
 		default:
 			/*  ARC:  */
 			switch (emul->machine) {
 			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_NEC_R94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_NEC_R98:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_JAZZ_PICA:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_JAZZ_MAGNUM:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_JAZZ_M700:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_DESKTECH_TYNE:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 2, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
@@ -2641,11 +2636,11 @@ Why is this here? TODO
 			strcat(arc_fpc_name, "FPC");
 
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-			    0, 1, 2, i, 0xffffffff, arc_cpu_name, system);
+			    0, 1, 2, i, 0xffffffff, arc_cpu_name, system, NULL, 0);
 
 			/*  TODO: Maybe this shouldn't be here?  */
 			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr);
+			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
 			if (emul->cache_picache)
@@ -2669,7 +2664,7 @@ Why is this here? TODO
 			     */
 			    0x01000000 + (cache_line_size << 16) + cache_size,
 				/*  32 bytes per line, default = 32 KB total  */
-			    0xffffffff, NULL, cpuaddr);
+			    0xffffffff, NULL, cpuaddr, NULL, 0);
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
 			if (emul->cache_pdcache)
@@ -2692,7 +2687,7 @@ Why is this here? TODO
 			     */
 			    0x01000000 + (cache_line_size << 16) + cache_size,
 				/*  32 bytes per line, default = 32 KB total  */
-			    0xffffffff, NULL, cpuaddr);
+			    0xffffffff, NULL, cpuaddr, NULL, 0);
 
 			if (emul->cache_secondary >= 12) {
 				cache_size = emul->cache_secondary - 12;
@@ -2712,7 +2707,7 @@ Why is this here? TODO
 				     */
 				    0x01000000 + (cache_line_size << 16) + cache_size,
 					/*  64 bytes per line, default = 1 MB total  */
-				    0xffffffff, NULL, cpuaddr);
+				    0xffffffff, NULL, cpuaddr, NULL, 0);
 			}
 
 			debug("adding ARC components: cpu%i = 0x%x, "
@@ -2737,7 +2732,7 @@ Why is this here? TODO
 			/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
 			/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
 			if (emul->use_x11)
-				arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system);
+				arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system, NULL, 0);
 		}
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
@@ -2752,7 +2747,7 @@ Why is this here? TODO
 			    COMPONENT_CLASS_AdapterClass,
 			    COMPONENT_TYPE_MultiFunctionAdapter,
 			    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
-			    system);
+			    system, NULL, 0);
 
 			/*
 			 *  DisplayController, needed by NetBSD:
@@ -2765,7 +2760,7 @@ Why is this here? TODO
 				    COMPONENT_FLAG_ConsoleOut |
 					COMPONENT_FLAG_Output,
 				    1, 2, 0, 0xffffffff, "ALI_S3",
-				    jazzbus);
+				    jazzbus, NULL, 0);
 
 				arcbios_addchild_manual(cpu,
 				    COMPONENT_CLASS_PeripheralClass,
@@ -2774,7 +2769,7 @@ Why is this here? TODO
 					COMPONENT_FLAG_Output,
 				    1, 2, 0, 0xffffffff, "640x480",
 						/*  "1024x768",  */
-				    ali_s3);
+				    ali_s3, NULL, 0);
 			}
 
 			diskcontroller = arcbios_addchild_manual(cpu,
@@ -2783,7 +2778,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, "I82077",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			floppy = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_PeripheralClass,
@@ -2792,7 +2787,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, NULL,
-			    diskcontroller);
+			    diskcontroller, NULL, 0);
 
 			kbdctl = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_ControllerClass,
@@ -2800,7 +2795,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_ConsoleIn |
 				COMPONENT_FLAG_Input,
 			    1, 2, 0, 0xffffffff, "I8742",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			kbd = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_PeripheralClass,
@@ -2808,21 +2803,21 @@ Why is this here? TODO
 				COMPONENT_FLAG_ConsoleIn |
 				COMPONENT_FLAG_Input,
 			    1, 2, 0, 0xffffffff, "PCAT_ENHANCED",
-			    kbdctl);
+			    kbdctl, NULL, 0);
 
 			ptrctl = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_ControllerClass,
 			    COMPONENT_TYPE_PointerController,
 				COMPONENT_FLAG_Input,
 			    1, 2, 0, 0xffffffff, "I8742",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			ptr = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_PeripheralClass,
 			    COMPONENT_TYPE_PointerPeripheral,
 				COMPONENT_FLAG_Input,
 			    1, 2, 0, 0xffffffff, "PS2 MOUSE",
-			    ptrctl);
+			    ptrctl, NULL, 0);
 
 /*  These cause Windows NT to bug out.  */
 #if 0
@@ -2832,7 +2827,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, "COM1",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			serial2 = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_ControllerClass,
@@ -2840,7 +2835,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, "COM1",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 #endif
 
 			paral = arcbios_addchild_manual(cpu,
@@ -2849,7 +2844,7 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, "LPT1",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			audio = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_ControllerClass,
@@ -2857,19 +2852,78 @@ Why is this here? TODO
 				COMPONENT_FLAG_Input |
 				COMPONENT_FLAG_Output,
 			    1, 2, 0, 0xffffffff, "MAGNUM",
-			    jazzbus);
+			    jazzbus, NULL, 0);
 
 			eisa = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_AdapterClass,
 			    COMPONENT_TYPE_EISAAdapter,
 			    0, 1, 2, 0, 0xffffffff, "EISA",
-			    system);
+			    system, NULL, 0);
 
+{
+unsigned char config[78];
+memset(config, 0, sizeof(config));
+
+/*  config data version: 1, revision: 2, count: 4  */
+config[0] = 0x01; config[1] = 0x00;
+config[2] = 0x02; config[3] = 0x00;
+config[4] = 0x04; config[5] = 0x00; config[6] = 0x00; config[7] = 0x00;
+
+/*
+          type: Interrupt
+           share_disposition: DeviceExclusive, flags: LevelSensitive
+           level: 4, vector: 22, reserved1: 0
+*/
+config[8] = arc_CmResourceTypeInterrupt;
+config[9] = arc_CmResourceShareDeviceExclusive;
+config[10] = arc_CmResourceInterruptLevelSensitive;
+config[12] = 4;
+config[16] = 22;
+config[20] = 0;
+
+/*
+          type: Memory
+           share_disposition: DeviceExclusive, flags: ReadWrite
+           start: 0x 0 80002000, length: 0x1000
+*/
+config[24] = arc_CmResourceTypeMemory;
+config[25] = arc_CmResourceShareDeviceExclusive;
+config[26] = arc_CmResourceMemoryReadWrite;
+config[28] = 0x00; config[29] = 0x20; config[30] = 0x00; config[31] = 0x80;
+  config[32] = 0x00; config[33] = 0x00; config[34] = 0x00; config[35] = 0x00;
+config[36] = 0x00; config[37] = 0x10; config[38] = 0x00; config[39] = 0x00;
+
+/*
+          type: DMA
+           share_disposition: DeviceExclusive, flags: 0x0
+           channel: 0, port: 0, reserved1: 0
+*/
+config[40] = arc_CmResourceTypeDMA;
+config[41] = arc_CmResourceShareDeviceExclusive;
+/*  42..43 = flags, 44,45,46,47 = channel, 48,49,50,51 = port, 52,53,54,55 = reserved  */
+
+/*          type: DeviceSpecific
+           share_disposition: DeviceExclusive, flags: 0x0
+           datasize: 6, reserved1: 0, reserved2: 0
+           data: [0x1:0x0:0x2:0x0:0x7:0x30]
+*/
+config[56] = arc_CmResourceTypeDeviceSpecific;
+config[57] = arc_CmResourceShareDeviceExclusive;
+/*  58,59 = flags  60,61,62,63 = data size, 64..71 = reserved  */
+config[60] = 6;
+/*  72..77 = the data  */
+config[72] = 0x01;
+config[73] = 0x00;
+config[74] = 0x02;
+config[75] = 0x00;
+config[76] = 0x07;
+config[77] = 0x30;
 			scsi = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_AdapterClass,
 			    COMPONENT_TYPE_SCSIAdapter,
 			    0, 1, 2, 0, 0xffffffff, "ESP216",
-			    system);
+			    system, config, sizeof(config));
+}
 		}
 
 
@@ -3005,6 +3059,9 @@ Why is this here? TODO
 			init_bootpath = "multi()disk()fdisk()";
 #endif
 
+/*  Windows NT experiments:  init_bootpath = "scsi()cdrom(6)fdisk()";  */
+
+
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);
 		strcpy(bootstr, init_bootpath);
@@ -3114,7 +3171,10 @@ Why is this here? TODO
 			add_environment_string(cpu, tmp, &addr);
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLOADPARTITION=scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+			add_environment_string(cpu, "OSLOADPARTITION=scsi()cdrom(6)fdisk();scsi(0)disk(0)rdisk(0)partition(1)", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "SYSTEMPARTITION=scsi()cdrom(6)fdisk();scsi(0)disk(0)rdisk(0)partition(1);scsi()cdrom(2)fdisk();scsi(0)disk(0)rdisk(0)partition(1);scsi(0)disk(0)rdisk(0)partition(2)", &addr);
 		}
 
 		/*  End the environment strings with an empty zero-terminated

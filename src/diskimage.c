@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.53 2004-11-30 21:47:44 debug Exp $
+ *  $Id: diskimage.c,v 1.54 2004-12-08 11:51:21 debug Exp $
  *
  *  Disk image support.
  *
@@ -1061,6 +1061,20 @@ printf(" XXX \n");
 		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 
 		/*  TODO  */
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case 0xbd:
+		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+
+		/*
+		 *  Used by Windows NT?
+		 *
+		 *  Not documented in http://www.danbbs.dk/~dino/SCSI/SCSI2-D.html.
+		 *
+		 *  TODO
+		 */
 
 		diskimage__return_default_status_and_message(xferp);
 		break;

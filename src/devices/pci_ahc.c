@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.6 2004-11-17 20:37:40 debug Exp $
+ *  $Id: pci_ahc.c,v 1.7 2004-12-08 11:51:20 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -111,6 +111,11 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+#if 0
+	case 0x84:
+		odata = 4 | 1;
+		break;
+#endif
 	default:
 		if (writeflag == MEM_WRITE)
 			debug("[ ahc: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);

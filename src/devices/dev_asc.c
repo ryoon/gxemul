@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.55 2004-11-30 21:47:41 debug Exp $
+ *  $Id: dev_asc.c,v 1.56 2004-12-08 11:51:20 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -63,7 +63,11 @@
 
 
 /*  #define ASC_DEBUG  */
+/*  #define debug fatal  */
 /*  #define ASC_FULL_REGISTER_ACCESS_DEBUG  */
+/*  static int quiet_mode = 0;  */
+
+extern int quiet_mode;
 
 
 #define	ASC_FIFO_LEN		16
@@ -77,8 +81,6 @@
 #define	PHASE_STATUS		3
 #define	PHASE_MSG_OUT		6
 #define	PHASE_MSG_IN		7
-
-extern int quiet_mode;
 
 
 /*  The controller's SCSI id:  */

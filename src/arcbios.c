@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.45 2004-12-05 18:07:50 debug Exp $
+ *  $Id: arcbios.c,v 1.46 2004-12-08 11:51:21 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -70,6 +70,14 @@ struct emul_arc_child64 {
 	uint64_t			ptr_parent;
 	struct arcbios_component64	component;
 };
+
+/*  Configuration data:  */
+#define	MAX_CONFIG_DATA		50
+static int n_configuration_data = 0;
+static uint64_t configuration_data_next_addr = ARC_CONFIG_DATA_ADDR;
+static uint64_t configuration_data_component[MAX_CONFIG_DATA];
+static int configuration_data_len[MAX_CONFIG_DATA];
+static uint64_t configuration_data_configdata[MAX_CONFIG_DATA];
 
 static int arc_64bit = 0;		/*  For some SGI modes  */
 static int arc_wordlen = sizeof(uint32_t);
@@ -459,7 +467,7 @@ printf("%i\n", arctype);
  *         stores the new child after the last stored child.
  *  TODO:  This stuff is really ugly.
  */
-uint64_t arcbios_addchild(struct cpu *cpu,
+static uint64_t arcbios_addchild(struct cpu *cpu,
 	struct arcbios_component *host_tmp_component,
 	char *identifier, uint32_t parent)
 {
@@ -590,7 +598,7 @@ uint64_t arcbios_addchild(struct cpu *cpu,
  *         stores the new child after the last stored child.
  *  TODO:  This stuff is really ugly.
  */
-uint64_t arcbios_addchild64(struct cpu *cpu,
+static uint64_t arcbios_addchild64(struct cpu *cpu,
 	struct arcbios_component64 *host_tmp_component,
 	char *identifier, uint64_t parent)
 {
@@ -746,11 +754,39 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t class, uint64_t type, uint64_t flags,
 	uint64_t version, uint64_t revision, uint64_t key,
-	uint64_t affinitymask, char *identifier, uint64_t parent)
+	uint64_t affinitymask, char *identifier, uint64_t parent,
+	void *config_data, size_t config_len)
 {
 	/*  This component is only for temporary use:  */
 	struct arcbios_component component;
 	struct arcbios_component64 component64;
+
+	if (config_data != NULL) {
+		unsigned char *p = config_data;
+		int i;
+
+		if (n_configuration_data >= MAX_CONFIG_DATA) {
+			printf("fatal error: you need to increase MAX_CONFIG_DATA\n");
+			exit(1);
+		}
+
+		for (i=0; i<config_len; i++) {
+			unsigned char ch = p[i];
+			memory_rw(cpu, cpu->mem, configuration_data_next_addr + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+		}
+
+		configuration_data_len[n_configuration_data] = config_len;
+		configuration_data_configdata[n_configuration_data] = configuration_data_next_addr;
+		configuration_data_next_addr += config_len;
+		configuration_data_component[n_configuration_data] = arcbios_next_component_address
+		    + (arc_64bit? 0x18 : 0x0c);
+
+		/*  printf("& ADDING %i: configdata=0x%016llx component=0x%016llx\n",
+		    n_configuration_data, (long long)configuration_data_configdata[n_configuration_data],
+		    (long long)configuration_data_component[n_configuration_data]);  */
+
+		n_configuration_data ++;
+	}
 
 	if (!arc_64bit) {
 		component.Class                 = class;
@@ -760,7 +796,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		component.Revision              = revision;
 		component.Key                   = key;
 		component.AffinityMask          = affinitymask;
-		component.ConfigurationDataSize = 0;
+		component.ConfigurationDataSize = config_len;
 		component.IdentifierLength      = 0;
 		component.Identifier            = 0;
 		if (identifier != NULL) {
@@ -775,7 +811,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		component64.Revision              = revision;
 		component64.Key                   = key;
 		component64.AffinityMask          = affinitymask;
-		component64.ConfigurationDataSize = 0;
+		component64.ConfigurationDataSize = config_len;
 		component64.IdentifierLength      = 0;
 		component64.Identifier            = 0;
 		if (identifier != NULL) {
@@ -824,6 +860,7 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x24	GetPeer(node)
  *	0x28	GetChild(node)
  *	0x2c	GetParent(node)
+ *	0x30	GetConfigurationData(config_data, node)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
  *	0x54	GetRelativeTime()
@@ -948,6 +985,23 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		debug("[ ARCBIOS GetParent(node 0x%016llx): 0x%016llx ]\n",
 		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_V0]);
+		break;
+	case 0x30:		/*  GetConfigurationData(void *configdata, void *node)  */
+		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016llx,0x%016llx) ]\n",
+		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1]);  */
+		cpu->gpr[GPR_V0] = ARCBIOS_EINVAL;
+		for (i=0; i<n_configuration_data; i++) {
+			/*  fatal("configuration_data_component[%i] = 0x%016llx\n", i, (long long)configuration_data_component[i]);  */
+			if (cpu->gpr[GPR_A1] == configuration_data_component[i]) {
+				cpu->gpr[GPR_V0] = 0;
+				for (j=0; j<configuration_data_len[i]; j++) {
+					unsigned char ch;
+					memory_rw(cpu, cpu->mem, configuration_data_configdata[i] + j, &ch, 1, MEM_READ, CACHE_NONE);
+					memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + j, &ch, 1, MEM_WRITE, CACHE_NONE);
+				}
+				break;
+			}
+		}
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");

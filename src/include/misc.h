@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.172 2004-12-06 21:47:46 debug Exp $
+ *  $Id: misc.h,v 1.173 2004-12-08 11:51:20 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -167,6 +167,7 @@ static void *no_map_anon_mmap(void *addr, size_t len, int prot, int flags,
 #define	SGI_SYSID_ADDR		0xffffffffbfca1800ULL
 #define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00ULL
 #define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80ULL
+#define	ARC_CONFIG_DATA_ADDR	0xffffffffbfca2000ULL
 #define	FIRST_ARC_COMPONENT	0xffffffffbfca8000ULL
 #define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000ULL
 #define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000ULL
@@ -552,7 +553,8 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
-	uint64_t revision, uint64_t key, uint64_t affinitymask, char *identifier, uint64_t parent);
+	uint64_t revision, uint64_t key, uint64_t affinitymask,
+	char *identifier, uint64_t parent, void *config_data, size_t config_len);
 void arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
 

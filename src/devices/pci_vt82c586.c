@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.2 2004-01-06 09:01:28 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.3 2004-01-07 00:53:44 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -68,7 +68,7 @@ uint32_t pci_vt82c586_isa_rr(int reg)
 /*
  *  pci_vt82c586_isa_init():
  */
-void pci_vt82c586_isa_init(struct memory *mem)
+void pci_vt82c586_isa_init(struct cpu *cpu, struct memory *mem)
 {
 }
 
@@ -95,7 +95,7 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 /*
  *  pci_vt82c586_ide_init():
  */
-void pci_vt82c586_ide_init(struct memory *mem)
+void pci_vt82c586_ide_init(struct cpu *cpu, struct memory *mem)
 {
 }
 

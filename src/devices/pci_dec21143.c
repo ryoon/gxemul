@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.2 2004-01-06 10:33:46 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.3 2004-01-07 00:53:44 debug Exp $
  *
  *  DEC 21143 PCI ethernet.
  *
@@ -67,7 +67,7 @@ uint32_t pci_dec21143_rr(int reg)
 /*
  *  pci_dec21143_init():
  */
-void pci_dec21143_init(struct memory *mem)
+void pci_dec21143_init(struct cpu *cpu, struct memory *mem)
 {
 }
 

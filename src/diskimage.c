@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.4 2003-11-24 04:28:06 debug Exp $
+ *  $Id: diskimage.c,v 1.5 2004-01-12 00:19:46 debug Exp $
  *
  *  Disk image support.
  *
@@ -67,6 +67,21 @@ int diskimage_exist(int disk_id)
 		return 0;
 
 	return 1;
+}
+
+
+/*
+ *  diskimage_getsize():
+ *
+ *  Returns -1 if the specified disk_id does not exists, otherwise
+ *  the size of the disk image is returned.
+ */
+int64_t diskimage_getsize(int disk_id)
+{
+	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
+		return -1;
+
+	return diskimages[disk_id]->total_size;
 }
 
 

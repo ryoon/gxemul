@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.29 2004-10-16 15:03:22 debug Exp $
+ *  $Id: bintrans.c,v 1.30 2004-10-16 16:13:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -295,21 +295,24 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int n_translated = 0;
 	int res, hi6, special6, rd;
 	uint64_t p;
+	size_t p_relative;
 	unsigned char instr[4];
+	unsigned char *host_mips_page;
 	unsigned char *chunk_addr, *chunk_addr2;
 	struct translation_entry *tep;
 	int entry_index;
-	int vaddr_is_in_kernel_space = 0;
 	size_t chunk_len;
 
+	/*
+	 *  Abort if the current "environment" isn't safe enough:
+	 */
 	if (cpu->delay_slot || cpu->nullify_next)
 		return -1;
 
-	if ((vaddr >> 32) == 0xffffffffULL) {
-		uint64_t v = vaddr & 0xffffffffULL;
-		if (v >= 0x80000000ULL && v < 0xc0000000ULL)
-			vaddr_is_in_kernel_space = 1;
-	}
+	host_mips_page = cpu->pc_bintrans_host_4kpage;
+	if (host_mips_page == NULL || (paddr & 3)!=0)
+		return -1;
+
 
 	/*
 	 *  If the chunk space is all used up, we need to start over from
@@ -338,18 +341,13 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	 */
 	chunk_addr += bintrans_chunk_header_len();
 	p = paddr;
+	p_relative = paddr & 0xfff;
 	try_to_translate = 1;
 
 	while (try_to_translate) {
-		/*  Read an instruction word from memory:  */
-		/*  (TODO: read directly from host memory. hm, maybe
-		    the optimization below which allows us to cross
-		    page boundaries for kernel code must be taken
-		    away...)  */
-		res = memory_rw(cpu, cpu->mem, p, &instr[0],
-		    sizeof(instr), MEM_READ, PHYSICAL | NO_EXCEPTIONS);
-		if (!res)
-			break;
+		/*  Read an instruction word from host memory:  */
+		*((uint32_t *)&instr[0]) =
+		    *((uint32_t *)(host_mips_page + p_relative));
 
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			int tmp;
@@ -386,14 +384,12 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			pc_increment -= sizeof(instr);
 
 		p += sizeof(instr);
+		p_relative += sizeof(instr);
 
-		/*  If we are running in user space, and we reached a
-		    different physical page, then the next page is not
-		    neccessarily guaranteed to be the next virtual, so
-		    then we just stop translating.  */
-		if (!vaddr_is_in_kernel_space)
-			if ((p & 0xfff) == 0)
-				try_to_translate = 0;
+		/*  If we have reached a different (MIPS) page, then
+		    stop translating.  */
+		if ((p & 0xfff) == 0)
+			try_to_translate = 0;
 	}
 
 	if (n_translated == 0)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.17 2004-07-01 11:46:03 debug Exp $
+ *  $Id: emul.c,v 1.18 2004-07-01 12:01:42 debug Exp $
  *
  *  Emulation startup.
  */
@@ -136,38 +136,37 @@ void load_bootblock(void)
 {
 	int boot_disk_id = diskimage_bootdev();
 	int res;
+	unsigned char minibuf[4];
 	unsigned char bootblock_buf[8192];
+	uint64_t bootblock_offset;
 
 	switch (emulation_type) {
 	case EMULTYPE_DEC:
 		/*
-		 *  The FFS bootblock is located at offset 0x200, and is 8KB
-		 *  large.  Ultrix seems to expect two
-		 *  copies, one at 0x80600000 and one at 0x80700000.
-		 *  We start running at 0x80700000 though, because
-		 *  that works with both NetBSD and Ultrix.
+		 *  The bootblock for DECstations is 8KB large.  We first
+		 *  read the 32-bit word at offset 0x1c. This word tells
+		 *  us the starting sector number of the bootblock.
 		 *
-		 *  NetBSD uses FFS for normal SCSI disks, but on the install
-		 *  CDROM for NetBSD/pmax 1.6.2, there is no bootblock at
-		 *  offset 0x200. (The CDROM uses a CD9660 file system.)
-		 *  Instead, the bootblock is found at offset 0x4a10000.
+		 *  (The bootblock is usually at offset 0x200, but for
+		 *  example the NetBSD/pmax 1.6.2 CDROM uses offset
+		 *  0x4a10000, so it is probably best to trust the offset
+		 *  given at offset 0x1c.)
 		 *
-		 *  TODO:  Find out how to find the bootblock for CD9660
-		 *         in the general case!
+		 *  Ultrix seems to expect two copies, one at 0x80600000 and
+		 *  one at 0x80700000. We start running at 0x80700000 though,
+		 *  because that works with both NetBSD and Ultrix.
 		 */
-		res = diskimage_access(boot_disk_id, 0, 0x200,
+		res = diskimage_access(boot_disk_id, 0, 0x1c,
+		    minibuf, sizeof(minibuf));
+
+		bootblock_offset = (minibuf[0] + (minibuf[1] << 8)
+		  + (minibuf[2] << 16) + (minibuf[3] << 24)) * 512;
+
+		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
 		    bootblock_buf, sizeof(bootblock_buf));
 
-		/*  Hack for NetBSD/pmax 1.6.2 install CDROM:  */
-		if (bootblock_buf[0] == 0 && bootblock_buf[1] == 0) {
-			res = diskimage_access(boot_disk_id, 0, 0x4a10000,
-			    bootblock_buf, sizeof(bootblock_buf));
-		}
-
-		/*  Ultrix boots at 0x80600000:  */
+		/*  Ultrix boots at 0x80600000, NetBSD at 0x80700000:  */
 		store_buf(0x80600000, bootblock_buf, sizeof(bootblock_buf));
-
-		/*  NetBSD boots at 0x80700000:  */
 		store_buf(0x80700000, bootblock_buf, sizeof(bootblock_buf));
 
 		cpus[bootstrap_cpu]->pc = 0x80700000;

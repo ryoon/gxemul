@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.580 2005-02-12 09:19:06 debug Exp $
+$Id: HISTORY,v 1.581 2005-02-12 10:14:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1660,4 +1660,4 @@ HISTORY of mips64emul
 		Major update to the manpage.
 		Removing the -G command line option (SGI modes).
 20050212	Updating the documentation (experimental devices: dev_cons
-		and dev_mp).
+		and dev_mp, better hello.c, and some other things).

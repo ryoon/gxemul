@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.60 2004-06-12 11:47:37 debug Exp $
+ *  $Id: devices.h,v 1.61 2004-06-12 12:14:54 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -444,6 +444,10 @@ void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 #define	DEV_TURBOCHANNEL_LEN		0x0470
 int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq);
+
+/*  dev_unreadable.c:  */
+int dev_unreadable_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
 
 /*  dev_vdac.c:  */
 #define	DEV_VDAC_LENGTH			0x20

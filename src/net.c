@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.22 2004-07-20 13:57:01 debug Exp $
+ *  $Id: net.c,v 1.23 2004-07-21 02:49:16 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -73,7 +73,7 @@
 #include "net.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 
 struct ethernet_packet_link {
@@ -589,9 +589,11 @@ fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 	 *  TODO:  Send back RST?
 	 */
 	if (con_id < 0 && !syn) {
-		fatal("[ net: TCP: dropping packet from unknown connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i ]\n",
+		fatal("[ net: TCP: dropping packet from unknown connection, %i.%i.%i.%i:%i -> %i.%i.%i.%i:%i %s%s%s%s%s]\n",
 		    packet[26], packet[27], packet[28], packet[29], srcport,
-		    packet[30], packet[31], packet[32], packet[33], dstport);
+		    packet[30], packet[31], packet[32], packet[33], dstport,
+		    fin? "FIN ": "", syn? "SYN ": "", ack? "ACK ": "",
+		    psh? "PSH ": "", rst? "RST ": "");
 		return;
 	}
 
@@ -697,6 +699,11 @@ fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 	if (ack && tcp_connections[con_id].state
 	    == TCP_OUTSIDE_DISCONNECTED2) {
 		debug("[ 'ack': guestOS's final termination of TCP connection %i ]\n", con_id);
+
+		/*  Send an RST?  (TODO, this is wrong...)  */
+		net_ip_tcp_connectionreply(extra, con_id, 0, NULL, 0, 1);
+
+		/*  ... and forget about this connection:  */
 		close(tcp_connections[con_id].socket);
 		tcp_connections[con_id].in_use = 0;
 		return;
@@ -708,12 +715,8 @@ fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 
 		/*  Send an ACK:  */
 		tcp_connections[con_id].state = TCP_OUTSIDE_CONNECTED;
-/*  TODO: This one is not coming through?  */
 		net_ip_tcp_connectionreply(extra, con_id, 0, NULL, 0, 0);
-		tcp_connections[con_id].state = TCP_OUTSIDE_DISCONNECTED;
-
-		close(tcp_connections[con_id].socket);
-		tcp_connections[con_id].in_use = 0;
+		tcp_connections[con_id].state = TCP_OUTSIDE_DISCONNECTED2;
 		return;
 	}
 
@@ -728,6 +731,7 @@ fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 
 	if (ack)
 		tcp_connections[con_id].inside_acknr = acknr;
+
 	tcp_connections[con_id].inside_seqnr = seqnr;
 
 	/*  TODO: This is hardcoded for a specific NetBSD packet:  */
@@ -757,15 +761,15 @@ fatal("OTHER CHECKSUM=%02x%02x ", packet[50], packet[51]);
 	 *  transmitted to the outside world.
 	 */
 
-	debug("[ %i bytes of tcp data to be sent, beginning at seqnr %u, ",
-	    len - data_offset, seqnr);
-
 	send_ofs = data_offset;
 	send_ofs += ((int32_t)tcp_connections[con_id].outside_acknr
 	    - (int32_t)seqnr);
-
+#if 0
+	debug("[ %i bytes of tcp data to be sent, beginning at seqnr %u, ",
+	    len - data_offset, seqnr);
 	debug("outside is at acknr %u ==> %i actual bytes to be sent ]\n",
 	    tcp_connections[con_id].outside_acknr, len - send_ofs);
+#endif
 
 	if (len - send_ofs > 0) {
 		/*  Is the socket available for output?  */
@@ -1242,7 +1246,7 @@ int net_ethernet_rx_avail(void *extra)
 			continue;
 		}
 
-		if (tcp_connections[con_id].state ==
+		if (tcp_connections[con_id].state >=
 		    TCP_OUTSIDE_DISCONNECTED)
 			continue;
 
@@ -1530,7 +1534,7 @@ void net_init(void)
 				 *  "x.y.z.w" (non-digit)
 				 */
 
-				printf("found nameserver at offset %i\n", i);
+				/*  debug("found nameserver at offset %i\n", i);  */
 				i += 10;
 				while (i<len && isspace(buf[i]))
 					i++;

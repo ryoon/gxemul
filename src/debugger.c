@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.49 2005-01-21 19:58:36 debug Exp $
+ *  $Id: debugger.c,v 1.50 2005-01-22 07:53:51 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -60,6 +60,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "net.h"
 
 #ifdef HACK_STRTOLL
 #define strtoll strtol
@@ -757,6 +758,9 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 			debug("emulation %i:\n", i);
 			debug_indentation(iadd);
 		}
+
+		if (e->net != NULL)
+			net_dumpinfo(e->net);
 
 		nm = e->n_machines;
 		for (j=0; j<nm; j++) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.7 2005-01-22 07:19:02 debug Exp $
+ *  $Id: net.h,v 1.8 2005-01-22 07:53:50 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -127,6 +127,7 @@ int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);
 void net_ethernet_tx(struct net *net, void *extra,
 	unsigned char *packet, int len);
+void net_dumpinfo(struct net *net);
 struct net *net_init(struct emul *emul, int init_flags,
 	char *ipv4addr, int netipv4len);
 

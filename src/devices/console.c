@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.23 2005-01-22 07:43:07 debug Exp $
+ *  $Id: console.c,v 1.24 2005-01-22 07:53:49 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -42,6 +42,7 @@
 
 #include "console.h"
 #include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.165 2004-10-16 14:22:58 debug Exp $
+ *  $Id: cpu.c,v 1.166 2004-10-17 02:02:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1415,7 +1415,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				    the code chunk and run it:  */
 				res = bintrans_attempt_translate(cpu,
 				    cpu->pc_bintrans_paddr,
-				    cached_pc);
+				    cached_pc, 1, MAX_TRANSLATE_DEPTH);
 				if (res != -1) {
 					/*  printf("BINTRANS translation success!"
 					    " pc = %016llx\n", (long long)cached_pc);  */

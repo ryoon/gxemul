@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.33 2004-10-17 01:48:10 debug Exp $
+ *  $Id: bintrans.c,v 1.34 2004-10-17 02:02:24 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -129,7 +129,7 @@
 int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	uint64_t vaddr) { return 0; }
+	uint64_t vaddr, int run_flag, int translate_depth) { return 0; }
 void bintrans_init(void)
 {
 	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
@@ -285,15 +285,19 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 /*
  *  bintrans_attempt_translate():
  *
- *  Attempt to translate a chunk of code, starting at 'paddr', _AND_ try to
- *  run it.
+ *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
+ *  and "run_flag" is non-zero, then the code chunk is run.
  *
  *  Returns -1 if no code translation occured, otherwise the generated code
- *  chunk is added to the translation_entry_array, and is executed. The
- *  return value is then the number of instructions executed.
+ *  chunk is added to the translation_entry_array. The return value is then
+ *  the number of instructions executed.
+ *
+ *  If run_flag is zero, then translation occurs, potentially using recursion
+ *  (at most translate_depth levels), and a return value of -1 (for failure)
+ *  or 0 (success) is returned, but no translated code is executed.
  */
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	uint64_t vaddr)
+	uint64_t vaddr, int run_flag, int translate_depth)
 {
 	int (*f)(struct cpu *);
 	int try_to_translate;
@@ -312,6 +316,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	 *  Abort if the current "environment" isn't safe enough:
 	 */
 	if (cpu->delay_slot || cpu->nullify_next)
+		return -1;
+
+	if (translate_depth == 0)
 		return -1;
 
 	host_mips_page = cpu->pc_bintrans_host_4kpage;

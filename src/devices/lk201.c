@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.9 2004-08-26 13:27:09 debug Exp $
+ *  $Id: lk201.c,v 1.10 2004-10-13 10:48:29 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -279,7 +279,30 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 			/*  Simply print the character to stdout:  */
 			console_putchar(idata);
 		} else {
-			debug("[ lk201: keyboard control: 0x%x ]\n", idata);
+			switch (idata) {
+			case 0xab:	/*  Get Keyboard ID:  */
+				/*  TODO: not 0x11,0x22  */
+				d->add_to_rx_queue(d->add_data,
+				    0x11, DCKBD_PORT);
+				d->add_to_rx_queue(d->add_data,
+				    0x22, DCKBD_PORT);
+				break;
+			case 0xfd:	/*  Keyboard self-test:  */
+				/*  Suitable return values according to
+				    Mach/PMAX source code:  */
+				d->add_to_rx_queue(d->add_data,
+				    0x01, DCKBD_PORT);
+				d->add_to_rx_queue(d->add_data,
+				    0x00, DCKBD_PORT);
+				d->add_to_rx_queue(d->add_data,
+				    0x00, DCKBD_PORT);
+				d->add_to_rx_queue(d->add_data,
+				    0x00, DCKBD_PORT);
+				break;
+			default:
+				fatal("[ lk201: keyboard control: 0x%x ]\n",
+				    idata);
+			}
 		}
 		break;
 	case DCMOUSE_PORT:		/*  port 1  */

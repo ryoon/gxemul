@@ -20,13 +20,17 @@ Serious bugs:
       that gives weight to this theory is that the serial driver in Linux is
       still being developed.)  But this is just a guess.
 
-  x)  Newer NetBSD 2.0_BETA snapshots from releng.netbsd.org sometimes crash.
+  x)  Newer NetBSD/pmax 2.0_BETA snapshots from releng.netbsd.org, and the
+      official 2.0 release, sometimes crash.
           Host\Snapshot:       20040606 20040707
             Linux/i386:        ok       crash
             FreeBSD/Alpha:     ok       ok
             OpenBSD/sparc64:   ok       ok
       crash = core dump when doing malloc(), so maybe some memory control
       blocks are overwritten by some code.
+      This only seems to affect Linux. By doing a 'setenv MALLOC_CHECK_ 1'
+      before running the emulator, it seems that the bug isn't triggered.
+
 
 Less serious bugs / issues:
 

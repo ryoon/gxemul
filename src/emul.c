@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.38 2004-08-18 09:04:13 debug Exp $
+ *  $Id: emul.c,v 1.39 2004-08-18 09:24:13 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -69,6 +69,7 @@ extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
+extern int show_trace_tree;
 extern int single_step;
 extern int max_random_cycles_per_chunk;
 extern int ncpus;
@@ -176,6 +177,48 @@ static int last_cmd_len = 0;
 
 
 /*
+ *  debugger_dump():
+ *
+ *  Dump emulated memory in hex and ASCII.
+ */
+void debugger_dump(uint64_t addr)
+{
+	struct cpu *c;
+	struct memory *m;
+	int x;
+	int lines = 8;
+
+	if (cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = cpus[bootstrap_cpu];
+	if (c == NULL) {
+		printf("cpus[bootstrap_cpu] = NULL\n");
+		return;
+	}
+	m = cpus[bootstrap_cpu]->mem;
+
+	while (lines -- > 0) {
+		unsigned char buf[16];
+		memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		    CACHE_NONE | NO_EXCEPTIONS);
+
+		printf("0x%016llx  ", (long long)addr);
+		for (x=0; x<16; x++)
+			printf("%02x%s", buf[x],
+			    (x&3)==3? " " : "");
+		printf(" ");
+		for (x=0; x<16; x++)
+			printf("%c", (buf[x]>=' ' && buf[x]<127)?
+			    buf[x] : '.');
+		printf("\n");
+		addr += 16;
+	}
+}
+
+
+/*
  *  debugger():
  *
  *  An interractive debugger; reads a command from the terminal, and
@@ -189,6 +232,7 @@ void debugger(void)
 	int ch, i;
 	char cmd[MAX_CMD_LEN];
 	int cmd_len;
+	static uint64_t last_dump_addr = 0xffffffff80000000;
 
 	cmd[0] = '\0'; cmd_len = 0;
 
@@ -218,7 +262,7 @@ void debugger(void)
 		}
 
 		/*  Just pressing Enter will repeat the last cmd:  */
-		if (cmd_len == 0) {
+		if (cmd_len == 0 && last_cmd_len != 0) {
 			cmd_len = last_cmd_len;
 			memcpy(cmd, last_cmd, cmd_len);
 		}
@@ -239,19 +283,35 @@ void debugger(void)
 
 		if (strcasecmp(cmd, "h") == 0 || strcasecmp(cmd, "?") == 0 ||
 		    strcasecmp(cmd, "help") == 0) {
-			printf("  continue    continue emulation\n");
-			printf("  help        prints this help message\n");
-			printf("  quit        quits mips64emul\n");
-			printf("  registers   dump all CPUs' register values\n");
-			printf("  step        single step\n");
-			printf("  version     print mips64emul version\n");
-		} else if (strcasecmp(cmd, "quit") == 0) {
+			printf("  continue       continue emulation\n");
+			printf("  dump [addr]    dumps emulated memory contents\n");
+			printf("  help           prints this help message\n");
+			printf("  quit           quits mips64emul\n");
+			printf("  registers      dump all CPUs' register values\n");
+			printf("  step           single step\n");
+			printf("  version        print mips64emul version\n");
+		} else if (strcasecmp(cmd, "quit") == 0 ||
+		    strcasecmp(cmd, "q") == 0) {
 			for (i=0; i<ncpus; i++)
 				cpus[i]->running = 0;
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "c") == 0 ||
 		    strcasecmp(cmd, "continue") == 0) {
 			exit_debugger = 1;
+		} else if (strcasecmp(cmd, "d") == 0 ||
+		    strcasecmp(cmd, "dump") == 0) {
+			debugger_dump(last_dump_addr);
+			last_dump_addr += 8*16;
+		} else if (strncasecmp(cmd, "d ", 2) == 0 ||
+		    strncasecmp(cmd, "dump ", 5) == 0) {
+			last_dump_addr = strtoll(cmd[1]==' '?
+			    cmd + 2 : cmd + 5, NULL, 16);
+			debugger_dump(last_dump_addr);
+			last_dump_addr += 8*16;
+			/*  Set last cmd to just 'd', so that just pressing
+			    enter will cause dump to continue from the last
+			    address:  */
+			last_cmd_len = 1;
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
 			return;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.159 2005-02-13 12:04:42 debug Exp $
+ *  $Id: memory.c,v 1.160 2005-02-26 11:40:30 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -367,10 +367,25 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		size_t,int,void *),
 	void *extra, int flags, unsigned char *bintrans_data)
 {
+	int i;
+
 	if (mem->n_mmapped_devices >= MAX_DEVICES) {
 		fprintf(stderr, "memory_device_register(): too many "
 		    "devices registered, cannot register '%s'\n", device_name);
 		exit(1);
+	}
+
+	/*  Check for collisions:  */
+	for (i=0; i<mem->n_mmapped_devices; i++) {
+		/*  If we are not colliding with device i, then continue:  */
+		if (baseaddr + len <= mem->dev_baseaddr[i])
+			continue;
+		if (baseaddr >= mem->dev_baseaddr[i] + mem->dev_length[i])
+			continue;
+
+		fatal("\nWARNING! \"%s\" collides with device %i (\"%s\")!\n"
+		    "         Run-time behaviour will be undefined!\n\n",
+		    device_name, i, mem->dev_name[i]);
 	}
 
 	/*  (40 bits of physical address is displayed)  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.8 2005-02-26 10:51:04 debug Exp $
+ *  $Id: device.c,v 1.9 2005-02-26 11:40:29 debug Exp $
  *
  *  Device registry framework.
  */
@@ -128,7 +128,7 @@ struct device_entry *device_lookup(char *name)
 		return NULL;
 
 	i = n_device_entries / 2;
-	step = i/2;
+	step = (i+1)/2;
 
 	for (;;) {
 		if (i < 0)
@@ -203,81 +203,94 @@ int device_unregister(char *name)
 
 
 /*
- *  device_add__internal():
- *
- *  Add a device to a machine.  (This is the real add function, used by
- *  all the different functions below.)
- */
-static void *device_add__internal(struct machine *machine, char *name,
-	uint64_t addr, uint64_t len, int irq_nr, int addr_mult)
-{
-	struct device_entry *p = device_lookup(name);
-	struct devinit devinit;
-
-	if (p == NULL) {
-		fatal("no such device (\"%s\")\n", name);
-		exit(1);
-	}
-
-	memset(&devinit, 0, sizeof(struct devinit));
-	devinit.machine = machine;
-	devinit.name = name;
-	devinit.addr = addr;
-	devinit.len = len;
-	devinit.addr_mult = addr_mult;
-	devinit.irq_nr = irq_nr;
-
-	if (!p->initf(&devinit)) {
-		fatal("error adding device \"%s\"\n", name);
-		exit(1);
-	}
-
-	return devinit.return_ptr;
-}
-
-
-/*
  *  device_add():
  *
  *  Add a device to a machine.
- */
-void device_add(struct machine *machine, char *name)
-{
-	device_add__internal(machine, name, 0,0,0, 1);
-}
-
-
-/*
- *  device_add_a():
  *
- *  Add a device to a machine, with address info.
+ *	"kn210 addr=0x12340000"   adds a kn210 device at a specific address.
  */
-void device_add_a(struct machine *machine, char *name, uint64_t a)
+void *device_add(struct machine *machine, char *name_and_params)
 {
-	device_add__internal(machine, name, a, 0, 0, 1);
-}
+	struct device_entry *p;
+	struct devinit devinit;
+	char *s2, *s3;
+	size_t len;
 
+	memset(&devinit, 0, sizeof(struct devinit));
+	devinit.machine = machine;
 
-/*
- *  device_add_ai():
- *
- *  Add a device to a machine, with address and interrupt info.
- */
-void device_add_ai(struct machine *machine, char *name, uint64_t a, int i)
-{
-	device_add__internal(machine, name, a, 0, i, 1);
-}
+	/*  Default values:  */
+	devinit.addr_mult = 1;
 
+	/*  Get the device name first:  */
+	s2 = name_and_params;
+	while (s2[0] != ',' && s2[0] != ' ' && s2[0] != '\0')
+		s2 ++;
 
-/*
- *  device_add_al():
- *
- *  Add a device to a machine, with address and length info.
- */
-void device_add_al(struct machine *machine, char *name, uint64_t a,
-	uint64_t len)
-{
-	device_add__internal(machine, name, a, len, 0, 1);
+	len = (size_t)s2 - (size_t)name_and_params;
+	devinit.name = malloc(len + 1);
+	if (devinit.name == NULL) {
+		fprintf(stderr, "device_add(): out of memory\n");
+		exit(1);
+	}
+	memcpy(devinit.name, name_and_params, len);
+	devinit.name[len] = '\0';
+
+	p = device_lookup(devinit.name);
+	if (p == NULL) {
+		fatal("no such device (\"%s\")\n", devinit.name);
+		exit(1);
+	}
+
+	/*  Get params from name_and_params:  */
+	while (*s2 != '\0') {
+		/*  Skip spaces, commas, and semicolons:  */
+		while (*s2 == ' ' || *s2 == ',' || *s2 == ';')
+			s2 ++;
+
+		if (*s2 == '\0')
+			break;
+
+		/*  s2 now points to the next param. eg "addr=1234"  */
+
+		/*  Get a word (until there is a '=' sign):  */
+		s3 = s2;
+		while (*s3 != '=' && *s3 != '\0')
+			s3 ++;
+		if (s3 == s2) {
+			fatal("weird param: %s\n", s2);
+			exit(1);
+		}
+		s3 ++;
+		/*  s3 now points to the parameter value ("1234")  */
+
+		if (strncmp(s2, "addr=", 5) == 0) {
+			devinit.addr = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "len=", 4) == 0) {
+			devinit.len = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "addr_mult=", 10) == 0) {
+			devinit.addr_mult = mystrtoull(s3, NULL, 0);
+		} else if (strncmp(s2, "irq=", 4) == 0) {
+			devinit.irq_nr = mystrtoull(s3, NULL, 0);
+		} else {
+			fatal("unknown param: %s\n", s2);
+			exit(1);
+		}
+
+		/*  skip to the next param:  */
+		s2 = s3;
+		while (*s2 != '\0' && *s2 != ' ' && *s2 != ',' && *s2 != ';')
+			s2 ++;
+	}
+
+	if (!p->initf(&devinit)) {
+		fatal("error adding device (\"%s\")\n", name_and_params);
+		exit(1);
+	}
+
+	free(devinit.name);
+
+	return devinit.return_ptr;
 }
 
 

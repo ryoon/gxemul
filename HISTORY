@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.610 2005-02-26 10:51:00 debug Exp $
+$Id: HISTORY,v 1.611 2005-02-26 11:40:27 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1701,3 +1701,4 @@ HISTORY of mips64emul
 20050225	Continuing on the device stuff.
 20050226	Continuing more on the device rewrite.
 		Separating the "testmips" machine into testmips and baremips.
+		Redesigning the device registry again :-)

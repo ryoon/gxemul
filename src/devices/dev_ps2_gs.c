@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.15 2005-02-26 10:51:01 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.16 2005-02-26 11:40:28 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -145,6 +145,7 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 int devinit_ps2_gs(struct devinit *devinit)
 {
 	struct gs_data *d;
+	char str[100];
 
 	d = malloc(sizeof(struct gs_data));
 	if (d == NULL) {
@@ -153,7 +154,9 @@ int devinit_ps2_gs(struct devinit *devinit)
 	}
 	memset(d, 0, sizeof(struct gs_data));
 
-	device_add_a(devinit->machine, "ps2_gif", DEV_PS2_GIF_FAKE_BASE);
+	snprintf(str, sizeof(str) - 1, "ps2_gif addr=0x%llx",
+	    (long long)DEV_PS2_GIF_FAKE_BASE);
+	device_add(devinit->machine, str);
 
 	memory_device_register(devinit->machine->memory, devinit->name,
 	    devinit->addr, DEV_PS2_GS_LENGTH, dev_ps2_gs_access, d,

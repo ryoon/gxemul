@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.5 2005-02-26 10:51:03 debug Exp $
+ *  $Id: device.h,v 1.6 2005-02-26 11:40:29 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
@@ -61,11 +61,7 @@ void autodev_init(void);
 int device_register(char *name, int (*initf)(struct devinit *));
 struct device_entry *device_lookup(char *name);
 int device_unregister(char *name);
-void device_add(struct machine *machine, char *name);
-void device_add_a(struct machine *machine, char *name, uint64_t a);
-void device_add_ai(struct machine *machine, char *name, uint64_t a, int i);
-void device_add_al(struct machine *machine, char *name, uint64_t a,
-	uint64_t len);
+void *device_add(struct machine *machine, char *name_and_params);
 void device_dumplist(void);
 void device_init(void);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.366 2005-02-26 10:51:04 debug Exp $
+ *  $Id: machine.c,v 1.367 2005-02-26 11:40:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1139,6 +1139,7 @@ void machine_setup(struct machine *machine)
 	uint64_t addr, addr2;
 	int i, j;
 	struct memory *mem;
+	char tmpstr[1000];
 
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
@@ -1241,7 +1242,9 @@ void machine_setup(struct machine *machine)
 		machine->main_console_handle = dev_cons_init(
 		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
 
-		device_add_a(machine, "mp", DEV_MP_ADDRESS);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
@@ -1579,7 +1582,7 @@ void machine_setup(struct machine *machine)
 			 */
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
-			device_add_a(machine, "kn210", 0x10080000);
+			device_add(machine, "kn210 addr=0x10080000");
 			dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
@@ -2117,7 +2120,7 @@ void machine_setup(struct machine *machine)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		device_add_a(machine, "ps2_gs", 0x12000000);
+		device_add(machine, "ps2_gs addr=0x12000000");
 		machine->ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
@@ -2231,10 +2234,10 @@ void machine_setup(struct machine *machine)
 				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "serial zs");	/*  serial? netbsd?  */
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
-				device_add_a(machine, "sgi_ip19", 0x18000000);
+				device_add(machine, "sgi_ip19 addr=0x18000000");
 
 				/*  Irix' <everest_du_init+0x130> reads this device:  */
-				device_add_al(machine, "random", 0x10006000, 16);
+				device_add(machine, "random addr=0x10006000 len=16");
 
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
 				store_32bit_word(cpu, 0xa0000000 + 0x3000,
@@ -2281,13 +2284,13 @@ void machine_setup(struct machine *machine)
 
 				/*  Return memory read errors so that hpc1
 				    and hpc2 are not detected:  */
-				device_add_al(machine, "unreadable", 0x1fb00000, 0x10000);
-				device_add_al(machine, "unreadable", 0x1f980000, 0x10000);
+				device_add(machine, "unreadable addr=0x1fb00000 len=0x10000");
+				device_add(machine, "unreadable addr=0x1f980000 len=0x10000");
 
 				/*  Return nothing for gio slots 0, 1, and 2: */
-				device_add_al(machine, "unreadable", 0x1f400000, 0x1000);	/*  gio0 slot 0  */
-				device_add_al(machine, "unreadable", 0x1f600000, 0x1000);	/*  gio0 slot 1  */
-				device_add_al(machine, "unreadable", 0x1f000000, 0x1000);	/*  gio0 slot 2  */
+				device_add(machine, "unreadable addr=0x1f400000 len=0x1000");	/*  gio0 slot 0  */
+				device_add(machine, "unreadable addr=0x1f600000 len=0x1000");	/*  gio0 slot 1  */
+				device_add(machine, "unreadable addr=0x1f000000 len=0x1000");	/*  gio0 slot 2  */
 
 				break;
 			case 21:
@@ -2295,7 +2298,7 @@ void machine_setup(struct machine *machine)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 
-				device_add_al(machine, "random", 0x418000200ULL, 0x20000);
+				device_add(machine, "random addr=0x418000200, len=0x20000");
 
 				break;
 			case 22:
@@ -2365,13 +2368,13 @@ Why is this here? TODO
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
-				device_add_al(machine, "unreadable", 0x1fb00000, 0x10000);
-				device_add_al(machine, "unreadable", 0x1f980000, 0x10000);
+				device_add(machine, "unreadable addr=0x1fb00000, len=0x10000");
+				device_add(machine, "unreadable addr=0x1f980000, len=0x10000");
 
 				/*  Similarly for gio slots 0, 1, and 2:  */
-				device_add_al(machine, "unreadable", 0x1f400000, 0x1000);	/*  gio0 slot 0  */
-				device_add_al(machine, "unreadable", 0x1f600000, 0x1000);	/*  gio0 slot 1  */
-				device_add_al(machine, "unreadable", 0x1f000000, 0x1000);	/*  gio0 slot 2  */
+				device_add(machine, "unreadable addr=0x1f400000, len=0x1000");	/*  gio0 slot 0  */
+				device_add(machine, "unreadable addr=0x1f600000, len=0x1000");	/*  gio0 slot 1  */
+				device_add(machine, "unreadable addr=0x1f000000, len=0x1000");	/*  gio0 slot 2  */
 
 				break;
 			case 25:
@@ -2384,7 +2387,7 @@ Why is this here? TODO
 				    0x400086000ULL, 0, machine->use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
-				device_add_a(machine, "sgi_ip19", 0x18000000);
+				device_add(machine, "sgi_ip19 addr=0x18000000");
 
 				/*
 				 *  Memory size, not 4096 byte pages, but 256
@@ -2419,7 +2422,7 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (Impact Indigo2 ?)");
 
-				device_add_al(machine, "random", 0x1fbe0000ULL, 1);
+				device_add(machine, "random addr=0x1fbe0000, len=1");
 
 				/*  Something at paddr 0x1880fb0000.  */
 
@@ -2631,7 +2634,7 @@ Why is this here? TODO
 
 				/*  lpt at 0x80008000  */
 
-				device_add_ai(machine, "fdc", 0x8000c000ULL, 0);
+				device_add(machine, "fdc addr=0x8000c000, irq=0");
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_NEC_RD94:
@@ -2759,7 +2762,7 @@ Why is this here? TODO
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
 				    dev_jazz_dma_controller, machine->jazz_data);
 
-				device_add_ai(machine, "fdc", 0x80003000ULL, 0);
+				device_add(machine, "fdc addr=0x80003000, irq=0");
 
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
@@ -3808,7 +3811,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
 		 */
 
-		device_add_al(machine, "random", 0x1017fffc, 4);
+		device_add(machine, "random addr=0x1017fffc len=4");
 
 		/*
 		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
@@ -3939,7 +3942,9 @@ for (i=0; i<32; i++)
 		machine->main_console_handle = dev_cons_init(
 		    machine, mem, DEV_CONS_ADDRESS, "console", 0);
 
-		device_add_a(machine, "mp", DEV_MP_ADDRESS);
+		snprintf(tmpstr, sizeof(tmpstr) - 1, "mp addr=0x%llx",
+		    (long long)DEV_MP_ADDRESS);
+		device_add(machine, tmpstr);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);

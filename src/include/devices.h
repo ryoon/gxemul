@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.58 2004-06-11 11:25:56 debug Exp $
+ *  $Id: devices.h,v 1.59 2004-06-11 15:22:42 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -130,6 +130,12 @@ struct dec5800_data {
 };
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_decbi.c:  */
+/*  16 slots, 0x2000 bytes each  */
+#define	DEV_DECBI_LENGTH			0x20000
+int dev_decbi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_decbi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_deccca.c:  */
 #define	DEV_DECCCA_LENGTH			0x10000	/*  ?  */

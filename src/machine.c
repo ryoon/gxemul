@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.88 2004-06-11 11:25:57 debug Exp $
+ *  $Id: machine.c,v 1.89 2004-06-11 15:22:53 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -835,6 +835,7 @@ void machine_init(struct memory *mem)
 			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
 			dev_deccca_init(cpus[bootstrap_cpu], mem, DEC_DECCCA_BASEADDR);
 			dev_decxmi_init(cpus[bootstrap_cpu], mem, 0x11800000);
+			dev_decbi_init(cpus[bootstrap_cpu], mem, 0x10000000);
 
 			break;
 

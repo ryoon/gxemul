@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.43 2004-10-21 04:44:06 debug Exp $
+ *  $Id: dev_asc.c,v 1.44 2004-10-21 04:54:33 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -62,8 +62,8 @@
 #include "ncr53c9xreg.h"
 
 
-#define ASC_DEBUG
-#define ASC_FULL_REGISTER_ACCESS_DEBUG
+/*  #define ASC_DEBUG  */
+/*  #define ASC_FULL_REGISTER_ACCESS_DEBUG  */
 
 
 #define	ASC_FIFO_LEN		16

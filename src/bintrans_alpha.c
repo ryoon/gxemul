@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.97 2005-01-05 01:09:35 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.98 2005-01-05 04:30:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -2174,6 +2174,219 @@ ok_unaligned_load1 = a;
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x04 | ((alpha_rt & 7) << 5);
 		    *a++ = 0x38 | ((alpha_rt >> 3) & 3);
 		break;
+
+	case HI6_SWL:
+		/*  a1 = 0..3 (or 0..7 for 64-bit stores):  */
+		alpha_rs = map_MIPS_to_Alpha[rs];
+		if (alpha_rs < 0) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+			alpha_rs = ALPHA_T0;
+		}
+		*a++ = imm; *a++ = (imm >> 8); *a++ = 0x20 + alpha_rs; *a++ = 0x22;
+		/*  02 30 20 46     and     a1,alignment,t1  */
+		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
+
+		/*  ldl t0,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;
+
+		if (bigendian) {
+			/*  TODO  */
+			bintrans_write_chunkreturn_fail(&a);
+		}
+
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T2);
+
+		/*
+		 *  swl:	memory = 0x12 0x34 0x56 0x78
+		 *		register = 0x89abcdef
+		 *	offset (a1):	memory becomes:
+		 *	0		0x89 0x.. 0x.. 0x..
+		 *	1		0xab 0x89 0x.. 0x..
+		 *	2		0xcd 0xab 0x89 0x..
+		 *	3		0xef 0xcd 0xab 0x89
+		 */
+
+/*
+  a5 75 40 40     cmpeq   t1,0x03,t4
+  01 00 a0 e4     beq     t4,20 <skip>
+*/
+*a++ = 0xa5; *a++ = 0x75; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x02; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+
+/*  01 10 60 40     addl    t2,0,t0  */
+*a++ = 0x01; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
+
+ok_unaligned_load3 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+
+*a++ = 0xa5; *a++ = 0x55; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x05; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+/*
+  2:
+  e8:   83 16 61 48     srl     t2,0x8,t2
+  ec:   23 f6 60 48     zapnot  t2,0x7,t2
+  f0:   21 16 3f 48     zapnot  t0,0xf8,t0
+  f4:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x83; *a++ = 0x16; *a++ = 0x61; *a++ = 0x48;
+*a++ = 0x23; *a++ = 0xf6; *a++ = 0x60; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0x16; *a++ = 0x3f; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+ok_unaligned_load2 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+*a++ = 0xa5; *a++ = 0x35; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x05; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+/*
+  1:
+  f8:   83 16 62 48     srl     t2,0x10,t2
+  fc:   23 76 60 48     zapnot  t2,0x3,t2
+ 100:   21 96 3f 48     zapnot  t0,0xfc,t0
+ 104:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x83; *a++ = 0x16; *a++ = 0x62; *a++ = 0x48;
+*a++ = 0x23; *a++ = 0x76; *a++ = 0x60; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0x96; *a++ = 0x3f; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+ok_unaligned_load1 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+
+
+/*
+ 0:
+ 108:   83 16 63 48     srl     t2,0x18,t2
+ 10c:   23 36 60 48     zapnot  t2,0x1,t2
+ 110:   21 d6 3f 48     zapnot  t0,0xfe,t0
+ 114:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x83; *a++ = 0x16; *a++ = 0x63; *a++ = 0x48;
+*a++ = 0x23; *a++ = 0x36; *a++ = 0x60; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0xd6; *a++ = 0x3f; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+
+		*ok_unaligned_load3 = ((size_t)a - (size_t)ok_unaligned_load3 - 4) / 4;
+		*ok_unaligned_load2 = ((size_t)a - (size_t)ok_unaligned_load2 - 4) / 4;
+		*ok_unaligned_load1 = ((size_t)a - (size_t)ok_unaligned_load1 - 4) / 4;
+
+		/*  sdl t0,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;
+		break;
+
+	case HI6_SWR:
+		/*  a1 = 0..3 (or 0..7 for 64-bit stores):  */
+		alpha_rs = map_MIPS_to_Alpha[rs];
+		if (alpha_rs < 0) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+			alpha_rs = ALPHA_T0;
+		}
+		*a++ = imm; *a++ = (imm >> 8); *a++ = 0x20 + alpha_rs; *a++ = 0x22;
+		/*  02 30 20 46     and     a1,alignment,t1  */
+		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
+
+		/*  ldl t0,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;
+
+		if (bigendian) {
+			/*  TODO  */
+			bintrans_write_chunkreturn_fail(&a);
+		}
+
+		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T2);
+
+		/*
+		 *  swr:	memory = 0x12 0x34 0x56 0x78
+		 *		register = 0x89abcdef
+		 *	offset (a1):	memory becomes:
+		 *	0		0xef 0xcd 0xab 0x89
+		 *	1		0x.. 0xef 0xcd 0xab
+		 *	2		0x.. 0x.. 0xef 0xcd
+		 *	3		0x.. 0x.. 0x.. 0xef
+		 */
+
+
+/*
+  a5 75 40 40     cmpeq   t1,0x03,t4
+  01 00 a0 e4     beq     t4,20 <skip>
+*/
+*a++ = 0xa5; *a++ = 0x75; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x04; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+
+/*
+ 118:   23 17 63 48     sll     t2,0x18,t2
+ 11c:   21 f6 20 48     zapnot  t0,0x7,t0
+ 120:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x23; *a++ = 0x17; *a++ = 0x63; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0xf6; *a++ = 0x20; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+ok_unaligned_load3 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+
+
+*a++ = 0xa5; *a++ = 0x55; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x04; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+/*
+  2:
+ 124:   23 17 62 48     sll     t2,0x10,t2
+ 128:   21 76 20 48     zapnot  t0,0x3,t0
+ 12c:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0x76; *a++ = 0x20; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+ok_unaligned_load2 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+*a++ = 0xa5; *a++ = 0x35; *a++ = 0x40; *a++ = 0x40;
+*a++ = 0x04; *a++ = 0x00; *a++ = 0xa0; *a++ = 0xe4;
+/*
+  1:
+ 130:   23 17 61 48     sll     t2,0x8,t2
+ 134:   21 36 20 48     zapnot  t0,0x1,t0
+ 138:   01 04 23 44     or      t0,t2,t0
+*/
+*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;
+*a++ = 0x21; *a++ = 0x36; *a++ = 0x20; *a++ = 0x48;
+*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x44;
+
+ok_unaligned_load1 = a;
+*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+
+/*
+ 0:
+ 13c:   01 10 60 40     addl    t2,0,t0
+*/
+*a++ = 0x01; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
+
+
+		*ok_unaligned_load3 = ((size_t)a - (size_t)ok_unaligned_load3 - 4) / 4;
+		*ok_unaligned_load2 = ((size_t)a - (size_t)ok_unaligned_load2 - 4) / 4;
+		*ok_unaligned_load1 = ((size_t)a - (size_t)ok_unaligned_load1 - 4) / 4;
+
+		/*  sdl t0,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;
+		break;
+
 	default:
 		;
 	}

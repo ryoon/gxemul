@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.443 2005-01-05 01:31:26 debug Exp $
+$Id: HISTORY,v 1.444 2005-01-05 04:30:18 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1420,3 +1420,4 @@ HISTORY of mips64emul
 20050105	Fixing some more bintrans bugs.
 		Unaligned stores that cause tlb refill exceptions should now
 		cause TLBS exceptions, not TLBL.
+		Adding experimental swl and swr to the Alpha backend.

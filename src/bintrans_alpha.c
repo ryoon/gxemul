@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.63 2004-11-26 06:42:41 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.64 2004-11-26 15:36:20 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1685,7 +1685,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 		switch (rd) {
 		case COP0_INDEX:
 
-		/*  TODO: Some bits are not writable!  */
+		/*  TODO: Some bits are not writable on R3000  */
 		case COP0_ENTRYLO0:
 		case COP0_ENTRYLO1:
 

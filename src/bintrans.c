@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.86 2004-11-26 09:05:32 debug Exp $
+ *  $Id: bintrans.c,v 1.87 2004-11-26 15:36:20 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -262,10 +262,9 @@ struct translation_page_entry *prev = NULL;
 	if (!tep->page_is_potentially_in_use)
 		return;
 
+	tep->page_is_potentially_in_use = 0;
 	memset(&tep->chunk[0], 0, sizeof(tep->chunk));
 	memset(&tep->flags[0], 0, sizeof(tep->flags));
-
-	tep->page_is_potentially_in_use = 0;
 	return;
 }
 
@@ -582,7 +581,7 @@ default:
 			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
 			n_translated += translated;
 			break;
-
+#if 0
 		case HI6_COP0:
 			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
 				/*  rfe:  */
@@ -637,7 +636,7 @@ default:
 			} else
 				try_to_translate = 0;
 			break;
-
+#endif
 		default:
 			/*  Untranslatable:  */
 			/*  TODO: this code should only be in one place  */
@@ -688,15 +687,15 @@ default:
 		}
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 25 &&
-		    prev_p < 1015 && tep->chunk[prev_p+1] != 0 &&
-		    !delayed_branch) {
+		if (translated && try_to_translate &&
+		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
+		    && !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
 			    &ca, &tep->chunk[prev_p+1], NULL, 1, prev_p+1);
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 200)
+		if (n_translated > 150)
 			try_to_translate = 0;
 
 		p += sizeof(instr);

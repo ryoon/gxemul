@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.38 2004-12-02 20:35:17 debug Exp $
+ *  $Id: arcbios.c,v 1.39 2004-12-02 20:59:15 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -286,7 +286,7 @@ uint64_t arcbios_addchild(struct cpu *cpu,
  */
 uint64_t arcbios_addchild64(struct cpu *cpu,
 	struct arcbios_component64 *host_tmp_component,
-	char *identifier, uint32_t parent)
+	char *identifier, uint64_t parent)
 {
 	uint64_t a = arcbios_next_component_address;
 	uint64_t peer=0;
@@ -317,7 +317,7 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 		uint64_t eparent, echild, epeer, tmp;
 		unsigned char buf[8];
 
-		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
+		/*  debug("[ addchild: peeraddr = 0x%016llx ]\n", (long long)peeraddr);  */
 
 		memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
@@ -385,6 +385,8 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24)
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
+
+		tmp &= 0xfffff;
 
 		peeraddr += 0x50;
 		peeraddr += tmp + 1;

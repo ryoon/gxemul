@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.222 2004-12-02 20:35:17 debug Exp $
+ *  $Id: machine.c,v 1.223 2004-12-02 20:59:15 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -877,7 +877,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	struct arcbios_mem64 arcbios_mem64;
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
-	uint32_t system = 0;
+	uint64_t system = 0;
 	uint64_t sgi_ram_offset = 0;
 	int arc_wordlen = sizeof(uint32_t);
 	char *short_machine_name = NULL;
@@ -2586,7 +2586,7 @@ Why is this here? TODO
 		debug("system = 0x%x\n", system);
 
 		for (i=0; i<emul->ncpus; i++) {
-			uint32_t cpuaddr, fpu, picache, pdcache, sdcache = 0;
+			uint64_t cpuaddr, fpu, picache, pdcache, sdcache = 0;
 			int cache_size, cache_line_size;
 			unsigned int jj;
 			char arc_cpu_name[100];

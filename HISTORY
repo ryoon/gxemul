@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.346 2004-12-02 19:33:53 debug Exp $
+$Id: HISTORY,v 1.347 2004-12-02 20:59:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1228,4 +1228,6 @@ HISTORY of mips64emul
 		incorrectly extended register is detected, the emulator now
 		exits instead of continues.
 		Removing the LAST_USED_TLB_EXPERIMENT stuff.
-		Minor updates to work better with Windows NT's ARCINST.EXE.
+		Minor updates to work better with Windows NT's ARCINST.EXE;
+		printing 0x9b via arcbios becomes ESC + '[', and the ARC
+		memory descriptor stuff has been generalized a bit more.

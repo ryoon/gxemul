@@ -1,7 +1,8 @@
-$Id: COPYRIGHT,v 1.1 2004-08-03 00:58:33 debug Exp $
+$Id: COPYRIGHT,v 1.2 2004-12-03 22:44:25 debug Exp $
 
-The vt220l.816 font was imported into mips64emul from FreeBSD. Here's the
-COPYRIGHT message as found in FreeBSD (/usr/src/usr.sbin/pcvt/fonts/COPYRIGHT):
+The vt220l.816 and vt220l.808 fonts were imported into mips64emul from FreeBSD.
+Here's the COPYRIGHT message as found in FreeBSD
+(/usr/src/usr.sbin/pcvt/fonts/COPYRIGHT):
 
 -------------------------------------------------------------------------------
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.122 2004-12-01 14:57:45 debug Exp $
+ *  $Id: memory.c,v 1.123 2004-12-03 22:44:26 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -922,8 +922,8 @@ into the devices  */
 				char *symbol;
 				uint64_t offset;
 
-				if (!quiet_mode) {
-					debug("[ memory_rw(): writeflag=%i ", writeflag);
+				if (1) /* !quiet_mode) */ {
+					fatal("[ memory_rw(): writeflag=%i ", writeflag);
 					if (writeflag) {
 						unsigned int i;
 						debug("data={", writeflag);
@@ -934,7 +934,7 @@ into the devices  */
 					symbol = get_symbol_name(
 					    &cpu->emul->symbol_context,
 					    cpu->pc_last, &offset);
-fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
+					fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
 					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
 

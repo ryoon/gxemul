@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.13 2004-11-25 10:53:30 debug Exp $
+ *  $Id: dev_vga.c,v 1.14 2004-12-03 22:44:23 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -36,7 +36,12 @@
 #include "misc.h"
 #include "devices.h"
 
+#include "fonts/font8x8.c"
 #include "fonts/font8x16.c"
+
+
+#define	VGA_MEM_MAXY		60
+#define	VGA_MEM_ALLOCY		67
 
 
 #define	VGA_FB_ADDR	0x123000000000ULL
@@ -46,6 +51,8 @@ struct vga_data {
 	uint64_t	control_base;
 
 	struct vfb_data *fb;
+
+	int		use_8x8_font;
 
 	int		max_x;
 	int		max_y;
@@ -70,6 +77,7 @@ struct vga_data {
 void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 {
 	int fg, bg, i, x,y, subx, line;
+	int font_height = d->use_8x8_font? 8 : 16;
 
 	start &= ~1;
 	end |= 1;
@@ -85,11 +93,14 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 		}
 
 		x = (i/2) % d->max_x; x *= 8;
-		y = (i/2) / d->max_x; y *= 16;
+		y = (i/2) / d->max_x; y *= font_height;
 
-		for (line = 0; line < 16; line++) {
+		for (line = 0; line < font_height; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
+				unsigned char *font =
+				    d->use_8x8_font? font8x8 : font8x16;
+
 				int addr = (d->max_x*8 * (line+y) + x + subx)
 				    * 3;
 
@@ -97,7 +108,8 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
 				pixel[2] = d->fb->rgb_palette[bg * 3 + 2];
 
-				if (font8x16[ch * 16 + line] & (128 >> subx)) {
+				if (font[ch * font_height + line] &
+				    (128 >> subx)) {
 					pixel[0] = d->fb->rgb_palette
 					    [fg * 3 + 0];
 					pixel[1] = d->fb->rgb_palette
@@ -125,8 +137,20 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	int modified, i;
+	int y;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	y = relative_addr / (d->max_x * 2);
+	if (y >= d->max_y && !d->use_8x8_font) {
+		/*  Switch to 8x8 font:  */
+		fatal("SWITCHING to 8x8 font\n");
+
+		d->use_8x8_font = 1;
+
+		d->max_y = VGA_MEM_MAXY;
+		vga_update(cpu, d, 0, d->max_x * d->max_y * 2 -1);
+	}
 
 	if (relative_addr < d->videomem_size) {
 		if (writeflag == MEM_WRITE) {
@@ -258,20 +282,21 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	d->control_base  = control_base;
 	d->max_x         = max_x;
 	d->max_y         = max_y;
-	d->videomem_size = max_x * max_y * 2;
+	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
 	d->videomem = malloc(d->videomem_size);
 	if (d->videomem == NULL) {
 		fprintf(stderr, "out of memory in dev_vga_init()\n");
 		exit(1);
 	}
 
-	for (y=0; y<max_y; y++)
+	for (y=0; y<VGA_MEM_MAXY; y++)
 		for (x=0; x<max_x; x++) {
 			i = (x + max_x * y) * 2;
 			d->videomem[i] = ' ';
 			d->videomem[i+1] = 0x07;	/*  Default color  */
 		}
 
+	d->use_8x8_font = 0;
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
@@ -294,10 +319,11 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 			}
 
 	memory_device_register(mem, "vga_mem", videomem_base,
-	    d->videomem_size, dev_vga_access, d, MEM_DEFAULT, NULL);	/*  TODO: BINTRANS  */
+	    VGA_MEM_ALLOCY * max_x * 2,
+	    dev_vga_access, d, MEM_DEFAULT, NULL);	/*  TODO: BINTRANS  */
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    16, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
-	vga_update(cpu, d, 0, d->videomem_size-1);
+	vga_update(cpu, d, 0, max_x * max_y * 2 -1);
 }
 

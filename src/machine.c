@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.224 2004-12-03 20:03:47 debug Exp $
+ *  $Id: machine.c,v 1.225 2004-12-03 22:44:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2302,6 +2302,27 @@ Why is this here? TODO
 				    0x60000003d0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
+				/*  Windows NT uses physical addresses like
+				    0x400b8000 to access video  */
+				dev_ram_init(mem, 0x400b8000ULL,
+				    0x10000, DEV_RAM_MIRROR, 0x100000b8000ULL);
+				dev_ram_init(mem, 0x0600003d0ULL,
+				    0x10, DEV_RAM_MIRROR, 0x60000003d0ULL);
+
+				dev_ram_init(mem, 0x80004000,
+				    0x1000, DEV_RAM_MIRROR, 0x2000004000ULL);
+/*
+600003da (ram dac)
+90000021
+900000a1
+9000000f
+900000de
+90000070
+90000240 - 900002f7
+900001f2
+90000172
+ */
+
 				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
 
 				dev_asc_init(cpu, mem,
@@ -2715,11 +2736,15 @@ Why is this here? TODO
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
 		    emul->machine == MACHINE_ARC_JAZZ_PICA) {
-			uint32_t jazzbus;
-#if 1
+			uint64_t jazzbus, ali_s3;
+			uint64_t diskcontroller, floppy, kbdctl, kbd;
+			uint64_t ptrctl, ptr;
+			uint64_t serial1, serial2, paral, audio;
+			uint64_t eisa, scsi;
+
 			jazzbus = arcbios_addchild_manual(cpu,
-			    3 /*  Adapter  */,
-			    12 /* MultiFunctionAdapter */,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_MultiFunctionAdapter,
 			    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
 			    system);
 
@@ -2727,15 +2752,118 @@ Why is this here? TODO
 			 *  DisplayController, needed by NetBSD:
 			 *  TODO: NetBSD still doesn't use it :(
 			 */
-			if (emul->use_x11)
-				arcbios_addchild_manual(cpu,
-				    4  /*  Controller  */,
-				    19  /* Display controller */,
+			if (emul->use_x11) {
+				ali_s3 = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+				    COMPONENT_TYPE_DisplayController,
 				    COMPONENT_FLAG_ConsoleOut |
 					COMPONENT_FLAG_Output,
 				    1, 2, 0, 0xffffffff, "ALI_S3",
 				    jazzbus);
+
+				arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_PeripheralClass,
+				    COMPONENT_TYPE_MonitorPeripheral,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "640x480",
+						/*  "1024x768",  */
+				    ali_s3);
+			}
+
+			diskcontroller = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_DiskController,
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, "I82077",
+			    jazzbus);
+
+			floppy = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_PeripheralClass,
+			    COMPONENT_TYPE_FloppyDiskPeripheral,
+				COMPONENT_FLAG_Removable |
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, NULL,
+			    diskcontroller);
+
+			kbdctl = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_KeyboardController,
+				COMPONENT_FLAG_ConsoleIn |
+				COMPONENT_FLAG_Input,
+			    1, 2, 0, 0xffffffff, "I8742",
+			    jazzbus);
+
+			kbd = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_PeripheralClass,
+			    COMPONENT_TYPE_KeyboardPeripheral,
+				COMPONENT_FLAG_ConsoleIn |
+				COMPONENT_FLAG_Input,
+			    1, 2, 0, 0xffffffff, "PCAT_ENHANCED",
+			    kbdctl);
+
+			ptrctl = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_PointerController,
+				COMPONENT_FLAG_Input,
+			    1, 2, 0, 0xffffffff, "I8742",
+			    jazzbus);
+
+			ptr = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_PeripheralClass,
+			    COMPONENT_TYPE_PointerPeripheral,
+				COMPONENT_FLAG_Input,
+			    1, 2, 0, 0xffffffff, "PS2 MOUSE",
+			    ptrctl);
+
+/*  These cause Windows NT to bug out.  */
+#if 0
+			serial1 = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_SerialController,
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, "COM1",
+			    jazzbus);
+
+			serial2 = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_SerialController,
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, "COM1",
+			    jazzbus);
 #endif
+
+			paral = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_ParallelController,
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, "LPT1",
+			    jazzbus);
+
+			audio = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_ControllerClass,
+			    COMPONENT_TYPE_AudioController,
+				COMPONENT_FLAG_Input |
+				COMPONENT_FLAG_Output,
+			    1, 2, 0, 0xffffffff, "MAGNUM",
+			    jazzbus);
+
+			eisa = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_EISAAdapter,
+			    0, 1, 2, 0, 0xffffffff, "EISA",
+			    system);
+
+			scsi = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_SCSIAdapter,
+			    0, 1, 2, 0, 0xffffffff, "ESP216",
+			    system);
 		}
 
 

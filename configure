@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.9 2004-02-22 13:57:16 debug Exp $
+#  $Id: configure,v 1.10 2004-02-22 14:22:16 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -135,7 +135,7 @@ else
 			COPTIM="-xO5 -fast $COPTIM"
 		fi
 		COPTIM="-DSOLARIS $COPTIM"
-		OTHERLIBS="-lrt $OTHERLIBS"
+		OTHERLIBS="-lrt -lsocket $OTHERLIBS"
 	else
 		#  gcc or something else:
 		$CC _testprog.c -o _testprog -O 2> /dev/null

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.30 2004-07-02 13:35:26 debug Exp $
+ *  $Id: file.c,v 1.31 2004-07-03 19:45:22 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -53,6 +53,14 @@
 #include "exec_aout.h"
 #include "exec_ecoff.h"
 #include "exec_elf.h"
+
+
+/*
+ *  This should be increased by every routine here that actually loads an
+ *  executable file into memory.  (For example, loading a symbol file should
+ *  NOT increase this.)
+ */
+static int n_executables_loaded = 0;
 
 
 struct aout_symbol {
@@ -223,6 +231,8 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	else
 		cpu->byte_order = EMUL_BIG_ENDIAN;
+
+	n_executables_loaded ++;
 }
 
 
@@ -494,6 +504,8 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	else
 		cpu->byte_order = EMUL_BIG_ENDIAN;
+
+	n_executables_loaded ++;
 }
 
 
@@ -636,6 +648,8 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 		debug("'%s': WARNING! no entrypoint found!\n", filename);
 	else
 		cpu->pc = entry;
+
+	n_executables_loaded ++;
 }
 
 
@@ -698,6 +712,8 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 	fclose(f);
 
 	cpu->pc = entry;
+
+	n_executables_loaded ++;
 }
 
 
@@ -1114,6 +1130,19 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 	else
 		cpu->byte_order = EMUL_BIG_ENDIAN;
+
+	n_executables_loaded ++;
+}
+
+
+/*
+ *  file_n_executables_loaded():
+ *
+ *  Returns the number of executable files loaded into emulated memory.
+ */
+int file_n_executables_loaded(void)
+{
+	return n_executables_loaded;
 }
 
 
@@ -1131,7 +1160,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
 	unsigned char minibuf[12];
-	int len;
+	int len, i;
 	off_t size;
 
 	assert(mem != NULL);
@@ -1195,8 +1224,27 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 		return;
 	}
 
-	/*  Last resort:  symbol definitions from nm (or nm -S):  */
-	/*  debug("'%s': assuming symbol definitions\n", filename);  */
+	/*
+	 *  Last resort:  symbol definitions from nm (or nm -S):
+	 *
+	 *  If the minibuf contains typical 'binary' characters, then print
+	 *  an error message and quit instead of assuming that it is a
+	 *  symbol file.
+	 */
+	for (i=0; i<(signed)sizeof(minibuf); i++)
+		if (minibuf[i] < 32)
+			if (minibuf[i] != '\t' && minibuf[i] != '\n' &&
+			    minibuf[i] != '\r' && minibuf[i] != '\f') {
+				fprintf(stderr, "The file format of '%s' is unknown.\n", filename);
+				for (i=0; i<(signed)sizeof(minibuf); i++)
+					fprintf(stderr, " %02x", minibuf[i]);
+				fprintf(stderr, "\n");
+				fprintf(stderr, "Possible explanations:\n\n");
+				fprintf(stderr, "  o)  If this is a disk image, you forgot '-d' on the command line.\n");
+				fprintf(stderr, "  o)  This is an unsupported binary format.\n");
+				exit(1);
+			}
+
 	symbol_readfile(filename);
 }
 

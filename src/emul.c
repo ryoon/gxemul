@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.20 2004-07-02 13:35:26 debug Exp $
+ *  $Id: emul.c,v 1.21 2004-07-03 19:45:22 debug Exp $
  *
  *  Emulation startup.
  */
@@ -280,6 +280,11 @@ void emul(void)
 			break;
 
 		extra_argc --;  extra_argv ++;
+	}
+
+	if (file_n_executables_loaded() == 0 && !booting_from_diskimage) {
+		fprintf(stderr, "No executable file loaded, and we're not booting directly from a disk image.\nAborting.\n");
+		exit(1);
 	}
 
 	if ((cpus[bootstrap_cpu]->pc >> 32) == 0 &&

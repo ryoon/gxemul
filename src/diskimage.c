@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.12 2004-04-06 14:05:40 debug Exp $
+ *  $Id: diskimage.c,v 1.13 2004-04-06 15:36:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -353,7 +353,7 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		 *  (special case if the value is 0, actually means 256.)
 		 */
 		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
-		      ((xferp->cmd[2]) << 8) + xferp->cmd[3];
+		      (xferp->cmd[2] << 8) + xferp->cmd[3];
 		retlen = xferp->cmd[4];
 		if (retlen == 0)
 			retlen = 256;
@@ -389,7 +389,7 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		 *  (special case if the value is 0, actually means 256.)
 		 */
 		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
-		      ((xferp->cmd[2]) << 8) + xferp->cmd[3];
+		      (xferp->cmd[2] << 8) + xferp->cmd[3];
 		retlen = xferp->cmd[4];
 		if (retlen == 0)
 			retlen = 256;
@@ -433,9 +433,41 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		break;
 
-	case SCSICMD_REQUEST_SENSE:
-	case 0x15:
 	case SCSICMD_START_STOP_UNIT:
+		debug("START_STOP_UNIT");
+
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
+
+		/*  TODO: actualy care about cmd[]  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_REQUEST_SENSE:
+		debug("REQUEST_SENSE");
+
+		retlen = xferp->cmd[4];
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+
+		/*  TODO  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_MODE_SELECT:
 	case 0x1e:
 	case SCSICDROM_READ_SUBCHANNEL:
 	case SCSICDROM_READ_TOC:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.13 2004-05-06 03:52:20 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.14 2004-05-07 00:41:51 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -181,8 +181,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, "PMAG-BA");
-		dev_bt459_init(mem, baseaddr + VFB_CFB_BT459, fb, 8);
+		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, device_name);
+		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459, fb, 8, irq);
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */
@@ -206,13 +206,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-JA")==0) {
-		/*  This works at least B/W in Ultrix, so far.  It's supposed to be "true color"?  */
-		/*  I though that meant 24-bit, but Ultrix output pixels as if it were an 8-bit device.  */
-		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-JA");
-		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x400000, VFB_GENERIC, 1280,1024, 1280,1024, 24, "PMAG-JA");
-		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
+		/*  "Truecolor", mixed 8- and 24-bit  */
+		dev_pmagja_init(cpu, mem, baseaddr, irq);
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */

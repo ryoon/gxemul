@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.12 2004-01-06 02:00:21 debug Exp $
+ *  $Id: file.c,v 1.13 2004-01-06 10:32:30 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -64,7 +64,7 @@ struct aout_symbol {
 
 extern uint64_t file_loaded_end_addr;
 
-char *last_filename = NULL;
+char *last_filename = "not_yet_set";
 
 
 #define	unencode(var,dataptr,typ)	{				\
@@ -668,7 +668,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	int ofs;
 	int chunk_len = 1024;
 	int align_len;
-	char *symbol_strings = NULL; size_t symbol_length;
+	char *symbol_strings = NULL; size_t symbol_length = 0;
 	Elf32_Sym *symbols_sym32 = NULL;  int n_symbols = 0;
 	Elf64_Sym *symbols_sym64 = NULL;
 
@@ -955,15 +955,20 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 				exit(1);
 			}
 
-			debug("'%s': %i symbol entries at %08llx\n",
+			debug("'%s': %i symbol entries at 0x%llx\n",
 			    filename, (int)n_entries, (long long)sh_offset);
 
 			n_symbols = n_entries;
 		}
 
-		/*  TODO:  This is incorrect, there may be several strtab sections!  */
+		/*
+		 *  TODO:  This is incorrect, there may be several strtab sections.
+		 *
+		 *  For now, the simple/stupid guess that the largest string table
+		 *  is the one to use seems to be good enough.
+		 */
 
-		if (sh_type == SHT_STRTAB) {
+		if (sh_type == SHT_STRTAB && sh_size > symbol_length) {
 			size_t len;
 
 			if (symbol_strings != NULL)
@@ -982,7 +987,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 				exit(1);
 			}
 
-			debug("'%s': %i bytes of symbol strings at %08llx\n",
+			debug("'%s': %i bytes of symbol strings at 0x%llx\n",
 			    filename, (int)sh_size, (long long)sh_offset);
 
 			symbol_strings[sh_size] = '\0';

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.47 2005-01-19 14:42:11 debug Exp $
+ *  $Id: file.c,v 1.48 2005-01-20 14:36:47 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -400,7 +400,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		unencode(s_nlnno,   &scnhdr.s_nlnno,   uint16_t);
 		unencode(s_flags,   &scnhdr.s_flags,   uint32_t);
 
-		debug("0x%x bytes @ 0x%08x, file offset 0x%lx, flags 0x%x)\n",
+		debug("0x%x @ 0x%08x, offset 0x%lx, flags 0x%x)\n",
 		    (int)s_size, (int)s_vaddr, (long)s_scnptr, (int)s_flags);
 
 		end_addr = s_vaddr + s_size;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.60 2005-01-20 14:25:17 debug Exp $
+ *  $Id: dev_asc.c,v 1.61 2005-01-20 14:36:47 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.43 2005-01-19 14:24:22 debug Exp $
+ *  $Id: debugger.c,v 1.44 2005-01-20 14:36:47 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -54,6 +54,7 @@
 #include "console.h"
 #include "cop0.h"
 #include "cpu_types.h"
+#include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
@@ -746,6 +747,8 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 
 		if (m->ncpus > 1)
 			debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
+
+		diskimage_dump_info(m);
 
 		if (nm > 1)
 			debug_indentation(-iadd);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.17 2005-01-20 14:25:17 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.18 2005-01-20 14:36:47 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)

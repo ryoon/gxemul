@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.55 2004-07-04 12:52:16 debug Exp $
+ *  $Id: memory.c,v 1.56 2004-07-04 16:11:24 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -536,7 +536,12 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			data[i] = cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]];
 	} else {
-		rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
+		for (i=0; i<len; i++)
+			if (cpu->cache[which_cache][(addr+i) &
+			    cpu->cache_mask[which_cache]] != data[i]) {
+				rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
+				break;
+			}
 		for (i=0; i<len; i++)
 			cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]] = data[i];

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.93 2004-07-04 12:52:16 debug Exp $
+ *  $Id: cpu.c,v 1.94 2004-07-04 16:11:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -132,10 +132,7 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R2000:
 		case MIPS_R3000:
-			if (i == CACHE_INSTRUCTION)
-				cpu->cache_size[i] = 65536;
-			else
-				cpu->cache_size[i] = 32768;
+			cpu->cache_size[i] = 65536;
 			cpu->cache_linesize[i] = 4;
 			size_per_cache_line = sizeof(struct r3000_cache_line);
 			break;

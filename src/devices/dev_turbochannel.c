@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.29 2004-07-16 18:19:32 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.30 2004-10-06 11:08:36 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -140,6 +140,9 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
  *
  *  This is a generic turbochannel card device.  device_name should point
  *  to a string such as "PMAG-BA".
+ *
+ *  TODO: When running for example dual-head, maybe the name of each
+ *        framebuffer should include the card slot number?
  */
 void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq)
@@ -207,7 +210,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		    looks for the rom signature  */
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, "PMAG-AA");
+		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name);
 		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);	/*  palette  */
 		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);	/*  cursor  */
 		rom_offset = 0;

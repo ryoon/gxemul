@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.242 2004-10-07 15:10:06 debug Exp $
+$Id: HISTORY,v 1.243 2004-10-07 22:55:35 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -982,3 +982,6 @@ HISTORY of mips64emul
 		Adding a COMPILE_DATE string to config.h.
 20041007	Adding a NEC RISCserver 4200 model (-A6), and some more
 		updates to the ARC component tree generator.
+20041008	The 'll' instruction should be signed, not unsigned as before.
+		This (and some other minor fixes) causes Irix on SGI-IP32 (O2)
+		to actually boot far enough to print its first boot messages :)

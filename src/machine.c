@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.186 2004-10-07 15:10:09 debug Exp $
+ *  $Id: machine.c,v 1.187 2004-10-07 22:55:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2687,6 +2687,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 			add_environment_string(cpu, "showconfig=istrue", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "diagmode=v", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "SystemPartition=dksc (0,0,8)", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "OSLoadPartition=dksc (0,0,0)", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "root=dks0d0s0", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
 		}
 
 		/*  End the environment strings with an empty zero-terminated

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.158 2004-10-02 06:14:35 debug Exp $
+ *  $Id: cpu.c,v 1.159 2004-10-07 22:55:37 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2373,10 +2373,10 @@ static int cpu_run_instr(struct cpu *cpu)
 			case HI6_SWC3:	{                   signd = 0; }  break;
 			case HI6_SDC1:	{ wlen = 8;         signd = 0; }  break;
 
-			case HI6_LL:	{           st = 0; signd = 0; linked = 1; }  break;
+			case HI6_LL:	{           st = 0; signd = 1; linked = 1; }  break;
 			case HI6_LLD:	{ wlen = 8; st = 0; signd = 0; linked = 1; }  break;
 
-			case HI6_SC:	{                   signd = 0; linked = 1; }  break;
+			case HI6_SC:	{                   signd = 1; linked = 1; }  break;
 			case HI6_SCD:	{ wlen = 8;         signd = 0; linked = 1; }  break;
 
 			default:

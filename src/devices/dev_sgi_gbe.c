@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.10 2004-07-11 01:02:13 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.11 2004-10-07 22:55:36 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -246,6 +246,9 @@ odata = random();	/*  testhack for the ip32 prom  */
 
 	case 0x20004:
 		odata = random();	/*  IP32 prom test hack. TODO  */
+		/*  IRIX wants 0x20, it seems.  */
+		if (random() & 1)
+			odata = 0x20;
 		break;
 
 	case 0x30000:	/*  normal plane ctrl 0  */
@@ -262,6 +265,9 @@ odata = random();	/*  testhack for the ip32 prom  */
 
 	case 0x30008:	/*  normal plane ctrl 2  */
 		odata = random();	/*  IP32 prom test hack. TODO  */
+		/*  IRIX wants 0x20, it seems.  */
+		if (random() & 1)
+			odata = 0x20;
 		break;
 
 	case 0x3000c:	/*  normal plane ctrl 3  */
@@ -276,6 +282,9 @@ odata = random();	/*  testhack for the ip32 prom  */
 
 	case 0x40000:
 		odata = random();	/*  IP32 prom test hack. TODO  */
+		/*  IRIX wants 0x20, it seems.  */
+		if (random() & 1)
+			odata = 0x20;
 		break;
 
 	/*

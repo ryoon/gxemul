@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.41 2004-03-27 05:43:01 debug Exp $
+ *  $Id: cpu.c,v 1.42 2004-03-27 19:26:54 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2455,6 +2455,24 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				if (instruction_trace)
 					debug("pmfhi\tr%i rs=%i\n", rd);
 				cpu->gpr[rd] = cpu->hi;
+			}
+		} else if ((instrword & 0xfc1fffff) == 0x70000269 || (instrword & 0xfc1fffff) == 0x70000229) {
+			/*
+			 *  This is just a guess for R5900, I've not found any docs on this one yet.
+			 *
+			 *	pmthi/pmtlo rs		(pmtlo = 269, pmthi = 229)
+			 *
+			 *  A wild guess is that this is a 128-bit version of mthi/mtlo.
+			 *  For now, this is implemented as 64-bit only.  (TODO)
+			 */
+			if (instr[0] == 0x69) {
+				if (instruction_trace)
+					debug("pmtlo\tr%i rs=%i\n", rd);
+				cpu->lo = cpu->gpr[rs];
+			} else {
+				if (instruction_trace)
+					debug("pmthi\tr%i rs=%i\n", rd);
+				cpu->hi = cpu->gpr[rs];
 			}
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
 			/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.260 2004-12-22 17:57:38 debug Exp $
+ *  $Id: machine.c,v 1.261 2004-12-27 10:25:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -591,18 +591,37 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  VR41xx interrupt routine:
+ *
+ *  irq_nr = 8 + x
+ *	x = 0..15 for level1
+ *	x = 16..31 for level2
  */
 void vr41xx_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-	debug("vr41xx_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+	debug("vr41xx_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
 
-	if (assrt)
-		vr41xx_data->sysint1 |= irq_nr;
-	else
-		vr41xx_data->sysint1 &= ~irq_nr;
+	if (irq_nr < 16) {
+		if (assrt)
+			vr41xx_data->sysint1 |= (1 << irq_nr);
+		else
+			vr41xx_data->sysint1 &= ~(1 << irq_nr);
+	} else if (irq_nr < 32) {
+		irq_nr -= 16;
+		if (assrt)
+			vr41xx_data->sysint2 |= (1 << irq_nr);
+		else
+			vr41xx_data->sysint2 &= ~(1 << irq_nr);
+	}
 
-	if (vr41xx_data->sysint1 & vr41xx_data->msysint1)
+	/*  TODO: Which hardware interrupt pin?  */
+
+	debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
+	    vr41xx_data->sysint1, vr41xx_data->msysint1,
+	    vr41xx_data->sysint2, vr41xx_data->msysint2);
+
+	if ((vr41xx_data->sysint1 & vr41xx_data->msysint1) |
+	    (vr41xx_data->sysint2 & vr41xx_data->msysint2))
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.23 2004-01-10 05:41:37 debug Exp $
+ *  $Id: misc.h,v 1.24 2004-01-11 23:53:07 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -168,7 +168,7 @@ struct cpu_type_def {
 
 #define	DEFAULT_RAM_IN_MB	32
 #define	MAX_PC_DUMPPOINTS	16
-#define	MAX_DEVICES		20
+#define	MAX_DEVICES		22
 
 struct cpu;
 
@@ -790,6 +790,7 @@ void playstation2_sifbios_emul(struct cpu *cpu);
 
 
 /*  symbol.c:  */
+int get_symbol_addr(char *symbol, uint64_t *addr);
 char *get_symbol_name(uint64_t addr, int *offset);
 void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type);
 void symbol_readfile(char *fname);

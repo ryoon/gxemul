@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.126 2004-12-07 09:42:31 debug Exp $
+ *  $Id: memory.c,v 1.127 2004-12-07 09:49:34 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -787,17 +787,17 @@ into the devices  */
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
 					if (bintrans_cached && writeflag) {
-						if (paddr < cpu->mem->dev_bintrans_write_low[i])
-						    cpu->mem->dev_bintrans_write_low[i] = paddr & ~0xfff;
-						if (paddr > cpu->mem->dev_bintrans_write_high[i])
-						    cpu->mem->dev_bintrans_write_high[i] = paddr | 0xfff;
+						if (paddr < mem->dev_bintrans_write_low[i])
+						    mem->dev_bintrans_write_low[i] = paddr & ~0xfff;
+						if (paddr > mem->dev_bintrans_write_high[i])
+						    mem->dev_bintrans_write_high[i] = paddr | 0xfff;
 					}
 
 					if (!(mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK))
 						wf = 0;
 
 					update_translation_table(cpu, vaddr & ~0xfff,
-					    cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff),
+					    mem->dev_bintrans_data[i] + (paddr & ~0xfff),
 					    wf, orig_paddr & ~0xfff);
 				}
 #endif
@@ -856,16 +856,13 @@ into the devices  */
 	/*
 	 *  Data and instruction cache emulation:
 	 */
-	/*  vaddr shouldn't be used below anyway,
-	    except for in the next 'if' statement:  */
-	if ((vaddr >> 32) == 0xffffffffULL)
-		vaddr &= 0xffffffffULL;
 
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
 		/*  if not uncached addess  (TODO: generalize this)  */
 		if (!(cache_flags & PHYSICAL) && cache != CACHE_NONE &&
-		    !(vaddr >= 0xa0000000ULL && vaddr <= 0xbfffffffULL)) {
+		    !((vaddr & 0xffffffffULL) >= 0xa0000000ULL &&
+		      (vaddr & 0xffffffffULL) <= 0xbfffffffULL)) {
 			if (memory_cache_R3000(cpu, cache, paddr,
 			    writeflag, len, data))
 				goto do_return_ok;
@@ -1129,6 +1126,4 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	if (baseaddr + len > mem->mmap_dev_maxaddr)
 		mem->mmap_dev_maxaddr = baseaddr + len;
 }
-
-
 

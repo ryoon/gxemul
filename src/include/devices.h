@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.92 2004-08-10 02:31:31 debug Exp $
+ *  $Id: devices.h,v 1.93 2004-08-10 14:19:48 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -74,8 +74,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, void *turbochannel);
 
 /*  dev_au1x00.c:  */
+struct au1x00_ic_data {
+	int		ic_nr;
+	uint32_t	request0_int;
+	uint32_t	request1_int;
+};
+
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_au1x00_init(struct cpu *cpu, struct memory *mem);
+struct au1x00_ic_data *dev_au1x00_init(struct cpu *cpu, struct memory *mem);
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20

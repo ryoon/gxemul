@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.1 2004-08-10 02:31:30 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.2 2004-08-10 14:19:47 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -43,13 +43,6 @@
 #include "memory.h"
 
 #include "aureg.h"
-
-
-struct au1x00_ic_data {
-	int		ic_nr;
-	uint32_t	request0_int;
-	uint32_t	request1_int;
-};
 
 
 struct au1x00_uart_data {
@@ -210,7 +203,7 @@ int dev_au1x00_pc_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_au1x00_init():
  */
-void dev_au1x00_init(struct cpu *cpu, struct memory *mem)
+struct au1x00_ic_data *dev_au1x00_init(struct cpu *cpu, struct memory *mem)
 {
 	struct au1x00_ic_data *d_ic0;
 	struct au1x00_ic_data *d_ic1;
@@ -269,5 +262,7 @@ void dev_au1x00_init(struct cpu *cpu, struct memory *mem)
 	memory_device_register(mem, "au1x00_pc",
 	    PC_BASE, PC_SIZE + 0x8, dev_au1x00_pc_access, d_pc);
 	cpu_add_tickfunction(cpu, dev_au1x00_pc_tick, d_pc, 15);
+
+	return d_ic0;
 }
 

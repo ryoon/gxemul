@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.156 2004-08-10 02:31:32 debug Exp $
+ *  $Id: machine.c,v 1.157 2004-08-10 14:19:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -92,6 +92,7 @@ struct kn02_csr *kn02_csr;
 struct dec_ioasic_data *dec_ioasic_data;
 struct ps2_data *ps2_data;
 struct dec5800_data *dec5800_csr;
+struct au1x00_ic_data *au1x00_ic_data;
 
 struct crime_data *crime_data;
 struct mace_data *mace_data;
@@ -717,6 +718,32 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt(cpu, 2);
 
 	/*  printf("sgi_crime_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irq_nr, crime_interrupts);  */
+}
+
+
+/*
+ *  Au1x00 interrupt routine:
+ *
+ *  TODO: This is just bogus so far.
+ */
+void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	uint32_t m;
+
+	irq_nr -= 8;
+	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
+
+	m = 1 << irq_nr;
+
+	if (assrt)
+		au1x00_ic_data->request0_int |= m;
+	else
+		au1x00_ic_data->request0_int &= ~m;
+
+	if (au1x00_ic_data->request0_int != 0)
+		cpu_interrupt(cpu, 2);
+	else
+		cpu_interrupt_ack(cpu, 2);
 }
 
 
@@ -2540,7 +2567,8 @@ void machine_init(struct memory *mem)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-		dev_au1x00_init(cpus[bootstrap_cpu], mem);
+		cpus[bootstrap_cpu]->md_interrupt = au1x00_interrupt;
+		au1x00_ic_data = dev_au1x00_init(cpus[bootstrap_cpu], mem);
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?

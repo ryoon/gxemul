@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.56 2004-06-07 07:07:43 debug Exp $
+ *  $Id: cpu.c,v 1.57 2004-06-08 07:58:37 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1983,6 +1983,13 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 						break;
 					}
 				}
+			} else {
+				/*
+				 *  If any kind of load or store occurs between an ll and an sc,
+				 *  then the ll-sc sequence should fail.  (This is local to
+				 *  each cpu.)
+				 */
+				cpu->rmw = 0;
 			}
 
 			if (st) {

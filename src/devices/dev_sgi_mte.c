@@ -23,13 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mte.c,v 1.6 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_sgi_mte.c,v 1.7 2004-12-18 06:01:15 debug Exp $
  *  
  *  SGI "mte". This device seems to be an accelerator for copying/clearing
  *  memory.  Used in SGI-IP32.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

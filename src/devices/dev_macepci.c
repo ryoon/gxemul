@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.11 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_macepci.c,v 1.12 2004-12-18 06:01:14 debug Exp $
  *  
  *  SGI "macepci".
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

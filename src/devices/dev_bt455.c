@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.4 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_bt455.c,v 1.5 2004-12-18 06:01:14 debug Exp $
  *  
  *  Brooktree 455, used by TURBOchannel graphics cards.
  *
@@ -32,7 +32,6 @@
  *  the BT455 as well; if so then this device must be re-hacked.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

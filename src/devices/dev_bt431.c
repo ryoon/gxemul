@@ -23,14 +23,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt431.c,v 1.5 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_bt431.c,v 1.6 2004-12-18 06:01:14 debug Exp $
  *  
  *  Brooktree 431, used by TURBOchannel graphics cards.
  *
  *  TODO.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

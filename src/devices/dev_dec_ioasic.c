@@ -23,14 +23,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.6 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.7 2004-12-18 06:01:14 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
  *  TODO:  Lots of stuff, such as DMA and all bits in the control registers.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

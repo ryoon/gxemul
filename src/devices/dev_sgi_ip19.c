@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.5 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.6 2004-12-18 06:01:14 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

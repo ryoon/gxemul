@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.74 2004-12-15 17:20:14 debug Exp $
+ *  $Id: dev_fb.c,v 1.75 2004-12-18 06:01:14 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -44,7 +44,6 @@
  *  TODO:  playstation 2 pixels are stored in another format, actually
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

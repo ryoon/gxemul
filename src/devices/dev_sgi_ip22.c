@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.18 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.19 2004-12-18 06:01:14 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.12 2004-12-06 13:15:04 debug Exp $
+ *  $Id: dev_rd94.c,v 1.13 2004-12-18 06:01:14 debug Exp $
  *  
  *  RD94 jazzio.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

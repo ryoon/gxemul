@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.18 2004-12-08 11:51:20 debug Exp $
+ *  $Id: dev_pica.c,v 1.19 2004-12-18 06:01:14 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

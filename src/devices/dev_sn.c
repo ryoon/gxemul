@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.3 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_sn.c,v 1.4 2004-12-18 06:01:15 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -31,7 +31,6 @@
  *  TODO
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

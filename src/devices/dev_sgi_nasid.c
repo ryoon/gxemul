@@ -23,13 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_nasid.c,v 1.8 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_sgi_nasid.c,v 1.9 2004-12-18 06:01:15 debug Exp $
  *  
  *  SGI nasid CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

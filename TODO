@@ -131,6 +131,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			    model, right now everything is 100% bogus
 		o)  Less interesting platforms:
 			o)  mipsco? (NetBSD)
+			o)  wgrisc? (big endian R3000, in OpenBSD's attic)
 			o)  other embedded / evaluation MIPS boards
 			o)  Playstation 1? R3000A. Weird hardware?
 				No FPU, but something as coproc 2.

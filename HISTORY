@@ -384,3 +384,12 @@ HISTORY of mips64emul
 		Adding a hack to allow a pmax/mach kernel to be loaded (it's
 		a COFF file with 0 (!) sections).
 		Initial test of bt459 + framebuffer cursor support.
+20040309	Fixes/updates of dev_dec5800 and dev_ssc (and dev_decxmi) allow
+		a KN5800 Ultrix-OSF1-ramdisk kernel to boot all the way into
+		userland and be interacted with.
+		The bt459 cursor should now look semi-nice, but it is still
+		a bit fake.
+20040310	Moving the DEC CCA stuff from src/machine.c into a separate
+		device file (devices/dev_deccca.c).
+		An ugly hack added to allow some more OSF/1 kernels (almost
+		a.out, but without many of the header fields) to load.

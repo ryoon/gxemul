@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: arcbios_other.h,v 1.2 2004-12-20 02:48:40 debug Exp $  */
+/*  gxemul: $Id: arcbios_other.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: arcbios.h,v 1.2 2000/01/23 21:01:50 soda Exp $	*/
 /*	$OpenBSD: arcbios.h,v 1.4 1997/05/01 15:13:30 pefo Exp $	*/
 

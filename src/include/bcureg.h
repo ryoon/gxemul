@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: bcureg.h,v 1.1 2005-01-05 23:17:16 debug Exp $  */
+/*  gxemul: $Id: bcureg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 
 #ifndef BCUREG_H
 #define BCUREG_H

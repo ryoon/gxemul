@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_kmin.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: dec_kmin.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 
 #ifndef	MIPS_KMIN_H
 #define	MIPS_KMIN_H 1

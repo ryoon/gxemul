@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dp83932reg.h,v 1.2 2004-12-20 02:48:40 debug Exp $  */
+/*  gxemul: $Id: dp83932reg.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: dp83932reg.h,v 1.2 2002/05/03 00:07:02 thorpej Exp $	*/
 
 #ifndef _DEV_IC_DP83932REG_H_

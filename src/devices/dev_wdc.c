@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.17 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_wdc.c,v 1.18 2005-03-05 12:31:26 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -149,7 +149,7 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  27-46: Model number  */
 	memcpy(&d->identify_struct[2 * 27],
-	    "Fake mips64emul disk                    ", 40);
+	    "Fake GXemul disk                        ", 40);
 	/*  TODO:  Use the diskimage's filename instead?  */
 
 	/*  47: max sectors per multitransfer  */

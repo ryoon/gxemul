@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_kn03.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: dec_kn03.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*  The IOASIC stuff below seems to be using 0x40000 per slot  */
 
 /*	$NetBSD: kn03.h,v 1.10 2000/02/29 04:41:57 nisimura Exp $	*/

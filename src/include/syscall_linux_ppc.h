@@ -1,5 +1,5 @@
 /*
- *  mips64emul: $Id: syscall_linux_ppc.h,v 1.1 2005-02-10 06:48:05 debug Exp $
+ *  gxemul: $Id: syscall_linux_ppc.h,v 1.2 2005-03-05 12:34:03 debug Exp $
  *
  *  Note: These syscall numbers are for Linux/PPC only, not for other Linux
  *  emulation modes.

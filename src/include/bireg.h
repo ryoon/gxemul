@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: bireg.h,v 1.1 2004-06-11 15:22:42 debug Exp $  */
+/*  gxemul: $Id: bireg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: bireg.h,v 1.7 2000/07/06 17:47:02 ragge Exp $	*/
 
 #ifndef BIREG_H

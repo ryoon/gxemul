@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_bootinfo.h,v 1.3 2004-07-02 13:35:25 debug Exp $  */
+/*  gxemul: $Id: dec_bootinfo.h,v 1.4 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.5 2000/01/09 15:34:41 ad Exp $	*/
 
 /*
@@ -45,7 +45,7 @@
  */
 #define BOOTINFO_ADDR	0x8001fc00
 
-/*  mips64emul:  these 'uint32_t' were 'int' in NetBSD:  */
+/*  gxemul:  these 'uint32_t' were 'int' in NetBSD:  */
 struct btinfo_common {
 	uint32_t next;		/* offset of next item, or zero */
 	uint32_t type;
@@ -57,7 +57,7 @@ struct btinfo_common {
 
 struct btinfo_magic {
 	struct btinfo_common common;
-	uint32_t magic;		/*  mips64emul, was 'int' in NetBSD  */
+	uint32_t magic;		/*  gxemul, was 'int' in NetBSD  */
 };
 
 #define BTINFO_BOOTPATH_LEN	80

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: aureg.h,v 1.1 2004-08-05 22:08:23 debug Exp $  */
+/*  gxemul: $Id: aureg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 /* $NetBSD: aureg.h,v 1.4 2003/11/08 05:49:08 simonb Exp $ */
 
 #ifndef AUREG_H

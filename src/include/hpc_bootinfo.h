@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: hpc_bootinfo.h,v 1.4 2004-12-15 17:20:14 debug Exp $  */
+/*  gxemul: $Id: hpc_bootinfo.h,v 1.5 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.2 2002/04/14 06:07:40 takemura Exp $	*/
 
 /*-

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: exec_elf.h,v 1.3 2005-02-01 11:49:29 debug Exp $  */
+/*  gxemul: $Id: exec_elf.h,v 1.4 2005-03-05 12:34:02 debug Exp $  */
 
 #ifndef	__EXEC_ELF_H
 #define	__EXEC_ELF_H
@@ -196,7 +196,7 @@ typedef struct {
 #define	EM_SPARC32PLUS	18	/* Enhanced instruction set SPARC */
 #define	EM_960		19	/* Intel 80960 */
 #define	EM_PPC		20	/* PowerPC */
-#define	EM_PPC64	21	/* PowerPC 64-bit  (mips64emul addition)  */
+#define	EM_PPC64	21	/* PowerPC 64-bit  (gxemul addition)  */
 #define	EM_V800		36	/* NEC V800 */
 #define	EM_FR20		37	/* Fujitsu FR20 */
 #define	EM_RH32		38	/* TRW RH-32 */

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: syscall_ultrix.h,v 1.1 2004-02-09 12:46:26 debug Exp $  */
+/*  gxemul: $Id: syscall_ultrix.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 /* $NetBSD: ultrix_syscall.h,v 1.44 2001/11/13 02:09:34 lukem Exp $ */
 
 /*

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: pmppc.h,v 1.1 2005-02-14 09:22:50 debug Exp $  */
+/*  gxemul: $Id: pmppc.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: pmppc.h,v 1.2 2002/07/05 18:45:20 matt Exp $	*/
 
 #ifndef	PMPPC_H

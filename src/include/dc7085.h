@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dc7085.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: dc7085.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: dc7085cons.h,v 1.6 2000/01/09 15:34:42 ad Exp $	*/
 
 /*

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: rd94.h,v 1.1 2003-12-30 03:09:04 debug Exp $  */
+/*  gxemul: $Id: rd94.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 #ifndef	_RD94_H_
 #define	_RD94_H_ 1
 

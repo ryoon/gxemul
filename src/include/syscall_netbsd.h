@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: syscall_netbsd.h,v 1.2 2004-04-06 02:30:40 debug Exp $  */
+/*  gxemul: $Id: syscall_netbsd.h,v 1.3 2005-03-05 12:34:03 debug Exp $  */
 /* $NetBSD: syscall.h,v 1.122 2002/05/03 00:26:49 eeh Exp $ */
 
 #ifndef SYSCALL_NETBSD_H

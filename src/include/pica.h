@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: pica.h,v 1.2 2004-10-14 12:32:54 debug Exp $  */
+/*  gxemul: $Id: pica.h,v 1.3 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: pica.h,v 1.2 2001/06/13 15:11:38 soda Exp $	*/
 /*	$OpenBSD: pica.h,v 1.4 1996/09/14 15:58:28 pefo Exp $ */
 

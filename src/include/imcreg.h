@@ -1,4 +1,4 @@
-/*  mips64emul:  $Id: imcreg.h,v 1.1 2004-06-07 11:52:06 debug Exp $  */
+/*  gxemul:  $Id: imcreg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: imcreg.h,v 1.2 2002/03/13 13:12:26 simonb Exp $	*/
 
 /*

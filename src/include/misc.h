@@ -28,9 +28,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.225 2005-03-05 10:35:37 debug Exp $
+ *  $Id: misc.h,v 1.226 2005-03-05 12:34:02 debug Exp $
  *
- *  Misc. definitions for mips64emul.
+ *  Misc. definitions for gxemul.
  */
 
 

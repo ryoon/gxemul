@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: if_lereg.h,v 1.3 2004-07-05 19:25:03 debug Exp $  */
+/*  gxemul: $Id: if_lereg.h,v 1.4 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: if_lereg.h,v 1.4 1994/10/26 21:09:08 cgd Exp $	*/
 
 #ifndef IF_LEREG_H
@@ -346,7 +346,7 @@ struct lereg2pad {
 #define	LE_CSR2		2
 #define	LE_CSR3		3
 
-/*  (mips64emul: NOTE: These are lereg0, not lereg1!)  */
+/*  (gxemul: NOTE: These are lereg0, not lereg1!)  */
 #define	LE_SERR		0x8000
 #define	LE_BABL		0x4000
 #define	LE_CERR		0x2000
@@ -370,7 +370,7 @@ struct lereg2pad {
 /*
  * Control and status bits -- lereg2
  */
-/*  (mips64emul: NOTE: These are not lereg, they are tx/rx descriptors)  */
+/*  (gxemul: NOTE: These are not lereg, they are tx/rx descriptors)  */
 #define	LE_OWN		0x8000
 #define	LE_ERR		0x4000
 #define	LE_STP		0x0200

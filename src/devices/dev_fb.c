@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.87 2005-02-18 06:19:19 debug Exp $
+ *  $Id: dev_fb.c,v 1.88 2005-03-05 12:31:26 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -932,7 +932,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 			}
 	}
 
-	snprintf(title, sizeof(title), "mips64emul: %ix%ix%i %s framebuffer",
+	snprintf(title, sizeof(title), "GXemul: %ix%ix%i %s framebuffer",
 	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
 	title[sizeof(title)-1] = '\0';
 

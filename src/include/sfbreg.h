@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sfbreg.h,v 1.1 2004-07-11 03:17:02 debug Exp $  */
+/*  gxemul: $Id: sfbreg.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 
 #ifndef SFBREG_H
 #define SFBREG_H

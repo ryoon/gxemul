@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: tc_ioasicreg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: tc_ioasicreg.h,v 1.3 2005-03-05 12:34:03 debug Exp $  */
 
 #ifndef TC_IOASICREG_H
 #define TC_IOASICREG_H

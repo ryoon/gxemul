@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: mc146818reg.h,v 1.3 2004-12-06 21:47:31 debug Exp $  */
+/*  gxemul: $Id: mc146818reg.h,v 1.4 2005-03-05 12:34:02 debug Exp $  */
 
 #ifndef	MC146818_REG_H
 #define	MC146818_REG_H

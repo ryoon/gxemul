@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: pcireg.h,v 1.3 2004-12-20 02:48:41 debug Exp $  */
+/*  gxemul: $Id: pcireg.h,v 1.4 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: pcireg.h,v 1.37 2002/03/22 20:03:20 drochner Exp $	*/
 
 #ifndef _DEV_PCI_PCIREG_H_

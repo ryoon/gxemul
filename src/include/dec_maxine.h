@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_maxine.h,v 1.2 2005-02-01 06:03:43 debug Exp $  */
+/*  gxemul: $Id: dec_maxine.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: maxine.h,v 1.8 2000/02/29 04:41:57 nisimura Exp $	*/
 
 /*-

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_5100.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: dec_5100.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 #ifndef	DEC_5100_H
 #define	DEC_5100_H
 

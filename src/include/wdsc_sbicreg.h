@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: wdsc_sbicreg.h,v 1.1 2004-06-12 11:47:37 debug Exp $  */
+/*  gxemul: $Id: wdsc_sbicreg.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: sbicreg.h,v 1.4 2002/03/13 13:12:27 simonb Exp $	*/
 
 /*

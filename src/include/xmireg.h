@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: xmireg.h,v 1.1 2004-02-23 23:55:12 debug Exp $  */
+/*  gxemul: $Id: xmireg.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: xmireg.h,v 1.1 2000/07/06 17:45:53 ragge Exp $	*/
 
 /*

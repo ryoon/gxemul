@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.13 2005-01-16 09:38:43 debug Exp $  */
+/*  gxemul: $Id: sgi_arcbios.h,v 1.14 2005-03-05 12:34:03 debug Exp $  */
 /*  This file has been modified from the NetBSD version, the additions
     are mostly guesses for 64-bit SGI stuff.  */
 
@@ -166,7 +166,7 @@ struct arcbios_component {
 	uint32_t	Identifier;			/*  was:  char *  */
 };
 
-/*  mips64emul addition: guess for a 64-bit version of arcbios_component:  */
+/*  gxemul addition: guess for a 64-bit version of arcbios_component:  */
 struct arcbios_component64 {
 	uint32_t	Class;
 	uint32_t	Type;
@@ -346,7 +346,7 @@ struct arcbios_mem {
 	uint32_t	PageCount;
 };
 
-/*  mips64emul: Linux/Octane reads these as 64-bit values  */
+/*  gxemul: Linux/Octane reads these as 64-bit values  */
 struct arcbios_mem64 {
 	uint32_t	Type;
 	uint32_t	dummy;		/*  not used by Linux?  */

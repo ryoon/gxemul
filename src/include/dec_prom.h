@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_prom.h,v 1.4 2005-02-18 08:07:58 debug Exp $  */
+/*  gxemul: $Id: dec_prom.h,v 1.5 2005-03-05 12:34:02 debug Exp $  */
 #ifndef _PMAX_DEC_PROM_H_
 #define _PMAX_DEC_PROM_H_
 
@@ -138,7 +138,7 @@ struct callback {
 	void	(*_leds) __P((int value));				/* 78 */
 	void	(*_clear_cache) __P((char *addr, int len));		/* 7c */
 	int	(*_getsysid) __P((void));				/* 80 */
-	int	(*_getbitmap) __P((struct memmap *map));		/* 84 */	/*  mips64emul: struct memmap  */
+	int	(*_getbitmap) __P((struct memmap *map));		/* 84 */	/*  gxemul: struct memmap  */
 	int	(*_disableintr) __P((int sn));				/* 88 */
 	int	(*_enableintr) __P((int sn));				/* 8c */
 	int	(*_testintr) __P((int sn));				/* 90 */

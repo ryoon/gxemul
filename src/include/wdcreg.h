@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: wdcreg.h,v 1.1 2004-01-14 06:11:46 debug Exp $  */
+/*  gxemul: $Id: wdcreg.h,v 1.2 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: wdcreg.h,v 1.25 2002/03/31 19:47:39 bouyer Exp $	*/
 
 #ifndef	WDCREG_H

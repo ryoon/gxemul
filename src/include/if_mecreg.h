@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: if_mecreg.h,v 1.1 2004-12-16 04:36:57 debug Exp $  */
+/*  gxemul: $Id: if_mecreg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: if_mecreg.h,v 1.2 2004/07/11 03:13:04 tsutsui Exp $	*/
 
 #ifndef IF_MECREG_H

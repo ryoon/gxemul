@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.6 2004-12-02 19:33:55 debug Exp $
+/*  gxemul: $Id: exec_ecoff_mips.h,v 1.7 2005-03-05 12:34:02 debug Exp $
  *  Addition of some ECOFF magin numbers, and ECOFF_BADMAG has been commented
  *  out to avoid warnings on Solaris.
  */
@@ -46,7 +46,7 @@
 
 #define ECOFF_PAD
 
-/*  mips64emul NOTE: Original types in NetBSD were 'u_long', not uint32_t  */
+/*  gxemul NOTE: Original types in NetBSD were 'u_long', not uint32_t  */
 
 #define ECOFF_MACHDEP \
         uint32_t gprmask; \
@@ -62,13 +62,13 @@
 
 #define ECOFF_MAGIC_MIPSEB	0x0160	/* mips1, big-endian */
 #define ECOFF_MAGIC_MIPSEL	0x0162	/* mips1, little-endian */
-#define ECOFF_MAGIC_MIPSEB2	0x0163	/* mips2, big-endian  (mips64emul addition) */
-#define ECOFF_MAGIC_MIPSEL2	0x0166	/* mips2, little-endian  (mips64emul addition) */
-#define ECOFF_MAGIC_MIPSEB3	0x0140	/* mips3, big-endian  (mips64emul addition) */
+#define ECOFF_MAGIC_MIPSEB2	0x0163	/* mips2, big-endian  (gxemul addition) */
+#define ECOFF_MAGIC_MIPSEL2	0x0166	/* mips2, little-endian  (gxemul addition) */
+#define ECOFF_MAGIC_MIPSEB3	0x0140	/* mips3, big-endian  (gxemul addition) */
 #define ECOFF_MAGIC_MIPSEL3	0x0142	/* mips3, little-endian */
 
 #if 0
-/*  commented out in mips64emul, to avoid warnings on Solaris  */
+/*  commented out in gxemul, to avoid warnings on Solaris  */
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define ECOFF_BADMAG(ep) \
     (!								\
@@ -79,7 +79,7 @@
 #if BYTE_ORDER == BIG_ENDIAN
 #define ECOFF_BADMAG(ep) ((ep)->f.f_magic != ECOFF_MAGIC_MIPSEB)
 #endif
-#endif	/*  mips64emul  */
+#endif	/*  gxemul  */
 
 #define ECOFF_SEGMENT_ALIGNMENT(ep) ((ep)->a.vstamp < 23 ? 8 : 16)
 
@@ -122,7 +122,7 @@ struct ecoff_symhdr {
 	int32_t		cbExtOffset;
 };
 
-#define	MIPS_MAGIC_SYM	0x7009		/*  mips64emul addition  */
+#define	MIPS_MAGIC_SYM	0x7009		/*  gxemul addition  */
 
 /* Macro for field name used by cgd's Alpha-derived code */
 #define esymMax iextMax

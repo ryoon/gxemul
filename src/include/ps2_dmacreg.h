@@ -1,9 +1,9 @@
-/*  mips64emul: $Id: ps2_dmacreg.h,v 1.3 2004-07-05 13:31:27 debug Exp $  */
+/*  gxemul: $Id: ps2_dmacreg.h,v 1.4 2005-03-05 12:34:03 debug Exp $  */
 
 #ifndef PS2_DMACREG_H
 #define	PS2_DMACREG_H
 
-/*  mips64emul: MIPS_PHYS_TO_KSEG1 has been changed to PS2_PHYS_TO_KSEG1.  */
+/*  gxemul: MIPS_PHYS_TO_KSEG1 has been changed to PS2_PHYS_TO_KSEG1.  */
 #define	PS2_PHYS_TO_KSEG1(x)		(x - 0x10008000)
 
 /*	$NetBSD: dmacreg.h,v 1.1 2001/10/16 15:38:36 uch Exp $	*/

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: ee_timerreg.h,v 1.2 2004-07-16 18:19:43 debug Exp $  */
+/*  gxemul: $Id: ee_timerreg.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: timerreg.h,v 1.1 2001/10/16 15:38:40 uch Exp $	*/
 
 /*-

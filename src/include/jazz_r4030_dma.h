@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: jazz_r4030_dma.h,v 1.2 2004-10-24 06:29:58 debug Exp $  */
+/*  gxemul: $Id: jazz_r4030_dma.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: dma.h,v 1.2 2001/07/24 16:26:53 tsutsui Exp $	*/
 /*	$OpenBSD: dma.h,v 1.3 1997/04/19 17:19:51 pefo Exp $	*/
 
@@ -104,7 +104,7 @@ typedef struct dma_softc {
 	int (*intr)(struct dma_softc *);	/* Interrupt routine pointer */
 	void (*end)(struct dma_softc *);	/* Interrupt routine pointer */
 } dma_softc_t;
-#endif	/*  not in mips64emul  */
+#endif	/*  not in gxemul  */
 
 #define	DMA_TO_DEV	0
 #define	DMA_FROM_DEV	1
@@ -125,6 +125,6 @@ void picaDmaStart __P((struct dma_softc *, char *, size_t, int));
 void picaDmaFlush __P((struct dma_softc *, char *, size_t, int));
 void asc_dma_init __P((struct dma_softc *));
 void fdc_dma_init __P((struct dma_softc *));
-#endif	/*  not in mips64emul  */
+#endif	/*  not in gxemul  */
 
 #endif	/*  __JAZZ_R4030_DMA  */

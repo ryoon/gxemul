@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_kn02.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: dec_kn02.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: kn02.h,v 1.8 2000/02/29 04:41:56 nisimura Exp $	*/
 
 /*-

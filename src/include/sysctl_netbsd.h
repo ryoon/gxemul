@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sysctl_netbsd.h,v 1.2 2004-01-27 21:52:28 debug Exp $  */
+/*  gxemul: $Id: sysctl_netbsd.h,v 1.3 2005-03-05 12:34:03 debug Exp $  */
 /*	$NetBSD: sysctl.h,v 1.74 2002/03/20 00:23:46 christos Exp $	*/
 
 /*
@@ -270,7 +270,7 @@ struct ctlname {
  * KERN_PROC subtype ops return arrays of augmented proc structures:
  */
 #if 0
-/*  Not in mips64emul  */
+/*  Not in gxemul  */
 struct kinfo_proc {
 	struct	proc kp_proc;			/* proc structure */
 	struct	eproc {
@@ -319,7 +319,7 @@ typedef struct {
 } ki_sigset_t;
 
 #if 0
-/*  Not in mips64emul  */
+/*  Not in gxemul  */
 struct kinfo_proc2 {
 	u_int64_t p_forw;		/* PTR: linked run/sleep queue. */
 	u_int64_t p_back;

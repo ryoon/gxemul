@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sccreg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: sccreg.h,v 1.3 2005-03-05 12:34:03 debug Exp $  */
 
 #ifndef SCCREG_H
 #define	SCCREG_H

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: kbdreg.h,v 1.1 2004-10-24 03:56:45 debug Exp $  */
+/*  gxemul: $Id: kbdreg.h,v 1.2 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: kbdreg.h,v 1.4 2000/01/23 21:01:57 soda Exp $	*/
 /*	$OpenBSD: kbdreg.h,v 1.3 1996/09/04 21:18:24 pefo Exp $	*/
 

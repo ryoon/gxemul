@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.34 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_vga.c,v 1.35 2005-03-05 12:31:26 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -468,9 +468,9 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	for (y=0; y<VGA_MEM_MAXY; y++) {
 		char s[81];
 #ifdef VERSION
-		strcpy(s, " mips64emul-" VERSION);
+		strcpy(s, " GXemul-" VERSION);
 #else
-		strcpy(s, " mips64emul");
+		strcpy(s, " GXemul");
 #endif
 		memset(s+strlen(s), ' ', 80 - strlen(s));
 		memcpy(s+79-strlen(name), name, strlen(name));

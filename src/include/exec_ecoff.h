@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: exec_ecoff.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  gxemul: $Id: exec_ecoff.h,v 1.3 2005-03-05 12:34:02 debug Exp $  */
 /*	$NetBSD: exec_ecoff.h,v 1.12 2000/11/21 00:37:56 jdolecek Exp $	*/
 
 /*

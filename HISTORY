@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.635 2005-03-12 09:13:42 debug Exp $
+$Id: HISTORY,v 1.636 2005-03-12 12:58:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1735,3 +1735,5 @@ Changelog for GXemul:
 20050311	Minor updates. Adding a dummy "NEC MobilePro 780" hpcmips
 		machine mode; disabling direct bintrans access to framebuffers
 		that are not 4K page aligned.
+20050312	Adding an ugly KIU hack to the VR41xx device (which enables
+		NetBSD/hpcmips MobilePro 780 keyboard input).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.383 2005-03-12 09:13:46 debug Exp $
+ *  $Id: machine.c,v 1.384 2005-03-12 12:58:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2088,6 +2088,8 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.153 2005-03-03 06:42:51 debug Exp $
+ *  $Id: devices.h,v 1.154 2005-03-12 12:58:13 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -538,13 +538,25 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relati
 void dev_turbochannel_init(struct machine *machine, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq);
 
 /*  dev_vga.c:  */
-int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_vga_init(struct machine *machine, struct memory *mem, uint64_t videomem_base, uint64_t control_base, int max_x, int max_y, char *name);
+int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+void dev_vga_init(struct machine *machine, struct memory *mem,
+	uint64_t videomem_base, uint64_t control_base, int max_x, int max_y,
+	char *name);
 
 /*  dev_vr41xx.c:  */
 #define	DEV_VR41XX_LENGTH		0x800		/*  TODO?  */
 struct vr41xx_data {
 	int		cpumodel;
+
+	int		kiu_console_handle;
+	int		kiu_offset;
+	int		d0;
+	int		d1;
+	int		d2;
+	int		d3;
+	int		d4;
+	int		d5;
 
 	/*  See icureg.h in NetBSD for more info.  */
 	uint16_t	sysint1;
@@ -553,8 +565,11 @@ struct vr41xx_data {
 	uint16_t	msysint2;
 };
 
-int dev_vr41xx_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct vr41xx_data *dev_vr41xx_init(struct machine *machine, struct memory *mem, int cpumodel);
+int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
+	struct memory *mem, int cpumodel);
 
 /*  dev_wdc.c:  */
 #define	DEV_WDC_LENGTH			0x8

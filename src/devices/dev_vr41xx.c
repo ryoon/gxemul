@@ -25,17 +25,18 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.15 2005-02-23 21:09:28 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.16 2005-03-12 12:58:13 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
- *  TODO
+ *  This is just a big hack. TODO: Fix.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "devices.h"
 #include "machine.h"
@@ -43,6 +44,7 @@
 #include "misc.h"
 
 #include "bcureg.h"
+#include "vrkiureg.h"
 
 
 #define	DEV_VR41XX_TICKSHIFT		14
@@ -55,8 +57,11 @@
  */
 void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 {
-/*	struct vr41xx_data *d = extra;  */
+	struct vr41xx_data *d = extra;
 
+	/*
+	 *  UGLY! TODO: fix this.
+	 */
 	{
 		static int x = 0;
 		/*  TODO:  */
@@ -64,6 +69,217 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		if (x > 100 && (x&3)==0)
 			cpu_interrupt(cpu, 8 + 3);
 	}
+
+	/*
+	 *  Keyboard input:
+	 *
+	 *  Hardcoded for MobilePro 780. (See NetBSD's hpckbdkeymap.h for
+	 *  info on other keyboard layouts. mobilepro780_keytrans is the
+	 *  one used here.)
+	 *
+	 *  TODO: Make this work with "any" keyboard layout.
+	 *
+	 *  ofs 0:
+	 *	8000='o' 4000='.' 2000=DOWN  1000=UP
+	 *	 800=';'  400='''  200='['    100=?
+	 *	  80='l'   40=CR    20=RIGHT   10=LEFT
+	 *	   8='/'    4='\'    2=']'      1=SPACE
+	 *  ofs 2:
+	 *	8000='a' 4000='s' 2000='d' 1000='f'
+	 *	 800='`'  400='-'  200='='  100=?
+	 *	  80='z'   40='x'   20='c'   10='v'
+	 *	   8=?      4=?      2=?
+	 *  ofs 4:
+	 *	8000='9' 4000='0' 2000=?   1000=?
+	 *	 800='b'  400='n'  200='m'  100=','
+	 *	  80='q'   40='w'   20='e'   10='r'
+	 *	   8='5'    4='6'    2='7'    1='8'
+	 *  ofs 6:
+	 *	8000=ESC 4000=DEL 2000=CAPS 1000=?
+	 *	 800='t'  400='y'  200='u'   100='i'
+	 *	  80='1'   40='2'   20='3'    10='4'
+	 *	   8='g'    4='h'    2='j'     1='k'
+	 *  ofs 8:
+	 *                      200=ALT_L
+	 *	  80=    40=TAB  20='p' 10=BS
+	 *	   8=     4=      2=     1=ALT_R
+	 *  ofs a:
+	 *	800=SHIFT 4=CTRL
+	 */
+
+	/*  Release all keys:  */
+	d->d0 = d->d1 = d->d2 = d->d3 = d->d4 = d->d5 = 0;
+
+	if (console_charavail(d->kiu_console_handle)) {
+		char ch = console_readchar(d->kiu_console_handle);
+
+		switch (ch) {
+		case '+':	console_makeavail(d->kiu_console_handle, '=');
+				d->d5 = 0x800; break;
+		case '_':	console_makeavail(d->kiu_console_handle, '-');
+				d->d5 = 0x800; break;
+		case '<':	console_makeavail(d->kiu_console_handle, ',');
+				d->d5 = 0x800; break;
+		case '>':	console_makeavail(d->kiu_console_handle, '.');
+				d->d5 = 0x800; break;
+		case '{':	console_makeavail(d->kiu_console_handle, '[');
+				d->d5 = 0x800; break;
+		case '}':	console_makeavail(d->kiu_console_handle, ']');
+				d->d5 = 0x800; break;
+		case ':':	console_makeavail(d->kiu_console_handle, ';');
+				d->d5 = 0x800; break;
+		case '"':	console_makeavail(d->kiu_console_handle, '\'');
+				d->d5 = 0x800; break;
+		case '|':	console_makeavail(d->kiu_console_handle, '\\');
+				d->d5 = 0x800; break;
+		case '?':	console_makeavail(d->kiu_console_handle, '/');
+				d->d5 = 0x800; break;
+
+		case '!':	console_makeavail(d->kiu_console_handle, '1');
+				d->d5 = 0x800; break;
+		case '@':	console_makeavail(d->kiu_console_handle, '2');
+				d->d5 = 0x800; break;
+		case '#':	console_makeavail(d->kiu_console_handle, '3');
+				d->d5 = 0x800; break;
+		case '$':	console_makeavail(d->kiu_console_handle, '4');
+				d->d5 = 0x800; break;
+		case '%':	console_makeavail(d->kiu_console_handle, '5');
+				d->d5 = 0x800; break;
+		case '^':	console_makeavail(d->kiu_console_handle, '6');
+				d->d5 = 0x800; break;
+		case '&':	console_makeavail(d->kiu_console_handle, '7');
+				d->d5 = 0x800; break;
+		case '*':	console_makeavail(d->kiu_console_handle, '8');
+				d->d5 = 0x800; break;
+		case '(':	console_makeavail(d->kiu_console_handle, '9');
+				d->d5 = 0x800; break;
+		case ')':	console_makeavail(d->kiu_console_handle, '0');
+				d->d5 = 0x800; break;
+
+		case '1':	d->d3 = 0x80; break;
+		case '2':	d->d3 = 0x40; break;
+		case '3':	d->d3 = 0x20; break;
+		case '4':	d->d3 = 0x10; break;
+		case '5':	d->d2 = 0x08; break;
+		case '6':	d->d2 = 0x04; break;
+		case '7':	d->d2 = 0x02; break;
+		case '8':	d->d2 = 0x01; break;
+		case '9':	d->d2 = 0x8000; break;
+		case '0':	d->d2 = 0x4000; break;
+
+		case ';':	d->d0 = 0x800; break;
+		case '\'':	d->d0 = 0x400; break;
+		case '[':	d->d0 = 0x200; break;
+		case '/':	d->d0 = 0x8; break;
+		case '\\':	d->d0 = 0x4; break;
+		case ']':	d->d0 = 0x2; break;
+
+		case 'a':	d->d1 = 0x8000; break;
+		case 'b':	d->d2 = 0x800; break;
+		case 'c':	d->d1 = 0x20; break;
+		case 'd':	d->d1 = 0x2000; break;
+		case 'e':	d->d2 = 0x20; break;
+		case 'f':	d->d1 = 0x1000; break;
+		case 'g':	d->d3 = 0x8; break;
+		case 'h':	d->d3 = 0x4; break;
+		case 'i':	d->d3 = 0x100; break;
+		case 'j':	d->d3 = 0x2; break;
+		case 'k':	d->d3 = 0x1; break;
+		case 'l':	d->d0 = 0x80; break;
+		case 'm':	d->d2 = 0x200; break;
+		case 'n':	d->d2 = 0x400; break;
+		case 'o':	d->d0 = 0x8000; break;
+		case 'p':	d->d4 = 0x20; break;
+		case 'q':	d->d2 = 0x80; break;
+		case 'r':	d->d2 = 0x10; break;
+		case 's':	d->d1 = 0x4000; break;
+		case 't':	d->d3 = 0x800; break;
+		case 'u':	d->d3 = 0x200; break;
+		case 'v':	d->d1 = 0x10; break;
+		case 'w':	d->d2 = 0x40; break;
+		case 'x':	d->d1 = 0x40; break;
+		case 'y':	d->d3 = 0x400; break;
+		case 'z':	d->d1 = 0x80; break;
+
+		case ',':	d->d2 = 0x100; break;
+		case '.':	d->d0 = 0x4000; break;
+		case '-':	d->d1 = 0x400; break;
+		case '=':	d->d1 = 0x200; break;
+
+		case '\r':
+		case '\n':	d->d0 = 0x40; break;
+		case '\b':	d->d4 = 0x10; break;
+
+		default:
+			/*  Shifted:  */
+			if (ch >= 'A' && ch <= 'Z') {
+				console_makeavail(d->kiu_console_handle,
+				    ch + 32);
+				d->d5 = 0x800;
+				break;
+			}
+
+			/*  CTRLed:  */
+			if (ch >= 1 && ch <= 26) {
+				console_makeavail(d->kiu_console_handle,
+				    ch + 64);
+				d->d5 = 0x4;
+				break;
+			}
+		}
+	}
+}
+
+
+/*
+ *  vr41xx_kiu():
+ *
+ *  Keyboard Interface Unit. Return value is "odata".
+ *  (See NetBSD's vrkiu.c for more info.)
+ */
+static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
+	int writeflag, struct vr41xx_data *d)
+{
+	uint64_t odata = 0;
+
+	switch (ofs) {
+	case 0:	odata = d->d0; break;
+	case 2:	odata = d->d1; break;
+	case 4:	odata = d->d2; break;
+	case 6:	odata = d->d3; break;
+	case 8:	odata = d->d4; break;
+	case 0xa:odata = d->d5; break;
+	case KIUSCANREP:
+		if (writeflag == MEM_WRITE) {
+			debug("[ vr41xx KIU: setting KIUSCANREP to 0x%04x ]\n",
+			    (int)idata);
+			/*  TODO  */
+		} else
+			fatal("[ vr41xx KIU: unimplemented read from "
+			    "KIUSCANREP ]\n");
+		break;
+	case KIUSCANS:
+		if (writeflag == MEM_WRITE) {
+			debug("[ vr41xx KIU: write to KIUSCANS: 0x%04x: TODO"
+			    " ]\n", (int)idata);
+			/*  TODO  */
+		} else
+			debug("[ vr41xx KIU: unimplemented read from "
+			    "KIUSCANS ]\n");
+		break;
+	case KIURST:
+		/*  Reset.  */
+		break;
+	default:
+		if (writeflag == MEM_WRITE)
+			fatal("[ vr41xx KIU: unimplemented write to offset "
+			    "0x%x, data=0x%016llx ]\n", ofs, (long long)idata);
+		else
+			fatal("[ vr41xx KIU: unimplemented read from offset "
+			    "0x%x ]\n", ofs);
+	}
+
+	return odata;
 }
 
 
@@ -81,6 +297,16 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint64_t);
+
+	/*  KIU ("Keyboard Interface Unit") is handled separately.  */
+	if (relative_addr >= d->kiu_offset &&
+	    relative_addr < d->kiu_offset + 0x20) {
+		odata = vr41xx_kiu(cpu, relative_addr - d->kiu_offset,
+		    idata, writeflag, d);
+		goto ret;
+	}
+
+	/*  TODO: Maybe these should be handled separately as well?  */
 
 	switch (relative_addr) {
 	/*  BCU:  0x00 .. 0x1c  */
@@ -156,8 +382,6 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		cpu_interrupt_ack(cpu, 8 + 3);
 		break;
 
-	/*  0x180: possibly a "KIU", see NetBSD sources for more info  */
-
 	default:
 		if (writeflag == MEM_WRITE)
 			debug("[ vr41xx: unimplemented write to address "
@@ -168,6 +392,7 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
+ret:
 	/*  Recalculate interrupt assertions:  */
 	cpu_interrupt_ack(cpu, 8 + 32);
 
@@ -193,6 +418,10 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	memset(d, 0, sizeof(struct vr41xx_data));
 
 	d->cpumodel = cpumodel;
+
+	/*  TODO: VRC4173 has the KIU at offset 0x100?  */
+	d->kiu_offset = 0x180;
+	d->kiu_console_handle = console_start_slave_inputonly(machine, "kiu");
 
 	switch (cpumodel) {
 	case 4101:

@@ -233,9 +233,6 @@ The result should looks something like this:
 <a name="netbsdinstall"></a>
 <h4>How to install NetBSD/pmax inside the emulator</h4>
 
-<font color="#ff0000">NOTE: This is still highly experimental and buggy,
-and does not quite work yet!</font>
-<p>
 To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
 you first need to install NetBSD onto a disk image. To NetBSD, the disk 
 image looks and acts just like a real SCSI disk, but it is just a normal 
@@ -264,52 +261,89 @@ You need to do the following:
 </ol>
 
 <p>
-Then proceed like you would if you would install NetBSD on a real
+Then proceed like you would do if you were installing NetBSD on a real
 DECstation.  Even if the emulator is running on a very fast host system,
-you should expect the installation to take quite some time.
+you should expect the installation to take quite some time. On a
+2.8 GHz Xeon-based PC, a full install takes around 4 hours.
 
 <p>
 Here are some screenshots taken during installation:
-<center>
+<p>
   <table border="0">
     <tr>
-	<td width=105 align="center">
+	<td width=135 align="center">
 	  <a href="netbsdpmax_install_01.gif">
 		<img src="netbsdpmax_install_01_small.gif"></a>
 	</td>
-	<td width=105 align="center">
+	<td align="left" valign="center">
+		<a href="netbsdpmax_install_01.gif">Screenshot 1</a>:
+		boot messages.
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
 	  <a href="netbsdpmax_install_02.gif">
 		<img src="netbsdpmax_install_02_small.gif"></a>
 	</td>
-	<td width=105 align="center">
+	<td align="left" valign="center">
+		<a href="netbsdpmax_install_02.gif">Screenshot 2</a>:
+		sysinst. Cursor keys may work, but don't always do,
+		so use alphabetic letters to be safe.
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
 	  <a href="netbsdpmax_install_03.gif">
 		<img src="netbsdpmax_install_03_small.gif"></a>
 	</td>
-	<td width=105 align="center">
+	<td align="left" valign="center">
+		<a href="netbsdpmax_install_03.gif">Screenshot 3</a>:
+		Disk partitioning.
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
 	  <a href="netbsdpmax_install_04.gif">
 		<img src="netbsdpmax_install_04_small.gif"></a>
 	</td>
-	<td width=105 align="center">
+	<td align="left" valign="center">
+		<a href="netbsdpmax_install_04.gif">Screenshot 4</a>:
+		newfs running...
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
 	  <a href="netbsdpmax_install_05.gif">
 		<img src="netbsdpmax_install_05_small.gif"></a>
 	</td>
-	<td width=105 align="center">
-	  <a href="netbsdpmax_install_06.gif">
-		<img src="netbsdpmax_install_06_small.gif"></a>
+	<td align="left" valign="center">
+		<a href="netbsdpmax_install_05.gif">Screenshot 5</a>:
+		Choose CD-ROM as distribution source.
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
+		...
+	</td>
+	<td align="left" valign="center">
+		Screenshot 6: ... (install finished)
 	</td>
     </tr>
   </table>
-</center>
 <p>
 <font color="#ff0000">
-TODO:  The last screenshot above shows where the installation bugs out.
-gunzip says that the gzip data is invalid; perhaps the bug is
-that some instruction used by gunzip is not 100% correctly emulated.
-</font>
-
+IMPORTANT:</font>
+Once the installation is completed, you should take a backup
+copy of the rootdisk image. The reason for this is that if you make
+some mistake later on, you probably don't want to go through serveral
+hours of re-installing again.
 <p>
-Once the installation is completed, following 
-these steps should boot the OS from the root disk image:
+Then, following these steps should boot the OS from the root disk image:
 <ol>
   <li>Download a NetBSD GENERIC kernel and gunzip it:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz</a>
@@ -318,6 +352,30 @@ these steps should boot the OS from the root disk image:
 	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d netbsd_pmax_rootdisk.img netbsd-GENERIC</b>
 </pre>
 </ol>
+<p>
+  <table border=0>
+    <tr>
+	<td width=135 align="center">
+	  <a href="netbsdpmax_installed_01.gif">
+		<img src="netbsdpmax_installed_01_small.gif"></a>
+	</td>
+	<td align="left" valign="center">
+		<a href="netbsdpmax_installed_01.gif">Screenshot 1</a>:
+		First bootup using the GENERIC kernel :-)
+	</td>
+    </tr>
+
+    <tr>
+	<td width=135 align="center">
+	  <a href="netbsdpmax_installed_02.gif">
+		<img src="netbsdpmax_installed_02_small.gif"></a>
+	</td>
+	<td align="left" valign="center">
+		<a href="netbsdpmax_installed_02.gif">Screenshot 2</a>:
+		Compiling mips64emul <i>inside</i> NetBSD inside mips64emul. :-)
+	</td>
+    </tr>
+  </table>
 <p>
 <font color="#ff0000">
 TODO:  As there are boot programs and kernels on both the CDROM image and 
@@ -475,6 +533,13 @@ this, add a 'b' prefix to one of the devices:
 <pre>
 	$ <b>./mips64emul -qD2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
 </pre>
+If you have a physical CD-ROM drive on the host machine, say /dev/cd0c, you can
+use it as a CD-ROM directly accessible from within the emulator:
+<pre>
+	$ <b>./mips64emul -qD2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
+</pre>
+It is probably possible to use harddisks as well this way, but I would not
+recommend it.
 
 
 <p><br>
@@ -638,7 +703,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.21 2004-04-13 08:57:25 debug Exp $</pre>
+<pre>$Id: index.html,v 1.22 2004-04-15 15:05:32 debug Exp $</pre>
 
 </body>
 </html>

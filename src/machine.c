@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.157 2004-08-10 14:19:49 debug Exp $
+ *  $Id: machine.c,v 1.158 2004-08-10 20:06:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -724,7 +724,16 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  Au1x00 interrupt routine:
  *
- *  TODO: This is just bogus so far.
+ *  TODO: This is just bogus so far.  For more info, read this:
+ *  http://www.meshcube.org/cgi-bin/viewcvs.cgi/kernel/linux/arch/mips/au1000/common/
+ *
+ *  CPU int 2 = IC 0, request 0
+ *  CPU int 3 = IC 0, request 1
+ *  CPU int 4 = IC 1, request 0
+ *  CPU int 5 = IC 1, request 1
+ *
+ *  Interrupts 0..31 are on interrupt controller 0, interrupts 32..63 are
+ *  on controller 1.
  */
 void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
@@ -733,7 +742,7 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	irq_nr -= 8;
 	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
 
-	m = 1 << irq_nr;
+	m = 1 << (irq_nr & 31);
 
 	if (assrt)
 		au1x00_ic_data->request0_int |= m;
@@ -744,6 +753,13 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
+
+	if (au1x00_ic_data->request1_int != 0)
+		cpu_interrupt(cpu, 3);
+	else
+		cpu_interrupt_ack(cpu, 3);
+
+	/*  TODO: Controller 1  */
 }
 
 

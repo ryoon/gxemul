@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.37 2005-01-09 01:55:31 debug Exp $
+ *  $Id: x11.c,v 1.38 2005-01-17 09:12:17 debug Exp $
  *
  *  X11-related functions.
  */
@@ -414,7 +414,12 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 
 	XSetStandardProperties(x11_display,
 	    fb_windows[fb_number].x11_fb_window, name,
-	    "mips64emul", None, NULL, 0, NULL);
+#ifdef VERSION
+	    "mips64emul-" VERSION,
+#else
+	    "mips64emul",
+#endif
+	    None, NULL, 0, NULL);
 	XSelectInput(x11_display, fb_windows[fb_number].x11_fb_window,
 	    StructureNotifyMask | ExposureMask | ButtonPressMask |
 	    ButtonReleaseMask | PointerMotionMask | KeyPressMask);

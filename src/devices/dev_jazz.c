@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.5 2005-01-05 01:09:34 debug Exp $
+ *  $Id: dev_jazz.c,v 1.6 2005-01-05 02:27:59 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -272,6 +272,47 @@ printf("R4030_SYS_ISA_VECTOR\n");
 
 
 /*
+ *  dev_jazz_led_access():
+ */
+int dev_jazz_led_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct jazz_data *d = (struct jazz_data *) extra;
+	uint64_t idata = 0, odata = 0;
+	int regnr;
+
+	idata = memory_readmax64(cpu, data, len);
+	regnr = relative_addr / sizeof(uint32_t);
+
+	switch (relative_addr) {
+	case 0:
+		if (writeflag == MEM_WRITE) {
+			d->led = idata;
+			debug("[ jazz_led: write to LED: 0x%02x ]\n",
+			    (int)idata);
+		} else {
+			odata = d->led;
+		}
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			fatal("[ jazz_led: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+		} else {
+			fatal("[ jazz_led: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_jazz_access_a0():
  *
  *  ISA interrupt stuff, high 8 interrupts.
@@ -449,6 +490,10 @@ struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "jazz", baseaddr, DEV_JAZZ_LENGTH,
 	    dev_jazz_access, (void *)d, MEM_DEFAULT, NULL);
+
+	/*  At least for Magnum and Pica-61:  */
+	memory_device_register(mem, "jazz_led", 0x08000f000ULL, 4,
+	    dev_jazz_led_access, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "jazz_isa_20", 0x90000020ULL, 2,
 	    dev_jazz_access_20, (void *)d, MEM_DEFAULT, NULL);

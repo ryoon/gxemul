@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.120 2005-01-04 16:45:36 debug Exp $
+ *  $Id: devices.h,v 1.121 2005-01-05 02:28:00 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -264,6 +264,8 @@ struct jazz_data {
 	uint32_t	dma0_count;
 	uint32_t	dma0_addr;
 	/*  same for dma1,2,3 actually (TODO)  */
+
+	int		led;
 };
 size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);

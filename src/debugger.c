@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.48 2005-01-21 19:50:19 debug Exp $
+ *  $Id: debugger.c,v 1.49 2005-01-21 19:58:36 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -740,23 +740,41 @@ static void debugger_cmd_lookup(struct machine *m, char *cmd_line)
 
 /*
  *  debugger_cmd_machine():
+ *
+ *  Dump info about all machines in all emulations.
  */
 static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
-	int i, j, nm = debugger_emul->n_machines, iadd = 4;
+	int i, j, nm, iadd = 4;
 
-	for (j=0; j<nm; j++) {
-		if (nm > 1) {
-			debug("machine %i:", j);
-			if (debugger_machine == debugger_emul->machines[j])
-				debug(" [ FOCUSED ]");
-			debug("\n");
+	for (i=0; i<debugger_n_emuls; i++) {
+		struct emul *e = debugger_emuls[i];
+
+		if (e == NULL)
+			continue;
+
+		if (debugger_n_emuls > 1) {
+			debug("emulation %i:\n", i);
 			debug_indentation(iadd);
 		}
 
-		machine_dumpinfo(debugger_emul->machines[j]);
+		nm = e->n_machines;
+		for (j=0; j<nm; j++) {
+			if (nm > 1 || debugger_n_emuls > 1) {
+				debug("machine %i:", j);
+				if (debugger_machine == e->machines[j])
+					debug(" [ FOCUSED ]");
+				debug("\n");
+				debug_indentation(iadd);
+			}
 
-		if (nm > 1)
+			machine_dumpinfo(e->machines[j]);
+
+			if (nm > 1 || debugger_n_emuls > 1)
+				debug_indentation(-iadd);
+		}
+
+		if (debugger_n_emuls > 1)
 			debug_indentation(-iadd);
 	}
 }
@@ -1460,7 +1478,7 @@ static struct cmd cmds[] = {
 		"lookup a symbol by name or address" },
 
 	{ "machine", "", 0, debugger_cmd_machine,
-		"print a summary of the machine being emulated" },
+		"print a summary of the machine(s) being emulated" },
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
 		"show opcode statistics" },
@@ -1541,7 +1559,7 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 			else
 				printf(" ");
 
-		printf("   %s\n", cmds[i].description);
+		printf("  %s\n", cmds[i].description);
 		i++;
 	}
 

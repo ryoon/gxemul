@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.250 2005-01-21 19:50:19 debug Exp $
+ *  $Id: cpu.c,v 1.251 2005-01-21 19:58:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3822,8 +3822,6 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
 	int ncpus = machine->ncpus;
 	int te;
 
-printf("INIT\n");
-
 	machine->a_few_cycles = 1048576;
 	machine->ncycles_flush = 0;
 	machine->ncycles_flushx11 = 0;
@@ -3874,8 +3872,6 @@ int cpu_run(struct emul *emul, struct machine *machine)
 	    machine->max_random_cycles_per_chunk;
 	int64_t ncycles_chunk_end;
 	int running, rounds;
-
-printf("RUN\n");
 
 	/*  The main loop:  */
 	running = 1;
@@ -4052,7 +4048,7 @@ printf("RUN\n");
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 8)
+		if (rounds > 16)
 			break;
 	}
 
@@ -4070,8 +4066,6 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 {
 	int te;
 	struct cpu **cpus = machine->cpus;
-
-printf("DEINIT\n");
 
 	/*
 	 *  Two last ticks of every hardware device.  This will allow

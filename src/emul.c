@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.3 2003-11-07 08:48:24 debug Exp $
+ *  $Id: emul.c,v 1.4 2003-11-08 08:43:54 debug Exp $
  *
  *  Emulation startup.
  */
@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "misc.h"
+#include "diskimage.h"
 #include "console.h"
 
 
@@ -135,6 +136,8 @@ void emul(void)
 	/*  Startup the bootstrap CPU:  */
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;
 	cpus[bootstrap_cpu]->running            = 1;
+
+	diskimage_dump_info();
 
 	if (use_x11)
 		x11_init();

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.78 2005-01-12 23:09:09 debug Exp $
+$Id: RELEASE,v 1.79 2005-01-13 07:20:56 debug Exp $
 
 I'm now working on post-0.2.4.
 
@@ -72,24 +72,9 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
-Here is a short summary of the changes from version 0.2.3 to 0.2.4:
+Here is a short summary of the changes from version 0.2.4 to 0.X.X:
 
-	x)  Debian GNU/Linux can now be installed. However, it is VERY
-	    unstable, and Linux Oopses when there is heavy serial console
-	    output. A '-U' command line option reduces the risk, but doesn't
-	    fix the problem.
-
-	x)  When emulating framebuffers for machines like the DECstation
-	    5000/200, that have a hardware mouse cursor, the host machine's
-	    X cursor is now invisible. (This might not sound like a very
-	    exiting change, but it "feels" a lot better than before.)
-
-	x)  Improvements to the experimental dynamic binary translation
-	    subsystem.
-
-	x)  Many improvements to the single-step debugger.
-
-	x)  Various other bugfixes and updates.
+	x)  TODO
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.13 2004-01-06 10:32:30 debug Exp $
+ *  $Id: file.c,v 1.14 2004-01-09 12:35:09 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -593,15 +593,16 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
  *  file_load_raw():
  *
  *  Loads a raw binary into emulated memory. The filename should be
- *  of the following form:     address:filename
+ *  of the following form:     loadaddress:filename
+ *  or    loadaddress:skiplen:filename
  */
 void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
 	int len, chunk_size;
 	unsigned char buf[4096];
-	uint64_t entry, vaddr;
-	char *p;
+	uint64_t entry, vaddr, skip = 0;
+	char *p, *p2;
 
 	p = strchr(filename, ':');
 	if (p == NULL) {
@@ -610,14 +611,24 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	entry = strtoll(filename, NULL, 0);
+	p2 = p+1;
 
-	f = fopen(p+1, "r");
+	/*  A second value? That's the optional skip value  */
+	p = strchr(p2, ':');
+	if (p != NULL) {
+		skip = strtoll(p2, NULL, 0);
+		p = p+1;
+	} else
+		p = p2;
+
+	f = fopen(p, "r");
 	if (f == NULL) {
-		perror(p+1);
+		perror(p);
 		exit(1);
 	}
 
 	vaddr = entry;
+	fseek(f, skip, SEEK_SET);
 
 	/*  Load file contents:  */
 	while (!feof(f)) {
@@ -629,7 +640,10 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 		vaddr += len;
 	}
 
-	debug("'%s': 0x%x bytes loaded at 0x%08llx\n", p+1, ftell(f), (long long)entry);
+	debug("'%s': 0x%x bytes loaded at 0x%08llx", p, ftell(f), (long long)entry);
+	if (skip > 0)
+		debug(" (0x%llx bytes of header skipped)", (long long)skip);
+	debug("\n");
 
 	fclose(f);
 

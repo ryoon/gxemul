@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.30 2004-07-08 22:49:18 debug Exp $
+ *  $Id: emul.c,v 1.31 2004-07-14 12:06:53 debug Exp $
  *
  *  Emulation startup.
  */
@@ -138,9 +138,9 @@ void load_bootblock(void)
 	int boot_disk_id = diskimage_bootdev();
 	int res;
 	unsigned char minibuf[0x20];
-	unsigned char bootblock_buf[8192];
+	unsigned char bootblock_buf[65536];
 	uint64_t bootblock_offset;
-	uint64_t bootblock_loadaddr;
+	uint64_t bootblock_loadaddr, bootblock_pc;
 	int n_blocks;
 
 	switch (emulation_type) {
@@ -166,6 +166,9 @@ void load_bootblock(void)
 
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
 		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
+
+		bootblock_pc = minibuf[0x14] + (minibuf[0x15] << 8)
+		  + (minibuf[0x16] << 16) + (minibuf[0x17] << 24);
 
 		n_blocks = minibuf[0x18] + (minibuf[0x19] << 8)
 		  + (minibuf[0x1a] << 16) + (minibuf[0x1b] << 24);
@@ -195,7 +198,9 @@ void load_bootblock(void)
 		store_buf(bootblock_loadaddr, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
 
-		cpus[bootstrap_cpu]->pc = bootblock_loadaddr;
+		bootblock_pc &= 0x0fffffff;
+		bootblock_pc |= 0xa0000000;
+		cpus[bootstrap_cpu]->pc = bootblock_pc;
 
 		break;
 	default:

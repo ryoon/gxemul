@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.42 2004-06-27 20:19:12 debug Exp $
+ *  $Id: memory.c,v 1.43 2004-06-28 00:54:21 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -849,11 +849,10 @@ have_paddr:
 	 *  TODO: This is mostly an ugly hack to make the cache size detection
 	 *  for R2000/R3000 work with a netbsd kernel.
 	 */
-#if 0
-	/*  vaddr shouldn't be used below anyway  */
+
+	/*  vaddr shouldn't be used below anyway, except for in the following 'if'  */
 	if ((vaddr >> 32) == (uint32_t)0xffffffff)
 		vaddr &= (uint64_t)0xffffffff;
-#endif
 
 	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000 && vaddr <= 0xbfffffff)) {
 		cachemask[0] = cpu->cache_size[0] - 1;

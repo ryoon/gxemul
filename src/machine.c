@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.110 2004-06-27 01:06:48 debug Exp $
+ *  $Id: machine.c,v 1.111 2004-06-28 00:54:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1526,7 +1526,7 @@ void machine_init(struct memory *mem)
 			switch (machine) {
 			case 19:
 				strcat(machine_name, " (Everest IP19)");
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				dev_scc_init(cpus[bootstrap_cpu], mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);

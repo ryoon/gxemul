@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.7 2004-01-06 01:59:51 debug Exp $
+ *  $Id: console.c,v 1.8 2004-01-25 00:14:24 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -156,8 +156,13 @@ int console_stdin_avail(void)
  */
 int console_charavail(void)
 {
-	while (console_stdin_avail())
-		console_makeavail(getchar());
+	while (console_stdin_avail()) {
+		unsigned char ch = getchar();
+		/*  Ugly hack: convert ctrl-b into ctrl-c.  (TODO: fix)  */
+		if (ch == 2)
+			ch = 3;
+		console_makeavail(ch);
+	}
 
 	if (console_fifo_head == console_fifo_tail)
 		return 0;

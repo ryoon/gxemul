@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.13 2004-01-19 12:48:40 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.14 2004-01-25 00:14:24 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -146,10 +146,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			return 1;
 		} else {
 			odata = console_readchar();
-			/*  Ugly hack:  CTRL-B ==> CTRL-C  */
-			if (odata == 2)
-				odata = 3;
-
 			dev_ns16550_tick(cpu, d);
 		}
 		break;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.151 2004-11-21 06:50:08 debug Exp $
+ *  $Id: misc.h,v 1.152 2004-11-22 00:13:55 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -564,7 +564,8 @@ struct r4000_cache_line {
 	char		dummy;
 };
 
-#define	N_BINTRANS_VADDR_TO_HOST	64
+#define	N_BINTRANS_VADDR_TO_HOST	96
+#define	N_BINTRANS_VADDR_TO_HOST_R3000	64
 #define	BINTRANS_DONT_RUN_NEXT		0x1000000
 #define	BINTRANS_N_MASK			0x0ffffff
 

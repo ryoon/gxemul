@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_tlb.c,v 1.2 2004-11-21 23:29:48 debug Exp $
+ *  $Id: memory_fast_tlb.c,v 1.3 2004-11-22 00:13:55 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  *
@@ -55,6 +55,12 @@ unsigned char *FAST_VADDR_TO_HOSTADDR(struct cpu *cpu,
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
+
+#ifdef FAST_VADDR_R3000
+	const int MAX = N_BINTRANS_VADDR_TO_HOST_R3000;
+#else
+	const int MAX = N_BINTRANS_VADDR_TO_HOST;
+#endif
 
 #if 0
 	if (!(cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR))
@@ -100,7 +106,7 @@ unsigned char *FAST_VADDR_TO_HOSTADDR(struct cpu *cpu,
 
 			cpu->bintrans_next_index = start_and_stop - 1;
 			if (cpu->bintrans_next_index < 0)
-				cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+				cpu->bintrans_next_index = MAX - 1;
 
 			tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
 			tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
@@ -125,7 +131,7 @@ urk_fulkod:
 
 		n ++;
 		i ++;
-		if (i == N_BINTRANS_VADDR_TO_HOST)
+		if (i == MAX)
 			i = 0;
 		if (i == start_and_stop)
 			break;
@@ -162,7 +168,7 @@ urk_fulkod:
 
 				cpu->bintrans_next_index --;
 				if (cpu->bintrans_next_index < 0)
-					cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+					cpu->bintrans_next_index = MAX - 1;
 				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
 				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
 				cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;
@@ -183,7 +189,7 @@ urk_fulkod:
 
 	cpu->bintrans_next_index --;
 	if (cpu->bintrans_next_index < 0)
-		cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+		cpu->bintrans_next_index = MAX - 1;
 	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
 	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
 	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;

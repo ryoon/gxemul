@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.74 2004-11-21 23:29:48 debug Exp $
+ *  $Id: bintrans.c,v 1.75 2004-11-22 00:13:55 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -740,10 +740,19 @@ run_it:
 	    && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
 		uint64_t paddr;
+		uint64_t old_pc;
 		int ok;
-		cpu->pc_last = cpu->pc;
+
+		old_pc = cpu->pc_last = cpu->pc;
+
 		ok = translate_address(cpu, cpu->pc, &paddr,
-		    FLAG_INSTR);	/*  + FLAG_NOEXCEPTIONS);  */
+		    FLAG_INSTR);
+
+		if (!ok && old_pc != cpu->pc) {
+			ok = translate_address(cpu, cpu->pc, &paddr,
+			    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+		}
+
 		if (ok) {
 			if (cpu->emul->emulation_type == EMULTYPE_DEC)
 				paddr &= 0x1fffffff;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.29 2005-01-04 16:59:27 debug Exp $
+ *  $Id: debugger.c,v 1.30 2005-01-05 02:18:02 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1377,16 +1377,72 @@ static char *debugger_readline(void)
 				cursor_pos --;
 				printf("\b");
 			}
+		} else if (ch == 2) {
+			/*  CTRL-B: Backwards one character.  */
+			if (cursor_pos > 0) {
+				printf("\b");
+				cursor_pos --;
+			}
 		} else if (ch == 5) {
 			/*  CTRL-E: End of line.  */
 			while (cursor_pos < cmd_len) {
 				printf("%c", cmd[cursor_pos]);
 				cursor_pos ++;
 			}
+		} else if (ch == 6) {
+			/*  CTRL-F: Forward one character.  */
+			if (cursor_pos < cmd_len) {
+				printf("%c",
+				    cmd[cursor_pos]);
+				cursor_pos ++;
+			}
 		} else if (ch == 11) {
 			/*  CTRL-K: Kill to end of line.  */
 			for (i=0; i<MAX_CMD_LEN; i++)
 				console_makeavail(4);	/*  :-)  */
+		} else if (ch == 14 || ch == 16) {
+			/*  CTRL-P: Previous line in the command history,
+			    CTRL-N: next line  */
+			do {
+				if (ch == 14 &&
+				    read_from_index == last_cmd_index)
+					break;
+				if (ch == 16)
+					i = read_from_index - 1;
+				else
+					i = read_from_index + 1;
+
+				if (i < 0)
+					i = N_PREVIOUS_CMDS - 1;
+				if (i >= N_PREVIOUS_CMDS)
+					i = 0;
+
+				/*  Special case: pressing 'down'
+				    to reach last_cmd_index:  */
+				if (i == last_cmd_index) {
+					read_from_index = i;
+					for (i=cursor_pos; i<cmd_len;
+					    i++)
+						printf(" ");
+					for (i=cmd_len-1; i>=0; i--)
+						printf("\b \b");
+					cmd[0] = '\0';
+					cmd_len = cursor_pos = 0;
+				} else if (last_cmd[i][0] != '\0') {
+					/*  Copy from old line:  */
+					read_from_index = i;
+					for (i=cursor_pos; i<cmd_len;
+					    i++)
+						printf(" ");
+					for (i=cmd_len-1; i>=0; i--)
+						printf("\b \b");
+					strcpy(cmd,
+					    last_cmd[read_from_index]);
+					cmd_len = strlen(cmd);
+					printf("%s", cmd);
+					cursor_pos = cmd_len;
+				}
+			} while (0);
 		} else if (ch >= ' ' && cmd_len < MAX_CMD_LEN) {
 			/*  Visible character:  */
 			memmove(cmd + cursor_pos + 1, cmd + cursor_pos,
@@ -1468,59 +1524,20 @@ static char *debugger_readline(void)
 					console_makeavail('\b');
 					break;
 				case 'A':	/*  Up.  */
-				case 'B':	/*  Down.  */
-					if (ch == 'B' &&
-					    read_from_index == last_cmd_index)
-						break;
-
-					if (ch == 'A')
-						i = read_from_index - 1;
-					else
-						i = read_from_index + 1;
-
-					if (i < 0)
-						i = N_PREVIOUS_CMDS - 1;
-					if (i >= N_PREVIOUS_CMDS)
-						i = 0;
-
-					/*  Special case: pressing 'down'
-					    to reach last_cmd_index:  */
-					if (i == last_cmd_index) {
-						read_from_index = i;
-						for (i=cursor_pos; i<cmd_len;
-						    i++)
-							printf(" ");
-						for (i=cmd_len-1; i>=0; i--)
-							printf("\b \b");
-						cmd[0] = '\0';
-						cmd_len = cursor_pos = 0;
-					} else if (last_cmd[i][0] != '\0') {
-						/*  Copy from old line:  */
-						read_from_index = i;
-						for (i=cursor_pos; i<cmd_len;
-						    i++)
-							printf(" ");
-						for (i=cmd_len-1; i>=0; i--)
-							printf("\b \b");
-						strcpy(cmd,
-						    last_cmd[read_from_index]);
-						cmd_len = strlen(cmd);
-						printf("%s", cmd);
-						cursor_pos = cmd_len;
-					}
+					/*  Up cursor ==> CTRL-P  */
+					console_makeavail(16);
 					break;
-				case 'C':	/*  Right  */
-					if (cursor_pos < cmd_len) {
-						printf("%c",
-						    cmd[cursor_pos]);
-						cursor_pos ++;
-					}
+				case 'B':	/*  Down.  */
+					/*  Down cursor ==> CTRL-N  */
+					console_makeavail(14);
+					break;
+				case 'C':
+					/*  Right cursor ==> CTRL-F  */
+					console_makeavail(6);
 					break;
 				case 'D':	/*  Left  */
-					if (cursor_pos > 0) {
-						printf("\b");
-						cursor_pos --;
-					}
+					/*  Left cursor ==> CTRL-B  */
+					console_makeavail(2);
 					break;
 				case 'F':
 					/*  End ==> CTRL-E  */

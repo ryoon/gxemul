@@ -362,3 +362,5 @@ HISTORY of mips64emul
 		to allow Ultrix to print boot messages in the -D3, -D4,
 		and -D7 modes, and also print graphical console messages
 		in -D4 and -D7 modes.
+		-D11 (DEC5500) polled getchar added (to the 'ssc' device).
+		Adding the 'madd' instruction (including R5900 weird stuff).

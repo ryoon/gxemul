@@ -91,7 +91,7 @@ mips64emul TODO
 			x)  PCI:  i/o and interrupts
 			x)  TURBOchannel  (many DEC systems)
 			x)  ARCBIOS (SGI, arc?)
-			x)  QBus (DECsystem 5400)
+			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
 			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
 			status words / control words, make this more portable/cleaner

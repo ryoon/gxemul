@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.26 2004-01-20 22:17:56 debug Exp $
+ *  $Id: misc.h,v 1.27 2004-01-24 21:09:54 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -767,6 +767,7 @@ unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(uint64_t addr, char *s);
 void store_32bit_word(uint64_t addr, uint32_t data32);
+uint32_t load_32bit_word(uint64_t addr);
 void machine_init(struct memory *mem);
 
 
@@ -796,6 +797,13 @@ void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type);
 void symbol_readfile(char *fname);
 void symbol_recalc_sizes(void);
 void symbol_init(void);
+
+
+/*  useremul.c:  */
+#define	USERLAND_NONE		0
+#define	USERLAND_NETBSD_PMAX	1
+void useremul_init(struct cpu *, struct memory *);
+void useremul_syscall(struct cpu *cpu, uint32_t code);
 
 
 /*  x11.c:  */

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.139 2004-11-01 09:25:57 debug Exp $
+$Id: index.html,v 1.140 2004-11-01 12:45:33 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -806,14 +806,14 @@ onto a disk image:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
         that Ultrix installs itself onto:<pre>
-        $ <b>dd if=/dev/zero of=rootdisk.img bs=512 count=1 seek=2698060</b>
+        $ <b>dd if=/dev/zero of=rootdisk.img bs=1024 count=1 seek=800000</b>
 
 </pre>
   <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
         it is called /dev/cd0c here, replace that with the name of your
         CDROM drive, or the name of a .iso image file.)
         Then, start the emulator like this:<pre>
-        $ <b>./mips64emul -X -M128 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        $ <b>./mips64emul -X -M64 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
         Once the first stage of the installation is done (restoring the root
@@ -821,7 +821,7 @@ onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('b') from the second
 	diskimage argument:<pre>
-        $ <b>./mips64emul -X -M128 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        $ <b>./mips64emul -X -M64 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -829,8 +829,18 @@ onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        $ <b>./mips64emul -X -M128 -D2 -j vmunix -d rootdisk.img</b>
+        $ <b>./mips64emul -X -M64 -D2 -j vmunix -d rootdisk.img</b>
 </pre>
+
+<p>
+You can experiment with adding <b>-Z2</b> (for emulating a 
+dual-headed workstation) or even <b>-Z3</b> (tripple-headed), and also the
+<b>-Y2</b> option for scaling down the framebuffer windows by a factor 2x2.
+(If you didn't use -Z<i>n</i> during the installation, and 
+compiled your own /vmunix, then it will not contain support for multiple 
+graphics cards. To overcome this problem, use the generic kernel, <b>-j 
+genvmunix</b>, whenever you are running the emulator with a different 
+setup than the one you used when Ultrix was installed.)
 
 <p>  
 A note for the historically interested out there:

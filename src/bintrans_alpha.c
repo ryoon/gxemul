@@ -23,11 +23,44 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.31 2004-11-14 04:17:36 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.32 2004-11-15 04:12:29 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
  *  See bintrans.c for more information.  Included from bintrans.c.
+ *
+ *
+ *  Some Alpha registers that are reasonable to use:
+ *
+ *	t5..t7		6..8		3
+ *	s0..s6		9..15		7
+ *	a1..a5		17..21		5
+ *	t8..t11		22..25		3
+ *
+ *  These can be "mapped" to MIPS registers in the translated code,
+ *  except a0 which points to the cpu struct, and t0..t4 (or so)
+ *  which are used by the translated code as temporaries.
+ *
+ *  3 + 7 + 8 = 18 available registers. Of course, all (except
+ *  s0..s6) must be saved when calling external functions, such as
+ *  when doing load/store.
+ *
+ *  Which are the 18 most commonly used MIPS registers? (This will
+ *  include the pc, and the "current number of executed translated
+ *  instructions.)
+ *
+ *  The current allocation is as follows:
+ *
+ *	Alpha:		MIPS:
+ *	------		-----
+ *
+ *	t5		pc  (64-bit)
+ *
+ *	t6		bintrans_instructions_executed (32-bit int)
+ *
+ *	t7..t11,	TODO
+ *	  s0..s6,
+ *	  a1..a5
  */
 
 
@@ -45,17 +78,6 @@ unsigned char bintrans_alpha_imb[32] = {
 	0x1f, 0x04, 0xff, 0x47,		/*  nop   */
 	0x00, 0x00, 0xfe, 0x2e		/*  unop  */
 };
-
-
-unsigned char bintrans_alpha_ret[4] = {
-	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
-};
-
-#if 0
-	0x00, 0x00, 0xfe, 0x2f,		/*  unop  */
-	0x1f, 0x04, 0xff, 0x47,		/*  nop   */
-	0x00, 0x00, 0xfe, 0x2f,		/*  unop  */
-#endif
 
 
 /*
@@ -76,6 +98,81 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 	f = (void *)&bintrans_alpha_imb[0];
 	f();
 }
+
+
+/*
+ *  lda sp,-128(sp)	some margin
+ *  stq ra,0(sp)
+ *  stq s0,8(sp)
+ *  stq s1,16(sp)
+ *  stq s2,24(sp)
+ *  stq s3,32(sp)
+ *  stq s4,40(sp)
+ *  stq s5,48(sp)
+ *  stq s6,56(sp)
+ *
+ *  jsr ra,(a1),<back>
+ *  back:
+ *
+ *  ldq ra,0(sp)
+ *  ldq s0,8(sp)
+ *  ldq s1,16(sp)
+ *  ldq s2,24(sp)
+ *  ldq s3,32(sp)
+ *  ldq s4,40(sp)
+ *  ldq s5,48(sp)
+ *  ldq s6,56(sp)
+ *  lda sp,128(sp)
+ *  ret
+ */
+#define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
+#define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+unsigned char bintrans_alpha_runchunk[96] = {
+	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
+	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
+	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
+	0x10, 0x00, 0x5e, 0xb5,		/*  stq     s1,16(sp)  */
+	0x18, 0x00, 0x7e, 0xb5,		/*  stq     s2,24(sp)  */
+	0x20, 0x00, 0x9e, 0xb5,		/*  stq     s3,32(sp)  */
+	0x28, 0x00, 0xbe, 0xb5,		/*  stq     s4,40(sp)  */
+	0x30, 0x00, 0xde, 0xb5,		/*  stq     s5,48(sp)  */
+	0x38, 0x00, 0xfe, 0xb5,		/*  stq     s6,56(sp)  */
+
+	ofs_pc&255,ofs_pc>>8,0xd0,0xa4,	/*  ldq     t5,"pc"(a0)  */
+	ofs_n&255,ofs_n>>8,0xf0,0xa0,	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
+
+	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
+
+	ofs_pc&255,ofs_pc>>8,0xd0,0xb4,	/*  stq     t5,"pc"(a0)  */
+	ofs_n&255,ofs_n>>8,0xf0,0xb0,	/*  stl     t6,"bintrans_instructions_executed"(a0)  */
+
+	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
+	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
+	0x10, 0x00, 0x5e, 0xa5,		/*  ldq     s1,16(sp)  */
+	0x18, 0x00, 0x7e, 0xa5,		/*  ldq     s2,24(sp)  */
+	0x20, 0x00, 0x9e, 0xa5,		/*  ldq     s3,32(sp)  */
+	0x28, 0x00, 0xbe, 0xa5,		/*  ldq     s4,40(sp)  */
+	0x30, 0x00, 0xde, 0xa5,		/*  ldq     s5,48(sp)  */
+	0x38, 0x00, 0xfe, 0xa5,		/*  ldq     s6,56(sp)  */
+	0x80, 0x00, 0xde, 0x23,		/*  lda     sp,128(sp)  */
+	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
+};
+
+
+/*
+ *
+ */
+static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
+{
+	void (*f)(struct cpu *, unsigned char *);
+	f = (void *)&bintrans_alpha_runchunk[0];
+	f(cpu, code);
+}
+
+
+unsigned char bintrans_alpha_ret[4] = {
+	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
+};
 
 
 /*
@@ -101,39 +198,19 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr)
 {
 	unsigned char *a = *addrp;
-	int ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
 
 	if (pc_inc == 0)
 		return;
 
 	if (flag_pc) {
-		/*
-		 *  p[0x918 / 8] += 0x7fff;   (where a0 = p, which is a long long ptr)
-		 *
-		 *   0:   18 09 30 a4     ldq     t0,2328(a0)
-		 *   4:   ff 7f 21 20     lda     t0,32767(t0)
-		 *   8:   18 09 30 b4     stq     t0,2328(a0)
-		 */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+		/*  lda t5,pc_inc(t5)  */
+		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0xc6; *a++ = 0x20;
 	}
 
 	if (flag_ninstr) {
-		/*
-		 *  Also increment the "number of executed instructions", which
-		 *  is an int.
-		 *
-		 *   0:   44 44 30 a0     ldl     t0,17476(a0)
-		 *   4:   89 07 21 20     lda     t0,1929(t0)
-		 *   8:   44 44 30 b0     stl     t0,17476(a0)
-		 */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-		    - ((size_t)&dummy_cpu);
-		pc_inc /= 4;	/*  nr of instructions instead of bytes  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;
+		pc_inc /= 4;
+		/*  lda t6,pc_inc(t6)  */
+		*a++ = (pc_inc & 255); *a++ = (pc_inc >> 8); *a++ = 0xe7; *a++ = 0x20;
 	}
 
 	*addrp = a;
@@ -482,15 +559,15 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED
 	 *  and cpu->delay_jmpaddr = pc + 4 + (imm << 2).
 	 *
-	 *  44 04 30 a4     ldq     t0,1092(a0)		load pc
+	 *  01 14 c0 40     addq    t5,0,t0		t0 = pc
 	 *  04 00 21 20     lda     t0,4(t0)		add 4
 	 *  c8 01 5f 20     lda     t1,456
 	 *  22 57 40 48     sll     t1,0x2,t1
 	 *  01 04 22 40     addq    t0,t1,t0		add (imm<<2)
 	 *  88 08 30 b4     stq     t0,2184(a0)		store pc
 	 */
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;  /*  addq    t5,0,t0  */
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x21; *a++ = 0x20;  /*  lda  */
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
 	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
@@ -541,11 +618,8 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
 
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-		*a++ = 8; *a++ = 0; *a++ = 0x21; *a++ = 0x20;  /*  lda t0,imm(t0)  */
-
+		*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq    t5,0,t0  */
+		*a++ = 8; *a++ = 0; *a++ = 0x21; *a++ = 0x20;  /*  lda t0,8(t0)  */
 		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 	}
@@ -571,12 +645,11 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	/*
 	 *  gpr[31] = retaddr
 	 *
-	 *  18 09 90 a4     ldq     t3,pc(a0)
+	 *  04 14 c0 40     addq    t5,0,t3	t3 = pc
 	 *  08 00 84 20     lda     t3,8(t3)
 	 *  18 09 90 b4     stq     t3,gpr31(a0)
 	 */
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
+	*a++ = 0x04; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;
 
 	/*  NOTE: t3 is used further down again  */
 
@@ -599,7 +672,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	 *  OR in the lowest 14 bits of imm.
 	 *  delay_jmpaddr = t0
 	 *
-	 *  18 09 30 a4     ldq     t0,pc(a0)
+	 *  01 14 c0 40     addq    t5,0,t0	t0 = pc
 	 *  04 00 21 20     lda     t0,4(t0)	<-- because the jump is from the delay slot
 	 *  81 96 23 48     srl     t0,0x1c,t0
 	 *  21 d7 21 48     sll     t0,0xe,t0
@@ -613,10 +686,9 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 
 	imm *= 4;
 
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = 0x01; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;
 
-	*a++ = 4; *a++ = 0; *a++ = 0x21; *a++ = 0x20;	/*  lda t0,8(t0)  */
+	*a++ = 4; *a++ = 0; *a++ = 0x21; *a++ = 0x20;	/*  lda t0,4(t0)  */
 
 	*a++ = 0x81; *a++ = 0x96; *a++ = 0x23; *a++ = 0x48;
 	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
@@ -678,9 +750,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;	/*  ldq t3,pc  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq t0,pc  */
+		*a++ = 0x04; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq t5,0,t3  */
+		*a++ = 0x06; *a++ = 0x14; *a++ = 0x20; *a++ = 0x40;	/*  addq t0,0,t5  */
 	}
 
 	if (potential_chunk_p == NULL) {
@@ -710,10 +781,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
 		/*  Don't execute too many instructions.  */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-		    - ((size_t)&dummy_cpu);
 		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0x01; *a++ = 0x10; *a++ = 0xe0; *a++ = 0x40;	/*  addl t6,0,t0  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
@@ -759,8 +828,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  02 00 62 44     and     t2,t1,t1
 		 *  01 04 22 40     addq    t0,t1,t0
 		 */
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+		*a++ = 0x03; *a++ = 0x14; *a++ = 0xc0; *a++ = 0x40;	/*  addq t5,0,t2  */
 		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
@@ -802,10 +870,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  a1 0d 22 40     cmple   t0,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-		    - ((size_t)&dummy_cpu);
 		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0x01; *a++ = 0x10; *a++ = 0xe0; *a++ = 0x40;	/*  addl t6,0,t0  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
@@ -944,9 +1010,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	*a++ = alignment; *a++ = 0x00; *a++ = 0x7f; *a++ = 0x22;	/*  lda a3,alignment  */
 
 	/*  Save a0 and the old return address on the stack:  */
-	*a++ = 0xe0; *a++ = 0xff; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,-32(sp)  */
+	*a++ = 0x80; *a++ = 0xff; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,-128(sp)  */
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0x5e; *a++ = 0xb7;	/*  stq ra,0(sp)  */
 	*a++ = 0x08; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xb6;	/*  stq a0,8(sp)  */
+
+	*a++ = 0x10; *a++ = 0x00; *a++ = 0xde; *a++ = 0xb4;	/*  stq t5,16(sp)  */
+	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xb0;	/*  stl t6,24(sp)  */
 
 	ofs = ((size_t)&dummy_cpu.bintrans_fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa7;	/*  ldq t12,0(a0)  */
@@ -957,7 +1026,11 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  Restore the old return address and a0 from the stack:  */
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0x5e; *a++ = 0xa7;	/*  ldq ra,0(sp)  */
 	*a++ = 0x08; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xa6;	/*  ldq a0,8(sp)  */
-	*a++ = 0x20; *a++ = 0x00; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,32(sp)  */
+
+	*a++ = 0x10; *a++ = 0x00; *a++ = 0xde; *a++ = 0xa4;	/*  ldq t5,16(sp)  */
+	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xa0;	/*  ldl t6,24(sp)  */
+
+	*a++ = 0x80; *a++ = 0x00; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,128(sp)  */
 
 	/*  If the result was NULL, then return (abort):  */
 	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;	/*  bne v0,<continue>  */

@@ -50,12 +50,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    (in theory) the emulator could support other architectures
 		    as well.   (sparc64?)
 		o)  Binary translation:
-			+)  load/store, connect better with the TLB
-			+)  better support for instructions in delayslots
-			+)  add the remaining "trivial" instructions (slti, ..)
-			+)  smaller chunk pointers on Alpha (offsets)
-			+)  flag for "don't run bintrans on the next attempt"
+			+)  flag for "don't run bintrans on the next attempt",
+			    for example on failed load/store
 			+)  recursive translation?
+			+)  on Alpha: use Alpha registers for common MIPS regs
+			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backends for non-Alpha machines
 			+)  see src/bintrans.c for more info
 		o)  Instructions:

@@ -23,89 +23,65 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.60 2004-11-14 04:17:36 debug Exp $
+ *  $Id: bintrans.c,v 1.61 2004-11-15 04:12:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
- *  NOTE:  This file is basically a place for me to write down my ideas,
- *         the dynamic binary translation system isn't really working
- *         again yet.
  *
+ *  This should be documented/commented better. Some of the main concepts are:
  *
- *	Keep a cache of a certain number of blocks.
+ *	o)  Keep a translation cache of a certain number of blocks.
  *
- *	Only translate simple instructions. (For example, the 'cache' and
- *	'tlbwr' instructions are NOT simple enough.)
+ *	o)  Only translate simple instructions. (For example, the 'tlbwr'
+ *	    instruction is not translated.)
  *
- *	Translate code in physical ram, not virtual. (This will keep things
- *	translated over process switches, and TLB updates.)
+ *	o)  Translate code in physical ram, not virtual. This will keep
+ *	    things translated over process switches, and TLB updates.
  *
- *	Do not translate over MIPS page boundaries (4 KB), unless we're
- *	running in kernel-space (where the "next physical page" means
- *	"the next virtual page" as well).
+ *	o)  When the translation cache is "full", then throw away everything
+ *	    translated so far and restart from scratch. The cache is of a
+ *	    fixed size, say 20 MB. (This is inspired by a comment in the Qemu
+ *	    technical documentation.)
  *
- *	Use a cache of a fixed size (say 16 MB or so). (This idea is based
- *	on a comment in the QEMU technical docs.)
+ *	o)  Do not translate over MIPS page boundaries (4 KB).
+ *	    (TODO: Perhaps it would be possible if we're running in kernel
+ *	    space? But it this would then require special checks at the
+ *	    end of each page.)
  *
- *	If memory is overwritten, any translated block for that page must
- *	be invalidated. (It is removed from the cache so that it cannot be
- *	found on lookups, and the code chunk is overwritten with a simple
- *	return instruction which does nothing. The later is needed because
- *	other translated code chunks may still try to jump to this one.)
- *		TODO: instead of just returning, maybe a hint should be
- *		given that the block has been removed, so that other blocks
- *		jumping to this block will also be invalidated?
+ *	o)  If memory is overwritten, any translated block for that page
+ *	    must be invalidated. (It is removed from the cache so that it
+ *	    cannot be found on lookups.)
  *
- *	Check before running a basic block that no external
- *		exceptions will occur for the duration of the
- *		block, and count down so that we can run for as
- *		long as possible in bintrans mode.
- *		(External = from a hardware device.)
+ *	o)  Only run a certain number of instructions, before returning to
+ *	    the main loop. (This is needed in order to allow devices to
+ *	    cause interrupts, and so on.)
  *
- *	Check for exceptions inside the block, for those instructions
- *		that require that.  Update the instruction counter by
- *		the number of successfully executed instructions only.
+ *	o)  Check for exceptions inside the block, for those instructions
+ *	    that require that.  Update the program counter by the number
+ *	    of successfully executed instructions only.
  *
- *	Don't do dynamic register allocation:
- *		For alpha, manipulate the cpu struct for "uncommon"
- *			registers, store common registers in alpha
- *			registers and write back at end. (TODO:
- *			experiments must reveal which registers are
- *			common and which aren't.)
- *		For i386, manipulate the cpu struct directly.
+ *	o)  There is no "intermediate representation"; everything is translated
+ *	    directly from MIPS machine code to target machine code.
  *
- *	Multiple target archs (alpha, i386, sparc, mips :-), ...)
+ *	o)  Theoretical support for multiple target architectures (Alpha,
+ *	    i386, sparc, mips :-), ...), but only Alpha implemented so far.
  *
- *	Load/stores.
+ *	o)  Load/stores are relatively complicated, so they call a function,
+ *	    fast_vaddr_to_hostaddr(), which does the lookup.
  *
- *	Testing:  Running regression tests with and without the binary
- *		translator enabled should obviously result in the exact
- *		same results, or something is wrong.
+ *  Testing:  Running regression tests with and without the binary translator
+ *  enabled should obviously result in the exact same results, or something is
+ *  wrong.
  *
- *	JUMPS:  Blocks need to be glued together efficiently.
+ *  The general idea is something like this:
  *
+ *	Check for the current PC (actually: its physical form) in the
+ *	translation cache. If it is found, then run the translated code chunk,
+ *	otherwise try to translate and then run it.
  *
- *  The general idea would be something like this:
- *  A block of code in the host's memory would have to conform with
- *  the C function calling ABI on that platform, so that the code block
- *  can be called easily from C. That is, entry and exit code needs to
- *  be added, in addition to the translated instructions.
- *
- *	o)  Check for the current PC (actually: its physical form) in the
- *		translation cache.
- *
- *	o)  If the current PC is not found, then make a decision
- *		regarding making a translation attempt, or not.
- *		Fallback to normal instruction execution in cpu.c.
- *
- *	o)  If there is a code block for the current PC in the
- *		translation cache, do a couple of checks and then
- *		run the block. Update registers and other values
- *		as neccessary.
- *
- *  The checks would include:
- *	don't start running inside a delay slot or "likely" slot.
- *	nr of cycles until the next hardware interrupt occurs
+ *  A few checks are made though, to make sure that the environment is "safe"
+ *  enough; starting inside a delay slot or "nullified" slot is considered
+ *  non-safe.
  */
 
 
@@ -146,7 +122,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
 static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr);
-
+static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, int rs, int rt, int sa, int instruction_type);
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
@@ -269,8 +245,7 @@ prev = tep;
  *  chunk is added to the translation_entry_array. The return value is then
  *  the number of instructions executed.
  */
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	int run_flag)
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 {
 	uint64_t paddr_page;
 	int offset_within_page;
@@ -283,7 +258,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	size_t p;
 	int try_to_translate;
 	int n_translated, translated;
-	int (*f)(struct cpu *);
+	unsigned char *f;
 	struct translation_page_entry *tep;
 	size_t chunk_len;
 	int rs,rt=0,rd,sa,imm;
@@ -329,8 +304,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 				if (!run_flag)
 					return -1;
 
-				f = (void *) ((size_t)tep->chunk[offset_within_page] +
-				    translation_code_chunk_space);
+				f = (size_t)tep->chunk[offset_within_page] +
+				    translation_code_chunk_space;
 				cpu->bintrans_instructions_executed = 0;
 				goto run_it;	/*  see further down  */
 			}
@@ -520,6 +495,16 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			n_translated += translated;
 			break;
 
+		case HI6_J:
+		case HI6_JAL:
+			imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
+			    (instr[1] << 8) + instr[0]) & 0x03ffffff;
+			translated = try_to_translate = bintrans_write_instruction__jal(&ca, imm, hi6 == HI6_JAL);
+			n_translated += translated;
+			delayed_branch = 2;
+			delayed_branch_new_p = -1;
+			break;
+
 		case HI6_ADDIU:
 		case HI6_DADDIU:
 		case HI6_ANDI:
@@ -532,16 +517,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			imm = (instr[1] << 8) + instr[0];
 			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
 			n_translated += translated;
-			break;
-
-		case HI6_J:
-		case HI6_JAL:
-			imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
-			    (instr[1] << 8) + instr[0]) & 0x03ffffff;
-			translated = try_to_translate = bintrans_write_instruction__jal(&ca, imm, hi6 == HI6_JAL);
-			n_translated += translated;
-			delayed_branch = 2;
-			delayed_branch_new_p = -1;
 			break;
 
 		case HI6_COP0:
@@ -639,7 +614,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 
 
 	/*  RUN the code chunk:  */
-	f = (void *)ca2;
+	f = ca2;
 	cpu->bintrans_instructions_executed = 0;
 run_it:
 
@@ -648,14 +623,13 @@ run_it:
 
 	old_n_executed = cpu->bintrans_instructions_executed;
 
-	f(cpu);
+	bintrans_runchunk(cpu, f);
 
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
-#ifdef USE_TINY_CACHE
 	if (!cpu->delay_slot && !cpu->nullify_next &&
-	    cpu->bintrans_instructions_executed < 4095 && (cpu->pc & 3) == 0
+	    cpu->bintrans_instructions_executed < 2047 && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
 		uint64_t paddr = (uint64_t) -1;
 		int ok;
@@ -682,8 +656,8 @@ run_it:
 					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
 						break;
 					if (tep->chunk[offset_within_page] != 0) {
-						f = (void *) ((size_t)tep->chunk[offset_within_page] +
-						    translation_code_chunk_space);
+						f = (size_t)tep->chunk[offset_within_page] +
+						    translation_code_chunk_space;
 						goto run_it;	/*  see further down  */
 					}
 					break;
@@ -692,7 +666,6 @@ run_it:
 			}
 		}
 	}
-#endif
 
 	return cpu->bintrans_instructions_executed;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.38 2004-11-04 22:57:36 debug Exp $
+ *  $Id: file.c,v 1.39 2004-11-15 04:12:29 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -166,7 +166,8 @@ static void file_load_aout(struct emul *emul, struct memory *mem,
 		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n", len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0)
-			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
+			memory_rw(cpu, mem, vaddr, &buf[0], len,
+			    MEM_WRITE, NO_EXCEPTIONS);
 		else {
 			if (osf1_hack)
 				break;
@@ -357,7 +358,8 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 			len = fread(buf, 1, chunk_size, f);
 
 			if (len > 0)
-				memory_rw(cpu, mem, where, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
+				memory_rw(cpu, mem, where, &buf[0], len,
+				    MEM_WRITE, NO_EXCEPTIONS);
 			where += len;
 			total_len += len;
 		}
@@ -433,7 +435,8 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 					break;
 				}
 
-				memory_rw(cpu, mem, s_vaddr, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
+				memory_rw(cpu, mem, s_vaddr, &buf[0], len,
+				    MEM_WRITE, NO_EXCEPTIONS);
 				s_vaddr += len;
 				total_len += len;
 			}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.88 2004-11-14 04:17:36 debug Exp $
+ *  $Id: coproc.c,v 1.89 2004-11-15 04:12:29 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -721,6 +721,11 @@ static void fpu_interpret_float_value(uint64_t reg,
 		break;
 	}
 
+	if (nan) {
+		fvp->f = 1.0;
+		goto no_reasonable_result;
+	}
+
 	/*  fraction:  */
 	fraction = 0.0;
 	switch (fmt) {
@@ -774,6 +779,7 @@ static void fpu_interpret_float_value(uint64_t reg,
 	if (sign)
 		fvp->f = -fvp->f;
 
+no_reasonable_result:
 	fvp->nan = nan;
 
 	/*  fatal("f = %f\n", fvp->f);  */
@@ -802,6 +808,9 @@ static void fpu_store_float_value(struct coproc *cp, int fd,
 	default:
 		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
 	}
+
+	if ((fmt == FMT_S || fmt == FMT_D) && nan)
+		goto store_nan;
 
 	/*  fraction:  */
 	switch (fmt) {
@@ -878,6 +887,7 @@ static void fpu_store_float_value(struct coproc *cp, int fd,
 		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
 	}
 
+store_nan:
 	if (fmt == FMT_S && nan)
 		r = 0x7fffffffULL;
 	if (fmt == FMT_D && nan)
@@ -940,19 +950,19 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	switch (op) {
 	case FPU_OP_ADD:
 		nf = float_value[0].f + float_value[1].f;
-		debug("  add: %f + %f = %f\n", float_value[0].f, float_value[1].f, nf);
+		/*  debug("  add: %f + %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_SUB:
 		nf = float_value[0].f - float_value[1].f;
-		debug("  sub: %f - %f = %f\n", float_value[0].f, float_value[1].f, nf);
+		/*  debug("  sub: %f - %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_MUL:
 		nf = float_value[0].f * float_value[1].f;
-		debug("  mul: %f * %f = %f\n", float_value[0].f, float_value[1].f, nf);
+		/*  debug("  mul: %f * %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
@@ -961,11 +971,11 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		if (fabs(float_value[1].f) > 0.00000000001)
 			nf = float_value[0].f / float_value[1].f;
 		else {
-			debug("DIV by zero !!!!\n");
+			/*  debug("DIV by zero !!!!\n");  */
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}
-		debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);
+		/*  debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt, nan);
 		break;
 	case FPU_OP_SQRT:
@@ -977,33 +987,30 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}
-		debug("  sqrt: %f => %f\n", float_value[0].f, nf);
+		/*  debug("  sqrt: %f => %f\n", float_value[0].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt, nan);
 		break;
 	case FPU_OP_ABS:
 		nf = fabs(float_value[0].f);
-		debug("  abs: %f => %f\n", float_value[0].f, nf);
+		/*  debug("  abs: %f => %f\n", float_value[0].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan);
 		break;
 	case FPU_OP_NEG:
 		nf = - float_value[0].f;
-		debug("  neg: %f => %f\n", float_value[0].f, nf);
+		/*  debug("  neg: %f => %f\n", float_value[0].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan);
 		break;
 	case FPU_OP_MOV:
 		nf = float_value[0].f;
-		debug("  mov: %f => %f\n", float_value[0].f, nf);
+		/*  debug("  mov: %f => %f\n", float_value[0].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan);
 		break;
 	case FPU_OP_C:
 		/*  TODO: how to detect unordered-ness and such?  */
-		debug("  c: %f(nan=%i), %f(nan=%i) cond=%i\n",
-		    (float)float_value[0].f, float_value[0].nan,
-		    (float)float_value[1].f, float_value[1].nan,
-		    cond);
+		/*  debug("  c: cond=%i\n", cond);  */
 
 		unordered = 0;
 		if (float_value[0].nan || float_value[1].nan)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.16 2005-01-29 09:31:01 debug Exp $
+ *  $Id: emul_parse.c,v 1.17 2005-01-29 09:36:35 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -116,7 +116,7 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 			int depth = 1;
 
 			/*  Skip until '}':  */
-			while (depth > 0 && ch != EOF) {
+			while (depth > 0) {
 				ch = fgetc(f);
 				if (ch == '\n')
 					(*line) ++;
@@ -124,6 +124,11 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 					depth ++;
 				if (ch == '}')
 					depth --;
+				if (ch == EOF) {
+					fatal("line %i: unexpected EOF inside"
+					    " a nested comment\n", *line);
+					exit(1);
+				}
 			}
 			continue;
 		}
@@ -211,6 +216,7 @@ static char cur_machine_random_mem_contents[10];
 static char cur_machine_force_netboot[10];
 static char cur_machine_ncpus[10];
 static char cur_machine_n_gfx_cards[10];
+static char cur_machine_emulated_hz[10];
 static char cur_machine_memory[10];
 #define	MAX_N_LOAD	20
 #define	MAX_LOAD_LEN	4000
@@ -330,6 +336,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_force_netboot[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
 		cur_machine_n_gfx_cards[0] = '\0';
+		cur_machine_emulated_hz[0] = '\0';
 		cur_machine_memory[0] = '\0';
 		return;
 	}
@@ -462,6 +469,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		if (cur_machine_n_gfx_cards[0])
 			m->n_gfx_cards = atoi(cur_machine_n_gfx_cards);
 
+		if (cur_machine_emulated_hz[0]) {
+			m->emulated_hz = atoi(cur_machine_emulated_hz);
+			m->automatic_clock_adjustment = 0;
+		}
+
 		/*  NOTE: Default nr of CPUs is 0:  */
 		if (!cur_machine_memory[0])
 			strcpy(cur_machine_memory, "0");
@@ -518,6 +530,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("force_netboot", cur_machine_force_netboot);
 	WORD("ncpus", cur_machine_ncpus);
 	WORD("n_gfx_cards", cur_machine_n_gfx_cards);
+	WORD("emulated_hz", cur_machine_emulated_hz);
 	WORD("memory", cur_machine_memory);
 
 	if (strcmp(word, "load") == 0) {

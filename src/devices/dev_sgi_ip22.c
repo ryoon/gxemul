@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.11 2004-06-12 17:17:40 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.12 2004-06-13 10:29:59 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -113,6 +113,7 @@ int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t rel
  */
 int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -120,7 +121,6 @@ int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t rela
 	if (writeflag == MEM_WRITE) {
 		debug("[ sgi_ip22_sysid: write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
 	} else {
-		debug("[ sgi_ip22_sysid: read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
 		/*
 		 *  According to NetBSD's sgimips/ip22.c:
 		 *        printf("IOC rev %d, machine %s, board rev %d\n", (sysid >> 5) & 0x07,
@@ -129,7 +129,9 @@ int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t rela
 		 */
 
 		/*  IOC rev 1, Guiness, board rev 3:  */
-		odata = (1 << 5) + (3 << 1) + 0;
+		odata = (1 << 5) + (3 << 1) + (d->guiness_flag? 0 : 1);
+
+		debug("[ sgi_ip22_sysid: read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -261,7 +263,7 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_sgi_ip22_init():
  */
-struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int guiness_flag)
 {
 	struct sgi_ip22_data *d = malloc(sizeof(struct sgi_ip22_data));
 	if (d == NULL) {
@@ -269,6 +271,7 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uin
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sgi_ip22_data));
+	d->guiness_flag = guiness_flag;
 
 	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH, dev_sgi_ip22_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);

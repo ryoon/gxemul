@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.88 2004-08-13 06:46:01 debug Exp $
+$Id: index.html,v 1.89 2004-08-16 06:19:58 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -141,19 +141,16 @@ Some other machine types are also emulated, but the degree to which the
 emulation works for these is generally not very high.
 <ul>
   <li>Silicon Graphics MIPS-based machines
-  <li>ARC (NEC RISCstation 2250 and 2200, Acer Pica-61, and Deskstation Tyne)
+  <li>ARC (NEC RISCstation 2250 and 2200, Acer Pica-61, Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
   <li>Cobalt
   <li>Sony Playstation 2
   <li>Skeletons for generic "hpcmips", <a href="http://www.meshcube.org/">MeshCube</a>,
 	and <a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>
 </ul>
 <p>
-Some more notes about the list above:  The machines above all have 64-bit
-capable CPUs, except early DECstation models. There were upgrades from
-R3000 to R4000 available for some DECstation, but I think Ultrix was still
-running in 32-bit mode.  Unfortunately, even if most of these machine types have
-64-bit CPUs in them (or even 128-bit, the Playstation 2's R5900 CPU
-is a bit weird), operating systems often run in 32-bit mode on them.
+Unfortunately, even if most of these machine types have
+64-bit CPUs in them (or 128-bit, the Playstation 2),
+operating systems often run in 32-bit mode on them.
 <p>
 There are other machines that use/used MIPS processors, for example the
 Playstation (1) and the Nintendo 64 game systems, but no free OS is ported
@@ -314,10 +311,7 @@ to support SCSI disk images, and definitely not well enough to run Irix.
 <p>
 There is no guarantee that anything
 specific will run in the emulator, but NetBSD (or possibly Linux) is a
-good starting point for someone who wants to experiment. Linux kernels
-don't usually have ramdisks in them, so until some disk controller device
-has been implemented, NetBSD is the way to go if you want to reach
-userland.
+good starting point for someone who wants to experiment.
 
 
 
@@ -834,8 +828,8 @@ Here are links to some of the kernels that I usually experiment with.
 		doesn't autodetect CPU at runtime, and <b>-X</b> for a graphical
 		framebuffer.
       <p>
-      <li>There is an <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi web page</a> but last time I
-		checked, there wasn't much there. There's also a
+      <li>There is an <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi web page</a>
+		but it didn't contain much last time I checked, and there's also a
 		<a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS Project</a>.
     </ul>
   </li>
@@ -848,9 +842,8 @@ Here are links to some of the kernels that I usually experiment with.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
 	<br>gunzip, and try with <b>-A1</b> (NEC RISCstation 2250, add <b>-X -N</b> for a graphical framebuffer),
-		<b>-A3</b> (NEC RISCstation 2200).
-	<br>(<b>-t -A2</b> (Acer PICA-61) and <b>-t -A4</b> (Deskstation Tyne) require a VGA-style 80x25 text
-		console device, which I haven't implemented yet.)
+		<b>-A3</b> (NEC RISCstation 2200),
+	<br><b>-A2</b> (Acer PICA-61), <b>-X -A4</b> (Deskstation Tyne), or <b>-A5</b> (Microsoft Jazz, MIPS Magnum)
       <p>
       <li>Linux:
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
@@ -858,8 +851,7 @@ Here are links to some of the kernels that I usually experiment with.
       <p>
       <li>OpenBSD/arc:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
-	<br>This is a very old OpenBSD kernel. Try running with <b>-t -A2</b> or <b>-t -A4</b>.
-		(Same problem as with netbsd, as no text console is imlemented yet.)
+	<br>This is a very old OpenBSD kernel. Try running with <b>-X -A2</b> or <b>-X -A4</b>.
     </ul>
   </li>
 

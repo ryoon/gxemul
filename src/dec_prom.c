@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.25 2004-07-17 20:10:10 debug Exp $
+ *  $Id: dec_prom.c,v 1.26 2004-08-16 06:18:45 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -66,6 +66,7 @@ extern int use_x11;
  *  function number, otherwise 0.
  *
  *	Vector	(dec)	Function
+ *	0x0	0	reset()
  *	0x10	2	restart()
  *	0x18	3	reinit()
  *	0x30	6	open()
@@ -82,6 +83,10 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	static int current_file_offset = 0;
 
 	switch (vector) {
+	case 0x0:	/*  reset()  */
+		/*  TODO  */
+		cpu->running = 0;
+		break;
 	case 0x10:	/*  restart()  */
 		/*  TODO  */
 		cpu->running = 0;

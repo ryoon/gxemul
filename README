@@ -1,4 +1,4 @@
-$Id: README,v 1.62 2005-02-22 12:15:28 debug Exp $
+$Id: README,v 1.63 2005-03-04 08:46:51 debug Exp $
 
 I'm now working on post-0.3.
 
@@ -13,11 +13,11 @@ Copyright (C) 2003-2005  Anders Gavare.
 Overview
 --------
 
-mips64emul is a MIPS machine emulator, which can be used in experiments
-involving MIPS binary code. Several emulation modes are available. For some 
-emulation modes, processors and surrounding hardware components are emulated    
-well enough to let unmodified operating systems run as if they were running on  
-a real machine.
+mips64emul is a machine emulator, which can be used to experiment with 
+binary code for (among others) MIPS-based machines. Several emulation
+modes are available. For some emulation modes, processors and surrounding
+hardware components are emulated well enough to let unmodified operating
+systems run as if they were running on a real machine.
 
 
 Quick start

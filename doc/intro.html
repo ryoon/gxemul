@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.14 2005-02-26 10:51:02 debug Exp $
+$Id: intro.html,v 1.15 2005-03-04 08:46:52 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -53,6 +53,7 @@ SUCH DAMAGE.
   <li><a href="#free">Is mips64emul free software?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#cpus">Which CPU types does mips64emul emulate?</a>
+  <li><a href="#accuracy">Emulation accuracy</a>
   <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
 </ul>
@@ -65,18 +66,18 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-mips64emul is a MIPS machine emulator, which can be used in experiments
-involving MIPS binary code. Several emulation modes are available. For
-some emulation modes, processors and surrounding hardware components are
-emulated well enough to let unmodified operating systems run as if they
-were running on a real machine.
+mips64emul is a machine emulator, which can be used to experiment with
+binary code for (among others) MIPS-based machines. Several emulation
+modes are available. For some emulation modes, processors and surrounding
+hardware components are emulated well enough to let unmodified operating
+systems run as if they were running on a real machine.
 
 <p>
 It is important to keep in mind that devices and CPUs are not really
 emulated correctly, they are only "faked" well enough to make eg. NetBSD
 run. Still, the emulator could be of interest for academic research and
-experiments, such as when learning how to write an OS for a MIPS-like
-machine, or profiling SMP, memory, or system call usage.
+experiments, such as when learning how to write an OS for a real machine,
+or profiling SMP, memory, or system call usage.
 
 <p>
 The emulator is written in C, does not depend on external libraries (except
@@ -84,26 +85,25 @@ X11, but that is optional), and should compile and run on any Unix-like
 system. If it doesn't, then that is a bug.
 
 <p>
-The emulator contains code which tries to emulate the workings of MIPS-like
-CPUs and surrounding hardware found in real machines, but it does not 
-contain any actual MIPS ROM code or other form of MIPS program code.  You 
-will need some form of program (in binary form) to run in the emulator.
-For many emulation modes, PROM calls are handled by the emulator itself, 
-so you do not need to use any PROM image at all.
+The emulator contains code which tries to emulate the workings of CPUs and
+surrounding hardware found in real machines, but it does not contain any
+ROM code. You will need some form of program (in binary form) to run in 
+the emulator. For many emulation modes, PROM calls are handled by the 
+emulator itself, so you do not need to use any ROM image at all.
 
 <p>
-You can use pre-compiled kernels (for example NetBSD kernels, or
-Linux), or other programs that are in MIPS binary format, and in some
-cases even actual ROM images. A couple of different file formats are
-supported (ELF, a.out, ECOFF, SREC, raw binaries).
+You can use pre-compiled kernels (for example NetBSD kernels, or Linux),
+or other programs that are in binary format, and in some cases even actual
+ROM images. A couple of different file formats are supported (ELF, a.out,
+ECOFF, SREC, raw binaries).
 
 <p>
-You do not need any MIPS compiler toolchain to build or use mips64emul.
+(You do not need any MIPS compiler toolchain to build or use mips64emul.
 If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from mips64emul. (There
-is also a <a href="technical.html#regtest">regression testing</a> framework,
-which requires that a GNU CC for mips64-unknown-elf or similar is available,
-but it is not required to build the emulator.)
+such a toolchain, but that is completely separate from mips64emul. There
+is a <a href="technical.html#regtest">regression testing</a> framework,
+which requires that a GNU CC for mips64-unknown-elf or similar is available.
+For simply building and using the emulator, it is not required.) 
 
 
 
@@ -187,16 +187,8 @@ a CTRL-C is sent to the emulated program.
 <a name="cpus"></a>
 <h3>Which CPU types does mips64emul emulate?</h3>
 
-While other emulators aim to emulate only one specific CPU type, eg R3000,
-mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
-Both 64-bit and 32-bit MIPS-like CPUs can be emulated.
+<h4>MIPS:</h4>
 
-<p>
-mips64emul is basically an instruction-level simulator; things that would
-happen in several steps within a physical CPU are not necessarily simulated
-correctly or at all (eg. pipe-line stages or out-of-order execution).
-
-<p>
 Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
 now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
 R1x000 (at least the parts that are similar to R4000) is beginning to work
@@ -208,6 +200,38 @@ This gives higher total performance than interpreting one instruction at a
 time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
 the command line, but keep in mind that it is still experimental.)
 
+
+
+<h4>URISC:</h4>
+
+I have implemented an <a href="http://en.wikipedia.org/wiki/URISC">URISC</a>
+emulation mode, just for fun. The only instruction available in an URISC
+machine is "reverse subtract and skip on borrow". (It is probably not
+worth trying to do bintrans with URISC, because any reasonable long URISC
+program relies on self-modifying code, which is bad for bintrans
+performance.)
+
+
+
+
+<h4>Other CPU types:</h4>
+
+There is some skeleton code for SPARC and POWER/PowerPC emulation too, but 
+these modes do not really work.
+
+
+
+
+
+<p><br>
+<a name="accuracy"></a>
+<h3>Emulation accuracy:</h3>
+
+mips64emul is an instruction-level simulator; things that would happen in
+several steps within a real CPU are not taken into account (eg. pipe-line
+stages or out-of-order execution). Still, instruction-level accuracy seems 
+to be enough to be able to run complete guest operating systems inside the 
+emulator.
 
 
 

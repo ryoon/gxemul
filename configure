@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.110 2005-03-01 06:48:23 debug Exp $
+#  $Id: configure,v 1.111 2005-03-04 08:46:51 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -55,6 +55,9 @@
 ###############################################################################
 
 ENABLEMIPS=YES
+ENABLEPPC=YES
+ENABLESPARC=YES
+ENABLEURISC=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -69,12 +72,12 @@ if [ z"$*" != z ]; then
 			MIPS16=YES
 		else if [ z$a = z--disable-mips ]; then
 			ENABLEMIPS=NO
-		else if [ z$a = z--enable-ppc ]; then
-			ENABLEPPC=YES
-		else if [ z$a = z--enable-sparc ]; then
-			ENABLESPARC=YES
-		else if [ z$a = z--enable-urisc ]; then
-			ENABLEURISC=YES
+		else if [ z$a = z--disable-ppc ]; then
+			ENABLEPPC=NO
+		else if [ z$a = z--disable-sparc ]; then
+			ENABLESPARC=NO
+		else if [ z$a = z--disable-urisc ]; then
+			ENABLEURISC=NO
 		else if [ z$a = z--enable-delays ]; then
 			DELAYS=YES
 		else if [ z$a = z--enable-caches ]; then
@@ -95,12 +98,9 @@ if [ z"$*" != z ]; then
 			echo "  --disable-x         don't include X11 support"
 			printf "\nCPU selection options:\n"
 			echo "  --disable-mips      disable MIPS CPU emulation"
-			echo "  --enable-ppc        enable PPC CPU emulation" \
-			    "(experimental)"
-			echo "  --enable-sparc      enable SPARC CPU" \
-			    "emulation (experimental)"
-			echo "  --enable-urisc      enable URISC CPU" \
-			    "emulation (experimental)"
+			echo "  --disable-ppc       disable PPC CPU emulation"
+			echo "  --disable-sparc     disable SPARC CPU emulation"
+			echo "  --disable-urisc     disable URISC CPU emulation"
 			printf "\nMIPS-specific options:\n"
 			echo "  --enable-mips16     enable MIPS16 instruction" \
 			    "support (experimental)"
@@ -165,7 +165,7 @@ if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
 fi
 if [ z$ENABLEURISC = zYES ]; then
-	echo 'Enabling URISC support.'
+	#echo 'Enabling URISC support.'
 	printf "#define ENABLE_URISC\n" >> config.h
 fi
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.101 2004-08-18 12:35:32 debug Exp $
+ *  $Id: misc.h,v 1.102 2004-08-19 19:59:45 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -925,6 +925,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function);
 struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name);
 void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *), void *extra, int clockshift);
 void cpu_register_dump(struct cpu *cpu);
+void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+	int running, uint64_t addr);
 int cpu_interrupt(struct cpu *cpu, int irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
@@ -979,7 +981,7 @@ void playstation2_sifbios_emul(struct cpu *cpu);
 /*  symbol.c:  */
 int symbol_nsymbols(void);
 int get_symbol_addr(char *symbol, uint64_t *addr);
-char *get_symbol_name(uint64_t addr, int *offset);
+char *get_symbol_name(uint64_t addr, uint64_t *offset);
 void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type);
 void symbol_readfile(char *fname);
 void symbol_recalc_sizes(void);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.45 2004-08-18 12:59:06 debug Exp $
+ *  $Id: emul.c,v 1.46 2004-08-19 19:59:46 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -224,7 +224,48 @@ void debugger_dump(uint64_t addr, int lines)
 			printf("\n");
 		}
 
-		addr += 16;
+		addr += sizeof(buf);
+	}
+}
+
+
+/*
+ *  debugger_unasm():
+ *
+ *  Dump emulated memory as MIPS instructions.
+ */
+void debugger_unasm(uint64_t addr, int lines)
+{
+	struct cpu *c;
+	struct memory *m;
+	int x, r;
+
+	if (cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = cpus[bootstrap_cpu];
+	if (c == NULL) {
+		printf("cpus[bootstrap_cpu] = NULL\n");
+		return;
+	}
+	m = cpus[bootstrap_cpu]->mem;
+
+	while (lines -- > 0) {
+		unsigned char buf[4];
+		memset(buf, 0, sizeof(buf));
+		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		    CACHE_NONE | NO_EXCEPTIONS);
+
+		if (c->byte_order == EMUL_BIG_ENDIAN) {
+			int tmp;
+			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+
+		cpu_disassemble_instr(c, &buf[0], 0, addr);
+
+		addr += sizeof(buf);
 	}
 }
 
@@ -284,8 +325,6 @@ void debugger_tlbdump(void)
  *
  *  An interractive debugger; reads a command from the terminal, and
  *  executes it.
- *
- *  TODO: This uses up 100% CPU, maybe that isn't very good.
  */
 void debugger(void)
 {
@@ -294,6 +333,7 @@ void debugger(void)
 	char cmd[MAX_CMD_LEN];
 	int cmd_len;
 	static uint64_t last_dump_addr = 0xffffffff80000000;
+	static uint64_t last_unasm_addr = 0xffffffff80000000;
 
 	cmd[0] = '\0'; cmd_len = 0;
 
@@ -305,7 +345,15 @@ void debugger(void)
 
 		ch = '\0';
 		while (ch != '\n') {
+			/*
+			 *  TODO: This uses up 100% CPU, maybe that isn't
+			 *  very good.  The usleep() call might make it a
+			 *  tiny bit nicer on other running processes, but
+			 *  it is still very ugly.
+			 */
 			ch = console_readchar();
+			usleep(1);
+
 			if (ch == '\b' && cmd_len > 0) {
 				cmd_len --;
 				cmd[cmd_len] = '\0';
@@ -362,18 +410,19 @@ void debugger(void)
 			strcpy(last_cmd, "d");
 		} else if (strcasecmp(cmd, "h") == 0 ||
 		    strcasecmp(cmd, "?") == 0 || strcasecmp(cmd, "help") == 0) {
-			printf("  continue       continues emulation\n");
-			printf("  dump [addr]    dumps emulated memory contents\n");
-			printf("  help           prints this help message\n");
-			printf("  itrace         toggles instruction_trace on or off (currently %s)\n",
+			printf("  continue            continues emulation\n");
+			printf("  dump [addr]         dumps emulated memory contents in hex and ASCII\n");
+			printf("  help                prints this help message\n");
+			printf("  itrace              toggles instruction_trace on or off (currently %s)\n",
 			    old_instruction_trace? "ON" : "OFF");
-			printf("  quit           quits mips64emul\n");
-			printf("  registers      dumps all CPUs' register values\n");
-			printf("  step           single steps one instruction\n");
-			printf("  tlbdump        dumps each CPU's TLB contents\n");
-			printf("  trace          toggles show_trace_tree on or off (currently %s)\n",
+			printf("  quit                quits mips64emul\n");
+			printf("  registers           dumps all CPUs' register values\n");
+			printf("  step                single steps one instruction\n");
+			printf("  tlbdump             dumps each CPU's TLB contents\n");
+			printf("  trace               toggles show_trace_tree on or off (currently %s)\n",
 			    old_show_trace_tree? "ON" : "OFF");
-			printf("  version        prints version info\n");
+			printf("  unassemble [addr]   dumps emulated memory contents as MIPS instructions\n");
+			printf("  version             prints version info\n");
 			last_cmd_len = 0;
 		} else if (strcasecmp(cmd, "i") == 0 ||
 		    strcasecmp(cmd, "itrace") == 0) {
@@ -404,6 +453,20 @@ void debugger(void)
 			    old_show_trace_tree? "ON" : "OFF");
 			/*  TODO: how to preserve quiet_mode?  */
 			old_quiet_mode = 0;
+		} else if (strcasecmp(cmd, "u") == 0 ||
+		    strcasecmp(cmd, "unassemble") == 0) {
+			debugger_unasm(last_unasm_addr, 16);
+			last_unasm_addr += 16 * 4;
+		} else if (strncasecmp(cmd, "u ", 2) == 0 ||
+		    strncasecmp(cmd, "unassemble ", 11) == 0) {
+			last_unasm_addr = strtoll(cmd[1]==' '?
+			    cmd + 2 : cmd + 11, NULL, 16);
+			debugger_unasm(last_unasm_addr, 16);
+			last_unasm_addr += 16 * 4;
+			/*  Set last cmd to just 'u', so that just pressing
+			    enter will continue from the last address:  */
+			last_cmd_len = 1;
+			strcpy(last_cmd, "u");
 		} else if (strcasecmp(cmd, "v") == 0 ||
 		    strcasecmp(cmd, "version") == 0) {
 			printf("%s\n",

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.204 2004-08-18 12:56:15 debug Exp $
+$Id: HISTORY,v 1.205 2004-08-19 19:59:44 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -906,4 +906,6 @@ HISTORY of mips64emul
 		Adding a simple interactive single-step debugger which is
 		activated by CTRL-C. (Commands so far: continue, dump, help,
 		itrace, quit, registers, step, trace, version)
-20040818(later)	Adding a 'tlbdump' debugger command.
+20040818(later)	Adding a 'tlbdump' debugger command, and some other minor
+		fixes.
+20040819	Minor updates. Adding an 'unassemble' debugger command.

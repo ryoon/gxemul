@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.120 2004-08-18 12:56:16 debug Exp $
+ *  $Id: cpu.c,v 1.121 2004-08-19 19:59:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -288,26 +288,39 @@ const char *cpu_flags(struct cpu *cpu)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  NOTE:  cpu->pc_last should be the address of the instruction, cpu->pc
- *         should already point to the _next_ instruction.
+ *  If running is 1, cpu->pc_last should be the address of the instruction,
+ *  cpu->pc should already point to the _next_ instruction.
+ *
+ *  If running is 0, things that depend on the runtime environment (eg.
+ *  register contents) will not be shown, and addr will be used instead of
+ *  cpu->pc for relative addresses.
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
+void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+	int running, uint64_t dumpaddr)
 {
-	int offset, hi6, special6, regimm5;
+	int hi6, special6, regimm5;
 	int rt, rd, rs, sa, imm, copz, cache_op, which_cache, showtag;
-	uint64_t addr;
+	uint64_t addr, offset;
 	uint32_t instrword;
 	char *symbol;
 
-	symbol = get_symbol_name(cpu->pc_last, &offset);
+	if (running)
+		dumpaddr = cpu->pc_last;
+
+	symbol = get_symbol_name(dumpaddr, &offset);
 	if (symbol != NULL && offset==0)
 		debug("<%s>\n", symbol);
 
-	debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-	    cpu->cpu_id, cpu->pc_last,
-	    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+	if (running)
+		debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
+		    cpu->cpu_id, dumpaddr,
+		    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+	else
+		debug("0x%016llx: %02x%02x%02x%02x%s\t",
+		    dumpaddr,
+		    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 
 	/*
 	 *  Decode the instruction:
@@ -364,20 +377,17 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			symbol = get_symbol_name(cpu->gpr[rs], &offset);
-			if (symbol != NULL)
-				debug("jr\tr%i\t\t<%s>", rs, symbol);
-			else
-				debug("jr\tr%i", rs);
+			debug("jr\tr%i", rs);
+			if (running && symbol != NULL)
+				debug("\t\t<%s>", symbol);
 			break;
 		case SPECIAL_JALR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
 			symbol = get_symbol_name(cpu->gpr[rs], &offset);
-			if (symbol != NULL)
-				debug("jalr\tr%i,r%i\t<%s>",
-				    rd, rs, symbol);
-			else
-				debug("jalr\tr%i,r%i", rd, rs);
+			debug("jalr\tr%i,r%i", rd, rs);
+			if (running && symbol != NULL)
+				debug("<%s>", symbol);
 			break;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
@@ -475,8 +485,12 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
+		addr = (dumpaddr + 4) + (imm << 2);
 		debug("%s\tr%i,r%i,%016llx", hi6_names[hi6], rt, rs,
-		    cpu->pc + (imm << 2));
+		    (long long)addr);
+		symbol = get_symbol_name(addr, &offset);
+		if (symbol != NULL && offset != addr)
+			debug("\t<%s>", symbol);
 		break;
 	case HI6_ADDI:
 	case HI6_ADDIU:
@@ -550,21 +564,26 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 			goto disasm_ret;
 		}
 
-		if (symbol != NULL)
-			debug("%s\tr%i,%i(r%i)\t\t[0x%016llx = %s, data=",
-			    hi6_names[hi6], rt, imm, rs, (long long)
-			    (cpu->gpr[rs] + imm), symbol);
-		else
-			debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=",
-			    hi6_names[hi6], rt, imm, rs, (long long)
-			    (cpu->gpr[rs] + imm));
-		/*  NOTE: No break, it is up to the caller to print 'data'.  */
+		debug("%s\tr%i,%i(r%i)",
+		    hi6_names[hi6], rt, imm, rs);
+
+		if (running) {
+			if (symbol != NULL)
+				debug("\t\t[0x%016llx = %s, data=",
+				    (long long)(cpu->gpr[rs] + imm), symbol);
+			else
+				debug("\t\t[0x%016llx, data=",
+				    (long long)(cpu->gpr[rs] + imm));
+		} else
+			break;
+		/*  NOTE: No break here, it is up to the
+			caller to print 'data'.  */
 		return;
 	case HI6_J:
 	case HI6_JAL:
 		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
 		    (instr[1] << 8) + instr[0]) << 2;
-		addr = cpu->pc & ~((1 << 28) - 1);
+		addr = (dumpaddr + 4) & ~((1 << 28) - 1);
 		addr |= imm;
 		symbol = get_symbol_name(addr, &offset);
 		if (symbol != NULL)
@@ -580,10 +599,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 		imm = (instr[3] << 24) + (instr[2] << 16) +
 		     (instr[1] << 8) + instr[0];
 		imm &= ((1 << 26) - 1);
-		/*  NOTE: disassembly into correct opcode doesn't
-			happen here!  */
-		/*  debug("%s\t0x%08x", hi6_names[hi6], imm);  */
-		/*  TODO: call coprocessor specific disasm routine  */
+		if (!running) {
+			debug("%s\t0x%08x", hi6_names[hi6], imm);
+			break;
+		}
+		/*  TODO: call coprocessor specific disasm routine here  */
 		return;
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
@@ -672,7 +692,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 			if (imm >= 32768)               
 				imm -= 65536;
 			debug("%s\tr%i,%016llx", regimm_names[regimm5],
-			    rs, cpu->pc + (imm << 2));
+			    rs, (dumpaddr + 4) + (imm << 2));
 			break;
 		default:
 			debug("unimplemented regimm5 = 0x%02x", regimm5);
@@ -694,7 +714,8 @@ disasm_ret:
  */
 void cpu_register_dump(struct cpu *cpu)
 {
-	int i, offset;
+	int i;
+	uint64_t offset;
 	char *symbol;
 
 	symbol = get_symbol_name(cpu->pc, &offset);
@@ -737,8 +758,8 @@ void cpu_register_dump(struct cpu *cpu)
  */
 void show_trace(struct cpu *cpu, uint64_t addr)
 {
-	int offset, x;
-	int n_args_to_print;
+	uint64_t offset;
+	int x, n_args_to_print;
 	char strbuf[50];
 	char *symbol;
 
@@ -881,7 +902,8 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
 	if (!quiet_mode) {
-		int offset, x;
+		uint64_t offset;
+		int x;
 		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 
 		debug("[ exception %s%s",
@@ -914,7 +936,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (tlb && vaddr == 0) {
-		int offset;
+		uint64_t offset;
 		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
@@ -922,7 +944,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (vaddr != 0 && vaddr < 0x1000) {
-		int offset;
+		uint64_t offset;
 		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
@@ -1301,7 +1323,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		cached_pc = cpu->pc;
 
 		if (instruction_trace_cached) {
-			int offset;
+			uint64_t offset;
 			char *symbol = get_symbol_name(cpu->pc_last ^ 1, &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
@@ -1360,7 +1382,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		}
 
 		if (instruction_trace_cached)
-			cpu_disassemble_instr(cpu, instr);
+			cpu_disassemble_instr(cpu, instr, 1, 0);
 	}
 
 
@@ -3003,7 +3025,7 @@ static int cpu_run_instr(struct cpu *cpu)
  */
 void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 {
-	int offset;
+	uint64_t offset;
 	char *symbol;
 	int64_t mseconds, ninstrs;
 	struct timeval tv;

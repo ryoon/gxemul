@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.12 2004-07-17 20:09:23 debug Exp $
+ *  $Id: symbol.c,v 1.13 2004-08-19 19:59:46 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -123,7 +123,7 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
  *  If no symbol was found, NULL is returned instead.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
-char *get_symbol_name(uint64_t addr, int *offset)
+char *get_symbol_name(uint64_t addr, uint64_t *offset)
 {
 	struct symbol *s;
 	int stepsize, ofs;

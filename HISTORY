@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.87 2004-06-13 10:32:02 debug Exp $
+$Id: HISTORY,v 1.88 2004-06-14 22:48:25 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -532,3 +532,14 @@ HISTORY of mips64emul
 		differences compared to 1.6.2, which I'm trying to solve.
 		Interrupt fixes for IP32: _serial and _misc are different.
 		Separation of IP22 (Full-house) and IP24 (Guiness).
+20040614	Modifying the memory layout for IP20,22,24,26 (RAM is now
+		offset by 128MB, leaving room for EISA registers and such),
+		and moving around some code chunks. This is not well
+		tested yet, but seems to work.
+		Moving parts of the tiny translation cache, as suggested
+		by Juli Mallett.  It seems that the speedup isn't as
+		apparent as it was a few weeks ago, though. :-(
+		Speedups due to not translating addresses into symbol
+		names unless the symbol name is actually printed.
+		Added support for loading old big-endian (Irix) ECOFF
+		kernels (0x60 0x01 as the first two bytes).

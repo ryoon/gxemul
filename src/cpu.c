@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.43 2004-03-28 01:23:29 debug Exp $
+ *  $Id: cpu.c,v 1.44 2004-03-28 14:55:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -532,9 +532,9 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 	int cpnr;					/*  coprocessor nr  */
 
-	uint64_t addr, value, result_value;		/*  for load/store  */
+	uint64_t addr, value, value_hi, result_value;	/*  for load/store  */
 	int wlen, st, signd, linked, dataflag = 0;
-	unsigned char d[8];
+	unsigned char d[16];				/*  room for at most 128 bits  */
 
 
 	/*
@@ -1280,7 +1280,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				break;
 			}
 			if (special6 == SPECIAL_MULT) {
-#if 0
 				int64_t f1, f2, sum;
 				f1 = cpu->gpr[rs];
 				if (f1 & 0x80000000) {		/*  sign extend  */
@@ -1293,9 +1292,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					f2 |= ((uint64_t)0xffffffff << 32);
 				}
 				sum = f1 * f2;
-#else
-				int64_t sum = (int32_t)cpu->gpr[rs] * (int32_t)cpu->gpr[rt];
-#endif
+
 				cpu->lo = sum & 0xffffffff;
 				cpu->hi = ((uint64_t)sum >> 32) & 0xffffffff;
 
@@ -1954,7 +1951,20 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				if (cpnr < 0)
 					break;
 
-				if (wlen == 4) {
+				if (wlen == 16) {
+					value_hi = cpu->gpr_quadhi[rt];
+					/*  Special case for R5900 128-bit stores:  */
+					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+						for (i=0; i<8; i++) {
+							d[i] = (value >> (i*8)) & 255;
+							d[i+8] = (value_hi >> (i*8)) & 255;
+						}
+					else
+						for (i=0; i<8; i++) {
+							d[i] = (value >> ((wlen-1-i)*8)) & 255;
+							d[i + 8] = (value_hi >> ((wlen-1-i)*8)) & 255;
+						}
+				} else if (wlen == 4) {
 					/*  Special case for 32-bit stores... (perhaps not worth it)  */
 					d[0] = value & 0xff;         d[1] = (value >> 8) & 0xff;
 					d[2] = (value >> 16) & 0xff; d[3] = (value >> 24) & 0xff;
@@ -1996,7 +2006,28 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 				if (wlen == 1)
 					value = d[0] | (signd && (d[0]&128)? (-1 << 8) : 0);
-				else {
+				else if (wlen == 16) {
+					/*  R5900 128-bit quadword:  */
+					value_hi = 0;
+					value = 0;
+					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+						for (i=wlen-1; i>=0; i--) {
+							value_hi <<= 8;
+							value_hi += (value >> 56) & 255;
+							value <<= 8;
+							value += d[i];
+						}
+					} else {
+						for (i=0; i<wlen; i++) {
+							value_hi <<= 8;
+							value_hi += (value >> 56) & 255;
+							value <<= 8;
+							value += d[i];
+						}
+					}
+					cpu->gpr_quadhi[rt] = value_hi;
+				} else {
+					/*  General case:  */
 					value = 0;
 					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 						if (signd && (d[wlen-1] & 128)!=0)	/*  sign extend  */
@@ -2051,6 +2082,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				case 2:		t = "0x%04llx"; break;
 				case 4:		t = "0x%08llx"; break;
 				case 8:		t = "0x%016llx"; break;
+				case 16:	debug("0x%016llx", (long long)value_hi);
+						t = "%016llx"; break;
 				default:	t = "0x%02llx";
 				}
 				debug(t, (long long)value);
@@ -2410,12 +2443,16 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		rt = instr[2] & 31;
 		rd = (instr[1] >> 3) & 31;
 
-		/*  Many of these can be found in the R5000 docs.  */
+		/*  printf("special2 %08x  rs=0x%02x rt=0x%02x rd=0x%02x\n", instrword, rs,rt,rd);  */
 
-		if (special6 == SPECIAL2_MADD) {
+		/*
+		 *  Many of these can be found in the R5000 docs, or figured out
+		 *  by studying binutils source code for MIPS instructions.
+		 */
+
+		if ((instrword & 0xfc0007ff) == 0x70000000) {
 			if (instruction_trace)
 				debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
-
 			{
 				int32_t a, b;
 				int64_t c;
@@ -2467,18 +2504,18 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			 */
 			if (instr[0] == 0x69) {
 				if (instruction_trace)
-					debug("pmtlo\tr%i rs=%i\n", rd);
+					debug("pmtlo\tr%i rs=%i\n", rs);
 				cpu->lo = cpu->gpr[rs];
 			} else {
 				if (instruction_trace)
-					debug("pmthi\tr%i rs=%i\n", rd);
+					debug("pmthi\tr%i rs=%i\n", rs);
 				cpu->hi = cpu->gpr[rs];
 			}
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
 			/*
 			 *  This is just a guess for R5900, I've not found any docs on this one yet.
 			 *
-			 *	por dst,src,src2  ==> special_2 = 0x29, rs=src rt=src2 rd=dst
+			 *	por dst,src,src2  ==> rs=src rt=src2 rd=dst
 			 *
 			 *  A wild guess is that this is a 128-bit "or" between two registers.
 			 *  For now, let's just or using 64-bits.  (TODO)
@@ -2487,10 +2524,13 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
 			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
-			/*  R5900 "undocumented" pextlw. TODO: find out if this is correct.  */
+			/*
+			 *  R5900 "undocumented" pextlw. TODO: find out if this is correct.
+			 *  It seems that this instruction is used to combine two 32-bit
+			 *  words into a 64-bit dword, typically before a sd (store dword).
+			 */
 			if (instruction_trace)
 				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
-
 			cpu->gpr[rd] =
 			    ((cpu->gpr[rs] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
 			    | (cpu->gpr[rt] & 0xffffffff);

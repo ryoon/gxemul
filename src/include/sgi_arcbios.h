@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.9 2004-07-17 18:50:20 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.10 2004-12-02 20:35:16 debug Exp $  */
 /*  This file has been modified from the NetBSD version, the additions
     are mostly guesses for 64-bit SGI stuff.  */
 
@@ -362,7 +362,7 @@ struct arcbios_mem64 {
 #define	ARCBIOS_MEM_LoadedProgram		5
 #define	ARCBIOS_MEM_FirmwareTemporary		6
 #define	ARCBIOS_MEM_FirmwarePermanent		7
-#elif defined(arc)
+#else	/*  lif defined(arc)  */
 #define	ARCBIOS_MEM_ExceptionBlock		0
 #define	ARCBIOS_MEM_SystemParameterBlock	1
 #define	ARCBIOS_MEM_FreeMemory			2

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.221 2004-11-26 20:37:35 debug Exp $
+ *  $Id: machine.c,v 1.222 2004-12-02 20:35:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -57,11 +57,13 @@
 #include "symbol.h"
 
 /*  For SGI emulation:  */
+#include "sgi_arcbios.h"
 #include "crimereg.h"
 
 /*  For ARC emulation:  */
 #define	ARC_CONSOLE_MAX_X	80
 #define	ARC_CONSOLE_MAX_Y	30
+int arc_n_memdescriptors = 0;
 
 /*  For DECstation emulation:  */
 #include "dec_5100.h"
@@ -2478,75 +2480,38 @@ Why is this here? TODO
 		 *  NOTE:  The region of physical address space between 0x10000000 and 0x1fffffff
 		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
 		 */
-		mem_base = 16 * 1048576 / 4096;
-		mem_count = emul->physical_ram_in_mb <= 256? emul->physical_ram_in_mb : 256;
-		mem_count = (mem_count - 16) * 1048576 / 4096;
 
-		mem_base += (sgi_ram_offset / 4096);
+		arc_n_memdescriptors = 0;
 
-		/*  TODO: Make this nicer!  */
+		arcbios_add_memory_descriptor(cpu, 0, 0x2000, ARCBIOS_MEM_FirmwarePermanent);
+		arcbios_add_memory_descriptor(cpu, 0x2000, 0x30000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
+		arcbios_add_memory_descriptor(cpu, 0x30000, 0x1000000-0x30000, ARCBIOS_MEM_LoadedProgram);
 
-		if (arc_wordlen == sizeof(uint64_t)) {
-			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, 
-			    emul->emulation_type == EMULTYPE_SGI? 3 : 2);
-			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
-			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
-			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+		mem_base = 16;
+		mem_base += sgi_ram_offset / 1048576;
 
-			mem_mb_left = emul->physical_ram_in_mb - 512;
-			mem_base = 512 * (1048576 / 4096);
-			mem_base += (sgi_ram_offset / 4096);
-			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem64);
-			while (mem_mb_left > 0) {
-				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+		while (mem_base < emul->physical_ram_in_mb + sgi_ram_offset/1048576) {
+			mem_count = emul->physical_ram_in_mb + sgi_ram_offset/1048576
+			    - mem_base;
 
-				memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type,
-				    emul->emulation_type == EMULTYPE_SGI? 3 : 2);
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
-
-				store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
-				mem_bufaddr += sizeof(arcbios_mem64);
-
-				mem_mb_left -= 512;
-				mem_base += 512 * (1048576 / 4096);
+			/*  Skip the 256-512MB region (for devices)  */
+			if (mem_base < 256 && mem_base + mem_count > 256) {
+				mem_count = 256-mem_base;
 			}
 
-			/*  End of memory descriptors:  (pagecount = zero)  */
-			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
-		} else {
-			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emul->emulation_type == EMULTYPE_SGI? 3 : 2);
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
-			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			/*  At most 512MB per descriptor (at least the first 512MB
+			    must be separated this way, according to the ARC spec)  */
+			if (mem_count > 512)
+				mem_count = 512;
 
-			mem_mb_left = emul->physical_ram_in_mb - 512;
-			mem_base = 512 * (1048576 / 4096);
-			mem_base += (sgi_ram_offset / 4096);
-			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
-			while (mem_mb_left > 0) {
-				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+			arcbios_add_memory_descriptor(cpu, mem_base * 1048576,
+			    mem_count * 1048576, ARCBIOS_MEM_FreeMemory);
 
-				memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emul->emulation_type == EMULTYPE_SGI? 3 : 2);
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
+			mem_base += mem_count;
 
-				store_buf(cpu, mem_bufaddr,
-				    (char *)&arcbios_mem, sizeof(arcbios_mem));
-				mem_bufaddr += sizeof(arcbios_mem);
-
-				mem_mb_left -= 512;
-				mem_base += 512 * (1048576 / 4096);
-			}
-
-			/*  End of memory descriptors:  (pagecount = zero)  */
-			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			/*  Skip the devices:  */
+			if (mem_base == 256)
+				mem_base = 512;
 		}
 
 		/*

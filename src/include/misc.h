@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.167 2004-12-02 16:28:02 debug Exp $
+ *  $Id: misc.h,v 1.168 2004-12-02 20:35:16 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -966,6 +966,8 @@ void fatal(char *fmt, ...);
 
 
 /*  arcbios.c:  */
+void arcbios_add_memory_descriptor(struct cpu *cpu,
+	uint64_t base, uint64_t len, int arctype);
 uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
 	uint64_t revision, uint64_t key, uint64_t affinitymask, char *identifier, uint64_t parent);
@@ -1018,6 +1020,8 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
 void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
 void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
+void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
+void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct emul *emul, struct memory *mem);

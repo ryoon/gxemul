@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.37 2004-12-02 19:33:56 debug Exp $
+ *  $Id: arcbios.c,v 1.38 2004-12-02 20:35:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -67,8 +67,78 @@ struct emul_arc_child64 {
 static int arc_64bit = 0;		/*  For some SGI modes  */
 static int arc_wordlen = sizeof(uint32_t);
 
+extern int arc_n_memdescriptors;
+uint64_t arcbios_memdescriptor_base = ARC_MEMDESC_ADDR;
+
 uint64_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
 int n_arc_components = 0;
+
+
+/*
+ *  arcbios_add_memory_descriptor():
+ *
+ *  NOTE: arctype is the ARC type, not the SGI type. This function takes
+ *  care of converting, when neccessary.
+ */
+void arcbios_add_memory_descriptor(struct cpu *cpu,
+	uint64_t base, uint64_t len, int arctype)
+{
+	uint64_t memdesc_addr;
+	int s;
+	struct arcbios_mem arcbios_mem;
+	struct arcbios_mem64 arcbios_mem64;
+
+	base /= 4096;
+	len /= 4096;
+
+/*  TODO: Huh? Why isn't it neccessary to convert from arc to sgi types?  */
+#if 0
+	if (cpu->emul->emulation_type == EMULTYPE_SGI) {
+		/*  arctype is SGI style  */
+printf("%i => ", arctype);
+		switch (arctype) {
+		case 0:	arctype = 0; break;
+		case 1:	arctype = 1; break;
+		case 2:	arctype = 3; break;
+		case 3:	arctype = 4; break;
+		case 4:	arctype = 5; break;
+		case 5:	arctype = 6; break;
+		case 6:	arctype = 7; break;
+		case 7:	arctype = 2; break;
+		}
+printf("%i\n", arctype);
+	}
+#endif
+	if (arc_64bit)
+		s = sizeof(arcbios_mem64);
+	else
+		s = sizeof(arcbios_mem);
+
+	memdesc_addr = arcbios_memdescriptor_base +
+	    arc_n_memdescriptors * s;
+
+	if (arc_64bit) {
+		memset(&arcbios_mem64, 0, s);
+		store_32bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem64.Type, arctype);
+		store_64bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem64.BasePage, base);
+		store_64bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem64.PageCount, len);
+		store_buf(cpu, memdesc_addr, (char *)&arcbios_mem64, s);
+	} else {
+		memset(&arcbios_mem, 0, s);
+		store_32bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem.Type, arctype);
+		store_32bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem.BasePage, base);
+		store_32bit_word_in_host(cpu,
+		    (unsigned char *)&arcbios_mem.PageCount, len);
+		store_buf(cpu, memdesc_addr, (char *)&arcbios_mem, s);
+	}
+
+	arc_n_memdescriptors ++;
+}
 
 
 /*
@@ -573,38 +643,19 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x48:		/*  void *GetMemoryDescriptor(void *ptr)  */
 		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->gpr[GPR_A0]);
-		/*
-		 *  RAM regions are split into 512MB chunks:
-		 */
-		cpu->gpr[GPR_V0] = ARC_MEMDESC_ADDR;
 
-		/*  If a0=NULL, then return a pointer to the first descriptor:  */
+		/*  If a0=NULL, then return the first descriptor:  */
 		if ((uint32_t)cpu->gpr[GPR_A0] == 0)
-			break;
-
-		/*  TODO: change this into reading the descriptor structure, nr of pages = zero ==> stop  */
-
-		mb_left = cpu->emul->physical_ram_in_mb;
-		while (mb_left > 0) {
-			mb_left -= 512;
-			/*  If the caller pointed to chunk x, then return a pointer
-				to chunk x+1, if it exists. Otherwise return 0.  */
-			if ((uint32_t)cpu->gpr[GPR_A0] == (uint32_t)cpu->gpr[GPR_V0]) {
-				if (mb_left <= 0)
-					cpu->gpr[GPR_V0] = 0;
-				else {
-					if (arc_64bit)
-						cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem64);
-					else
-						cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem);
-				}
-				break;
-			}
-
-			if (arc_64bit)
-				cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem64);
-			else
-				cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
+			cpu->gpr[GPR_V0] = arcbios_memdescriptor_base;
+		else {
+			int s = arc_64bit? sizeof(struct arcbios_mem64)
+			    : sizeof(struct arcbios_mem);
+			int nr = cpu->gpr[GPR_A0] - arcbios_memdescriptor_base;
+			nr /= s;
+			nr ++;
+			cpu->gpr[GPR_V0] = arcbios_memdescriptor_base + s * nr;
+			if (nr >= arc_n_memdescriptors)
+				cpu->gpr[GPR_V0] = 0;
 		}
 		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */

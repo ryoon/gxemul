@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.176 2005-01-28 01:31:08 debug Exp $
+ *  $Id: main.c,v 1.177 2005-01-28 09:39:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -162,9 +162,10 @@ static void usage(char *progname, int longusage)
 	printf("   Copyright (C) 2003-2005  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
-	printf("\nusage: %s [machine and general options] file [...]\n",
+	printf("\nusage: %s [machine and general options] [ file [file ..] ]\n",
 	    progname);
-	printf("   or  %s [general options] @configfile\n", progname);
+	printf("   or  %s [general options] @configfile [@configfile ..]\n",
+	    progname);
 
 	if (!longusage) {
 		printf("\nRun with  -h  for help on command line options.\n\n");

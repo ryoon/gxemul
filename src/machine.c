@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.162 2004-08-12 07:24:40 debug Exp $
+ *  $Id: machine.c,v 1.163 2004-08-13 04:55:47 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1717,6 +1717,9 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
+
+				dev_random_init(mem, 0x418000200ULL, 0x20000);
+
 				break;
 			case 22:
 			case 24:
@@ -1727,6 +1730,9 @@ void machine_init(struct memory *mem)
 					strcat(machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880, 1);
 				}
+
+				dev_ram_init(mem, 0x88000000ULL,
+				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 
 				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
 
@@ -1845,6 +1851,9 @@ void machine_init(struct memory *mem)
 
 				dev_ram_init(mem,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+
+				dev_ram_init(mem,    0x80000000ULL,
+				    32 * 1048576, DEV_RAM_RAM, 0x00000000);
 
 				/*
 				 *  Something at paddr=1f022004: TODO
@@ -2385,11 +2394,23 @@ void machine_init(struct memory *mem)
 
 		add_symbol_name(ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
 
-		for (i=0; i<100; i++)
-			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
-
-		for (i=0; i<100; i++)
-			store_32bit_word(ARC_PRIVATE_VECTORS + i*4, ARC_PRIVATE_ENTRIES + i*4);
+		switch (arc_wordlen) {
+		case sizeof(uint64_t):
+			for (i=0; i<100; i++)
+				store_64bit_word(ARC_FIRMWARE_VECTORS + i*8,
+				    ARC_FIRMWARE_ENTRIES + i*8);
+			for (i=0; i<100; i++)
+				store_64bit_word(ARC_PRIVATE_VECTORS + i*8,
+				    ARC_PRIVATE_ENTRIES + i*8);
+			break;
+		default:
+			for (i=0; i<100; i++)
+				store_32bit_word(ARC_FIRMWARE_VECTORS + i*4,
+				    ARC_FIRMWARE_ENTRIES + i*4);
+			for (i=0; i<100; i++)
+				store_32bit_word(ARC_PRIVATE_VECTORS + i*4,
+				    ARC_PRIVATE_ENTRIES + i*4);
+		}
 
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 10;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;

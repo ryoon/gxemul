@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sgiprom_to_bin.c,v 1.1 2004-06-19 13:42:45 debug Exp $
+ *  $Id: sgiprom_to_bin.c,v 1.2 2004-06-20 15:00:11 debug Exp $
  *
  *  sgiprom_to_bin.c
  *
@@ -72,6 +72,11 @@ int main(int argc, char *argv[])
 		s[0] = 0;
 		fgets(s, sizeof(s), stdin);
 
+		while (s[0] == '\r') {
+			memcpy(s, s+1, sizeof(s)-1);
+			s[MAX-1] = '\0';
+		}
+
 		/*  0xbfc00460:   24    5    0   10    0    5   28   c2  */
 		if (s[0] == '0' && s[10]==':') {
 			unsigned long x;
@@ -91,8 +96,8 @@ int main(int argc, char *argv[])
 				 */
 				off_t ofs;
 				printf("same_flag set, filling until just before 0x%08lx\n", (long)x);
+				fseek(f, same_start_offset, SEEK_SET);
 				for (ofs = same_start_offset; ofs < x; ofs += 8) {
-					fseek(f, ofs, SEEK_SET);
 					fwrite(previous_line, 1, sizeof(previous_line), f);
 				}
 				same_flag = 0;

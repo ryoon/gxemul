@@ -10,6 +10,10 @@ Most important stuff (but these are all non-trivial tasks):
 	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
 	x)  try to run X inside NetBSD, using framebuffer(s) with mouse support!
 
+  o)  Binary tree for memory mapped devices!
+  o)  Separate RAM as yet another device (a "RAM device"), replacing the
+      'memory' system with a more generic 'memory controller'.
+
   o)  Speed optimizations:
 	x)  memory_rw() cache for recently used pages. (how to invalidate
 	    pages? write-through? invalidate on tlb updates?)
@@ -62,6 +66,10 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
 
 	Emulation of specific machines and devices:
+		o)  Binary tree for memory mapped devices!
+		o)  Separate RAM as yet another device (a "RAM device"), replacing the
+			'memory' system with a more generic 'memory controller'.
+
 		o)  Separate busses and ROM emulation from machines!
 			x)  Make interrupt sharing more generic!
 			x)  TURBOchannel  (many DEC systems)

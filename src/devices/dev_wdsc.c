@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.23 2005-01-30 13:14:12 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.24 2005-02-21 07:18:09 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -199,7 +199,8 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 			d->irq_pending = 1;
 			d->reg[SBIC_csr] = SBIC_CSR_SEL_TIMEO;
 			if (d->controller_nr == 0 && diskimage_exist(
-			    cpu->machine, d->reg[SBIC_selid] & SBIC_SID_IDMASK)) {
+			    cpu->machine, d->reg[SBIC_selid] &
+			    SBIC_SID_IDMASK)) {
 				if (d->xfer != NULL)
 					scsi_transfer_free(d->xfer);
 				d->xfer = scsi_transfer_alloc();
@@ -220,7 +221,8 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 				free(d->buf);
 
 			d->buf_allocatedlen = (d->reg[SBIC_count_hi] << 16)
-			    + (d->reg[SBIC_count_med] << 8) + d->reg[SBIC_count_lo];
+			    + (d->reg[SBIC_count_med] << 8) +
+			    d->reg[SBIC_count_lo];
 
 			d->buf = malloc(d->buf_allocatedlen);
 			if (d->buf == NULL) {
@@ -241,7 +243,8 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 
 		switch (d->reg[SBIC_cmd] & ~SBIC_CMD_SBT) {
 		case SBIC_CMD_XFER_INFO:
-			if (d->buf == NULL || d->buf_curptr >= d->buf_allocatedlen) {
+			if (d->buf == NULL || d->buf_curptr >=
+			    d->buf_allocatedlen) {
 				fprintf(stderr, "fatal error in wdsc\n");
 				exit(1);
 			}
@@ -257,11 +260,15 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 
 				switch (d->current_phase) {
 				case CMD_PHASE:
-					scsi_transfer_allocbuf(&d->xfer->cmd_len, &d->xfer->cmd, d->buf_allocatedlen, 1);
-					memcpy(d->xfer->cmd, d->buf, d->buf_allocatedlen);
+					scsi_transfer_allocbuf(
+					    &d->xfer->cmd_len, &d->xfer->cmd,
+					    d->buf_allocatedlen, 1);
+					memcpy(d->xfer->cmd, d->buf,
+					    d->buf_allocatedlen);
 					break;
 				default:
-					fatal("wdsc: unimplemented phase %i!\n", d->current_phase);
+					fatal("wdsc: unimplemented phase %i!\n",
+					    d->current_phase);
 				}
 
 				res = diskimage_scsicommand(cpu,
@@ -272,15 +279,18 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 				d->irq_pending = 1;
 
 				if (res == 2)
-					d->reg[SBIC_csr] = SBIC_CSR_XFERRED | DATA_OUT_PHASE;
+					d->reg[SBIC_csr] = SBIC_CSR_XFERRED |
+					    DATA_OUT_PHASE;
 				else
-					d->reg[SBIC_csr] = SBIC_CSR_XFERRED | DATA_IN_PHASE;
+					d->reg[SBIC_csr] = SBIC_CSR_XFERRED |
+					    DATA_IN_PHASE;
 
 				/*  status phase?  msg in and msg out?  */
 			}
 			break;
 		default:
-			fatal("[ wdsc: don't know how to handle data for cmd = 0x%02x ]\n", d->reg[SBIC_cmd]);
+			fatal("[ wdsc: don't know how to handle data for "
+			    "cmd = 0x%02x ]\n", d->reg[SBIC_cmd]);
 		}
 
 		break;
@@ -346,7 +356,8 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 			odata = d->reg[d->register_select];
 
 			if (d->register_select == SBIC_csr) {
-				/*  TODO: when should interrupts actually be ack:ed?  */
+				/*  TODO: when should interrupts actually be
+				    ack:ed?  */
 				d->irq_pending = 0;
 			}
 

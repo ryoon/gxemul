@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.12 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.13 2005-02-21 07:18:09 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -160,11 +160,12 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ vr41xx: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
+			debug("[ vr41xx: unimplemented write to address "
+			    "0x%llx, data=0x%016llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ vr41xx: unimplemented read from address 0x%llx ]\n",
-			    (long long)relative_addr);
+			debug("[ vr41xx: unimplemented read from address "
+			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
 	/*  Recalculate interrupt assertions:  */
@@ -212,10 +213,11 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 		exit(1);
 	}
 
-	memory_device_register(mem, "vr41xx", baseaddr,
-	    DEV_VR41XX_LENGTH, dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "vr41xx", baseaddr, DEV_VR41XX_LENGTH,
+	    dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
 
-	machine_add_tickfunction(machine, dev_vr41xx_tick, d, DEV_VR41XX_TICKSHIFT);
+	machine_add_tickfunction(machine, dev_vr41xx_tick, d,
+	    DEV_VR41XX_TICKSHIFT);
 
 	return d;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.67 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_asc.c,v 1.68 2005-02-21 07:18:09 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -118,7 +118,8 @@ struct asc_data {
 
 	/*  Built-in DMA memory (for DECstation 5000/200):  */
 	uint32_t	dma_address_reg;
-	unsigned char	dma_address_reg_memory[4096];	/*  NOTE: full page, for bintrans  */
+	unsigned char	dma_address_reg_memory[4096];
+				/*  NOTE: full page, for bintrans  */
 	unsigned char	dma[128 * 1024];
 
 	void		*dma_controller_data;
@@ -133,7 +134,8 @@ struct asc_data {
 /*  (READ/WRITE name, if split)  */
 char *asc_reg_names[0x10] = {
 	"NCR_TCL", "NCR_TCM", "NCR_FIFO", "NCR_CMD",
-	"NCR_STAT/NCR_SELID", "NCR_INTR/NCR_TIMEOUT", "NCR_STEP/NCR_SYNCTP", "NCR_FFLAG/NCR_SYNCOFF",
+	"NCR_STAT/NCR_SELID", "NCR_INTR/NCR_TIMEOUT",
+	"NCR_STEP/NCR_SYNCTP", "NCR_FFLAG/NCR_SYNCOFF",
 	"NCR_CFG1", "NCR_CCF", "NCR_TEST", "NCR_CFG2",
 	"NCR_CFG3", "reg_0xd", "NCR_TCH", "reg_0xf"
 };
@@ -280,7 +282,8 @@ static int dev_asc_transfer(struct cpu *cpu, struct asc_data *d, int dmaflag)
 			} else {
 /*  TODO  */
 fatal("TODO..............\n");
-				len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+				len = d->reg_wo[NCR_TCL] +
+				    d->reg_wo[NCR_TCM] * 256;
 
 				len--;
 				ch = d->incoming_data[d->incoming_data_addr];
@@ -304,17 +307,22 @@ fatal("TODO..............\n");
 				res = 0;
 			} else {
 				int len = d->xferp->data_in_len;
-				int len2 = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+				int len2 = d->reg_wo[NCR_TCL] +
+				    d->reg_wo[NCR_TCM] * 256;
 				if (len2 == 0)
 					len2 = 65536;
 
                                 if (len < len2) {
-                                        fatal("{ asc: data in, len=%i len2=%i }\n", len, len2);
+                                        fatal("{ asc: data in, len=%i len2=%i "
+					    "}\n", len, len2);
                                 }
 
 				/*  TODO: check len2 in a similar way?  */
-				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
-					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+				if (len + (d->dma_address_reg &
+				    ((sizeof(d->dma)-1))) > sizeof(d->dma))
+					len = sizeof(d->dma) -
+					    (d->dma_address_reg &
+					    ((sizeof(d->dma)-1)));
 
 				if (len2 > len) {
 					memset(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), 0, len2);

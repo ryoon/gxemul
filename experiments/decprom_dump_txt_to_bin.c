@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: decprom_dump_txt_to_bin.c,v 1.3 2005-01-09 01:55:27 debug Exp $
+ *  $Id: decprom_dump_txt_to_bin.c,v 1.4 2005-02-21 07:18:10 debug Exp $
  *
  *  decprom_dump_txt_to_bin.c
  *
@@ -60,7 +60,8 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		fprintf(stderr, "usage: %s dump.txt dump.bin\n", argv[0]);
-		fprintf(stderr, "The resulting dump binary will be written to dump.bin\n");
+		fprintf(stderr, "The resulting dump binary will be written"
+		    " to dump.bin\n");
 		exit(1);
 	}
 
@@ -84,7 +85,8 @@ int main(int argc, char *argv[])
 			unsigned long data = strtoul(s + 12, NULL, 16);
 			unsigned char obuf[4];
 
-			printf("addr = 0x%0l8x data = 0x%08lx\n", (long)addr, (long)data);
+			printf("addr = 0x%0l8x data = 0x%08lx\n",
+			    (long)addr, (long)data);
 
 			addr -= 0xbfc00000L;
 			obuf[0] = data & 255;

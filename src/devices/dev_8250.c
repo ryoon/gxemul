@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.14 2005-02-06 15:15:03 debug Exp $
+ *  $Id: dev_8250.c,v 1.15 2005-02-21 07:18:09 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -37,11 +37,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "console.h"
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
 
 struct dev_8250_data {
@@ -98,7 +98,8 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
 /*
  *  dev_8250_access():
  */
-int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dev_8250_data *d = extra;
@@ -114,7 +115,8 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	else {
 #if 0
 		if (writeflag == MEM_WRITE)
-			fatal("[ 8250: write addr=0x%02x idata = 0x%02x ]\n", relative_addr, idata);
+			fatal("[ 8250: write addr=0x%02x idata = 0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		else
 			fatal("[ 8250: read addr=0x%02x ]\n", relative_addr);
 #endif

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.21 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_ssc.c,v 1.22 2005-02-21 07:18:09 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -130,7 +130,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			odata = d->rx_ctl;
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: read from 0x%08lx: 0x%02x ]\n", (long)relative_addr, odata);
+			debug("[ ssc: read from 0x%08lx: 0x%02x ]\n",
+			    (long)relative_addr, (int)odata);
 #endif
 		} else {
 			d->rx_ctl = idata;
@@ -141,7 +142,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 				cpu_interrupt_ack(cpu, 2);
 			}
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n",
+			    (long)relative_addr, (int)idata);
 #endif
 		}
 
@@ -149,13 +151,15 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 	case 0x0084:	/*  receive data  */
 		if (writeflag==MEM_READ) {
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ ssc: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 #endif
 			if (console_charavail(d->console_handle))
 				odata = console_readchar(d->console_handle);
 		} else {
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to 0x%08lx: 0x%02x ]\n",
+			    (long)relative_addr, (int)idata);
 #endif
 		}
 
@@ -164,7 +168,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			odata = d->tx_ctl;
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: read from 0x%08lx: 0x%04x ]\n", (long)relative_addr, odata);
+			debug("[ ssc: read from 0x%08lx: 0x%04x ]\n",
+			    (long)relative_addr, (int)odata);
 #endif
 		} else {
 			d->tx_ctl = idata;
@@ -175,16 +180,19 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 				cpu_interrupt_ack(cpu, 2);
 			}
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n",
+			    (long)relative_addr, (int)idata);
 #endif
 		}
 
 		break;
 	case 0x008c:	/*  transmit data  */
 		if (writeflag==MEM_READ) {
-			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ ssc: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			/*  debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+			/*  debug("[ ssc: write to 0x%08lx: 0x%02x ]\n",
+			    (long)relative_addr, (int)idata);  */
 			console_putchar(d->console_handle, idata);
 		}
 
@@ -193,30 +201,36 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			odata = 128;
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: read from 0x%08lx: 0x%08lx ]\n", (long)relative_addr, (long)odata);
+			debug("[ ssc: read from 0x%08lx: 0x%08lx ]\n",
+			    (long)relative_addr, (long)odata);
 #endif
 		} else {
 #ifdef SSC_DEBUG_TXRX
-			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, idata);
 #endif
 		}
 
 		break;
 	case 0x0108:
 		if (writeflag==MEM_READ) {
-			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ ssc: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
 #ifdef SSC_DEBUG
-			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 #endif
 		}
 
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ ssc: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 

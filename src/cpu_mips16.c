@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips16.c,v 1.1 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu_mips16.c,v 1.2 2005-02-21 07:18:11 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  *
@@ -103,7 +103,8 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 		rd = (x >> 5) & 0x07;
 		rs = (x >> 8) & 0x07;
 		if (cpu->cd.mips.mips16_extend)
-			imm = (cpu->cd.mips.mips16_extend & 0x7ff) + ((x & 0x1f) << 11);
+			imm = (cpu->cd.mips.mips16_extend & 0x7ff) +
+			    ((x & 0x1f) << 11);
 		else {
 			imm = (x & 0x1f) * wlen;
 			if (imm >= 0x10)
@@ -123,9 +124,10 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 
 /*  TODO  */
 
-		if (cpu->cd.mips.mips16_extend)
-			imm = (cpu->cd.mips.mips16_extend & 0x7ff) + ((x & 0x1f) << 11);
-		else {
+		if (cpu->cd.mips.mips16_extend) {
+			imm = (cpu->cd.mips.mips16_extend & 0x7ff) +
+			    ((x & 0x1f) << 11);
+		} else {
 			imm = (x & 0x1f) * wlen;
 			if (imm >= 0x10)
 				imm |= 0xffe0;		/*  sign-extend  */
@@ -141,9 +143,10 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 
 		/*  TODO: this is wrong  */
 
-		if (cpu->cd.mips.mips16_extend)
-			imm = ((cpu->cd.mips.mips16_extend & 0x7ff) << 5) + (x & 0xff);
-		else {
+		if (cpu->cd.mips.mips16_extend) {
+			imm = ((cpu->cd.mips.mips16_extend & 0x7ff) << 5) +
+			    (x & 0xff);
+		} else {
 			imm = (x & 0xff) << 3;
 			if (imm & (1 << 10))
 				imm |= 0xf800;		/*  sign-extend  */

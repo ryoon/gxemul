@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.15 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.16 2005-02-21 07:18:09 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -163,8 +163,8 @@ void mardigras_20400(struct cpu *cpu, struct sgi_mardigras_data *d,
 		addr = (mardigras_xsize * (mardigras_ysize - 1 - d->currenty)
 		    + d->currentx) * 3;
 /*
-		printf("addr=%08x curx,y=%4i,%4i startx,y=%4i,%4i stopx,y=%4i,%4i\n",
-		    addr, d->currentx, d->currenty,
+		printf("addr=%08x curx,y=%4i,%4i startx,y=%4i,%4i "
+		    "stopx,y=%4i,%4i\n", addr, d->currentx, d->currenty,
 		    d->startx, d->starty, d->stopx, d->stopy);
 */
 		len = 8*3;
@@ -275,9 +275,11 @@ int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ sgi_mardigras: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ sgi_mardigras: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ sgi_mardigras: write to  0x%08lx: 0x%016llx ]\n", (long)relative_addr, (long long)idata);
+			debug("[ sgi_mardigras: write to  0x%08lx: 0x%016llx"
+			    " ]\n", (long)relative_addr, (long long)idata);
 		}
 	}
 
@@ -312,6 +314,7 @@ void dev_sgi_mardigras_init(struct machine *machine, struct memory *mem,
 	}
 
 	memory_device_register(mem, "sgi_mardigras", baseaddr,
-	    DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access, d, MEM_DEFAULT, NULL);
+	    DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access, d,
+	    MEM_DEFAULT, NULL);
 }
 

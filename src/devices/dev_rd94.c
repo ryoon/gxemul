@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.22 2005-02-02 09:54:29 debug Exp $
+ *  $Id: dev_rd94.c,v 1.23 2005-02-21 07:18:09 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -66,7 +66,8 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 {
 	struct rd94_data *d = extra;
 
-	if (d->interval_start > 0 && d->interval > 0 && d->intmask!=0) {		/*  ??? !=0  */
+	/*  TODO: hm... intmask !=0 ?  */
+	if (d->interval_start > 0 && d->interval > 0 && d->intmask != 0) {
 		d->interval --;
 		if (d->interval <= 0) {
 			debug("[ rd94: interval timer interrupt ]\n");
@@ -108,7 +109,8 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			odata = (8+1) << 2;
 
 			/*  Ugly hack:  */
-			if ((cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & 0x800) == 0)
+			if ((cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & 0x800)
+			    == 0)
 				odata = 0;
 		}
 		debug("[ rd94: intstat1 ]\n");
@@ -159,25 +161,33 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 	case RD94_SYS_IT_VALUE:
 		if (writeflag == MEM_WRITE) {
 			d->interval = d->interval_start = idata;
-			debug("[ rd94: setting Interval Timer value to %i ]\n", idata);
+			debug("[ rd94: setting Interval Timer value to %i ]\n",
+			    (int)idata);
 		} else {
-			odata = d->interval_start;	/*  TODO: or d->interval ?  */;
+			odata = d->interval_start;
+			/*  TODO: or d->interval ?  */;
 		}
 		break;
 	case RD94_SYS_PCI_CONFADDR:
 	case RD94_SYS_PCI_CONFDATA:
 		if (writeflag == MEM_WRITE) {
-			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &idata, writeflag, d->pci_data);
+			bus_pci_access(cpu, mem, relative_addr ==
+			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
+			    &idata, writeflag, d->pci_data);
 		} else {
-			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &odata, writeflag, d->pci_data);
+			bus_pci_access(cpu, mem, relative_addr ==
+			    RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA,
+			    &odata, writeflag, d->pci_data);
 			/*  odata = 0;  */
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			fatal("[ rd94: unimplemented write to address 0x%x, "
+			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
+			fatal("[ rd94: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
 		}
 	}
 

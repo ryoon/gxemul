@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,20 +25,21 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.6 2005-01-23 13:43:02 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.7 2005-02-21 07:18:09 debug Exp $
  *
  *  DEC 21143 PCI ethernet.
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *  TODO:  This is just a dummy device, so far.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
+
 #include "bus_pci.h"
 
 
@@ -53,11 +54,14 @@ uint32_t pci_dec21143_rr(int reg)
 	case 0x04:
 		return 0xffffffff;
 	case 0x08:
-		return PCI_CLASS_CODE(PCI_CLASS_NETWORK, PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;		/*  Revision 4.1  */
+		/*  Revision 4.1  */
+		return PCI_CLASS_CODE(PCI_CLASS_NETWORK, PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;
 	case 0x10:
-		return 0x9ca00001;	/*  1ca00000, I/O space  (I have no idea about these...)  */
+		/*  1ca00000, I/O space  (I have no idea about these...)  */
+		return 0x9ca00001;
 	case 0x14:
-		return 0x9ca10000;	/*  1ca10000, mem space  (I have no idea about these...)  */
+		/*  1ca10000, mem space  (I have no idea about these...)  */
+		return 0x9ca10000;
 	case 0x3c:
 		return 0x00000100;	/*  interrupt pin A  */
 	default:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.13 2005-01-23 13:43:02 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.14 2005-02-21 07:18:09 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -99,11 +99,14 @@ uint32_t pci_dec21030_rr(int reg)
 		return 0x02800087;
 	case 0x08:
 		return 0x03800003;
-		/*  return PCI_CLASS_CODE(PCI_CLASS_DISPLAY, PCI_SUBCLASS_DISPLAY_VGA, 0) + 0x03;  */
+		/*  return
+		PCI_CLASS_CODE(PCI_CLASS_DISPLAY, PCI_SUBCLASS_DISPLAY_VGA, 0)
+		+ 0x03;  */
 	case 0x0c:
 		return 0x0000ff00;
 	case 0x10:
-		return 0x00000000 + 8;		/*  address  (8=prefetchable)  */
+		/*  address  (8=prefetchable)  */
+		return 0x00000000 + 8;
 	case 0x30:
 		return 0x08000001;
 	case 0x3c:
@@ -129,7 +132,8 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Read/write to the framebuffer:  */
 	if (relative_addr >= FRAMEBUFFER_BASE) {
-		/*  TODO:  Perhaps this isn't graphics mode (GMOR), but GOPR (operation) specific:  */
+		/*  TODO:  Perhaps this isn't graphics mode (GMOR),
+		    but GOPR (operation) specific:  */
 
 		switch (d->graphics_mode) {
 		case 1:		/*  Bitmap write:  */
@@ -153,19 +157,26 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 			if (newlen > len * 8)
 				newlen = len * 8;
 
-			r = dev_fb_access(cpu, mem, relative_addr - FRAMEBUFFER_BASE, buf2, newlen, writeflag, d->vfb_data);
+			r = dev_fb_access(cpu, mem, relative_addr -
+			    FRAMEBUFFER_BASE, buf2, newlen, writeflag,
+			    d->vfb_data);
 			break;
 		case 0x2d:	/*  Block fill:  */
 			/*  data is nr of pixels to fill minus one  */
 			newlen = memory_readmax64(cpu, data, len) + 1;
-			/*  debug("YO addr=0x%08x, newlen=%i\n", relative_addr, newlen);  */
+			/*  debug("YO addr=0x%08x, newlen=%i\n", relative_addr,
+			    newlen);  */
 			if (newlen > MAX_XSIZE)
 				newlen = MAX_XSIZE;
 			memset(buf2, d->color, newlen);
-			r = dev_fb_access(cpu, mem, relative_addr - FRAMEBUFFER_BASE, buf2, newlen, MEM_WRITE, d->vfb_data);
+			r = dev_fb_access(cpu, mem, relative_addr -
+			    FRAMEBUFFER_BASE, buf2, newlen, MEM_WRITE,
+			    d->vfb_data);
 			break;
 		default:
-			r = dev_fb_access(cpu, mem, relative_addr - FRAMEBUFFER_BASE, data, len, writeflag, d->vfb_data);
+			r = dev_fb_access(cpu, mem, relative_addr -
+			    FRAMEBUFFER_BASE, data, len, writeflag,
+			    d->vfb_data);
 		}
 		return r;
 	}
@@ -173,10 +184,12 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	/*  Read from/write to the dec21030's registers:  */
-	reg = ((relative_addr - TGA_MEM_CREGS) & (TGA_CREGS_ALIAS - 1)) / sizeof(uint32_t);
+	reg = ((relative_addr - TGA_MEM_CREGS) & (TGA_CREGS_ALIAS - 1))
+	    / sizeof(uint32_t);
         switch (reg) {
 
-	/*  Color?  (there are 8 of these, 2 used in 8-bit mode, 8 in 24-bit mode)  */
+	/*  Color?  (there are 8 of these, 2 used in 8-bit mode,
+	    8 in 24-bit mode)  */
 	case TGA_REG_GBCR0:
 		if (writeflag == MEM_WRITE)
 			d->color = idata;
@@ -187,7 +200,8 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 	/*  Board revision  */
 /*	case TGA_MEM_CREGS + sizeof(uint32_t) * TGA_REG_GREV:  */
 	case TGA_REG_GREV:
-		odata = 0x04;		/*  01,02,03,04 (rev0) and 20,21,22 (rev1) are allowed  */
+		/*  01,02,03,04 (rev0) and 20,21,22 (rev1) are allowed  */
+		odata = 0x04;
 		break;
 
 	/*  Graphics Mode:  */
@@ -227,16 +241,22 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 	case TGA_REG_GCDR:
 		debug("[ dec21030: block copy destination = 0x%08x ]\n", idata);
 		newlen = 64;
-		/*  Both source and destination are raw framebuffer addresses, offset by 0x1000.  */
-		dev_fb_access(cpu, mem, d->copy_source - 0x1000, buf2, newlen, MEM_READ,  d->vfb_data);
-		dev_fb_access(cpu, mem, idata          - 0x1000, buf2, newlen, MEM_WRITE, d->vfb_data);
+		/*  Both source and destination are raw framebuffer addresses,
+		    offset by 0x1000.  */
+		dev_fb_access(cpu, mem, d->copy_source - 0x1000,
+		    buf2, newlen, MEM_READ,  d->vfb_data);
+		dev_fb_access(cpu, mem, idata - 0x1000,
+		    buf2, newlen, MEM_WRITE, d->vfb_data);
 		break;
 
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ dec21030: unimplemented write to address 0x%x (=reg 0x%x), data=0x%02x ]\n", relative_addr, reg, idata);
+			debug("[ dec21030: unimplemented write to address"
+			    " 0x%x (=reg 0x%x), data=0x%02x ]\n",
+			    (int)relative_addr, reg, (int)idata);
 		else
-			debug("[ dec21030: unimplemented read from address 0x%x (=reg 0x%x) ]\n", relative_addr, reg);
+			debug("[ dec21030: unimplemented read from address"
+			    " 0x%x (=reg 0x%x) ]\n", (int)relative_addr, reg);
 	}
 
 	if (writeflag == MEM_READ)

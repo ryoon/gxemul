@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.16 2005-01-30 13:14:12 debug Exp $
+ *  $Id: dev_wdc.c,v 1.17 2005-02-21 07:18:09 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -98,7 +98,8 @@ static uint64_t wdc_get_inbuf(struct wdc_data *d)
 	int c = d->inbuf[d->inbuf_tail];
 
 	if (d->inbuf_head == d->inbuf_tail) {
-		fatal("WARNING! someone is reading too much from the wdc inbuf!\n");
+		fatal("WARNING! someone is reading too much from the "
+		    "wdc inbuf!\n");
 		return -1;
 	}
 
@@ -147,7 +148,8 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 	memcpy(&d->identify_struct[2 * 23], "VER 1.0 ", 8);
 
 	/*  27-46: Model number  */
-	memcpy(&d->identify_struct[2 * 27], "Fake mips64emul disk                    ", 40);
+	memcpy(&d->identify_struct[2 * 27],
+	    "Fake mips64emul disk                    ", 40);
 	/*  TODO:  Use the diskimage's filename instead?  */
 
 	/*  47: max sectors per multitransfer  */
@@ -189,9 +191,11 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 		odata |= WDCS_DRQ;
 
 	if (writeflag==MEM_READ)
-		debug("[ wdc: read from ALTSTATUS: 0x%02x ]\n", (int)relative_addr, odata);
+		debug("[ wdc: read from ALTSTATUS: 0x%02x ]\n",
+		    (int)relative_addr, odata);
 	else
-		debug("[ wdc: write to ALT. CTRL: 0x%02x ]\n", (int)relative_addr, idata);
+		debug("[ wdc: write to ALT. CTRL: 0x%02x ]\n",
+		    (int)relative_addr, idata);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -302,14 +306,16 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag==MEM_READ) {
 			odata = (d->sectorsize << 6) + (d->lba << 5) +
 			    (d->drive << 4) + (d->head);
-			debug("[ wdc: read from SDH: 0x%02x (sectorsize %i, lba=%i, drive %i, head %i) ]\n",
+			debug("[ wdc: read from SDH: 0x%02x (sectorsize %i,"
+			    " lba=%i, drive %i, head %i) ]\n",
 			    odata, d->sectorsize, d->lba, d->drive, d->head);
 		} else {
 			d->sectorsize = (idata >> 6) & 3;
 			d->lba   = (idata >> 5) & 1;
 			d->drive = (idata >> 4) & 1;
 			d->head  = idata & 0xf;
-			debug("[ wdc: write to SDH: 0x%02x (sectorsize %i, lba=%i, drive %i, head %i) ]\n",
+			debug("[ wdc: write to SDH: 0x%02x (sectorsize %i,"
+			    " lba=%i, drive %i, head %i) ]\n",
 			    idata, d->sectorsize, d->lba, d->drive, d->head);
 		}
 		break;
@@ -332,7 +338,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 #if 0
-/* ?? */		if (cpu->coproc[0]->reg[COP0_STATUS] & (1 << (d->irq_nr + 8)))
+/* ?? */		if (cpu->coproc[0]->reg[COP0_STATUS] & (1 <<
+			    (d->irq_nr + 8)))
 				cpu_interrupt_ack(cpu, d->irq_nr);
 #endif
 		} else {
@@ -347,14 +354,18 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			/*  Handle the command:  */
 			switch (d->cur_command) {
 			case WDCC_READ:
-				debug("[ wdc: READ from drive %i, head %i, cylinder %i, sector %i, nsecs %i ]\n",
-				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo, d->sector, d->seccnt);
-				/*  TODO:  HAHA! This should be removed quickly  */
+				debug("[ wdc: READ from drive %i, head %i, "
+				    "cylinder %i, sector %i, nsecs %i ]\n",
+				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
+				    d->sector, d->seccnt);
+				/*  TODO:  HAHA! This should be removed
+				    quickly  */
 				{
 					unsigned char buf[512*256];
 					int cyl = d->cyl_hi * 256+ d->cyl_lo;
 					int count = d->seccnt? d->seccnt : 256;
-					uint64_t offset = 512 * (d->sector - 1 + d->head * 63 + 16*63*cyl);
+					uint64_t offset = 512 * (d->sector - 1
+					    + d->head * 63 + 16*63*cyl);
 					diskimage_access(cpu->machine,
 					    d->drive + d->base_drive, 0,
 					    offset, buf, 512 * count);
@@ -365,16 +376,20 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			case WDCC_IDP:	/*  Initialize drive parameters  */
-				debug("[ wdc: IDP drive %i (TODO) ]\n", d->drive);
+				debug("[ wdc: IDP drive %i (TODO) ]\n",
+				    d->drive);
 				/*  TODO  */
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			case SET_FEATURES:
-				fatal("[ wdc: SET_FEATURES drive %i (TODO), feature 0x%02x ]\n", d->drive, d->precomp);
+				fatal("[ wdc: SET_FEATURES drive %i (TODO), "
+				    "feature 0x%02x ]\n", d->drive, d->precomp);
 				/*  TODO  */
 				switch (d->precomp) {
 				case WDSF_SET_MODE:
-					fatal("[ wdc: WDSF_SET_MODE drive %i, pio/dma flags 0x%02x ]\n", d->drive, d->seccnt);
+					fatal("[ wdc: WDSF_SET_MODE drive %i, "
+					    "pio/dma flags 0x%02x ]\n",
+					    d->drive, d->seccnt);
 					break;
 				default:
 					d->error |= WDCE_ABRT;
@@ -389,26 +404,34 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
 				wdc_initialize_identify_struct(cpu, d);
-				/*  The IDENTIFY data block is sent out in low/high byte order:  */
+				/*  The IDENTIFY data block is sent out
+				    in low/high byte order:  */
 				for (i=0; i<sizeof(d->identify_struct); i+=2) {
-					wdc_addtoinbuf(d, d->identify_struct[i+0]);
-					wdc_addtoinbuf(d, d->identify_struct[i+1]);
+					wdc_addtoinbuf(d, d->identify_struct
+					    [i+0]);
+					wdc_addtoinbuf(d, d->identify_struct
+					    [i+1]);
 				}
 
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			default:
-				fatal("[ wdc: unknown command 0x%02x (drive %i, head %i, cylinder %i, sector %i, nsecs %i) ]\n",
-				    d->cur_command, d->drive, d->head, d->cyl_hi*256+d->cyl_lo, d->sector, d->seccnt);
+				fatal("[ wdc: unknown command 0x%02x ("
+				    "drive %i, head %i, cylinder %i, sector %i,"
+				    " nsecs %i) ]\n", d->cur_command, d->drive,
+				    d->head, d->cyl_hi*256+d->cyl_lo,
+				    d->sector, d->seccnt);
 			}
 		}
 		break;
 
 	default:
 		if (writeflag==MEM_READ)
-			debug("[ wdc: read from 0x%02x ]\n", (int)relative_addr);
+			debug("[ wdc: read from 0x%02x ]\n",
+			    (int)relative_addr);
 		else
-			debug("[ wdc: write to  0x%02x: 0x%02x ]\n", (int)relative_addr, idata);
+			debug("[ wdc: write to  0x%02x: 0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 	}
 
 	if (writeflag == MEM_READ)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: sgiprom_to_bin.c,v 1.4 2005-01-09 01:55:27 debug Exp $
+ *  $Id: sgiprom_to_bin.c,v 1.5 2005-02-21 07:18:10 debug Exp $
  *
  *  sgiprom_to_bin.c
  *
@@ -86,21 +86,25 @@ int main(int argc, char *argv[])
 
 			x = strtol(s, NULL, 0);
 			if (x < 0xbfc00000) {
-				printf("x = 0x%08lx, less than 0xbfc00000. aborting\n", (long)x);
+				printf("x = 0x%08lx, less than 0xbfc00000. "
+				    "aborting\n", (long)x);
 				exit(1);
 			}
 			x -= 0xbfc00000;
 
 			if (same_flag) {
 				/*
-				 *  We should fill from same_start_offset to just before x,
-				 *  using previous_line data.
+				 *  We should fill from same_start_offset to
+				 *  just before x, using previous_line data.
 				 */
 				off_t ofs;
-				printf("same_flag set, filling until just before 0x%08lx\n", (long)x);
+				printf("same_flag set, filling until just "
+				    "before 0x%08lx\n", (long)x);
 				fseek(f, same_start_offset, SEEK_SET);
-				for (ofs = same_start_offset; ofs < x; ofs += 8) {
-					fwrite(previous_line, 1, sizeof(previous_line), f);
+				for (ofs = same_start_offset; ofs < x;
+				    ofs += 8) {
+					fwrite(previous_line, 1,
+					    sizeof(previous_line), f);
 				}
 				same_flag = 0;
 			}

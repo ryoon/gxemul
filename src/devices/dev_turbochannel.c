@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.11 2004-03-14 22:25:19 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.12 2004-04-24 22:39:12 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -176,8 +176,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, "PMAG-AA");
-		dev_bt459_init(mem, baseaddr + VFB_MFB_BT459, fb, 8);
-		/*  TODO: There should be a BT431 at 0x180000, and a BT455 at 0x100000. No BT459. */
+		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);	/*  palette  */
+		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);	/*  cursor  */
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.17 2005-02-03 08:13:05 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.18 2005-02-03 20:57:20 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -502,15 +502,16 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 		goto skip;
 
 	/*  Copy the packet data:  */
-	printf("RX: ");
+	/*  printf("RX: ");  */
 	for (i=0; i<d->cur_rx_packet_len; i++) {
 		res = memory_rw(cpu, cpu->mem, base + 32 + i + 2,
 		    d->cur_rx_packet + i, 1, MEM_WRITE, PHYSICAL);
-		printf(" %02x", d->cur_rx_packet[i]);
+		/*  printf(" %02x", d->cur_rx_packet[i]);  */
 	}
-	printf("\n");
+	/*  printf("\n");  */
 
-	printf("RX: %i bytes, base = 0x%x\n", d->cur_rx_packet_len, (int)base);
+	printf("RX: %i bytes, index %i, base = 0x%x\n",
+	    d->cur_rx_packet_len, d->cur_rx_addr_index, (int)base);
 
 	/*  4 bytes of CRC at the end. Hm. TODO  */
 	d->cur_rx_packet_len += 4;
@@ -573,8 +574,11 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 		return 0;
 
 	/*  Is this packet transmitted already?  */
-	if (data[0] & 0x80)
+	if (data[0] & 0x80) {
+		/*  fatal("[ mec_try_tx: tx_ring_ptr = %i, already"
+		    " transmitted? ]\n", tx_ring_ptr);  */
 		return 0;
+	}
 
 	len = data[6] * 256 + data[7];
 	start_offset = data[5] & 0x7f;
@@ -685,7 +689,13 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
 	    (ringread & MEC_TX_RING_READ_PTR);
 
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;
+/*	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;  */
+
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &=
+	    ~MEC_INT_TX_RING_BUFFER_ALIAS;
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |=
+	    (d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)] &
+	    MEC_INT_TX_RING_BUFFER_ALIAS);
 
 	return 1;
 }
@@ -736,6 +746,8 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 			break;
 		case MEC_TX_RING_PTR:	/*  0x30  */
 			idata &= MEC_TX_RING_WRITE_PTR;
+			d->reg[regnr] = (d->reg[regnr] &
+			    ~MEC_TX_RING_WRITE_PTR) | idata;
 			/*  TODO  */
 			break;
 		default:
@@ -781,7 +793,7 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case MEC_TX_RING_PTR:	/*  0x30  */
 		if (writeflag)
-			debug("[ sgi_mec: write to MEC_TX_RING_PTR: "
+			fatal("[ sgi_mec: write to MEC_TX_RING_PTR: "
 			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_PHY_DATA:	/*  0x64  */

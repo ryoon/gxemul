@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.356 2005-02-22 20:18:31 debug Exp $
+ *  $Id: machine.c,v 1.357 2005-02-23 06:54:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3963,6 +3963,13 @@ for (i=0; i<32; i++)
 		 */
 		machine->machine_name = "Motorola Sandpoint";
 
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.ppc.gpr[i] =
+				    0x12340000 + (i << 8) + 0x55;
+		}
+
 		break;
 
 	case MACHINE_BEBOX:
@@ -3973,6 +3980,9 @@ for (i=0; i<32; i++)
 
 		device_add(machine, "bebox");
 
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0x800003f8, 0, 1, 1, "serial 0");
+
 		store_32bit_word(cpu, 0x3010,
 		    machine->physical_ram_in_mb * 1048576);
 
@@ -3980,6 +3990,28 @@ for (i=0; i<32; i++)
 		    mirror/www.be.com/aboutbe/benewsletter/
 		    Issue27.html#Cookbook  for the details.  */
 		store_32bit_word(cpu, 0x301c, 0);
+
+		/*  r3 = bootargs, r4 = ptr to stack area?
+		    r6 = ptr to bootinfo?  */
+		cpu->cd.ppc.gpr[3] = 0;
+		cpu->cd.ppc.gpr[4] = machine->physical_ram_in_mb*1048576-0xc000;
+		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb*1048576-0x100;
+
+		/*  See NetBSD's bebox/include/bootinfo.h for details  */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 0, 12);  /*  next  */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 4, 0);  /*  mem  */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 8,
+		    machine->physical_ram_in_mb * 1048576 - 65536);
+
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 12, 20);  /* next */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 16, 1); /* console */
+		store_buf(cpu, cpu->cd.ppc.gpr[6] + 20, "com", 4);
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 24, 0x3f8);/* addr */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 28, 9600);/* speed */
+
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 32, 0);  /*  next  */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 36, 2);  /*  clock */
+		store_32bit_word(cpu, cpu->cd.ppc.gpr[6] + 40, 100);
 
 		break;
 

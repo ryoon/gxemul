@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.57 2005-02-22 20:55:41 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.58 2005-02-23 06:54:49 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -872,6 +872,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_SUBFCO:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFEO:
+		case PPC_31_SUBFZE:
+		case PPC_31_SUBFZEO:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -918,6 +920,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_SUBFEO:
 				mnem = power? "sfeo" : "subfeo";
 				break;
+			case PPC_31_SUBFZE:
+				mnem = power? "sfze" : "subfze";
+				break;
+			case PPC_31_SUBFZEO:
+				mnem = power? "sfzeo" : "subfzeo";
+				break;
 			}
 			debug("%s%s\tr%i,r%i,r%i", mnem, rc? "." : "",
 			    rt, ra, rb);
@@ -953,6 +961,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
 			break;
 		case PPC_31_SLW:
+		case PPC_31_SRAW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
@@ -971,6 +980,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				switch (xo) {
 				case PPC_31_SLW:  mnem =
 					power? "sl" : "slw"; break;
+				case PPC_31_SRAW:  mnem =
+					power? "sra" : "sraw"; break;
 				case PPC_31_SRW:  mnem =
 					power? "sr" : "srw"; break;
 				case PPC_31_AND:  mnem = "and"; break;
@@ -2030,6 +2041,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_31_MULLWO:
 		case PPC_31_SUBFE:
 		case PPC_31_SUBFEO:
+		case PPC_31_SUBFZE:
+		case PPC_31_SUBFZEO:
 		case PPC_31_SUBFC:
 		case PPC_31_SUBFCO:
 		case PPC_31_SUBF:
@@ -2104,6 +2117,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_SUBFCO:
 			case PPC_31_SUBFE:
 			case PPC_31_SUBFEO:
+			case PPC_31_SUBFZE:
+			case PPC_31_SUBFZEO:
 				old_ca = cpu->cd.ppc.xer & PPC_XER_CA;
 				if (xo == PPC_31_SUBFC || xo == PPC_31_SUBFCO)
 					old_ca = 1;
@@ -2112,8 +2127,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					tmp = (~cpu->cd.ppc.gpr[ra])
 					    & 0xffffffff;
 					tmp2 = tmp;
-					tmp += (cpu->cd.ppc.gpr[rb] &
-					    0xffffffff);
+					if (xo != PPC_31_SUBFZE &&
+					    xo != PPC_31_SUBFZEO)
+						tmp += (cpu->cd.ppc.gpr[rb] &
+						    0xffffffff);
 					if (old_ca)
 						tmp ++;
 					/*  printf("subfe: tmp2 = %016llx\n",
@@ -2211,6 +2228,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 
 		case PPC_31_SLW:
+		case PPC_31_SRAW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
@@ -2230,6 +2248,27 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				while (sh-- > 0)
 					cpu->cd.ppc.gpr[ra] <<= 1;
 				cpu->cd.ppc.gpr[ra] &= 0xffffffff;
+				break;
+			case PPC_31_SRAW:
+				tmp = cpu->cd.ppc.gpr[rs] & 0xffffffff;
+				cpu->cd.ppc.xer &= ~PPC_XER_CA;
+				i = 0;
+				sh = cpu->cd.ppc.gpr[rb] & 0x3f;
+				if (tmp & 0x80000000)
+					i = 1;
+				while (sh-- > 0) {
+					if (tmp & 1)
+						i++;
+					tmp >>= 1;
+					if (tmp & 0x40000000)
+						tmp |= 0x80000000;
+				}
+				cpu->cd.ppc.gpr[ra] = (int64_t)(int32_t)tmp;
+				/*  Set the CA bit if rs contained a negative
+				    number to begin with, and any 1-bits were
+				    shifted out:  */
+				if (i > 1)
+					cpu->cd.ppc.xer |= PPC_XER_CA;
 				break;
 			case PPC_31_SRW:
 				sh = cpu->cd.ppc.gpr[rb] & 0x3f;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.602 2005-02-22 14:39:13 debug Exp $
+$Id: HISTORY,v 1.603 2005-02-23 06:54:47 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1693,3 +1693,4 @@ HISTORY of mips64emul
 		Adding a dummy BeBox mode.
 		Making the pc register common for all cpu families.
 		Adding some more PPC instructions and fixing some bugs.
+20050223	Continuing on the BeBox stuff, and adding more instructions.

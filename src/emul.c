@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.169 2005-02-22 12:05:19 debug Exp $
+ *  $Id: emul.c,v 1.170 2005-02-23 06:54:49 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -628,10 +628,12 @@ void emul_machine_setup(struct machine *m, int n_load,
 	if (m->byte_order_override != NO_BYTE_ORDER_OVERRIDE)
 		cpu->byte_order = m->byte_order_override;
 
-	/*  Same byte order for all CPUs:  */
+	/*  Same byte order and entrypoint for all CPUs:  */
 	for (i=0; i<m->ncpus; i++)
-		if (i != m->bootstrap_cpu)
+		if (i != m->bootstrap_cpu) {
 			m->cpus[i]->byte_order = cpu->byte_order;
+			m->cpus[i]->pc = cpu->pc;
+		}
 
 	if (m->userland_emul != NULL)
 		useremul_setup(cpu, n_load, load_names);

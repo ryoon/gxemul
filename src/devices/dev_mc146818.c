@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.32 2004-07-08 01:16:18 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.33 2004-07-09 10:14:38 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -227,12 +227,17 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	/*
 	 *  For some reason, Linux/sgimips relies on the UIP bit to go
 	 *  on and off. Without this code, booting Linux takes forever:
+	 *
+	 *  Sprite seens to wants UF interrupt status, or it hangs
+	 *  forever during bootup.
 	 */
 	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
 #if 1
 	/*  TODO:  solve this more nicely  */
 	if ((random() & 0xff) == 0)
 		mc_data->reg[MC_REGA*4] ^= MC_REGA_UIP;
+	if ((random() & 0xff) == 0)
+		mc_data->reg[MC_REGC*4] ^= MC_REGC_UF;
 #endif
 
 	/*  RTC date/time is in binary, not BCD:  */

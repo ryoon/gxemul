@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.11 2005-01-16 07:30:36 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.12 2005-01-16 09:21:05 debug Exp $  */
 /*  This file has been modified from the NetBSD version, the additions
     are mostly guesses for 64-bit SGI stuff.  */
 
@@ -126,26 +126,23 @@ struct arcbios_spb {
  *  usage of void * in the NetBSD version of arcbios_spb.
  *
  *  Linux wants a 64-bit SPBSignature?
- *
- *  TODO: Are all these actually 64 bits wide?
  */
 struct arcbios_spb_64 {
-	uint64_t	SPBSignature;			/*  offset 0x0000  */
-	uint64_t	SPBLength;			/*  ?  */
-	uint16_t	Version;			/*  offset 0x0010  */
-	uint16_t	Revision;			/*  offset 0x0012  */
-	uint32_t	dummy;				/*  offset 0x0014, filler  */
-	uint64_t	RestartBlock;			/*  0x0018, was void * in netbsd  */
-	uint64_t	DebugBlock;			/*  0x0020, was void *  */
-	uint64_t	GEVector;			/*  0x0028, was void *  */
-	uint64_t	UTLBMissVector;			/*  0x0030, was void *  */
-	uint64_t	FirmwareVectorLength;		/*  0x0038  */
-	uint64_t	FirmwareVector;			/*  0x0040, was void *  */
-	uint64_t	PrivateVectorLength;
+	uint64_t	SPBSignature;
+/*	uint32_t	SPBLength;  */
+	uint16_t	Version;
+	uint16_t	Revision;
+	uint32_t	RestartBlock;			/*  was void * in netbsd  */
+	uint32_t	DebugBlock;			/*  was void *  */
+	uint32_t	GEVector;			/*  was void *  */
+	uint32_t	UTLBMissVector;			/*  was void *  */
+	uint32_t	FirmwareVectorLength;
+	uint64_t	FirmwareVector;			/*  was void *  */
+	uint32_t	PrivateVectorLength;
 	uint64_t	PrivateVector;			/*  was void *  */
-	uint64_t	AdapterCount;
-	uint64_t	AdapterType;
-	uint64_t	AdapterVectorLength;
+	uint32_t	AdapterCount;
+	uint32_t	AdapterType;
+	uint32_t	AdapterVectorLength;
 	uint64_t	AdapterVector;			/*  was void *  */
 };
 
@@ -168,21 +165,18 @@ struct arcbios_component {
 	uint32_t	Identifier;			/*  was:  char *  */
 };
 
-/*
- *  mips64emul addition: this is a guess for a 64-bit
- *  version of arcbios_component:
- */
+/*  mips64emul addition: guess for a 64-bit version of arcbios_component:  */
 struct arcbios_component64 {
 	uint32_t	Class;
 	uint32_t	Type;
 	uint32_t	Flags;
 	uint16_t	Version;
 	uint16_t	Revision;
-	uint32_t	Key;
-	uint32_t	AffinityMask;
-	uint32_t	ConfigurationDataSize;
-	uint32_t	IdentifierLength;
-	uint64_t	Identifier;			/*  offset 0x0020, was:  char *  */
+	uint64_t	Key;
+	uint64_t	AffinityMask;
+	uint64_t	ConfigurationDataSize;
+	uint64_t	IdentifierLength;
+	uint64_t	Identifier;			/*  was:  char *  */
 };
 
 /* 

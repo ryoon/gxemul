@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.478 2005-01-16 07:30:34 debug Exp $
+$Id: HISTORY,v 1.479 2005-01-16 09:21:04 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1472,3 +1472,8 @@ HISTORY of mips64emul
 		ARCS64 updates (testing with an OpenBSD snapshot in IP27
 		mode). This causes Linux/IP30 to not work. Maybe IP27 and
 		IP30 differ, even though both are 64-bit?
+		Better handling of 128MB and 512MB memory offsets used by
+		various SGI models.
+		Trying to revert the ARCS64 changes (OpenBSD/sgi does
+		seem to be aware of 64-bit vs 32-bit data structures in
+		_some_ places, but not all), to make Linux/IP30 work again.

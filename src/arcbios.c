@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.67 2005-01-16 07:30:37 debug Exp $
+ *  $Id: arcbios.c,v 1.68 2005-01-16 09:21:05 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -474,7 +474,8 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	len /= 4096;
 
 /*  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?  */
-#if 0
+/*  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag doesn't care?  */
+#if 1
 	if (cpu->emul->emulation_type == EMULTYPE_SGI) {
 		/*  arctype is SGI style  */
 printf("%i => ", arctype);
@@ -755,22 +756,18 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpu, cpu->mem, peeraddr + 0x40,
-				&buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		memory_rw(cpu, cpu->mem, peeraddr + 0x34,
+				&buf[0], sizeof(uint32_t), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
-			tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
-			tmp = buf[1]; buf[1] = buf[6]; buf[6] = tmp;
-			tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
-			tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
+			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
-		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24)
-		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
-		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
+		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
 		tmp &= 0xfffff;
 
-		peeraddr += 0x40;
+		peeraddr += 0x50;
 		peeraddr += tmp + 1;
 		peeraddr = ((peeraddr - 1) | 3) + 1;
 
@@ -785,16 +782,18 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	store_32bit_word(cpu, a+  0x20, host_tmp_component->Flags);
 	store_32bit_word(cpu, a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
 	store_32bit_word(cpu, a+  0x28, host_tmp_component->Key);
-	store_32bit_word(cpu, a+  0x2c, host_tmp_component->AffinityMask);
-	store_32bit_word(cpu, a+  0x30, host_tmp_component->ConfigurationDataSize);
-	store_32bit_word(cpu, a+  0x34, host_tmp_component->IdentifierLength);
-	store_32bit_word(cpu, a+  0x38, host_tmp_component->Identifier);
+	store_64bit_word(cpu, a+  0x30, host_tmp_component->AffinityMask);
+	store_64bit_word(cpu, a+  0x38, host_tmp_component->ConfigurationDataSize);
+	store_64bit_word(cpu, a+  0x40, host_tmp_component->IdentifierLength);
+	store_64bit_word(cpu, a+  0x48, host_tmp_component->Identifier);
 
-	arcbios_next_component_address += 0x40;
+	/*  TODO: Find out how a REAL ARCS64 implementation does it.  */
+
+	arcbios_next_component_address += 0x50;
 
 	if (host_tmp_component->IdentifierLength != 0) {
-		store_32bit_word(cpu, a + 0x38, a + 0x40);
-		store_string(cpu, a + 0x40, identifier);
+		store_64bit_word(cpu, a + 0x48, a + 0x50);
+		store_string(cpu, a + 0x50, identifier);
 		if (identifier != NULL)
 			arcbios_next_component_address += strlen(identifier) + 1;
 	}

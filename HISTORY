@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.559 2005-02-03 14:55:11 debug Exp $
+$Id: HISTORY,v 1.560 2005-02-03 22:20:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1621,5 +1621,6 @@ HISTORY of mips64emul
 		configuration file option 'bintrans_size'.
 		The debugger can now theoretically call disassembler functions
 		for cpu families with non-fixed instruction word length.
-		Working more on the mec controller. I was able to ftp out from
-		the OpenBSD/sgi install ramdisk once :-) but it is very buggy.
+		Working more on the mec controller. It now works well enough
+		to let both NetBSD/sgimips and OpenBSD/sgi connect to the
+		outside world using ftp :-)

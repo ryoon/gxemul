@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.18 2005-02-03 20:57:20 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.19 2005-02-03 22:20:14 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -157,8 +157,16 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	if (relative_addr == 0x18 || relative_addr == 0x1c) {
 		/*
 		 *  Force interrupt re-assertion:
+		 *
+		 *  NOTE: Ugly hack. Hopefully CRMERR is never used.
 		 */
-		cpu_interrupt_ack(cpu, 8);
+#if 0
+
+No. If this is enabled, the mec bugs out on either NetBSD or OpenBSD.
+TODO.
+
+		cpu_interrupt_ack(cpu, 8); /* CRM_INT_CRMERR); */
+#endif
 	}
 
 	switch (relative_addr) {
@@ -510,8 +518,10 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 	}
 	/*  printf("\n");  */
 
+#if 0
 	printf("RX: %i bytes, index %i, base = 0x%x\n",
 	    d->cur_rx_packet_len, d->cur_rx_addr_index, (int)base);
+#endif
 
 	/*  4 bytes of CRC at the end. Hm. TODO  */
 	d->cur_rx_packet_len += 4;
@@ -590,6 +600,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	/*  Hm. Is len one too little?  TODO  */
 	len ++;
 
+#if 0
 	printf("{ mec: txdesc %i: ", tx_ring_ptr);
 	for (i=0; i<sizeof(data); i++) {
 		if ((i & 3) == 0)
@@ -597,7 +608,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 		printf("%02x", data[i]);
 	}
 	printf(" }\n");
-
+#endif
 	dma_ptr_nr = 0;
 
 	j = 0;
@@ -689,7 +700,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
 	    (ringread & MEC_TX_RING_READ_PTR);
 
-/*	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;  */
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;
 
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &=
 	    ~MEC_INT_TX_RING_BUFFER_ALIAS;
@@ -715,9 +726,14 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 		;
 
 	/*  Interrupts:  (TODO: only when enabled)  */
-	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK)
+	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK) {
+#if 0
+		printf("[%02x]", (int)(d->reg[MEC_INT_STATUS /
+		    sizeof(uint64_t)] & MEC_INT_STATUS_MASK));
+		fflush(stdout);
+#endif
 		cpu_interrupt(cpu, d->irq_nr);
-	else
+	} else
 		cpu_interrupt_ack(cpu, d->irq_nr);
 }
 
@@ -772,9 +788,16 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_DMA_CONTROL:	/*  0x10  */
-		if (writeflag)
+		if (writeflag) {
 			debug("[ sgi_mec: write to MEC_DMA_CONTROL: "
 			    "0x%016llx ]\n", (long long)idata);
+			if (!(idata & MEC_DMA_TX_INT_ENABLE)) {
+				/*  This should apparently stop the
+				    TX Empty interrupt.  */
+				d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &=
+				    ~MEC_INT_TX_EMPTY;
+			}
+		}
 		break;
 	case MEC_TX_ALIAS:	/*  0x20  */
 		if (writeflag) {
@@ -793,7 +816,7 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case MEC_TX_RING_PTR:	/*  0x30  */
 		if (writeflag)
-			fatal("[ sgi_mec: write to MEC_TX_RING_PTR: "
+			debug("[ sgi_mec: write to MEC_TX_RING_PTR: "
 			    "0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_PHY_DATA:	/*  0x64  */

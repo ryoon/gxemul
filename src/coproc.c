@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.102 2004-11-24 08:53:26 debug Exp $
+ *  $Id: coproc.c,v 1.103 2004-11-24 09:30:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1492,9 +1492,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 {
 	struct coproc *cp = cpu->coproc[0];
 	int index, g_bit;
-	uint64_t oldvaddr, vaddr, paddr;
-	unsigned char *memblock;
-	int offset;
+	uint64_t oldvaddr;
 
 	/*
 	 *  ... and the last instruction page:

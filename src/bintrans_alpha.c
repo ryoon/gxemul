@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.58 2004-11-24 08:53:26 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.59 2004-11-24 09:30:17 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1596,56 +1596,6 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__rfe():
- */
-static int bintrans_write_instruction__rfe(unsigned char **addrp)
-{
-	uint32_t *a;
-	int ofs;
-
-	/*
-	 *  cpu->coproc[0]->reg[COP0_STATUS] =
-	 *	(cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
-	 *      ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
-	 */
-
-	/*
-	 *  ldq t0, coproc[0](a0)
-	 *  ldq t1, reg[COP0_STATUS](t0)
-	 *  lda t2, 0x...ffc0
-	 *  lda t3, 0x3f
-	 *  and t1,t2,t2
-	 *  and t1,t3,t3
-	 *  srl t3,2,t3
-	 *  or t2,t3,t3
-	 *  stq t3, reg[COP0_STATUS](t0)
-	 */
-
-	a = (uint32_t *) *addrp;
-
-	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
-	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
-
-	ofs = ((size_t)&dummy_coproc.reg[COP0_STATUS]) - (size_t)&dummy_coproc;
-	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,status(t0)  */
-
-	*a++ = 0x207fffc0;		/*  lda t2,0x...ffc0  */
-	*a++ = 0x209f003f;		/*  lda t3,0x3f  */
-	*a++ = 0x44430003;		/*  and t1,t2,t2  */
-	*a++ = 0x44440004;		/*  and t1,t3,t3  */
-	*a++ = 0x48805684;		/*  srl t3,2,t3  */
-	*a++ = 0x44640402;		/*  or t2,t3,t1  */
-
-	*a++ = 0xb4410000 | (ofs & 0xffff);		/*  stq t1,status(t0)  */
-
-	*addrp = (unsigned char *) a;
-
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }

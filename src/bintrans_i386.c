@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.21 2004-11-23 20:23:04 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.22 2004-11-24 09:30:17 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -907,62 +907,6 @@ rd0:
 
 
 /*
- *  bintrans_write_instruction__rfe():
- */
-static int bintrans_write_instruction__rfe(unsigned char **addrp)
-{
-	unsigned char *a;
-	int ofs;
-
-	/*
-	 *  cpu->coproc[0]->reg[COP0_STATUS] =
-	 *	(cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
-	 *      ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
-	 */
-
-	a = *addrp;
-
-	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
-
-	/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
-	*a++ = 0x8b; *a++ = 0x96;
-	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-
-	/*  here, edx = cpu->coproc[0]  */
-
-	ofs = ((size_t)&dummy_coproc.reg[COP0_STATUS]) - (size_t)&dummy_coproc;
-
-	/*  8b 82 38 30 00 00       mov    0x3038(%edx),%eax  */
-	*a++ = 0x8b; *a++ = 0x82;
-	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-
-	/*  here, eax = cpu->coproc[0]->reg[COP0_STATUS]  */
-
-	/*  89 c3                   mov    %eax,%ebx  */
-	/*  83 e3 3f                and    $0x3f,%ebx  */
-	/*  31 d8                   xor    %ebx,%eax  (clear lowest 6 bits of eax)  */
-	/*  c1 eb 02                shr    $0x2,%ebx  */
-	/*  09 d8                   or     %ebx,%eax  */
-	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0x83; *a++ = 0xe3; *a++ = 0x3f;
-	*a++ = 0x31; *a++ = 0xd8;
-	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x02;
-	*a++ = 0x09; *a++ = 0xd8;
-
-	/*  89 82 38 30 00 00       mov    %eax,0x3038(%edx)  */
-	*a++ = 0x89; *a++ = 0x82;
-	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-
-	/*  NOTE: High 32 bits of the coprocessor register is left unmodified.  */
-
-	*addrp = a;
-
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
-	return 1;
-}
-
-
-/*
  *  bintrans_write_instruction__mfc_mtc():
  */
 static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
@@ -1397,7 +1341,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
 	unsigned char *a, *retfail;
-	int ofs, writeflag, alignment, load=0;
+	int ofs, alignment, load=0;
 
 	/*  TODO: Not yet:  */
 	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ)
@@ -1421,6 +1365,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			return 0;
 	}
 
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 0, 1);
 
 	a = *addrp;
 
@@ -1480,54 +1425,112 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 
+	/*  Here, eax = vaddr  */
+
 	/*
-	 *  Do manual lookup:
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
 	 *
-	 *  hostaddr = fast(cpu, vaddr, writeflag)
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 16                shr    $0x16,%ebx
+	 *  81 e3 ff 03 00 00       and    $0x3ff,%ebx
+	 *  c1 e3 02                shl    $0x2,%ebx
 	 */
+	*a++ = 0x89; *a++ = 0xc3;
+	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x16;
+	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x03; *a++ = 0; *a++ = 0;
+	*a++ = 0xc1; *a++ = 0xe3; *a++ = 0x02;
 
-	writeflag = 1 - load;
-
-	/*  push writeflag  */
-	*a++ = 0x6a; *a++ = writeflag;
-
-	/*  push vaddr (eax and edx)  */
-	*a++ = 0x52;
-	*a++ = 0x50;
-
-	/*  push cpu (esi)  */
-	*a++ = 0x56;
-
-	ofs = ((size_t)&dummy_cpu.bintrans_fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
-	*a++ = 0x8b; *a++ = 0x86;
+	/*
+	 *  edi = vaddr_to_hostaddr_table0
+	 *
+	 *  8b be 34 12 00 00       mov    0x1234(%esi),%edi
+	 */
+	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
+	*a++ = 0x8b; *a++ = 0xbe;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
-	/*  ff d0                   call   *%eax  */
-	*a++ = 0xff; *a++ = 0xd0;
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  01 df                   add    %ebx,%edi
+	 *  8b 0f                   mov    (%edi),%ecx
+	 */
+	*a++ = 0x01; *a++ = 0xdf;
+	*a++ = 0x8b; *a++ = 0x0f;
 
-	/*  83 c4 10                add    $0x10,%esp  */
-	*a++ = 0x83; *a++ = 0xc4; *a++ = 0x10;
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0c                shr    $0xc,%ebx
+	 *  81 e3 ff 03 00 00       and    $0x3ff,%ebx
+	 *  c1 e3 02                shl    $0x2,%ebx
+	 */
+	*a++ = 0x89; *a++ = 0xc3;
+	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0c;
+	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x03; *a++ = 0; *a++ = 0;
+	*a++ = 0xc1; *a++ = 0xe3; *a++ = 0x02;
 
-	/*  If eax is NULL, then return.  */
-	/*  83 f8 00                cmp    $0x0,%eax  */
-	/*  75 01                   jne    <okjump>  */
-	/*  c3                      ret    */
-	*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b]
+	 *
+	 *  01 d9                   add    %ebx,%ecx
+	 *  8b 09                   mov    (%ecx),%ecx
+	 */
+	*a++ = 0x01; *a++ = 0xd9;
+	*a++ = 0x8b; *a++ = 0x09;
+
+	/*
+	 *  ecx = NULL? Then return with failure.
+	 *
+	 *  83 f9 00                cmp    $0x0,%ecx
+	 *  75 01                   jne    <okzzz>
+	 */
+	*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
 	*a++ = 0x75; retfail = a; *a++ = 0x00;
 	bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 	*retfail = (size_t)a - (size_t)retfail - 1;
 
-	/*  If eax is -1, then just return (an exception).  */
-	/*  83 f8 ff                cmp    $-1,%eax  */
-	/*  75 01                   jne    <okjump>  */
-	/*  c3                      ret    */
-	*a++ = 0x83; *a++ = 0xf8; *a++ = 0xff;
-	*a++ = 0x75; retfail = a; *a++ = 0x00;
-	bintrans_write_chunkreturn(&a);		/*  ret (but no fail)  */
-	*retfail = (size_t)a - (size_t)retfail - 1;
+	/*
+	 *  edi = ecx   (this is the host page)
+	 *
+	 *  89 cf                   mov    %ecx,%edi
+	 */
+	*a++ = 0x89; *a++ = 0xcf;
 
-	/*  89 c7                   mov    %eax,%edi  */
-	*a++ = 0x89; *a++ = 0xc7;
+	/*
+	 *  If the lowest bit is zero, and we're storing, then fail.
+	 */
+	if (!load) {
+		/*
+		 *  f7 c7 01 00 00 00       test   $0x1,%edi
+		 *  75 01                   jne    <ok>
+		 */
+		*a++ = 0xf7; *a++ = 0xc7; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+		*a++ = 0x75; retfail = a; *a++ = 0x00;
+		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+		*retfail = (size_t)a - (size_t)retfail - 1;
+	}
+
+	/*
+	 *  ebx = offset within page = vaddr & 0xfff
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  81 e3 ff 0f 00 00       and    $0xfff,%ebx
+	 */
+	*a++ = 0x89; *a++ = 0xc3;
+	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+	/*
+	 *  edi = host address   ( = host page + offset)
+	 *
+	 *  83 e7 fc                and    $0xfffffffc,%edi	clear the lowest two bits
+	 *  01 df                   add    %ebx,%edi
+	 */
+	*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfc;
+	*a++ = 1; *a++ = 0xdf;
+
+/* bintrans_write_chunkreturn_fail(&a); */
 
 	if (!load)
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
@@ -1612,15 +1615,16 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 0);
 	return 1;
 }
 
 
 /*
- *  bintrans_write_instruction__tlb():
+ *  bintrans_write_instruction__tlb_rfe_etc():
  */
-static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
+static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
+	int itype)
 {
 	unsigned char *a;
 	int ofs = 0;	/*  avoid a compiler warning  */
@@ -1630,6 +1634,8 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	case TLB_TLBR:
 	case TLB_TLBWR:
 	case TLB_TLBWI:
+	case TLB_RFE:
+	case TLB_ERET:
 		break;
 	default:
 		return 0;
@@ -1650,6 +1656,12 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 		*a++ = 0x6a; *a++ = (itype == TLB_TLBWR);
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
+	case TLB_RFE:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
+		break;
+	case TLB_ERET:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
+		break;
 	}
 
 	/*  push cpu (esi)  */
@@ -1662,8 +1674,20 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	/*  ff d0                   call   *%eax  */
 	*a++ = 0xff; *a++ = 0xd0;
 
-	/*  83 c4 10                add    $8,%esp  */
-	*a++ = 0x83; *a++ = 0xc4; *a++ = 8;
+	switch (itype) {
+	case TLB_TLBP:
+	case TLB_TLBR:
+	case TLB_TLBWR:
+	case TLB_TLBWI:
+		/*  83 c4 08                add    $8,%esp  */
+		*a++ = 0x83; *a++ = 0xc4; *a++ = 8;
+		break;
+	case TLB_RFE:
+	case TLB_ERET:
+		/*  83 c4 04                add    $4,%esp  */
+		*a++ = 0x83; *a++ = 0xc4; *a++ = 4;
+		break;
+	}
 
 	*addrp = a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);

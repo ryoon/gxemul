@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.68 2005-01-25 08:14:48 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.69 2005-01-29 12:56:32 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -303,12 +303,13 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 static void bintrans_write_pc_inc(unsigned char **addrp)
 {
 	unsigned char *a = *addrp;
-	int ofs;
 
 	/*  83 c7 04                add    $0x4,%edi  */
 	*a++ = 0x83; *a++ = 0xc7; *a++ = 4;
 
+#if 0
 	if (!bintrans_32bit_only) {
+		int ofs;
 		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
 		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 		ofs += 4;
@@ -319,6 +320,7 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 		*a++ = (ofs >> 24) & 255;
 		*a++ = 0;
 	}
+#endif
 
 	/*  45   inc %ebp  */
 	*a++ = 0x45;
@@ -338,10 +340,13 @@ static void load_pc_into_eax_edx(unsigned char **addrp)
 	/*  89 f8                   mov    %edi,%eax  */
 	*a++ = 0x89; *a++ = 0xf8;
 
+#if 0
 	if (bintrans_32bit_only) {
 		/*  99                      cltd   */
 		*a++ = 0x99;
-	} else {
+	} else
+#endif
+ {
 		int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
 		ofs += 4;
@@ -389,10 +394,13 @@ static void load_into_eax_edx(unsigned char **addrp, void *p)
 	*a++ = 0x8b; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
+#if 0
 	if (bintrans_32bit_only) {
 		/*  99                      cltd   */
 		*a++ = 0x99;
-	} else {
+	} else
+#endif
+ {
 		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
 		ofs += 4;
 		*a++ = 0x8b; *a++ = 0x96;
@@ -516,9 +524,11 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
 
+#if 0
 	if (bintrans_32bit_only)
 		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
 	else
+#endif
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 
 	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
@@ -526,11 +536,14 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
 
+#if 0
 		if (bintrans_32bit_only) {
 			load_pc_into_eax_edx(&a);
 			/*  83 c0 08                add    $0x8,%eax  */
 			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		} else {
+		} else
+#endif
+ {
 			load_pc_into_eax_edx(&a);
 			/*  83 c0 08                add    $0x8,%eax  */
 			/*  83 d2 00                adc    $0x0,%edx  */
@@ -618,9 +631,11 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		goto rt0;
 	}
 
+#if 0
 	if (bintrans_32bit_only)
 		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
 	else
+#endif
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 
 	switch (instruction_type) {
@@ -669,10 +684,12 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
 		/*  or  */
 		/*  29 c9                   sub    %ecx,%ecx  */
+#if 0
 		if (bintrans_32bit_only) {
 			/*  99                      cltd   */
 			*a++ = 0x99;
 		}
+#endif
 		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
 		if (uimm & 0x8000) {
 			*a++ = 0xff; *a++ = 0xff;
@@ -712,10 +729,12 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
 		/*  or  */
 		/*  29 c9                   sub    %ecx,%ecx  */
+#if 0
 		if (bintrans_32bit_only) {
 			/*  99                      cltd   */
 			*a++ = 0x99;
 		}
+#endif
 		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
 		if (uimm & 0x8000) {
 			*a++ = 0xff; *a++ = 0xff;
@@ -779,12 +798,15 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 
 	if (link) {
 		/*  gpr[31] = pc + 8  */
+#if 0
 		if (bintrans_32bit_only) {
 			/*  50             push  %eax */
 			/*  83 c0 08       add   $0x8,%eax  */
 			*a++ = 0x50;
 			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		} else {
+		} else
+#endif
+ {
 			/*  50             push  %eax */
 			/*  52             push  %edx */
 			/*  83 c0 08                add    $0x8,%eax  */
@@ -795,10 +817,13 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
 		}
 		store_eax_edx(&a, &dummy_cpu.gpr[31]);
+#if 0
 		if (bintrans_32bit_only) {
 			/*  58     pop %eax  */
 			*a++ = 0x58;
-		} else {
+		} else
+#endif
+ {
 			/*  5a     pop %edx  */
 			/*  58     pop %eax  */
 			*a++ = 0x5a;
@@ -1223,7 +1248,9 @@ rd0:
 /*
  *  bintrans_write_instruction__mfc_mtc():
  */
-static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
+static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
+	unsigned char **addrp, int coproc_nr, int flag64bit, int rt,
+	int rd, int mtcflag)
 {
 	unsigned char *a, *failskip;
 	int ofs;
@@ -1306,13 +1333,13 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			*a++ = 0x89; *a++ = 0xc1;
 			*a++ = 0x89; *a++ = 0xda;
 			*a++ = 0x81; *a++ = 0xe1; *a++ = 0x00; *a++ = 0x00;
-			if (bintrans_32bit_only) {
+			if (mem->bintrans_32bit_only) {
 				*a++ = 0xe7; *a++ = 0x0f;
 			} else {
 				*a++ = 0xff; *a++ = 0xff;
 			}
 			*a++ = 0x81; *a++ = 0xe2; *a++ = 0x00; *a++ = 0x00;
-			if (bintrans_32bit_only) {
+			if (mem->bintrans_32bit_only) {
 				*a++ = 0xe7; *a++ = 0x0f;
 			} else {
 				*a++ = 0xff; *a++ = 0xff;
@@ -1455,7 +1482,10 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		/*  75 01                   jne    155 <skip>  */
 		*a++ = 0x39; *a++ = 0xc3;
 		*a++ = 0x75; skip1 = a; *a++ = 0x00;
-		if (!bintrans_32bit_only) {
+#if 0
+		if (!bintrans_32bit_only)
+#endif
+ {
 			*a++ = 0x39; *a++ = 0xd1;
 			*a++ = 0x75; skip2 = a; *a++ = 0x00;
 		}
@@ -1463,12 +1493,15 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 
 	if (instruction_type == HI6_BNE) {
 		/*  If rt != rs, then ok. Otherwise skip.  */
+#if 0
 		if (bintrans_32bit_only) {
 			/*  39 c3                   cmp    %eax,%ebx  */
 			/*  74 xx                   je     <skip>  */
 			*a++ = 0x39; *a++ = 0xc3;
 			*a++ = 0x74; skip2 = a; *a++ = 0x00;
-		} else {
+		} else
+#endif
+ {
 			/*  39 c3                   cmp    %eax,%ebx  */
 			/*  75 06                   jne    156 <bra>  */
 			/*  39 d1                   cmp    %edx,%ecx  */
@@ -1627,7 +1660,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 try_chunk_p:
 
 	if (potential_chunk_p == NULL) {
-		if (bintrans_32bit_only) {
+		if (mem->bintrans_32bit_only) {
 #if 1
 			/*  8b 86 78 56 34 12       mov    0x12345678(%esi),%eax  */
 			/*  ff e0                   jmp    *%eax  */
@@ -1900,8 +1933,9 @@ try_chunk_p:
 /*
  *  bintrans_write_instruction__loadstore():
  */
-static int bintrans_write_instruction__loadstore(unsigned char **addrp,
-	int rt, int imm, int rs, int instruction_type, int bigendian)
+static int bintrans_write_instruction__loadstore(struct memory *mem,
+	unsigned char **addrp, int rt, int imm, int rs,
+	int instruction_type, int bigendian)
 {
 	unsigned char *a, *retfail, *generic64bit, *doloadstore,
 	    *okret0, *okret1, *okret2, *skip;
@@ -1947,7 +1981,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	a = *addrp;
 
-	if (bintrans_32bit_only)
+	if (mem->bintrans_32bit_only)
 		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
 	else
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
@@ -1957,7 +1991,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		/*  83 d2 ff                adc    $0xffffffff,%edx  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
-		if (!bintrans_32bit_only) {
+		if (!mem->bintrans_32bit_only) {
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
 		}
 	} else {
@@ -1965,7 +1999,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		/*  83 d2 00                adc    $0x0,%edx  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0; *a++ = 0;
-		if (!bintrans_32bit_only) {
+		if (!mem->bintrans_32bit_only) {
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
 		}
 	}
@@ -2028,7 +2062,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	/*  Here, edx:eax = vaddr  */
 
-	if (bintrans_32bit_only) {
+	if (mem->bintrans_32bit_only) {
 		/*  Call the quick lookup routine:  */
 		ofs = (size_t)bintrans_i386_loadstore_32bit;
 		ofs = ofs - ((size_t)a + 5);

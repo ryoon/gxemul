@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.266 2005-01-29 11:50:19 debug Exp $
+ *  $Id: cpu.c,v 1.267 2005-01-29 12:56:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1641,10 +1641,10 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  round as well.
 			 *
 			 *  This still has to count as one or more
-			 *  instructions, so 1000 is returned. (Ugly.)
+			 *  instructions, so 100 is returned. (Ugly.)
 			 */
 			if (!res)
-				return 1000;
+				return 100;
 
 			cpu->pc = cpu->gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
@@ -1655,7 +1655,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->trace_tree_depth --;
 
 			/*  TODO: how many instrs should this count as?  */
-			return 1;
+			return 100;
 		}
 	}
 

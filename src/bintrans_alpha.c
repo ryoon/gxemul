@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.108 2005-01-25 08:14:48 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.109 2005-01-29 12:56:32 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1140,7 +1140,7 @@ static int bintrans_write_instruction__delayedbranch(
 	}
 
 	if (potential_chunk_p == NULL) {
-		if (bintrans_32bit_only) {
+		if (mem->bintrans_32bit_only) {
 			/*  34 12 70 a7     ldq     t12,4660(a0)  */
 			ofs = (size_t)&dummy_cpu.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
@@ -1396,7 +1396,8 @@ static int bintrans_write_instruction__delayedbranch(
 /*
  *  bintrans_write_instruction__loadstore():
  */
-static int bintrans_write_instruction__loadstore(unsigned char **addrp,
+static int bintrans_write_instruction__loadstore(
+	struct memory *mem, unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
 	unsigned char *a, *fail, *generic64bit = NULL, *generic64bitA = NULL;
@@ -1519,7 +1520,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	alpha_rt = map_MIPS_to_Alpha[rt];
 
-	if (bintrans_32bit_only) {
+	if (mem->bintrans_32bit_only) {
 		/*  Special case for 32-bit addressing:  */
 
 		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
@@ -2364,7 +2365,9 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 /*
  *  bintrans_write_instruction__mfc_mtc():
  */
-static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
+static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
+	unsigned char **addrp, int coproc_nr, int flag64bit, int rt,
+	int rd, int mtcflag)
 {
 	uint32_t *a, *jump;
 	int ofs;
@@ -2453,7 +2456,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			/*  Only allow updates to the status register if
 			    the interrupt enable bits were changed, but no
 			    other bits!  */
-			if (bintrans_32bit_only) {
+			if (mem->bintrans_32bit_only) {
 				/*  R3000 etc.  */
 				/*  t4 = 0x0fe70000;  */
 				*a++ = 0x20bf0000;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.142 2005-01-25 08:14:48 debug Exp $
+ *  $Id: bintrans.c,v 1.143 2005-01-29 12:56:32 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -35,7 +35,8 @@
  *	o)  Keep a translation cache of a certain number of blocks.
  *
  *	o)  Only translate simple instructions. (For example, the 'tlbwr'
- *	    instruction is not translated.)
+ *	    instruction is not actually translated, converted into a call
+ *	    to C code.)
  *
  *	o)  Translate code in physical ram, not virtual. This will keep
  *	    things translated over process switches, and TLB updates.
@@ -49,8 +50,8 @@
  *
  *	o)  Do not translate over MIPS page boundaries (4 KB).
  *	    (TODO: Perhaps it would be possible if we're running in kernel
- *	    space? But it this would then require special checks at the
- *	    end of each page.)
+ *	    space? But that would require special checks at the end of
+ *	    each page.)
  *
  *	o)  If memory is overwritten, any translated block for that page
  *	    must be invalidated. (It is removed from the cache so that it
@@ -68,7 +69,8 @@
  *	    directly from MIPS machine code to target machine code.
  *
  *	o)  Theoretical support for multiple target architectures (Alpha,
- *	    i386, sparc, mips :-), ...), but only Alpha implemented so far.
+ *	    i386, sparc, mips :-), ...), but only Alpha and i386 implemented
+ *	    so far.
  *
  *	o)  Load/stores: TODO: Comment.
  *
@@ -86,7 +88,6 @@
  *  enough; starting inside a delay slot or "nullified" slot is considered
  *  non-safe.
  */
-
 
 #include <errno.h>
 #include <stdio.h>
@@ -137,10 +138,10 @@ static int bintrans_write_instruction__branch(unsigned char **addrp, int instruc
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
 static int bintrans_write_instruction__delayedbranch(struct memory *mem, unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p, int p, int forward);
-static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
+static int bintrans_write_instruction__loadstore(struct memory *mem, unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
-static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
+static int bintrans_write_instruction__mfc_mtc(struct memory *mem, unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
 static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int itype);
 
 #define	CALL_TLBWI	0
@@ -165,11 +166,6 @@ static void bintrans_register_potential_quick_jump(struct memory *mem,
 	if (mem->quick_jumps_index >= MAX_QUICK_JUMPS)
 		mem->quick_jumps_index = 0;
 }
-
-
-/*  Set to non-zero for R3000 and similar cpus.  */
-/*  TODO: MOVE THIS!  */
-static int bintrans_32bit_only = 0;
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -299,7 +295,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
 		return cpu->bintrans_instructions_executed;
 
-	bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
+	/*  TODO: isa level, not mmu_model?  */
+	cpu->mem->bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 
 	/*  Is this a part of something that is already translated?  */
@@ -594,25 +591,25 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				/*  mfc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 0, rt, rd, 0);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 0);
 				n_translated += translated;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x20 && (instr[1]&7)==0 && instr[0]==0) {
 				/*  dmfc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 1, rt, rd, 0);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 0);
 				n_translated += translated;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x80 && (instr[1]&7)==0 && instr[0]==0) {
 				/*  mtc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 0, rt, rd, 1);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 0, rt, rd, 1);
 				n_translated += translated;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0xa0 && (instr[1]&7)==0 && instr[0]==0) {
 				/*  dmtc0:  */
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
-				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 1, rt, rd, 1);
+				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 1);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
 				/*  tlbwi:  */
@@ -660,7 +657,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
-			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+			translated = try_to_translate = bintrans_write_instruction__loadstore(cpu->mem, &ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
 			n_translated += translated;
 			break;
 
@@ -802,7 +799,7 @@ run_it:
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
-		if (bintrans_32bit_only ||
+		if (cpu->mem->bintrans_32bit_only ||
 		    (cpu->pc & 0xffffffff80000000ULL) == 0 ||
 		    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
 			/*  32-bit special case:  */
@@ -859,7 +856,7 @@ run_it:
 				tep = tep->next;
 			}
 
-#if 1
+#if 0
 			/*  We have no translation.  */
 			if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
 			    cpu->machine->prom_emulation)
@@ -867,9 +864,9 @@ run_it:
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */
-			if (bintrans_32bit_only) {
-			/*  TODO: This doesn't seem to work with R4000 etc?
-			    || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
+			/*  TODO: This doesn't seem to work with R4000 etc?  */
+			if (cpu->mem->bintrans_32bit_only) {
+			    /* || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
 			    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
 				int ok = 1;
 				/*  32-bit special case:  */

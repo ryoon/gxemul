@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.25 2005-01-24 07:02:59 debug Exp $
+$Id: BUGS,v 1.26 2005-01-29 12:56:29 debug Exp $
 
 If you encounter any bugs not listed here, and not listed in the TODO, 
 then feel free to report them to me.
@@ -39,6 +39,10 @@ Less serious bugs / issues:
 
   o)  UDP packets that are too large are not handled well by the Lance
       device.
+
+  o)  Colors in X11 framebuffers on MacOS X hosts are wrong. (I'm not sure
+      how to solve this; the code works on both little-endian (Alpha) and
+      big-endian (UltraSPARC) X-servers...)
 
   o)  bintranslated 64-bit stuff checks to see if the top 32 bits are
       all zeroes or all ones, and then uses 32-bit tables and such. This

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.10 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.11 2005-01-29 12:56:30 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -60,7 +60,7 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		static int x = 0;
 		/*  TODO:  */
 		x++;
-		if (x > 100 && x&1)
+		if (x > 100 && (x&3)==0)
 			cpu_interrupt(cpu, 8 + 3);
 	}
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.25 2005-01-25 08:38:27 debug Exp $
+ *  $Id: memory.h,v 1.26 2005-01-29 12:56:31 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -92,6 +92,8 @@ struct memory {
 
 	unsigned char	*translation_code_chunk_space;
 	size_t		translation_code_chunk_space_head;
+
+	int		bintrans_32bit_only;
 
 	struct translation_page_entry **translation_page_entry_array;
 

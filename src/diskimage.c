@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.20 2004-04-15 06:39:44 debug Exp $
+ *  $Id: diskimage.c,v 1.21 2004-04-15 09:13:36 debug Exp $
  *
  *  Disk image support.
  *
@@ -487,7 +487,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 
-		fatal("READ  ofs=%i size=%i\n", (int)ofs, (int)size);
+		debug("READ  ofs=%i size=%i\n", (int)ofs, (int)size);
 
 		diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
 		/*  TODO: how about return code?  */
@@ -545,7 +545,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		debug(", data_out != NULL, OK :-)");
 
-		fatal("WRITE ofs=%i size=%i offset=%i\n", (int)ofs, (int)size, (int)xferp->data_out_offset);
+		debug("WRITE ofs=%i size=%i offset=%i\n", (int)ofs, (int)size, (int)xferp->data_out_offset);
 
 		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
 		/*  TODO: how about return code?  */

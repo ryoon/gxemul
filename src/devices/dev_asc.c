@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.26 2004-04-15 06:40:04 debug Exp $
+ *  $Id: dev_asc.c,v 1.27 2004-04-15 09:13:42 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -358,7 +358,7 @@ fatal("TODO.......asdgasin\n");
 
 			/*  If the disk wants more than we're DMAing, then this is a multitransfer:  */
 			if (d->xferp->data_out_offset != d->xferp->data_out_len) {
-				fatal("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
+				debug("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
 				if (d->xferp->data_out_offset > d->xferp->data_out_len)
 					fatal("[ asc data_out dma: too much? ]\n");
 				else

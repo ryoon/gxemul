@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.113 2004-10-08 11:19:08 debug Exp $
+$Id: index.html,v 1.114 2004-10-08 17:26:33 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -165,6 +165,7 @@ A number of different configure options are available:
     <i>--caches</i>       enable cache emulation
     <i>--delays</i>       enable instruction latency/delay emulation
     <i>--mips16</i>       enable MIPS16 instruction support
+    <i>--nobintrans</i>   configure without bintrans support, even if the host supports it
     <i>--nox11</i>        configure without x11 support
     <i>--userland</i>     enable userland emulation
 </pre>
@@ -182,6 +183,8 @@ causes an overall slowdown, so don't enable it unless you need it.
 <i>--mips16</i> enables MIPS16 instruction support. This doesn't really work yet, 
 as only very few MIPS16 instructions are translated. This causes an overall
 slowdown, so don't enable it unless you need it.
+<p>
+<i>--nobintrans</i> disables dynamic binary translation completely.
 <p>
 <i>--nox11</i> disables X11 support completely. (If the configure script cannot
 compile a small X11 test program, it will be disabled anyway.)  This might 

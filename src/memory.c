@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.80 2004-10-06 08:17:45 debug Exp $
+ *  $Id: memory.c,v 1.81 2004-10-08 17:26:35 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -36,6 +36,7 @@
 
 #include "misc.h"
 
+#include "bintrans.h"
 #include "memory.h"
 
 
@@ -1096,18 +1097,16 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
-#if 0
-	/*  This check should not be neccessary:  */
-	if (cpu == NULL) {
-		fprintf(stderr, "memory_rw(): cpu == NULL\n");
-		exit(1);
-	}
-#endif
-
 #ifdef ENABLE_USERLAND
 	if (cpu->emul->userland_emul) {
 		paddr = vaddr & 0x7fffffff;
 		goto have_paddr;
+	}
+#endif
+
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		cpu->pc_bintrans_paddr_valid = 0;
 	}
 #endif
 
@@ -1253,6 +1252,22 @@ into the devices  */
 		}
 	}
 #endif
+
+
+	/*  TODO: How about bintrans vs cache emulation?  */
+
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		if (cache == CACHE_INSTRUCTION) {
+			cpu->pc_bintrans_paddr_valid = 1;
+			cpu->pc_bintrans_paddr = paddr;
+		}
+
+		if (writeflag == MEM_WRITE)
+			bintrans_invalidate(cpu, paddr);
+	}
+#endif
+
 
 	/*
 	 *  Data and instruction cache emulation:

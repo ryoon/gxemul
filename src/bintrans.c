@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.21 2004-10-08 16:38:19 debug Exp $
+ *  $Id: bintrans.c,v 1.22 2004-10-08 17:26:35 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -92,7 +92,8 @@
  *  can be called easily from C. That is, entry and exit code needs to
  *  be added, in addition to the translated instructions.
  *
- *	o)  Check for the current PC in the translation cache.
+ *	o)  Check for the current PC (actually: its physical form) in the
+ *		translation cache.
  *
  *	o)  If the current PC is not found, then make a decision
  *		regarding making a translation attempt, or not.
@@ -124,8 +125,9 @@
  *  No bintrans, then let's supply dummy functions:
  */
 
-int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { }
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc) { }
+int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
+void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_init(void)
 {
 	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
@@ -156,12 +158,14 @@ void bintrans_host_cacheinvalidate(void);
 #endif	/*  ALPHA  */
 
 
-#define	BINTRANS_CACHE_N_INDEX_BITS	14
+#define	BINTRANS_CACHE_N_INDEX_BITS	12
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
-#define	PC_TO_INDEX(p)			((pc >> 2) & CACHE_INDEX_MASK)
+#define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 struct translation_entry {
-	uint64_t			pc;
+	uint64_t			paddr;
+	int				len;
+
 	struct translation_entry	*next;
 
 	/*  TODO  */
@@ -171,17 +175,17 @@ struct translation_entry **translation_entry_array;
 
 
 /*
- *  bintrans_pc_is_in_cache():
+ *  bintrans_paddr_is_in_cache():
  *
  *  Checks the translation cache to see if a certain address is translated.
  *  Return 1 if the address is known, 0 otherwise.
  *
- *  bits 2 through 2+N-1 of pc are used as an index into an array to speed
- *  up the search, where N is the number of bits in that index.
+ *  Some bits of the physical page number are used as an index into an array
+ *  to speed up the search.
  */
-int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc)
+int bintrans_paddr_is_in_cache(struct cpu *cpu, uint64_t paddr)
 {
-	int entry_index = PC_TO_INDEX(pc);
+	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_entry *tep;
 
 	tep = translation_entry_array[entry_index];
@@ -189,7 +193,7 @@ int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc)
 	/*  TODO: Something better than a linked list would be nice.  */
 
 	while (tep != NULL) {
-		if (tep->pc == pc)
+		if (tep->paddr == paddr)
 			return 1;
 
 		tep = tep->next;
@@ -200,15 +204,50 @@ int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc)
 
 
 /*
+ *  bintrans_invalidate():
+ *
+ *  Invalidate translations containing a certain physical address.
+ */
+void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
+{
+	int entry_index = PADDR_TO_INDEX(paddr);
+	struct translation_entry *tep;
+
+	tep = translation_entry_array[entry_index];
+
+	/*  TODO: Something better than a linked list would be nice.  */
+
+	while (tep != NULL) {
+		if (paddr >= tep->paddr && paddr < tep->paddr + tep->len) {
+
+			/*  TODO  */
+			fprintf(stderr, "bintrans_invalidate(): invalidating"
+			    " %016llx: TODO\n", (long long)paddr);
+			exit(1);
+			/*  TODO: remove the translation from the list,
+			    and free whatever memory it was using  */
+
+			/*  Restart the search from the beginning:  */
+			tep = translation_entry_array[entry_index];
+			continue;
+		}
+
+		tep = tep->next;
+	}
+}
+
+
+/*
  *  bintrans_attempt_translate():
  *
- *  Attempt to translate a chunk of code, starting at 'pc'.
+ *  Attempt to translate a chunk of code, starting at 'paddr'.
  *
  *  Returns 0 if no code translation occured, otherwise 1 is returned and
  *  the generated code chunk is added to the translation_entry_array.
  */
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc)
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 {
+	/*  printf("tr: paddr=%08x\n", (int)paddr);  */
 
 	return 0;
 }
@@ -223,7 +262,7 @@ void bintrans_init(void)
 {
 	size_t s;
 
-	debug("starting bintrans\n");
+	debug("starting bintrans: EXPERIMENTAL!\n");
 
 	s = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	s *= sizeof(struct translation_entry *);
@@ -234,7 +273,6 @@ void bintrans_init(void)
 	}
 
 	memset(translation_entry_array, 0, s);
-	debug("    (%i bytes allocated for the bintrans cache array)\n", s);
 }
 
 

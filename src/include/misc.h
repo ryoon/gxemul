@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.112 2004-10-07 15:10:08 debug Exp $
+ *  $Id: misc.h,v 1.113 2004-10-08 17:26:34 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -603,6 +603,10 @@ struct cpu {
 	uint64_t	pc_last_physical_page;
 	unsigned char	*pc_last_host_4k_page;
 	int		pc_last_was_in_host_ram;
+#ifdef BINTRANS
+	int		pc_bintrans_paddr_valid;
+	uint64_t	pc_bintrans_paddr;
+#endif
 
 #ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */

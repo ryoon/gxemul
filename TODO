@@ -1,4 +1,4 @@
-$Id: TODO,v 1.113 2005-01-26 10:39:14 debug Exp $
+$Id: TODO,v 1.114 2005-01-27 11:59:23 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -120,14 +120,12 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  IP32 ("O2"): (Lots of stuff)
 				+)  mec (ethernet)
-				+)  scsi
+				+)  pci
+				+)  ahc (scsi)
 				+)  ps2 kbd
 				+)  memory controller
-				+)  R10000
-				+)  "power off" stuff
 				+)  framebuffer/graphics
 				+)  caches
-				+)  pci
 			x)  more ARCBIOS stuff
 			x)  Memory/interrupt controllers
 			x)  IP30 (Linux with graphics support?)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.20 2004-03-08 01:30:18 debug Exp $
+ *  $Id: file.c,v 1.21 2004-03-11 05:30:06 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -93,7 +93,7 @@ char *last_filename = "not_yet_set";
  *  TODO:  This has to be rewritten / corrected to support multiple a.out
  *         formats, where text/data are aligned differently.
  */
-void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu)
+void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf1_hack)
 {
 	struct exec aout_header;
 	FILE *f;
@@ -110,19 +110,34 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu)
 		exit(1);
 	}
 
-	len = fread(&aout_header, 1, sizeof(aout_header), f);
-	if (len != sizeof(aout_header)) {
-		fprintf(stderr, "%s: not a complete a.out image\n", filename);
-		exit(1);
+	if (osf1_hack) {
+		fread(&buf, 1, 32, f);
+		vaddr = buf[16] + (buf[17] << 8) + (buf[18] << 16) + (buf[19] << 24);
+		entry = buf[20] + (buf[21] << 8) + (buf[22] << 16) + (buf[23] << 24);
+		debug("'%s': OSF1 a.out-ish hack, load address 0x%08lx, entry point 0x%08x\n",
+		    filename, (long)vaddr, (long)entry);
+		symbsize = 0;
+		fseek(f, 0, SEEK_END);
+		textsize = ftell(f) - 512;	/*  This is of course wrong, but should work anyway  */
+		datasize = 0;
+		fseek(f, 512, SEEK_SET);
+	} else {
+		len = fread(&aout_header, 1, sizeof(aout_header), f);
+		if (len != sizeof(aout_header)) {
+			fprintf(stderr, "%s: not a complete a.out image\n", filename);
+			exit(1);
+		}
+
+		unencode(entry, &aout_header.a_entry, uint32_t);
+		vaddr = entry;
+		debug("'%s': a.out, entry point 0x%08lx\n", filename, (long)entry);
+
+		unencode(textsize, &aout_header.a_text, uint32_t);
+		unencode(datasize, &aout_header.a_data, uint32_t);
+		debug("'%s': text+data = %i+%i bytes\n", filename, textsize, datasize);
+
+		unencode(symbsize, &aout_header.a_syms, uint32_t);
 	}
-
-	unencode(entry, &aout_header.a_entry, uint32_t);
-	vaddr = entry;
-	debug("'%s': a.out, entry point 0x%08lx\n", filename, (long)entry);
-
-	unencode(textsize, &aout_header.a_text, uint32_t);
-	unencode(datasize, &aout_header.a_data, uint32_t);
-	debug("'%s': text+data = %i+%i bytes\n", filename, textsize, datasize);
 
 	/*  Load text and data:  */
 	total_len = textsize + datasize;
@@ -130,18 +145,23 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu)
 		len = total_len > sizeof(buf) ? sizeof(buf) : total_len;
 		len = fread(buf, 1, len, f);
 
+		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n", len, (int)vaddr, buf[0], buf[1], buf[2]);  */
+
 		if (len > 0)
 			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, 0);
 		else {
-			fprintf(stderr, "could not read from %s\n", filename);
-			exit(1);
+			if (osf1_hack)
+				break;
+			else {
+				fprintf(stderr, "could not read from %s\n", filename);
+				exit(1);
+			}
 		}
 
 		vaddr += len;
 		total_len -= len;
 	}
 
-	unencode(symbsize, &aout_header.a_syms, uint32_t);
 	if (symbsize != 0) {
 		struct aout_symbol *aout_symbol_ptr;
 		int i, n_symbols;
@@ -1092,7 +1112,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
-	unsigned char minibuf[4];
+	unsigned char minibuf[12];
 	int len;
 
 	assert(mem != NULL);
@@ -1121,10 +1141,13 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 		return;
 	}
 
-	/*  Is it an a.out?  */
-	if (minibuf[0]==0x00 && minibuf[1]==0x8b &&
-	    minibuf[2]==0x01 && minibuf[3]==0x07) {
-		file_load_aout(mem, filename, cpu);
+	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
+	if (minibuf[0]==0x00 && minibuf[1]==0x8b && minibuf[2]==0x01 && minibuf[3]==0x07) {
+		file_load_aout(mem, filename, cpu, 0);
+		return;
+	}
+	if (minibuf[0]==0x00 && minibuf[2]==0x00 && minibuf[8]==0x7a && minibuf[9]==0x75) {
+		file_load_aout(mem, filename, cpu, 1);
 		return;
 	}
 

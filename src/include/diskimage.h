@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.10 2004-04-06 10:46:02 debug Exp $
+ *  $Id: diskimage.h,v 1.11 2004-04-06 14:05:38 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -40,6 +40,14 @@ struct scsi_transfer {
 	size_t			msg_out_len;
 	unsigned char		*cmd;
 	size_t			cmd_len;
+
+/*
+ *	void			(*get_data_out)(struct scsi_transfer *, size_t);
+ *	void			*gdo_extra;
+ */
+
+	/*  data_out_len is set by the SCSI disk, if it needs data_out,
+	    which is then filled in during a second pass in the controller.  */
 	unsigned char		*data_out;
 	size_t			data_out_len;
 
@@ -70,7 +78,12 @@ void diskimage_dump_info(void);
 #define	SCSICMD_INQUIRY			0x12	/*  Mandatory  */
 
 #define	SCSICMD_READ			0x08
+#define	SCSICMD_WRITE			0x0a
 #define	SCSICMD_MODE_SENSE		0x1a
+
+#define	SCSICMD_START_STOP_UNIT		0x1b
+
+#define	SCSICMD_SYNCHRONIZE_CACHE	0x35
 
 /*  SCSI block device commands:  */
 #define	SCSIBLOCKCMD_READ_CAPACITY	0x25

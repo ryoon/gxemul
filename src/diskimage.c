@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.11 2004-04-06 10:46:03 debug Exp $
+ *  $Id: diskimage.c,v 1.12 2004-04-06 14:05:40 debug Exp $
  *
  *  Disk image support.
  *
@@ -138,7 +138,7 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len)
 
 	(*lenp) = want_len;
 	if ((p = malloc(want_len)) == NULL) {
-		fprintf(stderr, "out of memory\n");
+		fprintf(stderr, "scsi_transfer_allocbuf(): out of memory trying to allocate %li bytes\n", (long)want_len);
 		exit(1);
 	}
 	memset(p, 0, want_len);
@@ -188,7 +188,10 @@ int64_t diskimage_getsize(int disk_id)
  *  interprets the command, and (if neccessary) creates responses in
  *  data_in, msg_in, and status.
  *
- *  Returns 1 if ok, 0 on error.
+ *  Returns:
+ *	2 if the command expects data from the DATA_OUT phase,
+ *	1 if otherwise ok,
+ *	0 on error.
  */
 int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 {
@@ -349,8 +352,8 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		 *  cmd[4] holds the number of logical blocks to transfer.
 		 *  (special case if the value is 0, actually means 256.)
 		 */
-		ofs = (xferp->cmd[1] & 0x1f) << 16 +
-		      (xferp->cmd[2]) << 8 + xferp->cmd[3];
+		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
+		      ((xferp->cmd[2]) << 8) + xferp->cmd[3];
 		retlen = xferp->cmd[4];
 		if (retlen == 0)
 			retlen = 256;
@@ -372,13 +375,78 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		break;
 
+	case SCSICMD_WRITE:
+		debug("WRITE");
+
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
+
+		/*
+		 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
+		 *  logical block address.
+		 *
+		 *  cmd[4] holds the number of logical blocks to transfer.
+		 *  (special case if the value is 0, actually means 256.)
+		 */
+		ofs = ((xferp->cmd[1] & 0x1f) << 16) +
+		      ((xferp->cmd[2]) << 8) + xferp->cmd[3];
+		retlen = xferp->cmd[4];
+		if (retlen == 0)
+			retlen = 256;
+
+		size = retlen * logical_block_size;
+		ofs *= logical_block_size;
+
+		if (xferp->data_out == NULL) {
+			debug(", data_out == NULL, wanting %i bytes, \n\n", (int)size);
+			xferp->data_out_len = size;
+			return 2;
+		}
+
+		debug(", data_out != NULL, OK :-)");
+
+		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
+		/*  TODO: how about return code?  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_SYNCHRONIZE_CACHE:
+		debug("SYNCHRONIZE_CACHE");
+
+		if (xferp->cmd_len != 10)
+			debug(" (weird len=%i)", xferp->cmd_len);
+
+		/*  TODO: actualy care about cmd[]  */
+		fsync(fileno(diskimages[disk_id]->f));
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
 	case SCSICMD_REQUEST_SENSE:
 	case 0x15:
-	case 0x1b:
+	case SCSICMD_START_STOP_UNIT:
 	case 0x1e:
 	case SCSICDROM_READ_SUBCHANNEL:
 	case SCSICDROM_READ_TOC:
 		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
 		break;
 
 	default:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.18 2004-04-06 09:11:09 debug Exp $
+ *  $Id: dev_asc.c,v 1.19 2004-04-06 14:05:41 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -60,6 +60,7 @@
 #define	PHASE_MSG_OUT		6
 #define	PHASE_MSG_IN		7
 
+extern int quiet_mode;
 extern int instruction_trace;
 
 
@@ -195,6 +196,35 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
 }
 
 
+#if 0
+/*
+ *  dev_asc_get_data_out():
+ *
+ *  Called from a SCSI disk when it wants to get the data_out stuff
+ *  from the controller.
+ */
+void dev_asc_get_data_out(struct scsi_transfer *xp, size_t len)
+{
+	struct asc_data *d = xp->gdo_extra;
+	size_t i;
+	unsigned char ch;
+
+	printf("\n{{ get_data_out(len %i): ", (int)len);
+
+	scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
+
+	for (i=0; i<len; i++) {
+		int ofs = d->dma_address_reg + i;
+		ch = d->dma[ofs & (sizeof(d->dma)-1)];
+		d->xferp->data_out[i] = ch;
+		printf(" %02x", ch);
+	}
+
+	printf(" }}\n\n");
+}
+#endif
+
+
 /*
  *  dev_asc_newxfer():
  *
@@ -210,6 +240,10 @@ void dev_asc_newxfer(struct asc_data *d)
 	}
 
 	d->xferp = scsi_transfer_alloc();
+#if 0
+	d->xferp->get_data_out = dev_asc_get_data_out;
+	d->xferp->gdo_extra = (void *) d;
+#endif
 }
 
 
@@ -221,12 +255,12 @@ void dev_asc_newxfer(struct asc_data *d)
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag)
+int dev_asc_transfer(struct asc_data *d, int dmaflag)
 {
 	int res = 1;
 	int len, i, ch;
 
-	debug(" { TRANSFER from id %i to id %i: ", from_id, to_id);
+	debug(" { TRANSFER to/from id %i: ", d->reg_wo[NCR_SELID] & 7);
 
 	if (d->cur_phase == PHASE_DATA_IN) {
 		/*  Data coming into the controller from external device:  */
@@ -261,11 +295,13 @@ fatal("TODO..............\n");
 				res = 0;
 			} else {
 				int len = d->xferp->data_in_len;
-				if (len + d->dma_address_reg > sizeof(d->dma))
-					len = sizeof(d->dma) - d->dma_address_reg;
 
-				for (i=0; i<len; i++)
-					debug(" %02x", d->xferp->data_in[i]);
+				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
+					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+
+				if (!quiet_mode)
+					for (i=0; i<len; i++)
+						debug(" %02x", d->xferp->data_in[i]);
 
 				memcpy(d->dma + d->dma_address_reg, d->xferp->data_in, len);
 
@@ -281,8 +317,44 @@ fatal("TODO..............\n");
 				d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
 			}
 		}
+	} else if (d->cur_phase == PHASE_DATA_OUT) {
+		/*  Data going from the controller to an external device:  */
+		if (!dmaflag) {
+fatal("TODO.......asdgasin\n");
+		} else {
+			/*  Copy data from DMA to data_out:  */
+			int len = d->xferp->data_out_len;
+			if (len == 0) {
+				fprintf(stderr, "d->xferp->data_out_len == 0 ?\n");
+				exit(1);
+			}
+
+			if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
+				len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+
+			scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
+
+			memcpy(d->xferp->data_out, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len);
+
+			if (!quiet_mode)
+				for (i=0; i<len; i++)
+					debug(" %02x", d->xferp->data_out[i]);
+
+			len = 0;
+
+			d->reg_wo[NCR_TCL] = len & 255;
+			d->reg_wo[NCR_TCM] = (len >> 8) & 255;
+
+			/*  Successful DMA transfer:  */
+			d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
+		}
 	} else {
-		fatal("!!! TODO: unknown/unimplemented phase in transfer\n");
+		fatal("!!! TODO: unknown/unimplemented phase in transfer: %i\n", d->cur_phase);
+	}
+
+	/*  Redo the command if data was just send using DATA_OUT:  */
+	if (d->cur_phase == PHASE_DATA_OUT) {
+		int ok = diskimage_scsicommand(d->reg_wo[NCR_SELID] & 7, d->xferp);
 	}
 
 	d->cur_phase = PHASE_STATUS;
@@ -384,9 +456,12 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 	d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 
-	d->cur_phase = PHASE_STATUS;
-	if (d->xferp->data_in != NULL)
+	if (ok == 2)
+		d->cur_phase = PHASE_DATA_OUT;
+	else if (d->xferp->data_in != NULL)
 		d->cur_phase = PHASE_DATA_IN;
+	else
+		d->cur_phase = PHASE_STATUS;
 
 	d->reg_ro[NCR_STAT] &= ~7;
 	d->reg_ro[NCR_STAT] |= d->cur_phase;
@@ -395,6 +470,7 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 	d->reg_ro[NCR_STEP] |= 4;	/*  DONE (?)  */
 
 	debug("}");
+
 	return ok;
 }
 
@@ -682,10 +758,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 				break;
 			}
 
-			dev_asc_transfer(d,
-			    d->reg_wo[NCR_SELID] & 7,
-			    d->reg_ro[NCR_CFG1] & 7,
-			    idata & NCRCMD_DMA? 1 : 0);
+			dev_asc_transfer(d, idata & NCRCMD_DMA? 1 : 0);
 			break;
 
 		default:

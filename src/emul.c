@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.55 2004-09-05 02:27:09 debug Exp $
+ *  $Id: emul.c,v 1.56 2004-09-05 02:40:36 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,7 +59,6 @@ char **extra_argv;
 extern int booting_from_diskimage;
 
 extern int physical_ram_in_mb;
-extern int random_mem_contents;
 extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -687,7 +686,7 @@ void emul_start(struct emul *emul)
 	}
 
 	/*  Fill memory with random bytes:  */
-	if (random_mem_contents) {
+	if (emul->random_mem_contents) {
 		for (i=0; i<physical_ram_in_mb*1048576; i+=256) {
 			unsigned char data[256];
 			unsigned int j;

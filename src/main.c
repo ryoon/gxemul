@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.76 2004-09-05 02:29:39 debug Exp $
+ *  $Id: main.c,v 1.77 2004-09-05 02:40:36 debug Exp $
  */
 
 #include <stdio.h>
@@ -57,7 +57,6 @@ int quiet_mode = 0;
  *         completely.
  */
 
-int random_mem_contents = 0;
 int physical_ram_in_mb = 0;
 int booting_from_diskimage = 0;
 
@@ -352,7 +351,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			register_dump = 1;
 			break;
 		case 'S':
-			random_mem_contents = 1;
+			emul->random_mem_contents = 1;
 			break;
 		case 's':
 			show_opcode_statistics = 1;

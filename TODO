@@ -12,9 +12,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
 			(using manual swap-out of blocks to disk, ugly)
-		o)  Cache latencies in number of cycles or instructions.
-		    Should device reads/writes also return the number of
-		    cycles they used?
 		o)  A global command line option should be used to turn
 		    cache emulation on or off. When off, caches should be
 		    faked like they are right now. When on, caches and
@@ -49,10 +46,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			    opcodes.
 			o)  warn and/or cause exceptions for unimplemented
 			    instructions (depending on CPU type)
-		o)  Nr of instructions per second is NOT the number of cycles
-		    per second, this is CPU dependant.  Several subsystems
-		    (CPUs, other systems) may need to have speeds fixed
-		    relative to each other.
 		o)  R2000/R3000:
 			x)  Make sure that registers (INCLUDING coprocessor
 			    registers) are always sign-extended. (32-bit stuff)
@@ -159,6 +152,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 	Better X-windows functionality:
 		o)  Cursor transparency masking
 		o)  More 2D and 3D framebuffer acceleration
+		o)  Non-resizable windows?  Or choose scaledown depending
+			on size (and center the image, with a black border)
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
@@ -168,7 +163,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 				bad to enable if the cursor is for example
 				a text console cursor.)
 			x)  X11 cursor keycodes and such?
-		o)  Non-resizable windows?
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11
 			specific code to src/x11.c!
 

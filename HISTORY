@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.343 2004-12-01 14:57:43 debug Exp $
+$Id: HISTORY,v 1.344 2004-12-01 22:14:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1221,3 +1221,6 @@ HISTORY of mips64emul
 		Preparing for release 0.2.3.
 		Adding a generic load/store mechanism, which is used when the
 		32-bit optimized version cannot be used (for R4000 etc).
+
+==============  RELEASE 0.2.3  ==============
+

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.58 2004-12-01 09:45:57 debug Exp $
+$Id: RELEASE,v 1.59 2004-12-01 22:14:48 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -73,39 +73,16 @@ of a curiosity, and should not be considered working yet.
 
 Here is a short summary of the changes from version 0.2 to 0.2.2:
 
-  o)  0.2 -> 0.2.1:
-
-        x)  No major feature enhancements, but a couple of minor bug fixes.
-
-  o)  0.2.1 -> 0.2.2:
-
-        x)  Acer PICA-61 is now emulated well enough to let NetBSD/arc and
-            OpenBSD/arc be installed onto harddisk images.
-
-        x)  Some parts of TCP/IP networking work when running Ultrix as
-            the guest OS. (Network support should still be considered
-            experimental, though, even for NetBSD, OpenBSD, and Linux.)
-
-	x)  Ultrix running with more than one emulated graphics card (dual-
-	    or tripple-headed workstation setup) works better than before;
-	    when moving the host's mouse pointer from one framebuffer window
-	    to another, the emulated mouse is now moved so that it should
-	    appear on the correct emulated screen.
-
-        x)  Mach (the microkernel) seems to boot and run on an emulated
-            DECstation. (Unfortunately, I haven't found any "mach_servers"
-            binaries for pmax yet, and without those the microkernel cannot
-            do much.)
-
-        x)  Lots of minor bug fixes.
-
-  o)  0.2.2 -> 0.2.3:
-
 	x)  An experimental dynamic binary translation subsystem has been
-	    added, which improves speed. (Use -b to enable bintrans.)
+	    added, which improves speed.  It should work when emulating
+	    R3000-style CPUs. Add -b to the command line to enable bintrans.
+	    (For R4000-style CPUs, the bintrans system is not entirely
+	    reliable yet.)
 
-	x)  Redhat Linux 7.1 for mips has been verified to work on an
-	    emulated DECstation 5000/200.
+	x)  Redhat Linux 7.1 for mips has been verified to work under
+	    DECstation 5000/200 emulation.
+
+        x)  A number of minor bug fixes.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

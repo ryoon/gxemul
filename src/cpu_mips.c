@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.29 2005-02-22 12:05:19 debug Exp $
+ *  $Id: cpu_mips.c,v 1.30 2005-02-22 19:09:01 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1045,7 +1045,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 			    rt, imm, regname(cpu->machine, rs));
 
 			if (running) {
-				debug("\t\t[0x%016llx = %s]",
+				debug("\t[0x%016llx = %s]",
 				    (long long)(cpu->cd.mips.gpr[rs] + imm));
 				if (symbol != NULL)
 					debug(" = %s", symbol);
@@ -1067,7 +1067,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 		debug(",%i(%s)", imm, regname(cpu->machine, rs));
 
 		if (running) {
-			debug("\t\t[");
+			debug("\t[");
 
 			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
 			    cpu->cd.mips.cpu_type.isa_level == 32)

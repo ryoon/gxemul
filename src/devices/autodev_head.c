@@ -25,12 +25,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: autodev_head.c,v 1.3 2005-02-22 13:23:43 debug Exp $
+ *  $Id: autodev_head.c,v 1.4 2005-02-22 19:08:59 debug Exp $
  *
  *  Automatically register all devices from the devices/ subdir.
  *
- *  NOTE: autodev_head.c, plus a line for each device, plus autodev_tail.c
- *  should be combined into one. See Makefile.skel for more info.
+ *  NOTE: autodev_head.c, plus a line for each device, plus autodev_middle.c,
+ *  plus another line (again) for each device, plus autodev_tail.c should be
+ *  combined into one. See makeautodev.sh for more info.
  */
 
 #include "stdio.h"

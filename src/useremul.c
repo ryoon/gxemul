@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.42 2005-02-22 12:05:19 debug Exp $
+ *  $Id: useremul.c,v 1.43 2005-02-22 19:09:02 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -859,6 +859,10 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		 *
 		 *  TODO
 		 */
+		cpu->cd.ppc.gpr[3] = result_low;
+
+		if (result_high_set)
+			cpu->cd.ppc.gpr[4] = result_high;
 		break;
 	}
 }

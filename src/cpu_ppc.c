@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.54 2005-02-22 15:20:17 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.55 2005-02-22 19:09:02 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -436,6 +436,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
 	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;
+	int bfa;
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -607,6 +608,11 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_19:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_19_MCRF:
+			bf = (iword >> 23) & 7;
+			bfa = (iword >> 18) & 7;
+			debug("mcrf\tcr%i,cr%i", bf, bfa);
+			break;
 		case PPC_19_BCLR:
 		case PPC_19_BCCTR:
 			bo = (iword >> 21) & 31;
@@ -916,13 +922,22 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("mftb%s\tr%i", spr==268? "" :
 			    (spr==269? "u" : "?"), rt);
 			break;
+		case PPC_31_CNTLZW:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			mnem = power? "cntlz" : "cntlzw";
+			debug("%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
+			break;
 		case PPC_31_SLW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_NOR:
 		case PPC_31_OR:
+		case PPC_31_ORC:
 		case PPC_31_XOR:
+		case PPC_31_NAND:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -936,11 +951,13 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				case PPC_31_SRW:  mnem =
 					power? "sr" : "srw"; break;
 				case PPC_31_AND:  mnem = "and"; break;
+				case PPC_31_NAND: mnem = "nand"; break;
 				case PPC_31_ANDC: mnem = "andc"; break;
 				case PPC_31_NOR:  mnem = "nor"; break;
 				case PPC_31_OR:   mnem = "or"; break;
-				case PPC_31_XOR:  mnem = "or"; break;
-			}
+				case PPC_31_ORC:  mnem = "orc"; break;
+				case PPC_31_XOR:  mnem = "xor"; break;
+				}
 				debug("%s%s\tr%i,r%i,r%i", mnem,
 				    rc? "." : "", ra, rs, rb);
 			}
@@ -1196,7 +1213,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	char *mnem = NULL;
 	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
 	int c, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
-	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag, old_ca;
+	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag, old_ca, bfa;
 	uint64_t tmp=0, tmp2, addr;
 	uint64_t cached_pc;
 
@@ -1468,6 +1485,15 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_19:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+
+		case PPC_19_MCRF:
+			bf = (iword >> 23) & 7;
+			bfa = (iword >> 18) & 7;
+			tmp = cpu->cd.ppc.cr >> (28 - bfa*4);
+			tmp &= 0xf;
+			cpu->cd.ppc.cr &= ~(0xf << (28 - bf*4));
+			cpu->cd.ppc.cr |= (tmp << (28 - bf*4));
+			break;
 
 		case PPC_19_BCLR:
 		case PPC_19_BCCTR:
@@ -2107,13 +2133,30 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 
+		case PPC_31_CNTLZW:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			cpu->cd.ppc.gpr[ra] = 0;
+			for (i=0; i<32; i++) {
+				if (cpu->cd.ppc.gpr[rs] &
+				    ((uint64_t)1 << (31-i)))
+					break;
+				cpu->cd.ppc.gpr[ra] ++;
+			}
+			if (rc)
+				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
+			break;
+
 		case PPC_31_SLW:
 		case PPC_31_SRW:
 		case PPC_31_AND:
 		case PPC_31_ANDC:
 		case PPC_31_NOR:
 		case PPC_31_OR:
+		case PPC_31_ORC:
 		case PPC_31_XOR:
+		case PPC_31_NAND:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
@@ -2149,14 +2192,21 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] |
 				    cpu->cd.ppc.gpr[rb];
 				break;
+			case PPC_31_ORC:
+				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] |
+				    (~cpu->cd.ppc.gpr[rb]);
+				break;
 			case PPC_31_XOR:
 				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] ^
 				    cpu->cd.ppc.gpr[rb];
 				break;
+			case PPC_31_NAND:
+				cpu->cd.ppc.gpr[ra] = ~(cpu->cd.ppc.gpr[rs]
+				    & cpu->cd.ppc.gpr[rb]);
+				break;
 			}
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
-			break;
 			break;
 
 		case PPC_31_DCCCI:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.53 2004-02-29 00:08:46 debug Exp $
+ *  $Id: machine.c,v 1.54 2004-02-29 01:59:43 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -275,7 +275,8 @@ void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-	debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+
+	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt) {
 		/*  OR into the INTR:  */

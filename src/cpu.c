@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.37 2004-03-07 03:55:26 debug Exp $
+ *  $Id: cpu.c,v 1.38 2004-03-24 00:48:44 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1543,6 +1543,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	case HI6_SWC1:
 	case HI6_SWC2:
 	case HI6_SWC3:
+	case HI6_SDC1:
 	case HI6_LWL:	/*  Unaligned load/store  */
 	case HI6_LWR:
 	case HI6_LDL:
@@ -1618,6 +1619,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (hi6 == HI6_SWC1)	instr_mnem = "swc1";
 			if (hi6 == HI6_SWC2)	instr_mnem = "swc2";
 			if (hi6 == HI6_SWC3)	instr_mnem = "swc3";
+			if (hi6 == HI6_SDC1)	instr_mnem = "sdc1";
 			if (hi6 == HI6_SWL)	instr_mnem = "swl";
 			if (hi6 == HI6_SWR)	instr_mnem = "swr";
 			if (hi6 == HI6_SDL)	instr_mnem = "sdl";
@@ -1816,6 +1818,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		case HI6_SWC1:
 		case HI6_SWC2:
 		case HI6_SWC3:
+		case HI6_SDC1:
 			linked = 0;
 
 			switch (hi6) {
@@ -1847,6 +1850,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			case HI6_SWC1:	{ wlen = 4; st = 1; signd = 0; }  break;
 			case HI6_SWC2:	{ wlen = 4; st = 1; signd = 0; }  break;
 			case HI6_SWC3:	{ wlen = 4; st = 1; signd = 0; }  break;
+			case HI6_SDC1:	{ wlen = 8; st = 1; signd = 0; }  break;
 
 			case HI6_LL:	{ wlen = 4; st = 0; signd = 0; linked = 1; }  break;
 			case HI6_LLD:	{ wlen = 8; st = 0; signd = 0; linked = 1; }  break;
@@ -1920,6 +1924,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				switch (hi6) {
 				case HI6_SWC3:	cpnr++;		/*  fallthrough  */
 				case HI6_SWC2:	cpnr++;
+				case HI6_SDC1:
 				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 							break;
@@ -1992,7 +1997,9 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 				switch (hi6) {
 				case HI6_LWC3:	cpnr++;		/*  fallthrough  */
+				case HI6_LDC2:
 				case HI6_LWC2:	cpnr++;
+				case HI6_LDC1:
 				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 							break;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.40 2004-03-23 02:30:56 debug Exp $
+ *  $Id: misc.h,v 1.41 2004-03-24 00:48:42 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -554,7 +554,7 @@ struct cpu {
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
-	"sc", "swc1", "swc2", "swc3", "scd", "opcode_3d", "opcode_3e", "sd"		/*  0x38 - 0x3f  */	}
+	"sc", "swc1", "swc2", "swc3", "scd", "sdc1", "opcode_3e", "sd"			/*  0x38 - 0x3f  */	}
 
 #define	REGIMM_NAMES	{	\
 	"bltz", "bgez", "bltzl", "bgezl", "regimm_04", "regimm_05", "regimm_06", "regimm_07",			/*  0x00 - 0x07  */	\
@@ -745,7 +745,7 @@ struct cpu {
 #define	HI6_SWC2			0x3a	/*  111010  */	/*  MIPS I  */
 #define	HI6_SWC3			0x3b	/*  111011  */	/*  MIPS I  */
 #define	HI6_SCD				0x3c	/*  111100  */	/*  MIPS III  */
-/*					0x3d	    111101  */
+#define	HI6_SDC1			0x3d	/*  111101  */  /*  ???  */
 /*					0x3e	    111110  */
 #define	HI6_SD				0x3f	/*  111111  */	/*  MIPS III  */
 

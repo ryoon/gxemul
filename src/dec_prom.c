@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.7 2004-02-22 13:13:17 debug Exp $
+ *  $Id: dec_prom.c,v 1.8 2004-03-04 03:14:13 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -164,6 +164,7 @@ void decstation_prom_emul(struct cpu *cpu)
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
+		fatal("[ DEC PROM getenv(\"%s\"): WARNING: Not in environment! ]\n", buf);
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x6c:		/*  ulong slot_address(int sn)  */

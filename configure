@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.18 2004-06-22 23:29:49 debug Exp $
+#  $Id: configure,v 1.19 2004-06-22 23:50:18 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -148,12 +148,11 @@ COPTIM=$CFLAGS
 #
 #  Figure out if VERSION should be defined.
 #
-X=`pwd|rev|cut -d / -f 1|rev`
-Y=`echo $X|rev|cut -d \- -f 1|rev`
-if [ z"$Y" = zmips64emul ]; then
+X=`basename \`pwd\`|cut -d \- -f 2-`
+if [ z"$X" = zmips64emul ]; then
 	echo '#  No VERSION defined.' >> _Makefile.header
 else
-	COPTIM="-DVERSION=\\\"$Y\\\" $COPTIM"
+	COPTIM="-DVERSION=\\\"$X\\\" $COPTIM"
 fi
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.242 2005-01-18 08:26:14 debug Exp $
+ *  $Id: cpu.c,v 1.243 2005-01-18 12:26:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1246,7 +1246,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			}
 			break;
 		default:
-			debug(" vaddr=%08llx", (long long)vaddr);
+			debug(" vaddr=0x%016llx", (long long)vaddr);
 		}
 
 		debug(" pc->last=%08llx <%s> ]\n",

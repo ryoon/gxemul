@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.66 2004-04-11 15:53:00 debug Exp $
+$Id: HISTORY,v 1.67 2004-04-13 08:58:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -452,3 +452,4 @@ HISTORY of mips64emul
 		Mounting disks works in Ultrix. Installing to disk usually
 		crashes for various reasons, but an OSF/1 install gets
 		relatively far (similar to the NetBSD/pmax install).
+20040412	Trying to find the bug.

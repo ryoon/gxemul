@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.16 2003-12-22 18:20:29 debug Exp $
+ *  $Id: machine.c,v 1.17 2003-12-28 20:56:13 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -295,7 +295,7 @@ void machine_init(struct memory *mem)
 			dev_le_init(mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE);
 			dev_sii_init(cpus[0], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
 			dev_dc7085_init(cpus[0], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, 0, 1, emulated_ips);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -339,7 +339,7 @@ void machine_init(struct memory *mem)
 
 			/*  TURBOchannel slot 7 is system stuff.  */
 			dev_dc7085_init(cpus[0], mem, KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, 0, 1, emulated_ips);
 
 			/*  (kn02 shared irq numbers (IP) are offset by +8 in the emulator)  */
 			kn02_csr = dev_kn02_init(cpus[0], mem, KN02_SYS_CSR);
@@ -370,7 +370,7 @@ void machine_init(struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dev_scc_init(cpus[0], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, 0, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards. TODO: irqs  */
@@ -405,7 +405,7 @@ void machine_init(struct memory *mem)
 			 */
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);
 			dev_scc_init(cpus[0], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, 0, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
@@ -495,7 +495,7 @@ void machine_init(struct memory *mem)
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
 			dev_scc_init(cpus[0], mem, 0x1c100000, 0, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, 3, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, 0x1c200000, 3, 0, 1, emulated_ips);
 			dev_asc_init(cpus[0], mem, 0x1c300000, 0);	/*  (?)  SCSI  */
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
@@ -526,7 +526,7 @@ void machine_init(struct memory *mem)
 			 *  The KN230 cpu board has several devices sharing the same IRQ, so
 			 *  the kn230 CSR contains info about which devices have caused interrupts.
 			 */
-			dev_mc146818_init(cpus[0], mem, KN230_SYS_CLOCK, 4, 0, emulated_ips);
+			dev_mc146818_init(cpus[0], mem, KN230_SYS_CLOCK, 4, 0, 1, emulated_ips);
 			dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
@@ -646,7 +646,7 @@ void machine_init(struct memory *mem)
 		if (emulated_ips == 0)
 			emulated_ips = 1000000;		/*  TODO: how fast are Cobalt machines?  */
 
-		dev_mc146818_init(cpus[0], mem, 0x10000000, 4, 1, emulated_ips);	/*  ???  */
+		dev_mc146818_init(cpus[0], mem, 0x10000000, 4, 1, 1, emulated_ips);	/*  ???  */
 		dev_gt_init(mem, 0x14000000, 0);			/*  ???  */
 		dev_ns16550_init(mem, 0x1c800000, 5, 1);		/*  ???  */
 
@@ -708,6 +708,8 @@ void machine_init(struct memory *mem)
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
 
+		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
+
 		debug("adding playstation 1 memory: 4 MB\n");
 		ps1_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
 		if (ps1_mem == NULL) {
@@ -722,7 +724,13 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_SGI:
 	case EMULTYPE_ARC:
-		/*  SGI is just a special case of ARC, in a way.  */
+		/*
+		 *  SGI and ARC emulation share a lot of code. (SGI is a special case of
+		 *  "almost ARC".)
+		 *
+		 *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a pretty
+		 *  detailed list of IP ("Inhouse Processor") model numbers.
+		 */
 		machine_name = malloc(500);
 		if (machine_name == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -783,7 +791,7 @@ void machine_init(struct memory *mem)
 		 */
 
 		{
-			uint32_t system, cpu;
+			uint32_t system;
 			int i;
 
 			if (emulation_type == EMULTYPE_SGI) {
@@ -791,6 +799,11 @@ void machine_init(struct memory *mem)
 				    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
 
 				/*  TODO:  sync devices and component tree  */
+				/*  TODO 2: These are model dependant!!!  */
+				dev_crime_init(mem, 0x14000000);
+				dev_macepci_init(mem, 0x1f080000);
+				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
 				dev_ns16550_init(mem, 0x1f390000, 0, 0x100);	/*  com0  */
 				dev_ns16550_init(mem, 0x1f398000, 0, 0x100);	/*  com1  */
 			} else {
@@ -798,18 +811,25 @@ void machine_init(struct memory *mem)
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 
 				/*  TODO:  sync devices and component tree  */
-				dev_pckbc_init(mem, 0x2000005000, 0);
+				/*  TODO 2: These are model dependant!!!  */
+				dev_mc146818_init(cpus[0], mem, 0x2000004000, 0, 0, 1, emulated_ips);	/*  ???  */
+				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
 				dev_ns16550_init(mem, 0x2000006000, 0, 1);	/*  com0  */
+				dev_ns16550_init(mem, 0x2000007000, 0, 1);	/*  com1  */
 			}
 
 			/*  Common stuff for both SGI and ARC:  */
 			debug("system = 0x%x\n", system);
 
 			for (i=0; i<ncpus; i++) {
+				uint32_t cpu, fpu;
 				cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
 				    0, 1, 20, 0, 0x0, "R5000", system);
-				/*  TODO:  FPU and cache (per cpu)  */
-				debug("cpu%i = 0x%x\n", i, cpu);
+				fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+				    0, 1, 20, 0, 0x0, "R5000FPC", cpu);
+
+				/*  TODO:  cache (per cpu)  */
+				debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);
 			}
 		}
 
@@ -825,7 +845,17 @@ void machine_init(struct memory *mem)
 		store_32bit_word(0x80018004, 0x80018200);
 		store_32bit_word(0x80018010, 0);
 
-		bootstr = "kernel";
+		/*  Boot string in ARC format:  */
+		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
+		tmp_ptr = rindex(last_filename, '/');
+		if (tmp_ptr == NULL)
+			tmp_ptr = last_filename;
+		else
+			tmp_ptr ++;
+		bootstr = malloc(strlen(init_bootpath) + strlen(tmp_ptr) + 1);
+		strcpy(bootstr, init_bootpath);
+		strcat(bootstr, tmp_ptr);
+
 		bootarg = "-a";
 
 		store_string(0x80018100, bootstr);

@@ -255,3 +255,8 @@ HISTORY of mips64emul
 20031220	Adding some super-ugly arcbios emulation code.
 		Making some progress on the SGI and ARC machine
 		emulations.
+20031222	SGI and ARC progress. Multiple CPUs are now added to
+		the arcbios component tree (although NetBSD cannot
+		actually use more than one).
+20031228	Adding 'crime' and 'macepci' fake devices for SGI
+		emulation.

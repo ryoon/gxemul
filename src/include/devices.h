@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.6 2003-12-22 19:45:55 debug Exp $
+ *  $Id: devices.h,v 1.7 2003-12-28 20:56:16 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -62,6 +62,11 @@ void dev_cons_init(struct memory *mem);
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
 int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned char *color_plane_mask);
+
+/*  dev_crime.c:  */
+#define	DEV_CRIME_LENGTH		0x0000000000000100
+int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_crime_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080
@@ -160,6 +165,11 @@ void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint
 /*  see comreg.h and ns16550reg.h for more info  */
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+
+/*  dev_macepci.c:  */
+#define	DEV_MACEPCI_LENGTH		0x100
+int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_macepci_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.37 2005-02-16 08:41:59 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.38 2005-02-16 09:02:34 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1196,7 +1196,6 @@ printf("subfic: tmp = %016llx\n", (long long)tmp);
 printf("subfic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
 			if ((tmp >> 32) != (cpu->cd.ppc.gpr[rt] >> 32))
 				cpu->cd.ppc.xer |= PPC_XER_CA;
-cpu->cd.ppc.xer |= PPC_XER_CA;
 			/*  High 32 bits are probably undefined in
 			    32-bit mode (I hope)  */
 		} else {
@@ -1274,14 +1273,14 @@ cpu->cd.ppc.xer |= PPC_XER_CA;
 		ra = (iword >> 16) & 31;
 		rc = hi6 == PPC_HI6_ADDIC_DOT;
 		imm = (int16_t)(iword & 0xffff);
-		cpu->cd.ppc.xer &= ~PPC_XER_CA;
+		/*  NOTE: Addic doesn't clear CA!  */
 		if (cpu->cd.ppc.bits == 32) {
 			tmp = cpu->cd.ppc.gpr[ra] & 0xffffffff;
 			cpu->cd.ppc.gpr[rt] = tmp + (int64_t)imm;
 			/*  TODO: is this CA correct?  */
 printf("addic: tmp = %016llx\n", (long long)tmp);
 printf("addic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
-			if ((tmp >> 32) != 0)
+			if ((tmp >> 32) != (cpu->cd.ppc.gpr[rt] >> 32))
 				cpu->cd.ppc.xer |= PPC_XER_CA;
 			/*  High 32 bits are probably undefined in
 			    32-bit mode (I hope)  */

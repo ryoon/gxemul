@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.173 2004-09-05 02:46:03 debug Exp $
+ *  $Id: machine.c,v 1.174 2004-09-05 03:06:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -72,8 +72,6 @@ extern int ncpus;
 extern struct cpu **cpus;
 extern int emulated_hz;
 extern int use_x11;
-extern char *boot_kernel_filename;
-extern char *boot_string_argument;
 
 uint64_t file_loaded_end_addr = 0;
 
@@ -1356,16 +1354,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		/*  TODO: this should be the name of the booting kernel  */
 		bootarg = malloc(strlen(init_bootpath) +
-		    strlen(boot_kernel_filename) + 1);
+		    strlen(emul->boot_kernel_filename) + 1);
 		strcpy(bootarg, init_bootpath);
-		strcat(bootarg, boot_kernel_filename);
+		strcat(bootarg, emul->boot_kernel_filename);
 
 		bootstr = "boot";
 
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
-		    boot_string_argument);
+		    emul->boot_string_argument);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;
@@ -2563,11 +2561,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
 
 		bootstr = malloc(strlen(init_bootpath) +
-		    strlen(boot_kernel_filename) + 1);
+		    strlen(emul->boot_kernel_filename) + 1);
 		strcpy(bootstr, init_bootpath);
-		strcat(bootstr, boot_kernel_filename);
+		strcat(bootstr, emul->boot_kernel_filename);
 
-		bootarg = boot_string_argument;		/*  -a, for example  */
+		bootarg = emul->boot_string_argument;		/*  -a, for example  */
 
 		/*
 		 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html

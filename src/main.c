@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.80 2004-09-05 03:03:44 debug Exp $
+ *  $Id: main.c,v 1.81 2004-09-05 03:06:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -76,8 +76,6 @@ int64_t max_instructions = 0;
 int emulated_hz = 0;
 int max_random_cycles_per_chunk = 0;
 int speed_tricks = 1;
-char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
-char *boot_string_argument = "-a";		/*  overridden with -o  */
 
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
@@ -309,7 +307,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			speed_tricks = 0;
 			break;
 		case 'j':
-			boot_kernel_filename = optarg;
+			emul->boot_kernel_filename = malloc(strlen(optarg) + 1);
+			if (emul->boot_kernel_filename == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			strcpy(emul->boot_kernel_filename, optarg);
 			break;
 		case 'M':
 			emul->physical_ram_in_mb = atoi(optarg);
@@ -324,7 +327,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			ncpus = atoi(optarg);
 			break;
 		case 'o':
-			boot_string_argument = optarg;
+			emul->boot_string_argument = malloc(strlen(optarg) + 1);
+			if (emul->boot_string_argument == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			strcpy(emul->boot_string_argument, optarg);
 			break;
 		case 'P':
 		case 'p':

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.476 2005-01-16 04:06:17 debug Exp $
+$Id: HISTORY,v 1.477 2005-01-16 05:18:23 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1468,3 +1468,4 @@ HISTORY of mips64emul
 20050116	Minor updates to the documentation on using PROM images.
 		Adding ARCBIOS function 0x100 (used by IRIX when returning
 		from main, but undocumented).
+		MC146818 updates (mostly SGI-related).

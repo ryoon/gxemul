@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.54 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.55 2005-01-16 05:18:24 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -46,9 +46,10 @@
 #include "mc146818reg.h"
 
 
-#define	to_bcd(x)	( (x/10) * 16 + (x%10) )
+#define	to_bcd(x)	( ((x)/10) * 16 + ((x)%10) )
 
 /*  #define MC146818_DEBUG  */
+
 #define	TICK_STEPS_SHIFT	14
 
 
@@ -60,6 +61,8 @@ struct mc_data {
 	int	register_choice;
 	int	reg[N_REGISTERS];
 	int	addrdiv;
+
+	int	use_bcd;
 
 	int	timebase_hz;
 	int	interrupt_hz;
@@ -163,6 +166,75 @@ int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
+ *  mc146818_update_time():
+ *
+ *  This function updates the MC146818 registers by reading
+ *  the host's clock.
+ */
+static void mc146818_update_time(struct mc_data *mc_data)
+{
+	struct tm *tmp;
+	time_t timet;
+
+	timet = time(NULL);
+	tmp = gmtime(&timet);
+
+	mc_data->reg[0x00] = (tmp->tm_sec);
+	mc_data->reg[0x08] = (tmp->tm_min);
+	mc_data->reg[0x10] = (tmp->tm_hour);
+	mc_data->reg[0x18] = (tmp->tm_wday + 1);
+	mc_data->reg[0x1c] = (tmp->tm_mday);
+	mc_data->reg[0x20] = (tmp->tm_mon + 1);
+	mc_data->reg[0x24] = (tmp->tm_year);
+
+	switch (mc_data->access_style) {
+	case MC146818_ARC_NEC:
+		mc_data->reg[0x24] += (0x18 - 104);
+		break;
+	case MC146818_SGI:
+		/*
+		 *  NetBSD/sgimips assumes data in BCD format.
+		 *  Also, IRIX stores the year value in a weird
+		 *  format, according to ../arch/sgimips/sgimips/clockvar.h
+		 *  in NetBSD:
+		 *
+		 *  "If year < 1985, store (year - 1970), else
+		 *   (year - 1940). This matches IRIX semantics."
+		 *
+		 *  A real SGI IP32 box seems to use the value 5
+		 *  for the year 2005.
+		 */
+		mc_data->reg[0x24] =
+		    mc_data->reg[0x24] >= 100 ?
+			(mc_data->reg[0x24] - 100) :
+		      (
+			mc_data->reg[0x24] < 85 ?
+			  (mc_data->reg[0x24] - 30 + 40)
+			: (mc_data->reg[0x24] - 40)
+		      );
+		break;
+	case MC146818_DEC:
+		/*
+		 *  DECstations must have 72 or 73 in the
+		 *  Year field, or Ultrix screems.  (Weird.)
+		 */
+		mc_data->reg[0x24] = 72;
+		break;
+	}
+
+	if (mc_data->use_bcd) {
+		mc_data->reg[0x00] = to_bcd(mc_data->reg[0x00]);
+		mc_data->reg[0x08] = to_bcd(mc_data->reg[0x08]);
+		mc_data->reg[0x10] = to_bcd(mc_data->reg[0x10]);
+		mc_data->reg[0x18] = to_bcd(mc_data->reg[0x18]);
+		mc_data->reg[0x1c] = to_bcd(mc_data->reg[0x1c]);
+		mc_data->reg[0x20] = to_bcd(mc_data->reg[0x20]);
+		mc_data->reg[0x24] = to_bcd(mc_data->reg[0x24]);
+	}
+}
+
+
+/*
  *  dev_mc146818_access():
  */
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
@@ -173,18 +245,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	time_t timet;
 	struct mc_data *mc_data = extra;
 	int relative_addr = r;
-
-#ifdef MC146818_DEBUG
-	if (writeflag == MEM_WRITE) {
-		int i;
-		fatal("[ mc146818: write to addr=0x%04x: ", relative_addr);
-		for (i=0; i<len; i++)
-			fatal("%02x ", data[i]);
-		fatal("]\n");
-	} else
-		fatal("[ mc146818: read from addr=0x%04x (len %i) ]\n",
-		    relative_addr, len);
-#endif
 
 	relative_addr /= mc_data->addrdiv;
 
@@ -239,6 +299,17 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		;
 	}
 
+#ifdef MC146818_DEBUG
+	if (writeflag == MEM_WRITE) {
+		int i;
+		fatal("[ mc146818: write to addr=0x%04x (len %i): ",
+		    (int)relative_addr, (int)len);
+		for (i=0; i<len; i++)
+			fatal("%02x ", data[i]);
+		fatal("]\n");
+	}
+#endif
+
 	/*
 	 *  For some reason, Linux/sgimips relies on the UIP bit to go
 	 *  on and off. Without this code, booting Linux takes forever:
@@ -269,8 +340,12 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 	}
 
-	/*  RTC date/time is in binary, not BCD:  */
-	mc_data->reg[MC_REGB*4] |= (1 << 2);
+	/*  RTC data is in either BCD format or binary:  */
+	if (mc_data->use_bcd) {
+		mc_data->reg[MC_REGB*4] &= ~(1 << 2);
+	} else {
+		mc_data->reg[MC_REGB*4] |= (1 << 2);
+	}
 
 	/*  RTC date/time is always Valid:  */
 	mc_data->reg[MC_REGD*4] |= MC_REGD_VRT;
@@ -355,7 +430,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 			debug("[ rtc set to interrupt every %i:th cycle ]\n",
 			    mc_data->interrupt_every_x_cycles);
-			return 1;
+			break;
 		case MC_REGB*4:
 			if (((data[0] ^ mc_data->reg[MC_REGB*4]) & MC_REGB_PIE))
 				mc_data->cycles_left_until_interrupt =
@@ -366,17 +441,16 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				/*  mc_data->cycles_left_until_interrupt = mc_data->interrupt_every_x_cycles;  */
 			}
 			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
-			return 1;
+			break;
 		case MC_REGC*4:
 			mc_data->reg[MC_REGC*4] = data[0];
 			debug("[ mc146818: write to MC_REGC, data[0] = 0x%02x ]\n", data[0]);
-			return 1;
+			break;
 		default:
 			mc_data->reg[relative_addr] = data[0];
 			/*  fatal("[ mc146818: unimplemented write to "
 			    "relative_addr = %08lx ]\n",
 			    (long)relative_addr);  */
-			return 1;
 		}
 	} else {
 		/*  READ:  */
@@ -404,42 +478,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			if (mc_data->reg[MC_REGB*4] & MC_REGB_SET)
 				break;
 
-			timet = time(NULL);
-			tmp = gmtime(&timet);
-			/*  use to_bcd() for BCD conversion  */
-			mc_data->reg[0x00] = (tmp->tm_sec);
-			mc_data->reg[0x08] = (tmp->tm_min);
-			mc_data->reg[0x10] = (tmp->tm_hour);
-			mc_data->reg[0x18] = (tmp->tm_wday + 1);
-			mc_data->reg[0x1c] = (tmp->tm_mday);
-			mc_data->reg[0x20] = (tmp->tm_mon + 1);
-			mc_data->reg[0x24] = (tmp->tm_year);
-
-			switch (mc_data->access_style) {
-			case MC146818_ARC_NEC:
-				mc_data->reg[0x24] += (0x18 - 104);
-				break;
-			case MC146818_SGI:
-				mc_data->reg[0x24] += (100 - 104);
-				/*
-				 *  TODO:  The thing above only works for
-				 *  NetBSD/sgimips, not for the IP32 PROM. For
-				 *  example, it interprets a host date of 'Sun
-				 *  Jan 11 19:10:39 CET 2004' as 'January 11
-				 *  64, 12:10:13 GMT'.   TODO: Fix this.
-				 *
-				 *  Perhaps it is a ds17287, not a mc146818.
-				 */
-				break;
-			case MC146818_DEC:
-				/*
-				 *  DECstations must have 72 or 73 in the
-				 *  Year field, or Ultrix screems.  (Weird.)
-				 */
-				mc_data->reg[0x24] = 72;
-			default:
-				;
-			}
+			mc146818_update_time(mc_data);
 			break;
 		default:
 			/*  debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);  */
@@ -454,9 +493,20 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			    mc_data->interrupt_every_x_cycles;  */
 			mc_data->reg[MC_REGC * 4] = 0x00;
 		}
-
-		return 1;
 	}
+
+#ifdef MC146818_DEBUG
+	if (writeflag == MEM_READ) {
+		int i;
+		fatal("[ mc146818: read from addr=0x%04x (len %i): ",
+		    (int)relative_addr, (int)len);
+		for (i=0; i<len; i++)
+			fatal("%02x ", data[i]);
+		fatal("]\n");
+	}
+#endif
+
+	return 1;
 }
 
 
@@ -517,6 +567,11 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	mc_data->reg[0x79] = 0x55;
 	mc_data->reg[0x7d] = 0xaa;
 
+	/*  Only SGI uses BCD format (?)  */
+	mc_data->use_bcd = 0;
+	if (access_style == MC146818_SGI)
+		mc_data->use_bcd = 1;
+
 	if (access_style == MC146818_DEC) {
 		/*  Battery valid, for DECstations  */
 		mc_data->reg[0xf8] = 1;
@@ -533,6 +588,9 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		memory_device_register(mem, "mc146818", baseaddr,
 		    DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access,
 		    (void *)mc_data, MEM_DEFAULT, NULL);
+
+	mc146818_update_time(mc_data);
+
 	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
 }
 

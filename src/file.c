@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.69 2005-02-02 18:45:25 debug Exp $
+ *  $Id: file.c,v 1.70 2005-02-02 19:10:03 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -536,7 +536,6 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			    sizeof(struct ms_sym) * f_nsyms, f);
 			sym = (struct ms_sym *) ms_sym_buf;
 			for (sym_nr=0; sym_nr<f_nsyms; sym_nr++) {
-				int i;
 				char name[300];
 				uint32_t v, t, altname;
 				/*  debug("sym %5i: '", sym_nr);
@@ -896,7 +895,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	Elf64_Ehdr hdr64;
 	FILE *f;
 	uint64_t eentry;
-	int len, i, ok, memory_rw_flags = NO_EXCEPTIONS;
+	int len, i, ok;
 	int elf64, encoding, eflags;
 	int etype, emachine;
 	int ephnum, ephentsize, eshnum, eshentsize;
@@ -1018,8 +1017,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		case EM_PPC:
 		case EM_PPC64:
 			ok = 1;
-			memory_rw_flags |= PHYSICAL;
 		}
+		break;
 	}
 	if (!ok) {
 		fprintf(stderr, "%s: this is a ", filename);
@@ -1158,7 +1157,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					size_t len_to_copy;
 					len_to_copy = (i + align_len) <= len? align_len : len - i;
 					memory_rw(m->cpus[0], mem, p_vaddr + ofs, &ch[i],
-					    len_to_copy, MEM_WRITE, memory_rw_flags);
+					    len_to_copy, MEM_WRITE, NO_EXCEPTIONS);
 					ofs += align_len;
 					i += align_len;
 				}
@@ -1368,7 +1367,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		debug("PPC64: ");
 
 		res = memory_rw(m->cpus[0], mem, eentry, b, sizeof(b),
-		    MEM_READ, memory_rw_flags);
+		    MEM_READ, NO_EXCEPTIONS);
 		if (!res)
 			debug(" [WARNING: could not read memory?] ");
 
@@ -1380,7 +1379,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    (uint64_t)b[7];
 
 		res = memory_rw(m->cpus[0], mem, eentry + 8, b, sizeof(b),
-		    MEM_READ, memory_rw_flags);
+		    MEM_READ, NO_EXCEPTIONS);
 		if (!res)
 			debug(" [WARNING: could not read memory?] ");
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.11 2005-02-02 18:45:25 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.12 2005-02-02 19:10:03 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -376,7 +376,7 @@ void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc;
-	uint64_t addr, offset;
+	uint64_t offset;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
 	int power = cpu->cd.ppc.mode == MODE_POWER;
@@ -554,14 +554,16 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	unsigned char buf[4];
 	int r, hi6, rt, rs, ra, imm;
 	uint64_t tmp;
-	uint64_t cached_pc = cpu->cd.ppc.pc & ~3;
+	uint64_t cached_pc;
+
+	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
 
 	r = memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION | PHYSICAL);
 	if (!r)
 		return 0;
 
-	iword = (buf[0] << 24) ^ (buf[1] << 16) + (buf[2] << 8) | buf[3];
+	iword = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
 
 	if (cpu->machine->instruction_trace) {
 		/*  TODO: Yuck.  */
@@ -606,7 +608,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	default:
 		fatal("[ unimplemented PPC hi6 = 0x%02x, pc = 0x%016llx ]\n",
-		    hi6, (long long) (cached_pc - sizeof(iword)));
+		    hi6, (long long) (cpu->cd.ppc.pc_last));
 		cpu->running = 0;
 		return 0;
 	}

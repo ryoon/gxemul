@@ -25,6 +25,9 @@ Most important stuff (but these are all _huge_ tasks):
 			*  tested using a kind of regression test (ie test code
 			   written in mips assembly language)
 		o)  Floating point instructions. (ISA I and II?)
+		o)  MIPS16:
+			x)  should the lowest bit of the PC be used instead of cpu->mips16 ?
+			x)  implement all instructions
 		o)  MIPS V (SIMD vector stuff?)
 		o)  MDMX?  (MIPS Digital Media Extension)
 		o)  Warn about mis-used bit fields (ie bits that should be
@@ -32,7 +35,6 @@ Most important stuff (but these are all _huge_ tasks):
 			Both for coprocessor registers and for instruction opcodes.
 		o)  warn and/or cause exceptions for unimplemented instructions,
 			at specific ISA levels.
-		o)  MIPS 16 (???)
 		o)  Something radical:  instead of a large switch/case thing,
 			I could implement some kind of tree-structure of masks
 			and comparisions, and arrays of functions to call. Hm.

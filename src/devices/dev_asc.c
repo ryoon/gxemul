@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.21 2004-04-11 15:47:18 debug Exp $
+ *  $Id: dev_asc.c,v 1.22 2004-04-12 08:19:28 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -47,6 +47,9 @@
 #include "diskimage.h"
 
 #include "ncr53c9xreg.h"
+
+
+/*  #define	ASC_DEBUG	*/
 
 #define	ASC_FIFO_LEN		16
 #define	STATE_DISCONNECTED	0
@@ -275,9 +278,11 @@ fatal("TODO..............\n");
 				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
 
+#ifdef ASC_DEBUG
 				if (!quiet_mode)
 					for (i=0; i<len; i++)
 						debug(" %02x", d->xferp->data_in[i]);
+#endif
 
 				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len);
 
@@ -309,10 +314,11 @@ fatal("TODO.......asdgasin\n");
 
 			memcpy(d->xferp->data_out, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len);
 
+#ifdef ASC_DEBUG
 			if (!quiet_mode)
 				for (i=0; i<len; i++)
 					debug(" %02x", d->xferp->data_out[i]);
-
+#endif
 			len = 0;
 
 			d->reg_wo[NCR_TCL] = len & 255;
@@ -347,7 +353,9 @@ fatal("TODO.......asdgasin\n");
 			while (d->fifo_in != d->fifo_out) {
 				ch = dev_asc_fifo_read(d);
 				d->xferp->msg_out[i++] = ch;
+#ifdef ASC_DEBUG
 				debug("%02x ", ch);
+#endif
 			}
 		} else {
 			/*  Copy data from DMA to msg_out:  */
@@ -579,22 +587,28 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	} else if (relative_addr >= 0x80000 && relative_addr+len-1 <= 0x9ffff) {
 		if (writeflag==MEM_READ) {
 			memcpy(data, d->dma + (relative_addr - 0x80000), len);
+#ifdef ASC_DEBUG
 			debug("[ asc: read from DMA addr 0x%05x:",
 			    relative_addr - 0x80000);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
-
-/* instruction_trace = 1; */
+			debug(" ]\n");
+#endif
 
 			/*  Don't return the common way, as that would overwrite data.  */
-			debug(" ]\n");
 			return 1;
 		} else {
 			memcpy(d->dma + (relative_addr - 0x80000), data, len);
+#ifdef ASC_DEBUG
 			debug("[ asc: write to  DMA addr 0x%05x:",
 			    relative_addr - 0x80000);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
+			debug(" ]\n");
+#endif
+
+			/*  Quick return.  */
+			return 1;
 		}
 	} else {
 		if (writeflag==MEM_READ) {

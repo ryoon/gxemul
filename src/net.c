@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.52 2005-01-22 20:34:30 debug Exp $
+ *  $Id: net.c,v 1.53 2005-01-22 20:40:45 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -41,7 +41,6 @@
  *		o)  remove the netbsd-specific options in the tcp header (?)
  *		o)  Outgoing UDP packet fragment support.
  *		o)  IPv6
- *		o)  DHCP? (Just return the 10.x.x.x default values.)
  *		o)  Incoming connections
  *
  *
@@ -1027,6 +1026,7 @@ static void net_ip(struct net *net, void *extra,
  *  Handle an IPv4 DHCP broadcast packet, coming from the emulated NIC.
  *
  *  Read http://www.ietf.org/rfc/rfc2131.txt for details on DHCP.
+ *  (And http://users.telenet.be/mydotcom/library/network/dhcp.htm.)
  */
 static void net_ip_broadcast_dhcp(struct net *net, void *extra,
 	unsigned char *packet, int len)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.225 2005-04-04 21:29:29 debug Exp $
+ *  $Id: main.c,v 1.226 2005-04-06 21:15:24 debug Exp $
  */
 
 #include <stdio.h>
@@ -623,6 +623,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		fprintf(stderr, "You cannot both select old bintrans and"
 		    " disable bintrans at the same time.\n");
 		exit(1);
+	}
+
+	if (m->bintrans_enable && !m->old_bintrans_enable) {
+		fprintf(stderr, "There is no new bintrans system yet."
+		    " Using the old one for now.\n");
+		m->old_bintrans_enable = 1;
 	}
 
 	if (m->machine_type == MACHINE_NONE && msopts) {

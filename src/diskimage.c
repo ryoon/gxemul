@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.40 2004-07-22 22:35:20 debug Exp $
+ *  $Id: diskimage.c,v 1.41 2004-08-01 01:14:03 debug Exp $
  *
  *  Disk image support.
  *
@@ -510,18 +510,23 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  TODO: update this when implementing 10-byte commands:  */
 		xferp->data_in[4] = 0x00;		/*  density code  */
-		xferp->data_in[5] = 0x00;		/*  nr of blocks, high  */
-		xferp->data_in[6] = 0x00;		/*  nr of blocks, mid  */
-		xferp->data_in[7] = 0x00;		/*  nr of blocks, low */
+		xferp->data_in[5] = 0;			/*  nr of blocks, high  */
+		xferp->data_in[6] = 0;			/*  nr of blocks, mid  */
+		xferp->data_in[7] = 0;			/*  nr of blocks, low */
 		xferp->data_in[8] = 0x00;		/*  reserved  */
 		xferp->data_in[9] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
 		xferp->data_in[10] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
 		xferp->data_in[11] = diskimages[disk_id]->logical_block_size & 255;
 
+		diskimage__return_default_status_and_message(xferp);
+
 		/*  descriptors, 8 bytes (each)  */
 
 		/*  page, n bytes (each)  */
 		switch (pagecode) {
+		case 0:
+			/*  TODO: Nothing here?  */
+			break;
 		case 1:		/*  read-write error recovery page  */
 			xferp->data_in[12 + 0] = pagecode;
 			xferp->data_in[12 + 1] = 10;
@@ -574,8 +579,6 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			fatal("[ MODE_SENSE for page %i is not yet implemented! ]\n", pagecode);
 		}
 
-
-		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_READ:
@@ -907,19 +910,49 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		break;
 
 	case SCSICDROM_READ_SUBCHANNEL:
-	case SCSICDROM_READ_TOC:
-		retlen = 0;
+		/*
+		 *  According to
+		 *  http://mail-index.netbsd.org/port-i386/1997/03/03/0010.html:
+		 *
+		 *  "The READ_CD_CAPACITY, READ_SUBCHANNEL, and MODE_SELECT
+		 *   commands have the same opcode in SCSI or ATAPI, but don't
+		 *   have the same command structure"...
+		 *
+		 *  TODO: This still doesn't work. Hm.
+		 */
+		retlen = 48;
 
-		switch (xferp->cmd[0]) {
-		case SCSICDROM_READ_SUBCHANNEL:
-			retlen = 48;
-			debug("CDROM_READ_SUBCHANNEL: TODO");
-			break;
-		case SCSICDROM_READ_TOC:
-			retlen = 12;
-			debug("CDROM_READ_TOC: TODO");
-			break;
-		}
+		debug("CDROM_READ_SUBCHANNEL/READ_CD_CAPACITY, cmd[1]=0x%02x",
+		    xferp->cmd[1]);
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen);
+
+		diskimage_recalc_size(disk_id);
+
+		size = diskimages[disk_id]->total_size /
+		    diskimages[disk_id]->logical_block_size;
+		if (diskimages[disk_id]->total_size &
+		    (diskimages[disk_id]->logical_block_size-1))
+			size ++;
+
+		xferp->data_in[0] = (size >> 24) & 255;
+		xferp->data_in[1] = (size >> 16) & 255;
+		xferp->data_in[2] = (size >> 8) & 255;
+		xferp->data_in[3] = size & 255;
+
+		xferp->data_in[4] = (diskimages[disk_id]->logical_block_size >> 24) & 255;
+		xferp->data_in[5] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
+		xferp->data_in[6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
+		xferp->data_in[7] = diskimages[disk_id]->logical_block_size & 255;
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case SCSICDROM_READ_TOC:
+		retlen = 12;
+		debug("CDROM_READ_TOC: TODO");
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,
@@ -931,6 +964,53 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		break;
 
 	case SCSICMD_MODE_SELECT:
+		debug("[ SCSI MODE_SELECT: ");
+
+		/*
+		 *  TODO:
+		 *
+		 *  This is super-hardcoded for NetBSD's usage of mode_select
+		 *  to set the size of CDROM sectors to 2048.
+		 */
+
+		if (xferp->data_out_offset == 0) {
+			xferp->data_out_len = 12;	/*  TODO  */
+			debug("data_out == NULL, wanting %i bytes ]\n",
+			    (int)xferp->data_out_len);
+			return 2;
+		}
+
+		debug("data_out!=NULL (OK), ");
+
+		/*  TODO:  Care about cmd?  */
+
+		/*  Set sector size to 2048:  */
+		/*  00 05 00 08 00 03 ca 40 00 00 08 00  */
+		if (xferp->data_out[0] == 0x00 &&
+		    xferp->data_out[1] == 0x05 &&
+		    xferp->data_out[2] == 0x00 &&
+		    xferp->data_out[3] == 0x08) {
+			diskimages[disk_id]->logical_block_size =
+			    (xferp->data_out[9] << 16) +
+			    (xferp->data_out[10] << 8) +
+			    xferp->data_out[11];
+			debug("[ setting logical_block_size to %i ]\n",
+			    diskimages[disk_id]->logical_block_size);
+		} else {
+			int i;
+			fatal("[ unknown MODE_SELECT: cmd =");
+			for (i=0; i<xferp->cmd_len; i++)
+				fatal(" %02x", xferp->cmd[i]);
+			fatal(", data_out =");
+			for (i=0; i<xferp->data_out_len; i++)
+				fatal(" %02x", xferp->data_out[i]);
+			fatal(" ]");
+		}
+
+		debug(" ]\n");
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
 	case 0x1e:
 		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 

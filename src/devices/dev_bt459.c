@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.14 2004-06-27 01:57:50 debug Exp $
+ *  $Id: dev_bt459.c,v 1.15 2004-06-27 14:33:44 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -40,6 +40,9 @@
 #include "bt459.h"
 
 
+/*  #define BT459_DEBUG  */
+#define BT459_TICK_SHIFT	9
+
 struct bt459_data {
 	uint32_t	bt459_reg[DEV_BT459_NREGS];
 
@@ -49,6 +52,8 @@ struct bt459_data {
 	int		planes;
 	int		irq_nr;
 	int		interrupts_enable;
+	int		interrupt_time;
+	int		interrupt_time_reset_value;
 	int		type;
 
 	int		cursor_on;
@@ -71,9 +76,21 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 {
 	struct bt459_data *d = extra;
 
+	/*
+	 *  Vertical retrace interrupts. (This hack is kind of ugly.)
+	 *  Once ever 'interrupt_time_reset_value', the interrupt is
+	 *  asserted. It is acked either manually (by someone reading
+	 *  a normal BT459 register or the Interrupt ack register),
+	 *  or after another tick has passed.  (This is to prevent
+	 *  lockups from unhandled interrupts.)
+	 */
 	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0) {
-		cpu_interrupt(cpu, d->irq_nr);
-		d->interrupts_enable = 0;
+		d->interrupt_time --;
+		if (d->interrupt_time < 0) {
+			d->interrupt_time = d->interrupt_time_reset_value;
+			cpu_interrupt(cpu, d->irq_nr);
+		} else
+			cpu_interrupt_ack(cpu, d->irq_nr);
 	}
 }
 
@@ -113,7 +130,13 @@ int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 
 	idata = memory_readmax64(cpu, data, len);
 
+#ifdef BT459_DEBUG
+	falal("[ bt459: IRQ ack ]\n");
+#endif
+
 	d->interrupts_enable = 1;
+	if (d->irq_nr > 0)
+		cpu_interrupt_ack(cpu, d->irq_nr);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -132,11 +155,21 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int btaddr, new_cursor_x, new_cursor_y;
-	int on;
+	int old_cursor_on = d->cursor_on;
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  Every interrupt enabling must be done manually.  */
+#ifdef BT459_DEBUG
+	if (writeflag == MEM_WRITE)
+		fatal("[ bt459: write to addr 0x%02x: %08x ]\n",
+		    (int)relative_addr, (int)idata);
+#endif
+
+	/*
+	 *  Vertical retrace interrupts are acked either by
+	 *  accessing a normal BT459 register, or the irq register,
+	 *  or by simply "missing" it.
+	 */
 	if (d->irq_nr > 0)
 		cpu_interrupt_ack(cpu, d->irq_nr);
 
@@ -180,8 +213,20 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			debug("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
 			d->bt459_reg[btaddr] = idata;
 
-if (btaddr < 0x100)
-	fatal("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+			switch (btaddr) {
+			case BT459_REG_CCR:
+				/*  Cursor control register:  */
+				switch (idata & 0xff) {
+				case 0x00:	d->cursor_on = 0; break;
+				case 0xc0:	d->cursor_on = 1; break;
+				default:
+					fatal("[ bt459: unimplemented CCR value 0x%08x ]\n", idata);
+				}
+				break;
+			default:
+				if (btaddr < 0x100)
+					fatal("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+			}
 
 			/*  Write to cursor bitmap:  */
 			if (btaddr >= 0x400)
@@ -252,17 +297,11 @@ if (btaddr < 0x100)
 		new_cursor_y += 14;
 	}
 
-	/*  TODO: what do the bits in the CCR do?  */
-	on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
-
-on = 1;
-
-	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y || on != d->cursor_on) {
+	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y || d->cursor_on != old_cursor_on) {
 		int ysize_mul = 1;
 
 		d->cursor_x = new_cursor_x;
 		d->cursor_y = new_cursor_y;
-		d->cursor_on = on;
 
 		/*
 		 *  Ugly hack for Ultrix:
@@ -280,11 +319,17 @@ on = 1;
 		}
 
 		debug("[ bt459: cursor = %03i,%03i ]\n", d->cursor_x, d->cursor_y);
-		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, d->cursor_xsize, d->cursor_ysize * ysize_mul);
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, d->cursor_on, d->cursor_xsize, d->cursor_ysize * ysize_mul);
 	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
+
+#ifdef BT459_DEBUG
+	if (writeflag == MEM_READ)
+		fatal("[ bt459: read from addr 0x%02x: %08x ]\n",
+		    (int)relative_addr, (int)idata);
+#endif
 
 	return 1;
 }
@@ -311,11 +356,13 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
+	d->interrupt_time_reset_value = 10000;
+
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH,
 	    dev_bt459_access, (void *)d);
-	memory_device_register(mem, "bt459_irq", baseaddr_irq, 4,
+	memory_device_register(mem, "bt459_irq", baseaddr_irq, 0x10000,
 	    dev_bt459_irq_access, (void *)d);
 
-	cpu_add_tickfunction(cpu, dev_bt459_tick, d, 22);
+	cpu_add_tickfunction(cpu, dev_bt459_tick, d, BT459_TICK_SHIFT);
 }
 

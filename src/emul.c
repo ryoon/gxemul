@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.132 2005-01-26 08:22:58 debug Exp $
+ *  $Id: emul.c,v 1.133 2005-01-26 09:26:47 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -656,16 +656,32 @@ struct emul *emul_create_from_configfile(char *fname)
 {
 	int iadd = 4;
 	struct emul *e = emul_new();
+	FILE *f;
+	char buf[4096];
+	size_t len;
 
 	debug("Creating emulation from configfile \"%s\":\n", fname);
 	debug_indentation(iadd);
 
-	/*  Create a network:  */
-	/*  ..  */
-	/*  Create the machine:  */
-	/*  ..  */
-	/*  emul_machine_setup(emul, 0);  */
+	f = fopen(fname, "r");
+	if (f == NULL) {
+		perror(fname);
+		exit(1);
+	}
 
+	/*  Read header: (must be !!mips64emul)  */
+	len = fread(buf, 1, 12, f);
+	if (len != 12 || strncmp(buf, "!!mips64emul", 12) != 0) {
+		fprintf(stderr, "%s: must start with '!!mips64emul'\n", fname);
+		exit(1);
+	}
+
+	/*  Restart from beginning:  */
+	rewind(f);
+
+	emul_parse_config(e, f);
+
+	fclose(f);
 	debug_indentation(-iadd);
 	return e;
 }

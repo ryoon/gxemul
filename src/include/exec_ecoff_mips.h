@@ -1,9 +1,6 @@
-/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.4 2004-07-11 01:01:01 debug Exp $  */
-/*
- *  Magic addition, ECOFF_MAGIC_MIPSEB2:
- *    "MIPSEB MIPS-II COFF executable (impure) not stripped", 0x0163
- *
- *  I also commented out ECOFF_BADMAG, to avoid warnings on Solaris.
+/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.5 2004-09-14 15:04:45 debug Exp $
+ *  Addition of some ECOFF magin numbers, and ECOFF_BADMAG has been commented
+ *  out to avoid warnings on Solaris.
  */
 
 #ifndef EXEC_ECOFF_MIPS_H
@@ -65,7 +62,9 @@
 
 #define ECOFF_MAGIC_MIPSEB	0x0160	/* mips1, big-endian */
 #define ECOFF_MAGIC_MIPSEL	0x0162	/* mips1, little-endian */
-#define ECOFF_MAGIC_MIPSEB2	0x6301	/* mips2, big-endian  (mips64emul addition) */
+#define ECOFF_MAGIC_MIPSEB2	0x0163	/* mips2, big-endian  (mips64emul addition) */
+#define ECOFF_MAGIC_MIPSEL2	0x0166	/* mips2, little-endian  (mips64emul addition) */
+#define ECOFF_MAGIC_MIPSEB3	0x0140	/* mips3, big-endian  (mips64emul addition) */
 #define ECOFF_MAGIC_MIPSEL3	0x0142	/* mips3, little-endian */
 
 #if 0

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.223 2004-09-06 05:22:20 debug Exp $
+$Id: HISTORY,v 1.224 2004-09-14 15:04:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -933,3 +933,11 @@ HISTORY of mips64emul
 		when running configure.
 		Modifying src/symbol.c to not use global variables.
 20040906	Minor update.
+20040914	Using $COPTIM when detecting which compiler flags to use in
+		the configure script. (This makes sure that combinations of
+		flags should work.)
+		There'll probably be a 0.2.1 release some time soon, but I'll
+		do some more clean-up first.
+		Minor update to the detection of ECOFF files, but I don't like
+		it; sometimes the endianness of the magic value seems to be
+		swapped, but it doesn't have to do with endianness?

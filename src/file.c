@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.33 2004-09-05 04:56:02 debug Exp $
+ *  $Id: file.c,v 1.34 2004-09-14 15:04:46 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -31,7 +31,7 @@
  *	ELF		32-bit and 64-bit MSB and LSB MIPS
  *	a.out		some format used by OpenBSD 2.x pmax kernels
  *	ecoff		old Ultrix format
- *	srec		motorola SREC format
+ *	srec		Motorola SREC format
  *	raw		raw binaries ("address:filename")
  *
  *  If a file is not of one of the above mentioned formats, it is assumed
@@ -41,7 +41,6 @@
  *  TODO:  wrapper for gzip compressed files?
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -263,7 +262,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 	struct ecoff_scnhdr scnhdr;
 	FILE *f;
 	int len, secn, total_len, chunk_size;
-	int encoding = ELFDATA2LSB;
+	int encoding = ELFDATA2LSB;	/*  Assume little-endian. See below  */
 	unsigned char buf[4096];
 
 	f = fopen(filename, "r");
@@ -278,23 +277,37 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 		exit(1);
 	}
 
+	/*
+	 *  The following code looks a bit ugly, but it should work. The ECOFF
+	 *  16-bit magic value seems to be stored in MSB byte order for
+	 *  big-endian binaries, and LSB byte order for little-endian binaries.
+	 *
+	 *  The unencode() assumes little-endianness by default.
+	 */
 	unencode(f_magic, &exechdr.f.f_magic, uint16_t);
 	switch (f_magic) {
-	case ECOFF_MAGIC_MIPSEB:
 	case ((ECOFF_MAGIC_MIPSEB & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB >> 8) & 0xff):
-		format_name = "MIPS1 MSB";
+		format_name = "MIPS1 BE";
 		encoding = ELFDATA2MSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL:
-		format_name = "MIPS1 LSB";
+		format_name = "MIPS1 LE";
 		encoding = ELFDATA2LSB;
 		break;
-	case ECOFF_MAGIC_MIPSEB2:
-		format_name = "MIPS2 MSB";
+	case ((ECOFF_MAGIC_MIPSEB2 & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB2 >> 8) & 0xff):
+		format_name = "MIPS2 BE";
+		encoding = ELFDATA2MSB;
+		break;
+	case ECOFF_MAGIC_MIPSEL2:
+		format_name = "MIPS2 LE";
+		encoding = ELFDATA2LSB;
+		break;
+	case ((ECOFF_MAGIC_MIPSEB3 & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB3 >> 8) & 0xff):
+		format_name = "MIPS3 BE";
 		encoding = ELFDATA2MSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL3:
-		format_name = "MIPS3 LSB";
+		format_name = "MIPS3 LE";
 		encoding = ELFDATA2LSB;
 		break;
 	default:
@@ -306,7 +319,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 	unencode(f_nscns,  &exechdr.f.f_nscns,  uint16_t);
 	unencode(f_symptr, &exechdr.f.f_symptr, uint32_t);
 	unencode(f_nsyms,  &exechdr.f.f_nsyms,  uint32_t);
-	debug("'%s': ecoff, %s, %i sections, %i symbols @ 0x%lx\n",
+	debug("'%s': ECOFF, %s, %i sections, %i symbols @ 0x%lx\n",
 	    filename, format_name, f_nscns, f_nsyms, (long)f_symptr);
 
 	unencode(a_magic, &exechdr.a.magic, uint16_t);
@@ -524,9 +537,11 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 /*
  *  file_load_srec():
  *
- *  Loads an SREC file into emulated memory. Description of the SREC
- *  file format found at:
- *  http://www.ndsu.nodak.edu/instruct/tareski/373f98/notes/srecord.htm
+ *  Loads a Motorola SREC file into emulated memory. Description of the SREC
+ *  file format can be found at here:
+ *
+ *      http://www.ndsu.nodak.edu/instruct/tareski/373f98/notes/srecord.htm
+ *  or  http://www.amelek.gda.pl/avr/uisp/srecord.htm
  */
 static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 {
@@ -1184,8 +1199,10 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	int len, i;
 	off_t size;
 
-	assert(mem != NULL);
-	assert(filename != NULL);
+	if (mem == NULL || filename == NULL) {
+		fprintf(stderr, "file_load(): mem or filename is NULL\n");
+		exit(1);
+	}
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
@@ -1229,17 +1246,29 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 		return;
 	}
 
-	/*  Is it an ecoff?  */
-	if ((minibuf[0]==0x42 && minibuf[1]==0x01) ||
-	    (minibuf[0]==0x01 && minibuf[1]==0x60) ||
-	    (minibuf[0]==0x01 && minibuf[1]==0x63) ||
-	    (minibuf[0]==0x60 && minibuf[1]==0x01) ||
-	    (minibuf[0]==0x62 && minibuf[1]==0x01)) {
+	/*
+	 *  Is it an ecoff?
+	 *
+	 *  TODO: What's the deal with the magic value's byte order? Sometimes
+	 *  it seems to be reversed for BE when compared to LE, but not always?
+	 */
+	if (minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB ||
+	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL ||
+	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB2 ||
+	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL2 ||
+	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEB3 ||
+	    minibuf[0]+256*minibuf[1] == ECOFF_MAGIC_MIPSEL3 ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB2 ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL2 ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB3 ||
+	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL3) {
 		file_load_ecoff(cpu->emul, mem, filename, cpu);
 		return;
 	}
 
-	/*  Is it an SREC file?  */
+	/*  Is it a Motorola SREC file?  */
 	if ((minibuf[0]=='S' && minibuf[1]>='0' && minibuf[1]<='9')) {
 		file_load_srec(mem, filename, cpu);
 		return;

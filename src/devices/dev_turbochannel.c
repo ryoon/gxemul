@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.19 2004-07-05 01:09:15 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.20 2004-07-09 07:51:03 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -95,8 +95,23 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 			}
 		}
 
-		/*  If this slot is empty, return error:  */
-		if (d->card_module_name[0] ==  ' ')
+		/*
+		 *  If this slot is empty, return an error so that a DBE
+		 *  exception is caused. (This is the way DECstation operating
+		 *  systems have to detect the absence of cards in a
+		 *  TURBOchannel slot.)
+		 *
+		 *  NOTE:  The Sprite kernel reads from offsets 0x3e0..0x400
+		 *  without handling the DBE exception, and both Ultrix and
+		 *  NetBSD seem to detect the DBE exception using addresses
+		 *  around offset 0x0 or 0x3c0000.  This code seems to work
+		 *  with all of the those OS kernels:
+		 */
+		if (d->card_module_name[0] ==  ' ' &&
+			(relative_addr < 0x3e0 ||
+				relative_addr >= 0x1000) &&
+			(relative_addr < 0x3803e0 ||
+				relative_addr >= 0x381000))
 			return 0;
 
 		debug(") ]\n");

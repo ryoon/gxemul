@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.56 2004-07-08 22:49:17 debug Exp $
+ *  $Id: coproc.c,v 1.57 2004-07-09 07:51:06 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -74,6 +74,11 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 	if (coproc_nr == 0) {
 		c->nr_of_tlbs = cpu->cpu_type.nr_of_tlb_entries;
 
+		/*
+		 *  Start with nothing in the status register. This makes sure
+		 *  that we are running in kernel mode with all interrupts
+		 *  disabled.
+		 */
 		c->reg[COP0_STATUS] = 0;
 
 		c->reg[COP0_COMPARE] = (uint64_t)-1;

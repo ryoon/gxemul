@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.16 2004-07-08 06:52:39 debug Exp $
+ *  $Id: dev_le.c,v 1.17 2004-07-09 07:51:03 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -600,7 +600,7 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 
 	/*  Read from station's ROM (ethernet address):  */
-	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1c0017) {
+	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1fffff) {
 		i = (relative_addr & 0xff) / 4;
 		i = d->rom[i & (ROM_SIZE-1)];
 
@@ -740,8 +740,8 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->rom[26] = d->rom[30] = 0x55;
 	d->rom[27] = d->rom[31] = 0xaa;
 
-	memory_device_register(mem, "le", baseaddr, len, dev_le_access,
-	    (void *)d);
+	memory_device_register(mem, "le", baseaddr, DEV_LE_LENGTH,
+	    dev_le_access, (void *)d);
 
 	cpu_add_tickfunction(cpu, dev_le_tick, d, 11);
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.10 2005-02-08 17:18:32 debug Exp $
+ *  $Id: cpu_mips.h,v 1.11 2005-02-09 14:28:29 debug Exp $
  */
 
 #include "misc.h"
@@ -413,6 +413,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 /*  memory_mips.c:  */
 int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data);
+int mips_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+	unsigned char *data, size_t len, int writeflag, int cache_flags);
 
 
 /*  mips16.c:  */

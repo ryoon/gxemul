@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.282 2005-02-06 16:11:49 debug Exp $
+ *  $Id: cpu.c,v 1.283 2005-02-09 14:28:28 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -250,6 +250,12 @@ void cpu_list_available_types(void)
 	int iadd = 4;
 
 	fp = first_cpu_family;
+
+	if (fp == NULL) {
+		debug("No CPUs defined!\n");
+		return;
+	}
+
 	while (fp != NULL) {
 		debug("%s:\n", fp->name);
 		debug_indentation(iadd);

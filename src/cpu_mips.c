@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.21 2005-02-08 17:18:33 debug Exp $
+ *  $Id: cpu_mips.c,v 1.22 2005-02-09 14:28:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2140,7 +2140,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		unsigned char instr16[2];
 		int mips16_offset = 0;
 
-		if (!memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+		if (!mips_memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0],
+		    sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 			return 0;
 
 		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
@@ -2171,7 +2172,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			/*  instruction with extend:  */
 			mips16_offset += 2;
-			if (!memory_rw(cpu, cpu->mem, (cached_pc ^ 1) + mips16_offset, &instr16[0], sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
+			if (!mips_memory_rw(cpu, cpu->mem, (cached_pc ^ 1) +
+			    mips16_offset, &instr16[0], sizeof(instr16),
+			    MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -2225,7 +2228,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
 #endif
                 } else {
-			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
+			if (!mips_memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 		}
@@ -3395,7 +3398,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						}
 				}
 
-				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
+				success = mips_memory_rw(cpu, cpu->mem, addr,
+				    d, wlen, MEM_WRITE, CACHE_DATA);
 				if (!success) {
 					/*  The store failed, and might have caused an exception.  */
 					if (instruction_trace_cached)
@@ -3407,7 +3411,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				int cpnr = 1;
 				int success;
 
-				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
+				success = mips_memory_rw(cpu, cpu->mem, addr,
+				    d, wlen, MEM_READ, CACHE_DATA);
 				if (!success) {
 					/*  The load failed, and might have caused an exception.  */
 					if (instruction_trace_cached)
@@ -3596,14 +3601,15 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				unsigned char aligned_word[8];
 				uint64_t oldpc = cpu->cd.mips.pc;
 				/*
-				 *  NOTE (this is ugly): The memory_rw()
-				 *  generates a TLBL exception, if there
+				 *  NOTE (this is ugly): The mips_memory_rw()
+				 *  call generates a TLBL exception, if there
 				 *  is a tlb refill exception. However, since
 				 *  this is a Store, the exception is converted
 				 *  to a TLBS:
 				 */
-				int ok = memory_rw(cpu, cpu->mem, aligned_addr,
-				    &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
+				int ok = mips_memory_rw(cpu, cpu->mem,
+				    aligned_addr, &aligned_word[0], wlen,
+				    MEM_READ, CACHE_DATA);
 				if (!ok) {
 					if (cpu->cd.mips.pc != oldpc) {
 						cp0->reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
@@ -3627,14 +3633,18 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					reg_ofs += reg_dir;
 				}
 
-				ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_WRITE, CACHE_DATA);
+				ok = mips_memory_rw(cpu, cpu->mem,
+				    aligned_addr, &aligned_word[0], wlen,
+				    MEM_WRITE, CACHE_DATA);
 				if (!ok)
 					return 1;
 			} else {
 				/*  Load:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8], databyte;
-				int ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
+				int ok = mips_memory_rw(cpu, cpu->mem,
+				    aligned_addr, &aligned_word[0], wlen,
+				    MEM_READ, CACHE_DATA);
 				if (!ok)
 					return 1;
 
@@ -4113,6 +4123,7 @@ int mips_cpu_family_init(struct cpu_family *fp)
 	fp->tlbdump = mips_cpu_tlbdump;
 	fp->interrupt = mips_cpu_interrupt;
 	fp->interrupt_ack = mips_cpu_interrupt_ack;
+	fp->memory_rw = mips_memory_rw;
 	return 1;
 }
 

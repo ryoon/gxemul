@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.569 2005-02-09 10:00:09 debug Exp $
+$Id: HISTORY,v 1.570 2005-02-09 14:28:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1644,3 +1644,5 @@ HISTORY of mips64emul
 		sizeof => (int)sizeof in the configure script (suggested by
 		Nils Weller).
 20050209	Adding a check for -lm to the configure script.
+		Continuing on the cleanup: trying to make memory_rw non-MIPS
+		dependant.

@@ -63,6 +63,8 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
 		o)  5K, r10000: I've printed the manuals, so these should
 			be possible to cover
+		o)  actually use the R10K framemask for tlb lookups
+			http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html
 		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
 
 	Emulation of specific machines and devices:

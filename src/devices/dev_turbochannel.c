@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.23 2004-07-09 09:30:31 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.24 2004-07-10 06:36:30 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -181,6 +181,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	 *  PMAG-CA:  px0 at tc0 slot 2 offset 0x0: 2D, 4x1 stamp, 8 plane     (PMAG-DA,EA,FA,FB are also pixelstamps)
 	 *  PMAG-DV:  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8
 	 *  PMAG-JA:  "truecolor" in Ultrix
+	 *  PMAGB-BA: sfb0 at tc0 slot 0 offset 0x0: 0x0x8
 	 *  PMAGB-VA: sfb0 at tc0 slot 2 offset 0x0: 0x0x8
 	 *  PMAZ-AA:  asc0 at tc0 slot 2 offset 0x0: NCR53C94, 25MHz, SCSI ID 7
 	 */
@@ -203,7 +204,16 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, device_name);
+		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC,
+		    1024,864, 1024,1024,8, device_name);
+		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
+		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
+		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
+	} else if (strcmp(device_name, "PMAGB-BA")==0) {
+		/*  sfb in NetBSD  */
+		/*  TODO: This is not working yet.  */
+		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC,
+		    1280,1024, 1280,1024,8, device_name);
 		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
 		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */

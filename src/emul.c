@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.67 2004-09-05 04:03:04 debug Exp $
+ *  $Id: emul.c,v 1.68 2004-09-05 04:22:42 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,8 +59,6 @@ char **extra_argv;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
-extern struct cpu **cpus;
-extern int x11_scaledown;
 extern int quiet_mode;
 extern int n_dumppoints;
 extern char *dumppoint_string[];
@@ -182,16 +180,16 @@ static void debugger_dump(struct emul *emul, uint64_t addr, int lines)
 	struct memory *m;
 	int x, r;
 
-	if (cpus == NULL) {
+	if (emul->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = cpus[emul->bootstrap_cpu];
+	c = emul->cpus[emul->bootstrap_cpu];
 	if (c == NULL) {
-		printf("cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = cpus[emul->bootstrap_cpu]->mem;
+	m = emul->cpus[emul->bootstrap_cpu]->mem;
 
 	while (lines -- > 0) {
 		unsigned char buf[16];
@@ -230,16 +228,16 @@ static void debugger_unasm(struct emul *emul, uint64_t addr, int lines)
 	struct memory *m;
 	int r;
 
-	if (cpus == NULL) {
+	if (emul->cpus == NULL) {
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = cpus[emul->bootstrap_cpu];
+	c = emul->cpus[emul->bootstrap_cpu];
 	if (c == NULL) {
-		printf("cpus[emul->bootstrap_cpu] = NULL\n");
+		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = cpus[emul->bootstrap_cpu]->mem;
+	m = emul->cpus[emul->bootstrap_cpu]->mem;
 
 	while (lines -- > 0) {
 		unsigned char buf[4];
@@ -271,40 +269,40 @@ static void debugger_tlbdump(struct emul *emul)
 
 	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i: (", i);
-		if (cpus[i]->cpu_type.isa_level < 3 ||
-		    cpus[i]->cpu_type.isa_level == 32)
+		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
+		    emul->cpus[i]->cpu_type.isa_level == 32)
 			printf("index=0x%08x random=0x%08x wired=0x%08x",
-			    (int)cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (int)cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (int)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
 		else
 			printf("index=0x%016llx random=0x%016llx wired=0x%016llx",
-			    (long long)cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)cpus[i]->coproc[0]->reg[COP0_RANDOM],
-			    (long long)cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (long long)emul->cpus[i]->coproc[0]->reg[COP0_WIRED]);
 		printf(")\n");
 
-		for (j=0; j<cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
-			if (cpus[i]->cpu_type.mmu_model == MMU3K)
+		for (j=0; j<emul->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
+			if (emul->cpus[i]->cpu_type.mmu_model == MMU3K)
 				printf("%3i: hi=0x%08x lo=0x%08x\n",
 				    j,
-				    (int)cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)cpus[i]->coproc[0]->tlbs[j].lo0);
-			else if (cpus[i]->cpu_type.isa_level < 3 ||
-			    cpus[i]->cpu_type.isa_level == 32)
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0);
+			else if (emul->cpus[i]->cpu_type.isa_level < 3 ||
+			    emul->cpus[i]->cpu_type.isa_level == 32)
 				printf("%3i: hi=0x%08x mask=0x%08x lo0=0x%08x lo1=0x%08x\n",
 				    j,
-				    (int)cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)cpus[i]->coproc[0]->tlbs[j].mask,
-				    (int)cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (int)cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (int)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 			else
 				printf("%3i: hi=0x%016llx mask=0x%016llx lo0=0x%016llx lo1=0x%016llx\n",
 				    j,
-				    (long long)cpus[i]->coproc[0]->tlbs[j].hi,
-				    (long long)cpus[i]->coproc[0]->tlbs[j].mask,
-				    (long long)cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (long long)cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].hi,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].mask,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
 	}
 }
@@ -424,12 +422,12 @@ void debugger(void)
 		} else if (strcasecmp(cmd, "quit") == 0 ||
 		    strcasecmp(cmd, "q") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
-				cpus[i]->running = 0;
+				debugger_emul->cpus[i]->running = 0;
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "r") == 0 ||
 		    strcasecmp(cmd, "registers") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
-				cpu_register_dump(cpus[i]);
+				cpu_register_dump(debugger_emul->cpus[i]);
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
 			return;
@@ -644,19 +642,19 @@ void emul_start(struct emul *emul)
 	debug("\n");
 
 	/*  Create CPUs:  */
-	cpus = malloc(sizeof(struct cpu *) * emul->ncpus);
-	if (cpus == NULL) {
+	emul->cpus = malloc(sizeof(struct cpu *) * emul->ncpus);
+	if (emul->cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(cpus, 0, sizeof(struct cpu *) * emul->ncpus);
+	memset(emul->cpus, 0, sizeof(struct cpu *) * emul->ncpus);
 
 	debug("adding cpu0");
 	if (emul->ncpus > 1)
 		debug(" .. cpu%i", emul->ncpus-1);
 	debug(": %s\n", emul->emul_cpu_name);
 	for (i=0; i<emul->ncpus; i++)
-		cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
+		emul->cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
 
 	if (emul->use_random_bootstrap_cpu)
 		emul->bootstrap_cpu = random() % emul->ncpus;
@@ -686,8 +684,8 @@ void emul_start(struct emul *emul)
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0x80000000 + i;
-			memory_rw(cpus[emul->bootstrap_cpu], mem, addr, data,
-			    sizeof(data), MEM_WRITE,
+			memory_rw(emul->cpus[emul->bootstrap_cpu], mem,
+			    addr, data, sizeof(data), MEM_WRITE,
 			    CACHE_NONE | NO_EXCEPTIONS);
 		}
 	}
@@ -697,10 +695,10 @@ void emul_start(struct emul *emul)
 		debug("loading files into emulation memory:\n");
 
 	if (emul->booting_from_diskimage)
-		load_bootblock(emul, cpus[emul->bootstrap_cpu]);
+		load_bootblock(emul, emul->cpus[emul->bootstrap_cpu]);
 
 	while (extra_argc > 0) {
-		file_load(mem, extra_argv[0], cpus[emul->bootstrap_cpu]);
+		file_load(mem, extra_argv[0], emul->cpus[emul->bootstrap_cpu]);
 
 		/*
 		 *  For userland emulation, the remainding items
@@ -721,27 +719,27 @@ void emul_start(struct emul *emul)
 		exit(1);
 	}
 
-	if ((cpus[emul->bootstrap_cpu]->pc >> 32) == 0 &&
-	    (cpus[emul->bootstrap_cpu]->pc & 0x80000000ULL))
-		cpus[emul->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
+	if ((emul->cpus[emul->bootstrap_cpu]->pc >> 32) == 0 &&
+	    (emul->cpus[emul->bootstrap_cpu]->pc & 0x80000000ULL))
+		emul->cpus[emul->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
 
-	if ((cpus[emul->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
-	    (cpus[emul->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
-		cpus[emul->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
+	if ((emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
+	    (emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
+		emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<emul->ncpus; i++)
 		if (i != emul->bootstrap_cpu)
-			cpus[i]->byte_order =
-			    cpus[emul->bootstrap_cpu]->byte_order;
+			emul->cpus[i]->byte_order =
+			    emul->cpus[emul->bootstrap_cpu]->byte_order;
 
 	if (emul->userland_emul)
-		useremul_init(cpus[emul->bootstrap_cpu],
+		useremul_init(emul->cpus[emul->bootstrap_cpu],
 		    extra_argc, extra_argv);
 
 	/*  Startup the bootstrap CPU:  */
-	cpus[emul->bootstrap_cpu]->bootstrap_cpu_flag = 1;
-	cpus[emul->bootstrap_cpu]->running            = 1;
+	emul->cpus[emul->bootstrap_cpu]->bootstrap_cpu_flag = 1;
+	emul->cpus[emul->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
 	add_pc_dump_points();
@@ -754,8 +752,8 @@ void emul_start(struct emul *emul)
 		    emul->max_random_cycles_per_chunk);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
-	    emul->bootstrap_cpu, cpus[emul->bootstrap_cpu]->pc,
-	    cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+	    emul->bootstrap_cpu, emul->cpus[emul->bootstrap_cpu]->pc,
+	    emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
 
 	/*
 	 *  console_init() makes sure that the terminal is in a good state.
@@ -776,7 +774,7 @@ void emul_start(struct emul *emul)
 		quiet_mode = 1;
 
 
-	cpu_run(emul, cpus, emul->ncpus);
+	cpu_run(emul, emul->cpus, emul->ncpus);
 
 
 	if (emul->use_x11) {

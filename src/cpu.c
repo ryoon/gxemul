@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.146 2004-09-05 04:03:03 debug Exp $
+ *  $Id: cpu.c,v 1.147 2004-09-05 04:22:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -51,8 +51,7 @@ extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
-extern int tlb_dump;
-extern struct cpu **cpus;
+
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
@@ -2559,19 +2558,19 @@ static int cpu_run_instr(struct cpu *cpu)
 				 *  was _NOT_ a linked store?
 				 */
 				for (i=0; i<cpu->emul->ncpus; i++) {
-					if (cpus[i]->rmw) {
+					if (cpu->emul->cpus[i]->rmw) {
 						uint64_t yaddr = addr;
 						uint64_t xaddr =
-						    cpus[i]->rmw_addr;
+						    cpu->emul->cpus[i]->rmw_addr;
 						uint64_t mask;
-						mask = ~(cpus[i]->
+						mask = ~(cpu->emul->cpus[i]->
 						    cache_linesize[CACHE_DATA]
 						    - 1);
 						xaddr &= mask;
 						yaddr &= mask;
 						if (xaddr == yaddr) {
-							cpus[i]->rmw = 0;
-							cpus[i]->rmw_addr = 0;
+							cpu->emul->cpus[i]->rmw = 0;
+							cpu->emul->cpus[i]->rmw_addr = 0;
 						}
 					}
 				}
@@ -3059,8 +3058,7 @@ void cpu_show_cycles(struct emul *emul,
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = ncycles *
-	    cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+	ninstrs = ncycles * emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 	if (emul->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
@@ -3068,7 +3066,7 @@ void cpu_show_cycles(struct emul *emul,
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+		    / emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 		if (cur_cycles_per_second < 1500000)
 			cur_cycles_per_second = 1500000;
@@ -3109,7 +3107,7 @@ void cpu_show_cycles(struct emul *emul,
 
 	printf("total nr of cycles = %lli", (long long) ncycles);
 
-	if (cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
+	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instructions)", (long long) ninstrs);
 
 	printf(", instr/sec: %lli cur, %lli avg",
@@ -3117,10 +3115,10 @@ void cpu_show_cycles(struct emul *emul,
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	symbol = get_symbol_name(cpus[emul->bootstrap_cpu]->pc, &offset);
+	symbol = get_symbol_name(emul->cpus[emul->bootstrap_cpu]->pc, &offset);
 
 	printf(", pc=%016llx <%s> ]\n",
-	    (long long)cpus[emul->bootstrap_cpu]->pc, symbol? symbol : "no symbol");
+	    (long long)emul->cpus[emul->bootstrap_cpu]->pc, symbol? symbol : "no symbol");
 
 do_return:
 	ninstrs_last = ninstrs;

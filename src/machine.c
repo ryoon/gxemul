@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.177 2004-09-05 04:03:04 debug Exp $
+ *  $Id: machine.c,v 1.178 2004-09-05 04:22:42 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -66,8 +66,6 @@
 #include "dec_kmin.h"
 #include "dec_maxine.h"
 
-
-extern struct cpu **cpus;
 
 uint64_t file_loaded_end_addr = 0;
 
@@ -817,7 +815,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	struct vfb_data *fb;
 
 	/*  Abreviation:  :-)  */
-	struct cpu *cpu = cpus[emul->bootstrap_cpu];
+	struct cpu *cpu = emul->cpus[emul->bootstrap_cpu];
 
 
 	emul->machine_name = NULL;
@@ -834,7 +832,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		emul->machine_name = "\"Bare\" test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
-		dev_mp_init(mem, cpus);
+		dev_mp_init(mem, emul->cpus);
 		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic");
 

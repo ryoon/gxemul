@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.30 2004-09-05 04:03:03 debug Exp $
+ *  $Id: arcbios.c,v 1.31 2004-09-05 04:22:42 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -48,7 +48,6 @@
 
 
 extern int quiet_mode;
-extern struct cpu **cpus;
 
 
 struct emul_arc_child {
@@ -470,7 +469,7 @@ void arcbios_emul(struct cpu *cpu)
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
 		for (i=0; i<cpu->emul->ncpus; i++)
-			cpus[i]->running = 0;
+			cpu->emul->cpus[i]->running = 0;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
 		{

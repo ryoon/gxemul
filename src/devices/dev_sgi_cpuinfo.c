@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_cpuinfo.c,v 1.1 2004-01-05 06:30:51 debug Exp $
+ *  $Id: dev_sgi_cpuinfo.c,v 1.2 2004-01-05 06:40:11 debug Exp $
  *  
  *  SGI cpuinfo CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -52,7 +52,8 @@ int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relativ
 {
 	struct sgi_cpuinfo_data *d = (struct sgi_cpuinfo_data *) extra;
 	int regnr;
-	int idata = 0, odata=0, odata_set=0, i;
+	uint64_t idata = 0, odata=0, odata_set=0;
+	int i;
 
 	/*  Switch byte order for incoming data, if neccessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -71,17 +72,14 @@ int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relativ
 
 	/*  Read from/write to the sgi_cpuinfo:  */
 	switch (relative_addr) {
-
-	case 0x1600000:
-		odata = 0x1234;		/*  Just testing... :-)  */
-					/*  I have no idea about what these CPU id values are  */
+	case 0x12000020d0:
+		odata = DEV_SGI_CPUINFO_BASE + 0x123400;		/*  I'm just making this up  (TODO)  */
 		break;
-
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_cpuinfo: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_cpuinfo: unimplemented write to address 0x%llx, data=0x%02x ]\n", (long long)relative_addr, idata);
 		else
-			debug("[ sgi_cpuinfo: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_cpuinfo: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (odata_set) {

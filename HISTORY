@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.125 2004-07-02 14:17:13 debug Exp $
+$Id: HISTORY,v 1.126 2004-07-03 15:37:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -657,3 +657,8 @@ HISTORY of mips64emul
 20040702(later)	Cleanup to remove compiler warnings (Compaq's cc, Solaris' cc,
 		and gcc 3.3.3/3.3.4 in Linux), mostly by putting ULL on large
 		numeric constants.
+		Better support for scaledown of BT459 cursors, but still not
+		color-averaging.
+20040703	Modifications to the configure script so that a config.h file
+		is created, containing things that were passed along as
+		-Dxxx on each cc command line before.

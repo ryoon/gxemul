@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.49 2004-04-17 20:55:11 debug Exp $
+ *  $Id: cpu.c,v 1.50 2004-05-02 14:41:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -338,33 +338,35 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 	symbol = get_symbol_name(cpu->pc_last, &offset);
 
-	debug("[ exception %s%s",
-	    exception_names[exccode], tlb? " <tlb>" : "");
+	if (!quiet_mode) {
+		debug("[ exception %s%s",
+		    exception_names[exccode], tlb? " <tlb>" : "");
 
-	switch (exccode) {
-	case EXCEPTION_INT:
-		debug(" cause_im=0x%02x", (int)((cpu->coproc[0]->reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
-		break;
-	case EXCEPTION_SYS:
-		debug(" v0=%i", (int)cpu->gpr[GPR_V0]);
-		for (x=0; x<4; x++) {
-			int64_t d = cpu->gpr[GPR_A0 + x];
-			char strbuf[30];
+		switch (exccode) {
+		case EXCEPTION_INT:
+			debug(" cause_im=0x%02x", (int)((cpu->coproc[0]->reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
+			break;
+		case EXCEPTION_SYS:
+			debug(" v0=%i", (int)cpu->gpr[GPR_V0]);
+			for (x=0; x<4; x++) {
+				int64_t d = cpu->gpr[GPR_A0 + x];
+				char strbuf[30];
 
-			if (d > -256 && d < 256)
-				debug(" a%i=%i", x, (int)d);
-			else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-				debug(" a%i=\"%s\"", x, memory_conv_to_string(cpu, cpu->mem, d, strbuf, sizeof(strbuf)));
-			else
-				debug(" a%i=0x%llx", x, (long long)d);
+				if (d > -256 && d < 256)
+					debug(" a%i=%i", x, (int)d);
+				else if (memory_points_to_string(cpu, cpu->mem, d, 1))
+					debug(" a%i=\"%s\"", x, memory_conv_to_string(cpu, cpu->mem, d, strbuf, sizeof(strbuf)));
+				else
+					debug(" a%i=0x%llx", x, (long long)d);
+			}
+			break;
+		default:
+			debug(" vaddr=%08llx", (long long)vaddr);
 		}
-		break;
-	default:
-		debug(" vaddr=%08llx", (long long)vaddr);
-	}
 
-	debug(" pc->last=%08llx <%s> ]\n",
-	    (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
+		debug(" pc->last=%08llx <%s> ]\n",
+		    (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
+	}
 
 	if (tlb && vaddr == 0) {
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
@@ -2124,8 +2126,27 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 			result_value = cpu->gpr[rt];
 
-			/*  TODO:  if a store fails because of an exception, the memory
-				may be partly written to. This is probably not good...  */
+			/*  Try to load and store, to make sure that all bytes in this store
+			    will be allowed to go through:  */
+			if (st) {
+				for (i=0; i<wlen; i++) {
+					unsigned char databyte;
+					int ok;
+
+					tmpaddr = addr + i*dir;
+					/*  Have we moved into another word/dword? Then stop:  */
+					if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
+						break;
+
+					/*  Load and store one byte:  */
+					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
+					if (!ok)
+						return 0;
+					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
+					if (!ok)
+						return 0;
+				}
+			}
 
 			for (i=0; i<wlen; i++) {
 				unsigned char databyte;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.57 2004-06-12 18:45:11 debug Exp $
+ *  $Id: misc.h,v 1.58 2004-06-17 22:52:27 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -195,7 +195,7 @@ struct cpu_type_def {
 #define	MAX_PC_DUMPPOINTS	16
 #define	MAX_DEVICES		22
 
-#define	BINTRANS_CACHEENTRIES	64
+#define	BINTRANS_CACHEENTRIES	16
 
 /*  lowest 5 bits are register number, bit 6 and up can be used as flags:  */
 #define	MEMREGISTERHINT_WRITE	32

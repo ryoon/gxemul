@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.57 2004-07-05 13:54:49 debug Exp $
+ *  $Id: memory.c,v 1.58 2004-07-06 01:21:55 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1130,7 +1130,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 	/*
 	 *  Physical addresses of the form 0xa8........ and 0x90..........
-	 *  don't actually have all 64 bit significant, only the lower part.
+	 *  don't actually have all 64 bits significant, only the lower part.
 	 *
 	 *  (TODO:  Is this SGI specific?)  (TODO 2:  Is 48 bits ok?)
 	 *

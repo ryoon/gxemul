@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.84 2004-07-05 13:33:00 debug Exp $
+ *  $Id: misc.h,v 1.85 2004-07-06 01:21:38 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -211,7 +211,7 @@ struct cpu_type_def {
 #define	DEBUG_BUFSIZE		1024
 
 #define	DEFAULT_RAM_IN_MB	32
-#define	MAX_PC_DUMPPOINTS	5
+#define	MAX_PC_DUMPPOINTS	4
 #define	MAX_DEVICES		22
 
 
@@ -489,7 +489,7 @@ struct coproc {
 
 /*  Number of "tiny" translation cache entries:  */
 #define	N_TRANSLATION_CACHE_INSTR	4
-#define	N_TRANSLATION_CACHE_DATA	4
+#define	N_TRANSLATION_CACHE_DATA	5
 
 struct translation_cache_entry {
 	int		wf;
@@ -517,10 +517,10 @@ struct r4000_cache_line {
 
 
 struct cpu {
-	int		cpu_id;
 	int		byte_order;
-	int		bootstrap_cpu_flag;
 	int		running;
+	int		bootstrap_cpu_flag;
+	int		cpu_id;
 
 	struct cpu_type_def cpu_type;
 
@@ -528,8 +528,16 @@ struct cpu {
 
 	void		(*md_interrupt)(struct cpu *, int irq_nr, int);
 
-	struct memory	*mem;
+	/*  Special purpose registers:  */
+	uint64_t	pc;
+	uint64_t	pc_last;		/*  PC of last instruction   */
+	uint64_t	hi;
+	uint64_t	lo;
 
+	/*  General purpose registers:  */
+	uint64_t	gpr[NGPRS];
+
+	struct memory	*mem;
 
 	/*
 	 *  The translation_cached stuff is used to speed up the
@@ -542,13 +550,6 @@ struct cpu {
 	struct translation_cache_entry
 			translation_cache_data[N_TRANSLATION_CACHE_DATA];
 #endif
-
-	/*  Special purpose registers:  */
-	uint64_t	pc;
-	uint64_t	pc_last;		/*  PC of last instruction   */
-	uint64_t	hi;
-	uint64_t	lo;
-
 
 	/*
 	 *  For faster memory lookup when running instructions:
@@ -573,9 +574,6 @@ struct cpu {
 	unsigned char	*pc_last_host_4k_page;
 	int		pc_last_was_in_host_ram;
 
-	/*  General purpose registers:  */
-	uint64_t	gpr[NGPRS];
-
 #ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
 	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
@@ -585,8 +583,6 @@ struct cpu {
 	int		instruction_delay;
 #endif
 
-	int		last_was_rfe;		/*  R2000/R3000, after rfe  */
-
 	int		trace_tree_depth;
 
 	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
@@ -594,8 +590,10 @@ struct cpu {
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 
-	uint64_t	show_trace_addr;
+	int		last_was_rfe;		/*  R2000/R3000, after rfe  */
+
 	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
+	uint64_t	show_trace_addr;
 
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
@@ -606,8 +604,8 @@ struct cpu {
 #endif
 
 	int		rmw;		/*  Read-Modify-Write  */
-	uint64_t	rmw_addr;	/*  Address of rmw modification  */
 	int		rmw_len;	/*  Length of rmw modification  */
+	uint64_t	rmw_addr;	/*  Address of rmw modification  */
 
 	/*
 	 *  TODO:  The R5900 has 128-bit registers. I'm not really sure

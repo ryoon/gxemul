@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.8 2004-07-07 20:32:06 debug Exp $
+ *  $Id: net.c,v 1.9 2004-07-08 06:53:13 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -50,6 +50,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <fcntl.h>
 
 #include "misc.h"
 #include "net.h"
@@ -72,6 +77,12 @@ static struct ethernet_packet_link *last_ethernet_packet = NULL;
 
 unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
+
+/*  TODO  */
+static int net_socket = -1;
+static int last_source_udp_id;
+static int last_source_udp_port;
+static uint32_t last_source_udp_ip;	/*  actually MAC should be here too  */
 
 
 /*
@@ -188,10 +199,8 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
 		/*  Change from echo REQUEST to echo REPLY:  */
 		lp->data[34] = 0x00;
 
-/*  TODO: NetBSD doesn't seem to recognize this packet yet  */
-
 		/*  Decrease the TTL to a low value:  */
-		lp->data[22] = 3;
+		lp->data[22] = 2;
 
 		/*  Recalculate ICMP checksum:  */
 		net_ip_checksum(lp->data + 34, 2, len - 34);
@@ -203,6 +212,80 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
 	default:
 		fatal("[ net: ICMP type %i not yet implemented ]\n", type);
 	}
+}
+
+
+/*
+ *  net_ip_udp():
+ *
+ *  Handle a UDP packet.
+ *
+ *  (See http://www.networksorcery.com/enp/protocol/udp.htm.)
+ *
+ *  The IP header (at offset 14) could look something like
+ *
+ *	ver=45 tos=00 len=003c id=0006 ofs=0000 ttl=40 p=11 sum=b798
+ *	src=0a000001 dst=c1abcdef
+ *
+ *  and the UDP data (beginning at offset 34):
+ *
+ *	srcport=fffc dstport=0035 length=0028 chksum=76b6
+ *	43e20100000100000000000003667470066e6574627364036f726700001c0001
+ */
+static void net_ip_udp(void *extra, unsigned char *packet, int len)
+{
+	int i, srcport, dstport, udp_len;
+	ssize_t res;
+	struct sockaddr_in remote_ip;
+
+	srcport = (packet[34] << 8) + packet[35];
+	dstport = (packet[36] << 8) + packet[37];
+	udp_len = (packet[38] << 8) + packet[39];
+	/*  chksum at offset 40 and 41  */
+
+	fatal("[ net: UDP: ");
+	fatal("srcport=%i dstport=%i len=%i ", srcport, dstport, udp_len);
+	for (i=42; i<len; i++) {
+		if (packet[i] >= ' ' && packet[i] < 127)
+			printf("%c", packet[i]);
+		else
+			printf("[%02x]", packet[i]);
+	}
+	fatal(" ]");
+
+	if (net_socket < 0) {
+		net_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if (net_socket < 0) {
+			fatal("[ net: UDP: socket() returned %i ]\n",
+			    net_socket);
+			return;
+		}
+
+		/*  Set net_socket to non-blocking:  */
+		res = fcntl(net_socket, F_GETFL);
+		fcntl(net_socket, F_SETFL, res | O_NONBLOCK);
+	}
+
+	last_source_udp_id = (packet[18] << 8) + packet[19] + 1;
+	last_source_udp_port = srcport;
+	last_source_udp_ip = (packet[26] << 24) + (packet[27] << 16)
+	    + (packet[28] << 8) + packet[29];
+
+	remote_ip.sin_family = AF_INET;
+	/*  Wohaaa, this is ugly:  TODO  */
+	((unsigned char *)&remote_ip.sin_addr)[0] = packet[30];
+	((unsigned char *)&remote_ip.sin_addr)[1] = packet[31];
+	((unsigned char *)&remote_ip.sin_addr)[2] = packet[32];
+	((unsigned char *)&remote_ip.sin_addr)[3] = packet[33];
+	remote_ip.sin_port = htons(dstport);
+
+	res = sendto(net_socket, packet + 42, len - 42,
+	    0, (const struct sockaddr *)&remote_ip, sizeof(remote_ip));
+
+	if (res != udp_len)
+		fatal("[ net: UDP: unable to send %i bytes ]\n", udp_len);
+	else
+		fatal("[ net: UDP: OK!!! ]\n");
 }
 
 
@@ -237,6 +320,12 @@ static void net_ip(void *extra, unsigned char *packet, int len)
 		switch (packet[23]) {
 		case 1:	/*  ICMP  */
 			net_ip_icmp(extra, packet, len);
+			break;
+		case 6:	/*  TCP  */
+			fatal("[ net: TCP not yet implemented ]\n");
+			break;
+		case 17:/*  UDP  */
+			net_ip_udp(extra, packet, len);
 			break;
 		default:
 			fatal("[ net: IP: UNIMPLEMENTED protocol %i ]\n",
@@ -345,12 +434,88 @@ static void net_arp(void *extra, unsigned char *packet, int len)
  *  Return 1 if there is a packet available for this 'extra' pointer, otherwise
  *  return 0.
  *
- *  (This function is basically net_ethernet_rx() but it only receives a return
- *  value telling us whether there is a packet or not, we don't actually get
- *  the packet.)
+ *  Appart from actually checking for incoming packets from the outside world,
+ *  this function basically works like net_ethernet_rx() but it only receives
+ *  a return value telling us whether there is a packet or not, we don't
+ *  actually get the packet.
  */
 int net_ethernet_rx_avail(void *extra)
 {
+	if (net_socket >= 0) {
+		ssize_t res;
+		unsigned char buf[10000];
+		struct sockaddr_in from;
+		socklen_t from_len = sizeof(from);
+
+		res = recvfrom(net_socket, buf, sizeof(buf),
+		    0, (struct sockaddr *)&from, &from_len);
+
+		if (res >= 0) {
+			/*
+			 *  Create a UDP packet:
+			 *	Ethernet = 14 bytes
+			 *	IP = 20 bytes
+			 *	UDP = 8 bytes + data
+			 */
+			struct ethernet_packet_link *lp;
+			int ip_len = 20 + 8 + res;
+			int udp_len = 8 + res;
+
+			lp = net_allocate_packet_link(extra,
+			    14 + 20 + 8 + res);
+
+			/*  Ethernet header:  */
+			lp->data[0] = 0x11;
+			lp->data[1] = 0x22;
+			lp->data[2] = 0x33;
+			lp->data[3] = 0x44;
+			lp->data[4] = 0x55;
+			lp->data[5] = 0x66;
+			memcpy(lp->data + 6, gateway_addr, 6);
+			lp->data[12] = 0x08;	/*  IP = 0x0800  */
+			lp->data[13] = 0x00;
+
+			/*  IP header:  */
+			lp->data[14] = 0x45;	/*  ver  */
+			lp->data[15] = 0x00;	/*  tos  */
+			lp->data[16] = ip_len >> 8;
+			lp->data[17] = ip_len & 0xff;
+			lp->data[18] = last_source_udp_id >> 8;
+			lp->data[19] = last_source_udp_id & 0xff;
+			lp->data[20] = 0;	/*  TODO: ofs  */
+			lp->data[21] = 0;	/*  TODO: ofs  */
+			lp->data[22] = 2;	/*  ttl  */
+			lp->data[23] = 17;	/*  p = UDP  */
+			lp->data[26] = ((unsigned char *)&from)[4];
+			lp->data[27] = ((unsigned char *)&from)[5];
+			lp->data[28] = ((unsigned char *)&from)[6];
+			lp->data[29] = ((unsigned char *)&from)[7];
+			lp->data[30] = (last_source_udp_ip >> 24) & 0xff;
+			lp->data[31] = (last_source_udp_ip >> 16) & 0xff;
+			lp->data[32] = (last_source_udp_ip >> 8) & 0xff;
+			lp->data[33] = (last_source_udp_ip >> 0) & 0xff;
+			net_ip_checksum(lp->data + 14, 10, 20);
+
+			/*  UDP:  */
+			lp->data[34] = ((unsigned char *)&from)[2];
+			lp->data[35] = ((unsigned char *)&from)[3];
+			lp->data[36] = (last_source_udp_port >> 8) & 0xff;
+			lp->data[37] = (last_source_udp_port >> 0) & 0xff;
+			lp->data[38] = udp_len >> 8;
+			lp->data[39] = udp_len & 0xff;
+			memcpy(lp->data + 42, buf, res);
+			net_ip_checksum(lp->data + 34, 6, 8 + res);
+
+{
+int i;
+printf("\n+++  INCOMING UDP: ");
+for (i=0; i<lp->len; i++)
+	printf(" %02x", lp->data[i]);
+printf("\n\n");
+}
+		}
+	}
+
 	return net_ethernet_rx(extra, NULL, NULL);
 }
 

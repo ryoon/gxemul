@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.4 2004-10-16 14:22:58 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.5 2004-10-16 14:48:43 debug Exp $
  *
  *  UltraSparc specific code for dynamic binary translation.
  *
@@ -41,7 +41,7 @@ struct cpu dummy_cpu;
  *
  *  TODO.
  */
-void bintrans_host_cacheinvalidate(void)
+void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 {
 	/*  TODO  */
 }

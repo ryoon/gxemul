@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.9 2004-10-16 14:22:58 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.10 2004-10-16 14:48:43 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -64,7 +64,7 @@ unsigned char bintrans_alpha_ret[16] = {
  *  compilers have such simple constructs, so an entire function has to
  *  be written as bintrans_alpha_imb[] above.
  */
-void bintrans_host_cacheinvalidate(void)
+void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 {
 	/*  Long form of ``asm("imb");''  */
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.27 2004-10-16 14:22:58 debug Exp $
+ *  $Id: bintrans.c,v 1.28 2004-10-16 14:48:43 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -142,7 +142,7 @@ void bintrans_init(void)
 
 /*  Function declaration, should be the same as in bintrans_*.c:  */
 
-void bintrans_host_cacheinvalidate(void);
+void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 size_t bintrans_chunk_header_len(void);
 void bintrans_write_chunkhead(unsigned char *p);
 void bintrans_write_chunkreturn(unsigned char **addrp);
@@ -287,7 +287,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	uint64_t vaddr)
 {
 	int (*f)(struct cpu *);
-	int try_to_translate = 1;
+	int try_to_translate;
 	int pc_increment = 0;
 	int n_translated = 0;
 	int res, hi6, special6, rd;
@@ -298,6 +298,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int entry_index;
 	int vaddr_is_in_kernel_space = 0;
 	size_t chunk_len;
+
+	if (cpu->delay_slot || cpu->nullify_next)
+		return -1;
 
 	if ((vaddr >> 32) == 0xffffffffULL) {
 		uint64_t v = vaddr & 0xffffffffULL;
@@ -332,9 +335,14 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	 */
 	chunk_addr += bintrans_chunk_header_len();
 	p = paddr;
+	try_to_translate = 1;
 
 	while (try_to_translate) {
 		/*  Read an instruction word from memory:  */
+		/*  (TODO: read directly from host memory. hm, maybe
+		    the optimization below which allows us to cross
+		    page boundaries for kernel code must be taken
+		    away...)  */
 		res = memory_rw(cpu, cpu->mem, p, &instr[0],
 		    sizeof(instr), MEM_READ, PHYSICAL | NO_EXCEPTIONS);
 		if (!res)
@@ -398,9 +406,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	/*  ...and return code:  */
 	bintrans_write_chunkreturn(&chunk_addr);
 
-	/*  Invalidate the host's instruction cache, if neccessary:  */
-	bintrans_host_cacheinvalidate();
-
 	/*
 	 *  Add the translation to the translation entry array:
 	 *
@@ -420,6 +425,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 
 	/*  chunk_len = nr of bytes occupied by the new code chunk  */
 	chunk_len = (size_t)chunk_addr - (size_t)chunk_addr2;
+
+	/*  Invalidate the host's instruction cache, if neccessary:  */
+	bintrans_host_cacheinvalidate(chunk_addr2, chunk_len);
 
 	translation_code_chunk_space_head += chunk_len;
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.184 2004-12-15 16:31:59 debug Exp $
+ *  $Id: misc.h,v 1.185 2004-12-17 03:40:10 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -132,7 +132,7 @@ static void *no_map_anon_mmap(void *addr, size_t len, int prot, int flags,
 /*  HPCmips:  */
 #include "hpc_bootinfo.h"
 #if 1
-#define	HPCMIPS_FB_ADDR		0x1a200000
+#define	HPCMIPS_FB_ADDR		0x0a200000
 #define	HPCMIPS_FB_XSIZE	240
 #define	HPCMIPS_FB_YSIZE	320
 #else

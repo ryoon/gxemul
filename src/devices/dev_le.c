@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.8 2004-07-05 01:09:04 debug Exp $
+ *  $Id: dev_le.c,v 1.9 2004-07-05 02:33:28 debug Exp $
  *  
  *  LANCE ethernet, as used on DECstations.
  *
@@ -52,12 +52,18 @@
 
 #include "if_lereg.h"
 
+#define	LE_MODE_DTX	2
+#define	LE_MODE_DRX	1
+
 
 /*  #define LE_DEBUG  */
+#define debug fatal
 
 
 #define	N_REGISTERS	4
 #define	SRAM_SIZE	(128*1024)
+#define	ROM_SIZE	32
+
 
 struct le_data {
 	int		irq_nr;
@@ -66,6 +72,8 @@ struct le_data {
 	uint64_t	buf_end;
 	int		len;
 
+	uint8_t		rom[ROM_SIZE];
+
 	int		reg_select;
 	uint16_t	reg[N_REGISTERS];
 
@@ -73,13 +81,18 @@ struct le_data {
 
 	/*  Initialization block:  */
 	uint32_t	init_block_addr;
+
 	uint16_t	mode;
-	uint64_t	padr;
+	uint64_t	padr;	/*  MAC address  */
 	uint64_t	ladrf;
-	uint32_t	rdra;
-	uint8_t		rlen;
-	uint32_t	tdra;
-	uint8_t		tlen;
+	uint32_t	rdra;	/*  receive descriptor ring address  */
+	int		rlen;	/*  nr of rx descriptors  */
+	uint32_t	tdra;	/*  transmit descriptor ring address  */
+	int		tlen;	/*  nr ot tx descriptors  */
+
+	/*  Current rx and tx descriptor indices:  */
+	int		rxp;
+	int		txp;
 };
 
 
@@ -107,7 +120,7 @@ void le_chip_init(struct le_data *d)
 	if (d->init_block_addr & 1)
 		fatal("[ le: WARNING! initialization block address not word aligned? ]\n");
 
-	fatal("[ le: d->init_block_addr = 0x%06x ]\n", d->init_block_addr);
+	debug("[ le: d->init_block_addr = 0x%06x ]\n", d->init_block_addr);
 
 	d->mode = le_read_16bit(d, d->init_block_addr + 0);
 	d->padr = le_read_16bit(d, d->init_block_addr + 2);
@@ -119,18 +132,32 @@ void le_chip_init(struct le_data *d)
 	d->ladrf += (le_read_16bit(d, d->init_block_addr + 14) << 48);
 	d->rdra = le_read_16bit(d, d->init_block_addr + 16);
 	d->rdra += ((le_read_16bit(d, d->init_block_addr + 18) & 0xff) << 16);
-	d->rlen = ((le_read_16bit(d, d->init_block_addr + 18) & 0xff00) >> 8);
+	d->rlen = 1 << ((le_read_16bit(d, d->init_block_addr + 18) >> 13) & 7);
 	d->tdra = le_read_16bit(d, d->init_block_addr + 20);
 	d->tdra += ((le_read_16bit(d, d->init_block_addr + 22) & 0xff) << 16);
-	d->tlen = ((le_read_16bit(d, d->init_block_addr + 22) & 0xff00) >> 8);
+	d->tlen = 1 << ((le_read_16bit(d, d->init_block_addr + 22) >> 13) & 7);
 
-	fatal("[ le: DEBUG: mode              %04x ]\n", d->mode);
-	fatal("[ le: DEBUG: padr  %016llx ]\n", (long long)d->padr);
-	fatal("[ le: DEBUG: ladrf %016llx ]\n", (long long)d->ladrf);
-	fatal("[ le: DEBUG: rdra            %06llx ]\n", d->rdra);
-	fatal("[ le: DEBUG: rlen                %02x ]\n", d->rlen);
-	fatal("[ le: DEBUG: tdra            %06llx ]\n", d->tdra);
-	fatal("[ le: DEBUG: tlen                %02x ]\n", d->tlen);
+	debug("[ le: DEBUG: mode              %04x ]\n", d->mode);
+	debug("[ le: DEBUG: padr  %016llx ]\n", (long long)d->padr);
+	debug("[ le: DEBUG: ladrf %016llx ]\n", (long long)d->ladrf);
+	debug("[ le: DEBUG: rdra            %06llx ]\n", d->rdra);
+	debug("[ le: DEBUG: rlen               %3i ]\n", d->rlen);
+	debug("[ le: DEBUG: tdra            %06llx ]\n", d->tdra);
+	debug("[ le: DEBUG: tlen               %3i ]\n", d->tlen);
+
+	/*  Set TXON and RXON, unless they are disabled by 'mode':  */
+	if (d->mode & LE_MODE_DTX)
+		d->reg[0] &= ~LE_TXON;
+	else
+		d->reg[0] |= LE_TXON;
+
+	if (d->mode & LE_MODE_DRX)
+		d->reg[0] &= ~LE_RXON;
+	else
+		d->reg[0] |= LE_RXON;
+
+	/*  Go to the start of the descriptor rings:  */
+	d->rxp = d->txp = 0;
 
 	/*  Set IDON and reset the INIT bit when we are done.  */
 	d->reg[0] |= LE_IDON;
@@ -176,11 +203,10 @@ void dev_le_tick(struct cpu *cpu, void *extra)
 {
 	struct le_data *d = (struct le_data *) extra;
 
-	le_register_fix(d);
-
-	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA)
+	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA) {
+		debug("[ le: interrupt ]\n");
 		cpu_interrupt(cpu, d->irq_nr);
-	else
+	} else
 		cpu_interrupt_ack(cpu, d->irq_nr);
 }
 
@@ -214,8 +240,6 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 		if (x & LE_TDMD)
 			d->reg[r] |= LE_TDMD;
 		if (x & LE_STRT) {
-			if (!(d->reg[r] & LE_STOP))
-				fatal("[ le: attempt to STaRT before STOPped! ]\n");
 			d->reg[r] |= LE_STRT;
 			d->reg[r] &= ~LE_STOP;
 		}
@@ -250,7 +274,7 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int i, retval = 1;
 	struct le_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -264,35 +288,33 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	/*  Automatic update of some registers:  */
 	le_register_fix(d);
 
-	/*
-	 *  Read/write of the SRAM:
-	 */
+	/*  Read/write of the SRAM:  */
 	if (relative_addr < SRAM_SIZE && relative_addr + len <= SRAM_SIZE) {
 		if (writeflag == MEM_READ) {
 			memcpy(data, d->sram + relative_addr, len);
-			fatal("[ le: read from SRAM offset 0x%05x:",
+			debug("[ le: read from SRAM offset 0x%05x:",
 			    relative_addr);
 			for (i=0; i<len; i++)
-				fatal(" %02x", data[i]);
-			fatal(" ]\n");
+				debug(" %02x", data[i]);
+			debug(" ]\n");
+			retval = 9;	/*  9 cycles  */
 		} else {
 			memcpy(d->sram + relative_addr, data, len);
-			fatal("[ le: write to SRAM offset 0x%05x:",
+			debug("[ le: write to SRAM offset 0x%05x:",
 			    relative_addr);
 			for (i=0; i<len; i++)
-				fatal(" %02x", data[i]);
-			fatal(" ]\n");
+				debug(" %02x", data[i]);
+			debug(" ]\n");
+			retval = 6;	/*  6 cycles  */
 		}
 		return 1;
 	}
 
 
-	/*
-	 *  Read from station's ROM ethernet address:
-	 *  This returns a MAC address of 01:02:03:04:05:06.
-	 */
+	/*  Read from station's ROM (ethernet address):  */
 	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1c0017) {
 		i = (relative_addr & 0xff) / 4;
+		i = d->rom[i & (ROM_SIZE-1)];
 
 		if (writeflag == MEM_READ) {
 			odata = (i << 24) + (i << 16) + (i << 8) + i;
@@ -304,6 +326,7 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			fatal(" ]\n");
 		}
 
+		retval = 13;	/*  13 cycles  */
 		goto do_return;
 	}
 
@@ -314,35 +337,26 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case 0x100000:
 		if (writeflag==MEM_READ) {
 			odata = d->reg[d->reg_select];
-			fatal("[ le: read from register 0x%02x: 0x%02x ]\n",
+			debug("[ le: read from register 0x%02x: 0x%02x ]\n",
 			    d->reg_select, (int)odata);
 
 			/*
 			 *  A read from csr1..3 should return "undefined"
-			 *  result if the stop bit is set.
+			 *  result if the stop bit is set.  However, Ultrix
+			 *  seems to do just that, so let's _not_ print
+			 *  a warning here.
 			 */
-#if 0
-			if (d->reg_select != 0 && d->reg[0] & LE_STOP) {
-				odata = 0x0000;
-				fatal("[ le: read from register 0x%02x when STOPped: UNDEFINED ]\n",
-				    d->reg_select);
-			}
-#endif
 		} else {
 			fatal("[ le: write to register 0x%02x: 0x%02x ]\n",
 			    d->reg_select, (int)idata);
 
 			/*
 			 *  A write to from csr1..3 when the stop bit is
-			 *  set should be ignored.
+			 *  set should be ignored. However, Ultrix writes
+			 *  even if the stop bit is set, so let's _not_
+			 *  print a warning about it.
 			 */
-#if 0
-			if (d->reg_select != 0 && d->reg[0] & LE_STOP) {
-				fatal("[ le: write to register 0x%02x when STOPped: IGNORED ]\n",
-				    d->reg_select);
-			} else
-#endif
-				le_register_write(d, d->reg_select, idata);
+			le_register_write(d, d->reg_select, idata);
 		}
 		break;
 
@@ -383,9 +397,10 @@ do_return:
 #endif
 	}
 
+	le_register_fix(d);
 	dev_le_tick(cpu, extra);
 
-	return 1;
+	return retval;
 }
 
 
@@ -411,6 +426,28 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	/*  Initial register contents:  */
 	d->reg[0] = LE_STOP;
+
+	/*  ROM (including the MAC address):  */
+	d->rom[0] = 0x01;
+	d->rom[1] = 0x02;
+	d->rom[2] = 0x03;
+	d->rom[3] = 0x04;
+	d->rom[4] = 0x05;
+	d->rom[5] = 0x06;
+
+	/*  Copies and checksum:  */
+	d->rom[10] = d->rom[21] = d->rom[5];
+	d->rom[11] = d->rom[20] = d->rom[4];
+	d->rom[12] = d->rom[19] = d->rom[3];
+	d->rom[7] =  d->rom[8]  = d->rom[23] =
+		     d->rom[13] = d->rom[18] = d->rom[2];
+	d->rom[6] =  d->rom[9]  = d->rom[22] =
+		     d->rom[14] = d->rom[17] = d->rom[1];
+	d->rom[15] = d->rom[16] = d->rom[0];
+	d->rom[24] = d->rom[28] = 0xff;
+	d->rom[25] = d->rom[29] = 0x00;
+	d->rom[26] = d->rom[30] = 0x55;
+	d->rom[27] = d->rom[31] = 0xaa;
 
 	memory_device_register(mem, "le", baseaddr, len, dev_le_access,
 	    (void *)d);

@@ -1,7 +1,8 @@
-$Id: RELEASE,v 1.75 2005-01-12 04:31:57 debug Exp $
+$Id: RELEASE,v 1.76 2005-01-12 08:45:48 debug Exp $
 
-The next release will most probably be 0.2.4. Some of the features I'd like
-to have time to implement and test:
+The next release will most probably be 0.2.4.
+
+Some of the features I'd like to have time to implement after that:
 
 	x)  better support for non-DECstation modes
 		o)  for example, netbooting OpenBSD/sgi snapshots,

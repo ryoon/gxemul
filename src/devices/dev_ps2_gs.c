@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.11 2005-01-10 23:22:21 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.12 2005-01-12 08:45:49 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */

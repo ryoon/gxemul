@@ -30,6 +30,7 @@ Serious bugs:
       blocks are overwritten by some code.
       This only seems to affect Linux. By doing a 'setenv MALLOC_CHECK_ 1'
       before running the emulator, it seems that the bug isn't triggered.
+      (OpenBSD/arc 2.3 on an i386 host also triggers this bug sometimes.)
 
 
 Less serious bugs / issues:

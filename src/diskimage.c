@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.22 2004-04-15 14:54:59 debug Exp $
+ *  $Id: diskimage.c,v 1.23 2004-04-15 15:45:42 debug Exp $
  *
  *  Disk image support.
  *
@@ -683,7 +683,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 	case SCSICMD_MODE_SELECT:
 	case 0x1e:
-		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+		debug("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 
 		/*  TODO  */
 

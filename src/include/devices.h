@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.22 2004-01-09 04:20:54 debug Exp $
+ *  $Id: devices.h,v 1.23 2004-01-09 16:24:50 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -264,11 +264,21 @@ void dev_sgi_gbe_init(struct memory *mem, uint64_t baseaddr);
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
+/*  dev_sgi_mte.c:  */
+#define	DEV_SGI_MTE_LENGTH		0x10000
+int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
+
 /*  dev_sgi_nasid.c:  */
 #define	DEV_SGI_NASID_BASE		0x9200000000000000
 #define	DEV_SGI_NASID_LENGTH		0x0000000100000000
 int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_nasid_init(struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sgi_ust.c:  */
+#define	DEV_SGI_UST_LENGTH		0x10000
+int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */
 #define	DEV_SII_LENGTH			0x0000000000000100

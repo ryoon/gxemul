@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.13 2004-01-05 03:26:16 debug Exp $
+ *  $Id: cpu.c,v 1.14 2004-01-05 06:41:22 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1555,7 +1555,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			if (hi6 == HI6_LD)	instr_mnem = "ld";
 			if (hi6 == HI6_LWC1)	instr_mnem = "lwc1";
 			if (hi6 == HI6_LWC2)	instr_mnem = "lwc2";
-			if (hi6 == HI6_LWC3)	instr_mnem = "lwc3";
+			if (hi6 == HI6_LWC3)	instr_mnem = "pref";	/* "lwc3"; */
 			if (hi6 == HI6_LDC1)	instr_mnem = "ldc1";
 			if (hi6 == HI6_LDC2)	instr_mnem = "ldc2";
 			if (hi6 == HI6_LL)	instr_mnem = "ll";
@@ -1582,13 +1582,18 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				int offset;
 		                char *symbol = get_symbol_name(cpu->gpr[rs] + imm, &offset);
 
-				if (symbol != NULL)
-					debug("%s\tr%i,%i(r%i)\t\t[0x%016llx = %s, data=", instr_mnem,
+				if (hi6 == HI6_LWC3)
+					debug("%s\t0x%x,%i(r%i)\t\t[0x%016llx = %s]\n", instr_mnem,
 					    rt, imm, rs, (long long)(cpu->gpr[rs] + imm), symbol);
-				else
-					debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=", instr_mnem,
-					    rt, imm, rs, (long long)(cpu->gpr[rs] + imm));
-	
+				else {
+					if (symbol != NULL)
+						debug("%s\tr%i,%i(r%i)\t\t[0x%016llx = %s, data=", instr_mnem,
+						    rt, imm, rs, (long long)(cpu->gpr[rs] + imm), symbol);
+					else
+						debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=", instr_mnem,
+						    rt, imm, rs, (long long)(cpu->gpr[rs] + imm));
+				}
+
 				dataflag = 1;
 			}
 		}
@@ -1718,7 +1723,7 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 		case HI6_LD:
 		case HI6_LWC1:
 		case HI6_LWC2:
-		case HI6_LWC3:
+		case HI6_LWC3:	/*  pref  */
 		case HI6_LDC1:
 		case HI6_LDC2:
 		case HI6_LL:
@@ -1771,6 +1776,13 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 				fatal("cannot be here\n");
 				wlen = 4; st = 0; signd = 0;
 			}
+
+			/*
+			 *  In the MIPS IV ISA, the 'lwc3' instruction is changed into 'pref'.
+			 *  The pref instruction is emulated by not doing anything. :-)  TODO
+			 */
+			if (hi6 == HI6_LWC3)
+				break;
 
 			addr = cpu->gpr[rs] + imm;
 

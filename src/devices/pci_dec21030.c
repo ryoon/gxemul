@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.4 2004-03-04 03:14:30 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.5 2004-03-22 00:55:29 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -41,6 +41,10 @@
  *
  *  TODO: This device is far from complete.
  *        The RAMDAC is non-existant.
+ *
+ *  TODO:  all fb device writes with direct writes to the framebuffer
+ *  memory, and update the x1,y1,x2,y2 coordinates instead.
+ *  That will give better performance.
  */
 
 #include <stdio.h>

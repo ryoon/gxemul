@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.70 2005-01-30 11:38:15 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.71 2005-01-30 13:23:35 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -55,9 +55,9 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-#define ofs_i		(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-#define ofs_pc		(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
-#define ofs_pc_last	(((size_t)&dummy_cpu.pc_last) - ((size_t)&dummy_cpu))
+#define ofs_i		(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+#define ofs_pc		(((size_t)&dummy_cpu.cd.mips.pc) - ((size_t)&dummy_cpu))
+#define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
 
 
 unsigned char bintrans_i386_runchunk[41] = {
@@ -120,7 +120,7 @@ static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
 	 *
 	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
 	 */
-#define ofs_tabl0	(((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
+#define ofs_tabl0	(((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 	0x8b, 0x8e,
 	ofs_tabl0 & 255, (ofs_tabl0 >> 8) & 255, (ofs_tabl0 >> 16) & 255, (ofs_tabl0 >> 24) & 255,
 
@@ -143,7 +143,7 @@ static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
 	0x81, 0xe3, 0xfc, 0x0f, 0, 0,
 
 	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b].chunks
+	 *  ecx = vaddr_to_hostaddr_table0[a][b].cd.mips.chunks
 	 *
 	 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
 	 */
@@ -182,7 +182,7 @@ static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
 
 	/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
 	/*  ff e0                   jmp    *%eax  */
-#define ofs_chunkbase	((size_t)&dummy_cpu.chunk_base_address - (size_t)&dummy_cpu)
+#define ofs_chunkbase	((size_t)&dummy_cpu.cd.mips.chunk_base_address - (size_t)&dummy_cpu)
 	0x03, 0x86,
 	    ofs_chunkbase & 255, (ofs_chunkbase >> 8) & 255, (ofs_chunkbase >> 16) & 255, (ofs_chunkbase >> 24) & 255,
 	0xff, 0xe0
@@ -311,7 +311,7 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 	if (!bintrans_32bit_only) {
 		int ofs;
 		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
 		ofs += 4;
 		*a++ = 0x83; *a++ = 0x96;
 		*a++ = ofs & 255;
@@ -347,7 +347,7 @@ static void load_pc_into_eax_edx(unsigned char **addrp)
 	} else
 #endif
  {
-		int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		int ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
 		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
 		ofs += 4;
 		*a++ = 0x8b; *a++ = 0x96;
@@ -364,7 +364,7 @@ static void load_pc_into_eax_edx(unsigned char **addrp)
 static void store_eax_edx_into_pc(unsigned char **addrp)
 {
 	unsigned char *a;
-	int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	int ofs = ((size_t)&dummy_cpu.cd.mips.pc) - (size_t)&dummy_cpu;
 	a = *addrp;
 
 	/*  89 c7                   mov    %eax,%edi  */
@@ -382,7 +382,7 @@ static void store_eax_edx_into_pc(unsigned char **addrp)
 /*
  *  load_into_eax_edx():
  *
- *  Usage:    load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);   etc.
+ *  Usage:    load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);   etc.
  */
 static void load_into_eax_edx(unsigned char **addrp, void *p)
 {
@@ -414,7 +414,7 @@ static void load_into_eax_edx(unsigned char **addrp, void *p)
 /*
  *  load_into_eax_and_sign_extend_into_edx():
  *
- *  Usage:    load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);   etc.
+ *  Usage:    load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);   etc.
  */
 static void load_into_eax_and_sign_extend_into_edx(unsigned char **addrp, void *p)
 {
@@ -436,7 +436,7 @@ static void load_into_eax_and_sign_extend_into_edx(unsigned char **addrp, void *
 /*
  *  load_into_eax_dont_care_about_edx():
  *
- *  Usage:    load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);   etc.
+ *  Usage:    load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);   etc.
  */
 static void load_into_eax_dont_care_about_edx(unsigned char **addrp, void *p)
 {
@@ -455,7 +455,7 @@ static void load_into_eax_dont_care_about_edx(unsigned char **addrp, void *p)
 /*
  *  store_eax_edx():
  *
- *  Usage:    store_eax_edx(&a, &dummy_cpu.gpr[rs]);   etc.
+ *  Usage:    store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);   etc.
  */
 static void store_eax_edx(unsigned char **addrp, void *p)
 {
@@ -494,7 +494,7 @@ static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int im
 	/*  99                      cltd   */
 	*a++ = 0x99;
 
-	store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+	store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 	*addrp = a;
 
 rt0:
@@ -519,19 +519,19 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	 */
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
 
 #if 0
 	if (bintrans_32bit_only)
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	else
 #endif
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
-	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
@@ -551,7 +551,7 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
 		}
 
-		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rd]);
 	}
 
 	*addrp = a;
@@ -574,18 +574,18 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 		if (rd != 0) {
 			/*  mfhi or mflo  */
 			if (hi_flag)
-				load_into_eax_edx(&a, &dummy_cpu.hi);
+				load_into_eax_edx(&a, &dummy_cpu.cd.mips.hi);
 			else
-				load_into_eax_edx(&a, &dummy_cpu.lo);
-			store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+				load_into_eax_edx(&a, &dummy_cpu.cd.mips.lo);
+			store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rd]);
 		}
 	} else {
 		/*  mthi or mtlo  */
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rd]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rd]);
 		if (hi_flag)
-			store_eax_edx(&a, &dummy_cpu.hi);
+			store_eax_edx(&a, &dummy_cpu.cd.mips.hi);
 		else
-			store_eax_edx(&a, &dummy_cpu.lo);
+			store_eax_edx(&a, &dummy_cpu.cd.mips.lo);
 	}
 
 	*addrp = a;
@@ -619,24 +619,24 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 
 	if (uimm == 0 && (instruction_type == HI6_ADDIU ||
 	    instruction_type == HI6_ADDI)) {
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
-		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		goto rt0;
 	}
 
 	if (uimm == 0 && (instruction_type == HI6_DADDIU ||
 	    instruction_type == HI6_DADDI || instruction_type == HI6_ORI)) {
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
-		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		goto rt0;
 	}
 
 #if 0
 	if (bintrans_32bit_only)
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	else
 #endif
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
 	switch (instruction_type) {
 	case HI6_ADDIU:
@@ -774,7 +774,7 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		break;
 	}
 
-	store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+	store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 rt0:
 	*addrp = a;
@@ -816,7 +816,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
 		}
-		store_eax_edx(&a, &dummy_cpu.gpr[31]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[31]);
 #if 0
 		if (bintrans_32bit_only) {
 			/*  58     pop %eax  */
@@ -852,10 +852,10 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 	*a++ = 0x0d; *a++ = subimm; *a++ = subimm >> 8;
 	*a++ = subimm >> 16; *a++ = subimm >> 24;
 
-	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -930,27 +930,27 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	if ((instruction_type == SPECIAL_ADDU || instruction_type == SPECIAL_DADDU
 	    || instruction_type == SPECIAL_OR) && rt == 0) {
 		if (load64)
-			load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+			load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 		else
-			load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
-		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+			load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rd]);
 		*addrp = a;
 		goto rd0;
 	}
 
 	/*  edx:eax = rs, ecx:ebx = rt  */
 	if (load64) {
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		/*  89 c3                   mov    %eax,%ebx  */
 		/*  89 d1                   mov    %edx,%ecx  */
 		*a++ = 0x89; *a++ = 0xc3; *a++ = 0x89; *a++ = 0xd1;
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	} else {
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		/*  89 c3                   mov    %eax,%ebx  */
 		/*  89 d1                   mov    %edx,%ecx  */
 		*a++ = 0x89; *a++ = 0xc3; *a++ = 0x89; *a++ = 0xd1;
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	}
 
 	switch (instruction_type) {
@@ -1156,13 +1156,13 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x89; *a++ = 0xd7;
 		*a++ = 0x99;
 		/*  here: edi=hi, edx:eax = sign-extended lo  */
-		store_eax_edx(&a, &dummy_cpu.lo);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.lo);
 		/*  89 f8                   mov    %edi,%eax  */
 		/*  99                      cltd   */
 		*a++ = 0x89; *a++ = 0xf8;
 		*a++ = 0x99;
 		/*  here: edx:eax = sign-extended hi  */
-		store_eax_edx(&a, &dummy_cpu.hi);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.hi);
 		/*  5f    pop %edi  */
 		*a++ = 0x5f;
 		do_store = 0;
@@ -1195,13 +1195,13 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x89; *a++ = 0xd7;
 		*a++ = 0x99;
 		/*  here: edi=hi, edx:eax = sign-extended lo  */
-		store_eax_edx(&a, &dummy_cpu.lo);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.lo);
 		/*  89 f8                   mov    %edi,%eax  */
 		/*  99                      cltd   */
 		*a++ = 0x89; *a++ = 0xf8;
 		*a++ = 0x99;
 		/*  here: edx:eax = sign-extended hi  */
-		store_eax_edx(&a, &dummy_cpu.hi);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.hi);
 		/*  5f    pop %edi  */
 		*a++ = 0x5f;
 		do_store = 0;
@@ -1236,7 +1236,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	}
 
 	if (do_store)
-		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rd]);
 
 	*addrp = a;
 rd0:
@@ -1281,7 +1281,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 	 *************************************************************/
 
 	/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
-	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 	*a++ = 0x8b; *a++ = 0x96;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -1297,7 +1297,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 		*a++ = 0x8b; *a++ = 0x9a;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 		/*
 		 *  Here:  eax contains the value in register rt,
@@ -1353,7 +1353,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 			    an interrupt exception:  */
 
 			/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
-			ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 			*a++ = 0x8b; *a++ = 0x96;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -1386,7 +1386,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 		}
 
 		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
-		ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 		*a++ = 0x8b; *a++ = 0x96;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -1423,7 +1423,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 			*a++ = 0x99;
 		}
 
-		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 	}
 
 	*addrp = a;
@@ -1467,12 +1467,12 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	switch (instruction_type) {
 	case HI6_BEQ:
 	case HI6_BNE:
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		/*  89 c3                   mov    %eax,%ebx  */
 		/*  89 d1                   mov    %edx,%ecx  */
 		*a++ = 0x89; *a++ = 0xc3; *a++ = 0x89; *a++ = 0xd1;
 	}
-	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+	load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
 	if (instruction_type == HI6_BEQ && rt != rs) {
 		/*  If rt != rs, then skip.  */
@@ -1578,7 +1578,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 */
 
 	/*  c7 86 38 30 00 00 01 00 00 00    movl   $0x1,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -1596,7 +1596,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	} else {
 		*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
 	}
-	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
+	store_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
 
 	if (skip1 != NULL)
 		*skip1 = (size_t)a - (size_t)skip1 - 1;
@@ -1626,7 +1626,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 		goto try_chunk_p;
 
 	/*  Skip all of this if there is no branch:  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
 
 	/*  8b 86 38 30 00 00       mov    0x3038(%esi),%eax  */
 	*a++ = 0x8b; *a++ = 0x86;
@@ -1643,7 +1643,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 	 */
 
 	/*  c7 86 38 30 00 00 00 00 00 00    movl   $0x0,0x3038(%esi)  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0xc7; *a++ = 0x86;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0;
@@ -1654,7 +1654,7 @@ static int bintrans_write_instruction__delayedbranch(struct memory *mem,
 	/*  89 d1                   mov    %edx,%ecx  */
 	*a++ = 0x89; *a++ = 0xc3;
 	*a++ = 0x89; *a++ = 0xd1;
-	load_into_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
+	load_into_eax_edx(&a, &dummy_cpu.cd.mips.delay_jmpaddr);
 	store_eax_edx_into_pc(&a);
 
 try_chunk_p:
@@ -1664,7 +1664,7 @@ try_chunk_p:
 #if 1
 			/*  8b 86 78 56 34 12       mov    0x12345678(%esi),%eax  */
 			/*  ff e0                   jmp    *%eax  */
-			ofs = ((size_t)&dummy_cpu.bintrans_jump_to_32bit_pc) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_jump_to_32bit_pc) - (size_t)&dummy_cpu;
 			*a++ = 0x8b; *a++ = 0x86;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 			*a++ = 0xff; *a++ = 0xe0;
@@ -1697,7 +1697,7 @@ try_chunk_p:
 			 *
 			 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
 			 */
-			ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
 			*a++ = 0x8b; *a++ = 0x8e;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -1720,11 +1720,11 @@ try_chunk_p:
 			*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 			/*
-			 *  ecx = vaddr_to_hostaddr_table0[a][b].chunks
+			 *  ecx = vaddr_to_hostaddr_table0[a][b].cd.mips.chunks
 			 *
 			 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
 			 */
-			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0]
+			ofs = (size_t)&dummy_vth32_table.cd.mips.bintrans_chunks[0]
 			    - (size_t)&dummy_vth32_table;
 
 			*a++ = 0x8b; *a++ = 0x8c;  *a++ = 0x19;
@@ -1763,7 +1763,7 @@ try_chunk_p:
 
 			/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
 			/*  ff e0                   jmp    *%eax  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = 0x03; *a++ = 0x86;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 			*a++ = 0xff; *a++ = 0xe0;
@@ -1834,7 +1834,7 @@ try_chunk_p:
 
 			/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
 			/*  ff e0                   jmp    *%eax  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = 0x03; *a++ = 0x86;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 			*a++ = 0xff; *a++ = 0xe0;
@@ -1915,7 +1915,7 @@ try_chunk_p:
 
 			/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
 			/*  ff e0                   jmp    *%eax  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = 0x03; *a++ = 0x86;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 			*a++ = 0xff; *a++ = 0xe0;
@@ -1982,9 +1982,9 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 	a = *addrp;
 
 	if (mem->bintrans_32bit_only)
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 	else
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 
 	if (imm & 0x8000) {
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
@@ -2198,7 +2198,7 @@ TODO: top 33 bits!!!!!!!
 		*a++ = 0x56;
 
 		/*  eax = points to the right function  */
-		ofs = ((size_t)&dummy_cpu.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
 		*a++ = 0x8b; *a++ = 0x86;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
@@ -2226,9 +2226,9 @@ TODO: top 33 bits!!!!!!!
 
 	if (!load) {
 		if (alignment >= 7)
-			load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+			load_into_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 		else
-			load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+			load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 	}
 
 	switch (instruction_type) {
@@ -2286,7 +2286,7 @@ TODO: top 33 bits!!!!!!!
 		break;
 
 	case HI6_LWL:
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
@@ -2295,7 +2295,7 @@ TODO: top 33 bits!!!!!!!
 		/*  89 c3                   mov    %eax,%ebx  */
 		*a++ = 0x89; *a++ = 0xc3;
 
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 		/*  ALIGNED LOAD:  */
 		/*  8b 11                   mov    (%ecx),%edx  */
@@ -2385,7 +2385,7 @@ TODO: top 33 bits!!!!!!!
 		break;
 
 	case HI6_LWR:
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
@@ -2394,7 +2394,7 @@ TODO: top 33 bits!!!!!!!
 		/*  89 c3                   mov    %eax,%ebx  */
 		*a++ = 0x89; *a++ = 0xc3;
 
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 		/*  ALIGNED LOAD:  */
 		/*  8b 11                   mov    (%ecx),%edx  */
@@ -2503,7 +2503,7 @@ TODO: top 33 bits!!!!!!!
 		break;
 
 	case HI6_SWL:
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
@@ -2512,7 +2512,7 @@ TODO: top 33 bits!!!!!!!
 		/*  89 c3                   mov    %eax,%ebx  */
 		*a++ = 0x89; *a++ = 0xc3;
 
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 		/*  ALIGNED LOAD:  */
 		/*  8b 11                   mov    (%ecx),%edx  */
@@ -2606,7 +2606,7 @@ TODO: top 33 bits!!!!!!!
 		break;
 
 	case HI6_SWR:
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rs]);
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
 		*a++ = 5;
 		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
@@ -2615,7 +2615,7 @@ TODO: top 33 bits!!!!!!!
 		/*  89 c3                   mov    %eax,%ebx  */
 		*a++ = 0x89; *a++ = 0xc3;
 
-		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 		/*  ALIGNED LOAD:  */
 		/*  8b 11                   mov    (%ecx),%edx  */
@@ -2714,7 +2714,7 @@ TODO: top 33 bits!!!!!!!
 	}
 
 	if (load && rt != 0)
-		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		store_eax_edx(&a, &dummy_cpu.cd.mips.gpr[rt]);
 
 	*addrp = a;
 	bintrans_write_pc_inc(addrp);
@@ -2774,25 +2774,25 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	case CALL_TLBR:
 		/*  push readflag  */
 		*a++ = 0x6a; *a++ = (itype == CALL_TLBR);
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
 		break;
 	case CALL_TLBWR:
 	case CALL_TLBWI:
 		/*  push randomflag  */
 		*a++ = 0x6a; *a++ = (itype == CALL_TLBWR);
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
 	case CALL_SYSCALL:
 	case CALL_BREAK:
 		/*  push randomflag  */
 		*a++ = 0x6a; *a++ = (itype == CALL_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
-		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_simple_exception) - (size_t)&dummy_cpu;
 		break;
 	case CALL_RFE:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_rfe) - (size_t)&dummy_cpu;
 		break;
 	case CALL_ERET:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_eret) - (size_t)&dummy_cpu;
 		break;
 	}
 

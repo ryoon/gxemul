@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.278 2004-10-25 02:03:20 debug Exp $
+$Id: HISTORY,v 1.279 2004-10-25 02:52:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1075,3 +1075,4 @@ HISTORY of mips64emul
 		Writing a skeleton G364 framebuffer for M700, enough to show
 		the Linux penguin and some text, although scrolling isn't
 		correctly implemented yet.
+		Adding a dummy SONIC (ethernet) device, dev_sn, for PICA.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.208 2004-10-25 01:54:06 debug Exp $
+ *  $Id: machine.c,v 1.209 2004-10-25 02:51:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2208,6 +2208,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0x100000b8000ULL, 0x60000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
+				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
+
 				dev_asc_init(cpu, mem,
 				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
 				    dev_pica_dma_controller, pica_data);
@@ -2293,10 +2295,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
+				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
+
 				dev_ns16550_init(cpu, mem, 0x2000006000ULL,
-				    0, 1, emul->use_x11? 0 : 1);
+				    8 + 8, 1, emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
-				    0, 1, 0);
+				    8 + 9, 1, 0);
 
 				break;
 

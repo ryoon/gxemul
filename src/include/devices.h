@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.104 2004-10-25 01:54:05 debug Exp $
+ *  $Id: devices.h,v 1.105 2004-10-25 02:51:20 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -524,6 +524,11 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 void dev_sii_tick(struct cpu *cpu, void *);
 int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
+
+/*  dev_sn_fb.c:  */
+#define	DEV_SN_LENGTH		0x1000
+int dev_sn_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sn_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000

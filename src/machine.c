@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.281 2005-01-16 14:13:45 debug Exp $
+ *  $Id: machine.c,v 1.282 2005-01-17 08:40:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2202,17 +2202,7 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
-				/*
-				 *  IRIX reads from the following addresses, so there's probably
-				 *  something interesting there:
-				 *
-				 *  0x1fcffff0 <.MIPS.options+0x30>
-				 *  0x19600000 <get_nasid+0x4>
-				 *  0x190020d0 <get_cpuinfo+0x34>
-				 */
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
-				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
-				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
 				break;
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */

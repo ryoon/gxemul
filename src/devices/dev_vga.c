@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.7 2004-10-22 06:23:23 debug Exp $
+ *  $Id: dev_vga.c,v 1.8 2004-10-22 06:30:16 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -99,9 +99,12 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 				pixel[2] = d->fb->rgb_palette[bg * 3 + 2];
 
 				if (font8x16[ch * 16 + line] & (128 >> subx)) {
-					pixel[0] = d->fb->rgb_palette[fg * 3 + 0];
-					pixel[1] = d->fb->rgb_palette[fg * 3 + 1];
-					pixel[2] = d->fb->rgb_palette[fg * 3 + 2];
+					pixel[0] = d->fb->rgb_palette
+					    [fg * 3 + 0];
+					pixel[1] = d->fb->rgb_palette
+					    [fg * 3 + 1];
+					pixel[2] = d->fb->rgb_palette
+					    [fg * 3 + 2];
 				}
 
 				dev_fb_access(cpu, cpu->mem, addr, &pixel[0],
@@ -138,9 +141,11 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ vga: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ vga: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ vga: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ vga: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, idata);
 		}
 	}
 
@@ -182,8 +187,9 @@ void vga_reg_write(struct vga_data *d, int regnr, int idata)
  *
  *  Reads and writes of the VGA control registers.
  */
-int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct vga_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -206,9 +212,11 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ vga_ctrl: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ vga_ctrl: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, idata);
 		}
 	}
 
@@ -221,6 +229,9 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 /*
  *  dev_vga_init():
+ *
+ *  Register a VGA text console device. max_x and max_y could be something
+ *  like 80 and 25, respectively.
  */
 void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	uint64_t control_base, int max_x, int max_y)
@@ -273,10 +284,10 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 				i+=3;
 			}
 
-	memory_device_register(mem, "vga_mem", videomem_base, d->videomem_size,
-	    dev_vga_access, d);
-	memory_device_register(mem, "vga_ctrl", control_base, 16,
-	    dev_vga_ctrl_access, d);
+	memory_device_register(mem, "vga_mem", videomem_base,
+	    d->videomem_size, dev_vga_access, d);
+	memory_device_register(mem, "vga_ctrl", control_base,
+	    16, dev_vga_ctrl_access, d);
 
 	vga_update(cpu, d, 0, d->videomem_size-1);
 }

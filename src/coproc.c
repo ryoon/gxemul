@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.77 2004-11-01 07:58:21 debug Exp $
+ *  $Id: coproc.c,v 1.78 2004-11-01 09:35:51 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -956,7 +956,7 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		break;
 	case FPU_OP_C:
 		/*  TODO: how to detect unordered-ness and such?  */
-		fatal("  c: %f(nan=%i), %f(nan=%i) cond=%i\n",
+		debug("  c: %f(nan=%i), %f(nan=%i) cond=%i\n",
 		    (float)float_value[0].f, float_value[0].nan,
 		    (float)float_value[1].f, float_value[1].nan,
 		    cond);

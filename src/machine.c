@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.215 2004-11-01 09:26:10 debug Exp $
+ *  $Id: machine.c,v 1.216 2004-11-01 09:35:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1513,7 +1513,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  Environment variables:  */
 		addr = DEC_PROM_STRINGS;
 
-		if (emul->use_x11)
+		if (emul->use_x11 && emul->n_gfx_cards > 0)
 			/*  (0,3)  Keyboard and Framebuffer  */
 			add_environment_string(cpu, framebuffer_console_name, &addr);
 		else

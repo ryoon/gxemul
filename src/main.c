@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.124 2004-11-01 09:26:10 debug Exp $
+ *  $Id: main.c,v 1.125 2004-11-01 09:35:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -205,7 +205,7 @@ void usage(char *progname)
  */
 int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
-	int ch, using_switch_d = 0, using_switch_o = 0;
+	int ch, using_switch_d = 0, using_switch_o = 0, using_switch_Z = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
 
@@ -370,6 +370,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'Z':
 			emul->n_gfx_cards = atoi(optarg);
+			using_switch_Z = 1;
 			break;
 		case 'h':
 		default:
@@ -607,6 +608,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		emul->use_x11 = 0;
 	}
 #endif
+
+	if (!using_switch_Z && !emul->use_x11)
+		emul->n_gfx_cards = 0;
 
 	return 0;
 }

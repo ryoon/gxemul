@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.113 2004-12-10 02:11:32 debug Exp $
+ *  $Id: bintrans.c,v 1.114 2004-12-10 04:16:04 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -189,7 +189,7 @@ static struct translation_page_entry *translation_page_entry_array[
     (1 << BINTRANS_CACHE_N_INDEX_BITS) ];
 
 
-#define	MAX_QUICK_JUMPS		10
+#define	MAX_QUICK_JUMPS		8
 static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
 static int quick_jump_page_offset[MAX_QUICK_JUMPS];
 static int n_quick_jumps;

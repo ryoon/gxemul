@@ -21,16 +21,20 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 	Binary translation:  src/bintrans.c
 
 	Network layer
-		o)  ethernet interfaces
-		o)  (userland, non-root) network stack
+		o)  TCP :-)
+		o)  Make it work with Ultrix too, not just NetBSD.
+
+	Configure script:
+		o)  Only enable Alpha prefetch on pca56 or higher, not on
+		    ev4, ev5.
+		o)  Use getopts?
+		o)  X11 libs and headers via command line option?
+		o)  NetBSD X11 linking vs runtime issue?
 
 	Command line option parsing:
 		o)  Use only one letter for selecting machine type (followed
 		    by a substring of the machine type), not one letter
 		    for each machine type as it is now.
-
-	Clock stuff:  The clock should adjust to _real_ time, not CPU 
-		user time.
 
 	CPU Emulation:
 		o)  Factor out the MIPS dependant parts of the cpu, so that

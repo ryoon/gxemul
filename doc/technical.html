@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.5 2004-07-09 04:11:45 debug Exp $
+$Id: technical.html,v 1.6 2004-07-09 04:46:14 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -214,8 +214,8 @@ has a fixed IPv4 address of 10.0.0.254. An OS running in the emulator
 can thus have any 10.x.x.x address; a typical choice would be 10.0.0.1.
 
 <p>
-With emulated NetBSD/pmax, running the following commands should enable
-the emulated NIC:
+Inside emulated NetBSD/pmax, running the following commands should
+configure the emulated NIC:
 <pre>
 	# <b>ifconfig le0 10.0.0.1</b>
 	# <b>route add default 10.0.0.254</b>

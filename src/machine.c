@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.305 2005-01-28 09:36:25 debug Exp $
+ *  $Id: machine.c,v 1.306 2005-01-28 10:20:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -178,6 +178,35 @@ int machine_name_to_type(char *stype, char *ssubtype,
 
 		fatal("unknown DEC subtype '%s'\n", ssubtype);
 		return 0;
+	}
+
+	if (strcasecmp(stype, "Linksys") == 0 ||
+	    strcasecmp(stype, "WRT54G") == 0) {
+		*type = MACHINE_WRT54G;
+		return 1;
+	}
+
+	if (strcasecmp(stype, "Cobalt") == 0 ||
+	    strcasecmp(stype, "Raq") == 0) {
+		*type = MACHINE_COBALT;
+		return 1;
+	}
+
+	if (strcasecmp(stype, "SonyNeWS") == 0 ||
+	    strcasecmp(stype, "NeWS") == 0) {
+		*type = MACHINE_SONYNEWS;
+		return 1;
+	}
+
+	if (strcasecmp(stype, "NetGear") == 0 ||
+	    strcasecmp(stype, "WG602") == 0) {
+		*type = MACHINE_NETGEAR;
+		return 1;
+	}
+
+	if (strcasecmp(stype, "MeshCube") == 0) {
+		*type = MACHINE_MESHCUBE;
+		return 1;
 	}
 
 /*  TODO  */

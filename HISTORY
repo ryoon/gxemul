@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.527 2005-01-28 00:35:22 debug Exp $
+$Id: HISTORY,v 1.528 2005-01-28 10:19:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1566,3 +1566,6 @@ HISTORY of mips64emul
 		config file parser (adding a couple of machine words, enough
 		to run simple emulations, and adding support for multi-line
 		comments using tuborgs).
+		Removing some command line options for the least working
+		emulation modes (-e, -f, -g, -E, -H), adding new -E and -e
+		options for selecting machine type.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.178 2005-01-28 09:41:31 debug Exp $
+ *  $Id: main.c,v 1.179 2005-01-28 10:20:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,9 +152,6 @@ void fatal(char *fmt, ...)
  */
 static void usage(char *progname, int longusage)
 {
-	int i;
-	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
-
 	printf("mips64emul");
 #ifdef VERSION
 	printf("-" VERSION);
@@ -182,20 +179,7 @@ static void usage(char *progname, int longusage)
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");
 #endif
-	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
-
-	/*  List CPU names:  */
-	i = 0;
-	while (cpu_type_defs[i].name != NULL) {
-		if ((i % 6) == 0)
-			printf("\t");
-		printf("\t%s", cpu_type_defs[i].name);
-		i++;
-		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
-			printf("\n");
-	}
-	printf("                (Most of these are bogus, and not really implemented.)\n");
-
+	printf("  -C x      try to emulate a specific CPU. (Use -H to get a list of types.)\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
@@ -207,14 +191,11 @@ static void usage(char *progname, int longusage)
 	printf("                r     read-only (don't allow changes to the file)\n");
 	printf("                t     SCSI tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
-	printf("  -E        try to emulate a Cobalt machine\n");
-	printf("  -e        try to emulate a MeshCube\n");
+	printf("  -E t      try to emulate machine type t. (Use -H to get a list of types.)\n");
+	printf("  -e st     try to emulate machine subtype st. (Use this with -E.)\n");
 	printf("  -F xx     try to emulate an hpcmips machine, where 'xx' may be:\n");
 	printf("                1=Casio BE-300, 2=Casio E-105\n");
-	printf("  -f        try to emulate a Sony NeWS MIPS machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
-	printf("  -g        try to emulate a NetGear box (WG602)\n");
-	printf("  -H        try to emulate a Linksys WRT54G\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
@@ -253,6 +234,7 @@ static void usage(char *progname, int longusage)
 	printf("  -z disp   add disp as an X11 display to use for framebuffers\n");
 
 	printf("\nGeneral options:\n");
+	printf("  -H        display a list of possible CPU and machine types\n");
 	printf("  -h        display this help message\n");
 	printf("  -K        force the debugger to be entered at the end of a simulation\n");
 	printf("  -q        quiet mode (don't print startup or debug messages)\n");
@@ -271,19 +253,45 @@ ret:
 
 
 /*
+ *  show_cpus_and_machine_types():
+ */
+void show_cpus_and_machine_types(void)
+{
+	int i;
+	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+
+	printf("Available CPU names:\n");
+	i = 0;
+	while (cpu_type_defs[i].name != NULL) {
+		printf("\t%s", cpu_type_defs[i].name);
+		i++;
+		if ((i % 7) == 0 || cpu_type_defs[i].name == NULL)
+			printf("\n");
+	}
+
+	printf("Most of these are bogus, and not really implemented.\n");
+
+	printf("\nAvailable machine types (and subtypes):\n");
+
+	/*  TODO  */
+}
+
+
+/*
  *  get_cmd_args():
  *
  *  Reads command line arguments.
  */
 int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
-	int ch, using_switch_d = 0, using_switch_Z = 0;
+	int ch, res, using_switch_d = 0, using_switch_Z = 0;
 	char *progname = argv[0];
+	char *type = NULL, *subtype = NULL;
 	int n_cpus_set = 0;
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:E:e:F:G:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
@@ -316,33 +324,22 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'E':
-			m->machine_type = MACHINE_COBALT;
-			m->machine_subtype = 0;
+			type = optarg;
 			break;
 		case 'e':
-			m->machine_type = MACHINE_MESHCUBE;
-			m->machine_subtype = 0;
+			subtype = optarg;
 			break;
 		case 'F':
 			m->machine_type = MACHINE_HPCMIPS;
 			m->machine_subtype = atoi(optarg);
 			break;
-		case 'f':
-			m->machine_type = MACHINE_SONYNEWS;
-			m->machine_subtype = 0;
-			break;
 		case 'G':
 			m->machine_type = MACHINE_SGI;
 			m->machine_subtype = atoi(optarg);
 			break;
-		case 'g':
-			m->machine_type = MACHINE_NETGEAR;
-			m->machine_subtype = 0;
-			break;
 		case 'H':
-			m->machine_type = MACHINE_WRT54G;
-			m->machine_subtype = 0;
-			break;
+			show_cpus_and_machine_types();
+			exit(1);
 		case 'h':
 			usage(progname, 1);
 			exit(1);
@@ -499,6 +496,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			exit(1);
 		}
 	}
+
+	res = machine_name_to_type(type, subtype,
+	    &m->machine_type, &m->machine_subtype);
+	if (!res)
+		exit(1);
 
 	argc -= optind;
 	argv += optind;

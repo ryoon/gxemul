@@ -26,13 +26,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.16 2004-01-05 06:40:59 debug Exp $
+ *  $Id: devices.h,v 1.17 2004-01-06 09:02:17 debug Exp $
  *
  *  Memory mapped devices:
  */
 
 #include <inttypes.h>
 #include <sys/types.h>
+
+struct pci_data;
 
 /* #ifdef WITH_X11
 #include <X11/Xlib.h>
@@ -132,7 +134,7 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
+struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_gt.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.31 2004-09-05 05:06:56 debug Exp $
+ *  $Id: dec_prom.c,v 1.32 2004-10-13 23:48:37 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -178,6 +178,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
  *	0x0c	strcmp()
  *	0x14	strlen()
  *	0x24	getchar()
+ *	0x28	gets()
  *	0x2c	puts()
  *	0x30	printf()
  *	0x38	iopoll()
@@ -193,6 +194,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
  *	0x8c	enableintr()
  *	0x9c	halt()
  *	0xa4	gettcinfo()
+ *	0xa8	execute_cmd()
  *	0xac	rex()
  */
 void decstation_prom_emul(struct cpu *cpu)
@@ -202,7 +204,7 @@ void decstation_prom_emul(struct cpu *cpu)
 	int callback = (cpu->pc & 0xf000)? 1 : 0;
 	unsigned char buf[100];
 	unsigned char ch1, ch2, ch3;
-	uint64_t slot_base = 0x10000000, slot_size = 0;
+	uint64_t tmpaddr, slot_base = 0x10000000, slot_size = 0;
 
 	if (!callback) {
 		vector = dec_jumptable_func(cpu, vector);
@@ -239,6 +241,47 @@ void decstation_prom_emul(struct cpu *cpu)
 	case 0x24:		/*  getchar()  */
 		/*  debug("[ DEC PROM getchar() ]\n");  */
 		cpu->gpr[GPR_V0] = console_readchar();
+		break;
+	case 0x28:		/*  gets()  */
+		/*  debug("[ DEC PROM gets() ]\n");  */
+		tmpaddr = cpu->gpr[GPR_A0];
+		i = 0;
+		do {
+			while ((ch = console_readchar()) < 1)
+				;
+			if (ch == '\r')
+				ch = '\n';
+			ch2 = ch;
+
+			if (ch == '\b') {
+				console_putchar(ch2);
+				console_putchar(' ');
+				console_putchar(ch2);
+			} else
+				console_putchar(ch2);
+
+			fflush(stdout);
+
+			if (ch == '\n') {
+				/*  It seems that trailing newlines
+				    are not included in the buffer.  */
+			} else if (ch != '\b') {
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch2,
+				    sizeof(ch2), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+				i++;
+			} else {
+				if (i > 0)
+					i--;
+			}
+		} while (ch2 != '\n');
+
+		/*  Trailing nul-byte:  */
+		ch2 = '\0';
+		memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch2,
+		    sizeof(ch2), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+
+		/*  Return the input argument:  */
+		cpu->gpr[GPR_V0] = cpu->gpr[GPR_A0];
 		break;
 	case 0x2c:		/*  puts()  */
 		i = 0;
@@ -471,6 +514,13 @@ void decstation_prom_emul(struct cpu *cpu)
 		store_32bit_word(cpu, DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
 		store_32bit_word(cpu, DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
 		cpu->gpr[GPR_V0] = DEC_PROM_TCINFO;
+		break;
+	case 0xa8:		/*  int execute_cmd(char *)  */
+		i = 0;
+		while ((ch = read_char_from_memory(cpu, GPR_A0, i++)) != '\0')
+			console_putchar(ch);
+		console_putchar('\n');
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0xac:		/*  rex()  */
 		debug("[ DEC PROM rex('%c') ]\n", (int)cpu->gpr[GPR_A0]);

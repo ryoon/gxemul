@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.252 2004-10-13 23:01:14 debug Exp $
+$Id: HISTORY,v 1.253 2004-10-13 23:48:36 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1017,3 +1017,4 @@ HISTORY of mips64emul
 20041014	Minor fix to src/emul.c for reading bootblocks at the end of
 		a disk or cdrom image (thanks to Alexandru Lazar for making me
 		aware of this).
+		Adding "gets()" to src/dec_prom.c.

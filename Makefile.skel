@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.17 2004-10-16 14:25:58 debug Exp $
+#  $Id: Makefile.skel,v 1.18 2004-10-17 15:56:15 debug Exp $
 #
 #  Makefile for mips64emul
 #
@@ -27,7 +27,14 @@ install: all
 	@echo "There is no automatic 'make install'. You need to manually copy the mips64emul"
 	@echo "binary and any other files you need to where you want them to reside."
 	@echo
-	@ls -l $(BIN) doc/*.[1-9]
+	@echo "binary:"
+	@ls -l $(BIN)
+	@echo
+	@echo "man page:"
+	@ls -l doc/*.[1-9]
+	@echo
+	@echo "documentation:"
+	@ls -l doc/*.html doc/*.png doc/*.gif doc/*.c
 	@echo
 
 clean:

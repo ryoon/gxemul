@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.33 2004-02-29 00:08:44 debug Exp $
+ *  $Id: devices.h,v 1.34 2004-02-29 02:00:32 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -347,6 +347,24 @@ void dev_wdsc_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_ZS_LENGTH			0x8
 int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+
+/*  lk201.c:  */
+struct lk201_data {
+        int                     use_fb;
+
+        void                    (*add_to_rx_queue)(void *,int,int);
+	void			*add_data;
+                
+        unsigned char           keyb_buf[8];
+        int                     keyb_buf_pos;
+                        
+        int                     mouse_mode;
+        int                     mouse_revision;         /*  0..15  */  
+        int                     mouse_x, mouse_y, mouse_buttons;
+};
+void lk201_tick(struct lk201_data *); 
+void lk201_tx_data(struct lk201_data *, int port, int idata);
+void lk201_init(struct lk201_data *d, int use_fb, void (*add_to_rx_queue)(void *,int,int), void *);
 
 
 #endif	/*  DEVICES_H  */

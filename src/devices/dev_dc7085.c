@@ -23,12 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.14 2004-02-25 12:24:13 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.15 2004-02-29 02:00:34 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
- *
- *  TODO:  Quite a lot has been implemented, but there are some things
- *         left;  self-test, the mouse stuff, more keyboard stuff, ...
  */
 
 #include <stdio.h>
@@ -56,23 +53,20 @@ struct dc_data {
 
 	int			tx_scanner;
 
-	unsigned char		keyb_buf[8];
-	int			keyb_buf_pos;
-
 	int			irqnr;
 	int			use_fb;
 
-	int			mouse_mode;
-	int			mouse_revision;		/*  0..15  */
-	int			mouse_x, mouse_y, mouse_buttons;
+	struct lk201_data	lk201;
 };
 
 
 /*
  *  Add a character to the receive queue.
  */
-static void add_to_rx_queue(struct dc_data *d, unsigned char ch, int line_no)
+void add_to_rx_queue(void *e, int ch, int line_no)
 {
+	struct dc_data *d = (struct dc_data *) e;
+
 	d->rx_queue_char[d->cur_rx_queue_pos_write]   = ch;
 	d->rx_queue_lineno[d->cur_rx_queue_pos_write] = line_no;
 	d->cur_rx_queue_pos_write ++;
@@ -81,148 +75,6 @@ static void add_to_rx_queue(struct dc_data *d, unsigned char ch, int line_no)
 
 	if (d->cur_rx_queue_pos_write == d->cur_rx_queue_pos_read)
 		fatal("warning: add_to_rx_queue(): rx_queue overrun!\n");
-}
-
-
-/*
- *  Converts ascii console input to LK201 keyboard scan codes.
- */
-void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
-{
-	int i, found=-1, shifted = 0, controlled = 0;
-
-	if (d->keyb_buf_pos > 0 && d->keyb_buf_pos < sizeof(d->keyb_buf)) {
-		/*  Escape sequence:  */
-		d->keyb_buf[d->keyb_buf_pos] = ch;
-		d->keyb_buf_pos ++;
-
-		if (d->keyb_buf_pos == 2) {
-			if (ch == '[')
-				return;
-			d->keyb_buf_pos = 0;
-			/*  not esc+[, output as normal key  */
-		} else {
-			/*  Inside an esc+[ sequence  */
-
-			switch (ch) {
-			case 'A':  found = 0xaa;  /*  Up     */  break;
-			case 'B':  found = 0xa9;  /*  Down   */  break;
-			case 'C':  found = 0xa8;  /*  Right  */  break;
-			case 'D':  found = 0xa7;  /*  Left   */  break;
-			/*  TODO: pageup, pagedown, ...  */
-			default:
-				;
-			}
-
-			d->keyb_buf_pos = 0;
-		}
-	} else
-		d->keyb_buf_pos = 0;
-
-	if (found == -1) {
-		switch (ch) {
-		case '\b':
-			found = 0xbc;
-			break;
-		case '\n':
-			found = 0xbd;
-			break;
-		case '\t':
-			found = 0xbe;
-			break;
-		case 27:	/*  esc  */
-			d->keyb_buf[0] = 27;
-			d->keyb_buf_pos = 1;
-			return;
-		default:
-			if (ch >= 1 && ch <= 26) {
-				ch = 'a' + ch - 1;
-				controlled = 1;
-			}
-
-			shifted = 0;
-			for (i=0; i<256; i++) {
-				/*  Skip numeric digits, so that the normal
-					digits are used instead.  */
-				if (i >= 0x92 && i<=0xa0)
-					continue;
-
-				if (unshiftedAscii[i] == ch) {
-					found = i;
-					break;
-				}
-			}
-
-			if (found == -1) {
-				/*  unshift ch:  */
-				if (ch >= 'A' && ch <= 'Z')
-					ch = ch + ('a' - 'A');
-				for (i=0; i<256; i++)
-					if (shiftedAscii[i] == ch) {
-						found = i;
-						shifted = 1;
-						break;
-					}
-			}
-		}
-	}
-
-	if (!shifted)
-		add_to_rx_queue(d, KEY_UP, DCKBD_PORT);
-	else {
-		add_to_rx_queue(d, KEY_UP, DCKBD_PORT);
-		add_to_rx_queue(d, KEY_SHIFT, DCKBD_PORT);
-	}
-
-	if (controlled)
-		add_to_rx_queue(d, KEY_CONTROL, DCKBD_PORT);
-
-	/*  Send the actual scan code:  */
-	add_to_rx_queue(d, found, DCKBD_PORT);
-}
-
-
-/*
- *  send_mouse_update_sequence():
- *
- *  mouse_x,y,buttons contains the "goal", d->mouse_* contains the
- *  current state.
- */
-void send_mouse_update_sequence(struct dc_data *d, int mouse_x, int mouse_y, int mouse_buttons)
-{
-	int xsign, xdelta, ysign, ydelta;
-
-	xdelta = mouse_x - d->mouse_x;
-	ydelta = mouse_y - d->mouse_y;
-	if (xdelta > 127)
-		xdelta = 127;
-	if (xdelta < -127)	/*  TODO:  128 would probably be OK too  */
-		xdelta = -127;
-	if (ydelta > 127)
-		ydelta = 127;
-	if (ydelta < -127)	/*  TODO:  128 would probably be OK too  */
-		ydelta = -127;
-
-	xsign = xdelta < 0? 1 : 0;
-	ysign = ydelta < 0? 1 : 0;
-
-	d->mouse_x += xdelta;
-	d->mouse_y += ydelta;
-	d->mouse_buttons = mouse_buttons;
-
-	switch (d->mouse_mode) {
-	case 0:
-		/*  Do nothing (before the mouse is initialized)  */
-		break;
-	case MOUSE_INCREMENTAL:
-		add_to_rx_queue(d, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + (mouse_buttons & 7), DCMOUSE_PORT);
-		add_to_rx_queue(d, xdelta, DCMOUSE_PORT);
-		add_to_rx_queue(d, ydelta, DCMOUSE_PORT);
-		break;
-	default:
-		/*  TODO:  prompt mode and perhaps more stuff  */
-		fatal("[ dc7085: mouse mode 0x%02x unknown: TODO ]\n", d->mouse_mode);
-	}
 }
 
 
@@ -239,24 +91,7 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	int avail;
 	int mouse_x, mouse_y, mouse_buttons;
 
-	if (console_charavail()) {
-		unsigned char ch = console_readchar();
-		if (d->use_fb)
-			convert_ascii_to_keybcode(d, ch);
-		else {
-			/*  This is ugly, but neccessary because different machines
-				seem to use different ports for their serial console:  */
-			add_to_rx_queue(d, ch, DCKBD_PORT);	/*  DEC MIPSMATE 5100  */
-			add_to_rx_queue(d, ch, DCCOMM_PORT);
-			add_to_rx_queue(d, ch, DCPRINTER_PORT);	/*  DECstation 3100 (PMAX)  */
-		}
-	}
-
-	/*  Check for mouse updates:  */
-	console_getmouse(&mouse_x, &mouse_y, &mouse_buttons);
-	if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
-	    mouse_buttons != d->mouse_buttons)
-		send_mouse_update_sequence(d, mouse_x, mouse_y, mouse_buttons);
+	lk201_tick(&d->lk201);
 
 	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
 
@@ -370,42 +205,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			int line_no = (d->regs.dc_csr >> RBUF_LINE_NUM_SHIFT) & 0x3;
 			idata &= 0xff;
 
-			switch (line_no) {
-			case DCKBD_PORT:		/*  port 0  */
-				if (!d->use_fb) {
-					/*  Simply print the character to stdout:  */
-					console_putchar(idata);
-				} else {
-					debug("[ dc7085 keyboard control: 0x%x ]\n", idata);
-				}
-				break;
-			case DCMOUSE_PORT:		/*  port 1  */
-				debug("[ dc7085 writing data to MOUSE: 0x%x", idata);
-				if (idata == MOUSE_INCREMENTAL) {
-					d->mouse_mode = MOUSE_INCREMENTAL;
-				} else if (idata == MOUSE_SELF_TEST) {
-					/*
-					 *  Mouse self-test:
-					 *
-					 *  TODO: Find out if this is correct. The lowest
-					 *        four bits of the second byte should be
-					 *        0x2, according to NetBSD/pmax. But the
-					 *        other bits and bytes?
-					 */
-					debug(" (mouse self-test request)");
-					add_to_rx_queue(d, 0xa0 | d->mouse_revision, DCMOUSE_PORT);
-					add_to_rx_queue(d, 0x02, DCMOUSE_PORT);
-					add_to_rx_queue(d, 0x00, DCMOUSE_PORT);
-					add_to_rx_queue(d, 0x00, DCMOUSE_PORT);
-				} else
-					debug(" UNKNOWN byte; TODO");
-				debug(" ]\n");
-				break;
-			case DCCOMM_PORT:		/*  port 2  */
-			case DCPRINTER_PORT:		/*  port 3  */
-				/*  Simply print the character to stdout:  */
-				console_putchar(idata);
-			}
+			lk201_tx_data(&d->lk201, line_no, idata);
 
 			d->regs.dc_csr &= ~CSR_TRDY;
 			cpu_interrupt_ack(cpu, d->irqnr);
@@ -460,8 +260,7 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 	d->regs.dc_csr = CSR_TRDY | CSR_MSE;
 	d->regs.dc_tcr = 0x00;
 
-	d->mouse_mode = 0;
-	d->mouse_revision = 0;	/*  0..15  */
+	lk201_init(&d->lk201, use_fb, add_to_rx_queue, d);
 
 	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH, dev_dc7085_access, d);
 	cpu_add_tickfunction(cpu, dev_dc7085_tick, d, 9);		/*  every 512:th cycle  */

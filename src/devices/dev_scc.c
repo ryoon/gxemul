@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.8 2004-02-29 00:08:47 debug Exp $
+ *  $Id: dev_scc.c,v 1.9 2004-02-29 02:00:34 debug Exp $
  *  
  *  Serial controller on some DECsystems. (Z8530 ?)
  *
@@ -33,9 +33,10 @@
  *	serial ports (2 and 3).
  *
  *  TODO:
- *	Interrupts (both RX and TX)?
- *	DMA?
- *	Keyboard & mouse data as in the 'dc' device.
+ *	Mouse support!!!  (scc0 and scc1 need to cooperate, in order to
+ *		emulate the same lk201 behaviour as when using the dc device)
+ *	DMA
+ *	More correct interrupt support.
  */
 
 #include <stdio.h>
@@ -47,6 +48,7 @@
 #include "console.h"
 #include "devices.h"
 
+#include "lk201.h"
 #include "sccreg.h"
 
 #define	N_SCC_PORTS	2
@@ -69,15 +71,32 @@ struct scc_data {
 	unsigned char	rx_queue_char[N_SCC_PORTS * MAX_QUEUE_LEN];
 	int		cur_rx_queue_pos_write[N_SCC_PORTS];
 	int		cur_rx_queue_pos_read[N_SCC_PORTS];
+
+	struct lk201_data lk201;
 };
 
 
 /*
+ *  dev_scc_add_to_rx_queue():
+ *
  *  Add a character to the receive queue.
  */
-static void add_to_rx_queue(struct scc_data *d, unsigned char ch, int portnr)
+void dev_scc_add_to_rx_queue(void *e, int ch, int portnr)
 { 
-        d->rx_queue_char[portnr * N_SCC_REGS + d->cur_rx_queue_pos_write[portnr]] = ch; 
+	struct scc_data *d = (struct scc_data *) e;
+	int scc_nr;
+
+	/*  DC's keyboard port ==> SCC keyboard port  */
+	if (portnr == 0)
+		portnr = 3;
+
+	scc_nr = portnr / N_SCC_PORTS;
+	if (scc_nr != d->scc_nr)
+		return;
+
+	portnr &= (N_SCC_PORTS - 1);
+
+        d->rx_queue_char[portnr * MAX_QUEUE_LEN + d->cur_rx_queue_pos_write[portnr]] = ch; 
         d->cur_rx_queue_pos_write[portnr] ++;
         if (d->cur_rx_queue_pos_write[portnr] == MAX_QUEUE_LEN)
                 d->cur_rx_queue_pos_write[portnr] = 0;
@@ -96,7 +115,7 @@ int rx_avail(struct scc_data *d, int portnr)
 unsigned char rx_nextchar(struct scc_data *d, int portnr)
 {
 	unsigned char ch;
-	ch = d->rx_queue_char[portnr * N_SCC_REGS + d->cur_rx_queue_pos_read[portnr]];
+	ch = d->rx_queue_char[portnr * MAX_QUEUE_LEN + d->cur_rx_queue_pos_read[portnr]];
 	d->cur_rx_queue_pos_read[portnr]++;
 	if (d->cur_rx_queue_pos_read[portnr] == MAX_QUEUE_LEN)
 		d->cur_rx_queue_pos_read[portnr] = 0;
@@ -115,8 +134,10 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 	/*  Add keystrokes to the rx queue:  */
 	if (d->use_fb == 0 && d->scc_nr == 1) {
 		if (console_charavail())
-			add_to_rx_queue(d, console_readchar(), 0);
+			dev_scc_add_to_rx_queue(extra, console_readchar(), 2);
 	}
+	if (d->use_fb == 1 && d->scc_nr == 1)
+		lk201_tick(&d->lk201);
 
 	for (i=0; i<N_SCC_PORTS; i++) {
 		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_TX_EMPTY;
@@ -126,8 +147,11 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 		if (rx_avail(d, i))
 			d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_RX_AVAIL;
 
-		/*  Interrupts:  */
-		if (d->scc_register_w[i * N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE) {
+		/*
+		 *  Interrupts:
+		 *  (NOTE: Interrupt enables are always at channel A)
+		 */
+		if (d->scc_register_w[N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE) {
 			/*  TX interrupts?  */
 			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
 				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_A ||
@@ -136,7 +160,7 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 			}
 
 			/*  RX interrupts?  */
-			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & (SCC_WR1_RXI_FIRST_CHAR
+			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] & (SCC_WR1_RXI_FIRST_CHAR
 			    | SCC_WR1_RXI_ALL_CHAR)) {
 				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0] & SCC_RR0_RX_AVAIL) {
 					if (i == SCC_CHANNEL_A)
@@ -225,17 +249,11 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			/*  debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);  */
 
 			/*  Send the character:  */
-			switch (d->scc_nr * 2 + port) {
-			case 2:	/*  2 is a comm port  */
-				console_putchar(idata);
-				break;
-			default:
-				fatal("[ scc: output to scc_nr %i port %i: 0x%02x ]\n", d->scc_nr, port, idata);
-			}
+			lk201_tx_data(&d->lk201, d->scc_nr * 2 + port, idata);
 
 			/*  Loopback:  */
 			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14] & SCC_WR14_LOCAL_LOOPB)
-				add_to_rx_queue(d, idata, port);
+				dev_scc_add_to_rx_queue(d, idata, d->scc_nr * 2 + port);
 
 			/*  TX interrupt:  */
 			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE &&
@@ -283,6 +301,8 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	d->irq_nr = irq_nr;
 	d->scc_nr = scc_nr;
 	d->use_fb = use_fb;
+
+	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH, dev_scc_access, d);
 	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);	/*  every 1024:th cycle  */

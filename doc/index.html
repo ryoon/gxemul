@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.185 2005-01-04 16:45:01 debug Exp $
+$Id: index.html,v 1.186 2005-01-05 02:18:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -936,9 +936,11 @@ Ultrix from the harddisk image:<pre>
 Ultrix mostly seems to work with dynamic binary translation (enabled by 
 the <b>-b</b> command line option). If you have a very fast
 host machine, and use bintrans, you might experience a weird timer related
-bug, which makes it impossible to logon to the system. A temporary
-workaround is to add <b>-I33000000</b> to fix the emulated clock speed to 
-33 million instructions per emulated second.
+bug, which makes it impossible to logon to the system. It is triggered
+when the emulation goes faster than any real DECstation machine was 
+capable of running. A temporary workaround is to add <b>-I33000000</b>
+to fix the emulated clock speed to 33 million instructions per emulated
+second. (When using -CR4400, -I16000000 should be used instead.)
 
 <p>
 You can experiment with adding <b>-Z2</b> (for emulating a 

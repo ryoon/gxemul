@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.5 2003-12-29 00:53:41 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.6 2003-12-30 03:04:45 debug Exp $
  *  
  *  NS16550 serial controller.
+ *
+ *  TODO: fifo. Without the fifo functionality, NetBSD detects this device
+ *  as a 8250 or 16450.
  */
 
 #include <stdio.h>
@@ -40,10 +43,16 @@
 
 
 struct ns_data {
-	int	reg[8];
-	int	irq_enable;
-	int	irqnr;
-	int	addrmult;
+	int		reg[8];
+	int		irq_enable;
+	int		irqnr;
+	int		addrmult;
+
+	int		dlab;		/*  Divisor Latch Access bit  */
+	int		divisor;
+	int		databits;
+	char		parity;
+	const char	*stopbits;
 };
 
 
@@ -105,6 +114,9 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	d->reg[com_lsr] &= ~LSR_RXRDY;
 	d->reg[com_msr] = MSR_DCD | MSR_DSR | MSR_CTS;
 
+	/*  FIFO turned off:  */
+	d->reg[com_iir] &= 0x0f;
+
 	if (console_charavail()) {
 		d->reg[com_lsr] |= LSR_RXRDY;
 	}
@@ -113,13 +125,27 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 
 	switch (relative_addr) {
 	case com_data:	/*  com_data or com_dlbl  */
+		/*  Read/write of the Divisor value:  */
+		if (d->dlab) {
+			if (writeflag == MEM_WRITE) {
+				/*  Set the low byte of the divisor:  */
+				d->divisor &= ~0xff;
+				d->divisor |= (idata & 0xff);
+			} else {
+				odata_set = 1;
+				odata = d->divisor & 0xff;
+			}
+			break;
+		}
+
+		/*  Read write of data:  */
 		if (writeflag == MEM_WRITE) {
 			/*  Ugly hack: don't show form feeds:  */
 			if (idata != 12)
 				console_putchar(idata);
 
+			d->reg[com_iir] |= IIR_TXRDY;
 			dev_ns16550_tick(cpu, d);
-/*			cpu_interrupt_ack(cpu, d->irqnr); */
 			return 1;
 		} else {
 			odata = console_readchar();
@@ -129,10 +155,24 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 
 			odata_set = 1;
 			dev_ns16550_tick(cpu, d);
-/*			cpu_interrupt_ack(cpu, d->irqnr); */
 		}
 		break;
-	case com_ier:	/*  interrupt enable  */
+	case com_ier:	/*  interrupt enable AND high byte of the divisor  */
+		/*  Read/write of the Divisor value:  */
+		if (d->dlab) {
+			if (writeflag == MEM_WRITE) {
+				/*  Set the high byte of the divisor:  */
+				d->divisor &= ~0xff00;
+				d->divisor |= ((idata & 0xff) << 8);
+				debug("[ ns16550 speed set to %i bps ]\n", 115200 / d->divisor);
+			} else {
+				odata_set = 1;
+				odata = (d->divisor & 0xff00) >> 8;
+			}
+			break;
+		}
+
+		/*  IER:  */
 		if (writeflag == MEM_WRITE) {
 			debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
 			d->irq_enable = idata;
@@ -171,10 +211,47 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			odata_set = 1;
 		}
 		break;
+	case com_lctl:
+		if (writeflag == MEM_WRITE) {
+			d->reg[relative_addr] = idata;
+			switch (idata & 0x7) {
+			case 0:	d->databits = 5; d->stopbits = "1"; break;
+			case 1:	d->databits = 6; d->stopbits = "1"; break;
+			case 2:	d->databits = 7; d->stopbits = "1"; break;
+			case 3:	d->databits = 8; d->stopbits = "1"; break;
+			case 4:	d->databits = 5; d->stopbits = "1.5"; break;
+			case 5:	d->databits = 6; d->stopbits = "2"; break;
+			case 6:	d->databits = 7; d->stopbits = "2"; break;
+			case 7:	d->databits = 8; d->stopbits = "2"; break;
+			}
+			switch ((idata & 0x38) / 0x8) {
+			case 0:	d->parity = 'N'; break;		/*  none  */
+			case 1:	d->parity = 'O'; break;		/*  odd  */
+			case 2:	d->parity = '?'; break;
+			case 3:	d->parity = 'E'; break;		/*  even  */
+			case 4:	d->parity = '?'; break;
+			case 5:	d->parity = 'Z'; break;		/*  zero  */
+			case 6:	d->parity = '?'; break;
+			case 7:	d->parity = 'o'; break;		/*  one  */
+			}
+
+			d->dlab = idata & 0x80? 1 : 0;
+
+			debug("[ ns16550 write to lctl: 0x%02x (%s%ssetting mode %i%c%s) ]\n",
+			    idata,
+			    d->dlab? "Divisor Latch access, " : "",
+			    idata&0x40? "sending BREAK, " : "",
+			    d->databits, d->parity, d->stopbits);
+		} else {
+			odata = d->reg[relative_addr];
+			odata_set = 1;
+			debug("[ ns16550 read from lctl: 0x%02x ]\n", odata);
+		}
+		break;
 	case com_mcr:
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550 write to mcr: 0x%02x ]\n", idata);
 			d->reg[relative_addr] = idata;
+			debug("[ ns16550 write to mcr: 0x%02x ]\n", idata);
 		} else {
 			odata = d->reg[relative_addr];
 			odata_set = 1;
@@ -226,6 +303,12 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 	memset(d, 0, sizeof(struct ns_data));
 	d->irqnr = irq_nr;
 	d->addrmult = addrmult;
+
+	d->dlab = 0;
+	d->divisor  = 115200 / 9600;
+	d->databits = 8;
+	d->parity   = 'N';
+	d->stopbits = "1";
 
 	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
 	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 9);	/*  every 512:th cycle  */

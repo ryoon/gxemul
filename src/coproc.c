@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.70 2004-10-17 15:31:44 debug Exp $
+ *  $Id: coproc.c,v 1.71 2004-10-19 03:40:33 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -57,6 +57,7 @@ char *cop0_names[32] = COP0_NAMES;
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct coproc *c;
+	int IB, DB, SB, IC, DC, SC;
 
 	c = malloc(sizeof(struct coproc));
 	if (c == NULL) {
@@ -120,24 +121,35 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R4000:	/*  according to the R4000 manual  */
 		case MIPS_R4600:
+			IB = cpu->emul->cache_picache_linesize - 4;
+			IB = IB < 0? 0 : (IB > 1? 1 : IB);
+			DB = cpu->emul->cache_pdcache_linesize - 4;
+			DB = DB < 0? 0 : (DB > 1? 1 : DB);
+			SB = cpu->emul->cache_secondary_linesize - 4;
+			SB = SB < 0? 0 : (SB > 3? 3 : SB);
+			IC = cpu->emul->cache_picache - 12;
+			IC = IC < 0? 0 : (IC > 7? 7 : IC);
+			DC = cpu->emul->cache_pdcache - 12;
+			DC = DC < 0? 0 : (DC > 7? 7 : DC);
+			SC = cpu->emul->cache_secondary? 0 : 1;
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  Master/Checker present bit  */
 			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
 			    | (0x00 << 24)	/*  EP  */
-			    | (0x01 << 22)	/*  SB  */
-			    | (0x00 << 21)	/*  SS  */
+			    | (  SB << 22)	/*  SB  */
+			    | (0x00 << 21)	/*  SS: 0 = mixed i/d scache  */
 			    | (0x00 << 20)	/*  SW  */
 			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (0x00 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
+			    | (  SC << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
 			    | (0x00 << 16)	/*  SM: (todo)  */
 			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
 			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
 			    | (0x00 << 13)	/*  EB: (todo)  */
 			    | (0x00 << 12)	/*  0 (resered)  */
-			    | (   3 <<  9)	/*  IC: I-cache = 2^(12+IC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   3 <<  6)	/*  DC: D-cache = 2^(12+DC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   1 <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
-			    | (   1 <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
+			    | (  IC <<  9)	/*  IC: I-cache = 2^(12+IC) bytes  (1 = 8KB, 4=64K)  */
+			    | (  DC <<  6)	/*  DC: D-cache = 2^(12+DC) bytes  (1 = 8KB, 4=64K)  */
+			    | (  IB <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
+			    | (  DB <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
 			    | (   0 <<  3)	/*  CU: todo  */
 			    | (   0 <<  0)	/*  kseg0 coherency algorithm
 							(TODO)  */

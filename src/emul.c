@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.79 2004-10-17 15:31:44 debug Exp $
+ *  $Id: emul.c,v 1.80 2004-10-19 03:40:34 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -669,9 +669,10 @@ void emul_start(struct emul *emul)
 	debug("adding cpu0");
 	if (emul->ncpus > 1)
 		debug(" .. cpu%i", emul->ncpus-1);
-	debug(": %s\n", emul->emul_cpu_name);
+	debug(": %s", emul->emul_cpu_name);
 	for (i=0; i<emul->ncpus; i++)
 		emul->cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
+	debug("\n");
 
 	if (emul->use_random_bootstrap_cpu)
 		emul->bootstrap_cpu = random() % emul->ncpus;

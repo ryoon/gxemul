@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.193 2004-10-17 15:31:45 debug Exp $
+ *  $Id: machine.c,v 1.194 2004-10-19 03:40:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2538,32 +2538,33 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  32 bytes per line, default = 32 KB total  */
 			    0xffffffff, NULL, cpuaddr);
 
-			cache_size = 8;	/*  1 MB  */
-			if (emul->cache_secondary)
+			if (emul->cache_secondary >= 12) {
 				cache_size = emul->cache_secondary - 12;
-			if (cache_size < 0)
-				cache_size = 0;
 
-			cache_line_size = 6;	/*  64 bytes default  */
-			if (emul->cache_secondary_linesize)
-				cache_line_size = emul->cache_secondary_linesize;
-			if (cache_line_size < 0)
-				cache_line_size = 0;
+				cache_line_size = 6;	/*  64 bytes default  */
+				if (emul->cache_secondary_linesize)
+					cache_line_size = emul->cache_secondary_linesize;
+				if (cache_line_size < 0)
+					cache_line_size = 0;
 
-			sdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
-			    COMPONENT_TYPE_SecondaryDCache, 0, 1, 2,
-			    /*
-			     *  Key bits:  0xYYZZZZ
-			     *  Cache line size is 1 << YY,
-			     *  Cache size is 4KB << ZZZZ.
-			     */
-			    0x01000000 + (cache_line_size << 16) + cache_size,
-				/*  64 bytes per line, default = 1 MB total  */
-			    0xffffffff, NULL, cpuaddr);
+				sdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
+				    COMPONENT_TYPE_SecondaryDCache, 0, 1, 2,
+				    /*
+				     *  Key bits:  0xYYZZZZ
+				     *  Cache line size is 1 << YY,
+				     *  Cache size is 4KB << ZZZZ.
+				     */
+				    0x01000000 + (cache_line_size << 16) + cache_size,
+					/*  64 bytes per line, default = 1 MB total  */
+				    0xffffffff, NULL, cpuaddr);
+			}
 
 			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x,"
-			    " picache = 0x%x pdcache = 0x%x sdcache = 0x%x\n",
-			    i, cpuaddr, i, fpu, picache, pdcache, sdcache);
+			    " picache = 0x%x pdcache = 0x%x",
+			    i, cpuaddr, i, fpu, picache, pdcache);
+			if (emul->cache_secondary >= 12)
+				debug(" sdcache = 0x%x", sdcache);
+			debug("\n");
 		}
 
 
@@ -2803,7 +2804,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "nogfxkbd=1", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "eaddr=00:00:00:00:00:00", &addr);
+			add_environment_string(cpu, "eaddr=10:20:30:40:50:60", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "verbose=istrue", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));

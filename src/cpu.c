@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.168 2004-10-17 15:31:44 debug Exp $
+ *  $Id: cpu.c,v 1.169 2004-10-19 03:40:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,8 +71,8 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	struct cpu *cpu;
 	int i, j, tags_size, n_cache_lines, size_per_cache_line;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
-
-	assert(mem != NULL);
+	int64_t secondary_cache_size;
+	int x, linesize;
 
 	cpu = malloc(sizeof(struct cpu));
 	if (cpu == NULL) {
@@ -108,36 +107,76 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	}
 
 	/*
-	 *  Data and Instruction caches:
+	 *  CACHES:
 	 *
-	 *  TODO: These should be configurable at runtime, perhaps.
+	 *  1) Use DEFAULT_PCACHE_SIZE and DEFAULT_PCACHE_LINESIZE etc.
+	 *  2) If there are specific values defined for this type of cpu,
+	 *     in its cpu_type substruct, then let's use those.
+	 *  3) Values in the emul struct override both of the above.
+	 *
+	 *  Once we've decided which values to use, they are stored in
+	 *  the emul struct so they can be used from src/machine.c etc.
+	 */
+
+	x = DEFAULT_PCACHE_SIZE;
+	if (cpu->cpu_type.default_pdcache)
+		x = cpu->cpu_type.default_pdcache;
+	if (emul->cache_pdcache == 0)
+		emul->cache_pdcache = x;
+
+	x = DEFAULT_PCACHE_SIZE;
+	if (cpu->cpu_type.default_picache)
+		x = cpu->cpu_type.default_picache;
+	if (emul->cache_picache == 0)
+		emul->cache_picache = x;
+
+	if (emul->cache_secondary == 0)
+		emul->cache_secondary = cpu->cpu_type.default_scache;
+
+	linesize = DEFAULT_PCACHE_LINESIZE;
+	if (cpu->cpu_type.default_pdlinesize)
+		linesize = cpu->cpu_type.default_pdlinesize;
+	if (emul->cache_pdcache_linesize == 0)
+		emul->cache_pdcache_linesize = linesize;
+
+	linesize = DEFAULT_PCACHE_LINESIZE;
+	if (cpu->cpu_type.default_pilinesize)
+		linesize = cpu->cpu_type.default_pilinesize;
+	if (emul->cache_picache_linesize == 0)
+		emul->cache_picache_linesize = linesize;
+
+	linesize = 0;
+	if (cpu->cpu_type.default_slinesize)
+		linesize = cpu->cpu_type.default_slinesize;
+	if (emul->cache_secondary_linesize == 0)
+		emul->cache_secondary_linesize = linesize;
+
+
+	/*
+	 *  Primary Data and Instruction caches:
 	 */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
-		int x;
+		switch (i) {
+		case CACHE_DATA:
+			x = 1 << emul->cache_pdcache;
+			linesize = 1 << emul->cache_pdcache_linesize;
+			break;
+		case CACHE_INSTRUCTION:
+			x = 1 << emul->cache_picache;
+			linesize = 1 << emul->cache_picache_linesize;
+			break;
+		}
+
+		/*  Primary cache size and linesize:  */
+		cpu->cache_size[i] = x;
+		cpu->cache_linesize[i] = linesize;
 
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R2000:
 		case MIPS_R3000:
-			cpu->cache_size[i] = 65536;
-			cpu->cache_linesize[i] = 4;
 			size_per_cache_line = sizeof(struct r3000_cache_line);
 			break;
 		default:
-			x = 1 << DEFAULT_PCACHE_SIZE;
-
-			switch (i) {
-			case CACHE_DATA:
-				if (emul->cache_pdcache)
-					x = 1 << emul->cache_pdcache;
-				break;
-			case CACHE_INSTRUCTION:
-				if (emul->cache_picache)
-					x = 1 << emul->cache_picache;
-				break;
-			}
-
-			cpu->cache_size[i] = x;
-			cpu->cache_linesize[i] = 1 << DEFAULT_PCACHE_LINESIZE;
 			size_per_cache_line = sizeof(struct r4000_cache_line);
 		}
 
@@ -176,6 +215,28 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 		/*  Set cache_last_paddr to something "impossible":  */
 		cpu->cache_last_paddr[i] = IMPOSSIBLE_PADDR;
 	}
+
+	/*
+	 *  Secondary cache:
+	 */
+	secondary_cache_size = 0;
+	if (emul->cache_secondary)
+		secondary_cache_size = 1 << emul->cache_secondary;
+	/*  TODO: linesize...  */
+
+	debug(" (I+D = %i+%i KB",
+	    (int)(cpu->cache_size[CACHE_INSTRUCTION] / 1024),
+	    (int)(cpu->cache_size[CACHE_DATA] / 1024));
+
+	if (secondary_cache_size != 0) {
+		debug(", L2 = ");
+		if (secondary_cache_size >= 1048576)
+			debug("%i MB", (int)(secondary_cache_size / 1048576));
+		else
+			debug("%i KB", (int)(secondary_cache_size / 1024));
+	}
+
+	debug(")");
 
 	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
 	cpu->coproc[1] = coproc_new(cpu, 1);	/*  FPU  */

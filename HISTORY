@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.262 2004-10-18 04:53:59 debug Exp $
+$Id: HISTORY,v 1.263 2004-10-19 03:40:31 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1032,3 +1032,7 @@ HISTORY of mips64emul
 		used yet.
 20041017	Minor updates.
 20041018	Update to dev_mc146818 to allow Mach to boot a bit further.
+		The "hardware random" in dev_mp.c now returns up to 64 bits
+		of random.
+20041019	Minor updates to the way cache sizes are used throughout
+		the code.

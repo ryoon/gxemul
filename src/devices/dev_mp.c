@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.12 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_mp.c,v 1.13 2004-10-19 03:40:32 debug Exp $
  *  
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -120,7 +120,10 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_HARDWARE_RANDOM:
+		/*  Return (up to) 64 bits of "hardware random":  */
 		odata = random();
+		odata = (odata << 31) ^ random();
+		odata = (odata << 31) ^ random();
 		break;
 
 	default:

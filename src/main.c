@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.46 2004-06-29 01:25:34 debug Exp $
+ *  $Id: main.c,v 1.47 2004-06-29 06:28:04 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -433,7 +433,7 @@ int get_cmd_args(int argc, char *argv[])
 		usage(progname);
 		printf("You must specify one or more names of files that you wish to load into memory.\n");
 		printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
-		printf("where syms is the text produced my running 'nm' (or 'nm -S') on a binary.\n");
+		printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
 		printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
 		printf("or \"address:skiplen:\".\n");
 		printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");

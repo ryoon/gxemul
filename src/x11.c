@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.33 2004-12-08 13:27:31 debug Exp $
+ *  $Id: x11.c,v 1.34 2004-12-08 13:27:46 debug Exp $
  *
  *  X11-related functions.
  */
@@ -170,10 +170,10 @@ void x11_redraw_cursor(int i)
 		XFlush(fb_windows[i].x11_display);
 	}
 
-	printf("n_colors_used = %i\n", n_colors_used);
+	/*  printf("n_colors_used = %i\n", n_colors_used);  */
 
-	/*  Remove the old X11 host cursor:  */
 	if (fb_windows[i].host_cursor != 0 && n_colors_used < 2) {
+		/*  Remove the old X11 host cursor:  */
 		XUndefineCursor(fb_windows[i].x11_display, fb_windows[i].x11_fb_window);
 		XFlush(fb_windows[i].x11_display);
 		XFreeCursor(fb_windows[i].x11_display, fb_windows[i].host_cursor);

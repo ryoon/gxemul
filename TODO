@@ -167,6 +167,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			Multiple simultaneous machines should be possible.
 		o)  Disk images.
 
+	Regression tests: tests/
+
 	Save state of the whole emulated machine, to be able to load it back
 		in later?  (Memory, all device's states, all registers and
 		so on.  Like taking a snapshot)

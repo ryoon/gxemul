@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.5 2004-01-11 23:53:36 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.6 2004-01-14 06:10:20 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -102,8 +102,11 @@ uint32_t pci_vt82c586_ide_rr(int reg)
  */
 void pci_vt82c586_ide_init(struct cpu *cpu, struct memory *mem)
 {
-	/*  TODO:  what about these base addresses and interrupt numbers? They work for Cobalt...  */
-	dev_wdc_init(cpu, mem, 0x100001f0, 0, 0);	/*  primary  */
-	dev_wdc_init(cpu, mem, 0x10000170, 0, 2);	/*  secondary  */
+	/*
+	 *  TODO:  what about these base addresses and interrupt
+	 * numbers? They work for Cobalt...   7 = PCI interrupt
+	 */
+	dev_wdc_init(cpu, mem, 0x100001f0, 7, 0);	/*  primary  */
+	dev_wdc_init(cpu, mem, 0x10000170, 7, 2);	/*  secondary  */
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.10 2004-07-16 18:19:45 debug Exp $
+ *  $Id: symbol.c,v 1.11 2004-07-17 19:38:22 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -55,7 +55,19 @@ struct symbol {
 };
 
 struct symbol *first_symbol = NULL;
-int n_symbols = 0;
+static int sorted_array = 0;
+static int n_symbols = 0;
+
+
+/*
+ *  symbol_nsymbols():
+ *
+ *  Return n_symbols.
+ */
+int symbol_nsymbols(void)
+{
+	return n_symbols;
+}
 
 
 /*
@@ -69,6 +81,11 @@ int n_symbols = 0;
 int get_symbol_addr(char *symbol, uint64_t *addr)
 {
 	struct symbol *s;
+
+	if (sorted_array) {
+		fprintf(stderr, "get_symbol_addr(): the array is already sorted!\n");
+		exit(1);
+	}
 
 	s = first_symbol;
 	while (s != NULL) {
@@ -100,16 +117,12 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
  *  *offset will be set to 0x8.
  *
  *  If no symbol was found, NULL is returned instead.
- *
- *  NOTE:  This algorithm has linear time complexity, O(n).  It should _NOT_
- *         be used during fast execution.  It is ok however to use this
- *         routine while debugging, ie when quiet_mode == 0 or when there
- *         is some kind of fatal or uncommon error.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
 char *get_symbol_name(uint64_t addr, int *offset)
 {
 	struct symbol *s;
+	int stepsize, ofs;
 
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;
@@ -118,25 +131,60 @@ char *get_symbol_name(uint64_t addr, int *offset)
 	if (offset != NULL)
 		*offset = 0;
 
-	s = first_symbol;
-	while (s != NULL) {
-		/*  Found a match?  */
-		if (addr >= s->addr && addr < s->addr + s->len) {
-			if (addr == s->addr)
-				snprintf(symbol_buf, SYMBOLBUF_MAX,
-				    "%s", s->name);
-			else
-				snprintf(symbol_buf, SYMBOLBUF_MAX,
-				    "%s+0x%lx", s->name, (long)
-				    (addr - s->addr));
-			if (offset != NULL)
-				*offset = addr - s->addr;
-			return symbol_buf;
+	if (!sorted_array) {
+		/*  Slow, linear O(n) search:  */
+		s = first_symbol;
+		while (s != NULL) {
+			/*  Found a match?  */
+			if (addr >= s->addr && addr < s->addr + s->len) {
+				if (addr == s->addr)
+					snprintf(symbol_buf, SYMBOLBUF_MAX,
+					    "%s", s->name);
+				else
+					snprintf(symbol_buf, SYMBOLBUF_MAX,
+					    "%s+0x%lx", s->name, (long)
+					    (addr - s->addr));
+				if (offset != NULL)
+					*offset = addr - s->addr;
+				return symbol_buf;
+			}
+			s = s->next;
 		}
+	} else {
+		/*  Faster, O(log n) search:  */
+		stepsize = n_symbols / 2;
+		ofs = stepsize;
+		while (stepsize > 0 || (stepsize == 0 && ofs == 0)) {
+			s = first_symbol + ofs;
 
-		s = s->next;
+			/*  Found a match?  */
+			if (addr >= s->addr && addr < s->addr + s->len) {
+				if (addr == s->addr)
+					snprintf(symbol_buf, SYMBOLBUF_MAX,
+					    "%s", s->name);
+				else
+					snprintf(symbol_buf, SYMBOLBUF_MAX,
+					    "%s+0x%lx", s->name, (long)
+					    (addr - s->addr));
+				if (offset != NULL)
+					*offset = addr - s->addr;
+				return symbol_buf;
+			}
+
+			/*  Special case for offset 0 (end of search in
+			    the Left direction  */
+			if (ofs == 0)
+				break;
+
+			stepsize >>= 1;
+			if (addr < s->addr)
+				ofs -= stepsize;
+			else
+				ofs += stepsize;
+		}
 	}
 
+	/*  Not found? Then return NULL.  */
 	return NULL;
 }
 
@@ -149,6 +197,11 @@ char *get_symbol_name(uint64_t addr, int *offset)
 void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type)
 {
 	struct symbol *s;
+
+	if (sorted_array) {
+		fprintf(stderr, "add_symbol_name(): the symbol array is already sorted\n");
+		exit(1);
+	}
 
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;
@@ -286,32 +339,24 @@ void symbol_recalc_sizes(void)
 	}
 
 	qsort(tmp_array, n_symbols, sizeof(struct symbol), sym_addr_compare);
+	sorted_array = 1;
 
 	/*  Recreate the first_symbol chain:  */
 	first_symbol = NULL;
 	for (i=0; i<n_symbols; i++) {
-		tmp_ptr = malloc(sizeof(struct symbol));
-		if (tmp_ptr == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		*tmp_ptr = tmp_array[i];
-		tmp_ptr->next = first_symbol;
-		first_symbol = tmp_ptr;
-
-		/*  printf("'%s'\n", first_symbol->name);  */
-
 		/*  Recalculate size, if 0:  */
-		if (tmp_ptr->len == 0) {
+		if (tmp_array[i].len == 0) {
+			uint64_t len;
 			if (i != n_symbols-1)
-				tmp_ptr->len = tmp_array[i+1].addr
+				len = tmp_array[i+1].addr
 				    - tmp_array[i].addr;
 			else
-				tmp_ptr->len = 1;
+				len = 1;
+			tmp_array[i].len = len;
 		}
 	}
 
-	free(tmp_array);
+	first_symbol = tmp_array;
 }
 
 
@@ -323,7 +368,7 @@ void symbol_recalc_sizes(void)
 void symbol_init(void)
 {
 	first_symbol = NULL;
+	sorted_array = 0;
 	n_symbols = 0;
 }
-
 

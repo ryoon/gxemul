@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.221 2004-09-05 03:42:50 debug Exp $
+$Id: HISTORY,v 1.222 2004-09-05 04:55:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -931,3 +931,4 @@ HISTORY of mips64emul
 		it seems that this causes a slowdown of the emulator.
 		Userland emulation is now only used if --userland is used
 		when running configure.
+		Modifying src/symbol.c to not use global variables.

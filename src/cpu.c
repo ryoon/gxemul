@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.148 2004-09-05 04:32:04 debug Exp $
+ *  $Id: cpu.c,v 1.149 2004-09-05 04:56:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -45,6 +45,7 @@
 #include "dec_kn02.h"
 #include "devices.h"
 #include "memory.h"
+#include "symbol.h"
 
 
 extern int old_show_trace_tree;
@@ -286,7 +287,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (running)
 		dumpaddr = cpu->pc_last;
 
-	symbol = get_symbol_name(dumpaddr, &offset);
+	symbol = get_symbol_name(&cpu->emul->symbol_context, dumpaddr, &offset);
 	if (symbol != NULL && offset==0)
 		debug("<%s>\n", symbol);
 
@@ -363,7 +364,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			symbol = get_symbol_name(cpu->gpr[rs], &offset);
+			symbol = get_symbol_name(&cpu->emul->symbol_context,
+			    cpu->gpr[rs], &offset);
 			debug("jr\tr%i", rs);
 			if (running && symbol != NULL)
 				debug("\t\t<%s>", symbol);
@@ -371,7 +373,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case SPECIAL_JALR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
-			symbol = get_symbol_name(cpu->gpr[rs], &offset);
+			symbol = get_symbol_name(&cpu->emul->symbol_context,
+			    cpu->gpr[rs], &offset);
 			debug("jalr\tr%i,r%i", rd, rs);
 			if (running && symbol != NULL)
 				debug("<%s>", symbol);
@@ -475,7 +478,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		addr = (dumpaddr + 4) + (imm << 2);
 		debug("%s\tr%i,r%i,%016llx", hi6_names[hi6], rt, rs,
 		    (long long)addr);
-		symbol = get_symbol_name(addr, &offset);
+		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		    addr, &offset);
 		if (symbol != NULL && offset != addr)
 			debug("\t<%s>", symbol);
 		break;
@@ -541,7 +545,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm = (instr[1] << 8) + instr[0];
 		if (imm >= 32768)
 			imm -= 65536;
-		symbol = get_symbol_name(cpu->gpr[rs] + imm, &offset);
+		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		    cpu->gpr[rs] + imm, &offset);
 
 		/*  LWC3 is PREF in the newer ISA levels:  */
 		if (hi6 == HI6_LWC3) {
@@ -572,7 +577,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		    (instr[1] << 8) + instr[0]) << 2;
 		addr = (dumpaddr + 4) & ~((1 << 28) - 1);
 		addr |= imm;
-		symbol = get_symbol_name(addr, &offset);
+		symbol = get_symbol_name(&cpu->emul->symbol_context,
+		    addr, &offset);
 		if (symbol != NULL)
 			debug("%s\t0x%016llx\t<%s>",
 			    hi6_names[hi6], (long long)addr, symbol);
@@ -705,7 +711,7 @@ void cpu_register_dump(struct cpu *cpu)
 	uint64_t offset;
 	char *symbol;
 
-	symbol = get_symbol_name(cpu->pc, &offset);
+	symbol = get_symbol_name(&cpu->emul->symbol_context, cpu->pc, &offset);
 
 	if (cpu->cpu_type.isa_level < 3 ||
 	    cpu->cpu_type.isa_level == 32)
@@ -755,7 +761,7 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 	if (cpu->emul->ncpus > 1)
 		debug("cpu%i:", cpu->cpu_id);
 
-	symbol = get_symbol_name(addr, &offset);
+	symbol = get_symbol_name(&cpu->emul->symbol_context, addr, &offset);
 
 	for (x=0; x<cpu->trace_tree_depth; x++)
 		debug("  ");
@@ -892,7 +898,8 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
-		char *symbol = get_symbol_name(cpu->pc_last, &offset);
+		char *symbol = get_symbol_name(
+		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
 
 		debug("[ exception %s%s",
 		    exception_names[exccode], tlb? " <tlb>" : "");
@@ -925,7 +932,8 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 	if (tlb && vaddr == 0) {
 		uint64_t offset;
-		char *symbol = get_symbol_name(cpu->pc_last, &offset);
+		char *symbol = get_symbol_name(
+		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
@@ -933,7 +941,8 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 	if (vaddr != 0 && vaddr < 0x1000) {
 		uint64_t offset;
-		char *symbol = get_symbol_name(cpu->pc_last, &offset);
+		char *symbol = get_symbol_name(
+		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
@@ -1314,7 +1323,9 @@ static int cpu_run_instr(struct cpu *cpu)
 
 		if (instruction_trace_cached) {
 			uint64_t offset;
-			char *symbol = get_symbol_name(cpu->pc_last ^ 1, &offset);
+			char *symbol = get_symbol_name(
+			    &cpu->emul->symbol_context, cpu->pc_last ^ 1,
+			    &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
 
@@ -3111,7 +3122,8 @@ void cpu_show_cycles(struct emul *emul,
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	symbol = get_symbol_name(emul->cpus[emul->bootstrap_cpu]->pc, &offset);
+	symbol = get_symbol_name(&emul->symbol_context,
+	    emul->cpus[emul->bootstrap_cpu]->pc, &offset);
 
 	printf(", pc=%016llx <%s> ]\n",
 	    (long long)emul->cpus[emul->bootstrap_cpu]->pc, symbol? symbol : "no symbol");

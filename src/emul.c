@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.69 2004-09-05 04:32:04 debug Exp $
+ *  $Id: emul.c,v 1.70 2004-09-05 04:56:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -86,7 +86,8 @@ static void add_pc_dump_points(struct emul *emul)
 		 */
 		if (dp == 0) {
 			uint64_t addr;
-			int res = get_symbol_addr(emul->dumppoint_string[i], &addr);
+			int res = get_symbol_addr(&emul->symbol_context,
+			    emul->dumppoint_string[i], &addr);
 			if (!res)
 				fprintf(stderr,
 				    "WARNING! PC dumppoint '%s' could not be parsed\n",
@@ -739,8 +740,9 @@ void emul_start(struct emul *emul)
 	/*  Add PC dump points:  */
 	add_pc_dump_points(emul);
 
-	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
-	symbol_recalc_sizes();
+	add_symbol_name(&emul->symbol_context,
+	    0x9fff0000, 0x10000, "r2k3k_cache", 0);
+	symbol_recalc_sizes(&emul->symbol_context);
 
 	if (emul->max_random_cycles_per_chunk > 0)
 		debug("using random cycle chunks (1 to %i cycles)\n",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.13 2004-08-19 19:59:46 debug Exp $
+ *  $Id: symbol.c,v 1.14 2004-09-05 04:56:02 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -38,6 +38,8 @@
 
 #include "misc.h"
 
+#include "symbol.h"
+
 #ifdef HACK_STRTOLL
 #define strtoll strtol
 #define strtoull strtoul
@@ -46,27 +48,15 @@
 
 #define	SYMBOLBUF_MAX	100
 
-struct symbol {
-	struct symbol	*next;
-	uint64_t	addr;
-	uint64_t	len;
-	char		*name;
-	int		type;
-};
-
-static struct symbol *first_symbol = NULL;
-static int sorted_array = 0;
-static int n_symbols = 0;
-
 
 /*
  *  symbol_nsymbols():
  *
  *  Return n_symbols.
  */
-int symbol_nsymbols(void)
+int symbol_nsymbols(struct symbol_context *sc)
 {
-	return n_symbols;
+	return sc->n_symbols;
 }
 
 
@@ -78,20 +68,20 @@ int symbol_nsymbols(void)
  *
  *  NOTE:  This is O(n).
  */
-int get_symbol_addr(char *symbol, uint64_t *addr)
+int get_symbol_addr(struct symbol_context *sc, char *symbol, uint64_t *addr)
 {
 	struct symbol *s;
 
-	if (sorted_array) {
+	if (sc->sorted_array) {
 		int i;
-		for (i=0; i<n_symbols; i++)
-			if (strcmp(symbol, first_symbol[i].name) == 0) {
+		for (i=0; i<sc->n_symbols; i++)
+			if (strcmp(symbol, sc->first_symbol[i].name) == 0) {
 				if (addr != NULL)
-					*addr = first_symbol[i].addr;
+					*addr = sc->first_symbol[i].addr;
 				return 1;
 			}
 	} else {
-		s = first_symbol;
+		s = sc->first_symbol;
 		while (s != NULL) {
 			if (strcmp(symbol, s->name) == 0) {
 				if (addr != NULL)
@@ -123,7 +113,8 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
  *  If no symbol was found, NULL is returned instead.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
-char *get_symbol_name(uint64_t addr, uint64_t *offset)
+char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
+	uint64_t *offset)
 {
 	struct symbol *s;
 	int stepsize, ofs;
@@ -135,9 +126,9 @@ char *get_symbol_name(uint64_t addr, uint64_t *offset)
 	if (offset != NULL)
 		*offset = 0;
 
-	if (!sorted_array) {
+	if (!sc->sorted_array) {
 		/*  Slow, linear O(n) search:  */
-		s = first_symbol;
+		s = sc->first_symbol;
 		while (s != NULL) {
 			/*  Found a match?  */
 			if (addr >= s->addr && addr < s->addr + s->len) {
@@ -156,10 +147,10 @@ char *get_symbol_name(uint64_t addr, uint64_t *offset)
 		}
 	} else {
 		/*  Faster, O(log n) search:  */
-		stepsize = n_symbols / 2;
+		stepsize = sc->n_symbols / 2;
 		ofs = stepsize;
 		while (stepsize > 0 || (stepsize == 0 && ofs == 0)) {
-			s = first_symbol + ofs;
+			s = sc->first_symbol + ofs;
 
 			/*  Found a match?  */
 			if (addr >= s->addr && addr < s->addr + s->len) {
@@ -203,11 +194,12 @@ char *get_symbol_name(uint64_t addr, uint64_t *offset)
  *
  *  Add a symbol to the symbol list.
  */
-void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type)
+void add_symbol_name(struct symbol_context *sc,
+	uint64_t addr, uint64_t len, char *name, int type)
 {
 	struct symbol *s;
 
-	if (sorted_array) {
+	if (sc->sorted_array) {
 		fprintf(stderr, "add_symbol_name(): the symbol array is already sorted\n");
 		exit(1);
 	}
@@ -231,11 +223,11 @@ void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type)
 	s->len  = len;
 	s->type = type;
 
-	n_symbols ++;
+	sc->n_symbols ++;
 
 	/*  Add first in list:  */
-	s->next = first_symbol;
-	first_symbol = s;
+	s->next = sc->first_symbol;
+	sc->first_symbol = s;
 }
 
 
@@ -248,14 +240,14 @@ void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type)
  *  with something that reads symbols directly from the executable
  *  images.
  */
-void symbol_readfile(char *fname)
+void symbol_readfile(struct symbol_context *sc, char *fname)
 {
 	FILE *f;
 	char b1[80]; uint64_t addr;
 	char b2[80]; uint64_t len;
 	char b3[80]; int type;
 	char b4[80];
-	int cur_n_symbols = n_symbols;
+	int cur_n_symbols = sc->n_symbols;
 
 	f = fopen(fname, "r");
 	if (f == NULL) {
@@ -286,12 +278,13 @@ void symbol_readfile(char *fname)
 		if (type == 't' || type == 'r' || type == 'g')
 			continue;
 
-		add_symbol_name(addr, len, b4, type);
+		add_symbol_name(sc, addr, len, b4, type);
 	}
 
 	fclose(f);
 
-	debug("'%s': %i symbols\n", fname, n_symbols - cur_n_symbols, fname);
+	debug("'%s': %i symbols\n", fname, sc->n_symbols - cur_n_symbols,
+	    fname);
 }
 
 
@@ -321,14 +314,14 @@ int sym_addr_compare(const void *a, const void *b)
  *  containing all symbols, qsort()-ing that array according to address, and
  *  recalculating the size fields if neccessary.
  */
-void symbol_recalc_sizes(void)
+void symbol_recalc_sizes(struct symbol_context *sc)
 {
 	struct symbol *tmp_array;
 	struct symbol *last_ptr;
 	struct symbol *tmp_ptr;
 	int i;
 
-	tmp_array = malloc(sizeof (struct symbol) * n_symbols);
+	tmp_array = malloc(sizeof (struct symbol) * sc->n_symbols);
 	if (tmp_array == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -336,7 +329,7 @@ void symbol_recalc_sizes(void)
 
 	/*  Copy first_symbol --> tmp_array, and remove the old
 		first_symbol at the same time:  */
-	tmp_ptr = first_symbol;
+	tmp_ptr = sc->first_symbol;
 	i = 0;
 	while (tmp_ptr != NULL) {
 		tmp_array[i] = *tmp_ptr;
@@ -346,16 +339,17 @@ void symbol_recalc_sizes(void)
 		i++;
 	}
 
-	qsort(tmp_array, n_symbols, sizeof(struct symbol), sym_addr_compare);
-	sorted_array = 1;
+	qsort(tmp_array, sc->n_symbols, sizeof(struct symbol),
+	    sym_addr_compare);
+	sc->sorted_array = 1;
 
 	/*  Recreate the first_symbol chain:  */
-	first_symbol = NULL;
-	for (i=0; i<n_symbols; i++) {
+	sc->first_symbol = NULL;
+	for (i=0; i<sc->n_symbols; i++) {
 		/*  Recalculate size, if 0:  */
 		if (tmp_array[i].len == 0) {
 			uint64_t len;
-			if (i != n_symbols-1)
+			if (i != sc->n_symbols-1)
 				len = tmp_array[i+1].addr
 				    - tmp_array[i].addr;
 			else
@@ -366,7 +360,7 @@ void symbol_recalc_sizes(void)
 		tmp_array[i].next = &tmp_array[i+1];
 	}
 
-	first_symbol = tmp_array;
+	sc->first_symbol = tmp_array;
 }
 
 
@@ -375,10 +369,10 @@ void symbol_recalc_sizes(void)
  *
  *  Initialize the symbol hashtables.
  */
-void symbol_init(void)
+void symbol_init(struct symbol_context *sc)
 {
-	first_symbol = NULL;
-	sorted_array = 0;
-	n_symbols = 0;
+	sc->first_symbol = NULL;
+	sc->sorted_array = 0;
+	sc->n_symbols = 0;
 }
 

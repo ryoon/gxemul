@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.32 2004-07-16 18:19:45 debug Exp $
+ *  $Id: file.c,v 1.33 2004-09-05 04:56:02 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -53,6 +53,7 @@
 #include "exec_ecoff.h"
 #include "exec_elf.h"
 #include "memory.h"
+#include "symbol.h"
 
 
 #ifdef HACK_STRTOLL
@@ -109,7 +110,8 @@ extern uint64_t file_loaded_end_addr;
  *  TODO:  This has to be rewritten / corrected to support multiple a.out
  *         formats, where text/data are aligned differently.
  */
-void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf1_hack)
+static void file_load_aout(struct emul *emul, struct memory *mem,
+	char *filename, struct cpu *cpu, int osf1_hack)
 {
 	struct exec aout_header;
 	FILE *f;
@@ -221,7 +223,8 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf
 
 			/* debug("symbol type 0x%04x @ 0x%08x: %s\n", type, addr, string_symbols + str_index); */
 			if (type != 0 && addr != 0)
-				add_symbol_name(addr, 0, string_symbols + str_index, 0);
+				add_symbol_name(&emul->symbol_context,
+				    addr, 0, string_symbols + str_index, 0);
 			i++;
 		}
 
@@ -248,7 +251,8 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf
  *  Loads an ecoff binary image into the emulated memory.  The entry point
  *  (read from the ecoff header) is stored in the specified CPU's registers.
  */
-void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_ecoff(struct emul *emul, struct memory *mem,
+	char *filename, struct cpu *cpu)
 {
 	struct ecoff_exechdr exechdr;
 	int f_magic, f_nscns, f_nsyms;
@@ -493,7 +497,9 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 			    sym_nr, (int)extsyms[sym_nr].es_value,
 			    symbol_data + extsyms[sym_nr].es_strindex);  */
 
-			add_symbol_name(extsyms[sym_nr].es_value, 0, symbol_data + extsyms[sym_nr].es_strindex, 0);
+			add_symbol_name(&emul->symbol_context,
+			    extsyms[sym_nr].es_value, 0,
+			    symbol_data + extsyms[sym_nr].es_strindex, 0);
 		}
 
 		free(extsyms);
@@ -522,7 +528,7 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
  *  file format found at:
  *  http://www.ndsu.nodak.edu/instruct/tareski/373f98/notes/srecord.htm
  */
-void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
 	unsigned char buf[516];
@@ -666,7 +672,7 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
  *  of the following form:     loadaddress:filename
  *  or    loadaddress:skiplen:filename
  */
-void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
 	int len;
@@ -734,7 +740,8 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
  *  ELF files. :-/   Hopefully it will be able to recognize most valid MIPS
  *  executables.
  */
-void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_elf(struct emul *emul, struct memory *mem,
+	char *filename, struct cpu *cpu)
 {
 	Elf32_Ehdr hdr32;
 	Elf64_Ehdr hdr64;
@@ -1128,7 +1135,8 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 				size ++;
 
 			if (addr != 0)
-				add_symbol_name(addr, size, symbol_strings + st_name, 0);
+				add_symbol_name(&emul->symbol_context,
+				    addr, size, symbol_strings + st_name, 0);
 
 			if (strcmp(symbol_strings + st_name, "_gp") == 0) {
 				debug("'%s': found _gp address: 0x%016llx\n", filename, addr);
@@ -1207,17 +1215,17 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	/*  Is it an ELF?  */
 	if (minibuf[1]=='E' && minibuf[2]=='L' && minibuf[3]=='F') {
-		file_load_elf(mem, filename, cpu);
+		file_load_elf(cpu->emul, mem, filename, cpu);
 		return;
 	}
 
 	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
 	if (minibuf[0]==0x00 && minibuf[1]==0x8b && minibuf[2]==0x01 && minibuf[3]==0x07) {
-		file_load_aout(mem, filename, cpu, 0);
+		file_load_aout(cpu->emul, mem, filename, cpu, 0);
 		return;
 	}
 	if (minibuf[0]==0x00 && minibuf[2]==0x00 && minibuf[8]==0x7a && minibuf[9]==0x75) {
-		file_load_aout(mem, filename, cpu, 1);
+		file_load_aout(cpu->emul, mem, filename, cpu, 1);
 		return;
 	}
 
@@ -1227,7 +1235,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	    (minibuf[0]==0x01 && minibuf[1]==0x63) ||
 	    (minibuf[0]==0x60 && minibuf[1]==0x01) ||
 	    (minibuf[0]==0x62 && minibuf[1]==0x01)) {
-		file_load_ecoff(mem, filename, cpu);
+		file_load_ecoff(cpu->emul, mem, filename, cpu);
 		return;
 	}
 
@@ -1258,6 +1266,6 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 				exit(1);
 			}
 
-	symbol_readfile(filename);
+	symbol_readfile(&cpu->emul->symbol_context, filename);
 }
 

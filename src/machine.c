@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.178 2004-09-05 04:22:42 debug Exp $
+ *  $Id: machine.c,v 1.179 2004-09-05 04:56:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -50,10 +50,11 @@
 
 #include "misc.h"
 
-#include "memory.h"
+#include "bus_pci.h"
 #include "devices.h"
 #include "diskimage.h"
-#include "bus_pci.h"
+#include "memory.h"
+#include "symbol.h"
 
 /*  For SGI emulation:  */
 #include "crimereg.h"
@@ -1563,7 +1564,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		cpu->md_interrupt = ps2_interrupt;
 
-		add_symbol_name(PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
+		add_symbol_name(&emul->symbol_context,
+		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
@@ -2408,7 +2410,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 
-		add_symbol_name(ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
+		add_symbol_name(&emul->symbol_context,
+		    ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
 
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):

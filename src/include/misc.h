@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.106 2004-09-05 02:19:17 debug Exp $
+ *  $Id: misc.h,v 1.107 2004-09-05 04:56:01 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -974,16 +974,6 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
 
 /*  ps2_bios.c:  */
 void playstation2_sifbios_emul(struct cpu *cpu);
-
-
-/*  symbol.c:  */
-int symbol_nsymbols(void);
-int get_symbol_addr(char *symbol, uint64_t *addr);
-char *get_symbol_name(uint64_t addr, uint64_t *offset);
-void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type);
-void symbol_readfile(char *fname);
-void symbol_recalc_sizes(void);
-void symbol_init(void);
 
 
 /*  useremul.c:  */

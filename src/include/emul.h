@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.3 2004-09-05 01:47:38 debug Exp $
+ *  $Id: emul.h,v 1.4 2004-09-05 04:56:01 debug Exp $
  */
 
 #include "misc.h"
@@ -34,11 +34,15 @@
 #define	CPU_NAME_MAXLEN		48
 #define	MAX_PC_DUMPPOINTS	4
 
+#include "symbol.h"
+
 struct emul {
 	char	emul_cpu_name[CPU_NAME_MAXLEN];
 	int	emulation_type;
 	int	machine;
 	char	*machine_name;
+
+	struct symbol_context symbol_context;
 
 	int	random_mem_contents;
 	int	physical_ram_in_mb;

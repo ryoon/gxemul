@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.100 2004-09-05 04:32:04 debug Exp $
+ *  $Id: main.c,v 1.101 2004-09-05 04:56:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -212,7 +212,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	emul->emul_cpu_name[0] =
 	    emul->emul_cpu_name[CPU_NAME_MAXLEN-1] = '\0';
 
-	symbol_init();
+	symbol_init(&emul->symbol_context);
 
 	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.71 2005-02-25 06:14:30 debug Exp $
+#  $Id: Makefile.skel,v 1.72 2005-03-01 09:35:35 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -28,7 +28,7 @@ OBJS=lk201.o \
 	dev_pmppc.o \
 	bus_pci.o \
 	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o \
-	\
+	dev_urisc.o \
 	dev_bebox.o
 
 all:

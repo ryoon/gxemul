@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.2 2005-03-01 08:23:55 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.3 2005-03-01 09:35:38 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -35,13 +35,12 @@
  *
  *	The PC should always be in sync with the memory word at address 0.
  *
- *	The accumulator register should always be in sync with the memory
- *	word following the word at address 0.
+ *	Optional: The accumulator register should always be in sync with the
+ *	memory word following the word at address 0.
  *
  *
  *  TODO:
  *
- *	o)  Non-8-bit word length
  *	o)  Little-endian support?
  */
 
@@ -114,7 +113,9 @@ struct cpu *urisc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 
-	cpu->cd.urisc.wordlen = 8;
+	cpu->cd.urisc.wordlen = 32;
+	cpu->cd.urisc.acc_in_mem = 0;
+	cpu->cd.urisc.halt_on_zero = 1;
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -191,7 +192,7 @@ int urisc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 {
 	uint64_t offset;
 	char *symbol;
-	int i;
+	int i, nbytes = cpu->cd.urisc.wordlen / 8;
 	char tmps[50];
 
 	if (running)
@@ -204,17 +205,18 @@ int urisc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
-	sprintf(tmps, "0x%%0%illx:  0x", cpu->cd.urisc.wordlen / 4);
+	sprintf(tmps, "0x%%0%illx:  0x", nbytes * 2);
 	debug(tmps, (long long)dumpaddr);
 
 	/*  TODO:  Little-endian?  */
 
-	for (i=0; i<cpu->cd.urisc.wordlen / 8; i++)
+	for (i=0; i<nbytes; i++)
 		debug("%02x", instr[i]);
 
-	debug("\n");
+	if (!running)
+		debug("\n");
 
-	return cpu->cd.urisc.wordlen / 8;
+	return nbytes;
 }
 
 
@@ -224,7 +226,8 @@ int urisc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 void urisc_cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	int cpunr = 0;
+	int i, cpunr = 0;
+	int nbytes = m->cpus[cpunr]->cd.urisc.wordlen / 8;
 
 	/*  CPU number:  */
 
@@ -236,8 +239,8 @@ void urisc_cpu_register_match(struct machine *m, char *name,
 			unsigned char buf[8];
 			m->cpus[cpunr]->pc = *valuep;
 
-			/*  TODO: non-8-bit machines  */
-			buf[0] = *valuep;
+			for (i=0; i<nbytes; i++)
+				buf[nbytes-1-i] = *valuep >> (8*i);
 
 			m->cpus[cpunr]->memory_rw(m->cpus[cpunr],
 			    m->cpus[cpunr]->mem, 0, buf,
@@ -253,14 +256,16 @@ void urisc_cpu_register_match(struct machine *m, char *name,
 			unsigned char buf[8];
 			m->cpus[cpunr]->cd.urisc.acc = *valuep;
 
-			/*  TODO: non-8-bit machines  */
-			buf[0] = *valuep;
+			if (m->cpus[cpunr]->cd.urisc.acc_in_mem) {
+				for (i=0; i<nbytes; i++)
+					buf[nbytes-1-i] = *valuep >> (8*i);
 
-			m->cpus[cpunr]->memory_rw(m->cpus[cpunr],
-			    m->cpus[cpunr]->mem,
-			    m->cpus[cpunr]->cd.urisc.wordlen / 8,
-			    buf, m->cpus[cpunr]->cd.urisc.wordlen / 8,
-			    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+				m->cpus[cpunr]->memory_rw(m->cpus[cpunr],
+				    m->cpus[cpunr]->mem,
+				    m->cpus[cpunr]->cd.urisc.wordlen / 8,
+				    buf, m->cpus[cpunr]->cd.urisc.wordlen / 8,
+				    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+			}
 		} else
 			*valuep = m->cpus[cpunr]->cd.urisc.acc;
 		*match_register = 1;
@@ -283,57 +288,108 @@ int urisc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	unsigned char buf[8];
 	unsigned char instr[8];
 	uint64_t addr, data, mask = (uint64_t) -1;
-	int skip = 0;
+	int skip = 0, i, nbytes = cpu->cd.urisc.wordlen / 8;
+	char tmps[100];
 
 	if (cpu->cd.urisc.wordlen < 64)
 		mask = ((int64_t)1 << cpu->cd.urisc.wordlen) - 1;
 
-	cpu->pc &= mask;
+	/*  Read PC from memory, just to be sure:  */
+	cpu->memory_rw(cpu, cpu->mem, 0, buf, nbytes, MEM_READ, CACHE_DATA);
+	cpu->pc = 0;
+	for (i=0; i<nbytes; i++) {
+		cpu->pc <<= 8;
+		cpu->pc += buf[i];
+	}
 
-	/*  Read an instruction:  */
-	cpu->memory_rw(cpu, cpu->mem, cpu->pc, instr, cpu->cd.urisc.wordlen/8,
-	    MEM_READ, CACHE_INSTRUCTION);
+	addr = cpu->pc;
 
-	if (cpu->machine->instruction_trace)
-		urisc_cpu_disassemble_instr(cpu, buf, 1, 0, 0);
+	if (cpu->cd.urisc.halt_on_zero && cpu->pc <= 4) {
+		cpu->running = 0;
+		return 0;
+	}
 
 	/*  Advance the program counter:  */
-	cpu->pc += cpu->cd.urisc.wordlen/8;
+	cpu->pc += nbytes;
 	cpu->pc &= mask;
+	for (i=0; i<nbytes; i++)
+		buf[nbytes-1-i] = cpu->pc >> (8*i);
+	cpu->memory_rw(cpu, cpu->mem, 0, buf, nbytes, MEM_WRITE, CACHE_DATA);
 
-	buf[0] = cpu->pc;
-	cpu->memory_rw(cpu, cpu->mem, 0, buf, cpu->cd.urisc.wordlen/8,
-	    MEM_WRITE, CACHE_DATA);
+	/*  Read an instruction:  */
+	cpu->memory_rw(cpu, cpu->mem, addr, instr, nbytes, MEM_READ,
+	    CACHE_INSTRUCTION);
 
-	addr = instr[0];
+	if (cpu->machine->instruction_trace) {
+		cpu->pc -= nbytes;
+		urisc_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+		cpu->pc += nbytes;
+	}
+
+	addr = 0;
+	for (i=0; i<nbytes; i++) {
+		addr <<= 8;
+		addr += instr[i];
+	}
 
 	/*  Read data from memory:  */
 	cpu->memory_rw(cpu, cpu->mem, addr, buf, cpu->cd.urisc.wordlen/8,
 	    MEM_READ, CACHE_DATA);
-	data = buf[0];
+	data = 0;
+	for (i=0; i<nbytes; i++) {
+		data <<= 8;
+		data += buf[i];
+	}
+
+	if (cpu->machine->instruction_trace) {
+		sprintf(tmps, "\t[mem=0x%%0%illx", nbytes * 2);
+		debug(tmps, (long long)data);
+		sprintf(tmps, "; acc: 0x%%0%illx", nbytes * 2);
+		debug(tmps, (long long)cpu->cd.urisc.acc);
+	}
 
 	skip = (uint64_t)data < (uint64_t)cpu->cd.urisc.acc;
 
 	data -= cpu->cd.urisc.acc;
 	data &= mask;
 
-	/*  Write back result to both memory and the accumulator:  */
 	cpu->cd.urisc.acc = data;
-	buf[0] = cpu->cd.urisc.acc;
-	cpu->memory_rw(cpu, cpu->mem, addr, buf,
-	    cpu->cd.urisc.wordlen/8, MEM_WRITE, CACHE_DATA);
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.urisc.wordlen/8, buf,
-	    cpu->cd.urisc.wordlen/8, MEM_WRITE, CACHE_DATA);
+
+	if (cpu->machine->instruction_trace) {
+		sprintf(tmps, " ==> 0x%%0%illx", nbytes * 2);
+		debug(tmps, (long long)cpu->cd.urisc.acc);
+		if (skip)
+			debug(", SKIP");
+		debug("]\n");
+	}
+
+	/*  Write back result to both memory and the accumulator:  */
+	for (i=0; i<nbytes; i++)
+		buf[nbytes-1-i] = cpu->cd.urisc.acc >> (8*i);
+	cpu->memory_rw(cpu, cpu->mem, addr, buf, nbytes, MEM_WRITE, CACHE_DATA);
+	if (cpu->cd.urisc.acc_in_mem)
+		cpu->memory_rw(cpu, cpu->mem, nbytes, buf,
+		    nbytes, MEM_WRITE, CACHE_DATA);
 
 	/*  Skip on borrow:  */
 	if (skip) {
+		/*  Read PC from memory:  */
+		cpu->memory_rw(cpu, cpu->mem, 0, buf, nbytes,
+		    MEM_READ, CACHE_DATA);
+		cpu->pc = 0;
+		for (i=0; i<nbytes; i++) {
+			cpu->pc <<= 8;
+			cpu->pc += buf[i];
+		}
+
 		/*  Advance the program counter:  */
-		cpu->pc += cpu->cd.urisc.wordlen/8;
+		cpu->pc += nbytes;
 		cpu->pc &= mask;
 
-		buf[0] = cpu->pc;
-		cpu->memory_rw(cpu, cpu->mem, 0, buf, cpu->cd.urisc.wordlen/8,
-		    MEM_WRITE, CACHE_DATA);
+		for (i=0; i<nbytes; i++)
+			buf[nbytes-1-i] = cpu->pc >> (8*i);
+		cpu->memory_rw(cpu, cpu->mem, 0, buf, nbytes, MEM_WRITE,
+		    CACHE_DATA);
 	}
 
 	return 1;

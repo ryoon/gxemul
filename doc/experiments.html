@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.42 2005-02-26 10:51:02 debug Exp $
+$Id: experiments.html,v 1.43 2005-03-01 09:35:36 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -772,8 +772,27 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
 	<br>$ <b>./mips64emul -E ultra1 -v -i bsd.rd</b>
     </ul>
   </li>
+</ul>
 
-  <p>
+<p>
+The URISC emulation mode is just for fun. Enable with the --enable-urisc 
+configure option. (Read <a href="http://en.wikipedia.org/wiki/URISC">http://en.wikipedia.org/wiki/URISC</a>
+for more info.)
+
+<p>
+<ul>
+
+  <li>URISC:
+    <ul>
+      <li>I've placed a small test program in the experiments directory.
+	<br>Start like this: <b>./mips64emul -E testurisc 0:urisc_test.bin</b>
+	<br>or, if you want to single-step:
+		<b>./mips64emul -V -E testurisc 0:urisc_test.bin</b>
+	<br>2005-03-01: All outputed characters are printed twice. I'll
+	try to make a pseudo-device for outputing to "normal" devices
+	later.
+    </ul>
+  </li>
 
 </ul>
 

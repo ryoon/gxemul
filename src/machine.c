@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.373 2005-03-01 08:23:55 debug Exp $
+ *  $Id: machine.c,v 1.374 2005-03-01 09:35:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4120,6 +4120,8 @@ for (i=0; i<32; i++)
 		/*  TODO  */
 		/*  A special "device" for accessing normal devices
 		    using urisc accesses?  */
+
+		device_add(machine, "urisc addr=0x12341234");
 
 		break;
 

@@ -1,6 +1,3 @@
-#ifndef	CPU_URISC_H
-#define	CPU_URISC_H
-
 /*
  *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
@@ -26,30 +23,75 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
+ *   
  *
+ *  $Id: dev_urisc.c,v 1.1 2005-03-01 09:35:35 debug Exp $
  *
- *  $Id: cpu_urisc.h,v 1.3 2005-03-01 09:35:38 debug Exp $
+ *  URISC putchar device.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "console.h"
+#include "cpu.h"
+#include "device.h"
+#include "machine.h"
+#include "memory.h"
 #include "misc.h"
 
 
-struct cpu_family;
+struct urisc_data {
+	int		console_handle;
 
-struct urisc_cpu {
-	int		wordlen;
-	int		acc_in_mem;
-	int		halt_on_zero;
-
-	uint64_t	acc;
+	uint64_t	data;
 };
 
 
-/*  cpu_urisc.c:  */
-int urisc_cpu_run(struct emul *emul, struct machine *machine);
-int urisc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
-	unsigned char *data, size_t len, int writeflag, int cache_flags);
-int urisc_cpu_family_init(struct cpu_family *);
+/*
+ *  dev_urisc_access():
+ */
+int dev_urisc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
+	void *extra)
+{
+	struct urisc_data *d = extra;
+	uint64_t idata = 0, odata = 0;
+	idata = memory_readmax64(cpu, data, len);
+
+	if (writeflag == MEM_WRITE) {
+		if ((int8_t)idata > 0)
+			console_putchar(d->console_handle, idata - 1);
+		d->data = idata;
+	} else
+		odata = d->data;
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
 
 
-#endif	/*  CPU_URISC_H  */
+/*
+ *  devinit_urisc():
+ */
+int devinit_urisc(struct devinit *devinit)
+{
+	struct urisc_data *d;
+
+	d = malloc(sizeof(struct urisc_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct urisc_data));
+	d->console_handle = console_start_slave(devinit->machine, "console");
+
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, 0x8, dev_urisc_access, d, MEM_DEFAULT, NULL);
+
+	return 1;
+}
+

@@ -23,11 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.5 2004-06-12 12:36:55 debug Exp $
+ *  $Id: dev_zs.c,v 1.6 2004-06-12 17:06:12 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
- *  TODO:  Implement this correctly.
+ *  TODO:  Implement this correctly.  Right now it is very hardcoded,
+ *  and only barely works with NetSBD/sgimips.
  */
 
 #include <stdio.h>
@@ -43,12 +44,28 @@
 struct zs_data {
 	int		irq_nr;
 	int		addrmult;
+
+	int		tx_done;
 };
 
 
 /*  From NetBSD:  */
 #define	ZSRR0_RX_READY		1
 #define	ZSRR0_TX_READY		4
+
+
+/*
+ *  dev_zs_tick():
+ */
+void dev_zs_tick(struct cpu *cpu, void *extra)
+{
+	struct zs_data *d = (struct zs_data *) extra;
+
+	if (console_charavail() || d->tx_done)
+		cpu_interrupt(cpu, d->irq_nr);
+	else
+		cpu_interrupt_ack(cpu, d->irq_nr);
+}
 
 
 /*
@@ -85,6 +102,20 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		} else {
 			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
 			console_putchar(idata & 255);
+			d->tx_done = 1;
+		}
+		break;
+	case 0xb:
+		if (writeflag==MEM_READ) {
+			odata = 0;
+			if (d->tx_done)
+				odata |= 2;
+			if (console_charavail())
+				odata |= 4;
+			d->tx_done = 0;
+			debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);
+		} else {
+			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
 		}
 		break;
 	default:
@@ -97,6 +128,8 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
+
+	dev_zs_tick(cpu, extra);
 
 	return 1;
 }
@@ -119,5 +152,6 @@ void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq
 	d->addrmult = addrmult;
 
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult, dev_zs_access, d);
+	cpu_add_tickfunction(cpu, dev_zs_tick, d, 10);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.2 2004-01-20 23:13:36 debug Exp $
+ *  $Id: bintrans.c,v 1.3 2004-01-20 23:47:41 debug Exp $
  *
  *  Binary translation.
  *
@@ -84,5 +84,7 @@
  *	Testing:  Running regression tests with and without the binary
  *		translator enabled should obviously result in the exact
  *		same results, or something is wrong.
+ *
+ *	How about loops?
  */
 

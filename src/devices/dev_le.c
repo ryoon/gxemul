@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_le.c,v 1.5 2004-02-19 10:25:28 debug Exp $
  *  
  *  LANCE ethernet.
  */
@@ -46,6 +46,7 @@ struct le_data {
 
 	int		register_choice;
 	uint32_t	reg[N_REGISTERS];
+	uint32_t	csr;
 };
 
 
@@ -60,31 +61,54 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	int regnr, i;
 	struct le_data *d = extra;
 
-	if (relative_addr & 3) {
-		debug("[ le relative_addr = 0x%x !!! ]\n",
-		    (int) relative_addr);
-		return 0;
-	}
-
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / 4;
 
-	switch (relative_addr) {
-	default:
-		if (writeflag==MEM_READ) {
-			debug("[ le read from %08lx ]\n", (long)relative_addr);
-			odata = d->reg[regnr];
-		} else {
-			debug("[ le write to %08lx:", (long)relative_addr);
+	if (relative_addr >= 0x1c0000 && relative_addr <= 0x1c0017) {
+		/*  Read from station's ROM ethernet address:  */
+		int i = (relative_addr & 0xff) / 4;
+
+		if (writeflag==MEM_READ)
+			odata = i;		/*  TODO: actual address  */
+		else {
+			debug("[ le write to station's ethernet address (%08lx):", (long)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
-			d->reg[regnr] = idata;
-			return 1;
+		}
+	} else {
+		switch (relative_addr) {
+		case 0x100000:
+			if (writeflag==MEM_READ) {
+				odata = d->csr;
+				debug("[ le read from %08lx: 0x%llx ]\n", (long)relative_addr, (long long)odata);
+			} else {
+				debug("[ le write to %08lx: 0x%llx ]\n", (long)relative_addr, (long long)idata);
+				d->csr = idata;
+			}
+			break;
+		default:
+			regnr = relative_addr / 4;
+			if (relative_addr & 3) {
+				debug("[ le relative_addr = 0x%x !!! ]\n",
+				    (int) relative_addr);
+				return 0;
+			}
+
+			if (writeflag==MEM_READ) {
+				debug("[ le read from %08lx ]\n", (long)relative_addr);
+				if (regnr < N_REGISTERS)
+					odata = d->reg[regnr];
+			} else {
+				debug("[ le write to %08lx:", (long)relative_addr);
+				for (i=0; i<len; i++)
+					debug(" %02x", data[i]);
+				debug(" ]\n");
+				if (regnr < N_REGISTERS)
+					d->reg[regnr] = idata;
+				return 1;
+			}
 		}
 	}
-
-/*  odata = random() & 0xffff;  */
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

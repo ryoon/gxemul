@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.71 2005-03-10 23:56:21 debug Exp $
+ *  $Id: net.c,v 1.72 2005-03-14 19:14:05 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -95,6 +95,7 @@
 #include <fcntl.h>
 #include <signal.h>
 
+#include "machine.h"
 #include "misc.h"
 #include "net.h"
 
@@ -136,43 +137,46 @@ static void net_debugaddr(void *ipv4_addr, int type)
 }
 
 
-static unsigned char unique_ethernet_mac[6];
-static int initialized_unique_ethernet_mac = 0;
-
 /*
  *  net_generate_unique_mac():
  *
- *  NOTE: This function is NOT reentrant.
+ *  Generate a "unique" serial number for a machine. The machine's serial
+ *  number is combined with the machine's current number of NICs to form a
+ *  more-or-less valid MAC address.
+ *
+ *  The return value (6 bytes) are written to macbuf.
  */
-void net_generate_unique_mac(unsigned char *macbuf)
+void net_generate_unique_mac(struct machine *machine, unsigned char *macbuf)
 {
-	int j;
+	int x, y;
 
-	if (macbuf == NULL) {
+	if (macbuf == NULL || machine == NULL) {
 		fatal("**\n**  net_generate_unique_mac(): NULL ptr\n**\n");
 		return;
 	}
 
-	if (!initialized_unique_ethernet_mac) {
-		unique_ethernet_mac[0] = 0x10;
-		unique_ethernet_mac[1] = 0x20;
-		unique_ethernet_mac[2] = 0x30;
-		unique_ethernet_mac[3] = 0x10;
-		unique_ethernet_mac[4] = 0x10;
-		unique_ethernet_mac[5] = 0x10;
-		initialized_unique_ethernet_mac = 1;
-	}
+	x = machine->serial_nr;
+	y = machine->nr_of_nics;
 
-	memcpy(macbuf, unique_ethernet_mac, sizeof(unique_ethernet_mac));
+	/*
+	 *  TODO: What is a good starting value? Right now, it looks like this:
+	 *
+	 *  +-----------+-------------------+-------------+-------------+
+	 *  |  16 bits  |  16 bits machine  |  12 bits    |  4 bits of  |
+	 *  |  fixed    |  serial nr        |  NIC nr(*)  |  zeroes     |
+	 *  +-----------+-------------------+-------------+-------------+
+	 *
+	 *  (*) = almost
+	 */
+	macbuf[0] = 0x10;
+	macbuf[1] = 0x20;
+	macbuf[2] = x >> 8;
+	macbuf[3] = x & 255;
+	macbuf[4] = y / 15;
+	macbuf[5] = (y % 15) * 0x10 + 0x10;
 
-	/*  Advance to a new unique address:  */
-	j = 5;
-	while (j >= 0) {
-		unique_ethernet_mac[j] += 0x10;
-		if (unique_ethernet_mac[j] != 0x00)
-			j = 0;
-		j--;
-	}
+	/*  TODO: Remember the mac addresses somewhere?  */
+	machine->nr_of_nics ++;
 }
 
 

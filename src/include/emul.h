@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.35 2005-02-26 12:35:48 debug Exp $
+ *  $Id: emul.h,v 1.36 2005-03-14 19:14:03 debug Exp $
  */
 
 #include "misc.h"
@@ -37,6 +37,8 @@ struct machine;
 struct net;
 
 struct emul {
+	int		next_serial_nr;
+
 	struct net	*net;
 
 	char		*name;

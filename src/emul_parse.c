@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.28 2005-03-14 12:13:52 debug Exp $
+ *  $Id: emul_parse.c,v 1.29 2005-03-14 19:14:04 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -220,6 +220,7 @@ static char cur_machine_force_netboot[10];
 static char cur_machine_start_paused[10];
 static char cur_machine_ncpus[10];
 static char cur_machine_n_gfx_cards[10];
+static char cur_machine_serial_nr[10];
 static char cur_machine_emulated_hz[10];
 static char cur_machine_memory[10];
 #define	MAX_N_LOAD		15
@@ -374,6 +375,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_start_paused[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
 		cur_machine_n_gfx_cards[0] = '\0';
+		cur_machine_serial_nr[0] = '\0';
 		cur_machine_emulated_hz[0] = '\0';
 		cur_machine_memory[0] = '\0';
 		return;
@@ -493,7 +495,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		}
 
 		if (!cur_machine_bintrans[0])
-			strcpy(cur_machine_bintrans, "no");
+			strcpy(cur_machine_bintrans, "yes");
 		m->bintrans_enable = m->bintrans_enabled_from_start =
 		    parse_on_off(cur_machine_bintrans);
 
@@ -530,6 +532,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 
 		if (cur_machine_n_gfx_cards[0])
 			m->n_gfx_cards = atoi(cur_machine_n_gfx_cards);
+
+		if (cur_machine_serial_nr[0]) {
+			m->serial_nr = atoi(cur_machine_serial_nr);
+			e->next_serial_nr = m->serial_nr+1;
+		}
 
 		if (cur_machine_emulated_hz[0]) {
 			m->emulated_hz = mystrtoull(cur_machine_emulated_hz,
@@ -621,6 +628,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("use_random_bootstrap_cpu", cur_machine_random_cpu);
 	WORD("force_netboot", cur_machine_force_netboot);
 	WORD("ncpus", cur_machine_ncpus);
+	WORD("serial_nr", cur_machine_serial_nr);
 	WORD("n_gfx_cards", cur_machine_n_gfx_cards);
 	WORD("emulated_hz", cur_machine_emulated_hz);
 	WORD("memory", cur_machine_memory);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.640 2005-03-14 12:13:48 debug Exp $
+$Id: HISTORY,v 1.641 2005-03-14 19:14:01 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1745,3 +1745,5 @@ Changelog for GXemul:
 		bintrans subsystem: command line option -b now means "old
 		bintrans", -B means "disable bintrans", and using no option at
 		all selects "new bintrans".
+		Better generation of MAC addresses when emulating multiple
+		machines and/or NICs.

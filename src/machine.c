@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.387 2005-03-14 12:13:52 debug Exp $
+ *  $Id: machine.c,v 1.388 2005-03-14 19:14:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -132,6 +132,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->name = strdup(name);
 
 	/*  Sane default values:  */
+	m->serial_nr = 0;
 	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
 	m->bintrans_enable = 1;
@@ -2569,7 +2570,7 @@ Why is this here? TODO
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
-				net_generate_unique_mac(macaddr);
+				net_generate_unique_mac(machine, macaddr);
 				eaddr_string = malloc(30);
 				if (eaddr_string == NULL) {
 					fprintf(stderr, "out of memory\n");
@@ -4494,6 +4495,11 @@ void machine_default_cputype(struct machine *m)
 void machine_dumpinfo(struct machine *m)
 {
 	int i;
+
+	debug("serial nr: %i", m->serial_nr);
+	if (m->nr_of_nics > 0)
+		debug("  (nr of nics: %i)", m->nr_of_nics);
+	debug("\n");
 
 	debug("memory: %i MB", m->physical_ram_in_mb);
 	if (m->memory_offset_in_mb != 0)

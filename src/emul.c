@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.178 2005-03-13 22:23:14 debug Exp $
+ *  $Id: emul.c,v 1.179 2005-03-14 19:14:04 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -286,17 +286,17 @@ struct emul *emul_new(char *name)
 /*
  *  emul_add_machine():
  *
- *  Calls machine_new(), adds the new machine into the emul
- *  struct, and returns a pointer to the new machine.
+ *  Calls machine_new(), adds the new machine into the emul struct, and
+ *  returns a pointer to the new machine.
  *
- *  This function should be used instead of manually calling
- *  machine_new().
+ *  This function should be used instead of manually calling machine_new().
  */
 struct machine *emul_add_machine(struct emul *e, char *name)
 {
 	struct machine *m;
 
 	m = machine_new(name, e);
+	m->serial_nr = (e->next_serial_nr ++);
 
 	e->n_machines ++;
 	e->machines = realloc(e->machines,

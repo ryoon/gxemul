@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.9 2005-02-26 17:37:22 debug Exp $
+ *  $Id: dev_sn.c,v 1.10 2005-03-14 19:14:02 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -112,7 +112,7 @@ int devinit_sn(struct devinit *devinit)
 	memset(d, 0, sizeof(struct sn_data));
 	d->irq_nr = devinit->irq_nr;
 
-	net_generate_unique_mac(d->macaddr);
+	net_generate_unique_mac(devinit->machine, d->macaddr);
 
 	name2 = malloc(50);
 	if (name2 == NULL) {

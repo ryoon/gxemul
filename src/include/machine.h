@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.40 2005-03-14 12:13:50 debug Exp $
+ *  $Id: machine.h,v 1.41 2005-03-14 19:14:03 debug Exp $
  */
 
 #include <sys/types.h>
@@ -75,6 +75,12 @@ struct machine {
 	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
 
 	char	*machine_name;
+
+	/*  The serial number is mostly used when emulating multiple machines
+	    in a network. nr_of_nics is the current nr of network cards, which
+	    is useful when emulating multiple cards in one machine:  */
+	int	serial_nr;
+	int	nr_of_nics;
 
 	struct cpu_family *cpu_family;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.10 2005-02-03 23:36:21 debug Exp $
+ *  $Id: net.h,v 1.11 2005-03-14 19:14:03 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -131,7 +131,7 @@ struct net {
 };
 
 /*  net.c:  */
-void net_generate_unique_mac(unsigned char *macbuf);
+void net_generate_unique_mac(struct machine *, unsigned char *macbuf);
 int net_ethernet_rx_avail(struct net *net, void *extra);
 int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);

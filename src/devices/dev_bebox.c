@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.1 2005-02-22 13:23:43 debug Exp $
+ *  $Id: dev_bebox.c,v 1.2 2005-02-22 13:45:47 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -45,7 +45,12 @@
 
 
 struct bebox_data {
-	int		dummy;
+	/*  The 5 motherboard registers:  */
+	uint32_t	cpu0_intmask;
+	uint32_t	cpu1_intmask;
+	uint32_t	int_source;
+	uint32_t	xpi;
+	uint32_t	resets;
 };
 
 
@@ -63,13 +68,26 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0x3f0:
+		if (writeflag == MEM_READ) {
+			odata = d->xpi;
+
+			/*  Bit 6 (counted from the left) is cpuid:  */
+			odata &= ~0x02000000;
+			if (cpu->cpu_id == 1)
+				odata |= 0x02000000;
+		} else {
+			debug("[ bebox: unimplemented write to 0x3f0:"
+			    " 0x%08x ]\n", (int)idata);
+		}
+		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ bebox: read from 0x%08lx ]\n",
+			debug("[ bebox: unimplemented read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			debug("[ bebox: write to  0x%08lx: 0x%08x ]\n",
-			    (long)relative_addr, (int)idata);
+			debug("[ bebox: unimplemented write to 0x%08lx: 0x"
+			    "%08x ]\n", (long)relative_addr, (int)idata);
 		}
 	}
 

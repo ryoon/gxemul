@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.48 2005-02-22 12:36:06 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.49 2005-02-22 13:45:49 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1571,7 +1571,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_ANDIS_DOT:
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
-		if (hi6 == PPC_HI6_ANDIS_DOT)
+		if (hi6 == PPC_HI6_ANDI_DOT)
 			imm = (iword & 0xffff);
 		else
 			imm = (iword & 0xffff) << 16;

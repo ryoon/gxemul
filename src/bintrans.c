@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.93 2004-11-28 12:26:36 debug Exp $
+ *  $Id: bintrans.c,v 1.94 2004-11-30 12:48:38 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -370,6 +370,15 @@ quick_attempt_translate_again:
 	/*  ca is the "chunk address"; where to start generating a chunk:  */
 	ca = translation_code_chunk_space
 	    + translation_code_chunk_space_head;
+
+
+	/*
+	 *  Make sure that this page will not be written to by translated
+	 *  code:
+	 */
+	update_translation_table(cpu, 0x80000000 + paddr, NULL, -1, 0);
+	update_translation_table(cpu, 0xa0000000 + paddr, NULL, -1, 0);
+
 
 	/*
 	 *  Try to translate a chunk of code:
@@ -737,7 +746,6 @@ default:
 	/*  RUN the code chunk:  */
 	f = ca2;
 run_it:
-
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
 
@@ -787,7 +795,9 @@ run_it:
 			if (!ok && old_pc != cpu->pc) {
 				ok = cpu->translate_address(cpu, cpu->pc, &paddr,
 				    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+
 				cpu->pc_last_host_4k_page = NULL;
+				cpu->pc_bintrans_host_4kpage = NULL;
 			}
 		}
 

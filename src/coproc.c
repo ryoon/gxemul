@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.114 2004-11-29 09:00:18 debug Exp $
+ *  $Id: coproc.c,v 1.115 2004-11-30 12:48:38 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -310,7 +310,7 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		void *p;
 		uint32_t p_paddr;
 
-		if (writeflag)
+		if (writeflag > 0)
 			bintrans_invalidate(cpu, paddr_page);
 
 		switch (cpu->cpu_type.mmu_model) {
@@ -341,20 +341,22 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			p = tbl1->haddr_entry[b];
 			p_paddr = tbl1->paddr_entry[b];
 			/* printf("   p = %p\n", p); */
-			if (p == NULL && p_paddr == 0) {
+			if (p == NULL && p_paddr == 0 && (host_page!=NULL || paddr_page!=0)) {
 				tbl1->refcount ++;
 				/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
 				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
 			}
 			if (writeflag == -1) {
 				/*  Forced downgrade to read-only:  */
-				tbl1->haddr_entry[b] = host_page;
-				tbl1->paddr_entry[b] = paddr_page;
+				tbl1->haddr_entry[b] = (void *)
+				    ((size_t)tbl1->haddr_entry[b] & ~1);
 			} else if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
 				/*  Don't degrade a page from writable to readonly.  */
 			} else {
-				if (host_page != NULL || paddr_page == 0)
+				if (host_page != NULL)
 					tbl1->haddr_entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+				else
+					tbl1->haddr_entry[b] = NULL;
 				tbl1->paddr_entry[b] = paddr_page;
 			}
 			break;
@@ -1683,6 +1685,8 @@ if (paddr < 0x10000000)
 if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 	memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 
+	/*  bintrans_invalidate(cpu, paddr);  */
+
 	/*  TODO: Hahaha, this is even uglier than the thing
 		above. Some OSes seem to map code pages read/write,
 		which causes the bintrans cache to be invalidated
@@ -1694,8 +1698,6 @@ if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 
 	update_translation_table(cpu, vaddr, memblock, wf, paddr);
 }
-
-
 
 
 
@@ -1731,6 +1733,7 @@ void coproc_rfe(struct cpu *cpu)
 	int oldmode;
 
 	oldmode = cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SR_KU_CUR;
+
 	cpu->coproc[0]->reg[COP0_STATUS] =
 	    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 	    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);

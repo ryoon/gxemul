@@ -827,6 +827,7 @@ struct vfb_data {
 	int		xsize;
 	int		ysize;
 	int		bit_depth;
+	int		eight_div_bit_depth;
 
 	unsigned char	color_plane_mask;
 

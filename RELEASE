@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.85 2005-02-04 09:50:47 debug Exp $
+$Id: RELEASE,v 1.86 2005-02-07 07:17:42 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
@@ -32,8 +32,7 @@ any way whatsoever.)
 
 The emulator can be used for many different things. One of the most interesting
 uses is to run complete "guest" operating systems. I have verified that the
-following operating systems can run inside the emulator, similar to how they
-run on real hardware:
+following operating systems can run inside the emulator:
 
 
        Guest operating system               Emulated machine

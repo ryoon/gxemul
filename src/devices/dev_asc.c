@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.9 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_asc.c,v 1.10 2004-02-18 09:35:22 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -325,31 +325,31 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		}
 
 		if (writeflag==MEM_READ) {
-			debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], odata);
+			debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], (int)odata);
 		} else {
-			debug("[ asc: write to  %s: 0x%02x", asc_reg_names[regnr], idata);
+			debug("[ asc: write to  %s: 0x%02x", asc_reg_names[regnr], (int)idata);
 		}
 	} else if (relative_addr == 0x40000) {
 		if (writeflag==MEM_READ) {
 			odata = d->dma_address_reg;
-			debug("[ asc: read from DMA address reg: 0x%08x", odata);
+			debug("[ asc: read from DMA address reg: 0x%08x", (int)odata);
 		} else {
 			d->dma_address_reg = idata;
-			debug("[ asc: write to  DMA address reg: 0x%08x", idata);
+			debug("[ asc: write to  DMA address reg: 0x%08x", (int)idata);
 		}
 	} else if (relative_addr >= 0x80000 && relative_addr+len-1 <= 0x9ffff) {
 		if (writeflag==MEM_READ) {
 			memcpy(data, d->dma + (relative_addr - 0x80000), len);
-			debug("[ asc: read from DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, odata);
+			debug("[ asc: read from DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, (int)odata);
 		} else {
 			memcpy(d->dma + (relative_addr - 0x80000), data, len);
-			debug("[ asc: write to  DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, idata);
+			debug("[ asc: write to  DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, (int)idata);
 		}
 	} else {
 		if (writeflag==MEM_READ) {
-			debug("[ asc: read from 0x%04x: 0x%02x", relative_addr, odata);
+			debug("[ asc: read from 0x%04x: 0x%02x", relative_addr, (int)odata);
 		} else {
-			debug("[ asc: write to  0x%04x: 0x%02x", relative_addr, idata);
+			debug("[ asc: write to  0x%04x: 0x%02x", relative_addr, (int)idata);
 		}
 	}
 
@@ -535,7 +535,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			}
 			break;
 		default:
-			fatal("(unimplemented asc cmd 0x%02x)", idata);
+			fatal("(unimplemented asc cmd 0x%02x)", (int)idata);
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_ILL;
 			exit(1);	/*  TODO:  exit or continue with Illegal command interrupt?  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.102 2005-01-10 01:22:25 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.103 2005-01-10 01:39:09 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -62,7 +62,7 @@
  *	t8		a1 (mips register 5)  (64-bit)
  *	t9		s0 (mips register 16)  (64-bit)
  *	t10		table0 cached (for load/store)
- *	t11		t3 (mips register 11)  (64-bit)
+ *	t11		v0 (mips register 2)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)
  *	s2		sp (mips register 29)  (64-bit)
@@ -104,14 +104,14 @@
 #define	ALPHA_ZERO		31
 
 static int map_MIPS_to_Alpha[32] = {
-	ALPHA_ZERO, -1, -1, -1,				/*  0 .. 3  */
-	ALPHA_T7, ALPHA_T8, -1, -1,			/*  4 .. 7  */
-	ALPHA_S4, ALPHA_S5, ALPHA_S6, ALPHA_T11,	/*  8 .. 11  */
-	-1, -1, -1, -1,					/*  12 .. 15  */
-	ALPHA_T9, -1, -1, -1,				/*  16 .. 19  */
-	-1, -1, -1, -1,					/*  20 .. 23  */
-	-1, -1, -1, -1,					/*  24 .. 27  */
-	-1, ALPHA_S2, -1, ALPHA_S3,			/*  28 .. 31  */
+	ALPHA_ZERO, -1, ALPHA_T11, -1,		/*  0 .. 3  */
+	ALPHA_T7, ALPHA_T8, -1, -1,		/*  4 .. 7  */
+	ALPHA_S4, ALPHA_S5, ALPHA_S6, -1,	/*  8 .. 11  */
+	-1, -1, -1, -1,				/*  12 .. 15  */
+	ALPHA_T9, -1, -1, -1,			/*  16 .. 19  */
+	-1, -1, -1, -1,				/*  20 .. 23  */
+	-1, -1, -1, -1,				/*  24 .. 27  */
+	-1, ALPHA_S2, -1, ALPHA_S3,		/*  28 .. 31  */
 };
 
 
@@ -188,8 +188,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_t0	(((size_t)&dummy_cpu.gpr[GPR_T0]) - ((size_t)&dummy_cpu))
 #define ofs_t1	(((size_t)&dummy_cpu.gpr[GPR_T1]) - ((size_t)&dummy_cpu))
 #define ofs_t2	(((size_t)&dummy_cpu.gpr[GPR_T2]) - ((size_t)&dummy_cpu))
-#define ofs_t3	(((size_t)&dummy_cpu.gpr[GPR_T3]) - ((size_t)&dummy_cpu))
-#define ofs_t4	(((size_t)&dummy_cpu.gpr[GPR_T4]) - ((size_t)&dummy_cpu))
+#define ofs_v0	(((size_t)&dummy_cpu.gpr[GPR_V0]) - ((size_t)&dummy_cpu))
 #define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
 #define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 static unsigned char bintrans_alpha_runchunk[200] = {
@@ -217,7 +216,7 @@ static unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[t2]"(a0)  */
 	ofs_tbl0&255,ofs_tbl0>>8,0x10,0xa7,/*  ldq     t10,table0(a0)  */
-	ofs_t3&255,ofs_t3>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t3]"(a0)  */
+	ofs_v0&255,ofs_v0>>8,0x30,0xa7,	/*  ldq     t11,"gpr[v0]"(a0)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
@@ -233,7 +232,7 @@ static unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xb5,	/*  stq     s6,"gpr[t2]"(a0)  */
-	ofs_t3&255,ofs_t3>>8,0x30,0xb7,	/*  stq     t11,"gpr[t3]"(a0)  */
+	ofs_v0&255,ofs_v0>>8,0x30,0xb7,	/*  stq     t11,"gpr[v0]"(a0)  */
 
 	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
@@ -473,7 +472,7 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mipsreg, int alphareg)
 {
 	uint32_t *a = (uint32_t *) *addrp;
-	int ofs;
+	int ofs, alpha_mips_reg;
 
 	switch (mipsreg) {
 	case MIPSREG_PC:
@@ -488,51 +487,16 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		/*  addq s1,0,alphareg  */
 		*a++ = 0x41401400 | alphareg;
 		break;
-	case 0:
-		/*  addq zero,0,alphareg  */
-		*a++ = 0x43e01400 | alphareg;
-		break;
-	case GPR_A0:
-		/*  addq t7,0,alphareg  */
-		*a++ = 0x41001400 | alphareg;
-		break;
-	case GPR_A1:
-		/*  addq t8,0,alphareg  */
-		*a++ = 0x42c01400 | alphareg;
-		break;
-	case GPR_T0:
-		/*  addq s4,0,alphareg  */
-		*a++ = 0x41a01400 | alphareg;
-		break;
-	case GPR_T1:
-		/*  addq s5,0,alphareg  */
-		*a++ = 0x41c01400 | alphareg;
-		break;
-	case GPR_T2:
-		/*  addq s6,0,alphareg  */
-		*a++ = 0x41e01400 | alphareg;
-		break;
-	case GPR_T3:
-		/*  addq t11,0,alphareg  */
-		*a++ = 0x43201400 | alphareg;
-		break;
-	case GPR_S0:
-		/*  addq t9,0,alphareg  */
-		*a++ = 0x42e01400 | alphareg;
-		break;
-	case GPR_SP:
-		/*  addq s2,0,alphareg  */
-		*a++ = 0x41601400 | alphareg;
-		break;
-	case GPR_RA:
-		/*  addq s3,0,alphareg  */
-		*a++ = 0x41801400 | alphareg;
-		break;
-
 	default:
-		/*  ldq alphareg,gpr[mipsreg](a0)  */
-		ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
-		*a++ = 0xa4100000 | (alphareg << 21) | ofs;
+		alpha_mips_reg = map_MIPS_to_Alpha[mipsreg];
+		if (alpha_mips_reg < 0) {
+			ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+			/*  ldq alphareg,gpr[mipsreg](a0)  */
+			*a++ = 0xa4100000 | (alphareg << 21) | ofs;
+		} else {
+			/*  addq alpha_mips_reg,0,alphareg  */
+			*a++ = 0x40001400 | (alpha_mips_reg << 21) | alphareg;
+		}
 	}
 	*addrp = (unsigned char *) a;
 }
@@ -544,7 +508,7 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alphareg, int mipsreg)
 {
 	uint32_t *a = (uint32_t *) *addrp;
-	int ofs;
+	int ofs, alpha_mips_reg;
 
 	switch (mipsreg) {
 	case MIPSREG_PC:
@@ -561,46 +525,16 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 		break;
 	case 0:		/*  the zero register  */
 		break;
-	case GPR_A0:
-		/*  addq alphareg,0,t7  */
-		*a++ = 0x40001408 | (alphareg << 21);
-		break;
-	case GPR_A1:
-		/*  addq alphareg,0,t8  */
-		*a++ = 0x40001416 | (alphareg << 21);
-		break;
-	case GPR_T0:
-		/*  addq alphareg,0,s4  */
-		*a++ = 0x4000140d | (alphareg << 21);
-		break;
-	case GPR_T1:
-		/*  addq alphareg,0,s5  */
-		*a++ = 0x4000140e | (alphareg << 21);
-		break;
-	case GPR_T2:
-		/*  addq alphareg,0,s6  */
-		*a++ = 0x4000140f | (alphareg << 21);
-		break;
-	case GPR_T3:
-		/*  addq alphareg,0,t11  */
-		*a++ = 0x40001419 | (alphareg << 21);
-		break;
-	case GPR_S0:
-		/*  addq alphareg,0,t9  */
-		*a++ = 0x40001417 | (alphareg << 21);
-		break;
-	case GPR_SP:
-		/*  addq alphareg,0,s2  */
-		*a++ = 0x4000140b | (alphareg << 21);
-		break;
-	case GPR_RA:
-		/*  addq alphareg,0,s3  */
-		*a++ = 0x4000140c | (alphareg << 21);
-		break;
 	default:
-		/*  stq alphareg,gpr[mipsreg](a0)  */
-		ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
-		*a++ = 0xb4100000 | (alphareg << 21) | ofs;
+		alpha_mips_reg = map_MIPS_to_Alpha[mipsreg];
+		if (alpha_mips_reg < 0) {
+			/*  stq alphareg,gpr[mipsreg](a0)  */
+			ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+			*a++ = 0xb4100000 | (alphareg << 21) | ofs;
+		} else {
+			/*  addq alphareg,0,alpha_mips_reg  */
+			*a++ = 0x40001400 | (alphareg << 21) | alpha_mips_reg;
+		}
 	}
 	*addrp = (unsigned char *) a;
 }

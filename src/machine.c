@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.265 2005-01-04 16:45:20 debug Exp $
+ *  $Id: machine.c,v 1.266 2005-01-05 03:19:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2441,10 +2441,10 @@ Why is this here? TODO
 				dev_fdc_init(mem, 0x80003000ULL, 0);
 
 				dev_mc146818_init(cpu, mem,
-				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);
+				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 				dev_pckbc_init(cpu, mem, 0x80005000ULL,
-				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, emul->use_x11);
 
 				dev_ns16550_init(cpu, mem,
 				    0x80006000ULL, 8 + 8, 1,
@@ -2471,11 +2471,11 @@ Why is this here? TODO
 				cpu->md_interrupt = jazz_interrupt;
 
 				dev_mc146818_init(cpu, mem,
-				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);
+				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 #if 0
 				dev_pckbc_init(cpu, mem, 0x80005000ULL,
-				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
+				    PCKBC_JAZZ, 8 + 6, 8 + 7, emul->use_x11);
 #endif
 				dev_ns16550_init(cpu, mem,
 				    0x80006000ULL, 8 + 8, 1,

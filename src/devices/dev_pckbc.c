@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.29 2004-12-08 23:27:10 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.30 2005-01-05 03:19:19 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -366,7 +366,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 		    (int)relative_addr);
 #endif
 
-	/*  For PICA:  */
+	/*  For JAZZ-based machines:  */
 	if (relative_addr >= 0x60)
 		relative_addr -= 0x60;
 
@@ -606,7 +606,7 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	}
 	memset(d, 0, sizeof(struct pckbc_data));
 
-	if (type == PCKBC_PICA) {
+	if (type == PCKBC_JAZZ) {
 		type = PCKBC_8042;
 		len = DEV_PCKBC_LENGTH + 0x60;
 	}

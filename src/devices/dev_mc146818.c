@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.51 2004-12-22 16:12:54 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.52 2005-01-05 03:19:19 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -128,12 +128,12 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 
 
 /*
- *  dev_mc146818_pica_access():
+ *  dev_mc146818_jazz_access():
  *
- *  It seems like the PICA accesses the mc146818 by writing one byte to
- *  0x90000000070 and then reading or writing another byte at 0x......0004000.
+ *  It seems like JAZZ machines accesses the mc146818 by writing one byte to
+ *  0x90000070 and then reading or writing another byte at 0x......0004000.
  */
-int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
+int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
@@ -142,12 +142,12 @@ int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {
 		int i;
-		fatal("[ mc146818_pica: write to addr=0x%04x: ", relative_addr);
+		fatal("[ mc146818_jazz: write to addr=0x%04x: ", relative_addr);
 		for (i=0; i<len; i++)
 			fatal("%02x ", data[i]);
 		fatal("]\n");
 	} else
-		fatal("[ mc146818_pica: read from addr=0x%04x ]\n", relative_addr);
+		fatal("[ mc146818_jazz: read from addr=0x%04x ]\n", relative_addr);
 #endif
 
 	if (writeflag == MEM_WRITE) {
@@ -218,8 +218,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			fatal("[ mc146818: not accessed as an MC146818_ARC_NEC device! ]\n");
 		}
 		break;
-	case MC146818_ARC_PICA:
-		/*  See comment for dev_mc146818_pica_access().  */
+	case MC146818_ARC_JAZZ:
+		/*  See comment for dev_mc146818_jazz_access().  */
 		relative_addr = mc_data->last_addr * 4;
 		break;
 	case MC146818_DEC:
@@ -520,9 +520,9 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		mc_data->reg[0xf8] = 1;
 	}
 
-	if (access_style == MC146818_ARC_PICA)
-		memory_device_register(mem, "mc146818_pica", 0x90000070ULL,
-		    1, dev_mc146818_pica_access, (void *)mc_data, MEM_DEFAULT, NULL);
+	if (access_style == MC146818_ARC_JAZZ)
+		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,
+		    1, dev_mc146818_jazz_access, (void *)mc_data, MEM_DEFAULT, NULL);
 
 	if (access_style == MC146818_PC_CMOS)
 		memory_device_register(mem, "mc146818", baseaddr,

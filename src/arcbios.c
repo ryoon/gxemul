@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.8 2003-12-22 10:13:14 debug Exp $
+ *  $Id: arcbios.c,v 1.9 2003-12-22 19:43:48 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -106,7 +106,7 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 		uint32_t eparent, echild, epeer, tmp;
 		unsigned char buf[4];
 
-		debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);
+		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
 
 		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
@@ -129,17 +129,17 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 		}
 		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);
+		/*  debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);  */
 
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
 			store_32bit_word(peeraddr + 0x00, epeer);
-			debug("[ addchild: adding 0x%08x as peer to 0x%08x ]\n", a, peeraddr);
+			/*  debug("[ addchild: adding 0x%08x as peer to 0x%08x ]\n", a, peeraddr);  */
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
 			store_32bit_word(peeraddr + 0x04, echild);
-			debug("[ addchild: adding 0x%08x as child to 0x%08x ]\n", a, peeraddr);
+			/*  debug("[ addchild: adding 0x%08x as child to 0x%08x ]\n", a, peeraddr);  */
 		}
 
 		/*  Go to the next component:  */
@@ -222,6 +222,11 @@ uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags, 
 /*
  *  arcbios_emul():  ARCBIOS emulation
  *
+ *	0x0c	Halt()
+ *	0x10	PowerDown()
+ *	0x14	Restart()
+ *	0x18	Reboot()
+ *	0x1c	EnterInteractiveMode()
  *	0x24	GetPeer(node)
  *	0x28	GetChild(node)
  *	0x2c	GetParent(node)
@@ -240,6 +245,16 @@ void arcbios_emul(struct cpu *cpu)
 	unsigned char buf[40];
 
 	switch (vector) {
+	case 0x0c:		/*  Halt()  */
+	case 0x10:		/*  PowerDown()  */
+	case 0x14:		/*  Restart()  */
+	case 0x18:		/*  Reboot()  */
+	case 0x1c:		/*  EnterInteractiveMode()  */
+		debug("[ ARCBIOS Halt() or similar ]\n");
+		/*  Halt all CPUs.  */
+		for (i=0; i<ncpus; i++)
+			cpus[i]->running = 0;
+		break;
 	case 0x24:		/*  GetPeer(node)  */
 		{
 			uint32_t peer;

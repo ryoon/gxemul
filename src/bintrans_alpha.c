@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.46 2004-11-21 07:40:42 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.47 2004-11-21 08:09:49 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -191,7 +191,7 @@ unsigned char bintrans_alpha_runchunk[192] = {
 	ofs_t4&255,ofs_t4>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t4]"(a0)  */
 
 	0xff, 0xff, 0x1f, 0x21,		/*  lda     t7,-1   (last virtual, -1 is an invalid addr)  */
-	0x00, 0x00, 0xdf, 0x22,		/*  lda     t8,0    (last physical = NULL)  */
+	0x00, 0x00, 0xdf, 0x22,		/*  lda     t8,0    (last host = NULL)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
@@ -1826,9 +1826,18 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	*a++ = 0xb0fe0018;		/*  stl t6,24(sp)  */
 	*a++ = 0xb71e0020;		/*  stq t10,32(sp)  */
 	*a++ = 0xb73e0028;		/*  stq t11,40(sp)  */
-	*a++ = 0xb51e0030;		/*  stq t7,48(sp)  */
-	*a++ = 0xb6de0038;		/*  stq t8,56(sp)  */
-	*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
+
+	switch (itype) {
+	case TLB_TLBWR:
+	case TLB_TLBWI:
+		/*  No need to save t7,t8,t9, because a write to the
+		    TLB should invaliade the caches anyway.  */
+		break;
+	default:
+		*a++ = 0xb51e0030;		/*  stq t7,48(sp)  */
+		*a++ = 0xb6de0038;		/*  stq t8,56(sp)  */
+		*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
+	}
 
 	switch (itype) {
 	case TLB_TLBP:
@@ -1851,9 +1860,18 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	*a++ = 0xa0fe0018;		/*  ldl t6,24(sp)  */
 	*a++ = 0xa71e0020;		/*  ldq t10,32(sp)  */
 	*a++ = 0xa73e0028;		/*  ldq t11,40(sp)  */
-	*a++ = 0xa51e0030;		/*  ldq t7,48(sp)  */
-	*a++ = 0xa6de0038;		/*  ldq t8,56(sp)  */
-	*a++ = 0xa6fe0040;		/*  ldq t9,64(sp)  */
+
+	switch (itype) {
+	case TLB_TLBWR:
+	case TLB_TLBWI:
+		/*  Invalidate the one-entry load/store cache:  */
+		*a++ = 0x211fffff;	/*  lda     t7,-1 (last virtual, -1 is an invalid addr)  */
+		break;
+	default:
+		*a++ = 0xa51e0030;	/*  ldq t7,48(sp)  */
+		*a++ = 0xa6de0038;	/*  ldq t8,56(sp)  */
+		*a++ = 0xa6fe0040;	/*  ldq t9,64(sp)  */
+	}
 
 	*a++ = 0x23de0080;		/*  lda sp,128(sp)  */
 

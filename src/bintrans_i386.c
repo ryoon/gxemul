@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.15 2004-11-21 06:50:09 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.16 2004-11-21 08:09:49 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -1145,7 +1145,8 @@ try_chunk_p:
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
 		*a++ = 0x81; *a++ = 0xbe;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-		*a++ = 0xf0; *a++ = 0x1f; *a++ = 0; *a++ = 0;
+		*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+		*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
 		*a++ = 0x7c; *a++ = 0x01;
 		*a++ = 0xc3;
 
@@ -1436,8 +1437,51 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
  */
 static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 {
-	/*  TODO  */
+	unsigned char *a;
+	int ofs = 0;	/*  avoid a compiler warning  */
 
-	return 0;
+	switch (itype) {
+	case TLB_TLBP:
+	case TLB_TLBR:
+	case TLB_TLBWR:
+	case TLB_TLBWI:
+		break;
+	default:
+		return 0;
+	}
+
+	a = *addrp;
+
+	switch (itype) {
+	case TLB_TLBP:
+	case TLB_TLBR:
+		/*  push readflag  */
+		*a++ = 0x6a; *a++ = (itype == TLB_TLBR);
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
+		break;
+	case TLB_TLBWR:
+	case TLB_TLBWI:
+		/*  push randomflag  */
+		*a++ = 0x6a; *a++ = (itype == TLB_TLBWR);
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
+		break;
+	}
+
+	/*  push cpu (esi)  */
+	*a++ = 0x56;
+
+	/*  eax = points to the right function  */
+	*a++ = 0x8b; *a++ = 0x86;
+	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+	/*  ff d0                   call   *%eax  */
+	*a++ = 0xff; *a++ = 0xd0;
+
+	/*  83 c4 10                add    $8,%esp  */
+	*a++ = 0x83; *a++ = 0xc4; *a++ = 8;
+
+	*addrp = a;
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	return 1;
 }
 

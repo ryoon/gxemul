@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.27 2004-07-11 13:10:02 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.28 2004-07-11 13:51:16 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -43,6 +43,8 @@ struct turbochannel_data {
 	uint64_t	baseaddr;
 	uint64_t	endaddr;
 	int		irq;
+
+	int		rom_skip;
 
 	char		device_name[9];		/*  NUL-terminated  */
 
@@ -65,6 +67,8 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	relative_addr += d->rom_skip;
 
 	if (writeflag == MEM_READ) {
 		debug("[ turbochannel: read from slot %i addr 0x%08lx (", d->slot_nr, (long)relative_addr);
@@ -144,6 +148,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	struct turbochannel_data *d;
 	int rom_offset = 0x3c0000;
 	int rom_length = DEV_TURBOCHANNEL_LEN;
+	int rom_skip = 0;
 
 	if (device_name==NULL)
 		return;
@@ -190,7 +195,10 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	if (strcmp(device_name, "PMAD-AA")==0) {
 		/*  le in NetBSD, Lance ethernet  */
 		dev_le_init(cpu, mem, baseaddr, 0, 0, irq, 4*1048576);
-		rom_offset = 0x3c0000;
+		/*  One ROM at 0x1c03e0, and one at 0x3c0000.  */
+		rom_skip = 0x300;
+		rom_offset = 0x1c0000;
+		rom_length = 0x201000;
 	} else if (strcmp(device_name, "PMAZ-AA")==0) {
 		/*  asc in NetBSD, SCSI  */
 		dev_asc_init(cpu, mem, baseaddr, irq, d);
@@ -262,7 +270,9 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	} else
 		fatal("warning: unknown TURBOchannel device name \"%s\"\n", device_name);
 
-	memory_device_register(mem, "turbochannel", baseaddr + rom_offset,
-	    rom_length, dev_turbochannel_access, d);
+	d->rom_skip = rom_skip;
+
+	memory_device_register(mem, "turbochannel", baseaddr + rom_offset + rom_skip,
+	    rom_length - rom_skip, dev_turbochannel_access, d);
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.585 2005-02-13 23:50:47 debug Exp $
+$Id: HISTORY,v 1.586 2005-02-14 07:28:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1667,3 +1667,4 @@ HISTORY of mips64emul
 		Added a NOFPU flag to the MIPS cpu flags, so that executing
 		FPU instructions on for example VR4xxx will fail (as suggested
 		by Alexander Yurchenko).
+20050214	Implementing more PPC instructions.

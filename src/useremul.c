@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.7 2004-02-09 15:32:18 debug Exp $
+ *  $Id: useremul.c,v 1.8 2004-02-18 09:29:47 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -58,14 +58,14 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <time.h>
+#include <errno.h>
 
 #include "memory.h"
 #include "misc.h"
 #include "syscall_netbsd.h"
 #include "sysctl_netbsd.h"
 #include "syscall_ultrix.h"
-
-extern int errno;
 
 extern int userland_emul;
 extern char *last_filename;
@@ -298,13 +298,13 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				}
 
 				/*  TODO: address validity check  */
-				result_low = memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
+				memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
+
+				result_low = write(descr, charbuf, length);
 				if ((int64_t)result_low < 0) {
 					error_code = errno;
 					error_flag = 1;
 				}
-
-				write(descr, charbuf, length);
 
 				free(charbuf);
 			}
@@ -809,7 +809,7 @@ printf("fcntl!!!! res = %i error=%i\n", result_low, error_code);
 
 			if (arg1 != 0) {
 				struct stat st;
-				result_low = stat(charbuf, &st);
+				result_low = stat((char *)charbuf, &st);
 				if ((int64_t)result_low < 0) {
 					error_flag = 1;
 					error_code = errno;
@@ -859,11 +859,11 @@ printf("fcntl!!!! res = %i error=%i\n", result_low, error_code);
 			debug("useremul_syscall(): ultrix gethostname(0x%llx,%lli)\n",
 			    (long long)arg0, (long long)arg1);
 			result_low = 0;
-			if (arg1 > 0 && arg1 < 500000) {
-				char buf[arg1];
+			if (arg1 != 0 && arg1 < 500000) {
+				unsigned char buf[arg1];
 				int i;
 
-				result_low = gethostname(buf, sizeof(buf));
+				result_low = gethostname((char *)buf, sizeof(buf));
 
 				for (i = 0; i<sizeof(buf) && i < arg1; i++)
 					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
@@ -886,7 +886,7 @@ printf("fcntl!!!! res = %i error=%i\n", result_low, error_code);
 					iov_base = load_32bit_word(arg1 + 8*i + 0);	/*  char *  */
 					iov_len  = load_32bit_word(arg1 + 8*i + 4);	/*  size_t  */
 
-					if (iov_len > 0) {
+					if (iov_len != 0) {
 						unsigned char *charbuf = malloc(iov_len);
 						if (charbuf == NULL) {
 							fprintf(stderr, "out of memory in useremul_syscall()\n");

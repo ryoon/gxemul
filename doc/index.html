@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.197 2005-01-16 03:46:43 debug Exp $
+$Id: index.html,v 1.198 2005-01-16 04:06:17 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1908,15 +1908,15 @@ IRIX userland emulation might theoretically also be possible to add.
 <a name="promdump"></a>
 <h3>Using a PROM dump from a real machine:</h3>
 
-Raw PROM images from real machines can, in a few cases, be used. One
-case which I've tried is to use a DECstation 5000/125 PROM image.
-ROM images from other machines might work as well, but ROM code is
-usually much more sensitive to correctness of the emulator than
-operating system kernels or userland programs are.
+Raw PROM images from real machines can, in a few cases, be used in
+the emulator. ROM code is usually much more sensitive to correctness
+of the emulator than operating system kernels or userland programs
+are, so don't expect any PROM image to just magically work.
+
+
 <p>
-The image first needs to be extracted from the machine. I presume
-that these PROMs are not legal to redistribute, so you really need
-to extract the PROM from a physical machine that you own. There are
+<h4>Dumping the PROM on a DECstation 5000/125:</h4>
+The image first needs to be extracted from the machine. There are
 several ways to do this.
 <ul>
   <li>Use hardware to read the PROM chip(s) directly. Not easy if you
@@ -2012,14 +2012,17 @@ During bootup, the PROM complains <i>a lot</i> about hardware failures.
 That's because the emulator doesn't emulate the hardware well enough yet.
 <p>
 The command line options used are:
--D3 for DECstation model 3 (5000/xxx), -Q to supress the emulator's own PROM
+-D3 for DECstation model 3 (5000/1xx), -Q to supress the emulator's own PROM
 call emulation, -M128 for 128MB RAM (because mips64emul doesn't correctly
 emulate memory detection well enough for the PROM to accept, so it will
 always believe there is 128MB ram anyway), and -q to supress debug messages.
 The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
 binary file which should be loaded at a specific virtual address.
 
+
 <p><br>
+<h4>Dumping the PROM on a SGI O2:</h4>
+
 The general ideas in this section applies to using ROM images from other
 machines as well. Besides DECstation, I've also tried this on an SGI IP32
 ("O2").

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.65 2005-01-12 07:42:39 debug Exp $
+ *  $Id: arcbios.c,v 1.66 2005-01-16 04:06:18 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1122,6 +1122,7 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x80	GetFileInformation(handle, buf)
  *	0x88	FlushAllCaches()
  *	0x90	GetDisplayStatus(uint32_t handle)
+ *	0x100	undocumented IRIX return from main() (?)
  */
 void arcbios_emul(struct cpu *cpu)
 {
@@ -1633,6 +1634,17 @@ void arcbios_emul(struct cpu *cpu)
 		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n", cpu->gpr[GPR_A0]);
 		/*  TODO:  handle different values of 'handle'?  */
 		cpu->gpr[GPR_V0] = ARC_DSPSTAT_ADDR;
+		break;
+	case 0x100:
+		/*
+		 *  Undocumented, but used by IRIX when shutting down.
+		 *  Like a return_from_main(), or similar.
+		 */
+		debug("[ ARCBIOS: IRIX return_from_main() (?) ]\n");
+		/*  Halt all CPUs.  */
+		for (i=0; i<cpu->emul->ncpus; i++)
+			cpu->emul->cpus[i]->running = 0;
+		cpu->emul->exit_without_entering_debugger = 1;
 		break;
 	case 0x888:
 		/*

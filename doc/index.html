@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.84 2004-08-05 21:22:14 debug Exp $
+$Id: index.html,v 1.85 2004-08-08 14:07:27 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -87,7 +87,8 @@ mips64emul is a MIPS machine emulator.
 
 The goals are to emulate 64-bit and 32-bit MIPS-like CPUs and enough surrounding hardware
 to fake real machines, capable of running real (unmodified) operating systems
-(such as <a href="http://www.netbsd.org/">NetBSD</a>, <a href="http://www.linux-mips.org/">Linux</a>, 
+(such as <a href="http://www.netbsd.org/">NetBSD</a>, <a href="http://www.linux-mips.org/">Linux</a>,
+<a href="http://www.freebsd.org/platforms/mips.html">FreeBSD</a>, 
 or <a href="http://www.openbsd.org/pmax.html">OpenBSD</a>),
 and to assist in experimenting with MIPS in general.
 This is a spare time hobby project, and many things are not implemented yet.
@@ -899,6 +900,8 @@ Here are links to some of the kernels that I usually experiment with.
       <li>Linux:
 	<br>A Linux kernel is available from
 	<a href="http://www.meshcube.org/feed/stable/">http://www.meshcube.org/feed/stable</a>/<a href="http://www.meshcube.org/feed/stable/kernel-image-mtx_2.4.24-3_mipsel.ipk">kernel-image-mtx_2.4.24-3_mipsel.ipk</a>
+	<br>(This is a Debian package, you can use <b>ar</b> and <b>tar</b>
+		to extract kernel.img from it.)
 	<br>Try running with <b>-e 0x80800000:kernel.img</b>.
     </ul>
   </li>

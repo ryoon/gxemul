@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.144 2004-09-05 03:51:23 debug Exp $
+ *  $Id: cpu.c,v 1.145 2004-09-05 03:56:53 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -51,7 +51,6 @@ extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
-extern int use_x11;
 extern int tlb_dump;
 extern struct cpu **cpus;
 extern int ncpus;
@@ -3296,7 +3295,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		} while (running && (ncycles < ncycles_chunk_end));
 
 		/*  Check for X11 events:  */
-		if (use_x11) {
+		if (emul->use_x11) {
 			if (ncycles > ncycles_flushx11 + (1<<16)) {
 				x11_check_event();
 				ncycles_flushx11 = ncycles;

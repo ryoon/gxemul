@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.49 2004-09-05 03:51:21 debug Exp $
+ *  $Id: dev_fb.c,v 1.50 2004-09-05 03:56:53 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -60,8 +60,6 @@
 #include <X11/Xutil.h>
 #endif
 
-
-extern int use_x11;
 
 #ifdef WITH_X11
 extern XColor x11_graycolor[16];
@@ -515,7 +513,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	int need_to_redraw_cursor = 0;
 #endif
 
-	if (!use_x11)
+	if (!cpu->emul->use_x11)
 		return;
 
 #ifdef WITH_X11
@@ -691,7 +689,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	 *  of which area(s) we modify, so that the display isn't updated
 	 *  unneccessarily.
 	 */
-	if (writeflag == MEM_WRITE && use_x11) {
+	if (writeflag == MEM_WRITE && cpu->emul->use_x11) {
 		int x, y, x2,y2;
 
 		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
@@ -858,7 +856,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	title[sizeof(title)-1] = '\0';
 
 #ifdef WITH_X11
-	if (use_x11)
+	if (cpu->emul->use_x11)
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
 		    title, cpu->emul->x11_scaledown);
 	else

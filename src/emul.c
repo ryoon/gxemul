@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.65 2004-09-05 03:49:20 debug Exp $
+ *  $Id: emul.c,v 1.66 2004-09-05 03:56:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -61,7 +61,6 @@ int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
 extern int n_dumppoints;
@@ -667,7 +666,7 @@ void emul_start(struct emul *emul)
 
 	diskimage_dump_info();
 
-	if (use_x11)
+	if (emul->use_x11)
 		x11_init();
 
 	if (emul->userland_emul) {
@@ -781,7 +780,7 @@ void emul_start(struct emul *emul)
 	cpu_run(emul, cpus, ncpus);
 
 
-	if (use_x11) {
+	if (emul->use_x11) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail()) {
 			x11_check_event();

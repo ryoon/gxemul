@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.175 2004-09-05 03:12:45 debug Exp $
+ *  $Id: machine.c,v 1.176 2004-09-05 03:56:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -70,7 +70,6 @@
 extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int use_x11;
 
 uint64_t file_loaded_end_addr = 0;
 
@@ -885,7 +884,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
 			dev_le_init(cpu, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
 			dev_sii_init(cpu, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
+			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, emul->use_x11);
 			dev_mc146818_init(cpu, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
@@ -951,7 +950,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*  TURBOchannel slot 7 is system stuff.  */
 			dev_dc7085_init(cpu, mem,
-			    KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
+			    KN02_SYS_DZ, KN02_IP_DZ +8, emul->use_x11);
 			dev_mc146818_init(cpu, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
@@ -988,8 +987,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
-			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
+			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, emul->use_x11, 0, 1);
+			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL);
 
@@ -1046,8 +1045,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			dev_le_init(cpu, mem, KN03_SYS_LANCE,
 			    0, 0, KN03_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
+			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
+			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL);
 
@@ -1099,7 +1098,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 
 			dec5800_csr = dev_dec5800_init(cpu, mem, 0x10000000);
-			dev_ssc_init(cpu, mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
+			dev_ssc_init(cpu, mem, 0x10140000, 2, emul->use_x11, &dec5800_csr->csr);
 			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
 			dev_decxmi_init(cpu, mem, 0x11800000);
 			dev_decbi_init(cpu, mem, 0x10000000);
@@ -1136,7 +1135,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
 			dev_kn210_init(cpu, mem, 0x10080000);
-			dev_ssc_init(cpu, mem, 0x10140000, 0, use_x11, NULL);	/*  TODO:  not irq 0  */
+			dev_ssc_init(cpu, mem, 0x10140000, 0, emul->use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -1189,7 +1188,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  (the system stuff), 0x1c000000
 			 */
 			dev_scc_init(cpu, mem, 0x1c100000,
-			    XINE_INTR_SCC_0 +8, use_x11, 0, 1);
+			    XINE_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000,
@@ -1223,7 +1222,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  asc (scsi) at 0x17100000.
 			 */
 
-			dev_ssc_init(cpu, mem, 0x10140000, 0, use_x11, NULL);		/*  TODO:  not irq 0  */
+			dev_ssc_init(cpu, mem, 0x10140000, 0, emul->use_x11, NULL);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
 			dev_dec5500_ioboard_init(cpu, mem, 0x17000000);
@@ -1248,7 +1247,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emul->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
-			if (use_x11)
+			if (emul->use_x11)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
 			/*  KN230 interrupts:  */
@@ -1261,9 +1260,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
 			dev_mc146818_init(cpu, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
-			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
+			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, emul->use_x11);		/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, emul->use_x11); */	/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, emul->use_x11); */	/*  NOTE: CSR_INTR  */
 			dev_le_init(cpu, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(cpu, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
 			kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
@@ -1398,7 +1397,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  Environment variables:  */
 		addr = DEC_PROM_STRINGS;
 
-		if (use_x11)
+		if (emul->use_x11)
 			/*  (0,3)  Keyboard and Framebuffer  */
 			add_environment_string(cpu, framebuffer_console_name, &addr);
 		else
@@ -1547,7 +1546,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (emul->physical_ram_in_mb != 32)
 			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
-		if (!use_x11)
+		if (!emul->use_x11)
 			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
 
 		/*
@@ -1661,7 +1660,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 19:
 				strcat(emul->machine_name, " (Everest IP19)");
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
-				dev_scc_init(cpu, mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
+				dev_scc_init(cpu, mem, 0x10086000, 0, emul->use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpu, mem, 0x18000000);
 
@@ -1804,7 +1803,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				 /*  serial? irix?  */
 				dev_scc_init(cpu, mem,
-				    0x400086000ULL, 0, use_x11, 0, 8);
+				    0x400086000ULL, 0, emul->use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
 				dev_sgi_ip19_init(cpu, mem,
@@ -1914,7 +1913,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_ram_init(mem,    0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
 
-				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, use_x11);	/*  crime0  */
+				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, emul->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpu, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
@@ -2028,7 +2027,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
 				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
-				if (use_x11)
+				if (emul->use_x11)
 					arcbios_addchild_manual(cpu, 4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
 
 				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
@@ -2574,7 +2573,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
 
-		if (use_x11) {
+		if (emul->use_x11) {
 			store_string(cpu, ARC_ARGV_START + 0x180, "console=g");
 			store_string(cpu, ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
 			store_string(cpu, ARC_ARGV_START + 0x220, "ConsoleOut=video()");
@@ -2600,7 +2599,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		addr = SGI_ENV_STRINGS;
 
-		if (use_x11) {
+		if (emul->use_x11) {
 			if (emul->emulation_type == EMULTYPE_ARC) {
 				add_environment_string(cpu, "ConsoleIn=multi()key()keyboard()console()", &addr);
 				add_environment_string(cpu, "ConsoleOut=multi()video()monitor()console()", &addr);
@@ -2629,7 +2628,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (emul->physical_ram_in_mb != 64)
 			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
-		if (use_x11)
+		if (emul->use_x11)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
@@ -2670,7 +2669,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	case EMULTYPE_NETGEAR:
 		emul->machine_name = "NetGear WG602";
 
-		if (use_x11)
+		if (emul->use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
 
 		dev_8250_init(cpu, mem, 0x18000800, 0, 4);

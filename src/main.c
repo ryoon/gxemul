@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.96 2004-09-05 03:51:23 debug Exp $
+ *  $Id: main.c,v 1.97 2004-09-05 03:56:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -66,8 +66,6 @@ int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for inst
 
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
-
-int use_x11 = 0;
 
 
 /*
@@ -359,7 +357,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->verbose ++;
 			break;
 		case 'X':
-			use_x11 = 1;
+			emul->use_x11 = 1;
 			break;
 		case 'Y':
 			emul->x11_scaledown = atoi(optarg);
@@ -513,9 +511,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 #endif
 
 #ifndef WITH_X11
-	if (use_x11) {
+	if (emul->use_x11) {
 		fprintf(stderr, "WARNING: %s was compiled without X11 support. Ignoring -X.\n", progname);
-		use_x11 = 0;
+		emul->use_x11 = 0;
 	}
 #endif
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.27 2004-07-12 10:23:30 debug Exp $
+ *  $Id: dev_bt459.c,v 1.28 2004-09-05 03:56:52 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -39,8 +39,6 @@
 
 #include "bt459.h"
 
-
-extern int use_x11;
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>     
@@ -101,7 +99,7 @@ struct bt459_data {
 /*
  *  bt459_sync_xysize():
  */
-void bt459_sync_xysize(struct bt459_data *d)
+static void bt459_sync_xysize(struct bt459_data *d)
 {
 	int x,y, xmax=0, ymax=0;
 
@@ -129,7 +127,7 @@ void bt459_sync_xysize(struct bt459_data *d)
  *
  *  d->cursor_xsize and ysize are also updated.
  */
-void bt459_update_X_cursor(struct bt459_data *d)
+static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 {
 	int i, x,y, xmax=0, ymax=0;
 
@@ -154,7 +152,7 @@ void bt459_update_X_cursor(struct bt459_data *d)
 
 #ifdef WITH_X11
 	/*  Now let's use XPutPixel to set cursor_ximage pixels:  */
-	if (use_x11) {
+	if (cpu->emul->use_x11) {
 		for (y=0; y<=ymax; y++)
 			for (x=0; x<=xmax; x+=4) {
 				struct fb_window *win = d->vfb_data->fb_window;
@@ -198,7 +196,8 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 
 	if (d->need_to_update_cursor_shape) {
 		d->need_to_update_cursor_shape = 0;
-		bt459_update_X_cursor(d);	/*  or  bt459_sync_xysize(d);  */
+		bt459_update_X_cursor(cpu, d);
+		    /*  or  bt459_sync_xysize(d);  */
 	}
 
 	/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.7 2004-06-12 17:12:09 debug Exp $
+ *  $Id: dev_zs.c,v 1.8 2004-06-20 15:16:13 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -46,6 +46,8 @@
 struct zs_data {
 	int		irq_nr;
 	int		addrmult;
+
+	int		reg_select;
 
 	int		tx_done;
 };
@@ -91,7 +93,19 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 				odata |= ZSRR0_RX_READY;
 			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
 		} else {
-			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			/*  Hm...  TODO  */
+			if (d->reg_select == 0) {
+				d->reg_select = idata;
+			} else {
+				switch (d->reg_select) {
+				case 8:	console_putchar(idata & 255);
+					break;
+				default:
+					debug("[ zs: write to (unimplemented) register 0x%02x: 0x%08x ]\n", d->reg_select, idata);
+				}
+				d->reg_select = 0;
+			}
+			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
 		}
 		break;
 	case 7:

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.9 2005-02-10 05:55:00 debug Exp $
+$Id: guestoses.html,v 1.10 2005-02-10 16:03:17 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -554,7 +554,7 @@ client. Performing this setup is very time consuming, but necessary.
 	# <b>echo ifconfig_le0="inet 10.0.0.2" &gt;&gt; /etc/rc.conf</b>
 	# <b>echo nameserver 10.0.0.254 &gt;&gt; /etc/rc.conf</b>
 	# <b>echo 10.0.0.254 &gt; /etc/mygate</b>
-	# <b>mkdir /x; echo /x &gt; /etc/exports</b>
+	# <b>mkdir /x; echo /x -maproot=root 10.0.0.1 &gt; /etc/exports</b>
 	# <b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
 	# <b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
 	# <b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
@@ -572,10 +572,6 @@ client. Performing this setup is very time consuming, but necessary.
 	# <b>sh</b>
 	# <b>for a in base* etc* misc*; do tar vzxfp $a; done</b>
 	# <b>dd if=/dev/zero of=swap bs=1024 count=16384</b>
-
-	If you want to check that the export works, try this:
-
-	# <b>mount -v localhost:/x /mnt; ls /mnt; umount /mnt</b>
 
 </pre>
   <p>

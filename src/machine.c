@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.340 2005-02-09 20:36:08 debug Exp $
+ *  $Id: machine.c,v 1.341 2005-02-10 16:03:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4213,10 +4213,12 @@ void machine_dumpinfo(struct machine *m)
 	if (m->single_step_on_bad_addr)
 		debug("single-step on bad addresses\n");
 
-	debug("bintrans %s (%i MB cache), other speedtricks %s\n",
-	    m->bintrans_enable? "enabled" : "disabled",
-	    (int) (m->bintrans_size / 1048576),
-	    m->speed_tricks? "enabled" : "disabled");
+	if (m->bintrans_enable)
+		debug("bintrans enabled (%i MB cache)\n",
+		    (int) (m->bintrans_size / 1048576));
+	else
+		debug("bintrans disabled, other speedtricks %s\n",
+		    m->speed_tricks? "enabled" : "disabled");
 
 	debug("clock: ");
 	if (m->automatic_clock_adjustment)

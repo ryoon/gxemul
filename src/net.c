@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.64 2005-02-06 19:35:20 debug Exp $
+ *  $Id: net.c,v 1.65 2005-02-10 16:03:17 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -285,7 +285,8 @@ static struct ethernet_packet_link *net_allocate_packet_link(
 		exit(1);
 	}
 
-	memset(lp, 0, sizeof(struct ethernet_packet_link));
+	/*  memset(lp, 0, sizeof(struct ethernet_packet_link));  */
+
 	lp->len = len;
 	lp->extra = extra;
 	lp->data = malloc(len);
@@ -293,6 +294,9 @@ static struct ethernet_packet_link *net_allocate_packet_link(
 		fprintf(stderr, "net_allocate_packet_link(): out of memory\n");
 		exit(1);
 	}
+	lp->next = NULL;
+
+	/*  TODO: maybe this is not necessary:  */
 	memset(lp->data, 0, len);
 
 	/*  Add last in the link chain:  */
@@ -1912,11 +1916,13 @@ void net_ethernet_tx(struct net *net, void *extra,
 			return;
 		}
 
-		fatal("[ net: TX: IP packet not for gateway, "
-		    "and not broadcast: ");
-		for (i=0; i<14; i++)
-			fatal("%02x", packet[i]);
-		fatal(" ]\n");
+		if (net->n_nics < 2) {
+			fatal("[ net: TX: IP packet not for gateway, "
+			    "and not broadcast: ");
+			for (i=0; i<14; i++)
+				fatal("%02x", packet[i]);
+			fatal(" ]\n");
+		}
 		return;
 	}
 
@@ -2050,6 +2056,11 @@ void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
 
 	if (net == NULL)
 		return;
+
+	if (extra == NULL) {
+		fprintf(stderr, "net_add_nic(): extra = NULL\n");
+		exit(1);
+	}
 
 	net->n_nics ++;
 	net->nic_extra = realloc(net->nic_extra, sizeof(void *)

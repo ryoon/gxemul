@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.60 2005-01-06 00:10:00 debug Exp $
+ *  $Id: diskimage.c,v 1.61 2005-01-06 00:13:48 debug Exp $
  *
  *  Disk image support.
  *
@@ -348,7 +348,7 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ",
 	    disk_id, xferp->cmd[0]);
 
-#if 1
+#if 0
 	fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x ]\n",
 	    disk_id, xferp->cmd[0]);
 #endif
@@ -982,12 +982,12 @@ printf(" XXX \n");
 		break;
 
 	case SCSICDROM_READ_TOC:
-		fatal("CDROM_READ_TOC: ");
-		fatal("lun=%i msf=%i ",
+		debug("(CDROM_READ_TOC: ");
+		debug("lun=%i msf=%i ",
 		    xferp->cmd[1] >> 5, (xferp->cmd[1] >> 1) & 1);
-		fatal("starting_track=%i ", xferp->cmd[6]);
+		debug("starting_track=%i ", xferp->cmd[6]);
 		retlen = xferp->cmd[7] * 256 + xferp->cmd[8];
-		fatal("allocation_len=%i ", retlen);
+		debug("allocation_len=%i)\n", retlen);
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.186 2004-08-03 00:31:57 debug Exp $
+$Id: HISTORY,v 1.187 2004-08-03 02:06:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -868,3 +868,6 @@ HISTORY of mips64emul
 		to run from each CPU at max (useful for SMP instruction
 		interleave experiments).
 		Importing a 8x16 consoel font from FreeBSD (vt220l.816).
+		Adding a skeleton for a 80x25 text console device (dev_vga),
+		useful for some ARC modes. (Character output is possible, but
+		no cursor yet.)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.45 2004-04-09 05:12:39 debug Exp $
+ *  $Id: cpu.c,v 1.46 2004-04-11 15:47:57 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -517,7 +517,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	struct coproc *cp0 = cpu->coproc[0];
 	int instr_fetched;
 	int i;
-	int dcount;
 	unsigned char instr[4];
 	uint32_t instrword;
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
@@ -536,15 +535,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	uint64_t addr, value, value_hi, result_value;	/*  for load/store  */
 	int wlen, st, signd, linked, dataflag = 0;
 	unsigned char d[16];				/*  room for at most 128 bits  */
-
-
-	/*
-	 *  Hardware 'ticks':  (clocks, interrupt sources...)
-	 */
-	dcount = cpu->cpu_type.flags & DCOUNT? 1 : 0;
-	for (i=0; i<cpu->n_tick_entries; i++)
-		if (((*instrcount) & ((1 << (cpu->tick_shift[i] + dcount))-1)) == 0)
-			cpu->tick_func[i](cpu, cpu->tick_extra[i]);
 
 
 	if (cpu->instruction_delay > 0) {
@@ -2599,6 +2589,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	int i, s1, s2;
 	long ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	long ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
+	int dcount;
 	int running;
 	struct rusage rusage;
 	struct timeval starttime;
@@ -2610,9 +2601,18 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	while (running) {
 		ncycles_chunk_end = ncycles + (1 << 14);
 
-		/*  Run instructions from each CPU:  */
+		/*  Do a chunk of cycles:  */
 		do {
 			running = 0;
+
+			/*  Hardware 'ticks':  (clocks, interrupt sources...)  */
+			/*  TODO: not cpus[0], use some kind of "mainbus" instead  */
+			dcount = cpus[0]->cpu_type.flags & DCOUNT? 1 : 0;
+			for (i=0; i<cpus[0]->n_tick_entries; i++)
+				if ((ncycles & ((1 << (cpus[0]->tick_shift[i] + dcount))-1)) == 0)
+					cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
+
+			/*  Run instructions from each CPU:  */
 			for (i=0; i<ncpus; i++)
 				if (cpus[i]->running) {
 					cpu_run_instr(cpus[i], &ncycles);

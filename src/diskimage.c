@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.18 2004-04-14 22:30:34 debug Exp $
+ *  $Id: diskimage.c,v 1.19 2004-04-15 03:58:56 debug Exp $
  *
  *  Disk image support.
  *
@@ -484,6 +484,11 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
 
+if (size > 8192) {
+	printf("READ too large\n");
+	return 0;
+}
+
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 
@@ -535,6 +540,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
 
+if (size > 8192) {
+	printf("WRITE too large\n");
+	return 0;
+}
 		if (xferp->data_out == NULL) {
 			debug(", data_out == NULL, wanting %i bytes, \n\n", (int)size);
 			xferp->data_out_len = size;
@@ -546,7 +555,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
 		/*  TODO: how about return code?  */
 
-		fsync(fileno(diskimages[disk_id]->f));
+		/*  Is this really neccessary?  */
+		/*  fsync(fileno(diskimages[disk_id]->f));  */
 
 		/*  Return status and message:  */
 		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);

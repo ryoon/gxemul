@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.2 2003-12-30 04:32:32 debug Exp $
+ *  $Id: dev_fdc.c,v 1.3 2004-01-06 01:59:51 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"
@@ -52,21 +53,11 @@ struct fdc_data {
  */
 int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata = 0;
 	int i;
-	int idata = 0, odata=0, odata_set=0;
 	struct fdc_data *d = extra;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
+	idata = memory_readmax64(cpu, data, len);
 
 	/*  TODO:  this is 100% dummy  */
 
@@ -75,7 +66,6 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		/*  no debug warning  */
 		if (writeflag==MEM_READ) {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		} else
 			d->reg[relative_addr] = idata;
 		break;
@@ -83,7 +73,6 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag==MEM_READ) {
 			debug("[ fdc: read from reg %i ]\n", (int)relative_addr);
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		} else {
 			debug("[ fdc: write to reg %i:", (int)relative_addr);
 			for (i=0; i<len; i++)
@@ -93,16 +82,8 @@ int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.2 2004-01-05 01:23:37 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.3 2004-01-06 01:59:51 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

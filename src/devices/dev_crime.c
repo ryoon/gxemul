@@ -23,15 +23,20 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.5 2004-01-03 03:11:53 debug Exp $
+ *  $Id: dev_crime.c,v 1.6 2004-01-06 01:59:51 debug Exp $
  *  
  *  SGI "crime".
+ *
+ *  TODO:  This is hardcoded for bigendian, but since it will probably only
+ *         be used for SGI emulation, and no little-endian machines, this is
+ *         not that much of a problem.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

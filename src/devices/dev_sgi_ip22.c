@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.1 2004-01-05 03:27:42 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.2 2004-01-06 01:59:51 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -58,29 +59,16 @@ void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
-	int regnr;
-	int idata = 0, odata=0, odata_set=0, i;
+	uint64_t idata = 0, odata = 0;
+	int regnr, i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);
 
-	if (writeflag == MEM_WRITE) {
+	if (writeflag == MEM_WRITE)
 		d->reg[regnr] = idata;
-	} else {
-		odata_set = 1;
+	else
 		odata = d->reg[regnr];
-	}
 
 	/*  Read from/write to the sgi_ip22:  */
 	switch (relative_addr) {
@@ -93,10 +81,6 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		}
 		break;
 	case 0x3c:	/*  timer control  */
-		if (writeflag == MEM_WRITE) {
-		} else {
-			odata_set = 1;
-		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
@@ -106,15 +90,8 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -89,22 +90,11 @@ char *gs_reg_high_names[4] = {
  */
 int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata = 0;
 	int i, regnr;
-	uint64_t idata = 0, odata=0, odata_set=0;
 	struct gs_data *d = extra;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 16;
 	if (relative_addr & 0xf) {
 		debug("[ gs unaligned access, addr 0x%x ]\n", (int)relative_addr);
@@ -120,7 +110,6 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 		if (writeflag==MEM_READ) {
 			debug("[ gs read from addr 0x%x ]\n", (int)relative_addr);
 			odata = d->reg[regnr];
-			odata_set = 1;
 		} else {
 			debug("[ gs write to addr 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)
@@ -131,18 +120,10 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-	return 0;
+	return 1;
 }
 
 

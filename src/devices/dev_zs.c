@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.2 2004-01-05 01:24:02 debug Exp $
+ *  $Id: dev_zs.c,v 1.3 2004-01-06 01:59:51 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"
@@ -52,29 +53,17 @@ struct zs_data {
  */
 int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	int i;
 	struct zs_data *d = extra;
-	int idata = 0, odata=0, odata_set=0;
+	uint64_t idata = 0, odata = 0;
+	int i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
+	idata = memory_readmax64(cpu, data, len);
 	relative_addr /= d->addrmult;
 
 	switch (relative_addr) {
 	case 3:
 		if (writeflag==MEM_READ) {
 			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
-			odata_set = 1;
 			odata = 0x04;	/*  ??? 0x04 allows transmission  */
 		} else {
 			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
@@ -83,7 +72,6 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	case 7:
 		if (writeflag==MEM_READ) {
 			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
-			odata_set = 1;
 			if (console_charavail())
 				odata = console_readchar();
 			else
@@ -96,21 +84,13 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);
-			odata_set = 1;
 		} else {
 			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_sii.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -170,23 +171,9 @@ void dev_sii_tick(struct cpu *cpu, void *extra)
  */
 int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata = 0;
 	int regnr, i;
-	int idata = 0, odata=0, odata_set=0;
 	struct sii_data *d = extra;
-
-	dev_sii_tick(cpu, extra);
-
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
 
 	if (relative_addr & 3) {
 		debug("[ sii relative_addr = 0x%x !!! ]\n",
@@ -194,15 +181,15 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		return 0;
 	}
 
+	dev_sii_tick(cpu, extra);
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 2;
-
 	odata = d->regs[regnr];
 
 	switch (relative_addr) {
 	case 0x00:				/*  SII_SDB: Diagnostic  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from SDB (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  SDB (data=0x%04x) ]\n", idata);
 			d->regs[regnr] = idata;
@@ -212,7 +199,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x0c:				/*  SII_CSR: Control/status  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from CSR (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  CSR (data=0x%04x: %s %s %s %s %s) ]\n", idata,
 			    idata & SII_HPM? "HPM" : "!hpm",
@@ -227,7 +213,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x10:				/*  SII_ID: SCSI ID  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from ID (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  ID (data=0x%04x: scsi id %i) ]\n", idata, idata & 7);
 			if (!(idata & SII_ID_IO))
@@ -243,7 +228,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x14:				/*  SII_SLCSR: Selector control  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from SLCSR (data=0x%04x: scsi_id=%i) ]\n", d->regs[regnr], d->regs[regnr] & 7);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  SLCSR (data=0x%04x: scsi_id=%i) ]\n", idata, idata & 7);
 			if ((idata & ~0x7) != 0)
@@ -257,7 +241,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag == MEM_READ) {
 			/*  TODO: set the DESTAT register from somewhere else?  */
 			debug("[ sii: read from DESTAT (data=0x%04x: scsi_id=%i) ]\n", d->regs[regnr], d->regs[regnr] & 7);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  DESTAT (data=0x%04x: scsi_id=%i) ]\n", idata, idata & 7);
 			debug("WARNING: sii DESTAT is read-only!\n");
@@ -268,7 +251,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag == MEM_READ) {
 			/*  TODO  */
 			debug("[ sii: read from DATA (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			/*  TODO  */
 			debug("[ sii: write to  DATA (data=0x%04x) ]\n", idata);
@@ -280,7 +262,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x24:				/*  SII_DMCTRL: DMA control  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from DMCTRL (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  DMCTRL (data=0x%04x: %s) ]\n", idata,
 			    (idata & 3)==0? "async" : "sync");
@@ -294,7 +275,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x48:				/*  SII_CSTAT: Connection status  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from CSTAT (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  CSTAT (data=0x%04x) ]\n", idata);
 
@@ -331,7 +311,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x4c:				/*  SII_DSTAT: Data transfer status  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from DSTAT (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  DSTAT (data=0x%04x) ]\n", idata);
 
@@ -362,7 +341,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x50:				/*  SII_COMM: Command  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from COMM (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  COMM (data=0x%04x: %s %s %s command=0x%02x rest=0x%02x) ]\n", idata,
 			    idata & SII_DMA?    "DMA" : "!dma",
@@ -385,7 +363,6 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x54:				/*  SII_DICTRL: Diagnostics control  */
 		if (writeflag == MEM_READ) {
 			debug("[ sii: read from DICTRL (data=0x%04x) ]\n", d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  DICTRL (data=0x%04x: port=%s) ]\n",
 			    idata, idata & SII_PRE? "enabled" : "disabled");
@@ -398,26 +375,16 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ sii: read from %08lx (data=0x%04x) ]\n", (long)relative_addr, d->regs[regnr]);
-			odata_set = 1;
 		} else {
 			debug("[ sii: write to  %08lx (data=0x%04x) ]\n", (long)relative_addr, idata);
 			d->regs[regnr] = idata;
-			return 1;
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-	return 0;
+	return 1;
 }
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.3 2003-12-30 05:49:38 debug Exp $
+ *  $Id: dev_rd94.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -73,28 +74,16 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct rd94_data *d = (struct rd94_data *) extra;
-	int regnr;
-	int idata = 0, odata=0, odata_set=0, i;
+	uint64_t idata = 0, odata = 0;
+	int regnr, i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
 	case RD94_SYS_INTSTAT1:		/*  LB (Local Bus ???)  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			/*  Return value is (irq level + 1) << 2  */
 			odata = (8+1) << 2;
 
@@ -108,7 +97,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_INTSTAT2:		/*  PCI/EISA  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;	/*  TODO  */
 		}
 		debug("[ rd94: intstat2 ]\n");
@@ -117,7 +105,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_INTSTAT3:		/*  IT (Interval Timer)  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;	/*  return value does not matter?  */
 		}
 		debug("[ rd94: intstat3 ]\n");
@@ -127,7 +114,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_INTSTAT4:		/*  IPI  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;	/*  return value does not matter?  */
 		}
 		debug("[ rd94: intstat4 ]\n");
@@ -136,7 +122,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_CPUID:
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = cpu->cpu_id;
 		}
 		break;
@@ -144,7 +129,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		if (writeflag == MEM_WRITE) {
 			d->intmask = idata;
 		} else {
-			odata_set = 1;
 			odata = d->intmask;
 		}
 		break;
@@ -153,7 +137,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->interval = d->interval_start = idata;
 			debug("[ rd94: setting Interval Timer value to %i ]\n", idata);
 		} else {
-			odata_set = 1;
 			odata = d->interval_start;	/*  TODO: or d->interval ?  */;
 		}
 		break;
@@ -161,7 +144,6 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case RD94_SYS_PCI_CONFDATA:
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;
 		}
 		break;
@@ -170,19 +152,11 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
 		} else {
 			debug("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
-			odata_set = 1;
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

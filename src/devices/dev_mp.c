@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_mp.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -56,19 +57,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	int i;
 	uint64_t addr = 0;
 
-	if (writeflag == MEM_WRITE) {
-		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			for (i=0; i<len; i++) {
-				addr <<= 8;
-			addr |= data[i];
-			}
-		} else {
-			for (i=0; i<len; i++) {
-				addr <<= 8;
-				addr |= data[len-1-i];
-			}
-		}
-	}
+	addr = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_READ && relative_addr == DEV_MP_WHOAMI) {
 		for (i=0; i<len; i++)

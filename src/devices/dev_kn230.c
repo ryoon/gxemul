@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_kn230.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -43,23 +44,11 @@
  */
 int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	int i;
 	struct kn230_csr *d = extra;
-	int idata = 0, odata=0, odata_set=0;
+	uint64_t idata = 0, odata = 0;
+	int i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
-	odata_set = 1;
+	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0:
@@ -78,16 +67,9 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
-
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+  
 	return 1;
 }
 

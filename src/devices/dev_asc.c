@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.7 2003-11-24 23:46:56 debug Exp $
+ *  $Id: dev_asc.c,v 1.8 2004-01-06 01:59:51 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 #include "diskimage.h"
@@ -299,23 +300,10 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	struct asc_data *d = extra;
 	int target_exists;
 	int n_messagebytes;
-	int idata = 0, odata=0;
+	uint64_t idata = 0, odata = 0;
 
 	dev_asc_tick(cpu, extra);
-
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
-	odata = 0;
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 4;
 
 	/*  Controller's ID is fixed:  */
@@ -575,13 +563,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 	debug(" ]\n");
 
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-		for (i=0; i<len; i++)
-			data[i] = (odata >> (i*8)) & 255;
-	} else {
-		for (i=0; i<len; i++)
-			data[len - 1 - i] = (odata >> (i*8)) & 255;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.10 2004-01-04 21:43:09 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.11 2004-01-06 01:59:51 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"
@@ -95,21 +96,11 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
  */
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata=0;
 	int i;
-	int idata = 0, odata=0, odata_set=0;
 	struct ns_data *d = extra;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
+	idata = memory_readmax64(cpu, data, len);
 
 	/*  Always ready to transmit:  */
 	d->reg[com_lsr] |= LSR_TXRDY | LSR_TSRE;
@@ -136,7 +127,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 				d->divisor &= ~0xff;
 				d->divisor |= (idata & 0xff);
 			} else {
-				odata_set = 1;
 				odata = d->divisor & 0xff;
 			}
 			break;
@@ -157,7 +147,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			if (odata == 2)
 				odata = 3;
 
-			odata_set = 1;
 			dev_ns16550_tick(cpu, d);
 		}
 		break;
@@ -170,7 +159,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 				d->divisor |= ((idata & 0xff) << 8);
 				debug("[ ns16550 speed set to %i bps ]\n", 115200 / d->divisor);
 			} else {
-				odata_set = 1;
 				odata = (d->divisor & 0xff00) >> 8;
 			}
 			break;
@@ -184,7 +172,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			dev_ns16550_tick(cpu, d);
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		}
 		break;
 	case com_iir:	/*  interrupt identification (r), fifo control (w)  */
@@ -193,7 +180,6 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			d->reg[relative_addr] = idata;
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 			debug("[ ns16550 read from iir: 0x%02x ]\n", odata);
 d->reg[com_iir] &= ~IIR_TXRDY;
 dev_ns16550_tick(cpu, d);
@@ -205,7 +191,6 @@ dev_ns16550_tick(cpu, d);
 			d->reg[relative_addr] = idata;
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		}
 		break;
 	case com_msr:
@@ -214,7 +199,6 @@ dev_ns16550_tick(cpu, d);
 			d->reg[relative_addr] = idata;
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		}
 		break;
 	case com_lctl:
@@ -250,7 +234,6 @@ dev_ns16550_tick(cpu, d);
 			    d->databits, d->parity, d->stopbits);
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 			debug("[ ns16550 read from lctl: 0x%02x ]\n", odata);
 		}
 		break;
@@ -260,7 +243,6 @@ dev_ns16550_tick(cpu, d);
 			debug("[ ns16550 write to mcr: 0x%02x ]\n", idata);
 		} else {
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 			debug("[ ns16550 read from mcr: 0x%02x ]\n", odata);
 		}
 		break;
@@ -268,27 +250,17 @@ dev_ns16550_tick(cpu, d);
 		if (writeflag==MEM_READ) {
 			debug("[ ns16550 read from reg %i ]\n", (int)relative_addr);
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		} else {
 			debug("[ ns16550 write to reg %i:", (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
 			d->reg[relative_addr] = idata;
-			return 1;
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_n64_bios.c,v 1.1 2004-01-04 21:40:11 debug Exp $
+ *  $Id: dev_n64_bios.c,v 1.2 2004-01-06 01:59:51 debug Exp $
  *  
  *  Nintendo 64 devices between 0x03f00000 and 0x05000000.
  *  (Not really a BIOS.)
@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.10 2003-12-29 09:49:33 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.11 2004-01-06 01:59:51 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"
@@ -293,23 +294,12 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
  */
 int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata = 0;
 	int i;
-	int idata = 0, odata=0, odata_set=0;
 	struct dc_data *d = extra;
 
 	dev_dc7085_tick(cpu, extra);
-
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
+	idata = memory_readmax64(cpu, data, len);
 
 	/*  Always clear:  */
 	d->regs.dc_csr &= ~CSR_CLR;
@@ -328,7 +318,6 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			/*  read:  */
 			/*  debug("[ dc7085 read from CSR: (csr = 0x%04x) ]\n", d->regs.dc_csr);  */
 			odata = d->regs.dc_csr;
-			odata_set = 1;
 		}
 		break;
 	case 0x08:	/*  LPR:  */
@@ -356,7 +345,6 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 				debug("empty ");
 			debug("]\n");
 			odata = (avail? RBUF_DVAL:0) | (lineno << RBUF_LINE_NUM_SHIFT) | ch;
-			odata_set = 1;
 
 			d->regs.dc_csr &= ~CSR_RDONE;
 			cpu_interrupt_ack(cpu, d->irqnr);
@@ -373,7 +361,6 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			/*  read:  */
 			/*  debug("[ dc7085 read from TCR: (tcr = 0x%04x) ]\n", d->regs.dc_tcr);  */
 			odata = d->regs.dc_tcr;
-			odata_set = 1;
 		}
 		break;
 	case 0x18:	/*  Modem status (R), transmit data (W)  */
@@ -427,7 +414,6 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			d->regs.dc_msr_tdr |= MSR_DSR2 | MSR_CD2 | MSR_DSR3 | MSR_CD3;
 			debug("[ dc7085 read from MSR: (msr_tdr = 0x%04x) ]\n", d->regs.dc_msr_tdr);
 			odata = d->regs.dc_msr_tdr;
-			odata_set = 1;
 		}
 		break;
 	default:
@@ -441,18 +427,10 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-	return 0;
+	return 1;
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.9 2004-01-05 06:40:27 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.10 2004-01-06 01:59:51 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -36,6 +36,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 

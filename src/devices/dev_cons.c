@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.4 2003-11-09 03:59:32 debug Exp $
+ *  $Id: dev_cons.c,v 1.5 2004-01-06 01:59:51 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

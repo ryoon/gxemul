@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.12 2004-01-03 03:11:53 debug Exp $
+ *  $Id: dev_fb.c,v 1.13 2004-01-06 01:59:51 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -53,6 +53,7 @@
 #include <X11/Xutil.h>
 #endif
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 

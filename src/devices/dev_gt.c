@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.4 2004-01-03 03:11:31 debug Exp $
+ *  $Id: dev_gt.c,v 1.5 2004-01-06 01:59:51 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -78,21 +79,11 @@ void dev_gt_tick(struct cpu *cpu, void *extra)
  */
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
+	uint64_t idata = 0, odata = 0;
 	int i;
-	uint64_t idata = 0, odata=0, odata_set=0;
 	struct gt_data *d = extra;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
+	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
 	case 0xc18:
@@ -103,7 +94,6 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		} else {
 			odata = 0xffffffff;	/*  ???  interrupt something...  */
 cpu_interrupt_ack(cpu, d->irqnr);
-			odata_set = 1;
 			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n", (long)odata);
 		}
 		break;
@@ -115,7 +105,6 @@ cpu_interrupt_ack(cpu, d->irqnr);
 		} else {
 			debug("[ gt read from PCI ADDR (data = 0x%08lx) ]\n", (long)d->pci_addr);
 			odata = d->pci_addr;
-			odata_set = 1;
 		}
 		break;
 	case 0xcfc:	/*  PCI DATA  */
@@ -169,36 +158,25 @@ cpu_interrupt_ack(cpu, d->irqnr);
 					    (int)d->pci_addr, odata);
 				}
 			}
-			odata_set = 1;
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ gt read from addr 0x%x ]\n", (int)relative_addr);
 			odata = d->reg[relative_addr];
-			odata_set = 1;
 		} else {
 			debug("[ gt write to addr 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
 			d->reg[relative_addr] = idata;
-			return 1;
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-	return 0;
+	return 1;
 }
 
 

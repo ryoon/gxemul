@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.3 2003-12-30 03:03:34 debug Exp $
+ *  $Id: dev_macepci.c,v 1.4 2004-01-06 01:59:51 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -50,21 +51,10 @@ struct macepci_data {
 int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
-	int regnr;
-	int idata = 0, odata=0, odata_set=0, i;
+	uint64_t idata = 0, odata=0;
+	int regnr, i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
+	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);
 
 	/*  Read from/write to the macepci:  */
@@ -72,21 +62,18 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	case 0x00:	/*  Error address  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;
 		}
 		break;
 	case 0x04:	/*  Error flags  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0x06;
 		}
 		break;
 	case 0x0c:	/*  Revision number  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0x01;
 		}
 		break;
@@ -94,7 +81,6 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata_set = 1;
 			odata = 0;
 		}
 		break;
@@ -106,15 +92,8 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		}
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

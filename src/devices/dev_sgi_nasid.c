@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_nasid.c,v 1.2 2004-01-05 06:40:44 debug Exp $
+ *  $Id: dev_sgi_nasid.c,v 1.3 2004-01-06 01:59:51 debug Exp $
  *  
  *  SGI nasid CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 
@@ -51,23 +52,10 @@ struct sgi_nasid_data {
 int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct sgi_nasid_data *d = (struct sgi_nasid_data *) extra;
-	int regnr;
-	int idata = 0, odata=0, odata_set=0, i;
+	uint64_t idata = 0, odata = 0;
+	int regnr, i;
 
-	/*  Switch byte order for incoming data, if neccessary:  */
-	if (cpu->byte_order == EMUL_BIG_ENDIAN)
-		for (i=0; i<len; i++) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-	else
-		for (i=len-1; i>=0; i--) {
-			idata <<= 8;
-			idata |= data[i];
-		}
-
-	if (writeflag == MEM_READ)
-		odata_set = 1;
+	idata = memory_readmax64(cpu, data, len);
 
 	/*  Read from/write to the sgi_nasid:  */
 	switch (relative_addr) {
@@ -82,15 +70,8 @@ int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 			debug("[ sgi_nasid: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
 	}
 
-	if (odata_set) {
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-			for (i=0; i<len; i++)
-				data[i] = (odata >> (i*8)) & 255;
-		} else {
-			for (i=0; i<len; i++)
-				data[len - 1 - i] = (odata >> (i*8)) & 255;
-		}
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.1 2004-01-04 21:44:24 debug Exp $
+ *  $Id: dev_ram.c,v 1.2 2004-01-06 01:59:51 debug Exp $
  *  
  *  A generic RAM (memory) device.
  */
@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

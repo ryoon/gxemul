@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003,2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.7 2004-03-04 18:44:40 debug Exp $
+ *  $Id: ps2_bios.c,v 1.8 2004-03-25 12:39:47 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -55,7 +55,7 @@ extern int use_x11;
  *	1	halt(int mode)
  *	2	setdve(int mode)
  *	3	putchar(int ch)
- *	4	getchar()		TODO
+ *	4	getchar()
  *	16	dma_init()
  *	17	dma_exit()
  *	32	cmd_init()
@@ -83,6 +83,7 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		console_putchar(cpu->gpr[GPR_A1]);
 		break;
 	case 4:			/*  getchar()  */
+		/*  This is untested. TODO  */
 		/*  debug("[ SIFBIOS getchar() ]\n";  */
 		cpu->gpr[GPR_V0] = 0;
 		if (console_charavail())

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.32 2004-11-20 08:57:13 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.33 2004-12-12 13:18:35 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -248,7 +248,9 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 		memory_writemax64(cpu, data, len, odata);
 
 do_return:
+#ifndef SLOWSERIALINTERRUPTS
 	dev_dc7085_tick(cpu, extra);
+#endif
 
 	return 1;
 }

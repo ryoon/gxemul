@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.154 2004-12-12 10:59:23 debug Exp $
+$Id: index.html,v 1.155 2004-12-12 13:18:36 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1017,13 +1017,18 @@ adding <b>-b</b> to the command line options).
 <a name="declinux"></a>
 <h3>How to install Debian GNU/Linux for DECstation in the emulator:</h3>
 
+<p>
+<font color="#ff0000">NOTE: This is experimental.
+</font>
+
+<p>
 The following steps should let you install Debian GNU/Linux for DECstation
 onto a harddisk image:
 
 <p>
 <ol>
-  <li>Compile mips64emul:<pre>
-	$ <b>./configure; make</b>
+  <li>Compile mips64emul: (Note: SLOWSERIALINTERRUPTS)<pre>
+	$ <b>CFLAGS="-DSLOWSERIALINTERRUPTS" ./configure; make</b>
 
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
@@ -1033,12 +1038,12 @@ onto a harddisk image:
 </pre>
   <li>Download the install kernel:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
-	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
+	    <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
 	4743488 bytes, MD5 = 9b635b50e49fae3df7d853a8290a39d8
 
 </pre>
   <li>For a text-mode installation, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -b -M128 -o 'console=ttyS3' -d debian.img -O boot.img</b>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
 </pre>
 </ol>
@@ -1073,6 +1078,9 @@ network settings. The following should work:
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
 unstable. During my tests, even pressing the wrong key during the install
 (for example the wrong cursor key) can cause a kernel Oops.
+Hopefully using -DSLOWSERIALINTERRUPTS when building the emulator will
+reduce the risk for such crashes. (I haven't had time to come up with
+a clean solution to this yet.)
 </font>
 
 <ol start="5">
@@ -1083,7 +1091,7 @@ unstable. During my tests, even pressing the wrong key during the install
 
 </pre>
   <li>Boot Debian using the following command line:<pre>
-	$ <b>./mips64emul -D2 -b -M128 -o 'console=ttyS3 root=/dev/sda1 ro' \
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 ro' \
 	    -d debian.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>

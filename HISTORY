@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.379 2004-12-12 10:59:12 debug Exp $
+$Id: HISTORY,v 1.380 2004-12-12 13:18:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1304,3 +1304,6 @@ HISTORY of mips64emul
 		though.)
 20041212	Updating doc/index.html with better Debian installation
 		instructions.
+		If SLOWSERIALINTERRUPTS is defined at compile time, interrupts
+		from the dc7085 device will not come as often as they normally
+		do. This makes Debian seem more stable.

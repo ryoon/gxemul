@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.34 2004-12-12 10:59:24 debug Exp $
+ *  $Id: net.c,v 1.35 2004-12-12 13:18:36 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1554,7 +1554,7 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 			if (packet[i] == 0xff)
 				n++;
 		if (n == 6) {
-			fatal("[ net: TX: IP broadcast: TODO ]\n");
+			debug("[ net: TX: IP broadcast: TODO ]\n");
 			return;
 		}
 

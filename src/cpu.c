@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.121 2004-08-19 19:59:46 debug Exp $
+ *  $Id: cpu.c,v 1.122 2004-08-19 20:28:48 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -318,9 +318,9 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		    cpu->cpu_id, dumpaddr,
 		    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 	else
-		debug("0x%016llx: %02x%02x%02x%02x%s\t",
+		debug("0x%016llx: %02x%02x%02x%02x\t",
 		    dumpaddr,
-		    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+		    instr[3], instr[2], instr[1], instr[0]);
 
 	/*
 	 *  Decode the instruction:

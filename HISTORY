@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.100 2004-06-24 15:05:36 debug Exp $
+$Id: HISTORY,v 1.101 2004-06-24 21:37:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -585,3 +585,6 @@ HISTORY of mips64emul
 		used anywhere anyway).
 		Other minor optimizations (moving around stuff in the
 		cpu struct in misc.h, and caching cpu->pc in cpu.c).
+		Separating the tiny translation cache into two, one for
+		code and one for data. This gives a few percent speed
+		increase.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.31 2004-06-07 10:35:11 debug Exp $
+ *  $Id: memory.c,v 1.32 2004-06-08 10:49:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -337,6 +337,10 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 		vaddr &= 0xffffffff;
 		pageshift = 12;
+
+		/*  These are needed later:  */
+		vaddr_asid = (cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
+		vaddr_vpn2 = (vaddr & R2K3K_ENTRYHI_VPN_MASK) >> pageshift;
 	} else {
 		/*  R4000:  */
 		ksu = (cp0->reg[COP0_STATUS] & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT;
@@ -392,6 +396,10 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 		/*  This suppresses a gcc warning:  */
 		pageshift = 12;
+
+		/*  This is needed later:  */
+		vaddr_asid = cp0->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
+		/*  vpn2 depends on pagemask, which is not fixed on R4000  */
 	}
 
 
@@ -429,15 +437,6 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 	if (use_tlb) {
-		/*  Before traversing the TLB entries:  */
-		if (mmumodel3k) {
-			vaddr_asid = (cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
-			vaddr_vpn2 = (vaddr & R2K3K_ENTRYHI_VPN_MASK) >> pageshift;
-		} else {
-			vaddr_asid = cp0->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
-			/*  vpn2 depends on pagemask, which is not fixed on R4000  */
-		}
-
 		for (i=0; i<n_tlbs; i++) {
 			if (mmumodel3k) {
 				entry_vpn2 = (cp0->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
@@ -498,7 +497,9 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 						    debug(", tlb entry %2i: mask=%016llx hi=%016llx lo0=%016llx lo1=%016llx\n",
 							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);  */
 						*return_addr = (pfn << pageshift) | (vaddr & ((1 << pageshift)-1));
+#ifdef LAST_USED_TLB_EXPERIMENT
 						cp0->tlbs[i].last_used = cp0->reg[COP0_COUNT];
+#endif
 						return 1;
 					} else {
 						/*  TLB modification exception  */

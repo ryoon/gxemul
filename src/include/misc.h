@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.53 2004-06-07 07:07:44 debug Exp $
+ *  $Id: misc.h,v 1.54 2004-06-08 10:49:46 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -63,7 +63,8 @@ typedef uint64_t u_int64_t;
 #define SUPPORT_MIPS16
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
-
+/*  #define MFHILO_DELAY  */
+/*  #define LAST_USED_TLB_EXPERIMENT  */
 
 /*  Machine emulation types:  */
 #define	EMULTYPE_NONE		0
@@ -265,8 +266,9 @@ struct tlb {
 	uint64_t	hi;
 	uint64_t	lo1;
 	uint64_t	lo0;
-
+#ifdef LAST_USED_TLB_EXPERIMENT
 	uint64_t	last_used;		/*  set to coproc0's count value at access  */
+#endif
 };
 
 struct coproc {
@@ -501,8 +503,8 @@ struct cpu {
 	int		trace_tree_depth;
 	int		instruction_delay;
 
-	int		delay_slot;
 	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
+	int		delay_slot;
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
 
@@ -518,8 +520,10 @@ struct cpu {
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
 
+#ifdef MFHILO_DELAY
 	int		mfhi_delay;	/*  instructions left since last mfhi  */
 	int		mflo_delay;	/*  instructions left since last mflo  */
+#endif
 
 	int		rmw;		/*  Read-Modify-Write  */
 	uint64_t	rmw_addr;		/*  Address of rmw modification  */

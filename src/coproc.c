@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.33 2004-06-07 07:20:57 debug Exp $
+ *  $Id: coproc.c,v 1.34 2004-06-08 10:49:45 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1215,7 +1215,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 #endif
 
 				if (op == COP0_TLBWR) {
-#if 0
+#ifdef LAST_USED_TLB_EXPERIMENT
 					/*
 					 *  This is an experimental thing which finds the index
 					 *  with lowest last_used value, instead of just a random

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.57 2004-06-08 07:58:37 debug Exp $
+ *  $Id: cpu.c,v 1.58 2004-06-08 10:49:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -664,11 +664,13 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			show_trace(cpu, cpu->show_trace_addr);
 	}
 
+#ifdef MFHILO_DELAY
 	/*  Decrease the MFHI/MFLO delays:  */
 	if (cpu->mfhi_delay > 0)
 		cpu->mfhi_delay--;
 	if (cpu->mflo_delay > 0)
 		cpu->mflo_delay--;
+#endif
 
 	/*  Read an instruction from memory:  */
 #ifdef SUPPORT_MIPS16
@@ -1176,11 +1178,15 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 			if (special6 == SPECIAL_MFHI) {
 				cpu->gpr[rd] = cpu->hi;
+#ifdef MFHILO_DELAY
 				cpu->mfhi_delay = 3;
+#endif
 			}
 			if (special6 == SPECIAL_MFLO) {
 				cpu->gpr[rd] = cpu->lo;
+#ifdef MFHILO_DELAY
 				cpu->mflo_delay = 3;
+#endif
 			}
 			break;
 		case SPECIAL_MTLO:
@@ -1219,7 +1225,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			rt = instr[2] & 31;
 			rd = (instr[1] >> 3) & 31;
 
-#if 0
+#ifdef MFHILO_DELAY
 			if (cpu->mflo_delay > 0 && (
 			    special6 == SPECIAL_DDIV ||   special6 == SPECIAL_DDIVU ||
 			    special6 == SPECIAL_DIV ||    special6 == SPECIAL_DIVU ||

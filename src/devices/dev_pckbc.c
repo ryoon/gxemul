@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.9 2004-06-11 11:25:55 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.10 2004-06-11 12:43:15 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
  *
- *  TODO:  This is just a dummy device so far.
+ *  TODO:  Actually handle keypresses :-)
  */
 
 #include <stdio.h>
@@ -199,15 +199,44 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 			/*  Handle keyboard commands:  */
 			switch (idata) {
+			/*  These are incorrect, the second byte of commands should be treated better:  */
+			case 0x00:	/*  second byte of 0xed, SGI-IP32's prom  */
+				pckbc_add_code(d, 0x00, port_nr);	/*  ?  */
+				break;
+			case 0x14:	/*  second byte of 0xfc, SGI-IP32's prom  */
+			case 0x28:	/*  second byte of 0xf3, SGI-IP32's prom  */
+			case 0x76:	/*  third byte of 0xfc, SGI-IP32's prom  */
+			case 0x03:	/*  second byte of ATKBD_CMD_GSCANSET (?)  */
+				pckbc_add_code(d, 0x03, port_nr);	/*  ?  */
+				break;
+
+			/*  Command bytes:  */
+			case 0xf0:	/*  ATKBD_CMD_GSCANSET (?)  */
+				pckbc_add_code(d, 0x03, port_nr);	/*  ?  */
+				break;
 			case 0xf2:	/*  Get keyboard ID  */
 				/*  The keyboard should generate 2 status bytes.  */
 				pckbc_add_code(d, 0xab, port_nr);
 				pckbc_add_code(d, 0x83, port_nr);
 				break;
+			case 0xed:	/*  "ATKBD_CMD_SETLEDS", takes 1 byte arg  */
+			case 0xf3:	/*  "PSMOUSE_CMD_SETRATE", takes 1 byte arg  */
+			case 0xf4:	/*  "ATKBD_CMD_ENABLE" (or PSMOUSE_CMD_ENABLE), no args  */
+			case 0xf5:	/*  "ATKBD_CMD_RESET_DIS" (keyboard, according to Linux sources)  */
+			case 0xf6:	/*  "PSMOUSE_CMD_RESET_DIS" (mouse, according to Linux sources)  */
+				/*  TODO: what does this do?  */
+				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				break;
+			case 0xfa:	/*  "ATKBD_CMD_SETALL_MBR" (linux)  */
+				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				break;
+			case 0xfc:	/*  ?  */
+				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
+				break;
 			case 0xff:	/*  Keyboard reset  */
 				/*  The keyboard should generate 2 status bytes.  */
 				pckbc_add_code(d, 0xfa, port_nr);	/*  ack  (?) */
-				pckbc_add_code(d, 0xaa, port_nr);	/*  batery ok (?)  */
+				pckbc_add_code(d, 0xaa, port_nr);	/*  battery ok (?)  */
 				break;
 			default:
 				fatal("[ pckbc: UNIMPLEMENTED keyboard command 0x%02x (port %i) ]\n", (int)idata, port_nr);
@@ -217,7 +246,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	case PS2 + PS2_RXBUF:
 		if (writeflag==MEM_READ) {
-			odata = 0;
+			odata = random() & 0xff;	/*  what to return if no data available? TODO  */
 			if (d->head[port_nr] != d->tail[port_nr])
 				odata = pckbc_get_key(d, port_nr);
 			fatal("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);

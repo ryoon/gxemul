@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.16 2004-12-22 08:01:08 debug Exp $
+ *  $Id: debugger.c,v 1.17 2004-12-22 08:08:22 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -462,6 +462,7 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 	int i, cpuid = -1;
 	int dump = 1;
 	int regnr = -1;		/*  -1 means the pc register  */
+	int coprocreg = 0;
 	char *p = cmd_line;
 
 	while (*p == ' ')
@@ -479,11 +480,19 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 					p++;
 				regnr = atoi(p);
 				break;
+			case 'c':
+			case 'C':
+				while (isalpha((int)*p))
+					p++;
+				regnr = atoi(p);
+				coprocreg = 1;
+				break;
 			default:
 				printf("usage: reg [ cpuid | name=value ]\n");
 				printf("Possible names are:\n");
-				printf("    pc\n");
+				printf("    pc   rXX   cXX\n");
 				printf("value should be entered in hex.\n");
+				printf("cXX only work with coproc0 registers for now.\n");
 				return;
 			}
 			dump = 0;
@@ -514,8 +523,13 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 		p++;
 
 	if (regnr >= 0 && regnr < 32) {
-		printf("r%i", regnr);
-		tmp = emul->cpus[cpuid]->gpr[regnr];
+		if (coprocreg) {
+			printf("c0.%i", regnr);
+			tmp = emul->cpus[cpuid]->coproc[0]->reg[regnr];
+		} else {
+			printf("r%i", regnr);
+			tmp = emul->cpus[cpuid]->gpr[regnr];
+		}
 	} else if (regnr == -1) {
 		printf("pc");
 		tmp = emul->cpus[cpuid]->pc;
@@ -543,11 +557,15 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 
 	/*  Print a warning, in case the user didn't think about
 	    sign-extension:  */
-	if ((tmp >> 32) == 0) && (tmp & 0x80000000ULL))
+	if ((tmp >> 32) == 0 && (tmp & 0x80000000ULL))
 		printf("NOTE: Treated as a 64-bit value, not sign-extended.\n");
 
 	if (regnr >= 0 && regnr < 32) {
-		emul->cpus[cpuid]->gpr[regnr] = tmp;
+		if (coprocreg) {
+			emul->cpus[cpuid]->coproc[0]->reg[regnr] = tmp;
+		} else {
+			emul->cpus[cpuid]->gpr[regnr] = tmp;
+		}
 	} else if (regnr == -1) {
 		emul->cpus[cpuid]->pc = tmp;
 	}

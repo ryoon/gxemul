@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.67 2005-01-20 08:08:37 debug Exp $
+ *  $Id: diskimage.c,v 1.68 2005-01-20 08:12:25 debug Exp $
  *
  *  Disk image support.
  *
@@ -482,7 +482,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		debug("READ_CAPACITY");
 
 		if (xferp->cmd_len != 10)
-			fatal(" (weird READ_CAPACITY len=%i, should be 10)",
+			fatal(" [ weird READ_CAPACITY len=%i, should be 10 ] ",
 			    xferp->cmd_len);
 		else {
 			if (xferp->cmd[8] & 1) {

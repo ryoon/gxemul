@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.45 2005-02-19 16:29:28 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.46 2005-02-22 07:15:58 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1504,21 +1504,29 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		switch (hi6) {
 		case PPC_HI6_RLWIMI:
-			while (mb <= me) {
+			for (;;) {
 				uint64_t mask;
 				mask = (uint64_t)1 << (31-mb);
 				cpu->cd.ppc.gpr[ra] &= ~mask;
 				cpu->cd.ppc.gpr[ra] |= (tmp & mask);
+				if (mb == me)
+					break;
 				mb ++;
+				if (mb == 32)
+					mb = 0;
 			}
 			break;
 		case PPC_HI6_RLWINM:
 			cpu->cd.ppc.gpr[ra] = 0;
-			while (mb <= me) {
+			for (;;) {
 				uint64_t mask;
 				mask = (uint64_t)1 << (31-mb);
 				cpu->cd.ppc.gpr[ra] |= (tmp & mask);
+				if (mb == me)
+					break;
 				mb ++;
+				if (mb == 32)
+					mb = 0;
 			}
 			break;
 		}

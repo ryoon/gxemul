@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.352 2005-02-22 06:43:11 debug Exp $
+ *  $Id: machine.c,v 1.353 2005-02-22 07:15:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3942,6 +3942,13 @@ for (i=0; i<32; i++)
 		dev_pmppc_init(mem);
 
 		/*  com0 = 0xff600300, com1 = 0xff600400 ?  */
+
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.ppc.gpr[i] =
+				    0x12340000 + (i << 8) + 0x55;
+		}
 
 		break;
 

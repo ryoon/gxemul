@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.355 2005-02-22 15:20:17 debug Exp $
+ *  $Id: machine.c,v 1.356 2005-02-22 20:18:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3973,6 +3973,14 @@ for (i=0; i<32; i++)
 
 		device_add(machine, "bebox");
 
+		store_32bit_word(cpu, 0x3010,
+		    machine->physical_ram_in_mb * 1048576);
+
+		/*  TODO: List of stuff, see http://www.beatjapan.org/
+		    mirror/www.be.com/aboutbe/benewsletter/
+		    Issue27.html#Cookbook  for the details.  */
+		store_32bit_word(cpu, 0x301c, 0);
+
 		break;
 
 	case MACHINE_ULTRA1:
@@ -4214,8 +4222,8 @@ void machine_default_cputype(struct machine *m)
 		m->cpu_name = strdup("MPC7400");
 		break;
 	case MACHINE_BEBOX:
-		/*  For NetBSD/bebox. Dual 603 CPUs.  */
-		m->cpu_name = strdup("PPC603");
+		/*  For NetBSD/bebox. Dual 133 MHz 603e CPUs, for example.  */
+		m->cpu_name = strdup("PPC603e");
 		break;
 
 	/*  SPARC:  */

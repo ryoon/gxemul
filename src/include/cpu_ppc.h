@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.20 2005-02-22 12:05:17 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.21 2005-02-22 20:18:31 debug Exp $
  */
 
 #include "misc.h"
@@ -60,7 +60,7 @@ struct ppc_cpu_type_def {
 
 #define PPC_CPU_TYPE_DEFS	{					\
 	{ "PPC405GP", 32, PPC_NOFP, 15, 2, 15, 2, 20, 1, },	 	\
-	{ "PPC603", 32, 0, 15, 2, 15, 2, 20, 1 },			\
+	{ "PPC603e", 32, 0, 14, 4, 14, 4, 0, 0 },			\
 	{ "MPC7400", 32, 0, 15, 2, 15, 2, 19, 1 },			\
 	{ "PPC750", 32, 0, 15, 2, 15, 2, 20, 1 },			\
 	{ "G4e", 32, 0, 15, 8, 15, 8, 18, 8 },				\

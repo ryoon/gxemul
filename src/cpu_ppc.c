@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.55 2005-02-22 19:09:02 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.56 2005-02-22 20:18:31 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -844,6 +844,17 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
+			break;
+		case PPC_31_MTSR:
+			/*  Move to segment register (?)  */
+			/*  TODO  */
+			debug("mtsr\tTODO");
+			break;
+		case PPC_31_MTSRIN:
+			/*  Move to segment register indirect (?)  */
+			rt = (iword >> 21) & 31;
+			rb = (iword >> 11) & 31;
+			debug("mtsrin\tr%i,r%i", rt, rb);
 			break;
 		case PPC_31_ADDC:
 		case PPC_31_ADDCO:
@@ -1961,6 +1972,19 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
+			break;
+
+		case PPC_31_MTSR:
+			/*  Move to segment register (?)  */
+			/*  TODO  */
+			break;
+
+		case PPC_31_MTSRIN:
+			/*  Move to segment register indirect (?)  */
+			rt = (iword >> 21) & 31;
+			rb = (iword >> 11) & 31;
+			/*  TODO  */
+			cpu->cd.ppc.gpr[rt] = 0;
 			break;
 
 		case PPC_31_ADDC:

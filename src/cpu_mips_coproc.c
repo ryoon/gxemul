@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.7 2005-02-22 12:05:19 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.8 2005-02-22 20:18:31 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2372,11 +2372,13 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 		return;
 	}
 
+#if 0
 	/*  No FPU?  */
 	if (cpnr == 1 && (cpu->cd.mips.cpu_type.flags & NOFPU)) {
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		return;
 	}
+#endif
 
 	/*  For quick reference:  */
 	copz = (function >> 21) & 31;

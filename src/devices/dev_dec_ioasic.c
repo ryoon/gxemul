@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.11 2005-02-22 12:15:29 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.12 2005-02-22 20:18:30 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -123,36 +123,52 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 					    dma_len);
 
 				/*  and signal the end of page:  */
-				d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= IOASIC_INTR_T2_PAGE_END;
+				d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) /
+				    0x10] |= IOASIC_INTR_T2_PAGE_END;
 
-				d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_CSR_DMAEN_T2;
+				d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) /
+				    0x10] &= ~IOASIC_CSR_DMAEN_T2;
 				curptr |= 0xfff;
 				curptr ++;
 
-				d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] =
-				    ((curptr << 3) & ~0x1f) | ((curptr >> 29) & 0x1f);
+				d->reg[(IOASIC_SCC_T2_DMAPTR -
+				    IOASIC_SLOT_1_START) / 0x10] = ((curptr <<
+				    3) & ~0x1f) | ((curptr >> 29) & 0x1f);
 			}
 
 			if (csr & IOASIC_CSR_DMAEN_R2) {
 				/*  Receive data:  */
-				curptr = (d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] >> 3)
-				    | ((d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
+				curptr = (d->reg[(IOASIC_SCC_R2_DMAPTR -
+				    IOASIC_SLOT_1_START) / 0x10] >> 3)
+				    | ((d->reg[(IOASIC_SCC_R2_DMAPTR -
+				    IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
 				dma_len = 0x1000 - (curptr & 0xffc);
 
 				dma_res = 0;
 				if (d->dma_func[3] != NULL) {
-					dma_res = d->dma_func[3](cpu, d->dma_func_extra[3], curptr, dma_len, 0);
+					dma_res = d->dma_func[3](cpu,
+					    d->dma_func_extra[3], curptr,
+					    dma_len, 0);
 				} else
-					fatal("[ dec_ioasic: DMA tx: data @ %08x, len %i bytes, but no handler? ]\n", (int)curptr, dma_len);
+					fatal("[ dec_ioasic: DMA tx: data @ "
+					    "%08x, len %i bytes, but no "
+					    "handler? ]\n", (int)curptr,
+					    dma_len);
 
 				/*  and signal the end of page:  */
 				if (dma_res > 0) {
-					if ((curptr & 0x800) != ((curptr + dma_res) & 0x800))
-						d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= IOASIC_INTR_R2_HALF_PAGE;
+					if ((curptr & 0x800) != ((curptr +
+					    dma_res) & 0x800))
+						d->reg[(IOASIC_INTR -
+						    IOASIC_SLOT_1_START) / 0x10]
+						    |= IOASIC_INTR_R2_HALF_PAGE;
 					curptr += dma_res;
-/*					d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_CSR_DMAEN_R2;  */
-					d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] =
-					    ((curptr << 3) & ~0x1f) | ((curptr >> 29) & 0x1f);
+/*					d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START
+					   ) / 0x10] &= ~IOASIC_CSR_DMAEN_R2; */
+					d->reg[(IOASIC_SCC_R2_DMAPTR -
+					    IOASIC_SLOT_1_START) / 0x10] =
+					    ((curptr << 3) & ~0x1f) | ((curptr
+					    >> 29) & 0x1f);
 				}
 			}
 		}
@@ -160,15 +176,18 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	case IOASIC_INTR:
 		if (writeflag == MEM_READ) {
-			odata = d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10];
+			odata = d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START)
+			    / 0x10];
 			/*  Note/TODO: How about other models than KN03?  */
 			if (!d->rackmount_flag)
 				odata |= KN03_INTR_PROD_JUMPER;
 		} else {
 			/*  Clear bits on write.  */
-			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~idata;
+			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &=
+			    ~idata;
 
-			/*  Make sure that the CPU interrupt is deasserted as well:  */
+			/*  Make sure that the CPU interrupt is deasserted as
+			    well:  */
 			if (idata != 0)
 				cpu_interrupt_ack(cpu, 8 + idata);
 		}
@@ -176,10 +195,12 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	case IOASIC_IMSK:
 		if (writeflag == MEM_WRITE) {
-			d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10] = idata;
+			d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10] =
+			    idata;
 			cpu_interrupt_ack(cpu, 8 + 0);
 		} else
-			odata = d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10];
+			odata = d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) /
+			    0x10];
 		break;
 
 	case IOASIC_CTR:
@@ -195,7 +216,8 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 	case 0x80014:
 		/*  Station's ethernet address:  */
 		if (writeflag == MEM_WRITE) {
-			fatal("[ dec_ioasic: attempt to write to the station's ethernet address? ]\n");
+			fatal("[ dec_ioasic: attempt to write to the station's"
+			    " ethernet address? ]\n");
 		} else {
 			odata = ((relative_addr - 0x80000) / 4 + 1) * 0x10;
 		}
@@ -203,9 +225,12 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			fatal("[ dec_ioasic: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			fatal("[ dec_ioasic: unimplemented write to address "
+			    "0x%llx, data=0x%016llx ]\n",
+			    (long long)relative_addr, (long long)idata);
 		else
-			fatal("[ dec_ioasic: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			fatal("[ dec_ioasic: unimplemented read from address "
+			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)
@@ -236,7 +261,8 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
 	d->rackmount_flag = rackmount_flag;
 
 	memory_device_register(mem, "dec_ioasic", baseaddr,
-	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 	return d;
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.515 2005-01-22 13:49:07 debug Exp $
+$Id: HISTORY,v 1.516 2005-01-22 20:34:29 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1539,3 +1539,5 @@ HISTORY of mips64emul
 		Linux on DECstation uses a non-used part of the RTC registers
 		for the year value; this is supported now, so Linux thinks
 		it is 2005 and not 2000.
+		Began hacking on something to reply to Debian's DHCP requests,
+		but it's not working yet.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.51 2005-01-22 13:31:15 debug Exp $
+ *  $Id: net.c,v 1.52 2005-01-22 20:34:30 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -165,8 +165,9 @@ void net_ip_checksum(unsigned char *ip_header, int chksumoffset, int len)
  *  tcp_len is length of header PLUS data.  The psedo header is created
  *  internally here, and does not need to be supplied by the caller.
  */
-void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
-	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr)
+static void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
+	int tcp_len, unsigned char *srcaddr, unsigned char *dstaddr,
+	int udpflag)
 {
 	int i, pad = 0;
 	unsigned char pseudoh[12];
@@ -175,7 +176,7 @@ void net_ip_tcp_checksum(unsigned char *tcp_header, int chksumoffset,
 	memcpy(pseudoh + 0, srcaddr, 4);
 	memcpy(pseudoh + 4, dstaddr, 4);
 	pseudoh[8] = 0x00;
-	pseudoh[9] = 0x06;
+	pseudoh[9] = udpflag? 17 : 6;
 	pseudoh[10] = tcp_len >> 8;
 	pseudoh[11] = tcp_len & 255;
 
@@ -443,7 +444,7 @@ static void net_ip_tcp_connectionreply(struct net *net, void *extra,
 
 	/*  Checksum:  */
 	net_ip_tcp_checksum(lp->data + 34, 16, tcp_length,
-	    lp->data + 26, lp->data + 30);
+	    lp->data + 26, lp->data + 30, 0);
 
 #if 0
 	{
@@ -552,7 +553,7 @@ static void net_ip_tcp(struct net *net, void *extra,
 #endif
 
 	net_ip_tcp_checksum(packet + 34, 16, len - 34,
-		packet + 26, packet + 30);
+		packet + 26, packet + 30, 0);
 	if (packet[50] * 256 + packet[51] != checksum) {
 		debug("TCP: dropping packet because of checksum mismatch "
 		    "(0x%04x != 0x%04x)\n", packet[50] * 256 + packet[51],
@@ -951,10 +952,12 @@ static void net_ip_udp(struct net *net, void *extra,
 		net->udp_connections[con_id].fake_ns = 1;
 	}
 
-	remote_ip.sin_port = htons(net->udp_connections[con_id].outside_udp_port);
+	remote_ip.sin_port = htons(
+	    net->udp_connections[con_id].outside_udp_port);
 
-	res = sendto(net->udp_connections[con_id].socket, packet + 42, len - 42,
-	    0, (const struct sockaddr *)&remote_ip, sizeof(remote_ip));
+	res = sendto(net->udp_connections[con_id].socket, packet + 42,
+	    len - 42, 0, (const struct sockaddr *)&remote_ip,
+	    sizeof(remote_ip));
 
 	if (res != len-42)
 		debug("[ net: UDP: unable to send %i bytes ]\n", len-42);
@@ -993,7 +996,8 @@ static void net_ip(struct net *net, void *extra,
 #endif
 
 	/*  Cut off overflowing tail data:  */
-	len = 14 + packet[16]*256 + packet[17];
+	if (len > 14 + packet[16]*256 + packet[17])
+		len = 14 + packet[16]*256 + packet[17];
 
 	if (packet[14] == 0x45) {
 		/*  IPv4:  */
@@ -1018,6 +1022,164 @@ static void net_ip(struct net *net, void *extra,
 
 
 /*
+ *  net_ip_broadcast_dhcp():
+ *
+ *  Handle an IPv4 DHCP broadcast packet, coming from the emulated NIC.
+ *
+ *  Read http://www.ietf.org/rfc/rfc2131.txt for details on DHCP.
+ */
+static void net_ip_broadcast_dhcp(struct net *net, void *extra,
+	unsigned char *packet, int len)
+{
+	/*
+	 *  TODO
+	 */
+#if 0
+	struct ethernet_packet_link *lp;
+	int i;
+
+	fatal("[ net: IPv4 DHCP: ");
+#if 0
+	fatal("ver=%02x ", packet[14]);
+	fatal("tos=%02x ", packet[15]);
+	fatal("len=%02x%02x ", packet[16], packet[17]);
+	fatal("id=%02x%02x ",  packet[18], packet[19]);
+	fatal("ofs=%02x%02x ", packet[20], packet[21]);
+	fatal("ttl=%02x ", packet[22]);
+	fatal("p=%02x ", packet[23]);
+	fatal("sum=%02x%02x ", packet[24], packet[25]);
+#endif
+	fatal("src=%02x%02x%02x%02x ",
+	    packet[26], packet[27], packet[28], packet[29]);
+	fatal("dst=%02x%02x%02x%02x ",
+	    packet[30], packet[31], packet[32], packet[33]);
+#if 0
+	for (i=34; i<len; i++)
+		fatal("%02x", packet[i]);
+#endif
+
+	if (len < 34 + 8 + 236) {
+		fatal("[ DHCP packet too short? Len=%i ]\n", len);
+		return;
+	}
+
+	/*
+	 *  UDP data (at offset 34):
+	 *
+	 *  srcport=0044 dstport=0043 length=0134 chksum=a973
+	 *  data = 01010600d116d276000000000000000000000000000000
+	 *         0000000000102030405060...0000...638253633501...000
+	 */
+
+	fatal("op=%02x ", packet[42]);
+	fatal("htype=%02x ", packet[43]);
+	fatal("hlen=%02x ", packet[44]);
+	fatal("hops=%02x ", packet[45]);
+	fatal("xid=%02x%02x%02x%02x ", packet[46], packet[47],
+	    packet[48], packet[49]);
+	fatal("secs=%02x%02x ", packet[50], packet[51]);
+	fatal("flags=%02x%02x ", packet[52], packet[53]);
+	fatal("ciaddr=%02x%02x%02x%02x ", packet[54], packet[55],
+	    packet[56], packet[57]);
+	fatal("yiaddr=%02x%02x%02x%02x ", packet[58], packet[59],
+	    packet[60], packet[61]);
+	fatal("siaddr=%02x%02x%02x%02x ", packet[62], packet[63],
+	    packet[64], packet[65]);
+	fatal("giaddr=%02x%02x%02x%02x ", packet[66], packet[67],
+	    packet[68], packet[69]);
+	fatal("chaddr=");
+	for (i=70; i<70+16; i++)
+		fatal("%02x", packet[i]);
+	/*
+   |                          sname   (64)                         |
+   |                          file    (128)                        |
+	 */
+	fatal(" ]\n");
+
+	lp = net_allocate_packet_link(net, extra, len);
+
+	/*  Copy the old packet first:  */
+	memcpy(lp->data, packet, len);
+
+	/*  We are sending to the client, from the gateway:  */
+	memcpy(lp->data + 0, packet + 6, 6);
+	memcpy(lp->data + 6, net->gateway_ethernet_addr, 6);
+
+	memcpy(lp->data + 26, &net->gateway_ipv4_addr[0], 4);
+	lp->data[30] = 0xff;
+	lp->data[31] = 0xff;
+	lp->data[32] = 0xff;
+	lp->data[33] = 0xff;
+
+	/*  Switch src and dst ports:  */
+	memcpy(lp->data + 34, packet + 36, 2);
+	memcpy(lp->data + 36, packet + 34, 2);
+
+	/*  Client's (yiaddr) IPv4 address:  */
+	lp->data[58] = 10;
+	lp->data[59] = 0;
+	lp->data[60] = 0;
+	lp->data[61] = 1;
+
+	/*  Server's IPv4 address:  (giaddr)  */
+	memcpy(lp->data + 66, &net->gateway_ipv4_addr[0], 4);
+
+	/*  This is a Reply:  */
+	lp->data[42] = 0x02;
+
+	sprintf(lp->data + 70+16+64, "mips64emul");
+
+	/*  Recalculate IP header checksum:  */
+	net_ip_checksum(lp->data + 14, 10, 20);
+
+	/*  ... and the UDP checksum:  */
+	net_ip_tcp_checksum(lp->data + 34, 6, len - 34 - 8,
+	    lp->data + 26, lp->data + 30, 1);
+
+
+/*  Debug dump:  */
+packet = lp->data;
+	fatal("[ net: IPv4 DHCP REPLY: ");
+	for (i=0; i<14; i++)
+		fatal("%02x", packet[i]);
+	fatal("ver=%02x ", packet[14]);
+	fatal("tos=%02x ", packet[15]);
+	fatal("len=%02x%02x ", packet[16], packet[17]);
+	fatal("id=%02x%02x ",  packet[18], packet[19]);
+	fatal("ofs=%02x%02x ", packet[20], packet[21]);
+	fatal("ttl=%02x ", packet[22]);
+	fatal("p=%02x ", packet[23]);
+	fatal("sum=%02x%02x ", packet[24], packet[25]);
+	fatal("src=%02x%02x%02x%02x ",
+	    packet[26], packet[27], packet[28], packet[29]);
+	fatal("dst=%02x%02x%02x%02x ",
+	    packet[30], packet[31], packet[32], packet[33]);
+	fatal("op=%02x ", packet[42]);
+	fatal("htype=%02x ", packet[43]);
+	fatal("hlen=%02x ", packet[44]);
+	fatal("hops=%02x ", packet[45]);
+	fatal("xid=%02x%02x%02x%02x ", packet[46], packet[47],
+	    packet[48], packet[49]);
+	fatal("secs=%02x%02x ", packet[50], packet[51]);
+	fatal("flags=%02x%02x ", packet[52], packet[53]);
+	fatal("ciaddr=%02x%02x%02x%02x ", packet[54], packet[55],
+	    packet[56], packet[57]);
+	fatal("yiaddr=%02x%02x%02x%02x ", packet[58], packet[59],
+	    packet[60], packet[61]);
+	fatal("siaddr=%02x%02x%02x%02x ", packet[62], packet[63],
+	    packet[64], packet[65]);
+	fatal("giaddr=%02x%02x%02x%02x ", packet[66], packet[67],
+	    packet[68], packet[69]);
+	fatal("chaddr=");
+	for (i=70; i<70+16; i++)
+		fatal("%02x", packet[i]);
+	fatal(" ]\n");
+
+#endif
+}
+
+
+/*
  *  net_ip_broadcast():
  *
  *  Handle an IP broadcast packet, coming from the emulated NIC.
@@ -1028,11 +1190,9 @@ static void net_ip_broadcast(struct net *net, void *extra,
 {
 	unsigned char *p = (void *) &net->netmask_ipv4;
 	uint32_t x, y;
-	int xl, warning = 0, match = 0;
+	int i, xl, warning = 0, match = 0;
 
 #if 0
-	int i;
-
 	fatal("[ net: IP BROADCAST: ");
 	fatal("ver=%02x ", packet[14]);
 	fatal("tos=%02x ", packet[15]);
@@ -1054,7 +1214,7 @@ static void net_ip_broadcast(struct net *net, void *extra,
 	/*  Check for 10.0.0.255 first, maybe some guest OSes think that
 	    it's a /24 network, regardless of what it actually is.  */
 	y = (packet[30] << 24) + (packet[31] << 16) +
-	    packet[32] << 8 + packet[33];
+	    (packet[32] << 8) + packet[33];
 
 	x = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3];
 	/*  Example: x = 10.0.0.0  */
@@ -1071,35 +1231,44 @@ static void net_ip_broadcast(struct net *net, void *extra,
 
 	if (x == y)
 		match = 1;
+	if (y == 0xffffffff)
+		match = 1;
 
 	if (warning)
 		fatal("[ net_ip_broadcast(): warning: broadcast to "
-		    "0x%08x, expecting broadcast to 0x%08x ]\n", y, x);
+		    "0x%08x, expecting broadcast to 0x%08x or "
+		    "0xffffffff ]\n", y, x);
 
 	/*  Cut off overflowing tail data:  */
-	len = 14 + packet[16]*256 + packet[17];
+	if (len > 14 + packet[16]*256 + packet[17])
+		len = 14 + packet[16]*256 + packet[17];
 
-#if 0
-	if (packet[14] == 0x45) {
-		/*  IPv4:  */
-		switch (packet[23]) {
-		case 1:	/*  ICMP  */
-			net_ip_icmp(net, extra, packet, len);
-			break;
-		case 6:	/*  TCP  */
-			net_ip_tcp(net, extra, packet, len);
-			break;
-		case 17:/*  UDP  */
-			net_ip_udp(net, extra, packet, len);
-			break;
-		default:
-			fatal("[ net: IP: UNIMPLEMENTED protocol %i ]\n",
-			    packet[23]);
-		}
-	} else
-		fatal("[ net: IP: UNIMPLEMENTED ip, first byte = 0x%02x ]\n",
-		    packet[14]);
-#endif
+	/*  Check for known packets:  */
+	if (packet[14] == 0x45 &&			/*  IPv4  */
+	    packet[23] == 0x11 &&			/*  UDP  */
+	    packet[34] == 0 && packet[35] == 68 &&	/*  DHCP client  */
+	    packet[36] == 0 && packet[37] == 67) {	/*  DHCP server  */
+		net_ip_broadcast_dhcp(net, extra, packet, len);
+		return;
+	}
+
+	/*  Unknown packet:  */
+	fatal("[ net: UNIMPLEMENTED IP BROADCAST: ");
+	fatal("ver=%02x ", packet[14]);
+	fatal("tos=%02x ", packet[15]);
+	fatal("len=%02x%02x ", packet[16], packet[17]);
+	fatal("id=%02x%02x ",  packet[18], packet[19]);
+	fatal("ofs=%02x%02x ", packet[20], packet[21]);
+	fatal("ttl=%02x ", packet[22]);
+	fatal("p=%02x ", packet[23]);
+	fatal("sum=%02x%02x ", packet[24], packet[25]);
+	fatal("src=%02x%02x%02x%02x ",
+	    packet[26], packet[27], packet[28], packet[29]);
+	fatal("dst=%02x%02x%02x%02x ",
+	    packet[30], packet[31], packet[32], packet[33]);
+	for (i=34; i<len; i++)
+		fatal("%02x", packet[i]);
+	fatal(" ]\n");
 }
 
 

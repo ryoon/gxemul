@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.42 2004-08-18 10:11:55 debug Exp $
+ *  $Id: emul.c,v 1.43 2004-08-18 12:35:46 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -226,6 +226,56 @@ void debugger_dump(uint64_t addr, int lines)
 
 
 /*
+ *  debugger_tlbdump():
+ *
+ *  Dump each CPU's TLB contents.
+ */
+void debugger_tlbdump(void)
+{
+	int i, j;
+
+	for (i=0; i<ncpus; i++) {
+		printf("cpu%i: (", i);
+		if (cpus[i]->cpu_type.isa_level < 3 ||
+		    cpus[i]->cpu_type.isa_level == 32)
+			printf("index=0x%08x random=0x%08x wired=0x%08x",
+			    (int)cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (int)cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (int)cpus[i]->coproc[0]->reg[COP0_WIRED]);
+		else
+			printf("index=0x%016llx random=0x%016llx wired=0x%016llx",
+			    (long long)cpus[i]->coproc[0]->reg[COP0_INDEX],
+			    (long long)cpus[i]->coproc[0]->reg[COP0_RANDOM],
+			    (long long)cpus[i]->coproc[0]->reg[COP0_WIRED]);
+		printf(")\n");
+
+		for (j=0; j<cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
+			if (cpus[i]->cpu_type.mmu_model == MMU3K)
+				printf("%3i: hi=0x%08x lo=0x%08x\n",
+				    j,
+				    (int)cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)cpus[i]->coproc[0]->tlbs[j].lo0);
+			else if (cpus[i]->cpu_type.isa_level < 3 ||
+			    cpus[i]->cpu_type.isa_level == 32)
+				printf("%3i: hi=0x%08x mask=0x%08x lo0=0x%08x lo1=0x%08x\n",
+				    j,
+				    (int)cpus[i]->coproc[0]->tlbs[j].hi,
+				    (int)cpus[i]->coproc[0]->tlbs[j].mask,
+				    (int)cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (int)cpus[i]->coproc[0]->tlbs[j].lo1);
+			else
+				printf("%3i: hi=0x%016llx mask=0x%016llx lo0=0x%016llx lo1=0x%016llx\n",
+				    j,
+				    (long long)cpus[i]->coproc[0]->tlbs[j].hi,
+				    (long long)cpus[i]->coproc[0]->tlbs[j].mask,
+				    (long long)cpus[i]->coproc[0]->tlbs[j].lo0,
+				    (long long)cpus[i]->coproc[0]->tlbs[j].lo1);
+		}
+	}
+}
+
+
+/*
  *  debugger():
  *
  *  An interractive debugger; reads a command from the terminal, and
@@ -316,6 +366,7 @@ void debugger(void)
 			printf("  quit           quits mips64emul\n");
 			printf("  registers      dump all CPUs' register values\n");
 			printf("  step           single step\n");
+			printf("  tlbdump        dump each CPU's TLB contents\n");
 			printf("  trace          toggle show_trace_tree on or off (currently %s)\n",
 			    old_show_trace_tree? "ON" : "OFF");
 			printf("  version        print mips64emul version\n");
@@ -325,6 +376,8 @@ void debugger(void)
 			old_instruction_trace = 1 - old_instruction_trace;
 			printf("instruction_trace = %s\n",
 			    old_instruction_trace? "ON" : "OFF");
+			/*  TODO: how to preserve quiet_mode?  */
+			old_quiet_mode = 0;
 		} else if (strcasecmp(cmd, "quit") == 0 ||
 		    strcasecmp(cmd, "q") == 0) {
 			for (i=0; i<ncpus; i++)
@@ -337,11 +390,16 @@ void debugger(void)
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
 			return;
-		} else if (strcasecmp(cmd, "t") == 0 ||
+		} else if (strcasecmp(cmd, "tl") == 0 ||
+		    strcasecmp(cmd, "tlbdump") == 0) {
+			debugger_tlbdump();
+		} else if (strcasecmp(cmd, "tr") == 0 ||
 		    strcasecmp(cmd, "trace") == 0) {
 			old_show_trace_tree = 1 - old_show_trace_tree;
 			printf("show_trace_tree = %s\n",
 			    old_show_trace_tree? "ON" : "OFF");
+			/*  TODO: how to preserve quiet_mode?  */
+			old_quiet_mode = 0;
 		} else if (strcasecmp(cmd, "v") == 0 ||
 		    strcasecmp(cmd, "version") == 0) {
 			printf("%s\n",

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.177 2005-01-28 09:39:55 debug Exp $
+ *  $Id: main.c,v 1.178 2005-01-28 09:41:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -168,7 +168,8 @@ static void usage(char *progname, int longusage)
 	    progname);
 
 	if (!longusage) {
-		printf("\nRun with  -h  for help on command line options.\n\n");
+		printf("\nRun  %s -h  for help on command line options.\n\n",
+		    progname);
 		goto ret;
 	}
 

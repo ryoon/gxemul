@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.61 2004-11-15 04:12:29 debug Exp $
+ *  $Id: bintrans.c,v 1.62 2004-11-15 05:04:06 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -343,7 +343,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	 *  Try to translate a chunk of code:
 	 */
 
-	byte_order_cached_bigendian = cpu->byte_order == EMUL_BIG_ENDIAN;
+	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 	p = paddr & 0xfff;
 	try_to_translate = 1;
 	n_translated = 0;

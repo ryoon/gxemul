@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.32 2004-11-15 04:12:29 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.33 2004-11-15 05:04:06 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -127,7 +127,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
  */
 #define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 #define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-unsigned char bintrans_alpha_runchunk[96] = {
+unsigned char bintrans_alpha_runchunk[104] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
@@ -137,6 +137,7 @@ unsigned char bintrans_alpha_runchunk[96] = {
 	0x28, 0x00, 0xbe, 0xb5,		/*  stq     s4,40(sp)  */
 	0x30, 0x00, 0xde, 0xb5,		/*  stq     s5,48(sp)  */
 	0x38, 0x00, 0xfe, 0xb5,		/*  stq     s6,56(sp)  */
+	0x78, 0x00, 0xbe, 0xb7,		/*  stq     gp,120(sp)  */
 
 	ofs_pc&255,ofs_pc>>8,0xd0,0xa4,	/*  ldq     t5,"pc"(a0)  */
 	ofs_n&255,ofs_n>>8,0xf0,0xa0,	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
@@ -154,6 +155,7 @@ unsigned char bintrans_alpha_runchunk[96] = {
 	0x28, 0x00, 0xbe, 0xa5,		/*  ldq     s4,40(sp)  */
 	0x30, 0x00, 0xde, 0xa5,		/*  ldq     s5,48(sp)  */
 	0x38, 0x00, 0xfe, 0xa5,		/*  ldq     s6,56(sp)  */
+	0x78, 0x00, 0xbe, 0xa7,		/*  ldq     gp,120(sp)  */
 	0x80, 0x00, 0xde, 0x23,		/*  lda     sp,128(sp)  */
 	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
 };
@@ -1059,9 +1061,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
 
-			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
-			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			/*  save result in (top 4 bytes of) t1, then t4. get back top bits of t4:  */
+			*a++ = 0x22; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t1  */
 			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+			*a++ = 0x05; *a++ = 0x14; *a++ = 0x40; *a++ = 0x40;		/*  addq t1,0,t4  */
 
 			/*  swap highest 4 bytes:  */
 			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
@@ -1075,7 +1078,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
 
 			/*  or the results together:  */
-			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xa1; *a++ = 0x44;		/*  or t4,t0,t0  */
 		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
 		break;
@@ -1138,9 +1141,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
 
-			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
-			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			/*  save result in (top 4 bytes of) t1, then t4. get back top bits of t4:  */
+			*a++ = 0x22; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t1  */
 			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+			*a++ = 0x05; *a++ = 0x14; *a++ = 0x40; *a++ = 0x40;		/*  addq t1,0,t4  */
 
 			/*  swap highest 4 bytes:  */
 			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
@@ -1154,7 +1158,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
 
 			/*  or the results together:  */
-			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xa1; *a++ = 0x44;		/*  or t4,t0,t0  */
 		}
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb4;			/*  stq to memory  */
 		break;

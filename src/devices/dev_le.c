@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.15 2004-07-07 06:01:25 debug Exp $
+ *  $Id: dev_le.c,v 1.16 2004-07-08 06:52:39 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -377,8 +377,19 @@ void le_rx(struct le_data *d)
 		/*  Set the ENP bit if this was the end of a packet:  */
 		if (d->rx_packet_offset >= d->rx_packet_len) {
 			rx_descr[1] |= LE_ENP;
+
+			/*
+			 *  NOTE:  The Lance documentation that I have read
+			 *  says _NOTHING_ about the length being 4 more than
+			 *  the length of the data.  You can guess how
+			 *  surprised I was when I saw the following in
+			 *  NetBSD (dev/ic/am7990.c):
+			 *
+			 *	lance_read(sc, LE_RBUFADDR(sc, bix),
+			 *		(int)rmd.rmd3 - 4);
+			 */
 			rx_descr[3] &= ~0xfff;
-			rx_descr[3] |= d->rx_packet_len;
+			rx_descr[3] |= d->rx_packet_len + 4;
 
 			free(d->rx_packet);
 			d->rx_packet = NULL;

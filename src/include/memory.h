@@ -2,7 +2,7 @@
 #define	MEMORY_H
 
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.23 2005-01-18 06:22:58 debug Exp $
+ *  $Id: memory.h,v 1.24 2005-01-21 13:13:13 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -41,35 +41,47 @@
 
 /*  memory.c:  */
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len);
-void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t data);
+void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
+	uint64_t data);
 
 void *zeroed_alloc(size_t s);
 
 struct memory *memory_new(uint64_t physical_max);
 
-int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length);
-char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
+int memory_points_to_string(struct cpu *cpu, struct memory *mem,
+	uint64_t addr, int min_string_length);
+char *memory_conv_to_string(struct cpu *cpu, struct memory *mem,
+	uint64_t addr, char *buf, int bufsize);
 
-unsigned char *memory_paddr_to_hostaddr(struct memory *mem, uint64_t paddr, int writeflag);
+unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+	uint64_t paddr, int writeflag);
 
 /*  memory_fast_v2h.c:  */
-unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu, uint64_t vaddr, int writeflag);
+unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu, uint64_t vaddr,
+	int writeflag);
 
-int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
-int translate_address_mmu8k(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
-int translate_address_mmu10k(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
-int translate_address_mmu4100(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
-int translate_address_generic(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
+int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int translate_address_mmu8k(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int translate_address_mmu10k(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int translate_address_mmu4100(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
 
 #define FLAG_WRITEFLAG          1
 #define FLAG_NOEXCEPTIONS       2
 #define FLAG_INSTR              4
 
-int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
+int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+	unsigned char *data, size_t len, int writeflag, int cache);
 #define	MEMORY_ACCESS_FAILED	0
 #define	MEMORY_ACCESS_OK	1
 
-void memory_device_bintrans_access(struct cpu *, struct memory *mem, void *extra, uint64_t *low, uint64_t *high);
+void memory_device_bintrans_access(struct cpu *, struct memory *mem,
+	void *extra, uint64_t *low, uint64_t *high);
 
 void memory_device_register_statefunction(
 	struct memory *mem, void *extra,
@@ -77,8 +89,10 @@ void memory_device_register_statefunction(
 	    struct memory *, void *extra, int wf, int nr,
 	    int *type, char **namep, void **data, size_t *len));
 
-void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
-	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *, int flags, unsigned char *bintrans_data);
+void memory_device_register(struct memory *mem, const char *,
+	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,
+	    struct memory *,uint64_t,unsigned char *,size_t,int,void *),
+	void *extra, int flags, unsigned char *bintrans_data);
 #define	MEM_DEFAULT			0
 #define	MEM_BINTRANS_OK			1
 #define	MEM_BINTRANS_WRITE_OK		2

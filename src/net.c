@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.44 2005-01-19 08:44:53 debug Exp $
+ *  $Id: net.c,v 1.45 2005-01-21 13:13:14 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1634,28 +1634,18 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 
 
 /*
- *  net_init():
+ *  get_host_nameserver():
  *
- *  This function should be called before any other net_*() functions are used.
+ *  This function parses "/etc/resolv.conf" to figure out the nameserver
+ *  used by the host.
  */
-void net_init(void)
+static void get_host_nameserver(struct in_addr *nameserverp)
 {
 	FILE *f;
 	char buf[8000];
 	size_t len;
 	int res;
 	unsigned int i, start;
-
-	net_nameserver_known = 0;
-	memset(&nameserver_ipv4, 0, sizeof(nameserver_ipv4));
-
-	net_timestamp = 0;
-	first_ethernet_packet = last_ethernet_packet = NULL;
-
-	memset(udp_connections, 0, MAX_UDP_CONNECTIONS *
-	    sizeof(struct udp_connection));
-	memset(tcp_connections, 0, MAX_TCP_CONNECTIONS *
-	    sizeof(struct tcp_connection));
 
 	/*
 	 *  This is a very ugly hack, which tries to figure out which
@@ -1673,56 +1663,107 @@ void net_init(void)
 	 *        one to use.
 	 */
 	f = fopen("/etc/resolv.conf", "r");
-	if (f != NULL) {
-		/*  TODO: get rid of the hardcoded values  */
-		memset(buf, 0, sizeof(buf));
-		len = fread(buf, 1, sizeof(buf) - 100, f);
-		fclose(f);
+	if (f == NULL)
+		return;
 
-		for (i=0; i<len; i++)
-			if (strncmp(buf+i, "nameserver", 10) == 0) {
-				char *p;
+	/*  TODO: get rid of the hardcoded values  */
+	memset(buf, 0, sizeof(buf));
+	len = fread(buf, 1, sizeof(buf) - 100, f);
+	fclose(f);
 
-				/*
-				 *  "nameserver" (1 or more whitespace)
-				 *  "x.y.z.w" (non-digit)
-				 */
+	for (i=0; i<len; i++)
+		if (strncmp(buf+i, "nameserver", 10) == 0) {
+			char *p;
 
-				/*  debug("found nameserver at offset %i\n", i);  */
-				i += 10;
-				while (i<len && (buf[i]==' ' || buf[i]=='\t'))
-					i++;
-				if (i >= len)
-					break;
-				start = i;
+			/*
+			 *  "nameserver" (1 or more whitespace)
+			 *  "x.y.z.w" (non-digit)
+			 */
 
-				p = strchr(buf + start, '\n');
-				if (p != NULL)
-					*p = '\0';
-				p = strchr(buf + start, '\r');
-				if (p != NULL)
-					*p = '\0';
-
-				res = inet_pton(AF_INET, buf + start,
-				    &nameserver_ipv4);
-				if (res < 1)
-					break;
-
-				debug("net: using nameserver");
-				for (i=0; i<sizeof(nameserver_ipv4); i++)
-					debug("%c%i",
-					    i? '.' : ' ',
-					    ((unsigned char *)
-					    &nameserver_ipv4)[i]);
-				debug("\n");
-
-				net_nameserver_known = 1;
+			/*  debug("found nameserver at offset %i\n", i);  */
+			i += 10;
+			while (i<len && (buf[i]==' ' || buf[i]=='\t'))
+				i++;
+			if (i >= len)
 				break;
-			}
-	}
+			start = i;
+
+			p = strchr(buf + start, '\n');
+			if (p != NULL)
+				*p = '\0';
+			p = strchr(buf + start, '\r');
+			if (p != NULL)
+				*p = '\0';
+
+			res = inet_pton(AF_INET, buf + start,
+			    nameserverp);
+			if (res < 1)
+				break;
+
+			net_nameserver_known = 1;
+			break;
+		}
+}
+
+
+/*
+ *  net_gateway_init():
+ *
+ *  This function creates a "gateway" machine, for example 10.0.0.254,
+ *  which acts as a gateway/router/nameserver etc.
+ */
+static void net_gateway_init(struct emul *emul)
+{
+	unsigned int i;
+
+	debug("gateway at 10.0.0.254: ");
 
 	if (!net_nameserver_known)
-		debug("net: could not determine which nameserver to use\n");
+		debug("(could not determine host's nameserver)\n");
+	else {
+		debug("using nameserver");
+		for (i=0; i<sizeof(nameserver_ipv4); i++)
+			debug("%c%i", i? '.' : ' ',
+			    ((unsigned char *)&nameserver_ipv4)[i]);
+		debug("\n");
+	}
+
+	signal(SIGPIPE, SIG_IGN);
+}
+
+
+/*
+ *  net_init():
+ *
+ *  This function should be called before any other net_*() functions are used.
+ *  It creates a network (10.x.x.x), with one special machine connected to
+ *  it (10.0.0.254), which can act as a gateway/nameserver etc.
+ */
+void net_init(struct emul *emul)
+{
+	int iadd = 4;
+
+	net_nameserver_known = 0;
+	memset(&nameserver_ipv4, 0, sizeof(nameserver_ipv4));
+
+	net_timestamp = 0;
+	first_ethernet_packet = last_ethernet_packet = NULL;
+
+	memset(udp_connections, 0, MAX_UDP_CONNECTIONS *
+	    sizeof(struct udp_connection));
+	memset(tcp_connections, 0, MAX_TCP_CONNECTIONS *
+	    sizeof(struct tcp_connection));
+
+	debug("net: max outgoing connections: TCP: %i, UDP: %i\n",
+	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);
+
+	get_host_nameserver(&nameserver_ipv4);
+
+	debug_indentation(iadd);
+
+	net_gateway_init(emul);
+
+	debug_indentation(-iadd);
 
 	signal(SIGPIPE, SIG_IGN);
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.288 2005-01-20 20:45:52 debug Exp $
+ *  $Id: machine.c,v 1.289 2005-01-21 13:13:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -107,7 +107,7 @@ struct sgi_ip30_data *sgi_ip30_data;
  *
  *  Returns a reasonably initialized struct machine.
  */
-struct machine *machine_new(void)
+struct machine *machine_new(char *name)
 {
 	struct machine *m;
 	m = malloc(sizeof(struct machine));
@@ -117,6 +117,8 @@ struct machine *machine_new(void)
 	}
 
 	memset(m, 0, sizeof(struct machine));
+
+	m->name = strdup(name);
 
 	/*  Sane default values:  */
 	m->machine_type = MACHINE_NONE;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.161 2005-01-20 14:25:20 debug Exp $
+ *  $Id: main.c,v 1.162 2005-01-21 13:13:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -268,7 +268,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int ch, using_switch_d = 0, using_switch_o = 0, using_switch_Z = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
-	struct machine *m = emul_add_machine(emul);
+	struct machine *m = emul_add_machine(emul, "default");
 
 	symbol_init(&m->symbol_context);
 

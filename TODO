@@ -1,4 +1,4 @@
-$Id: TODO,v 1.109 2005-01-19 14:26:52 debug Exp $
+$Id: TODO,v 1.110 2005-01-21 13:13:12 debug Exp $
 
 mips64emul TODO
 ---------------
@@ -48,11 +48,12 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	CPU Emulation:
 		o)  Factor out the MIPS dependant parts of the cpu, so that
-		    (in theory) the emulator could support other architectures
-		    as well.   (sparc64?)
+		    the emulator can support other architectures (powerpc64,
+		    sparc64, and other intereting architectures.. 64-bit hppa?)
 		o)  Binary translation:
 			+)  recursive translation?
 			+)  basic blocks instead of one-instruction? :)
+			+)  use an intermediate representation
 			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backend for UltraSparc and MIPS?
 			+)  see src/bintrans.c for more info
@@ -97,6 +98,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			+)  Own experiments with ycx2.
 
 	Emulation of specific machines and devices:
+		o)  Clean up stuff to make it possible to emulate multiple
+		    (different) machines simultaneously.
 		o)  Various SCSI and IDE controllers
 		o)  PS/2-style keyboard controller (for several machines)
 		o)  Generic busses;
@@ -159,6 +162,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Terminal based interactive debugger:
 		o)  see src/debugger.c
+
+	GDB interface?
 
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.121 2005-01-20 14:49:17 debug Exp $
+ *  $Id: emul.c,v 1.122 2005-01-21 13:13:14 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -272,11 +272,11 @@ struct emul *emul_new(void)
  *  This function should be used instead of manually calling
  *  machine_new().
  */
-struct machine *emul_add_machine(struct emul *e)
+struct machine *emul_add_machine(struct emul *e, char *name)
 {
 	struct machine *m;
 
-	m = machine_new();
+	m = machine_new(name);
 
 	e->n_machines ++;
 	e->machines = realloc(e->machines,
@@ -415,7 +415,7 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 
 	m = emul->machines[machine_nr];
 
-	debug("machine %i:\n", machine_nr);
+	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
 
 	/*  Create the system's memory:  */
@@ -631,7 +631,7 @@ void emul_start(struct emul *emul)
 	atexit(fix_console);
 
 	/*  Create a network:  */
-	net_init();
+	net_init(emul);
 
 	/*  Create machines:  */
 	for (i=0; i<emul->n_machines; i++)

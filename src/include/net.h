@@ -2,7 +2,7 @@
 #define	NET_H
 
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,16 +28,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.4 2005-01-09 01:55:28 debug Exp $
+ *  $Id: net.h,v 1.5 2005-01-21 13:13:13 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
+
+struct emul;
 
 /*  net.c:  */
 int net_ethernet_rx_avail(void *extra);
 int net_ethernet_rx(void *extra, unsigned char **packetp, int *lenp);
 void net_ethernet_tx(void *extra, unsigned char *packet, int len);
-void net_init(void);
+void net_init(struct emul *emul);
 
 
 #endif	/*  NET_H  */

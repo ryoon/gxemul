@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.3 2005-01-20 14:25:18 debug Exp $
+ *  $Id: machine.h,v 1.4 2005-01-21 13:13:13 debug Exp $
  */
 
 #include "misc.h"
@@ -44,6 +44,9 @@ struct emul;
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
+
+	/*  Name as choosen by the user:  */
+	char	*name;
 
 	int	machine_type;
 	int	machine_subtype;
@@ -197,7 +200,7 @@ struct machine {
 
 
 /*  machine.c:  */
-struct machine *machine_new(void);
+struct machine *machine_new(char *name);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);

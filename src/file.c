@@ -25,13 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.48 2005-01-20 14:36:47 debug Exp $
+ *  $Id: file.c,v 1.49 2005-01-21 13:13:14 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
  *
  *	ELF		32-bit and 64-bit MSB and LSB MIPS
- *	a.out		some format used by OpenBSD 2.x pmax kernels
+ *	a.out		old format used by OpenBSD 2.x pmax kernels
  *	ecoff		old format used by Ultrix, Windows NT, etc
  *	srec		Motorola SREC format
  *	raw		raw binaries ("address:[skiplen:]filename")
@@ -45,13 +45,12 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "misc.h"
-
 #include "exec_aout.h"
 #include "exec_ecoff.h"
 #include "exec_elf.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "symbol.h"
 
 
@@ -59,6 +58,26 @@
 #define strtoll strtol
 #define strtoull strtoul
 #endif
+
+
+/*  ELF machine types as strings: (same as exec_elf.h)  */
+#define N_ELF_MACHINE_TYPES	54
+static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
+	"NONE", "M32", "SPARC", "386",				/*  0..3  */
+	"68K", "88K", "486", "860",				/*  4..7  */
+	"MIPS", "S370", "MIPS_RS3_LE", "RS6000",		/*  8..11  */
+	"unknown12", "unknown13", "unknown14", "PARISC",	/*  12..15  */
+	"NCUBE", "VPP500", "SPARC32PLUS", "960",		/*  16..19  */
+	"PPC", "unknown21", "unknown22", "unknown23",		/*  20..23  */
+	"unknown24", "unknown25", "unknown26", "unknown27",	/*  24..27  */
+	"unknown28", "unknown29", "unknown30", "unknown31",	/*  28..31  */
+	"unknown32", "unknown33", "unknown34", "unknown35",	/*  32..35  */
+	"V800", "FR20", "RH32", "RCE",				/*  36..39  */
+	"ARM", "ALPHA", "SH", "SPARCV9",			/*  40..43  */
+	"TRICORE", "ARC", "H8_300", "H8_300H",			/*  44..47  */
+	"H8S", "H8_500", "IA_64", "MIPS_X",			/*  48..51  */
+	"COLDFIRE", "68HC12"					/*  52..53  */
+};
 
 
 /*
@@ -117,9 +136,9 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 	int len;
 	int encoding = ELFDATA2LSB;
 	uint32_t entry, datasize, textsize;
-	int32_t symbsize;
+	int32_t symbsize = 0;
 	uint32_t vaddr, total_len;
-	unsigned char buf[1024];
+	unsigned char buf[4096];
 	unsigned char *syms;
 
 	f = fopen(filename, "r");
@@ -130,19 +149,23 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 	if (osf1_hack) {
 		fread(&buf, 1, 32, f);
-		vaddr = buf[16] + (buf[17] << 8) + (buf[18] << 16) + (buf[19] << 24);
-		entry = buf[20] + (buf[21] << 8) + (buf[22] << 16) + (buf[23] << 24);
-		debug("OSF1 a.out-ish hack, load address 0x%08lx, entry point 0x%08x\n",
-		    (long)vaddr, (long)entry);
+		vaddr = buf[16] + (buf[17] << 8) +
+		    (buf[18] << 16) + (buf[19] << 24);
+		entry = buf[20] + (buf[21] << 8) +
+		    (buf[22] << 16) + (buf[23] << 24);
+		debug("OSF1 a.out, load address 0x%08lx, "
+		    "entry point 0x%08x\n", (long)vaddr, (long)entry);
 		symbsize = 0;
 		fseek(f, 0, SEEK_END);
-		textsize = ftell(f) - 512;	/*  This is of course wrong, but should work anyway  */
+		/*  This is of course wrong, but should work anyway:  */
+		textsize = ftell(f) - 512;
 		datasize = 0;
 		fseek(f, 512, SEEK_SET);
 	} else {
 		len = fread(&aout_header, 1, sizeof(aout_header), f);
 		if (len != sizeof(aout_header)) {
-			fprintf(stderr, "%s: not a complete a.out image\n", filename);
+			fprintf(stderr, "%s: not a complete a.out image\n",
+			    filename);
 			exit(1);
 		}
 
@@ -152,7 +175,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 		unencode(textsize, &aout_header.a_text, uint32_t);
 		unencode(datasize, &aout_header.a_data, uint32_t);
-		debug("text+data = %i+%i bytes\n", textsize, datasize);
+		debug("text + data = %i + %i bytes\n", textsize, datasize);
 
 		unencode(symbsize, &aout_header.a_syms, uint32_t);
 	}
@@ -163,7 +186,8 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		len = total_len > sizeof(buf) ? sizeof(buf) : total_len;
 		len = fread(buf, 1, len, f);
 
-		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n", len, (int)vaddr, buf[0], buf[1], buf[2]);  */
+		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n",
+		    len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0)
 			memory_rw(cpu, mem, vaddr, &buf[0], len,
@@ -172,7 +196,8 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 			if (osf1_hack)
 				break;
 			else {
-				fprintf(stderr, "could not read from %s\n", filename);
+				fprintf(stderr, "could not read from %s\n",
+				    filename);
 				exit(1);
 			}
 		}
@@ -189,7 +214,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		char *string_symbols;
 		off_t oldpos;
 
-		debug("symbols = %i bytes @ 0x%x\n", symbsize, (int)ftell(f));
+		debug("symbols: %i bytes @ 0x%x\n", symbsize, (int)ftell(f));
 		syms = malloc(symbsize);
 		if (syms == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -197,7 +222,8 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		}
 		len = fread(syms, 1, symbsize, f);
 		if (len != symbsize) {
-			fprintf(stderr, "error reading symbols from %s\n", filename);
+			fprintf(stderr, "error reading symbols from %s\n",
+			    filename);
 			exit(1);
 		}
 
@@ -205,7 +231,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		fseek(f, 0, SEEK_END);
 		strings_len = ftell(f) - oldpos;
 		fseek(f, oldpos, SEEK_SET);
-		debug("strings = %i bytes @ 0x%x\n", strings_len, (int)ftell(f));
+		debug("strings: %i bytes @ 0x%x\n", strings_len, (int)ftell(f));
 		string_symbols = malloc(strings_len);
 		if (string_symbols == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -217,11 +243,14 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		n_symbols = symbsize / sizeof(struct aout_symbol);
 		i = 0;
 		while (i < n_symbols) {
-			unencode(str_index, &aout_symbol_ptr[i].strindex, uint32_t);
-			unencode(type,      &aout_symbol_ptr[i].type,     uint32_t);
-			unencode(addr,      &aout_symbol_ptr[i].addr,     uint32_t);
+			unencode(str_index, &aout_symbol_ptr[i].strindex,
+			    uint32_t);
+			unencode(type, &aout_symbol_ptr[i].type, uint32_t);
+			unencode(addr, &aout_symbol_ptr[i].addr, uint32_t);
 
-			/* debug("symbol type 0x%04x @ 0x%08x: %s\n", type, addr, string_symbols + str_index); */
+			/*  debug("symbol type 0x%04x @ 0x%08x: %s\n",
+			    type, addr, string_symbols + str_index);  */
+
 			if (type != 0 && addr != 0)
 				add_symbol_name(&m->symbol_context,
 				    addr, 0, string_symbols + str_index, 0);
@@ -264,7 +293,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 	FILE *f;
 	int len, secn, total_len, chunk_size;
 	int encoding = ELFDATA2LSB;	/*  Assume little-endian. See below  */
-	unsigned char buf[4096];
+	unsigned char buf[8192];
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
@@ -893,7 +922,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	}
 
 	if (emachine != EM_MIPS && emachine != EM_MIPS_RS3_LE) {
-		fprintf(stderr, "%s: unknown machine type '%i' (not MIPS?)\n", filename, emachine);
+		fprintf(stderr, "%s: this is a ", filename);
+		if (emachine >= 0 && emachine < N_ELF_MACHINE_TYPES)
+			fprintf(stderr, elf_machine_type[emachine]);
+		else
+			fprintf(stderr, "machine type '%i'", emachine);
+		fprintf(stderr, " ELF binary, not MIPS!\n");
 		exit(1);
 	}
 

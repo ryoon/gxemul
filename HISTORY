@@ -377,3 +377,6 @@ HISTORY of mips64emul
 		lq, and sq.  (Most of them are just guesses, though.)
 		Implementing my own XImage putpixel routine, which can be
 		inlined... significantly faster than normal XPutPixel. :-)
+20040307	Implementing the basic functionality of a "PMAG-CA" pixelstamp
+		accellerated framebuffer device. Works with NetBSD and
+		Ultrix, but no cursor or color support.

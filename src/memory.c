@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.18 2004-02-06 06:12:51 debug Exp $
+ *  $Id: memory.c,v 1.19 2004-02-18 09:28:59 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -672,6 +672,9 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 				debug("%s device '%s' addr %08lx failed\n",
 				    writeflag? "writing to" : "reading from",
 				    mem->dev_name[i], (long)paddr);
+
+				/*  If the memory mapped device failed, then return with a DBE exception  */
+				cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0, 0);
 				return MEMORY_ACCESS_FAILED;
 			}
 			goto do_return_ok;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.93 2004-06-22 22:27:36 debug Exp $
+$Id: HISTORY,v 1.94 2004-06-23 00:37:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -562,5 +562,15 @@ HISTORY of mips64emul
 20040622(late)	Trying to track down the last SCSI tape bugs.
 		Removing _all_ dynamic binary translation code (bintrans),
 		starting from scratch again.
-		Performing a general code cleanup (comments, fixing stuff
+20040623(early)	Performing a general code cleanup (comments, fixing stuff
 		that led to compiler warnings, ...).
+		Disabling MIPS16 support by default, and making it a
+		configure time option to enable it (--mips16). This gives
+		a few percent speed increase overall.
+		Increasing performance by assuming that instruction loads
+		(reading from memory) will be at the same page as the last
+		load.  First by assuming that a vaddr -> paddr translation
+		for instruction loads almost always is preserved (gaining
+		about 15% speed), and then that a paddr -> host memblock
+		translation also holds if the instruction is in normal RAM
+		(which led to another 15% speed increase).  :-)

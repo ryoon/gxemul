@@ -1,20 +1,16 @@
-$Id: RELEASE,v 1.72 2005-01-01 17:23:07 debug Exp $
+$Id: RELEASE,v 1.73 2005-01-08 15:50:29 debug Exp $
 
-The release "road map" at the moment looks something like this:
+The next release will most probably be 0.2.4. Some of the features I'd like
+to have time to implement and test:
 
-  0.2.4 (or perhaps skip directly to 0.3, depending on what I have time
-	 to implement)
-
-Features I'd like to have time to implement:
-
-	x)  more support for non-DECstation modes
+	x)  better support for non-DECstation modes
 	x)  stable bintrans for 64-bit CPUs (R4000 etc)
-	x)  fix the Linux-related problems for good (How to do this?)
+	x)  fix the Linux-related problems for good, if at all possible
 
 
-A 0.3 release would need to be tested a lot, to make sure that everything 
-mentioned in the documentation works as stated. As many possible 
-combinations as possible of the following must be tested:
+Further into the future:  A 0.3 release would need to be tested a lot, to
+make sure that everything mentioned in the documentation works as stated.
+As many possible combinations as possible of the following must be tested:
 
 	o)  host platforms
 		x)  different architectures
@@ -54,14 +50,14 @@ The following guest operating systems have been verified to work:
     Operating system                   Emulated machine
     ----------------                   ----------------
 
-    NetBSD 1.6.2/pmax                  DECstation 5000/200
-    OpenBSD 2.8-BETA/pmax              DECstation 5000/200
-    Ultrix 4.2-4.5/RISC                DECstation 5000/200
+    NetBSD/pmax 2.0 (and 1.6.2)        DECstation 5000/200
+    OpenBSD/pmax 2.8-BETA              DECstation 5000/200
+    Ultrix 4.2-4.5                     DECstation 5000/200
     Sprite demo harddisk image         DECstation 5000/200
     Debian GNU/Linux for DECstation    DECstation 5000/200 (*)
     Redhat Linux 7.1 for mips          DECstation 5000/200
-    NetBSD 1.6.2/arc                   Acer PICA-61
-    OpenBSD 2.3/arc                    Acer PICA-61
+    NetBSD/arc 2.0 (and 1.6.2)         Acer PICA-61
+    OpenBSD/arc 2.3                    Acer PICA-61
 
 
 (*) = not very stable yet, but it "often" works.

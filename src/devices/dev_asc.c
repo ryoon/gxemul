@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.28 2004-04-25 12:12:09 debug Exp $
+ *  $Id: dev_asc.c,v 1.29 2004-06-21 23:07:44 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -745,9 +745,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			debug("ICCS");
 			/*  Reveice a status byte + a message byte.  */
 
-			/*  TODO: these should be read from the xferp  */
-			dev_asc_fifo_write(d, 0);
-			dev_asc_fifo_write(d, 0);
+			/*  TODO: how about other status and message bytes?  */
+			dev_asc_fifo_write(d, d->xferp->status[0]);
+			dev_asc_fifo_write(d, d->xferp->msg_in[0]);
 
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;

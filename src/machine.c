@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.163 2004-08-13 04:55:47 debug Exp $
+ *  $Id: machine.c,v 1.164 2004-08-13 06:11:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2423,7 +2423,8 @@ void machine_init(struct memory *mem)
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Version, 1);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 100 * 4);	/*  ?  */
+			/*  FirmwareVectorLength is a pointer to something?  */
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 0xa0000000ULL);	/*  ?  */
 			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVector, ARC_PRIVATE_VECTORS);
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
@@ -2442,15 +2443,17 @@ void machine_init(struct memory *mem)
 
 
 			/*
-			 *  Super-ugly test hack, to fool arcs_getenv() in 64-bit Irix:
+			 *  Super-ugly test hack, to fool arcs_getenv() in
+			 *  64-bit Irix:
 			 *
-			 *  The SPB is a bit less than 0x40 bytes long, but Irix seems
-			 *  to use offsets after the standard SPB data.  (TODO)
+			 *  The SPB is a bit less than 0x40 bytes long, but
+			 *  Irix seems to use offsets after the standard SPB
+			 *  data.  (TODO)
 			 *
-			 *  Then, at offset 0xf0 in this new structure, there is a pointer
-			 *  to a function which Irix calls.  It seems that this is a
-			 *  getenv-like function, so let's call (32-bit) arcbios, and
-			 *  then return.
+			 *  Then, at offset 0xf0 in this new structure, there
+			 *  is a pointer to a function which Irix calls.  It
+			 *  seems that this is a getenv-like function, so let's
+			 *  call (32-bit) arcbios, and then return.
 			 *
 			 *  This is ugly.
 			 */
@@ -2554,10 +2557,10 @@ void machine_init(struct memory *mem)
 			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
 			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=video()");
 		} else {
-#if 1
+#if 0
 			store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 #else
-			store_string(ARC_ARGV_START + 0x180, "console=d");	/*  Irix  */
+			store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
 #endif
 			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
 			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");

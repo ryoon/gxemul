@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.24 2004-07-11 07:02:25 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.25 2004-07-16 23:04:18 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -70,7 +70,7 @@ void add_to_rx_queue(void *e, int ch, int line_no)
 		entries_in_use += MAX_QUEUE_LEN;
 
 	/*  Ignore mouse updates, if they come too often:  */
-	if (entries_in_use > MAX_QUEUE_LEN/4 && line_no == DCMOUSE_PORT)
+	if (entries_in_use > MAX_QUEUE_LEN/2 && line_no == DCMOUSE_PORT)
 		return;
 
 	d->rx_queue_char[d->cur_rx_queue_pos_write]   = ch;

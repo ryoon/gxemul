@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.200 2004-10-22 22:12:07 debug Exp $
+ *  $Id: machine.c,v 1.201 2004-10-23 04:30:13 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1434,8 +1434,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 		    emul->boot_string_argument[0] == '\0')
 			cpu->gpr[GPR_A0] --;
 
-		strcat(bootarg, " ");
-		strcat(bootarg, emul->boot_string_argument);
+		if (emul->boot_string_argument[0] != '\0') {
+			strcat(bootarg, " ");
+			strcat(bootarg, emul->boot_string_argument);
+		}
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;

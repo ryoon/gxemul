@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.270 2004-10-22 22:12:06 debug Exp $
+$Id: HISTORY,v 1.271 2004-10-23 04:30:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1053,3 +1053,4 @@ HISTORY of mips64emul
 		Using mmap() in memory.c as well, which reduces memory usage
 		when emulating large memory sizes if the memory isn't actually
 		written to.
+20041023	Minor updates.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.123 2004-10-21 03:32:06 debug Exp $
+ *  $Id: misc.h,v 1.124 2004-10-23 04:30:12 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -244,8 +244,6 @@ struct cpu_type_def {
 	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0, 0, 0, 0, 0, 0, 0 } }
 
 /*  Debug stuff:  */
-#define	EMUL_DEBUG		"\e[0;1m"	/*  bold  */
-#define	EMUL_DEBUG_END		"\e[0m"		/*  restore to normal  */
 #define	DEBUG_BUFSIZE		1024
 
 #define	DEFAULT_RAM_IN_MB	32

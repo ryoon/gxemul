@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.115 2004-10-22 08:08:35 debug Exp $
+ *  $Id: main.c,v 1.116 2004-10-23 04:30:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -68,7 +68,6 @@ void debug(char *fmt, ...)
 	va_end(argp);
 
 	printf("%s", buf);
-/*	printf(EMUL_DEBUG"%s"EMUL_DEBUG_END, buf);  */
 }
 
 
@@ -89,7 +88,6 @@ void fatal(char *fmt, ...)
 	va_end(argp);
 
 	printf("%s", buf);
-	/*  printf(EMUL_DEBUG"%s"EMUL_DEBUG_END, buf);  */
 }
 
 

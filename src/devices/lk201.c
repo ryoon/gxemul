@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.12 2004-10-17 15:31:40 debug Exp $
+ *  $Id: lk201.c,v 1.13 2004-10-23 04:30:12 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -296,6 +296,8 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 			case LK_KBD_ENABLE:	/*  0x8b  */
 				break;
 			case LED_ALL:		/*  0x8f  */
+				break;
+			case LK_RING_BELL:	/*  0xa7  */
 				break;
 			case 0xab:	/*  Get Keyboard ID:  */
 				/*  TODO: not 0x11,0x22  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.8 2005-02-22 20:18:31 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.9 2005-03-14 12:13:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -506,85 +506,105 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 
 
 /*
+ *  old_update_translation_table():
+ */
+static void old_update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag, uint64_t paddr_page)
+{
+#ifdef BINTRANS
+	int a, b;
+	struct vth32_table *tbl1;
+	void *p;
+	uint32_t p_paddr;
+
+	/*  This table stuff only works for 32-bit mode:  */
+	if (vaddr_page & 0x80000000ULL) {
+		if ((vaddr_page >> 32) != 0xffffffffULL)
+			return;
+	} else {
+		if ((vaddr_page >> 32) != 0)
+			return;
+	}
+
+	a = (vaddr_page >> 22) & 0x3ff;
+	b = (vaddr_page >> 12) & 0x3ff;
+	/*  printf("vaddr = %08x, a = %03x, b = %03x\n",
+	    (int)vaddr_page,a, b);  */
+	tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
+	/*  printf("tbl1 = %p\n", tbl1);  */
+	if (tbl1 == cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
+		/*  Allocate a new table1:  */
+		/*  printf("ALLOCATING a new table1, 0x%08x - "
+		    "0x%08x\n", a << 22, (a << 22) + 0x3fffff);  */
+		if (cpu->cd.mips.next_free_vth_table == NULL) {
+			tbl1 = malloc(sizeof(struct vth32_table));
+			if (tbl1 == NULL) {
+				fprintf(stderr, "out of mem\n");
+				exit(1);
+			}
+			memset(tbl1, 0, sizeof(struct vth32_table));
+		} else {
+			tbl1 = cpu->cd.mips.next_free_vth_table;
+			cpu->cd.mips.next_free_vth_table =
+			    tbl1->next_free;
+			tbl1->next_free = NULL;
+		}
+		cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] = tbl1;
+		if (tbl1->refcount != 0) {
+			printf("INTERNAL ERROR in coproc.c\n");
+			exit(1);
+		}
+	}
+	p = tbl1->haddr_entry[b];
+	p_paddr = tbl1->paddr_entry[b];
+	/* printf("   p = %p\n", p); */
+	if (p == NULL && p_paddr == 0 &&
+	    (host_page!=NULL || paddr_page!=0)) {
+		tbl1->refcount ++;
+		/*  printf("ADDING %08x -> %p wf=%i (refcount is "
+		    "now %i)\n", (int)vaddr_page, host_page,
+		    writeflag, tbl1->refcount);  */
+	}
+	if (writeflag == -1) {
+		/*  Forced downgrade to read-only:  */
+		tbl1->haddr_entry[b] = (void *)
+		    ((size_t)tbl1->haddr_entry[b] & ~1);
+	} else if (writeflag==0 && (size_t)p&1 && host_page != NULL) {
+		/*  Don't degrade a page from writable to readonly.  */
+	} else {
+		if (host_page != NULL)
+			tbl1->haddr_entry[b] = (void *)
+			    ((size_t)host_page + (writeflag?1:0));
+		else
+			tbl1->haddr_entry[b] = NULL;
+		tbl1->paddr_entry[b] = paddr_page;
+	}
+	tbl1->bintrans_chunks[b] = NULL;
+#endif
+}
+
+
+/*
  *  update_translation_table():
  */
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page)
 {
 #ifdef BINTRANS
-	if (cpu->machine->bintrans_enable) {
-		int a, b;
-		struct vth32_table *tbl1;
-		void *p;
-		uint32_t p_paddr;
+	if (!cpu->machine->bintrans_enable)
+		return;
 
-		if (writeflag > 0)
-			bintrans_invalidate(cpu, paddr_page);
+	if (writeflag > 0)
+		bintrans_invalidate(cpu, paddr_page);
 
-		/*  This table stuff only works for 32-bit mode:  */
-		if (vaddr_page & 0x80000000ULL) {
-			if ((vaddr_page >> 32) != 0xffffffffULL)
-				return;
-		} else {
-			if ((vaddr_page >> 32) != 0)
-				return;
-		}
-
-		a = (vaddr_page >> 22) & 0x3ff;
-		b = (vaddr_page >> 12) & 0x3ff;
-		/*  printf("vaddr = %08x, a = %03x, b = %03x\n",
-		    (int)vaddr_page,a, b);  */
-		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
-		/*  printf("tbl1 = %p\n", tbl1);  */
-		if (tbl1 == cpu->cd.mips.vaddr_to_hostaddr_nulltable) {
-			/*  Allocate a new table1:  */
-			/*  printf("ALLOCATING a new table1, 0x%08x - "
-			    "0x%08x\n", a << 22, (a << 22) + 0x3fffff);  */
-			if (cpu->cd.mips.next_free_vth_table == NULL) {
-				tbl1 = malloc(sizeof(struct vth32_table));
-				if (tbl1 == NULL) {
-					fprintf(stderr, "out of mem\n");
-					exit(1);
-				}
-				memset(tbl1, 0, sizeof(struct vth32_table));
-			} else {
-				tbl1 = cpu->cd.mips.next_free_vth_table;
-				cpu->cd.mips.next_free_vth_table =
-				    tbl1->next_free;
-				tbl1->next_free = NULL;
-			}
-			cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] = tbl1;
-			if (tbl1->refcount != 0) {
-				printf("INTERNAL ERROR in coproc.c\n");
-				exit(1);
-			}
-		}
-		p = tbl1->haddr_entry[b];
-		p_paddr = tbl1->paddr_entry[b];
-		/* printf("   p = %p\n", p); */
-		if (p == NULL && p_paddr == 0 &&
-		    (host_page!=NULL || paddr_page!=0)) {
-			tbl1->refcount ++;
-			/*  printf("ADDING %08x -> %p wf=%i (refcount is "
-			    "now %i)\n", (int)vaddr_page, host_page,
-			    writeflag, tbl1->refcount);  */
-		}
-		if (writeflag == -1) {
-			/*  Forced downgrade to read-only:  */
-			tbl1->haddr_entry[b] = (void *)
-			    ((size_t)tbl1->haddr_entry[b] & ~1);
-		} else if (writeflag==0 && (size_t)p&1 && host_page != NULL) {
-			/*  Don't degrade a page from writable to readonly.  */
-		} else {
-			if (host_page != NULL)
-				tbl1->haddr_entry[b] = (void *)
-				    ((size_t)host_page + (writeflag?1:0));
-			else
-				tbl1->haddr_entry[b] = NULL;
-			tbl1->paddr_entry[b] = paddr_page;
-		}
-		tbl1->bintrans_chunks[b] = NULL;
+	if (cpu->machine->old_bintrans_enable) {
+		old_update_translation_table(cpu, vaddr_page, host_page,
+		    writeflag, paddr_page);
+		return;
 	}
+
+	/*  TODO  */
+	/*  printf("update_translation_table(): TODO\n");  */
 #endif
 }
 
@@ -599,6 +619,11 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	struct vth32_table *tbl1;
 	void *p;
 	uint32_t p_paddr;
+
+	if (!cpu->machine->old_bintrans_enable) {
+		/*  printf("invalidate_table_entry(): New: TODO\n");  */
+		return;
+	}
 
 	/*  This table stuff only works for 32-bit mode:  */
 	if (vaddr & 0x80000000ULL) {
@@ -650,6 +675,11 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 {
 	int a, b;
 	struct vth32_table *tbl1;
+
+	if (!cpu->machine->old_bintrans_enable) {
+		printf("clear_all_chunks_from_all_tables(): New: TODO\n");
+		return;
+	}
 
 	for (a=0; a<0x400; a++) {
 		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];

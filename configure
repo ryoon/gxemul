@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.118 2005-03-13 09:36:06 debug Exp $
+#  $Id: configure,v 1.119 2005-03-14 12:13:49 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -957,6 +957,8 @@ printf "checking for bintrans backend... "
 BINTRANS=NO
 
 if [ z$ENABLEMIPS = zNO ]; then
+	printf "NO!\nTEMPORARY HACK/PROBLEM: Disabling bintrans for now,\n"
+	printf "until things have stabilized.\n"
 	NOBINTRANS=YES
 fi
 
@@ -967,23 +969,16 @@ else
 	if [ z"`uname -m`" = zalpha ]; then
 		printf "#define ALPHA\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
-		printf "alpha\n"
+		printf "Alpha\n"
 		BINTRANS=YES
 	fi
 
-	#  x86:  TODO: interpret all i?86 as i386!
-	if [ z"`uname -m`" = zi386 ]; then
+	#  x86:  (all machines ending in "86" are treated as i386)
+	if [ z"`uname -m|rev|cut -c1-2`" = z68 ]; then
 		printf "#define I386\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
 		printf "i386\n"
 		BINTRANS=YES
-	else
-		if [ z"`uname -m`" = zi686 ]; then
-			printf "#define I386\n" >> config.h
-			printf "#define BINTRANS\n" >> config.h
-			printf "i386\n"
-			BINTRANS=YES
-		fi
 	fi
 
 # MIPS not yet
@@ -991,7 +986,7 @@ else
 #	if [ z"`uname -m`" = zmips ]; then
 #		printf "#define MIPS\n" >> config.h
 #		printf "#define BINTRANS\n" >> config.h
-#		printf "mips\n"
+#		printf "MIPS\n"
 #		BINTRANS=YES
 #	fi
 
@@ -999,13 +994,13 @@ else
 #	if [ z"`uname -m`" = zsun4u ]; then
 #		printf "#define SPARCV9\n" >> config.h
 #		printf "#define BINTRANS\n" >> config.h
-#		printf "sparcv9\n"
+#		printf "SPARC V9\n"
 #		BINTRANS=YES
 #	else
 #		if [ z"`uname -m`" = zsparc64 ]; then
 #			printf "#define SPARCV9\n" >> config.h
 #			printf "#define BINTRANS\n" >> config.h
-#			printf "sparcv9\n"
+#			printf "SPARC V9\n"
 #			BINTRANS=YES
 #		fi
 #	fi

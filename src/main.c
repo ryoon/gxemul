@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.218 2005-03-06 08:35:07 debug Exp $
+ *  $Id: main.c,v 1.219 2005-03-14 12:13:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -228,7 +228,7 @@ unsigned long long mystrtoull(const char *s, char **endp, int base)
 void internal_w(char *arg)
 {
 	if (arg == NULL || strncmp(arg, "W@", 2) != 0) {
-		printf("-W is for internal use by gxemul,"
+		fprintf(stderr, "-W is for internal use by gxemul,"
 		    " not for manual use.\n");
 		exit(1);
 	}
@@ -240,7 +240,8 @@ void internal_w(char *arg)
 		console_slave(arg + 1);
 		break;
 	default:
-		printf("internal_w(): UNIMPLEMENTED arg = '%s'\n", arg);
+		fprintf(stderr, "internal_w(): UNIMPLEMENTED arg = '%s'\n",
+		    arg);
 	}
 }
 
@@ -283,7 +284,8 @@ static void usage(int longusage)
 
 	printf("\nOther options:\n");
 #ifdef BINTRANS
-	printf("  -b        enable dynamic binary translation\n");
+	printf("  -B        disable dynamic binary translation completely\n");
+	printf("  -b        use the OLD binary translation subsystem\n");
 #endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
@@ -387,11 +389,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "bC:Dd:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "BbC:Dd:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
 		switch (ch) {
+		case 'B':
+			m->bintrans_enable = 0;
+			msopts = 1;
+			break;
 		case 'b':
-			m->bintrans_enable = 1;
+			m->old_bintrans_enable = 1;
 			msopts = 1;
 			break;
 		case 'C':
@@ -524,7 +530,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'u':
 			m->userland_emul = strdup(optarg);
 			if (m->userland_emul == NULL) {
-				printf("out of memory\n");
+				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
 			m->machine_type = MACHINE_USERLAND;
@@ -562,20 +568,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			    m->x11_display_names,
 			    m->x11_n_display_names * sizeof(char *));
 			if (m->x11_display_names == NULL) {
-				printf("out of memory\n");
+				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
 			m->x11_display_names[m->x11_n_display_names-1] =
 			    strdup(optarg);
 			if (m->x11_display_names
 			    [m->x11_n_display_names-1] == NULL) {
-				printf("out of memory\n");
+				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
 			msopts = 1;
 			break;
 		default:
-			printf("Invalid option.\n");
+			fprintf(stderr, "Invalid option.\n");
 			usage(0);
 			exit(1);
 		}
@@ -597,9 +603,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	extra_argv = argv;
 
 
+	if (!m->bintrans_enable && m->old_bintrans_enable) {
+		fprintf(stderr, "You cannot both select old bintrans and"
+		    " disable bintrans at the same time.\n");
+		exit(1);
+	}
+
 	if (m->machine_type == MACHINE_NONE && msopts) {
-		printf("Machine specific options used directly on the command "
-		    "line, but no machine\nemulation specified?\n");
+		fprintf(stderr, "Machine specific options used directly on "
+		    "the command line, but no machine\nemulation specified?\n");
 		exit(1);
 	}
 
@@ -607,21 +619,21 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  -i, -r, -t are pretty verbose:  */
 
 	if (m->instruction_trace && !verbose) {
-		printf("implicitly turning of -q and turning on -v, "
+		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
 		    "because of -i\n");
 		verbose = 1;
 		quiet_mode = 0;
 	}
 
 	if (m->register_dump && !verbose) {
-		printf("implicitly turning of -q and turning on -v, "
+		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
 		    "because of -r\n");
 		verbose = 1;
 		quiet_mode = 0;
 	}
 
 	if (m->show_trace_tree && !verbose) {
-		printf("implicitly turning of -q and turning on -v, "
+		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
 		    "because of -t\n");
 		verbose = 1;
 		quiet_mode = 0;
@@ -641,7 +653,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			/*  Booting directly from a disk image...  */
 		} else {
 			usage(0);
-			printf("\nNo filename given. Aborting.\n");
+			fprintf(stderr, "\nNo filename given. Aborting.\n");
 			exit(1);
 		}
 	} else if (m->boot_kernel_filename[0] == '\0') {

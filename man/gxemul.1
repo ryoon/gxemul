@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.2 2005-03-06 08:21:11 debug Exp $
+.\" $Id: gxemul.1,v 1.3 2005-03-14 12:13:51 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -101,8 +101,12 @@ Use this together with
 .Pp
 Other options:
 .Bl -tag -width Ds
+.It Fl B
+Disable dynamic binary translation completely. (It is turned on by 
+default, if bintrans support for the host architecture is implemented 
+in the emulator.)
 .It Fl b
-Enable dynamic binary translation.
+Use the OLD binary translation subsystem. (Alpha and i386 hosts only.)
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
@@ -258,9 +262,9 @@ subdirectory of the
 distribution.
 .Sh EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
-5000/200 (3MAX), with dynamic binary translation enabled:
+5000/200 (3MAX):
 .Pp
-.Dl "gxemul -E dec -e 3max -b -d netbsddisk.img"
+.Dl "gxemul -E dec -e 3max -d netbsddisk.img"
 .Pp
 netbsddisk.img should be a raw disk image containing a NetBSD/pmax
 filesystem.

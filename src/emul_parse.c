@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.27 2005-02-26 16:53:33 debug Exp $
+ *  $Id: emul_parse.c,v 1.28 2005-03-14 12:13:52 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -211,6 +211,7 @@ static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
+static char cur_machine_old_bintrans[10];
 static char cur_machine_bintrans_size[10];
 static char cur_machine_byte_order[20];
 static char cur_machine_random_mem[10];
@@ -364,6 +365,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
+		cur_machine_old_bintrans[0] = '\0';
 		cur_machine_bintrans_size[0] = '\0';
 		cur_machine_byte_order[0] = '\0';
 		cur_machine_random_mem[0] = '\0';
@@ -494,6 +496,17 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_bintrans, "no");
 		m->bintrans_enable = m->bintrans_enabled_from_start =
 		    parse_on_off(cur_machine_bintrans);
+
+		if (!cur_machine_old_bintrans[0])
+			strcpy(cur_machine_old_bintrans, "no");
+		m->old_bintrans_enable = parse_on_off(cur_machine_old_bintrans);
+
+		if (!m->bintrans_enable && m->old_bintrans_enable) {
+			fatal("cannot use old bintrans when bintrans is"
+			    " disabled.\n");
+			exit(1);
+		}
+
 		/*  TODO: Hm...  */
 		if (m->bintrans_enable)
 			m->speed_tricks = 0;
@@ -601,6 +614,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("use_x11", cur_machine_use_x11);
 	WORD("x11_scaledown", cur_machine_x11_scaledown);
 	WORD("bintrans", cur_machine_bintrans);
+	WORD("old_bintrans", cur_machine_old_bintrans);
 	WORD("bintrans_size", cur_machine_bintrans_size);
 	WORD("byte_order", cur_machine_byte_order);
 	WORD("random_mem_contents", cur_machine_random_mem);

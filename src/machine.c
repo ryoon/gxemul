@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.386 2005-03-13 09:51:41 debug Exp $
+ *  $Id: machine.c,v 1.387 2005-03-14 12:13:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -134,6 +134,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	/*  Sane default values:  */
 	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
+	m->bintrans_enable = 1;
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;
 	m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;

@@ -25,9 +25,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.154 2005-03-05 12:17:53 debug Exp $
+ *  $Id: bintrans.c,v 1.155 2005-03-14 12:13:52 debug Exp $
  *
  *  Dynamic binary translation.
+ *
+ *
+ *  --------------------------------------------------------------------------
+ *
+ *    NOTE: This code needs a lot of updating; much of it is MIPS-specific.
+ *
+ *  --------------------------------------------------------------------------
  *
  *
  *  This should be documented/commented better. Some of the main concepts are:
@@ -115,6 +122,13 @@
 
 int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
+void old_bintrans_init_cpu(struct cpu *cpu) { }
+void old_bintrans_init(struct machine *machine, struct memory *mem)
+{
+	fatal("\n***  NOT starting bintrans, as gxemul "
+	    "was compiled without such support!\n\n");
+}
+
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
 void bintrans_init(struct machine *machine, struct memory *mem)
@@ -195,11 +209,11 @@ static void bintrans_register_potential_quick_jump(struct memory *mem,
 
 
 /*
- *  bintrans_invalidate():
+ *  old_bintrans_invalidate():
  *
  *  Invalidate translations containing a certain physical address.
  */
-void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
+static void old_bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_page_entry *tep;
@@ -234,7 +248,23 @@ struct translation_page_entry *prev = NULL;
 	tep->page_is_potentially_in_use = 0;
 	memset(&tep->chunk[0], 0, sizeof(tep->chunk));
 	memset(&tep->flags[0], 0, sizeof(tep->flags));
-	return;
+}
+
+
+/*
+ *  bintrans_invalidate():
+ *
+ *  Invalidate translations containing a certain physical address.
+ */
+void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
+{
+	if (cpu->machine->old_bintrans_enable) {
+		old_bintrans_invalidate(cpu, paddr);
+		return;
+	}
+
+	/*  TODO  */
+	/*  printf("bintrans_invalidate(): TODO\n");  */
 }
 
 
@@ -261,14 +291,14 @@ static void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *
 
 
 /*
- *  bintrans_attempt_translate():
+ *  old_bintrans_attempt_translate():
  *
  *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
  *  the code chunk is run.
  *
  *  Returns the number of executed instructions.
  */
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
+int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 {
 	uint64_t paddr_page;
 	int offset_within_page;
@@ -907,13 +937,33 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 
 /*
- *  bintrans_init_cpu():
+ *  bintrans_attempt_translate():
+ *
+ *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
+ *  the code chunk is run.
+ *
+ *  Returns the number of executed instructions.
+ */
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
+{
+	if (cpu->machine->old_bintrans_enable)
+		return old_bintrans_attempt_translate(cpu, paddr);
+
+	/*  TODO  */
+	/*  printf("bintrans_attempt_translate(): TODO\n");  */
+
+	return 0;
+}
+
+
+/*
+ *  old_bintrans_init_cpu():
  *
  *  This must be called for each cpu wishing to use bintrans. This should
- *  be called after bintrans_init(), but before any other function in this
+ *  be called after old_bintrans_init(), but before any other function in this
  *  module.
  */
-void bintrans_init_cpu(struct cpu *cpu)
+void old_bintrans_init_cpu(struct cpu *cpu)
 {
 	int i, offset;
 
@@ -974,11 +1024,11 @@ void bintrans_init_cpu(struct cpu *cpu)
 
 
 /*
- *  bintrans_init():
+ *  old_bintrans_init():
  *
  *  Should be called before any other bintrans_*() function is used.
  */
-void bintrans_init(struct machine *machine, struct memory *mem)
+void old_bintrans_init(struct machine *machine, struct memory *mem)
 {
 	int res, i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	size_t s;
@@ -987,7 +1037,7 @@ void bintrans_init(struct machine *machine, struct memory *mem)
 	    struct translation_page_entry *) *
 	    (1 << BINTRANS_CACHE_N_INDEX_BITS));
 	if (mem->translation_page_entry_array == NULL) {
-		fprintf(stderr, "bintrans_init(): out of memory\n");
+		fprintf(stderr, "old_bintrans_init(): out of memory\n");
 		exit(1);
 	}
 
@@ -1007,7 +1057,8 @@ void bintrans_init(struct machine *machine, struct memory *mem)
 	if (mem->translation_code_chunk_space == NULL) {
 		mem->translation_code_chunk_space = malloc(s);
 		if (mem->translation_code_chunk_space == NULL) {
-			fprintf(stderr, "bintrans_init(): out of memory (2)\n");
+			fprintf(stderr, "old_bintrans_init(): out of "
+			    "memory (2)\n");
 			exit(1);
 		}
 	}
@@ -1042,5 +1093,42 @@ void bintrans_init(struct machine *machine, struct memory *mem)
 
 	bintrans_backend_init();
 }
+
+
+/*
+ *  bintrans_init_cpu():
+ *
+ *  This must be called for each cpu wishing to use bintrans. This should
+ *  be called after bintrans_init(), but before any other function in this
+ *  module.
+ */
+void bintrans_init_cpu(struct cpu *cpu)
+{
+	if (cpu->machine->old_bintrans_enable) {
+		old_bintrans_init_cpu(cpu);
+		return;
+	}
+
+	/*  TODO  */
+	printf("bintrans_init_cpu(): TODO\n");
+}
+
+
+/*
+ *  bintrans_init():
+ *
+ *  Should be called before any other bintrans_*() function is used.
+ */
+void bintrans_init(struct machine *machine, struct memory *mem)
+{
+	if (machine->old_bintrans_enable) {
+		old_bintrans_init(machine, mem);
+		return;
+	}
+
+	/*  TODO  */
+	printf("bintrans_init(): TODO\n");
+}
+
 
 #endif	/*  BINTRANS  */

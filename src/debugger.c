@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.96 2005-03-06 08:21:12 debug Exp $
+ *  $Id: debugger.c,v 1.97 2005-03-14 12:13:52 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -380,10 +380,8 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 {
-	if (*cmd_line) {
-		printf("syntax: bintrans\n");
-		return;
-	}
+	if (*cmd_line == '\0')
+		goto printstate;
 
 	if (!m->bintrans_enabled_from_start) {
 		printf("You must have enabled bintrans from the start of the "
@@ -391,8 +389,21 @@ static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 		return;
 	}
 
-	m->bintrans_enable = !m->bintrans_enable;
-	printf("bintrans_enable = %s\n", m->bintrans_enable? "ON" : "OFF");
+	while (*cmd_line == ' ')
+		cmd_line++;
+
+	/*  Note: len 3 and 4, to include the NUL char.  */
+	if (strncasecmp(cmd_line, "on", 3) == 0)
+		m->bintrans_enable = 1;
+	else if (strncasecmp(cmd_line, "off", 4) == 0)
+		m->bintrans_enable = 0;
+	else
+		printf("syntax: bintrans [on|off]\n");
+
+printstate:
+	printf("bintrans is now %s%s\n",
+	     m->bintrans_enable? "ENABLED" : "disabled",
+	     m->old_bintrans_enable? " (using the OLD bintrans system)" : "");
 }
 
 
@@ -1400,7 +1411,7 @@ static struct cmd cmds[] = {
 	{ "breakpoint", "...", 0, debugger_cmd_breakpoint,
 		"manipulate breakpoints" },
 
-	{ "bintrans", "", 0, debugger_cmd_bintrans,
+	{ "bintrans", "[on|off]", 0, debugger_cmd_bintrans,
 		"toggle bintrans on or off" },
 
 	/*  NOTE: Try to keep 'c' down to only one command. Having 'continue'

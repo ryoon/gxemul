@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.260 2005-01-26 17:19:57 debug Exp $
+ *  $Id: cpu.c,v 1.261 2005-01-28 09:13:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -4071,5 +4071,39 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 		cpu_show_full_statistics(machine);
 
 	fflush(stdout);
+}
+
+
+/*
+ *  mips_cpu_dumpinfo():
+ */
+void mips_cpu_dumpinfo(struct cpu *cpu)
+{
+	struct mips_cpu_type_def *ct = &cpu->cpu_type;
+	int i;
+
+	debug("cpu%i: %s, %s", cpu->cpu_id, ct->name,
+	    cpu->running? "running" : "stopped");
+
+	debug(" (%i-bit ", (ct->isa_level < 3 ||
+	    ct->isa_level == 32)? 32 : 64);
+
+	debug("%s, ", cpu->byte_order == EMUL_BIG_ENDIAN? "BE" : "LE");
+
+	debug("%i TLB entries", ct->nr_of_tlb_entries);
+
+	if (ct->default_picache || ct->default_pdcache)
+		debug(", I+D = %i+%i KB",
+		    (1 << ct->default_picache) / 1024,
+		    (1 << ct->default_pdcache) / 1024);
+
+	if (ct->default_scache) {
+		int kb = (1 << ct->default_scache) / 1024;
+		debug(", L2 = %i %cB",
+		    kb >= 1024? kb / 1024 : kb,
+		    kb >= 1024? 'M' : 'K');
+	}
+
+	debug(")\n");
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.302 2005-01-28 08:49:00 debug Exp $
+ *  $Id: machine.c,v 1.303 2005-01-28 09:13:48 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4046,36 +4046,25 @@ void machine_dumpinfo(struct machine *m)
 	debug("memory: %i MB", m->physical_ram_in_mb);
 	if (m->memory_offset_in_mb != 0)
 		debug(" (offset by %i MB)", m->memory_offset_in_mb);
+	if (m->random_mem_contents)
+		debug(", randomized contents at startup");
+	if (m->dbe_on_nonexistant_memaccess)
+		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");
 
-	for (i=0; i<m->ncpus; i++) {
-		struct mips_cpu_type_def *ct = &m->cpus[i]->cpu_type;
+	debug("bintrans %s, other speedtricks %s\n",
+	    m->bintrans_enable? "enabled" : "disabled",
+	    m->speed_tricks? "enabled" : "disabled");
 
-		debug("cpu%i: %s, %s", i, ct->name,
-		    m->cpus[i]->running? "running" : "stopped");
+	debug("clock: ");
+	if (m->automatic_clock_adjustment)
+		debug("adjusted automatically");
+	else
+		debug("fixed at %i Hz", m->emulated_hz);
+	debug("\n");
 
-		debug(" (%i-bit ", (ct->isa_level < 3 ||
-		    ct->isa_level == 32)? 32 : 64);
-
-		debug("%s, ", m->cpus[i]->byte_order
-		    == EMUL_BIG_ENDIAN? "BE" : "LE");
-
-		debug("%i TLB entries", ct->nr_of_tlb_entries);
-
-		if (ct->default_picache || ct->default_pdcache)
-			debug(", I+D = %i+%i KB",
-			    (1 << ct->default_picache) / 1024,
-			    (1 << ct->default_pdcache) / 1024);
-
-		if (ct->default_scache) {
-			int kb = (1 << ct->default_scache) / 1024;
-			debug(", L2 = %i %cB",
-			    kb >= 1024? kb / 1024 : kb,
-			    kb >= 1024? 'M' : 'K');
-		}
-
-		debug(")\n");
-	}
+	for (i=0; i<m->ncpus; i++)
+		cpu_dumpinfo(m->cpus[i]);
 
 	if (m->ncpus > 1)
 		debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
@@ -4091,5 +4080,8 @@ void machine_dumpinfo(struct machine *m)
 	}
 
 	diskimage_dump_info(m);
+
+	if (m->force_netboot)
+		debug("Forced netboot\n");
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.10 2005-01-28 08:49:00 debug Exp $
+ *  $Id: emul_parse.c,v 1.11 2005-01-28 09:13:47 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -198,6 +198,8 @@ static char cur_machine_slow_serial[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
+static char cur_machine_force_netboot[10];
+static char cur_machine_ncpus[10];
 #define	MAX_N_LOAD	20
 #define	MAX_LOAD_LEN	4000
 static char *cur_machine_load[MAX_N_LOAD];
@@ -309,6 +311,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
+		cur_machine_force_netboot[0] = '\0';
+		cur_machine_ncpus[0] = '\0';
 		return;
 	}
 
@@ -402,6 +406,18 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_bintrans, "no");
 		m->bintrans_enable = m->bintrans_enabled_from_start =
 		    parse_on_off(cur_machine_bintrans);
+		/*  TODO: Hm...  */
+		if (m->bintrans_enable)
+			m->speed_tricks = 0;
+
+		if (!cur_machine_force_netboot[0])
+			strcpy(cur_machine_force_netboot, "no");
+		m->force_netboot = parse_on_off(cur_machine_force_netboot);
+
+		/*  NOTE: Default nr of CPUs is 0:  */
+		if (!cur_machine_ncpus[0])
+			strcpy(cur_machine_ncpus, "0");
+		m->ncpus = atoi(cur_machine_ncpus);
 
 		if (!cur_machine_x11_scaledown[0])
 			m->x11_scaledown = 1;
@@ -447,6 +463,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
 	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
 	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);
+	ACCEPT_SIMPLE_WORD("force_netboot", cur_machine_force_netboot);
+	ACCEPT_SIMPLE_WORD("ncpus", cur_machine_ncpus);
 
 	if (strcmp(word, "load") == 0) {
 		read_one_word(f, word, maxbuflen,

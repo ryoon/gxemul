@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.3 2005-01-24 16:29:43 debug Exp $
+ *  $Id: mips_cpu.h,v 1.4 2005-01-28 09:13:46 debug Exp $
  */
 
 #include "misc.h"
@@ -401,6 +401,7 @@ void cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
 void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);
+void mips_cpu_dumpinfo(struct cpu *cpu);
 
 
 #endif	/*  MIPS_CPU_H  */

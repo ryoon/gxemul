@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_common.c,v 1.1 2005-01-23 13:43:07 debug Exp $
+ *  $Id: cpu_common.c,v 1.2 2005-01-28 09:13:47 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -59,5 +59,16 @@ int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	return mips_cpu_interrupt_ack(cpu, irq_nr);
+}
+
+
+/*
+ *  cpu_dumpinfo():
+ *
+ *  Dumps info about a CPU using debug().
+ */
+void cpu_dumpinfo(struct cpu *cpu)
+{
+	mips_cpu_dumpinfo(cpu);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.7 2004-01-06 09:01:15 debug Exp $
+ *  $Id: dev_gt.c,v 1.8 2004-01-06 14:28:02 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -132,7 +132,7 @@ uint32_t pci_gt_rr(int reg)
 /*
  *  pci_gt_init():
  */
-void pci_gt_init(struct memory *mem)
+void pci_gt_init(struct cpu *cpu, struct memory *mem)
 {
 }
 
@@ -161,7 +161,7 @@ struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	 *  According to NetBSD/cobalt:
 	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011 System Controller, rev 1
 	 */
-	bus_pci_add(d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
+	bus_pci_add(cpu, d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
 
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH, dev_gt_access, d);
 	cpu_add_tickfunction(cpu, dev_gt_tick, d, TICK_STEPS_SHIFT);

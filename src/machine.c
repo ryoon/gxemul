@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.183 2004-09-29 06:33:27 debug Exp $
+ *  $Id: machine.c,v 1.184 2004-09-29 14:03:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2652,14 +2652,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_pointer_and_advance(cpu, &addr,
 		    ARC_ARGV_START + 0x100, arc_wordlen==sizeof(uint64_t));
 
-		if (emul->emulation_type == EMULTYPE_SGI) {
-			/*  bootarg:  (only for SGI, or for ARC as well? TODO)  */
-			store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
-			cpu->gpr[GPR_A0] ++;
-			store_pointer_and_advance(cpu, &addr,
-			    ARC_ARGV_START + 0x200,
-			    arc_wordlen==sizeof(uint64_t));
+		/*  bootarg:  */
+		store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
+		cpu->gpr[GPR_A0] ++;
+		store_pointer_and_advance(cpu, &addr,
+		    ARC_ARGV_START + 0x200,
+		    arc_wordlen==sizeof(uint64_t));
 
+		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*
 			 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
 			 *  for more options.  It seems that on SGI machines,

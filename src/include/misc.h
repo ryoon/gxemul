@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.98 2004-08-11 02:58:30 debug Exp $
+ *  $Id: misc.h,v 1.99 2004-08-12 05:13:55 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -98,6 +98,7 @@ typedef uint64_t u_int64_t;
 #define	EMULTYPE_SGI		6
 #define	EMULTYPE_ARC		7
 #define	EMULTYPE_MESHCUBE	8
+#define	EMULTYPE_NETGEAR	9
 
 /*  Specific machines:  */
 #define	MACHINE_NONE		0

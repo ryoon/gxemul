@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.64 2004-08-10 02:34:31 debug Exp $
+ *  $Id: main.c,v 1.65 2004-08-12 05:13:54 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -198,6 +198,7 @@ void usage(char *progname)
 	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F        try to emulate an hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
+	printf("  -g        try to emulate a NetGear box (WG602)\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
@@ -249,7 +250,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -289,6 +290,10 @@ int get_cmd_args(int argc, char *argv[])
 		case 'G':
 			emulation_type = EMULTYPE_SGI;
 			machine = atoi(optarg);
+			break;
+		case 'g':
+			emulation_type = EMULTYPE_NETGEAR;
+			machine = 0;
 			break;
 		case 'I':
 			emulated_hz = atoi(optarg);
@@ -419,6 +424,9 @@ int get_cmd_args(int argc, char *argv[])
 		/*  TODO:  Should be AU1500, but Linux doesn't like
 			the absence of caches in the emulator  */
 
+	if (emulation_type == EMULTYPE_NETGEAR && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "RC32334");
+
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
 
@@ -452,6 +460,9 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_MESHCUBE && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 64;
+
+	if (emulation_type == EMULTYPE_NETGEAR && physical_ram_in_mb == 0)
+		physical_ram_in_mb = 16;
 
 	if (emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;

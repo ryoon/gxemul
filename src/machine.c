@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.160 2004-08-11 03:52:14 debug Exp $
+ *  $Id: machine.c,v 1.161 2004-08-12 05:13:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2619,6 +2619,16 @@ void machine_init(struct memory *mem)
 
 		cpus[bootstrap_cpu]->gpr[GPR_A2] = 0xa0003000ULL;
 		store_string(0xa0002000ULL, "hello=world\n");
+
+		break;
+
+	case EMULTYPE_NETGEAR:
+		machine_name = "NetGear WG602";
+
+		if (use_x11)
+			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
+
+		dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000800, 0, 4);
 
 		break;
 

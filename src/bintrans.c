@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.152 2005-02-22 12:05:18 debug Exp $
+ *  $Id: bintrans.c,v 1.153 2005-03-05 08:42:25 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -783,7 +783,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 run_it:
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
+	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]); */
 
 	enter_chunks_into_tables(cpu, cpu->pc, &tep->chunk[0]);
 
@@ -792,7 +792,7 @@ run_it:
 	bintrans_runchunk(cpu, f);
 
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
+	    (long long)cpu->pc, (long long)cpu->cd.mips.gpr[31]);  */
 
 	if (!cpu->cd.mips.delay_slot && !cpu->cd.mips.nullify_next &&
 	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT

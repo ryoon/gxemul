@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.288 2005-03-01 06:48:23 debug Exp $
+ *  $Id: cpu.c,v 1.289 2005-03-05 08:42:25 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -210,7 +210,7 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (cpu->machine->cpu_family == NULL ||
 	    cpu->machine->cpu_family->interrupt_ack == NULL) {
-		debug("cpu_interrupt_ack(): NULL\n");
+		/*  debug("cpu_interrupt_ack(): NULL\n");  */
 		return 0;
 	} else
 		return cpu->machine->cpu_family->interrupt_ack(cpu, irq_nr);

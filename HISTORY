@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.371 2004-12-09 02:22:58 debug Exp $
+$Id: HISTORY,v 1.372 2004-12-09 14:31:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1272,9 +1272,9 @@ HISTORY of mips64emul
 		The single step debugger is now automatically entered when
 		all CPUs have stopped running, unless there was a clean
 		shutdown of some kind (PROM halt() call, or similar).
-		Adding a -V option for starting up in a paused state, in
+		Adding a -V option for starting up in a paused state, into
 		the single-step debugger.
-		Adding a node about 'mmon' to the documentation
+		Adding a note about 'mmon' to the documentation
 		(http://www.brouhaha.com/~eric/software/mmon/).
 20041209	Fixes to devices/console.c which makes cursor keys and such
 		a bit more reliable.

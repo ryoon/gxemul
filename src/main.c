@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.81 2004-09-05 03:06:32 debug Exp $
+ *  $Id: main.c,v 1.82 2004-09-05 03:07:49 debug Exp $
  */
 
 #include <stdio.h>
@@ -75,7 +75,6 @@ int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
 int emulated_hz = 0;
 int max_random_cycles_per_chunk = 0;
-int speed_tricks = 1;
 
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
@@ -304,7 +303,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			instruction_trace = 1;
 			break;
 		case 'J':
-			speed_tricks = 0;
+			emul->speed_tricks = 0;
 			break;
 		case 'j':
 			emul->boot_kernel_filename = malloc(strlen(optarg) + 1);

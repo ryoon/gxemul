@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.132 2004-09-05 03:03:44 debug Exp $
+ *  $Id: cpu.c,v 1.133 2004-09-05 03:07:49 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -58,7 +58,6 @@ extern int single_step;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
-extern int speed_tricks;
 extern int prom_emulation;
 extern int tlb_dump;
 extern int64_t max_instructions;
@@ -2155,8 +2154,10 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  interrupts!!!  For now: return as if we just
 			 *  executed 1 instruction.
 			 */
-			if (speed_tricks && cpu->delay_slot && cpu->last_was_jumptoself &&
-			    cpu->jump_to_self_reg == rt && cpu->jump_to_self_reg == rs) {
+			if (cpu->emul->speed_tricks && cpu->delay_slot &&
+			    cpu->last_was_jumptoself &&
+			    cpu->jump_to_self_reg == rt &&
+			    cpu->jump_to_self_reg == rs) {
 				if ((int64_t)cpu->gpr[rt] > 1 && imm == -1) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);

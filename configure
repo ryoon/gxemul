@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.10 2004-02-22 14:22:16 debug Exp $
+#  $Id: configure,v 1.11 2004-03-06 17:12:26 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -111,7 +111,8 @@ if [ -x _testprog ]; then
 	CWARNINGS="-Wall $CWARNINGS"
 	if [ z"$CC" = zccc ]; then
 #		CWARNINGS="$CWARNINGS -msg_disable longlongtype,questcompare2,intconcasttru,intconstsign,unusedtop,ptrmismatch1,cvtu32to64,duptypedef,intconsttrunc"
-		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
+		CWARNINGS="$CWARNINGS -msg_disable longlongtype,intconsttrunc,cvtu32to64"
+#		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
 	fi
 fi
 rm -f _testprog

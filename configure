@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.47 2004-08-11 19:55:53 debug Exp $
+#  $Id: configure,v 1.48 2004-08-11 20:28:56 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -173,6 +173,11 @@ printf "$CC $CFLAGS\n"
 
 if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
 	COMPAQCC=YES
+fi
+
+
+if $CC -V 2> /dev/null | grep Sun 1> /dev/null 2> /dev/null; then
+	SUNCC=YES
 fi
 
 
@@ -436,7 +441,7 @@ if [ z"$COMPAQCC" = zYES ]; then
 else
 	if [ z"`uname`" = zSunOS ]; then
 		#  "cc", the system's default compiler:
-		if [ z"$CC" = zcc ]; then
+		if [ z"$SUNCC" = zYES ]; then
 			COPTIM="-xO5 -xdepend $COPTIM"
 		fi
 		printf "#define SOLARIS\n" >> config.h

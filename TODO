@@ -202,8 +202,3 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  nr of simultaneous ASIDs in use in the TLB  (x = time)
 		o)  position of read/write on (SCSI) disks   (x = time)
 
-	Write Documentation:
-		o)  A very tiny manpage
-		o)  User Documentation (HTML)
-		o)  Technical Documentation (HTML)
-

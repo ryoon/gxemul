@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.398 2004-12-15 05:27:31 debug Exp $
+$Id: HISTORY,v 1.399 2004-12-15 17:20:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1346,3 +1346,8 @@ HISTORY of mips64emul
 		stuff.
 		Implementing more of the different exception offsets (taking
 		CAUSE_IV and STATUS_BEV into account).
+		hpc_bootinfo should now be correctly filled on big-endian
+		hosts.
+		Always shift left by 12, not by pageshift, to get physical
+		addresses on MMU4K etc. (Thanks to Alec Voropay for noticing
+		this.)

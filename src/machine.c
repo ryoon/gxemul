@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.243 2004-12-15 16:32:00 debug Exp $
+ *  $Id: machine.c,v 1.244 2004-12-15 17:20:15 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1693,30 +1693,40 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 */
 
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
-		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
-		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576
+		    + 0x80000000ULL - 512;	/*  argv  */
+		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576
+		    + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+
 		bootstr = "netbsd";
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8);
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 4, 0);
 		store_string(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
+
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
-		hpc_bootinfo.length = sizeof(hpc_bootinfo);
-		hpc_bootinfo.magic = HPC_BOOTINFO_MAGIC;
-		hpc_bootinfo.fb_addr = 0x80000000 + HPCMIPS_FB_ADDR;
-		hpc_bootinfo.fb_line_bytes = 512;
-		    /*  HPCMIPS_FB_XSIZE / 4;	for 2-bits-per-pixel  */
-		hpc_bootinfo.fb_width = HPCMIPS_FB_XSIZE;
-		hpc_bootinfo.fb_height = HPCMIPS_FB_YSIZE;
-		hpc_bootinfo.fb_type = BIFB_D16_FFFF; /*  BIFB_D2_M2L_3;  */
-		hpc_bootinfo.bi_cnuse = BI_CNUSE_BUILTIN;  /*  _BUILTIN or _SERIAL  */
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + HPCMIPS_FB_ADDR);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, 512);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, HPCMIPS_FB_XSIZE);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, HPCMIPS_FB_YSIZE);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, BIFB_D16_FFFF); /*  BIFB_D2_M2L_3;  */
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
 
 		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
-		hpc_bootinfo.platid_cpu = 1 << 14;
-		hpc_bootinfo.platid_machine =
+
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+		      (1 << 26)		/*  1 = MIPS  */
+		    + (1 << 20)		/*  1 = VR  */
+		    + (1 << 14)		/*  1 = VR41XX  */
+		    + (3 <<  8)		/*  3 = VR4121  */
+		    );
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
 		      (3 << 22)		/*  22: vendor  3=casio */
 		    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
 		    + (2 <<  8)		/*   8: model   2=EXXX*/
-		    + (3);		/*   0: submodel 3=E500 */
+		    + (3)		/*   0: submodel 3=E500 */
+		    );
 /*
 #define PLATID_FLAGS_SHIFT              0
 #define PLATID_CPU_SUBMODEL_SHIFT       8
@@ -1731,7 +1741,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 */
 		printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);
-		hpc_bootinfo.timezone = 0;
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
 		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,

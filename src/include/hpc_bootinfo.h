@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: hpc_bootinfo.h,v 1.3 2004-07-02 13:35:25 debug Exp $  */
+/*  mips64emul: $Id: hpc_bootinfo.h,v 1.4 2004-12-15 17:20:14 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.2 2002/04/14 06:07:40 takemura Exp $	*/
 
 /*-
@@ -39,20 +39,20 @@
 #define _HPC_BOOTINFO_H_
 
 struct hpc_bootinfo {
-	int16_t length;			/*  short  */
-	int16_t reserved;		/*  short  */
-	int32_t magic;			/*  int  */
-	uint32_t fb_addr;			/*  void *  */
-	int16_t fb_line_bytes;		/*  short  */
-	int16_t fb_width;		/*  short  */
-	int16_t fb_height;		/*  short  */
-	int16_t fb_type;		/*  short  */
+	int16_t  length;		/*  short  */
+	int16_t  reserved;		/*  short  */
+	int32_t  magic;			/*  int  */
+	uint32_t fb_addr;		/*  void *  */
+	int16_t  fb_line_bytes;		/*  short  */
+	int16_t  fb_width;		/*  short  */
+	int16_t  fb_height;		/*  short  */
+	int16_t  fb_type;		/*  short  */
 
-	int16_t bi_cnuse;		/*  short  */
+	int16_t  bi_cnuse;		/*  short  */
 	uint32_t platid_cpu;		/*  unsigned long  */
 	uint32_t platid_machine;	/*  unsigned long  */
 
-	int32_t timezone;		/*  long  */
+	int32_t  timezone;		/*  long  */
 };
 
 #define BI_CNUSE_BUILTIN	(1<<0)

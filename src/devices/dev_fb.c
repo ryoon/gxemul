@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.73 2004-12-15 16:31:58 debug Exp $
+ *  $Id: dev_fb.c,v 1.74 2004-12-15 17:20:14 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -367,6 +367,28 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 					g = (d->framebuffer[fb_addr] << 5) +
 					    (d->framebuffer[fb_addr + 1] >> 5);
 					b = d->framebuffer[fb_addr + 1] & 0x1f;
+
+if (d->vfb_type == VFB_HPCMIPS) {
+	/*  Bits are in reverse?  TODO: Make this nicer  */
+	r = ((r & 1) << 4) |
+	    ((r & 2) << 2) |
+	    ((r & 4)) |
+	    ((r & 8) >> 2) |
+	    ((r & 16) >> 4);
+
+	g = ((g & 1) << 5) |
+	    ((g & 2) << 3) |
+	    ((g & 4) << 1) |
+	    ((g & 8) >> 1) |
+	    ((g & 16) >> 3) |
+	    ((g & 32) >> 5);
+
+	b = ((b & 1) << 4) |
+	    ((b & 2) << 2) |
+	    ((b & 4)) |
+	    ((b & 8) >> 2) |
+	    ((b & 16) >> 4);
+}
 					r *= 8;
 					g *= 4;
 					b *= 8;

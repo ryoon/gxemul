@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.13 2005-01-16 15:30:01 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.14 2005-01-16 16:32:15 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -155,6 +155,14 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+
+	/*  0x114 + 0x40 * (wid - 8): 0x80000000 for "alive", according to Linux/IP30  */
+
+	case 0x114 + 0x40 * (12 - 8):
+		fatal("[ IP30: asdvasdvnb ]\n");
+		odata = 0x80000000;
+		break;
+
 	case 0x0029c:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during bootup:

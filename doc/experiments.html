@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.2 2005-01-26 11:39:15 debug Exp $
+$Id: experiments.html,v 1.3 2005-01-27 18:49:44 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -63,8 +63,10 @@ SUCH DAMAGE.
 <h3>Hello world:</h3>
 
 You might want to use the emulator to develop programs on your own,
-not just run precompiled kernels such as NetBSD. To get started, I'd recommend
-you do two things:
+not just run precompiled kernels such as NetBSD. To get started, I recommend
+that you do two things:
+
+<p>
 <ul>
   <li>Build and install a cross-compiler for MIPS.
   <li>Compile this hello world program, and run it in the emulator.
@@ -102,7 +104,7 @@ are emulated, such as putchar device, and a simple framebuffer
 </pre>
 This hello world program is available here as well: <a href="hello.c">hello.c</a>
 <p>
-I'd recommend you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
+I recommend that you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
 target, and install it. Other compilers could work too, but GCC is good because
 of its portability. Then try to compile the hello world program:
 <pre>
@@ -122,12 +124,36 @@ of its portability. Then try to compile the hello world program:
 </pre>
 
 <p>
+You need to type CTRL-C after Hello world has appeared on your terminal,
+because the program just hangs forever there. Typing CTRL-C brings up the
+single-step debugger. To exit the emulator, type 'quit'.
+
+<p>
 As you can see above, a GCC configured for mips64-unknown-elf can produce
-both 64-bit and 32-bit code. If you don't want to run the entire
+both 64-bit and 32-bit binaries. If you don't want to run the entire
 Hello World program, but want to single-step through the execution to
 learn more about how MIPS programs run, then add -V to the command line:
 <pre>
 	$ <b>./mips64emul -Va hello</b>
+	..
+	mips64emul&gt; <b>r</b>
+	cpu0:    pc = ffffffff800300a4    <f>
+	cpu0:    hi = 0000000000000000    lo = 0000000000000000
+	cpu0:    zr = 0000000000000000    at = 0000000000000000
+	cpu0:    v0 = 0000000000000000    v1 = 0000000000000000
+	..
+	cpu0:    gp = ffffffff800780e0    sp = ffffffffa0007f00
+	cpu0:    fp = 0000000000000000    ra = 0000000000000000
+	mips64emul&gt; <b>s 5</b>
+	&lt;f&gt;
+	ffffffff800300a4: 67bdfff0   daddiu  sp,sp,-16
+	ffffffff800300a8: ffbf0008   sd      ra,8(sp)    [0xffffffffa0007ef8, data=0x0000000000000000]
+	ffffffff800300ac: ffbe0000   sd      fp,0(sp)    [0xffffffffa0007ef0, data=0x0000000000000000]
+	ffffffff800300b0: 03a0f02d   daddu   fp,sp,zr
+	ffffffff800300b4: 3c040000   lui     a0,0x0
+	mips64emul&gt; <b>print fp</b>
+	fp = 0xffffffffa0007ef0
+	mips64emul&gt; <b><blink>_</blink></b>
 </pre>
 
 <p>
@@ -137,6 +163,7 @@ will repeat the 's' command. Type 'quit' to quit.
 
 <p>
 Hopefully this is enough to get you inspired. :-)
+
 
 
 

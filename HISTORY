@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.524 2005-01-26 16:59:14 debug Exp $
+$Id: HISTORY,v 1.525 2005-01-27 18:49:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1561,3 +1561,4 @@ HISTORY of mips64emul
 		intro.html, and misc.html.
 		Updating the man page and adding a skeleton section about the
 		configure files to doc/misc.html.
+20050127	Minor documentation updates.

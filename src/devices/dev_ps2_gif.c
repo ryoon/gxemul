@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.25 2005-02-21 09:37:43 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.26 2005-02-22 12:36:05 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -247,7 +247,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			 */
 
 			/*
-			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
+			fatal("[ gif write to addr 0x%x (len=%i):",
+			    (int)relative_addr, (int)len);
 			for (i=0; i<len; i++) {
 				fatal(" %02x", data[i]);
 				if ((i & 7) == 7)
@@ -259,7 +260,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 			*/
 
 			for (y=0; y<ysize; y++) {
-				int fb_addr = (xbase + (ybase+y) * d->xsize) * d->bytes_per_pixel;
+				int fb_addr = (xbase + (ybase+y) * d->xsize)
+				    * d->bytes_per_pixel;
 				int addr = (24 + y*xsize) * 4;
 				for (x=0; x<xsize; x++) {
 					/*  There are three bytes (r,g,b) at data[addr + 0] .. [addr + 2].

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.47 2005-02-22 12:05:19 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.48 2005-02-22 12:36:06 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -892,6 +892,16 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug("%s%s\tr%i,r%i,r%i", mnem,
 				    rc? "." : "", ra, rs, rb);
 			}
+			break;
+		case PPC_31_DCCCI:
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			debug("dccci\tr%i,r%i", ra, rb);
+			break;
+		case PPC_31_ICCCI:
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			debug("iccci\tr%i,r%i", ra, rb);
 			break;
 		case PPC_31_DIVWU:
 		case PPC_31_DIVWUO:
@@ -1992,6 +2002,16 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 			break;
+			break;
+
+		case PPC_31_DCCCI:
+		case PPC_31_ICCCI:
+			/*  Supervisor IBM 4xx Data Cache Congruence Class
+			    Invalidate, see www.xilinx.com/publications/
+			    xcellonline/partners/xc_pdf/xc_ibm_pwrpc42.pdf
+			    or similar  */
+			/*  ICCCI is probably Instruction... blah blah  */
+			/*  TODO  */
 			break;
 
 		case PPC_31_DIVWU:

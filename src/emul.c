@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.12 2004-02-19 10:26:05 debug Exp $
+ *  $Id: emul.c,v 1.13 2004-06-14 22:50:19 debug Exp $
  *
  *  Emulation startup.
  */
@@ -134,15 +134,29 @@ void emul(void)
 {
 	struct memory *mem;
 	int i;
-	uint64_t addr;
+	uint64_t addr, memory_amount;
 
 	srandom(time(NULL));
 
 	atexit(fix_console);
 
-	/*  Create the system's memory:  */
-	debug("adding memory: %i MB\n", physical_ram_in_mb);
-	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, (uint64_t)physical_ram_in_mb * 1048576, DEFAULT_MAX_BITS);
+	/*
+	 *  Create the system's memory:
+	 *
+	 *  A special hack is used for some SGI models,
+	 *  where memory is offset by 128MB to leave room for
+	 *  EISA space and other things.
+	 */
+	debug("adding memory: %i MB", physical_ram_in_mb);
+	memory_amount = (uint64_t)physical_ram_in_mb * 1048576;
+	if (emulation_type == EMULTYPE_SGI && (machine == 20 || machine == 22
+	    || machine == 24 || machine == 26)) {
+		debug(" (offset by 128MB, SGI hack)");
+		memory_amount += 128 * 1048576;
+	}
+	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK,
+	    memory_amount, DEFAULT_MAX_BITS);
+	debug("\n");
 
 	/*  Create CPUs:  */
 	cpus = malloc(sizeof(struct cpu *) * ncpus);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.64 2004-09-05 03:46:41 debug Exp $
+ *  $Id: emul.c,v 1.65 2004-09-05 03:49:20 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,7 +59,6 @@ char **extra_argv;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
-extern int max_random_cycles_per_chunk;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int use_x11;
@@ -752,9 +751,9 @@ void emul_start(struct emul *emul)
 	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
 	symbol_recalc_sizes();
 
-	if (max_random_cycles_per_chunk > 0)
+	if (emul->max_random_cycles_per_chunk > 0)
 		debug("using random cycle chunks (1 to %i cycles)\n",
-		    max_random_cycles_per_chunk);
+		    emul->max_random_cycles_per_chunk);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    emul->bootstrap_cpu, cpus[emul->bootstrap_cpu]->pc,

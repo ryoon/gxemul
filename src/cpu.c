@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.142 2004-09-05 03:47:45 debug Exp $
+ *  $Id: cpu.c,v 1.143 2004-09-05 03:49:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -56,7 +56,6 @@ extern int tlb_dump;
 extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
-extern int max_random_cycles_per_chunk;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
@@ -3137,7 +3136,8 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 {
 	int te;
 	int64_t max_instructions_cached = max_instructions;
-	int64_t max_random_cycles_per_chunk_cached = max_random_cycles_per_chunk;
+	int64_t max_random_cycles_per_chunk_cached =
+	    emul->max_random_cycles_per_chunk;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */

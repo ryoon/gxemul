@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.4 2004-12-14 03:43:06 debug Exp $
+ *  $Id: debugger.c,v 1.5 2004-12-14 04:19:07 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -109,6 +109,30 @@ void debugger_activate(int x)
 
 
 /****************************************************************************/
+
+
+/*
+ *  debugger_cmd_breakpoints():
+ */
+static void debugger_cmd_breakpoints(struct emul *emul, char *cmd_line)
+{
+	int i;
+
+	if (emul->n_breakpoints == 0)
+		printf("No breakpoints set.\n");
+
+	for (i=0; i<emul->n_breakpoints; i++) {
+		printf("%3i: 0x%016llx", i,
+		    (long long)emul->breakpoint_addr[i]);
+		if (emul->breakpoint_string[i] != NULL)
+			printf(" (%s)", emul->breakpoint_string[i]);
+		if (emul->breakpoint_flags[i])
+			printf(": flags=0x%x", emul->breakpoint_flags[i]);
+		printf("\n");
+	}
+
+	last_cmd_len = 0;
+}
 
 
 /*
@@ -404,7 +428,10 @@ struct cmd {
 };
 
 static struct cmd cmds[] = {
-	"continue", "",	0, debugger_cmd_continue,
+	"breakpoints", "", 0, debugger_cmd_breakpoints,
+		"show breakpoints",
+
+	"continue", "", 0, debugger_cmd_continue,
 		"continue execution",
 
 	"dump", "[addr]", 0, debugger_cmd_dump,

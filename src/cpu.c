@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.216 2004-12-14 01:56:33 debug Exp $
+ *  $Id: cpu.c,v 1.217 2004-12-14 04:19:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1332,15 +1332,15 @@ int cpu_run_instr(struct cpu *cpu)
 	if (cpu->last_was_jumptoself > 0)
 		cpu->last_was_jumptoself --;
 
-	/*  Check PC dumppoints:  */
-	for (i=0; i<cpu->emul->n_dumppoints; i++)
-		if (cached_pc == cpu->emul->dumppoint_pc[i]) {
-			cpu->emul->instruction_trace =
-			    instruction_trace_cached = 1;
-			quiet_mode = quiet_mode_cached = 0;
-			if (cpu->emul->dumppoint_flag_r[i])
-				cpu->emul->register_dump = 1;
-		}
+	/*  Check PC against breakpoints:  */
+	if (!cpu->emul->single_step)
+		for (i=0; i<cpu->emul->n_breakpoints; i++)
+			if (cached_pc == cpu->emul->breakpoint_addr[i]) {
+				fatal("Breakpoint reached, pc=0x%016llx\n",
+				    (long long)cached_pc);
+				cpu->emul->single_step = 1;
+				return 0;
+			}
 
 
 	/*  Remember where we are, in case of interrupt or exception:  */
@@ -3619,6 +3619,11 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					do {
 						instrs_run =
 						    cpu_run_instr(cpus[0]);
+						if (instrs_run == 0 &&
+						    emul->single_step) {
+							j = a_few_instrs;
+							break;
+						}
 					} while (instrs_run == 0);
 					j += instrs_run;
 					cpu0instrs += instrs_run;
@@ -3631,8 +3636,14 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					for (j=0; j<a_few_instrs2; )
 						if (cpus[i]->running) {
 							int instrs_run = 0;
-							while (!instrs_run)
+							while (!instrs_run) {
 								instrs_run = cpu_run_instr(cpus[i]);
+								if (instrs_run == 0 &&
+								    emul->single_step) {
+									j = a_few_instrs2;
+									break;
+								}
+							}
 							j += instrs_run;
 						} else
 							break;

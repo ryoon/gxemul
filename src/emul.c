@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.92 2004-12-14 02:21:21 debug Exp $
+ *  $Id: emul.c,v 1.93 2004-12-14 04:19:07 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,20 +59,20 @@ extern struct emul *debugger_emul;
 
 
 /*
- *  add_pc_dump_points():
+ *  add_dump_points():
  *
- *  Take the strings dumppoint_string[] and convert to addresses
- *  (and store them in dumppoint_pc[]).
+ *  Take the strings breakpoint_string[] and convert to addresses
+ *  (and store them in breakpoint_addr[]).
  */
-static void add_pc_dump_points(struct emul *emul)
+static void add_dump_points(struct emul *emul)
 {
 	int i;
 	int string_flag;
 	uint64_t dp;
 
-	for (i=0; i<emul->n_dumppoints; i++) {
+	for (i=0; i<emul->n_breakpoints; i++) {
 		string_flag = 0;
-		dp = strtoull(emul->dumppoint_string[i], NULL, 0);
+		dp = strtoull(emul->breakpoint_string[i], NULL, 0);
 
 		/*
 		 *  If conversion resulted in 0, then perhaps it is a
@@ -81,11 +81,11 @@ static void add_pc_dump_points(struct emul *emul)
 		if (dp == 0) {
 			uint64_t addr;
 			int res = get_symbol_addr(&emul->symbol_context,
-			    emul->dumppoint_string[i], &addr);
+			    emul->breakpoint_string[i], &addr);
 			if (!res)
 				fprintf(stderr,
-				    "WARNING! PC dumppoint '%s' could not be parsed\n",
-				    emul->dumppoint_string[i]);
+				    "WARNING! Breakpoint '%s' could not be parsed\n",
+				    emul->breakpoint_string[i]);
 			else {
 				dp = addr;
 				string_flag = 1;
@@ -99,11 +99,11 @@ static void add_pc_dump_points(struct emul *emul)
 
 		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
 			dp |= 0xffffffff00000000ULL;
-		emul->dumppoint_pc[i] = dp;
+		emul->breakpoint_addr[i] = dp;
 
-		debug("pc dumppoint %i: %016llx", i, (long long)dp);
+		debug("breakpoint %i: %016llx", i, (long long)dp);
 		if (string_flag)
-			debug(" (%s)", emul->dumppoint_string[i]);
+			debug(" (%s)", emul->breakpoint_string[i]);
 		debug("\n");
 	}
 }
@@ -400,7 +400,7 @@ void emul_start(struct emul *emul)
 	emul->cpus[emul->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
-	add_pc_dump_points(emul);
+	add_dump_points(emul);
 
 	add_symbol_name(&emul->symbol_context,
 	    0x9fff0000, 0x10000, "r2k3k_cache", 0);

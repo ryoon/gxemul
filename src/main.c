@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.135 2004-12-08 17:18:39 debug Exp $
+ *  $Id: main.c,v 1.136 2004-12-14 04:19:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -173,9 +173,7 @@ static void usage(char *progname, int longusage)
 	       "            present (for DECstation emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI emulation).\n");
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
-	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
-	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
-	printf("  -p pc     same as -P, but only enables -i, not -r\n");
+	printf("  -p pc     add a PC breakpoint\n");
 	printf("  -Q        no built-in PROM emulation  (use this for running ROM images)\n");
 	printf("  -q        quiet mode (don't print startup or debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
@@ -227,7 +225,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -330,21 +328,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			strcpy(emul->boot_string_argument, optarg);
 			using_switch_o = 1;
 			break;
-		case 'P':
 		case 'p':
-			if (emul->n_dumppoints >= MAX_PC_DUMPPOINTS) {
-				fprintf(stderr, "too many pc dumppoints\n");
+			if (emul->n_breakpoints >= MAX_BREAKPOINTS) {
+				fprintf(stderr, "too many breakpoints\n");
 				exit(1);
 			}
-			emul->dumppoint_string[emul->n_dumppoints] =
+			emul->breakpoint_string[emul->n_breakpoints] =
 			    malloc(strlen(optarg) + 1);
-			if (emul->dumppoint_string[emul->n_dumppoints] == NULL) {
+			if (emul->breakpoint_string[emul->n_breakpoints] == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(emul->dumppoint_string[emul->n_dumppoints], optarg);
-			emul->dumppoint_flag_r[emul->n_dumppoints] = (ch == 'P') ? 1 : 0;
-			emul->n_dumppoints ++;
+			strcpy(emul->breakpoint_string[emul->n_breakpoints], optarg);
+			emul->breakpoint_flags[emul->n_breakpoints] = 0;
+			emul->n_breakpoints ++;
 			break;
 		case 'Q':
 			emul->prom_emulation = 0;
@@ -369,9 +366,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 't':
 			emul->show_trace_tree = 1;
-			break;
-		case 'U':
-			emul->tlb_dump = 1;
 			break;
 		case 'u':
 			emul->userland_emul = atoi(optarg);

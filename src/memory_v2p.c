@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.7 2004-12-14 00:30:45 debug Exp $
+ *  $Id: memory_v2p.c,v 1.8 2004-12-14 04:19:07 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -245,23 +245,6 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		} else
 			use_tlb = 0;
 	}
-
-#if 0
-	if (cpu->emul->tlb_dump && !no_exceptions) {
-		int i;
-		debug("{ vaddr=%016llx ==> ? }\n", (long long)vaddr);
-		for (i=0; i<cpu->cpu_type.nr_of_tlb_entries; i++) {
-			char *symbol;
-			uint64_t offset;
-
-			symbol = get_symbol_name(&cpu->emul->symbol_context,
-			    cpu->pc_last, &offset);
-			/*  debug("pc = 0x%08llx <%s>\n", (long long)cpu->pc_last, symbol? symbol : "no symbol");  */
-			debug("tlb entry %2i: mask=%016llx hi=%016llx lo1=%016llx lo0=%016llx\n",
-				i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo1, cp0->tlbs[i].lo0);
-		}
-	}
-#endif
 
 	if (use_tlb) {
 #ifndef V2P_MMU3K

@@ -26,13 +26,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.12 2004-12-14 02:21:20 debug Exp $
+ *  $Id: emul.h,v 1.13 2004-12-14 04:19:06 debug Exp $
  */
 
 #include "misc.h"
 
 #define	CPU_NAME_MAXLEN		48
-#define	MAX_PC_DUMPPOINTS	4
+
+#define	MAX_BREAKPOINTS		8
+#define	BREAKPOINT_FLAG_R	1
 
 #include "symbol.h"
 
@@ -52,13 +54,10 @@ struct emul {
 	int	prom_emulation;
 	int	register_dump;
 
-	/*  PC Dumppoints: if the PC value ever matches one of these, we set
-		register_dump = instruction_trace = 1  */
-	int	n_dumppoints;
-	char	*dumppoint_string[MAX_PC_DUMPPOINTS];
-	uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
-	int	dumppoint_flag_r[MAX_PC_DUMPPOINTS];
-	    /*  0 for instruction trace, 1 for instr.trace + register dump  */
+	int	n_breakpoints;
+	char	*breakpoint_string[MAX_BREAKPOINTS];
+	uint64_t breakpoint_addr[MAX_BREAKPOINTS];
+	int	breakpoint_flags[MAX_BREAKPOINTS];
 
 	/*  Cache sizes: (1 << x) x=0 for default values  */
 	int	cache_picache;
@@ -93,7 +92,6 @@ struct emul {
 	int	exit_without_entering_debugger;
 
 	int	show_trace_tree;
-	int	tlb_dump;
 	int	verbose;
 
 	int	n_gfx_cards;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.83 2004-07-04 12:52:15 debug Exp $
+ *  $Id: misc.h,v 1.84 2004-07-05 13:33:00 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -300,8 +300,6 @@ struct coproc {
 /*  TODO:  Coproc registers are actually CPU dependant, so an R4000
 	has other bits/registers than an R3000...
     TODO 2: CPUs like the R10000 are probably even a bit more different.  */
-
-#include "cpuregs.h"
 
 /*  Coprocessor 0's registers:  */
 #define	COP0_NAMES	{ "INDEX", "RANDOM", "ENTRYLO0", "ENTRYLO1", \

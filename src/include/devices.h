@@ -26,14 +26,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.77 2004-07-05 01:09:06 debug Exp $
+ *  $Id: devices.h,v 1.78 2004-07-05 13:33:08 debug Exp $
  *
  *  Memory mapped devices:
  */
 
-#include <inttypes.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
+struct cpu;
+struct memory;
 struct pci_data;
 
 /* #ifdef WITH_X11

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.52 2004-02-26 15:13:32 debug Exp $
+ *  $Id: machine.c,v 1.53 2004-02-29 00:08:46 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -564,8 +564,8 @@ void machine_init(struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
@@ -606,8 +606,8 @@ void machine_init(struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
 
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
@@ -716,7 +716,7 @@ void machine_init(struct memory *mem)
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11, 0);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, XINE_INTR_SCSI +8);
 

@@ -23,13 +23,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.7 2004-02-26 15:14:21 debug Exp $
+ *  $Id: dev_scc.c,v 1.8 2004-02-29 00:08:47 debug Exp $
  *  
  *  Serial controller on some DECsystems. (Z8530 ?)
  *
+ *  NOTE:
+ *	Each scc device is responsible for two lines; the first scc device
+ *	controls mouse (0) and keyboard (1), and the second device controls
+ *	serial ports (2 and 3).
+ *
  *  TODO:
- *	All 4 lines  (0=kbd, 1=mouse, 2&3 = comm-ports?)
- *	Interrupts (both RX and TX)
+ *	Interrupts (both RX and TX)?
  *	DMA?
  *	Keyboard & mouse data as in the 'dc' device.
  */
@@ -45,54 +49,108 @@
 
 #include "sccreg.h"
 
+#define	N_SCC_PORTS	2
 #define	N_SCC_REGS	16
 #define	MAX_QUEUE_LEN	1024
+
+/*  #define SCC_DEBUG  */
 
 struct scc_data {
 	int		irq_nr;
 	int		use_fb;
+	int		scc_nr;
 
-	int		register_select_in_progress;
-	int		register_selected;
+	int		register_select_in_progress[N_SCC_PORTS];
+	int		register_selected[N_SCC_PORTS];
 
-	unsigned char	scc_register_r[N_SCC_REGS];
-	unsigned char	scc_register_w[N_SCC_REGS];
+	unsigned char	scc_register_r[N_SCC_PORTS * N_SCC_REGS];
+	unsigned char	scc_register_w[N_SCC_PORTS * N_SCC_REGS];
 
-	unsigned char	rx_queue_char[MAX_QUEUE_LEN];
-	int		cur_rx_queue_pos_write;
-	int		cur_rx_queue_pos_read;
+	unsigned char	rx_queue_char[N_SCC_PORTS * MAX_QUEUE_LEN];
+	int		cur_rx_queue_pos_write[N_SCC_PORTS];
+	int		cur_rx_queue_pos_read[N_SCC_PORTS];
 };
 
 
 /*
  *  Add a character to the receive queue.
  */
-static void add_to_rx_queue(struct scc_data *d, unsigned char ch)
+static void add_to_rx_queue(struct scc_data *d, unsigned char ch, int portnr)
 { 
-        d->rx_queue_char[d->cur_rx_queue_pos_write]   = ch; 
-        d->cur_rx_queue_pos_write ++;
-        if (d->cur_rx_queue_pos_write == MAX_QUEUE_LEN)
-                d->cur_rx_queue_pos_write = 0;
+        d->rx_queue_char[portnr * N_SCC_REGS + d->cur_rx_queue_pos_write[portnr]] = ch; 
+        d->cur_rx_queue_pos_write[portnr] ++;
+        if (d->cur_rx_queue_pos_write[portnr] == MAX_QUEUE_LEN)
+                d->cur_rx_queue_pos_write[portnr] = 0;
 
-        if (d->cur_rx_queue_pos_write == d->cur_rx_queue_pos_read)
+        if (d->cur_rx_queue_pos_write[portnr] == d->cur_rx_queue_pos_read[portnr])
                 fatal("warning: add_to_rx_queue(): rx_queue overrun!\n");
 }
 
 
-int rx_avail(struct scc_data *d)
+int rx_avail(struct scc_data *d, int portnr)
 {
-	return d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
+	return d->cur_rx_queue_pos_write[portnr] != d->cur_rx_queue_pos_read[portnr];
 }
 
 
-unsigned char rx_nextchar(struct scc_data *d)
+unsigned char rx_nextchar(struct scc_data *d, int portnr)
 {
 	unsigned char ch;
-	ch = d->rx_queue_char[d->cur_rx_queue_pos_read];
-	d->cur_rx_queue_pos_read++;
-	if (d->cur_rx_queue_pos_read == MAX_QUEUE_LEN)
-		d->cur_rx_queue_pos_read = 0;
+	ch = d->rx_queue_char[portnr * N_SCC_REGS + d->cur_rx_queue_pos_read[portnr]];
+	d->cur_rx_queue_pos_read[portnr]++;
+	if (d->cur_rx_queue_pos_read[portnr] == MAX_QUEUE_LEN)
+		d->cur_rx_queue_pos_read[portnr] = 0;
 	return ch;
+}
+
+
+/*
+ *  dev_scc_tick():
+ */
+void dev_scc_tick(struct cpu *cpu, void *extra)
+{
+	int i;
+	struct scc_data *d = (struct scc_data *) extra;
+
+	/*  Add keystrokes to the rx queue:  */
+	if (d->use_fb == 0 && d->scc_nr == 1) {
+		if (console_charavail())
+			add_to_rx_queue(d, console_readchar(), 0);
+	}
+
+	for (i=0; i<N_SCC_PORTS; i++) {
+		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_TX_EMPTY;
+		d->scc_register_r[i * N_SCC_REGS + SCC_RR1] = 0;		/*  No receive errors  */
+
+		d->scc_register_r[i * N_SCC_REGS + SCC_RR0] &= ~SCC_RR0_RX_AVAIL;
+		if (rx_avail(d, i))
+			d->scc_register_r[i * N_SCC_REGS + SCC_RR0] |= SCC_RR0_RX_AVAIL;
+
+		/*  Interrupts:  */
+		if (d->scc_register_w[i * N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE) {
+			/*  TX interrupts?  */
+			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_B)
+					cpu_interrupt(cpu, d->irq_nr);
+			}
+
+			/*  RX interrupts?  */
+			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & (SCC_WR1_RXI_FIRST_CHAR
+			    | SCC_WR1_RXI_ALL_CHAR)) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0] & SCC_RR0_RX_AVAIL) {
+					if (i == SCC_CHANNEL_A)
+						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_RX_IP_A;
+					else
+						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_RX_IP_B;
+				}
+
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_RX_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_RX_IP_B)
+					cpu_interrupt(cpu, d->irq_nr);
+			}
+		}
+	}
 }
 
 
@@ -107,72 +165,88 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	uint64_t idata = 0, odata = 0;
 	int port;
 
-	if (console_charavail())
-		add_to_rx_queue(d, console_readchar());
-
 	idata = memory_readmax64(cpu, data, len);
-
-	/*  Status register:  */
-	d->scc_register_r[SCC_RR0] |= SCC_RR0_TX_EMPTY;
-	d->scc_register_r[SCC_RR0] &= ~SCC_RR0_RX_AVAIL;
-	if (rx_avail(d))
-		d->scc_register_r[SCC_RR0] |= SCC_RR0_RX_AVAIL;
-
-	/*  No receive errors:  */
-	d->scc_register_r[SCC_RR1] = 0;
 
 	port = relative_addr / 8;
 	relative_addr &= 7;
 
+	dev_scc_tick(cpu, extra);
+
 	switch (relative_addr) {
 	case 1:		/*  command  */
 		if (writeflag==MEM_READ) {
-			odata =  d->scc_register_r[d->register_selected];
+			odata = d->scc_register_r[port * N_SCC_REGS + d->register_selected[port]];
 
-if (d->register_selected == 3)
-	d->scc_register_r[SCC_RR3] &= SCC_RR3_TX_IP_A;
+			if (d->register_selected[port] == SCC_RR3) {
+				if (port == SCC_CHANNEL_B)
+					fatal("WARNING! scc channel B has no RR3\n");
 
-			d->register_select_in_progress = 0;
-			d->register_selected = 0;
+				d->scc_register_r[port * N_SCC_REGS + SCC_RR3] = 0;
+				cpu_interrupt_ack(cpu, d->irq_nr);
+			}
+
+#ifdef SCC_DEBUG
+			fatal("[ scc: port %i, register %i, read value 0x%02x ]\n", port, d->register_selected[port], odata);
+#endif
+			d->register_select_in_progress[port] = 0;
+			d->register_selected[port] = 0;
 			/*  debug("[ scc: (port %i) read from 0x%08lx ]\n", port, (long)relative_addr);  */
 		} else {
 			/*  If no register is selected, then select one. Otherwise, write to the selected register.  */
-			if (d->register_select_in_progress == 0) {
-				d->register_select_in_progress = 1;
-				d->register_selected = idata;
-				d->register_selected &= (N_SCC_REGS-1);
+			if (d->register_select_in_progress[port] == 0) {
+				d->register_select_in_progress[port] = 1;
+				d->register_selected[port] = idata;
+				d->register_selected[port] &= (N_SCC_REGS-1);
 			} else {
-				d->scc_register_w[d->register_selected] = idata;
+				d->scc_register_w[port * N_SCC_REGS + d->register_selected[port]] = idata;
+#ifdef SCC_DEBUG
+				fatal("[ scc: port %i, register %i, write value 0x%02x ]\n", port, d->register_selected[port], idata);
+#endif
 
-				d->scc_register_r[SCC_RR12] = d->scc_register_w[SCC_WR12];
-				d->scc_register_r[SCC_RR13] = d->scc_register_w[SCC_WR13];
+				d->scc_register_r[port * N_SCC_REGS + SCC_RR12] = d->scc_register_w[port * N_SCC_REGS + SCC_WR12];
+				d->scc_register_r[port * N_SCC_REGS + SCC_RR13] = d->scc_register_w[port * N_SCC_REGS + SCC_WR13];
 
-				d->register_select_in_progress = 0;
-				d->register_selected = 0;
+				d->register_select_in_progress[port] = 0;
+				d->register_selected[port] = 0;
 			}
-			/*  debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);  */
 		}
 		break;
 	case 5:		/*  data  */
 		if (writeflag==MEM_READ) {
-			if (rx_avail(d))
-				odata = rx_nextchar(d);
+			if (rx_avail(d, port))
+				odata = rx_nextchar(d, port);
+
+			/*  TODO:  perhaps only clear the RX part of RR3?  */
+			d->scc_register_r[N_SCC_REGS + SCC_RR3] = 0;
+			cpu_interrupt_ack(cpu, d->irq_nr);
+
 			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n", port, (long)relative_addr, odata);
 		} else {
 			/*  debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);  */
+
 			/*  Send the character:  */
-			console_putchar(idata);
+			switch (d->scc_nr * 2 + port) {
+			case 2:	/*  2 is a comm port  */
+				console_putchar(idata);
+				break;
+			default:
+				fatal("[ scc: output to scc_nr %i port %i: 0x%02x ]\n", d->scc_nr, port, idata);
+			}
 
 			/*  Loopback:  */
-			if (d->scc_register_w[d->register_selected] & SCC_WR14_LOCAL_LOOPB)
-				add_to_rx_queue(d, idata);
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14] & SCC_WR14_LOCAL_LOOPB)
+				add_to_rx_queue(d, idata, port);
 
 			/*  TX interrupt:  */
-/*			if (d->scc_register_w[SCC_WR1] & SCC_WR1_TX_IE) {
-				d->scc_register_r[SCC_RR3] |= SCC_RR3_TX_IP_A;
-				cpu_interrupt(cpu, d->irq_nr);
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE &&
+			    d->scc_register_w[port * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
+				if (port == SCC_CHANNEL_A)
+					d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_TX_IP_A;
+				else
+					d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_TX_IP_B;
 			}
-*/
+
+			dev_scc_tick(cpu, extra);
 		}
 		break;
 	default:
@@ -192,8 +266,11 @@ if (d->register_selected == 3)
 
 /*
  *  dev_scc_init():
+ *
+ *	use_fb = non-zero when using graphical console + keyboard
+ *	scc_nr = 0 or 1
  */
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb)
+void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr)
 {
 	struct scc_data *d;
 
@@ -204,8 +281,10 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	}
 	memset(d, 0, sizeof(struct scc_data));
 	d->irq_nr = irq_nr;
+	d->scc_nr = scc_nr;
 	d->use_fb = use_fb;
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH, dev_scc_access, d);
+	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);	/*  every 1024:th cycle  */
 }
 

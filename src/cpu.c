@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.84 2004-07-03 20:06:18 debug Exp $
+ *  $Id: cpu.c,v 1.85 2004-07-03 20:09:55 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -940,20 +940,32 @@ int cpu_run_instr(struct cpu *cpu)
 
 			/*
 			 *  Check for NOP:
-			 *  The R4000 manual says that a shift amount of zero is treated
-			 *  as a nop by some assemblers.  Checking for sa == 0 here would
-			 *  not be correct, though, because instructions such as
-			 *  sll r3,r4,0 are possible, and are definitely not a nop.
+			 *
+			 *  The R4000 manual says that a shift amount of zero
+			 *  is treated as a nop by some assemblers. Checking
+			 *  for sa == 0 here would not be correct, though,
+			 *  because instructions such as sll r3,r4,0 are
+			 *  possible, and are definitely not a nop.
 			 *  Instead, check if the destination register is r0.
+			 *
+			 *  TODO:  ssnop should wait until the _next_
+			 *  cycle boundary, or something like that. The
+			 *  code here is incorrect.
 			 */
 			if (rd == 0 && special6 == SPECIAL_SLL) {
 				if (instruction_trace) {
 					if (sa == 0)
 						debug("nop\n");
-					else if (sa == 1)
+					else if (sa == 1) {
 						debug("ssnop\n");
-					else
-						debug("nop (weird, sa=%i)\n", sa);
+#ifdef ENABLE_INSTRUCTION_DELAYS
+						cpu->instruction_delay +=
+						    cpu->cpu_type.
+						    instrs_per_cycle - 1;
+#endif
+					} else
+						debug("nop (weird, sa=%i)\n",
+						    sa);
 				}
 				break;
 			} else

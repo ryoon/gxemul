@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.13 2004-01-08 07:33:57 debug Exp $
+ *  $Id: main.c,v 1.14 2004-01-09 12:34:40 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -73,6 +73,7 @@ int max_instructions = 0;
 int emulated_ips = 0;
 int show_opcode_statistics = 0;
 int speed_tricks = 1;
+int prom_emulation = 1;
 
 int bootstrap_cpu;
 int use_random_bootstrap_cpu = 0;
@@ -178,6 +179,7 @@ void usage(char *progname)
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");
+	printf("  -Q        no PROM emulation\n");
 	printf("  -q        quiet mode (don't print debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
 	printf("  -r        register dumps before every instruction\n");
@@ -208,7 +210,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:qRrSsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -276,6 +278,9 @@ int get_cmd_args(int argc, char *argv[])
 			}
 			dumppoint_flag_r[n_dumppoints] = (ch == 'P') ? 1 : 0;
 			dumppoint_pc[n_dumppoints++] = new_pc_dumppoint;
+			break;
+		case 'Q':
+			prom_emulation = 0;
 			break;
 		case 'q':
 			quiet_mode = 1;
@@ -374,7 +379,8 @@ int get_cmd_args(int argc, char *argv[])
 		printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
 		printf("where syms is the text produced my running 'nm' (or 'nm -S') on a binary.\n");
 		printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
-		printf("for example:    0xbfc00000:romimage.bin\n");
+		printf("or \"address:skiplen\".\n");
+		printf("Example:    0xbfc00000:romimage.bin\n");
 		exit(1);
 	}
 

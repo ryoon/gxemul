@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.6 2004-04-06 09:11:33 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.7 2004-06-07 10:33:55 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -69,6 +69,39 @@ int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 		} else {
 			debug("[ sgi_ip22_memctl: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
 		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  dev_sgi_ip22_sysid_access():
+ *
+ *  Returns 1 if ok, 0 on error.
+ */
+int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+{
+	uint64_t idata = 0, odata = 0;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	if (writeflag == MEM_WRITE) {
+		debug("[ sgi_ip22_sysid: write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+	} else {
+		debug("[ sgi_ip22_sysid: read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+		/*
+		 *  According to NetBSD's sgimips/ip22.c:
+		 *        printf("IOC rev %d, machine %s, board rev %d\n", (sysid >> 5) & 0x07,
+		 *                        (sysid & 1) ? "Indigo2 (Fullhouse)" : "Indy (Guiness)",
+		 *                        (sysid >> 1) & 0x0f);
+		 */
+
+		/*  IOC rev 1, Guiness, board rev 3:  */
+		odata = (1 << 5) + (3 << 1) + 0;
 	}
 
 	if (writeflag == MEM_READ)
@@ -138,6 +171,8 @@ void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 
 	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH, dev_sgi_ip22_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
+
+	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8, dev_sgi_ip22_sysid_access, (void *)d);
 
 	memory_device_register(mem, "sgi_ip22_memctl", 0x1fa00000, 0x1000, dev_sgi_ip22_memctl_access, (void *)d);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.34 2004-06-13 10:31:52 debug Exp $
+ *  $Id: memory.c,v 1.35 2004-06-14 22:50:59 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -49,6 +49,9 @@ extern int userland_emul;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
+
+
+#define USE_TINY_CACHE
 
 
 /*
@@ -276,6 +279,29 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 
 	if (cpu == NULL)
 		return 1;
+
+#ifdef USE_TINY_CACHE
+	/*
+	 *  Check the tiny translation cache first:
+	 *
+	 *  (Only userland addresses are checked, because other addresses
+	 *  are probably better of being statically translated, or through
+	 *  the TLB.)
+	 */
+	if ((cpu->pc & 0x80000000) == 0) {
+		int wf = 1 + (writeflag == MEM_WRITE);
+		int i;
+		uint64_t vaddr_shift_12 = vaddr >> 12;
+
+		for (i=0; i<N_TRANSLATION_CACHE; i++) {
+			if (cpu->translation_cached[i] >= wf &&
+			    vaddr_shift_12 == (cpu->translation_cached_vaddr_pfn[i])) {
+				*return_addr = cpu->translation_cached_paddr[i] | (vaddr & 0xfff);
+				return 1;
+			}
+		}
+	}
+#endif
 
 	if (userland_emul) {
 		*return_addr = vaddr & 0x7fffffff;
@@ -524,6 +550,14 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 #ifdef LAST_USED_TLB_EXPERIMENT
 						cp0->tlbs[i].last_used = cp0->reg[COP0_COUNT];
 #endif
+
+#ifdef USE_TINY_CACHE
+						/*  Enter into the tiny translation cache:  */
+						cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
+						cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
+						cpu->translation_cached_paddr[cpu->translation_cached_i] = (*return_addr) & ~0xfff;
+						cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
+#endif
 						return 1;
 					} else {
 						/*  TLB modification exception  */
@@ -727,46 +761,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;
-		ok = 1;
 	} else {
-		ok = 0;
-		if (cpu != NULL && cpu->cpu_type.mmu_model == MMU3K) {
-			int wf = 1 + (writeflag == MEM_WRITE);
-
-			for (i=0; i<N_TRANSLATION_CACHE; i++) {
-				if (cpu->translation_cached[i] >= wf &&
-				    (vaddr >> 12) == (cpu->translation_cached_vaddr_pfn[i])) {
-					paddr = cpu->translation_cached_paddr[i] | (vaddr & 0xfff);
-					ok = 1;
-					break;
-				}
-			}
-		}
-
-		if (!ok) {
-			ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
-			/*  If the translation caused an exception, or was invalid in some way,
-				we simply return without doing the memory access:  */
-			if (!ok)
-				return MEMORY_ACCESS_FAILED;
-
-			if (cpu != NULL && cpu->cpu_type.mmu_model == MMU3K) {
-				/*  Enter into the cache:  */
-				cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
-				cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
-				cpu->translation_cached_paddr[cpu->translation_cached_i] = paddr & ~0xfff;
-				cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
-			}
-		}
+		ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
+		/*  If the translation caused an exception, or was invalid in some way,
+			we simply return without doing the memory access:  */
+		if (!ok)
+			return MEMORY_ACCESS_FAILED;
 	}
-
-#if 0
-	/*  IRIX experiments  */
-	if (vaddr == 0xffffffffffffc488 || (paddr & 0xfffffff00)==0x13d0400)
-		printf("vaddr==0xffffffffffffc488 paddr=%016llx pc=%016llx writeflag=%i data=%016llx\n",
-			(long long)paddr, (long long)cpu->pc,
-			writeflag, (long long) *(long long *)data);
-#endif
 
 
 	/*
@@ -922,19 +923,23 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 				char *symbol;
 				int offset;
 
-				debug("[ memory_rw(): writeflag=%i ", writeflag);
-				if (writeflag) {
-					debug("data={", writeflag);
-					for (i=0; i<len; i++)
-						debug("%s%02x", i?",":"", data[i]);
-					debug("}");
+				if (!quiet_mode) {
+					debug("[ memory_rw(): writeflag=%i ", writeflag);
+					if (writeflag) {
+						debug("data={", writeflag);
+						for (i=0; i<len; i++)
+							debug("%s%02x", i?",":"", data[i]);
+						debug("}");
+					}
+					symbol = get_symbol_name(cpu->pc_last, &offset);
+					debug(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
+					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
-				symbol = get_symbol_name(cpu->pc_last, &offset);
-				debug(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
-				    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 
-				if (trace_on_bad_address)
+				if (trace_on_bad_address) {
 					instruction_trace = register_dump = 1;
+					quiet_mode = 0;
+				}
 			}
 
 			if (writeflag == MEM_READ) {

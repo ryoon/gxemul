@@ -23,7 +23,7 @@ install:
 	@echo "the mips64emul binary manually to where you want it to reside."
 
 clean:
-	rm -f $(BIN) *core
+	rm -f $(BIN) *core core.*
 	cd src; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 

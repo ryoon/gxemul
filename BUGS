@@ -1,5 +1,8 @@
 Please report any bugs you find to me.  Here is a list of KNOWN bugs:
 
+
+Serious bugs:
+
   o)  PMAG-BA / BT459 issues (for example when running DECstation "-D2 -X"
       emulation):
 
@@ -10,4 +13,13 @@ Please report any bugs you find to me.  Here is a list of KNOWN bugs:
 
         x)  The mouse pointer is a rectangular shape with no transparency, so
 	    it looks a bit funny.
+
+
+Less serious bugs / issues:
+
+  o)  the ssnop instruction doesn't align on a cycle boundary
+
+  o)  hardware device ticks are done at cycle specific intervals, not
+      instruction intervals, so sometimes a fraction of a cycle can be
+      "lost".
 

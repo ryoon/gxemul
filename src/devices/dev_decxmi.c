@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_decxmi.c,v 1.3 2004-03-22 00:55:54 debug Exp $
+ *  $Id: dev_decxmi.c,v 1.4 2004-06-11 15:23:37 debug Exp $
  *  
  *  DEC 5800 XMI (this has to do with SMP...)
  *
@@ -63,13 +63,20 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 	node_nr = relative_addr / XMI_NODESIZE;
 	relative_addr &= (XMI_NODESIZE - 1);
 
-	if (node_nr >= ncpus || node_nr > NNODEXMI)
+	if (node_nr >= ncpus+1 || node_nr >= NNODEXMI)
 		return 0;
 
 	switch (relative_addr) {
 	case XMI_TYPE:
 		if (writeflag == MEM_READ) {
+			/*
+			 *  The first node is an XMI->BI adapter node, and then
+			 *  there are n CPU nodes.
+			 */
 			odata = XMIDT_ISIS;
+			if (node_nr == 0)
+				odata = XMIDT_DWMBA;
+
 			debug("[ decxmi: (node %i) read from XMI_TYPE: 0x%08x ]\n", node_nr, odata);
 		} else
 			debug("[ decxmi: (node %i) write to XMI_TYPE: 0x%08x ]\n", node_nr, idata);

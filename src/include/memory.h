@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.5 2004-05-11 16:23:44 debug Exp $
+ *  $Id: memory.h,v 1.6 2004-05-24 17:58:11 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -46,7 +46,7 @@ struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_
 int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length);
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
 
-unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr);
+unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr, uint64_t *paddr_ret);
 
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
 #define	MEMORY_ACCESS_FAILED	0

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.50 2004-05-11 16:23:44 debug Exp $
+ *  $Id: misc.h,v 1.51 2004-05-24 17:58:11 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -194,7 +194,10 @@ struct cpu_type_def {
 #define	MAX_PC_DUMPPOINTS	16
 #define	MAX_DEVICES		22
 
-#define	BINTRANS_CACHEENTRIES	16
+#define	BINTRANS_CACHEENTRIES	64
+
+/*  lowest 5 bits are register number, bit 6 and up can be used as flags:  */
+#define	MEMREGISTERHINT_WRITE	32
 
 struct cpu;
 
@@ -231,6 +234,7 @@ struct memory {
 	void		*bintrans_codechunk[BINTRANS_CACHEENTRIES];
 	size_t		bintrans_codechunk_len[BINTRANS_CACHEENTRIES];
 	size_t		bintrans_codechunk_time[BINTRANS_CACHEENTRIES];	/*  time for most recent use  */
+	int		bintrans_codechunk_ninstr[BINTRANS_CACHEENTRIES];
 	int		bintrans_codechunk_memregisterhint[BINTRANS_CACHEENTRIES];
 };
 
@@ -536,16 +540,15 @@ struct cpu {
 	 */
 	uint64_t	gpr_quadhi[NGPRS];
 
-	/*  translation_cached must be set to 0 every time the TLB is written to  */
+	/*
+	 *  The translation_cached stuff is used to speed up the
+	 *  most recent lookups into the TLB.  Whenever the TLB is
+	 *  written to, translation_cached[] must be filled with zeros.
+	 */
 	int		translation_cached_i;
 	int		translation_cached[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
-
-	long		stats_opcode[N_HI6];
-	long		stats__special[N_SPECIAL];
-	long		stats__regimm[N_REGIMM];
-	long		stats__special2[N_SPECIAL];
 
 	struct memory	*mem;
 
@@ -555,10 +558,22 @@ struct cpu {
 	int		cache_valid[2];
 	uint64_t	last_cached_address[2];
 
+	/*
+	 *  Hardware devices, run every x clock ticks/instructions.
+	 */
 	int		n_tick_entries;
-	int		tick_shift[MAX_TICK_FUNCTIONS];
+	int		ticks_till_next[MAX_TICK_FUNCTIONS];
+	int		ticks_reset_value[MAX_TICK_FUNCTIONS];
 	void		(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void		*tick_extra[MAX_TICK_FUNCTIONS];
+
+	/*
+	 *  Statistics:
+	 */
+	long		stats_opcode[N_HI6];
+	long		stats__special[N_SPECIAL];
+	long		stats__regimm[N_REGIMM];
+	long		stats__special2[N_SPECIAL];
 };
 
 #define	CACHE_DATA			0

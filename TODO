@@ -2,6 +2,12 @@ mips64emul TODO
 ---------------
 
 	Binary translation:  src/bintrans.c
+		o)  invalidate pages written to
+		o)  invalidate "parent" cache entries
+		o)  jump to other cache entry
+		o)  Interrupts, exact not shifted
+		o)  Nr of instructions executed
+		o)  add i386 host support
 
 	Userland ABI emulation: src/useremul.c
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.53 2004-05-11 02:13:11 debug Exp $
+ *  $Id: cpu.c,v 1.54 2004-05-24 17:58:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -156,9 +156,10 @@ void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *), v
 		exit(1);
 	}
 
-	cpu->tick_shift[n] = clockshift;
-	cpu->tick_func[n]  = func;
-	cpu->tick_extra[n] = extra;
+	cpu->ticks_till_next[n]   = 0;
+	cpu->ticks_reset_value[n] = 1 << clockshift;
+	cpu->tick_func[n]         = func;
+	cpu->tick_extra[n]        = extra;
 
 	cpu->n_tick_entries ++;
 }
@@ -511,8 +512,12 @@ const char *cpu_flags(struct cpu *cpu)
 /*
  *  cpu_run_instr():
  *
- *  Execute one instruction on a cpu.  If we are in a delay slot, set cpu->pc
+ *  Execute one instruction on a cpu.
+ *
+ *  If we are in a delay slot, set cpu->pc
  *  to cpu->delay_jmpaddr after the instruction is executed.
+ *
+ *  Return value is the number of instructions executed.
  */
 int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 {
@@ -772,12 +777,13 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 				result = bintrans_try_to_run(cpu, cpu->mem, paddr, chunk_nr);
 
-				if (result) {
+				if (result >= 0) {
 					if (instruction_trace)
 						printf("\n");
+
 					/*  TODO: misc stuff?  */
 
-					return 0;
+					return result;
 				} else {
 					if (instruction_trace)
 						printf(" (failed)\n");
@@ -826,9 +832,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
 		cp0->reg[COP0_COUNT] ++;
 	} else {
-		/*  TODO: &1 ==> double count blah blah  */
-		if ((*instrcount) & 1)
-			cp0->reg[COP0_COUNT] ++;
+		/*  TODO: double count blah blah  */
+		cp0->reg[COP0_COUNT] ++;
 
 		cp0->reg[COP0_RANDOM] --;
 		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
@@ -845,7 +850,9 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		cpu->nullify_next = 0;
 		if (instruction_trace)
 			debug("(nullified)\n");
-		return 0;
+
+		/*  Note: Return value is 1, even if no instruction was actually executed.  */
+		return 1;
 	}
 
 
@@ -1098,7 +1105,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (cpu->delay_slot) {
 				fatal("jr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
-				return 0;
+				return 1;
 			}
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
@@ -1131,7 +1138,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (cpu->delay_slot) {
 				fatal("jalr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
-				return 0;
+				return 1;
 			}
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
@@ -1507,7 +1514,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 			fatal("unimplemented special6 = 0x%02x\n", special6);
 			cpu->running = 0;
-			return 0;
+			return 1;
 		}
 		break;
 	case HI6_BEQ:
@@ -1701,6 +1708,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			 *
 			 *  TODO:  This should be generalized, and OPTIONAL as it
 			 *  makes the emulation less correct.
+			 *
+			 *  TODO:  increaste the count register, and cause interrupts!!!
 			 */
 			if (speed_tricks && cpu->delay_slot && cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt && cpu->jump_to_self_reg == rs) {
@@ -1708,13 +1717,11 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 					if (instruction_trace)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
-					(*instrcount) += cpu->gpr[rt] * 2;
-
-					/*  TODO:  increaste the count register, and cause interrupts!!!  */
-
 					cpu->gpr[rt] = 0;
 					if (instruction_trace)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
+
+					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
 				if ((int64_t)cpu->gpr[rt] < -5 && imm == 1) {
 					if (instruction_trace)
@@ -1722,6 +1729,8 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 					cpu->gpr[rt] = 0;
 					if (instruction_trace)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
+
+					/*  TODO: return value, -cpu->gpr[rt]*2;  */
 				}
 			}
 
@@ -1745,7 +1754,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (cpu->delay_slot) {
 				fatal("b*: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
-				return 0;
+				return 1;
 			}
 			likely = 0;
 			switch (hi6) {
@@ -2150,10 +2159,10 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 					/*  Load and store one byte:  */
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
 					if (!ok)
-						return 0;
+						return 1;
 					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
 					if (!ok)
-						return 0;
+						return 1;
 				}
 			}
 
@@ -2185,7 +2194,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 				/*  Return immediately if exception.  */
 				if (!ok)
-					return 0;
+					return 1;
 
 				reg_ofs += reg_dir;
 			}
@@ -2288,7 +2297,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 			fatal("unimplemented regimm5 = 0x%02x\n", regimm5);
 			cpu->running = 0;
-			return 0;
+			return 1;
 		}
 		break;
 	case HI6_J:
@@ -2296,7 +2305,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		if (cpu->delay_slot) {
 			fatal("j/jal: jump inside a jump's delay slot, or similar. TODO\n");
 			cpu->running = 0;
-			return 0;
+			return 1;
 		}
 		imm = ((instr[3] & 3) << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
 		imm <<= 2;
@@ -2529,7 +2538,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			fatal("unimplemented special_2 = 0x%02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
 			    special6, rs, rt, rd);
 			cpu->running = 0;
-			return 0;
+			return 1;
 		}
 		break;
 	default:
@@ -2540,12 +2549,13 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		}
 		fatal("unimplemented hi6 = 0x%02x\n", hi6);
 		cpu->running = 0;
-		return 0;
+		return 1;
 	}
 
 	/*  Don't put any code here, after the switch statement!  */
 
-	return 0;
+	/*  One instruction executed.  */
+	return 1;
 }
 
 
@@ -2594,11 +2604,10 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
  */
 int cpu_run(struct cpu **cpus, int ncpus)
 {
-	int i, s1, s2;
+	int i, s1, s2, te;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
-	int dcount;
-	int running;
+	int running, cpu0instrs;
 	struct rusage rusage;
 	struct timeval starttime;
 
@@ -2612,26 +2621,41 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		/*  Do a chunk of cycles:  */
 		do {
 			running = 0;
-
-			/*  Hardware 'ticks':  (clocks, interrupt sources...)  */
-			/*  TODO: not cpus[0], use some kind of "mainbus" instead  */
-			dcount = cpus[0]->cpu_type.flags & DCOUNT? 1 : 0;
-			for (i=0; i<cpus[0]->n_tick_entries; i++)
-				if ((ncycles & ((1 << (cpus[0]->tick_shift[i] + dcount))-1)) == 0)
-					cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
+			cpu0instrs = 0;
 
 			/*  Run instructions from each CPU:  */
 			for (i=0; i<ncpus; i++)
 				if (cpus[i]->running) {
-					cpu_run_instr(cpus[i], &ncycles);
+					int x = cpu_run_instr(cpus[i], &ncycles);
+					if (i==0)
+						cpu0instrs = x;
 					running = 1;
 				}
-			ncycles++;
+
+			if (cpu0instrs < 1)
+				cpu0instrs = 1;
+
+			/*
+			 *  Hardware 'ticks':  (clocks, interrupt sources...)
+			 *
+			 *  TODO: not cpus[0], use some kind of "mainbus" instead.
+			 *  TODO 2: take doublecount into account,
+			 *	dcount = cpus[0]->cpu_type.flags & DCOUNT? 1 : 0;
+			 */
+			for (te=0; te<cpus[0]->n_tick_entries; te++) {
+				cpus[0]->ticks_till_next[te] -= cpu0instrs;
+				if (cpus[0]->ticks_till_next[te] <= 0) {
+					cpus[0]->ticks_till_next[te] = cpus[0]->ticks_reset_value[te];
+					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
+				}
+			}
+
+			ncycles += cpu0instrs;
 		} while (running && (ncycles < ncycles_chunk_end));
 
 		/*  Check for X11 events:  */
 		if (use_x11) {
-			if (ncycles > ncycles_flushx11 + (1<<16)) {
+			if (ncycles > ncycles_flushx11 + (1<<17)) {
 				x11_check_event();
 				ncycles_flushx11 = ncycles;
 			}

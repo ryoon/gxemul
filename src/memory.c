@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.27 2004-05-11 16:23:46 debug Exp $
+ *  $Id: memory.c,v 1.28 2004-05-24 17:58:13 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -579,7 +579,7 @@ exception:
  *  the host's page, without having to care about whether it was writeable
  *  or not.
  */
-unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr)
+unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr, uint64_t *paddr_ret)
 {
 	int res;
 	uint64_t paddr;
@@ -628,6 +628,8 @@ unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr)
 
 	/*  printf("###  vaddr=%016llx paddr=%016llx hostaddr=%p\n",
 	    (long long)vaddr, (long long)paddr, memblock+offset);  */
+
+	*paddr_ret = paddr;
 
 	return memblock + offset;
 }

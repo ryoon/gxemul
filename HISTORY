@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.75 2004-05-11 16:23:12 debug Exp $
+$Id: HISTORY,v 1.76 2004-05-24 17:58:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -495,3 +495,4 @@ HISTORY of mips64emul
 20040508	Fixing cursor positioning for PMAG-BA.
 20040511	Prints current nr of instructions per seconds, not only
 		average, when using -N.
+20040515	Some more bintrans experiments.

@@ -336,5 +336,5 @@ HISTORY of mips64emul
 		work on Alpha, not on 32-bit machines.  It was a shift left,
 		probably done using 6 bits on alpha, 5 bits on 32-bit machines.
 20040223	Some minimal DEC KN5800 progress; Ultrix prints some boot
-		messages, detect 16 XMI R3000 cpus, and get a NULL panic.
+		messages, detects 16 XMI R3000 cpus, and get a NULL panic.
 		Still, better than nothing :-)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.38 2005-02-15 09:10:15 debug Exp $
+ *  $Id: useremul.c,v 1.39 2005-02-18 07:04:10 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -177,7 +177,8 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 			cur_argv += strlen(host_argv[i]) + 1;
 		}
 
-		/*  Store a NULL value between the args and the environment strings:  */
+		/*  Store a NULL value between the args and the environment
+		    strings:  */
 		store_32bit_word(cpu, stack_top - stack_margin +
 		    4 + i*sizeof(uint32_t), 0);  i++;
 
@@ -608,8 +609,10 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 		store_string(cpu, mipsbuf + 52, "ffs");	/*  f_typename  */
 #define MFSNAMELEN 16
 #define	MNAMELEN 90
-		store_string(cpu, mipsbuf + 52 + MFSNAMELEN, "/");	/*  f_mntonname  */
-		store_string(cpu, mipsbuf + 52 + MFSNAMELEN + MNAMELEN, "ffs");	/*  f_mntfromname  */
+		store_string(cpu, mipsbuf + 52 + MFSNAMELEN, "/");
+			/*  f_mntonname  */
+		store_string(cpu, mipsbuf + 52 + MFSNAMELEN + MNAMELEN, "ffs");
+			/*  f_mntfromname  */
 #endif
 		break;
 

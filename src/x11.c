@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.54 2005-02-13 11:23:33 debug Exp $
+ *  $Id: x11.c,v 1.55 2005-02-18 07:04:10 debug Exp $
  *
  *  X11-related functions.
  */
@@ -106,16 +106,22 @@ void x11_redraw_cursor(struct machine *m, int i)
 			return;
 		}
 
-		for (y=0; y<m->fb_windows[i]->cursor_ysize; y+=m->fb_windows[i]->scaledown)
-			for (x=0; x<m->fb_windows[i]->cursor_xsize; x+=m->fb_windows[i]->scaledown) {
+		for (y=0; y<m->fb_windows[i]->cursor_ysize;
+		    y+=m->fb_windows[i]->scaledown)
+			for (x=0; x<m->fb_windows[i]->cursor_xsize;
+			    x+=m->fb_windows[i]->scaledown) {
 				int px = x/m->fb_windows[i]->scaledown;
 				int py = y/m->fb_windows[i]->scaledown;
 				int p = 0, n = 0, c = 0;
 				unsigned long oldcol;
 
-				for (suby=0; suby<m->fb_windows[i]->scaledown; suby++)
-					for (subx=0; subx<m->fb_windows[i]->scaledown; subx++) {
-						c = m->fb_windows[i]->cursor_pixels[y+suby][x+subx];
+				for (suby=0; suby<m->fb_windows[i]->scaledown;
+				    suby++)
+					for (subx=0; subx<m->fb_windows[i]->
+					    scaledown; subx++) {
+						c = m->fb_windows[i]->
+						    cursor_pixels[y+suby]
+						    [x+subx];
 						if (c >= 0) {
 							p += c;
 							n++;
@@ -141,15 +147,16 @@ void x11_redraw_cursor(struct machine *m, int i)
 					if (oldcol != m->fb_windows[i]->
 					    x11_graycolor[N_GRAYCOLORS-1].pixel)
 						oldcol = m->fb_windows[i]->
-						    x11_graycolor[N_GRAYCOLORS-1].pixel;
+						    x11_graycolor[N_GRAYCOLORS
+						    -1].pixel;
 					else
 						oldcol = m->fb_windows[i]->
 						    x11_graycolor[0].pixel;
 					XPutPixel(xtmp, px, py, oldcol);
 					break;
 				default:	/*  Normal grayscale:  */
-					XPutPixel(xtmp, px, py, m->fb_windows[i]->
-					    x11_graycolor[p].pixel);
+					XPutPixel(xtmp, px, py, m->fb_windows[
+					    i]->x11_graycolor[p].pixel);
 				}
 			}
 
@@ -167,8 +174,10 @@ void x11_redraw_cursor(struct machine *m, int i)
 		m->fb_windows[i]->OLD_cursor_on = m->fb_windows[i]->cursor_on;
 		m->fb_windows[i]->OLD_cursor_x = m->fb_windows[i]->cursor_x;
 		m->fb_windows[i]->OLD_cursor_y = m->fb_windows[i]->cursor_y;
-		m->fb_windows[i]->OLD_cursor_xsize = m->fb_windows[i]->cursor_xsize;
-		m->fb_windows[i]->OLD_cursor_ysize = m->fb_windows[i]->cursor_ysize;
+		m->fb_windows[i]->OLD_cursor_xsize =
+		    m->fb_windows[i]->cursor_xsize;
+		m->fb_windows[i]->OLD_cursor_ysize =
+		    m->fb_windows[i]->cursor_ysize;
 		XFlush(m->fb_windows[i]->x11_display);
 	}
 
@@ -176,9 +185,11 @@ void x11_redraw_cursor(struct machine *m, int i)
 
 	if (m->fb_windows[i]->host_cursor != 0 && n_colors_used < 2) {
 		/*  Remove the old X11 host cursor:  */
-		XUndefineCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window);
+		XUndefineCursor(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_window);
 		XFlush(m->fb_windows[i]->x11_display);
-		XFreeCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor);
+		XFreeCursor(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->host_cursor);
 		m->fb_windows[i]->host_cursor = 0;
 	}
 
@@ -186,16 +197,22 @@ void x11_redraw_cursor(struct machine *m, int i)
 		GC tmpgc;
 
 		/*  Create a new X11 host cursor:  */
-		/*  cursor = XCreateFontCursor(m->fb_windows[i]->x11_display, XC_coffee_mug);  :-)  */
+		/*  cursor = XCreateFontCursor(m->fb_windows[i]->x11_display,
+		    XC_coffee_mug);  :-)  */
 		if (m->fb_windows[i]->host_cursor_pixmap != 0) {
-			XFreePixmap(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor_pixmap);
+			XFreePixmap(m->fb_windows[i]->x11_display,
+			    m->fb_windows[i]->host_cursor_pixmap);
 			m->fb_windows[i]->host_cursor_pixmap = 0;
 		}
-		m->fb_windows[i]->host_cursor_pixmap = XCreatePixmap(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window, 1, 1, 1);
-		XSetForeground(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_gc,
+		m->fb_windows[i]->host_cursor_pixmap =
+		    XCreatePixmap(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_window, 1, 1, 1);
+		XSetForeground(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->x11_fb_gc,
 		    m->fb_windows[i]->x11_graycolor[0].pixel);
 
-		tmpgc = XCreateGC(m->fb_windows[i]->x11_display, m->fb_windows[i]->host_cursor_pixmap, 0,0);
+		tmpgc = XCreateGC(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->host_cursor_pixmap, 0,0);
 
 		XDrawPoint(m->fb_windows[i]->x11_display,
 		    m->fb_windows[i]->host_cursor_pixmap,
@@ -203,13 +220,16 @@ void x11_redraw_cursor(struct machine *m, int i)
 
 		XFreeGC(m->fb_windows[i]->x11_display, tmpgc);
 
-		m->fb_windows[i]->host_cursor = XCreatePixmapCursor(m->fb_windows[i]->x11_display,
-		    m->fb_windows[i]->host_cursor_pixmap, m->fb_windows[i]->host_cursor_pixmap,
+		m->fb_windows[i]->host_cursor =
+		    XCreatePixmapCursor(m->fb_windows[i]->x11_display,
+		    m->fb_windows[i]->host_cursor_pixmap,
+		    m->fb_windows[i]->host_cursor_pixmap,
 		    &m->fb_windows[i]->x11_graycolor[N_GRAYCOLORS-1],
 		    &m->fb_windows[i]->x11_graycolor[N_GRAYCOLORS-1],
 		    0, 0);
 		if (m->fb_windows[i]->host_cursor != 0) {
-			XDefineCursor(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window,
+			XDefineCursor(m->fb_windows[i]->x11_display,
+			    m->fb_windows[i]->x11_fb_window,
 			    m->fb_windows[i]->host_cursor);
 			XFlush(m->fb_windows[i]->x11_display);
 		}
@@ -271,7 +291,8 @@ void x11_putimage_fb(struct machine *m, int i)
 	    m->fb_windows[i]->x11_fb_winxsize <= 0)
 		return;
 
-	XPutImage(m->fb_windows[i]->x11_display, m->fb_windows[i]->x11_fb_window,
+	XPutImage(m->fb_windows[i]->x11_display,
+	    m->fb_windows[i]->x11_fb_window,
 	    m->fb_windows[i]->x11_fb_gc, m->fb_windows[i]->fb_ximage, 0,0, 0,0,
 	    m->fb_windows[i]->x11_fb_winxsize,
 	    m->fb_windows[i]->x11_fb_winysize);
@@ -369,10 +390,12 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	    m->fb_windows[fb_number]->x11_screen_depth != 15 &&
 	    m->fb_windows[fb_number]->x11_screen_depth != 16 &&
 	    m->fb_windows[fb_number]->x11_screen_depth != 24) {
-		fatal("\n***\n***  WARNING! Your X server is running %i-bit color mode. This is not really\n",
+		fatal("\n***\n***  WARNING! Your X server is running %i-bit "
+		    "color mode. This is not really\n",
 		    m->fb_windows[fb_number]->x11_screen_depth);
-		fatal("***  supported yet.  8, 15, 16, and 24 bits should work.\n");
-		fatal("***  24-bit server gives color.  Any other bit depth gives undefined result!\n***\n\n");
+		fatal("***  supported yet.  8, 15, 16, and 24 bits should "
+		    "work.\n***  24-bit server gives color.  Any other bit "
+		    "depth gives undefined result!\n***\n\n");
 	}
 
 	if (m->fb_windows[fb_number]->x11_screen_depth <= 8)
@@ -525,10 +548,11 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 
 			if (event.type==Expose && event.xexpose.count==0) {
 				/*
-				 *  TODO:  the xexpose struct has x,y,width,height.
-				 *  Those could be used to only redraw the part of
-				 *  the framebuffer that was exposed. Note that
-				 *  the (mouse) cursor must be redrawn too.
+				 *  TODO:  the xexpose struct has x,y,width,
+				 *  height. Those could be used to only redraw
+				 *  the part of the framebuffer that was
+				 *  exposed. Note that the (mouse) cursor must
+				 *  be redrawn too.
 				 */
 				/*  x11_winxsize = event.xexpose.width;
 				    x11_winysize = event.xexpose.height;  */
@@ -546,28 +570,40 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					for (j=0; j<emuls[k]->n_machines; j++) {
 						struct machine *m2 = emuls[k]->
 						    machines[j];
-						for (i=0; i<m2->n_fb_windows; i++)
-							if (m->fb_windows[fb_nr]->x11_display == m2->fb_windows[i]->x11_display &&
-							    event.xmotion.window == m2->fb_windows[i]->x11_fb_window)
+						for (i=0; i<m2->n_fb_windows;
+						    i++)
+							if (m->fb_windows[
+							    fb_nr]->
+							    x11_display == m2->
+							    fb_windows[i]->
+							    x11_display &&
+							    event.xmotion.
+							    window == m2->
+							    fb_windows[i]->
+							    x11_fb_window)
 								found = i;
 					}
 				if (found < 0) {
 					printf("Internal error in x11.c.\n");
 					exit(1);
 				}
-				console_mouse_coordinates(event.xmotion.x * m->fb_windows[found]->scaledown,
-				    event.xmotion.y * m->fb_windows[found]->scaledown, found);
+				console_mouse_coordinates(event.xmotion.x *
+				    m->fb_windows[found]->scaledown,
+				    event.xmotion.y * m->fb_windows[found]->
+				    scaledown, found);
 			}
 
 			if (event.type == ButtonPress) {
-				debug("[ X11 ButtonPress: %i ]\n", event.xbutton.button);
+				debug("[ X11 ButtonPress: %i ]\n",
+				    event.xbutton.button);
 				/*  button = 1,2,3 = left,middle,right  */
 
 				console_mouse_button(event.xbutton.button, 1);
 			}
 
 			if (event.type == ButtonRelease) {
-				debug("[ X11 ButtonRelease: %i ]\n", event.xbutton.button);
+				debug("[ X11 ButtonRelease: %i ]\n",
+				    event.xbutton.button);
 				/*  button = 1,2,3 = left,middle,right  */
 
 				console_mouse_button(event.xbutton.button, 0);
@@ -582,24 +618,27 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 
 				if (XLookupString(&event.xkey, text,
 				    sizeof(text), &key, 0) == 1) {
-					console_makeavail(m->main_console_handle, text[0]);
+					console_makeavail(
+					    m->main_console_handle, text[0]);
 				} else {
 					int x = ke->keycode;
 					/*
 					 *  Special key codes:
 					 *
-					 *  NOTE/TODO: I'm hardcoding these to work with
-					 *  my key map. Maybe they should be read from
-					 *  some file...
+					 *  NOTE/TODO: I'm hardcoding these to
+					 *  work with my key map. Maybe they
+					 *  should be read from some file...
 					 *
-					 *  Important TODO 2:  It would be MUCH better if
-					 *  these were converted into 'native scancodes',
-					 *  for example for the DECstation's keyboard or
-					 *  the PC-style 8042 controller.
+					 *  Important TODO 2:  It would be MUCH
+					 *  better if these were converted into
+					 *  'native scancodes', for example for
+					 *  the DECstation's keyboard or the
+					 *  PC-style 8042 controller.
 					 */
 					switch (x) {
 					case 9:	/*  Escape  */
-						console_makeavail(m->main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, 27);
 						break;
 #if 0
 					/*  TODO  */
@@ -615,41 +654,61 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 68:	/*  F2  */
 					case 69:	/*  F3  */
 					case 70:	/*  F4  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, 'O');
-						console_makeavail(m->main_console_handle, 'P' +
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, 'O');
+						console_makeavail(m->
+						    main_console_handle, 'P' +
 						    x - 67);
 						break;
 					case 71:	/*  F5  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '1');
-						console_makeavail(m->main_console_handle, '5');
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '1');
+						console_makeavail(m->
+						    main_console_handle, '5');
 						break;
 					case 72:	/*  F6  */
 					case 73:	/*  F7  */
 					case 74:	/*  F8  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '1');
-						console_makeavail(m->main_console_handle, '7' +
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '1');
+						console_makeavail(m->
+						    main_console_handle, '7' +
 						    x - 72);
 						break;
 					case 75:	/*  F9  */
 					case 76:	/*  F10  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '2');
-						console_makeavail(m->main_console_handle, '1' +
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '2');
+						console_makeavail(m->
+						    main_console_handle, '1' +
 						    x - 68);
 						break;
 					case 95:	/*  F11  */
 					case 96:	/*  F12  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '2');
-						console_makeavail(m->main_console_handle, '3' +
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '2');
+						console_makeavail(m->
+						    main_console_handle, '3' +
 						    x - 95);
 						break;
 					/*  Cursor keys:  */
@@ -657,9 +716,12 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 104:	/*  Down  */
 					case 100:	/*  Left  */
 					case 102:	/*  Right  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, 
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, 
 						    x == 98? 'A' : (
 						    x == 104? 'B' : (
 						    x == 102? 'C' : (
@@ -670,9 +732,12 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 88:	/*  Down  */
 					case 83:	/*  Left  */
 					case 85:	/*  Right  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, 
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, 
 						    x == 80? 'A' : (
 						    x == 88? 'B' : (
 						    x == 85? 'C' : (
@@ -680,32 +745,47 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 						break;
 					case 97:	/*  Cursor  Home  */
 					case 79:	/*  Numeric Home  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, 'H');
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, 'H');
 						break;
 					case 103:	/*  Cursor  End  */
 					case 87:	/*  Numeric End  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, 'F');
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, 'F');
 						break;
 					case 99:	/*  Cursor  PgUp  */
 					case 81:	/*  Numeric PgUp  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '5');
-						console_makeavail(m->main_console_handle, '~');
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '5');
+						console_makeavail(m->
+						    main_console_handle, '~');
 						break;
 					case 105:	/*  Cursor  PgUp  */
 					case 89:	/*  Numeric PgDn  */
-						console_makeavail(m->main_console_handle, 27);
-						console_makeavail(m->main_console_handle, '[');
-						console_makeavail(m->main_console_handle, '6');
-						console_makeavail(m->main_console_handle, '~');
+						console_makeavail(m->
+						    main_console_handle, 27);
+						console_makeavail(m->
+						    main_console_handle, '[');
+						console_makeavail(m->
+						    main_console_handle, '6');
+						console_makeavail(m->
+						    main_console_handle, '~');
 						break;
 					default:
-						debug("[ unimplemented X11 keycode %i ]\n", x);
+						debug("[ unimplemented X11 "
+						    "keycode %i ]\n", x);
 					}
 				}
 			}

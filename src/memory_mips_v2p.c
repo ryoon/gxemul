@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.2 2005-02-09 20:36:09 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.3 2005-02-18 07:04:10 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -103,19 +103,27 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (instr) {
 			/*  Code:  */
 			for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++) {
-				if (cpu->cd.mips.translation_cache_instr[i].wf >= wf &&
-				    vaddr_shift_12 == (cpu->cd.mips.translation_cache_instr[i].vaddr_pfn)) {
-					*return_addr = cpu->cd.mips.translation_cache_instr[i].paddr | (vaddr & 0xfff);
-					return cpu->cd.mips.translation_cache_instr[i].wf;
+				if (cpu->cd.mips.translation_cache_instr[i].wf
+				    >= wf && vaddr_shift_12 == (cpu->cd.mips.
+				    translation_cache_instr[i].vaddr_pfn)) {
+					*return_addr = cpu->cd.mips.
+					    translation_cache_instr[i].paddr
+					    | (vaddr & 0xfff);
+					return cpu->cd.mips.
+					    translation_cache_instr[i].wf;
 				}
 			}
 		} else {
 			/*  Data:  */
 			for (i=0; i<N_TRANSLATION_CACHE_DATA; i++) {
-				if (cpu->cd.mips.translation_cache_data[i].wf >= wf &&
-				    vaddr_shift_12 == (cpu->cd.mips.translation_cache_data[i].vaddr_pfn)) {
-					*return_addr = cpu->cd.mips.translation_cache_data[i].paddr | (vaddr & 0xfff);
-					return cpu->cd.mips.translation_cache_data[i].wf;
+				if (cpu->cd.mips.translation_cache_data[i].wf
+				    >= wf && vaddr_shift_12 == (cpu->cd.mips.
+				    translation_cache_data[i].vaddr_pfn)) {
+					*return_addr = cpu->cd.mips.
+					    translation_cache_data[i].paddr
+					    | (vaddr & 0xfff);
+					return cpu->cd.mips.
+					    translation_cache_data[i].wf;
 				}
 			}
 		}
@@ -142,17 +150,23 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *   10   0    0    0  useg    0 - 0x7fffffff    (2GB)  (via TLB)
 	 *   10   0    0    1  xuseg   0 - 0xffffffffff  (1TB)  (via TLB)
 	 *
-	 *   01   0    0    0  suseg   0          - 0x7fffffff                  (2GB)  (via TLB)
-	 *   01   0    0    0  ssseg   0xc0000000 - 0xdfffffff                  (0.5 GB)  (via TLB)
-	 *   01   0    0    1  xsuseg  0 - 0xffffffffff                         (1TB)  (via TLB)
-	 *   01   0    0    1  xsseg   0x4000000000000000 - 0x400000ffffffffff  (1TB)  (via TLB)
-	 *   01   0    0    1  csseg   0xffffffffc0000000 - 0xffffffffdfffffff  (0.5TB)  (via TLB)
+	 *   01   0    0    0  suseg   0          - 0x7fffffff  (2GB via TLB)
+	 *   01   0    0    0  ssseg   0xc0000000 - 0xdfffffff  (0.5 GB via TLB)
+	 *   01   0    0    1  xsuseg  0 - 0xffffffffff         (1TB)  (via TLB)
+	 *   01   0    0    1  xsseg   0x4000000000000000 - 0x400000ffffffffff
+	 *					  (1TB)  (via TLB)
+	 *   01   0    0    1  csseg   0xffffffffc0000000 - 0xffffffffdfffffff
+	 *					  (0.5TB)  (via TLB)
 	 *
 	 *   00   x    x    0  kuseg   0 - 0x7fffffff  (2GB)  (via TLB)  (*)
-	 *   00   x    x    0  kseg0   0x80000000 - 0x9fffffff (0.5GB)  unmapped, cached
-	 *   00   x    x    0  kseg1   0xa0000000 - 0xbfffffff (0.5GB)  unmapped, uncached
-	 *   00   x    x    0  ksseg   0xc0000000 - 0xdfffffff (0.5GB)  (via TLB)
-	 *   00   x    x    0  kseg3   0xe0000000 - 0xffffffff (0.5GB)  (via TLB)
+	 *   00   x    x    0  kseg0   0x80000000 - 0x9fffffff (0.5GB)
+	 *					  unmapped, cached
+	 *   00   x    x    0  kseg1   0xa0000000 - 0xbfffffff (0.5GB)
+	 *					  unmapped, uncached
+	 *   00   x    x    0  ksseg   0xc0000000 - 0xdfffffff (0.5GB)
+	 *					  (via TLB)
+	 *   00   x    x    0  kseg3   0xe0000000 - 0xffffffff (0.5GB)
+	 *					  (via TLB)
 	 *   00   x    x    1  xksuseg 0 - 0xffffffffff (1TB) (via TLB) (*)
 	 *   00   x    x    1  xksseg  0x4000000000000000 - 0x400000ffffffffff  (1TB)  (via TLB)
 	 *   00   x    x    1  xkphys  0x8000000000000000 - 0xbfffffffffffffff  todo
@@ -162,7 +176,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *   00   x    x    1  cksseg  0xffffffffc0000000 - 0xffffffffdfffffff  like ksseg
 	 *   00   x    x    1  ckseg3  0xffffffffe0000000 - 0xffffffffffffffff  like kseg2
 	 *
-	 *  (*) = if ERL=1 then kuseg is not via TLB, but unmapped, uncached physical memory.
+	 *  (*) = if ERL=1 then kuseg is not via TLB, but unmapped,
+	 *  uncached physical memory.
 	 *
 	 *  (KSU==0 or EXL=1 or ERL=1 is enough to use k*seg*.)
 	 *

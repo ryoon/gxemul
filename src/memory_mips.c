@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.4 2005-02-11 09:29:51 debug Exp $
+ *  $Id: memory_mips.c,v 1.5 2005-02-18 07:04:10 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */
@@ -120,7 +120,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->cd.mips.instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		cpu->cd.mips.instruction_delay +=
+		    cpu->cd.mips.cpu_type.instrs_per_cycle
 		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
@@ -133,7 +134,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (cache == CACHE_DATA && writeflag==MEM_READ) {
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
 		if (!hit)
-			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |=
+			    MIPS1_CACHE_MISS;
 	}
 
 	/*
@@ -213,7 +215,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 		if (memblock == NULL) {
 			if (writeflag == MEM_READ)
-			memset(dst, 0, cpu->cd.mips.cache_linesize[which_cache]);
+			memset(dst, 0,
+			    cpu->cd.mips.cache_linesize[which_cache]);
 		} else {
 			src = memblock + (offset &
 			    ~cpu->cd.mips.cache_mask[which_cache]);
@@ -222,7 +225,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			    cpu->cd.mips.cache_linesize[which_cache];
 			dst += cache_line *
 			    cpu->cd.mips.cache_linesize[which_cache];
-			memcpy(dst, src, cpu->cd.mips.cache_linesize[which_cache]);
+			memcpy(dst, src,
+			    cpu->cd.mips.cache_linesize[which_cache]);
 		}
 
 		rp[cache_line].tag_paddr = paddr & tag_mask;
@@ -281,7 +285,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->cd.mips.instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		cpu->cd.mips.instruction_delay +=
+		    cpu->cd.mips.cpu_type.instrs_per_cycle
 		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
@@ -294,7 +299,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (cache == CACHE_DATA && writeflag==MEM_READ) {
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
 		if (!hit)
-			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |=
+			    MIPS1_CACHE_MISS;
 	}
 
 	/*
@@ -308,8 +314,10 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	/*  Data cache isolated?  Then don't access main memory:  */
 	if (cache_isolated) {
-		/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx paddr=%016llx => addr in cache = 0x%lx\n",
-		    writeflag, cache, (long long)vaddr, (long long)paddr, addr);  */
+		/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx "
+		    "paddr=%016llx => addr in cache = 0x%lx\n",
+		    writeflag, cache, (long long)vaddr,
+		    (long long)paddr, addr);  */
 
 		if (writeflag==MEM_READ) {
 			for (i=0; i<len; i++)

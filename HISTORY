@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.181 2004-07-30 11:24:01 debug Exp $
+$Id: HISTORY,v 1.182 2004-08-01 01:14:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -852,3 +852,11 @@ HISTORY of mips64emul
 		would work. (Dual-licensing as two separate files would work
 		though.)
 		Preparing for the upcoming release (0.2).
+20040801	Fixing the 512 vs 2048 cdrom sector size bug; I hadn't 
+		implemented the mode select SCSI command. (It still isn't
+		really implemented.)
+		A bug which crashes the emulator is triggered when run with
+		new NetBSD 2.0_BETA snapshots on a Linux/i386 host. I'm not
+		sure why.
+		UDP packets sent to the gateway (at 10.0.0.254) are now
+		forwarded to the machine that the host uses as its nameserver.

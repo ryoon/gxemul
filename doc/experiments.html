@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.41 2005-02-24 14:26:33 debug Exp $
+$Id: experiments.html,v 1.42 2005-02-26 10:51:02 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -74,10 +74,10 @@ that you do two things:
 </ul>
 
 <p>
-The emulator can be run in a mode where it doesn't emulate a real
-machine. In this "bare" machine mode, only a few simple devices
-are emulated, such as putchar device, and a simple framebuffer
-(for outputing pixels in a simple manner).
+The emulator has several modes where it doesn't emulate any real machine.
+It can either run in "bare" mode, where no devices are included by default
+(just the CPU), or in a "test" mode where some simple devices are 
+emulated.
 
 <p>
 <table border="0"><tr><td width="40">&nbsp;</td><td>
@@ -220,7 +220,7 @@ that aren't present on my FreeBSD system. 32-bit PPC works ok, though.&nbsp;]
 <a name="expdevices"></a>
 <h3>Experimental devices:</h3>
 
-The "bare" MIPS machine has the following experimental devices:
+The "test" MIPS machine has the following experimental devices:
 
 <p>
 <center><table border="0" width="80%">
@@ -374,7 +374,7 @@ accessed at 0xffffffff90000000 too, but devices should usually be accessed
 in a non-cached manner.)
 
 <p>
-(When using the bare PPC test machine, "testppc", the addresses are 
+(When using the PPC test machine, "testppc", the addresses are 
 0x10000000, 0x11000000 etc., so no need to add any virtual displacement.)
 
 <p>

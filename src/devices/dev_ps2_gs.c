@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.14 2005-02-21 09:37:43 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.15 2005-02-26 10:51:01 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -34,10 +34,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "devices.h"
+#include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+
+#define	DEV_PS2_GS_LENGTH		0x2000
+
+/*  NOTE/TODO: This should be the same as in ps2_stuff:  */
+#define	DEV_PS2_GIF_FAKE_BASE		0x50000000
 
 #define	N_GS_REGS	0x108
 
@@ -125,7 +131,7 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_ps2_gs_init():
+ *  devinit_ps2_gs():
  *
  *  Initialize the Playstation 2 graphics system. This is a bit tricky.
  *  'gs' is the memory mapped device, as seen by the main processor.
@@ -136,8 +142,7 @@ int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
  *
  *  TODO:  Make this clearer.
  */
-void dev_ps2_gs_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_ps2_gs(struct devinit *devinit)
 {
 	struct gs_data *d;
 
@@ -148,9 +153,12 @@ void dev_ps2_gs_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct gs_data));
 
-	dev_ps2_gif_init(machine, mem, DEV_PS2_GIF_FAKE_BASE);
+	device_add_a(devinit->machine, "ps2_gif", DEV_PS2_GIF_FAKE_BASE);
 
-	memory_device_register(mem, "ps2_gs", baseaddr, DEV_PS2_GS_LENGTH,
-	    dev_ps2_gs_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_PS2_GS_LENGTH, dev_ps2_gs_access, d,
+	    MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

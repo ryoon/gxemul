@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.26 2005-02-22 12:36:05 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.27 2005-02-26 10:51:01 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -42,11 +42,14 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+
+#define	DEV_PS2_GIF_LENGTH		0x10000
 
 #define	PS2_FB_ADDR	0x60000000ULL 	/*  hopefully nothing else here  */
 
@@ -373,12 +376,11 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_ps2_gif_init():
+ *  devinit_ps2_gif():
  *
- *  Attached to separate memory by dev_ps2_gs_init().
+ *  Attached to separate memory by devinit_ps2_gs().
  */
-void dev_ps2_gif_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_ps2_gif(struct devinit *devinit)
 {
 	struct gif_data *d;
 
@@ -390,12 +392,12 @@ void dev_ps2_gif_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct gif_data));
 
 	d->transparent_text = 0;
-	d->cpu = machine->cpus[0];		/*  TODO  */
+	d->cpu = devinit->machine->cpus[0];		/*  TODO  */
 	d->xsize = 640; d->ysize = 480;
 	d->bytes_per_pixel = 3;
 
-	d->vfb_data = dev_fb_init(machine, machine->memory, PS2_FB_ADDR,
-	    VFB_PLAYSTATION2,
+	d->vfb_data = dev_fb_init(devinit->machine, devinit->machine->memory,
+	    PS2_FB_ADDR, VFB_PLAYSTATION2,
 	    d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2", 0);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "could not initialize fb, out of memory\n");
@@ -408,7 +410,10 @@ void dev_ps2_gif_init(struct machine *machine, struct memory *mem,
 	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
 #endif
 
-	memory_device_register(mem, "ps2_gif", baseaddr, DEV_PS2_GIF_LENGTH,
-	    dev_ps2_gif_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_PS2_GIF_LENGTH, dev_ps2_gif_access, d,
+	    MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

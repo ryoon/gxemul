@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.7 2005-02-25 06:27:49 debug Exp $
+ *  $Id: device.c,v 1.8 2005-02-26 10:51:04 debug Exp $
  *
  *  Device registry framework.
  */
@@ -208,8 +208,8 @@ int device_unregister(char *name)
  *  Add a device to a machine.  (This is the real add function, used by
  *  all the different functions below.)
  */
-static void device_add__internal(struct machine *machine, char *name,
-	uint64_t addr, uint64_t len, int irq_nr)
+static void *device_add__internal(struct machine *machine, char *name,
+	uint64_t addr, uint64_t len, int irq_nr, int addr_mult)
 {
 	struct device_entry *p = device_lookup(name);
 	struct devinit devinit;
@@ -224,12 +224,15 @@ static void device_add__internal(struct machine *machine, char *name,
 	devinit.name = name;
 	devinit.addr = addr;
 	devinit.len = len;
+	devinit.addr_mult = addr_mult;
 	devinit.irq_nr = irq_nr;
 
 	if (!p->initf(&devinit)) {
 		fatal("error adding device \"%s\"\n", name);
 		exit(1);
 	}
+
+	return devinit.return_ptr;
 }
 
 
@@ -240,7 +243,7 @@ static void device_add__internal(struct machine *machine, char *name,
  */
 void device_add(struct machine *machine, char *name)
 {
-	device_add__internal(machine, name, 0,0,0);
+	device_add__internal(machine, name, 0,0,0, 1);
 }
 
 
@@ -251,7 +254,7 @@ void device_add(struct machine *machine, char *name)
  */
 void device_add_a(struct machine *machine, char *name, uint64_t a)
 {
-	device_add__internal(machine, name, a, 0, 0);
+	device_add__internal(machine, name, a, 0, 0, 1);
 }
 
 
@@ -262,7 +265,7 @@ void device_add_a(struct machine *machine, char *name, uint64_t a)
  */
 void device_add_ai(struct machine *machine, char *name, uint64_t a, int i)
 {
-	device_add__internal(machine, name, a, 0, i);
+	device_add__internal(machine, name, a, 0, i, 1);
 }
 
 
@@ -274,7 +277,7 @@ void device_add_ai(struct machine *machine, char *name, uint64_t a, int i)
 void device_add_al(struct machine *machine, char *name, uint64_t a,
 	uint64_t len)
 {
-	device_add__internal(machine, name, a, len, 0);
+	device_add__internal(machine, name, a, len, 0, 1);
 }
 
 

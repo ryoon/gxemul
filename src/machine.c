@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.365 2005-02-25 06:27:49 debug Exp $
+ *  $Id: machine.c,v 1.366 2005-02-26 10:51:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1220,12 +1220,23 @@ void machine_setup(struct machine *machine)
 		    "to get help on all command line options.\n");
 		exit(1);
 
-	case MACHINE_MIPSTEST:
+	case MACHINE_BAREMIPS:
 		/*
 		 *  A "bare" MIPS test machine.
+		 *
+		 *  NOTE: NO devices at all.
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
-		machine->machine_name = "\"Bare\" MIPS test machine";
+		machine->machine_name = "\"Bare\" MIPS machine";
+		break;
+
+	case MACHINE_TESTMIPS:
+		/*
+		 *  A MIPS test machine (which happens to work with my
+		 *  thesis work).
+		 */
+		cpu->byte_order = EMUL_BIG_ENDIAN;
+		machine->machine_name = "MIPS test machine";
 
 		machine->main_console_handle = dev_cons_init(
 		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
@@ -1234,7 +1245,6 @@ void machine_setup(struct machine *machine)
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
-
 		break;
 
 	case MACHINE_DEC:
@@ -2107,7 +2117,7 @@ void machine_setup(struct machine *machine)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		dev_ps2_gs_init(machine, mem, 0x12000000);
+		device_add_a(machine, "ps2_gs", 0x12000000);
 		machine->ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
@@ -3910,11 +3920,20 @@ for (i=0; i<32; i++)
 
 		break;
 
-	case MACHINE_PPCTEST:
+	case MACHINE_BAREPPC:
 		/*
-		 *  A "bare" PPC test machine.
+		 *  A "bare" PPC machine.
+		 *
+		 *  NOTE: NO devices at all.
 		 */
-		machine->machine_name = "\"Bare\" PPC test machine";
+		machine->machine_name = "\"Bare\" PPC machine";
+		break;
+
+	case MACHINE_TESTPPC:
+		/*
+		 *  A PPC test machine, similar to the test machine for MIPS.
+		 */
+		machine->machine_name = "PPC test machine";
 
 		/*  TODO: interrupt for PPC?  */
 		machine->main_console_handle = dev_cons_init(
@@ -3924,7 +3943,6 @@ for (i=0; i<32; i++)
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
-
 		break;
 
 	case MACHINE_WALNUT:
@@ -4066,13 +4084,17 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_BARESPARC:
+		/*  A bare SPARC machine, with no devices.  */
+		machine->machine_name = "\"Bare\" SPARC machine";
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
 		 *  OpenBSD/sparc64 (http://www.openbsd.org/sparc64.html)
 		 */
 		machine->machine_name = "Sun Ultra1";
-
 		break;
 
 	default:
@@ -4210,7 +4232,8 @@ void machine_default_cputype(struct machine *m)
 		return;
 
 	switch (m->machine_type) {
-	case MACHINE_MIPSTEST:
+	case MACHINE_BAREMIPS:
+	case MACHINE_TESTMIPS:
 		m->cpu_name = strdup("R4000");
 		break;
 	case MACHINE_PS2:
@@ -4287,7 +4310,8 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  PowerPC:  */
-	case MACHINE_PPCTEST:
+	case MACHINE_BAREPPC:
+	case MACHINE_TESTPPC:
 		m->cpu_name = strdup("PPC970");
 		break;
 	case MACHINE_WALNUT:
@@ -4323,6 +4347,9 @@ void machine_default_cputype(struct machine *m)
 		break;
 
 	/*  SPARC:  */
+	case MACHINE_BARESPARC:
+		m->cpu_name = strdup("SPARCV9");
+		break;
 	case MACHINE_ULTRA1:
 		m->cpu_name = strdup("SPARCV9");
 		break;
@@ -4578,6 +4605,22 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for PPC:  */
+	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
+	    MACHINE_TESTPPC, 1, 0);
+	me->aliases[0] = "testppc";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Test-machine for MIPS:  */
+	me = machine_entry_new("Test-machine for MIPS", ARCH_MIPS,
+	    MACHINE_TESTMIPS, 1, 0);
+	me->aliases[0] = "testmips";
+	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Sun Ultra1:  */
 	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
 	me->aliases[0] = "ultra1";
@@ -4700,18 +4743,26 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Generic PPC test machine:  */
-	me = machine_entry_new("Generic PPC test machine", ARCH_PPC,
-	    MACHINE_PPCTEST, 1, 0);
-	me->aliases[0] = "testppc";
+	/*  Generic "bare" SPARC machine:  */
+	me = machine_entry_new("Generic \"bare\" SPARC machine", ARCH_SPARC,
+	    MACHINE_BARESPARC, 1, 0);
+	me->aliases[0] = "baresparc";
+	if (cpu_family_ptr_by_number(ARCH_SPARC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" PPC machine:  */
+	me = machine_entry_new("Generic \"bare\" PPC machine", ARCH_PPC,
+	    MACHINE_BAREPPC, 1, 0);
+	me->aliases[0] = "bareppc";
 	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
-	/*  Generic MIPS test machine:  */
-	me = machine_entry_new("Generic MIPS test machine", ARCH_MIPS,
-	    MACHINE_MIPSTEST, 1, 0);
-	me->aliases[0] = "testmips";
+	/*  Generic "bare" MIPS machine:  */
+	me = machine_entry_new("Generic \"bare\" MIPS machine", ARCH_MIPS,
+	    MACHINE_BAREMIPS, 1, 0);
+	me->aliases[0] = "baremips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

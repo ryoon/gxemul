@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.33 2005-02-24 14:50:10 debug Exp $
+ *  $Id: machine.h,v 1.34 2005-02-26 10:51:03 debug Exp $
  */
 
 #include <sys/types.h>
@@ -203,35 +203,38 @@ struct machine {
 #define	ARCH_SPARC		3
 
 /*  MIPS:  */
-#define	MACHINE_MIPSTEST	1
-#define	MACHINE_DEC		2
-#define	MACHINE_COBALT		3
-#define	MACHINE_HPCMIPS		4
-#define	MACHINE_PS2		5
-#define	MACHINE_SGI		6
-#define	MACHINE_ARC		7
-#define	MACHINE_MESHCUBE	8
-#define	MACHINE_NETGEAR		9
-#define	MACHINE_WRT54G		10
-#define	MACHINE_SONYNEWS	11
+#define	MACHINE_BAREMIPS	1000
+#define	MACHINE_TESTMIPS	1001
+#define	MACHINE_DEC		1002
+#define	MACHINE_COBALT		1003
+#define	MACHINE_HPCMIPS		1004
+#define	MACHINE_PS2		1005
+#define	MACHINE_SGI		1006
+#define	MACHINE_ARC		1007
+#define	MACHINE_MESHCUBE	1008
+#define	MACHINE_NETGEAR		1009
+#define	MACHINE_WRT54G		1010
+#define	MACHINE_SONYNEWS	1011
 
 /*  PPC:  */
-#define	MACHINE_PPCTEST		100
-#define	MACHINE_WALNUT		101
-#define	MACHINE_PMPPC		102
-#define	MACHINE_SANDPOINT	103
-#define	MACHINE_BEBOX		104
-#define	MACHINE_PREP		105
-#define	MACHINE_MACPPC		106
-#define	MACHINE_DB64360		107
+#define	MACHINE_BAREPPC		2000
+#define	MACHINE_TESTPPC		2001
+#define	MACHINE_WALNUT		2002
+#define	MACHINE_PMPPC		2003
+#define	MACHINE_SANDPOINT	2004
+#define	MACHINE_BEBOX		2005
+#define	MACHINE_PREP		2006
+#define	MACHINE_MACPPC		2007
+#define	MACHINE_DB64360		2008
 
 /*  SPARC:  */
-#define	MACHINE_ULTRA1		200
+#define	MACHINE_BARESPARC	3000
+#define	MACHINE_ULTRA1		3001
 
 
 /*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
-#define	MACHINE_USERLAND	10000
+#define	MACHINE_USERLAND	100000
 
 /*  DEC:  */
 #define	MACHINE_DEC_PMAX_3100		1

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.35 2005-01-17 08:07:28 debug Exp $
+ *  $Id: debugger.c,v 1.36 2005-01-17 08:15:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -681,8 +681,10 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 {
 	int i;
 
-	printf("ram: %i MB\n",
-	    (int)(emul->cpus[0]->mem->physical_max / 1048576));
+	printf("ram: %i MB", emul->physical_ram_in_mb);
+	if (emul->memory_offset_in_mb != 0)
+		printf(" (offset by %i MB)", emul->memory_offset_in_mb);
+	printf("\n");
 
 	for (i=0; i<emul->ncpus; i++) {
 		struct cpu_type_def *ct = &emul->cpus[i]->cpu_type;
@@ -712,6 +714,9 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 
 		printf(")\n");
 	}
+
+	if (emul->ncpus > 1)
+		printf("Bootstrap cpu is nr %i\n", emul->bootstrap_cpu);
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.385 2004-12-13 05:35:51 debug Exp $
+$Id: HISTORY,v 1.386 2004-12-14 02:21:19 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1313,3 +1313,6 @@ HISTORY of mips64emul
 		some updates to the section on installing Debian.
 		32-bit bintrans backend optimization: don't inline large
 		chunks of code, such as general jumps.
+20041214	Minor fix for coproc unusable for R4000 (it's the PC that,
+		matters, not the KSU bits).
+		Separating out the debugger from emul.c into debugger.c.

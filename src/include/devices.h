@@ -26,9 +26,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.111 2004-12-09 00:04:10 debug Exp $
+ *  $Id: devices.h,v 1.112 2004-12-14 02:21:20 debug Exp $
  *
- *  Memory mapped devices:
+ *  Memory mapped devices.
+ *
+ *  TODO: Separate into lots of smaller files? That might speed up a compile,
+ *        but I'm not sure that it's a price worth paying.
  */
 
 #include <sys/types.h>

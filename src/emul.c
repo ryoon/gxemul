@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.123 2005-01-21 15:22:20 debug Exp $
+ *  $Id: emul.c,v 1.124 2005-01-21 19:50:19 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -397,7 +397,7 @@ static void add_arc_components(struct machine *m)
 
 
 /*
- *  emul_machine_start():
+ *  emul_machine_setup():
  *
  *	o)  Initialize the hardware (RAM, devices, CPUs, ...) which
  *	    will be emulated in this machine.
@@ -406,7 +406,7 @@ static void add_arc_components(struct machine *m)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-static void emul_machine_start(struct emul *emul, int machine_nr)
+static void emul_machine_setup(struct emul *emul, int machine_nr)
 {
 	struct machine *m;
 	struct memory *mem;
@@ -419,7 +419,7 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 	debug_indentation(iadd);
 
 	/*  Create the system's memory:  */
-	debug("adding main memory: %i MB", m->physical_ram_in_mb);
+	debug("memory: %i MB", m->physical_ram_in_mb);
 	memory_amount = (uint64_t)m->physical_ram_in_mb * 1048576;
 	if (m->memory_offset_in_mb > 0) {
 		/*
@@ -558,18 +558,14 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
 
-	debug("starting emulation: cpu%i ", m->bootstrap_cpu);
-	if (m->bootstrap_cpu >= 10)  i++;
-	if (m->bootstrap_cpu >= 100)  i++;
-	if (m->bootstrap_cpu >= 1000)  i++;
-	if (m->bootstrap_cpu >= 10000)  i++;
+	debug("starting cpu%i at ", m->bootstrap_cpu);
 	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
 	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32)
-		debug("pc=0x%08x gp=0x%08x",
+		debug("0x%08x (gp=0x%08x)",
 		    (int)m->cpus[m->bootstrap_cpu]->pc,
 		    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
 	else {
-		debug("pc=0x%016llx gp=0x%016llx",
+		debug("0x%016llx (gp=0x%016llx)",
 		    (long long)m->cpus[m->bootstrap_cpu]->pc,
 		    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
 	}
@@ -580,71 +576,88 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 
 
 /*
- *  emul_run():
- *
- *  Run an emulation.
- */
-static void emul_run(struct emul *emul)
-{
-	struct machine *m;
-
-	/*  TODO:  */
-	if (emul->n_machines > 1) {
-		fprintf(stderr, "\nEmulating multiple machines"
-		    " simultaneously isn't supported yet.\n\n");
-		exit(1);
-	}
-
-	m = emul->machines[0];
-
-	/*  TODO: Run stuff from each machine here  */
-	cpu_run(emul, m);
-}
-
-
-/*
- *  emul():
+ *  emul_simple_init():
  *
  *	o)  Initialize networks.
  *
- *	o)  Initialize machines to be simulated.
- *
- *	o)  Start running instructions on the bootstrap cpu(s).
+ *	o)  Initialize one machine.
  */
-void emul_start(struct emul *emul)
+void emul_simple_init(struct emul *emul)
 {
 	int i, n, iadd=4;
 
-	/*  Print startup message:  */
-	debug("mips64emul");
-#ifdef VERSION
-	debug("-" VERSION);
-#endif
-	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the source code and/or documentation for "
-	    "other Copyright messages.\n");
+	if (emul->n_machines != 1) {
+		fprintf(stderr, "emul_simple_init(): n_machines != 1\n");
+		exit(1);
+	}
 
-	debug("Setting up...\n");
+	debug("Simple setup...\n");
 	debug_indentation(iadd);
-
-	srandom(time(NULL));
-	atexit(fix_console);
 
 	/*  Create a network:  */
 	emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY);
 
-	/*  Create machines:  */
+	/*  Create the machine:  */
 	for (i=0; i<emul->n_machines; i++)
-		emul_machine_start(emul, i);
+		emul_machine_setup(emul, i);
 
 	debug_indentation(-iadd);
+}
+
+
+/*
+ *  emul_create_from_configfile():
+ *
+ *  Create an emul struct by reading settings from a configuration file.
+ */
+struct emul *emul_create_from_configfile(char *fname)
+{
+	int iadd = 4;
+	struct emul *e = emul_new();
+
+	debug("Creating emulation from configfile \"%s\":\n", fname);
+	debug_indentation(iadd);
+
+	/*  Create a network:  */
+	/*  ..  */
+	/*  Create the machine:  */
+	/*  ..  */
+	/*  emul_machine_setup(emul, 0);  */
+
+	debug_indentation(-iadd);
+	return e;
+}
+
+
+/*
+ *  emul_run():
+ *
+ *	o)  Set up things needed before running emulations.
+ *
+ *	o)  Run emulations (one or more, in parallel).
+ *
+ *	o)  De-initialize things.
+ */
+void emul_run(struct emul **emuls, int n_emuls)
+{
+	struct emul *e;
+	int i = 0, j, go = 1, n, anything;
+
+	if (n_emuls < 1) {
+		fprintf(stderr, "emul_run(): no thing to do\n");
+		return;
+	}
+
+	srandom(time(NULL));
+	atexit(fix_console);
+
 	i = 79;
 	while (i-- > 0)
 		debug("-");
 	debug("\n\n");
 
 	/*  Initialize the interactive debugger:  */
-	debugger_init(emul);
+	debugger_init(emuls, n_emuls);
 
 	/*
 	 *  console_init() makes sure that the terminal is in a good state.
@@ -655,22 +668,62 @@ void emul_start(struct emul *emul)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-	console_init(emul);
+	console_init(emuls[0]);		/*  TODO: what is a good argument?  */
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 
-	if (!emul->verbose)
-		quiet_mode = 1;
+	/*  No emulation in verbose mode? Then set quiet_mode.  */
+	for (i=0; i<n_emuls; i++)
+		if (!emuls[i]->verbose)
+			quiet_mode = 1;
 
+	/*  Initialize all CPUs in all machines in all emulations:  */
+	for (i=0; i<n_emuls; i++) {
+		e = emuls[i];
+		if (e == NULL)
+			continue;
+		for (j=0; j<e->n_machines; j++)
+			cpu_run_init(e, e->machines[j]);
+	}
 
-	emul_run(emul);
+	/*
+	 *  MAIN LOOP:
+	 *
+	 *  Run all emulations in parallel, running each machine in
+	 *  each emulation.
+	 */
+	while (go) {
+		go = 0;
+		for (i=0; i<n_emuls; i++) {
+			e = emuls[i];
+			if (e == NULL)
+				continue;
 
+			for (j=0; j<e->n_machines; j++) {
+				/*  TODO: cpu_run() is a strange name, since
+				    there can be multiple cpus in a machine  */
+				anything = cpu_run(e, e->machines[j]);
+				if (anything)
+					go = 1;
+			}
+		}
+	}
+
+	/*  Deinitialize all CPUs in all machines in all emulations:  */
+	for (i=0; i<n_emuls; i++) {
+		e = emuls[i];
+		if (e == NULL)
+			continue;
+		for (j=0; j<e->n_machines; j++)
+			cpu_run_deinit(e, e->machines[j]);
+	}
 
 	/*  Any machine using X11? Then we should wait before exiting:  */
 	n = 0;
-	for (i=0; i<emul->n_machines; i++)
-		if (emul->machines[i]->use_x11)
-			n++;
+	for (i=0; i<n_emuls; i++)
+		for (j=0; j<emuls[i]->n_machines; j++)
+			if (emuls[i]->machines[j]->use_x11)
+				n++;
 	if (n > 0) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail()) {

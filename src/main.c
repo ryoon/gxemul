@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.162 2005-01-21 13:13:14 debug Exp $
+ *  $Id: main.c,v 1.163 2005-01-21 19:50:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -143,7 +143,7 @@ void fatal(char *fmt, ...)
 /*
  *  usage():
  *
- *  Print program usage to stdout.
+ *  Prints program usage to stdout.
  */
 static void usage(char *progname, int longusage)
 {
@@ -154,7 +154,7 @@ static void usage(char *progname, int longusage)
 #ifdef VERSION
 	printf("-" VERSION);
 #endif
-	printf("  Copyright (C) 2003-2005  Anders Gavare\n");
+	printf("   Copyright (C) 2003-2005  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 	printf("\nusage: %s [options] file [...]\n", progname);
@@ -270,6 +270,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int n_cpus_set = 0;
 	struct machine *m = emul_add_machine(emul, "default");
 
+	m->machine_type = MACHINE_NONE;
 	symbol_init(&m->symbol_context);
 
 	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:"
@@ -790,20 +791,73 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 /*
  *  main():
+ *
+ *  Two kinds of emulations are started from here:
+ *
+ *	o)  Simple emulations, using command line arguments, compatible with
+ *	    earlier version of mips64emul.
+ *
+ *	o)  Emulations set up by parsing special config files. (0 or more.)
  */
 int main(int argc, char *argv[])
 {
-	struct emul *emul;
+	struct emul **emuls;
+	int n_emuls;
+	int i;
 
-	emul = emul_new();
-	if (emul == NULL) {
+	emuls = malloc(sizeof(struct emul *));
+	if (emuls == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	get_cmd_args(argc, argv, emul);
+	/*  Allocate space for a simple emul setup:  */
+	n_emuls = 1;
+	emuls[0] = emul_new();
+	if (emuls[0] == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 
-	emul_start(emul);
+	get_cmd_args(argc, argv, emuls[0]);
+
+	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE)
+		n_emuls --;
+
+	/*  Print startup message:  */
+	debug("mips64emul");
+#ifdef VERSION
+	debug("-" VERSION);
+#endif
+	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("Read the source code and/or documentation for "
+	    "other Copyright messages.\n");
+
+	/*  Simple initialization, from command line arguments:  */
+	if (n_emuls > 0)
+		emul_simple_init(emuls[0]);
+
+	/*  Initialize emulations from config files:  */
+	for (i=1; i<argc; i++) {
+		if (argv[i][0] == '@') {
+			n_emuls ++;
+			emuls = realloc(emuls, sizeof(struct emul *) * n_emuls);
+			if (emuls == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			emuls[n_emuls - 1] =
+			    emul_create_from_configfile(argv[i] + 1);
+		}
+	}
+
+	if (n_emuls == 0) {
+		usage(argv[0], 1);
+		exit(1);
+	}
+
+	/*  Run all emulations:  */
+	emul_run(emuls, n_emuls);
 
 	return 0;
 }

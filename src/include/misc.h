@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.204 2005-01-20 20:45:50 debug Exp $
+ *  $Id: misc.h,v 1.205 2005-01-21 19:50:18 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -541,13 +541,15 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
 	int vaddr_asid, int x_64);
 void cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
+void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
+void cpu_run_deinit(struct emul *emul, struct machine *machine);
 
 
 /*  debugger:  */
 void debugger_activate(int x);
 void debugger(void);
-void debugger_init(struct emul *);
+void debugger_init(struct emul **emuls, int n_emuls);
 
 
 /*  dec_prom.c:  */

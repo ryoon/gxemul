@@ -28,8 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.5 2005-01-21 15:22:19 debug Exp $
+ *  $Id: machine.h,v 1.6 2005-01-21 19:50:18 debug Exp $
  */
+
+#include <sys/time.h>
 
 #include "misc.h"
 
@@ -57,6 +59,16 @@ struct machine {
 	int	use_random_bootstrap_cpu;
 	int	ncpus;
 	struct cpu **cpus;
+
+	/*  These are used by stuff in cpu.c, mostly:  */
+	struct timeval starttime;
+	int64_t ncycles;
+	int64_t	ncycles_show;
+	int64_t	ncycles_flush;
+	int64_t	ncycles_flushx11;
+	int	a_few_cycles;
+	int	a_few_instrs;
+
 
 	struct diskimage *first_diskimage;
 

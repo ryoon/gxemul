@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.49 2005-01-21 13:13:14 debug Exp $
+ *  $Id: file.c,v 1.50 2005-01-21 19:50:19 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1277,6 +1277,10 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 		fprintf(stderr, "file_load(): mem or filename is NULL\n");
 		exit(1);
 	}
+
+	/*  Skip configuration files:  */
+	if (filename[0] == '@')
+		return;
 
 	debug("loading %s:\n", filename);
 	debug_indentation(iadd);

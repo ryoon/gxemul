@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.249 2005-01-20 20:45:52 debug Exp $
+ *  $Id: cpu.c,v 1.250 2005-01-21 19:50:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3811,9 +3811,58 @@ do_return:
 
 
 /*
+ *  cpu_run_init():
+ *
+ *  Prepare to run instructions on all CPUs in this machine. (This function
+ *  should only need to be called once for each machine.)
+ */
+void cpu_run_init(struct emul *emul, struct machine *machine)
+{
+	struct cpu **cpus = machine->cpus;
+	int ncpus = machine->ncpus;
+	int te;
+
+printf("INIT\n");
+
+	machine->a_few_cycles = 1048576;
+	machine->ncycles_flush = 0;
+	machine->ncycles_flushx11 = 0;
+	machine->ncycles = 0;
+	machine->ncycles_show = 0;
+
+	/*
+	 *  Instead of doing { one cycle, check hardware ticks }, we
+	 *  can do { n cycles, check hardware ticks }, as long as
+	 *  n is at most as much as the lowest number of cycles/tick
+	 *  for any hardware device.
+	 */
+	for (te=0; te<cpus[0]->n_tick_entries; te++) {
+		if (cpus[0]->ticks_reset_value[te] < machine->a_few_cycles)
+			machine->a_few_cycles = cpus[0]->ticks_reset_value[te];
+	}
+
+	machine->a_few_cycles >>= 1;
+	if (machine->a_few_cycles < 1)
+		machine->a_few_cycles = 1;
+
+	if (ncpus > 1 && machine->max_random_cycles_per_chunk == 0)
+		machine->a_few_cycles = 1;
+
+	/*  debug("cpu_run_init(): a_few_cycles = %i\n",
+	    machine->a_few_cycles);  */
+
+	/*  For performance measurement:  */
+	gettimeofday(&machine->starttime, NULL);
+}
+
+
+/*
  *  cpu_run():
  *
- *  Run instructions from all CPUs, until all CPUs have halted.
+ *  Run instructions on all CPUs in this machine, for a "medium duration"
+ *  (or until all CPUs have halted).
+ *
+ *  Return value is 1 if anything happened, 0 if all CPUs are stopped.
  */
 int cpu_run(struct emul *emul, struct machine *machine)
 {
@@ -3823,42 +3872,18 @@ int cpu_run(struct emul *emul, struct machine *machine)
 	int64_t max_instructions_cached = machine->max_instructions;
 	int64_t max_random_cycles_per_chunk_cached =
 	    machine->max_random_cycles_per_chunk;
-	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
-	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
-		/*  TODO: how about overflow of ncycles?  */
-	int running, ncpus_cached = ncpus;
-	struct timeval starttime;
-	int a_few_cycles = 1048576, a_few_instrs;
+	int64_t ncycles_chunk_end;
+	int running, rounds;
 
-	/*
-	 *  Instead of doing { one cycle, check hardware ticks }, we
-	 *  can do { n cycles, check hardware ticks }, as long as
-	 *  n is at most as much as the lowest number of cycles/tick
-	 *  for any hardware device.
-	 */
-	for (te=0; te<cpus[0]->n_tick_entries; te++) {
-		if (cpus[0]->ticks_reset_value[te] < a_few_cycles)
-			a_few_cycles = cpus[0]->ticks_reset_value[te];
-	}
-
-	a_few_cycles >>= 1;
-	if (a_few_cycles < 1)
-		a_few_cycles = 1;
-
-	if (ncpus > 1 && max_random_cycles_per_chunk_cached == 0)
-		a_few_cycles = 1;
-
-	/*  debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);  */
-
-	/*  For performance measurement:  */
-	gettimeofday(&starttime, NULL);
+printf("RUN\n");
 
 	/*  The main loop:  */
 	running = 1;
+	rounds = 0;
 	while (running || emul->single_step) {
-		ncycles_chunk_end = ncycles + (1 << 16);
+		ncycles_chunk_end = machine->ncycles + (1 << 16);
 
-		a_few_instrs = a_few_cycles *
+		machine->a_few_instrs = machine->a_few_cycles *
 		    cpus[0]->cpu_type.instrs_per_cycle;
 
 		/*  Do a chunk of cycles:  */
@@ -3873,7 +3898,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 			 */
 
 			/*  Is any cpu alive?  */
-			for (i=0; i<ncpus_cached; i++)
+			for (i=0; i<ncpus; i++)
 				if (cpus[i]->running)
 					running = 1;
 
@@ -3891,7 +3916,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 				for (j=0; j<cpus[0]->cpu_type.instrs_per_cycle; j++) {
 					if (emul->single_step)
 						debugger();
-					for (i=0; i<ncpus_cached; i++)
+					for (i=0; i<ncpus; i++)
 						if (cpus[i]->running) {
 							int instrs_run = cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
@@ -3899,9 +3924,9 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						}
 				}
 			} else if (max_random_cycles_per_chunk_cached > 0) {
-				for (i=0; i<ncpus_cached; i++)
+				for (i=0; i<ncpus; i++)
 					if (cpus[i]->running) {
-						a_few_instrs2 = a_few_cycles;
+						a_few_instrs2 = machine->a_few_cycles;
 						if (a_few_instrs2 >= max_random_cycles_per_chunk_cached)
 							a_few_instrs2 = max_random_cycles_per_chunk_cached;
 						j = (random() % a_few_instrs2) + 1;
@@ -3914,7 +3939,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 					}
 			} else {
 				/*  CPU 0 is special, cpu0instr must be updated.  */
-				for (j=0; j<a_few_instrs; ) {
+				for (j=0; j<machine->a_few_instrs; ) {
 					int instrs_run;
 					if (!cpus[0]->running)
 						break;
@@ -3923,7 +3948,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						    cpu_run_instr(emul, cpus[0]);
 						if (instrs_run == 0 &&
 						    emul->single_step) {
-							j = a_few_instrs;
+							j = machine->a_few_instrs;
 							break;
 						}
 					} while (instrs_run == 0);
@@ -3932,8 +3957,8 @@ int cpu_run(struct emul *emul, struct machine *machine)
 				}
 
 				/*  CPU 1 and up:  */
-				for (i=1; i<ncpus_cached; i++) {
-					a_few_instrs2 = a_few_cycles *
+				for (i=1; i<ncpus; i++) {
+					a_few_instrs2 = machine->a_few_cycles *
 					    cpus[i]->cpu_type.instrs_per_cycle;
 					for (j=0; j<a_few_instrs2; )
 						if (cpus[i]->running) {
@@ -3997,38 +4022,62 @@ int cpu_run(struct emul *emul, struct machine *machine)
 					emul->single_step = 1;
 			}
 
-			ncycles += cpu0instrs;
-		} while (running && (ncycles < ncycles_chunk_end));
+			machine->ncycles += cpu0instrs;
+		} while (running && (machine->ncycles < ncycles_chunk_end));
 
 		/*  Check for X11 events:  */
 		if (machine->use_x11) {
-			if (ncycles > ncycles_flushx11 + (1<<17)) {
+			if (machine->ncycles > machine->ncycles_flushx11 + (1<<17)) {
 				x11_check_event();
-				ncycles_flushx11 = ncycles;
+				machine->ncycles_flushx11 = machine->ncycles;
 			}
 		}
 
 		/*  If we've done buffered console output,
 		    the flush stdout every now and then:  */
-		if (ncycles > ncycles_flush + (1<<16)) {
+		if (machine->ncycles > machine->ncycles_flush + (1<<16)) {
 			console_flush();
-			ncycles_flush = ncycles;
+			machine->ncycles_flush = machine->ncycles;
 		}
 
-		if (ncycles > ncycles_show + (1<<23)) {
-			cpu_show_cycles(machine, &starttime, ncycles, 0);
-			ncycles_show = ncycles;
+		if (machine->ncycles > machine->ncycles_show + (1<<23)) {
+			cpu_show_cycles(machine, &machine->starttime,
+			    machine->ncycles, 0);
+			machine->ncycles_show = machine->ncycles;
 		}
 
 		if (max_instructions_cached != 0 &&
-		    ncycles >= max_instructions_cached)
+		    machine->ncycles >= max_instructions_cached)
 			running = 0;
+
+		/*  Let's allow other machines to run.  */
+		rounds ++;
+		if (rounds > 8)
+			break;
 	}
+
+	return running;
+}
+
+
+/*
+ *  cpu_run_deinit():
+ *
+ *  Shuts down all CPUs in a machine when ending a simulation. (This function
+ *  should only need to be called once for each machine.)
+ */
+void cpu_run_deinit(struct emul *emul, struct machine *machine)
+{
+	int te;
+	struct cpu **cpus = machine->cpus;
+
+printf("DEINIT\n");
 
 	/*
 	 *  Two last ticks of every hardware device.  This will allow
 	 *  framebuffers to draw the last updates to the screen before
 	 *  halting.
+	 *
 	 *  (TODO: do this per cpu?)
 	 */
         for (te=0; te<cpus[0]->n_tick_entries; te++) {
@@ -4036,16 +4085,15 @@ int cpu_run(struct emul *emul, struct machine *machine)
 		cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 	}
 
-	debug("All CPUs halted.\n");
+	debug("cpu_run_deinit(): All CPUs halted.\n");
 
 	if (machine->show_nr_of_instructions || !quiet_mode)
-		cpu_show_cycles(machine, &starttime, ncycles, 1);
+		cpu_show_cycles(machine, &machine->starttime,
+		    machine->ncycles, 1);
 
 	if (machine->show_opcode_statistics)
 		cpu_show_full_statistics(machine);
 
 	fflush(stdout);
-
-	return 0;
 }
 

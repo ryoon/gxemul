@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.47 2005-01-21 17:53:13 debug Exp $
+ *  $Id: debugger.c,v 1.48 2005-01-21 19:50:19 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -79,6 +79,8 @@ extern int quiet_mode;
 
 static volatile int ctrl_c;
 
+static int debugger_n_emuls;
+static struct emul **debugger_emuls;
 static struct emul *debugger_emul;
 static struct machine *debugger_machine;
 
@@ -1975,18 +1977,32 @@ void debugger(void)
  *
  *  Must be called before any other debugger function is used.
  */
-void debugger_init(struct emul *emul)
+void debugger_init(struct emul **emuls, int n_emuls)
 {
 	int i;
 
-	debugger_emul = emul;
-	debugger_machine = emul->machines[0];
+	debugger_n_emuls = n_emuls;
+	debugger_emuls = emuls;
+
+	if (n_emuls < 1)
+		return;
+
+	debugger_emul = emuls[0];
+	if (emuls[0]->n_machines < 1) {
+		fprintf(stderr, "\nERROR: No machines in emuls[0], "
+		    "cannot handle this situation yet.\n\n");
+		return;
+	}
+	debugger_machine = emuls[0]->machines[0];
 
 	/*  TODO  */
-	if (emul->n_machines > 1) {
-		fprintf(stderr, "\nEmulating multiple machines"
-		    " simultaneously isn't supported yet.\n\n");
-		exit(1);
+	if (n_emuls > 1) {
+		fprintf(stderr, "\nWARNING: Multiple simultaneous"
+		    " emulations isn't really supported yet.\n\n");
+	}
+	if (emuls[0]->n_machines > 1) {
+		fprintf(stderr, "\nWARNING: Emulating multiple machines"
+		    " simultaneously isn't really supported yet.\n\n");
 	}
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {

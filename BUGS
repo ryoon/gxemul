@@ -9,9 +9,6 @@ Serious bugs:
       solution are unknown at this point.
 
   x)  Linux/DECstation (Debian) installer (boot.img) crashes during install.
-      This might be a bug in Linux, according to
-      http://www.debian.org/ports/mips/:
-	"R3000 Decstation does crash with current cvs kernel"
 
   x)  Newer NetBSD 2.0_BETA snapshots from releng.netbsd.org sometimes crash.
           Host\Snapshot:       20040606 20040707

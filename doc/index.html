@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.100 2004-09-23 23:22:50 debug Exp $
+$Id: index.html,v 1.101 2004-09-24 14:58:44 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -574,7 +574,7 @@ will let you boot from the new rootdisk image:
 </pre>
 When asked for which root device to use, enter <b>rz0</b>.
 <br>When asked for which terminal type to use, when logging in as root,
-enter <b>rcons</b>.
+enter <b>rcons</b> if you using the graphical framebuffer, <b>vt100</b> for text-mode.
 <br>Use <b>startx</b> to start X windows.
 
 
@@ -693,6 +693,10 @@ environment.
 <h3>How to install Linux (Debian) for DECstation in the emulator:</h3>
 
 The Debian folks have made Linux kernels for DECstation available for download.
+
+<p>
+The following steps should let you install Debian GNU/Linux for DECstation
+onto a harddisk image:
 
 <p>
 <ol>
@@ -854,7 +858,7 @@ Here are links to some of the kernels that I usually experiment with.
 	<br>Read <a href="#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
-	<br>Note: Make sure you add <b>-CR4000</b> to the command line for
+	<br>Note: Make sure you add <b>-CR4400</b> to the command line for
 		R4000 kernels, as Linux doesn't autodetect CPU type at runtime.
       <p>
       <li>Sprite:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.34 2004-01-06 11:40:39 debug Exp $
+ *  $Id: machine.c,v 1.35 2004-01-07 00:53:28 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -680,11 +680,11 @@ void machine_init(struct memory *mem)
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
 		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);
-		bus_pci_add(pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);
-		bus_pci_add(pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
-		bus_pci_add(pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-		bus_pci_add(pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
-		bus_pci_add(pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);
+		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);
+		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
+		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
+		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -966,7 +966,7 @@ void machine_init(struct memory *mem)
 				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 
 				/*  PCI devices:  */
-				bus_pci_add(pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
+				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
 				break;
 			case 35:
 				strcat(machine_name, " (Origin 3000)");
@@ -989,8 +989,13 @@ void machine_init(struct memory *mem)
 			/*  lpt at 0x2000008000  */
 			dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
 
-			/*  PCI devices:  */
-			bus_pci_add(pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
+			/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
+			/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
+			if (use_x11)
+				arcbios_addchild_manual(4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
+
+			/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
+			bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 		}
 
 		/*
@@ -1008,6 +1013,11 @@ void machine_init(struct memory *mem)
 
 			/*  TODO:  cache (per cpu)  */
 			debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);
+/*  NetBSD:
+case arc_CacheClass:
+                if (cf->type == arc_SecondaryDcache)
+                        arc_cpu_l2cache_size = 4096 << (cf->key & 0xffff);
+*/
 		}
 
 
@@ -1045,13 +1055,14 @@ void machine_init(struct memory *mem)
 		store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 		store_string(ARC_ARGV_START + 0x200, "root=nfs");
 		store_string(ARC_ARGV_START + 0x240, "cpufreq=3");
-		store_string(ARC_ARGV_START + 0x280, "c=c");
 #else
 		store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
 		store_string(ARC_ARGV_START + 0x200, "dbaud=9600");
 		store_string(ARC_ARGV_START + 0x240, "nogfxkbd=Yes");
-		store_string(ARC_ARGV_START + 0x280, "diagmode=Yes");
 #endif
+
+		store_string(ARC_ARGV_START + 0x280, "OSLOADOPTIONS=-v");
+		/*  store_string(ARC_ARGV_START + 0x280, "diagmode=Yes");  */
 		store_string(ARC_ARGV_START + 0x2c0, bootarg);
 
 		/*  TODO:  not needed?  */
@@ -1062,9 +1073,15 @@ void machine_init(struct memory *mem)
 		/*  This works with NetBSD/sgimips and NetBSD/arc:  */
 		/*  add_environment_string("ConsoleOut=arcs", &addr);  */
 
-		add_environment_string("ConsoleIn=serial(0)", &addr);
-		add_environment_string("ConsoleOut=serial(0)", &addr);
-		add_environment_string("console=d2", &addr);		/*  d2 = serial?  */
+		if (use_x11 && emulation_type == EMULTYPE_ARC) {
+			add_environment_string("ConsoleIn=multi()key()keyboard()console()", &addr);
+			add_environment_string("ConsoleOut=multi()video()monitor()console()", &addr);
+			add_environment_string("console=g?", &addr);		/*  g? ???  */
+		} else {
+			add_environment_string("ConsoleIn=serial(0)", &addr);
+			add_environment_string("ConsoleOut=serial(0)", &addr);
+			add_environment_string("console=d2", &addr);		/*  d2 = serial?  */
+		}
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("eaddr=00:00:00:00:00:00", &addr);

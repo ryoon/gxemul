@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.147 2005-01-01 17:23:10 debug Exp $
+ *  $Id: main.c,v 1.148 2005-01-05 23:43:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -153,7 +153,7 @@ static void usage(char *progname, int longusage)
 	printf("  -E        try to emulate a Cobalt machine\n");
 	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F xx     try to emulate an hpcmips machine, where 'xx' may be:\n");
-	printf("                1=Casio BE-300\n");
+	printf("                1=Casio BE-300, 2=Casio E-105\n");
 	printf("  -f        try to emulate a Sony NeWS MIPS machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -g        try to emulate a NetGear box (WG602)\n");
@@ -479,8 +479,16 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		strcpy(emul->emul_cpu_name, "R3000");
 
 	if (emul->emulation_type == EMULTYPE_HPCMIPS
-	    && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "VR4131");
+	    && !emul->emul_cpu_name[0]) {
+		if (emul->machine == HPCMIPS_CASIO_BE300)
+			strcpy(emul->emul_cpu_name, "VR4131");
+		else if (emul->machine == HPCMIPS_CASIO_E105)
+			strcpy(emul->emul_cpu_name, "VR4121");
+		else {
+			printf("Unimplemented HPCMIPS model?\n");
+			exit(1);
+		}
+	}
 
 	if (emul->emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RM5200");
@@ -541,8 +549,17 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_SGI && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 48;
 
-	if (emul->emulation_type == EMULTYPE_HPCMIPS && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 16;
+	if (emul->emulation_type == EMULTYPE_HPCMIPS &&
+	    emul->physical_ram_in_mb == 0) {
+		switch (emul->machine) {
+		case HPCMIPS_CASIO_BE300:
+			emul->physical_ram_in_mb = 16;
+			break;
+		case HPCMIPS_CASIO_E105:
+			emul->physical_ram_in_mb = 32;
+			break;
+		}
+	}
 
 	if (emul->emulation_type == EMULTYPE_MESHCUBE && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 64;

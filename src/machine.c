@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.267 2005-01-05 05:47:23 debug Exp $
+ *  $Id: machine.c,v 1.268 2005-01-05 23:43:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1720,13 +1720,25 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_HPCMIPS:
+		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
+		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
 		/*
-		 *  TODO: Make all this nicer and more generic.
-		 */
+		#define PLATID_FLAGS_SHIFT              0
+		#define PLATID_CPU_SUBMODEL_SHIFT       8
+		#define PLATID_CPU_MODEL_SHIFT          14
+		#define PLATID_CPU_SERIES_SHIFT         20
+		#define PLATID_CPU_ARCH_SHIFT           26
+
+		#define PLATID_SUBMODEL_SHIFT           0
+		#define PLATID_MODEL_SHIFT              8
+		#define PLATID_SERIES_SHIFT             16
+		#define PLATID_VENDOR_SHIFT             22
+		*/
 
 		switch (emul->machine) {
 		case HPCMIPS_CASIO_BE300:
-			emul->machine_name = "Casio BE-300";
+			/*  166MHz VR4131  */
+			emul->machine_name = "Casio Cassiopeia BE-300";
 			hpcmips_fb_addr = 0x0a200000;
 			hpcmips_fb_xsize = 240;
 			hpcmips_fb_ysize = 320;
@@ -1737,8 +1749,51 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
 			    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
-			vr41xx_data = dev_vr41xx_init(cpu, mem, 0xf000000);
+			vr41xx_data = dev_vr41xx_init(cpu, mem, 4131);
 			cpu->md_interrupt = vr41xx_interrupt;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (6 <<  8)		/*  6 = VR4131  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (3 << 22)		/*  22: vendor  3=casio */
+			    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
+			    + (2 <<  8)		/*   8: model   2=EXXX*/
+			    + (3)		/*   0: submodel 3=E500 */
+			    );
+			/*  TODO: Don't use model number for E500, it's a BE300!  */
+			break;
+		case HPCMIPS_CASIO_E105:
+			/*  131MHz VR4121  */
+			emul->machine_name = "Casio Cassiopeia E-105";
+			hpcmips_fb_addr = 0x0a200000;	/*  TODO?  */
+			hpcmips_fb_xsize = 240;
+			hpcmips_fb_ysize = 320;
+			hpcmips_fb_xsize_mem = 256;
+			hpcmips_fb_ysize_mem = 320;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_FFFF;
+
+			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
+			    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+			vr41xx_data = dev_vr41xx_init(cpu, mem, 4121);
+			cpu->md_interrupt = vr41xx_interrupt;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  3 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (3 << 22)		/*  22: vendor  3=casio */
+			    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
+			    + (2 <<  8)		/*   8: model   2=EXXX*/
+			    + (2)		/*   0: submodel 2=E105  */
+			    );
 			break;
 		default:
 			printf("Unimplemented hpcmips machine number.\n");
@@ -1758,7 +1813,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 4, 0);
 		store_string(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
 
-		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
@@ -1767,34 +1821,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
-
-		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
-
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
-		      (1 << 26)		/*  1 = MIPS  */
-		    + (1 << 20)		/*  1 = VR  */
-		    + (1 << 14)		/*  1 = VR41XX  */
-		    + (3 <<  8)		/*  3 = VR4121  */
-		    );
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
-		      (3 << 22)		/*  22: vendor  3=casio */
-		    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
-		    + (2 <<  8)		/*   8: model   2=EXXX*/
-		    + (3)		/*   0: submodel 3=E500 */
-		    );
-
-		/*
-		#define PLATID_FLAGS_SHIFT              0
-		#define PLATID_CPU_SUBMODEL_SHIFT       8
-		#define PLATID_CPU_MODEL_SHIFT          14
-		#define PLATID_CPU_SERIES_SHIFT         20
-		#define PLATID_CPU_ARCH_SHIFT           26
-
-		#define PLATID_SUBMODEL_SHIFT           0
-		#define PLATID_MODEL_SHIFT              8
-		#define PLATID_SERIES_SHIFT             16
-		#define PLATID_VENDOR_SHIFT             22
-		*/
 
 		printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.4 2004-12-28 21:35:54 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.5 2005-01-05 23:43:55 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -37,6 +37,8 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
+
+#include "bcureg.h"
 
 
 #define	DEV_VR41XX_TICKSHIFT		14
@@ -69,12 +71,25 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	struct vr41xx_data *d = (struct vr41xx_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
+	int revision = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint64_t);
 
 	switch (relative_addr) {
 	/*  BCU:  0x00 .. 0x1c  */
+	case BCUREVID_REG_W:	/*  0x010  */
+		switch (d->cpumodel) {
+		case 4131:	revision = BCUREVID_RID_4131; break;
+		case 4122:	revision = BCUREVID_RID_4122; break;
+		case 4121:	revision = BCUREVID_RID_4121; break;
+		case 4111:	revision = BCUREVID_RID_4111; break;
+		case 4102:	revision = BCUREVID_RID_4102; break;
+		case 4101:	revision = BCUREVID_RID_4101; break;
+		case 4181:	revision = BCUREVID_RID_4181; break;
+		}
+		odata = (revision << BCUREVID_RIDSHFT);
+		break;
 	case 0x14:
 		/*
 		 *  TODO?  Linux seems to read this. The lowest bits are
@@ -154,14 +169,36 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
  *  dev_vr41xx_init():
  */
 struct vr41xx_data *dev_vr41xx_init(struct cpu *cpu,
-	struct memory *mem, uint64_t baseaddr)
+	struct memory *mem, int cpumodel)
 {
+	uint64_t baseaddr = 0;
 	struct vr41xx_data *d = malloc(sizeof(struct vr41xx_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct vr41xx_data));
+
+	d->cpumodel = cpumodel;
+
+	switch (cpumodel) {
+	case 4101:
+	case 4102:
+	case 4111:
+	case 4121:
+		baseaddr = 0xb000000;
+		break;
+	case 4181:
+		baseaddr = 0xa000000;
+		break;
+	case 4122:
+	case 4131:
+		baseaddr = 0xf000000;
+		break;
+	default:
+		printf("Unimplemented VR cpu model\n");
+		exit(1);
+	}
 
 	memory_device_register(mem, "vr41xx", baseaddr,
 	    DEV_VR41XX_LENGTH, dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);

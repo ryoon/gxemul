@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.139 2005-01-04 16:45:50 debug Exp $
+ *  $Id: coproc.c,v 1.140 2005-01-05 23:43:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -131,6 +131,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R4000:	/*  according to the R4000 manual  */
+		case MIPS_R4100:
 		case MIPS_R4600:
 			IB = cpu->emul->cache_picache_linesize - 4;
 			IB = IB < 0? 0 : (IB > 1? 1 : IB);

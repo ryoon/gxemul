@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.17 2004-12-22 17:49:59 debug Exp $
+ *  $Id: emul.h,v 1.18 2005-01-05 23:43:57 debug Exp $
  */
 
 #include "misc.h"
@@ -150,6 +150,7 @@ void emul_start(struct emul *emul);
 /*  HPCmips:  */
 /*  Machine types:  */
 #define	HPCMIPS_CASIO_BE300	1
+#define	HPCMIPS_CASIO_E105	2
 
 /*  Playstation 2:  */
 #define	PLAYSTATION2_BDA	0xffffffffa0001000ULL

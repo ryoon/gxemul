@@ -24,16 +24,6 @@ Here are examples of kernels that can be experimented with:
   This is an old OpenBSD kernel in a.out format.
   Try running with  -D1 or -D2.
 
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
-  Try running with  -E -q.
-
-  http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
-  gunzip, and then try running with -E.
-
-  A NetBSD/playstation2 snapshot kernel is available here:
-  ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
-  Try running with  -X -B -q      (-X is required, for the framebuffer).
-
   NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
 
@@ -45,6 +35,16 @@ Here are examples of kernels that can be experimented with:
 
   An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)
   ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
+
+  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
+  Try running with  -E -q.
+
+  http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
+  gunzip, and then try running with -E.
+
+  A NetBSD/playstation2 snapshot kernel is available here:
+  ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
+  Try running with  -X -B -q      (-X is required, for the framebuffer).
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.
        Add  -X  to use a X-windows framebuffer, if the emulated machine

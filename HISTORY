@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.80 2004-06-07 11:52:03 debug Exp $
+$Id: HISTORY,v 1.81 2004-06-08 10:58:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -504,3 +504,8 @@ HISTORY of mips64emul
 		sure yet if it breaks or fixes anything).
 		Some minor fixes for SGI-IP22 (such as faked board revision
 		numbers).
+20040608	ll/sc should now fail if any unrelated load/store occurs.
+		Minor changes to the configure script.
+		Adding some ifdefs around code which is not often used
+		(the mfhi/mflo delay, and the last_used TLB experimental
+		code); this might cause a tiny speedup.

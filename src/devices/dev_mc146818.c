@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.22 2004-06-28 23:40:22 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.23 2004-06-29 02:30:34 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -51,7 +51,7 @@ extern struct cpu **cpus;
 
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
-/*  #define MC146818_DEBUG  */
+#define MC146818_DEBUG
 #define	TICK_STEPS_SHIFT	10
 
 
@@ -101,6 +101,28 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 			mc_data->instructions_left_until_interrupt =
 			    mc_data->interrupt_every_x_instructions;
 		}
+	}
+}
+
+
+/*
+ *  dev_mc146818_pica_access():
+ *
+ *  It seems like the PICA accesses the mc146818 by writing one byte to
+ *  0x90000000070 and then reading or writing another byte at 0x......0004000.
+ */
+int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct mc_data *mc_data = extra;
+
+	if (writeflag == MEM_WRITE) {
+		mc_data->last_addr = data[0];
+		return 1;
+	} else {
+		data[0] = mc_data->last_addr;
+		return 1;
 	}
 }
 
@@ -162,6 +184,10 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		else {
 			fatal("[ mc146818: not accessed as an MC146818_ARC_NEC device! ]\n");
 		}
+		break;
+	case MC146818_ARC_PICA:
+		/*  See comment for dev_mc146818_pica_access().  */
+		relative_addr = mc_data->last_addr * 4;
 		break;
 	case MC146818_DEC:
 	case MC146818_SGI:
@@ -446,6 +472,10 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		/*  Battery valid, for DECstations  */
 		mc_data->reg[0xf8] = 1;
 	}
+
+	if (access_style == MC146818_ARC_PICA)
+		memory_device_register(mem, "mc146818_pica", 0x90000000070,
+		    1, dev_mc146818_pica_access, (void *)mc_data);
 
 	if (access_style == MC146818_PC_CMOS)
 		memory_device_register(mem, "mc146818", baseaddr,

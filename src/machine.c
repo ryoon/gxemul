@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.114 2004-06-29 01:25:34 debug Exp $
+ *  $Id: machine.c,v 1.115 2004-06-29 02:30:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1882,17 +1882,33 @@ void machine_init(struct memory *mem)
 
 				strcat(machine_name, " (Acer PICA-61)");
 
-				/*  dev_asc_init(cpus[bootstrap_cpu], mem, 0x2000002000, 0);  */
+				/*  TODO:  lots of stuff  */
 
-				/*  perhaps _PC_CMOS, not _ARC_NEC?  how about addr div?  */
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);  /*  mcclock0  */
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x90000000070, 0,
-				    MC146818_PC_CMOS, 1, emulated_ips);  /*  mcclock0  */
+				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
+				    0x2000002000, 0);  */
 
-				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005060, PCKBC_8042, 0, 0);  /*  TODO: irq numbers  */
+				/*  Linux:  0x800004000  */
+				/*  NetBSD: 0x2000004000  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				    0x800004000, 2, MC146818_ARC_PICA, 1,
+				    emulated_ips);
+				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				    0x2000004000, 2, MC146818_ARC_PICA, 1,
+				    emulated_ips);
 
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);
+				/*  TODO: irq numbers  */
+				dev_pckbc_init(cpus[bootstrap_cpu], mem,
+				    0x2000005060, PCKBC_8042, 0, 0);
+
+				/*  TODO: irq numbers  */
+				/*  Linux:  0x800006000  */
+				/*  NetBSD: 0x2000006000  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x800006000, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000006000, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000007000, 0, 1);
 
 				break;
 

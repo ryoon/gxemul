@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.73 2004-06-29 01:56:38 debug Exp $
+ *  $Id: devices.h,v 1.74 2004-06-29 02:30:32 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -279,7 +279,8 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pci
 #define	MC146818_DEC		0
 #define	MC146818_PC_CMOS	1
 #define	MC146818_ARC_NEC	2
-#define	MC146818_SGI		3
+#define	MC146818_ARC_PICA	3
+#define	MC146818_SGI		4
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

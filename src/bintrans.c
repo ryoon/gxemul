@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.59 2004-11-13 16:41:16 debug Exp $
+ *  $Id: bintrans.c,v 1.60 2004-11-14 04:17:36 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -130,7 +130,7 @@
 int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	int run_flag, int translate_depth) { return 0; }
+	int run_flag) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
 void bintrans_init(void)
 {
@@ -156,6 +156,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
+static int bintrans_write_instruction__rfe(unsigned char **addrp);
+static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd);
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -223,12 +225,24 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_page_entry *tep;
+struct translation_page_entry *prev = NULL;
 	uint64_t paddr_page = paddr & ~0xfff;
 
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page)
+#if 0
 			break;
+#else
+{
+			if (prev == NULL)
+				translation_page_entry_array[entry_index] = tep->next;
+			else
+				prev->next = tep->next;
+			return;
+}
+#endif
+prev = tep;
 		tep = tep->next;
 	}
 	if (tep == NULL)
@@ -246,49 +260,6 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 
 /*
- *  bintrans_runchunk():
- *
- *  Checks the translation cache for a physical address. If the address
- *  is found, then that code is run, and the number of MIPS instructions
- *  executed is returned.  Otherwise, -1 is returned.
- */
-int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
-{
-	int entry_index = PADDR_TO_INDEX(paddr);
-	struct translation_page_entry *tep;
-	uint64_t paddr_page = paddr & ~0xfff;
-	int offset_within_page = (paddr & 0xfff) / 4;
-	int (*f)(struct cpu *);
-
-	if (cpu->delay_slot || cpu->nullify_next)
-		return -1;
-
-	tep = translation_page_entry_array[entry_index];
-
-	while (tep != NULL) {
-		if (tep->paddr == paddr_page) {
-			if (tep->chunk[offset_within_page] == 0)
-				return -1;
-
-			cpu->bintrans_instructions_executed = 0;
-
-			f = (void *) ((size_t)tep->chunk[offset_within_page] +
-			    translation_code_chunk_space);
-
-			f(cpu);
-
-			/*  printf("after the chunk has run.\n");  */
-			return cpu->bintrans_instructions_executed;
-		}
-
-		tep = tep->next;
-	}
-
-	return -1;
-}
-
-
-/*
  *  bintrans_attempt_translate():
  *
  *  Attempt to translate a chunk of code, starting at 'paddr'. If successful,
@@ -297,13 +268,9 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
  *  Returns -1 if no code translation occured, otherwise the generated code
  *  chunk is added to the translation_entry_array. The return value is then
  *  the number of instructions executed.
- *
- *  If run_flag is zero, then translation occurs, potentially using recursion
- *  (at most translate_depth levels), and a return value of -1 (for failure)
- *  or 0 (success) is returned, but no translated code is executed.
  */
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
-	int run_flag, int translate_depth)
+	int run_flag)
 {
 	uint64_t paddr_page;
 	int offset_within_page;
@@ -312,6 +279,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	unsigned char *ca, *ca_justdid, *ca2;
 	int res, hi6, special6, regimm5;
 	unsigned char instr[4];
+	int old_n_executed;
 	size_t p;
 	int try_to_translate;
 	int n_translated, translated;
@@ -343,9 +311,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	if (cpu->delay_slot || cpu->nullify_next)
 		return -1;
 
-	if (translate_depth == 0)
-		return -1;
-
 	/*  Not on a page directly readable by the host? Then abort.  */
 	host_mips_page = cpu->pc_bintrans_host_4kpage;
 	if (host_mips_page == NULL || (paddr & 3)!=0)
@@ -360,8 +325,15 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 		if (tep->paddr == paddr_page) {
 			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
 				return -1;
-			if (tep->chunk[offset_within_page] != 0)
-				return -1;
+			if (tep->chunk[offset_within_page] != 0) {
+				if (!run_flag)
+					return -1;
+
+				f = (void *) ((size_t)tep->chunk[offset_within_page] +
+				    translation_code_chunk_space);
+				cpu->bintrans_instructions_executed = 0;
+				goto run_it;	/*  see further down  */
+			}
 			break;
 		}
 		tep = tep->next;
@@ -462,17 +434,30 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			case SPECIAL_NOR:
 			case SPECIAL_XOR:
 			case SPECIAL_SLL:
+			case SPECIAL_SLLV:
 			case SPECIAL_DSLL:
-			case SPECIAL_SLT:
-			case SPECIAL_SLTU:
+			case SPECIAL_DSLL32:
 			case SPECIAL_SRA:
+			case SPECIAL_SRAV:
+			case SPECIAL_SRLV:
 			case SPECIAL_SRL:
 			case SPECIAL_DSRA:
+			case SPECIAL_DSRA32:
 			case SPECIAL_DSRL:
+			case SPECIAL_DSRL32:
+			case SPECIAL_SLT:
+			case SPECIAL_SLTU:
+			case SPECIAL_SYNC:
 				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
 				sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
+
+				/*  treat SYNC as a nop :-)  */
+				if (special6 == SPECIAL_SYNC) {
+					rd = rt = rs = sa = 0;
+					special6 = SPECIAL_SLL;
+				}
 				translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, rd, rs, rt, sa, special6);
 				n_translated += translated;
 				break;
@@ -559,6 +544,28 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			delayed_branch_new_p = -1;
 			break;
 
+		case HI6_COP0:
+			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
+				/*  rfe:  */
+				translated = bintrans_write_instruction__rfe(&ca);
+				n_translated += translated;
+				try_to_translate = 0;
+			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0 && (instr[1]&7)==0 && instr[0]==0) {
+				/*  mfc0:  */
+				rt = instr[2] & 31;
+				rd = (instr[1] >> 3) & 31;
+				translated = try_to_translate = bintrans_write_instruction__mfc(&ca, 0, 0, rt, rd);
+				n_translated += translated;
+			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0x20 && (instr[1]&7)==0 && instr[0]==0) {
+				/*  dmfc0:  */
+				rt = instr[2] & 31;
+				rd = (instr[1] >> 3) & 31;
+				translated = try_to_translate = bintrans_write_instruction__mfc(&ca, 0, 1, rt, rd);
+				n_translated += translated;
+			} else
+				try_to_translate = 0;
+			break;
+
 		default:
 			try_to_translate = 0;
 		}
@@ -586,7 +593,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			    ((size_t)ca_justdid - (size_t)translation_code_chunk_space);
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && n_translated > 10 && prev_p < 1018 &&
+		if (translated && n_translated > 10 && prev_p < 1022 &&
 		    tep->chunk[prev_p+1] != 0 && !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(&ca, &tep->chunk[prev_p+1], NULL, 1);
 			try_to_translate = 0;
@@ -632,16 +639,60 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 
 
 	/*  RUN the code chunk:  */
-	cpu->bintrans_instructions_executed = 0;
 	f = (void *)ca2;
+	cpu->bintrans_instructions_executed = 0;
+run_it:
 
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
 
+	old_n_executed = cpu->bintrans_instructions_executed;
+
 	f(cpu);
 
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
+	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
+
+#ifdef USE_TINY_CACHE
+	if (!cpu->delay_slot && !cpu->nullify_next &&
+	    cpu->bintrans_instructions_executed < 4095 && (cpu->pc & 3) == 0
+	    && cpu->bintrans_instructions_executed != old_n_executed) {
+		uint64_t paddr = (uint64_t) -1;
+		int ok;
+		ok = translate_address(cpu, cpu->pc, &paddr,
+		    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+		if (ok) {
+			if (cpu->emul->emulation_type == EMULTYPE_DEC)
+				paddr &= 0x1fffffff;
+			else
+				paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
+
+			if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
+				paddr = (uint64_t) -1;
+		} else
+			paddr = (uint64_t) -1;
+
+		if ((int64_t)paddr != -1) {
+			paddr_page = paddr & ~0xfff;
+			offset_within_page = (paddr & 0xfff) / 4;
+			entry_index = PADDR_TO_INDEX(paddr);
+			tep = translation_page_entry_array[entry_index];
+			while (tep != NULL) {
+				if (tep->paddr == paddr_page) {
+					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+						break;
+					if (tep->chunk[offset_within_page] != 0) {
+						f = (void *) ((size_t)tep->chunk[offset_within_page] +
+						    translation_code_chunk_space);
+						goto run_it;	/*  see further down  */
+					}
+					break;
+				}
+				tep = tep->next;
+			}
+		}
+	}
+#endif
 
 	return cpu->bintrans_instructions_executed;
 }

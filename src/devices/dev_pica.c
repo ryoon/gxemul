@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.12 2004-11-10 15:41:31 debug Exp $
+ *  $Id: dev_pica.c,v 1.13 2004-11-14 04:17:34 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -41,7 +41,7 @@
 #include "jazz_r4030_dma.h"
 
 
-#define	DEV_PICA_TICKSHIFT		10
+#define	DEV_PICA_TICKSHIFT		12
 
 #define	PICA_TIMER_IRQ			15
 

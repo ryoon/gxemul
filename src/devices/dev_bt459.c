@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.42 2004-11-08 20:20:32 debug Exp $
+ *  $Id: dev_bt459.c,v 1.43 2004-11-14 04:17:34 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -49,7 +49,8 @@ extern int quiet_mode;
 
 
 /*  #define BT459_DEBUG  */
-#define BT459_TICK_SHIFT	11
+/*  #define WITH_CURSOR_DEBUG  */
+#define BT459_TICK_SHIFT	12
 
 struct bt459_data {
 	uint32_t	bt459_reg[DEV_BT459_NREGS];
@@ -171,12 +172,22 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 
 					win->cursor_pixels[y][x+i] =
 					    pixelvalue;
-/* printf("%i", color); */
+#ifdef WITH_CURSOR_DEBUG
+printf("%i", color);
+#endif
 				}
 			}
-/* printf("\n"); */
+#ifdef WITH_CURSOR_DEBUG
+printf("\n");
+#endif
 		}
-/* printf("\n"); */
+#ifdef WITH_CURSOR_DEBUG
+printf("color 1,2,3 = 0x%02x, 0x%02x, 0x%02x\n",
+    d->bt459_reg[BT459_REG_CCOLOR_1],
+    d->bt459_reg[BT459_REG_CCOLOR_2],
+    d->bt459_reg[BT459_REG_CCOLOR_3]);
+printf("\n");
+#endif
 		/*
 		 *  Make sure the cursor is redrawn, if it is on:
 		 *

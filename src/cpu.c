@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.185 2004-11-13 16:41:16 debug Exp $
+ *  $Id: cpu.c,v 1.186 2004-11-14 04:17:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1537,33 +1537,25 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->dont_run_next_bintrans = 0;
 		} else if (cpu->emul->bintrans_enable &&
 		    cpu->pc_bintrans_paddr_valid) {
-			int res;
-			res = bintrans_runchunk(cpu, cpu->pc_bintrans_paddr);
-
+			int res = bintrans_attempt_translate(cpu,
+			    cpu->pc_bintrans_paddr, 1);
 			if (res >= 0) {
-				/*  debug("BINTRANS cache hit,"
-				    "  pc = %016llx\n", (long long)cached_pc);  */
+				/*  debug("BINTRANS translation + hit,"
+				    " pc = %016llx\n", (long long)cached_pc);  */
 				if (res > 0) {
 					if (instruction_trace_cached)
 						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					/*  cpu->dont_run_next_bintrans = 1;  */
-					return res;
-				}
-			} else {
-				/*  Bintrans cache miss: try to translate
-				    the code chunk and run it:  */
-				res = bintrans_attempt_translate(cpu,
-				    cpu->pc_bintrans_paddr,
-				    1, MAX_TRANSLATE_DEPTH);
-				if (res >= 0) {
-					/*  debug("BINTRANS translation + hit,"
-					    " pc = %016llx\n", (long long)cached_pc);  */
-					if (res > 0) {
-						if (instruction_trace_cached)
-							cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-						/*  cpu->dont_run_next_bintrans = 1;  */
-						return res;
+
+					if (cpu->cpu_type.exc_model != EXC3K) {
+						if (cp0->reg[COP0_COUNT] < cp0->reg[COP0_COMPARE] &&
+						    cp0->reg[COP0_COUNT] + (res-1) >= cp0->reg[COP0_COMPARE])
+							cpu_interrupt(cpu, 7);
+
+						cp0->reg[COP0_COUNT] += (res-1);
 					}
+
+					return res;
 				}
 			}
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.87 2004-11-13 16:41:16 debug Exp $
+ *  $Id: coproc.c,v 1.88 2004-11-14 04:17:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -320,12 +320,16 @@ static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vad
 
 #ifdef USE_TINY_CACHE
 	int i;
+	vaddr2 &= 0xffffe000ULL;
+	vaddr2 >>= 12;
 
 	/*  Invalidate the tiny translation cache...  */
 	for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-		cpu->translation_cache_instr[i].wf = 0;
+/*		if (all || vaddr2 == cpu->translation_cache_instr[i].vaddr_pfn)  */
+			cpu->translation_cache_instr[i].wf = 0;
 	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-		cpu->translation_cache_data[i].wf = 0;
+/*		if (all || vaddr2 == cpu->translation_cache_data[i].vaddr_pfn)  */
+			cpu->translation_cache_data[i].wf = 0;
 #endif
 }
 
@@ -1007,8 +1011,10 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 
 		switch (cond) {
 		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
-		case 4:		return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less than  TODO (?)  */
-		case 6:		return (float_value[0].f <= float_value[1].f) || !unordered;  /*  Ordered or Less than or Equal  TODO (?)  */
+		case 4:		return (float_value[0].f < float_value[1].f) || !unordered;	/*  Ordered or Less than  TODO (?)  */
+		case 5:		return (float_value[0].f < float_value[1].f) || unordered;	/*  Unordered or Less than  */
+		case 6:		return (float_value[0].f <= float_value[1].f) || !unordered;	/*  Ordered or Less than or Equal  TODO (?)  */
+		case 7:		return (float_value[0].f <= float_value[1].f) || unordered;	/*  Unordered or Less than or Equal  */
 		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
 		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
 
@@ -1018,8 +1024,6 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		case 0:		return 0;					/*  False  */
 		case 1:		return 0;					/*  Unordered  */
 		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
-		case 5:		return (float_value[0].f < float_value[1].f);	/*  Unordered or Less than  */
-		case 7:		return (float_value[0].f <= float_value[1].f);	/*  Unordered or Less than or Equal  */
 		case 8:		return 0;					/*  Signaling false  */
 		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */
 		case 10:	return (float_value[0].f == float_value[1].f);	/*  Signaling Equal  */

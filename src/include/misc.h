@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.142 2004-11-13 16:41:15 debug Exp $
+ *  $Id: misc.h,v 1.143 2004-11-14 04:17:35 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -523,7 +523,7 @@ struct coproc {
 #define	MAX_TICK_FUNCTIONS	12
 
 /*  Number of "tiny" translation cache entries:  */
-#define	N_TRANSLATION_CACHE_INSTR	4
+#define	N_TRANSLATION_CACHE_INSTR	5
 #define	N_TRANSLATION_CACHE_DATA	5
 
 struct translation_cache_entry {

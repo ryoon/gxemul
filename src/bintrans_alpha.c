@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.30 2004-11-13 16:41:16 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.31 2004-11-14 04:17:36 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -32,6 +32,7 @@
 
 
 struct cpu dummy_cpu;
+struct coproc dummy_coproc;
 
 
 unsigned char bintrans_alpha_imb[32] = {
@@ -257,11 +258,15 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DADDU:
 	case SPECIAL_DSUBU:
 	case SPECIAL_OR:
+	case SPECIAL_AND:
 	case SPECIAL_NOR:
 	case SPECIAL_XOR:
 	case SPECIAL_DSLL:
 	case SPECIAL_DSRL:
 	case SPECIAL_DSRA:
+	case SPECIAL_DSLL32:
+	case SPECIAL_DSRL32:
+	case SPECIAL_DSRA32:
 	case SPECIAL_SLT:
 	case SPECIAL_SLTU:
 		load64 = 1;
@@ -315,14 +320,34 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
+	case SPECIAL_SLLV:
+		/*  rd = rt << (rs&31)  (logical)     t0 = t1 << (t0&31)  */
+		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
+		*a++ = 0x21; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sll t1,t0,t0  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		break;
 	case SPECIAL_DSLL:
+		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
+		break;
+	case SPECIAL_DSLL32:
+		sa += 32;
 		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		break;
 	case SPECIAL_SRA:
 		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
+	case SPECIAL_SRAV:
+		/*  rd = rt >> (rs&31)  (arithmetic)     t0 = t1 >> (t0&31)  */
+		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
+		*a++ = 0x81; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sra t1,t0,t0  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		break;
 	case SPECIAL_DSRA:
+		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
+		break;
+	case SPECIAL_DSRA32:
+		sa += 32;
 		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
 		break;
 	case SPECIAL_SRL:
@@ -331,8 +356,20 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl  */
 		break;
+	case SPECIAL_SRLV:
+		/*  rd = rt >> (rs&31)  (logical)     t0 = t1 >> (t0&31)  */
+		*a++ = 0x22; *a++ = 0xf6; *a++ = 0x41; *a++ = 0x48;	/*  zapnot t1,0xf,t1 (use only lowest 32 bits)  */
+		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
+		*a++ = 0x81; *a++ = 0x06; *a++ = 0x41; *a++ = 0x48;	/*  srl t1,t0,t0  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
+		break;
 	case SPECIAL_DSRL:
 		/*  Note: bits of sa are distributed among two different bytes.  */
+		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
+		break;
+	case SPECIAL_DSRL32:
+		/*  Note: bits of sa are distributed among two different bytes.  */
+		sa += 32;
 		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;
 		break;
 	case SPECIAL_SLT:
@@ -675,7 +712,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		/*  Don't execute too many instructions.  */
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 		    - ((size_t)&dummy_cpu);
-		*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -767,7 +804,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 */
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 		    - ((size_t)&dummy_cpu);
-		*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -1160,6 +1197,103 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	}
 
 	*addrp = a;
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__rfe():
+ */
+static int bintrans_write_instruction__rfe(unsigned char **addrp)
+{
+	uint32_t *a;
+	int ofs;
+
+	/*
+	 *  cpu->coproc[0]->reg[COP0_STATUS] =
+	 *	(cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
+	 *      ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
+	 */
+
+	/*
+	 *  ldq t0, coproc[0](a0)
+	 *  ldq t1, reg[COP0_STATUS](t0)
+	 *  lda t2, 0x...ffc0
+	 *  lda t3, 0x3f
+	 *  and t1,t2,t2
+	 *  and t1,t3,t3
+	 *  srl t3,2,t3
+	 *  or t2,t3,t3
+	 *  stq t3, reg[COP0_STATUS](t0)
+	 */
+
+	a = (uint32_t *) *addrp;
+
+	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
+
+	ofs = ((size_t)&dummy_coproc.reg[COP0_STATUS]) - (size_t)&dummy_coproc;
+	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,status(t0)  */
+
+	*a++ = 0x2063ffc0;		/*  lda t2,0x...ffc0  */
+	*a++ = 0x209f003f;		/*  lda t3,0x3f  */
+	*a++ = 0x44430003;		/*  and t1,t2,t2  */
+	*a++ = 0x44440004;		/*  and t1,t3,t3  */
+	*a++ = 0x48805684;		/*  srl t3,2,t3  */
+	*a++ = 0x44640402;		/*  or t2,t3,t1  */
+
+	*a++ = 0xb4410000 | (ofs & 0xffff);		/*  stq t1,status(t0)  */
+
+	*addrp = (unsigned char *) a;
+
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__mfc():
+ */
+static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd)
+{
+	uint32_t *a;
+	int ofs;
+
+	/*
+	 *  NOTE: Only a few registers are readable without side effects.
+	 */
+	if (rt == 0)
+		goto rt0;
+
+	if (coproc_nr >= 1)
+		return 0;
+
+
+	/*************************************************************
+	 *
+	 *  TODO: Check for kernel mode, or Coproc X usability bit!
+	 *
+	 *************************************************************/
+
+	a = (uint32_t *) *addrp;
+
+	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
+
+	ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,reg_rd(t0)  */
+
+	if (!flag64bit) {
+		*a++ = 0x40401002;		/*  addl t1,0,t1  */
+	}
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = 0xb4500000 | (ofs & 0xffff);		/*  stq t1,rt(a0)  */
+
+	*addrp = (unsigned char *) a;
+
+rt0:
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }

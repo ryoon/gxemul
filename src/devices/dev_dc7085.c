@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.28 2004-11-10 15:41:31 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.29 2004-11-14 04:17:34 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -40,7 +40,7 @@
 #include "dc7085.h"
 
 
-#define	DC_TICK_SHIFT		10
+#define	DC_TICK_SHIFT		12
 
 #define	MAX_QUEUE_LEN		8192
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.98 2004-11-13 16:41:17 debug Exp $
+ *  $Id: memory.c,v 1.99 2004-11-14 04:17:36 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -251,11 +251,6 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 	buf[bufsize-1] = '\0';
 	return buf;
 }
-
-
-#define	FLAG_WRITEFLAG		1
-#define	FLAG_NOEXCEPTIONS	2
-#define	FLAG_INSTR		4
 
 
 /*
@@ -658,7 +653,7 @@ static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
  *	1  Success, the page is readable only
  *	2  Success, the page is read/write
  */
-static int translate_address(struct cpu *cpu, uint64_t vaddr,
+int translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
 {
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
@@ -1106,7 +1101,37 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 			if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
 			    cpu->bintrans_data_hostpage[i] != NULL &&
 			    cpu->bintrans_data_writable[i] >= writeflag)
+#if 0
 				return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+#else
+{
+				uint64_t tmpaddr;
+				unsigned char *tmpptr;
+				int tmpwf;
+				unsigned char *ret = cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+
+if (cpu->bintrans_next_index != i) {
+				cpu->bintrans_next_index --;
+				if (cpu->bintrans_next_index < 0)
+					cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+
+				tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
+				tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
+				tmpwf   = cpu->bintrans_data_writable[cpu->bintrans_next_index];
+
+				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->bintrans_data_hostpage[i];
+				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = cpu->bintrans_data_vaddr[i];
+				cpu->bintrans_data_writable[cpu->bintrans_next_index] = cpu->bintrans_data_writable[i];
+
+				cpu->bintrans_data_hostpage[i] = tmpptr;
+				cpu->bintrans_data_vaddr[i] = tmpaddr;
+				cpu->bintrans_data_writable[i] = tmpwf;
+
+				ret = cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
+}
+				return ret;
+}
+#endif
 			i++;
 			if (i == N_BINTRANS_VADDR_TO_HOST)
 				i = 0;

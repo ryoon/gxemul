@@ -29,27 +29,49 @@
 #include "memory.h"
 #include "misc.h"
 
+struct pci_device {
+	int		bus, device, function;
+
+	void		(*init)(struct memory *mem);
+	uint32_t	(*read_register)(int reg);
+
+	struct pci_device *next;
+};
+
 struct pci_data {
 	uint32_t	pci_addr;
+	struct pci_device *first_device;
 };
 
 #define	BUS_PCI_ADDR	0xcf8
 #define	BUS_PCI_DATA	0xcfc
 
-#define	PCI_VENDOR_GALILEO			0x11ab
-#define	PCI_PRODUCT_GALILEO_GT64011		0x4146
 
-#define	PCI_VENDOR_DEC				0x1011
-#define	PCI_PRODUCT_DEC_21142			0x0019
-
-#define	PCI_VENDOR_SYMBIOS			0x1000
-#define	PCI_PRODUCT_SYMBIOS_860			0x0006
-
-#define	PCI_VENDOR_VIATECH			0x1106
-#define	PCI_PRODUCT_VIATECH_VT82C586_ISA	0x0586
+#include "pcidevs.h"
+#include "pcireg.h"
 
 
+/*  bus_pci.c:  */
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, uint64_t *data, int writeflag, struct pci_data *pci_data);
+void bus_pci_add(struct pci_data *pci_data, struct memory *mem,
+	int bus, int device, int function,
+	void (*init)(struct memory *mem), uint32_t (*read_register)(int reg));
 struct pci_data *bus_pci_init(struct memory *mem);
+
+
+/*
+ *  Individual devices:
+ */
+
+/*  dec21143:  */
+uint32_t pci_dec21143_rr(int reg);
+void pci_dec21143_init(struct memory *mem);
+
+/*  vt82c586:  */
+uint32_t pci_vt82c586_isa_rr(int reg);
+void pci_vt82c586_isa_init(struct memory *mem);
+uint32_t pci_vt82c586_ide_rr(int reg);
+void pci_vt82c586_ide_init(struct memory *mem);
+
 
 #endif	/*  PCI_BUS_H  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.72 2004-09-23 23:22:28 debug Exp $
+ *  $Id: emul.c,v 1.73 2004-09-28 02:57:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -526,12 +526,6 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 			fatal("\nWARNING! Unusually large bootblock (%i bytes, more than 8KB)\n\n",
 			    n_blocks * 512);
 
-		if (minibuf[0x10] != minibuf[0x14] ||
-		    minibuf[0x11] != minibuf[0x15] ||
-		    minibuf[0x12] != minibuf[0x16] ||
-		    minibuf[0x13] != minibuf[0x17])
-			fatal("\nWARNING! Differing values at offset 0x10 and 0x14 of DECstation boot info\n\n");
-
 		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
 		    bootblock_buf, sizeof(bootblock_buf));
 		if (!res) {
@@ -663,16 +657,6 @@ void emul_start(struct emul *emul)
 	if (emul->use_x11)
 		x11_init();
 
-	if (emul->userland_emul) {
-		/*
-		 *  For userland only emulation, no machine emulation is
-		 *  needed.
-		 */
-	} else {
-		machine_init(emul, mem);
-		net_init();
-	}
-
 	/*  Fill memory with random bytes:  */
 	if (emul->random_mem_contents) {
 		for (i=0; i<emul->physical_ram_in_mb*1048576; i+=256) {
@@ -685,6 +669,16 @@ void emul_start(struct emul *emul)
 			    addr, data, sizeof(data), MEM_WRITE,
 			    CACHE_NONE | NO_EXCEPTIONS);
 		}
+	}
+
+	if (emul->userland_emul) {
+		/*
+		 *  For userland only emulation, no machine emulation is
+		 *  needed.
+		 */
+	} else {
+		machine_init(emul, mem);
+		net_init();
 	}
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */

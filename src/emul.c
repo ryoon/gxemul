@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.8 2004-01-11 16:53:30 debug Exp $
+ *  $Id: emul.c,v 1.9 2004-01-24 21:10:09 debug Exp $
  *
  *  Emulation startup.
  */
@@ -56,6 +56,7 @@ extern int bootstrap_cpu;
 extern int use_random_bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
+extern int userland_emul;
 extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
@@ -164,7 +165,9 @@ void emul(void)
 	if (use_x11)
 		x11_init();
 
-	machine_init(mem);
+	/*  For userland only emulation, no machine emulation is needed.  */
+	if (!userland_emul)
+		machine_init(mem);
 
 	/*  Fill memory with random bytes:  */
 	if (random_mem_contents) {
@@ -193,6 +196,9 @@ void emul(void)
 	if ((cpus[bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
 	    (cpus[bootstrap_cpu]->gpr[GPR_GP] & 0x80000000))
 		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000;
+
+	if (userland_emul)
+		useremul_init(cpus[bootstrap_cpu], mem);
 
 	/*  Startup the bootstrap CPU:  */
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;

@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.8 2004-03-27 19:26:15 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.9 2004-03-28 01:23:17 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
+ *
+ *  TODO:  Convert memory_rw() accesses into direct framebuffer reads and
+ *         writes, to improve performance.
  */
 
 #include <stdio.h>
@@ -197,25 +200,53 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		if (data[0] == 0x08 && data[1] == 0x80) {					/*  Possibly "initialize 640x480 mode":  */
 			debug("[ gif: initialize video mode (?) ]\n");
 		} else if (data[0] == 0x04 && data[1] == 0x00 && len > 300) {			/*  Possibly "output 8x16 character":  */
-			int xbase, ybase, x, y;
+			int xbase, ybase, xsize, ysize, x, y;
 
 			xbase = data[9*4 + 0] + (data[9*4 + 1] << 8);
 			ybase = data[9*4 + 2] + (data[9*4 + 3] << 8);
 
-			/*  debug("[ gif: putchar at (%i,%i) ]\n", xbase, ybase);  */
+			xsize = data[12*4 + 0] + (data[12*4 + 1] << 8);
+			ysize = data[13*4 + 0] + (data[13*4 + 1] << 8);
+			ysize &= ~0xf;	/*  multple of 16  */
 
-			/*  Copy the character data to framebuffer memory:  */
-			for (y=0; y<16; y++)
-				for (x=0; x<8; x++) {
-					int addr = (6*4 + x+y*8) * 4;
-					int fb_addr = (xbase+x + (ybase+y) * d->xsize) * d->bytes_per_pixel;
-					unsigned char pixels[3];
-					/*  print using pure black and white only (r = g = b)  */
-					pixels[0] = pixels[1] = pixels[2] = data[addr]? 0xff : 0x00;
+			debug("[ gif: putchar at (%i,%i), size (%i,%i) ]\n", xbase, ybase, xsize, ysize);
 
-					if (!d->transparent_text || pixels[0])
-						memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+			/*
+			 *  NetBSD and Linux:
+			 *
+			 *	[ gif write to addr 0x0 (len=608):
+			 *	 04 00 00 00 00 00 00 10, 0e 00 00 00 00 00 00 00, 00 00 00 00 00 00 0a 00, 50 00 00 00 00 00 00 00,
+			 *	 00 00 00 00 00 00 00 00, 51 00 00 00 00 00 00 00, 08 00 00 00 16 00 00 00, 52 00 00 00 00 00 00 00,
+			 *	 00 00 00 00 00 00 00 00, 53 00 00 00 00 00 00 00, 20 80 00 00 00 00 00 08, 00 00 00 00 00 00 00 00,
+			 *	 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
+			 *	 aa aa 00 80 aa aa 00 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80, 00 00 aa 80 00 00 aa 80,
+			 */
+
+			/*
+			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
+			for (i=0; i<len; i++) {
+				fatal(" %02x", data[i]);
+				if ((i & 7) == 7)
+					fatal(",");
+				if ((i & 31) == 31)
+					fatal("\n");
+			}
+			fatal(" ]\n");
+			*/
+
+			for (y=0; y<ysize; y++) {
+				int fb_addr = (xbase + (ybase+y) * d->xsize) * d->bytes_per_pixel;
+				int addr = (24 + y*xsize) * 4;
+				for (x=0; x<xsize; x++) {
+					/*  There are three bytes (r,g,b) at data[addr + 0] .. [addr + 2].
+					    TODO: This should be translated to a direct update of the framebuffer.  */
+
+					memory_rw(NULL, d->fb_mem, fb_addr, data + addr, 3, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+
+					fb_addr += d->bytes_per_pixel;
+					addr += 4;
 				}
+			}
 		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  Possibly "scroll/copy 640x16":  */
 			int y_source, y_dest;
 			unsigned char pixels[640 * 16 * 3];
@@ -254,7 +285,9 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			for (i=0; i<len; i++)
 				fatal(" %02x", data[i]);
 			fatal(" ]\n");
-		}
+/*			fatal("Unknown gif command.\n");
+			cpu->running = 0;
+*/		}
 	}
 
 	return 1;

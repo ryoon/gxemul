@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.82 2005-01-19 14:59:20 debug Exp $
+#  $Id: configure,v 1.83 2005-01-23 10:54:01 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -77,7 +77,7 @@ if [ z"$*" != z ]; then
 			echo "  --caches       enable cache emulation (experimental)"
 			echo "  --delays       enable instruction latency/delay emulation"
 #			echo "  --gui          compile with GTK+ 2.x"
-			echo "  --mips16       enable MIPS16 instruction support"
+			echo "  --mips16       enable MIPS16 instruction support (experimental)"
 			echo "  --nobintrans   configure without bintrans, even if the host supports it"
 			echo "  --nox11        configure without X11 support"
 			echo "  --userland     enable userland emulation (experimental)"

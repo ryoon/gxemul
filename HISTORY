@@ -380,3 +380,7 @@ HISTORY of mips64emul
 20040307	Implementing the basic functionality of a "PMAG-CA" pixelstamp
 		accellerated framebuffer device. Works with NetBSD and
 		Ultrix, but no cursor or color support.
+20040308	PMAG-CA, -DA, and -FA pixelstamps seem to work now.
+		Adding a hack to allow a pmax/mach kernel to be loaded (it's
+		a COFF file with 0 (!) sections).
+		Initial test of bt459 + framebuffer cursor support.

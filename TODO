@@ -148,8 +148,7 @@ mips64emul TODO
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 
-	Profile the whole emulator, and try to increase performance. As
-		of now it is utterly slow.
+	Profile the whole emulator, and try to increase performance.
 
 	Statistics:  (this could be interesting)
 		o)  memory accesses (to measure cache efficiency and
@@ -161,5 +160,7 @@ mips64emul TODO
 	possible, with different compilers and compiler settings. (Maybe on
 	non-Unix-like systems too, if the X11 stuff is separated well enough.)
 
-	Write Documentation (TeX/HTML/manpages, or DocBook?) for the whole emulator.
+	Write Documentation (TeX/HTML/manpages, or DocBook?):
+		o)  User's guide
+		o)  Internals
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.153 2004-08-05 22:22:21 debug Exp $
+ *  $Id: machine.c,v 1.154 2004-08-05 22:45:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2550,6 +2550,7 @@ void machine_init(struct memory *mem)
 
 		dev_8250_init(cpus[bootstrap_cpu], mem, 0x11100000, 0, 4);
 		dev_random_init(mem, 0x1017fffc, 4);
+		dev_meshcube_init(cpus[bootstrap_cpu], mem);
 
 		/*
 		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I

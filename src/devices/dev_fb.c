@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.26 2004-03-25 20:57:51 debug Exp $
+ *  $Id: dev_fb.c,v 1.27 2004-03-28 14:56:10 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -195,6 +195,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	if (fillflag)
 		debug("framebuffer_blockcopyfill(FILL, %i,%i, %i,%i, color %i,%i,%i)\n",
 		    x1,y1, x2,y2, fill_r, fill_g, fill_b);
+	else
 		debug("framebuffer_blockcopyfill(COPY, %i,%i, %i,%i, from %i,%i)\n",
 		    x1,y1, x2,y2, from_x,from_y);
 
@@ -208,10 +209,21 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	linelen = (x2-x1 + 1) * (d->bit_depth/8);	/*  NOTE: nr of bytes, not pixels  */
 
 	if (fillflag) {
-		printf("TODO: actual fill\n");
 		for (y=y1; y<=y2; y++) {
-			/*  if (y>=0 && y<d->ysize)  */
-				/*  memset something...  */
+			if (y>=0 && y<d->ysize) {
+				int x;
+				char buf[8192 * 3];
+				if (d->bit_depth == 24)
+					for (x=0; x<linelen; x+=3) {
+						buf[x] = fill_r;
+						buf[x+1] = fill_g;
+						buf[x+2] = fill_b;
+					}
+				else
+					printf("TODO: fill for non-24-bit modes\n");
+
+				memmove(d->framebuffer + dest_ofs, buf, linelen);
+			}
 
 			dest_ofs += d->bytes_per_line;
 		}

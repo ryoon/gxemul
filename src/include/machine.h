@@ -28,19 +28,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.8 2005-01-26 13:01:13 debug Exp $
+ *  $Id: machine.h,v 1.9 2005-01-26 16:17:12 debug Exp $
  */
 
+#include <sys/types.h>
 #include <sys/time.h>
 
-#include "misc.h"
+#include "symbol.h"
+
 
 #define	MAX_BREAKPOINTS		8
 #define	BREAKPOINT_FLAG_R	1
 
 #define	MAX_TICK_FUNCTIONS	14
-
-#include "symbol.h"
 
 struct diskimage;
 struct emul;
@@ -250,6 +250,7 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct machine *);
 void machine_memsize_fix(struct machine *);
+void machine_default_cputype(struct machine *);
 void machine_dumpinfo(struct machine *);
 
 

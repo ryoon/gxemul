@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.135 2005-01-26 13:01:14 debug Exp $
+ *  $Id: emul.c,v 1.136 2005-01-26 16:17:13 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -444,8 +444,19 @@ void emul_machine_setup(struct machine *machine)
 	debug("\n");
 
 	/*  Create CPUs:  */
-	if (machine->ncpus < 1)
-		machine->ncpus = 1;
+	if (machine->cpu_name == NULL)
+		machine_default_cputype(machine);
+	if (machine->ncpus == 0) {
+		/*  TODO: This should be moved elsewhere...  */
+		if (machine->machine_type == MACHINE_ARC &&
+		    machine->machine_subtype == MACHINE_ARC_NEC_R96)
+			machine->ncpus = 2;
+		else if (machine->machine_type == MACHINE_ARC &&
+		    machine->machine_subtype == MACHINE_ARC_NEC_R98)
+			machine->ncpus = 4;
+		else
+			machine->ncpus = 1;
+	}
 	machine->cpus = malloc(sizeof(struct cpu *) * machine->ncpus);
 	if (machine->cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -460,7 +471,7 @@ void emul_machine_setup(struct machine *machine)
 	debug("adding cpu0");
 	if (machine->ncpus > 1)
 		debug(" .. cpu%i", machine->ncpus - 1);
-	debug(": %s", machine->cpu_name);
+	debug(": ");
 	for (i=0; i<machine->ncpus; i++) {
 		machine->cpus[i] = cpu_new(machine->memory, machine,
 		    i, machine->cpu_name);

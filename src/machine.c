@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.298 2005-01-26 13:01:14 debug Exp $
+ *  $Id: machine.c,v 1.299 2005-01-26 16:17:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -130,8 +130,7 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;
 	m->boot_kernel_filename = "";
-	m->boot_string_argument = "";
-	m->ncpus = DEFAULT_NCPUS;
+	m->boot_string_argument = NULL;
 	m->automatic_clock_adjustment = 1;
 	m->x11_scaledown = 1;
 	m->n_gfx_cards = 1;
@@ -1128,8 +1127,23 @@ void machine_init(struct machine *machine)
 
 
 	mem = cpu->mem;
-
 	machine->machine_name = NULL;
+
+	/*  TODO: Move this somewhere else?  */
+	if (machine->boot_string_argument == NULL) {
+		switch (machine->machine_type) {
+		case MACHINE_ARC:
+			machine->boot_string_argument = "-aN";
+			break;
+		case MACHINE_DEC:
+			machine->boot_string_argument = "-a";
+			break;
+		default:
+			/*  Important, because boot_string_argument should
+			    not be set to NULL:  */
+			machine->boot_string_argument = "";
+		}
+	}
 
 	switch (machine->machine_type) {
 
@@ -3755,11 +3769,12 @@ for (i=0; i<32; i++)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "Sony NeWS (NET WORK STATION)";
 
-{
-int i;
-for (i=0; i<32; i++)
-		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
-}
+		/*  This is just a test.  TODO  */
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
+		}
 
 		dev_zs_init(machine, mem, 0x1e950000, 0, 1);
 
@@ -3781,9 +3796,9 @@ for (i=0; i<32; i++)
 		machine->emulated_hz = 1500000;
 
 	if (bootstr != NULL) {
-		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)",
-		    bootstr);
-		if (bootarg != NULL)
+		debug("bootstring%s: %s", (bootarg!=NULL &&
+		    strlen(bootarg) >= 1)? "(+bootarg)" : "", bootstr);
+		if (bootarg != NULL && strlen(bootarg) >= 1)
 			debug(" %s", bootarg);
 		debug("\n");
 	}
@@ -3877,6 +3892,99 @@ void machine_memsize_fix(struct machine *m)
 
 	if (m->physical_ram_in_mb == 0)
 		m->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
+}
+
+
+/*
+ *  machine_default_cputype():
+ *
+ *  Sets m->cpu_name, if it isn't already set, depending on the machine
+ *  type.
+ */
+void machine_default_cputype(struct machine *m)
+{
+	if (m == NULL) {
+		fatal("machine_default_cputype(): m == NULL?\n");
+		exit(1);
+	}
+
+	if (m->cpu_name != NULL)
+		return;
+
+	switch (m->machine_type) {
+	case MACHINE_PS2:
+		m->cpu_name = strdup("R5900");
+		break;
+	case MACHINE_DEC:
+		if (m->machine_subtype > 2)
+			m->cpu_name = strdup("R3000A");
+		if (m->machine_subtype > 1 && m->cpu_name == NULL)
+			m->cpu_name = strdup("R3000");
+		if (m->cpu_name == NULL)
+			m->cpu_name = strdup("R2000");
+		break;
+	case MACHINE_SONYNEWS:
+		m->cpu_name = strdup("R3000");
+		break;
+	case MACHINE_HPCMIPS:
+		switch (m->machine_subtype) {
+		case MACHINE_HPCMIPS_CASIO_BE300:
+			m->cpu_name = strdup("VR4131");
+			break;
+		case MACHINE_HPCMIPS_CASIO_E105:
+			m->cpu_name = strdup("VR4121");
+			break;
+		default:
+			printf("Unimplemented HPCMIPS model?\n");
+			exit(1);
+		}
+		break;
+	case MACHINE_COBALT:
+		m->cpu_name = strdup("RM5200");
+		break;
+	case MACHINE_MESHCUBE:
+		m->cpu_name = strdup("R4400");
+		/*  TODO:  Should be AU1500, but Linux doesn't like
+		    the absence of caches in the emulator  */
+		break;
+	case MACHINE_NETGEAR:
+		m->cpu_name = strdup("RC32334");
+		break;
+	case MACHINE_WRT54G:
+		m->cpu_name = strdup("BCM4712");
+		break;
+	case MACHINE_ARC:
+		switch (m->machine_subtype) {
+		case MACHINE_ARC_JAZZ_PICA:
+			m->cpu_name = strdup("R4000");
+			break;
+		default:
+			m->cpu_name = strdup("R4400");
+		}
+		break;
+	case MACHINE_SGI:
+		if (m->machine_subtype <= 12)
+			m->cpu_name = strdup("R3000");
+		if (m->cpu_name == NULL && m->machine_subtype == 35)
+			m->cpu_name = strdup("R12000");
+		if (m->cpu_name == NULL && (m->machine_subtype == 25 ||
+		    m->machine_subtype == 27 ||
+		    m->machine_subtype == 28 ||
+		    m->machine_subtype == 30 ||
+		    m->machine_subtype == 32))
+			m->cpu_name = strdup("R10000");
+		if (m->cpu_name == NULL && (m->machine_subtype == 21 ||
+		    m->machine_subtype == 26))
+			m->cpu_name = strdup("R8000");
+		if (m->cpu_name == NULL && m->machine_subtype == 24)
+			m->cpu_name = strdup("R5000");
+
+		/*  Other SGIs should probably work with
+		    R4000, R4400 or R5000 or similar:  */
+		if (m->cpu_name == NULL)
+			m->cpu_name = strdup("R4400");
+		break;
+	}
 }
 
 

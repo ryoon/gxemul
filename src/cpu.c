@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.258 2005-01-26 08:22:58 debug Exp $
+ *  $Id: cpu.c,v 1.259 2005-01-26 16:17:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -107,6 +107,9 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 	int64_t secondary_cache_size;
 	int x, linesize;
 
+	if (cpu_type_name == NULL)
+		cpu_type_name = CPU_DEFAULT;
+
 	cpu = malloc(sizeof(struct cpu));
 	if (cpu == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -138,6 +141,9 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 		    cpu_type_name);
 		exit(1);
 	}
+
+	if (cpu_id == 0)
+		debug("%s", cpu->cpu_type.name);
 
 	/*
 	 *  CACHES:
@@ -4023,7 +4029,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 16)
+		if (rounds > 4)
 			break;
 	}
 

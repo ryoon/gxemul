@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.3 2005-01-26 13:01:14 debug Exp $
+ *  $Id: emul_parse.c,v 1.4 2005-01-26 16:17:14 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "emul.h"
+#include "machine.h"
 #include "misc.h"
 #include "net.h"
 
@@ -289,6 +290,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_name, "no_name");
 
 		m = emul_add_machine(e, cur_machine_name);
+m->machine_type = 2;
+m->machine_subtype = 2;
 		emul_machine_setup(m);
 
 		*parsestate = PARSESTATE_EMUL;

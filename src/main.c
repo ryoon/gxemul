@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.170 2005-01-26 13:01:14 debug Exp $
+ *  $Id: main.c,v 1.171 2005-01-26 16:17:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -344,12 +344,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->speed_tricks = 0;
 			break;
 		case 'j':
-			m->boot_kernel_filename = malloc(strlen(optarg) + 1);
+			m->boot_kernel_filename = strdup(optarg);
 			if (m->boot_kernel_filename == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(m->boot_kernel_filename, optarg);
 			break;
 		case 'K':
 			emul->force_debugger_at_exit = 1;
@@ -371,12 +370,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->force_netboot = 1;
 			break;
 		case 'o':
-			m->boot_string_argument = malloc(strlen(optarg) + 1);
+			m->boot_string_argument = strdup(optarg);
 			if (m->boot_string_argument == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(m->boot_string_argument, optarg);
 			using_switch_o = 1;
 			break;
 		case 'p':
@@ -384,14 +382,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				fprintf(stderr, "too many breakpoints\n");
 				exit(1);
 			}
-			m->breakpoint_string[m->n_breakpoints] =
-			    malloc(strlen(optarg) + 1);
+			m->breakpoint_string[m->n_breakpoints] = strdup(optarg);
 			if (m->breakpoint_string[m->n_breakpoints] == NULL) {
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
-			strcpy(m->breakpoint_string[m->n_breakpoints],
-			    optarg);
 			m->breakpoint_flags[m->n_breakpoints] = 0;
 			m->n_breakpoints ++;
 			break;
@@ -454,14 +449,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				exit(1);
 			}
 			m->x11_display_names[m->x11_n_display_names-1] =
-			    malloc(strlen(optarg) + 1);
+			    strdup(optarg);
 			if (m->x11_display_names
 			    [m->x11_n_display_names-1] == NULL) {
 				printf("out of memory\n");
 				exit(1);
 			}
-			strcpy(m->x11_display_names
-			    [m->x11_n_display_names-1], optarg);
 			break;
 		default:
 			printf("Invalid option.\n");
@@ -495,117 +488,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -t\n");
 		emul->verbose = 1;
-	}
-
-
-	/*  Default nr of CPUs (for SMP systems):  */
-
-	if (!n_cpus_set) {
-		if (m->machine_type == MACHINE_ARC &&
-		    m->machine_subtype == MACHINE_ARC_NEC_R96)
-			m->ncpus = 2;
-
-		if (m->machine_type == MACHINE_ARC &&
-		    m->machine_subtype == MACHINE_ARC_NEC_R98)
-			m->ncpus = 4;
-	}
-
-
-	/*  Default CPU type: (overridden by -C)  */
-
-	if (m->cpu_name == NULL) {
-		switch (m->machine_type) {
-		case MACHINE_PS2:
-			m->cpu_name = strdup("R5900");
-			break;
-		case MACHINE_DEC:
-			if (m->machine_subtype > 2)
-				m->cpu_name = strdup("R3000A");
-			if (m->machine_subtype > 1 && m->cpu_name == NULL)
-				m->cpu_name = strdup("R3000");
-			if (m->cpu_name == NULL)
-				m->cpu_name = strdup("R2000");
-			break;
-		case MACHINE_SONYNEWS:
-			m->cpu_name = strdup("R3000");
-			break;
-		case MACHINE_HPCMIPS:
-			switch (m->machine_subtype) {
-			case MACHINE_HPCMIPS_CASIO_BE300:
-				m->cpu_name = strdup("VR4131");
-				break;
-			case MACHINE_HPCMIPS_CASIO_E105:
-				m->cpu_name = strdup("VR4121");
-				break;
-			default:
-				printf("Unimplemented HPCMIPS model?\n");
-				exit(1);
-			}
-			break;
-		case MACHINE_COBALT:
-			m->cpu_name = strdup("RM5200");
-			break;
-		case MACHINE_MESHCUBE:
-			m->cpu_name = strdup("R4400");
-			/*  TODO:  Should be AU1500, but Linux doesn't like
-			    the absence of caches in the emulator  */
-			break;
-		case MACHINE_NETGEAR:
-			m->cpu_name = strdup("RC32334");
-			break;
-		case MACHINE_WRT54G:
-			m->cpu_name = strdup("BCM4712");
-			break;
-		case MACHINE_ARC:
-			switch (m->machine_subtype) {
-			case MACHINE_ARC_JAZZ_PICA:
-				m->cpu_name = strdup("R4000");
-				break;
-			default:
-				m->cpu_name = strdup("R4400");
-			}
-			break;
-		case MACHINE_SGI:
-			if (m->machine_subtype <= 12)
-				m->cpu_name = strdup("R3000");
-			if (m->cpu_name == NULL && m->machine_subtype == 35)
-				m->cpu_name = strdup("R12000");
-			if (m->cpu_name == NULL && (m->machine_subtype == 25 ||
-			    m->machine_subtype == 27 ||
-			    m->machine_subtype == 28 ||
-			    m->machine_subtype == 30 ||
-			    m->machine_subtype == 32))
-				m->cpu_name = strdup("R10000");
-			if (m->cpu_name == NULL && (m->machine_subtype == 21 ||
-			    m->machine_subtype == 26))
-				m->cpu_name = strdup("R8000");
-			if (m->cpu_name == NULL && m->machine_subtype == 24)
-				m->cpu_name = strdup("R5000");
-
-			/*  Other SGIs should probably work with
-			    R4000, R4400 or R5000 or similar:  */
-			if (m->cpu_name == NULL)
-				m->cpu_name = strdup("R4400");
-			break;
-		}
-	}
-
-	/*  Still no CPU set? Then use a default value:  */
-	if (m->cpu_name == NULL)
-		m->cpu_name = strdup(CPU_DEFAULT);
-
-
-	/*  Default Boot string arguments: (overridden by -o)  */
-
-	if (!using_switch_o) {
-		switch (m->machine_type) {
-		case MACHINE_ARC:
-			m->boot_string_argument = "-aN";
-			break;
-		case MACHINE_DEC:
-			m->boot_string_argument = "-a";
-			break;
-		}
 	}
 
 
@@ -643,21 +525,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		else
 			s2 ++;
 
-		m->boot_kernel_filename = malloc(strlen(s2) + 1);
+		m->boot_kernel_filename = strdup(s2);
 		if (m->boot_kernel_filename == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
-		strcpy(m->boot_kernel_filename, s2);
 	}
 
 	if (m->n_gfx_cards < 0 || m->n_gfx_cards > 3) {
 		fprintf(stderr, "Bad number of gfx cards (-Z).\n");
-		exit(1);
-	}
-
-	if (m->ncpus < 1) {
-		fprintf(stderr, "Too few cpus (-n).\n");
 		exit(1);
 	}
 

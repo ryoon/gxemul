@@ -1,8 +1,9 @@
-$Id: RELEASE,v 1.68 2004-12-18 03:26:13 debug Exp $
+$Id: RELEASE,v 1.69 2004-12-18 03:41:29 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
-  0.2.4, or perhaps skip directly to 0.3
+  0.2.4 (or perhaps skip directly to 0.3, depending on what I have time
+	 to implement)
 
 Features I'd like to have time to implement:
 
@@ -93,7 +94,7 @@ free to drop me an email regarding other bugs.
 Files included in this release are:
 
   BUGS                        A list of known bugs.
-  HISTORY                     Detailed revision history/changelog.
+  HISTORY                     Detailed revision history / changelog.
   LICENSE                     Copyright message / license.
   README                      Quick start instructions, for the impatient.
   RELEASE                     This file.

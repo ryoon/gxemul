@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.22 2004-07-03 19:46:53 debug Exp $
+ *  $Id: emul.c,v 1.23 2004-07-03 19:48:15 debug Exp $
  *
  *  Emulation startup.
  */
@@ -313,9 +313,6 @@ void emul(void)
 
 	/*  Add PC dump points:  */
 	add_pc_dump_points();
-
-	if (emulated_hz < 1)
-		emulated_hz = 1;
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    bootstrap_cpu,

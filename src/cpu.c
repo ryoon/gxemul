@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.82 2004-07-03 19:45:00 debug Exp $
+ *  $Id: cpu.c,v 1.83 2004-07-03 19:48:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2670,7 +2670,7 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	char *symbol;
 	int64_t mseconds, ninstrs;
 	struct rusage rusage;
-	int h, m, s, ms;
+	int h, m, s, ms, d;
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
@@ -2688,7 +2688,11 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ms = ncycles / (emulated_hz / 1000);
+	d = emulated_hz / 1000;
+	if (d < 1)
+		d = 1;
+
+	ms = ncycles / d;
 	h = ms / 3600000;
 	ms -= 3600000 * h;
 	m = ms / 60000;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.104 2005-01-10 22:30:42 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.105 2005-01-14 03:36:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -191,61 +191,6 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_v0	(((size_t)&dummy_cpu.gpr[GPR_V0]) - ((size_t)&dummy_cpu))
 #define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
 #define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
-static unsigned char bintrans_alpha_runchunk[200] = {
-	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
-	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
-	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
-	0x10, 0x00, 0x5e, 0xb5,		/*  stq     s1,16(sp)  */
-	0x18, 0x00, 0x7e, 0xb5,		/*  stq     s2,24(sp)  */
-	0x20, 0x00, 0x9e, 0xb5,		/*  stq     s3,32(sp)  */
-	0x28, 0x00, 0xbe, 0xb5,		/*  stq     s4,40(sp)  */
-	0x30, 0x00, 0xde, 0xb5,		/*  stq     s5,48(sp)  */
-	0x38, 0x00, 0xfe, 0xb5,		/*  stq     s6,56(sp)  */
-	0x78, 0x00, 0xbe, 0xb7,		/*  stq     gp,120(sp)  */
-
-	ofs_pc&255,ofs_pc>>8,0xd0,0xa4,	/*  ldq     t5,"pc"(a0)  */
-	ofs_n&255,ofs_n>>8,0xf0,0xa0,	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
-	ofs_a0&255,ofs_a0>>8,0x10,0xa5,	/*  ldq     t7,"a0"(a0)  */
-	ofs_a1&255,ofs_a1>>8,0xd0,0xa6,	/*  ldq     t8,"a1"(a0)  */
-	ofs_s0&255,ofs_s0>>8,0xf0,0xa6,	/*  ldq     t9,"s0"(a0)  */
-	ofs_ds&255,ofs_ds>>8,0x30,0xa1,	/*  ldl     s0,"delay_slot"(a0)  */
-	ofs_ja&255,ofs_ja>>8,0x50,0xa5,	/*  ldq     s1,"delay_jmpaddr"(a0)  */
-	ofs_sp&255,ofs_sp>>8,0x70,0xa5,	/*  ldq     s2,"gpr[sp]"(a0)  */
-	ofs_ra&255,ofs_ra>>8,0x90,0xa5,	/*  ldq     s3,"gpr[ra]"(a0)  */
-	ofs_t0&255,ofs_t0>>8,0xb0,0xa5,	/*  ldq     s4,"gpr[t0]"(a0)  */
-	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
-	ofs_t2&255,ofs_t2>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[t2]"(a0)  */
-	ofs_tbl0&255,ofs_tbl0>>8,0x10,0xa7,/*  ldq     t10,table0(a0)  */
-	ofs_v0&255,ofs_v0>>8,0x30,0xa7,	/*  ldq     t11,"gpr[v0]"(a0)  */
-
-	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
-
-	ofs_pc&255,ofs_pc>>8,0xd0,0xb4,	/*  stq     t5,"pc"(a0)  */
-	ofs_n&255,ofs_n>>8,0xf0,0xb0,	/*  stl     t6,"bintrans_instructions_executed"(a0)  */
-	ofs_a0&255,ofs_a0>>8,0x10,0xb5,	/*  stq     t7,"a0"(a0)  */
-	ofs_a1&255,ofs_a1>>8,0xd0,0xb6,	/*  stq     t8,"a1"(a0)  */
-	ofs_s0&255,ofs_s0>>8,0xf0,0xb6,	/*  stq     t9,"s0"(a0)  */
-	ofs_ds&255,ofs_ds>>8,0x30,0xb1,	/*  stl     s0,"delay_slot"(a0)  */
-	ofs_ja&255,ofs_ja>>8,0x50,0xb5,	/*  stq     s1,"delay_jmpaddr"(a0)  */
-	ofs_sp&255,ofs_sp>>8,0x70,0xb5,	/*  stq     s2,"gpr[sp]"(a0)  */
-	ofs_ra&255,ofs_ra>>8,0x90,0xb5,	/*  stq     s3,"gpr[ra]"(a0)  */
-	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
-	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
-	ofs_t2&255,ofs_t2>>8,0xf0,0xb5,	/*  stq     s6,"gpr[t2]"(a0)  */
-	ofs_v0&255,ofs_v0>>8,0x30,0xb7,	/*  stq     t11,"gpr[v0]"(a0)  */
-
-	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
-	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
-	0x10, 0x00, 0x5e, 0xa5,		/*  ldq     s1,16(sp)  */
-	0x18, 0x00, 0x7e, 0xa5,		/*  ldq     s2,24(sp)  */
-	0x20, 0x00, 0x9e, 0xa5,		/*  ldq     s3,32(sp)  */
-	0x28, 0x00, 0xbe, 0xa5,		/*  ldq     s4,40(sp)  */
-	0x30, 0x00, 0xde, 0xa5,		/*  ldq     s5,48(sp)  */
-	0x38, 0x00, 0xfe, 0xa5,		/*  ldq     s6,56(sp)  */
-	0x78, 0x00, 0xbe, 0xa7,		/*  ldq     gp,120(sp)  */
-	0x80, 0x00, 0xde, 0x23,		/*  lda     sp,128(sp)  */
-	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
-};
 
 static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	/*  Don't execute too many instructions. (see comment below)  */
@@ -408,8 +353,7 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	0x6be50000		/*  jmp (t4)  */
 };
 
-static const void (*bintrans_runchunk)
-    (struct cpu *, unsigned char *) = (void *)bintrans_alpha_runchunk;
+static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
 
 static void (*bintrans_jump_to_32bit_pc)
     (struct cpu *) = (void *)bintrans_alpha_jump_to_32bit_pc;
@@ -2706,4 +2650,86 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 
 	return 1;
 }
+
+
+/*
+ *  bintrans_backend_init():
+ *
+ *  This is neccessary for broken 2.95.4 compilers on FreeBSD/Alpha 4.9,
+ *  and probably a few others. (For Compaq's CC, and for gcc 3.x, this
+ *  wouldn't be neccessary, and the old code would have worked.)
+ */
+static void bintrans_backend_init(void)
+{ 
+	int size = 256;		/*  NOTE: This MUST be enough, or we fail  */
+	uint32_t *p;
+
+	p = (uint32_t *)mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+	    MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init(): out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_runchunk = (void *)p;
+
+	*p++ = 0x23deffa0;		/*  lda     sp,-0x60(sp)  */
+	*p++ = 0xb75e0000;		/*  stq     ra,0(sp)  */
+	*p++ = 0xb53e0008;		/*  stq     s0,8(sp)  */
+	*p++ = 0xb55e0010;		/*  stq     s1,16(sp)  */
+	*p++ = 0xb57e0018;		/*  stq     s2,24(sp)  */
+	*p++ = 0xb59e0020;		/*  stq     s3,32(sp)  */
+	*p++ = 0xb5be0028;		/*  stq     s4,40(sp)  */
+	*p++ = 0xb5de0030;		/*  stq     s5,48(sp)  */
+	*p++ = 0xb5fe0038;		/*  stq     s6,56(sp)  */
+	*p++ = 0xb7be0058;		/*  stq     gp,0x58(sp)  */
+
+	*p++ = 0xa4d00000 | ofs_pc;	/*  ldq     t5,"pc"(a0)  */
+	*p++ = 0xa0f00000 | ofs_n;	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
+	*p++ = 0xa5100000 | ofs_a0;	/*  ldq     t7,"a0"(a0)  */
+	*p++ = 0xa6d00000 | ofs_a1;	/*  ldq     t8,"a1"(a0)  */
+	*p++ = 0xa6f00000 | ofs_s0;	/*  ldq     t9,"s0"(a0)  */
+	*p++ = 0xa1300000 | ofs_ds;	/*  ldl     s0,"delay_slot"(a0)  */
+	*p++ = 0xa5500000 | ofs_ja;	/*  ldq     s1,"delay_jmpaddr"(a0)  */
+	*p++ = 0xa5700000 | ofs_sp;	/*  ldq     s2,"gpr[sp]"(a0)  */
+	*p++ = 0xa5900000 | ofs_ra;	/*  ldq     s3,"gpr[ra]"(a0)  */
+	*p++ = 0xa5b00000 | ofs_t0;	/*  ldq     s4,"gpr[t0]"(a0)  */
+	*p++ = 0xa5d00000 | ofs_t1;	/*  ldq     s5,"gpr[t1]"(a0)  */
+	*p++ = 0xa5f00000 | ofs_t2;	/*  ldq     s6,"gpr[t2]"(a0)  */
+	*p++ = 0xa7100000 | ofs_tbl0;	/*  ldq     t10,table0(a0)  */
+	*p++ = 0xa7300000 | ofs_v0;	/*  ldq     t11,"gpr[v0]"(a0)  */
+
+	*p++ = 0x6b514000;		/*  jsr     ra,(a1),<back>  */
+
+	*p++ = 0xb4d00000 | ofs_pc;	/*  stq     t5,"pc"(a0)  */
+	*p++ = 0xb0f00000 | ofs_n;	/*  stl     t6,"bintrans_instructions_executed"(a0)  */
+	*p++ = 0xb5100000 | ofs_a0;	/*  stq     t7,"a0"(a0)  */
+	*p++ = 0xb6d00000 | ofs_a1;	/*  stq     t8,"a1"(a0)  */
+	*p++ = 0xb6f00000 | ofs_s0;	/*  stq     t9,"s0"(a0)  */
+	*p++ = 0xb1300000 | ofs_ds;	/*  stl     s0,"delay_slot"(a0)  */
+	*p++ = 0xb5500000 | ofs_ja;	/*  stq     s1,"delay_jmpaddr"(a0)  */
+	*p++ = 0xb5700000 | ofs_sp;	/*  stq     s2,"gpr[sp]"(a0)  */
+	*p++ = 0xb5900000 | ofs_ra;	/*  stq     s3,"gpr[ra]"(a0)  */
+	*p++ = 0xb5b00000 | ofs_t0;	/*  stq     s4,"gpr[t0]"(a0)  */
+	*p++ = 0xb5d00000 | ofs_t1;	/*  stq     s5,"gpr[t1]"(a0)  */
+	*p++ = 0xb5f00000 | ofs_t2;	/*  stq     s6,"gpr[t2]"(a0)  */
+	*p++ = 0xb7300000 | ofs_v0;	/*  stq     t11,"gpr[v0]"(a0)  */
+
+	*p++ = 0xa75e0000;		/*  ldq     ra,0(sp)  */
+	*p++ = 0xa53e0008;		/*  ldq     s0,8(sp)  */
+	*p++ = 0xa55e0010;		/*  ldq     s1,16(sp)  */
+	*p++ = 0xa57e0018;		/*  ldq     s2,24(sp)  */
+	*p++ = 0xa59e0020;		/*  ldq     s3,32(sp)  */
+	*p++ = 0xa5be0028;		/*  ldq     s4,40(sp)  */
+	*p++ = 0xa5de0030;		/*  ldq     s5,48(sp)  */
+	*p++ = 0xa5fe0038;		/*  ldq     s6,56(sp)  */
+	*p++ = 0xa7be0058;		/*  ldq     gp,0x58(sp)  */
+	*p++ = 0x23de0060;		/*  lda     sp,0x60(sp)  */
+	*p++ = 0x6bfa8001;		/*  ret   */
+} 
 

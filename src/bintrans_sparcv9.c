@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.17 2005-01-09 22:49:27 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.18 2005-01-14 03:36:19 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -527,4 +527,12 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 {
 	return 0;
 }
+
+
+/*
+ *  bintrans_backend_init():
+ */
+static void bintrans_backend_init(void)
+{ 
+} 
 

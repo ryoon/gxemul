@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.63 2005-01-10 03:06:32 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.64 2005-01-14 03:36:19 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2793,5 +2793,13 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	}
 
 	return 1;
+}
+
+
+/*
+ *  bintrans_backend_init():
+ */
+static void bintrans_backend_init(void)
+{
 }
 

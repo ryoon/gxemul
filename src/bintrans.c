@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.133 2005-01-10 22:30:41 debug Exp $
+ *  $Id: bintrans.c,v 1.134 2005-01-14 03:36:18 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -95,13 +95,12 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#include "misc.h"
-
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu_types.h"
 #include "emul.h"
 #include "memory.h"
+#include "misc.h"
 #include "opcodes.h"
 
 
@@ -1066,6 +1065,8 @@ void bintrans_init(void)
 	if (res)
 		debug("warning: mprotect() failed with errno %i."
 		    " this usually doesn't really matter...\n", errno);
+
+	bintrans_backend_init();
 }
 
 #endif	/*  BINTRANS  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.470 2005-01-13 07:20:56 debug Exp $
+$Id: HISTORY,v 1.471 2005-01-14 03:36:16 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1456,3 +1456,5 @@ HISTORY of mips64emul
 ==============  RELEASE 0.2.4  ==============
 
 20050113	Minor updates.
+20050114	Fix to the Alpha bintrans backend to allow compilation with
+		old versions of gcc (2.95.4).

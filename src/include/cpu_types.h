@@ -2,7 +2,7 @@
 #define	CPU_TYPES_H
 
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_types.h,v 1.7 2005-01-13 05:24:35 debug Exp $
+ *  $Id: cpu_types.h,v 1.8 2005-01-14 03:36:17 debug Exp $
  *
  *  CPU types.
  */
@@ -101,4 +101,3 @@
 
 
 #endif	/*  CPU_TYPES_H  */
-

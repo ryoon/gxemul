@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.18 2004-10-24 04:10:14 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.19 2004-10-24 04:42:34 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -367,9 +367,9 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 		    (int)relative_addr);
 #endif
 
-	/*
-	 *  TODO:  this is almost 100% dummy
-	 */
+	/*  For PICA:  */
+	if (relative_addr >= 0x60)
+		relative_addr -= 0x60;
 
 	/*  8242 PS2-style:  */
 	if (d->type == PCKBC_8242) {
@@ -583,6 +583,7 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	int type, int keyboard_irqnr, int mouse_irqnr, int in_use)
 {
 	struct pckbc_data *d;
+	int len = DEV_PCKBC_LENGTH;
 
 	d = malloc(sizeof(struct pckbc_data));
 	if (d == NULL) {
@@ -590,13 +591,19 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pckbc_data));
+
+	if (type == PCKBC_PICA) {
+		type = PCKBC_8042;
+		len = DEV_PCKBC_LENGTH + 0x60;
+	}
+
 	d->type           = type;
 	d->keyboard_irqnr = keyboard_irqnr;
 	d->mouse_irqnr    = mouse_irqnr;
 	d->in_use         = in_use;
 
 	memory_device_register(mem, "pckbc", baseaddr,
-	    DEV_PCKBC_LENGTH, dev_pckbc_access, d);
+	    len, dev_pckbc_access, d);
 	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, PCKBC_TICKSHIFT);
 }
 

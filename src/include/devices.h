@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.101 2004-10-24 03:56:45 debug Exp $
+ *  $Id: devices.h,v 1.102 2004-10-24 04:42:35 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -311,6 +311,7 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 #define	DEV_PCKBC_LENGTH		0x10
 #define	PCKBC_8042		0
 #define	PCKBC_8242		1
+#define	PCKBC_PICA		3
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
 
@@ -321,6 +322,10 @@ struct pica_data {
 	uint32_t	int_asserted;
 	int		interval;
 	int		interval_start;
+	uint64_t	dma0;
+	uint64_t	dma1;
+	uint64_t	dma2;
+	uint64_t	dma3;
 };
 int dev_pica_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);

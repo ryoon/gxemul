@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.6 2004-10-24 03:56:43 debug Exp $
+ *  $Id: dev_pica.c,v 1.7 2004-10-24 04:42:34 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -78,6 +78,34 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case R4030_SYS_DMA0_REGS:
+		if (write_flag == MEM_WRITE) {
+			d->dma0 = idata;
+		} else {
+			odata = d->dma0;
+		}
+		break;
+	case R4030_SYS_DMA1_REGS:
+		if (write_flag == MEM_WRITE) {
+			d->dma1 = idata;
+		} else {
+			odata = d->dma1;
+		}
+		break;
+	case R4030_SYS_DMA2_REGS:
+		if (write_flag == MEM_WRITE) {
+			d->dma2 = idata;
+		} else {
+			odata = d->dma2;
+		}
+		break;
+	case R4030_SYS_DMA3_REGS:
+		if (write_flag == MEM_WRITE) {
+			d->dma3 = idata;
+		} else {
+			odata = d->dma3;
+		}
+		break;
 	case R4030_SYS_ISA_VECTOR:
 		/*  ?  */
 		{

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.203 2004-10-24 03:56:46 debug Exp $
+ *  $Id: machine.c,v 1.204 2004-10-24 04:42:36 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2198,8 +2198,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
-				dev_pckbc_init(cpu, mem, 0x2000005060ULL,
-				    PCKBC_8042, 8 + 6, 8 + 7, emul->use_x11);
+				dev_pckbc_init(cpu, mem, 0x2000005000ULL,
+				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
 
 				dev_ns16550_init(cpu, mem,
 				    0x2000006000ULL, 8 + 8, 1,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.12 2004-05-08 02:06:04 debug Exp $
+ *  $Id: dev_bt459.c,v 1.13 2004-06-27 01:06:16 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -48,6 +48,7 @@ struct bt459_data {
 
 	int		planes;
 	int		irq_nr;
+	int		interrupts_enable;
 	int		type;
 
 	int		cursor_on;
@@ -70,20 +71,8 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 {
 	struct bt459_data *d = extra;
 
-	if (d->type != BT459_PX) {
-		if (d->irq_nr > 0)
-			cpu_interrupt(cpu, d->irq_nr);
-
-		/*
-		 *  TODO:  This is a really ugly hack.
-		 *  Ultrix, when running in graphics mode, reads the bt459
-		 *  registers on an interrupt, so we can ack it there, but
-		 *  during bootup it does not, so something else must
-		 *  ack.  This is extremely ugly.
-		 */
-		if (random() & 1)
-			cpu_interrupt_ack(cpu, d->irq_nr);
-	}
+	if (d->type != BT459_PX && d->interrupts_enable && d->irq_nr > 0)
+		cpu_interrupt(cpu, d->irq_nr);
 }
 
 
@@ -111,6 +100,27 @@ void bt459_sync_xysize(struct bt459_data *d)
 
 
 /*
+ *  dev_bt459_irq_access():
+ *
+ *  Returns 1 if ok, 0 on error.
+ */
+int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+{
+	struct bt459_data *d = (struct bt459_data *) extra;
+	uint64_t idata = 0, odata = 0;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	d->interrupts_enable = 1;
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_bt459_access():
  *
  *  Returns 1 if ok, 0 on error.
@@ -124,8 +134,10 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	idata = memory_readmax64(cpu, data, len);
 
+	/*  Every interrupt enabling must be done manually.  */
 	if (d->irq_nr > 0)
 		cpu_interrupt_ack(cpu, d->irq_nr);
+	d->interrupts_enable = 0;
 
 	/*  ID register is read-only, should always be 0x4a or 0x4a4a4a:  */
 	if (d->planes == 24)
@@ -280,7 +292,8 @@ on = 1;
 /*
  *  dev_bt459_init():
  */
-void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes, int irq_nr, int type)
+void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int planes, int irq_nr, int type)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -297,7 +310,10 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, stru
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
-	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH, dev_bt459_access, (void *)d);
+	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH,
+	    dev_bt459_access, (void *)d);
+	memory_device_register(mem, "bt459_irq", baseaddr_irq, 4,
+	    dev_bt459_irq_access, (void *)d);
 
 	cpu_add_tickfunction(cpu, dev_bt459_tick, d, 22);
 }

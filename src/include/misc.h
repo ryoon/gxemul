@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.24 2004-01-11 23:53:07 debug Exp $
+ *  $Id: misc.h,v 1.25 2004-01-19 12:51:39 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -153,7 +153,7 @@ struct cpu_type_def {
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
 	{ "R4700",	MIPS_R4700, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU4K,	4,	64 }, /*  MMU10K etc.. ?  */  \
+	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU10K,	4,	64 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, \

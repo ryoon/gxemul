@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.535 2005-01-29 13:45:40 debug Exp $
+$Id: HISTORY,v 1.536 2005-01-30 01:03:58 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1583,3 +1583,4 @@ HISTORY of mips64emul
 		must be rewritten later.
 		Continuing the multi-emul cleanup.
 		Bugfixes and other updates to dev_vga.
+20050130	Continuing the remodelling/cleanup.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.65 2005-01-30 00:37:09 debug Exp $
+ *  $Id: debugger.c,v 1.66 2005-01-30 01:04:00 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -62,7 +62,6 @@
 #include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
-#include "mips_cpu_types.h"
 #include "net.h"
 #include "x11.h"
 
@@ -99,9 +98,6 @@ int old_show_trace_tree = 0;
 
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
-
-static char *regnames[] = MIPS_REGISTER_NAMES;
-static char *cop0_names[] = COP0_NAMES;
 
 #define	MAX_CMD_LEN		63
 #define	N_PREVIOUS_CMDS		50
@@ -209,87 +205,9 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 	skip_symbol   = name[0] == '$' || name[0] == '%';
 
 	/*  Check for a register match:  */
-	if (!skip_register && strlen(name) >= 2) {
-		/*  CPU number:  */
-
-		/*  TODO  */
-
-		/*  Register name:  */
-		if (strcasecmp(name, "pc") == 0) {
-			if (writeflag) {
-				m->cpus[cpunr]->pc = *valuep;
-				if (m->cpus[cpunr]->delay_slot) {
-					printf("NOTE: Clearing the delay slot"
-					    " flag! (It was set before.)\n");
-					m->cpus[cpunr]->delay_slot = 0;
-				}
-				if (m->cpus[cpunr]->nullify_next) {
-					printf("NOTE: Clearing the nullify-ne"
-					    "xt flag! (It was set before.)\n");
-					m->cpus[cpunr]->nullify_next = 0;
-				}
-			} else
-				*valuep = m->cpus[cpunr]->pc;
-			match_register = 1;
-		} else if (strcasecmp(name, "hi") == 0) {
-			if (writeflag)
-				m->cpus[cpunr]->hi = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->hi;
-			match_register = 1;
-		} else if (strcasecmp(name, "lo") == 0) {
-			if (writeflag)
-				m->cpus[cpunr]->lo = *valuep;
-			else
-				*valuep = m->cpus[cpunr]->lo;
-			match_register = 1;
-		} else if (name[0] == 'r' && isdigit((int)name[1])) {
-			int nr = atoi(name + 1);
-			if (nr >= 0 && nr < 32) {
-				if (writeflag) {
-					if (nr != 0)
-						m->cpus[cpunr]->gpr[nr] = *valuep;
-					else
-						printf("WARNING: Attempt to modify r0.\n");
-				} else
-					*valuep = m->cpus[cpunr]->gpr[nr];
-				match_register = 1;
-			}
-		} else {
-			/*  Check for a symbolic name such as "t6" or "at":  */
-			int nr;
-			for (nr=0; nr<32; nr++)
-				if (strcmp(name, regnames[nr]) == 0) {
-					if (writeflag) {
-						if (nr != 0)
-							m->cpus[cpunr]->gpr[nr] = *valuep;
-						else
-							printf("WARNING: Attempt to modify r0.\n");
-					} else
-						*valuep = m->cpus[cpunr]->gpr[nr];
-					match_register = 1;
-				}
-		}
-
-		if (!match_register) {
-			/*  Check for a symbolic coproc0 name:  */
-			int nr;
-			for (nr=0; nr<32; nr++)
-				if (strcmp(name, cop0_names[nr]) == 0) {
-					if (writeflag) {
-						coproc_register_write(m->cpus[cpunr],
-						    m->cpus[cpunr]->coproc[0], nr,
-						    valuep, 1);
-					} else {
-						/*  TODO: Use coproc_register_read instead?  */
-						*valuep = m->cpus[cpunr]->coproc[0]->reg[nr];
-					}
-					match_register = 1;
-				}
-		}
-
-		/*  TODO: Coprocessor 1,2,3 registers.  */
-	}
+	if (!skip_register && strlen(name) >= 1)
+		cpu_register_match(m, name, writeflag, valuep,
+		    &match_register);
 
 	/*  Check for a number match:  */
 	if (!skip_numeric && isdigit((int)name[0])) {
@@ -1874,15 +1792,18 @@ void debugger_init(struct emul **emuls, int n_emuls)
 	debugger_n_emuls = n_emuls;
 	debugger_emuls = emuls;
 
-	if (n_emuls < 1)
-		return;
+	if (n_emuls < 1) {
+		fprintf(stderr, "\nERROR: No emuls (?)\n");
+		exit(1);
+	}
 
 	debugger_emul = emuls[0];
 	if (emuls[0]->n_machines < 1) {
 		fprintf(stderr, "\nERROR: No machines in emuls[0], "
 		    "cannot handle this situation yet.\n\n");
-		return;
+		exit(1);
 	}
+
 	debugger_machine = emuls[0]->machines[0];
 
 	/*  TODO  */

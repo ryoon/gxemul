@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_common.c,v 1.3 2005-01-30 00:37:09 debug Exp $
+ *  $Id: cpu_common.c,v 1.4 2005-01-30 01:04:00 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -73,6 +73,18 @@ void cpu_show_full_statistics(struct machine *m)
 void cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
 	mips_cpu_tlbdump(m, x, rawflag);
+}
+
+
+/*
+ *  cpu_register_match():
+ *
+ *  Used by the debugger.
+ */
+void cpu_register_match(struct machine *m, char *name,
+	int writeflag, uint64_t *valuep, int *match_register)
+{
+	mips_cpu_register_match(m, name, writeflag, valuep, match_register);
 }
 
 

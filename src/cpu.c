@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.268 2005-01-30 00:37:08 debug Exp $
+ *  $Id: cpu.c,v 1.269 2005-01-30 01:04:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <ctype.h>
 
 #include "arcbios.h"
 #include "bintrans.h"
@@ -544,6 +545,96 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
 	}
+}
+
+
+/*
+ *  mips_cpu_register_match():
+ */
+void mips_cpu_register_match(struct machine *m, char *name,
+	int writeflag, uint64_t *valuep, int *match_register)
+{
+	int cpunr = 0;
+
+	/*  CPU number:  */
+
+	/*  TODO  */
+
+	/*  Register name:  */
+	if (strcasecmp(name, "pc") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->pc = *valuep;
+			if (m->cpus[cpunr]->delay_slot) {
+				printf("NOTE: Clearing the delay slot"
+				    " flag! (It was set before.)\n");
+				m->cpus[cpunr]->delay_slot = 0;
+			}
+			if (m->cpus[cpunr]->nullify_next) {
+				printf("NOTE: Clearing the nullify-ne"
+				    "xt flag! (It was set before.)\n");
+				m->cpus[cpunr]->nullify_next = 0;
+			}
+		} else
+			*valuep = m->cpus[cpunr]->pc;
+		*match_register = 1;
+	} else if (strcasecmp(name, "hi") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->hi = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->hi;
+		*match_register = 1;
+	} else if (strcasecmp(name, "lo") == 0) {
+		if (writeflag)
+			m->cpus[cpunr]->lo = *valuep;
+		else
+			*valuep = m->cpus[cpunr]->lo;
+		*match_register = 1;
+	} else if (name[0] == 'r' && isdigit((int)name[1])) {
+		int nr = atoi(name + 1);
+		if (nr >= 0 && nr < 32) {
+			if (writeflag) {
+				if (nr != 0)
+					m->cpus[cpunr]->gpr[nr] = *valuep;
+				else
+					printf("WARNING: Attempt to modify r0.\n");
+			} else
+				*valuep = m->cpus[cpunr]->gpr[nr];
+			*match_register = 1;
+		}
+	} else {
+		/*  Check for a symbolic name such as "t6" or "at":  */
+		int nr;
+		for (nr=0; nr<32; nr++)
+			if (strcmp(name, regnames[nr]) == 0) {
+				if (writeflag) {
+					if (nr != 0)
+						m->cpus[cpunr]->gpr[nr] = *valuep;
+					else
+						printf("WARNING: Attempt to modify r0.\n");
+				} else
+					*valuep = m->cpus[cpunr]->gpr[nr];
+				*match_register = 1;
+			}
+	}
+
+	if (!(*match_register)) {
+		/*  Check for a symbolic coproc0 name:  */
+		int nr;
+		for (nr=0; nr<32; nr++)
+			if (strcmp(name, cop0_names[nr]) == 0) {
+				if (writeflag) {
+					coproc_register_write(m->cpus[cpunr],
+					    m->cpus[cpunr]->coproc[0], nr,
+					    valuep, 1);
+				} else {
+					/*  TODO: Use coproc_register_read instead?  */
+					*valuep = m->cpus[cpunr]->coproc[0]->reg[nr];
+				}
+				*match_register = 1;
+			}
+	}
+
+	/*  TODO: Coprocessor 1,2,3 registers.  */
 }
 
 

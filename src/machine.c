@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.216 2004-11-01 09:35:51 debug Exp $
+ *  $Id: machine.c,v 1.217 2004-11-06 15:31:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1092,19 +1092,28 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
-			 *  option cards.  The first one will contain a
-			 *  graphics card by default.
+			 *  option cards.  These are by default filled with
+			 *  zero or more graphics boards.
 			 *
 			 *  TODO: irqs 
 			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    0x10000000, 0x103fffff,
-			    turbochannel_default_gfx_card, KMIN_INT_TC0);
+			    emul->n_gfx_cards >= 1?
+				turbochannel_default_gfx_card : "",
+			    KMIN_INT_TC0);
 
 			dev_turbochannel_init(cpu, mem, 1,
-			    0x14000000, 0x143fffff, "", KMIN_INT_TC1);
+			    0x14000000, 0x143fffff,
+			    emul->n_gfx_cards >= 2?
+				turbochannel_default_gfx_card : "",
+			    KMIN_INT_TC1);
+
 			dev_turbochannel_init(cpu, mem, 2,
-			    0x18000000, 0x183fffff, "", KMIN_INT_TC2);
+			    0x18000000, 0x183fffff,
+			    emul->n_gfx_cards >= 3?
+				turbochannel_default_gfx_card : "",
+			    KMIN_INT_TC2);
 
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
 			/*  kmin_csr = dev_kmin_init(cpu, mem, KMIN_REG_INTR);  */
@@ -1151,21 +1160,27 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
-			 *  option cards.  The first one will contain a
-			 *  graphics card by default.
+			 *  option cards.  These are by default filled with
+			 *  zero or more graphics boards.
 			 *
 			 *  TODO: irqs 
 			 */
 			dev_turbochannel_init(cpu, mem, 0,
 			    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
-			    turbochannel_default_gfx_card, KN03_INTR_TC_0 +8);
+			    emul->n_gfx_cards >= 1?
+				turbochannel_default_gfx_card : "",
+			    KN03_INTR_TC_0 +8);
 
 			dev_turbochannel_init(cpu, mem, 1,
-			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "",
+			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END,
+			    emul->n_gfx_cards >= 2?
+				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_1 +8);
 
 			dev_turbochannel_init(cpu, mem, 2,
-			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "",
+			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END,
+			    emul->n_gfx_cards >= 3?
+				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_2 +8);
 
 			/*  TODO: interrupts  */
@@ -1271,9 +1286,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(cpu, mem, 0,
-			    0x10000000, 0x103fffff, "", XINE_INTR_TC_0 +8);
+			    0x10000000, 0x103fffff,
+			    emul->n_gfx_cards >= 2?
+				turbochannel_default_gfx_card : "",
+			    XINE_INTR_TC_0 +8);
 			dev_turbochannel_init(cpu, mem, 1,
-			    0x14000000, 0x143fffff, "", XINE_INTR_TC_1 +8);
+			    0x14000000, 0x143fffff,
+			    emul->n_gfx_cards >= 3?
+				turbochannel_default_gfx_card : "",
+			    XINE_INTR_TC_1 +8);
 
 			/*
 			 *  TURBOchannel slot 2 is hardwired to be used by
@@ -1855,9 +1876,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9880, 1);
 				}
 
+/*
+Why is this here? TODO
 				dev_ram_init(mem, 0x88000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
-
+*/
 				cpu->md_interrupt = sgi_ip22_interrupt;
 
 				/*

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.69 2005-02-22 06:09:25 debug Exp $
+#  $Id: Makefile.skel,v 1.70 2005-02-22 12:56:21 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -27,8 +27,9 @@ OBJS=lk201.o \
 	dev_vr41xx.o dev_au1x00.o \
 	dev_pmppc.o \
 	bus_pci.o \
-	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o
-
+	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o \
+	\
+	dev_bebox.o
 
 all:
 	cd fonts; $(MAKE); cd ..
@@ -37,14 +38,7 @@ all:
 	make autodev.o
 
 autodev.c: $(OBJS)
-	rm -f autodev.c
-	printf "/*\n *  DO NOT EDIT. AUTOMATICALLY CREATED\n */\n\n" >> autodev.c
-	cat autodev_head.c >> autodev.c
-	for a in `echo dev_*.o`; do \
-		B=`echo $$a|cut -c5-|sed s/\\\\.o//g`; \
-		printf "\tdevice_register(\""$$B"\");\n" >> autodev.c; \
-	done
-	cat autodev_tail.c >> autodev.c
+	./makeautodev.sh
 
 objs: $(OBJS)
 

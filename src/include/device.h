@@ -28,12 +28,19 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.h,v 1.1 2005-02-22 05:53:00 debug Exp $
+ *  $Id: device.h,v 1.2 2005-02-22 12:56:22 debug Exp $
  *
  *  Device registry.  (See device.c for more info.)
  */
 
 #include "misc.h"
+
+struct memory;
+
+struct devinit {
+	struct memory	*mem;
+	char		*name;
+};
 
 struct device_entry {
 	char		*name;

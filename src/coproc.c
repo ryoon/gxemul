@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.81 2004-11-07 19:58:52 debug Exp $
+ *  $Id: coproc.c,v 1.82 2004-11-08 16:09:02 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -984,12 +984,8 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 
 		switch (cond) {
 		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
-#if 0
-		case 4:		return 1;
-#else
-case 4:
-return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less than  TODO (?)  */
-#endif
+		case 4:		return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less than  TODO (?)  */
+		case 6:		return (float_value[0].f <= float_value[1].f) || !unordered;  /*  Ordered or Less than or Equal  TODO (?)  */
 		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
 		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
 
@@ -1000,7 +996,6 @@ return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less
 		case 1:		return 0;					/*  Unordered  */
 		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
 		case 5:		return (float_value[0].f < float_value[1].f);	/*  Unordered or Less than  */
-		case 6:		return 1; /* (float_value[0].f <= float_value[1].f);  */  /*  Ordered or Less than or Equal  TODO (?)  */
 		case 7:		return (float_value[0].f <= float_value[1].f);	/*  Unordered or Less than or Equal  */
 		case 8:		return 0;					/*  Signaling false  */
 		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */

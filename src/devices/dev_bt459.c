@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.32 2004-10-25 01:54:03 debug Exp $
+ *  $Id: dev_bt459.c,v 1.33 2004-11-01 09:25:39 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -500,7 +500,7 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		d->cursor_y_add =  37;
 		break;
 	case BT459_BA:
-		d->cursor_x_add = 220;
+		d->cursor_x_add = 219;
 		d->cursor_y_add =  34;
 		break;
 	case BT459_BBA:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.123 2004-07-04 03:28:54 debug Exp $
+ *  $Id: machine.c,v 1.124 2004-07-04 12:52:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1355,6 +1355,12 @@ void machine_init(struct memory *mem)
 			char tmps[300];
 			sprintf(tmps, "cca=%x",
 			    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
+			add_environment_string(tmps, &addr);
+		}
+
+		{
+			char tmps[300];
+			sprintf(tmps, "boot=%s", bootarg);
 			add_environment_string(tmps, &addr);
 		}
 

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.51 2004-07-04 11:37:54 debug Exp $
+$Id: index.html,v 1.52 2004-07-04 12:52:14 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -187,11 +187,14 @@ CC and CFLAGS environment variable values.
 <p>
 Here's a list of available configure options:
 <pre>
-    --caches    enable cache emulation (implies --delays)
+    --caches    enable cache emulation
     --delays    enable instruction latency/delay emulation
     --nox11     configure without x11 support
     --mips16    enable MIPS16 instruction support
 </pre>
+<p>
+Enabling caches does <i>not</i> by itself mean correct cache miss 
+penalties and such. You need both --caches and --delays for that.
 <p>
 (The possible configure options might differ between different releaes and
 snapshots, so this list may be incomplete.)

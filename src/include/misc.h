@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.82 2004-07-04 11:37:46 debug Exp $
+ *  $Id: misc.h,v 1.83 2004-07-04 12:52:15 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -510,6 +510,8 @@ struct r3000_cache_line {
 	uint32_t	tag_paddr;
 	int		tag_valid;
 };
+#define	R3000_TAG_VALID		1
+#define	R3000_TAG_DIRTY		2
 
 struct r4000_cache_line {
 	char		dummy;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.54 2004-07-04 03:47:15 debug Exp $
+ *  $Id: memory.c,v 1.55 2004-07-04 12:52:16 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -388,6 +388,9 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data)
 {
 #ifdef ENABLE_CACHE_EMULATION
+	struct r3000_cache_line *rp;
+	int cache_line;
+	uint32_t tag_mask;
 	unsigned char *memblock;
 	struct memory *mem = cpu->mem;
 	int offset;
@@ -396,18 +399,27 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int cache_isolated = 0, addr, hit, which_cache = cache;
 
 
+	if (len > 4 || cache == CACHE_NONE)
+		return 0;
+
+
+#ifdef ENABLE_CACHE_EMULATION
 	if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
 		which_cache ^= 1;
 
+	tag_mask = 0xffffffff & ~cpu->cache_mask[which_cache];
+	cache_line = (paddr & cpu->cache_mask[which_cache])
+	    / cpu->cache_linesize[which_cache];
+	rp = (struct r3000_cache_line *) cpu->cache_tags[which_cache];
+
 	/*  Is this a cache hit or miss?  */
-	hit = (cpu->cache_last_paddr[which_cache]
-		& ~cpu->cache_mask[which_cache])
-	    == (paddr & ~(cpu->cache_mask[which_cache]));
+	hit = (rp[cache_line].tag_valid & R3000_TAG_VALID) &&
+	    (rp[cache_line].tag_paddr == (paddr & tag_mask));
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
 		cpu->instruction_delay += cpu->cpu_type.instrs_per_cycle
-		    * cpu->cache_miss_penalty[cache];
+		    * cpu->cache_miss_penalty[which_cache];
 #endif
 
 	/*
@@ -431,28 +443,33 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	addr = paddr & cpu->cache_mask[which_cache];
 
-#ifdef ENABLE_CACHE_EMULATION
 	/*
-	 *  If there was a miss and the cache is not isolated, reload cache
-	 *  contents from main memory.
+	 *  If there was a miss and the cache is not isolated, then flush
+	 *  the old cacheline back to main memory, and read in the new
+	 *  cacheline.
 	 *
 	 *  Then access the cache.
 	 */
-	/*
-	fatal("L1 CACHE isolated=%i hit=%i write=%i cache=%i"
-	    " vaddr=%016llx paddr=%016llx => addr in"
+/*
+	fatal("L1 CACHE isolated=%i hit=%i write=%i cache=%i cacheline=%i"
+	    " paddr=%08x => addr in"
 	    " cache = 0x%lx\n", cache_isolated, hit, writeflag,
-	    which_cache, (long long)vaddr, (long long)paddr,
+	    which_cache, cache_line, (int)paddr,
 	    addr);
-	*/
-
+*/
 	if (!hit && !cache_isolated) {
 		unsigned char *dst, *src;
-		uint64_t old_cached_paddr =
-		    cpu->cache_last_paddr[which_cache];
+		uint64_t old_cached_paddr = rp[cache_line].tag_paddr
+		    + cache_line * cpu->cache_linesize[which_cache];
 
-		/*  Flush the cache to main memory:  */
-		if (old_cached_paddr != IMPOSSIBLE_PADDR) {
+		/*  Flush the old cacheline to main memory:  */
+		if ((rp[cache_line].tag_valid & R3000_TAG_VALID) &&
+		    (rp[cache_line].tag_valid & R3000_TAG_DIRTY)) {
+/*			fatal("  FLUSHING old tag=0%08x "
+			    "old_cached_paddr=0x%08x\n",
+			    rp[cache_line].tag_paddr,
+			    old_cached_paddr);
+*/
 			memblock = memory_paddr_to_hostaddr(
 			    mem, old_cached_paddr, MEM_WRITE);
 			offset = old_cached_paddr
@@ -463,10 +480,16 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			dst = memblock + (offset &
 			    ~cpu->cache_mask[which_cache]);
 
+			src += cache_line *
+			    cpu->cache_linesize[which_cache];
+			dst += cache_line *
+			    cpu->cache_linesize[which_cache];
+
 			if (memblock == NULL) {
 				fatal("BUG in memory.c! Hm.\n");
 			} else {
-				memcpy(dst, src, cpu->cache_size[which_cache]);
+				memcpy(dst, src,
+				    cpu->cache_linesize[which_cache]);
 			}
 			/*  offset is the offset within
 			 *  the memblock:
@@ -481,18 +504,31 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		/*  offset is offset within the memblock:
 		 *  printf("write: offset = 0x%x\n", offset);
 		 */
+
+/*		fatal("  FETCHING new paddr=0%08x\n", paddr);
+*/
 		dst = cpu->cache[which_cache];
 
 		if (memblock == NULL) {
 			if (writeflag == MEM_READ)
-			memset(dst, 0, cpu->cache_size[which_cache]);
+			memset(dst, 0, cpu->cache_linesize[which_cache]);
 		} else {
 			src = memblock + (offset &
 			    ~cpu->cache_mask[which_cache]);
-			memcpy(dst, src, cpu->cache_size[which_cache]);
+
+			src += cache_line *
+			    cpu->cache_linesize[which_cache];
+			dst += cache_line *
+			    cpu->cache_linesize[which_cache];
+			memcpy(dst, src, cpu->cache_linesize[which_cache]);
 		}
 
-		cpu->cache_last_paddr[which_cache] = paddr;
+		rp[cache_line].tag_paddr = paddr & tag_mask;
+		rp[cache_line].tag_valid = R3000_TAG_VALID;
+	}
+
+	if (cache_isolated && writeflag == MEM_WRITE) {
+		rp[cache_line].tag_valid = 0;
 	}
 
 	if (writeflag==MEM_READ) {
@@ -500,16 +536,20 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			data[i] = cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]];
 	} else {
+		rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
 		for (i=0; i<len; i++)
 			cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]] = data[i];
 	}
 
-	/*  Run instructions directly from the cache:  */
+	/*  Run instructions from the right host page:  */
 	if (cache == CACHE_INSTRUCTION) {
-		cpu->pc_last_was_in_host_ram = 1;
-		cpu->pc_last_host_4k_page =
-		    cpu->cache[which_cache] + (addr & ~0xfff);
+		memblock = memory_paddr_to_hostaddr(mem, paddr, MEM_READ);
+		if (memblock != NULL) {
+			cpu->pc_last_was_in_host_ram = 1;
+			cpu->pc_last_host_4k_page = memblock +
+			    (paddr & (mem->memblock_size - 1) & ~0xfff);
+		}
 	}
 
 	/*  Write-through! (Write to main memory as well.)  */
@@ -528,6 +568,38 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	if (cache != CACHE_DATA)
 		return 0;
+
+	/*  Is this a cache hit or miss?  */
+	hit = (cpu->cache_last_paddr[which_cache]
+		& ~cpu->cache_mask[which_cache])
+	    == (paddr & ~(cpu->cache_mask[which_cache]));
+
+#ifdef ENABLE_INSTRUCTION_DELAYS
+	if (!hit)
+		cpu->instruction_delay += cpu->cpu_type.instrs_per_cycle
+		    * cpu->cache_miss_penalty[which_cache];
+#endif
+
+	/*
+	 *  The cache miss bit is only set on cache reads, and only to the
+	 *  data cache. (?)
+	 *
+	 *  (TODO: is this correct? I don't remember where I got this from.)
+	 */
+	if (cache == CACHE_DATA && writeflag==MEM_READ) {
+		cpu->coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
+		if (!hit)
+			cpu->coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+	}
+
+	/*
+	 *  Is the Data cache isolated?  Then don't access main memory:
+	 */
+	if (cache == CACHE_DATA &&
+	    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+		cache_isolated = 1;
+
+	addr = paddr & cpu->cache_mask[which_cache];
 
 	/*  Data cache isolated?  Then don't access main memory:  */
 	if (cache_isolated) {
@@ -1068,6 +1140,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
 
 
+	/*
+	 *  If correct cache emulation is enabled, and we need to simluate
+	 *  cache misses even from the instruction cache, we can't run directly
+	 *  from a host page. :-/
+	 */
+#if defined(ENABLE_CACHE_EMULATION) && defined(ENABLE_INSTRUCTION_DELAYS)
+#else
 	if (cache == CACHE_INSTRUCTION) {
 		cpu->pc_last_virtual_page = vaddr & ~0xfff;
 		cpu->pc_last_physical_page = paddr & ~0xfff;
@@ -1076,6 +1155,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		/*  _last_was_in_host_ram will be set to 1 further down,
 		    if the page is actually in host ram  */
 	}
+#endif
 
 
 have_paddr:

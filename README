@@ -34,13 +34,13 @@ Here are examples of kernels that can be experimented with:
   ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
   Try running with  -X -B      (-X is required, for the framebuffer).
 
-  NetBSD/sgimips:  (try  -G)
+  NetBSD/sgimips:  (gunzip, and try running with  -G)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INDY_INSTALL.gz
 
-  NetBSD/arc:  (try  -A -q)
+  NetBSD/arc:  (gunzip, and try running with  -A -q)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz
 
-  An ARC linux kernel, ECOFF:  (try running with -A)
+  An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)
   ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.28 2004-09-02 02:13:14 debug Exp $
+ *  $Id: arcbios.c,v 1.29 2004-09-05 02:46:03 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -55,7 +55,6 @@ extern int quiet_mode;
 extern int use_x11;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int physical_ram_in_mb;
 
 
 struct emul_arc_child {
@@ -585,7 +584,7 @@ void arcbios_emul(struct cpu *cpu)
 
 		/*  TODO: change this into reading the descriptor structure, nr of pages = zero ==> stop  */
 
-		mb_left = physical_ram_in_mb;
+		mb_left = cpu->emul->physical_ram_in_mb;
 		while (mb_left > 0) {
 			mb_left -= 512;
 			/*  If the caller pointed to chunk x, then return a pointer

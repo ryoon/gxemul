@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.172 2004-09-05 02:29:39 debug Exp $
+ *  $Id: machine.c,v 1.173 2004-09-05 02:46:03 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -71,7 +71,6 @@ extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int emulated_hz;
-extern int physical_ram_in_mb;
 extern int use_x11;
 extern char *boot_kernel_filename;
 extern char *boot_string_argument;
@@ -864,10 +863,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emulated_hz == 0)
 				emulated_hz = 16670000;
 
-			if (physical_ram_in_mb > 24)
+			if (emul->physical_ram_in_mb > 24)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines cannot have more than 24MB RAM. Continuing anyway.\n");
 
-			if ((physical_ram_in_mb % 4) != 0)
+			if ((emul->physical_ram_in_mb % 4) != 0)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines have an integer multiple of 4 MBs of RAM. Continuing anyway.\n");
 
 			color_fb_flag = 1;	/*  1 for color, 0 for mono. TODO: command line option?  */
@@ -905,9 +904,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emulated_hz == 0)
 				emulated_hz = 25000000;
 
-			if (physical_ram_in_mb < 8)
+			if (emul->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
-			if (physical_ram_in_mb > 480)
+			if (emul->physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
@@ -971,7 +970,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			emul->machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
 			if (emulated_hz == 0)
 				emulated_hz = 33000000;
-			if (physical_ram_in_mb > 128)
+			if (emul->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*  KMIN interrupts:  */
@@ -1028,7 +1027,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			/*  TODO: are both these type 4?  */
 			if (emulated_hz == 0)
 				emulated_hz = 40000000;
-			if (physical_ram_in_mb > 480)
+			if (emul->physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  KN03 interrupts:  */
@@ -1085,7 +1084,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			emul->machine_name = "DECsystem 5800";
 
 /*  TODO: this is incorrect, banks multiply by 8 etc  */
-			if (physical_ram_in_mb < 48)
+			if (emul->physical_ram_in_mb < 48)
 				fprintf(stderr, "WARNING! 5800 will probably not run with less than 48MB RAM. Continuing anyway.\n");
 
 			/*
@@ -1148,9 +1147,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emulated_hz == 0)
 				emulated_hz = 33000000;
 
-			if (physical_ram_in_mb < 8)
+			if (emul->physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02CA machines do not have less than 8MB RAM. Continuing anyway.\n");
-			if (physical_ram_in_mb > 40)
+			if (emul->physical_ram_in_mb > 40)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
 			/*  Maxine interrupts:  */
@@ -1249,7 +1248,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			emul->machine_name = "DEC MIPSMATE 5100 (KN230)";
 			if (emulated_hz == 0)
 				emulated_hz = 20000000;
-			if (physical_ram_in_mb > 128)
+			if (emul->physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			if (use_x11)
@@ -1394,7 +1393,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			unsigned int i;
 			for (i=0; i<sizeof(memmap.bitmap); i++)
 				memmap.bitmap[i] = ((int)i * 4096*8 <
-				    1048576*physical_ram_in_mb)? 0xff : 0x00;
+				    1048576*emul->physical_ram_in_mb)?
+				    0xff : 0x00;
 		}
 		store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
 
@@ -1432,7 +1432,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmaplen=0x%x",
-			    physical_ram_in_mb * 1048576 / 4096 / 8);
+			    emul->physical_ram_in_mb * 1048576 / 4096 / 8);
 			add_environment_string(cpu, tmps, &addr);
 		}
 
@@ -1497,10 +1497,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  The bootstring should be stored starting 512 bytes before end
 		 *  of physical ram.
 		 */
-		cpu->gpr[GPR_A0] = physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->gpr[GPR_A0] = emul->physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
-		store_string(cpu, 0xffffffff80000000ULL + physical_ram_in_mb * 1048576 - 512, bootstr);
+		store_string(cpu, 0xffffffff80000000ULL +
+		    emul->physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
 	case EMULTYPE_HPCMIPS:
@@ -1513,12 +1514,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  NetBSD/hpcmips expects the following:
 		 */
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
-		cpu->gpr[GPR_A1] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
-		cpu->gpr[GPR_A2] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
+		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 		bootstr = "netbsd";
-		store_32bit_word(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8);
-		store_32bit_word(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 4, 0);
-		store_string(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
+		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8);
+		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 4, 0);
+		store_string(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		hpc_bootinfo.length = sizeof(hpc_bootinfo);
 		hpc_bootinfo.magic = HPC_BOOTINFO_MAGIC;
@@ -1541,13 +1542,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 		printf("hpc_bootinfo.platid_cpu     = 0x%x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%x\n", hpc_bootinfo.platid_machine);
 		hpc_bootinfo.timezone = 0;
-		store_buf(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
+		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 		break;
 
 	case EMULTYPE_PS2:
 		emul->machine_name = "Playstation 2";
 
-		if (physical_ram_in_mb != 32)
+		if (emul->physical_ram_in_mb != 32)
 			fprintf(stderr, "WARNING! Playstation 2 machines are supposed to have exactly 32 MB RAM. Continuing anyway.\n");
 		if (!use_x11)
 			fprintf(stderr, "WARNING! Playstation 2 without -X is pretty meaningless. Continuing anyway.\n");
@@ -1576,11 +1577,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 #if 0
 		/*  Harddisk controller present flag:  */
-		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 		dev_ps2_spd_init(cpu, mem, 0x14000000);
 #endif
 
-		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
+		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
 		store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
 
@@ -1593,16 +1594,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
 			tmp = gmtime(&timet);
 			/*  TODO:  are these 0- or 1-based?  */
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
-			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
+			store_byte(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
 		}
 
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
+		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this neccessary?  */
 		cpu->gpr[GPR_SP] = 0x80007f00;
@@ -1673,7 +1674,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
 				store_32bit_word(cpu, 0xa0000000 + 0x26d0,
-				    30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
+				    30000);  /* (emul->physical_ram_in_mb - 16) * (1048576 / 256));  */
 
 				break;
 			case 20:
@@ -1817,7 +1818,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  bytes?  (16 is size of kernel... approx)
 				 */
 				store_32bit_word(cpu, 0xa0000000ULL + 0x26d0,
-				    30000);  /* (physical_ram_in_mb - 16)
+				    30000);  /* (emul->physical_ram_in_mb - 16)
 						 * (1048576 / 256));  */
 
 				break;
@@ -2181,7 +2182,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		if (arc_wordlen == sizeof(uint64_t))
 			arcbios_set_64bit_mode(1);
 
-		if (physical_ram_in_mb < 16)
+		if (emul->physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
@@ -2246,7 +2247,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
 		 */
 		mem_base = 16 * 1048576 / 4096;
-		mem_count = physical_ram_in_mb <= 256? physical_ram_in_mb : 256;
+		mem_count = emul->physical_ram_in_mb <= 256? emul->physical_ram_in_mb : 256;
 		mem_count = (mem_count - 16) * 1048576 / 4096;
 
 		mem_base += (sgi_ram_offset / 4096);
@@ -2261,7 +2262,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
 			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 
-			mem_mb_left = physical_ram_in_mb - 512;
+			mem_mb_left = emul->physical_ram_in_mb - 512;
 			mem_base = 512 * (1048576 / 4096);
 			mem_base += (sgi_ram_offset / 4096);
 			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem64);
@@ -2291,7 +2292,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
 			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
-			mem_mb_left = physical_ram_in_mb - 512;
+			mem_mb_left = emul->physical_ram_in_mb - 512;
 			mem_base = 512 * (1048576 / 4096);
 			mem_base += (sgi_ram_offset / 4096);
 			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
@@ -2598,7 +2599,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_string(cpu, ARC_ARGV_START + 0x2e0, bootarg);
 
 		/*  TODO:  not needed?  */
-		cpu->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->gpr[GPR_SP] = emul->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
 
@@ -2629,7 +2630,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	case EMULTYPE_MESHCUBE:
 		emul->machine_name = "MeshCube";
 
-		if (physical_ram_in_mb != 64)
+		if (emul->physical_ram_in_mb != 64)
 			fprintf(stderr, "WARNING! MeshCubes are supposed to have exactly 64 MB RAM. Continuing anyway.\n");
 		if (use_x11)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");

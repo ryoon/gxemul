@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.57 2004-09-05 02:41:24 debug Exp $
+ *  $Id: emul.c,v 1.58 2004-09-05 02:46:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -56,7 +56,6 @@ extern char *optarg;
 int extra_argc;
 char **extra_argv;
 
-extern int physical_ram_in_mb;
 extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -631,8 +630,8 @@ void emul_start(struct emul *emul)
 	 *  where memory is offset by 128MB to leave room for
 	 *  EISA space and other things.
 	 */
-	debug("adding memory: %i MB", physical_ram_in_mb);
-	memory_amount = (uint64_t)physical_ram_in_mb * 1048576;
+	debug("adding memory: %i MB", emul->physical_ram_in_mb);
+	memory_amount = (uint64_t)emul->physical_ram_in_mb * 1048576;
 	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 20 ||
 	    emul->machine == 22 || emul->machine == 24 ||
 	    emul->machine == 26)) {
@@ -685,7 +684,7 @@ void emul_start(struct emul *emul)
 
 	/*  Fill memory with random bytes:  */
 	if (emul->random_mem_contents) {
-		for (i=0; i<physical_ram_in_mb*1048576; i+=256) {
+		for (i=0; i<emul->physical_ram_in_mb*1048576; i+=256) {
 			unsigned char data[256];
 			unsigned int j;
 			for (j=0; j<sizeof(data); j++)

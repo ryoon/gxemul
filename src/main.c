@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.78 2004-09-05 02:41:25 debug Exp $
+ *  $Id: main.c,v 1.79 2004-09-05 02:46:03 debug Exp $
  */
 
 #include <stdio.h>
@@ -56,8 +56,6 @@ int quiet_mode = 0;
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
  */
-
-int physical_ram_in_mb = 0;
 
 int show_opcode_statistics = 0;
 int prom_emulation = 1;
@@ -313,7 +311,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			boot_kernel_filename = optarg;
 			break;
 		case 'M':
-			physical_ram_in_mb = atoi(optarg);
+			emul->physical_ram_in_mb = atoi(optarg);
 			break;
 		case 'm':
 			max_instructions = atoi(optarg);
@@ -465,27 +463,27 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  Default memory size:  */
 
-	if (emul->emulation_type == EMULTYPE_PS2 && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 32;
+	if (emul->emulation_type == EMULTYPE_PS2 && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 32;
 
-	if (emul->emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 48;
+	if (emul->emulation_type == EMULTYPE_SGI && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 48;
 
-	if (emul->emulation_type == EMULTYPE_MESHCUBE && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 64;
+	if (emul->emulation_type == EMULTYPE_MESHCUBE && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 64;
 
-	if (emul->emulation_type == EMULTYPE_NETGEAR && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 16;
+	if (emul->emulation_type == EMULTYPE_NETGEAR && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 16;
 
-	if (emul->emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 48;
+	if (emul->emulation_type == EMULTYPE_ARC && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 48;
 
 	if (emul->emulation_type == EMULTYPE_DEC &&
-	    emul->machine == MACHINE_PMAX_3100 && physical_ram_in_mb == 0)
-		physical_ram_in_mb = 24;
+	    emul->machine == MACHINE_PMAX_3100 && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 24;
 
-	if (physical_ram_in_mb == 0)
-		physical_ram_in_mb = DEFAULT_RAM_IN_MB;
+	if (emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
 
 
 	/*

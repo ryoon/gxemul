@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.151 2005-01-20 09:42:26 debug Exp $
+ *  $Id: coproc.c,v 1.152 2005-01-20 17:02:50 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1014,6 +1014,9 @@ void coproc_register_write(struct cpu *cpu,
 	}
 
 	cp->reg[reg_nr] = tmp;
+
+	if (!flag64)
+		cp->reg[reg_nr] = (int64_t)(int32_t)cp->reg[reg_nr];
 }
 
 

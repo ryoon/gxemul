@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.65 2005-01-20 06:38:45 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.66 2005-01-20 17:02:49 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1237,7 +1237,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	int ofs;
 
 	if (mtcflag && flag64bit) {
-		/*  mtc: */
+		/*  dmtc  */
 		return 0;
 	}
 
@@ -1289,6 +1289,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 		 */
 
 		switch (rd) {
+
 		case COP0_INDEX:
 			break;
 
@@ -2701,7 +2702,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	int itype)
 {
 	unsigned char *a;
-	int ofs = 0;	/*  avoid a compiler warning  */
+	int ofs;
 
 	switch (itype) {
 	case CALL_TLBP:
@@ -2723,9 +2724,23 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0x89; *a++ = 0xbe; *a++ = ofs_pc&255;
 	*a++ = (ofs_pc>>8)&255; *a++ = (ofs_pc>>16)&255;
 	*a++ = (ofs_pc>>24)&255;	/*  mov    %edi,pc(%esi)  */
+
 	*a++ = 0x89; *a++ = 0xbe; *a++ = ofs_pc_last&255;
 	*a++ = (ofs_pc_last>>8)&255; *a++ = (ofs_pc_last>>16)&255;
 	*a++ = (ofs_pc_last>>24)&255;	/*  mov    %edi,pc_last(%esi)  */
+
+	/*  ... and make sure that the high 32 bits are ALSO in pc_last:  */
+	/*  8b 86 38 12 00 00       mov    0x1238(%esi),%eax  */
+	ofs = ofs_pc + 4;
+	*a++ = 0x8b; *a++ = 0x86; *a++ = ofs&255;
+	*a++ = (ofs>>8)&255; *a++ = (ofs>>16)&255;
+	*a++ = (ofs>>24)&255;	/*  mov    %edi,pc(%esi)  */
+
+	/*  89 86 34 12 00 00       mov    %eax,0x1234(%esi)  */
+	ofs = ofs_pc_last + 4;
+	*a++ = 0x89; *a++ = 0x86; *a++ = ofs&255;
+	*a++ = (ofs>>8)&255; *a++ = (ofs>>16)&255;
+	*a++ = (ofs>>24)&255;	/*  mov    %edi,pc(%esi)  */
 
 	switch (itype) {
 	case CALL_TLBP:

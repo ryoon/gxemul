@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.46 2004-04-02 05:49:29 debug Exp $
+ *  $Id: misc.h,v 1.47 2004-04-06 02:17:59 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -43,6 +43,14 @@
 
 #ifdef SOLARIS
 /*  For Solaris:  */
+typedef uint8_t u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
+#endif
+
+#ifdef HPUX
+/*  For HP-UX:  */
 typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;

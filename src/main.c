@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.102 2004-09-05 04:56:54 debug Exp $
+ *  $Id: main.c,v 1.103 2004-10-04 11:23:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -153,7 +153,8 @@ void usage(char *progname)
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
-	printf("  -j name   set the name of the kernel  (default = \"netbsd\")\n");
+	printf("  -j name   set the name of the kernel, for example:\n");
+	printf("                -j netbsd          for NetBSD/pmax\n");
 	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j netbsd.pmax     for the NetBSD/pmax 1.6.2 install CD\n");
 	printf("                -j vmunix          for Ultrix  (REQUIRED to boot Ultrix)\n");
@@ -475,6 +476,30 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			usage(progname);
 			exit(1);
 		}
+	} else if (emul->boot_kernel_filename[0] == '\0') {
+		/*
+		 *  Default boot_kernel_filename is "", which can be overriden
+		 *  by the -j command line option.  If it is still "" here,
+		 *  and we're not booting directly from a disk image, then
+		 *  try to set it to the last part of the last file name
+		 *  given on the command line. (Last part = the stuff after
+		 *  the last slash.)
+		 */
+		char *s = extra_argv[extra_argc - 1];
+		char *s2;
+
+		s2 = strrchr(s, '/');
+		if (s2 == NULL)
+			s2 = s;
+		else
+			s2 ++;
+
+		emul->boot_kernel_filename = malloc(strlen(s2) + 1);
+		if (emul->boot_kernel_filename == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		strcpy(emul->boot_kernel_filename, s2);
 	}
 
 	if (emul->ncpus < 1) {

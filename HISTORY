@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.239 2004-10-02 06:47:26 debug Exp $
+$Id: HISTORY,v 1.240 2004-10-04 11:23:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -974,3 +974,8 @@ HISTORY of mips64emul
 		crashes; found (and fixed) the bug rather quickly: the "fix"
 		I implemented a few days ago for the 'sub' instruction
 		(according to the MIPS64 manual) caused the bug.
+20041004	Changing the behaviour of the -j command line option. The
+		default is now "" (or taken from the last filename given on
+		the command line), not "netbsd". In practice, this doesn't
+		change much, except that -j netbsd.pmax is no longer needed
+		when installing NetBSD.

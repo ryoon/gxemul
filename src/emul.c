@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.73 2004-09-28 02:57:02 debug Exp $
+ *  $Id: emul.c,v 1.74 2004-10-04 11:23:55 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -576,7 +576,7 @@ struct emul *emul_new(void)
 	e->machine = MACHINE_NONE;
 	e->prom_emulation = 1;
 	e->speed_tricks = 1;
-	e->boot_kernel_filename = "netbsd";
+	e->boot_kernel_filename = "";
 	e->boot_string_argument = "-a";
 	e->ncpus = DEFAULT_NCPUS;
 	e->automatic_clock_adjustment = 1;

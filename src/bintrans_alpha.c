@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.70 2004-11-30 11:02:48 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.71 2004-11-30 19:57:01 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -68,8 +68,6 @@
  *	s4		t0 (mips register 8)  (64-bit)
  *	s5		t1 (mips register 9)  (64-bit)
  *	s6		t2 (mips register 10)  (64-bit)
- *
- *	  a1..a5	  TODO
  */
 
 #define	MIPSREG_PC			-6
@@ -79,20 +77,44 @@
 #define	MIPSREG_VIRTUAL_PAGE		-2
 #define	MIPSREG_HOST_PAGE		-1
 
-/*  Temporaries:  */
 #define	ALPHA_T0		1
 #define	ALPHA_T1		2
 #define	ALPHA_T2		3
 #define	ALPHA_T3		4
 #define	ALPHA_T4		5
-/*  Cached values:  */
 #define	ALPHA_T5		6
 #define	ALPHA_T6		7
 #define	ALPHA_T7		8
 #define	ALPHA_S0		9
 #define	ALPHA_S1		10
+#define	ALPHA_S2		11
+#define	ALPHA_S3		12
+#define	ALPHA_S4		13
+#define	ALPHA_S5		14
+#define	ALPHA_S6		15
+#define	ALPHA_A0		16
+#define	ALPHA_A1		17
+#define	ALPHA_A2		18
+#define	ALPHA_A3		19
+#define	ALPHA_A4		20
+#define	ALPHA_A5		21
 #define	ALPHA_T8		22
 #define	ALPHA_T9		23
+#define	ALPHA_T10		24
+#define	ALPHA_T11		25
+#define	ALPHA_ZERO		31
+
+static int map_MIPS_to_Alpha[32] = {
+	ALPHA_ZERO, -1, -1, -1,				/*  0 .. 3  */
+	ALPHA_T7, ALPHA_T8, -1, -1,			/*  4 .. 7  */
+	ALPHA_S4, ALPHA_S5, ALPHA_S6, ALPHA_T11,	/*  8 .. 11  */
+	-1, -1, -1, -1,					/*  12 .. 15  */
+	ALPHA_T9, -1, -1, -1,				/*  16 .. 19  */
+	-1, -1, -1, -1,					/*  20 .. 23  */
+	-1, -1, -1, -1,					/*  24 .. 27  */
+	-1, ALPHA_S2, -1, ALPHA_S3,			/*  28 .. 31  */
+};
+
 
 struct cpu dummy_cpu;
 struct coproc dummy_coproc;
@@ -465,102 +487,110 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	int rt, int rs, int imm, int instruction_type)
 {
-	unsigned char *a;
+	uint32_t *a;
 	unsigned int uimm;
-	int load64 = 0, sign3264 = 1;
+	int alpha_rs, alpha_rt;
 
-	switch (instruction_type) {
-	case HI6_DADDIU:
-	case HI6_ORI:
-	case HI6_XORI:
-	case HI6_SLTI:
-	case HI6_SLTIU:
-		load64 = 1;
-	}
-
-	switch (instruction_type) {
-	case HI6_ANDI:
-	case HI6_ORI:
-	case HI6_XORI:
-	case HI6_DADDIU:
-		sign3264 = 0;
-	}
-
-	a = *addrp;
+	a = (uint32_t *) *addrp;
 
 	if (rt == 0)
 		goto rt0;
 
 	uimm = imm & 0xffff;
 
+	alpha_rs = map_MIPS_to_Alpha[rs];
+	alpha_rt = map_MIPS_to_Alpha[rt];
+
 	if (uimm == 0 && (instruction_type == HI6_ADDIU ||
 	    instruction_type == HI6_DADDIU || instruction_type == HI6_ORI)) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
+		if (alpha_rs >= 0 && alpha_rt >= 0) {
+			/*  addq rs,0,rt  */
+			*a++ = 0x40001400 | (alpha_rs << 21) | alpha_rt;
+		} else {
+			*addrp = (unsigned char *) a;
+			bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_T0);
+			bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rt);
+			a = (uint32_t *) *addrp;
+		}
 		goto rt0;
 	}
 
-	if (load64) {
-		/*  ldq t0,rs(a0)  */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
-	} else {
-		/*  ldl t0,rs(a0)  */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
+	if (alpha_rs < 0) {
+		/*  ldq t0,"rs"(a0)  */
+		*addrp = (unsigned char *) a;
+		bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_T0);
+		a = (uint32_t *) *addrp;
+		alpha_rs = ALPHA_T0;
 	}
+
+	if (alpha_rt < 0)
+		alpha_rt = ALPHA_T0;
+
+	/*  Place the result of the calculation in alpha_rt:  */
 
 	switch (instruction_type) {
 	case HI6_ADDIU:
 	case HI6_DADDIU:
-		/*  lda t0,imm(t0)  */
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x21; *a++ = 0x20;
+		/*  lda rt,imm(rs)  */
+		*a++ = 0x20000000 | (alpha_rt << 21) | (alpha_rs << 16) | uimm;
+		if (instruction_type == HI6_ADDIU) {
+			/*  sign extend, 32->64 bits:  addl t0,zero,t0  */
+			*a++ = 0x40001000 | (alpha_rt << 21) | alpha_rt;
+		}
 		break;
 	case HI6_ANDI:
 	case HI6_ORI:
 	case HI6_XORI:
 		/*  lda t1,4660  */
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
+		*a++ = 0x205f0000 | uimm;
+
 		if (uimm & 0x8000) {
 			/*  01 00 42 24  ldah t1,1(t1)	<-- if negative only  */
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+			*a++ = 0x24420001;
 		}
+
 		switch (instruction_type) {
 		case HI6_ANDI:
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and t0,t1,t0  */
+			/*  and rs,t1,rt  */
+			*a++ = 0x44020000 | (alpha_rs << 21) | alpha_rt;
 			break;
 		case HI6_ORI:
-			*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;	/*  or t0,t1,t0  */
+			/*  or rs,t1,rt  */
+			*a++ = 0x44020400 | (alpha_rs << 21) | alpha_rt;
 			break;
 		case HI6_XORI:
-			*a++ = 0x01; *a++ = 0x08; *a++ = 0x22; *a++ = 0x44;	/*  xor t0,t1,t0  */
+			/*  xor rs,t1,rt  */
+			*a++ = 0x44020800 | (alpha_rs << 21) | alpha_rt;
 			break;
 		}
 		break;
 	case HI6_SLTI:
 	case HI6_SLTIU:
 		/*  lda t1,4660  */
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
+		*a++ = 0x205f0000 | uimm;
+
 		switch (instruction_type) {
 		case HI6_SLTI:
-			*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;	/*  cmplt  */
+			/*  cmplt rs,t1,rt  */
+			*a++ = 0x400209a0 | (alpha_rs << 21) | alpha_rt;
 			break;
 		case HI6_SLTIU:
-			*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;	/*  cmpult  */
+			/*  cmpult rs,t1,rt  */
+			*a++ = 0x400203a0 | (alpha_rs << 21) | alpha_rt;
 			break;
 		}
 		break;
 	}
 
-	if (sign3264) {
-		/*  sign extend, 32->64 bits:  addl t0,zero,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;
+	if (alpha_rt == ALPHA_T0) {
+		*a++ = 0x5fff041f;	/*  fnop  */
+		*addrp = (unsigned char *) a;
+		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rt);
+		a = (uint32_t *) *addrp;
 	}
 
-	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
-
 rt0:
-	*addrp = a;
+	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }

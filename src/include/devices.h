@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.127 2005-01-09 00:57:53 debug Exp $
+ *  $Id: devices.h,v 1.128 2005-01-09 01:05:47 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -507,27 +507,23 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pci
 #define	DEV_SGI_MEC_LENGTH		0x1000
 int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
+#define	DEV_SGI_UST_LENGTH		0x10000
+int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
+#define	DEV_SGI_MTE_LENGTH		0x10000
+int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_mardigras.c:  */
 #define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
 int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
-/*  dev_sgi_mte.c:  */
-#define	DEV_SGI_MTE_LENGTH		0x10000
-int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
-
 /*  dev_sgi_nasid.c:  */
 #define	DEV_SGI_NASID_BASE		0x9200000000000000ULL
 #define	DEV_SGI_NASID_LENGTH		0x0000000100000000ULL
 int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_nasid_init(struct memory *mem, uint64_t baseaddr);
-
-/*  dev_sgi_ust.c:  */
-#define	DEV_SGI_UST_LENGTH		0x10000
-int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */
 #define	DEV_SII_LENGTH			0x100

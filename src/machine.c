@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.70 2004-03-24 02:44:47 debug Exp $
+ *  $Id: machine.c,v 1.71 2004-03-25 12:39:33 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1301,7 +1301,7 @@ void machine_init(struct memory *mem)
 			/*  TODO:  Other machine types?  */
 			switch (machine) {
 			case 19:
-				strcat(machine_name, " (uknown SGI-IP19 ?)");	/*  TODO  */
+				strcat(machine_name, " (Everest IP19)");
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
 				dev_scc_init(cpus[bootstrap_cpu], mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
@@ -1309,6 +1309,9 @@ void machine_init(struct memory *mem)
 
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
 				store_32bit_word(0xa0000000 + 0x3000, 0xbaddeed2);
+
+				/*  Memory size, not 4096 byte pages, but 256 bytes?  */
+				store_32bit_word(0xa0000000 + 0x26d0, physical_ram_in_mb * (1048576 / 256));
 
 				break;
 			case 20:
@@ -1370,11 +1373,14 @@ void machine_init(struct memory *mem)
 			case 25:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine_name, " (uknown SGI-IP25 ?)");	/*  TODO  */
+				strcat(machine_name, " (Everest IP25)");
 				dev_scc_init(cpus[bootstrap_cpu], mem, 0x400086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
 				/*  NOTE:  ip19! (perhaps not really the same)  */
 				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
+
+				/*  Memory size, not 4096 byte pages, but 256 bytes?  */
+				store_32bit_word(0xa0000000 + 0x26d0, physical_ram_in_mb * (1048576 / 256));
 
 				break;
 			case 26:

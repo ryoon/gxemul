@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.172 2005-01-26 16:47:28 debug Exp $
+ *  $Id: main.c,v 1.173 2005-01-26 17:19:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,6 +44,9 @@
 #include "misc.h"
 
 
+extern volatile int single_step;
+extern int force_debugger_at_exit;
+
 extern int optind;
 extern char *optarg;
 int extra_argc;
@@ -58,6 +61,7 @@ char **extra_argv;
  *
  *****************************************************************************/
 
+int verbose = 0;
 int quiet_mode = 0;
 
 static int debug_indent = 0;
@@ -361,7 +365,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'K':
-			emul->force_debugger_at_exit = 1;
+			force_debugger_at_exit = 1;
 			break;
 		case 'M':
 			m->physical_ram_in_mb = atoi(optarg);
@@ -447,10 +451,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'V':
-			emul->single_step = 1;
+			single_step = 1;
 			break;
 		case 'v':
-			emul->verbose ++;
+			verbose ++;
 			break;
 		case 'X':
 			m->use_x11 = 1;
@@ -510,22 +514,22 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  -i, -r, -t are pretty verbose:  */
 
-	if (m->instruction_trace && !emul->verbose) {
+	if (m->instruction_trace && !verbose) {
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -i\n");
-		emul->verbose = 1;
+		verbose = 1;
 	}
 
-	if (m->register_dump && !emul->verbose) {
+	if (m->register_dump && !verbose) {
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -r\n");
-		emul->verbose = 1;
+		verbose = 1;
 	}
 
-	if (m->show_trace_tree && !emul->verbose) {
+	if (m->show_trace_tree && !verbose) {
 		printf("implicitly turning of -q and turning on -v, "
 		    "because of -t\n");
-		emul->verbose = 1;
+		verbose = 1;
 	}
 
 
@@ -576,7 +580,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 #if 0
-	if (emul->show_opcode_statistics && m->bintrans_enable) {
+	if (m->show_opcode_statistics && m->bintrans_enable) {
 		fprintf(stderr, "Cannot do both dynamic binary "
 		    "translation and exact opcode statistics.\n"
 		    "Aborting.\n");

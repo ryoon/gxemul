@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.259 2005-01-26 16:17:13 debug Exp $
+ *  $Id: cpu.c,v 1.260 2005-01-26 17:19:57 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -52,6 +52,8 @@
 #include "symbol.h"
 #include "x11.h"
 
+
+extern volatile int single_step;
 
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
@@ -1535,7 +1537,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->last_was_jumptoself --;
 
 	/*  Check PC against breakpoints:  */
-	if (!emul->single_step)
+	if (!single_step)
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
 			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
 				fatal("Breakpoint reached, pc=0x");
@@ -1545,7 +1547,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				else
 					fatal("%016llx", (long long)cached_pc);
 				fatal("\n");
-				emul->single_step = 1;
+				single_step = 1;
 				return 0;
 			}
 
@@ -3857,7 +3859,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 	/*  The main loop:  */
 	running = 1;
 	rounds = 0;
-	while (running || emul->single_step) {
+	while (running || single_step) {
 		ncycles_chunk_end = machine->ncycles + (1 << 16);
 
 		machine->a_few_instrs = machine->a_few_cycles *
@@ -3879,19 +3881,19 @@ int cpu_run(struct emul *emul, struct machine *machine)
 				if (cpus[i]->running)
 					running = 1;
 
-			if (emul->single_step) {
-				if (emul->single_step == 1) {
+			if (single_step) {
+				if (single_step == 1) {
 					old_instruction_trace = machine->instruction_trace;
 					old_quiet_mode = quiet_mode;
 					old_show_trace_tree = machine->show_trace_tree;
 					machine->instruction_trace = 1;
 					machine->show_trace_tree = 1;
 					quiet_mode = 0;
-					emul->single_step = 2;
+					single_step = 2;
 				}
 
 				for (j=0; j<cpus[0]->cpu_type.instrs_per_cycle; j++) {
-					if (emul->single_step)
+					if (single_step)
 						debugger();
 					for (i=0; i<ncpus; i++)
 						if (cpus[i]->running) {
@@ -3924,7 +3926,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 						instrs_run =
 						    cpu_run_instr(emul, cpus[0]);
 						if (instrs_run == 0 &&
-						    emul->single_step) {
+						    single_step) {
 							j = machine->a_few_instrs;
 							break;
 						}
@@ -3943,7 +3945,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 							while (!instrs_run) {
 								instrs_run = cpu_run_instr(emul, cpus[i]);
 								if (instrs_run == 0 &&
-								    emul->single_step) {
+								    single_step) {
 									j = a_few_instrs2;
 									break;
 								}
@@ -3996,7 +3998,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 			/*  All CPUs have died?  */
 			if (!running) {
 				if (machine->exit_without_entering_debugger == 0)
-					emul->single_step = 1;
+					single_step = 1;
 			}
 
 			machine->ncycles += cpu0instrs;

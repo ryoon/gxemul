@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.55 2005-01-26 08:27:09 debug Exp $
+ *  $Id: debugger.c,v 1.56 2005-01-26 17:19:57 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -81,6 +81,9 @@ extern int quiet_mode;
  *  Global debugger variables:
  */
 
+volatile int single_step = 0;
+int force_debugger_at_exit = 0;
+
 static volatile int ctrl_c;
 
 static int debugger_n_emuls;
@@ -120,7 +123,7 @@ void debugger_activate(int x)
 {
 	ctrl_c = 1;
 
-	if (debugger_emul->single_step) {
+	if (single_step) {
 		/*  Already in the debugger. Do nothing.  */
 		int i;
 		for (i=0; i<MAX_CMD_LEN+1; i++)
@@ -131,7 +134,7 @@ void debugger_activate(int x)
 		fflush(stdout);
 	} else {
 		/*  Enter the single step debugger.  */
-		debugger_emul->single_step = 1;
+		single_step = 1;
 
 		/*  Discard any chars in the input queue:  */
 		while (console_charavail())
@@ -1030,9 +1033,10 @@ static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 	struct emul *e;
 
 	for (i=0; i<debugger_n_emuls; i++) {
+		single_step = 0;
+
 		e = debugger_emuls[i];
-		e->single_step = 0;
-		e->force_debugger_at_exit = 0;
+		force_debugger_at_exit = 0;
 
 		for (j=0; j<e->n_machines; j++) {
 			struct machine *m = e->machines[j];
@@ -1986,7 +1990,7 @@ void debugger(void)
 			return;
 	}
 
-	debugger_emul->single_step = 0;
+	single_step = 0;
 	debugger_machine->instruction_trace = old_instruction_trace;
 	debugger_machine->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;

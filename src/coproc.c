@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.159 2005-01-24 16:02:30 debug Exp $
+ *  $Id: coproc.c,v 1.160 2005-01-26 17:19:57 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -45,6 +45,8 @@
 #include "misc.h"
 #include "opcodes.h"
 
+
+extern volatile int single_step;
 
 static char *cop0_names[] = COP0_NAMES;
 static char *regnames[] = MIPS_REGISTER_NAMES;
@@ -2431,7 +2433,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
 	    "(pc = %016llx)\n", cpu->cpu_id, cp->coproc_nr, function,
 	    (long long)cpu->pc_last);
 #if 1
-	cpu->machine->emul->single_step = 1;
+	single_step = 1;
 #else
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 #endif

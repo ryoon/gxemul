@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.136 2005-01-26 16:17:13 debug Exp $
+ *  $Id: emul.c,v 1.137 2005-01-26 17:19:57 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,9 +59,12 @@
 #endif
 
 
+extern int force_debugger_at_exit;
+
 extern int extra_argc;
 extern char **extra_argv;
 
+extern int verbose;
 extern int quiet_mode;
 
 extern struct emul *debugger_emul;
@@ -750,10 +753,9 @@ void emul_run(struct emul **emuls, int n_emuls)
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 
-	/*  No emulation in verbose mode? Then set quiet_mode.  */
-	for (i=0; i<n_emuls; i++)
-		if (!emuls[i]->verbose)
-			quiet_mode = 1;
+	/*  Not in verbose mode? Then set quiet_mode.  */
+	if (!verbose)
+		quiet_mode = 1;
 
 	/*  Initialize all CPUs in all machines in all emulations:  */
 	for (i=0; i<n_emuls; i++) {
@@ -796,12 +798,8 @@ void emul_run(struct emul **emuls, int n_emuls)
 			cpu_run_deinit(e, e->machines[j]);
 	}
 
-	/*  Any force_debugger_at_exit flag set? Then enter the debugger:  */
-	n = 0;
-	for (i=0; i<n_emuls; i++)
-		if (emuls[i]->force_debugger_at_exit)
-			n++;
-	if (n > 0) {
+	/*  force_debugger_at_exit flag set? Then enter the debugger:  */
+	if (force_debugger_at_exit) {
 		quiet_mode = 0;
 		debugger_reset();
 		debugger();

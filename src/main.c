@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.217 2005-03-06 08:21:12 debug Exp $
+ *  $Id: main.c,v 1.218 2005-03-06 08:35:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -287,7 +287,6 @@ static void usage(int longusage)
 #endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
-	printf("  -D        guarantee fully deterministic behaviour\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
 	    " as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
@@ -349,6 +348,7 @@ static void usage(int longusage)
 	    " get a list of\n            available emulation modes)\n");
 
 	printf("\nGeneral options:\n");
+	printf("  -D        guarantee fully deterministic behaviour\n");
 	printf("  -H        display a list of possible CPU and "
 	    "machine types\n");
 	printf("  -h        display this help message\n");

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.91 2004-11-20 08:57:15 debug Exp $
+ *  $Id: coproc.c,v 1.92 2004-11-21 06:50:09 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1318,6 +1318,218 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 
 /*
+ *  coproc_tlbpr():
+ *
+ *  'tlbp' and 'tlbr'.
+ */
+void coproc_tlbpr(struct cpu *cpu, int readflag)
+{
+	struct coproc *cp = cpu->coproc[0];
+	int i, found, g_bit;
+	uint64_t vpn2, xmask;
+
+	/*  Read:  */
+	if (readflag) {
+		if (cpu->cpu_type.mmu_model == MMU3K) {
+			i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
+			if (i >= cp->nr_of_tlbs) {
+				/*  TODO:  exception?  */
+				fatal("warning: tlbr from index %i (too high)\n", i);
+				return;
+			}
+
+			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi  & ~0x3f;
+			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0 & ~0xff;
+		} else {
+			/*  R4000:  */
+			i = cp->reg[COP0_INDEX] & INDEX_MASK;
+			if (i >= cp->nr_of_tlbs)	/*  TODO:  exception  */
+				return;
+
+			g_bit = cp->tlbs[i].hi & TLB_G;
+
+			cp->reg[COP0_PAGEMASK] = cp->tlbs[i].mask;
+			cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi & ~TLB_G;
+			cp->reg[COP0_ENTRYLO1] = cp->tlbs[i].lo1;
+			cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;
+
+			cp->reg[COP0_ENTRYLO0] &= ~ENTRYLO_G;
+			cp->reg[COP0_ENTRYLO1] &= ~ENTRYLO_G;
+			if (g_bit) {
+				cp->reg[COP0_ENTRYLO0] |= ENTRYLO_G;
+				cp->reg[COP0_ENTRYLO1] |= ENTRYLO_G;
+			}
+		}
+
+		return;
+	}
+
+	/*  Probe:  */
+	if (cpu->cpu_type.mmu_model == MMU3K) {
+		vpn2 = cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
+		found = -1;
+		for (i=0; i<cp->nr_of_tlbs; i++)
+			if ( ((cp->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) == (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK))
+			    || cp->tlbs[i].lo0 & R2K3K_ENTRYLO_G)
+				if ((cp->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) == vpn2) {
+					found = i;
+					break;
+				}
+	} else {
+		/*  R4000 and R10000:  */
+		if (cpu->cpu_type.mmu_model == MMU10K)
+			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
+		else
+			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
+		vpn2 = cp->reg[COP0_ENTRYHI] & xmask;
+		found = -1;
+		for (i=0; i<cp->nr_of_tlbs; i++)
+			if ( ((cp->tlbs[i].hi & ENTRYHI_ASID) == (cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID))
+			    || cp->tlbs[i].hi & TLB_G)
+				if ((cp->tlbs[i].hi & xmask) == vpn2) {
+					found = i;
+					break;
+				}
+	}
+	if (found == -1)
+		cp->reg[COP0_INDEX] = INDEX_P;
+	else {
+		if (cpu->cpu_type.mmu_model == MMU3K)
+			cp->reg[COP0_INDEX] = found << R2K3K_INDEX_SHIFT;
+		else
+			cp->reg[COP0_INDEX] = found;
+	}
+
+	/*  Sign extend the index register:  */
+	if ((cp->reg[COP0_INDEX] >> 32) == 0 &&
+	    cp->reg[COP0_INDEX] & 0x80000000)
+		cp->reg[COP0_INDEX] |=
+		    0xffffffff00000000ULL;
+}
+
+
+/*
+ *  coproc_tlbwri():
+ *
+ *  'tlbwr' and 'tlbwi'
+ */
+void coproc_tlbwri(struct cpu *cpu, int randomflag)
+{
+	struct coproc *cp = cpu->coproc[0];
+	int index, i, found, g_bit;
+
+	/*
+	 *  ... and the last instruction page:
+	 *
+	 *  Some thoughts about this:  Code running in
+	 *  the kernel's physical address space has the
+	 *  same vaddr->paddr translation, so the last
+	 *  virtual page invalidation only needs to
+	 *  happen if we are for some extremely weird
+	 *  reason NOT running in the kernel's physical
+	 *  address space.
+	 *
+	 *  (An even insaner (but probably useless)
+	 *  optimization would be to only invalidate
+	 *  the last virtual page stuff if the TLB
+	 *  update actually affects the vaddr in
+	 *  question.)
+	 */
+
+	if (cpu->pc < (uint64_t)0xffffffff80000000ULL ||
+	    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
+		cpu->pc_last_virtual_page =
+		    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
+
+	if (randomflag) {
+#ifdef LAST_USED_TLB_EXPERIMENT
+		/*
+		 *  This is an experimental thing which
+		 *  finds the index with lowest
+		 *  last_used value, instead of just a
+		 *  random entry:
+		 */
+		int i, found=-1;
+		uint64_t minimum_last_used;
+		for (i=(cpu->cpu_type.mmu_model == MMU3K)? 8 : cp->reg[COP0_WIRED]; i<cp->nr_of_tlbs; i++)
+			if (found==-1 || cp->tlbs[i].last_used < minimum_last_used) {
+				minimum_last_used = cp->tlbs[i].last_used;
+				found = i;
+			}
+		index = found;
+#else
+		/*  This is the non-experimental, normal behaviour:  */
+		if (cpu->cpu_type.mmu_model == MMU3K)
+			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
+		else
+			index = cp->reg[COP0_RANDOM] & RANDOM_MASK;
+#endif
+	} else {
+		if (cpu->cpu_type.mmu_model == MMU3K)
+			index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
+		else
+			index = cp->reg[COP0_INDEX] & INDEX_MASK;
+	}
+
+	if (index >= cp->nr_of_tlbs) {
+		fatal("warning: tlb index %i too high (max is %i)\n", index, cp->nr_of_tlbs-1);
+		/*  TODO:  cause an exception?  */
+		return;
+	}
+
+#if 0
+	/*  Debug dump of the previous entry at that index:  */
+	debug("                old entry at index = %04x", index);
+	debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
+	debug(" hi = %016llx", (long long) cp->tlbs[index].hi);
+	debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
+	debug(" lo1 = %016llx\n", (long long) cp->tlbs[index].lo1);
+#endif
+
+	/*  Translation caches must be invalidated:  */
+	if (cpu->cpu_type.mmu_model == MMU3K) {
+		uint64_t vaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
+		vaddr &= 0xffffffffULL;
+		if (vaddr & 0x80000000ULL)
+			vaddr |= 0xffffffff00000000ULL;
+		invalidate_translation_caches(cpu, 0, vaddr);
+	} else if (cpu->cpu_type.mmu_model == MMU4K) {
+		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+		/*  40 addressable bits:  */
+		if (vaddr & 0x8000000000ULL)
+			vaddr |= 0xffffff0000000000ULL;
+		invalidate_translation_caches(cpu, 0, vaddr);
+	} else if (cpu->cpu_type.mmu_model == MMU10K) {
+		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+		/*  44 addressable bits:  */
+		if (vaddr & 0x80000000000ULL)
+			vaddr |= 0xfffff00000000000ULL;
+		invalidate_translation_caches(cpu, 0, vaddr);
+	} else {
+		/*  Invalidate all:  */
+		invalidate_translation_caches(cpu, 1, 0);
+	}
+
+	/*  Write the entry:  */
+
+	if (cpu->cpu_type.mmu_model == MMU3K) {
+		cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];	/*  & R2K3K_ENTRYHI_VPN_MASK;  */
+		cp->tlbs[index].lo0 = cp->reg[COP0_ENTRYLO0];
+	} else {
+		/*  R4000:  */
+		g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
+		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
+		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
+		cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1] & ~ENTRYLO_G;
+		cp->tlbs[index].lo0  = cp->reg[COP0_ENTRYLO0] & ~ENTRYLO_G;
+		cp->tlbs[index].hi &= ~TLB_G;
+		if (g_bit)
+			cp->tlbs[index].hi |= TLB_G;
+	}
+}
+
+
+/*
  *  coproc_function():
  *
  *  Execute a coprocessor specific instruction. cp must be != NULL.
@@ -1329,7 +1541,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 void coproc_function(struct cpu *cpu, struct coproc *cp,
 	uint32_t function, int unassemble_only, int running)
 {
-	int co_bit, op, rt, rd, fs, g_bit, index, found, i;
+	int co_bit, op, rt, rd, fs, index, found, i;
 	int copz;
 	uint64_t vpn2, xmask, tmpvalue;
 	int cpnr = cp->coproc_nr;
@@ -1494,72 +1706,19 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 					debug("tlbr\n");
 					return;
 				}
-				if (cpu->cpu_type.mmu_model == MMU3K) {
-					i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
-					if (i >= cp->nr_of_tlbs) {
-						/*  TODO:  exception?  */
-						fatal("warning: tlbr from index %i (too high)\n", i);
-						return;
-					}
-
-					cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi  & ~0x3f;
-					cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0 & ~0xff;
-				} else {
-					/*  R4000:  */
-					i = cp->reg[COP0_INDEX] & INDEX_MASK;
-					if (i >= cp->nr_of_tlbs)	/*  TODO:  exception  */
-						return;
-
-					g_bit = cp->tlbs[i].hi & TLB_G;
-
-					cp->reg[COP0_PAGEMASK] = cp->tlbs[i].mask;
-					cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi & ~TLB_G;
-					cp->reg[COP0_ENTRYLO1] = cp->tlbs[i].lo1;
-					cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;
-
-					cp->reg[COP0_ENTRYLO0] &= ~ENTRYLO_G;
-					cp->reg[COP0_ENTRYLO1] &= ~ENTRYLO_G;
-					if (g_bit) {
-						cp->reg[COP0_ENTRYLO0] |= ENTRYLO_G;
-						cp->reg[COP0_ENTRYLO1] |= ENTRYLO_G;
-					}
-				}
+				coproc_tlbpr(cpu, 1);
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
-				/*
-				 *  ... and the last instruction page:
-				 *
-				 *  Some thoughts about this:  Code running in
-				 *  the kernel's physical address space has the
-				 *  same vaddr->paddr translation, so the last
-				 *  virtual page invalidation only needs to
-				 *  happen if we are for some extremely weird
-				 *  reason NOT running in the kernel's physical
-				 *  address space.
-				 *
-				 *  (An even insaner (but probably useless)
-				 *  optimization would be to only invalidate
-				 *  the last virtual page stuff if the TLB
-				 *  update actually affects the vaddr in
-				 *  question.)
-				 */
-				if (cpu->pc < (uint64_t)0xffffffff80000000ULL ||
-				    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
-					cpu->pc_last_virtual_page =
-					    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
-
 				if (unassemble_only) {
 					if (op == COP0_TLBWI)
 						debug("tlbwi");
 					else
 						debug("tlbwr");
-
 					if (!running) {
 						debug("\n");
 						return;
 					}
-
 					debug("\tindex=%08llx",
 					    (long long)cp->reg[COP0_INDEX]);
 					debug(", random=%08llx",
@@ -1573,142 +1732,14 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 					debug(", lo1=%016llx\n",
 					    (long long)cp->reg[COP0_ENTRYLO1]);
 				}
-
-				if (op == COP0_TLBWR) {
-#ifdef LAST_USED_TLB_EXPERIMENT
-					/*
-					 *  This is an experimental thing which
-					 *  finds the index with lowest
-					 *  last_used value, instead of just a
-					 *  random entry:
-					 */
-					int i, found=-1;
-					uint64_t minimum_last_used;
-					for (i=(cpu->cpu_type.mmu_model == MMU3K)? 8 : cp->reg[COP0_WIRED]; i<cp->nr_of_tlbs; i++)
-						if (found==-1 || cp->tlbs[i].last_used < minimum_last_used) {
-							minimum_last_used = cp->tlbs[i].last_used;
-							found = i;
-						}
-					index = found;
-#else
-					/*  This is the non-experimental, normal behaviour:  */
-					if (cpu->cpu_type.mmu_model == MMU3K)
-						index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
-					else
-						index = cp->reg[COP0_RANDOM] & RANDOM_MASK;
-#endif
-				} else {
-					if (cpu->cpu_type.mmu_model == MMU3K)
-						index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
-					else
-						index = cp->reg[COP0_INDEX] & INDEX_MASK;
-				}
-
-				if (index >= cp->nr_of_tlbs) {
-					fatal("warning: tlb index %i too high (max is %i)\n", index, cp->nr_of_tlbs-1);
-					/*  TODO:  cause an exception?  */
-					return;
-				}
-
-#if 0
-				/*  Debug dump of the previous entry at that index:  */
-				debug("                old entry at index = %04x", index);
-				debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
-				debug(" hi = %016llx", (long long) cp->tlbs[index].hi);
-				debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
-				debug(" lo1 = %016llx\n", (long long) cp->tlbs[index].lo1);
-#endif
-
-				/*  Translation caches must be invalidated:  */
-				if (cpu->cpu_type.mmu_model == MMU3K) {
-					uint64_t vaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
-					vaddr &= 0xffffffffULL;
-					if (vaddr & 0x80000000ULL)
-						vaddr |= 0xffffffff00000000ULL;
-					invalidate_translation_caches(cpu, 0, vaddr);
-				} else if (cpu->cpu_type.mmu_model == MMU4K) {
-					uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
-					/*  40 addressable bits:  */
-					if (vaddr & 0x8000000000ULL)
-						vaddr |= 0xffffff0000000000ULL;
-					invalidate_translation_caches(cpu, 0, vaddr);
-				} else if (cpu->cpu_type.mmu_model == MMU10K) {
-					uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
-					/*  44 addressable bits:  */
-					if (vaddr & 0x80000000000ULL)
-						vaddr |= 0xfffff00000000000ULL;
-					invalidate_translation_caches(cpu, 0, vaddr);
-				} else {
-					/*  Invalidate all:  */
-					invalidate_translation_caches(cpu, 1, 0);
-				}
-
-				/*  Write the entry:  */
-
-				if (cpu->cpu_type.mmu_model == MMU3K) {
-					cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];	/*  & R2K3K_ENTRYHI_VPN_MASK;  */
-					cp->tlbs[index].lo0 = cp->reg[COP0_ENTRYLO0];
-				} else {
-					/*  R4000:  */
-					g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
-					cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
-					cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
-					cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1] & ~ENTRYLO_G;
-					cp->tlbs[index].lo0  = cp->reg[COP0_ENTRYLO0] & ~ENTRYLO_G;
-
-					cp->tlbs[index].hi &= ~TLB_G;
-					if (g_bit)
-						cp->tlbs[index].hi |= TLB_G;
-				}
-
+				coproc_tlbwri(cpu, op == COP0_TLBWR);
 				return;
 			case COP0_TLBP:		/*  Probe TLB for matching entry  */
 				if (unassemble_only) {
 					debug("tlbp\n");
 					return;
 				}
-				if (cpu->cpu_type.mmu_model == MMU3K) {
-					vpn2 = cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
-					found = -1;
-					for (i=0; i<cp->nr_of_tlbs; i++)
-						if ( ((cp->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) == (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK))
-						    || cp->tlbs[i].lo0 & R2K3K_ENTRYLO_G)
-							if ((cp->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) == vpn2) {
-								found = i;
-								break;
-							}
-				} else {
-					/*  R4000 and R10000:  */
-					if (cpu->cpu_type.mmu_model == MMU10K)
-						xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
-					else
-						xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
-
-					vpn2 = cp->reg[COP0_ENTRYHI] & xmask;
-					found = -1;
-					for (i=0; i<cp->nr_of_tlbs; i++)
-						if ( ((cp->tlbs[i].hi & ENTRYHI_ASID) == (cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID))
-						    || cp->tlbs[i].hi & TLB_G)
-							if ((cp->tlbs[i].hi & xmask) == vpn2) {
-								found = i;
-								break;
-							}
-				}
-				if (found == -1)
-					cp->reg[COP0_INDEX] = INDEX_P;
-				else {
-					if (cpu->cpu_type.mmu_model == MMU3K)
-						cp->reg[COP0_INDEX] = found << R2K3K_INDEX_SHIFT;
-					else
-						cp->reg[COP0_INDEX] = found;
-				}
-
-				/*  Sign extend the index register:  */
-				if ((cp->reg[COP0_INDEX] >> 32) == 0 &&
-				    cp->reg[COP0_INDEX] & 0x80000000)
-					cp->reg[COP0_INDEX] |=
-					    0xffffffff00000000ULL;
-
+				coproc_tlbpr(cpu, 0);
 				return;
 			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
 				if (unassemble_only) {

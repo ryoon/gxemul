@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.150 2004-11-20 21:41:25 debug Exp $
+ *  $Id: misc.h,v 1.151 2004-11-21 06:50:08 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -642,6 +642,9 @@ struct cpu {
 	/*  Chunk base address:  */
 	unsigned char	*chunk_base_address;
 
+	void		(*bintrans_fast_tlbwri)(struct cpu *, int);
+	void		(*bintrans_fast_tlbpr)(struct cpu *, int);
+
 	/*  Data:  */
 	unsigned char	*(*bintrans_fast_vaddr_to_hostaddr)(struct cpu *cpu,
 			    uint64_t vaddr, int writeflag);
@@ -968,6 +971,8 @@ void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
+void coproc_tlbpr(struct cpu *cpu, int readflag);
+void coproc_tlbwri(struct cpu *cpu, int randomflag);
 void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 	int unassemble_only, int running);
 

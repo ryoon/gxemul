@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.71 2004-11-20 08:57:15 debug Exp $
+ *  $Id: bintrans.c,v 1.72 2004-11-21 06:50:09 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -135,6 +135,12 @@ static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int im
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
 static int bintrans_write_instruction__rfe(unsigned char **addrp);
 static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
+static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype);
+
+#define	TLB_TLBWI	0
+#define	TLB_TLBWR	1
+#define	TLB_TLBP	2
+#define	TLB_TLBR	3
 
 
 #define	BINTRANS_CACHE_N_INDEX_BITS	14
@@ -566,6 +572,22 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				rd = (instr[1] >> 3) & 31;
 				translated = try_to_translate = bintrans_write_instruction__mfc_mtc(&ca, 0, 1, rt, rd, 1);
 				n_translated += translated;
+			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
+				/*  tlbwi:  */
+				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBWI);
+				n_translated += translated;
+			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 6) {
+				/*  tlbwr:  */
+				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBWR);
+				n_translated += translated;
+			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 8) {
+				/*  tlbp:  */
+				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBP);
+				n_translated += translated;
+			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 1) {
+				/*  tlbr:  */
+				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBR);
+				n_translated += translated;
 			} else
 				try_to_translate = 0;
 			break;
@@ -722,6 +744,8 @@ run_it:
 void bintrans_init_cpu(struct cpu *cpu)
 {
 	cpu->chunk_base_address = translation_code_chunk_space;
+	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
+	cpu->bintrans_fast_tlbpr = coproc_tlbpr;
 	cpu->bintrans_fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
 }
 

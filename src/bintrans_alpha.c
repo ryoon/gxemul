@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.44 2004-11-20 10:01:27 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.45 2004-11-21 06:50:09 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -983,10 +983,10 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
-		/*  Don't execute too many instructions.  */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
-		*a++ = 0xc0; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
+		/*  Don't execute too many instructions. (see comment below)  */
+		*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+			*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xc2; *a++ = 0x40;	/*  cmple t5,t1,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
@@ -1068,13 +1068,12 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  abort by returning.
 		 *
 		 *  f4 01 5f 20     lda     t1,500  (some low number...)
-		 *  50 00 30 a0     ldl     t0,80(a0)
-		 *  a1 0d 22 40     cmple   t0,t1,t0
+		 *  a1 0d c2 40     cmple   t5,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
-		*a++ = 0xc0; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
+		*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+			*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xc2; *a++ = 0x40;	/*  cmple t5,t1,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
@@ -1713,21 +1712,16 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			break;
 #if 0
 
-This stuff doesn't really work very well.
-Perhaps allowing interrupts to be _disabled_ but not enabled is
-a solution.
+This is supposed to work, but doesn't.  TODO
 
 		case COP0_STATUS:
 			/*  Only allow updates to the status register if
 			    the interrupt enable bits were changed, but no
 			    other bits!  */
-			/*  ff fe bf 20     lda     t4, ~1  */
-/* *a++ = 0x20bffffe; */
-
-			/*  ff ff bf 24     ldah    t4,-1  */
-			/*  fe 00 a5 20     lda     t4,254(t4)  */
-			*a++ = 0x24bfffff;
-			*a++ = 0x20a500fe;
+			/*  fe 00 bf 20     lda     t4,0x00fe  */
+			/*  ff ff a5 24     ldah    t4,-1(t4)  */
+			*a++ = 0x20bf00fe;
+			*a++ = 0x24a5ffff;
 
 			/*  03 00 25 44     and     t0,t4,t2  */
 			/*  04 00 45 44     and     t1,t4,t3  */
@@ -1740,6 +1734,20 @@ a solution.
 			*a++ = 0;	/*  later  */
 			bintrans_write_chunkreturn_fail((unsigned char **)&a);
 			*jump = 0xf4600000 | (((size_t)a - (size_t)jump - 4) / 4);
+
+			/*  Also, no interrupts bits should have been
+			    ENABLED, only disabling is ok. We check for this
+			    by ORing the old and new values together. If
+			    the result is the old value, then we're ok.  */
+			/*  03 04 22 44     or      t0,t1,t2  */
+			/*  a4 05 43 40     cmpeq   t1,t2,t3  */
+			/*  01 00 80 f4     bne     t3,<ok>  */
+			*a++ = 0x44220403;
+			*a++ = 0x404305a4;
+			jump = a;
+			*a++ = 0;	/*  later  */
+			bintrans_write_chunkreturn_fail((unsigned char **)&a);
+			*jump = 0xf4800000 | (((size_t)a - (size_t)jump - 4) / 4);
 			break;
 #endif
 		default:
@@ -1773,4 +1781,85 @@ a solution.
 	return 1;
 }
 
+
+/*
+ *  bintrans_write_instruction__tlb():
+ */
+static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
+{
+	uint32_t *a;
+	int ofs;
+
+	switch (itype) {
+	case TLB_TLBWI:
+	case TLB_TLBWR:
+	case TLB_TLBP:
+	case TLB_TLBR:
+		break;
+	default:
+		return 0;
+	}
+
+	a = (uint32_t *) *addrp;
+
+	/*  a0 = pointer to the cpu struct  */
+
+	switch (itype) {
+	case TLB_TLBWI:
+	case TLB_TLBWR:
+		/*  a1 = 0 for indexed, 1 for random  */
+		*a++ = 0x223f0000 | (itype == TLB_TLBWR);
+		break;
+	case TLB_TLBP:
+	case TLB_TLBR:
+		/*  a1 = 0 for probe, 1 for read  */
+		*a++ = 0x223f0000 | (itype == TLB_TLBR);
+		break;
+	}
+
+	/*  Save a0 and the old return address on the stack:  */
+	*a++ = 0x23deff80;		/*  lda sp,-128(sp)  */
+
+	*a++ = 0xb75e0000;		/*  stq ra,0(sp)  */
+	*a++ = 0xb61e0008;		/*  stq a0,8(sp)  */
+	*a++ = 0xb4de0010;		/*  stq t5,16(sp)  */
+	*a++ = 0xb0fe0018;		/*  stl t6,24(sp)  */
+	*a++ = 0xb71e0020;		/*  stq t10,32(sp)  */
+	*a++ = 0xb73e0028;		/*  stq t11,40(sp)  */
+	*a++ = 0xb51e0030;		/*  stq t7,48(sp)  */
+	*a++ = 0xb6de0038;		/*  stq t8,56(sp)  */
+	*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
+
+	switch (itype) {
+	case TLB_TLBP:
+	case TLB_TLBR:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
+		break;
+	default:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
+	}
+
+	*a++ = 0xa7700000 | ofs;	/*  ldq t12,0(a0)  */
+
+	/*  Call bintrans_fast_tlbwr:  */
+	*a++ = 0x6b5b4000;		/*  jsr ra,(t12),<after>  */
+
+	/*  Restore the old return address and a0 from the stack:  */
+	*a++ = 0xa75e0000;		/*  ldq ra,0(sp)  */
+	*a++ = 0xa61e0008;		/*  ldq a0,8(sp)  */
+	*a++ = 0xa4de0010;		/*  ldq t5,16(sp)  */
+	*a++ = 0xa0fe0018;		/*  ldl t6,24(sp)  */
+	*a++ = 0xa71e0020;		/*  ldq t10,32(sp)  */
+	*a++ = 0xa73e0028;		/*  ldq t11,40(sp)  */
+	*a++ = 0xa51e0030;		/*  ldq t7,48(sp)  */
+	*a++ = 0xa6de0038;		/*  ldq t8,56(sp)  */
+	*a++ = 0xa6fe0040;		/*  ldq t9,64(sp)  */
+
+	*a++ = 0x23de0080;		/*  lda sp,128(sp)  */
+
+	*addrp = (unsigned char *) a;
+
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	return 1;
+}
 

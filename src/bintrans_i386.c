@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.14 2004-11-20 08:57:15 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.15 2004-11-21 06:50:09 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -1430,4 +1430,14 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	return 1;
 }
 
+
+/*
+ *  bintrans_write_instruction__tlb():
+ */
+static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
+{
+	/*  TODO  */
+
+	return 0;
+}
 

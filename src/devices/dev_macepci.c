@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.1 2003-12-28 20:56:15 debug Exp $
+ *  $Id: dev_macepci.c,v 1.2 2003-12-29 00:50:56 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -81,6 +81,11 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		odata_set = 1;
 		odata = 0x01;
 		break;
+	case 0xcf8:	/*  PCI ADDR  */
+	case 0xcfc:	/*  PCI DATA  */
+		odata_set = 1;
+		odata = 0;
+		break;
 	default:
 		if (writeflag == MEM_WRITE) {
 			debug("[ macepci: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
@@ -114,8 +119,6 @@ void dev_macepci_init(struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct macepci_data));
-
-memset(d->reg, 0xff, sizeof(d->reg));
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH, dev_macepci_access, (void *)d);
 }

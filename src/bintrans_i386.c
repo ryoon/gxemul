@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.24 2004-11-24 14:00:04 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.25 2004-11-26 06:42:41 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -1429,14 +1429,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
 	 *
 	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 16                shr    $0x16,%ebx
-	 *  81 e3 ff 03 00 00       and    $0x3ff,%ebx
-	 *  c1 e3 02                shl    $0x2,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
 	 */
 	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x16;
-	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x03; *a++ = 0; *a++ = 0;
-	*a++ = 0xc1; *a++ = 0xe3; *a++ = 0x02;
+	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x14;
+	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 	/*
 	 *  edi = vaddr_to_hostaddr_table0
@@ -1460,14 +1458,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
 	 *
 	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0c                shr    $0xc,%ebx
-	 *  81 e3 ff 03 00 00       and    $0x3ff,%ebx
-	 *  c1 e3 02                shl    $0x2,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
 	 */
 	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0c;
-	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x03; *a++ = 0; *a++ = 0;
-	*a++ = 0xc1; *a++ = 0xe3; *a++ = 0x02;
+	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0a;
+	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 	/*
 	 *  ecx = vaddr_to_hostaddr_table0[a][b]

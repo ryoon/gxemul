@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.62 2004-11-24 14:00:03 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.63 2004-11-26 06:42:41 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -69,7 +69,6 @@
  *	s5		t1 (mips register 9)  (64-bit)
  *	s6		t2 (mips register 10)  (64-bit)
  *
- *	  t7..t9	  TODO
  *	  a1..a5	  TODO
  */
 
@@ -1289,6 +1288,13 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		break;
 	}
 
+	/*
+	 *  a2 = vaddr_to_hostaddr_table0
+	 *  00 00 50 a6     ldq     a2,0(a0)
+	 */
+	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
+	*a++ = ofs&255; *a++ = ofs>>8; *a++ = 0x50; *a++ = 0xa6;
+
 	if (alignment > 0) {
 		/*
 		 *  Check alignment:
@@ -1311,46 +1317,45 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	/*
 	 *  t1 = 1023;
-	 *  t2 = (a1 >> 22) & t1;
-	 *  t3 = (a1 >> 12) & t1;
+	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
 	 *  t1 = a1 & 4095;
 	 *
-	 *  ff 03 5f 20     lda     t1,1023
-	 *  83 d6 22 4a     srl     a1,22,t2
-	 *  84 96 21 4a     srl     a1,12,t3
+	 *  f8 1f 5f 20     lda     t1,1023 * 8
+	 *  83 76 22 4a     srl     a1,19,t2
+	 *  84 36 21 4a     srl     a1, 9,t3
 	 *  03 00 62 44     and     t2,t1,t2
-	 *  04 00 82 44     and     t3,t1,t3
-	 *  23 77 60 48     sll     t2,0x3,t2
-	 *  24 77 80 48     sll     t3,0x3,t3
-	 *  ff 0f 5f 20     lda     t1,4095
-	 *  02 00 22 46     and     a1,t1,t1
 	 */
-	*a++ = 0xff; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;
-	*a++ = 0x83; *a++ = 0xd6; *a++ = 0x22; *a++ = 0x4a;
-	*a++ = 0x84; *a++ = 0x96; *a++ = 0x21; *a++ = 0x4a;
+	*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
+	*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
+	*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
 	*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
-	*a++ = 0x23; *a++ = 0x77; *a++ = 0x60; *a++ = 0x48;
-	*a++ = 0x24; *a++ = 0x77; *a++ = 0x80; *a++ = 0x48;
-	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
-	*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
 
 	/*
-	 *  a2 = vaddr_to_hostaddr_table0
 	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
-	 *
-	 *  00 00 50 a6     ldq     a2,0(a0)
 	 *  12 04 43 42     addq    a2,t2,a2
-	 *  00 00 72 a6     ldq     a3,0(a2)
-	 *  13 04 64 42     addq    a3,t3,a3
-	 *  00 00 73 a6     ldq     a3,0(a3)
 	 */
-	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
-	*a++ = ofs&255; *a++ = ofs>>8; *a++ = 0x50; *a++ = 0xa6;
 	*a++ = 0x12; *a++ = 0x04; *a++ = 0x43; *a++ = 0x42;
+
+	/*  04 00 82 44     and     t3,t1,t3  */
+	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
+
+	/*  00 00 72 a6     ldq     a3,0(a2)  */
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
+
+	/*  ff 0f 5f 20     lda     t1,4095  */
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
+
+	/*
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+	 *  13 04 64 42     addq    a3,t3,a3
+	 */
 	*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
+
+	/*  02 00 22 46     and     a1,t1,t1  */
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
+
+	/*  00 00 73 a6     ldq     a3,0(a3)  */
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
 
 	/*
@@ -1375,21 +1380,17 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
-/*if (!load)
- bintrans_write_chunkreturn_fail(&a);
-*/
 
 	/*
 	 *  The rest of this code was written with t3 as the address.
 	 *
-	 *  fe ff 7f 20     lda     t2,-2	Get rid of the
+	 *  fe ff 7f 20     lda     t2,-2	Get rid of the lowest
 	 *  04 00 63 46     and     a3,t2,t3	bit, and add
 	 *  04 04 82 40     addq    t3,t1,t3	the offset within the page.
 	 */
 	*a++ = 0xfe; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x63; *a++ = 0x46;
 	*a++ = 0x04; *a++ = 0x04; *a++ = 0x82; *a++ = 0x40;
-
 
 
 	switch (instruction_type) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.24 2004-07-10 06:36:30 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.25 2004-07-11 03:17:03 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -32,9 +32,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
+#include "sfbreg.h"
 
 
 struct turbochannel_data {
@@ -212,11 +213,12 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	} else if (strcmp(device_name, "PMAGB-BA")==0) {
 		/*  sfb in NetBSD  */
 		/*  TODO: This is not working yet.  */
-		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC,
-		    1280,1024, 1280,1024,8, device_name);
-		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
-		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
-		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
+		fb = dev_fb_init(cpu, mem, baseaddr + SFB_OFFSET_VRAM,
+		    VFB_GENERIC, 1280,1024, 1280,1024,8, device_name);
+		dev_sfb_init(cpu, mem, baseaddr + SFB_ASIC_OFFSET, fb);
+		dev_bt459_init(cpu, mem, baseaddr + SFB_OFFSET_BT459,
+		    baseaddr + SFB_CLEAR, fb, 8, irq, BT459_BA);
+		rom_offset = 0x0;	/*  ? TODO  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */
 		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PX, irq);

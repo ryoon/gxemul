@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.44 2005-02-19 16:22:06 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.45 2005-02-19 16:29:28 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1132,7 +1132,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
 	int c, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
 	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag;
-	uint64_t tmp, tmp2, addr;
+	uint64_t tmp=0, tmp2, addr;
 	uint64_t cached_pc;
 
 	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.133 2004-09-05 03:07:49 debug Exp $
+ *  $Id: cpu.c,v 1.134 2004-09-05 03:10:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -65,7 +65,6 @@ extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
 extern int max_random_cycles_per_chunk;
-extern int automatic_clock_adjustment;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
@@ -3066,7 +3065,7 @@ void cpu_show_cycles(struct emul *emul,
 	ninstrs = ncycles *
 	    cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
-	if (automatic_clock_adjustment) {
+	if (emul->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
 
 		/*  Current nr of cycles per second:  */
@@ -3096,7 +3095,7 @@ void cpu_show_cycles(struct emul *emul,
 
 	printf("[ ");
 
-	if (!automatic_clock_adjustment) {
+	if (!emul->automatic_clock_adjustment) {
 		d = emulated_hz / 1000;
 		if (d < 1)
 			d = 1;

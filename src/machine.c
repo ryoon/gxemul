@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.45 2004-02-19 10:24:51 debug Exp $
+ *  $Id: machine.c,v 1.46 2004-02-19 10:40:47 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1195,11 +1195,11 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 
 			/*  TODO:  sync devices and component tree  */
 			/*  TODO 2: These are model dependant!!!  */
-			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 8);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
+			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 0);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
 			dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
 			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
-			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
+			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);		/*  com1  */
 			/*  lpt at 0x2000008000  */
 			dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
 

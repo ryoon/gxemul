@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.9 2004-02-29 02:00:34 debug Exp $
+ *  $Id: dev_scc.c,v 1.10 2004-03-04 03:15:15 debug Exp $
  *  
  *  Serial controller on some DECsystems. (Z8530 ?)
  *
@@ -188,6 +188,7 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	struct scc_data *d = (struct scc_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int port;
+	int ultrix_mode = 0;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -195,6 +196,16 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	relative_addr &= 7;
 
 	dev_scc_tick(cpu, extra);
+
+	/*
+	 *  Ultrix writes words such as 0x1200 to relative address 0,
+	 *  instead of writing the byte 0x12 directly to address 1.
+	 */
+	if ((relative_addr == 0 || relative_addr == 4) && (idata & 0xff) == 0) {
+		ultrix_mode = 1;
+		relative_addr ++;
+		idata >>= 8;
+	}
 
 	switch (relative_addr) {
 	case 1:		/*  command  */
@@ -273,6 +284,10 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		} else {
 			debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);
 		}
+	}
+
+	if (ultrix_mode && writeflag == MEM_READ) {
+		odata <<= 8;
 	}
 
 	if (writeflag == MEM_READ)

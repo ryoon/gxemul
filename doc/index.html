@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.166 2004-12-14 12:00:11 debug Exp $
+$Id: index.html,v 1.167 2004-12-14 12:39:59 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1120,6 +1120,7 @@ CTRL-C and type <b>quit</b>, and then:
 	You'll enter single-user mode. You need to add a line to
 	/etc/inittab, to enable logins via serial console.<pre>
 	sh-2.05b# <b>echo 'T3:23:respawn:/sbin/getty -L ttyS3 9600 vt100' >> /etc/inittab</b>
+	sh-2.05b# <b>echo 'ttyS3' >> /etc/securetty</b>
 	sh-2.05b# <b>sync; umount /</b>
 </pre>
 </ol>

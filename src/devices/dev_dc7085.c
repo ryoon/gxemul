@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.34 2004-12-14 04:19:05 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.35 2004-12-14 12:39:58 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -46,6 +46,10 @@
 
 struct dc_data {
 	struct dc7085regs	regs;
+
+#ifdef SLOWSERIALINTERRUPTS
+	int every_other;
+#endif
 
 	unsigned char		rx_queue_char[MAX_QUEUE_LEN];
 	char			rx_queue_lineno[MAX_QUEUE_LEN];
@@ -97,6 +101,12 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 {
 	struct dc_data *d = extra;
 	int avail;
+
+#ifdef SLOWSERIALINTERRUPTS
+	d->every_other ^= 1;
+	if (!d->every_other)
+		return;
+#endif
 
 	d->regs.dc_csr &= ~CSR_RDONE;
 

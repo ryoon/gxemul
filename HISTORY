@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.391 2004-12-14 05:05:03 debug Exp $
+$Id: HISTORY,v 1.392 2004-12-14 12:39:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1328,3 +1328,5 @@ HISTORY of mips64emul
 		but the ERL and EXL bits override that.
 		Fix which allows Debian to boot directly from a disk image
 		(with DELO). (It reads multiple separate areas from disk.)
+		Update to the SLOWSERIALINTERRUPTS stuff, making it even
+		slower.

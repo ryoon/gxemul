@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.22 2004-03-24 02:45:18 debug Exp $
+ *  $Id: coproc.c,v 1.23 2004-03-25 20:58:39 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -332,6 +332,10 @@ void coproc_register_write(struct cpu *cpu,
 			tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
 			    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
 		}
+	}
+	if (cp->coproc_nr==0 && reg_nr == COP0_BADVADDR) {
+		/*  Hm. Irix writes to this register. (Why?)  */
+		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYLO1) {
 		unimpl = 0;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.31 2004-01-06 09:01:56 debug Exp $
+ *  $Id: machine.c,v 1.32 2004-01-06 10:31:46 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -237,6 +237,7 @@ void machine_init(struct memory *mem)
 	struct arcbios_mem arcbios_mem;
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
+	uint32_t system;
 
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
@@ -780,10 +781,13 @@ void machine_init(struct memory *mem)
 			exit(1);
 		}
 
-		if (emulation_type == EMULTYPE_SGI)
+		if (emulation_type == EMULTYPE_SGI) {
+			cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(machine_name, "SGI-IP%i", machine);
-		else
+		} else {
+			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
 			machine_name = "ARC";
+		}
 
 		if (physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
@@ -836,6 +840,17 @@ void machine_init(struct memory *mem)
 		mem_base = 16 * 1048576 / 4096;
 		mem_count = physical_ram_in_mb <= 512? physical_ram_in_mb : 512;
 		mem_count = (mem_count - 16) * 1048576 / 4096;
+
+		/*  SUPER-special case:   SGI-IP22, ignore the lowest 128MB of RAM:  */
+		if (emulation_type == EMULTYPE_SGI && machine == 22) {
+			if (physical_ram_in_mb <= 128) {
+				fatal("weird physical_ram_in_mb setting for SGI-IP22\n");
+				exit(1);
+			}
+			mem_base  += (128 * 1048576) / 4096;
+			mem_count -= (128 * 1048576) / 4096;
+		}
+
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
@@ -873,107 +888,120 @@ void machine_init(struct memory *mem)
 		 *	    [Disk]
 		 */
 
-		{
-			uint32_t system;
-			int i;
+		if (emulation_type == EMULTYPE_SGI) {
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
 
-			if (emulation_type == EMULTYPE_SGI) {
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
+			/*  TODO:  sync devices and component tree  */
 
-				/*  TODO:  sync devices and component tree  */
+			/*  TODO:  Other machine types?  */
+			switch (machine) {
+			case 20:
+				strcat(machine_name, " (Indigo2)");
+				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				break;
+			case 22:
+				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
 
-				/*  TODO:  Other machine types?  */
-				switch (machine) {
-				case 20:
-					strcat(machine_name, " (Indigo2)");
-					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
-					break;
-				case 22:
-					strcat(machine_name, " (Indy, Indigo2, Challenge S)");
-					/*
-					 *  According to NetBSD:
-					 *  imc0 at mainbus0 addr 0x1fa00000, revision 0
-					 *  gio0 at imc0
-					 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC3
-					 *  wdsc0 at hpc0 offset 0x44000  (SCSI)
-					 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03  (ethernet)
-					 *  zsc0 at hpc0 offset 0x59830  (serial console, 2 channels)
-					 *  dsclock0 at hpc0 offset 0x60000
-					 */
-					dev_wdsc_init(mem, 0x1fbc4000); 	 	/*  wdsc0  */
-					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
-					dev_sgi_ip22_init(cpus[0], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
-					break;
-				case 27:
-					strcat(machine_name, " (Origin 200/2000, Onyx2)");
-					/*
-					 *  IRIX reads from the following addresses, so there's probably
-					 *  something interesting there:
-					 *
-					 *  0x1fcffff0 <.MIPS.options+0x30>
-					 *  0x19600000 <get_nasid+0x4>
-					 *  0x190020d0 <get_cpuinfo+0x34>
-					 */
-					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
-					dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
-					dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
-					break;
-				case 30:
-					strcat(machine_name, " (Octane)");
-					break;
-				case 32:
-					strcat(machine_name, " (O2)");
-					dev_crime_init(mem, 0x14000000);		/*  crime0  */
-					/*  mte (?) at 0x15000000  */
-					dev_sgi_gbe_init(mem, 0x16000000);
-					dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
-					dev_macepci_init(mem, 0x1f080000);		/*  macepci0  */
-					/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */
-					dev_mace_init(mem, 0x1f310000);			/*  mace0  */
-					dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
-					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
-					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
-					dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
-					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
-					break;
-				case 35:
-					strcat(machine_name, " (Origin 3000)");
-					break;
-				default:
-					fatal("unimplemented SGI machine type IP%i\n", machine);
-					exit(1);
-				}
-			} else {
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+				/*
+				 *  This would be one possible implementation of the 128MB mirroring
+				 *  on IP22 machines.  However, an optimization in memory.c when
+				 *  reading instructions assumes that instructions are read from
+				 *  physical RAM.   (TODO)
+				 */
+				/*  dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);  */
 
-				/*  TODO:  sync devices and component tree  */
-				/*  TODO 2: These are model dependant!!!  */
-				dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000);
-				dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
-				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
-				/*  lpt at 0x2000008000  */
-				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
+				/*
+				 *  According to NetBSD:
+				 *  imc0 at mainbus0 addr 0x1fa00000, revision 0
+				 *  gio0 at imc0
+				 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC3
+				 *  wdsc0 at hpc0 offset 0x44000  (SCSI)
+				 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03  (ethernet)
+				 *  zsc0 at hpc0 offset 0x59830  (serial console, 2 channels)
+				 *  dsclock0 at hpc0 offset 0x60000
+				 */
+				dev_wdsc_init(mem, 0x1fbc4000); 	 	/*  wdsc0  */
+				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_sgi_ip22_init(cpus[0], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
+				break;
+			case 27:
+				strcat(machine_name, " (Origin 200/2000, Onyx2)");
+				/*
+				 *  IRIX reads from the following addresses, so there's probably
+				 *  something interesting there:
+				 *
+				 *  0x1fcffff0 <.MIPS.options+0x30>
+				 *  0x19600000 <get_nasid+0x4>
+				 *  0x190020d0 <get_cpuinfo+0x34>
+				 */
+				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
+				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
+				break;
+			case 30:
+				strcat(machine_name, " (Octane)");
+				break;
+			case 32:
+				strcat(machine_name, " (O2)");
+				dev_crime_init(mem, 0x14000000);		/*  crime0  */
+				/*  mte (?) at 0x15000000  */
+				dev_sgi_gbe_init(mem, 0x16000000);
+				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
+				pci_data = dev_macepci_init(mem, 0x1f080000);	/*  macepci0  */
+				/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */
+				dev_mace_init(mem, 0x1f310000);			/*  mace0  */
+				dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
+				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+
+				/*  PCI devices:  */
+				bus_pci_add(pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
+				break;
+			case 35:
+				strcat(machine_name, " (Origin 3000)");
+				break;
+			default:
+				fatal("unimplemented SGI machine type IP%i\n", machine);
+				exit(1);
 			}
+		} else {
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 
-			/*  Common stuff for both SGI and ARC:  */
-			debug("system = 0x%x\n", system);
+			/*  TODO:  sync devices and component tree  */
+			/*  TODO 2: These are model dependant!!!  */
+			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000);
+			dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
+			dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
+			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
+			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
+			/*  lpt at 0x2000008000  */
+			dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
 
-			/*  TODO:  Use correct CPU identification  */
-			for (i=0; i<ncpus; i++) {
-				uint32_t cpu, fpu;
-				cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-				    0, 1, 20, 0, 0x0, "R5000", system);
-				fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-				    0, 1, 20, 0, 0x0, "R5000FPC", cpu);
-
-				/*  TODO:  cache (per cpu)  */
-				debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);
-			}
+			/*  PCI devices:  */
+			bus_pci_add(pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
 		}
+
+		/*
+		 *  Common stuff for both SGI and ARC:
+		 */
+		debug("system = 0x%x\n", system);
+
+		/*  TODO:  Use correct CPU identification  */
+		for (i=0; i<ncpus; i++) {
+			uint32_t cpu, fpu;
+			cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
+			    0, 1, 20, 0, 0x0, "R5000", system);
+			fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+			    0, 1, 20, 0, 0x0, "R5000FPC", cpu);
+
+			/*  TODO:  cache (per cpu)  */
+			debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);
+		}
+
 
 		add_symbol_name(ARC_FIRMWARE_ENTRIES, 0x10000, "[ARCBIOS entry]", 0);
 
@@ -1038,6 +1066,7 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_NINTENDO64:
 		machine_name = "Nintendo 64";
+		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
 
 		/*
 		 *  Nintendo 64 emulation is not very important:
@@ -1087,8 +1116,9 @@ void machine_init(struct memory *mem)
 		cpus[bootstrap_cpu]->gpr[29] = 0xFFFFFFFFA4001FF0;
 		cpus[bootstrap_cpu]->gpr[31] = 0xFFFFFFFFA4001554;
 
-		dev_ram_init(mem, 0x04000000, 2048);
-		dev_ram_init(mem, 0x10000000, 2048);
+		/*  TODO:  DEV_RAM_MIRROR instead of copying  */
+		dev_ram_init(mem, 0x04000000, 2048, DEV_RAM_RAM, 0);
+		dev_ram_init(mem, 0x10000000, 2048, DEV_RAM_RAM, 0);
 
 		/*  Copy 1KB from 0x80000000 to 0xa4000000 and to 0xb0000000.  */
 
@@ -1099,7 +1129,6 @@ void machine_init(struct memory *mem)
 			store_byte(0xb0000000 + i, byte);
 		}
 
-		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
 		cpus[bootstrap_cpu]->pc = 0xa4000040;
 
 		dev_n64_bios_init(mem, 0x03f00000);

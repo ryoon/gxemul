@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.1 2004-01-20 11:38:05 debug Exp $
+ *  $Id: bintrans.c,v 1.2 2004-01-20 23:13:36 debug Exp $
  *
  *  Binary translation.
  *
@@ -37,7 +37,7 @@
  *		a block is actualy used more than once before translating
  *		it. (We can either keep an absolute count of lots of
  *		memory addresses, or utilize some kind of random function.
- *		In the later case, if a block is ran many times, it will
+ *		In the later case, if a block is run many times, it will
  *		have a higher probability of being translated.)
  *
  *	Simple basic-block stuff. Only simple-enough instructions are
@@ -67,7 +67,7 @@
  *		manually manipulate the emulated cpu's registers in the
  *		host's "struct cpu". (For example on i386.)
  *
- *	Multiple target archs (alpha, i386, sparc, ...)
+ *	Multiple target archs (alpha, i386, sparc, mips :-), ...)
  *		Try to use arch specific optimizations, such as prefetch
  *		on alphas that support that.
  *		Not all instructions will be easily translated to all
@@ -80,5 +80,9 @@
  *		will still run without intervention.
  *		The loads/stores will go to physical RAM, so they have
  *		to be translated (once) via the TLB.
+ *
+ *	Testing:  Running regression tests with and without the binary
+ *		translator enabled should obviously result in the exact
+ *		same results, or something is wrong.
  */
 

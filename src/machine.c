@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.337 2005-02-07 07:12:26 debug Exp $
+ *  $Id: machine.c,v 1.338 2005-02-08 17:18:33 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1253,7 +1253,7 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 		/*  An R2020 or R3220 memory thingy:  */
-		cpu->cd.mips.coproc[3] = coproc_new(cpu, 3);
+		cpu->cd.mips.coproc[3] = mips_coproc_new(cpu, 3);
 
 		/*  There aren't really any good standard values...  */
 		framebuffer_console_name = "osconsole=0,3";
@@ -1315,7 +1315,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
-			cpu->cd.mips.coproc[3] = coproc_new(cpu, 3);
+			cpu->cd.mips.coproc[3] = mips_coproc_new(cpu, 3);
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -3204,7 +3204,7 @@ Why is this here? TODO
 
 		if (machine->machine_type == MACHINE_SGI) {
 			/*  TODO: On which models is this required?  */
-			coproc_tlb_set_entry(cpu, 0, 1048576*16,
+			mips_coproc_tlb_set_entry(cpu, 0, 1048576*16,
 			    0xc000000000000000ULL,
 			    0x0, 1048576*16,
 			    1, 1, 1, 1, 1, 0, 2, 2);
@@ -3293,21 +3293,21 @@ Why is this here? TODO
 
 				/* 7: 256K, asid: 0x0, v: 0xe1000000,
 				   p0: 0xfff00000(2.VG), p1: 0x0(0..G)  */
-				coproc_tlb_set_entry(cpu, 7, 262144,
+				mips_coproc_tlb_set_entry(cpu, 7, 262144,
 				    0xffffffffe1000000ULL,
 				    0x0fff00000ULL, 0,
 				    1, 0, 0, 0, 1, 0, 2, 0);
 
 				/* 8: 64K, asid: 0x0, v: 0xe0000000,
 				   p0: 0x80000000(2DVG), p1: 0x0(0..G) */
-				coproc_tlb_set_entry(cpu, 8, 65536,
+				mips_coproc_tlb_set_entry(cpu, 8, 65536,
 				    0xffffffffe0000000ULL,
 				    0x080000000ULL, 0,
 				    1, 0, 1, 0, 1, 0, 2, 0);
 
 				/* 9: 64K, asid: 0x0, v: 0xe00e0000,
 				   p0: 0x800e0000(2DVG), p1: 0x800f0000(2DVG) */
-				coproc_tlb_set_entry(cpu, 9, 65536,
+				mips_coproc_tlb_set_entry(cpu, 9, 65536,
 				    (uint64_t)0xffffffffe00e0000ULL,
 				    (uint64_t)0x0800e0000ULL,
 				    (uint64_t)0x0800f0000ULL,
@@ -3315,35 +3315,35 @@ Why is this here? TODO
 
 				/* 10: 4K, asid: 0x0, v: 0xe0100000,
 				   p0: 0xf0000000(2DVG), p1: 0x0(0..G) */
-				coproc_tlb_set_entry(cpu, 10, 4096,
+				mips_coproc_tlb_set_entry(cpu, 10, 4096,
 				    (uint64_t)0xffffffffe0100000ULL,
 				    (uint64_t)0x0f0000000ULL, 0,
 				    1, 0, 1, 0, 1, 0, 2, 0);
 
 				/* 11: 1M, asid: 0x0, v: 0xe0200000,
 				   p0: 0x60000000(2DVG), p1: 0x60100000(2DVG) */
-				coproc_tlb_set_entry(cpu, 11, 1048576,
+				mips_coproc_tlb_set_entry(cpu, 11, 1048576,
 				    0xffffffffe0200000ULL,
 				    0x060000000ULL, 0x060100000ULL,
 				    1, 1, 1, 1, 1, 0, 2, 2);
 
 				/* 12: 1M, asid: 0x0, v: 0xe0400000,
 				   p0: 0x60200000(2DVG), p1: 0x60300000(2DVG) */
-				coproc_tlb_set_entry(cpu, 12, 1048576,
+				mips_coproc_tlb_set_entry(cpu, 12, 1048576,
 				    0xffffffffe0400000ULL,
 				    0x060200000ULL, 0x060300000ULL,
 				    1, 1, 1, 1, 1, 0, 2, 2);
 
 				/* 13: 4M, asid: 0x0, v: 0xe0800000,
 				   p0: 0x40000000(2DVG), p1: 0x40400000(2DVG) */
-				coproc_tlb_set_entry(cpu, 13, 1048576*4,
+				mips_coproc_tlb_set_entry(cpu, 13, 1048576*4,
 				    0xffffffffe0800000ULL,
 				    0x040000000ULL, 0x040400000ULL,
 				    1, 1, 1, 1, 1, 0, 2, 2);
 
 				/* 14: 16M, asid: 0x0, v: 0xe2000000,
 				   p0: 0x90000000(2DVG), p1: 0x91000000(2DVG) */
-				coproc_tlb_set_entry(cpu, 14, 1048576*16,
+				mips_coproc_tlb_set_entry(cpu, 14, 1048576*16,
 				    0xffffffffe2000000ULL,
 				    0x090000000ULL, 0x091000000ULL,
 				    1, 1, 1, 1, 1, 0, 2, 2);

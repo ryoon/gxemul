@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.20 2005-02-07 06:35:39 debug Exp $
+ *  $Id: cpu_mips.c,v 1.21 2005-02-08 17:18:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -55,6 +55,17 @@ int mips_cpu_family_init(struct cpu_family *fp)
 {
 	return 0;
 }
+
+
+/*  TODO: Maybe it isn't very nice to have these global like this...  */
+void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
+	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)  { }
+
+int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
+	int writeflag, size_t len, unsigned char *data)  {  return 0;  }
+
+unsigned char *mips_memory_paddr_to_hostaddr(struct memory *mem,
+	uint64_t paddr, int writeflag)  {  return NULL;  }
 
 
 #else   /*  ENABLE_MIPS  */
@@ -304,8 +315,9 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 		debug(")");
 	}
 
-	cpu->cd.mips.coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
-	cpu->cd.mips.coproc[1] = coproc_new(cpu, 1);	/*  FPU  */
+	/*  System coprocessor (0), and FPU (1):  */
+	cpu->cd.mips.coproc[0] = mips_coproc_new(cpu, 0);
+	cpu->cd.mips.coproc[1] = mips_coproc_new(cpu, 1);
 
 	/*
 	 *  Initialize the cpu->cd.mips.pc_last_* cache (a 1-entry cache of the
@@ -1753,7 +1765,7 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
 
 
 /*  Included here for better cache characteristics:  */
-#include "memory.c"
+#include "memory_mips.c"
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.85 2005-02-07 06:35:39 debug Exp $
+ *  $Id: debugger.c,v 1.86 2005-02-08 17:18:33 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1725,6 +1725,11 @@ static char *debugger_readline(void)
 				for (i=cmd_len; i<reallen; i++)
 					console_makeavail(MAIN_CONSOLE,
 					    cmds[i_match].name[i]);
+				/*  ... and a space, if the command takes
+				    any arguments:  */
+				if (cmds[i_match].args != NULL &&
+				    cmds[i_match].args[0] != '\0')
+					console_makeavail(MAIN_CONSOLE, ' ');
 				break;
 			default:
 				/*  Show all possible commands:  */

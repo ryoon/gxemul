@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.9 2005-02-03 05:56:57 debug Exp $
+ *  $Id: cpu_mips.h,v 1.10 2005-02-08 17:18:32 debug Exp $
  */
 
 #include "misc.h"
@@ -366,28 +366,6 @@ struct mips_cpu {
 };
 
 
-/*  coproc.c:  */
-struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr);
-void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
-        uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
-        int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
-        int cachealgo0, int cachealgo1);
-void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
-        unsigned char *host_page, int writeflag, uint64_t paddr_page);
-void clear_all_chunks_from_all_tables(struct cpu *cpu);
-void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
-void coproc_register_read(struct cpu *cpu,
-        struct mips_coproc *cp, int reg_nr, uint64_t *ptr);
-void coproc_register_write(struct cpu *cpu,
-        struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
-void coproc_tlbpr(struct cpu *cpu, int readflag);
-void coproc_tlbwri(struct cpu *cpu, int randomflag);
-void coproc_rfe(struct cpu *cpu);
-void coproc_eret(struct cpu *cpu);
-void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
-        uint32_t function, int unassemble_only, int running);
-
-
 /*  cpu_mips.c:  */
 struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
@@ -408,6 +386,33 @@ int mips_cpu_run(struct emul *emul, struct machine *machine);
 void mips_cpu_dumpinfo(struct cpu *cpu);
 void mips_cpu_list_available_types(void);
 int mips_cpu_family_init(struct cpu_family *);
+
+
+/*  cpu_mips_coproc.c:  */
+struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr);
+void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
+        uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
+        int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
+        int cachealgo0, int cachealgo1);
+void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+        unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void clear_all_chunks_from_all_tables(struct cpu *cpu);
+void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
+void coproc_register_read(struct cpu *cpu,
+        struct mips_coproc *cp, int reg_nr, uint64_t *ptr);
+void coproc_register_write(struct cpu *cpu,
+        struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
+void coproc_tlbpr(struct cpu *cpu, int readflag);
+void coproc_tlbwri(struct cpu *cpu, int randomflag);
+void coproc_rfe(struct cpu *cpu);
+void coproc_eret(struct cpu *cpu);
+void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
+        uint32_t function, int unassemble_only, int running);
+
+
+/*  memory_mips.c:  */
+int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
+	int writeflag, size_t len, unsigned char *data);
 
 
 /*  mips16.c:  */

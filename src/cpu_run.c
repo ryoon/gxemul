@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_run.c,v 1.2 2005-02-07 06:35:39 debug Exp $
+ *  $Id: cpu_run.c,v 1.3 2005-02-08 17:18:33 debug Exp $
  *
  *  Included from cpu_mips.c, cpu_ppc.c etc.  (The reason for this is that
  *  the call to a specific cpu's routine that runs one instruction will
@@ -233,7 +233,7 @@ int CPU_RUN(struct emul *emul, struct machine *machine)
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 8)
+		if (rounds > 16)
 			break;
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.1 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.2 2005-02-08 17:18:33 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -47,6 +47,21 @@
 #include "opcodes_mips.h"
 
 
+#ifndef ENABLE_MIPS
+
+
+struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
+{ return NULL; }
+
+void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
+	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
+	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
+	int cachealgo0, int cachealgo1) { }
+
+
+#else	/*  ENABLE_MIPS  */
+
+
 extern volatile int single_step;
 
 static char *cop0_names[] = COP0_NAMES;
@@ -62,11 +77,11 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 
 
 /*
- *  coproc_new():
+ *  mips_coproc_new():
  *
  *  Create a new MIPS coprocessor object.
  */
-struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr)
+struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct mips_coproc *c;
 #ifdef ENABLE_MIPS16
@@ -89,7 +104,7 @@ struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		c->nr_of_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
 		c->tlbs = malloc(c->nr_of_tlbs * sizeof(struct mips_tlb));
 		if (c->tlbs == NULL) {
-			fprintf(stderr, "coproc_new(): out of memory\n");
+			fprintf(stderr, "mips_coproc_new(): out of memory\n");
 			exit(1);
 		}
 
@@ -355,15 +370,18 @@ struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 
 /*
- *  coproc_tlb_set_entry():
+ *  mips_coproc_tlb_set_entry():
+ *
+ *  Used by machine setup code, if a specific machine emulation starts up
+ *  with hardcoded virtual to physical mappings.
  */
-void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
+void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
 	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
 	int cachealgo0, int cachealgo1)
 {
 	if (entrynr < 0 || entrynr >= cpu->cd.mips.coproc[0]->nr_of_tlbs) {
-		printf("coproc_tlb_set_entry(): invalid entry nr: %i\n",
+		printf("mips_coproc_tlb_set_entry(): invalid entry nr: %i\n",
 		    entrynr);
 		exit(1);
 	}
@@ -371,7 +389,7 @@ void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
 		if (size != 4096) {
-			printf("coproc_tlb_set_entry(): invalid pagesize "
+			printf("mips_coproc_tlb_set_entry(): invalid pagesize "
 			    "(%i) for MMU3K\n", size);
 			exit(1);
 		}
@@ -2006,8 +2024,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		 *
 		 *  TODO: non-4KB page sizes!
 		 */
-		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0, 0);
-		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
+		invalidate_translation_caches(
+		    cpu, 0, oldvaddr & ~0x1fff, 0, 0);
+		invalidate_translation_caches(
+		    cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
 	}
 
 
@@ -2026,7 +2046,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 		/*  TODO: This is ugly.  */
 		if (paddr < 0x10000000)
-			memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
+			memblock = mips_memory_paddr_to_hostaddr(
+			    cpu->mem, paddr, 1);
 
 		if (memblock != NULL &&
 		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
@@ -2442,3 +2463,4 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 #endif
 }
 
+#endif	/*  ENABLE_MIPS  */

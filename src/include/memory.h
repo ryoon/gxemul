@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.26 2005-01-29 12:56:31 debug Exp $
+ *  $Id: memory.h,v 1.27 2005-02-08 17:18:32 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -136,7 +136,9 @@ int memory_points_to_string(struct cpu *cpu, struct memory *mem,
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem,
 	uint64_t addr, char *buf, int bufsize);
 
-unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+/*  TODO: Move out stuff to mips-specific header files!  */
+
+unsigned char *mips_memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag);
 
 /*  memory_fast_v2h.c:  */

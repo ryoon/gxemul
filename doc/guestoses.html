@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.5 2005-02-06 19:35:19 debug Exp $
+$Id: guestoses.html,v 1.6 2005-02-08 17:18:31 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -509,25 +509,45 @@ for more information about OpenBSD on SGI machines.&nbsp;]
 
 <p>
 mips64emul does not yet emulate the AHC PCI SCSI controller in the O2, so 
-another (emulated) machine must be used as the nfs root server. Performing 
-this setup is very time consuming, but necessary.
+another emulated machine must be used as the nfs root server, and the
+emulated O2 machine must boot as a
+<a href="http://www.openbsd.org/cgi-bin/man.cgi?query=diskless&manpath=OpenBSD+Current&format=html">diskless</a>
+client. Performing this setup is very time consuming, but necessary.
 
 <p>
 <ol>
-  <li><a href="#netbsdinstall">Install NetBSD/pmax</a> or some other
-	OS inside the emulator. This will be the "nfs server" machine.
+  <li><a href="#netbsdinstall">Install NetBSD/pmax 1.6.2</a> or some other
+	similar OS inside the emulator. This will be the "nfs server" machine.
   <p>
-  <li>On the emulated nfs server machine, configure networking so that
-	it uses IPv4 address 10.0.0.2, and download the entire
-	OpenBSD/sgi snapshot from the ftp server:<pre>
-	# <b>cd /; mkdir x; cd x</b>
-	# <b>ftp -i ftp.openbsd.org</b>
+  <li>Configure the nfs server machine to act as an nfs server.<pre>
+	# <b>echo hostname=blahblah &gt;&gt; /etc/rc.conf</b>
+	# <b>echo ifconfig_le0="inet 10.0.0.2" &gt;&gt; /etc/rc.conf</b>
+	# <b>echo nameserver 10.0.0.254 &gt;&gt; /etc/rc.conf</b>
+	# <b>echo 10.0.0.254 &gt; /etc/mygate</b>
+	# <b>mkdir /x; echo /x &gt; /etc/exports</b>
+	# <b>echo rpcbind=YES &gt;&gt; /etc/rc.conf</b>
+	# <b>echo nfs_server=YES &gt;&gt; /etc/rc.conf</b>
+	# <b>echo mountd=YES &gt;&gt; /etc/rc.conf</b>
+	# <b>echo bootparamd=YES &gt;&gt; /etc/rc.conf</b>
+	# <b>printf "client root=10.0.0.2:/x \\\n swap=10.0.0.2:/x/swap\n" &gt; /etc/bootparams</b>
+	# <b>echo 10.0.0.1 client &gt; /etc/hosts</b>
+
+	Reboot. Then download the OpenBSD/sgi distribution:
+
+	# <b>cd /x; ftp -i ftp.se.openbsd.org</b>
 	...
 	<b>cd pub/OpenBSD/snapshots/sgi</b>
 	<b>mget *</b>
 
+	# <b>sh</b>
+	# <b>for a in base* etc* misc*; do tar vzxfp $a; done</b>
+	# <b>dd if=/dev/zero of=swap bs=1024 count=16384</b>
+
+	If you really want to check that the export works, try this too:
+
+	# <b>mount -v localhost:/x /mnt; ls /mnt; umount /mnt</b>
+
 </pre>
-  <li>Configure the nfs server machine to act as an nfs server.
   <p>
   <li>Create a configuration file along these lines:<pre>
 	<font color="#2020cf">!!mips64emul</font>
@@ -536,17 +556,20 @@ this setup is very time consuming, but necessary.
 	    net()
 
 	    machine(
-	        type("dec")
-	        subtype("5000/200")
-	        bintrans(yes)
-	        disk("nbsd_pmax.img")
-	    )
-
-	    machine(
+		name("client machine")
 	        type("sgi")
 	        subtype("ip32")
 	        bintrans(yes)
 	        load("openbsd-sgi-20050202-bsd")
+		start_paused(yes)
+	    )
+
+	    machine(
+		name("nfs server")
+	        type("dec")
+	        subtype("5000/200")
+	        bintrans(yes)
+	        disk("nbsd_pmax.img")
 	    )
 	)</b>
 
@@ -557,6 +580,17 @@ this setup is very time consuming, but necessary.
 	$ <b>./mips64emul @myconf</b>
 
 </pre>
+	You might want to log in as root on the server machine, and
+	run <b>tcpdump -lnvv</b> or similar, to see that what the client
+	machine actually does on the network.
+	<p>
+	The OpenBSD box ("client machine") will be paused, so when you
+	are ready to unpause it, press CTRL-C in the main mips64emul
+	window and use the <b>focus</b> and <b>pause</b> commands to
+	unpause the main CPU in that machine, and then <b>continue</b>
+	to resume execution.
+	<p>
+	When asked for "root device :", enter <b>mec0</b>.
 </ol>
 
 <p>

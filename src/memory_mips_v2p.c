@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.24 2005-01-30 12:54:53 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.1 2005-02-08 17:18:34 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -432,5 +432,4 @@ exception:
 	/*  Return failure:  */
 	return 0;
 }
-
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.566 2005-02-07 06:14:46 debug Exp $
+$Id: HISTORY,v 1.567 2005-02-08 17:18:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1638,3 +1638,6 @@ HISTORY of mips64emul
 20050207	Continuing on the console cleanup.
 		Adding a 'start_paused' configuration file option, and a
 		'pause' command to the debugger.
+20050208	Everything now builds with --withoutmips.
+		Continuing on the documentation on how to run OpenBSD/sgi, but
+		no actual success yet.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.149 2005-02-02 23:55:20 debug Exp $
+ *  $Id: bintrans.c,v 1.150 2005-02-08 17:18:33 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -117,7 +117,7 @@ int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
-void bintrans_init(struct memory *mem)
+void bintrans_init(struct machine *machine, struct memory *mem)
 {
 	fatal("\n***  NOT starting bintrans, as mips64emul "
 	    "was compiled without such support!\n\n");

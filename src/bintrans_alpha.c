@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.29 2004-11-13 15:27:55 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.30 2004-11-13 16:41:16 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -615,35 +615,36 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
  *  bintrans_write_instruction__delayedbranch():
  */
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
-	uint32_t *potential_chunk_p, uint32_t *chunks)
+	uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p)
 {
-	unsigned char *a, *skip;
+	unsigned char *a, *skip=NULL;
 	int ofs;
 	uint64_t alpha_addr, subaddr;
 
 	a = *addrp;
 
-	/*  Skip all of this if there is no branch:  */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa0;	/*  ldl t2,delay_slot(a0)  */
-	skip = a;
-	*a++ = 0; *a++ = 0; *a++ = 0x60; *a++ = 0xe4;  /*  beq t2,skip  */
+	if (!only_care_about_chunk_p) {
+		/*  Skip all of this if there is no branch:  */
+		ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa0;	/*  ldl t2,delay_slot(a0)  */
+		skip = a;
+		*a++ = 0; *a++ = 0; *a++ = 0x60; *a++ = 0xe4;  /*  beq t2,skip  */
 
-	/*
-	 *  Perform the jump by setting cpu->delay_slot = 0
-	 *  and pc = cpu->delay_jmpaddr.
-	 */
-	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
-	*a++ = 0; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,0 */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
+		/*
+		 *  Perform the jump by setting cpu->delay_slot = 0
+		 *  and pc = cpu->delay_jmpaddr.
+		 */
+		ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+		*a++ = 0; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,0 */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
 
-	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;	/*  ldq t3,pc  */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq t0,pc  */
-
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;	/*  ldq t3,pc  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq t0,pc  */
+	}
 
 	if (potential_chunk_p == NULL) {
 		/*  Not much we can do here if this wasn't to the same
@@ -835,7 +836,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 	}
 
-	*skip = ((size_t)a - (size_t)skip - 4) / 4;
+	if (skip != NULL)
+		*skip = ((size_t)a - (size_t)skip - 4) / 4;
 
 	*addrp = a;
 	return 1;

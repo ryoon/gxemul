@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.57 2004-11-10 15:41:31 debug Exp $
+ *  $Id: dev_fb.c,v 1.58 2004-11-13 16:41:15 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -692,7 +692,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 			int diffx1, diffx2, diffy1, diffy2;
 			/*  fhmult may be an integer multiple of the (assumed)
 			    font height, or any other number:  */
-			int short_distance = 6 * 22;
+			int short_distance = 8 * 22;
 
 			diffx1 = abs(x - d->update_x1);
 			diffx2 = abs(x - d->update_x2);

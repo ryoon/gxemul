@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.58 2004-11-13 15:27:55 debug Exp $
+ *  $Id: bintrans.c,v 1.59 2004-11-13 16:41:16 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -152,7 +152,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, i
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks);
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks, int only_care_about_chunk_p);
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
@@ -577,13 +577,20 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 					    &tep->chunk[delayed_branch_new_p/4];
 				else
 					potential_chunk_p = NULL;
-				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p, &tep->chunk[0]);
+				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p, &tep->chunk[0], 0);
 			}
 		}
 
 		if (translated && tep->chunk[prev_p] == 0)
 			tep->chunk[prev_p] = (uint32_t)
 			    ((size_t)ca_justdid - (size_t)translation_code_chunk_space);
+
+		/*  Glue together with previously translated code, if any:  */
+		if (translated && n_translated > 10 && prev_p < 1018 &&
+		    tep->chunk[prev_p+1] != 0 && !delayed_branch) {
+			bintrans_write_instruction__delayedbranch(&ca, &tep->chunk[prev_p+1], NULL, 1);
+			try_to_translate = 0;
+		}
 
 		p += sizeof(instr);
 

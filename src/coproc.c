@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.86 2004-11-13 15:27:55 debug Exp $
+ *  $Id: coproc.c,v 1.87 2004-11-13 16:41:16 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -301,13 +301,20 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
  *  changed, so that for example user-space addresses are not cached when
  *  they should not be.
  */
-static void invalidate_translation_caches(struct cpu *cpu)
+static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vaddr2)
 {
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int i;
-		for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-			cpu->bintrans_data_hostpage[i] = NULL;
+
+		if (all) {
+			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+				cpu->bintrans_data_hostpage[i] = NULL;
+		} else {
+			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+				if ((cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2)
+					cpu->bintrans_data_hostpage[i] = NULL;
+		}
 	}
 #endif
 
@@ -468,7 +475,21 @@ void coproc_register_write(struct cpu *cpu,
 		 *  Translation caches must be invalidated, because the
 		 *  address space might change (if the ASID changes).
 		 */
-		invalidate_translation_caches(cpu);
+		int inval = 0;
+
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			if ((cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) != (tmp & R2K3K_ENTRYHI_ASID_MASK))
+				inval = 1;
+			break;
+		default:
+			if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) != (tmp & ENTRYHI_ASID))
+				inval = 1;
+			break;
+		}
+
+		if (inval)
+			invalidate_translation_caches(cpu, 1, 0);
 
 		unimpl = 0;
 		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
@@ -1530,10 +1551,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 					    (long long)cp->reg[COP0_ENTRYLO1]);
 				}
 
-
-				/*  Translation caches must be invalidated:  */
-				invalidate_translation_caches(cpu);
-
 				if (op == COP0_TLBWR) {
 #ifdef LAST_USED_TLB_EXPERIMENT
 					/*
@@ -1578,6 +1595,30 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 				debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
 				debug(" lo1 = %016llx\n", (long long) cp->tlbs[index].lo1);
 #endif
+
+				/*  Translation caches must be invalidated:  */
+				if (cpu->cpu_type.mmu_model == MMU3K) {
+					uint64_t vaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
+					vaddr &= 0xffffffffULL;
+					if (vaddr & 0x80000000ULL)
+						vaddr |= 0xffffffff00000000ULL;
+					invalidate_translation_caches(cpu, 0, vaddr);
+				} else if (cpu->cpu_type.mmu_model == MMU4K) {
+					uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+					/*  40 addressable bits:  */
+					if (vaddr & 0x8000000000ULL)
+						vaddr |= 0xffffff0000000000ULL;
+					invalidate_translation_caches(cpu, 0, vaddr);
+				} else if (cpu->cpu_type.mmu_model == MMU10K) {
+					uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+					/*  44 addressable bits:  */
+					if (vaddr & 0x80000000000ULL)
+						vaddr |= 0xfffff00000000000ULL;
+					invalidate_translation_caches(cpu, 0, vaddr);
+				} else {
+					/*  Invalidate all:  */
+					invalidate_translation_caches(cpu, 1, 0);
+				}
 
 				/*  Write the entry:  */
 

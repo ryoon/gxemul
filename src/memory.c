@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.97 2004-11-13 15:27:55 debug Exp $
+ *  $Id: memory.c,v 1.98 2004-11-13 16:41:17 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1091,7 +1091,7 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
-int kernel_address = 0;
+	int kernel_address = 0;
 
 	if ((vaddr & alignmask) != 0)
 		return NULL;
@@ -1099,33 +1099,22 @@ int kernel_address = 0;
 	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
 	    cpu, (long long)vaddr, writeflag, alignmask);  */
 
-#if 0
-	/*  Caches are not very coozy to handle in bintrans:  */
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
-			return NULL;
-		break;
-	/*  TODO: other cache types  */
-	}
-#endif
-
 	vaddr_page = vaddr & ~0xfff;
-if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
-	i = cpu->bintrans_next_index;
-	for (;;) {
-		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
-		    cpu->bintrans_data_hostpage[i] != NULL &&
-		    cpu->bintrans_data_writable[i] >= writeflag)
-			return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
-		i++;
-		if (i == N_BINTRANS_VADDR_TO_HOST)
-			i = 0;
-		if (i == cpu->bintrans_next_index)
-			break;
-	}
-} else
-	kernel_address = 1;
+	if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
+		i = cpu->bintrans_next_index;
+		for (;;) {
+			if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
+			    cpu->bintrans_data_hostpage[i] != NULL &&
+			    cpu->bintrans_data_writable[i] >= writeflag)
+				return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+			i++;
+			if (i == N_BINTRANS_VADDR_TO_HOST)
+				i = 0;
+			if (i == cpu->bintrans_next_index)
+				break;
+		}
+	} else
+		kernel_address = 1;
 
 	ok = translate_address(cpu, vaddr, &paddr,
 	    (writeflag? FLAG_WRITEFLAG : 0) + FLAG_NOEXCEPTIONS);
@@ -1151,18 +1140,15 @@ if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);
 
-if (!kernel_address) {
-	cpu->bintrans_next_index --;
-	if (cpu->bintrans_next_index < 0)
-		cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
-	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
-	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
-	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
-}
-/*
-printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
-    cpu, (long long)vaddr, writeflag, alignmask);
-*/
+	if (!kernel_address) {
+		cpu->bintrans_next_index --;
+		if (cpu->bintrans_next_index < 0)
+			cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+		cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
+		cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+		cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
+	}
+
 	return memblock + offset;
 }
 #endif

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.184 2004-11-13 15:27:55 debug Exp $
+ *  $Id: cpu.c,v 1.185 2004-11-13 16:41:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1159,14 +1159,6 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  R4000:  */
 		cpu->coproc[0]->reg[COP0_STATUS] |= STATUS_EXL;
 	}
-
-#ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
-		int i;
-		for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-			cpu->bintrans_data_hostpage[i] = NULL;
-	}
-#endif
 }
 
 

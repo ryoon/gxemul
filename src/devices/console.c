@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: console.c,v 1.4 2003-11-08 14:26:35 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -49,9 +49,14 @@ extern int ncpus;
 struct termios console_oldtermios;
 struct termios console_curtermios;
 
-
 static int console_initialized = 0;
 static int console_stdout_pending;
+
+#define	CONSOLE_FIFO_LEN	2048
+
+static unsigned char console_fifo[CONSOLE_FIFO_LEN];
+static int console_fifo_head;
+static int console_fifo_tail;
 
 
 /*
@@ -76,6 +81,7 @@ void console_init(void)
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
 
 	console_stdout_pending = 1;
+	console_fifo_head = console_fifo_tail = 0;
 
 	console_initialized = 1;
 }
@@ -98,11 +104,27 @@ void console_deinit(void)
 
 
 /*
- *  console_charavail():
+ *  console_makeavail():
  *
- *  Returns 1 if a char is available, 0 otherwise.
+ *  Put a character in the queue, so that it will be avaiable,
+ *  by inserting it into the char fifo.
  */
-int console_charavail(void)
+void console_makeavail(char ch)
+{
+	console_fifo[console_fifo_head] = ch;
+	console_fifo_head = (console_fifo_head + 1) % CONSOLE_FIFO_LEN;
+
+	if (console_fifo_head == console_fifo_tail)
+		fatal("WARNING: console fifo overrun\n");
+}
+
+
+/*
+ *  console_stdin_avail():
+ *
+ *  Returns 1 if a char is available from stdin, 0 otherwise.
+ */
+int console_stdin_avail(void)
 {
 	fd_set rfds;
 	struct timeval tv;
@@ -119,16 +141,40 @@ int console_charavail(void)
 
 
 /*
+ *  console_charavail():
+ *
+ *  Returns 1 if a char is available in the fifo, 0 otherwise.
+ */
+int console_charavail(void)
+{
+	int avail = console_stdin_avail();
+
+	if (avail)
+		console_makeavail(getchar());
+
+	if (console_fifo_head == console_fifo_tail)
+		return 0;
+
+	return 1;
+}
+
+
+/*
  *  console_readchar():
  *
  *  Returns 0..255 if a char was available, -1 otherwise.
  */
 int console_readchar(void)
 {
+	int ch;
+
 	if (!console_charavail())
 		return -1;
 
-	return getchar();
+	ch = console_fifo[console_fifo_tail];
+	console_fifo_tail = (console_fifo_tail + 1) % CONSOLE_FIFO_LEN;
+
+	return ch;
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.17 2004-01-08 08:29:25 debug Exp $
+ *  $Id: cpu.c,v 1.18 2004-01-08 10:34:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -934,8 +934,15 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				if (special6 == SPECIAL_DSRA32)	instr_mnem = "dsra32";
 			}
 
-			/*  Check for NOP:  */
-			if (sa == 0 && special6 == SPECIAL_SLL) {
+			/*
+			 *  Check for NOP:
+			 *  The R4000 manual says that a shift amount of zero is treated
+			 *  as a nop by some assemblers.  Checking for sa == 0 here would
+			 *  not be correct, though, because instructions such as
+			 *  sll r3,r4,0 are possible, and are definitely not a nop.
+			 *  Instead, check if the destination register is r0.
+			 */
+			if (rd == 0 && special6 == SPECIAL_SLL) {
 				if (instruction_trace)
 					debug("nop\n");
 				break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.1 2005-02-22 05:53:01 debug Exp $
+ *  $Id: device.c,v 1.2 2005-02-22 06:09:25 debug Exp $
  *
  *  Device registry framework.
  */
@@ -43,6 +43,11 @@ static int device_entries_sorted = 0;
 static int n_device_entries = 0;
 
 
+/*
+ *  device_entry_compar():
+ *
+ *  Internal function, used by sort_entries().
+ */
 static int device_entry_compar(const void *a, const void *b)
 {
 	struct device_entry *pa = (struct device_entry *) a;
@@ -173,8 +178,13 @@ void device_dumplist(void)
 	if (!device_entries_sorted)
 		sort_entries();
 
-	for (i=0; i<n_device_entries; i++)
-		fatal("device %3i: %s\n", i, device_entries[i].name);
+	for (i=0; i<n_device_entries; i++) {
+		debug("  %s", device_entries[i].name);
+
+		/*  TODO: flags?  */
+
+		debug("\n");
+	}
 }
 
 

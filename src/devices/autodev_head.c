@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: autodev_head.c,v 1.1 2005-02-22 05:52:58 debug Exp $
+ *  $Id: autodev_head.c,v 1.2 2005-02-22 06:09:25 debug Exp $
  *
  *  Automatically register all devices from the devices/ subdir.
  *
@@ -43,7 +43,7 @@
  */
 void autodev_init(void)
 {
-	printf("autodev_init()\n");
+	/*  printf("autodev_init()\n");  */
 
 	/*  autodev_head.c ends here.  */
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.90 2005-02-18 08:07:59 debug Exp $
+ *  $Id: debugger.c,v 1.91 2005-02-22 06:09:25 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -56,6 +56,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "debugger.h"
 #include "diskimage.h"
 #include "emul.h"
@@ -443,7 +444,9 @@ static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 	}
 	mem = m->cpus[m->bootstrap_cpu]->mem;
 
-	if (strncmp(cmd_line, "state ", 6) == 0) {
+	if (strcmp(cmd_line, "all") == 0) {
+		device_dumplist();
+	} else if (strncmp(cmd_line, "state ", 6) == 0) {
 		i = atoi(cmd_line + 6);
 		if (i < 0 || i >= mem->n_mmapped_devices) {
 			printf("No devices with that id.\n");
@@ -502,7 +505,9 @@ static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 return_help:
 	printf("syntax: devices cmd [...]\n");
 	printf("Available cmds are:\n");
-	printf("  list        list all memory-mapped devices\n");
+	printf("  all         list all registered devices\n");
+	printf("  list        list all memory-mapped devices for the "
+	    "current machine\n");
 	printf("  state x     show state of device nr x\n");
 }
 

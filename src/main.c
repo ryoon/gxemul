@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.212 2005-02-22 05:53:01 debug Exp $
+ *  $Id: main.c,v 1.213 2005-02-22 06:09:25 debug Exp $
  */
 
 #include <stdio.h>
@@ -729,7 +729,7 @@ int main(int argc, char *argv[])
 	device_init();
 	machine_init();
 	useremul_init();
-device_dumplist();
+
 	emuls = malloc(sizeof(struct emul *));
 	if (emuls == NULL) {
 		fprintf(stderr, "out of memory\n");

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.48 2004-11-20 08:57:13 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.49 2004-12-18 23:07:28 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -519,7 +519,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	}
 
 	if (access_style == MC146818_ARC_PICA)
-		memory_device_register(mem, "mc146818_pica", 0x90000000070ULL,
+		memory_device_register(mem, "mc146818_pica", 0x90000070ULL,
 		    1, dev_mc146818_pica_access, (void *)mc_data, MEM_DEFAULT, NULL);
 
 	if (access_style == MC146818_PC_CMOS)

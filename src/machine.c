@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.247 2004-12-16 04:36:58 debug Exp $
+ *  $Id: machine.c,v 1.248 2004-12-18 23:07:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2301,11 +2301,6 @@ Why is this here? TODO
 				/*
 				 *  "PICA-61"
 				 *
-				 *  Something at 0x60000003b4, and something at 0x90000000070.
-				 *
-				 *  OpenBSD/arc seems to try to draw text onto a "VGA text"
-				 *  like device at 0x100000b0000 or 0x100000b8000.
-				 *
 				 *  According to NetBSD 1.6.2:
 				 *
 				 *  jazzio0 at mainbus0
@@ -2358,20 +2353,16 @@ Why is this here? TODO
 				}
 
 				pica_data = dev_pica_init(
-				    cpu, mem, 0x2000000000ULL);
+				    cpu, mem, 0x80000000ULL);
 				cpu->md_interrupt = pica_interrupt;
-
-				/*  BSD uses interrupt source at 0x3c.....  */
-				dev_ram_init(mem, 0x3c00000000ULL,
-				    0x1000, DEV_RAM_MIRROR, 0xf0000000ULL);
 
 				switch (emul->machine) {
 				case MACHINE_ARC_JAZZ_PICA:
 					dev_vga_init(cpu, mem,
-					    0x100000b8000ULL, 0x60000003c0ULL,
+					    0x400b8000ULL, 0x600003c0ULL,
 					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
-					arcbios_console_init(cpu, 0x100000b8000ULL,
-					    0x60000003c0ULL, ARC_CONSOLE_MAX_X,
+					arcbios_console_init(cpu, 0x400b8000ULL,
+					    0x600003c0ULL, ARC_CONSOLE_MAX_X,
 					    ARC_CONSOLE_MAX_Y);
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
@@ -2379,32 +2370,23 @@ Why is this here? TODO
 					break;
 				}
 
-				/*  Windows NT uses physical addresses like
-				    0x400b8000 to access video  */
-				dev_ram_init(mem, 0x400b8000ULL,
-				    0x10000, DEV_RAM_MIRROR, 0x100000b8000ULL);
-				dev_ram_init(mem, 0x0600003c0ULL,
-				    0x20, DEV_RAM_MIRROR, 0x60000003c0ULL);
-				dev_ram_init(mem, 0x80000000,
-				    0x10000, DEV_RAM_MIRROR, 0x2000000000ULL);
-
-				dev_sn_init(cpu, mem, 0x2000001000ULL, 8 + 4);
+				dev_sn_init(cpu, mem, 0x80001000ULL, 8 + 4);
 
 				dev_asc_init(cpu, mem,
-				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
+				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
 				    dev_pica_dma_controller, pica_data);
 
 				dev_mc146818_init(cpu, mem,
-				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
-
-				dev_pckbc_init(cpu, mem, 0x2000005000ULL,
-				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
+				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);
 
 				dev_ns16550_init(cpu, mem,
-				    0x2000006000ULL, 8 + 8, 1,
+				    0x80006000ULL, 8 + 8, 1,
 				    emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
-				    0x2000007000ULL, 8 + 9, 1, 0);
+				    0x80007000ULL, 8 + 9, 1, 0);
+
+				dev_pckbc_init(cpu, mem, 0x80005000ULL,
+				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
 
 				break;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.19 2004-12-18 06:01:14 debug Exp $
+ *  $Id: dev_pica.c,v 1.20 2004-12-18 23:07:28 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -366,43 +366,6 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_pica_access_timer():
- */
-int dev_pica_access_timer(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *extra)
-{
-	struct pica_data *d = (struct pica_data *) extra;
-	uint64_t idata = 0, odata = 0;
-
-	idata = memory_readmax64(cpu, data, len);
-	odata = 0;
-
-	switch (relative_addr) {
-	case 2:
-		if (writeflag == MEM_WRITE)
-			d->pica_timer_value = idata;
-		else
-			odata = d->pica_timer_value;
-		break;
-	default:
-		if (writeflag == MEM_WRITE) {
-			fatal("[ pica_timer: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
-		} else {
-			fatal("[ pica_timer: unimplemented read from address 0x%x"
-			    " ]\n", (int)relative_addr);
-		}
-	}
-
-	if (writeflag == MEM_READ)
-		memory_writemax64(cpu, data, len, odata);
-
-	return 1;
-}
-
-
-/*
  *  dev_pica_access_jazzio():
  *
  *  See jazzio_intr() in NetBSD's
@@ -428,6 +391,14 @@ int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
 			}
 		}
 		odata = v << 2;
+		break;
+	case 2:
+		/*  TODO: Should this be here?!  */
+
+		if (writeflag == MEM_WRITE)
+			d->pica_timer_value = idata;
+		else
+			odata = d->pica_timer_value;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
@@ -469,13 +440,10 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
 	    dev_pica_access, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_timer", 0xf00000000ULL, 4,
-	    dev_pica_access_timer, (void *)d, MEM_DEFAULT, NULL);
-
-	memory_device_register(mem, "pica_20", 0x90000000020ULL, 2,
+	memory_device_register(mem, "pica_20", 0x90000020ULL, 2,
 	    dev_pica_access_20, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_a0", 0x900000000a0ULL, 2,
+	memory_device_register(mem, "pica_a0", 0x900000a0ULL, 2,
 	    dev_pica_access_a0, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_jazzio", 0xf0000000ULL, 4,

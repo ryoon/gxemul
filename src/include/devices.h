@@ -2,7 +2,7 @@
 #define	DEVICES_H
 
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003,2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.44 2004-03-24 02:44:35 debug Exp $
+ *  $Id: devices.h,v 1.45 2004-03-25 21:00:51 debug Exp $
  *
  *  Memory mapped devices:
  */

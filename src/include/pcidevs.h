@@ -1,3 +1,4 @@
+/*  mips64emul: $Id: pcidevs.h,v 1.2 2004-03-25 21:00:51 debug Exp $  */
 /*	$NetBSD: pcidevs.h,v 1.433.2.9 2002/08/02 05:42:10 lukem Exp $	*/
 
 /*

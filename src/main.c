@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.21 2004-01-25 11:51:50 debug Exp $
+ *  $Id: main.c,v 1.22 2004-01-29 19:36:20 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -66,6 +66,7 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
+int bintrans_enable = 0;
 int register_dump = 0;
 int instruction_trace = 0;
 int trace_on_bad_address = 0;
@@ -148,6 +149,7 @@ void usage(char *progname)
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A        try to emulate a generic ARC machine (default CPU = R4000)\n");
 	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
+	printf("  -b        enable binary translation (experimental!)\n");
 	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
 
 	/*  List CPU names:  */
@@ -190,7 +192,8 @@ void usage(char *progname)
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
-	printf("  -u        userland-only (syscall) emulation\n");
+	printf("  -u x      userland-only (syscall) emulation; x=1 (NetBSD/pmax), x=2 (Ultrix/\n");
+	printf("            pmax), or x=3 (IRIX)\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
@@ -212,7 +215,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUuXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABbC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -221,6 +224,9 @@ int get_cmd_args(int argc, char *argv[])
 		case 'B':
 			emulation_type = EMULTYPE_PS2;
 			machine = 0;
+			break;
+		case 'b':
+			bintrans_enable = 1;
 			break;
 		case 'C':
 			strncpy(emul_cpu_name, optarg, sizeof(emul_cpu_name)-1);
@@ -307,7 +313,7 @@ int get_cmd_args(int argc, char *argv[])
 			tlb_dump = 1;
 			break;
 		case 'u':
-			userland_emul = USERLAND_NETBSD_PMAX;
+			userland_emul = atoi(optarg);
 			break;
 		case 'X':
 			use_x11 = 1;

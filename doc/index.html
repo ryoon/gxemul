@@ -21,6 +21,7 @@
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#use">How to use the emulator</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#userland">Running userland binaries</a>
   <li><a href="#feedback">Feedback</a>
 </ul>
 
@@ -131,6 +132,24 @@ image is added; the first will be SCSI target 0, the second will be target 1, an
 <pre>
 	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
+
+
+<p><br>
+<a name="userland"></a>
+<h4>Running userland binaries:</h4>
+
+You can run (some) userland programs as well. This will not emulate any
+particular machine, but instead try to translate syscalls from for example
+NetBSD/pmax into the host's OS' syscalls. For example, running /bin/hostname
+or /bin/date from the NetBSD/pmax distribution works:
+<pre>
+	$ <b>./mips64emul -q -u ../../mips/bin/pmax_bin_hostname</b>
+	tab.csbnet.se
+	$ <b>./mips64emul -q -u ../../mips/bin/pmax_bin_date</b>
+	Sun Jan 25 02:26:14 GMT 2004
+</pre>
+Userland syscall emulation is still in its beginning stages, so almost
+nothing works.
 
 
 <p><br>

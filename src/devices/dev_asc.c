@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.52 2004-11-20 05:27:00 debug Exp $
+ *  $Id: dev_asc.c,v 1.53 2004-11-20 21:41:24 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -1183,6 +1183,6 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 		    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->dma);
 	}
 
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 16);
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
 }
 

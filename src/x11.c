@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.30 2004-11-07 19:58:52 debug Exp $
+ *  $Id: x11.c,v 1.31 2004-11-20 21:41:26 debug Exp $
  *
  *  X11-related functions.
  */
@@ -430,25 +430,11 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 			exit(1);
 		}
 
-#if 0
-		fb_windows[fb_number].cursor_ximage =
-		    XCreateImage(fb_windows[fb_number].x11_display,
-		    CopyFromParent, fb_windows[fb_number].x11_screen_depth,
-		    ZPixmap, 0, cursor_data, xsize, ysize,
-		    8, xsize * alloc_depth / 8);
-
-		if (fb_windows[fb_number].cursor_ximage == NULL) {
-			fprintf(stderr, "out of memory allocating ximage\n");
-			exit(1);
-		}
-
 		/*  Fill the cursor ximage with white pixels:  */
 		for (y=0; y<ysize; y++)
 			for (x=0; x<xsize; x++)
-				XPutPixel(fb_windows[fb_number].cursor_ximage,
-				    x, y, fb_windows[fb_number].
-				    x11_graycolor[N_GRAYCOLORS-1].pixel);
-#endif
+				fb_windows[fb_number].cursor_pixels[y][x] =
+				    N_GRAYCOLORS-1;
 	}
 
 	return &fb_windows[fb_number];

@@ -50,12 +50,10 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    (in theory) the emulator could support other architectures
 		    as well.   (sparc64?)
 		o)  Binary translation:
-			+)  flag for "don't run bintrans on the next attempt",
-			    for example on failed load/store
 			+)  recursive translation?
-			+)  on Alpha: use Alpha registers for common MIPS regs
+			+)  quick forward jumps
 			+)  on Alpha: don't assume pca56-like byte load/store?
-			+)  write backends for non-Alpha machines
+			+)  write backend for UltraSparc and MIPS?
 			+)  see src/bintrans.c for more info
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info):

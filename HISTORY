@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.330 2004-11-26 20:03:07 debug Exp $
+$Id: HISTORY,v 1.331 2004-11-27 08:49:15 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1191,3 +1191,4 @@ HISTORY of mips64emul
 		when moving up the check for interrupts to above the code
 		which runs bintrans code, in src/cpu.c.
 		Adding movn and movz to the Alpha bintrans backend.
+20041127	Various minor updates.

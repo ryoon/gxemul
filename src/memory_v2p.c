@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.3 2004-11-25 20:03:57 debug Exp $
+ *  $Id: memory_v2p.c,v 1.4 2004-11-27 08:49:16 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -61,31 +61,6 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	int pageshift, n_tlbs;
 	int pmask;
-#endif
-
-
-#ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
-#ifdef V2P_MMU3K
-		int a, b;
-		struct vth32_table *tbl1;
-		void *p;
-		uint32_t p_paddr;
-
-		a = (vaddr >> 22) & 0x3ff;
-		b = (vaddr >> 12) & 0x3ff;
-		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-		p = tbl1->haddr_entry[b];
-		p_paddr = tbl1->paddr_entry[b];
-		/*  printf("p=%p p_paddr=%08x\n", p, p_paddr);  */
-		if (p != NULL) {
-			if ((writeflag && (size_t)p&1) || !writeflag) {
-				*return_addr = p_paddr | (vaddr & 0xfff);
-				return 1 + ((size_t)p & 1);
-			}
-		}
-#endif
-	}
 #endif
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.89 2004-11-26 20:03:08 debug Exp $
+ *  $Id: bintrans.c,v 1.90 2004-11-27 08:49:16 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -757,23 +757,32 @@ run_it:
 	    && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
 		uint64_t paddr;
-		uint64_t old_pc;
-		int ok;
+		int ok = 0;
+		int a, b;
+		struct vth32_table *tbl1;
 
-		old_pc = cpu->pc_last = cpu->pc;
-
-		ok = cpu->translate_address(cpu, cpu->pc, &paddr,
-		    FLAG_INSTR);
-
-		if (!ok && old_pc != cpu->pc) {
-			ok = cpu->translate_address(cpu, cpu->pc, &paddr,
-			    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			/*  32-bit special case:  */
+			a = (cpu->pc >> 22) & 0x3ff;
+			b = (cpu->pc >> 12) & 0x3ff;
+			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+			if (tbl1->haddr_entry[b] != NULL) {
+				paddr = tbl1->paddr_entry[b] | (cpu->pc & 0xfff);
+				ok = 1;
+			}
 		}
 
-		if (ok) {
-			/*  TODO: how about code between devices?  */
-			if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
-				ok = 0;
+		/*  General case, or if the special case above failed:  */
+		/*  (This may cause exceptions.)  */
+		if (!ok) {
+			uint64_t old_pc = cpu->pc_last = cpu->pc;
+			ok = cpu->translate_address(cpu, cpu->pc, &paddr, FLAG_INSTR);
+
+			if (!ok && old_pc != cpu->pc) {
+				ok = cpu->translate_address(cpu, cpu->pc, &paddr,
+				    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+			}
 		}
 
 		if (ok) {
@@ -783,8 +792,6 @@ run_it:
 			tep = translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
-					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-						break;
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    translation_code_chunk_space;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.118 2004-11-26 09:05:33 debug Exp $
+ *  $Id: memory.c,v 1.119 2004-11-27 08:49:16 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -671,6 +671,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
+
 
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {

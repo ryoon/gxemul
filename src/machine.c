@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.241 2004-12-15 06:07:10 debug Exp $
+ *  $Id: machine.c,v 1.242 2004-12-15 06:55:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -404,8 +404,7 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		kn02_csr->csr |= irq_nr;
 	} else {
 		/*  AND out the irq_nr from the CSR:  */
-		kn02_csr->csr = (kn02_csr->csr & 0xffffff00ULL)
-		    | ((kn02_csr->csr & 0xff) & ~irq_nr);
+		kn02_csr->csr &= ~irq_nr;
 	}
 
 	current = (kn02_csr->csr & KN02_CSR_IOINT) &

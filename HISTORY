@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.259 2004-10-16 18:09:31 debug Exp $
+$Id: HISTORY,v 1.260 2004-10-17 01:48:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1028,3 +1028,5 @@ HISTORY of mips64emul
 		slots, read directly from host memory and not via memory_rw(),
 		try mmap() before malloc() at startup, and many other minor
 		updates).
+		Adding bintrans_mips.c for 64-bit MIPS hosts, but it is not
+		used yet.

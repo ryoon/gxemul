@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.65 2004-10-09 11:03:45 debug Exp $
+#  $Id: configure,v 1.66 2004-10-17 01:48:09 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -402,6 +402,7 @@ BINTRANS=NO
 if [ z$NOBINTRANS = zYES ]; then
 	printf "disabled\n"
 else
+	#  Alpha:
 	if [ z"`uname -m`" = zalpha ]; then
 		printf "#define ALPHA\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
@@ -419,7 +420,7 @@ else
 		BINTRANS=YES
 	fi
 
-	#  TODO: interpret all i?86 as i386!
+	#  x86:  TODO: interpret all i?86 as i386!
 	if [ z"`uname -m`" = zi386 ]; then
 		printf "#define I386\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
@@ -434,6 +435,15 @@ else
 		fi
 	fi
 
+	#  MIPS:
+	if [ z"`uname -m`" = zmips ]; then
+		printf "#define MIPS\n" >> config.h
+		printf "#define BINTRANS\n" >> config.h
+		printf "mips\n"
+		BINTRANS=YES
+	fi
+
+	#  UltraSPARC:
 	if [ z"`uname -m`" = zsun4u ]; then
 		printf "#define SPARCV9\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h

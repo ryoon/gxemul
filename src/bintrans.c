@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.32 2004-10-16 18:15:12 debug Exp $
+ *  $Id: bintrans.c,v 1.33 2004-10-17 01:48:10 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -160,11 +160,15 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 #ifdef I386
 #include "bintrans_i386.c"
 #else
+#ifdef MIPS
+#include "bintrans_mips.c"
+#else
 #ifdef SPARCV9
 #include "bintrans_sparcv9.c"
 #else
 #error Unsupported host architecture for bintrans.
 #endif	/*  SPARCV9  */
+#endif	/*  MIPS  */
 #endif	/*  I386  */
 #endif	/*  ALPHA  */
 

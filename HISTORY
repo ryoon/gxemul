@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.477 2005-01-16 05:18:23 debug Exp $
+$Id: HISTORY,v 1.478 2005-01-16 07:30:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1469,3 +1469,6 @@ HISTORY of mips64emul
 		Adding ARCBIOS function 0x100 (used by IRIX when returning
 		from main, but undocumented).
 		MC146818 updates (mostly SGI-related).
+		ARCS64 updates (testing with an OpenBSD snapshot in IP27
+		mode). This causes Linux/IP30 to not work. Maybe IP27 and
+		IP30 differ, even though both are 64-bit?

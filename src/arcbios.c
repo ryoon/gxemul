@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.66 2005-01-16 04:06:18 debug Exp $
+ *  $Id: arcbios.c,v 1.67 2005-01-16 07:30:37 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -770,7 +770,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 
 		tmp &= 0xfffff;
 
-		peeraddr += 0x50;
+		peeraddr += 0x40;
 		peeraddr += tmp + 1;
 		peeraddr = ((peeraddr - 1) | 3) + 1;
 
@@ -780,22 +780,21 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	store_64bit_word(cpu, a + 0x00, peer);
 	store_64bit_word(cpu, a + 0x08, child);
 	store_64bit_word(cpu, a + 0x10, parent);
-	store_64bit_word(cpu, a+  0x18, host_tmp_component->Class);
-	store_64bit_word(cpu, a+  0x1c, host_tmp_component->Type);
-/*  TODO: these are not in the right order... see the 32-bit version above for more info  */
-	store_64bit_word(cpu, a+  0x20, host_tmp_component->Flags);
-	store_64bit_word(cpu, a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
-	store_64bit_word(cpu, a+  0x28, host_tmp_component->Key);
-	store_64bit_word(cpu, a+  0x30, host_tmp_component->AffinityMask);
-	store_64bit_word(cpu, a+  0x38, host_tmp_component->ConfigurationDataSize);
-	store_64bit_word(cpu, a+  0x40, host_tmp_component->IdentifierLength);
-	store_64bit_word(cpu, a+  0x48, host_tmp_component->Identifier);
+	store_32bit_word(cpu, a+  0x18, host_tmp_component->Class);
+	store_32bit_word(cpu, a+  0x1c, host_tmp_component->Type);
+	store_32bit_word(cpu, a+  0x20, host_tmp_component->Flags);
+	store_32bit_word(cpu, a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
+	store_32bit_word(cpu, a+  0x28, host_tmp_component->Key);
+	store_32bit_word(cpu, a+  0x2c, host_tmp_component->AffinityMask);
+	store_32bit_word(cpu, a+  0x30, host_tmp_component->ConfigurationDataSize);
+	store_32bit_word(cpu, a+  0x34, host_tmp_component->IdentifierLength);
+	store_32bit_word(cpu, a+  0x38, host_tmp_component->Identifier);
 
-	arcbios_next_component_address += 0x50;
+	arcbios_next_component_address += 0x40;
 
 	if (host_tmp_component->IdentifierLength != 0) {
-		store_64bit_word(cpu, a + 0x48, a + 0x50);
-		store_string(cpu, a + 0x50, identifier);
+		store_32bit_word(cpu, a + 0x38, a + 0x40);
+		store_string(cpu, a + 0x40, identifier);
 		if (identifier != NULL)
 			arcbios_next_component_address += strlen(identifier) + 1;
 	}
@@ -1136,6 +1135,9 @@ void arcbios_emul(struct cpu *cpu)
 		arcbios_private_emul(cpu);
 		return;
 	}
+
+	if (arc_64bit)
+		vector /= 2;
 
 	switch (vector) {
 	case 0x0c:		/*  Halt()  */

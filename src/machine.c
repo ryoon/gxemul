@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.276 2005-01-16 06:14:07 debug Exp $
+ *  $Id: machine.c,v 1.277 2005-01-16 07:30:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3261,93 +3261,22 @@ config[77] = 0x30;
 				    ARC_PRIVATE_ENTRIES + i*4);
 		}
 
-		/*  Hahaha, this is so ugly.  */
-		/*  TODO: Make it less ugly by not hardcoding everything.  */
-
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
-			/*  64-bit ARCBIOS SPB:  (TODO: This is just a guess)  */
+			/*
+			 *  ARCS64 SPD (TODO: This is just a guess)
+			 */
 			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Version, 1);
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
-			/*  FirmwareVectorLength is a pointer to something?  */
-			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 0xa0000000ULL);	/*  ?  */
-			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.PrivateVector, ARC_PRIVATE_VECTORS);
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
-			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64,
-			    sizeof(arcbios_spb_64));
-
-			/*
-			 *  Super-ugly test hack, to fool arcs_getenv() in
-			 *  64-bit Irix:
-			 *
-			 *  The SPB is a bit less than 0x40 bytes long, but
-			 *  Irix seems to use offsets after the standard SPB
-			 *  data.  (TODO)
-			 *
-			 *  Then, at offset 0xf0 in this new structure, there
-			 *  is a pointer to a function which Irix calls.  It
-			 *  seems that this is a getenv-like function, so let's
-			 *  call (32-bit) arcbios, and then return.
-			 *
-			 *  This is ugly.
-			 */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x40,
-			    0xffffffff80001400ULL);
-
-			/*  0x50 is used by Linux/IP30:  */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0x50, SGI_SPB_ADDR + 0x700);
-			/*  0x90 is used by Linux/IP30:  */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0x90, SGI_SPB_ADDR + 0x740);
-			/*  0xd8 is used by Linux/IP30:  */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0xd8, SGI_SPB_ADDR + 0x780);
-			/*  0xf0 is used by Irix:  */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x800);
-
-			/*  getchild  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x28);  /*  addiu, 0x28 = getchild  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
-
-			/*  getmemorydescriptor  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x48);  /*  addiu, 0x48 = getmemorydescriptor  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 + 16, 0);				/*  nop  */
-
-			/*  write  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x6c);  /*  addiu, 0x6c = write  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 + 16, 0);				/*  nop  */
-
-			/*  getenv  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 + 16, 0);				/*  nop  */
-
-			/*  This is similar, but used by Irix' arcs_nvram_tab() instead of arcs_getenv():  */
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x50,
-			    0xffffffff80001900ULL);
-			store_64bit_word(cpu, SGI_SPB_ADDR + 0x900 + 0x8, SGI_SPB_ADDR + 0xa00);
-
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 + 16, 0);				/*  nop  */
-
+			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
 			break;
 		default:	/*  32-bit  */
-			/*  ARCBIOS SPB:  */
+			/*
+			 *  ARCBIOS SPB:  (For ARC and 32-bit SGI modes)
+			 */
 			memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBLength, sizeof(arcbios_spb));

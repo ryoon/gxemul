@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.26 2004-11-23 09:20:45 debug Exp $
+ *  $Id: dev_crime.c,v 1.27 2004-11-29 08:15:18 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -46,7 +46,7 @@
 
 #define	CRIME_TICKSHIFT			14
 #define	CRIME_SPEED_MUL_FACTOR		1
-#define	CRIME_SPEED_DIV_FACTOR		2
+#define	CRIME_SPEED_DIV_FACTOR		1
 
 
 /*

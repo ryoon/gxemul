@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.66 2004-11-28 17:19:12 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.67 2004-11-29 08:15:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -59,8 +59,8 @@
  *	t7		a0 (mips register 4)  (64-bit)
  *	t8		a1 (mips register 5)  (64-bit)
  *	t9		s0 (mips register 16)  (64-bit)
- *	t10		t3 (mips register 11)  (64-bit)  (TODO: bug?)
- *	t11		t4 (mips register 12)  (64-bit)
+ *	t10		table0 cached
+ *	t11		t3 (mips register 11)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)
  *	s2		sp (mips register 29)  (64-bit)
@@ -169,6 +169,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_t3	(((size_t)&dummy_cpu.gpr[GPR_T3]) - ((size_t)&dummy_cpu))
 #define ofs_t4	(((size_t)&dummy_cpu.gpr[GPR_T4]) - ((size_t)&dummy_cpu))
 #define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
+#define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 unsigned char bintrans_alpha_runchunk[200] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
@@ -193,10 +194,10 @@ unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t0&255,ofs_t0>>8,0xb0,0xa5,	/*  ldq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xa5,	/*  ldq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xa5,	/*  ldq     s6,"gpr[t2]"(a0)  */
-#if 0
-	ofs_t3&255,ofs_t3>>8,0x10,0xa7,	/*  ldq     t10,"gpr[t3]"(a0)  */
+#if 1
+	ofs_tbl0&255,ofs_tbl0>>8,0x10,0xa7,/*  ldq     t10,table0(a0)  */
 #endif
-	ofs_t4&255,ofs_t4>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t4]"(a0)  */
+	ofs_t3&255,ofs_t3>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t3]"(a0)  */
 
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
@@ -212,10 +213,7 @@ unsigned char bintrans_alpha_runchunk[200] = {
 	ofs_t0&255,ofs_t0>>8,0xb0,0xb5,	/*  stq     s4,"gpr[t0]"(a0)  */
 	ofs_t1&255,ofs_t1>>8,0xd0,0xb5,	/*  stq     s5,"gpr[t1]"(a0)  */
 	ofs_t2&255,ofs_t2>>8,0xf0,0xb5,	/*  stq     s6,"gpr[t2]"(a0)  */
-#if 0
-	ofs_t3&255,ofs_t3>>8,0x10,0xb7,	/*  stq     t10,"gpr[t3]"(a0)  */
-#endif
-	ofs_t4&255,ofs_t4>>8,0x30,0xb7,	/*  stq     t11,"gpr[t4]"(a0)  */
+	ofs_t3&255,ofs_t3>>8,0x30,0xb7,	/*  stq     t11,"gpr[t4]"(a0)  */
 
 	0x00, 0x00, 0x5e, 0xa7,		/*  ldq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xa5,		/*  ldq     s0,8(sp)  */
@@ -339,13 +337,7 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		/*  addq s6,0,alphareg  */
 		*a++ = 0x41e01400 | alphareg;
 		break;
-#if 0
 	case GPR_T3:
-		/*  addq t10,0,alphareg  */
-		*a++ = 0x43001400 | alphareg;
-		break;
-#endif
-	case GPR_T4:
 		/*  addq t11,0,alphareg  */
 		*a++ = 0x43201400 | alphareg;
 		break;
@@ -418,13 +410,7 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 		/*  addq alphareg,0,s6  */
 		*a++ = 0x4000140f | (alphareg << 21);
 		break;
-#if 0
 	case GPR_T3:
-		/*  addq alphareg,0,t10  */
-		*a++ = 0x40001418 | (alphareg << 21);
-		break;
-#endif
-	case GPR_T4:
 		/*  addq alphareg,0,t11  */
 		*a++ = 0x40001419 | (alphareg << 21);
 		break;
@@ -1305,13 +1291,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		break;
 	}
 
-	/*
-	 *  a2 = vaddr_to_hostaddr_table0
-	 *  00 00 50 a6     ldq     a2,0(a0)
-	 */
-	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
-	*a++ = ofs&255; *a++ = ofs>>8; *a++ = 0x50; *a++ = 0xa6;
-
 	if (alignment > 0) {
 		/*
 		 *  Check alignment:
@@ -1349,10 +1328,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
 
 	/*
+	 *  t10 is vaddr_to_hostaddr_table0
+	 *
 	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  12 04 43 42     addq    a2,t2,a2
+	 *  12 04 03 43     addq    t10,t2,a2
 	 */
-	*a++ = 0x12; *a++ = 0x04; *a++ = 0x43; *a++ = 0x42;
+	*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
 
 	/*  04 00 82 44     and     t3,t1,t3  */
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
@@ -1384,30 +1365,29 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	bintrans_write_chunkreturn_fail(&a);
 	*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
+	/*  01 30 60 46     and     a3,0x1,t0  */
+	*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
+
 	/*
 	 *  If this is a store, then the lowest bit must be set:
 	 */
 	if (!load) {
-		/*  01 30 60 46     and     a3,0x1,t0  */
 		/*  01 00 20 f4     bne     t0,<okzzz>  */
-		*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
 		fail = a;
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
 		bintrans_write_chunkreturn_fail(&a);
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
+	/*  Get rid of the lowest bit:  */
+	/*  33 05 61 42     subq    a3,t0,a3  */
+	*a++ = 0x33; *a++ = 0x05; *a++ = 0x61; *a++ = 0x42;
 
-	/*
-	 *  The rest of this code was written with t3 as the address.
-	 *
-	 *  fe ff 7f 20     lda     t2,-2	Get rid of the lowest
-	 *  04 00 63 46     and     a3,t2,t3	bit, and add
-	 *  04 04 82 40     addq    t3,t1,t3	the offset within the page.
-	 */
-	*a++ = 0xfe; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x63; *a++ = 0x46;
-	*a++ = 0x04; *a++ = 0x04; *a++ = 0x82; *a++ = 0x40;
+	/*  The rest of this code was written with t3 as the address.  */
+
+	/*  Add the offset within the page:  */
+	/*  04 04 62 42     addq    a3,t1,t3  */
+	*a++ = 0x04; *a++ = 0x04; *a++ = 0x62; *a++ = 0x42;
 
 
 	switch (instruction_type) {

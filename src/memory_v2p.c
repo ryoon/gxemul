@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.13 2004-12-30 18:38:26 debug Exp $
+ *  $Id: memory_v2p.c,v 1.14 2005-01-09 00:38:17 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -180,7 +180,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	else if (ksu == KSU_SUPERVISOR)
 		x_64 = status & STATUS_SX;
 
-	/*  This suppresses compiler warning:  */
+	/*  This suppresses a compiler warning:  */
 	pageshift = 12;
 
 	/*
@@ -212,10 +212,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	if (vaddr <= 0x7fffffff)
 		use_tlb = 1;
 	else {
+#if 0
 		/*  Sign-extend vaddr, if necessary:  */
 		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000ULL)
 			vaddr |= 0xffffffff00000000ULL;
-
+#endif
 		if (ksu == KSU_KERNEL) {
 			/*  kseg0, kseg1:  */
 			if (vaddr >= (uint64_t)0xffffffff80000000ULL &&

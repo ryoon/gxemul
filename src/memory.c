@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.64 2004-07-18 12:34:47 debug Exp $
+ *  $Id: memory.c,v 1.65 2004-07-18 13:07:10 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1086,6 +1086,8 @@ exception:
  *  cpu->instruction_delay is increased by the number of instruction to
  *  delay execution.
  *
+ *  This function should not be called with cpu == NULL.
+ *
  *  Returns one of the following:
  *	MEMORY_ACCESS_FAILED
  *	MEMORY_ACCESS_OK
@@ -1103,10 +1105,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
+#if 0
+	/*  This check should not be neccessary:  */
 	if (cpu == NULL) {
-		paddr = vaddr & 0x1fffffff;
-		goto have_paddr;
+		fprintf(stderr, "memory_rw(): cpu == NULL\n");
+		exit(1);
 	}
+#endif
 
 	if (userland_emul) {
 		paddr = vaddr & 0x7fffffff;
@@ -1120,9 +1125,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  NOTE: There's no need to check this stuff here if
 	 *  pc_last_was_in_host_ram is true, as it's done at instruction fetch
 	 *  time in cpu.c!  Only check if _in_host_ram == 0.
-	 *
-	 *  NOTE 2:  cpu may be NULL here, but "hopefully" not if
-	 *  cache == CACHE_INSTRUCTION.  (TODO)
 	 */
 	if (cache == CACHE_INSTRUCTION &&
 	    !cpu->pc_last_was_in_host_ram &&
@@ -1181,7 +1183,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 have_paddr:
 
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
-		if (no_exceptions && cpu != NULL)
+		if (no_exceptions)
 			goto no_exception_access;
 
 /*  (*) = I need to access RAM devices easily without hardcoding stuff 
@@ -1190,8 +1192,6 @@ into the devices  */
 
 	/*
 	 *  Memory mapped device?
-	 *
-	 *  NOTE: cpu may be NULL.
 	 *
 	 *  TODO: this is utterly slow.
 	 *  TODO2: if paddr<base, but len enough, then we should write
@@ -1219,10 +1219,9 @@ into the devices  */
 				if (res == 0)
 					res = -1;
 
-				if (cpu != NULL)
-					cpu->instruction_delay +=
-					    ( (abs(res) - 1) *
-					     cpu->cpu_type.instrs_per_cycle );
+				cpu->instruction_delay +=
+				    ( (abs(res) - 1) *
+				     cpu->cpu_type.instrs_per_cycle );
 #endif
 				/*
 				 *  If accessing the memory mapped device
@@ -1247,9 +1246,6 @@ into the devices  */
 		} while (i != start);
 	}
 
-
-	if (cpu == NULL)
-		goto no_exception_access;
 
 #if 0
 	/*  Accesses that cross memory blocks are bad:  */

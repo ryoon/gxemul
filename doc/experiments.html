@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.8 2005-01-30 19:01:53 debug Exp $
+$Id: experiments.html,v 1.9 2005-01-30 19:16:25 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -414,6 +414,28 @@ or snapshot of the emulator.
 	<br>$ <b>./mips64emul -E linksys -t 0x80001000:piggy</b>
 	<br>There's also a .bin file available from linksys:
 		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Walnut (evbppc)
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-WALNUT.gz</a>
+	<br>gunzip, and try the following:
+	<br>$ <b>./mips64emul -E walnut netbsd-WALNUT</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>PM/PPC (pmppc)
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
+	<br>gunzip, and try the following:
+	<br>$ <b>./mips64emul -E pmppc netbsd-INSTALL</b>
     </ul>
   </li>
 

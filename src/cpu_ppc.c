@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.3 2005-01-30 19:01:55 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.4 2005-01-30 19:16:26 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -50,6 +50,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
 	struct cpu *cpu;
+	int any_cache = 0;
 	int i, found;
 	struct ppc_cpu_type_def cpu_type_defs[] = PPC_CPU_TYPE_DEFS;
 
@@ -81,8 +82,29 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
 
-	if (cpu_id == 0)
+	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
+	if (cpu_id == 0) {
 		debug("%s", cpu->cd.ppc.cpu_type.name);
+
+		if (cpu->cd.ppc.cpu_type.icache_shift != 0)
+			any_cache = 1;
+		if (cpu->cd.ppc.cpu_type.dcache_shift != 0)
+			any_cache = 1;
+		if (cpu->cd.ppc.cpu_type.l2cache_shift != 0)
+			any_cache = 1;
+
+		if (any_cache) {
+			debug(" (I+D = %i+%i KB",
+			    (int)(1 << (cpu->cd.ppc.cpu_type.icache_shift-10)),
+			    (int)(1 << (cpu->cd.ppc.cpu_type.dcache_shift-10)));
+			if (cpu->cd.ppc.cpu_type.l2cache_shift != 0) {
+				debug(", L2 = %i KB",
+				    (int)(1 << (cpu->cd.ppc.cpu_type.
+				    l2cache_shift-10)));
+			}
+			debug(")");
+		}
+	}
 
 	return cpu;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.36 2004-12-02 16:28:03 debug Exp $
+ *  $Id: arcbios.c,v 1.37 2004-12-02 19:33:56 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -667,6 +667,14 @@ void arcbios_emul(struct cpu *cpu)
 		for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 			unsigned char ch = '\0';
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
+
+			/*  SUPER-ugly hack for Windows NT, which uses
+			    0x9b instead of ESC + [  */
+			if (ch == 0x9b) {
+				console_putchar(27);
+				ch = '[';
+			}
+
 			console_putchar(ch);
 		}
 		store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);

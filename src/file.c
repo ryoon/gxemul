@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.39 2004-11-15 04:12:29 debug Exp $
+ *  $Id: file.c,v 1.40 2004-12-02 19:33:56 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -472,6 +472,12 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 		unencode(iextMax,       &symhdr.iextMax,       uint32_t);
 		unencode(cbExtOffset,   &symhdr.cbExtOffset,   uint32_t);
 
+		if (sym_magic != MIPS_MAGIC_SYM) {
+			debug("'%s': UNKNOWN symbol magic = 0x%x\n",
+			    filename, sym_magic);
+			goto unknown_coff_symbols;
+		}
+
 		debug("'%s': symbol header: magic = 0x%x\n",
 		    filename, sym_magic);
 
@@ -521,6 +527,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 
 		free(extsyms);
 		free(symbol_data);
+unknown_coff_symbols:
 	}
 
 	fclose(f);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.118 2004-12-02 16:28:03 debug Exp $
+ *  $Id: coproc.c,v 1.119 2004-12-02 19:33:56 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -425,6 +425,7 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 	paddr &= ~0xfff;
 
 	if (cpu->emul->bintrans_enable) {
+#if 0
 		uint64_t tlb_paddr;
 		uint64_t tlb_vaddr;
 		switch (cpu->cpu_type.mmu_model) {
@@ -437,16 +438,21 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 					invalidate_table_entry(cpu, tlb_vaddr);
 			}
 
-			if (paddr < 0x20000000) {
-				invalidate_table_entry(cpu, 0x80000000 + paddr);
-				invalidate_table_entry(cpu, 0xa0000000 + paddr);
-			}
+		}
+#endif
+
+		if (paddr < 0x20000000) {
+			invalidate_table_entry(cpu, 0x80000000 + paddr);
+			invalidate_table_entry(cpu, 0xa0000000 + paddr);
 		}
 	}
 
+#if 0
 	/*  TODO: Don't invalidate everything.  */
 	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
 		cpu->bintrans_data_hostpage[i] = NULL;
+#endif
+
 #endif
 }
 

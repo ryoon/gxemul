@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.5 2004-09-14 15:04:45 debug Exp $
+/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.6 2004-12-02 19:33:55 debug Exp $
  *  Addition of some ECOFF magin numbers, and ECOFF_BADMAG has been commented
  *  out to avoid warnings on Solaris.
  */
@@ -121,6 +121,8 @@ struct ecoff_symhdr {
 	int32_t		iextMax;
 	int32_t		cbExtOffset;
 };
+
+#define	MIPS_MAGIC_SYM	0x7009		/*  mips64emul addition  */
 
 /* Macro for field name used by cgd's Alpha-derived code */
 #define esymMax iextMax

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.22 2004-12-19 07:16:06 debug Exp $
+ *  $Id: dev_vga.c,v 1.23 2004-12-19 07:21:53 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -244,14 +244,19 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  */
 static void vga_reg_write(struct vga_data *d, int regnr, int idata)
 {
-	debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n", regnr, idata);
+	int ofs;
 
-	if (regnr == 0xe || regnr == 0xf) {
-		int ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
+	switch (regnr) {
+	case 0x0e:
+	case 0x0f:
+		ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
-
 		vga_update_cursor(d);
+		break;
+	default:
+		debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n",
+		    regnr, idata);
 	}
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.27 2004-07-07 01:33:46 debug Exp $
+ *  $Id: emul.c,v 1.28 2004-07-07 04:19:58 debug Exp $
  *
  *  Emulation startup.
  */
@@ -140,22 +140,19 @@ void load_bootblock(void)
 	unsigned char minibuf[0x20];
 	unsigned char bootblock_buf[8192];
 	uint64_t bootblock_offset;
+	uint64_t bootblock_loadaddr;
 
 	switch (emulation_type) {
 	case EMULTYPE_DEC:
 		/*
-		 *  The bootblock for DECstations is 8KB large.  We first
-		 *  read the 32-bit word at offset 0x1c. This word tells
-		 *  us the starting sector number of the bootblock.
+		 *  The bootblock for DECstations is 8KB large.  We first read
+		 *  the 32-bit word at offset 0x1c. This word tells us the
+		 *  starting sector number of the bootblock.
 		 *
-		 *  (The bootblock is usually at offset 0x200, but for
-		 *  example the NetBSD/pmax 1.6.2 CDROM uses offset
-		 *  0x4a10000, so it is probably best to trust the offset
-		 *  given at offset 0x1c.)
-		 *
-		 *  Ultrix seems to expect two copies, one at 0x80600000 and
-		 *  one at 0x80700000. We start running at 0x80700000 though,
-		 *  because that works with both NetBSD and Ultrix.
+		 *  Two values at offset 0x10 and 0x14 (which accidentally are
+		 *  identical for all cases I've seen) seem to indicate the
+		 *  load address and/or starting PC.  It's usually 0x80600000,
+		 *  or similar.
 		 */
 		res = diskimage_access(boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
@@ -163,17 +160,31 @@ void load_bootblock(void)
 		bootblock_offset = (minibuf[0x1c] + (minibuf[0x1d] << 8)
 		  + (minibuf[0x1e] << 16) + (minibuf[0x1f] << 24)) * 512;
 
+		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
+		  + (minibuf[0x12] << 16) + (minibuf[0x13] << 24);
+
+		if (minibuf[0x10] != minibuf[0x14] ||
+		    minibuf[0x11] != minibuf[0x15] ||
+		    minibuf[0x12] != minibuf[0x16] ||
+		    minibuf[0x13] != minibuf[0x17])
+			fatal("\nWARNING! Differing values at offset 0x10 and 0x14 of DECstation boot info\n\n");
+
 		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
 		    bootblock_buf, sizeof(bootblock_buf));
 
-		/*  Ultrix boots at 0x80600000, NetBSD at 0x80700000:  */
-		store_buf(0xa0600000, (char *)bootblock_buf,
-		    sizeof(bootblock_buf));
-		store_buf(0xa0700000, (char *)bootblock_buf,
-		    sizeof(bootblock_buf));
+		/*  Convert loadaddr to uncached:  */
+		if ((bootblock_loadaddr & 0xf0000000ULL) != 0x80000000 &&
+		    (bootblock_loadaddr & 0xf0000000ULL) != 0xa0000000)
+			fatal("\nWARNING! Weird load address 0x%08x.\n\n",
+			    (int)bootblock_loadaddr);
 
-		/*  Run uncached!  */
-		cpus[bootstrap_cpu]->pc = 0xa0700000;
+		bootblock_loadaddr &= 0x0fffffff;
+		bootblock_loadaddr |= 0xa0000000;
+
+		store_buf(bootblock_loadaddr, (char *)bootblock_buf,
+		    sizeof(bootblock_buf));
+		cpus[bootstrap_cpu]->pc = bootblock_loadaddr;
+
 		break;
 	default:
 		fatal("Booting from disk without a separate kernel doesn't work in this emulation mode.\n");

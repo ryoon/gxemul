@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.5 2004-01-29 20:48:04 debug Exp $
+ *  $Id: bintrans.c,v 1.6 2004-01-30 03:10:22 debug Exp $
  *
  *  Binary translation.
  *
@@ -86,32 +86,30 @@
  *		same results, or something is wrong.
  *
  *	How about loops?
- */
-
-/*
-The general idea would be something like this:
-A block of code in the host's memory would have to conform with
-the C function calling ABI on that platform, so that the code block
-can be called easily from C. That is, entry and exit code needs to
-be added, in addition to the translated instructions.
-
-	o)  Check for the current PC in the translation cache.
-	o)  If the current PC is not found, then make a decision
-		regarding making a translation attempt, or not.
-		Fallback to normal instruction execution in cpu.c.
-	o)  If there is a code block for the current PC in the
-		translation cache, do a couple of checks and then
-		run the block. Update registers and other values
-		as neccessary.
-
-The checks would include:
-	boundaries for load/store memory accesses  (these must be
-		to pages that are accessible without modifying the TLB,
-		that is, they either have to be to addresses which
-		are in the TLB or to kseg0/1 addresses)
-	no external interrupts should occur for enough number
-		of cycles
-
+ *
+ *
+ *  The general idea would be something like this:
+ *  A block of code in the host's memory would have to conform with
+ *  the C function calling ABI on that platform, so that the code block
+ *  can be called easily from C. That is, entry and exit code needs to
+ *  be added, in addition to the translated instructions.
+ *
+ *	o)  Check for the current PC in the translation cache.
+ *	o)  If the current PC is not found, then make a decision
+ *		regarding making a translation attempt, or not.
+ *		Fallback to normal instruction execution in cpu.c.
+ *	o)  If there is a code block for the current PC in the
+ *		translation cache, do a couple of checks and then
+ *		run the block. Update registers and other values
+ *		as neccessary.
+ *
+ *  The checks would include:
+ *	boundaries for load/store memory accesses  (these must be
+ *		to pages that are accessible without modifying the TLB,
+ *		that is, they either have to be to addresses which
+ *		are in the TLB or to kseg0/1 addresses)
+ *	no external interrupts should occur for enough number
+ *		of cycles
  */
 
 
@@ -127,12 +125,21 @@ The checks would include:
  *
  *  This function searches the translation cache for a specific address. If
  *  it is found, 1 is returned.  If the address was not found, 0 is returned.
- *
- *  TODO
  */
-int bintrans_check_cache(struct memory *mem, uint64_t paddr)
+int bintrans_check_cache(struct memory *mem, uint64_t paddr, int *chunk_nr)
 {
-	debug("bintrans_check_cache(): paddr=0x%016llx\n", (long long)paddr);
+	int i;
+
+	/*  debug("bintrans_check_cache(): paddr=0x%016llx\n", (long long)paddr);  */
+
+	for (i=0; i<BINTRANS_CACHEENTRIES; i++) {
+		if (paddr == mem->bintrans_paddr_start[i] &&
+		    mem->bintrans_codechunk[i] != NULL) {
+			if (chunk_nr != NULL)
+				*chunk_nr = i;
+			return 1;
+		}
+	}
 
 	return 0;
 }
@@ -145,20 +152,46 @@ int bintrans_check_cache(struct memory *mem, uint64_t paddr)
  *  so that any translation of code at those addresses is removed from the
  *  translation cache.
  *
- *  TODO
+ *  TODO 2:  Perhaps we should check that memory is actually modified.
+ *  Compare this to the situation of modifying framebuffer (video) memory,
+ *  if the new values put in the framebuffer equal the old values. Then
+ *  no redraw of the screen is neccessary.  Similarly, if ram is updated
+ *  with new code, but the new code is the same as the old code, then no
+ *  invalidation needs to be done!
  */
 void bintrans_invalidate(struct memory *mem, uint64_t paddr, uint64_t len)
 {
-	debug("bintrans_invalidate(): paddr=0x%016llx len=0x%llx\n",
-	    (long long)paddr, (long long)len);
+	int i;
 
+	/*  debug("bintrans_invalidate(): paddr=0x%016llx len=0x%llx\n",
+	    (long long)paddr, (long long)len);  */
+
+	for (i=0; i<BINTRANS_CACHEENTRIES; i++) {
+		/*
+		 *  Invalidate codechunk[i] if any of the following is true:
+		 *
+		 *	paddr is within [start, end]
+		 *	paddr+len-1 is within [start, end]
+		 *	paddr is less than start, and paddr+len-1 is more than end
+		 */
+		if (   (paddr >= mem->bintrans_paddr_start[i] && paddr <= mem->bintrans_paddr_end[i])
+		    || (paddr+len-1 >= mem->bintrans_paddr_start[i] && paddr+len-1 <= mem->bintrans_paddr_end[i])
+		    || (paddr < mem->bintrans_paddr_start[i] && paddr+len-1 > mem->bintrans_paddr_end[i])
+		    ) {
+			mem->bintrans_codechunk_len[i] = 0;
+		}
+	}
 }
 
 
 #define	BT_UNKNOWN		0
 #define	BT_ADDIU		1
+#define	BT_DADDIU		2
+#define	BT_ADDU			3
+#define	BT_DADDU		4
+#define	BT_NOP			5
 
-#define	CODECHUNK_SIZE		1024
+#define	CODECHUNK_SIZE		512
 
 /*
  *  bintrans__codechunk_addinstr():
@@ -168,11 +201,13 @@ void bintrans_invalidate(struct memory *mem, uint64_t paddr, uint64_t len)
  *  code.
  *  Returns 1 on success, 0 if no code was translated.
  */
-int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct cpu *cpu, struct memory *mem, int bt_instruction, int rt, int rs, int imm)
+int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct cpu *cpu, struct memory *mem,
+	int bt_instruction, int rt, int rs, int rd, int imm)
 {
 	void *codechunk;
 	size_t curlength;
 	int success = 0;
+	int ofs_rt, ofs_rs, ofs_rd;
 	unsigned char *p;
 
 	if (codechunkp == NULL) {
@@ -185,50 +220,125 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 
 	/*  Create codechunk header, if neccessary:  */
 	if (codechunk == NULL) {
-		fatal("creating codechunk header...\n");
-
+		/*  debug("creating codechunk header...\n");  */
 		codechunk = malloc(CODECHUNK_SIZE);
 		curlength = 0;
 	}
 
+	p = (unsigned char *)codechunk + curlength;
+
+
 	/*
-	 *  General idea:   example: ADDIU to same register (inc register)
+	 *  ADDIU / DADDIU:
 	 *
-	 *  f(unsigned char *p) {		<-- input argument is pointer to cpu struct
-	 *        p += 0x1234;			<-- p increased by offset to the register to increase
-	 *        (*((unsigned long long *)p)) += 0x5678;	<-- inc the register
+	 *  f(unsigned char *p) {
+	 *	(*((unsigned long long *)(p + 0x1234))) =
+	 *	    (*((unsigned long long *)(p + 0x2348))) + 0x5678;
 	 *  }
 	 *
-	 *  becomes
+	 *  If p is a pointer to a cpu struct, 0x1234 is the offset to the cpu
+	 *  register rt, 0x2348 is the offset of register rs (the source), and
+	 *  0x5678 is the amount to add, then we get this Alpha code:
 	 *
-	 *   0:   34 12 10 22     lda     a0,4660(a0)		<-- offset
-	 *   4:   00 00 30 a4     ldq     t0,0(a0)		<-- load
-	 *   8:   78 56 21 20     lda     t0,22136(t0)		<-- inc
-	 *   c:   1f 04 ff 5f     fnop
-	 *  10:   00 00 30 b4     stq     t0,0(a0)		<-- store back
+	 *  (a0 is the cpu struct pointer)
 	 *
-	 *  And the tail:
-	 *  14:   01 80 fa 6b     ret     zero,(ra),0x1		<-- return
+	 *   0:   48 23 30 a4     ldq     t0,9032(a0)		<-- load
+	 *   4:   01 14 20 40     addq    t0,0,t0		<-- inc
+	 *   8:   34 12 30 b4     stq     t0,4660(a0)		<-- store
+	 *
+	 *  NOTE: the code above is for DADDIU. The following two instructions
+	 *  sign-extend as should be done with ADDIU:
+	 *
+	 *   c:   f0 7f 50 a0     ldl     t1,32752(a0)		<-- load 32-bit signed
+	 *  10:   f0 7f 50 b4     stq     t1,32752(a0)		<-- store as 64-bit again
 	 */
-	if (bt_instruction == BT_ADDIU && rt == rs && imm >= 0) {
-		p = (unsigned char *)codechunk + curlength;
+	if ((bt_instruction == BT_ADDIU || bt_instruction == BT_DADDIU) && imm >= 0 && imm < 0xff) {
+		ofs_rt = (size_t)&(cpu->gpr[rt]) - (size_t)cpu;
+		ofs_rs = (size_t)&(cpu->gpr[rs]) - (size_t)cpu;
+		/*  debug("offsets ofs_rt=%i ofs_rs=%i\n", ofs_rt, ofs_rs);  */
 
-		p[0] = 0x34; p[1] = 0x12; p[2] = 0x10; p[3] = 0x22;
-		curlength += 4; p += 4;
+		if (imm != 0 && rt != 0) {
+			p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xa4;  curlength += 4; p += 4;
+			p[0] = 0x01; p[1] = 0x14 + ((imm & 7) << 5); p[2] = 0x20 + ((imm & 0xf8) >> 3); p[3] = 0x40;  curlength += 4; p += 4;
+			p[0] = ofs_rt & 255; p[1] = ofs_rt >> 8; p[2] = 0x30; p[3] = 0xb4;  curlength += 4; p += 4;
 
-		p[0] = 0x00; p[1] = 0x00; p[2] = 0x30; p[3] = 0xa4;
-		curlength += 4; p += 4;
+			/*  Sign-extend, for 32-bit addiu:  */
+			if (bt_instruction == BT_ADDIU) {
+				p[0] = ofs_rt & 255; p[1] = ofs_rt >> 8; p[2] = 0x50; p[3] = 0xa0;  curlength += 4; p += 4;
+				p[0] = ofs_rt & 255; p[1] = ofs_rt >> 8; p[2] = 0x50; p[3] = 0xb4;  curlength += 4; p += 4;
+			}
+		}
 
-		p[0] = 0x78; p[1] = 0x56; p[2] = 0x21; p[3] = 0x20;
-		curlength += 4; p += 4;
+		/*  Add 4 to cpu->pc  */
+		ofs_rs = (size_t)&(cpu->pc) - (size_t)cpu;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xa4;	curlength += 4; p += 4;
+		p[0] = 1;            p[1] = 0x94;        p[2] = 0x20; p[3] = 0x40;	curlength += 4; p += 4;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xb4;	curlength += 4; p += 4;
 
-		p[0] = 0x1f; p[1] = 0x04; p[2] = 0xff; p[3] = 0x5f;
-		curlength += 4; p += 4;
+		/*  Actually, PC should be sign extended, but this would be really uncommon in practice. (TODO)  */
 
-		p[0] = 0x00; p[1] = 0x00; p[2] = 0x30; p[3] = 0xb4;
-		curlength += 4; p += 4;
+		success = 1;	/*  TODO: rename to "continue" or something?  */
+	}
 
-		success = 0;	/*  TODO: rename to "continue" or something?  */
+	/*
+	 *  ADDU:
+	 *
+	 *  (a0 is the cpu struct pointer)
+	 *
+	 *   0:   08 10 30 a4     ldq     t0,4104(a0)		<-- load
+	 *   4:   0c 10 50 a4     ldq     t1,4108(a0)		<-- load
+	 *   8:   01 04 22 40     addq    t0,t1,t0		<-- add
+	 *   c:   1f 04 ff 5f     fnop
+	 *  10:   04 10 30 b4     stq     t0,4100(a0)		<-- store
+	 *
+	 *  NOTE: the code above is for DADDU. Sign extension like in addiu (above)
+	 *  is neccessary for addu.
+	 */
+	if (bt_instruction == BT_ADDU || bt_instruction == BT_DADDU) {
+		ofs_rt = (size_t)&(cpu->gpr[rt]) - (size_t)cpu;
+		ofs_rs = (size_t)&(cpu->gpr[rs]) - (size_t)cpu;
+		ofs_rd = (size_t)&(cpu->gpr[rd]) - (size_t)cpu;
+		/*  debug("offsets ofs_rt=%i ofs_rs=%i, ofs_rd=%i\n", ofs_rt, ofs_rs, ofs_rd);  */
+
+		if (rd != 0) {
+			p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xa4;  curlength += 4; p += 4;
+			p[0] = ofs_rt & 255; p[1] = ofs_rt >> 8; p[2] = 0x50; p[3] = 0xa4;  curlength += 4; p += 4;
+			p[0] = 0x01;         p[1] = 0x04;        p[2] = 0x22; p[3] = 0x40;  curlength += 4; p += 4;
+			p[0] = 0x1f;         p[1] = 0x04;        p[2] = 0xff; p[3] = 0x5f;  curlength += 4; p += 4;
+			p[0] = ofs_rd & 255; p[1] = ofs_rd >> 8; p[2] = 0x30; p[3] = 0xb4;  curlength += 4; p += 4;
+
+			/*  Sign-extend rd, for 32-bit addu:  */
+			if (bt_instruction == BT_ADDU) {
+				p[0] = ofs_rd & 255; p[1] = ofs_rd >> 8; p[2] = 0x50; p[3] = 0xa0;  curlength += 4; p += 4;
+				p[0] = ofs_rd & 255; p[1] = ofs_rd >> 8; p[2] = 0x50; p[3] = 0xb4;  curlength += 4; p += 4;
+			}
+		}
+
+		/*  Add 4 to cpu->pc  */
+		ofs_rs = (size_t)&(cpu->pc) - (size_t)cpu;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xa4;	curlength += 4; p += 4;
+		p[0] = 1;            p[1] = 0x94;        p[2] = 0x20; p[3] = 0x40;	curlength += 4; p += 4;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xb4;	curlength += 4; p += 4;
+
+		/*  Actually, PC should be sign extended, but this would be really uncommon in practice. (TODO)  */
+
+		success = 1;	/*  TODO: rename to "continue" or something?  */
+	}
+
+	/*
+	 *  NOP:
+	 *
+	 *  Add 4 to cpu->pc.
+	 */
+	if (bt_instruction == BT_NOP) {
+		/*  Add 4 to cpu->pc  */
+		ofs_rs = (size_t)&(cpu->pc) - (size_t)cpu;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xa4;	curlength += 4; p += 4;
+		p[0] = 1;            p[1] = 0x94;        p[2] = 0x20; p[3] = 0x40;	curlength += 4; p += 4;
+		p[0] = ofs_rs & 255; p[1] = ofs_rs >> 8; p[2] = 0x30; p[3] = 0xb4;	curlength += 4; p += 4;
+
+		/*  Actually, PC should be sign extended, but this would be really uncommon in practice. (TODO)  */
+		success = 1;	/*  TODO: rename to "continue" or something?  */
 	}
 
 	*codechunkp = codechunk;
@@ -250,12 +360,29 @@ void bintrans__codechunk_addtail(void *codechunk, size_t *curlengthp)
 
 	p = (unsigned char *)codechunk + curlength;
 
-	/*  Alpha   01 80 fa 6b     ret     zero,(ra),0x1  */
-	p[0] = 0x01;
-	p[1] = 0x80;
-	p[2] = 0xfa;
-	p[3] = 0x6b;
-	(*curlengthp) += 4;
+	p[0] = 0x01;  p[1] = 0x80;  p[2] = 0xfa;  p[3] = 0x6b;  /*  ret     zero,(ra),0x1  */	p += 4; curlength += 4;
+
+	if ((curlength & 0x7) == 0) {
+		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
+	}
+	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
+
+	if ((curlength & 0x7) == 0) {
+		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
+	}
+	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
+
+	if ((curlength & 0x7) == 0) {
+		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
+	}
+	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
+
+	if ((curlength & 0x7) == 0) {
+		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
+	}
+	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
+
+	(*curlengthp) = curlength;
 }
 
 
@@ -265,20 +392,36 @@ void bintrans__codechunk_addtail(void *codechunk, size_t *curlengthp)
  *  Try to add code at paddr to the translation cache.
  *  Returns 1 on success (if some code was added), 0 if no such code was
  *  added or any other problem occured.
- *
- *  TODO
  */
 int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 {
+	int oldest, oldest_i, i;
 	int ok;
 	uint8_t instr[4];
 	uint32_t instrword;
-	int rs, rt, imm;
+	int rs, rt, rd, imm;
 	int do_translate;
-	void *codechunk = NULL;
 	size_t curlength = 0;
+	uint64_t paddr_start = paddr;
 
-	debug("bintrans_try_to_add(): paddr=0x%016llx\n", (long long)paddr);
+        mem->bintrans_tickcount ++;
+	/*  Find a suitable slot in the cache:  */
+	oldest = -1;
+	oldest_i = -1;
+	for (i=0; i<BINTRANS_CACHEENTRIES; i++) {
+		if (oldest_i == -1 || mem->bintrans_codechunk_time[i] < oldest
+		    || mem->bintrans_codechunk[i] == NULL || mem->bintrans_codechunk_len == 0) {
+			oldest_i = i;
+			oldest = mem->bintrans_codechunk_time[i];
+		}
+	}
+
+	if (oldest_i == -1) {
+		fatal("no free codechunk slot?\n");
+		exit(1);
+	}
+
+	/*  debug("bintrans_try_to_add(): paddr=0x%016llx\n", (long long)paddr);  */
 
 	do_translate = 1;
 
@@ -286,8 +429,6 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 		ok = memory_rw(cpu, mem, paddr, &instr[0], sizeof(instr), MEM_READ, CACHE_NONE | PHYSICAL);
 		if (!ok) {
 			fatal("bintrans_try_to_add(): could not read from 0x%llx (?)\n", (long long)paddr);
-			if (codechunk != NULL)
-				free(codechunk);
 			return 0;
 		}
 
@@ -296,7 +437,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 		else
 			instrword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8) + instr[3];
 
-		fatal("  bintrans_try_to_add(): instr @ 0x%016llx = %08x\n", (long long)paddr, instrword);
+/*		debug("  bintrans_try_to_add(): instr @ 0x%016llx = %08x\n", (long long)paddr, instrword);
+*/
 
 		/*  If the instruction we are translating is unknown or too hard to translate,
 			then we stop.  Individual cases below should set do_translate to 1
@@ -304,15 +446,49 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 		do_translate = 0;
 
 		/*  addiu:  */
-		if ((instrword >> 26) == 0x09) {
+		if ((instrword >> 26) == 0x09 || (instrword >> 26) == 0x19) {
 			rs = (instrword >> 21) & 0x1f;
 			rt = (instrword >> 16) & 0x1f;
 			imm = instrword & 0xffff;
 			if (imm >= 32768)
 				imm -= 65536;
-			fatal("    addiu r%i,r%i,%i\n", rt,rs,imm);
+
+/*			if ((instrword >> 26) == 0x19)
+				debug("    daddiu r%i,r%i,%i\n", rt,rs,imm);
+			else
+				debug("    addiu r%i,r%i,%i\n", rt,rs,imm);
+*/
 			/*  Add this instruction to the code chunk:  */
-			if (bintrans__codechunk_addinstr(&codechunk, &curlength, cpu, mem, BT_ADDIU, rt, rs, imm))
+			if (bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem,
+			    ((instrword >> 26) == 0x19)? BT_DADDIU : BT_ADDIU, rt, rs, 0, imm))
+				do_translate = 1;
+		}
+
+		/*  addu:  */
+		if ( ((instrword >> 26) == 0x00 && (instrword & 0x3f) == 0x21) ||
+		     ((instrword >> 26) == 0x00 && (instrword & 0x3f) == 0x2d) ) {
+			rs = (instrword >> 21) & 0x1f;
+			rt = (instrword >> 16) & 0x1f;
+			rd = (instrword >> 11) & 0x1f;
+
+/*			if ((instrword & 0x3f) == 0x2d)
+				debug("    daddu r%i,r%i,r%i\n", rd,rs,rt);
+			else
+				debug("    addu r%i,r%i,r%i\n", rd,rs,rt);
+*/
+			/*  Add this instruction to the code chunk:  */
+			if (bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem,
+			    ((instrword & 0x3f) == 0x2d)? BT_DADDU : BT_ADDU, rt, rs, rd, 0))
+				do_translate = 1;
+		}
+
+		/*  nop:  */
+		if (instrword == 0) {
+/*			debug("    nop\n");
+*/
+			/*  Add this instruction to the code chunk:  */
+			if (bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem,
+			    BT_NOP, 0,0,0,0))
 				do_translate = 1;
 		}
 
@@ -323,30 +499,32 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 			do_translate = 0;
 	}
 
-	if (codechunk == NULL)
+	if (curlength == 0)
 		return 0;
-
-	if (curlength == 0) {
-		free(codechunk);
-		return 0;
-	}
 
 	/*  Add tail (exit instructions) to the codechunk.  */
-	bintrans__codechunk_addtail(codechunk, &curlength);
+	bintrans__codechunk_addtail(mem->bintrans_codechunk[oldest_i], &curlength);
 
-	fatal("codechunk == %p\n", (void *)codechunk);
+#if 0
 {
 	int i;
 	unsigned char *p;
-	printf("codechunk dump:\n");
-	p = (unsigned char *)codechunk;
+	debug("  codechunk == %p, dump:\n", (void *)mem->bintrans_codechunk[oldest_i]);
+	p = (unsigned char *)mem->bintrans_codechunk[oldest_i];
 	for (i=0; i<curlength; i+=4)
-		printf("  %02x %02x %02x %02x\n", p[i], p[i+1], p[i+2], p[i+3]);
+		debug("    %02x %02x %02x %02x\n", p[i], p[i+1], p[i+2], p[i+3]);
 }
+#endif
 
-	exit(1);
+	/*
+	 *  Add the codechunk to the cache:
+	 */
 
-	/*  TODO: add the codechunk to the cache  */
+	mem->bintrans_codechunk_len[oldest_i] = curlength;
+	mem->bintrans_codechunk_time[oldest_i] = mem->bintrans_tickcount;
+
+	mem->bintrans_paddr_start[oldest_i] = paddr_start;
+	mem->bintrans_paddr_end[oldest_i] = paddr - 1;
 
 	return 1;
 }
@@ -355,18 +533,57 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 /*
  *  bintrans_try_to_run():
  *
- *  Try to run code at paddr from the translation cache.
+ *  Try to run code at paddr from the translation cache, if circumstances
+ *  are good.
+ *
  *  Returns 1 on success (if some code was run), 0 if no such code was
  *  run or any other problem occured.
- *
- *  TODO
  */
 int bintrans_try_to_run(struct cpu *cpu, struct memory *mem, uint64_t paddr)
 {
-	debug("bintrans_try_to_run(): paddr=0x%016llx\n", (long long)paddr);
+	int res, chunk_nr;
+	volatile void (*f)(struct cpu *);
 
+	/*  debug("bintrans_try_to_run(): paddr=0x%016llx\n", (long long)paddr);  */
+
+	if (cpu->delay_slot || cpu->nullify_next)
+		return 0;
+
+	/*  If any external interrupts will occur in the time it will take
+		to run the codechunk, then we must abort now!  */
 	/*  TODO  */
 
-	return 0;
+	res = bintrans_check_cache(mem, paddr, &chunk_nr);
+	if (!res) {
+		fatal("bintrans_try_to_run() called, but chunk not in cache?\n");
+		exit(1);
+	}
+
+	/*  Run the chunk:  */
+	f = mem->bintrans_codechunk[chunk_nr];
+        mem->bintrans_tickcount ++;
+	mem->bintrans_codechunk_time[chunk_nr] = mem->bintrans_tickcount;
+
+	debug("DEBUG A: running codechunk %i @ %p (paddr 0x%08llx)\n", chunk_nr, (void *)f, (long long)paddr);
+{
+uint64_t regs[33];	/*  nr 32 is pc  */
+int i;
+for (i=0; i<32; i++)
+	regs[i] = cpu->gpr[i];
+regs[32] = cpu->pc;
+
+	f(cpu);
+
+for (i=0; i<32; i++)
+	if (regs[i] != cpu->gpr[i])
+		printf("REGISTER r%i changed from 0x%llx to 0x%llx\n",
+		    i, (long long)regs[i], (long long)cpu->gpr[i]);
+if (regs[32] != cpu->pc)
+	printf("REGISTER pc  changed from 0x%llx to 0x%llx\n",
+	    (long long)regs[i], (long long)cpu->pc);
+}
+	debug("DEBUG B: returning from codechunk %i\n", chunk_nr);
+
+	return 1;
 }
 

@@ -23,11 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.1 2004-01-03 03:10:10 debug Exp $
+ *  $Id: dev_zs.c,v 1.2 2004-01-05 01:24:02 debug Exp $
  *  
- *  Zilog serial controller.
+ *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
- *  TODO:  Implement this :)  Right now only simple character output is supported.
+ *  TODO:  Implement this correctly.
  */
 
 #include <stdio.h>
@@ -75,15 +75,19 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		if (writeflag==MEM_READ) {
 			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
 			odata_set = 1;
-			odata = 0xff;
+			odata = 0x04;	/*  ??? 0x04 allows transmission  */
 		} else {
 			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
 		}
 		break;
 	case 7:
 		if (writeflag==MEM_READ) {
-			debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);
+			/*  debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);  */
 			odata_set = 1;
+			if (console_charavail())
+				odata = console_readchar();
+			else
+				odata = 0;
 		} else {
 			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
 			console_putchar(idata & 255);

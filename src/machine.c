@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.32 2004-01-06 10:31:46 debug Exp $
+ *  $Id: machine.c,v 1.33 2004-01-06 10:49:12 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -946,7 +946,7 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (O2)");
 				dev_crime_init(mem, 0x14000000);		/*  crime0  */
 				/*  mte (?) at 0x15000000  */
-				dev_sgi_gbe_init(mem, 0x16000000);
+				dev_sgi_gbe_init(mem, 0x16000000);		/*  gbe?  framebuffer?  */
 				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
 				pci_data = dev_macepci_init(mem, 0x1f080000);	/*  macepci0  */
 				/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */

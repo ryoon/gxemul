@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.181 2005-01-28 12:17:57 debug Exp $
+ *  $Id: main.c,v 1.182 2005-01-28 12:32:43 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,6 +152,7 @@ void fatal(char *fmt, ...)
  */
 static void usage(char *progname, int longusage)
 {
+#if 0
 	printf("mips64emul");
 #ifdef VERSION
 	printf("-" VERSION);
@@ -159,6 +160,7 @@ static void usage(char *progname, int longusage)
 	printf("   Copyright (C) 2003-2005  Anders Gavare\n");
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
+#endif
 	printf("\nusage: %s [machine and general options] [ file [file ..] ]\n",
 	    progname);
 	printf("   or  %s [general options] @configfile [@configfile ..]\n",
@@ -171,33 +173,47 @@ static void usage(char *progname, int longusage)
 	}
 
 	printf("\nMachine specific options:\n");
-	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700,\n");
+	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, "
+	    "2=PICA-61, 3=NEC-R94,\n");
+	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, "
+	    "7=Olivetti M700,\n");
 	printf("            8=NEC-R96)\n");
 	printf("  -a        emulate a generic test machine\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");
 #endif
-	printf("  -C x      try to emulate a specific CPU. (Use -H to get a list of types.)\n");
-	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
-	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
-	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
-	printf("  -d fname  add fname as a disk image. You can add \"xxx:\" as a prefix\n");
+	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
+	    "list of types.)\n");
+	printf("  -D id     try to emulate a DECstation machine type 'id', "
+	    "where id may be:\n");
+	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), "
+	    "4=3MAX+(5000,5900),\n");
+	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, "
+	    "12=5100(MIPSMATE)\n");
+	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
+	    " as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
-	printf("                b     specifies that this is the boot device\n");
+	printf("                b     specifies that this is the boot"
+	    " device\n");
 	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
 	printf("                d     SCSI DISK (this is the default)\n");
-	printf("                r     read-only (don't allow changes to the file)\n");
+	printf("                r     read-only (don't allow changes to the"
+	    " file)\n");
 	printf("                t     SCSI tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
-	printf("  -E t      try to emulate machine type t. (Use -H to get a list of types.)\n");
-	printf("  -e st     try to emulate machine subtype st. (Use this with -E.)\n");
-	printf("  -F xx     try to emulate an hpcmips machine, where 'xx' may be:\n");
+	printf("  -E t      try to emulate machine type t. (Use -H to get "
+	    "a list of types.)\n");
+	printf("  -e st     try to emulate machine subtype st. (Use this "
+	    "with -E.)\n");
+	printf("  -F xx     try to emulate an hpcmips machine, where 'xx'"
+	    " may be:\n");
 	printf("                1=Casio BE-300, 2=Casio E-105\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
-	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
-	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
+	printf("  -I x      emulate clock interrupts at x Hz (affects"
+	    " rtc devices only, not\n");
+	printf("            actual runtime speed) (this disables automatic"
+	    " clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable some speed tricks\n");
 	printf("  -j name   set the name of the kernel, for example:\n");
@@ -206,49 +222,66 @@ static void usage(char *progname, int longusage)
 	printf("                -j vmunix          for Ultrix/RISC\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
-	printf("  -N        display nr of instructions/second average, at regular intervals\n");
+	printf("  -N        display nr of instructions/second average, at"
+	    " regular intervals\n");
 	printf("  -n nr     set nr of CPUs\n");
-	printf("  -O        fake netboot (tftp instead of disk), even when a disk image is\n"
-	       "            present (for DECstation, SGI, and ARC emulation)\n");
-	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI emulation).\n");
+	printf("  -O        fake netboot (tftp instead of disk), even when"
+	    " a disk image is\n"
+	    "            present (for DECstation, SGI, and ARC emulation)\n");
+	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI"
+	    " emulation).\n");
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
-	printf("  -p pc     add a breakpoint (remember to use the '0x' prefix for hex!)\n");
-	printf("  -Q        no built-in PROM emulation  (use this for running ROM images)\n");
+	printf("  -p pc     add a breakpoint (remember to use the '0x' "
+	    "prefix for hex!)\n");
+	printf("  -Q        no built-in PROM emulation  (use this for "
+	    "running ROM images)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
 	printf("  -r        register dumps before every instruction\n");
-	printf("  -S        initialize emulated RAM to random bytes, instead of zeroes\n");
+	printf("  -S        initialize emulated RAM to random bytes, "
+	    "instead of zeroes\n");
 	printf("  -s        show opcode usage statistics after simulation\n");
-	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
+	printf("  -T        start -i and -r traces on accesses to invalid"
+	    " memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef ENABLE_USERLAND
-	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
+	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax,"
+	    " 2=Ultrix/pmax\n");
 #endif
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
-	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
-	printf("  -Z n      set nr of graphics cards, for emulating a dual-head or tripple-head\n"
-	       "            environment (only for DECstation emulation)\n");
-	printf("  -z disp   add disp as an X11 display to use for framebuffers\n");
+	printf("  -y x      set max_random_cycles_per_chunk to x"
+	    " (experimental)\n");
+	printf("  -Z n      set nr of graphics cards, for emulating a "
+	    "dual-head or tripple-head\n"
+	    "            environment (only for DECstation emulation)\n");
+	printf("  -z disp   add disp as an X11 display to use for "
+	    "framebuffers\n");
 
 	printf("\nGeneral options:\n");
-	printf("  -H        display a list of possible CPU and machine types\n");
+	printf("  -H        display a list of possible CPU and "
+	    "machine types\n");
 	printf("  -h        display this help message\n");
-	printf("  -K        force the debugger to be entered at the end of a simulation\n");
-	printf("  -q        quiet mode (don't print startup or debug messages)\n");
+	printf("  -K        force the debugger to be entered at the end "
+	    "of a simulation\n");
+	printf("  -q        quiet mode (don't print startup messages)\n");
 	printf("  -V        start up in the single-step debugger, paused\n");
 	printf("  -v        verbose debug messages\n");
 	printf("\n");
 ret:
-	printf("You must specify one or more names of files that you wish to load into memory.\n");
-	printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
-	printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
-	printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
-	printf("or \"address:skiplen:\".\n");
-	printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");
-	printf("           0xbfc00000:0x100:rom.bin   for an image with 0x100 bytes header\n");
+	printf("You must specify one or more names of files that you wish "
+	    "to load into memory.\n"
+	    "Supported formats:  ELF a.out ecoff srec syms raw\n"
+	    "where syms is the text produced by running 'nm' (or 'nm -S') "
+	    "on a binary.\n"
+	    "To load a raw binary into memory, add \"address:\" in front "
+	    "of the filename,\n"
+	    "or \"address:skiplen:\".\n"
+	    "Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n"
+	    "           0xbfc00000:0x100:rom.bin   for an image with "
+	    "0x100 bytes header\n");
 }
 
 
@@ -649,6 +682,17 @@ int main(int argc, char *argv[])
 	int n_emuls;
 	int i;
 
+	/*  Print startup message:  */
+	debug("mips64emul");
+#ifdef VERSION
+	debug("-" VERSION);
+#endif
+	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("Read the source code and/or documentation for "
+	    "other Copyright messages.\n");
+
+	machine_init();
+
 	emuls = malloc(sizeof(struct emul *));
 	if (emuls == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -667,15 +711,6 @@ int main(int argc, char *argv[])
 
 	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE)
 		n_emuls --;
-
-	/*  Print startup message:  */
-	debug("mips64emul");
-#ifdef VERSION
-	debug("-" VERSION);
-#endif
-	debug("   Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the source code and/or documentation for "
-	    "other Copyright messages.\n");
 
 	/*  Simple initialization, from command line arguments:  */
 	if (n_emuls > 0)

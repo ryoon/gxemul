@@ -158,7 +158,7 @@ http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL
 Once you have downloaded the kernel and gunzip'd it, you can try it out in the
 emulator like this:
 <pre>
-	$ <b>./mips64emul -G32 -q netbsd-INSTALL</b>
+	$ <b>./mips64emul -G32 -CR5000 -q netbsd-INSTALL</b>
 </pre>
 -G signifies that we want SGI emulation, and 32 is the SGI-specific machine type.
 -q supresses debug messages. If everything works like it should, you should see NetBSD's boot messages...
@@ -611,7 +611,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.23 2004-05-04 15:57:55 debug Exp $</pre>
+<pre>$Id: index.html,v 1.24 2004-06-07 10:34:44 debug Exp $</pre>
 
 </body>
 </html>

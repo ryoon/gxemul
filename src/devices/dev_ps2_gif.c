@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.17 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.18 2004-11-25 10:53:30 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -378,7 +378,7 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	d->bytes_per_pixel = 3;
 
 	d->vfb_data = dev_fb_init(cpu, cpu->mem, PS2_FB_ADDR, VFB_PLAYSTATION2,
-	    d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
+	    d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2", 0);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "could not initialize fb, out of memory\n");
 		exit(1);

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.109 2004-11-21 09:22:41 debug Exp $
+ *  $Id: devices.h,v 1.110 2004-11-25 10:53:31 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -223,7 +223,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 void dev_fb_tick(struct cpu *, void *);
 int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,
-	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name);
+	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name, int logo);
 
 /*  dev_fdc.c:  */
 #define	DEV_FDC_LENGTH		0x0000000000000100

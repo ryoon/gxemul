@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.7 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.8 2004-11-25 10:53:30 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -292,7 +292,7 @@ void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t basead
 
 	d->fb = dev_fb_init(cpu, mem, MARDIGRAS_FAKE_OFFSET,
 	    VFB_GENERIC, mardigras_xsize, mardigras_ysize,
-	    mardigras_xsize, mardigras_ysize, 24, "SGI MardiGras");
+	    mardigras_xsize, mardigras_ysize, 24, "SGI MardiGras", 1);
 	if (d->fb == NULL) {
 		fprintf(stderr, "dev_sgi_mardigras_init(): out of memory\n");
 		exit(1);

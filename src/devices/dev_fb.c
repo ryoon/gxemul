@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.62 2004-11-24 12:52:02 debug Exp $
+ *  $Id: dev_fb.c,v 1.63 2004-11-25 10:53:29 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -61,7 +61,14 @@
 #endif
 
 
-#define	FB_TICK_SHIFT		18
+#define	FB_TICK_SHIFT		19
+
+#define	LOGO_XSIZE		256
+#define	LOGO_YSIZE		256
+#define	LOGO_BOTTOM_MARGIN	60
+/*  This must be a 256*256 pixels P4 ppm:  */
+#include "fb_logo.c"
+unsigned char *fb_logo = fb_logo_ppm + 11;
 
 
 /*  #define FB_DEBUG  */
@@ -752,10 +759,11 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
  */
 struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
-	int xsize, int ysize, int bit_depth, char *name)
+	int xsize, int ysize, int bit_depth, char *name, int logo)
 {
 	struct vfb_data *d;
 	size_t size;
+	int x, y;
 	char title[400];
 
 	d = malloc(sizeof(struct vfb_data));
@@ -828,6 +836,21 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	d->update_x1 = d->update_y1 = 99999;
 	d->update_x2 = d->update_y2 = -1;
 
+
+	/*  A nice bootup logo:  */
+	d->update_x1 = 0;
+	d->update_x2 = LOGO_XSIZE-1;
+	d->update_y1 = d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN;
+	d->update_y2 = d->visible_ysize-LOGO_BOTTOM_MARGIN;
+	for (y=0; y<LOGO_YSIZE; y++)
+		for (x=0; x<LOGO_XSIZE; x++) {
+			int s, a = ((y+d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN)*d->xsize
+			    + x) * d->bit_depth / 8;
+			int b = fb_logo[(y*LOGO_XSIZE+x) / 8] & (128 >> (x&7));
+			for (s=0; s<d->bit_depth / 8; s++)
+				d->framebuffer[a+s] = b? 0 : 255;
+		}
+
 	snprintf(title, sizeof(title), "mips64emul: %ix%ix%i %s framebuffer",
 	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
 	title[sizeof(title)-1] = '\0';
@@ -841,7 +864,9 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 		d->fb_window = NULL;
 
 	memory_device_register(mem, name, baseaddr, size, dev_fb_access,
-	    d, MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->framebuffer);
+	    d, MEM_DEFAULT
+	    /*  MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK  */,
+	    d->framebuffer);
 
 	cpu_add_tickfunction(cpu, dev_fb_tick, d, FB_TICK_SHIFT);
 	return d;

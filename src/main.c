@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.129 2004-11-23 12:30:39 debug Exp $
+ *  $Id: main.c,v 1.130 2004-11-25 10:53:32 debug Exp $
  */
 
 #include <stdio.h>
@@ -119,6 +119,7 @@ static void usage(char *progname, int longusage)
 	printf("\n");
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
 	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700)\n");
+	printf("  -a        emulate a generic test machine\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");
@@ -224,11 +225,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
 			emul->machine = atoi(optarg);
+			break;
+		case 'a':
+			emul->emulation_type = EMULTYPE_TEST;
+			emul->machine = 0;
 			break;
 		case 'B':
 			emul->emulation_type = EMULTYPE_PS2;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.219 2004-11-23 08:45:41 debug Exp $
+ *  $Id: machine.c,v 1.220 2004-11-25 10:53:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -901,7 +901,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 	switch (emul->emulation_type) {
 
 	case EMULTYPE_NONE:
-		break;
+		printf("\nNo emulation type specified.\n\n"
+		    "For example, if you want to emulate a DECstation, you need to add -Dx to the\n"
+		    "command line, where x is the DECstation specific model type. Run mips64emul -h\n"
+		    "to get help on all command line options.\n");
+		exit(1);
 
 	case EMULTYPE_TEST:
 		/*
@@ -912,7 +916,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, emul->cpus);
 		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
-		    640,480, 640,480, 24, "generic");
+		    640,480, 640,480, 24, "generic", 1);
 
 		break;
 
@@ -953,7 +957,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			fb = dev_fb_init(cpu, mem, KN01_PHYS_FBUF_START,
 			    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
-			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
+			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01", 1);
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
 			dev_le_init(cpu, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
@@ -1645,7 +1649,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		emul->machine_name = "hpcmips";
 		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
-		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips");
+		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips", 0);
 
 		/*
 		 *  NetBSD/hpcmips expects the following:

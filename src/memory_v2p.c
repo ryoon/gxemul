@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.1 2004-11-25 08:44:28 debug Exp $
+ *  $Id: memory_v2p.c,v 1.2 2004-11-25 10:53:32 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -289,8 +289,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #endif
 
 	if (use_tlb) {
-		int g_bit, v_bit, d_bit, odd = 0;
-		uint64_t cached_hi, cached_lo0, cached_lo1 = 0;
+#ifndef V2P_MMU3K
+		int odd = 0, cached_lo1 = 0;
+#endif
+		int g_bit, v_bit, d_bit;
+		uint64_t cached_hi, cached_lo0;
 		uint64_t entry_vpn2 = 0, entry_asid, pfn;
 
 		for (i=0; i<n_tlbs; i++) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.87 2004-11-23 13:25:29 debug Exp $
+ *  $Id: emul.c,v 1.88 2004-11-25 10:53:32 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -598,7 +598,7 @@ struct emul *emul_new(void)
 	memset(e, 0, sizeof(struct emul));
 
 	/*  Sane default values:  */
-	e->emulation_type = EMULTYPE_TEST;
+	e->emulation_type = EMULTYPE_NONE;
 	e->machine = MACHINE_NONE;
 	e->prom_emulation = 1;
 	e->speed_tricks = 1;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.12 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_vga.c,v 1.13 2004-11-25 10:53:30 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -273,7 +273,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 		}
 
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA");
+	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
 	i = 0;
 	for (r=0; r<2; r++)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.34 2004-11-17 20:37:40 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.35 2004-11-25 10:53:30 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -211,14 +211,14 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		    looks for the rom signature  */
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name);
+		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name, 1);
 		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);	/*  palette  */
 		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);	/*  cursor  */
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC,
-		    1024,864, 1024,1024,8, device_name);
+		    1024,864, 1024,1024,8, device_name, 1);
 		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
 		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
 		/*  ROM at both 0x380000 and 0x3c0000?  */
@@ -228,7 +228,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		/*  sfb in NetBSD  */
 		/*  TODO: This is not working with Ultrix yet.  */
 		fb = dev_fb_init(cpu, mem, baseaddr + SFB_OFFSET_VRAM,
-		    VFB_GENERIC, 1280,1024, 1280,1024,8, device_name);
+		    VFB_GENERIC, 1280,1024, 1280,1024,8, device_name, 1);
 		dev_sfb_init(cpu, mem, baseaddr + SFB_ASIC_OFFSET, fb);
 		/*  TODO: the CLEAR doesn't get through, as the address
 			range is already in use by the asic  */
@@ -253,7 +253,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DV")==0) {
 		/*  xcfb in NetBSD: TODO  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV");
+		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV", 1);
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-JA")==0) {
@@ -262,7 +262,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO");
+		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO", 1);
 		/*  TODO: bt463 at offset 0x040000, not bt459  */
 		dev_bt459_init(cpu, mem, baseaddr + 0x40000, 0, fb, 8, irq, 0);		/*  TODO: type  */
 		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);				/*  cursor  */

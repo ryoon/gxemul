@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.32 2004-05-07 00:42:28 debug Exp $
+#  $Id: Makefile.skel,v 1.33 2004-06-07 07:08:42 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -20,7 +20,7 @@ OBJS=console.o \
 	dev_turbochannel.o \
 	dev_rd94.o dev_fdc.o \
 	dev_crime.o dev_mace.o dev_macepci.o dev_sgi_gbe.o \
-	dev_sgi_mte.o dev_sgi_ust.o dev_sgi_ip19.o dev_sgi_ip22.o \
+	dev_sgi_mte.o dev_sgi_ust.o dev_sgi_ip19.o dev_sgi_ip22.o dev_sgi_ip30.o \
 	dev_sgi_nasid.o dev_sgi_cpuinfo.o \
 	dev_kn01_csr.o dev_kn02.o dev_kn210.o dev_kn230.o dev_dec_ioasic.o \
 	dev_sii.o dev_asc.o dev_wdsc.o \

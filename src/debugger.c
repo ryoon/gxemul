@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.38 2005-01-17 10:05:02 debug Exp $
+ *  $Id: debugger.c,v 1.39 2005-01-17 11:26:07 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -710,11 +710,11 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 		printf("cpu%i: %s, %s",
 		    i, ct->name, emul->cpus[i]->running? "running" : "stopped");
 
-		printf(" (%i-bit, ",
+		printf(" (%i-bit ",
 		    (ct->isa_level < 3 || ct->isa_level == 32)? 32 : 64);
 
-		printf("%s-endian, ", emul->cpus[i]->byte_order
-		    == EMUL_BIG_ENDIAN? "big" : "little");
+		printf("%s, ", emul->cpus[i]->byte_order
+		    == EMUL_BIG_ENDIAN? "BE" : "LE");
 
 		printf("%i TLB entries", ct->nr_of_tlb_entries);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.11 2004-11-19 09:09:09 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.12 2004-11-20 02:45:05 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -78,6 +78,28 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
 	unsigned char *a = *addrp;
+	*a++ = 0xc3;		/*  ret  */
+	*addrp = a;
+}
+
+
+/*
+ *  bintrans_write_chunkreturn_fail():
+ */
+static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
+{
+	unsigned char *a = *addrp;
+	int ofs;
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
+
+	/*  81 8e 45 23 01 00 00 00 00 01    orl    $0x1000000,0x12345(%esi)  */
+	*a++ = 0x81; *a++ = 0x8e;
+	*a++ = ofs & 255;
+	*a++ = (ofs >> 8) & 255;
+	*a++ = (ofs >> 16) & 255;
+	*a++ = (ofs >> 24) & 255;
+	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x01;
+
 	*a++ = 0xc3;		/*  ret  */
 	*addrp = a;
 }
@@ -341,8 +363,10 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	int load64 = 0, sign3264 = 1;
 
 	/*  TODO: Not yet  */
-	if (instruction_type == HI6_SLTI || instruction_type == HI6_SLTIU)
+	if (instruction_type == HI6_SLTI || instruction_type == HI6_SLTIU) {
+		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
+	}
 
 	switch (instruction_type) {
 	case HI6_DADDIU:
@@ -517,6 +541,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRL32:
 	case SPECIAL_SLT:
 	case SPECIAL_SLTU:
+		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
 	}
 
@@ -1186,7 +1211,7 @@ try_chunk_p:
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a;
+	unsigned char *a, *retfail;
 	int ofs, writeflag, alignment, load=0;
 
 	/*  TODO: Not yet:  */
@@ -1253,6 +1278,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 	if (alignment > 0) {
+		unsigned char *alignskip;
 		/*
 		 *  Check alignment:
 		 *
@@ -1263,8 +1289,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 */
 		*a++ = 0x89; *a++ = 0xc3;
 		*a++ = 0x83; *a++ = 0xe3; *a++ = alignment;
-		*a++ = 0x74; *a++ = 0x01;
-		*a++ = 0xc3;
+		*a++ = 0x74; alignskip = a; *a++ = 0x00;
+		bintrans_write_chunkreturn_fail(&a);
+		*alignskip = (size_t)a - (size_t)alignskip - 1;
 	}
 
 
@@ -1301,8 +1328,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  75 01                   jne    1cd <okjump>  */
 	/*  c3                      ret    */
 	*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
-	*a++ = 0x75; *a++ = 0x01;
-	*a++ = 0xc3;
+	*a++ = 0x75; retfail = a; *a++ = 0x00;
+	bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+	*retfail = (size_t)a - (size_t)retfail - 1;
 
 	/*  89 c7                   mov    %eax,%edi  */
 	*a++ = 0x89; *a++ = 0xc7;

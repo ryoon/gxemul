@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.39 2004-11-19 06:58:02 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.40 2004-11-20 02:45:05 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -240,6 +240,22 @@ static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
 static void bintrans_write_chunkreturn(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
+	*a++ = 0x6bfa8001;	/*  ret  */
+	*addrp = (unsigned char *) a;
+}
+
+
+/*
+ *  bintrans_write_chunkreturn_fail():
+ */
+static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
+{
+	uint32_t *a = (uint32_t *) *addrp;
+	/*  00 01 3f 24     ldah    t0,256  */
+	/*  07 04 27 44     or      t0,t6,t6  */
+	*a++ = 0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16);
+	*a++ = 0x44270407;
+
 	*a++ = 0x6bfa8001;	/*  ret  */
 	*addrp = (unsigned char *) a;
 }
@@ -1125,11 +1141,14 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
 	unsigned char *a, *cacheskip, *loadjmp = NULL, *manualskip = NULL;
+	unsigned char *fail;
 	int ofs, writeflag, alignment, load=0;
 
 	/*  TODO: Not yet:  */
-	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ)
+	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ) {
+		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
+	}
 
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:
@@ -1282,8 +1301,11 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	*a++ = 0x80; *a++ = 0x00; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,128(sp)  */
 
 	/*  If the result was NULL, then return (abort):  */
+	fail = a;
 	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;	/*  bne v0,<continue>  */
-	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+	bintrans_write_chunkreturn_fail(&a);
+	*fail = ((size_t)a - (size_t)fail - 4) /4;
 
 	/*  The rest of this code was written with t3 as the index, not v0:  */
 	*a++ = 0x04; *a++ = 0x04; *a++ = 0x1f; *a++ = 0x40;	/*  addq v0,zero,t3  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.1 2004-12-01 14:23:02 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.2 2004-12-01 14:57:45 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -55,9 +55,52 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
+	const int MAX = N_BINTRANS_VADDR_TO_HOST;
 
-	/*  printf("yo cpu=%p vaddr=%016llx wf=%i\n", cpu, (long long)vaddr,
-	    writeflag);  */
+	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
+	    cpu, (long long)vaddr, writeflag);  */
+
+	vaddr_page = vaddr & ~0xfff;
+	i = start_and_stop = cpu->bintrans_next_index;
+	n = 0;
+	for (;;) {
+		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
+		    cpu->bintrans_data_hostpage[i] != NULL &&
+		    cpu->bintrans_data_writable[i] >= writeflag) {
+			uint64_t tmpaddr;
+			unsigned char *tmpptr;
+			int tmpwf;
+
+			if (n < 3)
+				return cpu->bintrans_data_hostpage[i]
+				    + (vaddr & 0xfff);
+
+			cpu->bintrans_next_index = start_and_stop - 1;
+			if (cpu->bintrans_next_index < 0)
+				cpu->bintrans_next_index = MAX - 1;
+
+			tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
+			tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
+			tmpwf   = cpu->bintrans_data_writable[cpu->bintrans_next_index];
+
+			cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->bintrans_data_hostpage[i];
+			cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = cpu->bintrans_data_vaddr[i];
+			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cpu->bintrans_data_writable[i];
+
+			cpu->bintrans_data_hostpage[i] = tmpptr;
+			cpu->bintrans_data_vaddr[i] = tmpaddr;
+			cpu->bintrans_data_writable[i] = tmpwf;
+
+			return cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
+		}
+
+		n ++;
+		i ++;
+		if (i == MAX)
+			i = 0;
+		if (i == start_and_stop)
+			break;
+	}
 
 	ok = cpu->translate_address(cpu, vaddr, &paddr,
 	    (writeflag? FLAG_WRITEFLAG : 0) + FLAG_NOEXCEPTIONS);
@@ -83,6 +126,12 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 					    cpu->mem->dev_bintrans_write_high[i] = high_paddr;
 				}
 
+				cpu->bintrans_next_index --;
+				if (cpu->bintrans_next_index < 0)
+					cpu->bintrans_next_index = MAX - 1;
+				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
+				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+				cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;
 				return cpu->mem->dev_bintrans_data[i] + paddr;
 			} else
 				return NULL;
@@ -98,6 +147,12 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);
 
+	cpu->bintrans_next_index --;
+	if (cpu->bintrans_next_index < 0)
+		cpu->bintrans_next_index = MAX - 1;
+	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
+	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
 	return memblock + offset;
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.115 2004-11-30 12:48:38 debug Exp $
+ *  $Id: coproc.c,v 1.116 2004-12-01 14:57:45 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -422,6 +422,8 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 static void invalidate_translation_caches(struct cpu *cpu,
 	int all, uint64_t vaddr, int kernelspace, int old_asid_to_invalidate)
 {
+	int i;
+
 /* printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
 */
 #ifdef BINTRANS
@@ -447,12 +449,15 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	}
 #endif
 
+	/*  TODO: Don't invalidate everything.  */
+	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+		cpu->bintrans_data_hostpage[i] = NULL;
+
 	if (kernelspace)
 		all = 1;
 
 #ifdef USE_TINY_CACHE
 {
-	int i;
 	vaddr >>= 12;
 
 	/*  Invalidate the tiny translation cache...  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.342 2004-12-01 09:41:50 debug Exp $
+$Id: HISTORY,v 1.343 2004-12-01 14:57:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1219,3 +1219,5 @@ HISTORY of mips64emul
 		updating half of the pc register).
 20041201	More updates to the i386 backend, similar to those yesterday.
 		Preparing for release 0.2.3.
+		Adding a generic load/store mechanism, which is used when the
+		32-bit optimized version cannot be used (for R4000 etc).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.121 2004-11-29 09:00:18 debug Exp $
+ *  $Id: memory.c,v 1.122 2004-12-01 14:57:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -983,7 +983,7 @@ no_exception_access:
 		goto do_return_ok;
 	}
 
-	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
+	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
 	if (cpu->emul->bintrans_enable)
 		update_translation_table(cpu, vaddr & ~0xfff,

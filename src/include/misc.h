@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.165 2004-12-01 14:23:01 debug Exp $
+ *  $Id: misc.h,v 1.166 2004-12-01 14:57:44 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -558,6 +558,7 @@ struct r4000_cache_line {
 #define	N_SAFE_BINTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_BINTRANS_LIMIT		((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
 
+#define	N_BINTRANS_VADDR_TO_HOST	20
 
 /*  Virtual to host address translation tables:  */
 struct vth32_table {
@@ -655,6 +656,10 @@ struct cpu {
 	/*  For 64-bit (generic) emulation:  */
 	unsigned char	*(*fast_vaddr_to_hostaddr)(struct cpu *cpu,
 			    uint64_t vaddr, int writeflag);
+	int		bintrans_next_index;
+	int		bintrans_data_writable[N_BINTRANS_VADDR_TO_HOST];
+	uint64_t	bintrans_data_vaddr[N_BINTRANS_VADDR_TO_HOST];
+	unsigned char	*bintrans_data_hostpage[N_BINTRANS_VADDR_TO_HOST];
 
 	void		(*bintrans_fast_rfe)(struct cpu *);
 	void		(*bintrans_fast_eret)(struct cpu *);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.33 2004-12-01 08:48:36 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.34 2004-12-01 14:58:49 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1617,108 +1617,144 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 
-	/*  Here, eax = vaddr  */
+	/*  Here, edx:eax = vaddr  */
 
-	/*
-	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 14                shr    $20,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x14;
-	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-	/*
-	 *  edi = vaddr_to_hostaddr_table0
-	 *
-	 *  8b be 34 12 00 00       mov    0x1234(%esi),%edi
-	 */
-	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
-	*a++ = 0x8b; *a++ = 0xbe;
-	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a]
-	 *
-	 *  01 df                   add    %ebx,%edi
-	 *  8b 0f                   mov    (%edi),%ecx
-	 */
-	*a++ = 0x01; *a++ = 0xdf;
-	*a++ = 0x8b; *a++ = 0x0f;
-
-	/*
-	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0a                shr    $10,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0a;
-	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b]
-	 *
-	 *  01 d9                   add    %ebx,%ecx
-	 *  8b 09                   mov    (%ecx),%ecx
-	 */
-	*a++ = 0x01; *a++ = 0xd9;
-	*a++ = 0x8b; *a++ = 0x09;
-
-	/*
-	 *  ecx = NULL? Then return with failure.
-	 *
-	 *  83 f9 00                cmp    $0x0,%ecx
-	 *  75 01                   jne    <okzzz>
-	 */
-	*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
-	*a++ = 0x75; retfail = a; *a++ = 0x00;
-	bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
-	*retfail = (size_t)a - (size_t)retfail - 1;
-
-	/*
-	 *  edi = ecx   (this is the host page)
-	 *
-	 *  89 cf                   mov    %ecx,%edi
-	 */
-	*a++ = 0x89; *a++ = 0xcf;
-
-	/*
-	 *  If the lowest bit is zero, and we're storing, then fail.
-	 */
-	if (!load) {
+	if (bintrans_32bit_only) {
 		/*
-		 *  f7 c7 01 00 00 00       test   $0x1,%edi
-		 *  75 01                   jne    <ok>
+		 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+		 *
+		 *  89 c3                   mov    %eax,%ebx
+		 *  c1 eb 14                shr    $20,%ebx
+		 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
 		 */
-		*a++ = 0xf7; *a++ = 0xc7; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+		*a++ = 0x89; *a++ = 0xc3;
+		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x14;
+		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+		/*
+		 *  edi = vaddr_to_hostaddr_table0
+		 *
+		 *  8b be 34 12 00 00       mov    0x1234(%esi),%edi
+		 */
+		ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
+		*a++ = 0x8b; *a++ = 0xbe;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		/*
+		 *  ecx = vaddr_to_hostaddr_table0[a]
+		 *
+		 *  01 df                   add    %ebx,%edi
+		 *  8b 0f                   mov    (%edi),%ecx
+		 */
+		*a++ = 0x01; *a++ = 0xdf;
+		*a++ = 0x8b; *a++ = 0x0f;
+
+		/*
+		 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+		 *
+		 *  89 c3                   mov    %eax,%ebx
+		 *  c1 eb 0a                shr    $10,%ebx
+		 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+		 */
+		*a++ = 0x89; *a++ = 0xc3;
+		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0a;
+		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+		/*
+		 *  ecx = vaddr_to_hostaddr_table0[a][b]
+		 *
+		 *  01 d9                   add    %ebx,%ecx
+		 *  8b 09                   mov    (%ecx),%ecx
+		 */
+		*a++ = 0x01; *a++ = 0xd9;
+		*a++ = 0x8b; *a++ = 0x09;
+
+		/*
+		 *  ecx = NULL? Then return with failure.
+		 *
+		 *  83 f9 00                cmp    $0x0,%ecx
+		 *  75 01                   jne    <okzzz>
+		 */
+		*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
 		*a++ = 0x75; retfail = a; *a++ = 0x00;
 		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;
+
+		/*
+		 *  edi = ecx   (this is the host page)
+		 *
+		 *  89 cf                   mov    %ecx,%edi
+		 */
+		*a++ = 0x89; *a++ = 0xcf;
+
+		/*
+		 *  If the lowest bit is zero, and we're storing, then fail.
+		 */
+		if (!load) {
+			/*
+			 *  f7 c7 01 00 00 00       test   $0x1,%edi
+			 *  75 01                   jne    <ok>
+			 */
+			*a++ = 0xf7; *a++ = 0xc7; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+			*a++ = 0x75; retfail = a; *a++ = 0x00;
+			bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+			*retfail = (size_t)a - (size_t)retfail - 1;
+		}
+
+		/*
+		 *  ebx = offset within page = vaddr & 0xfff
+		 *
+		 *  89 c3                   mov    %eax,%ebx
+		 *  81 e3 ff 0f 00 00       and    $0xfff,%ebx
+		 */
+		*a++ = 0x89; *a++ = 0xc3;
+		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+		/*
+		 *  edi = host address   ( = host page + offset)
+		 *
+		 *  83 e7 fe                and    $0xfffffffe,%edi	clear the lowest bit
+		 *  01 df                   add    %ebx,%edi
+		 */
+		*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfe;
+		*a++ = 1; *a++ = 0xdf;
+
+	} else {
+		/*  64-bit generic case:  */
+
+		/*  push writeflag  */
+		*a++ = 0x6a; *a++ = load? 0 : 1;
+
+		/*  push vaddr (edx:eax)  */
+		*a++ = 0x52; *a++ = 0x50;
+
+		/*  push cpu (esi)  */
+		*a++ = 0x56;
+
+		/*  eax = points to the right function  */
+		ofs = ((size_t)&dummy_cpu.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
+		*a++ = 0x8b; *a++ = 0x86;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		/*  ff d0                   call   *%eax  */
+		*a++ = 0xff; *a++ = 0xd0;
+
+		/*  83 c4 08                add    $0x10,%esp  */
+		*a++ = 0x83; *a++ = 0xc4; *a++ = 0x10;
+
+		/*  If eax is NULL, then return.  */
+		/*  83 f8 00                cmp    $0x0,%eax  */
+		/*  75 01                   jne    1cd <okjump>  */
+		/*  c3                      ret    */
+		*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+		*a++ = 0x75; retfail = a; *a++ = 0x00;
+		bintrans_write_chunkreturn_fail(&a);            /*  ret (and fail)  */
+		*retfail = (size_t)a - (size_t)retfail - 1;  
+
+		/*  89 c7                   mov    %eax,%edi  */
+		*a++ = 0x89; *a++ = 0xc7;
 	}
 
-	/*
-	 *  ebx = offset within page = vaddr & 0xfff
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  81 e3 ff 0f 00 00       and    $0xfff,%ebx
-	 */
-	*a++ = 0x89; *a++ = 0xc3;
-	*a++ = 0x81; *a++ = 0xe3; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-	/*
-	 *  edi = host address   ( = host page + offset)
-	 *
-	 *  83 e7 fe                and    $0xfffffffe,%edi	clear the lowest bit
-	 *  01 df                   add    %ebx,%edi
-	 */
-	*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfe;
-	*a++ = 1; *a++ = 0xdf;
-
-/* bintrans_write_chunkreturn_fail(&a); */
 
 	if (!load)
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);

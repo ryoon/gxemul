@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.63 2004-07-10 08:45:03 debug Exp $
+$Id: index.html,v 1.64 2004-07-10 08:53:34 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -55,8 +55,7 @@ SUCH DAMAGE.
 <h1><font color="#ff0000">
 NOTE: This documentation is for the -current snapshot of mips64emul,
 and does not neccessarily apply to the latest release.
-Documentation for specific releases should be included in each
-release tarball.
+Documentation for a specific release is included in its release tarball.
 </font></h1>
 <p>
 
@@ -67,9 +66,9 @@ release tarball.
   <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
-  <li><a href="#netbsdinstall">How to install NetBSD/pmax inside the emulator</a>
-  <li><a href="#openbsdinstall">How to install OpenBSD/pmax inside the emulator</a>
-  <li><a href="#ultrixinstall">How to install Ultrix/RISC inside the emulator</a>
+  <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
+  <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
+  <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
@@ -302,7 +301,7 @@ userland.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>How to install NetBSD/pmax inside the emulator</h3>
+<h3>How to install NetBSD/pmax in the emulator</h3>
 
 To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
 you first need to install NetBSD onto a disk image. To NetBSD, the disk 
@@ -339,6 +338,8 @@ Then proceed like you would do if you were installing NetBSD on a real
 DECstation.  Even if the emulator is running on a very fast host system,
 you should expect the installation to take quite some time.
 
+
+<!--
 
 <table>
 <tr><td width=150>&nbsp;</td><td>
@@ -378,6 +379,8 @@ the network instead of from the pmax cdrom image.
 </td></tr>
 </table>
 
+-->
+
 
 <p>
 When the installation is completed, the following command should start
@@ -394,7 +397,7 @@ If you want to run without the X framebuffer, use this instead:<pre>
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>How to install OpenBSD/pmax inside the emulator</h3>
+<h3>How to install OpenBSD/pmax in the emulator</h3>
 
 Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
 You should first read the section above on how to install NetBSD,
@@ -474,7 +477,7 @@ common sense and imagination to modify them as you see fit.
 </ol>
 
 <p>
-The time required to do a full install is about an hours on a 2.8GHz Xeon PC.
+The time required to do a full install is about an hour on a 2.8GHz Xeon PC.
 
 <p>
 For some unknown reason, the install script does not set the root
@@ -519,7 +522,7 @@ let you boot from the new rootdisk image:
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>How to install Ultrix/RISC inside the emulator</h3>
+<h3>How to install Ultrix/RISC in the emulator</h3>
 
 The instructions for installing NetBSD/pmax can be used to install Ultrix
 as well, with a slight modification (the <b>-j</b> argument differs).

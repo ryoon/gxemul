@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.74 2004-11-30 20:55:23 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.75 2004-12-01 14:23:02 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1248,6 +1248,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
 	unsigned char *a, *fail;
+	uint32_t *b;
 	int ofs, alignment, load=0;
 
 	/*  TODO: Not yet:  */
@@ -1323,83 +1324,148 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
-	/*
-	 *  t1 = 1023;
-	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-	 *  t1 = a1 & 4095;
-	 *
-	 *  f8 1f 5f 20     lda     t1,1023 * 8
-	 *  83 76 22 4a     srl     a1,19,t2
-	 *  84 36 21 4a     srl     a1, 9,t3
-	 *  03 00 62 44     and     t2,t1,t2
-	 */
-	*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
-	*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
-	*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
-	*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
 
-	/*
-	 *  t10 is vaddr_to_hostaddr_table0
-	 *
-	 *  a3 = tbl0[t2]  (load entry from tbl0)
-	 *  12 04 03 43     addq    t10,t2,a2
-	 */
-	*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
+	if (bintrans_32bit_only) {
+		/*  Special case for 32-bit addressing:  */
 
-	/*  04 00 82 44     and     t3,t1,t3  */
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
+		/*
+		 *  t1 = 1023;
+		 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+		 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+		 *  t1 = a1 & 4095;
+		 *
+		 *  f8 1f 5f 20     lda     t1,1023 * 8
+		 *  83 76 22 4a     srl     a1,19,t2
+		 *  84 36 21 4a     srl     a1, 9,t3
+		 *  03 00 62 44     and     t2,t1,t2
+		 */
+		*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
+		*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
+		*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
+		*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
 
-	/*  00 00 72 a6     ldq     a3,0(a2)  */
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
+		/*
+		 *  t10 is vaddr_to_hostaddr_table0
+		 *
+		 *  a3 = tbl0[t2]  (load entry from tbl0)
+		 *  12 04 03 43     addq    t10,t2,a2
+		 */
+		*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
 
-	/*  ff 0f 5f 20     lda     t1,4095  */
-	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
+		/*  04 00 82 44     and     t3,t1,t3  */
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
 
-	/*
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
-	 *  13 04 64 42     addq    a3,t3,a3
-	 */
-	*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
+		/*  00 00 72 a6     ldq     a3,0(a2)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
 
-	/*  02 00 22 46     and     a1,t1,t1  */
-	*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
+		/*  ff 0f 5f 20     lda     t1,4095  */
+		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
 
-	/*  00 00 73 a6     ldq     a3,0(a3)  */
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
+		/*
+		 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+		 *  13 04 64 42     addq    a3,t3,a3
+		 */
+		*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
 
-	/*
-	 *  NULL? Then return failure.
-	 *  01 00 60 f6     bne     a3,f8 <okzz>
-	 */
-	fail = a;
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
-	bintrans_write_chunkreturn_fail(&a);
-	*fail = ((size_t)a - (size_t)fail - 4) / 4;
+		/*  02 00 22 46     and     a1,t1,t1  */
+		*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
 
-	/*  01 30 60 46     and     a3,0x1,t0  */
-	*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
+		/*  00 00 73 a6     ldq     a3,0(a3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
 
-	/*
-	 *  If this is a store, then the lowest bit must be set:
-	 */
-	if (!load) {
-		/*  01 00 20 f4     bne     t0,<okzzz>  */
+		/*
+		 *  NULL? Then return failure.
+		 *  01 00 60 f6     bne     a3,f8 <okzz>
+		 */
 		fail = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
 		bintrans_write_chunkreturn_fail(&a);
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
+
+		/*  01 30 60 46     and     a3,0x1,t0  */
+		*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
+
+		/*
+		 *  If this is a store, then the lowest bit must be set:
+		 */
+		if (!load) {
+			/*  01 00 20 f4     bne     t0,<okzzz>  */
+			fail = a;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+			bintrans_write_chunkreturn_fail(&a);
+			*fail = ((size_t)a - (size_t)fail - 4) / 4;
+		}
+
+		/*  Get rid of the lowest bit:  */
+		/*  33 05 61 42     subq    a3,t0,a3  */
+		*a++ = 0x33; *a++ = 0x05; *a++ = 0x61; *a++ = 0x42;
+
+		/*  The rest of this code was written with t3 as the address.  */
+
+		/*  Add the offset within the page:  */
+		/*  04 04 62 42     addq    a3,t1,t3  */
+		*a++ = 0x04; *a++ = 0x04; *a++ = 0x62; *a++ = 0x42;
+
+	} else {
+		*addrp = a;
+		b = (uint32_t *) *addrp;
+
+		/*  Generic (64-bit) stuff:  */
+
+		/*  Save a0 and the old return address on the stack:  */
+		*b++ = 0x23deff80;		/*  lda sp,-128(sp)  */
+
+		*b++ = 0xb75e0000;		/*  stq ra,0(sp)  */
+		*b++ = 0xb61e0008;		/*  stq a0,8(sp)  */
+		*b++ = 0xb4de0010;		/*  stq t5,16(sp)  */
+		*b++ = 0xb0fe0018;		/*  stl t6,24(sp)  */
+		*b++ = 0xb71e0020;		/*  stq t10,32(sp)  */
+		*b++ = 0xb73e0028;		/*  stq t11,40(sp)  */
+		*b++ = 0xb51e0030;		/*  stq t7,48(sp)  */
+		*b++ = 0xb6de0038;		/*  stq t8,56(sp)  */
+		*b++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
+
+		ofs = ((size_t)&dummy_cpu.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
+
+		*b++ = 0xa7700000 | ofs;	/*  ldq t12,0(a0)  */
+
+		/*  a1 is already vaddr. set a2 = writeflag  */
+		*b++ = 0x225f0000 | (load? 0 : 1);
+
+		/*  Call fast_vaddr_to_hostaddr:  */
+		*b++ = 0x6b5b4000;		/*  jsr ra,(t12),<after>  */
+
+		/*  Restore the old return address and a0 from the stack:  */
+		*b++ = 0xa75e0000;		/*  ldq ra,0(sp)  */
+		*b++ = 0xa61e0008;		/*  ldq a0,8(sp)  */
+		*b++ = 0xa4de0010;		/*  ldq t5,16(sp)  */
+		*b++ = 0xa0fe0018;		/*  ldl t6,24(sp)  */
+		*b++ = 0xa71e0020;		/*  ldq t10,32(sp)  */
+		*b++ = 0xa73e0028;		/*  ldq t11,40(sp)  */
+		*b++ = 0xa51e0030;		/*  ldq t7,48(sp)  */
+		*b++ = 0xa6de0038;		/*  ldq t8,56(sp)  */
+		*b++ = 0xa6fe0040;		/*  ldq t9,64(sp)  */
+
+		*b++ = 0x23de0080;		/*  lda sp,128(sp)  */
+
+		*addrp = (unsigned char *) b;
+		a = *addrp;
+
+		/*
+		 *  NULL? Then return failure.
+		 *  01 00 00 f4     bne     v0,f8 <okzz>
+		 */
+		fail = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;
+		bintrans_write_chunkreturn_fail(&a);
+		*fail = ((size_t)a - (size_t)fail - 4) / 4;
+
+		/*  The rest of this code was written with t3 as the address.  */
+
+		/*  04 14 00 40     addq    v0,0,t3  */
+		*a++ = 0x04; *a++ = 0x14; *a++ = 0x00; *a++ = 0x40;
 	}
 
-	/*  Get rid of the lowest bit:  */
-	/*  33 05 61 42     subq    a3,t0,a3  */
-	*a++ = 0x33; *a++ = 0x05; *a++ = 0x61; *a++ = 0x42;
-
-	/*  The rest of this code was written with t3 as the address.  */
-
-	/*  Add the offset within the page:  */
-	/*  04 04 62 42     addq    a3,t1,t3  */
-	*a++ = 0x04; *a++ = 0x04; *a++ = 0x62; *a++ = 0x42;
 
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:

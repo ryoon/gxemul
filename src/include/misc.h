@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.164 2004-11-28 12:26:35 debug Exp $
+ *  $Id: misc.h,v 1.165 2004-12-01 14:23:01 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -651,6 +651,10 @@ struct cpu {
 	struct vth32_table **vaddr_to_hostaddr_table0_user;
 	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
 	struct vth32_table *next_free_vth_table;
+
+	/*  For 64-bit (generic) emulation:  */
+	unsigned char	*(*fast_vaddr_to_hostaddr)(struct cpu *cpu,
+			    uint64_t vaddr, int writeflag);
 
 	void		(*bintrans_fast_rfe)(struct cpu *);
 	void		(*bintrans_fast_eret)(struct cpu *);

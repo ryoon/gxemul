@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.19 2004-11-25 08:44:27 debug Exp $
+ *  $Id: memory.h,v 1.20 2004-12-01 14:23:01 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -49,6 +49,9 @@ int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, 
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
 
 unsigned char *memory_paddr_to_hostaddr(struct memory *mem, uint64_t paddr, int writeflag);
+
+/*  memory_fast_v2h.c:  */
+unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu, uint64_t vaddr, int writeflag);
 
 int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags);

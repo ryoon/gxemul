@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.95 2004-11-30 21:47:43 debug Exp $
+ *  $Id: bintrans.c,v 1.96 2004-12-01 14:23:02 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -633,13 +633,17 @@ quick_attempt_translate_again:
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
+#if 0
 switch (cpu->cpu_type.mmu_model) {
 case MMU3K:
+#endif
 			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+#if 0
 	break;
 default:
 	translated = try_to_translate = 0;
 }
+#endif
 			n_translated += translated;
 			break;
 
@@ -869,6 +873,8 @@ void bintrans_init_cpu(struct cpu *cpu)
 	cpu->bintrans_fast_tlbpr  = coproc_tlbpr;
 	cpu->bintrans_fast_rfe    = coproc_rfe;
 	cpu->bintrans_fast_eret   = coproc_eret;
+
+	cpu->fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */
 	switch (cpu->cpu_type.mmu_model) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.39 2004-01-12 00:17:12 debug Exp $
+ *  $Id: machine.c,v 1.40 2004-01-14 06:10:04 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -49,6 +49,7 @@
 
 extern int emulation_type;
 extern char *machine_name;
+extern char emul_cpu_name[];
 
 extern int bootstrap_cpu;
 extern int ncpus;
@@ -1091,13 +1092,25 @@ dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 		 */
 		debug("system = 0x%x\n", system);
 
-		/*  TODO:  Use correct CPU identification  */
 		for (i=0; i<ncpus; i++) {
 			uint32_t cpu, fpu;
+			int jj;
+			char arc_cpu_name[100];
+			char arc_fpc_name[105];
+
+			strncpy(arc_cpu_name, emul_cpu_name, sizeof(arc_cpu_name));
+			arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
+			for (jj=0; jj<strlen(arc_cpu_name); jj++)
+				if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')
+					arc_cpu_name[jj] += ('A' - 'a');
+
+			strcpy(arc_fpc_name, arc_cpu_name);
+			strcat(arc_fpc_name, "FPC");
+
 			cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-			    0, 1, 20, 0, 0x0, "R5000", system);
+			    0, 1, 20, 0, 0x0, arc_cpu_name, system);
 			fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 20, 0, 0x0, "R5000FPC", cpu);
+			    0, 1, 20, 0, 0x0, arc_fpc_name, cpu);
 
 			/*  TODO:  cache (per cpu)  */
 			debug("cpu%i = 0x%x  (fpu = 0x%x)\n", i, cpu, fpu);

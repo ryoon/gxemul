@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.10 2004-10-27 03:22:33 debug Exp $
+ *  $Id: dev_vga.c,v 1.11 2004-10-29 06:40:42 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -279,17 +279,17 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	for (r=0; r<2; r++)
 		for (g=0; g<2; g++)
 			for (b=0; b<2; b++) {
-				d->fb->rgb_palette[i + 0] = r * 0x7f;
-				d->fb->rgb_palette[i + 1] = g * 0x7f;
-				d->fb->rgb_palette[i + 2] = b * 0x7f;
+				d->fb->rgb_palette[i + 0] = r * 0xaa;
+				d->fb->rgb_palette[i + 1] = g * 0xaa;
+				d->fb->rgb_palette[i + 2] = b * 0xaa;
 				i+=3;
 			}
 	for (r=0; r<2; r++)
 		for (g=0; g<2; g++)
 			for (b=0; b<2; b++) {
-				d->fb->rgb_palette[i + 0] = r * 0x7f + 0x80;
-				d->fb->rgb_palette[i + 1] = g * 0x7f + 0x80;
-				d->fb->rgb_palette[i + 2] = b * 0x7f + 0x80;
+				d->fb->rgb_palette[i + 0] = r * 0xaa + 0x55;
+				d->fb->rgb_palette[i + 1] = g * 0xaa + 0x55;
+				d->fb->rgb_palette[i + 2] = b * 0xaa + 0x55;
 				i+=3;
 			}
 

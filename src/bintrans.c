@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.94 2004-11-30 12:48:38 debug Exp $
+ *  $Id: bintrans.c,v 1.95 2004-11-30 21:47:43 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -202,6 +202,10 @@ static void bintrans_register_potential_quick_jump(unsigned char *a, int p)
 	if (quick_jumps_index >= MAX_QUICK_JUMPS)
 		quick_jumps_index = 0;
 }
+
+
+/*  Set to non-zero for R3000 and similar cpus.  */
+static int bintrans_32bit_only = 0;
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -383,7 +387,7 @@ quick_attempt_translate_again:
 	/*
 	 *  Try to translate a chunk of code:
 	 */
-
+	bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 	p = paddr & 0xfff;
 	try_to_translate = 1;

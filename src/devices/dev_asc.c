@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.54 2004-11-22 06:14:53 debug Exp $
+ *  $Id: dev_asc.c,v 1.55 2004-11-30 21:47:41 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -400,7 +400,7 @@ fatal("TODO.......asdgasin\n");
 			 */
 			if (d->xferp->data_out == NULL) {
 				scsi_transfer_allocbuf(&d->xferp->data_out_len,
-				    &d->xferp->data_out, len);
+				    &d->xferp->data_out, len, 0);
 
 				if (d->dma_controller != NULL)
 					d->dma_controller(
@@ -579,7 +579,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 
 	if (n_messagebytes > 0) {
 		scsi_transfer_allocbuf(&d->xferp->msg_out_len,
-		    &d->xferp->msg_out, n_messagebytes);
+		    &d->xferp->msg_out, n_messagebytes, 0);
 
 		i = 0;
 		while (n_messagebytes-- > 0) {
@@ -647,7 +647,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 			debug("[non-DMA] ");
 
 		scsi_transfer_allocbuf(&d->xferp->cmd_len,
-		    &d->xferp->cmd, d->n_bytes_in_fifo);
+		    &d->xferp->cmd, d->n_bytes_in_fifo, 0);
 
 		i = 0;
 		while (d->fifo_in != d->fifo_out) {
@@ -664,7 +664,7 @@ static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 			len = 65536;
 
 		scsi_transfer_allocbuf(&d->xferp->cmd_len,
-		    &d->xferp->cmd, len);
+		    &d->xferp->cmd, len, 0);
 
 		for (i=0; i<len; i++) {
 			int ofs = d->dma_address_reg + i;

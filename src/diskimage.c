@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.52 2004-11-28 19:31:09 debug Exp $
+ *  $Id: diskimage.c,v 1.53 2004-11-30 21:47:44 debug Exp $
  *
  *  Disk image support.
  *
@@ -199,7 +199,8 @@ void scsi_transfer_free(struct scsi_transfer *p)
  *
  *	scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
  */
-void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len)
+void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len,
+	int clearflag)
 {
 	unsigned char *p = (*pp);
 
@@ -214,7 +215,10 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len)
 		fprintf(stderr, "scsi_transfer_allocbuf(): out of memory trying to allocate %li bytes\n", (long)want_len);
 		exit(1);
 	}
-	memset(p, 0, want_len);
+
+	if (clearflag)
+		memset(p, 0, want_len);
+
 	(*pp) = p;
 }
 
@@ -295,9 +299,9 @@ int64_t diskimage_getsize(int disk_id)
 static void diskimage__return_default_status_and_message(
 	struct scsi_transfer *xferp)
 {
-	scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+	scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1, 0);
 	xferp->status[0] = 0x00;
-	scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+	scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1, 0);
 	xferp->msg_in[0] = 0x00;
 }
 
@@ -417,7 +421,7 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
 		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
 		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
@@ -498,7 +502,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, 8);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, 8, 1);
 
 		diskimage_recalc_size(disk_id);
 
@@ -533,7 +537,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			fatal("WARNING: mode sense, cmd[2] = 0x%02x\n", xferp->cmd[2]);
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
 
 		pagecode = xferp->cmd[2] & 0x3f;
 
@@ -691,7 +695,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size, 0);
 
 		debug(" READ  ofs=%lli size=%i\n", (long long)ofs, (int)size);
 
@@ -823,7 +827,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
 
 		xferp->data_in[0] = 0x80 + 0x70;	/*  0x80 = valid, 0x70 = "current errors"  */
 		xferp->data_in[2] = 0x00;		/*  SENSE KEY!  */
@@ -852,7 +856,7 @@ printf(" XXX \n");
 			fatal("WARNING: READ_BLOCK_LIMITS with cmd[1]=0x%02x not yet implemented\n");
 
 		/*  Return data:  */
-		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen, 1);
 
 		/*
 		 *  data[0] is reserved, data[1..3] contain the maximum
@@ -969,7 +973,7 @@ printf(" XXX \n");
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,
-		    &xferp->data_in, retlen);
+		    &xferp->data_in, retlen, 1);
 
 		diskimage_recalc_size(disk_id);
 
@@ -998,7 +1002,7 @@ printf(" XXX \n");
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len,
-		    &xferp->data_in, retlen);
+		    &xferp->data_in, retlen, 1);
 
 		/*  TODO  */
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.13 2004-11-18 08:38:10 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.14 2004-11-30 21:47:41 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -252,7 +252,7 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 
 				switch (d->current_phase) {
 				case CMD_PHASE:
-					scsi_transfer_allocbuf(&d->xfer->cmd_len, &d->xfer->cmd, d->buf_allocatedlen);
+					scsi_transfer_allocbuf(&d->xfer->cmd_len, &d->xfer->cmd, d->buf_allocatedlen, 1);
 					memcpy(d->xfer->cmd, d->buf, d->buf_allocatedlen);
 					break;
 				default:

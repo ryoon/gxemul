@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.28 2004-11-28 18:03:11 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.29 2004-11-30 21:47:43 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -170,14 +170,18 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 			*a++ = (pc_inc >> 8) & 255;
 		}
 
-		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
-		ofs += 4;
-		*a++ = 0x83; *a++ = 0x96;
-		*a++ = ofs & 255;
-		*a++ = (ofs >> 8) & 255;
-		*a++ = (ofs >> 16) & 255;
-		*a++ = (ofs >> 24) & 255;
-		*a++ = 0;
+		/*  TODO/NOTE: This bugs out if we're jumping from
+		    0xffffffffffffffff to 0x0000000000000000 etc.  */
+		if (!bintrans_32bit_only) {
+			/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
+			ofs += 4;
+			*a++ = 0x83; *a++ = 0x96;
+			*a++ = ofs & 255;
+			*a++ = (ofs >> 8) & 255;
+			*a++ = (ofs >> 16) & 255;
+			*a++ = (ofs >> 24) & 255;
+			*a++ = 0;
+		}
 	}
 
 	if (flag_ninstr) {

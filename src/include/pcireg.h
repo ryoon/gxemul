@@ -1,3 +1,4 @@
+/*  mips64emul: $Id: pcireg.h,v 1.2 2004-06-11 10:14:27 debug Exp $  */
 /*	$NetBSD: pcireg.h,v 1.37 2002/03/22 20:03:20 drochner Exp $	*/
 
 /*

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare796.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.110 2004-12-09 01:40:44 debug Exp $
+ *  $Id: bintrans.c,v 1.111 2004-12-09 02:23:00 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -40,7 +40,7 @@
  *
  *	o)  When the translation cache is "full", then throw away everything
  *	    translated so far and restart from scratch. The cache is of a
- *	    fixed size, say 20 MB. (This is inspired by a comment in the Qemu
+ *	    fixed size, say 24 MB. (This is inspired by a comment in the Qemu
  *	    technical documentation: "A 16 MByte cache holds the most recently
  *	    used translations. For simplicity, it is completely flushed when
  *	    it is full.")
@@ -152,7 +152,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int it
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 #ifndef BINTRANS_SIZE_IN_MB
-#define BINTRANS_SIZE_IN_MB		20
+#define BINTRANS_SIZE_IN_MB		24
 #endif
 
 #define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)

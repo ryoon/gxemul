@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.41 2004-12-07 12:41:52 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.42 2004-12-09 02:23:42 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -38,6 +38,7 @@
 
 struct cpu dummy_cpu;
 struct coproc dummy_coproc;
+struct vth32_table dummy_vth32_table;
 
 
 /*
@@ -1385,7 +1386,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p)
 {
-	unsigned char *a, *skip=NULL, *failskip;
+	unsigned char *a, *skip=NULL, *failskip, *fail;
 	int ofs;
 	uint32_t i386_addr;
 
@@ -1429,75 +1430,164 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 try_chunk_p:
 
 	if (potential_chunk_p == NULL) {
-		/*  Not much we can do here if this wasn't to the same physical page...  */
+		if (bintrans_32bit_only) {
+			/*
+			 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+			 *
+			 *  89 c3                   mov    %eax,%ebx
+			 *  c1 eb 14                shr    $20,%ebx
+			 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+			 */
+			*a++ = 0x89; *a++ = 0xc3;
+			*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x14;
+			*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
-		/*  Don't execute too many instructions.  */
-		/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
-		/*  7c 01                jl     <okk>  */
-		/*  c3                   ret    */
-		*a++ = 0x81; *a++ = 0xfd;
-		*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-		*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
-		*a++ = 0x7c; failskip = a; *a++ = 0x01;
-		bintrans_write_chunkreturn_fail(&a);
-		*failskip = (size_t)a - (size_t)failskip - 1;
+			/*
+			 *  ecx = vaddr_to_hostaddr_table0
+			 *
+			 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+			 */
+			ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
+			*a++ = 0x8b; *a++ = 0x8e;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
-		/*
-		 *  Compare the old pc (ecx:ebx) and the new pc (edx:eax). If they are on the
-		 *  same virtual page (which means that they are on the same physical
-		 *  page), then we can check the right chunk pointer, and if it
-		 *  is non-NULL, then we can jump there.  Otherwise just return.
-		 */
+			/*
+			 *  ecx = vaddr_to_hostaddr_table0[a]
+			 *
+			 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
+			 */
+			*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x19;
 
-		/*  Subtract 4 from the old pc first. (This is where the jump originated from.)  */
-		/*  83 eb 04                sub    $0x4,%ebx  */
-		/*  83 d9 00                sbb    $0x0,%ecx  */
-		*a++ = 0x83; *a++ = 0xeb; *a++ = 0x04;
-		*a++ = 0x83; *a++ = 0xd9; *a++ = 0x00;
+			/*
+			 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+			 *
+			 *  89 c3                   mov    %eax,%ebx
+			 *  c1 eb 0a                shr    $10,%ebx
+			 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+			 */
+			*a++ = 0x89; *a++ = 0xc3;
+			*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0a;
+			*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
-		/*  39 d1                   cmp    %edx,%ecx  */
-		/*  74 01                   je     1b9 <ok2>  */
-		/*  c3                      ret    */
-		*a++ = 0x39; *a++ = 0xd1;
-		*a++ = 0x74; *a++ = 0x01;
-		*a++ = 0xc3;
+			/*
+			 *  ecx = vaddr_to_hostaddr_table0[a][b].chunks
+			 *
+			 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
+			 */
+			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0]
+			    - (size_t)&dummy_vth32_table;
 
-		/*  Remember new pc:  */
-		/*  89 c1                   mov    %eax,%ecx  */
-		*a++ = 0x89; *a++ = 0xc1;
+			*a++ = 0x8b; *a++ = 0x8c;  *a++ = 0x19;
+			    *a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
-		/*  81 e3 00 f0 ff ff       and    $0xfffff000,%ebx  */
-		/*  25 00 f0 ff ff          and    $0xfffff000,%eax  */
-		*a++ = 0x81; *a++ = 0xe3; *a++ = 0x00; *a++ = 0xf0; *a++ = 0xff; *a++ = 0xff;
-		*a++ = 0x25; *a++ = 0x00; *a++ = 0xf0; *a++ = 0xff; *a++ = 0xff;
+			/*
+			 *  ecx = NULL? Then return with failure.
+			 *
+			 *  83 f9 00                cmp    $0x0,%ecx
+			 *  75 01                   jne    <okzzz>
+			 */
+			*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
+			*a++ = 0x75; fail = a; *a++ = 0x00;
+			bintrans_write_chunkreturn(&a);
+			*fail = (size_t)a - (size_t)fail - 1;
 
-		/*  39 c3                   cmp    %eax,%ebx  */
-		/*  74 01                   je     <ok1>  */
-		/*  c3                      ret    */
-		*a++ = 0x39; *a++ = 0xc3;
-		*a++ = 0x74; *a++ = 0x01;
-		*a++ = 0xc3;
+			/*
+			 *  25 fc 0f 00 00          and    $0xffc,%eax
+			 *  01 c1                   add    %eax,%ecx
+			 *
+			 *  8b 01                   mov    (%ecx),%eax
+			 *
+			 *  83 f8 00                cmp    $0x0,%eax
+			 *  75 01                   jne    <ok>
+			 *  c3                      ret
+			 */
+			*a++ = 0x25; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+			*a++ = 0x01; *a++ = 0xc1;
 
-		/*  81 e1 ff 0f 00 00       and    $0xfff,%ecx  */
-		*a++ = 0x81; *a++ = 0xe1; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+			*a++ = 0x8b; *a++ = 0x01;
 
-		/*  8b 81 78 56 34 12       mov    0x12345678(%ecx),%eax  */
-		ofs = (size_t)chunks;
-		*a++ = 0x8b; *a++ = 0x81; *a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+			*a++ = 0x75; fail = a; *a++ = 0x01;
+			bintrans_write_chunkreturn(&a);
+			*fail = (size_t)a - (size_t)fail - 1;
 
-		/*  83 f8 00                cmp    $0x0,%eax  */
-		/*  75 01                   jne    1cd <okjump>  */
-		/*  c3                      ret    */
-		*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
-		*a++ = 0x75; *a++ = 0x01;
-		*a++ = 0xc3;
+			/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
+			/*  ff e0                   jmp    *%eax  */
+			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			*a++ = 0x03; *a++ = 0x86;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = 0xff; *a++ = 0xe0;
+		} else {
+			/*  Not much we can do here if this wasn't to the same physical page...  */
 
-		/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
-		/*  ff e0                   jmp    *%eax  */
-		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
-		*a++ = 0x03; *a++ = 0x86;
-		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-		*a++ = 0xff; *a++ = 0xe0;
+			/*  Don't execute too many instructions.  */
+			/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+			/*  7c 01                jl     <okk>  */
+			/*  c3                   ret    */
+			*a++ = 0x81; *a++ = 0xfd;
+			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = 0x7c; failskip = a; *a++ = 0x01;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
+
+			/*
+			 *  Compare the old pc (ecx:ebx) and the new pc (edx:eax). If they are on the
+			 *  same virtual page (which means that they are on the same physical
+			 *  page), then we can check the right chunk pointer, and if it
+			 *  is non-NULL, then we can jump there.  Otherwise just return.
+			 */
+
+			/*  Subtract 4 from the old pc first. (This is where the jump originated from.)  */
+			/*  83 eb 04                sub    $0x4,%ebx  */
+			/*  83 d9 00                sbb    $0x0,%ecx  */
+			*a++ = 0x83; *a++ = 0xeb; *a++ = 0x04;
+			*a++ = 0x83; *a++ = 0xd9; *a++ = 0x00;
+
+			/*  39 d1                   cmp    %edx,%ecx  */
+			/*  74 01                   je     1b9 <ok2>  */
+			/*  c3                      ret    */
+			*a++ = 0x39; *a++ = 0xd1;
+			*a++ = 0x74; *a++ = 0x01;
+			*a++ = 0xc3;
+
+			/*  Remember new pc:  */
+			/*  89 c1                   mov    %eax,%ecx  */
+			*a++ = 0x89; *a++ = 0xc1;
+
+			/*  81 e3 00 f0 ff ff       and    $0xfffff000,%ebx  */
+			/*  25 00 f0 ff ff          and    $0xfffff000,%eax  */
+			*a++ = 0x81; *a++ = 0xe3; *a++ = 0x00; *a++ = 0xf0; *a++ = 0xff; *a++ = 0xff;
+			*a++ = 0x25; *a++ = 0x00; *a++ = 0xf0; *a++ = 0xff; *a++ = 0xff;
+
+			/*  39 c3                   cmp    %eax,%ebx  */
+			/*  74 01                   je     <ok1>  */
+			/*  c3                      ret    */
+			*a++ = 0x39; *a++ = 0xc3;
+			*a++ = 0x74; *a++ = 0x01;
+			*a++ = 0xc3;
+
+			/*  81 e1 ff 0f 00 00       and    $0xfff,%ecx  */
+			*a++ = 0x81; *a++ = 0xe1; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+
+			/*  8b 81 78 56 34 12       mov    0x12345678(%ecx),%eax  */
+			ofs = (size_t)chunks;
+			*a++ = 0x8b; *a++ = 0x81; *a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+			/*  83 f8 00                cmp    $0x0,%eax  */
+			/*  75 01                   jne    1cd <okjump>  */
+			/*  c3                      ret    */
+			*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+			*a++ = 0x75; *a++ = 0x01;
+			*a++ = 0xc3;
+
+			/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
+			/*  ff e0                   jmp    *%eax  */
+			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			*a++ = 0x03; *a++ = 0x86;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = 0xff; *a++ = 0xe0;
+		}
 	} else {
 		/*
 		 *  Just to make sure that we don't become too unreliant

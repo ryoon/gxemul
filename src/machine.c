@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.239 2004-12-15 05:27:15 debug Exp $
+ *  $Id: machine.c,v 1.240 2004-12-15 05:55:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2175,7 +2175,7 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(cpu, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 1
+#if 0
 				bus_pci_add(cpu, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
 				/*  bus_pci_add(cpu, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */

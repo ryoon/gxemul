@@ -84,7 +84,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Implement load delays?  Warnings on interlocks.
 		o)  Implement all coprocessor 0 bits / functions.
 			x)  coproc 0 selectors! (R4000 ?)
-			x)  BEV and all exception vectors....
 		o)  R4300 (nintendo64, no mmu?), R5900 (playstation2, weird
 			TLB/cache? 128-bit GPRs, new instructions),
 			4K (note: NOT R4000), 5K (note: NOT R5000),

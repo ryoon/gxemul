@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.61 2004-11-21 09:22:40 debug Exp $
+ *  $Id: dev_fb.c,v 1.62 2004-11-24 12:52:02 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -297,14 +297,14 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 		if (npixels == 0)
 			npixels = 1;
 
-		for (pixel=0; pixel<npixels; pixel++) {
-			int fb_addr, c, r, g, b;
-			color_r = color_g = color_b = 0;
+		if (d->bit_depth < 8) {
+			for (pixel=0; pixel<npixels; pixel++) {
+				int fb_addr, c, r, g, b;
+				color_r = color_g = color_b = 0;
 
-			fb_addr = (y * d->xsize + x) * d->bit_depth;
-			/*  fb_addr is now which _bit_ in framebuffer  */
+				fb_addr = (y * d->xsize + x) * d->bit_depth;
+				/*  fb_addr is now which _bit_ in framebuffer  */
 
-			if (d->bit_depth <= 8) {
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
 
@@ -318,7 +318,33 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				r = d->rgb_palette[c*3 + 0];
 				g = d->rgb_palette[c*3 + 1];
 				b = d->rgb_palette[c*3 + 2];
-			} else {
+
+				macro_put_pixel();
+				x++;
+			}
+		} else if (d->bit_depth == 8) {
+			for (pixel=0; pixel<npixels; pixel++) {
+				int fb_addr, c, r, g, b;
+				color_r = color_g = color_b = 0;
+
+				fb_addr = y * d->xsize + x;
+				/*  fb_addr is now which byte in framebuffer  */
+				c = d->framebuffer[fb_addr];
+				r = d->rgb_palette[c*3 + 0];
+				g = d->rgb_palette[c*3 + 1];
+				b = d->rgb_palette[c*3 + 2];
+
+				macro_put_pixel();
+				x++;
+			}
+		} else {	/*  d->bit_depth > 8  */
+			for (pixel=0; pixel<npixels; pixel++) {
+				int fb_addr, c, r, g, b;
+				color_r = color_g = color_b = 0;
+
+				fb_addr = (y * d->xsize + x) * d->bit_depth;
+				/*  fb_addr is now which byte in framebuffer  */
+
 				/*  > 8 bits color.  */
 				fb_addr >>= 3;
 				switch (d->bit_depth) {
@@ -330,12 +356,12 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				default:
 					r = g = b = random() & 255;
 				}
+
+				macro_put_pixel();
+				x++;
 			}
-
-			macro_put_pixel();
-
-			x++;
 		}
+
 		return;
 	}
 
@@ -372,10 +398,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 			fb_y = y * scaledown + suby;
 
 			fb_addr = fb_y * d->xsize + fb_x;
-			fb_addr = fb_addr * d->bit_depth;
-			/*  fb_addr is now which _bit_ in framebuffer  */
 
-			if (d->bit_depth <= 8) {
+			if (d->bit_depth < 8) {
+				fb_addr = fb_addr * d->bit_depth;
+				/*  fb_addr is now which _bit_ in framebuffer  */
+
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
 
@@ -389,9 +416,18 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				r = d->rgb_palette[c*3 + 0];
 				g = d->rgb_palette[c*3 + 1];
 				b = d->rgb_palette[c*3 + 2];
+			} else if (d->bit_depth == 8) {
+				/*  fb_addr is which _byte_ in framebuffer  */
+
+				c = d->framebuffer[fb_addr] * 3;
+				r = d->rgb_palette[c + 0];
+				g = d->rgb_palette[c + 1];
+				b = d->rgb_palette[c + 2];
 			} else {
+				fb_addr = (fb_addr * d->bit_depth) >> 3;
+				/*  fb_addr is which _byte_ in framebuffer  */
+
 				/*  > 8 bits color.  */
-				fb_addr >>= 3;
 				switch (d->bit_depth) {
 				case 24:
 					r = d->framebuffer[fb_addr];
@@ -578,8 +614,6 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			d->fb_window->OLD_cursor_xsize = d->fb_window->cursor_xsize;
 			d->fb_window->OLD_cursor_ysize = d->fb_window->cursor_ysize;
 		}
-
-		need_to_flush_x11 = 1;
 	}
 #endif
 

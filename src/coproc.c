@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.106 2004-11-24 12:23:24 debug Exp $
+ *  $Id: coproc.c,v 1.107 2004-11-24 12:52:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -349,7 +349,10 @@ if ((vaddr_page & 0xc0000000) >= 0xc0000000) {
 /*				printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
 				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);
 */			}
-			tbl1->entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+			if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
+				/*  Don't degrade a page from writable to readonly.  */
+			} else
+				tbl1->entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
 			break;
 		default:
 			;

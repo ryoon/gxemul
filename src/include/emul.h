@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.13 2004-12-14 04:19:06 debug Exp $
+ *  $Id: emul.h,v 1.14 2004-12-14 21:55:39 debug Exp $
  */
 
 #include "misc.h"
@@ -69,6 +69,7 @@ struct emul {
 
 	int	dbe_on_nonexistant_memaccess;
 	int	bintrans_enable;
+	int	bintrans_enabled_from_start;
 	int	instruction_trace;
 	int	single_step;
 	int	trace_on_bad_address;

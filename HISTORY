@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.394 2004-12-14 21:03:46 debug Exp $
+$Id: HISTORY,v 1.395 2004-12-14 21:55:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1337,3 +1337,6 @@ HISTORY of mips64emul
 		Adding a 'devices' command to the debugger.
 		The 'registers' and 'tlbdump' commands now take an optional
 		argument (a cpu id).
+		Adding rudimentary tab-completion and cursor key stuff to
+		debugger_readline().
+		Adding some more debugger commands: 'bintrans' and 'machine'.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.7 2004-12-14 21:03:46 debug Exp $
+ *  $Id: debugger.c,v 1.8 2004-12-14 21:55:40 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -132,6 +132,23 @@ static void debugger_cmd_breakpoints(struct emul *emul, char *cmd_line)
 	}
 
 	last_cmd_len = 0;
+}
+
+
+/*
+ *  debugger_cmd_bintrans():
+ */
+static void debugger_cmd_bintrans(struct emul *emul, char *cmd_line)
+{
+	if (!emul->bintrans_enabled_from_start) {
+		printf("ERROR: You must have enabled bintrans from the start of the simulation.\n");
+		printf("It is not possible to turn on afterwards.\n");
+		last_cmd_len = 0;
+		return;
+	}
+
+	emul->bintrans_enable = !emul->bintrans_enable;
+	printf("bintrans_enable = %s\n", emul->bintrans_enable? "ON" : "OFF");
 }
 
 
@@ -272,6 +289,45 @@ static void debugger_cmd_itrace(struct emul *emul, char *cmd_line)
 	/*  TODO: how to preserve quiet_mode?  */
 	old_quiet_mode = 0;
 	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+}
+
+
+/*
+ *  debugger_cmd_machine():
+ */
+static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
+{
+	int i;
+
+	printf("ram: %i MB\n",
+	    (int)(emul->cpus[0]->mem->physical_max / 1048576));
+
+	for (i=0; i<emul->ncpus; i++) {
+		struct cpu_type_def *ct = &emul->cpus[i]->cpu_type;
+
+		printf("cpu%i: %s, %s",
+		    i, ct->name, emul->cpus[i]->running? "running" : "stopped");
+
+		printf(" (%i-bit, ",
+		    (ct->isa_level < 3 || ct->isa_level == 32)? 32 : 64);
+		printf("%i TLB entries", ct->nr_of_tlb_entries);
+
+		if (ct->default_picache || ct->default_pdcache)
+			printf(", I+D = %i+%i KB",
+			    (1 << ct->default_picache) / 1024,
+			    (1 << ct->default_pdcache) / 1024);
+
+		if (ct->default_scache) {
+			int kb = (1 << ct->default_scache) / 1024;
+			printf(", L2 = %i %cB",
+			    kb >= 1024? kb / 1024 : kb,
+			    kb >= 1024? 'M' : 'K');
+		}
+
+		printf(")\n");
+	}
+
+	last_cmd_len = 0;
 }
 
 
@@ -492,6 +548,9 @@ static struct cmd cmds[] = {
 	{ "breakpoints", "", 0, debugger_cmd_breakpoints,
 		"show breakpoints" },
 
+	{ "bintrans", "", 0, debugger_cmd_bintrans,
+		"toggle bintrans on or off" },
+
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
@@ -506,6 +565,9 @@ static struct cmd cmds[] = {
 
 	{ "itrace", "", 0, debugger_cmd_itrace,
 		"toggle instruction_trace on or off" },
+
+	{ "machine", "", 0, debugger_cmd_machine,
+		"print a summary of the machine being emulated" },
 
 	{ "quit", "", 0, debugger_cmd_quit,
 		"quit the emulator" },
@@ -592,7 +654,7 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
  */
 static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 {
-	int ch;
+	int ch, i, n, i_match, reallen;
 
 	*cmd_len = 0; cmd[0] = '\0';
 	printf("mips64emul> ");
@@ -605,23 +667,88 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 		 *  The usleep() call might make it a tiny bit nicer on other
 		 *  running processes, but it is still very ugly.
 		 */
-		ch = console_readchar();
-		usleep(1);
+		while ((ch = console_readchar()) < 0)
+			usleep(1);
 
 		if (ch == '\b' && *cmd_len > 0) {
-			*cmd_len --;
+			(*cmd_len) --;
 			cmd[*cmd_len] = '\0';
 			printf("\b \b");
-			fflush(stdout);
-		} else if (ch >= ' ' && *cmd_len < max_cmd_len - 1) {
-			cmd[(*cmd_len) ++] = ch;
+		} else if (ch >= ' ' && (*cmd_len) < max_cmd_len - 1) {
+			cmd[*cmd_len] = ch;
+			(*cmd_len) ++;
 			cmd[*cmd_len] = '\0';
 			printf("%c", ch);
-			fflush(stdout);
 		} else if (ch == '\r' || ch == '\n') {
 			ch = '\n';
 			printf("\n");
+		} else if (ch == '\t') {
+			/*  Super-simple tab-completion:  */
+			i = 0;
+			while (cmds[i].name != NULL)
+				cmds[i++].tmp_flag = 0;
+
+			/*  Check for a (partial) command match:  */
+			n = i = i_match = 0;
+			while (cmds[i].name != NULL) {
+				if (strncasecmp(cmds[i].name, cmd,
+				    *cmd_len) == 0) {
+					cmds[i].tmp_flag = 1;
+					i_match = i;
+					n++;
+				}
+				i++;
+			}
+
+			switch (n) {
+			case 0:	/*  Beep.  */
+				printf("\a");
+				break;
+			case 1:	/*  Add the rest of the command:  */
+				reallen = strlen(cmds[i_match].name);
+				for (i=*cmd_len; i<reallen; i++)
+					console_makeavail(
+					    cmds[i_match].name[i]);
+				break;
+			default:
+				/*  Show all possible commands:  */
+				printf("\n  ");
+				i = 0;
+				while (cmds[i].name != NULL) {
+					if (cmds[i].tmp_flag)
+						printf("  %s",
+						    cmds[i].name);
+					i++;
+				}
+				printf("\nmips64emul> ");
+				for (i=0; i<*cmd_len; i++)
+					printf("%c", cmd[i]);
+			}
+		} else if (ch == 27) {
+			while ((ch = console_readchar()) < 0)
+				usleep(1);
+			if (ch == '[') {
+				while ((ch = console_readchar()) < 0)
+					usleep(1);
+				switch (ch) {
+				case 'A':	/*  Up.  */
+					for (i=0; i<MAX_CMD_LEN; i++)
+						console_makeavail('\b');
+					for (i=0; i<last_cmd_len; i++)
+						console_makeavail(last_cmd[i]);
+					break;
+				case 'B':	/*  Down.  */
+					for (i=0; i<MAX_CMD_LEN; i++)
+						console_makeavail('\b');
+					break;
+				case 'D':	/*  Left  */
+					console_makeavail('\b');
+					break;
+				}
+			}
 		}
+
+		fflush(stdout);
 	}
 }
 
@@ -634,7 +761,7 @@ static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 void debugger(void)
 {
 	int i, n, i_match, cmd_len, matchlen;
-	char cmd[MAX_CMD_LEN];
+	char cmd[MAX_CMD_LEN + 1];
 
 	exit_debugger = 0;
 

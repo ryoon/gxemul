@@ -148,7 +148,7 @@ Most important stuff:
 		o)  'srec' binaries?
 
 	Better X-windows functionality:
-		o)  Multiple framebuffer windows
+		o)  Non-resizable windows
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 

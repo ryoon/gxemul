@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.54 2005-01-24 07:40:07 debug Exp $
+ *  $Id: net.c,v 1.55 2005-01-24 11:27:34 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1935,7 +1935,7 @@ static void net_gateway_init(struct net *net)
 {
 	unsigned char *p = (void *) &net->netmask_ipv4;
 	uint32_t x;
-	int xl, iadd = 4;
+	int xl;
 
 	x = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3];
 	xl = 32 - net->netmask_ipv4_len;
@@ -2007,7 +2007,7 @@ struct net *net_init(struct emul *emul, int init_flags,
 	char *ipv4addr, int netipv4len)
 {
 	struct net *net;
-	int res, iadd = 4;
+	int res;
 
 	net = malloc(sizeof(struct net));
 	if (net == NULL) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.95 2004-06-14 09:16:26 debug Exp $
+ *  $Id: machine.c,v 1.96 2004-06-14 22:50:33 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -85,6 +85,7 @@ struct dec5800_data *dec5800_csr;
 
 struct crime_data *crime_data;
 struct mace_data *mace_data;
+struct sgi_ip20_data *sgi_ip20_data;
 struct sgi_ip22_data *sgi_ip22_data;
 
 
@@ -103,7 +104,7 @@ int int_to_bcd(int i)
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
 {
 	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 	return ch;
 }
 
@@ -116,7 +117,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 	int i;
 	for (i=0; i<40; i++) {
 		unsigned char ch = '\0';
-		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 		if (ch == '\0')
 			return;
 		if (ch >= ' ' && ch < 126)
@@ -134,7 +135,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
  */
 void store_byte(uint64_t addr, uint8_t data)
 {
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, &data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, &data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
@@ -195,7 +196,7 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
@@ -215,7 +216,7 @@ void store_32bit_word(uint64_t addr, uint32_t data32)
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE);
 }
 
 
@@ -679,7 +680,9 @@ void machine_init(struct memory *mem)
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
 	uint32_t system;
+	uint64_t sgi_ram_offset = 0;
 	int arc_wordlen = sizeof(uint32_t);
+	char *short_machine_name = NULL;
 
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
@@ -1420,126 +1423,36 @@ void machine_init(struct memory *mem)
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
+		short_machine_name = malloc(500);
+		if (short_machine_name == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
 
 		if (emulation_type == EMULTYPE_SGI) {
 			cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
+			sprintf(short_machine_name, "SGI-IP%i", machine);
 			sprintf(machine_name, "SGI-IP%i", machine);
 
 			/*  Super-special case for IP24:  */
 			if (machine == 24)
-				sprintf(machine_name, "SGI-IP22");
+				sprintf(short_machine_name, "SGI-IP22");
+
+			/*  Special cases for IP20,22,24,26 memory offset:  */
+			if (machine == 20 || machine == 22 ||
+			    machine == 24 || machine == 26) {
+				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, 128*1048576);
+				dev_ram_init(mem, 0x00050000, 128*1048576-0x50000, DEV_RAM_MIRROR, 128*1048576 + 0x50000);
+				sgi_ram_offset = 128*1048576;
+			}
 		} else {
 			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
+			short_machine_name = "ARC";
 			machine_name = "ARC";
 		}
 
-		if (physical_ram_in_mb < 16)
-			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
-
-		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
-		if (emulation_type == EMULTYPE_SGI) {
-			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
-			switch (machine) {
-			case 22:
-				strncpy(arcbios_sysid.ProductId, "87654321", 8);	/*  some kind of ID?  */
-				break;
-			case 32:
-				strncpy(arcbios_sysid.ProductId, "8", 1);		/*  6 or 8 (?)  */
-				break;
-			default:
-				snprintf(arcbios_sysid.ProductId, 8, "IP%i", machine);
-			}
-		} else {
-			/*
-			 *  ARC:  TODO:  Support other machine types. Right now,
-			 *  the "NEC-RD94" (NEC RISCstation 2250) is the only supported one.
-			 */
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
-		}
-		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
-
-		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
-		/*  TODO:  get 79 and 24 from the current terminal settings?  */
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
-		arcbios_dsp_stat.ForegroundColor = 7;
-		arcbios_dsp_stat.HighIntensity = 15;
-		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
-
-		/*
-		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
-		 *  If there's more than 512MB of RAM, it has to be split in two, according to
-		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
-		 *
-		 *  NOTE:  The region of physical address space between 0x10000000 and 0x1fffffff
-		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
-		 */
-		mem_base = 16 * 1048576 / 4096;
-		mem_count = physical_ram_in_mb <= 256? physical_ram_in_mb : 256;
-		mem_count = (mem_count - 16) * 1048576 / 4096;
-
-#if 0
-		/*  SUPER-special case:   SGI-IP22, ignore the lowest 128MB of address space:  */
-		if (emulation_type == EMULTYPE_SGI && machine == 22) {
-			/*  physical_ram_in_mb += 128;  */
-
-			mem_base  += (128 * 1048576) / 4096;
-			mem_count -= (128 * 1048576) / 4096;
-		}
-#endif
-
-		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
-		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
-
-		mem_mb_left = physical_ram_in_mb - 512;
-		mem_base = 512 * (1048576 / 4096);
-		mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
-		while (mem_mb_left > 0) {
-			mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
-
-			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
-
-			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
-			mem_bufaddr += sizeof(arcbios_mem);
-
-			mem_mb_left -= 512;
-			mem_base += 512 * (1048576 / 4096);
-		}
-
-		/*  End of memory descriptors:  (pagecount = zero)  */
-		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
-
-		/*
-		 *  Components:   (this is an example of what a system could look like)
-		 *
-		 *  [System]
-		 *	[CPU]  (one for each cpu)
-		 *	    [FPU]  (one for each cpu)
-		 *	    [CPU Caches]
-		 *	[Memory]
-		 *	[Ethernet]
-		 *	[Serial]
-		 *	[SCSI]
-		 *	    [Disk]
-		 *
-		 *  Here's a good list of what hardware is in different IP-models:
-		 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
-		 */
 
 		if (emulation_type == EMULTYPE_SGI) {
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, machine_name, 0  /*  ROOT  */);
-
-			/*  TODO:  sync devices and component tree  */
-
 			/*  TODO:  Other machine types?  */
 			switch (machine) {
 			case 19:
@@ -1562,12 +1475,13 @@ void machine_init(struct memory *mem)
 				/*
 				 *  Guesses based on NetBSD 2.0 beta, 20040606.
 				 */
-				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
+
+				/*  int0 at mainbus0 addr 0x1fb801c0  */
+				sgi_ip20_data = dev_sgi_ip20_init(cpus[bootstrap_cpu], mem, DEV_SGI_IP20_BASE);
+
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
 
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);
-
-				/*  int0 at mainbus0 addr 0x1fb801c0  */
 
 				break;
 			case 21:
@@ -1584,8 +1498,6 @@ void machine_init(struct memory *mem)
 					strcat(machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880, 1);
 				}
-
-				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
 				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
 
@@ -1612,7 +1524,7 @@ void machine_init(struct memory *mem)
 				 *  interrupts, and 32..63 for local1.  + y*65 for "mappable".
 				 */
 
-				/*  zsc0 serial console. TODO: irq nr  */
+				/*  zsc0 serial console.  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830,
 				    8 + 32 + 3 + 64*5, 1);
 
@@ -1623,10 +1535,10 @@ void machine_init(struct memory *mem)
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
 
-	 			/*  wdsc0, SCSI.  TODO: irq nr  */
+	 			/*  wdsc0: SCSI  */
 				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 8 + 1);
 
-				/*  wdsc1:  TODO: irq nr  */
+				/*  wdsc1: SCSI  TODO: irq nr  */
 				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbcc000, 8 + 1);
 
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
@@ -1659,7 +1571,6 @@ void machine_init(struct memory *mem)
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
-				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");
@@ -1809,9 +1720,6 @@ void machine_init(struct memory *mem)
 				exit(1);
 			}
 		} else {
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
-
 			/*  TODO:  sync devices and component tree  */
 			/*  TODO 2: These are model dependant!!!  */
 			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 0);
@@ -1830,6 +1738,114 @@ void machine_init(struct memory *mem)
 			/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
 			bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 		}
+
+		if (physical_ram_in_mb < 16)
+			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
+
+		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
+		if (emulation_type == EMULTYPE_SGI) {
+			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
+			switch (machine) {
+			case 22:
+				strncpy(arcbios_sysid.ProductId, "87654321", 8);	/*  some kind of ID?  */
+				break;
+			case 32:
+				strncpy(arcbios_sysid.ProductId, "8", 1);		/*  6 or 8 (?)  */
+				break;
+			default:
+				snprintf(arcbios_sysid.ProductId, 8, "IP%i", machine);
+			}
+		} else {
+			/*
+			 *  ARC:  TODO:  Support other machine types. Right now,
+			 *  the "NEC-RD94" (NEC RISCstation 2250) is the only supported one.
+			 */
+			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+		}
+		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
+
+		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
+		/*  TODO:  get 79 and 24 from the current terminal settings?  */
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
+		arcbios_dsp_stat.ForegroundColor = 7;
+		arcbios_dsp_stat.HighIntensity = 15;
+		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
+
+		/*
+		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
+		 *  If there's more than 512MB of RAM, it has to be split in two, according to
+		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
+		 *
+		 *  NOTE:  The region of physical address space between 0x10000000 and 0x1fffffff
+		 *  (256 - 512 MB) is usually occupied by memory mapped devices, so that portion is "lost".
+		 */
+		mem_base = 16 * 1048576 / 4096;
+		mem_count = physical_ram_in_mb <= 256? physical_ram_in_mb : 256;
+		mem_count = (mem_count - 16) * 1048576 / 4096;
+
+		mem_base += (sgi_ram_offset / 4096);
+
+		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+		mem_mb_left = physical_ram_in_mb - 512;
+		mem_base = 512 * (1048576 / 4096);
+		mem_base += (sgi_ram_offset / 4096);
+		mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
+		while (mem_mb_left > 0) {
+			mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+
+			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+
+			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			mem_bufaddr += sizeof(arcbios_mem);
+
+			mem_mb_left -= 512;
+			mem_base += 512 * (1048576 / 4096);
+		}
+
+		/*  End of memory descriptors:  (pagecount = zero)  */
+		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+		store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+		/*
+		 *  Components:   (this is an example of what a system could look like)
+		 *
+		 *  [System]
+		 *	[CPU]  (one for each cpu)
+		 *	    [FPU]  (one for each cpu)
+		 *	    [CPU Caches]
+		 *	[Memory]
+		 *	[Ethernet]
+		 *	[Serial]
+		 *	[SCSI]
+		 *	    [Disk]
+		 *
+		 *  Here's a good list of what hardware is in different IP-models:
+		 *  http://www.linux-mips.org/archives/linux-mips/2001-03/msg00101.html
+		 */
+
+		if (machine_name == NULL)
+			fatal("ERROR: machine_name == NULL\n");
+		if (short_machine_name == NULL)
+			fatal("ERROR: short_machine_name == NULL\n");
+
+		if (emulation_type == EMULTYPE_SGI) {
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
+		} else {
+			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+		}
+
 
 		/*
 		 *  Common stuff for both SGI and ARC:

@@ -1,10 +1,11 @@
-Release notes for mips64emul 0.1
-================================
+Release notes for mips64emul 0.1.1
+==================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
 
-This is the first official release of mips64emul.
+0.1 is the first official release of mips64emul. 0.1.1 contains a few 
+minor updates.
 
 mips64emul is a MIPS machine emulator. The goals are to emulate 32-bit and
 64-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
@@ -14,9 +15,9 @@ Linux.
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
-In mips64emul's current state, it is possible to emulate a DECstation well
-enough to let NetBSD/pmax install itself onto a harddisk image, in a manner
-very similar to how an install is performed on a real physical DECstation.
+In mips64emul's current state, a DECstation machine is emulated well enough
+to let NetBSD/pmax install itself onto a harddisk image, in a manner very
+similar to how an install is performed on a real physical DECstation.
 (Ultrix/RISC is also possible to install this way.)
 
 Other machine types are also emulated, but not well enough yet to let an

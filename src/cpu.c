@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.36 2004-03-06 12:55:20 debug Exp $
+ *  $Id: cpu.c,v 1.37 2004-03-07 03:55:26 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2569,10 +2569,16 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			running = 0;
 	}
 
-	/*  One last tick of every hardware device:  */
-	/*  (TODO: per cpu?)  */
-        for (i=0; i<cpus[0]->n_tick_entries; i++)
+	/*
+	 *  Two last ticks of every hardware device.  This will allow
+	 *  framebuffers to draw the last updates to the screen before
+	 *  halting.
+	 *  (TODO: do this per cpu?)
+	 */
+        for (i=0; i<cpus[0]->n_tick_entries; i++) {
 		cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
+		cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
+	}
 
 	debug("All CPUs halted.\n");
 

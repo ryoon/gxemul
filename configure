@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.45 2004-07-30 11:24:02 debug Exp $
+#  $Id: configure,v 1.46 2004-08-01 11:00:02 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -542,7 +542,7 @@ INCLUDE=-I../include/
 
 echo C compiler: $CC
 echo C compiler flags: $COPTIM $CWARNINGS $INCLUDE
-echo Link flags: $OTHERLIBS
+echo Linker flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$COPTIM" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header

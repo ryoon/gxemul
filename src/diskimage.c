@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.39 2004-07-21 03:03:23 debug Exp $
+ *  $Id: diskimage.c,v 1.40 2004-07-22 22:35:20 debug Exp $
  *
  *  Disk image support.
  *
@@ -1081,7 +1081,6 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
 int diskimage_add(char *fname)
 {
 	int id;
-	FILE *f;
 	char *cp;
 	int prefix_b = 0;
 	int prefix_c = 0;
@@ -1203,15 +1202,6 @@ int diskimage_add(char *fname)
 			diskimages[id]->logical_block_size = 512;
 		}
 	}
-
-	/*  Measure total_size:  */
-	f = fopen(fname, "r");
-	if (f == NULL) {
-		perror(fname);
-		exit(1);
-	}
-	fseek(f, 0, SEEK_END);
-	fclose(f);
 
 	diskimage_recalc_size(id);
 

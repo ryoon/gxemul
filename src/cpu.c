@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.10 2003-12-29 00:53:04 debug Exp $
+ *  $Id: cpu.c,v 1.11 2003-12-29 09:49:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -993,6 +993,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			break;
 		case SPECIAL_DSRLV:
 		case SPECIAL_DSRAV:
+		case SPECIAL_DSLLV:
 		case SPECIAL_SLLV:
 		case SPECIAL_SRAV:
 		case SPECIAL_SRLV:
@@ -1004,6 +1005,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				instr_mnem = NULL;
 				if (special6 == SPECIAL_DSRLV)	instr_mnem = "dsrlv";
 				if (special6 == SPECIAL_DSRAV)	instr_mnem = "dsrav";
+				if (special6 == SPECIAL_DSLLV)	instr_mnem = "dsllv";
 				if (special6 == SPECIAL_SLLV)	instr_mnem = "sllv";
 				if (special6 == SPECIAL_SRAV)	instr_mnem = "srav";
 				if (special6 == SPECIAL_SRLV)	instr_mnem = "srlv";
@@ -1024,6 +1026,11 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 					if (cpu->gpr[rd] & ((uint64_t)1 << 62))		/*  old sign-bit  */
 						cpu->gpr[rd] |= ((uint64_t)1 << 63);
 				}
+			}
+			if (special6 == SPECIAL_DSLLV) {
+				sa = cpu->gpr[rs] & 63;
+				cpu->gpr[rd] = cpu->gpr[rt];
+				cpu->gpr[rd] = cpu->gpr[rd] << sa;
 			}
 			if (special6 == SPECIAL_SLLV) {
 				sa = cpu->gpr[rs] & 31;
@@ -1150,6 +1157,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		case SPECIAL_NOR:
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
+		case SPECIAL_TEQ:
 		case SPECIAL_DADDU:
 		case SPECIAL_DSUBU:
 		case SPECIAL_MOVZ:
@@ -1206,6 +1214,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				if (special6 == SPECIAL_DIVU)	instr_mnem = "divu";
 				if (special6 == SPECIAL_DDIV)	instr_mnem = "ddiv";
 				if (special6 == SPECIAL_DDIVU)	instr_mnem = "ddivu";
+				if (special6 == SPECIAL_TEQ)	instr_mnem = "teq";
 				if (instr_mnem)
 					debug("%s\tr%i,r%i\n", instr_mnem, rs, rt);
 
@@ -1387,6 +1396,12 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
 					cpu->gpr[rd] |= 0xffffffff00000000;
+				break;
+			}
+
+			if (special6 == SPECIAL_TEQ) {
+				if (cpu->gpr[rs] == cpu->gpr[rt])
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 

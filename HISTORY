@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.296 2004-11-05 23:06:44 debug Exp $
+$Id: HISTORY,v 1.297 2004-11-06 00:41:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1120,3 +1120,4 @@ HISTORY of mips64emul
 		(-z) adds DISPLAYs that should be used.
 		Update regarding how DECstation BT459 cursors are used;
 		transparency :-) and some other bug fixes.
+20041106	More bt459 updates.

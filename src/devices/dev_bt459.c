@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.37 2004-11-06 00:00:41 debug Exp $
+ *  $Id: dev_bt459.c,v 1.38 2004-11-06 00:41:11 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -128,16 +128,9 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 	d->cursor_ysize = ymax + 1;
 
 	/*
-	 *  It seems that when Ultrix wants to use a full white block cursor,
-	 *  it uses color 3. This is all good and well, but later, when it
-	 *  uses a graphical mouse cursor (pointer shape), 0 means transparent,
-	 *  1 isn't used, 2 means white, and 3 means black. So it's all in
-	 *  reverse. The 'bw_only' flag is useful for this.
-	 *
-	 *  NetBSD/pmax uses 1 for white, not 2.
-	 *
-	 *  TODO: Is there a way to know which color scheme is used, without
-	 *  this kind of hack?
+	 *  The 'bw_only' hack is because it is nicer to have the b/w
+	 *  text cursor invert whatever it is standing on, not just overwrite
+	 *  it with a big white box.
 	 */
 
 #ifdef WITH_X11
@@ -159,16 +152,26 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 						else
 							pixelvalue = 0;
 					} else {
-						/*  0 = transparent  */
-						/*  1 = unknown  */
-						/*  2 = white  */
-						/*  3 = black  */
-						pixelvalue = CURSOR_COLOR_TRANSPARENT;
-						if (color == 1 || color == 2)
+						switch (color) {
+						case 1:	pixelvalue =
+							    d->bt459_reg[
+							    BT459_REG_CCOLOR_1];
+							break;
+						case 2:	pixelvalue =
+							    d->bt459_reg[
+							    BT459_REG_CCOLOR_2];
+							break;
+						case 3:	pixelvalue =
+							    d->bt459_reg[
+							    BT459_REG_CCOLOR_3];
+							break;
+						default:
 							pixelvalue =
-							    N_GRAYCOLORS - 1;
-						if (color == 3)
-							pixelvalue = 0;
+							    CURSOR_COLOR_TRANSPARENT;
+						}
+						/*  0xff => 0xf  */
+						if (pixelvalue >= N_GRAYCOLORS)
+							pixelvalue >>= 4;
 					}
 
 					win->cursor_pixels[y][x+i] =

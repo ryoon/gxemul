@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.88 2004-12-29 13:51:03 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.89 2004-12-29 18:00:35 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -338,12 +338,76 @@ static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	0x01, 0x80, 0xfa, 0x6b		/*  ret  */
 };
 
+static uint32_t bintrans_alpha_loadstore_32bit[15] = {
+	/*
+	 *  t1 = 1023;
+	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+	 *  t1 = a1 & 4095;
+	 *
+	 *  f8 1f 5f 20     lda     t1,1023 * 8
+	 *  83 76 22 4a     srl     a1,19,t2
+	 *  84 36 21 4a     srl     a1, 9,t3
+	 *  03 00 62 44     and     t2,t1,t2
+	 */
+	0x205f1ff8,
+	0x4a227683,
+	0x4a213684,
+	0x44620003,
+
+	/*
+	 *  t10 is vaddr_to_hostaddr_table0
+	 *
+	 *  a3 = tbl0[t2]  (load entry from tbl0)
+	 *  12 04 03 43     addq    t10,t2,a2
+	 */
+	0x43030412,
+
+	/*  04 00 82 44     and     t3,t1,t3  */
+	0x44820004,
+
+	/*  00 00 72 a6     ldq     a3,0(a2)  */
+	0xa6720000,
+
+	/*  ff 0f 5f 20     lda     t1,4095  */
+	0x205f0fff,
+
+	/*
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
+	 *  13 04 64 42     addq    a3,t3,a3
+	 */
+	0x42640413,
+
+	/*  02 00 22 46     and     a1,t1,t1  */
+	0x46220002,
+
+	/*  00 00 73 a6     ldq     a3,0(a3)  */
+	0xa6730000,
+
+	/*  01 30 60 46     and     a3,0x1,t0  */
+	0x46603001,
+
+	/*  Get rid of the lowest bit:  */
+	/*  33 05 61 42     subq    a3,t0,a3  */
+	0x42610533,
+
+	/*  The rest of the load/store code was written with t3 as the address.  */
+
+	/*  Add the offset within the page:  */
+	/*  04 04 62 42     addq    a3,t1,t3  */
+	0x42620404,
+
+	0x6be50000		/*  jmp (t4)  */
+};
 
 static const void (*bintrans_runchunk)
     (struct cpu *, unsigned char *) = (void *)bintrans_alpha_runchunk;
 
 static void (*bintrans_jump_to_32bit_pc)
     (struct cpu *) = (void *)bintrans_alpha_jump_to_32bit_pc;
+
+static void (*bintrans_loadstore_32bit)
+    (struct cpu *) = (void *)bintrans_alpha_loadstore_32bit;
 
 
 /*
@@ -420,8 +484,8 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		*a++ = 0x41401400 | alphareg;
 		break;
 	case 0:
-		/*  clr alphareg  */
-		*a++ = 0x47ff0400 | alphareg;
+		/*  addq zero,0,alphareg  */
+		*a++ = 0x43e01400 | alphareg;
 		break;
 	case GPR_A0:
 		/*  addq t7,0,alphareg  */
@@ -1376,7 +1440,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 {
 	unsigned char *a, *fail;
 	uint32_t *b;
-	int ofs, alignment, load=0, alpha_rs;
+	int ofs, alignment, load=0, alpha_rs, alpha_rt;
 
 	/*  TODO: Not yet:  */
 	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ) {
@@ -1455,53 +1519,24 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
+	alpha_rt = map_MIPS_to_Alpha[rt];
+
 	if (bintrans_32bit_only) {
 		/*  Special case for 32-bit addressing:  */
 
-		/*
-		 *  t1 = 1023;
-		 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-		 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-		 *  t1 = a1 & 4095;
-		 *
-		 *  f8 1f 5f 20     lda     t1,1023 * 8
-		 *  83 76 22 4a     srl     a1,19,t2
-		 *  84 36 21 4a     srl     a1, 9,t3
-		 *  03 00 62 44     and     t2,t1,t2
-		 */
-		*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
-		*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
-		*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
-		*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
+		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
+
+		/*  jsr t4,(t12),<after>  */
+		*a++ = 0x00; *a++ = 0x40; *a++ = 0xbb; *a++ = 0x68;
 
 		/*
-		 *  t10 is vaddr_to_hostaddr_table0
-		 *
-		 *  a3 = tbl0[t2]  (load entry from tbl0)
-		 *  12 04 03 43     addq    t10,t2,a2
+		 *  Now:
+		 *	a3 = host page  (or NULL if not found)
+		 *	t0 = 0 for readonly pages, 1 for read/write pages
+		 *	t3 = (potential) address of host load/store
 		 */
-		*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
-
-		/*  04 00 82 44     and     t3,t1,t3  */
-		*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
-
-		/*  00 00 72 a6     ldq     a3,0(a2)  */
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
-
-		/*  ff 0f 5f 20     lda     t1,4095  */
-		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
-
-		/*
-		 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
-		 *  13 04 64 42     addq    a3,t3,a3
-		 */
-		*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
-
-		/*  02 00 22 46     and     a1,t1,t1  */
-		*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
-
-		/*  00 00 73 a6     ldq     a3,0(a3)  */
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
 
 		/*
 		 *  NULL? Then return failure.
@@ -1512,12 +1547,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		bintrans_write_chunkreturn_fail(&a);
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
-		/*  01 30 60 46     and     a3,0x1,t0  */
-		*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
-
-		/*
-		 *  If this is a store, then the lowest bit must be set:
-		 */
+		/*  If this is a store, then the lowest bit must be set:  */
 		if (!load) {
 			/*  01 00 20 f4     bne     t0,<okzzz>  */
 			fail = a;
@@ -1525,17 +1555,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			bintrans_write_chunkreturn_fail(&a);
 			*fail = ((size_t)a - (size_t)fail - 4) / 4;
 		}
-
-		/*  Get rid of the lowest bit:  */
-		/*  33 05 61 42     subq    a3,t0,a3  */
-		*a++ = 0x33; *a++ = 0x05; *a++ = 0x61; *a++ = 0x42;
-
-		/*  The rest of this code was written with t3 as the address.  */
-
-		/*  Add the offset within the page:  */
-		/*  04 04 62 42     addq    a3,t1,t3  */
-		*a++ = 0x04; *a++ = 0x04; *a++ = 0x62; *a++ = 0x42;
-
 	} else {
 		*addrp = a;
 		b = (uint32_t *) *addrp;
@@ -1724,7 +1743,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb4;			/*  stq to memory  */
 		break;
 	case HI6_SW:
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
+		if (alpha_rt < 0 || bigendian) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
+			alpha_rt = ALPHA_T0;
+		}
 		if (bigendian) {
 			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
 			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
@@ -1736,7 +1758,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
 		}
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
+		/*  stl to memory:  stl rt,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x04 | ((alpha_rt & 7) << 5);
+		    *a++ = 0xb0 | ((alpha_rt >> 3) & 3);
 		break;
 	case HI6_SH:
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
@@ -1748,8 +1772,13 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
 		break;
 	case HI6_SB:
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x38;			/*  stb to memory  */
+		if (alpha_rt < 0) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
+			alpha_rt = ALPHA_T0;
+		}
+		/*  stb to memory:  stb rt,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x04 | ((alpha_rt & 7) << 5);
+		    *a++ = 0x38 | ((alpha_rt >> 3) & 3);
 		break;
 	default:
 		;

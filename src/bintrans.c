@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.120 2004-12-22 16:12:58 debug Exp $
+ *  $Id: bintrans.c,v 1.121 2004-12-29 18:00:35 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -324,7 +324,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	unsigned char *f;
 	struct translation_page_entry *tep;
 	size_t chunk_len;
-	int rs,rt=0,rd,sa,imm;
+	int rs,rt,rd,sa,imm;
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
 	int delayed_branch, stop_after_delayed_branch;
@@ -335,6 +335,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	/*  Abort if the current "environment" isn't safe enough:  */
 	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
 		return cpu->bintrans_instructions_executed;
+
+	bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
+	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 
 	/*  Is this a part of something that is already translated?  */
 	paddr_page = paddr & ~0xfff;
@@ -421,8 +424,6 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	/*
 	 *  Try to translate a chunk of code:
 	 */
-	bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
-	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 	p = paddr & 0xfff;
 	try_to_translate = 1;
 	n_translated = 0;
@@ -430,7 +431,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	delayed_branch = 0;
 	stop_after_delayed_branch = 0;
 	delayed_branch_new_p = 0;
-
+	rt = 0;
 	n_quick_jumps = quick_jumps_index = 0;
 
 	while (try_to_translate) {
@@ -925,6 +926,7 @@ void bintrans_init_cpu(struct cpu *cpu)
 	int i, offset;
 
 	cpu->chunk_base_address        = translation_code_chunk_space;
+	cpu->bintrans_loadstore_32bit  = bintrans_loadstore_32bit;
 	cpu->bintrans_jump_to_32bit_pc = bintrans_jump_to_32bit_pc;
 	cpu->bintrans_fast_tlbwri      = coproc_tlbwri;
 	cpu->bintrans_fast_tlbpr       = coproc_tlbpr;

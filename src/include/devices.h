@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.54 2004-06-07 07:08:28 debug Exp $
+ *  $Id: devices.h,v 1.55 2004-06-07 11:52:06 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -392,6 +392,7 @@ void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip22.c:  */
 #define	DEV_SGI_IP22_LENGTH		0x100
+#define	DEV_SGI_IP22_MEMCTL_LENGTH	0x100
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 

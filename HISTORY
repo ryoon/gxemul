@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.79 2004-06-07 07:21:09 debug Exp $
+$Id: HISTORY,v 1.80 2004-06-07 11:52:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -500,3 +500,7 @@ HISTORY of mips64emul
 		Adding some instructions: tlt, tltu, tge, tgeu, tne.
 20040607	Adding the dsub instruction.
 		Some minimal progress on SGI-IP30 emulation.
+		Applying a patch from Juli Mallett to src/file.c (I'm not
+		sure yet if it breaks or fixes anything).
+		Some minor fixes for SGI-IP22 (such as faked board revision
+		numbers).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.3 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.4 2004-02-22 13:13:30 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -76,7 +76,7 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		/*  Two byte values are written to this address, sequentially...  TODO  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			if (d->reg[regnr] > 0 && (random() & 0xff) == 0)
+			if (d->reg[regnr] != 0 && (random() & 0xff) == 0)
 				d->reg[regnr]--;	/*  Actually, the tick function should count down this to zero...  */
 		}
 		break;

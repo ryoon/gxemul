@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003, 2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.10 2004-03-11 05:29:49 debug Exp $
+ *  $Id: x11.c,v 1.11 2004-04-09 05:11:17 debug Exp $
  *
  *  X11-related functions.
  */
@@ -78,8 +78,26 @@ void x11_redraw(void)
 	if (x11_display==NULL || n_framebuffer_windows == 0)
 		return;
 
-	for (i=0; i<n_framebuffer_windows; i++)
+	for (i=0; i<n_framebuffer_windows; i++) {
 		x11_putimage_fb(i);
+
+		if (fb_windows[i].cursor_on) {
+			XPutImage(fb_windows[i].x11_display,
+			    fb_windows[i].x11_fb_window,
+			    fb_windows[i].x11_fb_gc,
+			    fb_windows[i].cursor_ximage,
+			    0, 0,
+			    fb_windows[i].cursor_x/fb_windows[i].scaledown,
+			    fb_windows[i].cursor_y/fb_windows[i].scaledown,
+			    fb_windows[i].cursor_xsize/fb_windows[i].scaledown,
+			    fb_windows[i].cursor_ysize/fb_windows[i].scaledown);
+			fb_windows[i].OLD_cursor_on = fb_windows[i].cursor_on;
+			fb_windows[i].OLD_cursor_x = fb_windows[i].cursor_x;
+			fb_windows[i].OLD_cursor_y = fb_windows[i].cursor_y;
+			fb_windows[i].OLD_cursor_xsize = fb_windows[i].cursor_xsize;
+			fb_windows[i].OLD_cursor_ysize = fb_windows[i].cursor_ysize;
+		}
+	}
 
 	XFlush(x11_display);
 }
@@ -166,6 +184,7 @@ void x11_init(void)
 		cname[1] = cname[2] = cname[3] =
 		    cname[4] = cname[5] = cname[6] =
 		    "0123456789ABCDEF"[i];
+		cname[7] = '\0';
 		XParseColor(x11_display, DefaultColormap(x11_display, x11_screen), cname, &x11_graycolor[i]);
 		XAllocColor(x11_display, DefaultColormap(x11_display, x11_screen), &x11_graycolor[i]);
 	}
@@ -247,7 +266,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 		debug("x11_fb_init(): clearing the XImage\n");
 		for (y=0; y<ysize; y++)
 			for (x=0; x<xsize; x++)
-				XPutPixel(fb_windows[fb_number].fb_ximage, x, y, x11_graycolor[0].pixel);
+				XPutPixel(fb_windows[fb_number].fb_ximage,
+				    x, y, x11_graycolor[0].pixel);
 	}
 
 	x11_putimage_fb(fb_number);
@@ -268,8 +288,10 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 			exit(1);
 		}
 
-		fb_windows[fb_number].cursor_ximage = XCreateImage(fb_windows[fb_number].x11_display, CopyFromParent,
-		    8 * bytes_per_pixel, XYPixmap, 0, cursor_data, xsize, ysize, 8, 0);
+		fb_windows[fb_number].cursor_ximage =
+		    XCreateImage(fb_windows[fb_number].x11_display,
+		    CopyFromParent, 8 * bytes_per_pixel, XYPixmap, 0,
+		    cursor_data, xsize, ysize, 8, 0);
 		if (fb_windows[fb_number].cursor_ximage == NULL) {
 			fprintf(stderr, "out of memory allocating ximage\n");
 			exit(1);
@@ -278,7 +300,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 		/*  Fill the cursor ximage with white pixels:  */
 		for (y=0; y<ysize; y++)
 			for (x=0; x<xsize; x++)
-				XPutPixel(fb_windows[fb_number].cursor_ximage, x, y, x11_graycolor[N_GRAYCOLORS-1].pixel);
+				XPutPixel(fb_windows[fb_number].cursor_ximage,
+				    x, y, x11_graycolor[N_GRAYCOLORS-1].pixel);
 	}
 
 	return &fb_windows[fb_number];
@@ -294,6 +317,7 @@ void x11_check_event(void)
 {
 	XEvent event;
 	int i, found;
+	int need_redraw = 0;
 
 	if (x11_display == NULL)
 		return;
@@ -304,13 +328,13 @@ void x11_check_event(void)
 		if (event.type==ConfigureNotify) {
 /*			x11_winxsize = event.xconfigure.width;
 			x11_winysize = event.xconfigure.height; */
-			x11_redraw();
+			need_redraw = 1;
 		}
 
 		if (event.type==Expose && event.xexpose.count==0) {
 /*			x11_winxsize = event.xexpose.width;
 			x11_winysize = event.xexpose.height; */
-			x11_redraw();
+			need_redraw = 1;
 		}
 
 		if (event.type == MotionNotify) {
@@ -351,6 +375,9 @@ void x11_check_event(void)
 			}
 		}
 	}
+
+	if (need_redraw)
+		x11_redraw();
 }
 
 

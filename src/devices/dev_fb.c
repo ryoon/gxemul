@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.28 2004-03-28 15:17:03 debug Exp $
+ *  $Id: dev_fb.c,v 1.29 2004-04-09 05:11:20 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -160,14 +160,15 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
 	int cursor_xsize, int cursor_ysize)
 {
-	d->cursor_x      = cursor_x;
-	d->cursor_y      = cursor_y;
-	d->cursor_on     = on;
-	d->cursor_xsize  = cursor_xsize;
-	d->cursor_ysize  = cursor_ysize;
-
-	debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n", cursor_x, cursor_y,
-	    cursor_xsize, cursor_ysize, on);
+#ifdef WITH_X11
+	d->fb_window->cursor_x      = cursor_x;
+	d->fb_window->cursor_y      = cursor_y;
+	d->fb_window->cursor_on     = on;
+	d->fb_window->cursor_xsize  = cursor_xsize;
+	d->fb_window->cursor_ysize  = cursor_ysize;
+#endif
+	/*  debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n",
+	    cursor_x, cursor_y, cursor_xsize, cursor_ysize, on);  */
 }
 
 
@@ -496,29 +497,40 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 skip_update:
 
 #ifdef WITH_X11
-	if (d->cursor_on != d->OLD_cursor_on ||
-	    d->cursor_x != d->OLD_cursor_x || d->cursor_y != d->OLD_cursor_y ||
-	    d->cursor_xsize != d->OLD_cursor_xsize || d->cursor_ysize != d->OLD_cursor_ysize) {
+	if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
+	    d->fb_window->cursor_x != d->fb_window->OLD_cursor_x ||
+	    d->fb_window->cursor_y != d->fb_window->OLD_cursor_y ||
+	    d->fb_window->cursor_xsize != d->fb_window->OLD_cursor_xsize ||
+	    d->fb_window->cursor_ysize != d->fb_window->OLD_cursor_ysize) {
 		/*  Remove old cursor, if any:  */
-		if (d->OLD_cursor_on) {
-			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
+		if (d->fb_window->OLD_cursor_on) {
+			XPutImage(d->fb_window->x11_display,
+			    d->fb_window->x11_fb_window,
 			    d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
-			    d->OLD_cursor_x/d->vfb_scaledown, d->OLD_cursor_y/d->vfb_scaledown,
-			    d->OLD_cursor_x/d->vfb_scaledown, d->OLD_cursor_y/d->vfb_scaledown,
-			    d->OLD_cursor_xsize/d->vfb_scaledown, d->OLD_cursor_ysize/d->vfb_scaledown);
+			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown);
 		}
 
 		/*  Paint new cursor:  */
-		if (d->cursor_on) {
-			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
-			    d->fb_window->x11_fb_gc, d->fb_window->cursor_ximage,
-			    0,0, d->cursor_x/d->vfb_scaledown, d->cursor_y/d->vfb_scaledown,
-			    d->cursor_xsize/d->vfb_scaledown, d->cursor_ysize/d->vfb_scaledown);
-			d->OLD_cursor_on = d->cursor_on;
-			d->OLD_cursor_x = d->cursor_x;
-			d->OLD_cursor_y = d->cursor_y;
-			d->OLD_cursor_xsize = d->cursor_xsize;
-			d->OLD_cursor_ysize = d->cursor_ysize;
+		if (d->fb_window->cursor_on) {
+			XPutImage(d->fb_window->x11_display,
+			    d->fb_window->x11_fb_window,
+			    d->fb_window->x11_fb_gc,
+			    d->fb_window->cursor_ximage,
+			    0, 0,
+			    d->fb_window->cursor_x/d->vfb_scaledown,
+			    d->fb_window->cursor_y/d->vfb_scaledown,
+			    d->fb_window->cursor_xsize/d->vfb_scaledown,
+			    d->fb_window->cursor_ysize/d->vfb_scaledown);
+			d->fb_window->OLD_cursor_on = d->fb_window->cursor_on;
+			d->fb_window->OLD_cursor_x = d->fb_window->cursor_x;
+			d->fb_window->OLD_cursor_y = d->fb_window->cursor_y;
+			d->fb_window->OLD_cursor_xsize = d->fb_window->cursor_xsize;
+			d->fb_window->OLD_cursor_ysize = d->fb_window->cursor_ysize;
 		}
 
 		need_to_flush_x11 = 1;
@@ -716,8 +728,6 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	snprintf(title, sizeof(title), "mips64emul: %ix%ix%i %s framebuffer",
 	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
 	title[sizeof(title)-1] = '\0';
-
-	d->cursor_x = d->cursor_y = d->cursor_xsize = d->cursor_ysize = d->cursor_on = 0;
 
 #ifdef WITH_X11
 	if (use_x11)

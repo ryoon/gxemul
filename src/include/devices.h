@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.49 2004-04-02 05:48:04 debug Exp $
+ *  $Id: devices.h,v 1.50 2004-04-09 05:11:19 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -155,17 +155,6 @@ struct vfb_data {
 
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */
 	unsigned char	rgb_palette[256 * 3];
-
-	int		cursor_x;
-	int		cursor_y;
-	int		cursor_xsize;
-	int		cursor_ysize;
-	int		cursor_on;
-	int		OLD_cursor_x;
-	int		OLD_cursor_y;
-	int		OLD_cursor_xsize;
-	int		OLD_cursor_ysize;
-	int		OLD_cursor_on;
 
 	/*  These should always be in sync:  */
 	unsigned char	*framebuffer;

@@ -1,4 +1,4 @@
-$Id: README,v 1.48 2004-12-12 22:22:28 debug Exp $
+$Id: README,v 1.49 2004-12-15 17:34:27 debug Exp $
 
 I'm now working on what will become 0.2.4.
 
@@ -18,9 +18,9 @@ MIPS-like CPUs and enough surrounding hardware to let unmodified operating
 systems run as if they were running on a real machine, and to assist in
 experiments involving MIPS-like code in general.
 
-(MIPS is a registered trademark of MIPS Technologies. mips64emul is a 
-spare-time hobby project, and is not affiliated with MIPS Technologies in
-any way whatsoever.)
+(MIPS is a registered trademark of MIPS Technologies. mips64emul is 
+developed as a spare-time hobby, and there is no affiliation with MIPS
+Technologies in any way whatsoever.)
 
 
 Quick start

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.168 2004-12-15 05:15:58 debug Exp $
+$Id: index.html,v 1.169 2004-12-15 17:34:28 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -88,21 +88,18 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-mips64emul is a free MIPS machine emulator.
-
-The goals are to emulate
+mips64emul is a free MIPS machine emulator. The goals are to emulate
 MIPS-like CPUs and enough surrounding hardware to let unmodified operating
 systems run as if they were running on a real machine, and to assist in
 experiments involving MIPS-like code in general.   
-<p>
-Note: This is a spare time hobby project,
-and many things are not implemented yet.
+
 <p>
 It is important to keep in mind that devices and CPUs are not really emulated
 correctly, they are only "faked" well enough to make eg. NetBSD run.
 That said, the emulator could still be of interest for academic research
 and experiments, such as learning how to write an OS for a MIPS-like
 machine, or profiling SMP, memory usage, or system call patterns.
+
 <p>
 The emulator is written in C, depends on no external libraries (except X11,
 which is optional), and should compile and run on any Unix-like system. If it doesn't, that
@@ -113,10 +110,9 @@ itself. However, if you have a ROM image, it might be possible to run it
 in the emulator.
 
 <p>
-(MIPS is a registered trademark of MIPS Technologies. This project is
-not affiliated with MIPS Technologies in any way whatsoever. There are
-probably also many other words and names used in this documentation that
-are trademarked; they are owned by their respective owners.)
+(MIPS is a registered trademark of MIPS Technologies. mips64emul is 
+developed as a spare-time hobby, and there is no affiliation with MIPS 
+Technologies in any way whatsoever.)
 
 
 

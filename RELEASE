@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.66 2004-12-14 16:40:05 debug Exp $
+$Id: RELEASE,v 1.67 2004-12-15 17:34:27 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -34,9 +34,9 @@ MIPS-like CPUs and enough surrounding hardware to let unmodified operating
 systems run as if they were running on a real machine, and to assist in
 experiments involving MIPS-like code in general.
 
-(MIPS is a registered trademark of MIPS Technologies. mips64emul is a
-spare-time hobby project, and is not affiliated with MIPS Technologies in
-any way whatsoever.)
+(MIPS is a registered trademark of MIPS Technologies. mips64emul is 
+developed as a spare-time hobby, and there is no affiliation with MIPS 
+Technologies in any way whatsoever.)
 
 
 In its current form, it is possible to use the emulator to install an

@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.20 2004-09-17 21:37:46 debug Exp $
+.\" $Id: mips64emul.1,v 1.21 2004-09-26 18:26:00 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -88,10 +88,9 @@ The following command will start NetBSD/pmax on an emulated DECstation
 
 .fi
 if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
-You may wish to add
-.B -XNM64
-to use the X11 framebuffer feature. Read the documentation for more 
-details.
+You may wish to add -XNM128 to use the X11 framebuffer feature and 
+increase the amount of emulated RAM to 128 MB. Read the
+documentation for more details.
 .SH AUTHOR
 Anders Gavare <md1gavan@mdstud.chalmers.se>
 .SH HISTORY

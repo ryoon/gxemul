@@ -61,7 +61,7 @@ Most important stuff (but these are all non-trivial tasks):
 			be possible to cover
 		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
 
-	Emulation of specific machines:
+	Emulation of specific machines and devices:
 		o)  Separate busses and ROM emulation from machines!
 			x)  Make interrupt sharing more generic!
 			x)  TURBOchannel  (many DEC systems)
@@ -107,7 +107,8 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  ARC:
 			x)  NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
 
-		o)  Nintendo 64? R4000.  http://www.nintendo.com/systems/n64/n64_specs.jsp
+		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
+			(R4300 or R4000? 4MB RAM?)
 
 		o)  newsmips?
 

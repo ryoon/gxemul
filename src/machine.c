@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.99 2004-06-15 21:27:37 debug Exp $
+ *  $Id: machine.c,v 1.100 2004-06-17 22:52:17 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1501,7 +1501,7 @@ void machine_init(struct memory *mem)
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
 
 				/*  WDSC SCSI controller:  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fb8011f, 0);
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fb8011f, 0, 0);
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
 				dev_unreadable_init(mem, 0x1fb00000, 0x10000);		/*  hpc1  */
@@ -1565,10 +1565,10 @@ void machine_init(struct memory *mem)
 				/*  dev_sq_init...  */
 
 	 			/*  wdsc0: SCSI  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 8 + 1);
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 0, 8 + 1);
 
 				/*  wdsc1: SCSI  TODO: irq nr  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbcc000, 8 + 1);
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbcc000, 1, 8 + 1);
 
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 

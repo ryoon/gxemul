@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.5 2004-06-12 14:29:11 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.6 2004-06-17 22:52:19 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
+#include "diskimage.h"
 #include "devices.h"
 
 #include "wdsc_sbicreg.h"
@@ -45,6 +46,7 @@
 
 struct wdsc_data {
 	int		irq_nr;
+	int		controller_nr;
 
 	int		register_select;
 	unsigned char	reg[DEV_WDSC_NREGS];
@@ -76,7 +78,7 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 {
 	d->reg[d->register_select] = idata & 0xff;
 
-	debug("[ wdsc: write to register 0x%02x", d->register_select);
+	debug("[ wdsc: write to register %i", d->register_select);
 
 	switch (d->register_select) {
 
@@ -123,6 +125,34 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 
 		break;
 
+	case SBIC_selid:
+		debug(" (selid): 0x%02x => ", (int)idata);
+
+		if (idata & SBIC_SID_SCC)
+			debug("SelectCommandChaining, ");
+		if (idata & SBIC_SID_FROM_SCSI)
+			debug("FromSCSI, ");
+		else
+			debug("ToSCSI, ");
+
+		debug("id %i", idata & SBIC_SID_IDMASK);
+		break;
+
+	case SBIC_rselid:
+		debug(" (rselid): 0x%02x => ", (int)idata);
+
+		if (idata & SBIC_RID_ER)
+			debug("EnableReselection, ");
+		if (idata & SBIC_RID_ES)
+			debug("EnableSelection, ");
+		if (idata & SBIC_RID_DSP)
+			debug("DisableSelectParity, ");
+		if (idata & SBIC_RID_SIV)
+			debug("SourceIDValid, ");
+
+		debug("id %i", idata & SBIC_RID_MASK);
+		break;
+
 	case SBIC_cmd:
 		debug(" (cmd): 0x%02x => ", (int)idata);
 
@@ -135,6 +165,7 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 		case SBIC_CMD_RESET:
 			debug("RESET");
 			d->irq_pending = 1;
+			d->reg[SBIC_csr] = SBIC_CSR_RESET;
 			break;
 		case SBIC_CMD_ABORT:
 			debug("ABORT");
@@ -142,7 +173,17 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 		case SBIC_CMD_SEL_ATN:
 			debug("SEL_ATN");
 			d->irq_pending = 1;
-			/*  TODO  */
+			d->reg[SBIC_csr] = SBIC_CSR_SEL_TIMEO;
+			if (d->controller_nr == 0 && diskimage_exist(d->reg[SBIC_selid] & SBIC_SID_IDMASK)) {
+
+				/*  TODO  */
+
+				/*  According to NetBSD, we can go either to
+				    SBIC_CSR_MIS_2 | CMD_PHASE, or
+				    SBIC_CSR_MIS_2 | MESG_OUT_PHASE.  */
+
+				d->reg[SBIC_csr] = SBIC_CSR_MIS_2 | CMD_PHASE;
+			}
 			break;
 		default:
 			debug("unimplemented command");
@@ -208,15 +249,12 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ) {
 			odata = d->reg[d->register_select];
 
-			/*  TODO: when to ack interrupts?  */
 			if (d->register_select == SBIC_csr) {
+				/*  TODO: when should interrupts actually be ack:ed?  */
 				d->irq_pending = 0;
-				odata = SBIC_CSR_RESET;
-				if (d->reg[SBIC_cmd] == SBIC_CMD_SEL_ATN)
-					odata = SBIC_CSR_SEL_TIMEO;
 			}
 
-			debug("[ wdsc: read from register 0x%02x: %02x ]\n",
+			debug("[ wdsc: read from register %i: 0x%02x ]\n",
 			    d->register_select, (int)odata);
 		} else {
 			dev_wdsc_regwrite(d, idata & 0xff);
@@ -250,7 +288,7 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_wdsc_init():
  */
-void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int controller_nr, int irq_nr)
 {
 	struct wdsc_data *d;
 
@@ -261,6 +299,7 @@ void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 	}
 	memset(d, 0, sizeof(struct wdsc_data));
 	d->irq_nr = irq_nr;
+	d->controller_nr = controller_nr;
 
 	memory_device_register(mem, "wdsc", baseaddr, DEV_WDSC_LENGTH,
 	    dev_wdsc_access, d);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.33 2004-07-17 12:00:14 debug Exp $
+ *  $Id: emul.c,v 1.34 2004-07-17 20:09:51 debug Exp $
  *
  *  Emulation startup.
  */
@@ -350,11 +350,11 @@ void emul(void)
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;
 	cpus[bootstrap_cpu]->running            = 1;
 
-	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
-	symbol_recalc_sizes();
-
 	/*  Add PC dump points:  */
 	add_pc_dump_points();
+
+	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
+	symbol_recalc_sizes();
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    bootstrap_cpu,

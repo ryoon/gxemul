@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.3 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.4 2005-02-03 06:15:08 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -137,6 +137,31 @@ void sparc_cpu_list_available_types(void)
 
 
 /*
+ *  sparc_cpu_register_match():
+ */
+void sparc_cpu_register_match(struct machine *m, char *name,
+	int writeflag, uint64_t *valuep, int *match_register)
+{
+	int cpunr = 0;
+
+	/*  CPU number:  */
+
+	/*  TODO  */
+
+	/*  Register name:  */
+	if (strcasecmp(name, "pc") == 0) {
+		if (writeflag) {
+			m->cpus[cpunr]->cd.sparc.pc = *valuep;
+		} else
+			*valuep = m->cpus[cpunr]->cd.sparc.pc;
+		*match_register = 1;
+	}
+
+	/*  TODO: _LOTS_ of stuff.  */
+}
+
+
+/*
  *  sparc_cpu_family_init():
  *
  *  Fill in the cpu_family struct for SPARC.
@@ -146,7 +171,7 @@ int sparc_cpu_family_init(struct cpu_family *fp)
 	fp->name = "SPARC";
 	fp->cpu_new = sparc_cpu_new;
 	fp->list_available_types = sparc_cpu_list_available_types;
-	/*  fp->register_match = sparc_cpu_register_match;  */
+	fp->register_match = sparc_cpu_register_match;
 	/*  fp->disassemble_instr = sparc_cpu_disassemble_instr;  */
 	/*  fp->register_dump = sparc_cpu_register_dump;  */
 	/*  fp->run = sparc_cpu_run;  */

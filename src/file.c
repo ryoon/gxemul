@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.71 2005-02-02 19:33:51 debug Exp $
+ *  $Id: file.c,v 1.72 2005-02-03 06:15:08 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1115,7 +1115,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    (p_type & PF_MASKPROC) == PT_MIPS_REGINFO) {
 			debug("chunk %i (", i);
 			if (p_type == PT_LOAD)
-				debug("loadable");
+				debug("load");
 			else
 				debug("0x%08x", (int)p_type);
 
@@ -1129,15 +1129,17 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			debug(" len=0x%llx\n", (long long)p_memsz);
 
 			if (p_vaddr != p_paddr) {
-				fprintf(stderr, "%s: vaddr != paddr. TODO: how to handle this? "
-				    "vaddr=%016llx paddr=%016llx\n", filename, (long long)p_vaddr,
+				fprintf(stderr, "%s: vaddr != paddr. TODO: "
+				    "how to handle this? vaddr=%016llx paddr"
+				    "=%016llx\n", filename, (long long)p_vaddr,
 				    (long long)p_paddr);
 				exit(1);
 			}
 
 			if (p_memsz < p_filesz) {
-				fprintf(stderr, "%s: memsz < filesz. TODO: how to handle this? "
-				    "memsz=%016llx filesz=%016llx\n", filename, (long long)p_memsz,
+				fprintf(stderr, "%s: memsz < filesz. TODO: how"
+				    " to handle this? memsz=%016llx filesz="
+				    "%016llx\n", filename, (long long)p_memsz,
 				    (long long)p_filesz);
 				exit(1);
 			}

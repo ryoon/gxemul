@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.159 2005-02-02 23:55:20 debug Exp $
+ *  $Id: emul.c,v 1.160 2005-02-03 06:15:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -583,9 +583,8 @@ void emul_machine_setup(struct machine *m, int n_load,
 			    cd.ppc.pc = entrypoint;
 			break;
 		case ARCH_SPARC:
-			debug("emul_machine_setup(): SPARC: TODO\n");
-			/*  m->cpus[m->bootstrap_cpu]->
-			    cd.sparc.pc = entrypoint;  */
+			m->cpus[m->bootstrap_cpu]->
+			    cd.sparc.pc = entrypoint;
 			break;
 		default:
 			fatal("emul_machine_setup(): Internal error: "

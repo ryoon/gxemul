@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.19 2004-01-06 02:00:24 debug Exp $
+ *  $Id: misc.h,v 1.20 2004-01-06 02:22:48 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -194,8 +194,11 @@ struct memory {
 	void		*dev_extra[MAX_DEVICES];
 };
 
-#define	DEFAULT_BITS_PER_PAGETABLE	12	/*  10  or 12  or 16  */
-#define	DEFAULT_BITS_PER_MEMBLOCK	16	/*  14  or 16  */
+/* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */
+/* #define	DEFAULT_BITS_PER_MEMBLOCK	16 */	/*  14  or 16  */
+
+#define	DEFAULT_BITS_PER_PAGETABLE	20	/*  10  or 12  or 16  or 20  */
+#define	DEFAULT_BITS_PER_MEMBLOCK	20	/*  14  or 16  or 20  */
 
 /*  Physical address space:  (choose something like 40, 52 or 64)  */
 #define	DEFAULT_MAX_BITS		40

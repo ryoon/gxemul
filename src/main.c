@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.32 2004-06-08 10:49:54 debug Exp $
+ *  $Id: main.c,v 1.33 2004-06-13 10:30:12 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -377,9 +377,12 @@ int get_cmd_args(int argc, char *argv[])
 	if (emulation_type == EMULTYPE_SGI && (machine == 21 || machine == 26) && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R8000");
 
-	/*  SGIs should probably work with both R4000 and R5000  */
+	if (emulation_type == EMULTYPE_SGI && machine == 24 && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R5000");
+
+	/*  SGIs should probably work with R4000, R4400 or R5000 or similar.  */
 	if (emulation_type == EMULTYPE_SGI && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4000");
+		strcpy(emul_cpu_name, "R4400");
 
 	if (!emul_cpu_name[0])
 		strcpy(emul_cpu_name, CPU_DEFAULT);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.5 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_scc.c,v 1.6 2004-01-24 21:13:05 debug Exp $
  *  
  *  Serial controller on some DECsystems (5000 ?).
  *
@@ -70,7 +70,9 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		break;
 	case 5:
 		if (writeflag==MEM_READ) {
-			debug("[ scc: read from 0x%08lx ]\n", (long)relative_addr);
+			if (console_charavail())
+				odata = console_readchar();
+			debug("[ scc: read from 0x%08lx: 0x%02x ]\n", (long)relative_addr, odata);
 		} else {
 			/*  debug("[ scc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
 			console_putchar(idata);

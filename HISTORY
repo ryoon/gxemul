@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.621 2005-03-04 20:12:35 debug Exp $
+$Id: HISTORY,v 1.622 2005-03-05 08:43:38 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1715,3 +1715,6 @@ HISTORY of mips64emul
 		modes are now enabled by default in the configure script.
 		Some minor PPC updates (adding a VGA device to the bebox
 		emulation mode).
+20050305	Moving the static i386 bintrans runchunk code snippet (and the
+		others) to be dynamically generated. (This allows the code to
+		compile on i386 with old gcc.)

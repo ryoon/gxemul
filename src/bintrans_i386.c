@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.73 2005-02-22 12:05:19 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.74 2005-03-05 08:43:39 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -58,193 +58,14 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_i		(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 #define ofs_pc		(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 #define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
-
-
-unsigned char bintrans_i386_runchunk[41] = {
-	0x57,					/*  push   %edi  */
-	0x56,					/*  push   %esi  */
-	0x55,					/*  push   %ebp  */
-	0x53,					/*  push   %ebx  */
-
-	/*
-	 *  In all translated code, esi points to the cpu struct, and
-	 *  ebp is the nr of executed (translated) instructions.
-	 */
-
-	/*  0=ebx, 4=ebp, 8=esi, 0xc=edi, 0x10=retaddr, 0x14=arg0, 0x18=arg1  */
-
-	0x8b, 0x74, 0x24, 0x14,			/*  mov    0x8(%esp,1),%esi  */
-
-	0x8b, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
-						/*  mov    nr_instr(%esi),%ebp  */
-	0x8b, 0xbe, ofs_pc&255, (ofs_pc>>8)&255, (ofs_pc>>16)&255, (ofs_pc>>24)&255,
-						/*  mov    pc(%esi),%edi  */
-
-	0xff, 0x54, 0x24, 0x18,			/*  call   *0x18(%esp,1)  */
-
-	0x89, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
-						/*  mov    %ebp,0x1234(%esi)  */
-	0x89, 0xbe, ofs_pc&255, (ofs_pc>>8)&255, (ofs_pc>>16)&255, (ofs_pc>>24)&255,
-						/*  mov    %edi,pc(%esi)  */
-
-	0x5b,					/*  pop    %ebx  */
-	0x5d,					/*  pop    %ebp  */
-	0x5e,					/*  pop    %esi  */
-	0x5f,					/*  pop    %edi  */
-	0xc3					/*  ret  */
-};
-
-static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
-	/*  Don't execute too many instructions.  */
-	/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
-	/*  7c 01                jl     <okk>  */
-	/*  c3                   ret    */
-	0x81, 0xfd,
-	(N_SAFE_BINTRANS_LIMIT-1) & 255, ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255, 0, 0,
-	0x7c, 0x01,
-	0xc3,
-
-	/*
-	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 14                shr    $20,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	0x89, 0xc3,
-	0xc1, 0xeb, 0x14,
-	0x81, 0xe3, 0xfc, 0x0f, 0, 0,
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0
-	 *
-	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
-	 */
 #define ofs_tabl0	(((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
-	0x8b, 0x8e,
-	ofs_tabl0 & 255, (ofs_tabl0 >> 8) & 255, (ofs_tabl0 >> 16) & 255, (ofs_tabl0 >> 24) & 255,
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a]
-	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
-	 */
-	0x8b, 0x0c, 0x19,
-
-	/*
-	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0a                shr    $10,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	0x89, 0xc3,
-	0xc1, 0xeb, 0x0a,
-	0x81, 0xe3, 0xfc, 0x0f, 0, 0,
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b].cd.mips.chunks
-	 *
-	 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
-	 */
 #define ofs_chunks	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
-	0x8b, 0x8c, 0x19,
-	    ofs_chunks & 255, (ofs_chunks >> 8) & 255, (ofs_chunks >> 16) & 255, (ofs_chunks >> 24) & 255,
-
-	/*
-	 *  ecx = NULL? Then return with failure.
-	 *
-	 *  83 f9 00                cmp    $0x0,%ecx
-	 *  75 01                   jne    <okzzz>
-	 */
-	0x83, 0xf9, 0x00,
-	0x75, 0x01,
-	0xc3,		/*  TODO: failure?  */
-
-	/*
-	 *  25 fc 0f 00 00          and    $0xffc,%eax
-	 *  01 c1                   add    %eax,%ecx
-	 *
-	 *  8b 01                   mov    (%ecx),%eax
-	 *
-	 *  83 f8 00                cmp    $0x0,%eax
-	 *  75 01                   jne    <ok>
-	 *  c3                      ret
-	 */
-	0x25, 0xfc, 0x0f, 0, 0,
-	0x01, 0xc1,
-
-	0x8b, 0x01,
-
-	0x83, 0xf8, 0x00,
-	0x75, 0x01,
-	0xc3,		/*  TODO: failure?  */
-
-	/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
-	/*  ff e0                   jmp    *%eax  */
 #define ofs_chunkbase	((size_t)&dummy_cpu.cd.mips.chunk_base_address - (size_t)&dummy_cpu)
-	0x03, 0x86,
-	    ofs_chunkbase & 255, (ofs_chunkbase >> 8) & 255, (ofs_chunkbase >> 16) & 255, (ofs_chunkbase >> 24) & 255,
-	0xff, 0xe0
-};
 
-static unsigned char bintrans_i386_loadstore_32bit[35] = {
-	/*
-	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 14                shr    $20,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	0x89, 0xc3,
-	0xc1, 0xeb, 0x14,
-	0x81, 0xe3, 0xfc, 0x0f, 0x00, 0x00,
 
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0
-	 *
-	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
-	 */
-	0x8b, 0x8e,
-	ofs_tabl0 & 255, (ofs_tabl0 >> 8) & 255, (ofs_tabl0 >> 16) & 255, (ofs_tabl0 >> 24) & 255,
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a]
-	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
-	 */
-	0x8b, 0x0c, 0x19,
-
-	/*
-	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-	 *
-	 *  89 c3                   mov    %eax,%ebx
-	 *  c1 eb 0a                shr    $10,%ebx
-	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-	 */
-	0x89, 0xc3,
-	0xc1, 0xeb, 0x0a,
-	0x81, 0xe3, 0xfc, 0x0f, 0x00, 0x00,
-
-	/*
-	 *  ecx = vaddr_to_hostaddr_table0[a][b]
-	 *
-	 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
-	 */
-	0x8b, 0x0c, 0x19,
-
-	/*  ret  */
-	0xc3
-};
-
-static const void (*bintrans_runchunk)
-    (struct cpu *, unsigned char *) = (void *)bintrans_i386_runchunk;
-
-static void (*bintrans_jump_to_32bit_pc)
-    (struct cpu *) = (void *)bintrans_i386_jump_to_32bit_pc;
-
-static void (*bintrans_loadstore_32bit)
-    (struct cpu *) = (void *)bintrans_i386_loadstore_32bit;
+static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
+static void (*bintrans_jump_to_32bit_pc)(struct cpu *);
+static void (*bintrans_loadstore_32bit)(struct cpu *);
 
 
 /*
@@ -2066,7 +1887,7 @@ static int bintrans_write_instruction__loadstore(struct memory *mem,
 
 	if (mem->bintrans_32bit_only) {
 		/*  Call the quick lookup routine:  */
-		ofs = (size_t)bintrans_i386_loadstore_32bit;
+		ofs = (size_t)bintrans_loadstore_32bit;
 		ofs = ofs - ((size_t)a + 5);
 		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
 		    *a++ = ofs >> 16; *a++ = ofs >> 24;
@@ -2131,7 +1952,7 @@ TODO: top 33 bits!!!!!!!
 		*a++ = 0x75; generic64bit = a; *a++ = 0x01;
 
 		/*  Call the quick lookup routine:  */
-		ofs = (size_t)bintrans_i386_loadstore_32bit;
+		ofs = (size_t)bintrans_loadstore_32bit;
 		ofs = ofs - ((size_t)a + 5);
 		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
 		    *a++ = ofs >> 16; *a++ = ofs >> 24;
@@ -2842,8 +2663,249 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 
 /*
  *  bintrans_backend_init():
+ *
+ *  This is neccessary for broken GCC 2.x. (For GCC 3.x, this wouldn't be
+ *  neccessary, and the old code would have worked.)
  */
 static void bintrans_backend_init(void)
-{
+{ 
+	int size;
+	unsigned char *p;
+
+
+	/*  "runchunk":  */
+	size = 64;		/*  NOTE: This MUST be enough, or we fail  */
+	p = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE |
+	    PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init():"
+			    " out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_runchunk = (void *)p;
+
+	*p++ = 0x57;				/*  push   %edi  */
+	*p++ = 0x56;				/*  push   %esi  */
+	*p++ = 0x55;				/*  push   %ebp  */
+	*p++ = 0x53;				/*  push   %ebx  */
+
+	/*
+	 *  In all translated code, esi points to the cpu struct, and
+	 *  ebp is the nr of executed (translated) instructions.
+	 */
+
+	/*  0=ebx, 4=ebp, 8=esi, 0xc=edi, 0x10=retaddr, 0x14=arg0, 0x18=arg1  */
+
+	/*  mov    0x8(%esp,1),%esi  */
+	*p++ = 0x8b; *p++ = 0x74; *p++ = 0x24; *p++ = 0x14;
+
+	/*  mov    nr_instr(%esi),%ebp  */
+	*p++ = 0x8b; *p++ = 0xae; *p++ = ofs_i&255; *p++ = (ofs_i>>8)&255;
+	*p++ = (ofs_i>>16)&255; *p++ = (ofs_i>>24)&255;
+
+	/*  mov    pc(%esi),%edi  */
+	*p++ = 0x8b; *p++ = 0xbe; *p++ = ofs_pc&255; *p++ = (ofs_pc>>8)&255;
+	*p++ = (ofs_pc>>16)&255; *p++ = (ofs_pc>>24)&255;
+
+	/*  call  *0x18(%esp,1)  */
+	*p++ = 0xff; *p++ = 0x54; *p++ = 0x24; *p++ = 0x18;
+
+	/*  mov    %ebp,0x1234(%esi)  */
+	*p++ = 0x89; *p++ = 0xae; *p++ = ofs_i&255; *p++ = (ofs_i>>8)&255;
+	*p++ = (ofs_i>>16)&255; *p++ = (ofs_i>>24)&255;
+
+	/*  mov    %edi,pc(%esi)  */
+	*p++ = 0x89; *p++ = 0xbe; *p++ = ofs_pc&255; *p++ = (ofs_pc>>8)&255;
+	*p++ = (ofs_pc>>16)&255; *p++ = (ofs_pc>>24)&255;
+
+	*p++ = 0x5b;				/*  pop    %ebx  */
+	*p++ = 0x5d;				/*  pop    %ebp  */
+	*p++ = 0x5e;				/*  pop    %esi  */
+	*p++ = 0x5f;				/*  pop    %edi  */
+	*p++ = 0xc3;				/*  ret  */
+
+
+
+	/*  "jump_to_32bit_pc":  */
+	size = 128;		/*  NOTE: This MUST be enough, or we fail  */
+	p = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE |
+	    PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init():"
+			    " out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_jump_to_32bit_pc = (void *)p;
+
+	/*  Don't execute too many instructions.  */
+	/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+	/*  7c 01                jl     <okk>  */
+	/*  c3                   ret    */
+	*p++ = 0x81; *p++ = 0xfd; *p++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+	*p++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *p++ = 0; *p++ = 0;
+	*p++ = 0x7c; *p++ = 0x01;
+	*p++ = 0xc3;
+
+	/*
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x14;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0
+	 *
+	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x8e;
+	*p++ = ofs_tabl0 & 255; *p++ = (ofs_tabl0 >> 8) & 255;
+	*p++ = (ofs_tabl0 >> 16) & 255; *p++ = (ofs_tabl0 >> 24) & 255;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
+
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0a;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b].cd.mips.chunks
+	 *
+	 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x8c; *p++ = 0x19; *p++ = ofs_chunks & 255;
+	*p++ = (ofs_chunks >> 8) & 255; *p++ = (ofs_chunks >> 16) & 255;
+	*p++ = (ofs_chunks >> 24) & 255;
+
+	/*
+	 *  ecx = NULL? Then return with failure.
+	 *
+	 *  83 f9 00                cmp    $0x0,%ecx
+	 *  75 01                   jne    <okzzz>
+	 */
+	*p++ = 0x83; *p++ = 0xf9; *p++ = 0x00;
+	*p++ = 0x75; *p++ = 0x01;
+	*p++ = 0xc3;		/*  TODO: failure?  */
+
+	/*
+	 *  25 fc 0f 00 00          and    $0xffc,%eax
+	 *  01 c1                   add    %eax,%ecx
+	 *
+	 *  8b 01                   mov    (%ecx),%eax
+	 *
+	 *  83 f8 00                cmp    $0x0,%eax
+	 *  75 01                   jne    <ok>
+	 *  c3                      ret
+	 */
+	*p++ = 0x25; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+	*p++ = 0x01; *p++ = 0xc1;
+
+	*p++ = 0x8b; *p++ = 0x01;
+
+	*p++ = 0x83; *p++ = 0xf8; *p++ = 0x00;
+	*p++ = 0x75; *p++ = 0x01;
+	*p++ = 0xc3;		/*  TODO: failure?  */
+
+	/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
+	/*  ff e0                   jmp    *%eax  */
+	*p++ = 0x03; *p++ = 0x86; *p++ = ofs_chunkbase & 255;
+	*p++ = (ofs_chunkbase >> 8) & 255; *p++ = (ofs_chunkbase >> 16) & 255;
+	*p++ = (ofs_chunkbase >> 24) & 255;
+	*p++ = 0xff; *p++ = 0xe0;
+
+
+
+	/*  "loadstore_32bit":  */
+	size = 48;		/*  NOTE: This MUST be enough, or we fail  */
+	p = (unsigned char *)mmap(NULL, size, PROT_READ | PROT_WRITE |
+	    PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
+	if (p == NULL) {
+		p = malloc(size);
+		if (p == NULL) {
+			fprintf(stderr, "bintrans_backend_init():"
+			    " out of memory\n");
+			exit(1);
+		}
+	}
+
+	bintrans_loadstore_32bit = (void *)p;
+
+	/*
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x14;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0
+	 *
+	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x8e; *p++ = ofs_tabl0 & 255;
+	*p++ = (ofs_tabl0 >> 8) & 255;
+	*p++ = (ofs_tabl0 >> 16) & 255; *p++ = (ofs_tabl0 >> 24) & 255;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
+
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	*p++ = 0x89; *p++ = 0xc3;
+	*p++ = 0xc1; *p++ = 0xeb; *p++ = 0x0a;
+	*p++ = 0x81; *p++ = 0xe3; *p++ = 0xfc; *p++ = 0x0f; *p++ = 0; *p++ = 0;
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
+	 */
+	*p++ = 0x8b; *p++ = 0x0c; *p++ = 0x19;
+
+	/*  ret  */
+	*p++ = 0xc3;
 }
 

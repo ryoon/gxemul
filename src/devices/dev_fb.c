@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.35 2004-06-22 22:24:25 debug Exp $
+ *  $Id: dev_fb.c,v 1.36 2004-06-22 23:30:03 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -125,9 +125,9 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
  */
 void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 {
+#ifdef WITH_X11
 	int ofs, ofs2, bit, bits, t;
 
-#ifdef WITH_X11
 	ofs = (fbw->x11_fb_winxsize * y + x) >> 3;
 	ofs2 = (fbw->x11_fb_winxsize * fbw->x11_fb_winysize) >> 3;
 
@@ -446,6 +446,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (!use_x11)
 		return;
 
+#ifdef WITH_X11
 	/*  Do we need to redraw the cursor?  */
 	if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
 	    d->fb_window->cursor_x != d->fb_window->OLD_cursor_x ||
@@ -471,7 +472,6 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		}
 	}
 
-#ifdef WITH_X11
 	if (need_to_redraw_cursor) {
 		/*  Remove old cursor, if any:  */
 		if (d->fb_window->OLD_cursor_on) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.15 2004-11-07 19:58:52 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.16 2004-11-07 20:51:21 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -685,10 +685,78 @@ int bintrans_write_instruction__sll(unsigned char **addrp,
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
-	/*  Note: bits of sa are distributed among two different bytes.  */
-	*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
+	if (sa != 0) {
+		/*  Note: bits of sa are distributed among two different bytes.  */
+		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl  */
+	}
 
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl  */
+	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+	*addrp = a;
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__sra():
+ */
+int bintrans_write_instruction__sra(unsigned char **addrp,
+	int *pc_increment, int rd, int rt, int sa)
+{
+	unsigned char *a;
+	int ofs;
+
+	/*
+	 *  88 08 30 a4     ldq     t0,2184(a0)
+	 *  81 f7 23 48     sra     t0,0x1f,t0
+	 *  88 08 30 b4     stq     t0,2184(a0)
+	 */
+	a = *addrp;
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	if (sa != 0) {
+		/*  Note: bits of sa are distributed among two different bytes.  */
+		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
+	}
+
+	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+	*addrp = a;
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__srl():
+ */
+int bintrans_write_instruction__srl(unsigned char **addrp,
+	int *pc_increment, int rd, int rt, int sa)
+{
+	unsigned char *a;
+	int ofs;
+
+	/*
+	 *  88 08 30 a0     ldl     t0,2184(a0)
+	 *  21 f6 21 48     zapnot  t0,0xf,t0		use only lowest 32 bits
+	 *  81 f6 23 48     srl     t0,0x1f,t0
+	 *  01 00 3f 40     addl    t0,zero,t0		re-extend to 64-bit
+	 *  88 08 30 b4     stq     t0,2184(a0)
+	 */
+	a = *addrp;
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+
+	if (sa != 0) {
+		*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot  */
+		/*  Note: bits of sa are distributed among two different bytes.  */
+		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl  */
+	}
 
 	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;

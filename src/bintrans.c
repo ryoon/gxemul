@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.41 2004-11-07 19:58:52 debug Exp $
+ *  $Id: bintrans.c,v 1.42 2004-11-07 20:51:21 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -166,6 +166,8 @@ int bintrans_write_instruction__xor(unsigned char **addrp, int *pc_increment, in
 int bintrans_write_instruction__slt(unsigned char **addrp, int *pc_increment, int rd, int rs, int rt);
 int bintrans_write_instruction__sltu(unsigned char **addrp, int *pc_increment, int rd, int rs, int rt);
 int bintrans_write_instruction__sll(unsigned char **addrp, int *pc_increment, int rd, int rt, int sa);
+int bintrans_write_instruction__sra(unsigned char **addrp, int *pc_increment, int rd, int rt, int sa);
+int bintrans_write_instruction__srl(unsigned char **addrp, int *pc_increment, int rd, int rt, int sa);
 int bintrans_write_instruction__lui(unsigned char **addrp, int *pc_increment, int rt, int imm);
 int bintrans_write_instruction__lw(unsigned char **addrp, int *pc_increment, int first_load, int first_store, int rt, int imm, int rs, int load_type);
 int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_increment, int rs);
@@ -543,6 +545,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			case SPECIAL_SLT:
 			case SPECIAL_SLTU:
 			case SPECIAL_SLL:
+			case SPECIAL_SRA:
+			case SPECIAL_SRL:
 				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
@@ -577,6 +581,12 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 						break;
 					case SPECIAL_SLL:
 						res = bintrans_write_instruction__sll(&chunk_addr, &pc_increment, rd, rt, sa);
+						break;
+					case SPECIAL_SRA:
+						res = bintrans_write_instruction__sra(&chunk_addr, &pc_increment, rd, rt, sa);
+						break;
+					case SPECIAL_SRL:
+						res = bintrans_write_instruction__srl(&chunk_addr, &pc_increment, rd, rt, sa);
 						break;
 					}
 				}

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.43 2004-03-10 02:09:32 debug Exp $
+ *  $Id: devices.h,v 1.44 2004-03-24 02:44:35 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -345,7 +345,7 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr);
+void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
 
 /*  dev_sgec.c:  */
 #define	DEV_SGEC_LENGTH		0x1000
@@ -362,6 +362,11 @@ void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_SGI_GBE_LENGTH		0x1000000
 int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sgi_ip19.c:  */
+#define	DEV_SGI_IP19_LENGTH		0x100000
+int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip22.c:  */
 #define	DEV_SGI_IP22_LENGTH		0x100

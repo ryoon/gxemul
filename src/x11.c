@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.43 2005-01-19 14:24:23 debug Exp $
+ *  $Id: x11.c,v 1.44 2005-01-19 21:27:10 debug Exp $
  *
  *  X11-related functions.
  */
@@ -584,6 +584,48 @@ void x11_check_event(void)
 					/*  Above the cursor keys:  */
 					106=Ins  107=Del
 #endif
+					/*  F1..F4:  */
+					case 67:	/*  F1  */
+					case 68:	/*  F2  */
+					case 69:	/*  F3  */
+					case 70:	/*  F4  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('O');
+						console_makeavail('P' +
+						    x - 67);
+						break;
+					case 71:	/*  F5  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('1');
+						console_makeavail('5');
+						break;
+					case 72:	/*  F6  */
+					case 73:	/*  F7  */
+					case 74:	/*  F8  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('1');
+						console_makeavail('7' +
+						    x - 72);
+						break;
+					case 75:	/*  F9  */
+					case 76:	/*  F10  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('2');
+						console_makeavail('1' +
+						    x - 68);
+						break;
+					case 95:	/*  F11  */
+					case 96:	/*  F12  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('2');
+						console_makeavail('3' +
+						    x - 95);
+						break;
 					/*  Cursor keys:  */
 					case 98:	/*  Up  */
 					case 104:	/*  Down  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.44 2004-02-18 09:29:13 debug Exp $
+ *  $Id: machine.c,v 1.45 2004-02-19 10:24:51 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -68,11 +68,9 @@ uint64_t file_loaded_end_addr = 0;
 
 extern struct memory *GLOBAL_gif_mem;
 
-int (*machine_irq)(int, int) = NULL;
-
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
-/*  TODO:  struct kmin_csr *kmin_csr;  */
+/*  struct kmin_csr *kmin_csr;  */
 
 
 /********************** Helper functions **********************/
@@ -232,27 +230,114 @@ void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
 /**************************************************************/
 
 
-/*  TODO:  how should all this be done nicely?  */
-int sgi_mace_machine_irq(int assrt, int irqnr)
+void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
+	irq_nr -= 8;
+
+	if (assrt) {
+		/*  OR in the irq_nr mask into the CSR:  */
+		kn02_csr->csr |= irq_nr;
+
+		/*  Assert MIPS interrupt 2:  */
+		cpu_interrupt(cpu, 2);
+	} else {
+		/*  AND out the irq_nr mask from the CSR:  */
+		kn02_csr->csr &= ~irq_nr;
+
+		if ((kn02_csr->csr & KN02_CSR_IOINT) == 0)
+			cpu_interrupt_ack(cpu, 2);
+	}
+}
+
+
+void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
+
+	/*  TODO: CSR  */
+
+	if (assrt) {
+		/*  Assert MIPS interrupt 5:  */
+		cpu_interrupt(cpu, 5);
+	} else {
+		cpu_interrupt_ack(cpu, 5);
+	}
+}
+
+
+void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	debug("kn03_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
+
+	/*  TODO: CSR  */
+
+	if (assrt) {
+		/*  Assert MIPS interrupt 3:  */
+		cpu_interrupt(cpu, 3);
+	} else {
+		cpu_interrupt_ack(cpu, 3);
+	}
+}
+
+
+void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	int r2;
+
+	kn230_csr->csr |= irq_nr;
+
+	switch (irq_nr) {
+	case KN230_CSR_INTR_SII:
+	case KN230_CSR_INTR_LANCE:
+		r2 = 3;
+		break;
+	case KN230_CSR_INTR_DZ0:
+	case KN230_CSR_INTR_OPT0:
+	case KN230_CSR_INTR_OPT1:
+		r2 = 2;
+		break;
+	default:
+		fatal("kn230_interrupt(): irq_nr = %i ?\n", irq_nr);
+	}
+
+	if (assrt) {
+		/*  OR in the irq_nr mask into the CSR:  */
+		kn230_csr->csr |= irq_nr;
+
+		/*  Assert MIPS interrupt 2 or 3:  */
+		cpu_interrupt(cpu, r2);
+	} else {
+		/*  AND out the irq_nr mask from the CSR:  */
+		kn230_csr->csr &= ~irq_nr;
+
+		/*  If the CSR interrupt bits are all zero, clear the bit in the cause register as well.  */
+		if (r2 == 2) {
+			/*  irq 2:  */
+			if ((kn230_csr->csr & (KN230_CSR_INTR_DZ0 | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
+				cpu_interrupt_ack(cpu, r2);
+		} else {
+			/*  irq 3:  */
+			if ((kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) == 0)
+				cpu_interrupt_ack(cpu, r2);
+		}
+	}
+}
+
+
+void sgi_mace_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	/*  TODO:  how should all this be done nicely?  */
 	static uint32_t mace_interrupts = 0;
 
 /*	printf("sgi_mace_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irqnr, mace_interrupts);  */
-	if (assrt)
-		mace_interrupts |= irqnr;
-	else
-		mace_interrupts &= ~irqnr;
 
 	if (assrt) {
-		if (mace_interrupts == 0)
-			return 0;
-		else
-			return 2;
+		mace_interrupts |= irq_nr;
+		cpu_interrupt(cpu, 2);
 	} else {
+		mace_interrupts &= ~irq_nr;
 		if (mace_interrupts == 0)
-			return 2;
-		else
-			return 0;
+			cpu_interrupt_ack(cpu, 2);
 	}
 }
 
@@ -385,6 +470,9 @@ void machine_init(struct memory *mem)
 			/*  An R3220 memory thingy:  */
 			cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
 
+			/*  KN02 interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = kn02_interrupt;
+
 			/*
 			 *  According to NetBSD/pmax:
 			 *  asc0 at tc0 slot 5 offset 0x0
@@ -423,6 +511,9 @@ void machine_init(struct memory *mem)
 			if (physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
+			/*  KMIN interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = kmin_interrupt;
+
 			/*
 			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
 			 *  tc slot 1:   0x14000000
@@ -448,7 +539,7 @@ void machine_init(struct memory *mem)
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x18000000, 0x183fffff, "", KMIN_INT_TC2);
 
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
-			/*  TODO:  kmin_csr = dev_kmin_init(cpus[bootstrap_cpu], mem, KMIN_REG_INTR);  */
+			/*  kmin_csr = dev_kmin_init(cpus[bootstrap_cpu], mem, KMIN_REG_INTR);  */
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
 			serial_console_name      = "osconsole=3";	/*  ?  */
@@ -460,6 +551,9 @@ void machine_init(struct memory *mem)
 				emulated_ips = 40000000;
 			if (physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
+
+			/*  KN03 interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = kn03_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
@@ -473,7 +567,8 @@ void machine_init(struct memory *mem)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);
+			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);	/*  TODO: this device is
+					too big when the ROM is included... > 4MB, not suitable for KN03, overlaps other devices  */
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
@@ -561,7 +656,6 @@ void machine_init(struct memory *mem)
 
 			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer: (NOTE: 0x8000000, not 0x18000000)  */
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
-/*			fb = dev_fb_init(cpus[bootstrap_cpu], mem, 0xa000000, VFB_DEC_MAXINE, 0,0,0,0,0, "Maxine");  */
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, 0, use_x11);
@@ -587,14 +681,14 @@ void machine_init(struct memory *mem)
 			if (use_x11)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
+			/*  KN230 interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = kn230_interrupt;
+
 			/*
 			 *  According to NetBSD/pmax:
 			 *  dc0 at ibus0 addr 0x1c000000
 			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 			 *  sii0 at ibus0 addr 0x1a000000
-			 *
-			 *  The KN230 cpu board has several devices sharing the same IRQ, so
-			 *  the kn230 CSR contains info about which devices have caused interrupts.
 			 */
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_ips);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
@@ -1066,7 +1160,7 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 				 * 	  1f3a0000	  mcclock0
 				 */
 				dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				machine_irq = sgi_mace_machine_irq;
+				cpus[bootstrap_cpu]->md_interrupt = sgi_mace_interrupt;
 				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200, 0x800);	/*  keyb+mouse (mace irq numbers)  */
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */

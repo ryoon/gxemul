@@ -23,20 +23,26 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.10 2004-07-08 22:49:18 debug Exp $
+ *  $Id: net.c,v 1.11 2004-07-09 04:12:47 debug Exp $
  *
- *  Emulated (ethernet) network support.
+ *  Emulated (ethernet / internet) network support.
+ *
+ *
+ *	NOTE:	This is just a hack, and just barely enough to get some
+ *		Internet networking up and running for emulated NetBSD.
+ *
  *
  *  The emulated NIC has a MAC address of (for example) 11:22:33:44:55:66.
  *  From the emulated environment, the only other machine existing on the
  *  network is a "gateway" or "firewall", which has an address of
- *  55:44:33:22:11:00.  This module (net.c) contains the emulation of that
- *  gateway.
+ *  55:44:33:22:11:00. This module (net.c) contains the emulation of that
+ *  gateway. It works like a NAT firewall, but emulated in userland software.
  *
- *  The gateway uses IPv4 address 10.0.0.254.  With NetBSD (inside the
+ *  The gateway uses the IPv4 address 10.0.0.254. With NetBSD (inside the
  *  emulator), a suitable choice of IPv4 address would be 10.0.0.1.  (Actually,
  *  any 10.x.x.x address works, as long as there isn't a collision with the
- *  gateway's IPv4 addres).
+ *  gateway's IPv4 address).
+ *
  *
  *  NOTE: The 'extra' argument used in many functions in this file is a pointer
  *  to something unique for each controller, so that if multiple controllers
@@ -60,7 +66,7 @@
 #include "net.h"
 
 
-#define debug fatal
+/*  #define debug fatal  */
 
 
 struct ethernet_packet_link {
@@ -82,7 +88,8 @@ unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
 static int net_socket = -1;
 static int last_source_udp_id;
 static int last_source_udp_port;
-static uint32_t last_source_udp_ip;	/*  actually MAC should be here too  */
+static uint32_t last_source_udp_ip;
+static unsigned char last_source_udp_mac[6];
 
 
 /*
@@ -216,6 +223,36 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
 
 
 /*
+ *  net_ip_tcp():
+ *
+ *  Handle a TCP packet comming from the emulated OS.
+ *
+ *  (See http://www.networksorcery.com/enp/protocol/tcp.htm.)
+ *
+ *  The IP header (at offset 14) could look something like
+ *
+ *	ver=45 tos=00 len=003c id=0006 ofs=0000 ttl=40 p=11 sum=b798
+ *	src=0a000001 dst=c1abcdef
+ *
+ *  TCP header, at offset 34:
+ *
+ *	srcport=fffe dstport=0015 seqnr=af419a1d acknr=00000000
+ *	control=a002 window=4000 checksum=fe58 urgent=0000
+ *	and then "options and padding" and then data.
+ *	(020405b4010303000101080a0000000000000000)
+ */
+static void net_ip_tcp(void *extra, unsigned char *packet, int len)
+{
+	int i;
+
+	fatal("[ net: TCP: ");
+	for (i=0; i<len; i++)
+		fatal(" %02x", packet[i]);
+	fatal(" ]\n");
+}
+
+
+/*
  *  net_ip_udp():
  *
  *  Handle a UDP packet.
@@ -243,15 +280,15 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	udp_len = (packet[38] << 8) + packet[39];
 	/*  chksum at offset 40 and 41  */
 
-	fatal("[ net: UDP: ");
-	fatal("srcport=%i dstport=%i len=%i ", srcport, dstport, udp_len);
+	debug("[ net: UDP: ");
+	debug("srcport=%i dstport=%i len=%i ", srcport, dstport, udp_len);
 	for (i=42; i<len; i++) {
 		if (packet[i] >= ' ' && packet[i] < 127)
-			printf("%c", packet[i]);
+			debug("%c", packet[i]);
 		else
-			printf("[%02x]", packet[i]);
+			debug("[%02x]", packet[i]);
 	}
-	fatal(" ]");
+	debug(" ]\n");
 
 	if (net_socket < 0) {
 		net_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -270,6 +307,7 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	last_source_udp_port = srcport;
 	last_source_udp_ip = (packet[26] << 24) + (packet[27] << 16)
 	    + (packet[28] << 8) + packet[29];
+	memcpy(last_source_udp_mac, packet + 6, 6);
 
 	remote_ip.sin_family = AF_INET;
 	/*  Wohaaa, this is ugly:  TODO  */
@@ -282,10 +320,10 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	res = sendto(net_socket, packet + 42, len - 42,
 	    0, (const struct sockaddr *)&remote_ip, sizeof(remote_ip));
 
-	if (res != udp_len)
-		fatal("[ net: UDP: unable to send %i bytes ]\n", udp_len);
+	if (res != len-42)
+		debug("[ net: UDP: unable to send %i bytes ]\n", len-42);
 	else
-		fatal("[ net: UDP: OK!!! ]\n");
+		debug("[ net: UDP: OK!!! ]\n");
 }
 
 
@@ -322,7 +360,7 @@ static void net_ip(void *extra, unsigned char *packet, int len)
 			net_ip_icmp(extra, packet, len);
 			break;
 		case 6:	/*  TCP  */
-			fatal("[ net: TCP not yet implemented ]\n");
+			net_ip_tcp(extra, packet, len);
 			break;
 		case 17:/*  UDP  */
 			net_ip_udp(extra, packet, len);
@@ -465,12 +503,7 @@ int net_ethernet_rx_avail(void *extra)
 			    14 + 20 + 8 + res);
 
 			/*  Ethernet header:  */
-			lp->data[0] = 0x11;
-			lp->data[1] = 0x22;
-			lp->data[2] = 0x33;
-			lp->data[3] = 0x44;
-			lp->data[4] = 0x55;
-			lp->data[5] = 0x66;
+			memcpy(lp->data + 0, last_source_udp_mac, 6);
 			memcpy(lp->data + 6, gateway_addr, 6);
 			lp->data[12] = 0x08;	/*  IP = 0x0800  */
 			lp->data[13] = 0x00;

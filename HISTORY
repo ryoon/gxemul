@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.141 2004-07-09 04:12:12 debug Exp $
+$Id: HISTORY,v 1.142 2004-07-09 04:12:36 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -705,5 +705,6 @@ HISTORY of mips64emul
 		Changing the lower clock speed bound from 1 MHz to 1.5 MHz.
 20040709	Incoming UDP checksums were wrong, but are now set to zero
 		and NetBSD inside the emulator now accepts the packets (eg.
-		nameserver responses).
+		nameserver responses).  Host lookups and even tftp file
+		transfers (using UDP) work now :-)
 		Adding a section on Networking to the Technical documentation.

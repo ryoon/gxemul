@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.36 2004-03-04 04:08:39 debug Exp $
+ *  $Id: devices.h,v 1.37 2004-03-04 20:05:24 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -153,6 +153,9 @@ struct vfb_data {
 #define	VFB_MFB_VRAM			0x200000
 #define	VFB_CFB_BT459			0x200000
 void set_grayscale_palette(struct vfb_data *d, int ncolors);
+void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
+	int fill_g, int fill_b, int x1, int y1, int x2, int y2,
+	int from_x, int from_y);
 void dev_fb_tick(struct cpu *, void *);
 int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,

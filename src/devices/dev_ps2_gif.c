@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.6 2004-03-04 18:44:16 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.7 2004-03-04 20:05:26 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  */
@@ -42,6 +42,7 @@ struct gif_data {
 	int		bytes_per_pixel;
 	int		transparent_text;
 	struct memory	*fb_mem;
+	struct vfb_data *vfb_data;
 };
 
 
@@ -205,7 +206,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			}
 
 			d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
-			dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
+			d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
 
 #if 0
 			test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
@@ -232,17 +233,15 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 					if (!d->transparent_text || pixels[0])
 						memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 				}
-		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  Possibly "copy 640x16":  */
+		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  Possibly "scroll/copy 640x16":  */
 			int y_source, y_dest;
 			unsigned char pixels[640 * 16 * 3];
 
 			y_source = data[8*4 + 2] + ((data[8*4 + 3] & 0x7) << 8);
 			y_dest   = data[9*4 + 2] + ((data[9*4 + 3] & 0x7) << 8);
-			debug("[ gif: copy 640x16: y_source=%i y_dest=%i ]\n", y_source, y_dest);
+			debug("[ gif: scroll/copy 640x16: y_source=%i y_dest=%i ]\n", y_source, y_dest);
 
-			/*  TODO: faster direct scroll  */
-			memory_rw(NULL, d->fb_mem, y_source * 640*3, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-			memory_rw(NULL, d->fb_mem, y_dest   * 640*3, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0, 0,y_dest, 639,y_dest+15, 0,y_source);
 		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  Possibly "output cursor":  */
 			int xbase, ybase, xend, yend, x, y;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.18 2004-03-04 06:14:08 debug Exp $
+ *  $Id: dev_fb.c,v 1.19 2004-03-04 20:05:26 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -104,6 +104,74 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 		d->rgb_palette[i*3 + 1] = gray;
 		d->rgb_palette[i*3 + 2] = gray;
 	}
+}
+
+
+/*
+ *  framebuffer_blockcopyfill():
+ *
+ *  This function should be used by devices that are capable of doing
+ *  block copy/fill.
+ *
+ *  If fillflag is non-zero, then fill_[rgb] should contain the color
+ *  with which to fill.
+ *
+ *  If fillflag is zero, copy mode is used, and from_[xy] should contain
+ *  the offset on the framebuffer where we should copy from.
+ *
+ *  NOTE:  Overlapping copies are undefined!
+ */
+void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
+	int fill_g, int fill_b, int x1, int y1, int x2, int y2,
+	int from_x, int from_y)
+{
+	int y;
+	long from_ofs, dest_ofs, linelen;
+
+	if (fillflag)
+		debug("framebuffer_blockcopyfill(FILL, %i,%i, %i,%i, color %i,%i,%i)\n",
+		    x1,y1, x2,y2, fill_r, fill_g, fill_b);
+		debug("framebuffer_blockcopyfill(COPY, %i,%i, %i,%i, from %i,%i)\n",
+		    x1,y1, x2,y2, from_x,from_y);
+
+	/*  Clip x:  */
+	if (x1 < 0)		x1 = 0;
+	if (x1 >= d->xsize)	x1 = d->xsize-1;
+	if (x2 < 0)		x2 = 0;
+	if (x2 >= d->xsize)	x2 = d->xsize-1;
+
+	dest_ofs = d->bytes_per_line * y1 + (d->bit_depth/8) * x1;
+	linelen = (x2-x1 + 1) * (d->bit_depth/8);	/*  NOTE: nr of bytes, not pixels  */
+
+	if (fillflag) {
+		printf("TODO: actual fill\n");
+		for (y=y1; y<=y2; y++) {
+			/*  if (y>=0 && y<d->ysize)  */
+				/*  memset something...  */
+
+			dest_ofs += d->bytes_per_line;
+		}
+	} else {
+		from_ofs = d->bytes_per_line * from_y + (d->bit_depth/8) * from_x;
+
+		for (y=y1; y<=y2; y++) {
+			if (y>=0 && y<d->ysize)
+				memmove(d->framebuffer + dest_ofs, d->framebuffer + from_ofs, linelen);
+
+			from_ofs += d->bytes_per_line;
+			dest_ofs += d->bytes_per_line;
+		}
+	}
+
+	if (x1 < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x1;
+	if (x1 > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x1;
+	if (x2 < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x2;
+	if (x2 > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x2;
+
+	if (y1 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y1;
+	if (y1 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y1;
+	if (y2 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y2;
+	if (y2 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y2;
 }
 
 

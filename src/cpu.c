@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.11 2003-12-29 09:49:18 debug Exp $
+ *  $Id: cpu.c,v 1.12 2003-12-30 03:06:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -601,7 +601,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem;
-	int cond, likely;
+	int cond, likely, and_link;
 	int dir, is_left, reg_ofs, reg_dir;		/*  for unaligned load/store  */
 	uint64_t tmpvalue, tmpaddr;
 
@@ -2018,6 +2018,10 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 		case REGIMM_BGEZ:
 		case REGIMM_BLTZL:
 		case REGIMM_BGEZL:
+		case REGIMM_BLTZAL:
+		case REGIMM_BLTZALL:
+		case REGIMM_BGEZAL:
+		case REGIMM_BGEZALL:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)		/*  signed 16-bit  */
@@ -2029,11 +2033,17 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 				if (regimm5 == REGIMM_BGEZ)	instr_mnem = "bgez";
 				if (regimm5 == REGIMM_BLTZL)	instr_mnem = "bltzl";
 				if (regimm5 == REGIMM_BGEZL)	instr_mnem = "bgezl";
+				if (regimm5 == REGIMM_BLTZAL)	instr_mnem = "bltzal";
+				if (regimm5 == REGIMM_BLTZALL)	instr_mnem = "bltzall";
+				if (regimm5 == REGIMM_BGEZAL)	instr_mnem = "bgezal";
+				if (regimm5 == REGIMM_BGEZALL)	instr_mnem = "bgezall";
 				debug("%s\tr%i,%016llx\n", instr_mnem, rs, cpu->pc + (imm << 2));
 			}
 
 			cond = 0;
+			and_link = 0;
 			likely = 0;
+
 			switch (regimm5) {
 			case REGIMM_BLTZL:	likely = 1;
 			case REGIMM_BLTZ:	cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) != 0;
@@ -2041,7 +2051,19 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 			case REGIMM_BGEZL:	likely = 1;
 			case REGIMM_BGEZ:	cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) == 0;
 						break;
+
+			case REGIMM_BLTZALL:	likely = 1;
+			case REGIMM_BLTZAL:	and_link = 1;
+						cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) != 0;
+						break;
+			case REGIMM_BGEZALL:	likely = 1;
+			case REGIMM_BGEZAL:	and_link = 1;
+						cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) == 0;
+						break;
 			}
+
+			if (and_link)
+				cpu->gpr[31] = cpu->pc + 4;
 
 			if (cond) {
 				cpu->delay_slot = TO_BE_DELAYED;
@@ -2058,7 +2080,7 @@ cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
-			fatal("unimplemented regimm5 = %02x\n", regimm5);
+			fatal("unimplemented regimm5 = 0x%02x\n", regimm5);
 			cpu->running = 0;
 			return 0;
 		}

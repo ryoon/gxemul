@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.14 2003-12-29 09:48:19 debug Exp $
+ *  $Id: misc.h,v 1.15 2003-12-30 03:05:27 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -605,6 +605,10 @@ struct cpu {
 #define	    REGIMM_BGEZ			    0x01    /*  00001  */	/*  MIPS I  */
 #define	    REGIMM_BLTZL		    0x02    /*  00010  */	/*  MIPS II  */
 #define	    REGIMM_BGEZL		    0x03    /*  00011  */	/*  MIPS II  */
+#define	    REGIMM_BLTZAL		    0x10    /*  10000  */
+#define	    REGIMM_BGEZAL		    0x11    /*  10001  */
+#define	    REGIMM_BLTZALL		    0x12    /*  10010  */
+#define	    REGIMM_BGEZALL		    0x13    /*  10011  */
 /*  regimm ...............  */
 
 #define	HI6_J				0x02	/*  000010  */	/*  MIPS I  */

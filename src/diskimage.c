@@ -23,9 +23,16 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.28 2004-06-22 16:18:51 debug Exp $
+ *  $Id: diskimage.c,v 1.29 2004-06-22 22:08:22 debug Exp $
  *
  *  Disk image support.
+ *
+ *  TODO:  There's probably a bug in the tape support:
+ *         Let's say there are 10240 bytes left in a file, and 10240
+ *         bytes are read. Then feof() is not true yet (?), so the next
+ *         read will also return 10240 bytes (but all zeroes), and then after
+ *         that return feof (which results in a filemark).  This is probably
+ *         trivial to fix, but I don't feel like it right now.
  *
  *  TODO:  diskimage_remove() ?
  *         Actually test diskimage_access() to see that it works.
@@ -565,8 +572,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			ofs = diskimages[disk_id]->tape_offset;
 
-			/*  fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i, ofs=%lli ]\n",
-			    disk_id, diskimages[disk_id]->tape_filenr, xferp->cmd[1], (int)size, (long long)ofs);  */
+			fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i, ofs=%lli ]\n",
+			    disk_id, diskimages[disk_id]->tape_filenr, xferp->cmd[1], (int)size, (long long)ofs);
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
@@ -829,10 +836,23 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		    xferp->cmd[5]);
 
 		switch (xferp->cmd[1] & 7) {
-		case 1:	/*  file nr  */
-			diskimages[disk_id]->tape_filenr += (
-			    (xferp->cmd[2] << 16) +
-			    (xferp->cmd[3] << 8) + xferp->cmd[4]);
+		case 1:	/*  Seek to a different file nr:  */
+			{
+				int diff = (xferp->cmd[2] << 16) +
+				    (xferp->cmd[3] << 8) + xferp->cmd[4];
+
+				/*  Negative seek offset:  */
+				if (diff & (1 << 23))
+					diff = - (16777216 - diff);
+
+				diskimages[disk_id]->tape_filenr += diff;
+			}
+
+			/*  At end of file, switch to the next automagically:  */
+			if (diskimages[disk_id]->filemark) {
+				diskimages[disk_id]->tape_filenr ++;
+				diskimages[disk_id]->filemark = 0;
+			}
 
 			debug("{ switching to tape file %i }", diskimages[disk_id]->tape_filenr);
 			diskimage__switch_tape(disk_id);

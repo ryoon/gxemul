@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.12 2004-01-11 16:31:34 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.13 2004-01-19 12:48:40 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -137,6 +137,9 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			/*  Ugly hack: don't show form feeds:  */
 			if (idata != 12)
 				console_putchar(idata);
+
+			if (d->reg[com_mcr] & MCR_LOOPBACK)
+				console_makeavail(idata);
 
 			d->reg[com_iir] |= IIR_TXRDY;
 			dev_ns16550_tick(cpu, d);

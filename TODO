@@ -96,11 +96,7 @@ Most important stuff (but these are all _huge_ tasks):
 				in software)
 
 		o)  Cobalt:
-			"cpu0 at mainbus0: QED RM5200 CPU Rev. 10.0 with built-in FPU Rev. 10.0
-			 cpu0: L1 cache: 32KB/32B Instruction, 32KB/32B Data, two way set associative
-			 cpu0: No L2 cache", according to NetBSD.
-			Tulip ethernet
-			harddisk controller
+			PCI:  Tulip ethernet and harddisk controller
 
 		o)  SGI machines (sgimips):
 			More ARCBIOS stuff?
@@ -119,9 +115,12 @@ Most important stuff (but these are all _huge_ tasks):
 			No FPU, but something as coproc 2.
 			(Perhaps the PS1 is a subset of the PS2.)
 
+		o)  ARC:
+			x)  NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
+
 		o)  Nintendo 64? R4000.  http://www.nintendo.com/systems/n64/n64_specs.jsp
 
-		o)  newsmips, arc?
+		o)  newsmips?
 
 	Multi-cpu stuff:
 		either do it in a way which emulates a real MP MIPS machine,

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.164 2004-12-14 07:11:09 debug Exp $
+$Id: index.html,v 1.165 2004-12-14 07:15:06 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -707,7 +707,7 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	$ <b>./mips64emul -D2 -d openbsddisk.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	$ <b>./mips64emul -D2 -b -d openbsddisk.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
 	(If you add -X, you will run with the graphical framebuffer. This is <i>REALLY</i> slow
@@ -743,7 +743,7 @@ password! The first time you boot up OpenBSD after the install, you
 need to go into single user mode and run <b>passwd root</b> to set
 the root password, or you will not be able to log in at all!
 <pre>
-	$ <b>./mips64emul -D2 -d openbsddisk.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+	$ <b>./mips64emul -D2 -b -d openbsddisk.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
 </pre>
 While you are at it, you might want to extract the X11 install sets
 as well, as the installer seems to ignore them too. (Perhaps due to a bug
@@ -770,10 +770,6 @@ Execute the following commands in the emulator:
 </ol>
 
 <p>
-OpenBSD/pmax should work fine with dynamic binary translation (enabled by 
-adding <b>-b</b> to the command line).
-
-<p>
 NOTE: It is also possible to install via ftp instead of using a CDROM image. 
 This is not much less awkward, you still need the simpleroot filesystem 
 image, and you still have to manually add the X11 install sets and set the 
@@ -783,8 +779,12 @@ root password, and so on.
 Once you have completed the installation procedure, the following command
 will let you boot from the new rootdisk image:
 <pre>
-	$ <b>./mips64emul -D2 -X -M64 -o '-aN' -d openbsddisk.img -j bsd</b>
+	$ <b>./mips64emul -D2 -b -X -M64 -o '-aN' -d openbsddisk.img -j bsd</b>
 </pre>
+
+<p>
+OpenBSD/pmax seems to work fine with dynamic binary translation (enabled 
+by the <b>-b</b> command line option).
 
 <p>
 (Normally, you would be asked about which root device to use (rz0), but 
@@ -889,7 +889,7 @@ onto a disk image:
         it is called /dev/cd0c here, replace that with the name of your
         CDROM drive, or the name of a .iso image file.)
         Then, start the emulator like this:<pre>
-        $ <b>./mips64emul -X -M64 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+        $ <b>./mips64emul -X -b -M64 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
         Once the first stage of the installation is done (restoring the root
@@ -897,7 +897,7 @@ onto a disk image:
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('b') from the second
 	diskimage argument:<pre>
-        $ <b>./mips64emul -X -M64 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+        $ <b>./mips64emul -X -b -M64 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -905,12 +905,12 @@ onto a disk image:
 <p>
 When the installation is completed, the following command should start  
 Ultrix from the harddisk image:<pre>
-        $ <b>./mips64emul -X -M64 -D2 -j vmunix -d rootdisk.img</b>
+        $ <b>./mips64emul -X -b -M64 -D2 -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>
 Ultrix mostly seems to work with dynamic binary translation (enabled by 
-adding <b>-b</b> to the command line options). If you have a very fast
+the <b>-b</b> command line option). If you have a very fast
 host machine, and use bintrans, you might experience a weird timer related
 bug, which makes it impossible to logon to the system. A temporary
 workaround is to add <b>-I33000000</b> to fix the emulated clock speed to 
@@ -924,7 +924,7 @@ There is also a <b>-z</b> option for supplying names of X11 displays to
 use. The following example starts Ultrix on an emulated tripple-headed 
 workstation, on three different displays (remote1:0.0, localhost:0.0, and 
 remote2:0.0), using no scaledown:<pre>
-        $ <b>./mips64emul -M64 -ND2 -jgenvmunix -d rootdisk.img -XZ3 \
+        $ <b>./mips64emul -M64 -bND2 -jgenvmunix -d rootdisk.img -XZ3 \
             -z remote1:0.0 -z localhost -z remote2:0.0</b>
 </pre>
 
@@ -1183,20 +1183,20 @@ in mips64emul:
 </pre>(Note sda1 instead of sdc1.)
   <p>
   <li>To boot Linux, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -b -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 </ol>
 
 <p>
 If you need to boot into single user mode, try the following:<pre>
-	$ <b>./mips64emul -D2 -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -b -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 
 <p>
 Redhat Linux on DECstation in R3000 mode should work fine with dynamic binary 
-translation (enabled by adding <b>-b</b> to the command line).
+translation (enabled by the <b>-b</b> command line option).
 
 <p>
 NOTE: You can add -XN and remove console=ttyS3 from the command line, if you want

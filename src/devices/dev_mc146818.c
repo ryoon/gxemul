@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.5 2003-12-30 03:04:00 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.6 2004-01-03 03:10:50 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -49,6 +49,9 @@ extern struct cpu **cpus;
 
 
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
+
+/*  #define MC146818_DEBUG  */
+#define	TICK_STEPS_SHIFT	6
 
 
 #define	N_REGISTERS	256
@@ -81,7 +84,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		return;
 
 	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) && mc_data->interrupt_every_x_instructions > 0) {
-		mc_data->instructions_left_until_interrupt--;
+		mc_data->instructions_left_until_interrupt -= (1 << TICK_STEPS_SHIFT);
 		if (mc_data->instructions_left_until_interrupt < 0 ||
 		    mc_data->instructions_left_until_interrupt >= mc_data->interrupt_every_x_instructions) {
 			/*  debug("[ rtc interrupt ]\n");  */
@@ -106,6 +109,17 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	struct tm *tmp;
 	time_t timet;
 	struct mc_data *mc_data = extra;
+
+#ifdef MC146818_DEBUG
+	if (writeflag == MEM_WRITE) {
+		int i;
+		debug("[ mc146818: write to addr=0x%04x: ", relative_addr);
+		for (i=0; i<len; i++)
+			debug("%02x ", data[i]);
+		debug("]\n");
+	} else
+		debug("[ mc146818: read from addr=0x%04x ]\n", relative_addr);
+#endif
 
 	if (writeflag == MEM_WRITE && relative_addr == 0x70) {
 		mc_data->last_addr = data[0];
@@ -305,6 +319,6 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->reg[0x7d] = 0xaa;
 
 	memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access, (void *)mc_data);
-	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, 0);	/*  0 = every cycle  */
+	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
 }
 

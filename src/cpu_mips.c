@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.15 2005-02-03 07:47:15 debug Exp $
+ *  $Id: cpu_mips.c,v 1.16 2005-02-03 16:30:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1556,8 +1556,12 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			debug(" vaddr=0x%016llx", (long long)vaddr);
 		}
 
-		debug(" pc->cd.mips.last=%08llx <%s> ]\n",
-		    (long long)cpu->cd.mips.pc_last, symbol? symbol : "(no symbol)");
+		debug(" pc=%08llx ", (long long)cpu->cd.mips.pc_last);
+
+		if (symbol != NULL)
+			debug("<%s> ]\n", symbol);
+		else
+			debug("]\n");
 	}
 
 	if (tlb && vaddr < 0x1000) {

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.258 2004-10-16 14:22:56 debug Exp $
+$Id: HISTORY,v 1.259 2004-10-16 18:09:31 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1024,4 +1024,7 @@ HISTORY of mips64emul
 		Renaming dev_jazz.c into dev_pica.c. Working on PICA timer
 		and interrupt specifics.
 20041016	Adding some dummy entries to lk201.c to reduce debug output.
-		Some bintrans updates.
+		Some bintrans updates (don't run in delay slots or nullified
+		slots, read directly from host memory and not via memory_rw(),
+		try mmap() before malloc() at startup, and many other minor
+		updates).

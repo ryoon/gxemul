@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.30 2004-10-16 16:13:29 debug Exp $
+ *  $Id: bintrans.c,v 1.31 2004-10-16 18:09:32 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -108,6 +108,7 @@
  */
 
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,7 +128,8 @@
 
 int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
-int bintrans_attempt_translate(struct cpu *cpu, uint64_t pc) { return 0; }
+int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
+	uint64_t vaddr) { return 0; }
 void bintrans_init(void)
 {
 	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
@@ -479,7 +481,7 @@ void bintrans_init(void)
 	size_t s;
 	int res;
 
-	debug("starting bintrans: EXPERIMENTAL!\n");
+	debug("bintrans: EXPERIMENTAL!\n");
 
 	s = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	s *= sizeof(struct translation_entry *);
@@ -491,14 +493,26 @@ void bintrans_init(void)
 
 	/*  The entry array must be NULLed, as these are pointers to
 	    translation entries.  */
+	debug("bintrans: translation_entry_array = %i KB at %p\n",
+	    (int)(s/1024), translation_entry_array);
 	memset(translation_entry_array, 0, s);
 
-	translation_code_chunk_space = malloc(CODE_CHUNK_SPACE_SIZE
-	    + CODE_CHUNK_SPACE_MARGIN);
+	/*  Allocate the large code chunk space:  */
+	s = CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN;
+	translation_code_chunk_space = mmap(NULL, s,
+	    PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+	/*  If mmap() failed, try malloc():  */
 	if (translation_code_chunk_space == NULL) {
-		fprintf(stderr, "bintrans_init(): out of memory (2)\n");
-		exit(1);
+		translation_code_chunk_space = malloc(s);
+		if (translation_code_chunk_space == NULL) {
+			fprintf(stderr, "bintrans_init(): out of memory (2)\n");
+			exit(1);
+		}
 	}
+
+	debug("bintrans: translation_code_chunk_space = %i MB at %p\n",
+	    (int)(s/1048576), translation_code_chunk_space);
 
 	/*
 	 *  The translation_code_chunk_space does not need to be zeroed,
@@ -520,12 +534,10 @@ void bintrans_init(void)
 	 *  using mmap(), then this could be a problem.
 	 */
 	res = mprotect(translation_code_chunk_space,
-	    CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN,
-	    PROT_READ | PROT_WRITE | PROT_EXEC);
+	    s, PROT_READ | PROT_WRITE | PROT_EXEC);
 	if (res)
 		debug("warning: mprotect() failed with errno %i."
-		    " this usually doesn't really matter...\n", res);
+		    " this usually doesn't really matter...\n", errno);
 }
-
 
 #endif	/*  BINTRANS  */

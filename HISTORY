@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.671 2005-04-04 22:59:46 debug Exp $
+$Id: HISTORY,v 1.672 2005-04-05 20:33:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1802,3 +1802,6 @@ Changelog for GXemul:
 		(thanks to Alec Voropay for noticing that it wasn't part
 		of root1.2.6.kernel-8.00).
 		Also adding a note about another cramfs image.
+		-o options are now added to the command line passed to the
+		Linux kernel, when emulating the VR3.
+		Adding a MobilePro 880 mode, and a dummy IBM WorkPad Z50 mode.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.24 2005-04-02 23:02:15 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.25 2005-04-05 20:33:08 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -560,6 +560,10 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 
 	machine_add_tickfunction(machine, dev_vr41xx_tick, d,
 	    DEV_VR41XX_TICKSHIFT);
+
+	/*  Some machines (?) use ISA space at 0x15000000 instead of
+	    0x14000000, eg IBM WorkPad Z50.  */
+	dev_ram_init(mem, 0x15000000, 0x1000000, DEV_RAM_MIRROR, 0x14000000);
 
 	return d;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.18 2005-04-04 20:50:59 debug Exp $
+ *  $Id: pci_ahc.c,v 1.19 2005-04-05 20:33:08 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -271,7 +271,13 @@ void pci_ahc_init(struct machine *machine, struct memory *mem)
 
 	/*  TODO:  this address is based on what NetBSD/sgimips uses
 	    on SGI IP32 (O2). Fix this.  */
+
 	memory_device_register(mem, "ahc", 0x18000000, DEV_AHC_LENGTH,
 	    dev_ahc_access, d, MEM_DEFAULT, NULL);
+
+	/*  OpenBSD/sgi snapshots sometime between 2005-03-11 and
+	    2005-04-04 changed to using 0x1a000000:  */
+	dev_ram_init(mem, 0x1a000000, 0x2000000, DEV_RAM_MIRROR,
+	    0x18000000);
 }
 

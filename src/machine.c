@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.401 2005-04-05 14:43:28 debug Exp $
+ *  $Id: machine.c,v 1.402 2005-04-05 20:33:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2183,6 +2183,36 @@ void machine_setup(struct machine *machine)
 			    + (2)		/*   0: submodel 2="MCR 700A" */
 			    );
 			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
+			/*  168 MHz VR4121  */
+			machine->machine_name = "NEC MobilePro 880";
+			/*  TODO:  */
+			hpcmips_fb_addr = 0xa0ea600;
+			hpcmips_fb_xsize = 800;
+			hpcmips_fb_ysize = 600;
+			hpcmips_fb_xsize_mem = 800;
+			hpcmips_fb_ysize_mem = 600;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_0000;
+
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  3 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (1 << 22)		/*  22: vendor  1=NEC  */
+			    + (2 << 16)		/*  16: series  2="NEC MCR" */
+			    + (3 <<  8)		/*   8: model   3="MCR 7XX" */
+			    + (4)		/*   0: submodel 4="MCR 730A" */
+			    );
+			break;
 		case MACHINE_HPCMIPS_AGENDA_VR3:
 			/*  66 MHz VR4181  */
 			machine->machine_name = "Agenda VR3";
@@ -2218,6 +2248,36 @@ void machine_setup(struct machine *machine)
 			    );
 
 			dev_ram_init(mem, 0x0f000000, 0x01000000, DEV_RAM_MIRROR, 0x0);
+			break;
+		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
+			/*  131 MHz VR4121  */
+			machine->machine_name = "Agenda VR3";
+			/*  TODO:  */
+			hpcmips_fb_addr = 0xa000000;
+			hpcmips_fb_xsize = 640;
+			hpcmips_fb_ysize = 480;
+			hpcmips_fb_xsize_mem = 640;
+			hpcmips_fb_ysize_mem = 480;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_0000;
+
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  3 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (9 << 22)		/*  22: vendor  9=IBM  */
+			    + (1 << 16)		/*  16: series  1=WorkPad */
+			    + (1 <<  8)		/*   8: model   1=Z50  */
+			    + (0)		/*   0: submodel 0 */
+			    );
 			break;
 		default:
 			printf("Unimplemented hpcmips machine number.\n");
@@ -4390,6 +4450,8 @@ void machine_memsize_fix(struct machine *m)
 			m->physical_ram_in_mb = 64;
 			break;
 		case MACHINE_HPCMIPS:
+			/*  Most have 32 MB by default.  */
+			m->physical_ram_in_mb = 32;
 			switch (m->machine_subtype) {
 			case MACHINE_HPCMIPS_CASIO_BE300:
 				m->physical_ram_in_mb = 16;
@@ -4516,10 +4578,14 @@ void machine_default_cputype(struct machine *m)
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_880:
 			m->cpu_name = strdup("VR4121");
 			break;
 		case MACHINE_HPCMIPS_AGENDA_VR3:
 			m->cpu_name = strdup("VR4181");
+			break;
+		case MACHINE_HPCMIPS_IBM_WORKPAD_Z50:
+			m->cpu_name = strdup("VR4121");
 			break;
 		default:
 			printf("Unimplemented HPCMIPS model?\n");
@@ -5051,7 +5117,7 @@ void machine_init(void)
 
 	/*  HPCmips:  */
 	me = machine_entry_new("Handheld MIPS (HPC)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 6);
+	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 8);
 	me->aliases[0] = "hpcmips";
 	me->aliases[1] = "hpc";
 	me->subtype[0] = machine_entry_subtype_new(
@@ -5067,14 +5133,21 @@ void machine_init(void)
 	me->subtype[2]->aliases[0] = "agenda";
 	me->subtype[2]->aliases[1] = "vr3";
 	me->subtype[3] = machine_entry_subtype_new(
-	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
-	me->subtype[3]->aliases[0] = "mobilepro770";
+	    "IBM WorkPad Z50", MACHINE_HPCMIPS_IBM_WORKPAD_Z50, 2);
+	me->subtype[3]->aliases[0] = "workpad";
+	me->subtype[3]->aliases[1] = "z50";
 	me->subtype[4] = machine_entry_subtype_new(
-	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
-	me->subtype[4]->aliases[0] = "mobilepro780";
+	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
+	me->subtype[4]->aliases[0] = "mobilepro770";
 	me->subtype[5] = machine_entry_subtype_new(
+	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
+	me->subtype[5]->aliases[0] = "mobilepro780";
+	me->subtype[6] = machine_entry_subtype_new(
 	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
-	me->subtype[5]->aliases[0] = "mobilepro800";
+	me->subtype[6]->aliases[0] = "mobilepro800";
+	me->subtype[7] = machine_entry_subtype_new(
+	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
+	me->subtype[7]->aliases[0] = "mobilepro880";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

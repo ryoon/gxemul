@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.26 2005-04-02 11:23:05 debug Exp $
+$Id: guestoses.html,v 1.27 2005-04-05 20:33:08 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -283,9 +283,9 @@ option and try again.
 <h3>How to install NetBSD/hpcmips in GXemul:</h3>
 
 It is possible to install NetBSD/hpcmips onto a disk image, on an an
-emulated MobilePro 770, 780, or 800. The emulator treats the different
-machine models as being almost identical; the most important difference is
-regarding the framebuffer.
+emulated MobilePro 770, 780, 800, or 880. The emulator treats the
+different machine models as being almost identical; the most important
+difference is regarding the framebuffer.
 
 <p>
 <table border="0">
@@ -321,13 +321,21 @@ regarding the framebuffer.
 		<td></td>
 		<td>0xa000000</td>
 	</tr>
+	<tr>
+		<td></td>
+		<td>MobilePro 880</td>
+		<td></td>
+		<td>800 x 600, 16 bits</td>
+		<td></td>
+		<td>0xa0ea600 (<super>*</super>)</td>
+	</tr>
 </table>
 
 <p>
-(<super>*</super>) = not aligned at a 4 KB boundary, so it will not
-work with the current bintrans system. Using this mode will still work,
-but each load and store will be emulated much more slowly than is possible
-with an aligned framebuffer.
+(<super>*</super>) = not aligned at a 4 KB boundary, so it will not work
+efficiently with the current bintrans system. Using this mode will still
+work, but each load and store will be emulated much more slowly than is
+possible with an aligned framebuffer.
 
 <p>
 These instructions show an example of how to install

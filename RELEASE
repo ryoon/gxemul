@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.18 2004-07-16 18:19:30 debug Exp $
+$Id: RELEASE,v 1.19 2004-07-16 19:07:31 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -110,6 +110,10 @@ release, but will most probably work anyway.
 		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
 		gcc 3.3.4 (Linux-2.6.7, Slackware)
 
+	Linux/ia64
+		gcc version 2.96 20000731 (Debian GNU/Linux IA64 experimental)
+		gcc version 3.3.3 (Linux 2.4.17 (Debian))
+
 	NetBSD/i386 2.0/-current
 		gcc 3.3.3
 
@@ -134,7 +138,8 @@ release, but will most probably work anyway.
 		cc: Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
 
 
-Platforms/compilers that are known NOT to work are:
+Platforms/compilers that have been tried and did NOT work when they were 
+tried are:
 
 	HP-UX/hppa B.11.00
 		using HP-UX' default cc   (gcc 3.3.2 works fine though)

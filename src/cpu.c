@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.59 2004-06-09 08:49:21 debug Exp $
+ *  $Id: cpu.c,v 1.60 2004-06-14 22:50:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -198,6 +198,8 @@ void cpu_register_dump(struct cpu *cpu)
  *  Show trace tree.   This function should be called every time
  *  a function is called.  cpu->trace_tree_depth is increased here
  *  and should not be increased by the caller.
+ *
+ *  Note:  This function should not be called if show_trace_tree == 0.
  */
 void show_trace(struct cpu *cpu, uint64_t addr)
 {
@@ -205,9 +207,6 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 	int n_args_to_print;
 	char strbuf[50];
 	char *symbol;
-
-	if (!show_trace_tree)
-		return;
 
 	cpu->trace_tree_depth ++;
 
@@ -337,9 +336,9 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int offset, x;
 	char *symbol = "";
 
-	symbol = get_symbol_name(cpu->pc_last, &offset);
-
 	if (!quiet_mode) {
+		symbol = get_symbol_name(cpu->pc_last, &offset);
+
 		debug("[ exception %s%s",
 		    exception_names[exccode], tlb? " <tlb>" : "");
 
@@ -370,12 +369,14 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (tlb && vaddr == 0) {
+		symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
 	}
 
 	if (vaddr != 0 && vaddr < 0x1000) {
+		symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
@@ -521,6 +522,7 @@ const char *cpu_flags(struct cpu *cpu)
  */
 int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 {
+	int quiet_mode_cached = quiet_mode;
 	struct coproc *cp0 = cpu->coproc[0];
 	int instr_fetched;
 	int i;
@@ -569,20 +571,21 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	/*  Hardwire the zero register to 0:  */
 	cpu->gpr[GPR_ZERO] = 0;
 
-
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
 		if (cpu->pc == dumppoint_pc[i]) {
 			instruction_trace = 1;
-			quiet_mode = 0;
+			quiet_mode = quiet_mode_cached = 0;
 			if (dumppoint_flag_r[i])
 				register_dump = 1;
 		}
 
-	/*  Dump CPU registers for debugging:  */
-	if (register_dump) {
-		debug("\n");
-		cpu_register_dump(cpu);
+	if (!quiet_mode_cached) {
+		/*  Dump CPU registers for debugging:  */
+		if (register_dump) {
+			debug("\n");
+			cpu_register_dump(cpu);
+		}
 	}
 
 #ifdef ALWAYS_SIGNEXTEND_32
@@ -658,10 +661,12 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	/*  Remember where we are, in case of interrupt or exception:  */
 	cpu->pc_last = cpu->pc;
 
-	if (cpu->show_trace_delay > 0) {
-		cpu->show_trace_delay --;
-		if (cpu->show_trace_delay == 0)
-			show_trace(cpu, cpu->show_trace_addr);
+	if (!quiet_mode_cached) {
+		if (cpu->show_trace_delay > 0) {
+			cpu->show_trace_delay --;
+			if (cpu->show_trace_delay == 0 && show_trace_tree == 0)
+				show_trace(cpu, cpu->show_trace_addr);
+		}
 	}
 
 #ifdef MFHILO_DELAY

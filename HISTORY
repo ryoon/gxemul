@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.146 2004-07-09 09:31:42 debug Exp $
+$Id: HISTORY,v 1.147 2004-07-10 06:37:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -716,3 +716,16 @@ HISTORY of mips64emul
 		This also makes Linux/DECstation properly recognize both the
 		Lance controller and the SCSI controller. Linux 2.4.26 from
 		Debian boots nicely in framebuffer mode :-)
+20040710	Some bits in the KN02 CSR that were supposed to be readonly
+		weren't. That has been fixed, and this allows Linux/DECstation
+		to get past SCSI detection. :-)
+		Minor updates to the ASC controller, which makes Linux and
+		OpenBSD/pmax like the controller enough to be able to access
+		SCSI devices. OpenBSD/pmax boots from a disk image for the
+		first time. :-)  Linux detects SCSI disks, but I have no
+		bootable Linux diskimage to test this with.
+		Updating the doc/ to include instructions on how to install
+		OpenBSD/pmax onto a disk image.
+		Naively added a PMAGB-BA (1280x1024x8) in hopes that it would
+		basically be a PMAG-BA (1024x864x8) in higher resolution,
+		but it didn't work that way. I'll have to look into this later.

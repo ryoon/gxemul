@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.26 2005-04-05 20:43:06 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.27 2005-04-06 17:08:27 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -63,30 +63,11 @@ static void recalc_kiu_int_assert(struct cpu *cpu, struct vr41xx_data *d)
 
 
 /*
- *  dev_vr41xx_tick():
+ *  vr41xx_keytick():
  */
-void dev_vr41xx_tick(struct cpu *cpu, void *extra)
+static void vr41xx_keytick(struct cpu *cpu, struct vr41xx_data *d)
 {
-	struct vr41xx_data *d = extra;
 	int keychange = 0;
-
-	/*
-	 *  UGLY! TODO: fix this.
-	 *
-	 *  Interrupts should be triggered if the corresponding unit (for
-	 *  example the RTC unit) is activated.
-	 */
-	{
-		static unsigned int x = 0;
-		x++;
-
-		if (x > 100 && (x&3)==0) {
-			if (d->cpumodel == 4121 || d->cpumodel == 4181)
-				cpu_interrupt(cpu, 3);
-			else
-				cpu_interrupt(cpu, 8 + 3);
-		}
-	}
 
 	/*
 	 *  Keyboard input:
@@ -125,6 +106,23 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 	 *	   8=     4=      2=     1=ALT_R
 	 *  ofs a:
 	 *	800=SHIFT 4=CTRL
+	 *
+	 *
+	 *  The following are for the IBM WorkPad Z50:
+	 *  (Not yet implemented, TODO)
+	 *
+	 *  00    f1      f3      f5      f7      f9      -       -       f11
+	 *  08    f2      f4      f6      f8      f10     -       -       f12
+	 *  10    '       [       -       0       p       ;       up      /
+	 *  18    -       -       -       9       o       l       .       -
+	 *  20    left    ]       =       8       i       k       ,       -
+	 *  28    h       y       6       7       u       j       m       n
+	 *  30    -       bs      num     del     -       \       ent     sp
+	 *  38    g       t       5       4       r       f       v       b
+	 *  40    -       -       -       3       e       d       c       right
+	 *  48    -       -       -       2       w       s       x       down
+	 *  50    esc     tab     ~       1       q       a       z       -
+	 *  58    menu    Ls      Lc      Rc      La      Ra      Rs      -
 	 */
 
 	if (d->d0 != 0 || d->d1 != 0 || d->d2 != 0 ||
@@ -287,6 +285,36 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 		d->kiu_int_assert |= 3;
 		recalc_kiu_int_assert(cpu, d);
 	}
+}
+
+
+/*
+ *  dev_vr41xx_tick():
+ */
+void dev_vr41xx_tick(struct cpu *cpu, void *extra)
+{
+	struct vr41xx_data *d = extra;
+
+	/*
+	 *  UGLY! TODO: fix this.
+	 *
+	 *  Interrupts should be triggered if the corresponding unit (for
+	 *  example the RTC unit) is activated.
+	 */
+	{
+		static unsigned int x = 0;
+		x++;
+
+		if (x > 100 && (x&3)==0) {
+			if (d->cpumodel == 4121 || d->cpumodel == 4181)
+				cpu_interrupt(cpu, 3);
+			else
+				cpu_interrupt(cpu, 8 + 3);
+		}
+	}
+
+	if (cpu->machine->use_x11)
+		vr41xx_keytick(cpu, d);
 }
 
 
@@ -554,8 +582,9 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	    dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
 
 	/*  At least on VR4131:  */
-	dev_ns16550_init(machine, mem, baseaddr + 0x800, 8 + 9, 1,
-	    1, "vr41xx siu");
+	if (cpumodel == 4131)
+		dev_ns16550_init(machine, mem, baseaddr + 0x800, 8 + 9, 1,
+		    1, "vr41xx siu");
 
 	/*  Hm... maybe this should not be here.  TODO  */
 	device_add(machine, "pcic addr=0x140003e0");

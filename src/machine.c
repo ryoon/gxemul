@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.402 2005-04-05 20:33:10 debug Exp $
+ *  $Id: machine.c,v 1.403 2005-04-06 17:08:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -786,6 +786,8 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 			m->vr41xx_data->giuint &= ~(1 << giu_irq);
 	}
 
+	/*  TODO: This is wrong. What about GIU bit 8?  */
+
 	if (irq_nr != 8) {
 		/*  If any GIU bit is asserted, then assert the main
 		    GIU interrupt:  */
@@ -813,9 +815,10 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 
 	/*  TODO: Which hardware interrupt pin?  */
 
-	/*  debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
+	debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
 	    m->vr41xx_data->sysint1, m->vr41xx_data->msysint1,
-	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);  */
+	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);
+
 
 	if ((m->vr41xx_data->sysint1 & m->vr41xx_data->msysint1) |
 	    (m->vr41xx_data->sysint2 & m->vr41xx_data->msysint2))
@@ -2107,8 +2110,6 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2137,8 +2138,6 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2167,8 +2166,6 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2197,8 +2194,6 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2227,12 +2222,16 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
-			/*  TODO: Hm...  */
-			machine->main_console_handle = dev_ns16550_init(machine, mem, 0x0c000010, 0, 1,
-			    1, "serial 0");  /*  TODO: irq?  */
+			/*  TODO: Hm... irq 17 according to linux, but 9 here?  */
+			{
+				int x;
+				x = dev_ns16550_init(machine, mem, 0x0c000010,
+				    8 + 9, 1, 1, "serial 0");
+
+				if (!machine->use_x11)
+					machine->main_console_handle = x;
+			}
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2263,8 +2262,6 @@ void machine_setup(struct machine *machine)
 
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
-			machine->main_console_handle =
-			    machine->vr41xx_data->kiu_console_handle;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2283,6 +2280,10 @@ void machine_setup(struct machine *machine)
 			printf("Unimplemented hpcmips machine number.\n");
 			exit(1);
 		}
+
+		if (machine->use_x11)
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
 
 		/*  NetBSD/hpcmips and possibly others expects the following:  */
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.672 2005-04-05 20:33:07 debug Exp $
+$Id: HISTORY,v 1.673 2005-04-06 17:08:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1805,3 +1805,5 @@ Changelog for GXemul:
 		-o options are now added to the command line passed to the
 		Linux kernel, when emulating the VR3.
 		Adding a MobilePro 880 mode, and a dummy IBM WorkPad Z50 mode.
+20050406	Connecting the VR3 serial controller to irq 9 (Linux calls this
+		irq 17), and some other interrupt-related cleanups.

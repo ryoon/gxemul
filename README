@@ -35,7 +35,7 @@ Here are examples of kernels that can be experimented with:
   Try running with  -X -B      (-X is required, for the framebuffer).
 
   NetBSD/sgimips:  (gunzip, and try running with  -G32)
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INDY_INSTALL.gz
+  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
 
   Linux/SGI kernels:
   http://www.linux-mips.org/~glaurung/

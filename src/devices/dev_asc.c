@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.25 2004-04-15 04:00:02 debug Exp $
+ *  $Id: dev_asc.c,v 1.26 2004-04-15 06:40:04 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -282,25 +282,6 @@ fatal("TODO..............\n");
                                         fatal("{ asc: data in, len=%i len2=%i }\n", len, len2);
                                 }
 
-				if (len > len2) {
-					unsigned char *n;
-
-					all_done = 0;
-                                        fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);
-
-					d->xferp->data_in_len -= len2;
-					n = malloc(d->xferp->data_in_len);
-					if (n == NULL) {
-						fprintf(stderr, "out of memory in dev_asc\n");
-						exit(1);
-					}
-					memcpy(n, d->xferp->data_in + len2, d->xferp->data_in_len);
-					free(d->xferp->data_in);
-					d->xferp->data_in = n;
-
-					len = len2;
-				}
-
 				/*  TODO: check len2 in a similar way?  */
 				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
@@ -314,7 +295,26 @@ fatal("TODO..............\n");
 						debug(" %02x", d->xferp->data_in[i]);
 #endif
 
-				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len);
+				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len2);
+
+				if (d->xferp->data_in_len > len2) {
+					unsigned char *n;
+
+					all_done = 0;
+					/*  fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);  */
+
+					d->xferp->data_in_len -= len2;
+					n = malloc(d->xferp->data_in_len);
+					if (n == NULL) {
+						fprintf(stderr, "out of memory in dev_asc\n");
+						exit(1);
+					}
+					memcpy(n, d->xferp->data_in + len2, d->xferp->data_in_len);
+					free(d->xferp->data_in);
+					d->xferp->data_in = n;
+
+					len = len2;
+				}
 
 				len = 0;
 
@@ -343,6 +343,8 @@ fatal("TODO.......asdgasin\n");
 
 			if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 				len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+
+			/*  fatal("    data out offset=%5i len=%5i\n", d->xferp->data_out_offset, len2);  */
 
 			if (d->xferp->data_out == NULL) {
 				scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);

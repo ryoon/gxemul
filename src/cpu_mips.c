@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.1 2005-01-30 12:59:08 debug Exp $
+ *  $Id: cpu_mips.c,v 1.2 2005-01-30 13:39:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -70,6 +70,9 @@ static char *special2_names[] = SPECIAL2_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
+
+
+#include "mips16.c"
 
 
 /*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.147 2005-01-30 12:54:52 debug Exp $
+ *  $Id: emul.c,v 1.148 2005-01-30 13:39:45 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -478,7 +478,7 @@ void emul_machine_setup(struct machine *machine, int n_load,
 	if (machine->bintrans_enable)
 		bintrans_init(machine->memory);
 
-	debug("adding cpu0");
+	debug("cpu0");
 	if (machine->ncpus > 1)
 		debug(" .. cpu%i", machine->ncpus - 1);
 	debug(": ");

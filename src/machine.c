@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.317 2005-01-30 12:54:52 debug Exp $
+ *  $Id: machine.c,v 1.318 2005-01-30 13:39:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3548,18 +3548,34 @@ config[77] = 0x30;
 		 *  TODO: How about floppies? multi()disk()fdisk()
 		 *        Is tftp() good for netbooting?
 		 */
-		init_bootpath = malloc(200);
+		init_bootpath = malloc(500);
+		if (init_bootpath == NULL) {
+			fprintf(stderr, "out of mem, bootpath\n");
+			exit(1);
+		}
+		init_bootpath[0] = '\0';
 
 		if (bootdev_id < 0 || machine->force_netboot) {
-			snprintf(init_bootpath, 200, "tftp()\\");
+			snprintf(init_bootpath, 400, "tftp()");
 		} else {
+			/*  TODO: Make this nicer.  */
+			if (machine->machine_type == MACHINE_SGI) {
+				if (machine->machine_subtype == 30)
+					strcat(init_bootpath, "xio(0)pci(15)");
+				if (machine->machine_subtype == 32)
+					strcat(init_bootpath, "pci(0)");
+			}
+
 			if (diskimage_is_a_cdrom(machine, bootdev_id))
-				snprintf(init_bootpath, 200,
-				    "scsi(0)cdrom(%i)fdisk(0)\\", bootdev_id);
+				snprintf(init_bootpath + strlen(init_bootpath), 400,
+				    "scsi(0)cdrom(%i)fdisk(0)", bootdev_id);
 			else
-				snprintf(init_bootpath, 200,
-				    "scsi(0)disk(%i)rdisk(0)partition(1)\\", bootdev_id);
+				snprintf(init_bootpath + strlen(init_bootpath), 400,
+				    "scsi(0)disk(%i)rdisk(0)partition(1)", bootdev_id);
 		}
+
+		if (machine->machine_type == MACHINE_ARC)
+			strcat(init_bootpath, "\\");
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(machine->boot_kernel_filename) + 1);

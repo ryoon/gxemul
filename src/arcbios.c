@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.63 2005-01-11 02:41:29 debug Exp $
+ *  $Id: arcbios.c,v 1.64 2005-01-11 02:49:15 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -277,10 +277,17 @@ static void handle_esc_seq(struct cpu *cpu)
 		arcbios_console_cury = row - 1;
 		return;
 	case 'J':
-		/*  J = clear screen below cursor, 2J = clear whole screen.  */
+		/*
+		 *  J = clear screen below cursor, and the rest of the
+		 *      current line,
+		 *  2J = clear whole screen.
+		 */
 		i = atoi(arcbios_escape_sequence + 1);
 		if (i != 0 && i != 2)
 			fatal("{ handle_esc_seq(): %iJ }\n", i);
+		if (i == 0)
+			for (col=arcbios_console_curx; col<arcbios_console_maxx; col++)
+				arcbios_putcell(cpu, ' ', col, arcbios_console_cury);
 		for (col=0; col<arcbios_console_maxx; col++)
 			for (row=i?0:arcbios_console_cury+1; row<arcbios_console_maxy; row++)
 				arcbios_putcell(cpu, ' ', col, row);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.15 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_jazz.c,v 1.16 2005-02-18 07:22:30 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -277,7 +277,8 @@ printf("R4030_SYS_ISA_VECTOR\n");
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ jazz: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+			    ", data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
 			fatal("[ jazz: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
@@ -318,7 +319,8 @@ int dev_jazz_led_access(struct cpu *cpu, struct memory *mem,
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ jazz_led: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+			    ", data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
 			fatal("[ jazz_led: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);
@@ -369,11 +371,12 @@ int dev_jazz_access_a0(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ jazz_isa_a0: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+			fatal("[ jazz_isa_a0: unimplemented write to "
+			    "address 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ jazz_isa_a0: unimplemented read from address 0x%x"
-			    " ]\n", (int)relative_addr);
+			fatal("[ jazz_isa_a0: unimplemented read from "
+			    "address 0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -421,11 +424,12 @@ int dev_jazz_access_20(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ jazz_isa_20: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+			fatal("[ jazz_isa_20: unimplemented write to "
+			    "address 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			fatal("[ jazz_isa_20: unimplemented read from address 0x%x"
-			    " ]\n", (int)relative_addr);
+			fatal("[ jazz_isa_20: unimplemented read from "
+			    "address 0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -474,7 +478,8 @@ int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
 	default:
 		if (writeflag == MEM_WRITE) {
 			fatal("[ jazzio: unimplemented write to address 0x%x"
-			    ", data=0x%02x ]\n", (int)relative_addr, (int)idata);
+			    ", data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
 			fatal("[ jazzio: unimplemented read from address 0x%x"
 			    " ]\n", (int)relative_addr);

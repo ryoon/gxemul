@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.55 2005-02-18 06:01:17 debug Exp $
+ *  $Id: dec_prom.c,v 1.56 2005-02-18 07:22:31 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -441,13 +441,15 @@ int decstation_prom_emul(struct cpu *cpu)
 				console_putchar(cpu->machine->
 				    main_console_handle, printfbuf[x]);
 		}
-		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
+		if (cpu->machine->register_dump ||
+		    cpu->machine->instruction_trace)
 			debug("\n");
 		fflush(stdout);
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x54:		/*  bootinit()  */
-		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);  */
+		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x58:		/*  bootread(int b, void *buffer, int n)  */
@@ -460,7 +462,9 @@ int decstation_prom_emul(struct cpu *cpu)
 		 *  TODO: Return value? NetBSD thinks that 0 is ok.
 		 */
 		debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
-		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0], (int)cpu->cd.mips.gpr[MIPS_GPR_A1], (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 
@@ -471,12 +475,15 @@ int decstation_prom_emul(struct cpu *cpu)
 
 			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in "
+				    "dec_prom.c, allocating %i bytes ]\n",
+				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
-			    cpu->cd.mips.gpr[MIPS_GPR_A0] * 512, tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] * 512, tmp_buf,
+			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data
 			    to emulated memory:  */
@@ -487,7 +494,8 @@ int decstation_prom_emul(struct cpu *cpu)
 
 				store_buf(cpu, dst, (char *)tmp_buf,
 				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A2];
+				cpu->cd.mips.gpr[MIPS_GPR_V0] =
+				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 			}
 
 			free(tmp_buf);
@@ -517,22 +525,26 @@ int decstation_prom_emul(struct cpu *cpu)
 			    + i + strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
+				cpu->cd.mips.gpr[MIPS_GPR_V0] =
+				    DEC_PROM_STRINGS + i +
+				    strlen((char *)buf) + 1;
 				return 1;
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
-		fatal("[ DEC PROM getenv(\"%s\"): WARNING: Not in environment! ]\n", buf);
+		fatal("[ DEC PROM getenv(\"%s\"): WARNING: Not in "
+		    "environment! ]\n", buf);
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x6c:		/*  ulong slot_address(int sn)  */
-		debug("[ DEC PROM slot_address(%i) ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		debug("[ DEC PROM slot_address(%i) ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		/*  TODO:  This is too hardcoded.  */
 		/*  TODO 2:  Should these be physical or virtual addresses?  */
 		switch (cpu->machine->machine_subtype) {
 		case MACHINE_DEC_3MAX_5000:
-			slot_base = KN02_PHYS_TC_0_START;	/*  0x1e000000  */
-			slot_size = 4*1048576;		/*  4 MB  */
+			slot_base = KN02_PHYS_TC_0_START;/*  0x1e000000  */
+			slot_size = 4*1048576;		 /*  4 MB  */
 			break;
 		case MACHINE_DEC_3MIN_5000:
 			slot_base = 0x10000000;
@@ -547,17 +559,21 @@ int decstation_prom_emul(struct cpu *cpu)
 			slot_size = 0x4000000;		/*  64 MB  */
 			break;
 		default:
-			fatal("warning: DEC PROM slot_address() unimplemented for this machine type\n");
+			fatal("warning: DEC PROM slot_address() "
+			    "unimplemented for this machine type\n");
 		}
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t)
-		    (0x80000000 + slot_base + slot_size * cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		    (0x80000000 + slot_base + slot_size *
+		    cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		break;
 	case 0x70:		/*  wbflush()  */
 		debug("[ DEC PROM wbflush(): TODO ]\n");
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x7c:		/*  clear_cache(addr, len)  */
-		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n", (uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A0], (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n",
+		    (uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		/*  TODO  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;	/*  ?  */
 		break;
@@ -566,7 +582,8 @@ int decstation_prom_emul(struct cpu *cpu)
 		/*  TODO:  why did I add the 0x82 stuff???  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = ((uint32_t)0x82 << 24)
 		    + (cpu->machine->machine_subtype << 16) + (0x3 << 8);
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
+		cpu->cd.mips.gpr[MIPS_GPR_V0] =
+		    (int64_t)(int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		break;
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",
@@ -590,15 +607,26 @@ int decstation_prom_emul(struct cpu *cpu)
 		cpu->dead = 1;
 		break;
 	case 0xa4:		/*  gettcinfo()  */
-		/*  These are just bogus values...  TODO  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO +  0, 0);	/*  revision  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO +  4, 50);	/*  clock period in nano seconds  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO +  8, 4);	/*  slot size in megabytes  TODO: not same for all models!!  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO + 12, 10);	/*  I/O timeout in cycles  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO + 16, 1);	/*  DMA address range in megabytes  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO + 20, 100);	/*  maximum DMA burst length  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
-		store_32bit_word(cpu, DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
+		/*
+		 *  These are just bogus values...  TODO
+		 *
+		 *   0:  revision
+		 *   4:  clock period in nano seconds
+		 *   8:  slot size in megabytes  TODO: not same for all models!
+		 *  12:  I/O timeout in cycles
+		 *  16:  DMA address range in megabytes
+		 *  20:  maximum DMA burst length
+		 *  24:  turbochannel parity (yes = 1)
+		 *  28:  reserved
+		 */
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  0, 0);
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  4, 50);
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  8, 4);
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 12, 10);
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 16, 1);
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 20, 100);
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 24, 0);
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 28, 0);
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = DEC_PROM_TCINFO;
 		break;
 	case 0xa8:		/*  int execute_cmd(char *)  */
@@ -609,7 +637,8 @@ int decstation_prom_emul(struct cpu *cpu)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0xac:		/*  rex()  */
-		debug("[ DEC PROM rex('%c') ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		debug("[ DEC PROM rex('%c') ]\n",
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		switch (cpu->cd.mips.gpr[MIPS_GPR_A0]) {
 		case 'h':
 			debug("DEC PROM: rex('h') ==> halt\n");
@@ -618,14 +647,16 @@ int decstation_prom_emul(struct cpu *cpu)
 			cpu->dead = 1;
 			break;
 		case 'b':
-			debug("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
+			debug("DEC PROM: rex('b') ==> reboot: TODO "
+			    "(halting CPU instead)\n");
 			cpu->machine->exit_without_entering_debugger = 1;
 			cpu->running = 0;
 			cpu->dead = 1;
 			break;
 		default:
-			fatal("DEC prom emulation: unknown rex() a0=0x%llx ('%c')\n",
-			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (char)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+			fatal("DEC prom emulation: unknown rex() a0=0x%llx ("
+			    "'%c')\n", (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
+			    (char)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			cpu->running = 0;
 			cpu->dead = 1;
 		}
@@ -644,7 +675,8 @@ int decstation_prom_emul(struct cpu *cpu)
 				printf("[%02x]", ch);
 		}
 		printf("\n");
-		fatal("PROM emulation: unimplemented callback vector 0x%x\n", vector);
+		fatal("PROM emulation: unimplemented callback vector 0x%x\n",
+		    vector);
 		cpu->running = 0;
 		cpu->dead = 1;
 	}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sfb.c,v 1.5 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_sfb.c,v 1.6 2005-02-18 07:22:30 debug Exp $
  *  
  *  SFB TURBOchannel framebuffer.
  *
@@ -43,6 +43,7 @@
 #include "devices.h"
 #include "memory.h"
 #include "misc.h"
+
 #include "sfbreg.h"
 
 #define	SFB_XSIZE	1280
@@ -76,10 +77,12 @@ int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	if (writeflag==MEM_READ) {
 		odata = d->reg[(relative_addr >> 2) & (N_SFB_REGS - 1)];
-		debug("[ sfb: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+		debug("[ sfb: read from addr 0x%x: 0x%llx ]\n",
+		    (int)relative_addr, (long long)odata);
 	} else {
 		d->reg[(relative_addr >> 2) & (N_SFB_REGS - 1)] = idata;
-		debug("[ sfb: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+		debug("[ sfb: write to addr 0x%x: 0x%llx ]\n",
+		    (int)relative_addr, (long long)idata);
 	}
 
 	if (writeflag == MEM_READ)

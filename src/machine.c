@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.26 2004-01-03 04:05:15 debug Exp $
+ *  $Id: machine.c,v 1.27 2004-01-04 21:42:25 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -769,7 +769,10 @@ void machine_init(struct memory *mem)
 		/*  ARCBIOS:  */
 		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
+		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
@@ -792,15 +795,15 @@ void machine_init(struct memory *mem)
 		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*
-		 *  The first 8 MBs of RAM are simply reserved... this simplifies things a lot.
+		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
 		 *  If there's more than 512MB of RAM, it has to be split in two, according to
 		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
 		 */
-		mem_base = 8 * 1048576 / 4096;
+		mem_base = 16 * 1048576 / 4096;
 		mem_count = physical_ram_in_mb <= 512? physical_ram_in_mb : 512;
-		mem_count = (mem_count - 8) * 1048576 / 4096;
+		mem_count = (mem_count - 16) * 1048576 / 4096;
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
@@ -812,7 +815,7 @@ void machine_init(struct memory *mem)
 			mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
 			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
@@ -851,8 +854,9 @@ void machine_init(struct memory *mem)
 				case 32:
 					dev_crime_init(mem, 0x14000000);		/*  crime0  */
 					/*  mte (?) at 0x15000000  */
-					/*  gbe (?) at 0x16000000  */
-					/*  ??? at 0x18000000  */
+					dev_sgi_gbe_init(mem, 0x16000000);
+					/*  serial at 0x18000000 ???  */
+					dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
 					dev_macepci_init(mem, 0x1f080000);		/*  macepci0  */
 					/*  mec0 (ethernet) at 0x1f280000  */
 					dev_mace_init(mem, 0x1f310000);			/*  mace0  */
@@ -860,7 +864,7 @@ void machine_init(struct memory *mem)
 					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 					dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
 					dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, 0, 0x40, emulated_ips);  /*  mcclock0  */
-					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);
+					dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 					break;
 				default:
 					fatal("unimplemented SGI machine type IP%i\n", machine);
@@ -901,12 +905,13 @@ void machine_init(struct memory *mem)
 		for (i=0; i<100; i++)
 			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 2;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
 		store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
-		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x200);
-		store_32bit_word(ARC_ARGV_START + 0x8, 0);
+		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
+		store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
+		store_32bit_word(ARC_ARGV_START + 0xc, 0);
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
@@ -922,8 +927,8 @@ void machine_init(struct memory *mem)
 		bootarg = "-a";
 
 		store_string(ARC_ARGV_START + 0x100, bootstr);
+store_string(ARC_ARGV_START + 0x180, "console=ttyS0");
 		store_string(ARC_ARGV_START + 0x200, bootarg);
-store_string(ARC_ARGV_START + 0x200, "ConsoleOut=serial(0)");
 
 		/*  TODO:  not needed?  */
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
@@ -935,6 +940,7 @@ store_string(ARC_ARGV_START + 0x200, "ConsoleOut=serial(0)");
 
 		add_environment_string("ConsoleIn=serial(0)", &addr);
 		add_environment_string("ConsoleOut=serial(0)", &addr);
+		add_environment_string("console=d2", &addr);		/*  d2 = serial?  */
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("eaddr=00:00:00:00:00:00", &addr);
@@ -972,29 +978,43 @@ store_string(ARC_ARGV_START + 0x200, "ConsoleOut=serial(0)");
 		 *  TODO:  This emulation is 99.999% non-functional.
 		 */
 
-		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
-		cpus[bootstrap_cpu]->pc = 0xa4000040;
-
 		/*  Numbers from Mupen64:  */
-		cpus[bootstrap_cpu]->gpr[ 6] = 0xFFFFFFFFA4001F0C;
-		cpus[bootstrap_cpu]->gpr[ 7] = 0xFFFFFFFFA4001F08;
-		cpus[bootstrap_cpu]->gpr[ 8] = 0x00000000000000C0;
-		cpus[bootstrap_cpu]->gpr[10] = 0x0000000000000040;
-		cpus[bootstrap_cpu]->gpr[11] = 0xFFFFFFFFA4000040;
-		cpus[bootstrap_cpu]->gpr[29] = 0xFFFFFFFFA4001FF0;
-
-		/*  CIC chip 2:  */
 		cpus[bootstrap_cpu]->gpr[ 1] = 0x0000000000000001;
 		cpus[bootstrap_cpu]->gpr[ 2] = 0x000000000EBDA536;
 		cpus[bootstrap_cpu]->gpr[ 3] = 0x000000000EBDA536;
 		cpus[bootstrap_cpu]->gpr[ 4] = 0x000000000000A536;
 		cpus[bootstrap_cpu]->gpr[ 5] = 0xFFFFFFFFC0F1D859;
+		cpus[bootstrap_cpu]->gpr[ 6] = 0xFFFFFFFFA4001F0C;
+		cpus[bootstrap_cpu]->gpr[ 7] = 0xFFFFFFFFA4001F08;
+		cpus[bootstrap_cpu]->gpr[ 8] = 0x00000000000000C0;
+		cpus[bootstrap_cpu]->gpr[10] = 0x0000000000000040;
+		cpus[bootstrap_cpu]->gpr[11] = 0xFFFFFFFFA4000040;
 		cpus[bootstrap_cpu]->gpr[12] = 0xFFFFFFFFED10D0B3;
 		cpus[bootstrap_cpu]->gpr[13] = 0x000000001402A4CC;
 		cpus[bootstrap_cpu]->gpr[14] = 0x000000002DE108EA;
 		cpus[bootstrap_cpu]->gpr[15] = 0x000000003103E121;
 		cpus[bootstrap_cpu]->gpr[22] = 0x000000000000003F;
+		cpus[bootstrap_cpu]->gpr[23] = 0x0000000000000006;
 		cpus[bootstrap_cpu]->gpr[25] = 0xFFFFFFFF9DEBB54F;
+		cpus[bootstrap_cpu]->gpr[29] = 0xFFFFFFFFA4001FF0;
+		cpus[bootstrap_cpu]->gpr[31] = 0xFFFFFFFFA4001554;
+
+		dev_ram_init(mem, 0x04000000, 2048);
+		dev_ram_init(mem, 0x10000000, 2048);
+
+		/*  Copy 1KB from 0x80000000 to 0xa4000000 and to 0xb0000000.  */
+
+		for (i=0; i<1024; i++) {
+			unsigned char byte;
+			byte = read_char_from_memory(cpus[bootstrap_cpu], 0, 0x80000000 + i);
+			store_byte(0xa4000000 + i, byte);
+			store_byte(0xb0000000 + i, byte);
+		}
+
+		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
+		cpus[bootstrap_cpu]->pc = 0xa4000040;
+
+		dev_n64_bios_init(mem, 0x03f00000);
 
 		break;
 

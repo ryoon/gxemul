@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.103 2004-07-10 14:58:19 debug Exp $
+ *  $Id: cpu.c,v 1.104 2004-07-12 21:00:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -345,6 +345,7 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 		return 0;
 
 	cpu->coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
+	cpu->cached_interrupt_is_possible = 1;
 	return 1;
 }
 
@@ -369,6 +370,9 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 		return 0;
 
 	cpu->coproc[0]->reg[COP0_CAUSE] &= ~((1 << irq_nr) << STATUS_IM_SHIFT);
+	if (!(cpu->coproc[0]->reg[COP0_CAUSE] & STATUS_IM_MASK))
+		cpu->cached_interrupt_is_possible = 0;
+
 	return 1;
 }
 
@@ -646,10 +650,50 @@ int cpu_run_instr(struct cpu *cpu)
 	}
 #endif
 
+	/*  Cache the program counter in a local variable:  */
+	cached_pc = cpu->pc;
+
+	/*  Hardwire the zero register to 0:  */
+	cpu->gpr[GPR_ZERO] = 0;
+
 	if (cpu->delay_slot) {
 		if (cpu->delay_slot == DELAYED) {
-			cpu->pc = cpu->delay_jmpaddr;
+			cached_pc = cpu->pc = cpu->delay_jmpaddr;
 			cpu->delay_slot = NOT_DELAYED;
+
+			/*
+			 *  ROM emulation:
+			 *
+			 *  This assumes that a jal was made to a ROM address,
+			 *  and we should return via gpr ra.
+			 */
+			if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
+				int rom_jal = 1;
+				switch (emulation_type) {
+				case EMULTYPE_DEC:
+					decstation_prom_emul(cpu);
+					break;
+				case EMULTYPE_PS2:
+					playstation2_sifbios_emul(cpu);
+					break;
+				case EMULTYPE_ARC:
+				case EMULTYPE_SGI:
+					arcbios_emul(cpu);
+					break;
+				default:
+					rom_jal = 0;
+				}
+
+				if (rom_jal) {
+					cpu->pc = cpu->gpr[GPR_RA];
+					/*  no need to update cached_pc, as we're returning  */
+					cpu->delay_slot = NOT_DELAYED;
+					cpu->trace_tree_depth --;
+
+					/*  TODO: how many instrs should this count as?  */
+					return 1;
+				}
+			}
 		}
 		if (cpu->delay_slot == TO_BE_DELAYED) {
 			/*  next instruction will be delayed  */
@@ -657,14 +701,8 @@ int cpu_run_instr(struct cpu *cpu)
 		}
 	}
 
-	/*  Cache the program counter in a local variable:  */
-	cached_pc = cpu->pc;
-
 	if (cpu->last_was_jumptoself > 0)
 		cpu->last_was_jumptoself --;
-
-	/*  Hardwire the zero register to 0:  */
-	cpu->gpr[GPR_ZERO] = 0;
 
 	/*  Check PC dumppoints:  */
 	for (i=0; i<n_dumppoints; i++)
@@ -728,40 +766,6 @@ int cpu_run_instr(struct cpu *cpu)
 	}
 #endif
 
-
-	/*
-	 *  ROM emulation:
-	 *
-	 *  This assumes that a jal was made to a ROM address,
-	 *  and we should return via gpr ra.
-	 */
-	if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
-		int rom_jal = 1;
-		switch (emulation_type) {
-		case EMULTYPE_DEC:
-			decstation_prom_emul(cpu);
-			break;
-		case EMULTYPE_PS2:
-			playstation2_sifbios_emul(cpu);
-			break;
-		case EMULTYPE_ARC:
-		case EMULTYPE_SGI:
-			arcbios_emul(cpu);
-			break;
-		default:
-			rom_jal = 0;
-		}
-
-		if (rom_jal) {
-			cpu->pc = cpu->gpr[GPR_RA];
-			/*  no need to update cached_pc, as we're returning  */
-			cpu->delay_slot = NOT_DELAYED;
-			cpu->trace_tree_depth --;
-
-			/*  TODO: how many instrs should this count as?  */
-			return 1;
-		}
-	}
 
 	/*  Remember where we are, in case of interrupt or exception:  */
 	cpu->pc_last = cached_pc;
@@ -917,36 +921,44 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  bit in the cause register is set) and corresponding enable bits
 	 *  in the status register are set, then cause an interrupt exception
 	 *  instead of executing the current instruction.
+	 *
+	 *  NOTE: cached_interrupt_is_possible is set to 1 whenever an
+	 *  interrupt bit in the cause register is set to one (in
+	 *  cpu_interrupt()) and set to 0 whenever all interrupt bits are
+	 *  cleared (in cpu_interrupt_ack()), so we don't need to do a full
+	 *  check each time.
 	 */
-	if (cpu->cpu_type.exc_model == EXC3K) {
-		/*  R3000:  */
-		int enabled, mask;
-		int status = cp0->reg[COP0_STATUS];
+	if (cpu->cached_interrupt_is_possible) {
+		if (cpu->cpu_type.exc_model == EXC3K) {
+			/*  R3000:  */
+			int enabled, mask;
+			int status = cp0->reg[COP0_STATUS];
 
-		if (cpu->last_was_rfe) {
-			enabled = 0;
-			cpu->last_was_rfe = 0;
+			if (cpu->last_was_rfe) {
+				enabled = 0;
+				cpu->last_was_rfe = 0;
+			} else {
+				enabled = status & MIPS_SR_INT_IE;
+				mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+				if (enabled && mask) {
+					cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+					return 0;
+				}
+			}
 		} else {
-			enabled = status & MIPS_SR_INT_IE;
-			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			/*  R4000 and others:  */
+			int enabled, mask;
+			int status = cp0->reg[COP0_STATUS];
+
+			enabled = (status & STATUS_IE)
+			    && !(status & STATUS_EXL)
+			    && !(status & STATUS_ERL);
+
+			mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
 			if (enabled && mask) {
 				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 				return 0;
 			}
-		}
-	} else {
-		/*  R4000 and others:  */
-		int enabled, mask;
-		int status = cp0->reg[COP0_STATUS];
-
-		enabled = (status & STATUS_IE)
-		    && !(status & STATUS_EXL)
-		    && !(status & STATUS_ERL);
-
-		mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
-		if (enabled && mask) {
-			cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
-			return 0;
 		}
 	}
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.87 2004-07-08 22:49:17 debug Exp $
+ *  $Id: misc.h,v 1.88 2004-07-12 21:00:29 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -616,6 +616,10 @@ struct cpu {
 	int		delay_slot;
 	int		nullify_next;		/*  set to 1 if next instruction
 							is to be nullified  */
+
+	/*  This is set to non-zero, if it is possible at all that an
+	    interrupt will occur.  */
+	int		cached_interrupt_is_possible;
 
 	int		last_was_rfe;		/*  R2000/R3000, after rfe  */
 

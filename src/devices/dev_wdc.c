@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.23 2005-03-29 00:32:27 debug Exp $
+ *  $Id: dev_wdc.c,v 1.24 2005-03-29 06:45:48 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -49,7 +49,11 @@
 
 extern int single_step;
 
+#define	WDC_TICK_SHIFT		14
 #define	WDC_INBUF_SIZE		(512*257)
+
+/*  INT_DELAY=2 to be safe, 1 is faster but maybe buggy.  */
+#define	INT_DELAY		1
 
 #define	debug fatal
 /*  #define  DATA_DEBUG  */
@@ -57,6 +61,8 @@ extern int single_step;
 struct wdc_data {
 	int		irq_nr;
 	int		base_drive;
+
+	int		delayed_interrupt;
 
 	unsigned char	identify_struct[512];
 
@@ -80,6 +86,22 @@ struct wdc_data {
 	int		head;
 	int		cur_command;
 };
+
+
+/*
+ *  dev_wdc_tick():
+ */
+void dev_wdc_tick(struct cpu *cpu, void *extra)
+{ 
+	struct wdc_data *d = extra;
+
+	if (d->delayed_interrupt) {
+		d->delayed_interrupt --;
+
+		if (d->delayed_interrupt == 0)
+			cpu_interrupt(cpu, d->irq_nr);
+	}
+}
 
 
 /*
@@ -256,8 +278,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 
 			if (d->inbuf_tail != d->inbuf_head)
-				cpu_interrupt(cpu, d->irq_nr);
-
+				d->delayed_interrupt = INT_DELAY;
 
 		} else {
 			int inbuf_len;
@@ -311,7 +332,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				d->write_count --;
 				d->write_offset += 512;
 
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 
 				if (d->write_count == 0)
 					d->write_in_progress = 0;
@@ -449,7 +470,7 @@ printf("WDC read from offset %lli\n", (long long)offset);
 					for (i=0; i<512 * count; i++)
 						wdc_addtoinbuf(d, buf[i]);
 				}
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 				break;
 			case WDCC_WRITE:
 				debug("[ wdc: WRITE to drive %i, head %i, "
@@ -479,7 +500,7 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				}
 /*  TODO: Really interrupt here?  */
 #if 0
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 #endif
 				break;
 
@@ -487,7 +508,7 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				debug("[ wdc: IDP drive %i (TODO) ]\n",
 				    d->drive);
 				/*  TODO  */
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 				break;
 			case SET_FEATURES:
 				fatal("[ wdc: SET_FEATURES drive %i (TODO), "
@@ -503,11 +524,11 @@ printf("WDC write to offset %lli\n", (long long)offset);
 					d->error |= WDCE_ABRT;
 				}
 				/*  TODO: always interrupt?  */
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 				break;
 			case WDCC_RECAL:
 				debug("[ wdc: RECAL drive %i ]\n", d->drive);
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 				break;
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
@@ -520,7 +541,7 @@ printf("WDC write to offset %lli\n", (long long)offset);
 					wdc_addtoinbuf(d, d->identify_struct
 					    [i+0]);
 				}
-				cpu_interrupt(cpu, d->irq_nr);
+				d->delayed_interrupt = INT_DELAY;
 				break;
 			default:
 				fatal("[ wdc: unknown command 0x%02x ("
@@ -579,5 +600,8 @@ void dev_wdc_init(struct machine *machine, struct memory *mem,
 	    dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
 	    dev_wdc_access, d, MEM_DEFAULT, NULL);
+
+	machine_add_tickfunction(machine, dev_wdc_tick,
+	    d, WDC_TICK_SHIFT);
 }
 

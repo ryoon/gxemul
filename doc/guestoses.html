@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.21 2005-03-29 00:51:51 debug Exp $
+$Id: guestoses.html,v 1.22 2005-03-29 06:45:49 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -290,12 +290,8 @@ option and try again.
 <a name="netbsdhpcmipsinstall"></a>
 <h3>How to install NetBSD/hpcmips in GXemul:</h3>
 
-<p>
-<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
-
-<p>
-These are preliminary instructions on how an installation of
-NetBSD/hpcmips on an emulated MobilePro 780 might be done.
+It is possible to install NetBSD/hpcmips onto a disk image, on an
+an emulated MobilePro 780, by following these instructions:
 
 <p>
 <ol start="1">
@@ -305,13 +301,13 @@ NetBSD/hpcmips on an emulated MobilePro 780 might be done.
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that you will install NetBSD/hpcmips onto:<pre>
-	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=990000</b>
+	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
 
 </pre>
   <li>Download the installation kernel (and gunzip it) and an ISO
 	image of NetBSD 2.0 for hpcmips:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
-	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
 
 </pre>(Or choose a mirror closer to you, if .se is slow.)
   <p>
@@ -320,6 +316,8 @@ NetBSD/hpcmips on an emulated MobilePro 780 might be done.
 
 </pre>
 	and proceed like you would do if you were installing on a real MobilePro 780.
+	(Choose "Use entire disk" when doing the MBR partitioning, and
+	choose wd1d (not cd0c) as the CDROM device to install from.)
 </ol>
 
 <p>

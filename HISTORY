@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.655 2005-03-29 00:51:50 debug Exp $
+$Id: HISTORY,v 1.656 2005-03-29 06:45:47 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1770,3 +1770,5 @@ Changelog for GXemul:
 20050329	Some progress on the wdc.
 		Updating the documentation of how to (possibly) install
 		NetBSD/hpcmips, once it is working.
+		Adding delays before wdc interrupts; this allows NetBSD
+		2.0/hpcmips to be successfully installed!

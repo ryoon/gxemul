@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.206 2004-10-24 10:37:39 debug Exp $
+ *  $Id: machine.c,v 1.207 2004-10-24 10:46:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -519,8 +519,8 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	uint32_t irq;
 	irq_nr -= 8;
 
-	debug("pica_interrupt() irq_nr = %i, assrt = %i\n",
-		irq_nr, assrt);
+	/*  debug("pica_interrupt() irq_nr = %i, assrt = %i\n",
+		irq_nr, assrt);  */
 
 	irq = 1 << irq_nr;
 
@@ -529,8 +529,8 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	else
 		pica_data->int_asserted &= ~irq;
 
-	debug("   %08x %08x\n", pica_data->int_asserted,
-		pica_data->int_enable_mask);
+	/*  debug("   %08x %08x\n", pica_data->int_asserted,
+		pica_data->int_enable_mask);  */
 
 	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
 

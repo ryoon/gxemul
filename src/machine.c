@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.151 2004-08-05 21:22:18 debug Exp $
+ *  $Id: machine.c,v 1.152 2004-08-05 21:48:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2535,25 +2535,24 @@ void machine_init(struct memory *mem)
 		if (use_x11)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
+		/*  TODO:  Which devices, and at what addresses?  */
+
 		dev_8250_init(cpus[bootstrap_cpu], mem, 0x11100000, 0, 4);
 
+
 		/*
-		 *  TODO
-		 *
-		 *  A Linux kernel probably wants "memsize" from
-		 *  somewhere... I haven't found any docs on how
-		 *  it is used though.
+		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I
+		 *  haven't found any docs on how it is used though.
 		 */
 
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 1;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = 0xa0001000ULL;
-		store_32bit_word(cpus[bootstrap_cpu]->gpr[GPR_A1], 0xa0002000ULL);
-		store_string(0xa0002000ULL, "memsize=64");
+		store_32bit_word(cpus[bootstrap_cpu]->gpr[GPR_A1],
+		    0xa0002000ULL);
+		store_string(0xa0002000ULL, "something=somethingelse");
 
 		cpus[bootstrap_cpu]->gpr[GPR_A2] = 0xa0003000ULL;
 		store_string(0xa0002000ULL, "hello=world\n");
-
-		cpus[bootstrap_cpu]->gpr[GPR_A3] = 0x12303321;
 
 		break;
 
@@ -2571,7 +2570,8 @@ void machine_init(struct memory *mem)
 	debug(" (%.2f MHz)\n", (float)emulated_hz / 1000000);
 
 	if (bootstr != NULL) {
-		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)", bootstr);
+		debug("bootstring%s: %s", bootarg==NULL? "": "(+bootarg)",
+		    bootstr);
 		if (bootarg != NULL)
 			debug(" %s", bootarg);
 		debug("\n");

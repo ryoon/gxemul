@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.21 2004-03-07 03:56:10 debug Exp $
+ *  $Id: dev_fb.c,v 1.22 2004-03-08 03:23:18 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -67,7 +67,15 @@ extern int x11_using_truecolor;
 #endif
 
 
-/*  #define	FB_DEBUG  */
+/*
+ *  FB_DEBUG enables lots of debug output.
+ *  FB_TICK_EVERYOTHER tries to improve overall performance by lagging behind
+ *     in the updates, but this might make the framebuffer seem less responsive.
+ *  EXPERIMENTAL_PUTPIXEL is my own inlined replacement for XPutPixel.
+ */
+
+/*  #define FB_DEBUG  */
+/*  #define FB_TICK_EVERYOTHER  */
 #define EXPERIMENTAL_PUTPIXEL
 
 
@@ -137,6 +145,23 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 		else
 			fbw->ximage_data[ofs + bit*ofs2] &= ~t;
 	}
+}
+
+
+/*
+ *  dev_fb_setcursor():
+ */
+void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
+	int cursor_xsize, int cursor_ysize)
+{
+	d->cursor_x      = cursor_x;
+	d->cursor_y      = cursor_y;
+	d->cursor_on     = on;
+	d->cursor_xsize  = cursor_xsize;
+	d->cursor_ysize  = cursor_ysize;
+
+	debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n", cursor_x, cursor_y,
+	    cursor_xsize, cursor_ysize, on);
 }
 
 
@@ -392,9 +417,10 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (!use_x11)
 		return;
 
-	if (d->update_x1 != -1) {
+	if (d->update_x2 != -1) {
 		int y, addr, addr2, q = d->vfb_scaledown;
 
+#ifdef FB_TICK_EVERYOTHER
 		/*
 		 *  This make sure we don't update too often, but if we haven't
 		 *  been updating in a while (that is, updated_last_tick = 0),
@@ -404,7 +430,7 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			d->updated_last_tick = 0;
 			return;
 		}
-
+#endif
 		d->updated_last_tick = 1;
 
 		if (d->update_x1 >= d->visible_xsize)	d->update_x1 = d->visible_xsize - 1;
@@ -432,9 +458,20 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
 		    (d->update_x2 - d->update_x1)/d->vfb_scaledown + 1,
 		    (d->update_y2 - d->update_y1)/d->vfb_scaledown + 1);
+
+		/*
+		 *  TODO:  This cursor stuff needs more work.
+		 */
+		if (d->cursor_on)
+			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
+			    d->fb_window->x11_fb_gc, d->fb_window->cursor_ximage,
+			    0,0, d->cursor_x/d->vfb_scaledown, d->cursor_y/d->vfb_scaledown,
+			    d->cursor_xsize/d->vfb_scaledown, d->cursor_ysize/d->vfb_scaledown);
+
 		XFlush(d->fb_window->x11_display);
 #endif
-		d->update_x1 = d->update_y1 = d->update_x2 = d->update_y2 = -1;
+		d->update_x1 = d->update_y1 = 99999;
+		d->update_x2 = d->update_y2 = -1;
 	} else
 		d->updated_last_tick = 0;
 }
@@ -618,11 +655,14 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	d->x11_xsize = d->visible_xsize / d->vfb_scaledown;
 	d->x11_ysize = d->visible_ysize / d->vfb_scaledown;
 
-	d->update_x1 = d->update_y1 = d->update_x2 = d->update_y2 = -1;
+	d->update_x1 = d->update_y1 = 99999;
+	d->update_x2 = d->update_y2 = -1;
 
 	snprintf(title, sizeof(title), "mips64emul: %ix%ix%i %s framebuffer",
 	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
 	title[sizeof(title)-1] = '\0';
+
+	d->cursor_x = d->cursor_y = d->cursor_xsize = d->cursor_ysize = d->cursor_on = 0;
 
 #ifdef WITH_X11
 	if (use_x11)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.6 2003-12-28 21:33:38 debug Exp $
+ *  $Id: coproc.c,v 1.7 2003-12-29 09:49:00 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -402,12 +402,16 @@ void coproc_register_write(struct cpu *cpu,
 		return;
 	}
 
+	if (cp->coproc_nr==0 && reg_nr==COP0_FRAMEMASK) {
+		unimpl = 0;
+	}
+
 	if (cp->coproc_nr==1)	unimpl = 0;
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "
-		    "register %i (%s)\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
-		    cp->coproc_nr==0? cop0_names[reg_nr] : "?");
+		    "register %i (%s), data = 0x%016llx\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
+		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
 
 		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
 		return;
@@ -634,6 +638,10 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 
 	/*  TODO: coprocessor R2020 on DECstation?  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff)
+		return;
+
+	/*  TODO: RM5200 idle (?)  */
+	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.182 2004-11-12 21:33:53 debug Exp $
+ *  $Id: cpu.c,v 1.183 2004-11-12 23:49:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1410,7 +1410,6 @@ static int cpu_run_instr(struct cpu *cpu)
 		return 0;
 	}
 #endif
-
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */

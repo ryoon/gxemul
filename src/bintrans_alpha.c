@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.27 2004-11-12 21:33:53 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.28 2004-11-12 23:49:25 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -137,267 +137,6 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 
 	*addrp = a;
 }
-
-
-#if 0
-
-/*
- *  bintrans_write_instruction__ori():
- */
-static int bintrans_write_instruction__ori(unsigned char **addrp,
-	int *pc_inc, int rt, int rs, int imm)
-{
-	unsigned char *a;
-	unsigned int uimm;
-	int ofs;
-
-	a = *addrp;
-	uimm = imm & 0xffff;
-
-	if (uimm & 0x8000) {
-		/*
-		 *  "Negative":
-		 *  00 80 3f 20     lda     t0,-32768
-		 *  1f 04 ff 5f     fnop
-		 *  88 08 50 a4     ldq     t1,2184(a0)
-		 *  01 00 21 24     ldah    t0,1(t0)
-		 *  02 04 41 44     or      t1,t0,t1
-		 *  1f 04 ff 5f     fnop
-		 *  88 08 50 b4     stq     t1,2184(a0)
-		 */
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x3f; *a++ = 0x20;
-		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
-
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x21; *a++ = 0x24;	/*  ldah  */
-		*a++ = 0x02; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;	/*  or  */
-		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xb4;
-	} else {
-		/*
-		 *  Positive:
- 		 *   34 12 5f 20     lda     t1,4660
- 		 *   88 08 30 a4     ldq     t0,2184(a0)
- 		 *   01 04 22 44     or      t0,t1,t0
- 		 *   1f 04 ff 5f     fnop
- 		 *   88 08 30 b4     stq     t0,2184(a0)
-		 */
-		ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-		*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;	/*  or  */
-		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-	}
-
-	*addrp = a;
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__slti():
- */
-static int bintrans_write_instruction__slti(unsigned char **addrp,
-	int *pc_inc, int rt, int rs, int imm, int unsigned_flag)
-{
-	unsigned char *a;
-	unsigned int uimm;
-	int ofs;
-
-	a = *addrp;
-	uimm = imm & 0xffff;
-
-	/*
-	 *   34 12 5f 20     lda     t1,4660
-	 *   88 08 30 a4     ldq     t0,2184(a0)
-	 *   a1 09 22 40     cmplt   t0,t1,t0
-	 *   1f 04 ff 5f     fnop
-	 *   88 08 30 b4     stq     t0,2184(a0)
-	 */
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x5f; *a++ = 0x20;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-	if (unsigned_flag) {
-		*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;	/*  cmpult  */
-	} else {
-		*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;	/*  cmplt  */
-	}
-
-	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	*addrp = a;
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__subu():
- */
-static int bintrans_write_instruction__subu(unsigned char **addrp,
-	int *pc_inc, int rd, int rs, int rt, int dsubu_flag)
-{
-	unsigned char *a;
-	int ofs;
-
-	/*
-	 *  90 08 30 a0     ldl     t0,2192(a0)
-	 *  98 08 50 a0     ldl     t1,2200(a0)
-	 *  21 01 22 40     subl    t0,t1,t0
-	 *  1f 04 ff 5f     fnop
-	 *  88 08 30 b4     stq     t0,2184(a0)
-	 */
-	a = *addrp;
-
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-
-	if (dsubu_flag) {
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
-		*a++ = 0x21; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;	/*  subq t0,t1,t0  */
-	} else {
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
-		*a++ = 0x21; *a++ = 0x01; *a++ = 0x22; *a++ = 0x40;	/*  subl t0,t1,t0  */
-	}
-
-	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
-
-	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	*addrp = a;
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__sra():
- */
-static int bintrans_write_instruction__sra(unsigned char **addrp,
-	int *pc_inc, int rd, int rt, int sa)
-{
-	unsigned char *a;
-	int ofs;
-
-	/*
-	 *  88 08 30 a4     ldq     t0,2184(a0)
-	 *  81 f7 23 48     sra     t0,0x1f,t0
-	 *  88 08 30 b4     stq     t0,2184(a0)
-	 */
-	a = *addrp;
-
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-	if (sa != 0) {
-		/*  Note: bits of sa are distributed among two different bytes.  */
-		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
-	}
-
-	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	*addrp = a;
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__srl():
- */
-static int bintrans_write_instruction__srl(unsigned char **addrp,
-	int *pc_inc, int rd, int rt, int sa)
-{
-	unsigned char *a;
-	int ofs;
-
-	/*
-	 *  88 08 30 a0     ldl     t0,2184(a0)
-	 *  21 f6 21 48     zapnot  t0,0xf,t0		use only lowest 32 bits
-	 *  81 f6 23 48     srl     t0,0x1f,t0
-	 *  01 00 3f 40     addl    t0,zero,t0		re-extend to 64-bit
-	 *  88 08 30 b4     stq     t0,2184(a0)
-	 */
-	a = *addrp;
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-
-	if (sa != 0) {
-		*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot  */
-		/*  Note: bits of sa are distributed among two different bytes.  */
-		*a++ = 0x81; *a++ = 0x16 + ((sa & 7) << 5); *a++ = 0x20 + (sa >> 3); *a++ = 0x48;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl  */
-	}
-
-	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	*addrp = a;
-	return 1;
-}
-
-
-/*
- *  bintrans_write_instruction__jalr():
- */
-static int bintrans_write_instruction__jalr(unsigned char **addrp,
-	int *pc_inc, int rd, int rs)
-{
-	unsigned char *a;
-	int ofs;
-
-	bintrans_write_pcflush(addrp, pc_inc, 1, 1);
-
-	a = *addrp;
-
-	/*
-	 *   gpr[rd] = retaddr
-	 *
-	 *   18 09 30 a4     ldq     t0,pc(a0)
-	 *   18 09 30 b4     stq     t0,rd(a0)
-	 */
-
-	if (rd != 0) {
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-	}
-
-
-	/*
-	 *   pc = gpr[rs]
-	 *
-	 *   18 09 30 a4     ldq     t0,rs(a0)
-	 *   18 09 30 b4     stq     t0,pc(a0)
-	 */
-
-	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
-	*addrp = a;
-	return 2;
-}
-
-
-#endif
 
 
 /*
@@ -864,109 +603,6 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
 
-#if 0
-	/*
-	 *  Compare the old pc (t3) and the new pc (t0). If they are on the
-	 *  same virtual page (which means that they are on the same physical
-	 *  page), then we can check the right chunk pointer, and if it
-	 *  is non-NULL, then we can jump there.  Otherwise just return.
-	 *
-	 *  00 f0 5f 20     lda     t1,-4096
-	 *  01 00 22 44     and     t0,t1,t0
-	 *  04 00 82 44     and     t3,t1,t3
-	 *  a3 05 24 40     cmpeq   t0,t3,t2
-	 *  01 00 60 f4     bne     t2,7c <ok2>
-	 *  01 80 fa 6b     ret
-	 */
-
-	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and  */
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;	/*  and  */
-	*a++ = 0xa3; *a++ = 0x05; *a++ = 0x24; *a++ = 0x40;	/*  cmpeq  */
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
-	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
-
-
-
-	/*
-	 *  See comment in _branch...
-	 */
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-	    - ((size_t)&dummy_cpu);
-	*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-	*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
-	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
-
-	/*  15 bits at a time, which means max 60 bits, but
-	    that should be enough. the top 4 bits are probably
-	    not used by userland alpha code. (TODO: verify this)  */
-	alpha_addr = (size_t)chunks;
-	subaddr = (alpha_addr >> 45) & 0x7fff;
-
-	/*
-	 *  00 00 3f 20     lda     t0,0
-	 *  21 f7 21 48     sll     t0,0xf,t0
-	 *  34 12 21 20     lda     t0,4660(t0)
-	 *  21 f7 21 48     sll     t0,0xf,t0
-	 *  34 12 21 20     lda     t0,4660(t0)
-	 *  21 f7 21 48     sll     t0,0xf,t0
-	 *  34 12 21 20     lda     t0,4660(t0)
-	 */
-
-	/*  Start with the topmost 15 bits:  */
-	*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
-	*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
-
-	subaddr = (alpha_addr >> 30) & 0x7fff;
-	*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-	*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
-
-	subaddr = (alpha_addr >> 15) & 0x7fff;
-	*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-	*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
-
-	subaddr = alpha_addr & 0x7fff;
-	*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-
-	/*
-	 *  t2 = pc
-	 *  t1 = t2 & 0xfff
-	 *  t0 += t1
-	 *
-	 *  00 00 70 a4     ldq     t2,0(a0)
-	 *  ff 0f 5f 20     lda     t1,4095
-	 *  02 00 62 44     and     t2,t1,t1
-	 *  01 04 22 40     addq    t0,t1,t0
-	 */
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
-	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-	*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
-	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
-
-	/*
-	 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
-	 *  If it is zero, then skip the following.
-	 *  Add cpu->chunk_base_address to t0.
-	 *  Jump to t0.
-	 */
-
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
-	*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
-
-	/*  ldl t2,chunk_base_address(a0)  */
-	ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
-	/*  addq t0,t2,t0  */
-	*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
-
-
-	/*  00 00 e1 6b     jmp     (t0)  */
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
-#endif
-
 	/*  If the machine continues executing here, it will return
 	    to the main loop, which is fine.  */
 
@@ -980,7 +616,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
  *  bintrans_write_instruction__delayedbranch():
  */
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
-	uint32_t *potential_chunk_p)
+	uint32_t *potential_chunk_p, uint32_t *chunks)
 {
 	unsigned char *a, *b, *b2, *skip;
 	int n;
@@ -999,18 +635,120 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	 *  Perform the jump by setting cpu->delay_slot = 0
 	 *  and pc = cpu->delay_jmpaddr.
 	 */
-	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-
 	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
 	*a++ = 0; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,0 */
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;	/*  stl  */
 
+	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;	/*  ldq t3,pc  */
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq t0,pc  */
+
+
 	if (potential_chunk_p == NULL) {
 		/*  Not much we can do here if this wasn't to the same
 		    physical page...  */
+
+		*a++ = 0xfc; *a++ = 0xff; *a++ = 0x84; *a++ = 0x20;	/*  lda t3,-4(t3)  */
+
+		/*
+		 *  Compare the old pc (t3) and the new pc (t0). If they are on the
+		 *  same virtual page (which means that they are on the same physical
+		 *  page), then we can check the right chunk pointer, and if it
+		 *  is non-NULL, then we can jump there.  Otherwise just return.
+		 *
+		 *  00 f0 5f 20     lda     t1,-4096
+		 *  01 00 22 44     and     t0,t1,t0
+		 *  04 00 82 44     and     t3,t1,t3
+		 *  a3 05 24 40     cmpeq   t0,t3,t2
+		 *  01 00 60 f4     bne     t2,7c <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and  */
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;	/*  and  */
+		*a++ = 0xa3; *a++ = 0x05; *a++ = 0x24; *a++ = 0x40;	/*  cmpeq  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+		/*  Don't execute too many instructions.  */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+		    - ((size_t)&dummy_cpu);
+		*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+		/*  15 bits at a time, which means max 60 bits, but
+		    that should be enough. the top 4 bits are probably
+		    not used by userland alpha code. (TODO: verify this)  */
+		alpha_addr = (size_t)chunks;
+		subaddr = (alpha_addr >> 45) & 0x7fff;
+
+		/*
+		 *  00 00 3f 20     lda     t0,0
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 *  21 f7 21 48     sll     t0,0xf,t0
+		 *  34 12 21 20     lda     t0,4660(t0)
+		 */
+
+		/*  Start with the topmost 15 bits:  */
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = (alpha_addr >> 30) & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = (alpha_addr >> 15) & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+		subaddr = alpha_addr & 0x7fff;
+		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+
+		/*
+		 *  t2 = pc
+		 *  t1 = t2 & 0xfff
+		 *  t0 += t1
+		 *
+		 *  00 00 70 a4     ldq     t2,0(a0)
+		 *  ff 0f 5f 20     lda     t1,4095
+		 *  02 00 62 44     and     t2,t1,t1
+		 *  01 04 22 40     addq    t0,t1,t0
+		 */
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
+
+		/*
+		 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
+		 *  If it is zero, then skip the following.
+		 *  Add cpu->chunk_base_address to t0.
+		 *  Jump to t0.
+		 */
+
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
+		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+
+		/*  ldl t2,chunk_base_address(a0)  */
+		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+		/*  addq t0,t2,t0  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+
+		/*  00 00 e1 6b     jmp     (t0)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
+
+		/*  Failure, then return to the main loop.  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 	} else {
 		/*
@@ -1086,17 +824,14 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
 		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
-
 		/*  ldl t2,chunk_base_address(a0)  */
 		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 		/*  addq t0,t2,t0  */
 		*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
 
-
 		/*  00 00 e1 6b     jmp     (t0)  */
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
-
 
 		/*  "Failure", then let's return to the main loop.  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */

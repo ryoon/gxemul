@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.56 2004-11-12 21:33:52 debug Exp $
+ *  $Id: bintrans.c,v 1.57 2004-11-12 23:49:25 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -152,7 +152,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, i
 static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
 static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
-static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p);
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p, uint32_t *chunks);
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
@@ -559,7 +559,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			    (instr[1] << 8) + instr[0]) & 0x03ffffff;
 			translated = try_to_translate = bintrans_write_instruction__jal(&ca, imm, hi6 == HI6_JAL);
 			n_translated += translated;
-			/*  TODO: stop translating for J?  */
 			delayed_branch = 2;
 			delayed_branch_new_p = -1;
 			break;
@@ -582,7 +581,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 					    &tep->chunk[delayed_branch_new_p/4];
 				else
 					potential_chunk_p = NULL;
-				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p);
+				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p, &tep->chunk[0]);
 			}
 		}
 

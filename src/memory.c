@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.95 2004-11-12 21:33:53 debug Exp $
+ *  $Id: memory.c,v 1.96 2004-11-12 23:49:25 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1130,6 +1130,12 @@ if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 	/*  printf("ok=%i\n", ok);  */
 	if (!ok)
 		return NULL;
+
+	if (cpu->emul->emulation_type == EMULTYPE_DEC)
+		paddr &= 0x1fffffff;
+	else
+		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
+
 	if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
 		return NULL;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.561 2005-02-03 23:36:19 debug Exp $
+$Id: HISTORY,v 1.562 2005-02-04 09:50:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1625,3 +1625,4 @@ HISTORY of mips64emul
 		to let both NetBSD/sgimips and OpenBSD/sgi connect to the
 		outside world using ftp :-)
 		Continuing on the cleanup of the networking subsystem.
+20050204	Continuing the cleanup.

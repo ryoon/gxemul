@@ -1,4 +1,4 @@
-$Id: README,v 1.56 2005-02-02 19:40:58 debug Exp $
+$Id: README,v 1.57 2005-02-04 09:51:51 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
@@ -13,7 +13,7 @@ Copyright (C) 2003-2005  Anders Gavare.
 Overview
 --------
 
-mips64emul is a free MIPS machine emulator. The goals are to emulate MIPS-like
+mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like
 processors and enough surrounding hardware to let unmodified operating systems
 run as if they were running on a real machine, and to assist in experiments
 involving MIPS-like code in general.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.62 2005-02-03 23:36:23 debug Exp $
+ *  $Id: net.c,v 1.63 2005-02-04 09:50:47 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -40,7 +40,7 @@
  *                  http://www.tcpipguide.com/free/t_TCPConnectionTermination-2.htm
  *		o)  remove the netbsd-specific options in the tcp header (?)
  *		o)  Outgoing UDP packet fragment support.
- *		o)  IPv6
+ *		o)  IPv6  (outgoing, incoming, and the nameserver/gateway)
  *		o)  Incoming connections
  *		o)  if multiple NICs are connected to the same network,
  *		    they should be able to see each other's packets, and
@@ -64,8 +64,17 @@
  *  for some other controller.
  *
  *
- *	guestOS   <------->   gateway (in the   <------->   outside machine
- *          ("inside")          emulator)                     ("outside")
+ *	<------------------  a network  ------------------------------>
+ *		^               ^				^
+ *		|               |				|
+ *	    a NIC connected    another NIC                the gateway
+ *	    to the network					|
+ *								v
+ *							     outside
+ *							      world
+ *
+ *  The gateway isn't connected as a NIC, but is an "implicit" machine on the
+ *  network.
  */
 
 #include <stdio.h>
@@ -81,7 +90,6 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <ctype.h>
 
 #include "misc.h"
 #include "net.h"
@@ -93,6 +101,7 @@
 #define	ADDR_IPV4	1
 #define	ADDR_IPV6	2
 #define	ADDR_ETHERNET	3
+
 
 /*
  *  net_debugaddr():
@@ -1629,14 +1638,17 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			continue;
 
 		if (net->tcp_connections[con_id].socket < 0) {
-			fatal("INTERNAL ERROR in net.c, tcp socket < 0 but in use?\n");
+			fatal("INTERNAL ERROR in net.c, tcp socket < 0"
+			    " but in use?\n");
 			continue;
 		}
 
 		if (net->tcp_connections[con_id].incoming_buf == NULL) {
-			net->tcp_connections[con_id].incoming_buf = malloc(TCP_INCOMING_BUF_LEN);
+			net->tcp_connections[con_id].incoming_buf =
+			    malloc(TCP_INCOMING_BUF_LEN);
 			if (net->tcp_connections[con_id].incoming_buf == NULL) {
-				printf("out of memory allocating incoming_buf for con_id %i\n", con_id);
+				printf("out of memory allocating "
+				    "incoming_buf for con_id %i\n", con_id);
 				exit(1);
 			}
 		}
@@ -1657,7 +1669,8 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			fatal("[ ECONNREFUSED: TODO ]\n");
 			net->tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED (refused connection)\n");
+			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED "
+			    "(refused connection)\n");
 			continue;
 		}
 
@@ -1666,13 +1679,15 @@ int net_ethernet_rx_avail(struct net *net, void *extra)
 			/*  TODO  */
 			net->tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED (timeout)\n");
+			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED "
+			    "(timeout)\n");
 			continue;
 		}
 
 		if (net->tcp_connections[con_id].state ==
 		    TCP_OUTSIDE_TRYINGTOCONNECT && res > 0) {
-			net->tcp_connections[con_id].state = TCP_OUTSIDE_CONNECTED;
+			net->tcp_connections[con_id].state =
+			    TCP_OUTSIDE_CONNECTED;
 			debug("CHANGING TO TCP_OUTSIDE_CONNECTED\n");
 			net_ip_tcp_connectionreply(net, extra, con_id, 1,
 			    NULL, 0, 0);
@@ -1742,19 +1757,22 @@ memcpy(net->tcp_connections[con_id].incoming_buf, buf, res);
 		} else if (res == 0) {
 			net->tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read res=0\n");
+			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read"
+			    " res=0\n");
 			net_ip_tcp_connectionreply(net, extra, con_id, 0,
 			    NULL, 0, 0);
 		} else {
 			net->tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read res<=0, errno = %i\n", errno);
+			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED, "
+			    "read res<=0, errno = %i\n", errno);
 			net_ip_tcp_connectionreply(net, extra, con_id, 0,
 			    NULL, 0, 0);
 		}
 
 		net->timestamp ++;
-		net->tcp_connections[con_id].last_used_timestamp = net->timestamp;
+		net->tcp_connections[con_id].last_used_timestamp =
+		    net->timestamp;
 	}
 
 	return net_ethernet_rx(net, extra, NULL, NULL);
@@ -1894,7 +1912,8 @@ void net_ethernet_tx(struct net *net, void *extra,
 			return;
 		}
 
-		fatal("[ net: TX: IP packet not for gateway, and not broadcast: ");
+		fatal("[ net: TX: IP packet not for gateway, "
+		    "and not broadcast: ");
 		for (i=0; i<14; i++)
 			fatal("%02x", packet[i]);
 		fatal(" ]\n");
@@ -1904,7 +1923,8 @@ void net_ethernet_tx(struct net *net, void *extra,
 	/*  ARP:  */
 	if (packet[12] == 0x08 && packet[13] == 0x06) {
 		if (len != 60)
-			fatal("[ net_ethernet_tx: WARNING! unusual ARP len (%i) ]\n", len);
+			fatal("[ net_ethernet_tx: WARNING! unusual "
+			    "ARP len (%i) ]\n", len);
 		net_arp(net, extra, packet + 14, len - 14, 0);
 		return;
 	}

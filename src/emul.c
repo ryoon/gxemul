@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.111 2005-01-17 07:58:56 debug Exp $
+ *  $Id: emul.c,v 1.112 2005-01-17 18:46:33 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -33,18 +33,18 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "misc.h"
 
 #include "bintrans.h"
 #include "emul.h"
 #include "console.h"
 #include "diskimage.h"
 #include "memory.h"
+#include "misc.h"
 #include "net.h"
 #include "sgi_arcbios.h"
 

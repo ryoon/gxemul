@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.40 2005-01-17 13:29:27 debug Exp $
+ *  $Id: debugger.c,v 1.41 2005-01-17 18:46:33 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -818,7 +818,6 @@ static void debugger_cmd_put(struct emul *emul, char *cmd_line)
 		p2 = strchr(q, ' ');
 
 		if (p2 != NULL) {
-			char *p3 = q;
 			*p2 = '\0';
 			if (strlen(q) != 1) {
 				printf("Invalid type '%s'\n", q);

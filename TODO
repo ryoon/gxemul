@@ -172,7 +172,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
 			x)  How about multiple framebuffer windows?
-			x)  X11 cursor keycodes and such?
+			x)  X11 cursor keycodes
+			x)  Keys like CTRL, ALT, SHIFT do not get through
+			    by themselves (these are neccessary for example
+			    to change the font of an xterm in X in the
+			    emulator)
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11
 			specific code to src/x11.c!
 

@@ -23,13 +23,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.14 2004-07-13 10:38:15 debug Exp $
+ *  $Id: net.c,v 1.15 2004-07-14 09:14:40 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
  *
  *	NOTE:	This is just a hack, and just barely enough to get some
- *		Internet networking up and running for emulated NetBSD.
+ *		Internet networking up and running for the guest OS.
  *
  *
  *  The emulated NIC has a MAC address of (for example) 11:22:33:44:55:66.
@@ -38,16 +38,19 @@
  *  55:44:33:22:11:00. This module (net.c) contains the emulation of that
  *  gateway. It works like a NAT firewall, but emulated in userland software.
  *
- *  The gateway uses the IPv4 address 10.0.0.254. With NetBSD (inside the
- *  emulator), a suitable choice of IPv4 address would be 10.0.0.1.  (Actually,
- *  any 10.x.x.x address works, as long as there isn't a collision with the
- *  gateway's IPv4 address).
+ *  The gateway uses IPv4 address 10.0.0.254, the guest OS (inside the
+ *  emulator) could use any 10.x.x.x address, except 10.0.0.254. A suitable
+ *  choice is, for example 10.0.0.1.
  *
  *
  *  NOTE: The 'extra' argument used in many functions in this file is a pointer
  *  to something unique for each controller, so that if multiple controllers
  *  are emulated concurrently, they will not get packets that aren't meant
  *  for some other controller.
+ *
+ *
+ *	guestOS   <------->   gateway (in the   <------->   outside machine
+ *          ("inside")          emulator)                     ("outside")
  */
 
 #include <stdio.h>
@@ -84,12 +87,48 @@ static struct ethernet_packet_link *last_ethernet_packet = NULL;
 unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
 
-/*  TODO  */
-static int last_udp_id = 0;
-static int net_udp_socket = -1;
-static int last_source_udp_port;
-static uint32_t last_source_udp_ip;
-static unsigned char last_source_udp_mac[6];
+
+#define	MAX_TCP_CONNECTIONS	25
+#define	MAX_UDP_CONNECTIONS	15
+
+static int64_t net_timestamp = 0;
+
+struct udp_connection {
+	int		in_use;
+	int64_t		last_used_timestamp;
+
+	/*  Inside:  */
+	unsigned char	ethernet_address[6];
+	unsigned char	inside_ip_address[4];
+	int		inside_udp_port;
+
+	/*  Outside:  */
+	int		udp_id;
+	int		socket;
+	unsigned char	outside_ip_address[4];
+	int		outside_udp_port;
+};
+
+struct tcp_connection {
+	int		in_use;
+
+	/*  Inside:  */
+	unsigned char	ethernet_address[6];
+	unsigned char	inside_ip_address[4];
+	int		tcp_port;
+
+/*  TODO:  states and buffers  */
+
+	/*  Outside:  */
+	int		tcp_id;
+	int		socket;
+	unsigned char	outside_ip_address[4];
+	int		outside_tcp_port;
+};
+
+
+static struct udp_connection udp_connections[MAX_UDP_CONNECTIONS];
+static struct tcp_connection tcp_connections[MAX_TCP_CONNECTIONS];
 
 
 /*
@@ -227,8 +266,6 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
  *
  *  Handle a TCP packet comming from the emulated OS.
  *
- *  (See http://www.networksorcery.com/enp/protocol/tcp.htm.)
- *
  *  The IP header (at offset 14) could look something like
  *
  *	ver=45 tos=00 len=003c id=0006 ofs=0000 ttl=40 p=11 sum=b798
@@ -241,18 +278,62 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
  *	and then "options and padding" and then data.
  *	(020405b4010303000101080a0000000000000000)
  *
- *  See:
+ *  See the following URLs for good descriptions of TCP:
  *
- *      http://www.tcpipguide.com/free/t_TCPConnectionTermination.htm
+ *	http://www.networksorcery.com/enp/protocol/tcp.htm
+ *	http://www.tcpipguide.com/free/t_TCPIPTransmissionControlProtocolTCP.htm
  */
 static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 {
-	int i;
+	int con_id, free_con_id, i, srcport, dstport, data_offset;
+	int syn, ack, psh, rst, urg, fin;
+	uint32_t seqnr, acknr;
+	int window, checksum, urgptr;
 
 	fatal("[ net: TCP: ");
-	for (i=0; i<len; i++)
-		fatal(" %02x", packet[i]);
+	for (i=0; i<34; i++)
+		fatal("%02x", packet[i]);
+	fatal(" ");
+
+	srcport = (packet[34] << 8) + packet[35];
+	dstport = (packet[36] << 8) + packet[37];
+	seqnr   = (packet[38] << 24) + (packet[39] << 16)
+		+ (packet[40] << 8) + packet[41];
+	acknr   = (packet[42] << 24) + (packet[43] << 16)
+		+ (packet[44] << 8) + packet[45];
+
+	fatal("srcport=%i dstport=%i seqnr=%lli acknr=%lli ",
+	    srcport, dstport, (long long)seqnr, (long long)acknr);
+
+	data_offset = (packet[46] >> 5) * 4 + 34;
+	/*  data_offset is now data offset within packet :-)  */
+
+	urg = packet[47] & 32;
+	ack = packet[47] & 16;
+	psh = packet[47] &  8;
+	rst = packet[47] &  4;
+	syn = packet[47] &  2;
+	fin = packet[47] &  1;
+
+	fatal(urg? "URG " : "");
+	fatal(ack? "ACK " : "");
+	fatal(psh? "PSH " : "");
+	fatal(rst? "RST " : "");
+	fatal(syn? "SYN " : "");
+	fatal(fin? "FIN " : "");
+
+	window   = (packet[48] << 8) + packet[49];
+	checksum = (packet[50] << 8) + packet[51];
+	urgptr   = (packet[52] << 8) + packet[53];
+
+	fatal("window=0x%04x checksum=0x%04x urgptr=0x%04x ",
+	    window, checksum, urgptr);
+
+	for (i=data_offset; i < len; i++)
+		fatal("%02x", packet[i]);
+
 	fatal(" ]\n");
+
 }
 
 
@@ -275,7 +356,7 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
  */
 static void net_ip_udp(void *extra, unsigned char *packet, int len)
 {
-	int i, srcport, dstport, udp_len;
+	int con_id, free_con_id, i, srcport, dstport, udp_len;
 	ssize_t res;
 	struct sockaddr_in remote_ip;
 
@@ -299,33 +380,82 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	}
 	debug(" ]\n");
 
-	if (net_udp_socket < 0) {
-		net_udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-		if (net_udp_socket < 0) {
+	/*  Is this "connection" new, or a currently ongoing one?  */
+	con_id = free_con_id = -1;
+	for (i=0; i<MAX_UDP_CONNECTIONS; i++) {
+		if (!udp_connections[i].in_use)
+			free_con_id = i;
+		if (udp_connections[i].in_use &&
+		    udp_connections[i].inside_udp_port == srcport &&
+		    udp_connections[i].outside_udp_port == dstport &&
+		    memcmp(udp_connections[i].inside_ip_address,
+			packet + 26, 4) == 0 &&
+		    memcmp(udp_connections[i].outside_ip_address,
+			packet + 30, 4) == 0) {
+			con_id = i;
+			break;
+		}
+	}
+
+	fatal("&& UDP connection is ");
+	if (con_id >= 0)
+		fatal("ONGOING");
+	else {
+		fatal("NEW");
+		if (free_con_id < 0) {
+			int i;
+			int64_t oldest = udp_connections[0].last_used_timestamp;
+			free_con_id = 0;
+
+			fatal(", NO FREE SLOTS, REUSING OLDEST ONE");
+			for (i=0; i<MAX_UDP_CONNECTIONS; i++)
+				if (udp_connections[i].last_used_timestamp < oldest) {
+					oldest = udp_connections[i].last_used_timestamp;
+					free_con_id = i;
+				}
+			close(udp_connections[free_con_id].socket);
+		}
+		con_id = free_con_id;
+		memset(&udp_connections[con_id], 0,
+		    sizeof(struct udp_connection));
+
+		memcpy(udp_connections[con_id].ethernet_address,
+		    packet + 6, 6);
+		memcpy(udp_connections[con_id].inside_ip_address,
+		    packet + 26, 4);
+		udp_connections[con_id].inside_udp_port = srcport;
+		memcpy(udp_connections[con_id].outside_ip_address,
+		    packet + 30, 4);
+		udp_connections[con_id].outside_udp_port = dstport;
+
+		udp_connections[con_id].socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if (udp_connections[con_id].socket < 0) {
 			fatal("[ net: UDP: socket() returned %i ]\n",
-			    net_udp_socket);
+			    udp_connections[con_id].socket);
 			return;
 		}
 
-		/*  Set net_udp_socket to non-blocking:  */
-		res = fcntl(net_udp_socket, F_GETFL);
-		fcntl(net_udp_socket, F_SETFL, res | O_NONBLOCK);
+		fatal(" {socket=%i}", udp_connections[con_id].socket);
+
+		udp_connections[con_id].in_use = 1;
+
+		/*  Set the socket to non-blocking:  */
+		res = fcntl(udp_connections[con_id].socket, F_GETFL);
+		fcntl(udp_connections[con_id].socket, F_SETFL,
+		    res | O_NONBLOCK);
 	}
 
-	last_source_udp_port = srcport;
-	last_source_udp_ip = (packet[26] << 24) + (packet[27] << 16)
-	    + (packet[28] << 8) + packet[29];
-	memcpy(last_source_udp_mac, packet + 6, 6);
+	fatal(", connection id %i\n", con_id);
+
+	net_timestamp ++;
+	udp_connections[con_id].last_used_timestamp = net_timestamp;
 
 	remote_ip.sin_family = AF_INET;
-	/*  Wohaaa, this is ugly:  TODO  */
-	((unsigned char *)&remote_ip.sin_addr)[0] = packet[30];
-	((unsigned char *)&remote_ip.sin_addr)[1] = packet[31];
-	((unsigned char *)&remote_ip.sin_addr)[2] = packet[32];
-	((unsigned char *)&remote_ip.sin_addr)[3] = packet[33];
-	remote_ip.sin_port = htons(dstport);
+	memcpy((unsigned char *)&remote_ip.sin_addr,
+	    udp_connections[con_id].outside_ip_address, 4);
+	remote_ip.sin_port = htons(udp_connections[con_id].outside_udp_port);
 
-	res = sendto(net_udp_socket, packet + 42, len - 42,
+	res = sendto(udp_connections[con_id].socket, packet + 42, len - 42,
 	    0, (const struct sockaddr *)&remote_ip, sizeof(remote_ip));
 
 	if (res != len-42)
@@ -487,7 +617,9 @@ static void net_arp(void *extra, unsigned char *packet, int len)
  */
 int net_ethernet_rx_avail(void *extra)
 {
-	while (net_udp_socket >= 0) {
+	int con_id;
+
+	for (con_id=0; con_id<MAX_UDP_CONNECTIONS; con_id++) {
 		ssize_t res;
 		unsigned char buf[70000];
 		unsigned char udp_data[70008];
@@ -500,14 +632,25 @@ int net_ethernet_rx_avail(void *extra)
 		int this_packets_data_length;
 		int fragment_ofs = 0;
 
-		res = recvfrom(net_udp_socket, buf, sizeof(buf),
+		if (!udp_connections[con_id].in_use)
+			continue;
+
+		if (udp_connections[con_id].socket < 0) {
+			fatal("INTERNAL ERROR in net.c, udp socket < 0 but in use?\n");
+			continue;
+		}
+
+		res = recvfrom(udp_connections[con_id].socket, buf, sizeof(buf),
 		    0, (struct sockaddr *)&from, &from_len);
 
-		/*  No more incoming UDP? Then break.  */
+		/*  No more incoming UDP on this connection?  */
 		if (res < 0)
-			break;
+			continue;
 
-		last_udp_id ++;
+		net_timestamp ++;
+		udp_connections[con_id].last_used_timestamp = net_timestamp;
+
+		udp_connections[con_id].udp_id ++;
 
 		/*
 		 *  We now have a UDP packet of size 'res' which we need
@@ -518,20 +661,21 @@ int net_ethernet_rx_avail(void *extra)
 		 *
 		 *	Ethernet = 14 bytes
 		 *	IP = 20 bytes
-		 *	UDP = 8 bytes + data
+		 *	(UDP = 8 bytes + data)
 		 *
-		 *  So data can be at most max_per_packet - 42. For UDP
+		 *  So data can be at most max_per_packet - 34. For UDP
 		 *  fragments, each multiple should (?) be a multiple of
-		 *  8 bytes.
+		 *  8 bytes, except the last which doesn't have any such
+		 *  restriction.
 		 */
 		max_per_packet = 1500;
 
 		/*  UDP:  */
 		udp_len = res + 8;
-		udp_data[0] = ((unsigned char *)&from)[2];
+		udp_data[0] = ((unsigned char *)&from)[2];	/*  outside_udp_port  */
 		udp_data[1] = ((unsigned char *)&from)[3];
-		udp_data[2] = (last_source_udp_port >> 8) & 0xff;
-		udp_data[3] = (last_source_udp_port >> 0) & 0xff;
+		udp_data[2] = (udp_connections[con_id].inside_udp_port >> 8) & 0xff;
+		udp_data[3] = udp_connections[con_id].inside_udp_port & 0xff;
 		udp_data[4] = udp_len >> 8;
 		udp_data[5] = udp_len & 0xff;
 		udp_data[6] = 0;
@@ -560,7 +704,7 @@ int net_ethernet_rx_avail(void *extra)
 			    14 + 20 + this_packets_data_length);
 
 			/*  Ethernet header:  */
-			memcpy(lp->data + 0, last_source_udp_mac, 6);
+			memcpy(lp->data + 0, udp_connections[con_id].ethernet_address, 6);
 			memcpy(lp->data + 6, gateway_addr, 6);
 			lp->data[12] = 0x08;	/*  IP = 0x0800  */
 			lp->data[13] = 0x00;
@@ -570,8 +714,8 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[15] = 0x00;	/*  tos  */
 			lp->data[16] = ip_len >> 8;
 			lp->data[17] = ip_len & 0xff;
-			lp->data[18] = last_udp_id >> 8;
-			lp->data[19] = last_udp_id & 0xff;
+			lp->data[18] = udp_connections[con_id].udp_id >> 8;
+			lp->data[19] = udp_connections[con_id].udp_id & 0xff;
 			lp->data[20] = (fragment_ofs >> 8);
 			if (bytes_converted + this_packets_data_length
 			    < udp_len)
@@ -583,10 +727,10 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[27] = ((unsigned char *)&from)[5];
 			lp->data[28] = ((unsigned char *)&from)[6];
 			lp->data[29] = ((unsigned char *)&from)[7];
-			lp->data[30] = (last_source_udp_ip >> 24) & 0xff;
-			lp->data[31] = (last_source_udp_ip >> 16) & 0xff;
-			lp->data[32] = (last_source_udp_ip >> 8) & 0xff;
-			lp->data[33] = (last_source_udp_ip >> 0) & 0xff;
+			lp->data[30] = udp_connections[con_id].inside_ip_address[0];
+			lp->data[31] = udp_connections[con_id].inside_ip_address[1];
+			lp->data[32] = udp_connections[con_id].inside_ip_address[2];
+			lp->data[33] = udp_connections[con_id].inside_ip_address[3];
 			net_ip_checksum(lp->data + 14, 10, 20);
 
 			memcpy(lp->data+34, udp_data + bytes_converted,
@@ -595,6 +739,11 @@ int net_ethernet_rx_avail(void *extra)
 			bytes_converted += this_packets_data_length;
 			fragment_ofs = bytes_converted / 8;
 		}
+
+		/*  This makes sure we check this connection AGAIN
+		    for more incoming UDP packets, before moving to the
+		    next connection:  */
+		con_id --;
 	}
 
 	return net_ethernet_rx(extra, NULL, NULL);
@@ -673,19 +822,19 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 	int i, n;
 
 #if 0
-	debug("[ net: ethernet: ");
+	fatal("[ net: ethernet: ");
 	for (i=0; i<6; i++)
-		debug("%02x", packet[i]);
-	debug(" ");
+		fatal("%02x", packet[i]);
+	fatal(" ");
 	for (i=6; i<12; i++)
-		debug("%02x", packet[i]);
-	debug(" ");
+		fatal("%02x", packet[i]);
+	fatal(" ");
 	for (i=12; i<14; i++)
-		debug("%02x", packet[i]);
-	debug(" ");
+		fatal("%02x", packet[i]);
+	fatal(" ");
 	for (i=14; i<len; i++)
-		debug("%02x", packet[i]);
-	debug(" ]\n");
+		fatal("%02x", packet[i]);
+	fatal(" ]\n");
 #endif
 
 	/*  Sprite:  */
@@ -754,5 +903,10 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 void net_init(void)
 {
 	first_ethernet_packet = last_ethernet_packet = NULL;
+
+	memset(udp_connections, 0, MAX_UDP_CONNECTIONS *
+	    sizeof(struct udp_connection));
+	memset(tcp_connections, 0, MAX_TCP_CONNECTIONS *
+	    sizeof(struct tcp_connection));
 }
 

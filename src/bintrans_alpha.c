@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.68 2004-11-29 08:20:38 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.69 2004-11-29 08:31:46 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -852,14 +852,12 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *
 	 *  04 00 26 20     lda     t0,4(t5)		add 4
 	 *  c8 01 5f 20     lda     t1,456
-	 *  22 57 40 48     sll     t1,0x2,t1
-	 *  0a 04 22 40     addq    t0,t1,s1		add (imm<<2)
+	 *  4a 04 41 40     s4addq  t1,t0,s1		s1 = (t1<<2) + t0
 	 */
 
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x26; *a++ = 0x20;  /*  lda  */
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
-	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
-	*a++ = 0x0a; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
+	*a++ = 0x4a; *a++ = 0x04; *a++ = 0x41; *a++ = 0x40;  /*  s4addq */
 
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.91 2004-07-17 19:38:24 debug Exp $
+ *  $Id: misc.h,v 1.92 2004-07-17 20:10:11 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -50,7 +50,6 @@
  *  -D if you want it. (This is done by ./configure --delays)
  */
 #define USE_TINY_CACHE
-/*  #define TLBMOD_LOADSTORE_STATISTICS  */
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
@@ -562,28 +561,6 @@ struct cpu {
 			translation_cache_instr[N_TRANSLATION_CACHE_INSTR];
 	struct translation_cache_entry
 			translation_cache_data[N_TRANSLATION_CACHE_DATA];
-#endif
-
-	/*
-	 *  EXPERIMENTAL:  tlbmod_tag for improved performance.
-	 *  Some things can be optimized if they have the same tlbmod_tag
-	 *  value as for a previous similar operation...  TODO: describe
-	 *  this better.
-	 */
-	int		tlbmod_tag;
-
-	int		tlbmod_tag_of_last_load;
-	int		tlbmod_tag_of_last_store;
-	uint64_t	last_load_vaddr_page;
-	uint64_t	last_store_vaddr_page;
-	unsigned char	*last_load_host_page;
-	unsigned char	*last_store_host_page;
-
-#ifdef TLBMOD_LOADSTORE_STATISTICS
-	int64_t		statistics_tagged_load_hits;
-	int64_t		statistics_tagged_load_misses;
-	int64_t		statistics_tagged_store_hits;
-	int64_t		statistics_tagged_store_misses;
 #endif
 
 	/*

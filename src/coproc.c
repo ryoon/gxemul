@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.58 2004-07-10 14:42:00 debug Exp $
+ *  $Id: coproc.c,v 1.59 2004-07-17 20:10:22 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -290,9 +290,6 @@ static void invalidate_translation_caches(struct cpu *cpu)
 	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
 		cpu->translation_cache_data[i].wf = 0;
 #endif
-
-	/*  Invalidate the experimental tlbmod stuff:  */
-	cpu->tlbmod_tag ++;
 }
 
 

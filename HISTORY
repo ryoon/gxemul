@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.508 2005-01-20 09:42:24 debug Exp $
+$Id: HISTORY,v 1.509 2005-01-20 20:06:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1527,3 +1527,6 @@ HISTORY of mips64emul
 		that Ultrix doesn't freak out).
 		Adding an ulgy workaround for the floating-point bug which
 		is triggered when running NetBSD/pmax 2.0 on an Alpha host.
+		The count/compare interrupt will not be triggered now, if
+		the compare register is left untouched.
+		Many, many other fixes...

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.485 2005-01-17 09:55:56 debug Exp $
+$Id: HISTORY,v 1.486 2005-01-17 11:27:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1486,3 +1486,4 @@ HISTORY of mips64emul
 		in more places than before).
 		Removing the dummy sgi_nasid and sgi_cpuinfo devices.
 		Also using symbolic names for coprocessor 0 registers.
+		Adding DEV_MP_MEMORY to dev_mp.c.

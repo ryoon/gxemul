@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.16 2005-01-09 01:55:25 debug Exp $
- *  
+ *  $Id: dev_mp.c,v 1.17 2005-01-17 11:27:31 debug Exp $
+ *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
- *  actual multiprocessor controller for any MIPS-based machine.
+ *  multiprocessor controller used in any real MIPS-based machine.
  */
 
 #include <stdio.h>
@@ -126,6 +126,17 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		odata = random();
 		odata = (odata << 31) ^ random();
 		odata = (odata << 31) ^ random();
+		break;
+
+	case DEV_MP_MEMORY:
+		/*
+		 *  Return the number of bytes of memory in the system.
+		 *
+		 *  (It is assumed to be located at physical address 0.
+		 *  It is actually located at emul->memory_offset_in_mb
+		 *  but that is only used for SGI emulation so far.)
+		 */
+		odata = cpu->emul->physical_ram_in_mb * 1048576;
 		break;
 
 	default:

@@ -2,7 +2,7 @@
 #define	MP_H
 
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.4 2005-01-09 01:55:28 debug Exp $
+ *  $Id: mp.h,v 1.5 2005-01-17 11:27:33 debug Exp $
  *
  *  dev_mp definitions.
  */
@@ -44,5 +44,6 @@
 #define     DEV_MP_UNPAUSE_CPU		    0x0060
 #define     DEV_MP_STARTUPSTACK		    0x0070
 #define     DEV_MP_HARDWARE_RANDOM	    0x0080
+#define     DEV_MP_MEMORY		    0x0090
 
 #endif	/*  MP_H  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.104 2004-06-24 03:55:21 debug Exp $
+ *  $Id: machine.c,v 1.105 2004-06-24 05:23:00 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1438,8 +1438,8 @@ void machine_init(struct memory *mem)
 			}
 		} else {
 			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
-			short_machine_name = "ARC";
-			machine_name = "ARC";
+			sprintf(short_machine_name, "ARC");
+			sprintf(machine_name, "ARC");
 		}
 
 
@@ -1740,23 +1740,53 @@ void machine_init(struct memory *mem)
 				exit(1);
 			}
 		} else {
-			/*  TODO:  sync devices and component tree  */
-			/*  TODO 2: These are model dependant!!!  */
-			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 0);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
-			dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
-			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
-			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);		/*  com1  */
-			/*  lpt at 0x2000008000  */
-			dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
+			switch (machine) {
 
-			/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
-			/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
-			if (use_x11)
-				arcbios_addchild_manual(4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
+			case ARC_MACHINE_NEC:
+				/*
+				 *  "NEC-RD94" (NEC RISCstation 2250)
+				 */
 
-			/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-			bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+				strcat(machine_name, " (NEC-RD94)");
+
+				/*  TODO:  sync devices and component tree  */
+
+				pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 0);
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
+				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);		/*  com1  */
+				/*  lpt at 0x2000008000  */
+				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
+
+				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
+				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
+				if (use_x11)
+					arcbios_addchild_manual(4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
+
+				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
+				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+				break;
+
+			case ARC_MACHINE_PICA:
+				/*
+				 *  "PICA-61"
+				 *
+				 *  Something at paddr 0x100000b8000,
+				 *  0x60000003b4, 0x100000aff60,
+				 *  and 0x2000005060 - 2000005061.
+				 *
+				 *  OpenBSD/arc seems to try to draw text onto a "VGA text"
+				 *  like device at 0x100000b0000 or 0x100000b8000.
+				 */
+
+				strcat(machine_name, " (PICA-61)");
+
+				break;
+
+			default:
+				fatal("Unimplemented ARC machine type %i\n", machine);
+			}
 		}
 
 		if (physical_ram_in_mb < 16)
@@ -1776,12 +1806,16 @@ void machine_init(struct memory *mem)
 				snprintf(arcbios_sysid.ProductId, 8, "IP%i", machine);
 			}
 		} else {
-			/*
-			 *  ARC:  TODO:  Support other machine types. Right now,
-			 *  the "NEC-RD94" (NEC RISCstation 2250) is the only supported one.
-			 */
-			strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
-			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+			switch (machine) {
+			case ARC_MACHINE_NEC:
+				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case ARC_MACHINE_PICA:
+				strncpy(arcbios_sysid.VendorId,  "abcdefgh", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			}
 		}
 		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
 
@@ -1864,8 +1898,20 @@ void machine_init(struct memory *mem)
 			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
 			break;
 		default:
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+			/*  ARC:  */
+			switch (machine) {
+			case ARC_MACHINE_NEC:
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+				break;
+			case ARC_MACHINE_PICA:
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "PICA-61", 0  /*  ROOT  */);
+				break;
+			default:
+				fatal("Unimplemented ARC machine type %i\n", machine);
+				exit(1);
+			}
 		}
 
 

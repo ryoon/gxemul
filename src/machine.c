@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.220 2004-11-25 10:53:32 debug Exp $
+ *  $Id: machine.c,v 1.221 2004-11-26 20:37:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1760,6 +1760,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *
 		 *  http://obsolete.majix.org/computers/sgi/iptable.shtml contains a pretty
 		 *  detailed list of IP ("Inhouse Processor") model numbers.
+		 *  (Or http://hardware.majix.org/computers/sgi/iptable.shtml)
 		 */
 		emul->machine_name = malloc(500);
 		if (emul->machine_name == NULL) {
@@ -1803,6 +1804,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other SGI machine types?  */
 			switch (emul->machine) {
+			case 12:
+				strcat(emul->machine_name, " (Iris Indigo IP12)");
+
+				/*  TODO  */
+				/*  33 MHz R3000, according to http://www.irisindigo.com/  */
+				/*  "capable of addressing up to 96MB of memory."  */
+
+				break;
 			case 19:
 				strcat(emul->machine_name, " (Everest IP19)");
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.130 2004-11-25 10:53:32 debug Exp $
+ *  $Id: main.c,v 1.131 2004-11-26 20:37:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -487,6 +487,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4400");
+
+	if (emul->emulation_type == EMULTYPE_SGI && emul->machine <= 12 &&
+	    !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R3000");
 
 	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 35 &&
 	    !emul->emul_cpu_name[0])

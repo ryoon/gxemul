@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.155 2004-09-26 19:33:06 debug Exp $
+ *  $Id: cpu.c,v 1.156 2004-09-28 15:23:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -712,6 +712,7 @@ void cpu_register_dump(struct cpu *cpu)
 
 	symbol = get_symbol_name(&cpu->emul->symbol_context, cpu->pc, &offset);
 
+	/*  Special registers:  */
 	if (cpu->cpu_type.isa_level < 3 ||
 	    cpu->cpu_type.isa_level == 32)
 		debug("cpu%i:  hi  = %08x  lo  = %08x  pc  = %08x",
@@ -725,6 +726,7 @@ void cpu_register_dump(struct cpu *cpu)
 		debug(" <%s>", symbol);
 	debug("\n");
 
+	/*  General registers:  */
 	for (i=0; i<32; i++) {
 		if ((i & 3) == 0)
 			debug("cpu%i:", cpu->cpu_id);
@@ -733,6 +735,22 @@ void cpu_register_dump(struct cpu *cpu)
 			debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
 		else
 			debug("  r%02i = %016llx", i, (long long)cpu->gpr[i]);
+		if ((i & 3) == 3)
+			debug("\n");
+	}
+
+	/*  Coprocessor 0 registers:  */
+	/*  TODO: multiple selections per register?  */
+	for (i=0; i<32; i++) {
+		if ((i & 3) == 0)
+			debug("cpu%i:", cpu->cpu_id);
+		if (cpu->cpu_type.isa_level < 3 ||
+		    cpu->cpu_type.isa_level == 32)
+			debug("  cop0,%02i = %08x", i,
+			    (int)cpu->coproc[0]->reg[i]);
+		else
+			debug("  cop0,%02i = %016llx", i,
+			    (long long)cpu->coproc[0]->reg[i]);
 		if ((i & 3) == 3)
 			debug("\n");
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.72 2004-11-30 20:20:05 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.73 2004-11-30 20:47:12 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -944,69 +944,44 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 static int bintrans_write_instruction__jal(unsigned char **addrp,
 	int imm, int link)
 {
-	unsigned char *a;
+	uint32_t *a;
 	uint64_t subimm;
 
-	a = *addrp;
+	a = (uint32_t *) *addrp;
 
-	/*
-	 *  gpr[31] = retaddr
-	 *
-	 *  08 00 84 20     lda     t3,8(t5)
-	 *  18 09 90 b4     stq     t3,gpr31(a0)
-	 */
+	/*  gpr[31] = retaddr   (NOTE: mips register 31 is in alpha reg s3)  */
 	if (link) {
-		*a++ = 8; *a++ = 0; *a++ = 0x86; *a++ = 0x20;	/*  lda t3,8(t5)  */
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T3, 31);
+		*a++ = 0x21860008;	/*  lda s3,8(t5)  */
 	}
 
 	/*  Set the jmpaddr to top 4 bits of pc + lowest 28 bits of imm*4:  */
 
 	/*
 	 *  imm = 4*imm;
-	 *  t0 = pc + 4
-	 *  shift right t0 28 steps.
-	 *  shift left t0 14 steps.
-	 *  OR in 14 bits of part of imm
-	 *  shift left 14 steps.
-	 *  OR in the lowest 14 bits of imm.
-	 *  delay_jmpaddr = t0
+	 *  t0 = ((pc + 4) & ~0x0fffffff) | imm;
 	 *
 	 *  04 00 26 20     lda     t0,4(t5)	<-- because the jump is from the delay slot
-	 *  81 96 23 48     srl     t0,0x1c,t0
-	 *  21 d7 21 48     sll     t0,0xe,t0
-	 *  c8 01 5f 20     lda     t1,456
-	 *  01 04 22 44     or      t0,t1,t0
-	 *  21 d7 21 48     sll     t0,0xe,t0
-	 *  c8 01 5f 20     lda     t1,456
-	 *  0a 04 22 44     or      t0,t1,s1
+	 *  23 01 5f 24     ldah    t1,291
+	 *  67 45 42 20     lda     t1,17767(t1)
+	 *  00 f0 7f 24     ldah    t2,-4096
+	 *  04 00 23 44     and     t0,t2,t3
+	 *  0a 04 44 44     or      t1,t3,s1
 	 */
-
 	imm *= 4;
-
-	*a++ = 4; *a++ = 0; *a++ = 0x26; *a++ = 0x20;	/*  lda t0,4(t5)  */
-
-	*a++ = 0x81; *a++ = 0x96; *a++ = 0x23; *a++ = 0x48;
-	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
-
-	subimm = (imm >> 14) & 0x3fff;
-	*a++ = (subimm & 255); *a++ = (subimm >> 8); *a++ = 0x5f; *a++ = 0x20;
-
-	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
-	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
-
-	subimm = imm & 0x3fff;
-	*a++ = (subimm & 255); *a++ = (subimm >> 8); *a++ = 0x5f; *a++ = 0x20;
-
-	*a++ = 0x0a; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
+	*a++ = 0x20260004;
+	*a++ = 0x245f0000 | (imm >> 16) + (imm & 0x8000? 1 : 0);
+	*a++ = 0x20420000 | (imm & 0xffff);
+	*a++ = 0x247ff000;
+	*a++ = 0x44230004;
+	*a++ = 0x4444040a;
 
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
+	*a++ = 0x213f0000 | TO_BE_DELAYED;
 
 	/*  If the machine continues executing here, it will return
 	    to the main loop, which is fine.  */
 
-	*addrp = a;
+	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }
@@ -1596,11 +1571,18 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 	 *  88 08 30 b4     stq     t0,2184(a0)
 	 */
 	if (rt != 0) {
+		int alpha_rt = map_MIPS_to_Alpha[rt];
+		if (alpha_rt < 0)
+			alpha_rt = ALPHA_T0;
+
 		a = (uint32_t *) *addrp;
-		*a++ = 0x243f0000 | ((uint32_t)imm & 0xffff);
-		*a++ = 0x5fff041f;
+		*a++ = 0x241f0000 | (alpha_rt << 21) | ((uint32_t)imm & 0xffff);
 		*addrp = (unsigned char *) a;
-		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rt);
+
+		if (alpha_rt == ALPHA_T0) {
+			*a++ = 0x5fff041f;	/*  fnop  */
+			bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rt);
+		}
 	}
 
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.54 2004-07-07 01:33:45 debug Exp $
+$Id: index.html,v 1.55 2004-07-07 02:22:40 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -223,6 +223,8 @@ of harddisk image and be interacted with similar to a real machine:
  <center>
   <table border="1">
     <tr><td>
+      <table border="0">
+	<tr><td>
 	  <table border="0">
 	    <tr>
 	      <td valign=top><b><u>Guest OS:</u></b></td>
@@ -248,16 +250,43 @@ of harddisk image and be interacted with similar to a real machine:
 	      <td valign=top>-X -D2 -j vmunix -d rootdisk.img</td>
 	    </tr>
 	  </table>
+<!--
+-rw-r--r--  1 debug  wheel  104432 Jul  7 04:15 netbsd-pmax-20040630.png
+-rw-r--r--  1 debug  wheel    2956 Jul  7 04:15 netbsd-pmax-20040630_small.png
+-rw-r--r--  1 debug  wheel   18456 Mar 11 07:21 netbsd-pmax-framebuffer.gif
+-rw-r--r--  1 debug  wheel    7827 Jul  3 17:57 technical.html
+-rw-r--r--  1 debug  wheel   15733 Jul  7 04:15 ultrix4.5-20040706.png
+-rw-r--r--  1 debug  wheel    3965 Jul  7 04:15 ultrix4.5-20040706_small.gif
+-->
+
+	</td></tr>
+
+	<tr><td height=10>&nbsp;</td></tr>
+
+	<tr><td>
+	  <center>
+	    <table border="0">
+	      <tr>
+		<td width=140 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+		<td width=140 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+	      </tr>
+	      <tr>
+		<td align=center>NetBSD/pmax 1.6.2</td>
+		<td align=center>Ultrix 4.5</td>
+	      </tr>
+	    </table>
+	  </center>
+	</td></tr>
+      </table>
     </td></tr>
   </table>
  </center>
 <p>
+It is non-trivial to get a specific operating system or OS kernel to
+run in the emulator, so don't expect the list above to grow very quickly.
 Some other emulation modes, most notably SGI emulation modes,
 work relatively well with NetBSD, but not well enough
 to support SCSI disk images, and definitely not well enough to run Irix.
-<p>
-It is non-trivial to get a specific operating system or OS kernel to
-run in the emulator, so don't expect the list above to grow very quickly.
 <p>
 There is no guarantee that anything
 specific will run in the emulator, but NetBSD (or possibly Linux) is a
@@ -342,24 +371,6 @@ emulated yet.
 <p>
 To exit the emulator, type CTRL-C. By typing CTRL-B instead, a CTRL-C is sent to
 the emulated program.
-<p>
-For some emulated machine types, a graphical framebuffer console is supported.
-NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">
-http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
-running on an emulated DECstation 5000 supports this:
-<pre>
-	$ <b>./mips64emul -D2 -XY2 -M12 netbsd-INSTALL</b>
-</pre>
--D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
-framebuffer; -Y2 is used to scale down the window by a factor 2x2;
-and -M12 sets the amount of emulated memory to 12 MB.
-The result should looks something like this:
-<p>
-<center>
-<img src="netbsd-pmax-framebuffer.gif">
-</center>
-<p><br>
-
 <p>
 Other operating system kernels can be downloaded from various places.
 Here are links to some of the kernels that I usually experiment with.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.13 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_fb.c,v 1.14 2004-01-07 00:51:27 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -67,7 +67,7 @@ extern int x11_using_truecolor;
 #endif
 
 
-/*  #define FB_DEBUG  */
+/*  #define	FB_DEBUG  */
 
 
 /*

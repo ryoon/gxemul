@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.10 2003-12-30 05:48:08 debug Exp $
+ *  $Id: arcbios.c,v 1.11 2004-01-02 22:20:58 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -61,7 +61,6 @@ struct emul_arc_child {
 	struct arcbios_component component;
 };
 
-#define	FIRST_ARC_COMPONENT	0x80004000		/*  TODO: ugly  */
 uint32_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
 int n_arc_components = 0;
 
@@ -240,7 +239,7 @@ uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags, 
  */
 void arcbios_emul(struct cpu *cpu)
 {
-	int vector = cpu->pc & 0xffff;
+	int vector = cpu->pc & 0xfff;
 	int i, j;
 	int mb_left;
 	unsigned char ch2;

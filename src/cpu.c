@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.100 2004-07-08 00:40:17 debug Exp $
+ *  $Id: cpu.c,v 1.101 2004-07-08 00:56:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -588,19 +588,24 @@ int cpu_run_instr(struct cpu *cpu)
 	uint32_t instrword;
 	uint64_t cached_pc;
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
-	int copz, stype, which_cache, cache_op;
-	char *instr_mnem = NULL;			/*  for instruction trace  */
+	int copz, which_cache, cache_op;
+
+	/*  for instruction trace  */
+	char *instr_mnem = NULL;
 
 	int cond=0, likely, and_link;
 
-	uint64_t dir, is_left, reg_ofs, reg_dir;	/*  for unaligned load/store  */
+	/*  for unaligned load/store  */
+	uint64_t dir, is_left, reg_ofs, reg_dir;
+
 	uint64_t tmpvalue, tmpaddr;
 
-	int cpnr;					/*  coprocessor nr  */
+	int cpnr;			/*  coprocessor nr  */
 
-	uint64_t addr, value, value_hi=0, result_value;	/*  for load/store  */
+	/*  for load/store  */
+	uint64_t addr, value, value_hi=0, result_value;
 	int wlen, st, signd, linked, dataflag = 0;
-	unsigned char d[16];				/*  room for at most 128 bits  */
+	unsigned char d[16];		/*  room for at most 128 bits  */
 
 
 	/*
@@ -705,6 +710,10 @@ int cpu_run_instr(struct cpu *cpu)
 				    0xffffffff00000000ULL;
 		}
 	}
+#endif
+
+#ifdef HAVE_PREFETCH
+	PREFETCH(cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
 #endif
 
 #ifdef HALT_IF_PC_ZERO
@@ -1584,9 +1593,9 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 			break;
 		case SPECIAL_SYNC:
-			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);
+			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
 			if (instruction_trace_cached)
-				debug("sync\t0x%02x\n", stype);
+				debug("sync\t0x%02x\n", imm);
 			/*  TODO: actually sync  */
 			break;
 		case SPECIAL_SYSCALL:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.44 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_fb.c,v 1.45 2004-07-08 00:56:22 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -719,12 +719,14 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 		if (y2 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y2;
 		if (y2 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y2;
 
+#if 0
 		/*  An update covering more than one line will automatically force an update
 		    of all the affected lines:  */
 		if (y != y2) {
 			d->update_x1 = 0;
 			d->update_x2 = d->xsize-1;
 		}
+#endif
 	}
 
 	/*

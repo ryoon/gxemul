@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.145 2004-12-26 18:02:13 debug Exp $
+ *  $Id: main.c,v 1.146 2004-12-29 16:19:34 debug Exp $
  */
 
 #include <stdio.h>
@@ -171,8 +171,8 @@ static void usage(char *progname, int longusage)
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
 	printf("  -n nr     set nr of CPUs\n");
-	printf("  -O        fake netboot (tftp instead of rzX), even when a disk image is\n"
-	       "            present (for DECstation emulation)\n");
+	printf("  -O        fake netboot (tftp instead of disk), even when a disk image is\n"
+	       "            present (for DECstation, SGI, and ARC emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI emulation).\n");
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
 	printf("  -p pc     add a breakpoint (remember to use the '0x' prefix for hex!)\n");

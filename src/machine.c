@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.262 2004-12-28 20:38:18 debug Exp $
+ *  $Id: machine.c,v 1.263 2004-12-29 16:19:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3250,15 +3250,20 @@ config[77] = 0x30;
 		 *  Boot string in ARC format:
 		 *
 		 *  TODO: How about floppies? multi()disk()fdisk()
+		 *        Is tftp() good for netbooting?
 		 */
 		init_bootpath = malloc(200);
 
-		if (diskimage_is_a_cdrom(bootdev_id))
-			snprintf(init_bootpath, 200,
-			    "scsi()cdrom(%i)fdisk()\\", bootdev_id);
-		else
-			snprintf(init_bootpath, 200,
-			    "scsi()disk(%i)rdisk(0)partition(1)\\", bootdev_id);
+		if (bootdev_id < 0 || emul->force_netboot) {
+			snprintf(init_bootpath, 200, "tftp()\\");
+		} else {
+			if (diskimage_is_a_cdrom(bootdev_id))
+				snprintf(init_bootpath, 200,
+				    "scsi()cdrom(%i)fdisk()\\", bootdev_id);
+			else
+				snprintf(init_bootpath, 200,
+				    "scsi()disk(%i)rdisk(0)partition(1)\\", bootdev_id);
+		}
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);

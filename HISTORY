@@ -413,3 +413,10 @@ HISTORY of mips64emul
 		userland correctly.  And a simple fix which allows NetBSD
 		timer interrupts to be triggered; NetBSD uses T_MODE_CMPE
 		(compare), while Linux uses _OVFE (overflow).
+20040328	Linux on Playstation 2 boots a bit. The Playstation 2
+		graphics controller has been extended to work better with
+		NetBSD, and to include some Linux support as well.
+		Some interrupt handling enhancements on Playstation 2.
+		128-bit loads and stores (lq and sq) are allowed, although
+		the top half of quadwords are not modified by other
+		instructions. (Linux uses lq and sq.)

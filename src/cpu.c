@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.44 2004-03-28 14:55:12 debug Exp $
+ *  $Id: cpu.c,v 1.45 2004-04-09 05:12:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -80,6 +80,7 @@ static char *special2_names[] = SPECIAL2_NAMES;
 /*  Ugly, but needed for kn230 and kn02 "shared" interrupts:  */
 extern struct kn230_csr *kn230_csr;
 extern struct kn02_csr *kn02_csr;
+
 
 
 /*
@@ -992,6 +993,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
 					sa--;
 				}
+				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
 			}
 			if (special6 == SPECIAL_SRA) {
 				/*  rd = sign-extend of rt:  */
@@ -999,11 +1001,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				while (sa > 0) {
 					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
 					sa--;
-					if (cpu->gpr[rd] & (1 << 30))		/*  old sign-bit of low word */
-						cpu->gpr[rd] |= ((uint64_t)1 << 63);
 				}
-				/*  Sign-extend of rd should not be neccessary.  */
-				/*  cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];  */
+				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
 			}
 			if (special6 == SPECIAL_DSRL32) {
 				cpu->gpr[rd] = cpu->gpr[rt] >> (sa + 32);
@@ -1066,32 +1065,32 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				cpu->gpr[rd] = cpu->gpr[rt];
 				cpu->gpr[rd] = cpu->gpr[rd] << sa;
 				/*  Sign-extend rd:  */
-				cpu->gpr[rd] &= (((uint64_t)1 << 32) - 1);
+				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= ~(((uint64_t)1 << 32) - 1);
+					cpu->gpr[rd] |= 0xffffffff00000000;
 			}
 			if (special6 == SPECIAL_SRAV) {
 				sa = cpu->gpr[rs] & 31;
 				cpu->gpr[rd] = cpu->gpr[rt];
 				/*  Sign-extend rd:  */
-				cpu->gpr[rd] &= (((uint64_t)1 << 32) - 1);
+				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= ~(((uint64_t)1 << 32) - 1);
+					cpu->gpr[rd] |= 0xffffffff00000000;
 				while (sa > 0) {
 					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
 					sa--;
-					if (cpu->gpr[rd] & ((uint64_t)1 << 30))		/*  old sign-bit  */
-						cpu->gpr[rd] |= ((uint64_t)1 << 63);
 				}
+				if (cpu->gpr[rd] & 0x80000000)
+					cpu->gpr[rd] |= 0xffffffff00000000;
 			}
 			if (special6 == SPECIAL_SRLV) {
 				sa = cpu->gpr[rs] & 31;
 				cpu->gpr[rd] = cpu->gpr[rt];
-				cpu->gpr[rd] &= (((uint64_t)1 << 32) - 1);	/*  zero-extend rd:  */
+				cpu->gpr[rd] &= 0xffffffff;
 				cpu->gpr[rd] = cpu->gpr[rd] >> sa;
 				/*  And finally sign-extend rd:  */
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= ~(((uint64_t)1 << 32) - 1);
+					cpu->gpr[rd] |= 0xffffffff00000000;
 			}
 			break;
 		case SPECIAL_JR:
@@ -1281,16 +1280,12 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			}
 			if (special6 == SPECIAL_MULT) {
 				int64_t f1, f2, sum;
-				f1 = cpu->gpr[rs];
-				if (f1 & 0x80000000) {		/*  sign extend  */
-					f1 &= 0xffffffff;
-					f1 |= ((uint64_t)0xffffffff << 32);
-				}
-				f2 = cpu->gpr[rt];
-				if (f2 & 0x80000000) {		/*  sign extend  */
-					f2 &= 0xffffffff;
-					f2 |= ((uint64_t)0xffffffff << 32);
-				}
+				f1 = cpu->gpr[rs] & 0xffffffff;
+				if (f1 & 0x80000000)		/*  sign extend  */
+					f1 |= 0xffffffff00000000;
+				f2 = cpu->gpr[rt] & 0xffffffff;
+				if (f2 & 0x80000000)		/*  sign extend  */
+					f2 |= 0xffffffff00000000;
 				sum = f1 * f2;
 
 				cpu->lo = sum & 0xffffffff;
@@ -1357,12 +1352,12 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (special6 == SPECIAL_DIV) {
 				int64_t a, b;
 				/*  Signextend rs and rt:  */
-				a = cpu->gpr[rs] & (((uint64_t)1 << 32) - 1);
+				a = cpu->gpr[rs] & 0xffffffff;
 				if (a & 0x80000000)
-					a |= ~(((uint64_t)1 << 32) - 1);
-				b = cpu->gpr[rt] & (((uint64_t)1 << 32) - 1);
+					a |= 0xffffffff00000000;
+				b = cpu->gpr[rt] & 0xffffffff;
 				if (b & 0x80000000)
-					b |= ~(((uint64_t)1 << 32) - 1);
+					b |= 0xffffffff00000000;
 
 				if (b == 0) {
 					cpu->lo = cpu->hi = 0;		/*  undefined  */
@@ -1382,8 +1377,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (special6 == SPECIAL_DIVU) {
 				int64_t a, b;
 				/*  Zero-extend rs and rt:  */
-				a = cpu->gpr[rs] & (((uint64_t)1 << 32) - 1);
-				b = cpu->gpr[rt] & (((uint64_t)1 << 32) - 1);
+				a = cpu->gpr[rs] & 0xffffffff;
+				b = cpu->gpr[rt] & 0xffffffff;
 				if (b == 0) {
 					cpu->lo = cpu->hi = 0;		/*  undefined  */
 				} else {
@@ -1799,13 +1794,16 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			cpu->gpr[rt] = (cpu->gpr[rs] < tmpvalue) ? 1 : 0;
 			break;
 		case HI6_ANDI:
-			cpu->gpr[rt] = cpu->gpr[rs] & (imm & 0xffff);
+			tmpvalue = imm;
+			cpu->gpr[rt] = cpu->gpr[rs] & (tmpvalue & 0xffff);
 			break;
 		case HI6_ORI:
-			cpu->gpr[rt] = cpu->gpr[rs] | (imm & 0xffff);
+			tmpvalue = imm;
+			cpu->gpr[rt] = cpu->gpr[rs] | (tmpvalue & 0xffff);
 			break;
 		case HI6_XORI:
-			cpu->gpr[rt] = cpu->gpr[rs] ^ (imm & 0xffff);
+			tmpvalue = imm;
+			cpu->gpr[rt] = cpu->gpr[rs] ^ (tmpvalue & 0xffff);
 			break;
 		case HI6_LB:
 		case HI6_LBU:

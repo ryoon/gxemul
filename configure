@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.106 2005-02-13 14:02:22 debug Exp $
+#  $Id: configure,v 1.107 2005-02-13 18:36:33 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -54,52 +54,58 @@
 #
 ###############################################################################
 
-WITHMIPS=YES
+ENABLEMIPS=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
 	for a in $*; do
-		if [ z$a = z--nox11 ]; then
+		if [ z$a = z--disable-x ]; then
 			NOX11=YES
 		else if [ z$a = z--always32 ]; then
 			ALWAYS32=YES
-		else if [ z$a = z--nobintrans ]; then
+		else if [ z$a = z--disable-bintrans ]; then
 			NOBINTRANS=YES
-		else if [ z$a = z--mips16 ]; then
+		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
-		else if [ z$a = z--gui ]; then
-			GUI=YES
-		else if [ z$a = z--withoutmips ]; then
-			WITHMIPS=NO
-		else if [ z$a = z--withppc ]; then
-			WITHPPC=YES
-		else if [ z$a = z--withsparc ]; then
-			WITHSPARC=YES
-		else if [ z$a = z--delays ]; then
+		else if [ z$a = z--disable-mips ]; then
+			ENABLEMIPS=NO
+		else if [ z$a = z--enable-ppc ]; then
+			ENABLEPPC=YES
+		else if [ z$a = z--enable-sparc ]; then
+			ENABLESPARC=YES
+		else if [ z$a = z--enable-delays ]; then
 			DELAYS=YES
-		else if [ z$a = z--caches ]; then
+		else if [ z$a = z--enable-caches ]; then
 			CACHES=YES
-		else
+		else if [ z$a = z--help ]; then
 			echo "usage: $0 [options]"
-			echo "  --always32     enable ALWAYS_SIGNEXTEND_32" \
-			    "(for hunting down 32/64-bit bugs)"
-			echo "  --caches       enable cache emulation" \
+			printf "\nDevelopment (debug) options:\n"
+			echo "  --always32          enable" \
+			    "ALWAYS_SIGNEXTEND_32 (for hunting down"
+			echo "                      32/64-bit bugs)"
+			printf "\nGeneral options:\n"
+			echo "  --disable-bintrans  configure without" \
+			    "bintrans, even if the host supports it"
+			echo "  --enable-caches     enable cache emulation" \
 			    "(experimental)"
-			echo "  --delays       enable instruction" \
+			echo "  --enable-delays     enable instruction" \
 			    "latency/delay emulation"
-#			echo "  --gui          compile with GTK+ 2.x"
-			#  TODO: separate out MIPS options from the others
-			echo "  --mips16       enable MIPS16 instruction" \
+			echo "  --disable-x         don't include X11 support"
+			printf "\nCPU selection options:\n"
+			echo "  --disable-mips      disable MIPS CPU emulation"
+			echo "  --enable-ppc        enable PPC CPU emulation" \
+			    "(experimental)"
+			echo "  --enable-sparc      enable SPARC CPU" \
+			    "emulation (experimental)"
+			printf "\nMIPS-specific options:\n"
+			echo "  --enable-mips16     enable MIPS16 instruction" \
 			    "support (experimental)"
-			echo "  --nobintrans   configure without bintrans," \
-			    "even if the host supports it"
-			echo "  --nox11        configure without X11 support"
-#			echo "  --withoutmips  disable MIPS CPU emulation" \
-#			    "(NOT YET)"
-#			echo "  --withppc      enable PPC CPU emulation" \
-#			    "(NOT YET)"
-#			echo "  --withsparc    enable SPARC CPU emulation" \
-#			    " (NOT YET)"
+			printf "\n"
+			exit
+		else
+			echo "Invalid option: $a"
+			echo "Run  $0 --help  to get a list of" \
+			    "available options."
 			exit
 		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
@@ -142,15 +148,15 @@ if [ z$MIPS16 = zYES ]; then
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
 fi
-if [ z$WITHMIPS = zYES ]; then
+if [ z$ENABLEMIPS = zYES ]; then
 	#echo 'Enabling MIPS support.'
 	printf "#define ENABLE_MIPS\n" >> config.h
 fi
-if [ z$WITHPPC = zYES ]; then
+if [ z$ENABLEPPC = zYES ]; then
 	echo 'Enabling PPC support.  NOTE: This is pretty much bogus.'
 	printf "#define ENABLE_PPC\n" >> config.h
 fi
-if [ z$WITHSPARC = zYES ]; then
+if [ z$ENABLESPARC = zYES ]; then
 	echo 'Enabling SPARC support.  NOTE: This is pretty much bogus.'
 	printf "#define ENABLE_SPARC\n" >> config.h
 fi
@@ -182,22 +188,6 @@ if [ z$CACHES = zYES ]; then
 		printf '         (--delays) will not produce correct '
 		printf 'cache miss penalties and such.\n'
 	fi
-fi
-
-
-#  GUI:
-if [ z$GUI = zYES ]; then
-	#  Check for GTK+ 2.x:
-	printf 'checking for GTK+ 2.x... '
-	A=`pkg-config --modversion gtk+-2.0|grep 2\\..`
-	if [ z$A = z ]; then
-		echo no
-	else
-		echo yes, $A
-	fi
-
-	echo 'Sorry, there is no GUI yet. Aborting.'
-	exit
 fi
 
 
@@ -399,7 +389,7 @@ fi
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
-if [ z$WITHMIPS = zYES ]; then
+if [ z$ENABLEMIPS = zYES ]; then
 	printf "checking for weird 'mips' define... "
 	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef mips
@@ -433,7 +423,7 @@ rm -f _testm*
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined ppc like this.
-if [ z$WITHPPC = zYES ]; then
+if [ z$ENABLEPPC = zYES ]; then
 	printf "checking for weird 'ppc' define... "
 	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef ppc
@@ -467,7 +457,7 @@ fi
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined sparc like this.
-if [ z$WITHSPARC = zYES ]; then
+if [ z$ENABLESPARC = zYES ]; then
 	printf "checking for weird 'sparc' define... "
 	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef sparc
@@ -878,7 +868,7 @@ printf "checking for bintrans backend... "
 
 BINTRANS=NO
 
-if [ z$WITHMIPS = zNO ]; then
+if [ z$ENABLEMIPS = zNO ]; then
 	NOBINTRANS=YES
 fi
 
@@ -985,7 +975,7 @@ printf "Regression test setup: (not really needed to build mips64emul)\n"
 #  MIPS cross-compiler:
 
 MIPS=''
-if [ z$WITHMIPS = zYES ]; then
+if [ z$ENABLEMIPS = zYES ]; then
 	printf "Checking for a GNU cross-compiler for 64-bit MIPS... "
 	echo 'int f(int x) { return x; }' > _testprog.c
 
@@ -1020,7 +1010,7 @@ echo "" >> _Makefile.header
 #  PPC64 cross-assembler:
 
 PPC=''
-if [ z$WITHPPC = zYES ]; then
+if [ z$ENABLEPPC = zYES ]; then
 	printf "Checking for a GNU cross-assembler for 64-bit PPC... "
 	echo 'nop' > _testprog.s
 
@@ -1059,7 +1049,7 @@ echo "" >> _Makefile.header
 #  SPARC64 cross-compiler:
 
 SPARC=''
-if [ z$WITHSPARC = zYES ]; then
+if [ z$ENABLESPARC = zYES ]; then
 	printf "Checking for a GNU cross-compiler for 64-bit SPARC... "
 	echo 'int f(int x) { return x; }' > _testprog.c
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.9 2005-02-12 10:49:07 debug Exp $
+$Id: intro.html,v 1.10 2005-02-13 18:36:34 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -170,48 +170,8 @@ you could try the following:
 </pre>
 
 <p>
-A number of different configure options are available:
-<pre>
-        <i>--always32</i>     enable special checks to hunt down 32-bit vs 64-bit bugs
-        <i>--caches</i>       enable cache emulation
-        <i>--delays</i>       enable instruction latency/delay emulation
-        <i>--mips16</i>       enable MIPS16 instruction support
-        <i>--nobintrans</i>   configure without bintrans support, even if the host supports it
-        <i>--nox11</i>        configure without X11 support
-</pre>
-
-<p>
-<i>--always32</i> enables some special code which checks that the emulated
-CPU registers are always sign-extended correctly (ie that the top 33 bits
-are either all zeroes, or all ones). This causes an overall slowdown, so
-don't enable it unless you are debugging mips64emul, and suspect that there
-are sign-extension bugs.
-<p>
-<i>--caches</i> enables emulation of caches (R3000 only, so far). This causes
-an overall slowdown, so don't enable it unless you need it. Enabling caches
-does <i>not</i> by itself mean correct cache miss penalties and such (you
-need both <i>--caches</i> and <i>--delays</i> for that) but it is needed to
-fool some operating system kernels (eg Mach/pmax) that the cache works
-like it should.
-<p>
-<i>--delays</i> simulates instruction latencies. Memory accesses can have
-penalties. When combined with <i>--caches</i>, cache misses cause penalties as
-well. This causes an overall slowdown, so don't enable it unless you need it.
-<p>
-<i>--mips16</i> enables MIPS16 instruction support. This doesn't really work
-yet, as only very few MIPS16 instructions are translated. This causes an
-overall slowdown, so don't enable it unless you need it.
-<p>
-<i>--nobintrans</i> disables dynamic binary translation completely.
-<p>
-<i>--nox11</i> disables X11 support completely. (If the configure script cannot
-compile a small X11 test program, it will be disabled anyway.)  This might 
-improve performance slightly, but makes it impossible to run certain 
-things in the emulator.
-
-<p>
-The possible configure options might differ between different releases and
-snapshots, so this list may be incomplete.
+Run <b>./configure --help</b> to get a list of configure options. (The 
+possible options differ between different releases and snapshots.)
 
 <p>
 Once you have built mips64emul, running it should be rather 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.187 2005-01-29 10:46:14 debug Exp $
+ *  $Id: main.c,v 1.188 2005-01-29 13:14:05 debug Exp $
  */
 
 #include <stdio.h>
@@ -285,32 +285,46 @@ ret:
 
 /*
  *  show_cpus_and_machine_types():
+ *
+ *  Show a list of available CPU and machine types.
  */
 void show_cpus_and_machine_types(void)
 {
-	int i, iadd = 8;
+	int i, j, iadd = 8;
 	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
-	printf("Available CPU names:\n");
+	printf("Available CPU types:\n\n");
+
+	debug_indentation(iadd);
+
+	debug("MIPS:\n");
+	debug_indentation(4);
 	i = 0;
 	while (cpu_type_defs[i].name != NULL) {
-		printf("\t%s", cpu_type_defs[i].name);
+		debug("%s", cpu_type_defs[i].name);
+		for (j=10 - strlen(cpu_type_defs[i].name); j>0; j--)
+			debug(" ");
 		i++;
-		if ((i % 7) == 0 || cpu_type_defs[i].name == NULL)
-			printf("\n");
+		if ((i % 6) == 0 || cpu_type_defs[i].name == NULL)
+			debug("\n");
 	}
+	debug_indentation(-4);
 
-	printf("Most of these are bogus, and not really implemented.\n");
-	printf("\nAvailable machine types (with aliases) and "
-	    "their subtypes:\n");
+	/*  Other CPU families: TODO  */
+
+	debug_indentation(-iadd);
+
+	printf("\nMost of the CPU types are bogus, and not"
+	    " really implemented.\nAvailable machine types (with "
+	    "aliases) and their subtypes:\n\n");
 
 	debug_indentation(iadd);
 	machine_list_available_types();
 	debug_indentation(-iadd);
 
 	printf("\n");
-	printf("Use the alias when selecting a machine type or subtype,\n"
-	    "not the real name.\n");
+	printf("Use the alias when selecting a machine type or subtype,"
+	    " not the real name.\n");
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.143 2005-01-29 12:56:32 debug Exp $
+ *  $Id: bintrans.c,v 1.144 2005-01-29 13:14:05 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -295,8 +295,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
 		return cpu->bintrans_instructions_executed;
 
-	/*  TODO: isa level, not mmu_model?  */
-	cpu->mem->bintrans_32bit_only = cpu->cpu_type.mmu_model == MMU3K;
+	cpu->mem->bintrans_32bit_only = (cpu->cpu_type.isa_level <= 2 ||
+	    cpu->cpu_type.isa_level == 32);
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 
 	/*  Is this a part of something that is already translated?  */

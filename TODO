@@ -1,4 +1,4 @@
-$Id: TODO,v 1.114 2005-01-27 11:59:23 debug Exp $
+$Id: TODO,v 1.115 2005-01-29 13:14:04 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -38,13 +38,6 @@ a mess. Order is random. Don't trust it to be up-to-date.
 			+)  Irix, AIX, QNX
 			+)  MacOS X  (I've not tried this personally yet)
 			+)  Ultrix using gcc? (Inside the emulator)
-
-	Command line option parsing:
-		o)  Use only one letter for selecting machine type (followed
-		    by a substring of the machine type), not one letter
-		    for each machine type as it is now.
-		o)  Set endianness for raw binaries?
-		o)  Long options?
 
 	CPU Emulation:
 		o)  Factor out the MIPS dependant parts of the cpu, so that
@@ -186,6 +179,7 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
+		o)  CLEAN UP the ugly event code
 		o)  Mouse clicks can be "missed" in the current system; this is
 		    not good. They should be put on a stack of some kind.
 		o)  More 2D and 3D framebuffer acceleration.

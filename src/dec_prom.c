@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.45 2005-01-29 11:50:19 debug Exp $
+ *  $Id: dec_prom.c,v 1.46 2005-01-29 13:14:05 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -254,6 +254,9 @@ int decstation_prom_emul(struct cpu *cpu)
 		/*  debug("[ DEC PROM gets() ]\n");  */
 		tmpaddr = cpu->gpr[MIPS_GPR_A0];
 		i = 0;
+
+		/*  TODO: Make this not hang (block) the entire emulator  */
+
 		do {
 			while ((ch = console_readchar()) < 1)
 				;

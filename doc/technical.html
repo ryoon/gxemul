@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.27 2004-11-22 06:14:54 debug Exp $
+$Id: technical.html,v 1.28 2004-12-01 09:41:51 debug Exp $
 
 Copyright (C) 2004  Anders Gavare.  All rights reserved.
 
@@ -119,12 +119,10 @@ serial controller device may output a character to stdout when written to.
 <a name="speed"></a>
 <h3>Speed</h3>
 
-<font color="#ff0000">NOTE: This section is valid as of 2004-11-21.</font>
-
-<p>
 There are two modes in which the emulator can run, <b>a</b>) a straight forward 
-loop which fetches one instruction from emulated RAM, and executes it, and 
-<b>b</b>) using dynamic binary translation.
+loop which fetches one instruction from emulated RAM and executes it
+(described in the previous section), and <b>b</b>)
+using dynamic binary translation.
 
 <p>
 Mode <b>a</b> is very slow. On a 2.8 GHz Intel Xeon host the resulting 
@@ -149,6 +147,10 @@ all translations are done directly from MIPS to host machine code.
 The default bintrans cache size is 20 MB, but you can change this by adding
 -DBINTRANS_SIZE_IN_MB=<i>xx</i> to your CFLAGS environment variable before 
 running the configure script.
+
+<p>
+To run the emulator with binary translation enabled, just add <b>-b</b>
+to the command line.
 
 <p>
 By default, an emulated OS running under DECstation emulation which listens to

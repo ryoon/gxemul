@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.57 2004-12-01 09:41:50 debug Exp $
+$Id: RELEASE,v 1.58 2004-12-01 09:45:57 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -104,8 +104,8 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
 	x)  An experimental dynamic binary translation subsystem has been
 	    added, which improves speed. (Use -b to enable bintrans.)
 
-	x)  Redhat Linux for mips has been verified to work on an emulated
-	    DECstation 5000/200.
+	x)  Redhat Linux 7.1 for mips has been verified to work on an
+	    emulated DECstation 5000/200.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

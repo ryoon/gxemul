@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.147 2004-11-30 11:02:35 debug Exp $
+$Id: index.html,v 1.148 2004-12-01 09:41:50 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -260,6 +260,13 @@ emulation works for these is generally not very high.
 </ul>
 
 <p>
+The support for machine types in the list above (Cobalt, Playstation 2, etc)
+is not enough to allow a complete guest OS to run, but there is enough 
+skeleton code so that someone with time and interest probably could fill 
+in the details, write interrupt code and device drivers and so on to make 
+it work.
+
+<p>
 Unfortunately, even if most of these machine types have
 64-bit CPUs in them (or 128-bit, the Playstation 2),
 operating systems often run in 32-bit mode on them.
@@ -277,10 +284,8 @@ NetBSD is a lot more fun :-)
 
 <p>
 In addition to specific machine types, a "bare" machine can be emulated.
-This mode is used when the emulator is started without specifying which
-machine type to emulate.
-A bare machine consists of one or more CPUs and a few experimental devices such
-as:
+A bare machine consists of one or more CPUs and a few experimental 
+devices such as:
 <p>
 <ul>
   <li>a console I/O device (putchar() and getchar()...)
@@ -300,11 +305,19 @@ for example for educational purposes or generic MIPS related experiments.
 
 While other emulators aim to emulate only one specific CPU type (eg R3000),
 mips64emul does not. The ideal goal would be to support "all" MIPS-like CPUs.
-(In reality, however, no CPU is emulated 100% correctly by mips64emul.)
-Support for specific processor features and instructions is added when needed.
+
 <p>
-Both 32-bit and 64-bit CPU types are emulated, and also some aspects of
-TX79/R5900 (128-bit).
+Right now, both R3000-style (32-bit) and R4000-style (64-bit) CPUs can
+be emulated.
+
+<p>
+MIPS CPUs have a lot of overlapping, in order to remain somewhat 
+compatible with each other, which means that other CPU types
+can be faked as well. For example,
+if you run NetBSD/sgimips with the <b>-C R12000</b> command line option,
+the CPU type will be a generic 64-bit MIPS-like CPU, which 
+NetBSD sees as an R12000. However, if the emulated OS actually depends on
+R12000-specific features, it will most likely fail.
 
 
 
@@ -315,8 +328,9 @@ TX79/R5900 (128-bit).
 <h3>Which guest OSes are possible to run?</h3>
 
 This table sums up the guest OSes that run well enough to be considered
-"working" in the emulator, that is, they can be installed onto some kind
-of harddisk image and be interacted with similar to a real machine:
+working in the emulator in some sence. They can boot from
+some kind of harddisk image and be interacted with similar to a real 
+machine:
 
 <p><br>
  <center>
@@ -364,6 +378,12 @@ of harddisk image and be interacted with similar to a real machine:
 	      <td></td>
 	      <td valign="top">DECstation</td>
 	    </tr>
+
+	    <tr>
+	      <td valign="top">Redhat&nbsp;Linux&nbsp;7.1<super>*</super></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	    </tr>
 	  </table>
 	</td></tr>
 
@@ -373,22 +393,24 @@ of harddisk image and be interacted with similar to a real machine:
 	  <center>
 	    <table border="0">
 	      <tr>
-		<td width=150 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
-		<td width=150 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
-		<td width=150 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+		<td width=140 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+		<td width=140 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
+		<td width=140 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+		<td width=140 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>NetBSD&nbsp;1.6.2/pmax</td>
 		<td align=center>OpenBSD&nbsp;2.8/pmax</td>
 		<td align=center>Ultrix&nbsp;4.5</td>
+		<td align=center>Redhat&nbsp;Linux&nbsp;7.1<super>*</super></td>
 	      </tr>
 	      <tr>
 		<td height=10>&nbsp;</td>
 	      </tr>
 	      <tr>
-		<td width=150 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
-		<td width=150 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
-		<td width=150 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
+		<td width=140 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
+		<td width=140 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
+		<td width=140 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>NetBSD&nbsp;1.6.2/arc</td>
@@ -404,12 +426,23 @@ of harddisk image and be interacted with similar to a real machine:
  </center>
 
 <p><br>
-(It is non-trivial to get a specific operating system or OS kernel to
-run in the emulator, so don't expect the list above to grow too quickly.)
+
+<super>*</super> Although Linux runs under DECstation emulation, at the
+time of writing this Linux has no support for the 5000/200's keyboard
+controller, so when the login prompt is reached you cannot interact with 
+the system. Some people are
+<a href="http://meeting.ffis.de/Oldenburg2004/work.html">working on</a>
+making it work. Running in text-mode (emulated serial console) works
+fine, though, but then you don't get to see the penguin in the corner.
+
 <p>
-There is no guarantee that anything
-specific will run in the emulator, but NetBSD (or possibly Linux) is a
-good starting point for someone who wants to experiment.
+It is non-trivial to get a specific operating system or OS kernel to
+run in the emulator, so don't expect the list above to grow too quickly.
+
+<p>
+There is no guarantee that anything specific will run in the emulator, but
+NetBSD is a good starting point for someone who wants to experiment.
+
 
 
 

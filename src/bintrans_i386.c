@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.5 2004-07-02 14:34:31 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.1 2004-07-02 14:34:31 debug Exp $
  *
- *  Alpha specific code for dynamic binary translation.
+ *  i386 specific code for dynamic binary translation.
  *
  *  See bintrans.c for more information.  Included from bintrans.c.
  */
@@ -34,11 +34,10 @@
 /*
  *  bintrans_host_cacheinvalidate()
  *
- *  Invalidate the host's instruction cache. On Alpha, we do this by
- *  executing an imb instruction.
+ *  Invalidate the host's instruction cache. On i386, this isn't neccessary,
+ *  so this is an empty function.
  */
 void bintrans_host_cacheinvalidate()
 {
-	asm("imb");
 }
 

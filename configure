@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.22 2004-07-02 14:28:18 debug Exp $
+#  $Id: configure,v 1.23 2004-07-02 14:34:30 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -168,30 +168,25 @@ fi
 #
 #  BINTRANS:
 #
-#  Should only be defined for compilers and architectures that
-#  really support bintrans.  As of now, only gcc on Alpha does this.
+#  Should only be defined for compilers and architectures that really support
+#  bintrans.  As of now, only gcc on Alpha does this.
 
 if [ z"`uname -m`" = zalpha ]; then
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf "int main(int argc, char *argv[]) { asm(\"imb\"); return 0; }\n" > _alpha_asm_test.c
 	$CC _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
 	if [ -x _alpha_asm_test ]; then
-		COPTIM="-DBINTRANS $COPTIM"
+		COPTIM="-DBINTRANS -DALPHA $COPTIM"
 	fi
 	rm -f _alpha_asm_test.c _alpha_asm_test
 fi
 
 #  Uncomment this when bintrans is available for i386:
 #if [ z"`uname -m`" = zi386 ]; then
-#	COPTIM="-DBINTRANS $COPTIM"
+#	COPTIM="-DBINTRANS -DI386 $COPTIM"
 #fi
 
 #############################################################################
-
-if [ z"`uname -m`" = zalpha ]; then
-	#  This is not an optimization, actually, just a flag:
-	COPTIM="-DALPHA $COPTIM"
-fi
 
 if [ z"`uname`" = zHP-UX ]; then
 	#  This is not an optimization, actually, just flags:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.16 2004-06-22 22:52:59 debug Exp $
+ *  $Id: bintrans.c,v 1.17 2004-07-02 14:34:31 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -123,17 +123,24 @@
 
 void bintrans_init(void)
 {
-fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
+	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
 }
 
 #else
+
 
 /*  Include host architecture specific bintrans code:  */
 
 #ifdef ALPHA
 #include "bintrans_alpha.c"
 #else
+
+#ifdef I386
+#include "bintrans_i386.c"
+#else
 #error Unsupported host architecture for bintrans.
+#endif
+
 #endif
 
 

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.48 2004-07-01 13:47:52 debug Exp $
+$Id: index.html,v 1.49 2004-07-02 09:26:58 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -444,23 +444,22 @@ You need to do the following:
 <ol>
   <li>Compile mips64emul:<pre>
 	$ <b>./configure; make</b>
-</pre>
-  <li>Download a NetBSD INSTALL kernel and gunzip it:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+
 </pre>
   <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=512 seek=1450000000</b>
+	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=900000000</b>
+
 </pre>
-  <li>Start the emulator with both the installation ISO image and the
-	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -N -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d bc:pmaxcd.iso netbsd-INSTALL</b>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -D2 -N -X -I4000000 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
 </pre>
 	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img -d bc:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -I4000000 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
 </pre>
 	but then make sure you choose 'vt100' when prompted with which terminal
 	type to use, and not 'rcons'.
@@ -473,42 +472,21 @@ you should expect the installation to take quite some time. On a
 2.8 GHz Xeon-based PC, a full install takes approximately an hour.
 
 <p>
-Then, following these steps should boot the OS from the root disk image:
-<ol>
-  <li>Download a NetBSD GENERIC kernel and gunzip it:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz</a>
+When the installation is completed, the following command should start
+NetBSD from the harddisk image:<pre>
+	$ <b>./mips64emul -D2 -N -X -I4000000 -d netbsddisk.img</b>
 </pre>
-  <li>Start the emulator with the root disk image and the GENERIC kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img netbsd-GENERIC</b>
-</pre>
-</ol>
 <p>
-<font color="#ff0000">
-Update 2004-07-01:
-It is now possible to boot directly from a DECstation harddisk image,
-without supplying the name of the kernel on the command line. (You 
-don't need the kernel as a separate file at all.) That means
-that booting is very much simpler than before. To install NetBSD/pmax,
-use the following:
-</font>
-<pre>
-	$ <b>./mips64emul -D2 -I4000000 -d diskimage -j netbsd.pmax -d bc:pmaxcd.iso</b>
+If you want to run without the X framebuffer, use this instead:<pre>
+	$ <b>./mips64emul -D2 -I4000000 -d netbsddisk.img</b>
 </pre>
-<font color="#ff0000">
-(The reason why you need <b>-j netbsd.pmax</b> is because the kernel on
-the ISO image is called /netbsd.pmax, there is no file called /netbsd.)
-After install, this should be enough to boot from the disk image:
-</font>
-<pre>
-	$ <b>./mips64emul -D2 -I4000000 -d diskimage</b>
-</pre>
-<font color="#ff0000">
-The same is true for Ultrix, but then <b>-j vmunix</b> must be used, both
-during install and during normal boot.
+
+<p>
+These installation instructions can be used for Ultrix as well,
+but then <b>-j vmunix</b> must be used, both during install and during
+normal boot.
 <b>-j <i>name</i></b> makes the bootstring contain <i>/name</i> as the
 filename to boot, instead of /netbsd, which is the default name.
-<p>NOTE: This is was not implemented in the 0.1 release.
-</font>
 
 
 <p><br>

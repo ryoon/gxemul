@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.121 2004-10-20 03:22:26 debug Exp $
+ *  $Id: misc.h,v 1.122 2004-10-21 01:07:14 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -217,15 +217,15 @@ struct cpu_type_def {
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32, 1,16,16, 2, 2, 0, 0 }, /*  instrs/cycle?  */  \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,13, 4, 4,19, 6 }, \
 	{ "R4000PC",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,13, 4, 4, 0, 6 }, \
-	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
+	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64, 4,15,15, 6, 5,20, 6 }, /*  2way I,D,Secondary  */ \
 	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
-	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, \
+	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,14,14, 4, 4,20, 6 }, /*  direct mapped I,D,Sec  */ \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, \
 	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2, 0, 0, 0, 0, 0, 0 }, /*  No DCOUNT?  */ \
 	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192, 2, 0, 0, 0, 0, 0, 0 }, /*  192 tlb entries? or 384? instrs/cycle?  */ \
 	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
 	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4, 0, 0, 0, 0, 0, 0 }, \
-	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  instrs/cycle?  */ \
+	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4,15,15, 5, 5, 0, 0 }, /*  2way I,D; instrs/cycle?  */ \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4,14,13, 6, 6, 0, 0 }, /*  instrs/cycle?  */ \
 	{ "TX3920",	MIPS_TX3900,0x30,	0,	EXC32, MMU32,	1,	32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \
 	{ "TX7901",	0x38,	    0x01,	0,	EXC4K, MMU4K,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  TODO: bogus?  */ \

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.99 2004-11-14 04:17:36 debug Exp $
+ *  $Id: memory.c,v 1.100 2004-11-16 20:50:36 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1086,7 +1086,6 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
-	int kernel_address = 0;
 
 	if ((vaddr & alignmask) != 0)
 		return NULL;
@@ -1095,51 +1094,48 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	    cpu, (long long)vaddr, writeflag, alignmask);  */
 
 	vaddr_page = vaddr & ~0xfff;
-	if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
-		i = cpu->bintrans_next_index;
-		for (;;) {
-			if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
-			    cpu->bintrans_data_hostpage[i] != NULL &&
-			    cpu->bintrans_data_writable[i] >= writeflag)
+	i = cpu->bintrans_next_index;
+	for (;;) {
+		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
+		    cpu->bintrans_data_hostpage[i] != NULL &&
+		    cpu->bintrans_data_writable[i] >= writeflag)
 #if 0
-				return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+			return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
 #else
 {
-				uint64_t tmpaddr;
-				unsigned char *tmpptr;
-				int tmpwf;
-				unsigned char *ret = cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+			uint64_t tmpaddr;
+			unsigned char *tmpptr;
+			int tmpwf;
+			unsigned char *ret = cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
 
 if (cpu->bintrans_next_index != i) {
-				cpu->bintrans_next_index --;
-				if (cpu->bintrans_next_index < 0)
-					cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+			cpu->bintrans_next_index --;
+			if (cpu->bintrans_next_index < 0)
+				cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
 
-				tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
-				tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
-				tmpwf   = cpu->bintrans_data_writable[cpu->bintrans_next_index];
+			tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
+			tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
+			tmpwf   = cpu->bintrans_data_writable[cpu->bintrans_next_index];
 
-				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->bintrans_data_hostpage[i];
-				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = cpu->bintrans_data_vaddr[i];
-				cpu->bintrans_data_writable[cpu->bintrans_next_index] = cpu->bintrans_data_writable[i];
+			cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->bintrans_data_hostpage[i];
+			cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = cpu->bintrans_data_vaddr[i];
+			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cpu->bintrans_data_writable[i];
 
-				cpu->bintrans_data_hostpage[i] = tmpptr;
-				cpu->bintrans_data_vaddr[i] = tmpaddr;
-				cpu->bintrans_data_writable[i] = tmpwf;
+			cpu->bintrans_data_hostpage[i] = tmpptr;
+			cpu->bintrans_data_vaddr[i] = tmpaddr;
+			cpu->bintrans_data_writable[i] = tmpwf;
 
-				ret = cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
+			ret = cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
 }
-				return ret;
+			return ret;
 }
 #endif
-			i++;
-			if (i == N_BINTRANS_VADDR_TO_HOST)
-				i = 0;
-			if (i == cpu->bintrans_next_index)
-				break;
-		}
-	} else
-		kernel_address = 1;
+		i++;
+		if (i == N_BINTRANS_VADDR_TO_HOST)
+			i = 0;
+		if (i == cpu->bintrans_next_index)
+			break;
+	}
 
 	ok = translate_address(cpu, vaddr, &paddr,
 	    (writeflag? FLAG_WRITEFLAG : 0) + FLAG_NOEXCEPTIONS);
@@ -1152,8 +1148,10 @@ if (cpu->bintrans_next_index != i) {
 	else
 		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
 
-	if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
-		return NULL;
+	for (i=0; i<cpu->mem->n_mmapped_devices; i++)
+		if (paddr >= cpu->mem->dev_baseaddr[i] &&
+		    paddr < cpu->mem->dev_baseaddr[i] + cpu->mem->dev_length[i])
+			return NULL;
 
 	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr,
 	    writeflag? MEM_WRITE : MEM_READ);
@@ -1165,14 +1163,12 @@ if (cpu->bintrans_next_index != i) {
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);
 
-	if (!kernel_address) {
-		cpu->bintrans_next_index --;
-		if (cpu->bintrans_next_index < 0)
-			cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
-		cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
-		cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
-		cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
-	}
+	cpu->bintrans_next_index --;
+	if (cpu->bintrans_next_index < 0)
+		cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
+	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
 
 	return memblock + offset;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.63 2004-11-15 10:05:21 debug Exp $
+ *  $Id: bintrans.c,v 1.64 2004-11-16 20:50:36 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -136,27 +136,6 @@ static int bintrans_write_instruction__rfe(unsigned char **addrp);
 static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd);
 
 
-/*  Include host architecture specific bintrans code:  */
-
-#ifdef ALPHA
-#include "bintrans_alpha.c"
-#else
-#ifdef I386
-#include "bintrans_i386.c"
-#else
-#ifdef MIPS
-#include "bintrans_mips.c"
-#else
-#ifdef SPARCV9
-#include "bintrans_sparcv9.c"
-#else
-#error Unsupported host architecture for bintrans.
-#endif	/*  SPARCV9  */
-#endif	/*  MIPS  */
-#endif	/*  I386  */
-#endif	/*  ALPHA  */
-
-
 #define	BINTRANS_CACHE_N_INDEX_BITS	14
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
@@ -190,6 +169,27 @@ struct translation_page_entry {
 #define	UNTRANSLATABLE		0x01
 
 struct translation_page_entry **translation_page_entry_array;
+
+
+/*  Include host architecture specific bintrans code:  */
+
+#ifdef ALPHA
+#include "bintrans_alpha.c"
+#else
+#ifdef I386
+#include "bintrans_i386.c"
+#else
+#ifdef MIPS
+#include "bintrans_mips.c"
+#else
+#ifdef SPARCV9
+#include "bintrans_sparcv9.c"
+#else
+#error Unsupported host architecture for bintrans.
+#endif	/*  SPARCV9  */
+#endif	/*  MIPS  */
+#endif	/*  I386  */
+#endif	/*  ALPHA  */
 
 
 /*
@@ -322,8 +322,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 		/*  ... and align again:  */
 		translation_code_chunk_space_head =
-		    ((translation_code_chunk_space_head - 1) |
-		    (sizeof(uint64_t)-1)) + 1;
+		    ((translation_code_chunk_space_head - 1) | 31) + 1;
 
 		/*  Add the entry to the array:  */
 		memset(tep, 0, sizeof(struct translation_page_entry));
@@ -524,7 +523,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				/*  rfe:  */
 				translated = bintrans_write_instruction__rfe(&ca);
 				n_translated += translated;
-				try_to_translate = 0;
+ 				try_to_translate = 0;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0 && (instr[1]&7)==0 && instr[0]==0) {
 				/*  mfc0:  */
 				rt = instr[2] & 31;
@@ -570,13 +569,16 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			    (size_t)translation_code_chunk_space);
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 15 &&
-		    prev_p < 1022 && tep->chunk[prev_p+1] != 0 &&
+		if (translated && try_to_translate && n_translated > 10 &&
+		    prev_p < 1020 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
 			    &ca, &tep->chunk[prev_p+1], NULL, 1);
 			try_to_translate = 0;
 		}
+
+		if (n_translated > 500)
+			try_to_translate = 0;
 
 		p += sizeof(instr);
 
@@ -610,8 +612,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 	/*  Align the code chunk space:  */
 	translation_code_chunk_space_head =
-	    ((translation_code_chunk_space_head - 1) |
-	    (sizeof(uint64_t)-1)) + 1;
+	    ((translation_code_chunk_space_head - 1) | 31) + 1;
 
 	if (!run_flag)
 		return 0;

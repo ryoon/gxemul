@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.34 2004-11-15 10:05:21 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.35 2004-11-16 20:50:36 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -875,63 +875,83 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  been translated yet, so we have to return to the main
 		 *  loop.  (Actually, we have to add cpu->chunk_base_address,
 		 *  because the uint32_t is limited to 32-bit offsets.)
+		 *
+		 *  Case 1:  The value is non-NULL already at translation
+		 *           time. Then we can make a direct (fast) native
+		 *           Alpha jump to the code chunk.
+		 *
+		 *  Case 2:  The value was NULL at translation time, then we
+		 *           have to check during runtime.
 		 */
 
-		/*  15 bits at a time, which means max 60 bits, but
-		    that should be enough. the top 4 bits are probably
-		    not used by userland alpha code. (TODO: verify this)  */
-		alpha_addr = (size_t)potential_chunk_p;
-		subaddr = (alpha_addr >> 45) & 0x7fff;
+		/*  Case 1:  */
+		/*  printf("%08x ", *potential_chunk_p);  */
+		alpha_addr = *potential_chunk_p + (size_t)translation_code_chunk_space;
+		ofs = (alpha_addr - ((size_t)a+4)) / 4;
+		/*  printf("%016llx %016llx %i\n", (long long)alpha_addr, (long long)a, ofs);  */
 
-		/*
-		 *  00 00 3f 20     lda     t0,0
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 */
+		if ((*potential_chunk_p) != 0 && ofs > -0xfffff && ofs < 0xfffff) {
+			*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + (ofs >> 16) & 0x1f; *a++ = 0xc3;	/*  br <chunk>  */
+		} else {
+			/*  Case 2:  */
+			/*  15 bits at a time, which means max 60 bits, but
+			    that should be enough. the top 4 bits are probably
+			    not used by userland alpha code. (TODO: verify this)  */
+			alpha_addr = (size_t)potential_chunk_p;
+			subaddr = (alpha_addr >> 45) & 0x7fff;
 
-		/*  Start with the topmost 15 bits:  */
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			/*
+			 *  00 00 3f 20     lda     t0,0
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 */
 
-		subaddr = (alpha_addr >> 30) & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			/*  Start with the topmost 15 bits:  */
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
 
-		subaddr = (alpha_addr >> 15) & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			subaddr = (alpha_addr >> 30) & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
 
-		subaddr = alpha_addr & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			subaddr = (alpha_addr >> 15) & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
 
-		/*
-		 *  Load the chunk pointer into t0.
-		 *  If it is NULL (zero), then skip the following jump.
-		 *  Jump to t0.
-		 */
+			subaddr = alpha_addr & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
 
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
-		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+			/*
+			 *  Load the chunk pointer into t0.
+			 *  If it is NULL (zero), then skip the following jump.
+			 *  Jump to t0.
+			 */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
+			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
-		/*  ldl t2,chunk_base_address(a0)  */
-		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
-		/*  addq t0,t2,t0  */
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+			/*  ldl t2,chunk_base_address(a0)  */
+			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+			/*  addq t0,t2,t0  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
 
-		/*  00 00 e1 6b     jmp     (t0)  */
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
+			/*  00 00 e1 6b     jmp     (t0)  */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
 
-		/*  "Failure", then let's return to the main loop.  */
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  "Failure", then let's return to the main loop.  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		}
 	}
 
-	if (skip != NULL)
+	if (skip != NULL) {
 		*skip = ((size_t)a - (size_t)skip - 4) / 4;
+		skip ++;
+		*skip = (((size_t)a - (size_t)skip - 4) / 4) >> 8;
+	}
 
 	*addrp = a;
 	return 1;
@@ -1303,7 +1323,7 @@ static int bintrans_write_instruction__rfe(unsigned char **addrp)
 	ofs = ((size_t)&dummy_coproc.reg[COP0_STATUS]) - (size_t)&dummy_coproc;
 	*a++ = 0xa4410000 | (ofs & 0xffff);		/*  ldq t1,status(t0)  */
 
-	*a++ = 0x2063ffc0;		/*  lda t2,0x...ffc0  */
+	*a++ = 0x207fffc0;		/*  lda t2,0x...ffc0  */
 	*a++ = 0x209f003f;		/*  lda t3,0x3f  */
 	*a++ = 0x44430003;		/*  and t1,t2,t2  */
 	*a++ = 0x44440004;		/*  and t1,t3,t3  */
@@ -1334,6 +1354,9 @@ static int bintrans_write_instruction__mfc(unsigned char **addrp, int coproc_nr,
 		return 0;
 
 	if (coproc_nr >= 1)
+		return 0;
+
+	if (rd == COP0_RANDOM || rd == COP0_COUNT)
 		return 0;
 
 

@@ -1,8 +1,9 @@
-$Id: RELEASE,v 1.80 2005-01-17 08:40:44 debug Exp $
+$Id: RELEASE,v 1.81 2005-01-28 10:26:16 debug Exp $
 
-I'm now working on post-0.2.4.
+I'm now working on post-0.2.4.1.
 
-Some of the features I'd like to have time to implement:
+Some of the features I'd like to have time to implement, after the
+redesign that I'm currently working on are:
 
 	x)  better support for non-DECstation modes
 		o)  for example, netbooting OpenBSD/sgi snapshots,
@@ -12,21 +13,6 @@ Some of the features I'd like to have time to implement:
 		    with bintrans
 	x)  R4000 and R10000 caches (and hopefully working with bintrans)
 	x)  fix the Linux-related problems for good, if at all possible
-
-
-Further into the future:  A 0.3 release would need to be tested a lot, to
-make sure that everything mentioned in the documentation works as stated.
-As many possible combinations as possible of the following must be tested:
-
-	o)  host platforms
-		x)  different architectures
-		x)  host OSes
-		x)  compilers (gcc vs other compilers)
-	o)  different configure flags
-	o)  different guest OSes
-	o)  different runtime flags (eg. bintrans enabled or not)
-
-	o)  no dead web links in the documentation
 
 ------------------------------------------------------------------------------
 
@@ -73,7 +59,7 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
-Here is a short summary of the changes from version 0.2.4 to 0.2.X:
+Here is a short summary of the changes from version 0.2.4.1 to 0.X.X:
 
 	x)  TODO
 

@@ -26,13 +26,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.1 2003-11-07 08:48:18 debug Exp $
+ *  $Id: console.h,v 1.2 2003-11-08 14:41:27 debug Exp $
  *
  *  Generic console functions.  (See console.c for more info.)
  */
 
 void console_init(void);
 void console_deinit(void);
+void console_makeavail(char ch);
 int console_charavail(void);
 int console_readchar(void);
 void console_putchar(int ch);

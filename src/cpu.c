@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.193 2004-11-24 12:23:24 debug Exp $
+ *  $Id: cpu.c,v 1.194 2004-11-24 13:35:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -837,10 +837,10 @@ void cpu_register_dump(struct cpu *cpu)
 			debug("cpu%i:", cpu->cpu_id);
 		if (cpu->cpu_type.isa_level < 3 ||
 		    cpu->cpu_type.isa_level == 32)
-			debug("  cop0,%02i = %08x", i,
+			debug("  c0,%02i = %08x", i,
 			    (int)cpu->coproc[0]->reg[i]);
 		else
-			debug("  cop0,%02i = %016llx", i,
+			debug("  c0,%02i = %016llx", i,
 			    (long long)cpu->coproc[0]->reg[i]);
 		if ((i & 3) == 3)
 			debug("\n");

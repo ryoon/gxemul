@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.59 2004-11-24 09:30:17 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.60 2004-11-24 13:35:11 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -56,9 +56,9 @@
  *
  *	t5		pc (64-bit)
  *	t6		bintrans_instructions_executed (32-bit int)
- *	t7		cached load/store virtual address (page)
- *	t8		cached load/store host address (page)
- *	t9		cached load/store writability (0=load, 1=load/store)
+ *	t7		a0 (mips register 4)  (64-bit)
+ *	t8		a1 (mips register 5)  (64-bit)
+ *	t9		s0 (mips register 16)  (64-bit)
  *	t10		t3 (mips register 11)  (64-bit)  (TODO: bug?)
  *	t11		t4 (mips register 12)  (64-bit)
  *	s0		delay_slot (32-bit int)
@@ -69,7 +69,8 @@
  *	s5		t1 (mips register 9)  (64-bit)
  *	s6		t2 (mips register 10)  (64-bit)
  *
- *	  a1..a5	TODO
+ *	  t7..t9	  TODO
+ *	  a1..a5	  TODO
  */
 
 #define	MIPSREG_PC			-6
@@ -161,12 +162,15 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
 #define ofs_sp	(((size_t)&dummy_cpu.gpr[GPR_SP]) - ((size_t)&dummy_cpu))
 #define ofs_ra	(((size_t)&dummy_cpu.gpr[GPR_RA]) - ((size_t)&dummy_cpu))
+#define ofs_a0	(((size_t)&dummy_cpu.gpr[GPR_A0]) - ((size_t)&dummy_cpu))
+#define ofs_a1	(((size_t)&dummy_cpu.gpr[GPR_A1]) - ((size_t)&dummy_cpu))
 #define ofs_t0	(((size_t)&dummy_cpu.gpr[GPR_T0]) - ((size_t)&dummy_cpu))
 #define ofs_t1	(((size_t)&dummy_cpu.gpr[GPR_T1]) - ((size_t)&dummy_cpu))
 #define ofs_t2	(((size_t)&dummy_cpu.gpr[GPR_T2]) - ((size_t)&dummy_cpu))
 #define ofs_t3	(((size_t)&dummy_cpu.gpr[GPR_T3]) - ((size_t)&dummy_cpu))
 #define ofs_t4	(((size_t)&dummy_cpu.gpr[GPR_T4]) - ((size_t)&dummy_cpu))
-unsigned char bintrans_alpha_runchunk[192] = {
+#define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
+unsigned char bintrans_alpha_runchunk[200] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
@@ -180,6 +184,9 @@ unsigned char bintrans_alpha_runchunk[192] = {
 
 	ofs_pc&255,ofs_pc>>8,0xd0,0xa4,	/*  ldq     t5,"pc"(a0)  */
 	ofs_n&255,ofs_n>>8,0xf0,0xa0,	/*  ldl     t6,"bintrans_instructions_executed"(a0)  */
+	ofs_a0&255,ofs_a0>>8,0x10,0xa5,	/*  ldq     t7,"a0"(a0)  */
+	ofs_a1&255,ofs_a1>>8,0xd0,0xa6,	/*  ldq     t8,"a1"(a0)  */
+	ofs_s0&255,ofs_s0>>8,0xf0,0xa6,	/*  ldq     t9,"s0"(a0)  */
 	ofs_ds&255,ofs_ds>>8,0x30,0xa1,	/*  ldl     s0,"delay_slot"(a0)  */
 	ofs_ja&255,ofs_ja>>8,0x50,0xa5,	/*  ldq     s1,"delay_jmpaddr"(a0)  */
 	ofs_sp&255,ofs_sp>>8,0x70,0xa5,	/*  ldq     s2,"gpr[sp]"(a0)  */
@@ -192,13 +199,13 @@ unsigned char bintrans_alpha_runchunk[192] = {
 #endif
 	ofs_t4&255,ofs_t4>>8,0x30,0xa7,	/*  ldq     t11,"gpr[t4]"(a0)  */
 
-	0xff, 0xff, 0x1f, 0x21,		/*  lda     t7,-1   (last virtual, -1 is an invalid addr)  */
-	0x00, 0x00, 0xdf, 0x22,		/*  lda     t8,0    (last host = NULL)  */
-
 	0x00, 0x40, 0x51, 0x6b,		/*  jsr     ra,(a1),<back>  */
 
 	ofs_pc&255,ofs_pc>>8,0xd0,0xb4,	/*  stq     t5,"pc"(a0)  */
 	ofs_n&255,ofs_n>>8,0xf0,0xb0,	/*  stl     t6,"bintrans_instructions_executed"(a0)  */
+	ofs_a0&255,ofs_a0>>8,0x10,0xb5,	/*  stq     t7,"a0"(a0)  */
+	ofs_a1&255,ofs_a1>>8,0xd0,0xb6,	/*  stq     t8,"a1"(a0)  */
+	ofs_s0&255,ofs_s0>>8,0xf0,0xb6,	/*  stq     t9,"s0"(a0)  */
 	ofs_ds&255,ofs_ds>>8,0x30,0xb1,	/*  stl     s0,"delay_slot"(a0)  */
 	ofs_ja&255,ofs_ja>>8,0x50,0xb5,	/*  stq     s1,"delay_jmpaddr"(a0)  */
 	ofs_sp&255,ofs_sp>>8,0x70,0xb5,	/*  stq     s2,"gpr[sp]"(a0)  */
@@ -313,6 +320,14 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		/*  clr alphareg  */
 		*a++ = 0x47ff0400 | alphareg;
 		break;
+	case GPR_A0:
+		/*  addq t7,0,alphareg  */
+		*a++ = 0x41001400 | alphareg;
+		break;
+	case GPR_A1:
+		/*  addq t8,0,alphareg  */
+		*a++ = 0x42c01400 | alphareg;
+		break;
 	case GPR_T0:
 		/*  addq s4,0,alphareg  */
 		*a++ = 0x41a01400 | alphareg;
@@ -334,6 +349,10 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 	case GPR_T4:
 		/*  addq t11,0,alphareg  */
 		*a++ = 0x43201400 | alphareg;
+		break;
+	case GPR_S0:
+		/*  addq t9,0,alphareg  */
+		*a++ = 0x42e01400 | alphareg;
 		break;
 	case GPR_SP:
 		/*  addq s2,0,alphareg  */
@@ -380,6 +399,14 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 		break;
 	case 0:		/*  the zero register  */
 		break;
+	case GPR_A0:
+		/*  addq alphareg,0,t7  */
+		*a++ = 0x40001408 | (alphareg << 21);
+		break;
+	case GPR_A1:
+		/*  addq alphareg,0,t8  */
+		*a++ = 0x40001416 | (alphareg << 21);
+		break;
 	case GPR_T0:
 		/*  addq alphareg,0,s4  */
 		*a++ = 0x4000140d | (alphareg << 21);
@@ -401,6 +428,10 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 	case GPR_T4:
 		/*  addq alphareg,0,t11  */
 		*a++ = 0x40001419 | (alphareg << 21);
+		break;
+	case GPR_S0:
+		/*  addq alphareg,0,t9  */
+		*a++ = 0x40001417 | (alphareg << 21);
 		break;
 	case GPR_SP:
 		/*  addq alphareg,0,s2  */
@@ -1815,18 +1846,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0xb0fe0018;		/*  stl t6,24(sp)  */
 	*a++ = 0xb71e0020;		/*  stq t10,32(sp)  */
 	*a++ = 0xb73e0028;		/*  stq t11,40(sp)  */
-
-	switch (itype) {
-	case TLB_TLBWR:
-	case TLB_TLBWI:
-		/*  No need to save t7,t8,t9, because a write to the
-		    TLB should invaliade the caches anyway.  */
-		break;
-	default:
-		*a++ = 0xb51e0030;		/*  stq t7,48(sp)  */
-		*a++ = 0xb6de0038;		/*  stq t8,56(sp)  */
-		*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
-	}
+	*a++ = 0xb51e0030;		/*  stq t7,48(sp)  */
+	*a++ = 0xb6de0038;		/*  stq t8,56(sp)  */
+	*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
 
 	switch (itype) {
 	case TLB_TLBP:
@@ -1857,18 +1879,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0xa0fe0018;		/*  ldl t6,24(sp)  */
 	*a++ = 0xa71e0020;		/*  ldq t10,32(sp)  */
 	*a++ = 0xa73e0028;		/*  ldq t11,40(sp)  */
-
-	switch (itype) {
-	case TLB_TLBWR:
-	case TLB_TLBWI:
-		/*  Invalidate the one-entry load/store cache:  */
-		*a++ = 0x211fffff;	/*  lda     t7,-1 (last virtual, -1 is an invalid addr)  */
-		break;
-	default:
-		*a++ = 0xa51e0030;	/*  ldq t7,48(sp)  */
-		*a++ = 0xa6de0038;	/*  ldq t8,56(sp)  */
-		*a++ = 0xa6fe0040;	/*  ldq t9,64(sp)  */
-	}
+	*a++ = 0xa51e0030;		/*  ldq t7,48(sp)  */
+	*a++ = 0xa6de0038;		/*  ldq t8,56(sp)  */
+	*a++ = 0xa6fe0040;		/*  ldq t9,64(sp)  */
 
 	*a++ = 0x23de0080;		/*  lda sp,128(sp)  */
 

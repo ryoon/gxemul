@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.83 2004-11-24 08:53:26 debug Exp $
+ *  $Id: bintrans.c,v 1.84 2004-11-24 13:35:11 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -183,7 +183,7 @@ struct translation_page_entry {
 static struct translation_page_entry **translation_page_entry_array;
 
 
-#define	MAX_QUICK_JUMPS		10
+#define	MAX_QUICK_JUMPS		5
 static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
 static int quick_jump_page_offset[MAX_QUICK_JUMPS];
 static int n_quick_jumps;
@@ -436,7 +436,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				n_translated += translated;
 				delayed_branch = 2;
 				delayed_branch_new_p = -1;	/*  anything, not within this physical page  */
-				if (special6 == SPECIAL_JR)
+				if (special6 == SPECIAL_JR && rs == 31)
 					stop_after_delayed_branch = 1;
 				break;
 			case SPECIAL_ADDU:
@@ -683,15 +683,15 @@ default:
 		}
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 30 &&
-		    prev_p < 1020 && tep->chunk[prev_p+1] != 0 &&
+		if (translated && try_to_translate && n_translated > 20 &&
+		    prev_p < 1015 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
 			    &ca, &tep->chunk[prev_p+1], NULL, 1, prev_p+1);
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 200)
+		if (n_translated > 100)
 			try_to_translate = 0;
 
 		p += sizeof(instr);

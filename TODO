@@ -1,8 +1,7 @@
 mips64emul TODO
 ---------------
 
-This file is a mess. Order is random.
-Don't trust it to be up-to-date.
+This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 
 	Caches / memory hierarchies:
@@ -23,6 +22,10 @@ Don't trust it to be up-to-date.
 		    possible.
 
 	Binary translation:  src/bintrans.c
+
+	Network layer
+		o)  ethernet interfaces
+		o)  (userland, non-root) network stack
 
 	Command line option parsing:
 		o)  Use only one letter for selecting machine type (followed
@@ -71,12 +74,8 @@ Don't trust it to be up-to-date.
 			R6000 (ISA II), R8000
 
 	Emulation of specific machines and devices:
-		o)  Binary tree for memory mapped devices?
-		o)  Separate RAM as yet another device (a "RAM device"),
-		    replacing the 'memory' system with a more generic
-		    'memory controller'.  (?  Perhaps not a good idea yet.)
-		o)  "wdc" IDE controller!
 		o)  SCSI controllers!
+		o)  "wdc" IDE controller!
 		o)  Busses, interrupt systems, and ROM emulation:
 			x)  Make interrupt sharing more generic!
 			x)  PCI:  i/o and interrupts
@@ -84,10 +83,9 @@ Don't trust it to be up-to-date.
 			x)  ARCBIOS (SGI, arc?)
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
-			boot directly from disk/cd-rom images
 			framebuffers:
 				better cursor support, overlays?,
-				2D/3D acceleration
+				2D/3D acceleration, PX[G]
 			status words / control words, make this more
 				portable/cleaner
 			scsi controller(s): sii, asc (+ DMA)
@@ -110,15 +108,15 @@ Don't trust it to be up-to-date.
 			Hardware:  OHCI usb controller, keyboard,
 				IDE controller, ...
 			Has an R3000A as a subsystem (!)
-		o)  Playstation 1? R3000A. Weird hardware?
-			No FPU, but something as coproc 2.
 		o)  hpcmips:  framebuffer(s) and harddisk controller,
 			among other things
-		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
-			(R4300, 4MB RAM, really weird memory map,
-			probably not interesting)
 		o)  newsmips?
 		o)  mipsco?
+		o)  Less interesting platforms:
+			o)  Playstation 1? R3000A. Weird hardware?
+				No FPU, but something as coproc 2.
+			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
+				(R4300, 4MB RAM, really weird memory map)
 
 	Multi-cpu stuff:
 		o)  SGI's NUMA architecture. Study
@@ -128,19 +126,13 @@ Don't trust it to be up-to-date.
 			it seems.)
 		o)  Own experiments with ycx2.
 
-	Framebuffer stuff:
-		o)  "Sprites", or overlays  (useful for cursors...)
-		o)  2D and 3D acceleration
-		o)  Move the polygon drawing stuff to its own module.
-		o)  Antialiased polygons? :-)
-
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images (?)
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
-			(ELF structure format)
+			(ELF structure format)?
 		o)  Better handling of tape files
 
 	Userland ABI emulation: src/useremul.c
@@ -165,16 +157,20 @@ Don't trust it to be up-to-date.
 		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
-		o)  Support 15-bit color! (And 16-bit as well?)
+		o)  Cursor transparency masking
+		o)  More 2D and 3D framebuffer acceleration
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
 			x)  How about multiple framebuffer windows?
-		o)  Non-resizable windows
+			x)  Try to make the emulated mouse cursor coordinates
+				track the host's X11 mouse! (This might be
+				bad to enable if the cursor is for example
+				a text console cursor.)
+			x)  X11 cursor keycodes and such?
+		o)  Non-resizable windows?
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11
 			specific code to src/x11.c!
-
-	Profile the whole emulator, and try to increase performance.
 
 	Statistics:  (this could be interesting)
 		o)  memory accesses (to measure cache efficiency and
@@ -184,11 +180,8 @@ Don't trust it to be up-to-date.
 		o)  nr of simultaneous ASIDs in use in the TLB  (x = time)
 		o)  position of read/write on (SCSI) disks   (x = time)
 
-	Make sure that the emulator compiles and runs on as many Unices as
-	possible, with different compilers and compiler settings. (Maybe on
-	non-Unix-like systems too, if the X11 stuff is separated well enough.)
-
-	Write Documentation (TeX/HTML/manpages, or DocBook?):
-		o)  User's guide
-		o)  Internals
+	Write Documentation:
+		o)  A very tiny manpage
+		o)  User Documentation (HTML)
+		o)  Technical Documentation (HTML)
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,9 +23,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.27 2004-11-29 08:15:18 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.1 2005-01-09 00:45:58 debug Exp $
  *  
- *  SGI "crime".
+ *  SGI IP32 devices.
+ *
+ *	o)  CRIME
+ *	o)  MACE
+ *	o)  MACE PCI bus
  *
  *  TODO:  This is hardcoded for bigendian, but since it will probably only
  *         be used for SGI emulation, and no little-endian machines, this is
@@ -36,10 +40,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
+#include "bus_pci.h"
 #include "console.h"
 #include "devices.h"
+#include "memory.h"
+#include "misc.h"
 
 #include "crimereg.h"
 
@@ -47,6 +52,11 @@
 #define	CRIME_TICKSHIFT			14
 #define	CRIME_SPEED_MUL_FACTOR		1
 #define	CRIME_SPEED_DIV_FACTOR		1
+
+struct macepci_data {
+	struct pci_data *pci_data;
+	uint32_t	reg[DEV_MACEPCI_LENGTH / 4];
+};
 
 
 /*
@@ -192,4 +202,144 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem,
 	return d;
 }
 
+
+/*
+ *  dev_mace_access():
+ */
+int dev_mace_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	int i;
+	struct mace_data *d = extra;
+
+	if (writeflag == MEM_WRITE)
+		memcpy(&d->reg[relative_addr], data, len);
+	else
+		memcpy(data, &d->reg[relative_addr], len);
+
+	switch (relative_addr) {
+#if 0
+	case 0x14:	/*  Current interrupt assertions  */
+	case 0x18:	/*  ???  */
+	case 0x1c:	/*  Interrupt mask  */
+		/*  don't dump debug info for these  */
+		break;
+#endif
+	default:
+		if (writeflag==MEM_READ) {
+			debug("[ mace: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
+		} else {
+			debug("[ mace: write to 0x%x:", (int)relative_addr);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" (len=%i) ]\n", len);
+		}
+	}
+
+	return 1;
+}
+
+
+/*
+ *  dev_mace_init():
+ */
+struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr,
+	int irqnr)
+{
+	struct mace_data *d;
+
+	d = malloc(sizeof(struct mace_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct mace_data));
+	d->irqnr = irqnr;
+
+	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH,
+	    dev_mace_access, d, MEM_DEFAULT, NULL);
+
+	return d;
+}
+
+
+/*
+ *  dev_macepci_access():
+ */
+int dev_macepci_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct macepci_data *d = (struct macepci_data *) extra;
+	uint64_t idata = 0, odata=0;
+	int regnr, res = 1;
+
+	idata = memory_readmax64(cpu, data, len);
+	regnr = relative_addr / sizeof(uint32_t);
+
+	/*  Read from/write to the macepci:  */
+	switch (relative_addr) {
+	case 0x00:	/*  Error address  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata = 0;
+		}
+		break;
+	case 0x04:	/*  Error flags  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata = 0x06;
+		}
+		break;
+	case 0x0c:	/*  Revision number  */
+		if (writeflag == MEM_WRITE) {
+		} else {
+			odata = 0x01;
+		}
+		break;
+	case 0xcf8:	/*  PCI ADDR  */
+	case 0xcfc:	/*  PCI DATA  */
+		if (writeflag == MEM_WRITE) {
+			res = bus_pci_access(cpu, mem, relative_addr, &idata, writeflag, d->pci_data);
+		} else {
+			res = bus_pci_access(cpu, mem, relative_addr, &odata, writeflag, d->pci_data);
+			/*  odata = 0;  */
+		}
+		break;
+	default:
+		if (writeflag == MEM_WRITE) {
+			debug("[ macepci: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+		} else {
+			debug("[ macepci: unimplemented read from address 0x%x ]\n", relative_addr);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return res;
+}
+
+
+/*
+ *  dev_macepci_init():
+ */
+struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
+	int pciirq)
+{
+	struct macepci_data *d = malloc(sizeof(struct macepci_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct macepci_data));
+
+	d->pci_data = bus_pci_init(mem, pciirq);
+
+	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH,
+	    dev_macepci_access, (void *)d, MEM_DEFAULT, NULL);
+
+	return d->pci_data;
+}
 

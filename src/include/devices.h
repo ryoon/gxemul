@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.125 2005-01-09 00:38:46 debug Exp $
+ *  $Id: devices.h,v 1.126 2005-01-09 00:46:44 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -128,16 +128,6 @@ void dev_cons_init(struct memory *mem);
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
 int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned char *color_plane_mask);
-
-/*  dev_crime.c:  */
-#define	DEV_CRIME_LENGTH		0x0000000000001000
-struct crime_data {
-	unsigned char	reg[DEV_CRIME_LENGTH];
-	int		irq_nr;
-	int		use_fb;
-};
-int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080
@@ -333,20 +323,6 @@ void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult, int in_use);
 
-/*  dev_mace.c:  */
-#define	DEV_MACE_LENGTH			0x100
-struct mace_data {
-	unsigned char	reg[DEV_MACE_LENGTH];
-	int		irqnr;
-};
-int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
-
-/*  dev_macepci.c:  */
-#define	DEV_MACEPCI_LENGTH		0x1000
-int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
-
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
 #define	MC146818_DEC		0
@@ -508,6 +484,26 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uin
 #define	DEV_SGI_IP30_LENGTH		0x80000
 int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sgi_ip32.c:  */
+#define	DEV_CRIME_LENGTH		0x0000000000001000
+struct crime_data {
+	unsigned char	reg[DEV_CRIME_LENGTH];
+	int		irq_nr;
+	int		use_fb;
+};
+int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+#define	DEV_MACE_LENGTH			0x100
+struct mace_data {
+	unsigned char	reg[DEV_MACE_LENGTH];
+	int		irqnr;
+};
+int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
+#define	DEV_MACEPCI_LENGTH		0x1000
+int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
 
 /*  dev_sgi_mardigras.c:  */
 #define	DEV_SGI_MARDIGRAS_LENGTH	0x800000

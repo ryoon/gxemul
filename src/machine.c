@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.66 2004-03-14 22:25:20 debug Exp $
+ *  $Id: machine.c,v 1.67 2004-03-15 16:10:24 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -548,10 +548,10 @@ void machine_init(struct memory *mem)
 			 */
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  */
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);
+/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);  */
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-FA", KN02_IP_SLOT0 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-JA", KN02_IP_SLOT0 +8);
-*/			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-RO", KN02_IP_SLOT0 +8);
+/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-JA", KN02_IP_SLOT0 +8);  */
+/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-RO", KN02_IP_SLOT0 +8);  */
 
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END, "", KN02_IP_SLOT1 +8);
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END, "", KN02_IP_SLOT2 +8);

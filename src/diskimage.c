@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.16 2004-04-12 08:19:15 debug Exp $
+ *  $Id: diskimage.c,v 1.17 2004-04-13 08:56:24 debug Exp $
  *
  *  Disk image support.
  *
@@ -274,10 +274,17 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		memcpy(xferp->data_in+16, "DISK            ", 16);
 		memcpy(xferp->data_in+32, "V0.0", 4);
 
+		/*
+		 *  Some Ultrix kernels want specific responses from
+		 *  the drives.
+		 */
+
 		if (emulation_type == EMULTYPE_DEC) {
-			/*  DEC, RZxx:  */
+			/*  DEC, RZ25 (rev 0900) is a 832527 sector large disk:  */
+			/*  DEC, RZ58 (rev 2000) is a 2698061 sector large disk:  */
 			memcpy(xferp->data_in+8,  "DEC     ", 8);
-			memcpy(xferp->data_in+16, "RZ58            ", 16);
+			memcpy(xferp->data_in+16, "RZ58     (C) DEC", 16);
+			memcpy(xferp->data_in+32, "2000", 4);
 		}
 
 		/*  Some data is different for CD-ROM drives:  */
@@ -289,6 +296,12 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 			if (emulation_type == EMULTYPE_DEC) {
 				/*  SONY, CD-ROM:  */
 				memcpy(xferp->data_in+8,  "SONY    ", 8);
+				memcpy(xferp->data_in+16, "CD-ROM          ", 16);
+
+				/*  ... or perhaps this:  */
+				memcpy(xferp->data_in+8,  "DEC     ", 8);
+				memcpy(xferp->data_in+16, "RRD42   (C) DEC ", 16);
+				memcpy(xferp->data_in+32, "4.5d", 4);
 			}
 		}
 
@@ -457,6 +470,7 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		size = retlen * logical_block_size;
 		ofs *= logical_block_size;
 
+printf("diskimage: size = %i\n", (int)size);
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 

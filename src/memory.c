@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.56 2004-07-04 16:11:24 debug Exp $
+ *  $Id: memory.c,v 1.57 2004-07-05 13:54:49 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -379,7 +379,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 /*
  *  memory_cache_R3000():
  *
- *  R3000 specific cache handling.
+ *  R2000/R3000 specific cache handling.
  *
  *  Return value is 1 if a jump to do_return_ok is supposed to happen directly
  *  after this routine is finished, 0 otherwise.
@@ -536,20 +536,19 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			data[i] = cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]];
 	} else {
-		for (i=0; i<len; i++)
+		for (i=0; i<len; i++) {
 			if (cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]] != data[i]) {
 				rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
-				break;
 			}
-		for (i=0; i<len; i++)
 			cpu->cache[which_cache][(addr+i) &
 			    cpu->cache_mask[which_cache]] = data[i];
+		}
 	}
 
 	/*  Run instructions from the right host page:  */
 	if (cache == CACHE_INSTRUCTION) {
-		memblock = memory_paddr_to_hostaddr(mem, paddr, MEM_READ);
+		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		if (memblock != NULL) {
 			cpu->pc_last_was_in_host_ram = 1;
 			cpu->pc_last_host_4k_page = memblock +

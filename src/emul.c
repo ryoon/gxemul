@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.88 2004-11-25 10:53:32 debug Exp $
+ *  $Id: emul.c,v 1.89 2004-12-06 13:15:06 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -40,6 +40,8 @@
 
 #include "bintrans.h"
 #include "console.h"
+#include "cop0.h"
+#include "cpu_types.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "memory.h"

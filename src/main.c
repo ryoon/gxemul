@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.133 2004-11-29 14:14:55 debug Exp $
+ *  $Id: main.c,v 1.134 2004-12-06 13:15:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,6 +35,7 @@
 
 #include "misc.h"
 
+#include "cpu_types.h"
 #include "diskimage.h"
 #include "emul.h"
 

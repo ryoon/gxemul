@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.72 2004-11-20 03:14:28 debug Exp $
+#  $Id: configure,v 1.73 2004-12-06 13:15:04 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -419,9 +419,11 @@ if [ ! -x _tests ]; then
 int main(int argc, char *argv[]) { int x = MAP_ANONYMOUS; return 0;}\n" > _tests.c
 	$CC $CFLAGS _tests.c -o _tests 2> /dev/null
 	if [ ! -x _tests ]; then
-		printf "no\n"
-		printf "WARNING! Neither MAP_ANON nor MAP_ANONYMOUS work on this system. Aborting.\n"
-		exit
+		printf "no\n\n"
+		printf "WARNING! Neither MAP_ANON nor MAP_ANONYMOUS work on this system.\n"
+		printf "Please try to compile anyway, and report to me whether it builds/runs or not.\n\n"
+		printf "#define MAP_ANON 0\n" >> config.h
+		printf "#define NO_MAP_ANON\n" >> config.h
 	else
 		printf "using MAP_ANONYMOUS\n"
 		printf "#define MAP_ANON MAP_ANONYMOUS\n" >> config.h

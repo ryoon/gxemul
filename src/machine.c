@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.227 2004-12-05 14:17:01 debug Exp $
+ *  $Id: machine.c,v 1.228 2004-12-06 13:15:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -54,6 +54,7 @@
 #include "devices.h"
 #include "diskimage.h"
 #include "memory.h"
+#include "opcodes.h"
 #include "symbol.h"
 
 /*  For SGI emulation:  */
@@ -69,6 +70,8 @@ extern int arcbios_console_curx;
 extern int arcbios_console_cury;
 
 /*  For DECstation emulation:  */
+#include "dec_prom.h"
+#include "dec_bootinfo.h"
 #include "dec_5100.h"
 #include "dec_kn01.h"
 #include "dec_kn02.h"

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.124 2004-12-04 12:35:57 debug Exp $
+ *  $Id: memory.c,v 1.125 2004-12-06 13:15:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -38,6 +38,7 @@
 #include "misc.h"
 
 #include "bintrans.h"
+#include "cop0.h"
 #include "memory.h"
 
 

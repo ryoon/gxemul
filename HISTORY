@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.357 2004-12-06 06:49:39 debug Exp $
+$Id: HISTORY,v 1.358 2004-12-06 13:15:04 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1249,3 +1249,6 @@ HISTORY of mips64emul
 20041205	Fixing a bintrans bug.
 		Some other minor updates (some of them bintrans related).
 20041206	Moving the web page to http://gavare.se.
+		Adding a hack for mmap() which supports anonymous mapping
+		using /dev/zero, but not using MAP_ANON{,YMOUS}.
+		Separating out opcodes.h, cop0.h, and cpu_types.h from misc.h.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.35 2004-11-30 08:23:34 debug Exp $
+ *  $Id: dec_prom.c,v 1.36 2004-12-06 13:15:06 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -41,6 +41,7 @@
 #include "diskimage.h"
 #include "memory.h"
 
+#include "dec_prom.h"
 #include "dec_5100.h"
 #include "dec_kn01.h"
 #include "dec_kn02.h"

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.8 2004-10-17 15:31:45 debug Exp $
+ *  $Id: mips16.c,v 1.9 2004-12-06 13:15:07 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -36,6 +36,7 @@
 #include <sys/resource.h>
 
 #include "misc.h"
+#include "opcodes.h"
 
 
 #ifndef ENABLE_MIPS16

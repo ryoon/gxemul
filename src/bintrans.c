@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.100 2004-12-05 16:05:29 debug Exp $
+ *  $Id: bintrans.c,v 1.101 2004-12-06 13:15:06 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -96,7 +96,10 @@
 #include "misc.h"
 
 #include "bintrans.h"
+#include "cop0.h"
+#include "cpu_types.h"
 #include "memory.h"
+#include "opcodes.h"
 
 
 #ifndef BINTRANS

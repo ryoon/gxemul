@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.11 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_rd94.c,v 1.12 2004-12-06 13:15:04 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -33,11 +33,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bus_pci.h"
+#include "cop0.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
-
-#include "bus_pci.h"
 #include "rd94.h"
 
 

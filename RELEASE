@@ -1,8 +1,8 @@
-$Id: RELEASE,v 1.77 2005-01-12 23:04:13 debug Exp $
+$Id: RELEASE,v 1.78 2005-01-12 23:09:09 debug Exp $
 
-The next release will most probably be 0.2.4.
+I'm now working on post-0.2.4.
 
-Some of the features I'd like to have time to implement after that:
+Some of the features I'd like to have time to implement:
 
 	x)  better support for non-DECstation modes
 		o)  for example, netbooting OpenBSD/sgi snapshots,
@@ -29,7 +29,7 @@ As many possible combinations as possible of the following must be tested:
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.4
+Release notes for mips64emul 0.2.X
 ==================================
 
 Copyright (C) 2003-2005  Anders Gavare.

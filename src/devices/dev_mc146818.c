@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.18 2004-06-24 01:15:09 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.19 2004-06-25 04:19:46 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -175,7 +175,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	 *  on and off. Without this code, booting Linux takes forever:
 	 */
 	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
-#if 0
+#if 1
 	/*  TODO:  solve this more nicely  */
 	if ((random() & 0xff) == 0)
 		mc_data->reg[MC_REGA*4] ^= MC_REGA_UIP;

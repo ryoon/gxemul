@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.7 2003-11-08 14:40:39 debug Exp $
+ *  $Id: machine.c,v 1.8 2003-11-09 04:12:43 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -345,8 +345,8 @@ void machine_init(struct memory *mem)
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
 			/*  TODO:  kmin_csr = dev_kmin_init(cpus[0], mem, KMIN_REG_INTR);  */
 
-			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb  */
-			serial_console_name      = "osconsole=3";
+			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
+			serial_console_name      = "osconsole=3";	/*  ?  */
 			break;
 
 		case MACHINE_3MAXPLUS_5000:	/*  type 4, KN03  */
@@ -373,7 +373,7 @@ void machine_init(struct memory *mem)
 			dev_asc_init(cpus[0], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
-			dev_turbochannel_init(cpus[0], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-BA", KN03_INTR_TC_0 +8);
+			dev_turbochannel_init(cpus[0], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-AA", KN03_INTR_TC_0 +8);
 			dev_turbochannel_init(cpus[0], mem, 1, KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "", KN03_INTR_TC_1 +8);
 			dev_turbochannel_init(cpus[0], mem, 2, KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "", KN03_INTR_TC_2 +8);
 

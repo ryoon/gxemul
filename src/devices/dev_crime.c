@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.3 2003-12-30 03:03:21 debug Exp $
+ *  $Id: dev_crime.c,v 1.4 2004-01-02 22:18:34 debug Exp $
  *  
  *  SGI "crime".
  */
@@ -56,13 +56,19 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	/*  Set crime version/revision:  */
 	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0x11;
 
+	/*  CRIME_TIME:  */
+	i = 7;
+	while (i >= 0) {
+		if ((++ d->reg[CRIME_TIME + i]) == 0)
+			i --;
+		else
+			break;
+	}
+
 	if (writeflag == MEM_WRITE)
 		memcpy(&d->reg[relative_addr], data, len);
 	else
 		memcpy(data, &d->reg[relative_addr], len);
-
-if ((random() & 0xfff) == 0)
-	d->reg[CRIME_TIME+7] ++;
 
 	switch (relative_addr) {
 	case 0x18:

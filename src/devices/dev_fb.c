@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.48 2004-07-14 19:55:43 debug Exp $
+ *  $Id: dev_fb.c,v 1.49 2004-09-05 03:51:21 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -61,7 +61,6 @@
 #endif
 
 
-extern int x11_scaledown;
 extern int use_x11;
 
 #ifdef WITH_X11
@@ -833,7 +832,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
 
-	d->vfb_scaledown = x11_scaledown;
+	d->vfb_scaledown = cpu->emul->x11_scaledown;
 
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
 	size = d->ysize * d->bytes_per_line;
@@ -861,7 +860,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 #ifdef WITH_X11
 	if (use_x11)
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    title, x11_scaledown);
+		    title, cpu->emul->x11_scaledown);
 	else
 #endif
 		d->fb_window = NULL;

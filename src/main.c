@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.95 2004-09-05 03:49:20 debug Exp $
+ *  $Id: main.c,v 1.96 2004-09-05 03:51:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,13 +64,10 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int64_t max_instructions = 0;
-
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
 int use_x11 = 0;
-int x11_scaledown = 1;
 
 
 /*
@@ -206,7 +203,7 @@ void usage(char *progname)
 	printf("  -v        verbose debug messages\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
-	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
+	printf("  -Y n      scale down framebuffer windows by n x n times\n");
 #endif /*  WITH_X11  */
 	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
 
@@ -302,7 +299,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->physical_ram_in_mb = atoi(optarg);
 			break;
 		case 'm':
-			max_instructions = atoi(optarg);
+			emul->max_instructions = atoi(optarg);
 			break;
 		case 'N':
 			emul->show_nr_of_instructions = 1;
@@ -365,7 +362,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			use_x11 = 1;
 			break;
 		case 'Y':
-			x11_scaledown = atoi(optarg);
+			emul->x11_scaledown = atoi(optarg);
 			break;
 		case 'y':
 			emul->max_random_cycles_per_chunk = atoi(optarg);

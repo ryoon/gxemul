@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.143 2004-09-05 03:49:20 debug Exp $
+ *  $Id: cpu.c,v 1.144 2004-09-05 03:51:23 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -53,7 +53,6 @@ extern int old_quiet_mode;
 extern int quiet_mode;
 extern int use_x11;
 extern int tlb_dump;
-extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int n_dumppoints;
@@ -3135,7 +3134,7 @@ do_return:
 int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 {
 	int te;
-	int64_t max_instructions_cached = max_instructions;
+	int64_t max_instructions_cached = emul->max_instructions;
 	int64_t max_random_cycles_per_chunk_cached =
 	    emul->max_random_cycles_per_chunk;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;

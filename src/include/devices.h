@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.72 2004-06-28 00:54:45 debug Exp $
+ *  $Id: devices.h,v 1.73 2004-06-29 01:56:38 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -219,7 +219,6 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x10
-#define	DEV_PCKBC_8242_LENGTH		0x20
 #define	PCKBC_8042		0
 #define	PCKBC_8242		1
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

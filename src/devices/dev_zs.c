@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.9 2004-06-28 00:55:07 debug Exp $
+ *  $Id: dev_zs.c,v 1.10 2004-06-29 01:56:41 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -87,7 +87,9 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	relative_addr /= d->addrmult;
 
 	port_nr = relative_addr / 8;
-	relative_addr &= 7;
+
+/*  TODO:  The zs controller has 2 ports...  */
+/*	relative_addr &= 7;  */
 
 	switch (relative_addr) {
 	case 3:

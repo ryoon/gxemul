@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.69 2004-08-05 21:22:18 debug Exp $
+ *  $Id: memory.c,v 1.70 2004-08-19 20:00:02 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -856,7 +856,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		debug("{ vaddr=%016llx ==> ? }\n", (long long)vaddr);
 		for (i=0; i<cpu->cpu_type.nr_of_tlb_entries; i++) {
 			char *symbol;
-			int offset;
+			uint64_t offset;
 
 			symbol = get_symbol_name(cpu->pc_last, &offset);
 			/*  debug("pc = 0x%08llx <%s>\n", (long long)cpu->pc_last, symbol? symbol : "no symbol");  */
@@ -1324,7 +1324,7 @@ into the devices  */
 		} else {
 			if (paddr >= mem->physical_max + 0 * 1024) {
 				char *symbol;
-				int offset;
+				uint64_t offset;
 
 				if (!quiet_mode) {
 					debug("[ memory_rw(): writeflag=%i ", writeflag);

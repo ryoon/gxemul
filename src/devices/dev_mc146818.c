@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.35 2004-08-03 13:10:53 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.36 2004-08-19 20:00:00 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -249,6 +249,11 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		mc_data->reg[MC_REGC*4] |= MC_REGC_UF;
 		mc_data->reg[MC_REGC*4] |= MC_REGC_IRQF;
 		mc_data->previous_second = tmp->tm_sec;
+
+		/*  For some reason, some Linux/DECstation KN04 kernels want
+		    the PF (periodic flag) bit set, even though interrupts
+		    are not enabled?  */
+		mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 	}
 
 	/*  RTC date/time is in binary, not BCD:  */

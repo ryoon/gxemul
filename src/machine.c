@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.164 2004-08-13 06:11:25 debug Exp $
+ *  $Id: machine.c,v 1.165 2004-08-19 20:00:02 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1840,6 +1840,11 @@ void machine_init(struct memory *mem)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Impact Indigo2 ?)");
+
+				dev_random_init(mem, 0x1fbe0000ULL, 1);
+
+				/*  Something at paddr 0x1880fb0000.  */
+
 				break;
 			case 30:
 				/*  NOTE:  Special case for arc_wordlen:  */

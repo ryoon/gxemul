@@ -147,6 +147,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Userland ABI emulation: src/useremul.c
 
+	Terminal based interactive debugger:
+		o)  Add more of the functionality that exists elsewhere
+		    in the emulator, so that it is useful from the debugger:
+			x) breakpoints, ...
+
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register
 			states, memory accesses and so on)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.187 2004-11-17 20:37:42 debug Exp $
+ *  $Id: cpu.c,v 1.188 2004-11-18 08:38:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -308,6 +308,10 @@ void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
 		fprintf(stderr, "cpu_add_tickfunction(): too many tick functions\n");
 		exit(1);
 	}
+
+	/*  Don't use too low clockshifts, that would be too inefficient with bintrans.  */
+	if (clockshift < 13)
+		fatal("WARNING! clockshift = %i, less than 13 (which would be more suitable)\n", clockshift);
 
 	cpu->ticks_till_next[n]   = 0;
 	cpu->ticks_reset_value[n] = 1 << clockshift;
@@ -3514,7 +3518,6 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					while (cpus[0]->ticks_till_next[te] <= 0)
 						cpus[0]->ticks_till_next[te] +=
 						    cpus[0]->ticks_reset_value[te];
-
 					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 				}
 			}

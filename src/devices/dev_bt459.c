@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.44 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_bt459.c,v 1.45 2004-11-18 08:38:10 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -50,7 +50,7 @@ extern int quiet_mode;
 
 /*  #define BT459_DEBUG  */
 /*  #define WITH_CURSOR_DEBUG  */
-#define BT459_TICK_SHIFT	12
+#define BT459_TICK_SHIFT	13
 
 struct bt459_data {
 	uint32_t	bt459_reg[DEV_BT459_NREGS];
@@ -68,6 +68,8 @@ struct bt459_data {
 
 	int		cursor_x_add;
 	int		cursor_y_add;
+
+	int		need_to_redraw_whole_screen;
 
 	int		need_to_update_cursor_shape;
 	int		cursor_on;
@@ -248,6 +250,14 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 		bt459_update_cursor_position(d, old_cursor_on);
 	}
 
+	if (d->need_to_redraw_whole_screen) {
+		d->vfb_data->update_x1 = 0;
+		d->vfb_data->update_x2 = d->vfb_data->xsize - 1;
+		d->vfb_data->update_y1 = 0;
+		d->vfb_data->update_y2 = d->vfb_data->ysize - 1;
+		d->need_to_redraw_whole_screen = 0;
+	}
+
 	/*
 	 *  Vertical retrace interrupts. (This hack is kind of ugly.)
 	 *  Once ever 'interrupt_time_reset_value', the interrupt is
@@ -264,18 +274,6 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 		} else
 			cpu_interrupt_ack(cpu, d->irq_nr);
 	}
-}
-
-
-/*
- *  schedule_redraw_of_whole_screen():
- */
-static void schedule_redraw_of_whole_screen(struct bt459_data *d)
-{
-	d->vfb_data->update_x1 = 0;
-	d->vfb_data->update_x2 = d->vfb_data->xsize - 1;
-	d->vfb_data->update_y1 = 0;
-	d->vfb_data->update_y2 = d->vfb_data->ysize - 1;
 }
 
 
@@ -391,13 +389,13 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				switch (idata & 0xff) {
 				case 0:	d->video_on = 0;
 					memset(d->rgb_palette, 0, 256*3);
-					schedule_redraw_of_whole_screen(d);
+					d->need_to_redraw_whole_screen = 1;
 					debug("[ bt459: video OFF ]\n");
 					break;
 				default:d->video_on = 1;
 					memcpy(d->rgb_palette,
 					    d->local_rgb_palette, 256*3);
-					schedule_redraw_of_whole_screen(d);
+					d->need_to_redraw_whole_screen = 1;
 					debug("[ bt459: video ON ]\n");
 				}
 				break;
@@ -446,7 +444,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				if (d->video_on &&
 				    d->local_rgb_palette[(btaddr & 0xff) * 3
 				    + d->palette_sub_offset] != idata)
-					schedule_redraw_of_whole_screen(d);
+					d->need_to_redraw_whole_screen = 1;
 
 				/*
 				 *  Actually, the palette should only be
@@ -486,8 +484,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		}
 	}
 
-	bt459_update_cursor_position(d, old_cursor_on);
 
+	bt459_update_cursor_position(d, old_cursor_on);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

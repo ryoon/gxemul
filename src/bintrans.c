@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.65 2004-11-18 00:41:13 debug Exp $
+ *  $Id: bintrans.c,v 1.66 2004-11-18 08:38:11 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -467,6 +467,11 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			delayed_branch_new_p = p + 4 + 4*imm;
 			break;
 
+		case HI6_CACHE:
+			translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
+			n_translated += translated;
+			break;
+
 		case HI6_LUI:
 			rt = instr[2] & 31;
 			imm = (instr[1] << 8) + instr[0];
@@ -634,7 +639,7 @@ run_it:
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
 	if (!cpu->delay_slot && !cpu->nullify_next &&
-	    cpu->bintrans_instructions_executed < 2047 && (cpu->pc & 3) == 0
+	    cpu->bintrans_instructions_executed < 4095 && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
 		uint64_t paddr = (uint64_t) -1;
 		int ok;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.36 2004-11-18 00:41:13 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.37 2004-11-18 08:38:11 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -888,7 +888,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 
 		/*  Don't execute too many instructions.  */
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
-		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
@@ -976,7 +976,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_N_INSTRS, ALPHA_T0);
-		*a++ = 0xc0; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */

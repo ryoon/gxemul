@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.14 2004-12-20 02:48:39 debug Exp $
+ *  $Id: dev_cons.c,v 1.15 2004-12-26 17:16:16 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -51,6 +51,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	/*  Exit the emulator:  */
 	if (relative_addr == DEV_CONS_HALT) {
 		cpu->running = 0;
+		cpu->emul->exit_without_entering_debugger = 1;
 		return 1;
 	}
 

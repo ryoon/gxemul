@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: test_mips.c,v 1.2 2003-11-06 13:39:46 debug Exp $
+ *  $Id: test_mips.c,v 1.3 2003-11-07 05:10:22 debug Exp $
  *
  *  mipstest.c  --  a test program to see that mips64emul emulates
  *                  everything correctly.
@@ -125,7 +125,10 @@ void load_store_test(void)
 	int *ip;
 	long *lp;
 
-	cp = sp = ip = lp = (void *) &buf[0];
+	cp = (void *) &buf[0];
+	sp = (void *) &buf[0];
+	ip = (void *) &buf[0];
+	lp = (void *) &buf[0];
 
 	printstr("\nload/store test:\n");
 	*cp = *sp;

@@ -23,12 +23,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.6 2004-06-12 17:06:12 debug Exp $
+ *  $Id: dev_zs.c,v 1.7 2004-06-12 17:12:09 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
- *  TODO:  Implement this correctly.  Right now it is very hardcoded,
- *  and only barely works with NetSBD/sgimips.
+ *  TODO:  Implement this correctly.  The values in here are too
+ *  hardcoded, and the controller should be able to handle 2 serial lines.
+ *
+ *  Right now it only barely works with NetSBD/sgimips.
  */
 
 #include <stdio.h>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.22 2005-03-28 22:22:44 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.23 2005-03-29 01:02:40 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -48,7 +48,7 @@
 #include "vrkiureg.h"
 
 
-#define	DEV_VR41XX_TICKSHIFT		14
+#define	DEV_VR41XX_TICKSHIFT		15
 
 /*  #define debug fatal  */
 

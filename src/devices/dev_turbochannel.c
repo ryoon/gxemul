@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.26 2004-07-11 04:57:45 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.27 2004-07-11 13:10:02 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -209,7 +209,9 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		    1024,864, 1024,1024,8, device_name);
 		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
 		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
-		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
+		/*  ROM at both 0x380000 and 0x3c0000?  */
+		rom_offset = 0x380000;
+		rom_length = 0x080000;
 	} else if (strcmp(device_name, "PMAGB-BA")==0) {
 		/*  sfb in NetBSD  */
 		/*  TODO: This is not working with Ultrix yet.  */

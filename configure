@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.11 2004-03-06 17:12:26 debug Exp $
+#  $Id: configure,v 1.12 2004-03-15 16:09:56 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -206,8 +206,14 @@ echo "COPTIM=$COPTIM" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
+echo "" >> _Makefile.header
+echo "MIPS_CC=mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips4 -mabi=64" >> _Makefile.header
+echo "MIPS_AS=mips64-unknown-elf-as -mabi=64" >> _Makefile.header
+echo "MIPS_LD=mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e main --oformat=elf64-bigmips" >> _Makefile.header
+echo "" >> _Makefile.header
 
-for a in ./ src/ devices/; do
+
+for a in ./ src/ devices/ tests/; do
 	cat _Makefile.header > $a/Makefile
 	cat $a/Makefile.skel >> $a/Makefile
 done

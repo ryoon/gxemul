@@ -1,16 +1,18 @@
 #
-#  $Id: Makefile.skel,v 1.15 2004-07-09 04:37:49 debug Exp $
+#  $Id: Makefile.skel,v 1.16 2004-07-12 21:57:50 debug Exp $
 #
 #  Makefile for mips64emul src
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
-OBJS=main.o emul.o file.o machine.o \
-	diskimage.o net.o \
+
+#  Order here _IS_ important, for cache optimizations:
+OBJS=main.o emul.o file.o diskimage.o net.o \
 	bintrans.o useremul.o \
-	cpu.o coproc.o mips16.o symbol.o \
+	coproc.o cpu.o machine.o mips16.o symbol.o \
 	x11.o \
 	dec_prom.o ps2_bios.o arcbios.o
+
 
 all: $(OBJS)
 
@@ -19,6 +21,10 @@ $(OBJS): Makefile
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
 cpu.o: cpu.c memory.c
+
+
+printobjs:
+	@for a in $(OBJS); do echo src/$$a; done
 
 clean:
 	rm -f $(OBJS) *core

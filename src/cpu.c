@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.104 2004-07-12 21:00:27 debug Exp $
+ *  $Id: cpu.c,v 1.105 2004-07-12 21:57:50 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -76,9 +76,6 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
-
-
-#include "memory.c"
 
 
 /*
@@ -225,6 +222,29 @@ void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
 
 
 /*
+ *  cpu_flags():
+ *
+ *  Returns a pointer to a string containing "(d)" "(j)" "(dj)" or "",
+ *  depending on the cpu's current delay_slot and last_was_jumptoself
+ *  flags.
+ */
+const char *cpu_flags(struct cpu *cpu)
+{
+	if (cpu->delay_slot) {
+		if (cpu->last_was_jumptoself)
+			return " (dj)";
+		else
+			return " (d)";
+	} else {
+		if (cpu->last_was_jumptoself)
+			return " (j)";
+		else
+			return "";
+	}
+}
+
+
+/*
  *  cpu_register_dump():
  *
  *  Dump cpu registers in a relatively readable format.
@@ -317,6 +337,13 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 
 	debug(")>\n");
 }
+
+
+/*
+ *  NOTE:  memory.c is included here, so as to lie close to the often
+ *         used CPU routines in the [host's] cache.
+ */
+#include "memory.c"
 
 
 /*
@@ -547,29 +574,6 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	} else {
 		/*  R4000:  */
 		cpu->coproc[0]->reg[COP0_STATUS] |= STATUS_EXL;
-	}
-}
-
-
-/*
- *  cpu_flags():
- *
- *  Returns a pointer to a string containing "(d)" "(j)" "(dj)" or "",
- *  depending on the cpu's current delay_slot and last_was_jumptoself
- *  flags.
- */
-const char *cpu_flags(struct cpu *cpu)
-{
-	if (cpu->delay_slot) {
-		if (cpu->last_was_jumptoself)
-			return " (dj)";
-		else
-			return " (d)";
-	} else {
-		if (cpu->last_was_jumptoself)
-			return " (j)";
-		else
-			return "";
 	}
 }
 
@@ -1036,7 +1040,7 @@ int cpu_run_instr(struct cpu *cpu)
 						debug("nop (weird, sa=%i)\n",
 						    sa);
 				}
-				break;
+				return 1;
 			} else
 				if (instruction_trace_cached)
 					debug("%s\tr%i,r%i,%i\n", instr_mnem, rd, rt, sa);
@@ -1088,7 +1092,7 @@ int cpu_run_instr(struct cpu *cpu)
 						cpu->gpr[rd] |= ((uint64_t)1 << 63);
 				}
 			}
-			break;
+			return 1;
 		case SPECIAL_DSRLV:
 		case SPECIAL_DSRAV:
 		case SPECIAL_DSLLV:
@@ -1162,7 +1166,7 @@ int cpu_run_instr(struct cpu *cpu)
 				if (cpu->gpr[rd] & 0x80000000ULL)
 					cpu->gpr[rd] |= 0xffffffff00000000ULL;
 			}
-			break;
+			return 1;
 		case SPECIAL_JR:
 			if (cpu->delay_slot) {
 				fatal("jr: jump inside a jump's delay slot, or similar. TODO\n");
@@ -1195,7 +1199,7 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->trace_tree_depth --;
 			}
 
-			break;
+			return 1;
 		case SPECIAL_JALR:
 			if (cpu->delay_slot) {
 				fatal("jalr: jump inside a jump's delay slot, or similar. TODO\n");
@@ -1224,7 +1228,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = tmpvalue;
-			break;
+			return 1;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
@@ -1248,7 +1252,7 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->mflo_delay = 3;
 #endif
 			}
-			break;
+			return 1;
 		case SPECIAL_ADD:
 		case SPECIAL_ADDU:
 		case SPECIAL_SUB:
@@ -1604,15 +1608,15 @@ int cpu_run_instr(struct cpu *cpu)
 			if (special6 == SPECIAL_MOVN) {
 				if (cpu->gpr[rt] != 0)
 					cpu->gpr[rd] = cpu->gpr[rs];
-				break;
+				return 1;
 			}
-			break;
+			return 1;
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
 			if (instruction_trace_cached)
 				debug("sync\t0x%02x\n", imm);
 			/*  TODO: actually sync  */
-			break;
+			return 1;
 		case SPECIAL_SYSCALL:
 			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
 			imm &= 0xfffff;
@@ -1623,26 +1627,26 @@ int cpu_run_instr(struct cpu *cpu)
 				useremul_syscall(cpu, imm);
 			} else
 				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
-			break;
+			return 1;
 		case SPECIAL_BREAK:
 			if (instruction_trace_cached)
 				debug("break\n");
 			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
-			break;
+			return 1;
 		case SPECIAL_MFSA:
 			/*  R5900? What on earth does this thing do?  */
 			rd = (instr[1] >> 3) & 31;
 			if (instruction_trace_cached)
 				debug("mfsa\tr%i\n", rd);
 			/*  TODO  */
-			break;
+			return 1;
 		case SPECIAL_MTSA:
 			/*  R5900? What on earth does this thing do?  */
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			if (instruction_trace_cached)
 				debug("mtsa\tr%i\n", rs);
 			/*  TODO  */
-			break;
+			return 1;
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
@@ -1653,7 +1657,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->running = 0;
 			return 1;
 		}
-		break;
+		return 1;
 	case HI6_BEQ:
 	case HI6_BEQL:
 	case HI6_BNE:
@@ -1799,6 +1803,8 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 		}
 
+		tmpvalue = imm;		/*  used later in several cases  */
+
 		switch (hi6) {
 		case HI6_ADDI:
 		case HI6_ADDIU:
@@ -1807,37 +1813,40 @@ int cpu_run_instr(struct cpu *cpu)
 			tmpvalue = cpu->gpr[rs];
 			result_value = cpu->gpr[rs] + imm;
 
-			/*
-			 *  addi and daddi should trap on overflow:
-			 *
-			 *  TODO:  This is incorrect? The R4000 manual says
-			 *  that overflow occurs if the carry bits out of bit
-			 *  62 and 63 differ.   The destination register should
-			 *  not be modified on overflow.
-			 */
-			if (imm >= 0) {
-				/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */
-				if (   ((hi6 == HI6_ADDI && (result_value &
-				    0x80000000ULL) && (tmpvalue &
-				    0x80000000ULL)==0))
-				    || ((hi6 == HI6_DADDI && (result_value &
-				    0x8000000000000000ULL) && (tmpvalue &
-				    0x8000000000000000ULL)==0)) ) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
-					break;
-				}
-			} else {
-				/*  Turn around from 0x8000.. to 0x7fff.. ?  Then overflow.  */
-				if (   ((hi6 == HI6_ADDI && (result_value &
-				    0x80000000ULL)==0 && (tmpvalue &
-				    0x80000000ULL)))
-				    || ((hi6 == HI6_DADDI && (result_value &
-				    0x8000000000000000ULL)==0 && (tmpvalue &
-				    0x8000000000000000ULL))) ) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
-					break;
+			if (hi6 == HI6_ADDI || hi6 == HI6_DADDI) {
+				/*
+				 *  addi and daddi should trap on overflow:
+				 *
+				 *  TODO:  This is incorrect? The R4000 manual says
+				 *  that overflow occurs if the carry bits out of bit
+				 *  62 and 63 differ.   The destination register should
+				 *  not be modified on overflow.
+				 */
+				if (imm >= 0) {
+					/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */
+					if (   ((hi6 == HI6_ADDI && (result_value &
+					    0x80000000ULL) && (tmpvalue &
+					    0x80000000ULL)==0))
+					    || ((hi6 == HI6_DADDI && (result_value &
+					    0x8000000000000000ULL) && (tmpvalue &
+					    0x8000000000000000ULL)==0)) ) {
+						cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+						break;
+					}
+				} else {
+					/*  Turn around from 0x8000.. to 0x7fff.. ?  Then overflow.  */
+					if (   ((hi6 == HI6_ADDI && (result_value &
+					    0x80000000ULL)==0 && (tmpvalue &
+					    0x80000000ULL)))
+					    || ((hi6 == HI6_DADDI && (result_value &
+					    0x8000000000000000ULL)==0 && (tmpvalue &
+					    0x8000000000000000ULL))) ) {
+						cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
+						break;
+					}
 				}
 			}
+
 			cpu->gpr[rt] = result_value;
 
 			/*
@@ -1883,7 +1892,7 @@ int cpu_run_instr(struct cpu *cpu)
 				/*  Sign-extend:  */
 				cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 			}
-			break;
+			return 1;
 		case HI6_BEQ:
 		case HI6_BNE:
 		case HI6_BGTZ:
@@ -1930,30 +1939,30 @@ int cpu_run_instr(struct cpu *cpu)
 				else
 					cpu->jump_to_self_reg = rs;
 			}
-			break;
+			return 1;
 		case HI6_LUI:
 			cpu->gpr[rt] = (imm << 16);
 			/*  No sign-extending neccessary, as imm already
 			    was sign-extended if it was negative.  */
 			break;
 		case HI6_SLTI:
-			tmpvalue = imm;
+/*			tmpvalue = imm; */
 			cpu->gpr[rt] = ((int64_t)cpu->gpr[rs] < (int64_t)tmpvalue) ? 1 : 0;
 			break;
 		case HI6_SLTIU:
-			tmpvalue = imm;
+/*			tmpvalue = imm; */
 			cpu->gpr[rt] = (cpu->gpr[rs] < tmpvalue) ? 1 : 0;
 			break;
 		case HI6_ANDI:
-			tmpvalue = imm;
+/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] & (tmpvalue & 0xffff);
 			break;
 		case HI6_ORI:
-			tmpvalue = imm;
+/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] | (tmpvalue & 0xffff);
 			break;
 		case HI6_XORI:
-			tmpvalue = imm;
+/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] ^ (tmpvalue & 0xffff);
 			break;
 		case HI6_LB:
@@ -2397,7 +2406,7 @@ int cpu_run_instr(struct cpu *cpu)
 				debug(t, (long long)value);
 				debug("]\n");
 			}
-			break;
+			return 1;
 		case HI6_LWL:	/*  Unaligned load/store  */
 		case HI6_LWR:
 		case HI6_LDL:
@@ -2515,9 +2524,9 @@ int cpu_run_instr(struct cpu *cpu)
 				debug("]\n");
 			}
 
-			break;
+			return 1;
 		}
-		break;
+		return 1;
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 
@@ -2584,7 +2593,7 @@ int cpu_run_instr(struct cpu *cpu)
 					cpu->nullify_next = 1;		/*  nullify delay slot  */
 			}
 
-			break;
+			return 1;
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
@@ -2595,7 +2604,8 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->running = 0;
 			return 1;
 		}
-		break;
+		/*  NOT REACHED  */
+		return 1;
 	case HI6_J:
 	case HI6_JAL:
 		if (cpu->delay_slot) {
@@ -2634,7 +2644,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->show_trace_addr = addr;
 		}
 
-		break;
+		return 1;
 	case HI6_COP0:
 	case HI6_COP1:
 	case HI6_COP2:
@@ -2667,7 +2677,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 			coproc_function(cpu, cpu->coproc[cpnr], imm);
 		}
-		break;
+		return 1;
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5);	/*  base  */
 		copz = instr[2] & 31;
@@ -2723,7 +2733,7 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 /*		}  */
 
-		break;
+		return 1;
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
@@ -2840,7 +2850,7 @@ int cpu_run_instr(struct cpu *cpu)
 			cpu->running = 0;
 			return 1;
 		}
-		break;
+		return 1;
 	default:
 		if (!instruction_trace_cached) {
 			fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",

@@ -39,16 +39,28 @@ and various bits of information. Enjoy! :-)
 <a name="overview"></a>
 <h4>Overview:</h4>
 
-mips64emul is a MIPS machine emulator. It tries to emulate a MIPS CPU
-and enough additional hardware to be able to run real (unmodified)
-operation systems, such as NetBSD, Linux, Irix, Ultrix, or OpenBSD.
-It is a spare time hobby project, and not everything has been implemented yet.
+mips64emul is a MIPS machine emulator.
+
+The goals are to emulate 32-bit and 64-bit MIPS CPUs and enough surrounding hardware
+to fake real machines, capable of running real (unmodified) operating systems,
+such as <a href="http://www.netbsd.org/">NetBSD</a> or <a href="http://www.kernel.org/">Linux</a>.
+This is a spare time hobby project, and many things are not implemented yet.
+<p> 
+The emulator could be of interest for academic research and experiments, such as
+learning how to write an OS for a MIPS-based machine, or profiling SMP,
+memory usage, or system call patterns.
 <p>
-The emulator might be useful when playing around with porting operating systems
-to the MIPS architecture, or for academic purposes (experimenting with MIPS).
-One of the reasons for writing mips64emul in the first place was to
-be able to experiment with large-scale SMP systems.
-Emulation of SMP systems is still experimental, though.
+The emulator is written in C, depends on no external libraries (except X11,
+which is optional), and should compile and run on any Unix-like system. If it doesn't, that
+is to be considered a bug. No MIPS compiler toolchain is needed if the program you
+wish to run in the emulator is already in binary form. No ROM images are
+needed, the emulator will try to emulate things such as PROM calls by
+itself. However, if you have a ROM image, it might be possible to run it
+in the emulator.
+
+<p>
+(MIPS is a registered trademark of MIPS Technologies. This project is
+not affiliated with MIPS Technologies in any way whatsoever.)
 
 
 <p><br>
@@ -62,7 +74,7 @@ Yes, mips64emul is distributed under a free license.
 Apart from the code I have written, some files are copied from other sources such
 as NetBSD, for example header files containing symbolic names of bitfields in device
 registers. They are also covered by similar licences. Please check individual files if
-you plan to use code from mips64emul.
+you plan to reuse code from mips64emul.
 
 
 <p><br>
@@ -97,6 +109,16 @@ to emulate.
 Playstation 2 is among the emulated machine types, but the emulation done
 by mips64emul is <i>not</i> suitable for playing games. Running Linux and
 NetBSD is a lot more fun :-)
+<p>
+In addition to specific machine types, a "bare" machine can be emulated.
+This mode is used when the emulator is started without specifying which
+machine type to emulate.
+A bare machine consists of just a CPU and some experimental devices such
+as:
+<ul>
+  <li>a console I/O device (think putchar() and getchar()...)
+  <li>an inter-processor communication device, for SMP experiments
+</ul>
 
 
 <p><br>
@@ -495,7 +517,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.16 2004-03-30 01:25:18 debug Exp $</pre>
+<pre>$Id: index.html,v 1.17 2004-04-01 01:44:27 debug Exp $</pre>
 
 </body>
 </html>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.58 2005-01-27 23:45:31 debug Exp $
+ *  $Id: net.c,v 1.59 2005-01-28 01:27:40 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1933,8 +1933,6 @@ static void parse_resolvconf(struct net *net)
 
 	for (i=0; i<len; i++)
 		if (strncmp(buf+i, "domain", 6) == 0) {
-			char *p;
-
 			/*  "domain" (1 or more whitespace) domain_name  */
 			i += 6;
 			while (i<len && (buf[i]==' ' || buf[i]=='\t'))

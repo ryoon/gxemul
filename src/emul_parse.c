@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.7 2005-01-28 00:23:26 debug Exp $
+ *  $Id: emul_parse.c,v 1.8 2005-01-28 00:35:23 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -108,6 +108,16 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 				ch = fgetc(f);
 			if (ch == '\n')
 				(*line) ++;
+			continue;
+		}
+
+		if (ch == '{') {
+			/*  Skip until '}':  */
+			while (ch != '}' && ch != EOF) {
+				ch = fgetc(f);
+				if (ch == '\n')
+					(*line) ++;
+			}
 			continue;
 		}
 
@@ -378,8 +388,14 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 
 		if (!cur_machine_x11_scaledown[0])
 			m->x11_scaledown = 1;
-		else
+		else {
 			m->x11_scaledown = atoi(cur_machine_x11_scaledown);
+			if (m->x11_scaledown < 0) {
+				fprintf(stderr, "Invalid scaledown value"
+				    " (%i)\n", m->x11_scaledown);
+				exit(1);
+			}
+		}
 
 		emul_machine_setup(m, cur_machine_n_load,
 		    cur_machine_load);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.349 2004-12-03 20:03:44 debug Exp $
+$Id: HISTORY,v 1.350 2004-12-03 22:54:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1237,3 +1237,6 @@ HISTORY of mips64emul
 20041203	Adding a terminal emulator layer which converts arcbios
 		stdout writes to "VGA text console" cell characters. Seems
 		to work with Windows NT and arcdiag.
+		Adding a 8x8 font to dev_vga.
+		Adding more ARC components to the component tree (for PICA
+		emulation).

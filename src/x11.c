@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.40 2005-01-17 18:17:58 debug Exp $
+ *  $Id: x11.c,v 1.41 2005-01-17 18:25:21 debug Exp $
  *
  *  X11-related functions.
  */
@@ -565,21 +565,24 @@ void x11_check_event(void)
 					 *  NOTE/TODO: I'm hardcoding these to work with
 					 *  my key map. Maybe they should be read from
 					 *  some file...
+					 *
+					 *  Important TODO 2:  It would be MUCH better if
+					 *  these were converted into 'native scancodes',
+					 *  for example for the DECstation's keyboard or
+					 *  the PC-style 8042 controller.
 					 */
 					switch (x) {
 					case 9:	/*  Escape  */
 						console_makeavail(27);
 						break;
 #if 0
+					/*  TODO  */
+
 					/*  The numeric keypad:  */
-					79=Home    81=PgUp
-					        84
-					87=End     89=PgDn
-					  90=Ins   91=Del
-TODO
+					90=Ins('0')  91=Del(',')
+
 					/*  Above the cursor keys:  */
-					106=Ins  97=Home  99=PgUp
-					107=Del 103=End  105=PgUp
+					106=Ins  107=Del
 #endif
 					/*  Cursor keys:  */
 					case 98:	/*  Up  */
@@ -606,6 +609,32 @@ TODO
 						    x == 88? 'B' : (
 						    x == 85? 'C' : (
 						    'D'))));
+						break;
+					case 97:	/*  Cursor  Home  */
+					case 79:	/*  Numeric Home  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('H');
+						break;
+					case 103:	/*  Cursor  End  */
+					case 87:	/*  Numeric End  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('F');
+						break;
+					case 99:	/*  Cursor  PgUp  */
+					case 81:	/*  Numeric PgUp  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('5');
+						console_makeavail('~');
+						break;
+					case 105:	/*  Cursor  PgUp  */
+					case 89:	/*  Numeric PgDn  */
+						console_makeavail(27);
+						console_makeavail('[');
+						console_makeavail('6');
+						console_makeavail('~');
 						break;
 					default:
 						debug("[ unimplemented X11 keycode %i ]\n", x);

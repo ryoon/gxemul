@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.4 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.5 2005-01-13 06:25:39 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -366,8 +366,6 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
  *	x)  tx and rx interrupts/ring/slot stuff
  */
 
-/*  #define debug fatal  */
-
 #define	MEC_TICK_SHIFT		14
 
 #define	MAX_TX_PACKET_LEN	1700
@@ -395,6 +393,9 @@ struct sgi_mec_data {
  */
 static void mec_reset(struct sgi_mec_data *d)
 {
+	if (d->cur_rx_packet != NULL)
+		free(d->cur_rx_packet);
+
 	memset(d->reg, 0, sizeof(d->reg));
 }
 
@@ -415,7 +416,7 @@ static void mec_control_write(struct cpu *cpu, struct sgi_mec_data *d,
 /*
  *  mec_try_rx():
  */
-static void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
+void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 {
 	uint64_t base;
 	unsigned char data[8];
@@ -501,7 +502,7 @@ skip:
 /*
  *  mec_try_tx():
  */
-static void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
+void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 {
 	uint64_t base, addr, dma_base;
 	int tx_ring_ptr, ringread, ringwrite, res, i, j;

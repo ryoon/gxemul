@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.29 2004-09-26 00:09:06 debug Exp $
+ *  $Id: net.c,v 1.30 2004-10-10 12:26:29 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -586,7 +586,10 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 	net_ip_tcp_checksum(packet + 34, 16, len - 34,
 		packet + 26, packet + 30);
 	if (packet[50] * 256 + packet[51] != checksum) {
-		debug("TCP: dropping packet because of checksum mismatch\n");
+		debug("TCP: dropping packet because of checksum mismatch "
+		    "(0x%04x != 0x%04x)\n", packet[50] * 256 + packet[51],
+		    checksum);
+
 		return;
 	}
 
@@ -998,7 +1001,7 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
  */
 static void net_ip(void *extra, unsigned char *packet, int len)
 {
-#if 0
+#if 1
 	int i;
 
 	debug("[ net: IP: ");
@@ -1018,6 +1021,9 @@ static void net_ip(void *extra, unsigned char *packet, int len)
 		debug("%02x", packet[i]);
 	debug(" ]\n");
 #endif
+
+	/*  Cut off overflowing tail data:  */
+	len = 14 + packet[16]*256 + packet[17];
 
 	if (packet[14] == 0x45) {
 		/*  IPv4:  */

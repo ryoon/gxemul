@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.133 2004-12-29 15:41:05 debug Exp $
+ *  $Id: coproc.c,v 1.134 2004-12-30 18:38:25 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -307,6 +307,72 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 	}
 
 	return c;
+}
+
+
+/*
+ *  coproc_tlb_set_entry():
+ */
+void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
+	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
+	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
+	int cachealgo0, int cachealgo1)
+{
+	if (entrynr < 0 || entrynr >= cpu->coproc[0]->nr_of_tlbs) {
+		printf("coproc_tlb_set_entry(): invalid entry nr: %i\n",
+		    entrynr);
+		exit(1);
+	}
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		if (size != 4096) {
+			printf("coproc_tlb_set_entry(): invalid pagesize "
+			    "(%i) for MMU3K\n", size);
+			exit(1);
+		}
+		cpu->coproc[0]->tlbs[entrynr].hi =
+		    (vaddr & R2K3K_ENTRYHI_VPN_MASK) |
+		    ((asid << R2K3K_ENTRYHI_ASID_SHIFT) & 
+		    R2K3K_ENTRYHI_ASID_MASK);
+		cpu->coproc[0]->tlbs[entrynr].lo0 =
+		    (paddr0 & R2K3K_ENTRYLO_PFN_MASK) |
+		    (cachealgo0? R2K3K_ENTRYLO_N : 0) |
+		    (dirty0? R2K3K_ENTRYLO_D : 0) |
+		    (valid0? R2K3K_ENTRYLO_V : 0) |
+		    (global? R2K3K_ENTRYLO_G : 0);
+		break;
+	default:
+		/*  MMU4K and MMU10K, etc:  */
+		if (cpu->cpu_type.mmu_model == MMU10K)
+			cpu->coproc[0]->tlbs[entrynr].hi =
+			    (vaddr & ENTRYHI_VPN2_MASK_R10K) |
+			    (vaddr & ENTRYHI_R_MASK) |
+			    (asid & ENTRYHI_ASID) |
+			    (global? TLB_G : 0);
+		else
+			cpu->coproc[0]->tlbs[entrynr].hi =
+			    (vaddr & ENTRYHI_VPN2_MASK) |
+			    (vaddr & ENTRYHI_R_MASK) |
+			    (asid & ENTRYHI_ASID) |
+			    (global? TLB_G : 0);
+		/*  NOTE: The pagemask size is for a "dual" page:  */
+		cpu->coproc[0]->tlbs[entrynr].mask = (2*size - 1) & ~0x1fff;
+		cpu->coproc[0]->tlbs[entrynr].lo0 =
+		    (((paddr0 >> 12) << ENTRYLO_PFN_SHIFT) &
+			ENTRYLO_PFN_MASK) |
+		    (dirty0? ENTRYLO_D : 0) |
+		    (valid0? ENTRYLO_V : 0) |
+		    (global? ENTRYLO_G : 0) |
+		    ((cachealgo0 << ENTRYLO_C_SHIFT) & ENTRYLO_C_MASK);
+		cpu->coproc[0]->tlbs[entrynr].lo1 =
+		    (((paddr1 >> 12) << ENTRYLO_PFN_SHIFT) &
+			ENTRYLO_PFN_MASK) |
+		    (dirty1? ENTRYLO_D : 0) |
+		    (valid1? ENTRYLO_V : 0) |
+		    (global? ENTRYLO_G : 0) |
+		    ((cachealgo1 << ENTRYLO_C_SHIFT) & ENTRYLO_C_MASK);
+	}
 }
 
 

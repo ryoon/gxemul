@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.193 2004-12-29 22:25:16 debug Exp $
+ *  $Id: misc.h,v 1.194 2004-12-30 18:38:23 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -495,6 +495,10 @@ void arcbios_init(void);
 
 /*  coproc.c:  */
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
+void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
+	uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
+	int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
+	int cachealgo0, int cachealgo1);
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
 void clear_all_chunks_from_all_tables(struct cpu *cpu);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.26 2004-12-29 22:25:17 debug Exp $
+ *  $Id: debugger.c,v 1.27 2004-12-30 18:38:26 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -913,9 +913,9 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 					printf("vaddr=0x%08x ",
 					    (int) (hi&R2K3K_ENTRYHI_VPN_MASK));
 					if (lo0 & R2K3K_ENTRYLO_G)
-						printf("(global),   ");
+						printf("(global), ");
 					else
-						printf("(asid 0x%02x),",
+						printf("(asid %02x),",
 						    (int) ((hi & R2K3K_ENTRYHI_ASID_MASK)
 						    >> R2K3K_ENTRYHI_ASID_SHIFT));
 					printf(" paddr=0x%08x ",
@@ -929,15 +929,17 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 				default:
 					/*  TODO: MIPS32 doesn't need 0x16llx  */
 					if (emul->cpus[i]->cpu_type.mmu_model == MMU10K)
-						printf("vaddr=0x%011llx ",
+						printf("vaddr=0x%1x..%011llx ",
+						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
 					else
-						printf("vaddr=0x%010llx ",
+						printf("vaddr=0x%1x..%010llx ",
+						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK));
 					if (hi & TLB_G)
-						printf("(global):   ");
+						printf("(global): ");
 					else
-						printf("(asid 0x%02x):",
+						printf("(asid %02x):",
 						    (int) (hi & ENTRYHI_ASID));
 
 					/*  TODO: Coherency bits  */

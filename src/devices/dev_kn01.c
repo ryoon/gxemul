@@ -23,9 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.1 2004-12-28 22:01:42 debug Exp $
+ *  $Id: dev_kn01.c,v 1.2 2004-12-30 18:38:22 debug Exp $
  *  
- *  PMAX (KN01) stuff; CSR (System Control Register) and VDAC.
+ *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
+ *  and VDAC.
  *
  *  TODO: The CSR isn't really complete.
  *

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.12 2004-12-22 16:12:58 debug Exp $
+ *  $Id: memory_v2p.c,v 1.13 2004-12-30 18:38:26 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -184,36 +184,23 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	pageshift = 12;
 
 	/*
-	 *  Special uncached access modes, for SGI machines
-	 *  and others (any R10000 system?).
+	 *  Physical addressing on R10000 etc:
 	 *
-	 *  Probably only accessible in kernel mode.
+	 *  TODO: Probably only accessible in kernel mode.
 	 *
 	 *  0x9000000080000000 = disable L2 cache (?)
 	 *  TODO:  Make this correct.
 	 */
-	switch (vaddr >> 60) {
-	/*
-	 *  TODO:  SGI-IP27 and others, when running Irix, seem to
-	 *  use these kernel-virtual-addresses as if they were
-	 *  physical addresses.  Maybe a static mapping in the
-	 *  tlb, say entry #0, would be a good solution?
-	 */
-	case 0xc:
-		if (cpu->emul->emulation_type != EMULTYPE_SGI ||
-		    (cpu->emul->machine < 25 && cpu->emul->machine != 19))
-			break;
-	case 8:
-	case 9:
-	case 0xa:
+	if ((vaddr >> 62) == 0x2) {
 		/*
 		 *  On IP30, addresses such as 0x900000001f600050 are used,
 		 *  but also things like 0x90000000a0000000.  (TODO)
+		 *
+		 *  On IP27 (and probably others), addresses such as
+		 *  0x92... and 0x96... have to do with NUMA stuff.
 		 */
 		*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
 		return 2;
-	default:
-		;
 	}
 
 	/*  This is needed later:  */

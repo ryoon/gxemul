@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.263 2004-12-29 16:19:34 debug Exp $
+ *  $Id: machine.c,v 1.264 2004-12-30 18:38:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2109,6 +2109,7 @@ Why is this here? TODO
 				break;
 			case 27:
 				strcat(emul->machine_name, " (Origin 200/2000, Onyx2)");
+				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
 				/*
@@ -2419,6 +2420,10 @@ Why is this here? TODO
 					    ARC_CONSOLE_MAX_Y);
 					break;
 				case MACHINE_ARC_JAZZ_MAGNUM:
+					/*  PROM mirror?  */
+					dev_ram_init(mem, 0xfff00000, 0x100000,
+					    DEV_RAM_MIRROR, 0x1fc00000);
+
 					/*  VXL. TODO  */
 					/*  control at 0x60100000?  */
 					dev_fb_init(cpu, mem, 0x60200000ULL,
@@ -2844,11 +2849,19 @@ Why is this here? TODO
 
 
 		/*
-		 *  Other components:
+		 *  Other components, and default TLB entries:
 		 *
 		 *  TODO: How to build the component tree intermixed with
 		 *  the rest of device initialization?
 		 */
+
+		if (emul->emulation_type == EMULTYPE_SGI) {
+			/*  TODO: On which models is this required?  */
+			coproc_tlb_set_entry(cpu, 0, 1048576*16,
+			    0xc000000000000000ULL,
+			    0x0, 1048576*16,
+			    1, 1, 1, 1, 1, 0, 2, 2);
+		}
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
 		    ( emul->machine == MACHINE_ARC_NEC_RD94 ||
@@ -2929,6 +2942,65 @@ Why is this here? TODO
 			 */
 			switch (emul->machine) {
 			case MACHINE_ARC_JAZZ_PICA:
+				/*  Default TLB entries on PICA-61:  */
+
+				/* 7: 256K, asid: 0x0, v: 0xe1000000,
+				   p0: 0xfff00000(2.VG), p1: 0x0(0..G)  */
+				coproc_tlb_set_entry(cpu, 7, 262144,
+				    0xffffffffe1000000ULL,
+				    0x0fff00000ULL, 0,
+				    1, 0, 0, 0, 1, 0, 2, 0);
+
+				/* 8: 64K, asid: 0x0, v: 0xe0000000,
+				   p0: 0x80000000(2DVG), p1: 0x0(0..G) */
+				coproc_tlb_set_entry(cpu, 8, 65536,
+				    0xffffffffe0000000ULL,
+				    0x080000000ULL, 0,
+				    1, 0, 1, 0, 1, 0, 2, 0);
+
+				/* 9: 64K, asid: 0x0, v: 0xe00e0000,
+				   p0: 0x800e0000(2DVG), p1: 0x800f0000(2DVG) */
+				coproc_tlb_set_entry(cpu, 9, 65536,
+				    (uint64_t)0xffffffffe00e0000ULL,
+				    (uint64_t)0x0800e0000ULL,
+				    (uint64_t)0x0800f0000ULL,
+				    1, 1, 1, 1, 1, 0, 2, 2);
+
+				/* 10: 4K, asid: 0x0, v: 0xe0100000,
+				   p0: 0xf0000000(2DVG), p1: 0x0(0..G) */
+				coproc_tlb_set_entry(cpu, 10, 4096,
+				    (uint64_t)0xffffffffe0100000ULL,
+				    (uint64_t)0x0f0000000ULL, 0,
+				    1, 0, 1, 0, 1, 0, 2, 0);
+
+				/* 11: 1M, asid: 0x0, v: 0xe0200000,
+				   p0: 0x60000000(2DVG), p1: 0x60100000(2DVG) */
+				coproc_tlb_set_entry(cpu, 11, 1048576,
+				    0xffffffffe0200000ULL,
+				    0x060000000ULL, 0x060100000ULL,
+				    1, 1, 1, 1, 1, 0, 2, 2);
+
+				/* 12: 1M, asid: 0x0, v: 0xe0400000,
+				   p0: 0x60200000(2DVG), p1: 0x60300000(2DVG) */
+				coproc_tlb_set_entry(cpu, 12, 1048576,
+				    0xffffffffe0400000ULL,
+				    0x060200000ULL, 0x060300000ULL,
+				    1, 1, 1, 1, 1, 0, 2, 2);
+
+				/* 13: 4M, asid: 0x0, v: 0xe0800000,
+				   p0: 0x40000000(2DVG), p1: 0x40400000(2DVG) */
+				coproc_tlb_set_entry(cpu, 13, 1048576*4,
+				    0xffffffffe0800000ULL,
+				    0x040000000ULL, 0x040400000ULL,
+				    1, 1, 1, 1, 1, 0, 2, 2);
+
+				/* 14: 16M, asid: 0x0, v: 0xe2000000,
+				   p0: 0x90000000(2DVG), p1: 0x91000000(2DVG) */
+				coproc_tlb_set_entry(cpu, 14, 1048576*16,
+				    0xffffffffe2000000ULL,
+				    0x090000000ULL, 0x091000000ULL,
+				    1, 1, 1, 1, 1, 0, 2, 2);
+
 				if (emul->use_x11) {
 					ali_s3 = arcbios_addchild_manual(cpu,
 					    COMPONENT_CLASS_ControllerClass,

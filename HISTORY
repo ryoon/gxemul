@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.429 2004-12-29 22:34:35 debug Exp $
+$Id: HISTORY,v 1.430 2004-12-30 18:38:21 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1398,3 +1398,7 @@ HISTORY of mips64emul
 		'-O' now also affects the bootstring for SGI and ARC emulation.
 		Bintrans updates (slightly faster 32-bit load/store on alpha).
 		Updates to the i386 backend too, but no real speed improvement.
+20041230	Cleaning up parts of the 64-bit virtual-to-physical code for
+		R10000, and per-machine default TLB entries can now be set
+		for SGI and ARC machines.
+		Fix: SGI-IP27 is ARC64, not ARCS.

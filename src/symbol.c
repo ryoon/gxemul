@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.11 2004-07-17 19:38:22 debug Exp $
+ *  $Id: symbol.c,v 1.12 2004-07-17 20:09:23 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -44,7 +44,7 @@
 #endif
 
 
-#define	SYMBOLBUF_MAX	200
+#define	SYMBOLBUF_MAX	100
 
 struct symbol {
 	struct symbol	*next;
@@ -54,7 +54,7 @@ struct symbol {
 	int		type;
 };
 
-struct symbol *first_symbol = NULL;
+static struct symbol *first_symbol = NULL;
 static int sorted_array = 0;
 static int n_symbols = 0;
 
@@ -83,19 +83,23 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
 	struct symbol *s;
 
 	if (sorted_array) {
-		fprintf(stderr, "get_symbol_addr(): the array is already sorted!\n");
-		exit(1);
-	}
-
-	s = first_symbol;
-	while (s != NULL) {
-		if (strcmp(symbol, s->name) == 0) {
-			if (addr != NULL)
-				*addr = s->addr;
-			return 1;
+		int i;
+		for (i=0; i<n_symbols; i++)
+			if (strcmp(symbol, first_symbol[i].name) == 0) {
+				if (addr != NULL)
+					*addr = first_symbol[i].addr;
+				return 1;
+			}
+	} else {
+		s = first_symbol;
+		while (s != NULL) {
+			if (strcmp(symbol, s->name) == 0) {
+				if (addr != NULL)
+					*addr = s->addr;
+				return 1;
+			}
+			s = s->next;
 		}
-
-		s = s->next;
 	}
 
 	return 0;
@@ -171,16 +175,21 @@ char *get_symbol_name(uint64_t addr, int *offset)
 				return symbol_buf;
 			}
 
-			/*  Special case for offset 0 (end of search in
-			    the Left direction  */
 			if (ofs == 0)
 				break;
 
 			stepsize >>= 1;
-			if (addr < s->addr)
-				ofs -= stepsize;
-			else
-				ofs += stepsize;
+
+			/*  Special case for offset 0 (end of search in
+			    the Left direction  */
+			if (stepsize == 0)
+				ofs = 0;
+			else {
+				if (addr < s->addr)
+					ofs -= stepsize;
+				else
+					ofs += stepsize;
+			}
 		}
 	}
 
@@ -308,10 +317,9 @@ int sym_addr_compare(const void *a, const void *b)
 /*
  *  symbol_recalc_sizes():
  *
- *  Recalculate sizes of symbols that have size = 0, by creating
- *  an array containing all symbols, qsort()-ing that array according
- *  to address, recalculating the size fields if neccessary, and
- *  recreating the linked list again.
+ *  Recalculate sizes of symbols that have size = 0, by creating an array
+ *  containing all symbols, qsort()-ing that array according to address, and
+ *  recalculating the size fields if neccessary.
  */
 void symbol_recalc_sizes(void)
 {
@@ -354,6 +362,8 @@ void symbol_recalc_sizes(void)
 				len = 1;
 			tmp_array[i].len = len;
 		}
+
+		tmp_array[i].next = &tmp_array[i+1];
 	}
 
 	first_symbol = tmp_array;

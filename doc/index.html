@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.70 2004-07-11 13:10:57 debug Exp $
+$Id: index.html,v 1.71 2004-07-12 08:31:18 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -70,6 +70,7 @@ Documentation for a specific release is included in its release tarball.
   <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
   <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
   <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
+  <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#networking">Networking</a>
   <li><a href="#hello">Hello world</a>
@@ -260,6 +261,12 @@ of harddisk image and be interacted with similar to a real machine:
 	      <td></td>
 	      <td valign=top>DECstation</td>
 	    </tr>
+
+	    <tr>
+	      <td valign=top><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a></td>
+	      <td></td>
+	      <td valign=top>DECstation</td>
+	    </tr>
 	  </table>
 	</td></tr>
 
@@ -269,14 +276,23 @@ of harddisk image and be interacted with similar to a real machine:
 	  <center>
 	    <table border="0">
 	      <tr>
-		<td width=130 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
-		<td width=130 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
-		<td width=130 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+		<td width=160 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+		<td width=160 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>NetBSD 1.6.2/pmax</td>
 		<td align=center>OpenBSD 2.8/pmax</td>
+	      </tr>
+	      <tr>
+		<td height=10>&nbsp;</td>
+	      </tr>
+	      <tr>
+		<td width=160 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+		<td width=160 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
+	      </tr>
+	      <tr>
 		<td align=center>Ultrix 4.5</td>
+		<td align=center>Sprite</td>
 	      </tr>
 	    </table>
 	  </center>
@@ -536,6 +552,8 @@ When asked for which root device to use, enter <b>rz0</b>.
 enter <b>rcons</b>.
 
 
+
+
 <p><br>
 <a name="ultrixinstall"></a>
 <h3>How to install Ultrix/RISC in the emulator</h3>
@@ -582,6 +600,49 @@ or OSF/1 directly in the emulator, you can always install it on your real
 machine onto a real SCSI disk, and then copy the contents of that SCSI
 disk into a file (using <b>dd(1)</b>), and use that file as a disk image
 file in the emulator.
+
+
+
+
+<p><br>
+<a name="sprite"></a>
+<h3>How to run Sprite for DECstation in the emulator</h3>
+
+Sprite was a research operating system at the University of Berkeley.
+Read this if you want to find out more about it:
+<a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">
+http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>
+
+<p>
+The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
+has a copy of a Sprite harddisk image for a DECstation 5000/200:<pre>
+	<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
+	MD5 = ec84eeeb20fe77b758370d5e312e4a5e
+</pre>
+<p>
+Once you have compiled the emulator (<b>./configure; make</b>) and 
+downloaded the harddisk image, you can start the emulator with the 
+following command:
+<pre>
+	$ <b>./mips64emul -X -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
+</pre>
+The first time you boot up with the disk image, you will be asked a number 
+of questions regarding network settings. If you feel like entering correct 
+values, then you should use the following:
+<p>
+<center>
+ <table border="0">
+  <tr> <td>Your machine's Ethernet address:</td>  <td>11:22:33:44:55:66</td> </tr>
+  <tr> <td>Your machine's IP:</td>  <td>10.0.0.1</td> </tr>
+  <tr> <td>Gateway's Ethernet address:</td>  <td>55:44:33:22:11:00</td> </tr>
+  <tr> <td>Gateway's IP:</td>  <td>10.0.0.254</td> </tr>
+ </table>
+</center>
+<p>
+Once you are logged in as root, running <b>xinit</b> will start the X11 
+environment.
+
+
 
 
 <p><br>
@@ -705,12 +766,8 @@ Here are links to some of the kernels that I usually experiment with.
 		has a copy of a harddisk image for a DECstation 5000/200:
 		<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
 			(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
-	<br>Once downloaded, take a backup copy in case you mess up.
-	<br>Run the emulator with <b>-D2 -d ds5000.bt -j vmsprite -I44000000</b>
-	<br>Note: This is pretty unstable, to say the least. It randomly
-		crashes with a "Fatal Error: Software time is ahead
-		of hardware!" message. If you see this, then just start
-		the emulator again. :-/
+	<br>Read <a href="#sprite">this section</a> for more information
+		about running this harddisk image in the emulator.
     </ul>
   </li>
 

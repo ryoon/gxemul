@@ -9,7 +9,7 @@ LIBS=-lm $(XLIB) $(OTHERLIBS)
 all: $(BIN)
 
 $(BIN): do_src do_devices
-	$(CC) $(COPTIM) $(SRCOBJS) devices/*.o $(LIBS) -o $(BIN)
+	$(CC) $(COPTIM) src/*.o devices/*.o $(LIBS) -o $(BIN)
 
 do_src:
 	cd src; $(MAKE); cd ..

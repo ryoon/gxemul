@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.94 2004-11-11 20:46:04 debug Exp $
+ *  $Id: memory.c,v 1.95 2004-11-12 21:33:53 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1091,6 +1091,7 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	uint64_t paddr, vaddr_page;
 	unsigned char *memblock;
 	size_t offset;
+int kernel_address = 0;
 
 	if ((vaddr & alignmask) != 0)
 		return NULL;
@@ -1108,6 +1109,7 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	}
 
 	vaddr_page = vaddr & ~0xfff;
+if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 	i = cpu->bintrans_next_index;
 	for (;;) {
 		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
@@ -1120,6 +1122,8 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 		if (i == cpu->bintrans_next_index)
 			break;
 	}
+} else
+	kernel_address = 1;
 
 	ok = translate_address(cpu, vaddr, &paddr,
 	    (writeflag? FLAG_WRITEFLAG : 0) + FLAG_NOEXCEPTIONS);
@@ -1139,13 +1143,14 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);
 
+if (!kernel_address) {
 	cpu->bintrans_next_index --;
 	if (cpu->bintrans_next_index < 0)
 		cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
 	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
 	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
 	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
-
+}
 /*
 printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
     cpu, (long long)vaddr, writeflag, alignmask);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.305 2004-11-11 13:57:30 debug Exp $
+$Id: HISTORY,v 1.306 2004-11-12 21:33:51 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1129,3 +1129,6 @@ HISTORY of mips64emul
 20041109	More updates. Bintrans experiments mostly.
 20041110	Some minor bintrans updates.
 20041111	Minor updates.
+20041112	A little rewrite of the bintrans system (again :-), this time
+		a lot more naïve and non-optimizing, in order to support delay
+		slots in a much simpler way.

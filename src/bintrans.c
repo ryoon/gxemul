@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.55 2004-11-11 20:46:04 debug Exp $
+ *  $Id: bintrans.c,v 1.56 2004-11-12 21:33:52 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -143,50 +143,19 @@ void bintrans_init(void)
 /*  Function declaration, should be the same as in bintrans_*.c:  */
 
 static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
-static size_t bintrans_chunk_header_len(void);
-static void bintrans_write_chunkhead(unsigned char *p);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
-static void bintrans_write_pcflush(unsigned char **addrp, int *pc_inc,
+static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	int flag_pc, int flag_ninstr);
 
-static int bintrans_write_instruction__addiu(unsigned char **addrp, int *pc_inc, int rt, int rs, int imm, int daddiu_flag);
-static int bintrans_write_instruction__andi(unsigned char **addrp, int *pc_inc, int rt, int rs, int imm);
-static int bintrans_write_instruction__ori(unsigned char **addrp, int *pc_inc, int rt, int rs, int imm);
-static int bintrans_write_instruction__xori(unsigned char **addrp, int *pc_inc, int rt, int rs, int imm);
-static int bintrans_write_instruction__slti(unsigned char **addrp, int *pc_inc, int rt, int rs, int imm, int unsigned_flag);
-static int bintrans_write_instruction__addu(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt, int daddu_flag);
-static int bintrans_write_instruction__subu(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt, int dsubu_flag);
-static int bintrans_write_instruction__and(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__or(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__nor(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__xor(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__slt(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__sltu(unsigned char **addrp, int *pc_inc, int rd, int rs, int rt);
-static int bintrans_write_instruction__sll(unsigned char **addrp, int *pc_inc, int rd, int rt, int sa);
-static int bintrans_write_instruction__sra(unsigned char **addrp, int *pc_inc, int rd, int rt, int sa);
-static int bintrans_write_instruction__srl(unsigned char **addrp, int *pc_inc, int rd, int rt, int sa);
-static int bintrans_write_instruction__lui(unsigned char **addrp, int *pc_inc, int rt, int imm);
-static int bintrans_write_instruction__lw(unsigned char **addrp, int *pc_inc, int rt, int imm, int rs, int load_type, int bigendian);
-static int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_inc, int rs);
-static int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_inc, int rd, int rs);
-static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int rd, int from_flag, int hi_flag);
-static int bintrans_write_instruction__branch(unsigned char **addrp, int *pc_inc, int branch_type, int rt, int rs, int imm, uint32_t *potential_chunk_p);
-static int bintrans_write_instruction__jal(unsigned char **addrp, int *pc_inc, int imm, int link, uint32_t *chunks);
-
-#define	LOAD_TYPE_LD	0
-#define	LOAD_TYPE_LWU	1
-#define	LOAD_TYPE_LW	2
-#define	LOAD_TYPE_LHU	3
-#define	LOAD_TYPE_LH	4
-#define	LOAD_TYPE_LBU	5
-#define	LOAD_TYPE_LB	6
-#define	LOAD_TYPE_SD	7
-#define	LOAD_TYPE_SW	8
-#define	LOAD_TYPE_SH	9
-#define	LOAD_TYPE_SB	10
-
-#define	BRANCH_BEQ	0
-#define	BRANCH_BNE	1
+static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
+static int bintrans_write_instruction__addu_etc(unsigned char **addrp, int rd, int rs, int rt, int sa, int instruction_type);
+static int bintrans_write_instruction__branch(unsigned char **addrp, int instruction_type, int regimm_type, int rt, int rs, int imm);
+static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special);
+static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link);
+static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint32_t *potential_chunk_p);
+static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
+static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
+static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -343,24 +312,22 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int offset_within_page;
 	int entry_index;
 	unsigned char *host_mips_page;
-	unsigned char *ca, *ca2;
-	int res, hi6, special6, hi6_2;
+	unsigned char *ca, *ca_justdid, *ca2;
+	int res, hi6, special6, regimm5;
 	unsigned char instr[4];
-	unsigned char instr2[4];
-	uint32_t instrX;
 	uint64_t new_pc;
 	size_t p;
 	int try_to_translate;
-	int n_translated, i;
-	int pc_inc;
+	int n_translated, i, translated;
 	int (*f)(struct cpu *);
 	struct translation_page_entry *tep;
 	size_t chunk_len;
-	int branch_rs,branch_rt,branch_imm;
 	int rs,rt,rd,sa,imm;
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
-uint32_t prev_chunk_offset; int prev_p;
+	int delayed_branch;
+	uint64_t delayed_branch_new_p;
+	uint32_t prev_chunk_offset; int prev_p;
 
 
 	/*
@@ -430,15 +397,6 @@ uint32_t prev_chunk_offset; int prev_p;
 	    + translation_code_chunk_space_head;
 
 	/*
-	 *  Some backends need a code chunk header, but assuming that
-	 *  this header is of a fixed known size, it does not have to
-	 *  be written until we're sure that a block of code was
-	 *  actually translated.
-	 */
-	ca += bintrans_chunk_header_len();
-
-
-	/*
 	 *  Try to translate a chunk of code:
 	 */
 
@@ -446,17 +404,13 @@ uint32_t prev_chunk_offset; int prev_p;
 	p = paddr & 0xfff;
 	try_to_translate = 1;
 	n_translated = 0;
-	pc_inc = 0;
 	res = 0;
+	delayed_branch = 0;
 
 	while (try_to_translate) {
-
-bintrans_write_pcflush(&ca, &pc_inc, 1, 1);
-prev_chunk_offset = tep->chunk[p/4];
-prev_p = p/4;
-tep->chunk[p/4] = (uint32_t)
-    ((size_t)ca - (size_t)translation_code_chunk_space);
-
+		ca_justdid = ca;
+		prev_p = p/4;
+		translated = 0;
 
 		/*  Read an instruction word from host memory:  */
 		*((uint32_t *)&instr[0]) = *((uint32_t *)(host_mips_page + p));
@@ -467,16 +421,42 @@ tep->chunk[p/4] = (uint32_t)
 			tmp = instr[1]; instr[1] = instr[2]; instr[2] = tmp;
 		}
 
-		/*  Assuming that the translation succeeds, let's increment the pc.  */
-		pc_inc += sizeof(instr);
-
 		hi6 = instr[3] >> 2;
 
 		/*  Check for instructions that can be translated:  */
 		switch (hi6) {
+
+		case HI6_REGIMM:
+			regimm5 = instr[2] & 0x1f;
+			switch (regimm5) {
+			case REGIMM_BLTZ:
+			case REGIMM_BGEZ:
+				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+				imm = (instr[1] << 8) + instr[0];
+				if (imm >= 32768)
+					imm -= 65536;  
+				translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, regimm5, rt, rs, imm);
+				n_translated += translated;
+				delayed_branch = 2;
+				delayed_branch_new_p = p + 4 + 4*imm;
+				break;
+			default:
+				try_to_translate = 0;
+			}
+			break;
+
 		case HI6_SPECIAL:
 			special6 = instr[0] & 0x3f;
 			switch (special6) {
+			case SPECIAL_JR:
+			case SPECIAL_JALR:
+				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+				rd = (instr[1] >> 3) & 31;
+				translated = try_to_translate = bintrans_write_instruction__jr(&ca, rs, rd, special6);
+				n_translated += translated;
+				delayed_branch = 2;
+				delayed_branch_new_p = -1;	/*  anything, not within this physical page  */
+				break;
 			case SPECIAL_ADDU:
 			case SPECIAL_DADDU:
 			case SPECIAL_SUBU:
@@ -485,124 +465,20 @@ tep->chunk[p/4] = (uint32_t)
 			case SPECIAL_OR:
 			case SPECIAL_NOR:
 			case SPECIAL_XOR:
+			case SPECIAL_SLL:
+			case SPECIAL_DSLL:
 			case SPECIAL_SLT:
 			case SPECIAL_SLTU:
-			case SPECIAL_SLL:
 			case SPECIAL_SRA:
 			case SPECIAL_SRL:
+			case SPECIAL_DSRA:
+			case SPECIAL_DSRL:
 				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 				rt = instr[2] & 31;
 				rd = (instr[1] >> 3) & 31;
 				sa = ((instr[1] & 7) << 2) + ((instr[0] >> 6) & 3);
-				if (rd == 0)
-					res = 1;
-				else {
-					switch (special6) {
-					case SPECIAL_ADDU:
-					case SPECIAL_DADDU:
-						res = bintrans_write_instruction__addu(&ca, &pc_inc, rd, rs, rt, special6 == SPECIAL_DADDU);
-						break;
-					case SPECIAL_SUBU:
-					case SPECIAL_DSUBU:
-						res = bintrans_write_instruction__subu(&ca, &pc_inc, rd, rs, rt, special6 == SPECIAL_DSUBU);
-						break;
-					case SPECIAL_AND:
-						res = bintrans_write_instruction__and(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_OR:
-						res = bintrans_write_instruction__or(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_NOR:
-						res = bintrans_write_instruction__nor(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_XOR:
-						res = bintrans_write_instruction__xor(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_SLT:
-						res = bintrans_write_instruction__slt(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_SLTU:
-						res = bintrans_write_instruction__sltu(&ca, &pc_inc, rd, rs, rt);
-						break;
-					case SPECIAL_SLL:
-						res = bintrans_write_instruction__sll(&ca, &pc_inc, rd, rt, sa);
-						break;
-					case SPECIAL_SRA:
-						res = bintrans_write_instruction__sra(&ca, &pc_inc, rd, rt, sa);
-						break;
-					case SPECIAL_SRL:
-						res = bintrans_write_instruction__srl(&ca, &pc_inc, rd, rt, sa);
-						break;
-					}
-				}
-				if (!res)
-					try_to_translate = 0;
-				else
-					n_translated += res;
-				break;
-			case SPECIAL_JR:
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				if (p == 0xffc) {
-					try_to_translate = 0;
-					break;
-				}
-				/*  Read the next instruction:  */
-				*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
-				if (byte_order_cached_bigendian) {
-					int tmp;
-					tmp = instr2[0]; instr2[0] = instr2[3]; instr2[3] = tmp;
-					tmp = instr2[1]; instr2[1] = instr2[2]; instr2[2] = tmp;
-				}
-				hi6_2 = instr2[3] >> 2;
-				if (hi6_2 == HI6_ADDIU) {
-					rs = ((instr2[3] & 3) << 3) + ((instr2[2] >> 5) & 7);
-					rt = instr2[2] & 31;
-					imm = (instr2[1] << 8) + instr2[0];
-					if (imm >= 32768)
-						imm -= 65536;
-					if (rt == 0)
-						res = 1;
-					else
-						res = bintrans_write_instruction__addiu(&ca, &pc_inc, rt, rs, imm, 0);
-					if (!res)
-						try_to_translate = 0;
-					else
-						n_translated += res;
-					if (!try_to_translate)
-						break;
-
-					/*  "jr rs; addiu" combination  */
-					rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-					bintrans_write_instruction__jr(&ca, &pc_inc, rs);
-					n_translated += 1;
-					p += sizeof(instr);
-					pc_inc = sizeof(instr);	/*  will be decreased later  */
-				} else if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
-					/*  "jr rs; nop" combination  */
-					bintrans_write_instruction__jr(&ca, &pc_inc, rs);
-					n_translated += 2;
-					p += sizeof(instr);
-					pc_inc = sizeof(instr);	/*  will be decreased later  */
-				}
-				try_to_translate = 0;
-				break;
-			case SPECIAL_JALR:
-				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				rd = (instr[1] >> 3) & 31;
-				if (p == 0xffc) {
-					try_to_translate = 0;
-					break;
-				}
-				instrX = *((uint32_t *)(host_mips_page + p + 4));	/*  next instruction  */
-				if (instrX == 0) {
-					/*  "jalr rd,rs; nop" combination  */
-					pc_inc += sizeof(instr);
-					bintrans_write_instruction__jalr(&ca, &pc_inc, rd, rs);
-					n_translated += 2;
-					p += sizeof(instr);
-					pc_inc = sizeof(instr);	/*  will be decreased later  */
-				}
-				try_to_translate = 0;
+				translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, rd, rs, rt, sa, special6);
+				n_translated += translated;
 				break;
 			case SPECIAL_MFHI:
 			case SPECIAL_MFLO:
@@ -610,174 +486,39 @@ tep->chunk[p/4] = (uint32_t)
 			case SPECIAL_MTLO:
 				rd = (instr[1] >> 3) & 31;
 				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-				res = bintrans_write_instruction__mfmthilo(&ca, &pc_inc,
+				translated = try_to_translate = bintrans_write_instruction__mfmthilo(&ca,
 				    (special6 == SPECIAL_MFHI || special6 == SPECIAL_MFLO)? rd : rs,
 				    special6 == SPECIAL_MFHI || special6 == SPECIAL_MFLO,
 				    special6 == SPECIAL_MFHI || special6 == SPECIAL_MTHI);
-				if (!res)
-					try_to_translate = 0;
-				else
-					n_translated += res;
+				n_translated += translated;
 				break;
 			default:
 				try_to_translate = 0;
 			}
 			break;
+
 		case HI6_BEQ:
 		case HI6_BNE:
-			branch_rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			branch_rt = instr[2] & 31;
-			branch_imm = (instr[1] << 8) + instr[0];
-			if (branch_imm >= 32768)
-				branch_imm -= 65536;
-			if (p == 0xffc) {
-				try_to_translate = 0;
-				break;
-			}
-			res = 0;
-			new_pc = p + 4 + 4 * branch_imm;
-			/*  Read the next instruction (in the delay slot):  */
-			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
-			if (byte_order_cached_bigendian) {
-				int tmp;
-				tmp = instr2[0]; instr2[0] = instr2[3]; instr2[3] = tmp;
-				tmp = instr2[1]; instr2[1] = instr2[2]; instr2[2] = tmp;
-			}
-			hi6_2 = instr2[3] >> 2;
-			if (hi6_2 == HI6_ADDIU) {
-				rs = ((instr2[3] & 3) << 3) + ((instr2[2] >> 5) & 7);
-				rt = instr2[2] & 31;
-				imm = (instr2[1] << 8) + instr2[0];
-				if (imm >= 32768)
-					imm -= 65536;
-				if (rt == 0)
-					res = 1;
-				else if (rt == branch_rt || rt == branch_rs)
-					res = 0;
-				else
-					res = bintrans_write_instruction__addiu(&ca, &pc_inc, rt, rs, imm, 0);
-				if (!res)
-					try_to_translate = 0;
-			} else if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
-				/*  Nop.  */
-			} else
-				try_to_translate = 0;
-
-			if (!try_to_translate)
-				break;
-
-			rt = branch_rt;
-			rs = branch_rs;
-			imm = branch_imm;
-
-			/*
-			 *  p is 0x000 .. 0xffc. If the jump is to
-			 *  within the same page, then we can use
-			 *  the same translation page to check if
-			 *  there already is a translation.
-			 */
-			/*  Same physical page? Then we might
-			    potentially be able to jump using the
-			    tep->chunk[new_pc/4] pointer :)  */
-			if ((new_pc & ~0xfff) == 0)
-				potential_chunk_p =
-				    &tep->chunk[new_pc/4];
-			else
-				potential_chunk_p = NULL;
-
-			/*  printf("branch r%i,r%i, %i; p=%08x,"
-			    " p+4+4*imm=%08x chunk=%08x\n", rt, rs,
-			    imm, p, new_pc, (int)tep->chunk[new_pc/4]);  */
-
-			switch (hi6) {
-			case HI6_BEQ:
-				res = bintrans_write_instruction__branch(&ca, &pc_inc, BRANCH_BEQ, rt, rs, imm, potential_chunk_p);
-				break;
-			case HI6_BNE:
-				res = bintrans_write_instruction__branch(&ca, &pc_inc, BRANCH_BNE, rt, rs, imm, potential_chunk_p);
-				break;
-			}
-
-			p += sizeof(instr);
-#if 0
-pc_inc = sizeof(instr);	/*  will be decreased later  */
-try_to_translate = 0;
-#endif
-			if (!res)
-				try_to_translate = 0;
-			else
-				n_translated += res;
-			break;
-		case HI6_ADDIU:
-		case HI6_DADDIU:
-		case HI6_ANDI:
-		case HI6_ORI:
-		case HI6_XORI:
-		case HI6_SLTI:
-		case HI6_SLTIU:
+		case HI6_BGTZ:
+		case HI6_BLEZ:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;
 			imm = (instr[1] << 8) + instr[0];
-			if (rt == 0)
-				res = 1;
-			else {
-				switch (hi6) {
-				case HI6_ADDIU:
-				case HI6_DADDIU:
-					res = bintrans_write_instruction__addiu(&ca, &pc_inc, rt, rs, imm, hi6 == HI6_DADDIU);
-					break;
-				case HI6_ANDI:
-					res = bintrans_write_instruction__andi(&ca, &pc_inc, rt, rs, imm);
-					break;
-				case HI6_ORI:
-					res = bintrans_write_instruction__ori(&ca, &pc_inc, rt, rs, imm);
-					break;
-				case HI6_XORI:
-					res = bintrans_write_instruction__xori(&ca, &pc_inc, rt, rs, imm);
-					break;
-				case HI6_SLTI:
-					res = bintrans_write_instruction__slti(&ca, &pc_inc, rt, rs, imm, 0);
-					break;
-				case HI6_SLTIU:
-					res = bintrans_write_instruction__slti(&ca, &pc_inc, rt, rs, imm, 1);
-					break;
-				}
-			}
-			if (!res)
-				try_to_translate = 0;
-			else
-				n_translated += res;
+			if (imm >= 32768)
+				imm -= 65536;
+			translated = try_to_translate = bintrans_write_instruction__branch(&ca, hi6, 0, rt, rs, imm);
+			n_translated += translated;
+			delayed_branch = 2;
+			delayed_branch_new_p = p + 4 + 4*imm;
 			break;
+
 		case HI6_LUI:
 			rt = instr[2] & 31;
 			imm = (instr[1] << 8) + instr[0];
-			if (rt == 0)
-				res = 1;
-			else
-				res = bintrans_write_instruction__lui(&ca, &pc_inc, rt, imm);
-			if (!res)
-				try_to_translate = 0;
-			else
-				n_translated += res;
+			translated = try_to_translate = bintrans_write_instruction__lui(&ca, rt, imm);
+			n_translated += translated;
 			break;
-		case HI6_J:
-		case HI6_JAL:
-			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
-			if (p == 0xffc) {
-				try_to_translate = 0;
-				break;
-			}
-			if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
-				imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
-				    (instr[1] << 8) + instr[0]) & 0x03ffffff;
-				pc_inc += sizeof(instr);
-				bintrans_write_instruction__jal(&ca, &pc_inc, imm, hi6 == HI6_JAL, &tep->chunk[0]);
-				n_translated += 2;
-				p += sizeof(instr);
-				pc_inc = sizeof(instr);	/*  will be decreased later  */
-			}
-			try_to_translate = 0;
-			break;
+
 		case HI6_LD:
 		case HI6_LWU:
 		case HI6_LW:
@@ -794,85 +535,60 @@ try_to_translate = 0;
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
-
-			switch (hi6) {
-			case HI6_LD:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LD, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LWU:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LWU, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LW:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LW, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LHU:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LHU, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LH:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LH, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LBU:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LBU, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_LB:
-				if (rt == 0) {
-					res = 0;
-				} else {
-					res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_LB, byte_order_cached_bigendian);
-				}
-				break;
-			case HI6_SD:
-				res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_SD, byte_order_cached_bigendian);
-				break;
-			case HI6_SW:
-				res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_SW, byte_order_cached_bigendian);
-				break;
-			case HI6_SH:
-				res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_SH, byte_order_cached_bigendian);
-				break;
-			case HI6_SB:
-				res = bintrans_write_instruction__lw(&ca, &pc_inc, rt, imm, rs, LOAD_TYPE_SB, byte_order_cached_bigendian);
-				break;
-			}
-			if (!res)
-				try_to_translate = 0;
-			else
-				n_translated += res;
+			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+			n_translated += translated;
 			break;
+
+		case HI6_ADDIU:
+		case HI6_DADDIU:
+		case HI6_ANDI:
+		case HI6_ORI:
+		case HI6_XORI:
+		case HI6_SLTI:
+		case HI6_SLTIU:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			imm = (instr[1] << 8) + instr[0];
+			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
+			n_translated += translated;
+			break;
+
+		case HI6_J:
+		case HI6_JAL:
+			imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
+			    (instr[1] << 8) + instr[0]) & 0x03ffffff;
+			translated = try_to_translate = bintrans_write_instruction__jal(&ca, imm, hi6 == HI6_JAL);
+			n_translated += translated;
+			/*  TODO: stop translating for J?  */
+			delayed_branch = 2;
+			delayed_branch_new_p = -1;
+			break;
+
 		default:
 			try_to_translate = 0;
 		}
 
-		/*  If the translation of this instruction failed,
-		    then don't count this as an increment of pc.  */
-		if (try_to_translate == 0) {
-			pc_inc -= sizeof(instr);
-			break;
+		if (translated && delayed_branch) {
+			delayed_branch --;
+			if (delayed_branch == 0) {
+				/*
+				 *  p is 0x000 .. 0xffc. If the jump is to
+				 *  within the same page, then we can use
+				 *  the same translation page to check if
+				 *  there already is a translation.
+				 */
+				if ((delayed_branch_new_p & ~0xfff) == 0)
+					potential_chunk_p =
+					    &tep->chunk[delayed_branch_new_p/4];
+				else
+					potential_chunk_p = NULL;
+				bintrans_write_instruction__delayedbranch(&ca, potential_chunk_p);
+			}
 		}
+
+		if (translated && tep->chunk[prev_p] == 0)
+			tep->chunk[prev_p] = (uint32_t)
+			    ((size_t)ca_justdid - (size_t)translation_code_chunk_space);
 
 		p += sizeof(instr);
 
@@ -880,10 +596,6 @@ try_to_translate = 0;
 		if (p == 0x1000)
 			try_to_translate = 0;
 	}
-
-
-tep->chunk[prev_p] = prev_chunk_offset;
-
 
 	tep->page_is_potentially_in_use = 1;
 
@@ -893,17 +605,11 @@ tep->chunk[prev_p] = prev_chunk_offset;
 		return -1;
 	}
 
-	/*  Flush the pc, to let it have a correct (emulated) value:  */
-	bintrans_write_pcflush(&ca, &pc_inc, 1, 1);
-
 	/*  ca2 = ptr to the head of the new code chunk  */
 	ca2 = translation_code_chunk_space +
 	    translation_code_chunk_space_head;
 
-	/*  Add code chunk header...  */
-	bintrans_write_chunkhead(ca2);
-
-	/*  ...and return code:  */
+	/*  Add return code:  */
 	bintrans_write_chunkreturn(&ca);
 
 	/*  chunk_len = nr of bytes occupied by the new code chunk  */
@@ -918,11 +624,6 @@ tep->chunk[prev_p] = prev_chunk_offset;
 	translation_code_chunk_space_head =
 	    ((translation_code_chunk_space_head - 1) |
 	    (sizeof(uint64_t)-1)) + 1;
-
-	/*  Insert the translated chunk into the page entry:  */
-	tep->flags[offset_within_page] = 0;
-	tep->chunk[offset_within_page] = (uint32_t)
-	    ((size_t)ca2 - (size_t)translation_code_chunk_space);
 
 	if (!run_flag)
 		return 0;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.181 2004-11-11 20:46:04 debug Exp $
+ *  $Id: cpu.c,v 1.182 2004-11-12 21:33:53 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1545,7 +1545,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				if (res > 0) {
 					if (instruction_trace_cached)
 						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-					cpu->dont_run_next_bintrans = 1;
+					/*  cpu->dont_run_next_bintrans = 1;  */
 					return res;
 				}
 			} else {
@@ -1560,7 +1560,7 @@ static int cpu_run_instr(struct cpu *cpu)
 					if (res > 0) {
 						if (instruction_trace_cached)
 							cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-						cpu->dont_run_next_bintrans = 1;
+						/*  cpu->dont_run_next_bintrans = 1;  */
 						return res;
 					}
 				}

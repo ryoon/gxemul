@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.171 2004-12-19 08:36:53 debug Exp $
+$Id: index.html,v 1.172 2004-12-21 06:20:31 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1023,7 +1023,14 @@ adding <b>-b</b> to the command line options).
 <h3>How to install Debian GNU/Linux for DECstation in the emulator:</h3>
 
 <p>
-<font color="#ff0000">NOTE: This is experimental.
+<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+unstable. During my tests, even pressing the wrong key during the install
+(for example the wrong cursor key) can cause a kernel Oops.
+I <i>think</i> this has to do with interrupts from the serial controller.
+Hopefully using the -U command line option will reduce the risk for such 
+crashes. (I haven't had time to come up with a clean solution to this yet;
+it feels like a buffer overflow in the Linux kernel, but it also likely
+that it is a bug in mips64emul.)
 </font>
 
 <p>
@@ -1032,8 +1039,8 @@ onto a harddisk image:
 
 <p>
 <ol>
-  <li>Compile mips64emul: (Note: SLOWSERIALINTERRUPTS)<pre>
-	$ <b>CFLAGS="-DSLOWSERIALINTERRUPTS" ./configure; make</b>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
 
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
@@ -1047,7 +1054,7 @@ onto a harddisk image:
 
 </pre>
   <li>For a text-mode installation, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
+	$ <b>./mips64emul -D2 -b -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
 
 </pre>
 </ol>
@@ -1077,18 +1084,10 @@ network settings. The following should work:
     Name server addresses:      10.0.0.254
 </pre>
 
-<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
-unstable. During my tests, even pressing the wrong key during the install
-(for example the wrong cursor key) can cause a kernel Oops.
-Hopefully using -DSLOWSERIALINTERRUPTS when building the emulator will
-reduce the risk for such crashes. (I haven't had time to come up with
-a clean solution to this yet.)
-</font>
-
 <p>
 Once the first phase of the install has finished, the following command 
 should let you boot into Debian, and perform post-install configuration:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
 
@@ -1106,7 +1105,7 @@ CTRL-C and type <b>quit</b>, and then:
 
 </pre>
   <li>Boot Debian using the following command line:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw
 		init=/bin/sh' -d debian.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
@@ -1123,7 +1122,7 @@ The system should now be ready for everyday use.
 
 <p>
 Use this command to boot from the completely installed disk image:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
 
@@ -1137,8 +1136,11 @@ Use this command to boot from the completely installed disk image:<pre>
 <h3>How to run Redhat Linux for DECstation in the emulator</h3>
 
 <p>
-<font color="#ff0000">NOTE: This is experimental.
+<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+unstable. Read the note about '-U' in the section on how to install 
+Debian.
 </font>
+
 
 <p>
 The following steps should let you run Redhat Linux for DECstation
@@ -1181,14 +1183,14 @@ in mips64emul:
 </pre>(Note sda1 instead of sdc1.)
   <p>
   <li>To boot Linux, start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -b -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -U -b -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 </ol>
 
 <p>
 If you need to boot into single user mode, try the following:<pre>
-	$ <b>./mips64emul -D2 -b -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+	$ <b>./mips64emul -D2 -U -b -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 

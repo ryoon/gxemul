@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.8 2004-12-18 03:25:39 debug Exp $
+.\" $Id: mips64emul.1,v 1.9 2004-12-21 06:20:32 debug Exp $
 .\"
 .\" Copyright (C) 2004  Anders Gavare.  All rights reserved.
 .\"
@@ -79,22 +79,20 @@ skipped, as the emulator runs the bootblocks from the diskimage directly and
 doesn't need the kernel as a separate file.)
 .SH EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
-5000/200 (which is "type 2" in the DECstation world), with dynamic
-binary translation enabled:
+5000/200, with dynamic binary translation enabled:
 .nf
 
 	mips64emul \-D2 \-b \-d netbsddisk.img
 
 .fi
-if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
-You may wish to add -X -M128 to use the X11 framebuffer feature and 
-increase the amount of emulated RAM to 128 MB.
+netbsddisk.img should be a raw disk image containing a NetBSD/pmax
+filesystem.
 
 Please read the documentation for more details.
 .SH AUTHOR
 Anders Gavare <anders@gavare.se>
 
-Go to http://gavare.se/mips64emul/ for more information.
+See http://gavare.se/mips64emul/ for more information.
 
 (MIPS is a registered trademark of MIPS Technologies. mips64emul is 
 developed as a spare-time hobby, and there is no affiliation with MIPS

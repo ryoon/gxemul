@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.7 2004-01-12 00:17:39 debug Exp $
+ *  $Id: dev_rd94.c,v 1.8 2004-01-16 17:34:05 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -78,7 +78,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	struct rd94_data *d = (struct rd94_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr, i;
+	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ust.c,v 1.1 2004-01-09 16:22:59 debug Exp $
+ *  $Id: dev_sgi_ust.c,v 1.2 2004-01-16 17:34:05 debug Exp $
  *  
  *  SGI "ust". Unknown function. Used in SGI-IP32.
  */
@@ -52,7 +52,7 @@ int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 {
 	struct sgi_ust_data *d = (struct sgi_ust_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int i, regnr;
+	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint64_t);

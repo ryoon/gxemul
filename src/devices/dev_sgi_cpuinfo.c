@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_cpuinfo.c,v 1.3 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_sgi_cpuinfo.c,v 1.4 2004-01-16 17:34:05 debug Exp $
  *  
  *  SGI cpuinfo CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -51,9 +51,8 @@ struct sgi_cpuinfo_data {
  */
 int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	struct sgi_cpuinfo_data *d = (struct sgi_cpuinfo_data *) extra;
+/*	struct sgi_cpuinfo_data *d = (struct sgi_cpuinfo_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
-	int i, regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.11 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.12 2004-01-16 17:34:05 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -111,6 +111,7 @@ void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 			case 'D':  found = 0xa7;  /*  Left   */  break;
 			/*  TODO: pageup, pagedown, ...  */
 			default:
+				;
 			}
 
 			d->keyb_buf_pos = 0;

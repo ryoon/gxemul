@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_ssc.c,v 1.5 2004-01-16 17:34:05 debug Exp $
  *  
  *  Serial controller on DECsystem 5400.
  *
@@ -54,7 +54,6 @@ struct ssc_data {
 int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 

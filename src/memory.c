@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.13 2004-01-14 06:09:01 debug Exp $
+ *  $Id: memory.c,v 1.14 2004-01-16 17:34:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -101,7 +101,6 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t data)
 {
 	int i;
-	uint64_t x = 0;
 
 	if (cpu == NULL) {
 		fatal("memory_readmax64(): cpu = NULL\n");
@@ -371,6 +370,9 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 		if ((vaddr >> 32) == 0 && vaddr & 0x80000000) {
 			vaddr |= 0xffffffff00000000;
 		}
+
+		/*  This suppresses a gcc warning:  */
+		pageshift = 12;
 	}
 
 

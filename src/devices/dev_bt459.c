@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_bt459.c,v 1.5 2004-01-16 17:34:05 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -61,7 +61,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int i, btaddr;
+	int btaddr;
 
 	idata = memory_readmax64(cpu, data, len);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.2 2004-01-14 06:10:33 debug Exp $
+ *  $Id: dev_wdc.c,v 1.3 2004-01-16 17:34:05 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -174,7 +174,6 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem, uint64_t relat
 {
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 

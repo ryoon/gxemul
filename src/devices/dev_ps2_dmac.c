@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_dmac.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_ps2_dmac.c,v 1.5 2004-01-16 17:34:05 debug Exp $
  *  
  *  Playstation 2 DMA controller.
  */
@@ -56,7 +56,7 @@ struct dmac_data {
 int dev_ps2_dmac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, regnr;
+	int regnr;
 	struct dmac_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);

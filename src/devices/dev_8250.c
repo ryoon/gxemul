@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.2 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_8250.c,v 1.3 2004-01-16 17:34:05 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -96,8 +96,8 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
  */
 int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	int i;
-	uint64_t idata = 0, odata = 0;
+/*	int i;
+	uint64_t idata = 0, odata = 0;  */
 	struct dev_8250_data *d = extra;
 
 	relative_addr /= d->addrmult;

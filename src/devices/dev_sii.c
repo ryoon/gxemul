@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_sii.c,v 1.5 2004-01-16 17:34:05 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -172,7 +172,7 @@ void dev_sii_tick(struct cpu *cpu, void *extra)
 int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int regnr, i;
+	int regnr;
 	struct sii_data *d = extra;
 
 	if (relative_addr & 3) {

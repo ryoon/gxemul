@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.15 2004-01-11 16:25:19 debug Exp $
+ *  $Id: file.c,v 1.16 2004-01-16 17:34:07 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -455,14 +455,12 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
-	int len, chunk_size;
 	unsigned char buf[516];
 	unsigned char bytes[270];
-	uint64_t entry, vaddr;
-	char *p;
+	uint64_t entry = 0, vaddr = 0;
 	int i, j, count;
 	char ch;
-	int buf_len, data_start;
+	int buf_len, data_start = 0;
 	int entry_set = 0;
 	int warning = 0;
 	int warning_len = 0;
@@ -534,7 +532,7 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 			debug("'%s': SREC \"", filename);
 			for (i=2; i<count-1; i++) {
 				ch = bytes[i];
-				if (ch >= ' ' && ch <= 127)
+				if (ch >= ' ' && ch < 127)
 					debug("%c", ch);
 				else
 					debug("?");
@@ -599,7 +597,7 @@ void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 {
 	FILE *f;
-	int len, chunk_size;
+	int len;
 	unsigned char buf[4096];
 	uint64_t entry, vaddr, skip = 0;
 	char *p, *p2;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.8 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_asc.c,v 1.9 2004-01-16 17:34:05 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -185,7 +185,7 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
  */
 void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes)
 {
-	int ok, len, i, retlen, ch, addr;
+	int ok, len, i, retlen, ch;
 	unsigned char *buf, *retbuf;
 
 	debug(" { TRANSFER from id %i to id %i: ", from_id, to_id);
@@ -296,10 +296,10 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
  */
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	int i, regnr;
+	int regnr;
 	struct asc_data *d = extra;
 	int target_exists;
-	int n_messagebytes;
+	int n_messagebytes = 0;
 	uint64_t idata = 0, odata = 0;
 
 	dev_asc_tick(cpu, extra);

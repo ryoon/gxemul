@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.14 2004-01-06 11:40:39 debug Exp $
+ *  $Id: arcbios.c,v 1.15 2004-01-16 17:34:07 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -62,7 +62,7 @@ struct emul_arc_child {
 	struct arcbios_component component;
 };
 
-uint32_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
+uint32_t arcbios_next_component_address = (uint32_t)FIRST_ARC_COMPONENT;
 int n_arc_components = 0;
 
 

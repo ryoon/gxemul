@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.2 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.3 2004-01-16 17:34:05 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -60,7 +60,7 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int regnr, i;
+	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);

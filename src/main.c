@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.17 2004-01-11 16:53:16 debug Exp $
+ *  $Id: main.c,v 1.18 2004-01-16 17:34:07 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -203,8 +203,7 @@ void usage(char *progname)
  */
 int get_cmd_args(int argc, char *argv[])
 {
-	int ch, i;
-	uint64_t new_pc_dumppoint;
+	int ch;
 	char *progname = argv[0];
 
 	emul_cpu_name[0] = emul_cpu_name[sizeof(emul_cpu_name)-1] = '\0';

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.7 2004-01-12 00:17:39 debug Exp $
+ *  $Id: dev_macepci.c,v 1.8 2004-01-16 17:34:05 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -53,7 +53,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
 	uint64_t idata = 0, odata=0;
-	int regnr, i, res = 1;
+	int regnr, res = 1;
 
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint32_t);

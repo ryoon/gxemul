@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.22 2004-01-12 00:19:34 debug Exp $
+ *  $Id: cpu.c,v 1.23 2004-01-16 17:34:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -635,15 +635,15 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	unsigned char instr[4];
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
-	char *instr_mnem;
-	int cond, likely, and_link;
+	char *instr_mnem = NULL;
+	int cond=0, likely, and_link;
 	uint64_t dir, is_left, reg_ofs, reg_dir;	/*  for unaligned load/store  */
 	uint64_t tmpvalue, tmpaddr;
 
 	int cpnr;					/*  coprocessor nr  */
 
 	uint64_t addr, result_value;			/*  for load/store  */
-	int wlen, st, signd, linked, dataflag;
+	int wlen, st, signd, linked, dataflag = 0;
 	unsigned char d[8];
 
 	/*

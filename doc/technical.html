@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.11 2004-07-12 10:27:37 debug Exp $
+$Id: technical.html,v 1.12 2004-07-12 10:40:15 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -312,7 +312,7 @@ something else, use your imagination to modify them:
 	configured so that you can use UDP, mounting the filesystem
 	should now be possible:  (this example is for NetBSD/pmax
 	or OpenBSD/pmax)<pre>
-	# <b>mount -o ro,-r=1024,-w=1024,-U,-s my.server.com:/tftpboot /mnt</b>
+	# <b>mount -o ro,-r=1024,-w=1024,-U,-3 my.server.com:/tftpboot /mnt</b>
     or
 	# <b>mount my.server.com:/tftpboot /mnt</b>
 </pre>

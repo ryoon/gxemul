@@ -9,22 +9,10 @@ LIBS=-lm $(XLIB) $(OTHERLIBS)
 all:
 	cd src; $(MAKE); cd ..
 	cd devices; $(MAKE); cd ..
-	$(CC) */*.o $(LIBS) -o $(BIN)
+	$(CC) src/*.o devices/*.o $(LIBS) -o $(BIN)
 
-test: test_mips test_mips16
-	ls -la test_mips test_mips16
-
-test_mips.o: test_mips.c
-	mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips4 -mabi=64  -c test_mips.c -o test_mips.o
-
-test_mips16.o: test_mips.c
-	mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips16 -mabi=64  -c test_mips.c -o test_mips16.o
-
-test_mips: test_mips.o
-	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips.o -o test_mips --oformat=elf64-bigmips
-
-test_mips16: test_mips16.o
-	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips16.o -o test_mips16 --oformat=elf64-bigmips
+regtest:
+	cd tests; make run_tests; cd ..
 
 clean:
 	rm -f $(BIN) *core
@@ -33,5 +21,7 @@ clean:
 	rm -f test_mips.o test_mips16.o test_mips test_mips16
 
 clean_all: clean
-	rm -f Makefile src/Makefile devices/Makefile
+	#  Tests are not cleaned on a normal clean.
+	cd tests; $(MAKE) clean; cd ..
+	rm -f Makefile src/Makefile devices/Makefile tests/Makefile
 

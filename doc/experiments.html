@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.4 2005-01-28 10:33:00 debug Exp $
+$Id: experiments.html,v 1.5 2005-01-28 10:34:54 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -192,12 +192,12 @@ or snapshot of the emulator.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
-	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
+	Read <a href="guestoses.html#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
 	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
-	<br>Read <a href="#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
+	<br>Read <a href="guestoses.html#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
 	It's a bit more complicated than installing NetBSD/pmax, but might work.
       <p>
       <li>Linux for DECstation:
@@ -212,7 +212,7 @@ or snapshot of the emulator.
 </pre>
 	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
 	<br>To try with serial console: <b>-D2 -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
-	<br>Read <a href="#declinux">this section</a> about how to run a Debian Linux install kernel.
+	<br>Read <a href="guestoses.html#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
 	<br>Note: Make sure you add <b>-CR4400</b> to the command line for
@@ -223,7 +223,7 @@ or snapshot of the emulator.
 		has a copy of a harddisk image for a DECstation 5000/200:
 		<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
 			(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
-	<br>Read <a href="#sprite">this section</a> for more information
+	<br>Read <a href="guestoses.html#sprite">this section</a> for more information
 		about running this harddisk image in the emulator.
       <p>
       <li><a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">Mach</a>:
@@ -278,13 +278,13 @@ or snapshot of the emulator.
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz</a>
 	<br>gunzip, and try with <b>-A1 -X -N</b> or <b>-A1</b>.
 	<br>(You may also try other -A<i>x</i> models.)
-	<br>Read <a href="#netbsdarcinstall">this section</a> about how
+	<br>Read <a href="guestoses.html#netbsdarcinstall">this section</a> about how
 		to install NetBSD/arc onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
 	<br>Try running with <b>-X -A2</b> or <b>-X -A4</b>.
-	<br>Read <a href="#openbsdarcinstall">this section</a> about how
+	<br>Read <a href="guestoses.html#openbsdarcinstall">this section</a> about how
 		to install OpenBSD/arc onto a harddisk image.
       <p>
       <li>Linux:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.33 2005-02-15 13:01:41 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.34 2005-02-16 06:00:30 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -429,7 +429,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
-	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb;
+	int spr, aa_bit, lk_bit, bf, bh, bi, bo, mb, nb, bt, ba, bb, fpreg;
 	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
@@ -619,6 +619,29 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_19_ISYNC:
 			debug("%s", power? "ics" : "isync");
+			break;
+		case PPC_19_CRAND:
+		case PPC_19_CRXOR:
+		case PPC_19_CROR:
+		case PPC_19_CRNAND:
+		case PPC_19_CRNOR:
+		case PPC_19_CRANDC:
+		case PPC_19_CREQV:
+		case PPC_19_CRORC:
+			bt = (iword >> 21) & 31;
+			ba = (iword >> 16) & 31;
+			bb = (iword >> 11) & 31;
+			switch (xo) {
+			case PPC_19_CRAND:	mnem = "crand"; break;
+			case PPC_19_CRXOR:	mnem = "crxor"; break;
+			case PPC_19_CROR:	mnem = "cror"; break;
+			case PPC_19_CRNAND:	mnem = "crnand"; break;
+			case PPC_19_CRNOR:	mnem = "crnor"; break;
+			case PPC_19_CRANDC:	mnem = "crandc"; break;
+			case PPC_19_CREQV:	mnem = "creqv"; break;
+			case PPC_19_CRORC:	mnem = "crorc"; break;
+			}
+			debug("%s\t%i,%i,%i", mnem, bt, ba, bb);
 			break;
 		default:
 			debug("unimplemented hi6_19, xo = 0x%x", xo);
@@ -915,6 +938,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_LWZU:
 	case PPC_HI6_LHZ:
 	case PPC_HI6_LHZU:
+	case PPC_HI6_LHA:
+	case PPC_HI6_LHAU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
@@ -924,16 +949,21 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
 	case PPC_HI6_STMW:
+	case PPC_HI6_LFD:
+	case PPC_HI6_STFD:
 		/*  NOTE: Loads use rt, not rs, but are otherwise similar
 		    to stores  */
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
+		fpreg = 0;
 		switch (hi6) {
 		case PPC_HI6_LWZ:	mnem = power? "l" : "lwz"; break;
 		case PPC_HI6_LWZU:	mnem = power? "lu" : "lwzu"; break;
 		case PPC_HI6_LHZ:	mnem = "lhz"; break;
 		case PPC_HI6_LHZU:	mnem = "lhzu"; break;
+		case PPC_HI6_LHA:	mnem = "lha"; break;
+		case PPC_HI6_LHAU:	mnem = "lhau"; break;
 		case PPC_HI6_LBZ:	mnem = "lbz"; break;
 		case PPC_HI6_LBZU:	mnem = "lbzu"; break;
 		case PPC_HI6_STW:	mnem = power? "st" : "stw"; break;
@@ -944,8 +974,15 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_HI6_STBU:	mnem = "stbu"; break;
 		case PPC_HI6_LMW:	mnem = power? "lm" : "lmw"; break;
 		case PPC_HI6_STMW:	mnem = power? "stm" : "stmw"; break;
+		case PPC_HI6_LFD:	fpreg = 1; mnem = "lfd"; break;
+		case PPC_HI6_STFD:	fpreg = 1; mnem = "stfd"; break;
 		}
-		debug("%s\tr%i,%i(r%i)", mnem, rs, imm, ra);
+		debug("%s\t", mnem);
+		if (fpreg)
+			debug("f");
+		else
+			debug("r");
+		debug("%i,%i(r%i)", rs, imm, ra);
 		if (running)
 			goto disasm_ret_nonewline;
 		break;
@@ -1087,7 +1124,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	char *mnem = NULL;
 	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
 	int c, m, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
-	int update, load, mb, nb;
+	int update, load, mb, nb, bt, ba, bb, fpreg, arithflag;
 	uint64_t tmp, tmp2, addr;
 	uint64_t cached_pc;
 
@@ -1321,6 +1358,38 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		case PPC_19_ISYNC:
 			/*  TODO: actually sync  */
+			break;
+
+		case PPC_19_CRAND:
+		case PPC_19_CRXOR:
+		case PPC_19_CROR:
+		case PPC_19_CRNAND:
+		case PPC_19_CRNOR:
+		case PPC_19_CRANDC:
+		case PPC_19_CREQV:
+		case PPC_19_CRORC:
+			bt = (iword >> 21) & 31;
+			ba = (iword >> 16) & 31;
+			bb = (iword >> 11) & 31;
+			ba = (cpu->cd.ppc.cr >> (31-ba)) & 1;
+			bb = (cpu->cd.ppc.cr >> (31-bb)) & 1;
+			cpu->cd.ppc.cr &= ~(1 << (31-bt));
+			switch (xo) {
+			case PPC_19_CRXOR:
+				if (ba ^ bb)
+					cpu->cd.ppc.cr |= (1 << (31-bt));
+				break;
+			case PPC_19_CROR:
+				if (ba | bb)
+					cpu->cd.ppc.cr |= (1 << (31-bt));
+				break;
+			default:
+				fatal("[ TODO: crXXX, xo = %i, "
+				    "pc = 0x%016llx ]\n",
+				    xo, (long long) (cpu->cd.ppc.pc_last));
+				cpu->running = 0;
+				return 0;
+			}
 			break;
 
 		default:
@@ -1974,6 +2043,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_LWZU:
 	case PPC_HI6_LHZ:
 	case PPC_HI6_LHZU:
+	case PPC_HI6_LHA:
+	case PPC_HI6_LHAU:
 	case PPC_HI6_LBZ:
 	case PPC_HI6_LBZU:
 	case PPC_HI6_STW:
@@ -1982,17 +2053,21 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_STHU:
 	case PPC_HI6_STB:
 	case PPC_HI6_STBU:
+	case PPC_HI6_LFD:
+	case PPC_HI6_STFD:
 		/*  NOTE: Loads use rt, not rs, but are otherwise similar
 		    to stores. This code uses rs for both.  */
 		rs = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
 
-		load = 1; update = 0; tmp_data_len = 4;
+		fpreg = 0; load = 1; update = 0; tmp_data_len = 4;
+		arithflag = 0;
 
 		switch (hi6) {
 		case PPC_HI6_LWZU:
 		case PPC_HI6_LHZU:
+		case PPC_HI6_LHAU:
 		case PPC_HI6_LBZU:
 		case PPC_HI6_STBU:
 		case PPC_HI6_STHU:
@@ -2007,10 +2082,15 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_HI6_STHU:
 		case PPC_HI6_STB:
 		case PPC_HI6_STBU:
+		case PPC_HI6_STFD:
 			load = 0;
 		}
 
 		switch (hi6) {
+		case PPC_HI6_LFD:
+		case PPC_HI6_STFD:
+			tmp_data_len = 8;
+			break;
 		case PPC_HI6_LBZ:
 		case PPC_HI6_LBZU:
 		case PPC_HI6_STB:
@@ -2019,10 +2099,24 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		case PPC_HI6_LHZ:
 		case PPC_HI6_LHZU:
+		case PPC_HI6_LHA:
+		case PPC_HI6_LHAU:
 		case PPC_HI6_STH:
 		case PPC_HI6_STHU:
 			tmp_data_len = 2;
 			break;
+		}
+
+		switch (hi6) {
+		case PPC_HI6_LFD:
+		case PPC_HI6_STFD:
+			fpreg = 1;
+		}
+
+		switch (hi6) {
+		case PPC_HI6_LHA:
+		case PPC_HI6_LHAU:
+			arithflag = 1;
 		}
 
 		if (ra == 0) {
@@ -2052,6 +2146,17 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (r == MEMORY_ACCESS_OK) {
 				tmp = 0;
+				if (arithflag) {
+					if (cpu->byte_order ==
+					    EMUL_BIG_ENDIAN) {
+						if (tmp_data[0] & 0x80)
+							tmp --;
+					} else {
+						if (tmp_data[tmp_data_len-1]
+						    & 0x80)
+							tmp --;
+					}
+				}
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					for (i=0; i<tmp_data_len; i++) {
 						tmp <<= 8;
@@ -2065,10 +2170,16 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					}
 				}
 
-				cpu->cd.ppc.gpr[rs] = tmp;
+				if (!fpreg)
+					cpu->cd.ppc.gpr[rs] = tmp;
+				else
+					cpu->cd.ppc.fpr[rs] = tmp;
 			}
 		} else {
-			tmp = cpu->cd.ppc.gpr[rs];
+			if (!fpreg)
+				tmp = cpu->cd.ppc.gpr[rs];
+			else
+				tmp = cpu->cd.ppc.fpr[rs];
 
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				for (i=0; i<tmp_data_len; i++)

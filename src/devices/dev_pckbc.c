@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.21 2004-10-25 01:54:03 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.22 2004-10-27 11:12:45 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -450,6 +450,15 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 				break;
 			case K_LDCMDBYTE:
 				d->state = STATE_LDCMDBYTE;
+				break;
+			case 0xa9:	/*  test auxiliary port  */
+				debug("[ pckbc: CONTROL 0xa9, TODO ]\n");
+				break;
+			case 0xaa:	/*  keyboard self-test  */
+				pckbc_add_code(d, 0x55, port_nr);
+				break;
+			case 0xd4:	/*  write to auxiliary port  */
+				debug("[ pckbc: CONTROL 0xd4, TODO ]\n");
 				break;
 			default:
 				fatal("[ pckbc: unknown CONTROL 0x%x ]\n",

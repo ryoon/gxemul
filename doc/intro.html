@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.25 2005-03-30 22:57:33 debug Exp $
+$Id: intro.html,v 1.26 2005-03-31 15:46:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -258,7 +258,7 @@ The machine types that are emulated best at the moment are:
 	<br>Serial controller, "VGA" text console, and SCSI are
 	emulated; enough to install and run NetBSD/arc and OpenBSD/arc.
   <p>
-  <li><b>NEC MobilePro 780</b> (an HPCmips machine)
+  <li><b>NEC MobilePro 770, 780, and 800</b> (HPCmips machines)
 	<br>Framebuffer, keyboard, and a PCMCIA IDE controller;
 	enough to install and run NetBSD/hpcmips.
 </ul>
@@ -368,7 +368,7 @@ interacted with similar to a real machine:
 	    <tr>
 	      <td valign="top"><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a></td>
 	      <td></td>
-	      <td valign="top">MobilePro 780</td>
+	      <td valign="top">NEC MobilePro</td>
 	    </tr>
 	  </table>
 	</td></tr>
@@ -407,7 +407,7 @@ interacted with similar to a real machine:
 	      <tr>
 		<td width=160 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
 		<td width=160 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
-		<td width=160 align=center><a href="20050329-netbsd-hpcmips-6.png"><img src="20050329-netbsd-hpcmips-6_small.png"></a></td>
+		<td width=160 align=center><a href="20050331-netbsd-hpcmips.png"><img src="20050331-netbsd-hpcmips_small.png"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
@@ -428,12 +428,12 @@ interacted with similar to a real machine:
 default kernel in Debian GNU/Linux does not support keyboards on the 5000/200
 (the specific DECstation model being emulated), so when the login prompt
 is reached you cannot interact with the system.
-Kaj-Michael Lang has made available a newer kernel (which supports
-keyboard input) here:
+Kaj-Michael Lang has compiled and made available a newer kernel from the
+current mips-linux development tree. You can find it here:
 <a href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
-This newer kernel, however, does not have Debian's ethernet patches,
-so you will not be able to use keyboard/framebuffer <i>and</i> networking
-at the same time.)
+This newer kernel supports keyboard input, but it does not have Debian's
+ethernet patches, so you will not be able to use keyboard/framebuffer 
+<i>and</i> networking at the same time.)
 
 
 <p>

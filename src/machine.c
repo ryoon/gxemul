@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.142 2004-07-17 18:50:21 debug Exp $
+ *  $Id: machine.c,v 1.143 2004-07-18 12:34:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2476,7 +2476,7 @@ void machine_init(struct memory *mem)
 		debug("machine: %s", machine_name);
 
 	if (emulated_hz < 1)
-		emulated_hz = 1000000;
+		emulated_hz = 1500000;
 
 	debug(" (%.2f MHz)\n", (float)emulated_hz / 1000000);
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.63 2004-07-17 20:10:10 debug Exp $
+ *  $Id: memory.c,v 1.64 2004-07-18 12:34:47 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -317,6 +317,7 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag)
 {
 	unsigned char *memblock;
+	int quick_2020_hack = 0;
 	void **table;
 	int entry, shrcount, mask, bits_per_memblock, bits_per_pagetable;
 
@@ -327,13 +328,21 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	mask = mem->entries_per_pagetable - 1;
 	shrcount = mem->max_bits - bits_per_pagetable;
 
+	if (bits_per_pagetable == 20 && bits_per_memblock == 20)
+		quick_2020_hack = 1;
+
 	/*
 	 *  Step through the pagetables until we find the correct memory
 	 *  block:
 	 */
 	while (shrcount >= bits_per_memblock) {
 		/*  printf("addr = %016llx\n", paddr);  */
-		entry = (paddr >> shrcount) & mask;
+
+		if (quick_2020_hack)
+			entry = (paddr >> 20) & 0xfffff;
+		else
+			entry = (paddr >> shrcount) & mask;
+
 		/*  printf("   entry = %x\n", entry);  */
 
 		if (table[entry] == NULL) {
@@ -366,9 +375,12 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 			memset(table[entry], 0, alloclen);
 		}
 
-		if (shrcount == bits_per_memblock)
+		if (shrcount == bits_per_memblock) {
 			memblock = (unsigned char *) table[entry];
-		else
+#ifdef HAVE_PREFETCH
+			PREFETCH(memblock + (paddr & (mem->memblock_size-1)));
+#endif
+		} else
 			table = (void **) table[entry];
 
 		shrcount -= bits_per_pagetable;
@@ -762,7 +774,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 */
 		ksu = (status & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT;
 		if (status & (STATUS_EXL | STATUS_ERL))
-			ksu = KSU_KERNEL << STATUS_KSU_SHIFT;
+			ksu = KSU_KERNEL;
 
 		/*  Assume KSU_USER.  */
 		x_64 = status & STATUS_UX;
@@ -772,24 +784,19 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		else if (ksu == KSU_SUPERVISOR)
 			x_64 = status & STATUS_SX;
 
+		/*  This suppresses compiler warning:  */
+		pageshift = 12;
+
 		/*
-		 *  Special case hacks, mostly for SGI machines:
+		 *  Special uncached access modes, for SGI machines
+		 *  and others (any R10000 system?).
+		 *
+		 *  Probably only accessible in kernel mode.
 		 *
 		 *  0x9000000080000000 = disable L2 cache (?)
 		 *  TODO:  Make this correct.
 		 */
 		switch (vaddr >> 60) {
-		case 8:
-		case 9:		/*  0x9000...  */
-			/*
-			 *  On IP30, addresses such as 0x900000001f600050 are used,
-			 *  but also things like 0x90000000a0000000.  (TODO)
-			 */
-			*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
-			return 1;
-		case 0xa:		/*  like 0xa8...  */
-			*return_addr = vaddr;
-			return 1;
 		/*
 		 *  TODO:  SGI-IP27 and others, when running Irix, seem to
 		 *  use these kernel-virtual-addresses as if they were
@@ -797,18 +804,21 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 *  tlb, say entry #0, would be a good solution?
 		 */
 		case 0xc:
-			if (emulation_type == EMULTYPE_SGI && machine >= 25) {
-				*return_addr = vaddr &
-				    (((uint64_t)1 << 44) - 1);
-				return 1;
-			}
-			break;
+			if (emulation_type != EMULTYPE_SGI ||
+			    machine >= 25)
+				break;
+		case 8:
+		case 9:
+		case 0xa:
+			/*
+			 *  On IP30, addresses such as 0x900000001f600050 are used,
+			 *  but also things like 0x90000000a0000000.  (TODO)
+			 */
+			*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
+			return 1;
 		default:
 			;
 		}
-
-		/*  This suppresses compiler warning:  */
-		pageshift = 12;
 
 		/*  This is needed later:  */
 		vaddr_asid = cp0->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
@@ -1241,7 +1251,7 @@ into the devices  */
 	if (cpu == NULL)
 		goto no_exception_access;
 
-
+#if 0
 	/*  Accesses that cross memory blocks are bad:  */
 	endaddr = paddr + len - 1;
 	endaddr &= ~(mem->memblock_size - 1);
@@ -1250,7 +1260,7 @@ into the devices  */
 		    "paddr=%016llx len=%i\n", (long long)paddr, (int)len);
 		return MEMORY_ACCESS_FAILED;
 	}
-
+#endif
 
 	/*
 	 *  Data and instruction cache emulation:

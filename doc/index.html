@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.203 2005-01-24 16:05:39 debug Exp $
+$Id: index.html,v 1.204 2005-01-25 19:59:18 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -1716,14 +1716,14 @@ of its portability. Then try to compile the hello world program:
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
 	$ <b>file hello</b>
 	hello: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q hello</b>
+	$ <b>./mips64emul -qa hello</b>
 	Hello world
 
 	$ <b>mips64-unknown-elf-gcc hello.c -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello</b>
 	$ <b>file hello</b>
 	hello: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q hello</b>
+	$ <b>./mips64emul -qa hello</b>
 	Hello world
 </pre>
 As you can see above, a GCC configured for mips64-unknown-elf can produce

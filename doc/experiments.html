@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.31 2005-02-19 10:45:31 debug Exp $
+$Id: experiments.html,v 1.32 2005-02-19 11:51:33 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -223,14 +223,13 @@ that aren't present on my FreeBSD system. 32-bit PPC works ok, though.&nbsp;]
 The "bare" MIPS machine has the following experimental devices:
 
 <p>
-<center><table border="0" width="85%">
+<center><table border="0" width="80%">
 
   <tr>
-    <td width="30">&nbsp;</td>
-    <td align="left" valign="top" width="250">
+    <td align="left" valign="top" width="200">
 	<b>cons:</b>
-	<p>This is a simple "console" device, for writing
-	characters to the mips64emul terminal.
+	<p>This is a simple console device, for writing
+	characters to the controlling terminal.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0">devices/dev_cons.c</font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x10000000</font>
     </td>
@@ -244,12 +243,12 @@ The "bare" MIPS machine has the following experimental devices:
 	  <tr>
 	    <td align="left" valign="top">0x0000</td>
 	    <td align="left" valign="top">
-		Read: getchar() (non-blocking)<br>
-		Write: putchar(ch)</td>
+		Read: <b>getchar()</b> (non-blocking)<br>
+		Write: <b>putchar(ch)</b></td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0010</td>
-	    <td align="left" valign="top">Read or write: halt()<br>
+	    <td align="left" valign="top">Read or write: <b>halt()</b><br>
 		(Useful for exiting the emulator.)</td>
 	  </tr>
 	</table>
@@ -261,7 +260,6 @@ The "bare" MIPS machine has the following experimental devices:
   </tr>
 
   <tr>
-    <td></td>
     <td align="left" valign="top">
 	<b>mp:</b>
 	<p>This device controls the behaviour of CPUs in an emulated
@@ -278,56 +276,56 @@ The "bare" MIPS machine has the following experimental devices:
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0000</td>
-	    <td align="left" valign="top">Read: whoami().
+	    <td align="left" valign="top">Read: <b>whoami()</b>.
 		Returns the id of the CPU doing the read.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0010</td>
-	    <td align="left" valign="top">Read: ncpus().
+	    <td align="left" valign="top">Read: <b>ncpus()</b>.
 		Returns the number of CPUs in the system.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0020</td>
-	    <td align="left" valign="top">Write: startupcpu(i).
+	    <td align="left" valign="top">Write: <b>startupcpu(i)</b>.
 		Starts CPU i. It begins execution at the address
 		set by a write to startupaddr (see below).</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0030</td>
-	    <td align="left" valign="top">Write: startupaddr(addr).
+	    <td align="left" valign="top">Write: <b>startupaddr(addr)</b>.
 		Sets the starting address for CPUs.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0040</td>
-	    <td align="left" valign="top">Write: pause_addr(addr).
+	    <td align="left" valign="top">Write: <b>pause_addr(addr)</b>.
 		Sets the pause address. (TODO: This is not
 		used anymore?)</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0050</td>
-	    <td align="left" valign="top">Write: pause_cpu(i).
+	    <td align="left" valign="top">Write: <b>pause_cpu(i)</b>.
 		Stops all CPUs <i>except</i> CPU i.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0060</td>
-	    <td align="left" valign="top">Write: unpause_cpu(i).
+	    <td align="left" valign="top">Write: <b>unpause_cpu(i)</b>.
 		Unpauses all CPUs <i>except</i> CPU i.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0070</td>
-	    <td align="left" valign="top">Write: startupstack(addr).
+	    <td align="left" valign="top">Write: <b>startupstack(addr)</b>.
 		Sets the startup stack address. (CPUs started with
 		startupcpu() above will have their stack pointer
 		set to this value.)</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0080</td>
-	    <td align="left" valign="top">Read: hardware_random().
+	    <td align="left" valign="top">Read: <b>hardware_random()</b>.
 		This produces a "random" number.</td>
 	  </tr>
 	  <tr>
 	    <td align="left" valign="top">0x0090</td>
-	    <td align="left" valign="top">Read: memory().
+	    <td align="left" valign="top">Read: <b>memory()</b>.
 		Returns the number of bytes of RAM in the system.</td>
 	  </tr>
 	</table>
@@ -339,7 +337,6 @@ The "bare" MIPS machine has the following experimental devices:
   </tr>
 
   <tr>
-    <td></td>
     <td align="left" valign="top">
 	<b>fb:</b>
 	<p>A simple linear framebuffer, for graphics output.
@@ -381,11 +378,23 @@ in a non-cached manner.)
 0x10000000, 0x11000000 etc., so no need to add any virtual displacement.)
 
 <p>
-The <b>cons</b> and <b>mp</b> devices are mostly agnostic when it comes to 
+The <b>mp</b> device is agnostic when it comes to 
 word-length. For example, when reading offset 0x0000 of the <b>mp</b> 
 device, you may use any kind of read (an 8-bit read will work just as well 
 as a 64-bit read, although the value will be truncated to 8 bits in the 
 first case).
+
+<p>
+The <b>cons</b> device should be accessed using 8-bit reads and writes.
+Doing a getchar() (ie reading from offset 0x0000) returns 0x00 if no 
+character was available.
+
+<p>
+On MIPS, the <b>cons</b> device is hardwired to interrupt 2 (the lowest 
+hardware interrupt). Whenever a character is available, the interrupt is 
+asserted. When there are no more available characters, the interrupt is 
+deasserted. (Remember that the interrupt has to be enabled in the status
+register of the system coprocessor.)
 
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.350 2005-02-18 06:01:17 debug Exp $
+ *  $Id: machine.c,v 1.351 2005-02-19 11:51:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1227,7 +1227,7 @@ void machine_setup(struct machine *machine)
 		machine->machine_name = "\"Bare\" MIPS test machine";
 
 		machine->main_console_handle = dev_cons_init(
-		    machine, mem, DEV_CONS_ADDRESS, "console");
+		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
 
 		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
 
@@ -3914,8 +3914,9 @@ for (i=0; i<32; i++)
 		 */
 		machine->machine_name = "\"Bare\" PPC test machine";
 
+		/*  TODO: interrupt for PPC?  */
 		machine->main_console_handle = dev_cons_init(
-		    machine, mem, DEV_CONS_ADDRESS, "console");
+		    machine, mem, DEV_CONS_ADDRESS, "console", 0);
 
 		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
 

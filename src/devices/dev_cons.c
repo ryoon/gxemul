@@ -25,13 +25,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.23 2005-02-18 06:51:54 debug Exp $
+ *  $Id: dev_cons.c,v 1.24 2005-02-19 11:51:33 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
  *  This device provides memory mapped I/O for a simple console supporting
  *  putchar (writing to memory) and getchar (reading from memory), and
- *  support for halting the emulator.  (This is useful for regression tests.)
+ *  support for halting the emulator.  (This is useful for regression tests,
+ *  Hello World-style test programs, and other simple experiments.)
  */
 
 #include <stdio.h>
@@ -46,9 +47,26 @@
 #include "misc.h"
 
 
+#define	CONS_TICK_SHIFT		14
+
 struct cons_data {
 	int		console_handle;
+	int		irq_nr;
 };
+
+
+/*
+ *  dev_cons_tick():
+ */
+void dev_cons_tick(struct cpu *cpu, void *extra)
+{
+	struct cons_data *d = extra;
+
+	cpu_interrupt_ack(cpu, d->irq_nr);
+
+	if (console_charavail(d->console_handle))
+		cpu_interrupt(cpu, d->irq_nr);
+}
 
 
 /*
@@ -91,6 +109,8 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem,
 			data[i] = ch;
 	}
 
+	dev_cons_tick(cpu, extra);
+
 	return 1;
 }
 
@@ -99,7 +119,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem,
  *  dev_cons_init():
  */
 int dev_cons_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, char *name)
+	uint64_t baseaddr, char *name, int irq_nr)
 {
 	struct cons_data *d;
 	char *name2;
@@ -110,7 +130,7 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct cons_data));
-
+	d->irq_nr = irq_nr;
 	d->console_handle = console_start_slave(machine, name);
 
 	name2 = malloc(strlen(name) + 20);
@@ -125,6 +145,7 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, name2, baseaddr, DEV_CONS_LENGTH,
 	    dev_cons_access, d, MEM_DEFAULT, NULL);
+	machine_add_tickfunction(machine, dev_cons_tick, d, CONS_TICK_SHIFT);
 
 	return d->console_handle;
 }

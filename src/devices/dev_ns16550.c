@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.31 2005-02-18 06:51:55 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.32 2005-02-19 11:51:33 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -72,7 +72,6 @@ struct ns_data {
 
 /*
  *  dev_ns16550_tick():
- *
  */
 void dev_ns16550_tick(struct cpu *cpu, void *extra)
 {

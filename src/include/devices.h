@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.143 2005-02-14 09:22:50 debug Exp $
+ *  $Id: devices.h,v 1.144 2005-02-19 11:51:34 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -115,10 +115,13 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 #define	BT459_PX		1	/*  px[g]  */
 #define	BT459_BA		2	/*  cfb  */
 #define	BT459_BBA		3	/*  sfb  */
-int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+int dev_bt459_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
 struct vfb_data;
-void dev_bt459_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
-	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int color_fb_flag, int irq_nr, int type);
+void dev_bt459_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t baseaddr_irq, struct vfb_data *vfb_data,
+	int color_fb_flag, int irq_nr, int type);
 
 /*  dev_cons.c:  */
 #define	DEV_CONS_ADDRESS		0x0000000010000000
@@ -129,12 +132,15 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *);
 int dev_cons_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, char *name);
+	uint64_t baseaddr, char *name, int irq_nr);
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
-int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned char *color_plane_mask);
+int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
+	unsigned char *color_plane_mask);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080

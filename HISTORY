@@ -400,3 +400,6 @@ HISTORY of mips64emul
 		zero-fill.
 		Adding a (new) regression test skeleton.
 20040321	Some really minor updates.
+20040323	Fixes to allow SGI-IP20 and IP22 to work a bit better
+		(aliased memory), and adding "private" firmware-like vectors
+		to arcbios emul.

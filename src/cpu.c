@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.52 2004-05-06 03:51:17 debug Exp $
+ *  $Id: cpu.c,v 1.53 2004-05-11 02:13:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2559,6 +2559,9 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	int64_t mseconds;
 	struct rusage rusage;
 
+	static int64_t mseconds_last = 0;
+	static int64_t ncycles_last = -1;
+
 	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
 
 	getrusage(RUSAGE_SELF, &rusage);
@@ -2569,11 +2572,18 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	if (mseconds == 0)
 		mseconds = 1;
 
-	printf("[ %lli cycles, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
+	if (mseconds - mseconds_last == 0)
+		mseconds_last --;
+
+	printf("[ %lli cycles, %lli instr/sec current, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
 	    (long long) ncycles,
+	    (long long) ((long long)1000 * (ncycles-ncycles_last) / (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ncycles / mseconds),
 	    bootstrap_cpu,
 	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
+
+	ncycles_last = ncycles;
+	mseconds_last = mseconds;
 }
 
 

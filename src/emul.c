@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.71 2004-09-17 20:49:38 debug Exp $
+ *  $Id: emul.c,v 1.72 2004-09-23 23:22:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -424,6 +424,7 @@ void debugger(void)
 		    strcasecmp(cmd, "registers") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
 				cpu_register_dump(debugger_emul->cpus[i]);
+			last_cmd_len = 0;
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
 			return;

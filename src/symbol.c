@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.22 2005-02-13 12:04:42 debug Exp $
+ *  $Id: symbol.c,v 1.23 2005-03-20 11:11:48 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -115,6 +115,9 @@ char *get_symbol_name(struct symbol_context *sc, uint64_t addr,
 {
 	struct symbol *s;
 	int stepsize, ofs;
+
+	if (sc->n_symbols == 0)
+		return NULL;
 
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;

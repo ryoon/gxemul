@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.82 2004-07-09 09:17:50 debug Exp $
+ *  $Id: devices.h,v 1.83 2004-07-11 03:17:24 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -386,6 +386,12 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
+
+/*  dev_sfb.c:  */
+#define	DEV_SFB_LENGTH		0x400000
+int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sfb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	struct vfb_data *vfb_data);
 
 /*  dev_sgec.c:  */
 #define	DEV_SGEC_LENGTH		0x1000

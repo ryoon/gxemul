@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.55 2005-01-16 05:18:24 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.56 2005-01-16 06:14:02 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
+ *  (DS1687 as used in some SGI machines is similar to MC146818.)
  *
  *  This device contains Date/time, the machine's ethernet address (on
  *  DECstation 3100), and can cause periodic (hardware) interrupts.
@@ -53,7 +54,8 @@
 #define	TICK_STEPS_SHIFT	14
 
 
-#define	N_REGISTERS	256
+/*  256 on DECstation, SGI uses reg at 72*4 as the Century  */
+#define	N_REGISTERS	1024
 struct mc_data {
 	int	access_style;
 	int	last_addr;
@@ -212,6 +214,10 @@ static void mc146818_update_time(struct mc_data *mc_data)
 			  (mc_data->reg[0x24] - 30 + 40)
 			: (mc_data->reg[0x24] - 40)
 		      );
+
+		/*  Century:  */
+		mc_data->reg[72 * 4] = 19 + (tmp->tm_year / 100);
+
 		break;
 	case MC146818_DEC:
 		/*
@@ -230,6 +236,7 @@ static void mc146818_update_time(struct mc_data *mc_data)
 		mc_data->reg[0x1c] = to_bcd(mc_data->reg[0x1c]);
 		mc_data->reg[0x20] = to_bcd(mc_data->reg[0x20]);
 		mc_data->reg[0x24] = to_bcd(mc_data->reg[0x24]);
+		mc_data->reg[72*4] = to_bcd(mc_data->reg[72*4]);
 	}
 }
 
@@ -470,6 +477,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		case 0x1c:
 		case 0x20:
 		case 0x24:
+		case 288:	/*  Century, on SGI (DS1687)  */
 			/*
 			 *  If the SET bit is set, then we don't automatically
 			 *  update the values.  Otherwise, we update them by
@@ -481,7 +489,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			mc146818_update_time(mc_data);
 			break;
 		default:
-			/*  debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);  */
+			debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);
 			;
 		}
 
@@ -520,7 +528,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	int irq_nr, int access_style, int addrdiv)
 {
 	unsigned char ether_address[6];
-	int i;
+	int i, dev_len;
 	struct mc_data *mc_data;
 
 	mc_data = malloc(sizeof(struct mc_data));
@@ -581,13 +589,18 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,
 		    1, dev_mc146818_jazz_access, (void *)mc_data, MEM_DEFAULT, NULL);
 
-	if (access_style == MC146818_PC_CMOS)
-		memory_device_register(mem, "mc146818", baseaddr,
-		    2 * addrdiv, dev_mc146818_access, (void *)mc_data, MEM_DEFAULT, NULL);
-	else
-		memory_device_register(mem, "mc146818", baseaddr,
-		    DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access,
-		    (void *)mc_data, MEM_DEFAULT, NULL);
+	dev_len = DEV_MC146818_LENGTH;
+	switch (access_style) {
+	case MC146818_PC_CMOS:
+		dev_len = 2;
+		break;
+	case MC146818_SGI:
+		dev_len = 0x400;
+	}
+
+	memory_device_register(mem, "mc146818", baseaddr,
+	    dev_len * addrdiv, dev_mc146818_access,
+	    (void *)mc_data, MEM_DEFAULT, NULL);
 
 	mc146818_update_time(mc_data);
 

@@ -43,6 +43,7 @@ Most important stuff (but these are all non-trivial tasks):
 		    other.
 		o)  R4000:  watchhi/watchlo exceptions, and other exception
 		    handling details
+		o)  R10000:  memory space, exceptions, ...
 		o)  r2k/r3k: Make sure that registers (INCLUDING coprocessor registers)
 		    are always sign-extended. (32-bit stuff)
 		o)  R3000 "tri-byte stores"???
@@ -53,8 +54,8 @@ Most important stuff (but these are all non-trivial tasks):
 			x)  BEV and all exception vectors....
 			x)  Actual 64-bit addressing
 		o)  R5900:  weird TLB/cache? 128-bit GPRs? new instructions?
-		o)  5K, r10000: I've printed the manuals, so these should
-			be possible to cover
+		o)  R4300:  mmu? nintendo64
+		o)  5K (note: NOT R5000)
 		o)  actually use the R10K framemask for tlb lookups
 			http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/hdwr/bks/SGI_Developer/books/R10K_UM/sgi_html/t5.Ver.2.0.book_284.html
 		o)  R12000, R14000, R6000 (MIPS ISA II?), R8000 ?, R20000 ?
@@ -72,11 +73,7 @@ Most important stuff (but these are all non-trivial tasks):
 			x)  QBus (DECsystem 5400)
 
 		o)  DECstations (pmax):
-			framebuffers:
-				x) programmable cursors?
-				x) overlays?
-				x) 2D/3D accelerated framebuffers?
-				x) more VDACs
+			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
 			status words / control words, make this more portable/cleaner
 			scsi controller(s): sii, asc
 			ethernet controller(s): le, fddi?
@@ -87,8 +84,7 @@ Most important stuff (but these are all non-trivial tasks):
 				in software)
 			DECstation 5840? "xbi-based SMP"
 
-		o)  Cobalt:
-			PCI:  Tulip ethernet and harddisk controller
+		o)  Cobalt:  PCI and interrupt system, ethernet, harddisk controller(s)
 
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  More ARCBIOS stuff must be implemented

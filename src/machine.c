@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.36 2004-01-09 04:20:15 debug Exp $
+ *  $Id: machine.c,v 1.37 2004-01-09 16:23:16 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -952,14 +952,43 @@ void machine_init(struct memory *mem)
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");
+
+
+dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+
 				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
-				/*  mte (?) at 0x15000000  */
+				dev_sgi_mte_init(mem, 0x15000000);		/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(mem, 0x16000000);		/*  gbe?  framebuffer?  */
 				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
 				pci_data = dev_macepci_init(mem, 0x1f080000);	/*  macepci0  */
 				/*  mec0 ethernet at 0x1f280000  */		/*  mec0  */
-				dev_mace_init(mem, 0x1f310000);			/*  mace0  */
-				dev_pckbc_init(mem, 0x1f320000, 0);		/*  ???  */
+				/*
+				 *  A combination of NetBSD and Linux info:
+				 *
+				 *	1f000000	mace
+				 *	1f080000	macepci
+				 *	1f100000	vin1
+				 *	1f180000	vin2
+				 *	1f200000	vout
+				 *	1f280000	enet
+				 *	1f300000	perif:
+				 *	  1f300000	  audio
+				 *	  1f310000	  isa
+				 *	  1f320000	  kbdms
+				 *	  1f330000	  i2c
+				 *	  1f340000	  ust
+				 *	1f380000	isa ext
+				 * 	  1f390000	  com0 (serial)
+				 * 	  1f398000	  com1 (serial)
+				 * 	  1f3a0000	  mcclock0
+				 */
+				dev_mace_init(mem, 0x1f310000);						/*  mace0  */
+				dev_pckbc_init(mem, 0x1f320000, 0);					/*  ???  */
+				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
 				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
@@ -1039,16 +1068,19 @@ case arc_CacheClass:
 		for (i=0; i<100; i++)
 			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 6;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 9;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
 
 		store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
 		store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
 		store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
-		store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x240);
-		store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x280);
-		store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x2c0);
-		store_32bit_word(ARC_ARGV_START + 0x18, 0);
+		store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x220);
+		store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x240);
+		store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x260);
+		store_32bit_word(ARC_ARGV_START + 0x18, ARC_ARGV_START + 0x280);
+		store_32bit_word(ARC_ARGV_START + 0x1c, ARC_ARGV_START + 0x2a0);
+		store_32bit_word(ARC_ARGV_START + 0x20, ARC_ARGV_START + 0x2c0);
+		store_32bit_word(ARC_ARGV_START + 0x24, 0);
 
 		/*  Boot string in ARC format:  */
 		init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
@@ -1063,19 +1095,24 @@ case arc_CacheClass:
 
 		bootarg = "-a";
 
+		/*
+		 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
+		 *  for more options.  It seems that on SGI machines, _ALL_ environment
+		 *  variables are passed on the command line.  (This is not true for ARC? TODO)
+		 */
+
 		store_string(ARC_ARGV_START + 0x100, bootstr);
 #if 1
 		store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
-		store_string(ARC_ARGV_START + 0x200, "root=nfs");
-		store_string(ARC_ARGV_START + 0x240, "cpufreq=3");
 #else
 		store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
-		store_string(ARC_ARGV_START + 0x200, "dbaud=9600");
-		store_string(ARC_ARGV_START + 0x240, "nogfxkbd=Yes");
 #endif
-
-		store_string(ARC_ARGV_START + 0x280, "OSLOADOPTIONS=-v");
-		/*  store_string(ARC_ARGV_START + 0x280, "diagmode=Yes");  */
+		store_string(ARC_ARGV_START + 0x200, "root=nfs");
+		store_string(ARC_ARGV_START + 0x220, "cpufreq=3");
+		store_string(ARC_ARGV_START + 0x240, "dbaud=9600");
+		store_string(ARC_ARGV_START + 0x260, "OSLOADOPTIONS=-v");
+		store_string(ARC_ARGV_START + 0x280, "verbose=istrue");
+		store_string(ARC_ARGV_START + 0x2a0, "showconfig=istrue");
 		store_string(ARC_ARGV_START + 0x2c0, bootarg);
 
 		/*  TODO:  not needed?  */
@@ -1098,6 +1135,7 @@ case arc_CacheClass:
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("eaddr=00:00:00:00:00:00", &addr);
+		add_environment_string("verbose=1", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;

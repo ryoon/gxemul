@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.187 2004-08-03 02:06:22 debug Exp $
+$Id: HISTORY,v 1.188 2004-08-03 02:25:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -871,3 +871,4 @@ HISTORY of mips64emul
 		Adding a skeleton for a 80x25 text console device (dev_vga),
 		useful for some ARC modes. (Character output is possible, but
 		no cursor yet.)
+		Adding a dev_zero device (returns zeroes on read).

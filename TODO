@@ -86,6 +86,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 	Emulation of specific machines and devices:
 		o)  SCSI controllers!
 		o)  "wdc" IDE controller!
+		o)  PC-style keyboard controller
 		o)  Busses, interrupt systems, and ROM emulation:
 			x)  Make interrupt sharing more generic!
 			x)  PCI:  i/o and interrupts

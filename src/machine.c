@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.148 2004-08-03 01:51:37 debug Exp $
+ *  $Id: machine.c,v 1.149 2004-08-03 02:25:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1996,7 +1996,7 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (Acer PICA-61)");
 
 				/*  TODO:  lots of stuff  */
-				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b7f60ULL, 0x60000003d0ULL);
+				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b8000ULL, 0x60000003d0ULL);
 
 				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
 				    0x2000002000ULL, 0, NULL);  */
@@ -2038,10 +2038,15 @@ void machine_init(struct memory *mem)
 
 				strcat(machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b7f60ULL, 0x900000003d0ULL);
+				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b8000ULL, 0x900000003d0ULL);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003f8ULL, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002f8ULL, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003e8ULL, 0, 1);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002e8ULL, 0, 1);
 
 				/*  PC kbd  */
-				dev_random_init(mem, 0x90000000060ULL, 5);
+				dev_zero_init(mem, 0x90000000064ULL, 1);
+				dev_random_init(mem, 0x90000000060ULL, 1);
 
 				break;
 
@@ -2099,9 +2104,11 @@ void machine_init(struct memory *mem)
 		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
 
 		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
-		/*  TODO:  get 79 and 24 from the current terminal settings?  */
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
+		/*  TODO:  get 80 and 24 from the current terminal settings?  */
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorXPosition, 1);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorYPosition, 1);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 80);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 25);
 		arcbios_dsp_stat.ForegroundColor = 7;
 		arcbios_dsp_stat.HighIntensity = 15;
 		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));

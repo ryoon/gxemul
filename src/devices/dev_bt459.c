@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.35 2004-11-05 23:06:45 debug Exp $
+ *  $Id: dev_bt459.c,v 1.36 2004-11-05 23:41:42 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -134,6 +134,8 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 	 *  1 isn't used, 2 means white, and 3 means black. So it's all in
 	 *  reverse. The 'bw_only' flag is useful for this.
 	 *
+	 *  NetBSD/pmax uses 1 for white, not 2.
+	 *
 	 *  TODO: Is there a way to know which color scheme is used, without
 	 *  this kind of hack?
 	 */
@@ -162,7 +164,7 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 						/*  2 = white  */
 						/*  3 = black  */
 						pixelvalue = CURSOR_COLOR_TRANSPARENT;
-						if (color == 2)
+						if (color == 1 || color == 2)
 							pixelvalue =
 							    N_GRAYCOLORS - 1;
 						if (color == 3)
@@ -184,9 +186,7 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 		 *  but if the old and new differ, the cursor is redrawn.
 		 *  (Hopefully this will "never" overflow.)
 		 */
-/*		if (d->vfb_data->fb_window->cursor_on)
-			d->vfb_data->fb_window->cursor_on ++;
-*/		if (d->cursor_on)
+		if (d->cursor_on)
 			d->cursor_on ++;
 	}
 #endif
@@ -207,7 +207,6 @@ static void bt459_update_cursor_position(struct bt459_data *d,
 	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y ||
 	    d->cursor_on != old_cursor_on) {
 		int on;
-		int ysize_mul = 1;
 
 		d->cursor_x = new_cursor_x;
 		d->cursor_y = new_cursor_y;
@@ -221,7 +220,7 @@ static void bt459_update_cursor_position(struct bt459_data *d,
 			on = 0;
 
 		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y,
-		    on, d->cursor_xsize, d->cursor_ysize*ysize_mul);
+		    on, d->cursor_xsize, d->cursor_ysize);
 	}
 }
 

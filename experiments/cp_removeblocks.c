@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cp_removeblocks.c,v 1.1 2004-06-28 20:49:19 debug Exp $
+ *  $Id: cp_removeblocks.c,v 1.2 2004-06-28 21:08:56 debug Exp $
  *
  *  This program copies a file, but only those blocks that are not zero-
  *  filled.  Typical usage would be if you have a harddisk image stored
@@ -84,6 +84,14 @@ int main(int argc, char *argv[])
 
 			in_pos += len;
 		}
+	}
+
+	/*  This causes f2 to get the correct file size:  */
+	in_pos = ftell(f1);
+	if (in_pos > 0) {
+		fseek(f2, in_pos - 1, SEEK_SET);
+		buf[0] = '\0';
+		fwrite(buf, 1, 1, f2);
 	}
 
 	fclose(f1);

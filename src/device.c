@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.12 2005-02-26 16:53:33 debug Exp $
+ *  $Id: device.c,v 1.13 2005-02-26 17:37:25 debug Exp $
  *
  *  Device registry framework.
  */
@@ -299,6 +299,13 @@ void *device_add(struct machine *machine, char *name_and_params)
 		while (*s2 != '\0' && *s2 != ' ' && *s2 != ',' && *s2 != ';')
 			s2 ++;
 	}
+
+
+	/*
+	 *  Call the init function for this device:
+	 */
+
+	devinit.return_ptr = NULL;
 
 	if (!p->initf(&devinit)) {
 		fatal("error adding device (\"%s\")\n", name_and_params);

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.43 2005-02-02 23:55:19 debug Exp $
+$Id: technical.html,v 1.44 2005-02-26 17:37:23 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -388,39 +388,52 @@ ftp, though.
 Each file in the device/ directory is responsible for one hardware
 device. These are used from src/machine.c, when initializing which hardware a
 particular machine model will be using.
+
+<p>
 (I'll be using the name 'foo' as the name of the device in all these
 examples.  This is pseudo code, it might need some modification to 
 actually compile and run.)
-<p>
 
+<p>
 Each device should have the following:
-<p>
 
+<p>
 <ul>
-  <li>An init function in dev_foo.c. It would typically look
+  <li>A devinit function in dev_foo.c. It would typically look
 	something like this:
 <pre>
-	void dev_foo_init(struct machine *machine, struct memory *mem,
-	    uint64_t baseaddr, int irq_nr)
+	/*
+	 *  devinit_foo():
+	 */
+	int devinit_foo(struct devinit *devinit)
 	{
-		struct foo_data *d;
+	        struct foo_data *d = malloc(sizeof(struct foo_data));
 
-		d = malloc(sizeof(struct foo_data));
-		if (d == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		memset(d, 0, sizeof(struct foo_data));
-		d->irq_nr = irq_nr;
+	        if (d == NULL) {
+	                fprintf(stderr, "out of memory\n");
+	                exit(1);
+	        }
+	        memset(d, 0, sizeof(struct foon_data));
 
-		memory_device_register(mem, "foo", baseaddr,
-		    DEV_FOO_LENGTH, dev_foo_access, d);
-
+		/*
+		 *  Set up stuff here, for example fill d with useful
+		 *  data. devinit contains settings like address, irq_nr,
+		 *  and other things.
+		 *
+		 *  ...
+		 */
+        
+	        memory_device_register(devinit->machine->memory, devinit->name,
+	            devinit->addr, DEV_FOO_LENGTH,
+	            dev_foo_access, (void *)d, MEM_DEFAULT, NULL);
+        
 		/*  This should only be here if the device
 		    has a tick function:  */
 		machine_add_tickfunction(machine, dev_foo_tick, d,
 		    FOO_TICKSHIFT);
-	}
+
+	        return 1;       
+	}       
 </pre><br>
 
   <li>The init function, the access function (described further down)
@@ -479,17 +492,20 @@ Each device should have the following:
 	}
 </pre><br>
 </ul>
+
 <p>
 The return value of the access function has until 20040702 been a 
 true/false value; 1 for success, or 0 for device access failure. A device 
-access failure will be seen as a MIPS DBE exception from the CPU.
+access failure (on MIPS) will result in a DBE exception.
+
 <p>
-Right now I'm converting the devices to support arbitrary memory latency 
-values. The return value is now the number of cycles that the read or 
+Some devices are converted to support arbitrary memory latency
+values. The return value is the number of cycles that the read or 
 write access took. A value of 1 means one cycle, a value of 10 means 10 
 cycles. Negative values are used for device access failures, and the 
 absolute value of the value is then the number of cycles; a value of -5 
 means that the access failed, and took 5 cycles.
+
 <p>
 To be compatible with pre-20040702 devices, a return value of 0 is treated 
 by the caller (in src/memory.c) as a value of -1.
@@ -505,10 +521,9 @@ by the caller (in src/memory.c) as a value of -1.
 In order to make sure that the emulator actually works like it is supposed 
 to, it must be tested. For this purpose, there is a simple regression 
 testing framework in the <b>tests/</b> directory.
-<p>
 
-<i>NOTE:  The regression testing framework is basically just a skeleton so 
-far.
+<p>
+<i>NOTE:  The regression testing framework is basically just a skeleton so far.
 Regression tests are very good to have. However, the fact that complete
 operating systems can run in the emulator indicate that the emulation is
 probably not too incorrect. This makes it less of a priority to write 
@@ -571,4 +586,3 @@ Read <b>tests/README</b> for more information.
 
 </body>
 </html>
-

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.8 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_sn.c,v 1.9 2005-02-26 17:37:22 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -38,7 +38,7 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
@@ -47,6 +47,8 @@
 
 #include "dp83932reg.h"
 
+
+#define	DEV_SN_LENGTH		0x1000
 
 struct sn_data {
 	int		irq_nr;
@@ -96,10 +98,9 @@ int dev_sn_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_sn_init():
+ *  devinit_sn():
  */
-void dev_sn_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, int irq_nr)
+int devinit_sn(struct devinit *devinit)
 {
 	char *name2;
 	struct sn_data *d = malloc(sizeof(struct sn_data));
@@ -109,7 +110,8 @@ void dev_sn_init(struct cpu *cpu, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sn_data));
-	d->irq_nr = irq_nr;
+	d->irq_nr = devinit->irq_nr;
+
 	net_generate_unique_mac(d->macaddr);
 
 	name2 = malloc(50);
@@ -117,13 +119,17 @@ void dev_sn_init(struct cpu *cpu, struct memory *mem,
 		fprintf(stderr, "out of memory in dev_sn_init()\n");
 		exit(1);
 	}
-	sprintf(name2, "sn [%02x:%02x:%02x:%02x:%02x:%02x]",
+	sprintf(name2, "%s [%02x:%02x:%02x:%02x:%02x:%02x]",
+	    devinit->name,
 	    d->macaddr[0], d->macaddr[1], d->macaddr[2],
 	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);
 
-	memory_device_register(mem, name2, baseaddr, DEV_SN_LENGTH,
+	memory_device_register(devinit->machine->memory, name2,
+	    devinit->addr, DEV_SN_LENGTH,
 	    dev_sn_access, (void *)d, MEM_DEFAULT, NULL);
 
-	net_add_nic(cpu->machine->emul->net, d, d->macaddr);
+	net_add_nic(devinit->machine->emul->net, d, d->macaddr);
+
+	return 1;
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.370 2005-02-26 16:53:33 debug Exp $
+ *  $Id: machine.c,v 1.371 2005-02-26 17:37:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2628,7 +2628,7 @@ Why is this here? TODO
 
 				pci_data = dev_rd94_init(machine, mem, 0x80000000ULL, 0);
 
-				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
+				device_add(machine, "sn addr=0x80001000 irq=0");
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
 				i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
 				j = dev_ns16550_init(machine, mem, 0x80006000ULL,
@@ -2765,7 +2765,8 @@ Why is this here? TODO
 					break;
 				}
 
-				dev_sn_init(cpu, mem, 0x80001000ULL, 8 + 4);
+				/*  irq 8 + 4  */
+				device_add(machine, "sn addr=0x80001000 irq=12");
 
 				dev_asc_init(machine, mem,
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.9 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.10 2004-07-11 01:02:13 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -223,11 +223,11 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
 
 	case 0x10000:		/*  vt_xy, according to Linux  */
 		if (writeflag == MEM_WRITE)
-			d->freeze = idata & (1<<31)? 1 : 0;
+			d->freeze = idata & ((uint32_t)1<<31)? 1 : 0;
 		else {
 			/*  bit 31 = freeze, 23..12 = cury, 11.0 = curx  */
 			odata = ((random() % (d->yres + 10)) << 12)
-			       + (random() % (d->xres + 10)) + (d->freeze? (1 << 31) : 0);
+			       + (random() % (d->xres + 10)) + (d->freeze? ((uint32_t)1 << 31) : 0);
 odata = random();	/*  testhack for the ip32 prom  */
 		}
 		break;

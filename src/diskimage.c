@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.15 2004-04-11 15:47:17 debug Exp $
+ *  $Id: diskimage.c,v 1.16 2004-04-12 08:19:15 debug Exp $
  *
  *  Disk image support.
  *
@@ -54,6 +54,9 @@ struct diskimage {
 
 	FILE		*f;
 };
+
+
+extern int emulation_type;
 
 
 #define	MAX_DISKIMAGES		8
@@ -271,19 +274,23 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		memcpy(xferp->data_in+16, "DISK            ", 16);
 		memcpy(xferp->data_in+32, "V0.0", 4);
 
-memcpy(xferp->data_in+8,  "DEC     ", 8);
-memcpy(xferp->data_in+16, "RZ58            ", 16);
+		if (emulation_type == EMULTYPE_DEC) {
+			/*  DEC, RZxx:  */
+			memcpy(xferp->data_in+8,  "DEC     ", 8);
+			memcpy(xferp->data_in+16, "RZ58            ", 16);
+		}
 
 		/*  Some data is different for CD-ROM drives:  */
 		if (diskimages[disk_id]->is_a_cdrom) {
 			xferp->data_in[0] = 0x05;	/*  0x05 = CD-ROM  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
-			memcpy(xferp->data_in+16, "CDROM           ", 16);
+			memcpy(xferp->data_in+16, "CD-ROM          ", 16);
 
-memcpy(xferp->data_in+8,  "SONY    ", 8);
-memcpy(xferp->data_in+16, "CD-ROM          ", 16);
+			if (emulation_type == EMULTYPE_DEC) {
+				/*  SONY, CD-ROM:  */
+				memcpy(xferp->data_in+8,  "SONY    ", 8);
+			}
 		}
-
 
 		/*  Return msg and status:  */
 		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);

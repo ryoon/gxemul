@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.276 2005-02-01 14:20:38 debug Exp $
+ *  $Id: cpu.c,v 1.277 2005-02-01 14:39:38 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -148,8 +148,11 @@ void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	case ARCH_MIPS:
 		mips_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
 		break;
+	case ARCH_PPC:
+		ppc_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
+		break;
 	default:
-		fatal("cpu_disassemble_instr(): not for PPC yet\n");
+		fatal("cpu_disassemble_instr(): ?\n");
 	}
 }
 

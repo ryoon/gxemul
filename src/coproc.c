@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.164 2005-02-01 06:48:53 debug Exp $
+ *  $Id: coproc.c,v 1.165 2005-02-01 14:39:38 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -38,13 +38,13 @@
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "mips_cpu_types.h"
 #include "misc.h"
-#include "opcodes.h"
+#include "opcodes_mips.h"
 
 
 extern volatile int single_step;

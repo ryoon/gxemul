@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.8 2005-02-01 14:20:38 debug Exp $
+ *  $Id: cpu_mips.c,v 1.9 2005-02-01 14:39:38 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -43,14 +43,14 @@
 #include "console.h"
 #include "cop0.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "debugger.h"
 #include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "mips_cpu_types.h"
-#include "opcodes.h"
+#include "opcodes_mips.h"
 #include "symbol.h"
 
 
@@ -667,8 +667,9 @@ static const char *cpu_flags(struct cpu *cpu)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->cd.mips.pc_last should be the address of the instruction,
- *  cpu->cd.mips.pc should already point to the _next_ instruction.
+ *  If running is 1, cpu->cd.mips.pc_last should be the address of the
+ *  instruction, cpu->cd.mips.pc should already point to the _next_
+ *  instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
  *  register contents) will not be shown, and addr will be used instead of
@@ -688,7 +689,8 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (running)
 		dumpaddr = cpu->cd.mips.pc_last;
 
-	symbol = get_symbol_name(&cpu->machine->symbol_context, dumpaddr, &offset);
+	symbol = get_symbol_name(&cpu->machine->symbol_context,
+	    dumpaddr, &offset);
 	if (symbol != NULL && offset==0)
 		debug("<%s>\n", symbol);
 

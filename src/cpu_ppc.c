@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.6 2005-02-01 14:20:38 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.7 2005-02-01 14:39:38 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -85,6 +85,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
+	cpu->cd.ppc.mode        = 64;	/*  TODO: how about 32-bit CPUs?  */
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
 	if (cpu_id == 0) {
@@ -284,5 +285,79 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 			*match_register = 1;
 		}
 	}
+}
+
+
+/*
+ *  ppc_cpu_disassemble_instr():
+ *
+ *  Convert an instruction word into human readable format, for instruction
+ *  tracing.
+ *
+ *  If running is 1, cpu->cd.ppc.pc should be the address of the
+ *  instruction.
+ *
+ *  If running is 0, things that depend on the runtime environment (eg.
+ *  register contents) will not be shown, and addr will be used instead of
+ *  cpu->cd.ppc.pc for relative addresses.
+ */
+void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+	int running, uint64_t dumpaddr, int bintrans)
+{
+	int hi6;
+	uint64_t addr, offset;
+	uint32_t iword;
+	char *symbol;
+
+	if (running)
+		dumpaddr = cpu->cd.ppc.pc;
+
+	symbol = get_symbol_name(&cpu->machine->symbol_context,
+	    dumpaddr, &offset);
+	if (symbol != NULL && offset==0)
+		debug("<%s>\n", symbol);
+
+	if (cpu->machine->ncpus > 1 && running)
+		debug("cpu%i: ", cpu->cpu_id);
+
+	if (cpu->cd.ppc.mode == 32)
+		debug("%08x", (int)dumpaddr);
+	else
+		debug("%016llx", (long long)dumpaddr);
+
+	/*
+	 *  NOTE/TODO: The code in debugger.c reverses byte order, because
+	 *  it was written for little-endian mips first. Hm. This is ugly.
+	 */
+	iword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8)
+	    + instr[0];
+
+	debug(": %08x\t", iword);
+
+	if (bintrans && !running) {
+		debug("(bintrans)");
+		goto disasm_ret;
+	}
+
+	/*
+	 *  Decode the instruction:
+	 */
+
+	hi6 = iword >> 26;
+
+	switch (hi6) {
+	case PPC_HI6_SC:
+		if (iword == 0x44000002)
+			debug("sc");
+		else
+			debug("TODO (sc?)");
+		break;
+	default:
+		/*  TODO  */
+		debug("TODO (hi6 = 0x%02x)", hi6);
+	}
+
+disasm_ret:
+	debug("\n");
 }
 

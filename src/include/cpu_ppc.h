@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.3 2005-01-31 05:45:51 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.4 2005-02-01 14:39:37 debug Exp $
  */
 
 #include "misc.h"
@@ -61,6 +61,7 @@ struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
 
 	uint64_t	pc;		/*  Program Counter (TODO: CIA?)  */
+	int		mode;		/*  32 or 64  */
 
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */
@@ -87,10 +88,7 @@ int ppc_cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void ppc_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
         /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
         int vaddr_asid, int x_64);
-void ppc_cpu_cause_simple_exception(struct cpu *cpu, int exc_code);
-void ppc_cpu_run_init(struct emul *emul, struct machine *machine);
 int ppc_cpu_run(struct emul *emul, struct machine *machine);
-void ppc_cpu_run_deinit(struct emul *emul, struct machine *machine);
 void ppc_cpu_dumpinfo(struct cpu *cpu);
 void ppc_cpu_list_available_types(void);
 

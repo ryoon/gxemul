@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.79 2005-02-01 07:26:05 debug Exp $
+ *  $Id: debugger.c,v 1.80 2005-02-01 14:39:38 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1235,6 +1235,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		r = memory_rw(c, mem, addr, &buf[0], sizeof(buf), MEM_READ,
 		    CACHE_NONE | NO_EXCEPTIONS);
 
+		/*  TODO: hm. the default for ppc is already bigendian...  */
 		if (c->byte_order == EMUL_BIG_ENDIAN) {
 			int tmp;
 			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;

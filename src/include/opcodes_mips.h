@@ -2,7 +2,7 @@
 #define	OPCODES_H
 
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes.h,v 1.3 2005-01-09 01:55:28 debug Exp $
+ *  $Id: opcodes_mips.h,v 1.1 2005-02-01 14:39:37 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  */

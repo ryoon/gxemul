@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.63 2005-02-04 09:50:47 debug Exp $
+ *  $Id: net.c,v 1.64 2005-02-06 19:35:20 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2047,6 +2047,9 @@ static void parse_resolvconf(struct net *net)
 void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
 {
 	int iadd = 4;
+
+	if (net == NULL)
+		return;
 
 	net->n_nics ++;
 	net->nic_extra = realloc(net->nic_extra, sizeof(void *)

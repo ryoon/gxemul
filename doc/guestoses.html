@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.4 2005-02-06 12:36:35 debug Exp $
+$Id: guestoses.html,v 1.5 2005-02-06 19:35:19 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -487,6 +487,80 @@ boot from the harddisk image:
 (The <b>-b</b> command line option enables dynamic binary translation,
 which isn't always 100% stable, so if things seem buggy you might want
 to try to remove that from the command line.)
+
+
+
+
+
+
+<p><br>
+<a name="openbsdsgiinstall"></a>
+<h3>How to run OpenBSD/sgi in the emulator:</h3>
+
+OpenBSD/sgi for SGI-IP32 ("O2") can theoretically run with root on nfs.
+
+<p>
+<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+
+<p>
+[&nbsp;2005-02-06: OpenBSD/sgi has not had an official release yet, but
+-current snapshots are available. See <a href="http://www.openbsd.org/sgi.html">http://www.openbsd.org/sgi.html</a>
+for more information about OpenBSD on SGI machines.&nbsp;]
+
+<p>
+mips64emul does not yet emulate the AHC PCI SCSI controller in the O2, so 
+another (emulated) machine must be used as the nfs root server. Performing 
+this setup is very time consuming, but necessary.
+
+<p>
+<ol>
+  <li><a href="#netbsdinstall">Install NetBSD/pmax</a> or some other
+	OS inside the emulator. This will be the "nfs server" machine.
+  <p>
+  <li>On the emulated nfs server machine, configure networking so that
+	it uses IPv4 address 10.0.0.2, and download the entire
+	OpenBSD/sgi snapshot from the ftp server:<pre>
+	# <b>cd /; mkdir x; cd x</b>
+	# <b>ftp -i ftp.openbsd.org</b>
+	...
+	<b>cd pub/OpenBSD/snapshots/sgi</b>
+	<b>mget *</b>
+
+</pre>
+  <li>Configure the nfs server machine to act as an nfs server.
+  <p>
+  <li>Create a configuration file along these lines:<pre>
+	<font color="#2020cf">!!mips64emul</font>
+
+	<b>emul(
+	    net()
+
+	    machine(
+	        type("dec")
+	        subtype("5000/200")
+	        bintrans(yes)
+	        disk("nbsd_pmax.img")
+	    )
+
+	    machine(
+	        type("sgi")
+	        subtype("ip32")
+	        bintrans(yes)
+	        load("openbsd-sgi-20050202-bsd")
+	    )
+	)</b>
+
+</pre>
+	Of course, you will need to change it to suit your system.
+  <p>
+  <li>Boot the nfs server and the OpenBSD/sgi client machine like this:<pre>
+	$ <b>./mips64emul @myconf</b>
+
+</pre>
+</ol>
+
+<p>
+TODO...
 
 
 

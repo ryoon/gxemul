@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.162 2004-12-14 05:05:04 debug Exp $
+$Id: index.html,v 1.163 2004-12-14 07:07:34 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1092,9 +1092,21 @@ reduce the risk for such crashes. (I haven't had time to come up with
 a clean solution to this yet.)
 </font>
 
+<p>
+It seems that there's a problem with getting a login prompt on serial 
+console (at least when I've done test installs), so when the installation 
+is finished you need to do the following:
+
+<p>
 <ol start="5">
+  <li>Download a normal kernel (not a RAMDISK one).<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
+	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
+
+</pre>
   <li>Boot Debian using the following command line:<pre>
-	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw init=/bin/sh' -d debian.img</b>
+	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw
+		init=/bin/sh' -d debian.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
 	You'll enter single-user mode. You need to add a line to
@@ -1110,6 +1122,12 @@ boot Debian:<pre>
 	$ <b>./mips64emul -D2 -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
+
+<p>
+The first time you boot Debian, some post-install configuration programs 
+will run. Everything is really slow, so you need a lot of patience, but 
+once everything is configured, you should be able to log in.
+
 
 
 

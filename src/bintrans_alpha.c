@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare682.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.50 2004-11-22 08:54:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.51 2004-11-22 09:19:08 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -804,15 +804,13 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED
 	 *  and cpu->delay_jmpaddr = pc + 4 + (imm << 2).
 	 *
-	 *  01 14 c0 40     addq    t5,0,t0		t0 = pc
-	 *  04 00 21 20     lda     t0,4(t0)		add 4
+	 *  04 00 26 20     lda     t0,4(t5)		add 4
 	 *  c8 01 5f 20     lda     t1,456
 	 *  22 57 40 48     sll     t1,0x2,t1
 	 *  0a 04 22 40     addq    t0,t1,s1		add (imm<<2)
 	 */
 
-	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
-	*a++ = 0x04; *a++ = 0x00; *a++ = 0x21; *a++ = 0x20;  /*  lda  */
+	*a++ = 0x04; *a++ = 0x00; *a++ = 0x26; *a++ = 0x20;  /*  lda  */
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
 	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
 	*a++ = 0x0a; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
@@ -836,27 +834,27 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
  */
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
 {
-	unsigned char *a;
-
-	a = *addrp;
+	uint32_t *a;
 
 	/*
 	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED
 	 *  and cpu->delay_jmpaddr = gpr[rs].
 	 */
-
-	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_S1);
+	bintrans_move_MIPS_reg_into_Alpha_reg(addrp, rs, ALPHA_S1);
+	a = (uint32_t *) *addrp;
 
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
+	*a++ = 0x213f0000 | TO_BE_DELAYED;
+	*addrp = (unsigned char *) a;
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
-		*a++ = 8; *a++ = 0; *a++ = 0x26; *a++ = 0x20;  /*  lda t0,8(t5)  */
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
+		a = (uint32_t *) *addrp;
+		*a++ = 0x20260008;	/*  lda t0,8(t5)  */
+		*addrp = (unsigned char *) a;
+		bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
 	}
 
-	*addrp = a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }
@@ -876,15 +874,11 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	/*
 	 *  gpr[31] = retaddr
 	 *
-	 *  04 14 c0 40     addq    t5,0,t3	t3 = pc
-	 *  08 00 84 20     lda     t3,8(t3)
+	 *  08 00 84 20     lda     t3,8(t5)
 	 *  18 09 90 b4     stq     t3,gpr31(a0)
 	 */
-	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);
-
 	if (link) {
-		*a++ = 8; *a++ = 0; *a++ = 0x84; *a++ = 0x20;	/*  lda t3,8(t3)  */
-		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+		*a++ = 8; *a++ = 0; *a++ = 0x86; *a++ = 0x20;	/*  lda t3,8(t5)  */
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T3, 31);
 	}
 
@@ -900,23 +894,19 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	 *  OR in the lowest 14 bits of imm.
 	 *  delay_jmpaddr = t0
 	 *
-	 *  01 14 c0 40     addq    t5,0,t0	t0 = pc
-	 *  04 00 21 20     lda     t0,4(t0)	<-- because the jump is from the delay slot
+	 *  04 00 26 20     lda     t0,4(t5)	<-- because the jump is from the delay slot
 	 *  81 96 23 48     srl     t0,0x1c,t0
 	 *  21 d7 21 48     sll     t0,0xe,t0
 	 *  c8 01 5f 20     lda     t1,456
 	 *  01 04 22 44     or      t0,t1,t0
 	 *  21 d7 21 48     sll     t0,0xe,t0
 	 *  c8 01 5f 20     lda     t1,456
-	 *  01 04 22 44     or      t0,t1,t0
-	 *  18 09 30 b4     stq     t0,delay_jmpaddr(a0)
+	 *  0a 04 22 44     or      t0,t1,s1
 	 */
 
 	imm *= 4;
 
-	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
-
-	*a++ = 4; *a++ = 0; *a++ = 0x21; *a++ = 0x20;	/*  lda t0,4(t0)  */
+	*a++ = 4; *a++ = 0; *a++ = 0x26; *a++ = 0x20;	/*  lda t0,4(t5)  */
 
 	*a++ = 0x81; *a++ = 0x96; *a++ = 0x23; *a++ = 0x48;
 	*a++ = 0x21; *a++ = 0xd7; *a++ = 0x21; *a++ = 0x48;
@@ -930,9 +920,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	subimm = imm & 0x3fff;
 	*a++ = (subimm & 255); *a++ = (subimm >> 8); *a++ = 0x5f; *a++ = 0x20;
 
-	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
-
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
+	*a++ = 0x0a; *a++ = 0x04; *a++ = 0x22; *a++ = 0x44;
 
 	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
 	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;

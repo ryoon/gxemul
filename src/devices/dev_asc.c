@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.27 2004-04-15 09:13:42 debug Exp $
+ *  $Id: dev_asc.c,v 1.28 2004-04-25 12:12:09 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -341,8 +341,7 @@ fatal("TODO.......asdgasin\n");
 				exit(1);
 			}
 
-			if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
-				len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+			/*  TODO: Make sure that len2 doesn't go outside of the dma memory?  */
 
 			/*  fatal("    data out offset=%5i len=%5i\n", d->xferp->data_out_offset, len2);  */
 

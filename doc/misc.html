@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.30 2005-02-19 10:45:31 debug Exp $
+$Id: misc.html,v 1.31 2005-02-23 22:18:08 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -260,7 +260,8 @@ might be a suitable choice.
   <li><b>(-)</b>&nbsp;&nbsp;mips64emul does not simulate out-of-order
 	execution, penalties related to instruction scheduling, or
 	load-delays, so it cannot be used to create optimizing compilers
-	that take advantage of such processor features.
+	that take advantage of such processor features. mips64emul keeps
+	track of the number of instructions executed, but that's it.
 </ul>
 
 

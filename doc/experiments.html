@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.38 2005-02-23 11:37:00 debug Exp $
+$Id: experiments.html,v 1.39 2005-02-23 22:18:08 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -624,6 +624,7 @@ The following work even less than the ones listed above:
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>
 	<br>Try <b>./mips64emul -X -b -E hpc -e be300 bsd.rd</b>
+	<br>Note: -b might be buggy, so you can try without that if you want to.
     </ul>
   </li>
 
@@ -698,7 +699,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc -v -t netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E pmppc netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -720,7 +721,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/bebox/">NetBSD/bebox</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz">ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz</a>
 	<br>$ <b>tar tvzf kern.tgz</b>
-	<br>$ <b>./mips64emul -E bebox -t netbsd</b>
+	<br>$ <b>./mips64emul -E bebox netbsd</b>
       <p>
       <li><a href="http://www.bebox.nu/os.php?s=os/linux/index">Linux/bebox</a>:
 	<br><a href="http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz">http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz</a>

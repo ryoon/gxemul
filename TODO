@@ -87,6 +87,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			x)  PCI:  i/o and interrupts
 			x)  TURBOchannel  (many DEC systems)
 			x)  ARCBIOS (SGI, arc?)
+				x)  Both 32-bit and 64-bit modes!
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
 			framebuffers:
@@ -102,6 +103,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			DECstation 5840? "xbi-based SMP"
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  Finish the SGI O2 framebuffer and keyboard support
+			x)  IP30 (Linux with graphics support?)
 			x)  SMP / NUMA?
 			x)  Jazz (ARC)
 			x)  Interrupts (PCI and others) (both ARC and SGI)

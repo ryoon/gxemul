@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.158 2004-07-14 09:15:04 debug Exp $
+$Id: HISTORY,v 1.159 2004-07-14 19:55:25 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -769,3 +769,18 @@ HISTORY of mips64emul
 		compiler flags for Linux.
 20040713	Trying out some minor optimizations.
 		Refreshing the UDP implementation in src/net.c a little.
+20040714	Updating the documentation a little on how to experiment
+		with a Debian Linux install kernel for DECstations.
+		A 'mini.iso' Linux image for DECstation has different fields
+		at offsets 0x10 and 0x14, so I'm guessing that the first is
+		the load address and the second is the initial PC value.
+		Hopefully this doesn't break anything.
+		Some initial TCP hacks, but not much is working yet.
+		Some updates for IP30:  The load/store 1-entry cache didn't
+		work too well with IP30 memory, so it's only turned on for
+		"MMU4K" now. (This needs to be fixed some better way.)
+		Adding a hack which allows Linux/Octane to use ARC write()
+		and getchild() on IP30. Linux uses ARCBIOS_SPB_SIGNATURE as a
+		64-bit field, it was 32-bit before. Unfortunately the data
+		returned by getchild() is still in 32-bit form, so Linux
+		crashes while it tries to access the child struct.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.136 2004-07-11 15:25:34 debug Exp $
+ *  $Id: machine.c,v 1.137 2004-07-14 19:55:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2233,7 +2233,7 @@ void machine_init(struct memory *mem)
 		case sizeof(uint64_t):
 			/*  64-bit ARCBIOS SPB:  (TODO: This is just a guess)  */
 			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Version, 1);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
@@ -2269,24 +2269,45 @@ void machine_init(struct memory *mem)
 			 */
 			store_64bit_word(SGI_SPB_ADDR + 0x40,
 			    0xffffffff80001400ULL);
-			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x500);
 
-			store_32bit_word(SGI_SPB_ADDR + 0x500 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x500 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x500 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
-			store_32bit_word(SGI_SPB_ADDR + 0x500 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x500 + 16, 0);				/*  nop  */
+			/*  0x50 is used by Linux/IP30:  */
+			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0x50, SGI_SPB_ADDR + 0x700);
+			/*  0xd8 is used by Linux/IP30:  */
+			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xd8, SGI_SPB_ADDR + 0x780);
+			/*  0xf0 is used by Irix:  */
+			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x800);
+
+			/*  getchild  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x28);  /*  addiu, 0x28 = getchild  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
+
+			/*  write  */
+			store_32bit_word(SGI_SPB_ADDR + 0x780 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x780 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x780 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x6c);  /*  addiu, 0x6c = write  */
+			store_32bit_word(SGI_SPB_ADDR + 0x780 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x780 + 16, 0);				/*  nop  */
+
+			/*  getenv  */
+			store_32bit_word(SGI_SPB_ADDR + 0x800 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x800 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x800 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
+			store_32bit_word(SGI_SPB_ADDR + 0x800 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x800 + 16, 0);				/*  nop  */
 
 			/*  This is similar, but used by Irix' arcs_nvram_tab() instead of arcs_getenv():  */
 			store_64bit_word(SGI_SPB_ADDR + 0x50,
-			    0xffffffff80001600ULL);
-			store_64bit_word(SGI_SPB_ADDR + 0x600 + 0x8, SGI_SPB_ADDR + 0x700);
+			    0xffffffff80001900ULL);
+			store_64bit_word(SGI_SPB_ADDR + 0x900 + 0x8, SGI_SPB_ADDR + 0xa00);
 
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
+			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
+			store_32bit_word(SGI_SPB_ADDR + 0xa00 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0xa00 + 16, 0);				/*  nop  */
 
 			break;
 		default:	/*  32-bit  */

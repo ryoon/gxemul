@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.106 2004-07-13 10:38:14 debug Exp $
+ *  $Id: cpu.c,v 1.107 2004-07-14 19:55:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2241,11 +2241,15 @@ static int cpu_run_instr(struct cpu *cpu)
 				/*
 				 *  For correct cache emulation, we can't use
 				 *  the tlbmod_* optimizaions.
+				 *
+				 *  TODO: This optimization is buggy, does
+				 *  not work on R3000 and on SGI-IP30, at
+				 *  least
 				 */
 #ifdef ENABLE_CACHE_EMULATION
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
 #else
-				if (cpu->cpu_type.mmu_model >= MMU4K &&
+				if (cpu->cpu_type.mmu_model == MMU4K &&
 				    (addr & ~0xfff) == cpu->last_store_vaddr_page
 				    && cpu->tlbmod_tag_of_last_store
 				    == cpu->tlbmod_tag) {
@@ -2290,11 +2294,15 @@ static int cpu_run_instr(struct cpu *cpu)
 				 *  not 100% obvious that the tlbmod
 				 *  optimization works. Perhaps it will have
 				 *  to be removed.  :-/
+				 *
+				 *  TODO: This optimization is buggy, does
+				 *  not work on R3000 and on SGI-IP30, at
+				 *  least
 				 */
 #ifdef ENABLE_CACHE_EMULATION
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
 #else
-				if (cpu->cpu_type.mmu_model >= MMU4K &&
+				if (cpu->cpu_type.mmu_model == MMU4K &&
 				    (addr & ~0xfff) == cpu->last_load_vaddr_page
 				    && cpu->tlbmod_tag_of_last_load
 				    == cpu->tlbmod_tag) {

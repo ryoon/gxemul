@@ -23,12 +23,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.22 2004-07-02 13:35:26 debug Exp $
+ *  $Id: arcbios.c,v 1.23 2004-07-14 19:55:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
  *  This whole file is a mess.
+ *
  *  TODO:  Fix.
+ *  TODO:  This is 32-bit specific, some machines (such as SGI-IP30) uses
+ *         64-bit versions of these structures.
  */
 
 #include <stdio.h>

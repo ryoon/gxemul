@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.11 2004-01-05 05:40:53 debug Exp $
+ *  $Id: coproc.c,v 1.12 2004-01-09 16:24:19 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -39,6 +39,7 @@
 
 extern int instruction_trace;
 extern int register_dump;
+extern int prom_emulation;
 
 char *cop0_names[32] = COP0_NAMES;
 
@@ -65,6 +66,10 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		c->nr_of_tlbs = cpu->cpu_type.nr_of_tlb_entries;
 
 		c->reg[COP0_STATUS] = 0;
+
+		/*  For stand alone systems, this should probably be set during bootup:  */
+		if (!prom_emulation)
+			c->reg[COP0_STATUS] |= STATUS_BEV;
 
 		c->reg[COP0_PRID] =
 		      (0x00 << 24)		/*  Company Options  */
@@ -372,12 +377,22 @@ void coproc_register_write(struct cpu *cpu,
 			   debug("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
 			tmp &= ~0x3f;
 		}
+
+		if (cpu->cpu_type.mmu_model == MMU3K)
+			tmp &= (R2K3K_ENTRYHI_VPN_MASK | R2K3K_ENTRYHI_ASID_MASK);
+		else if (cpu->cpu_type.mmu_model == MMU10K)
+			tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
+		else
+			tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_EPC) {
 		/*
 		 *  According to the R4000 manual:
 		 *	"The processor does not write to the EPC register
 		 *	 when the EXL bit in the Status register is set to a 1."
+		 *
+		 *  Perhaps that refers to hardware updates of the register,
+		 *  not software.  If this code is enabled, NetBSD crashes.
 		 */
 /*		if (cpu->cpu_type.exc_model == EXC4K &&
 		    cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
@@ -415,13 +430,26 @@ void coproc_register_write(struct cpu *cpu,
 		unimpl = 0;
 	}
 
+	if (cp->coproc_nr==0 && reg_nr==COP0_LLADDR)
+		unimpl = 0;
+
 	if (cp->coproc_nr==0 && (reg_nr==COP0_WATCHLO || reg_nr==COP0_WATCHHI)) {
 		/*  TODO  */
 		unimpl = 0;
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_XCONTEXT) {
-		/*  TODO  */
+		/*
+		 *  TODO:  According to the R10000 manual, the R4400 shares the PTEbase
+		 *  portion of the context registers (that is, xcontext and context).
+		 *  on R10000, they are separate registers.
+		 */
+fatal("xcontext 0x%016llx\n", tmp);
+		unimpl = 0;
+	}
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_ERRCTL) {
+		/*  TODO: R10000  */
 		unimpl = 0;
 	}
 
@@ -568,8 +596,11 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 								break;
 							}
 				} else {
-					/*  R4000:  */
-					xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;  /*   & 0xffffffff;  */		/*  <---  if 32-bit mode  */
+					/*  R4000 and R10000:  */
+					if (cpu->cpu_type.mmu_model == MMU10K)
+						xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
+					else
+						xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 
 					vpn2 = cp->reg[COP0_ENTRYHI] & xmask;
 					found = -1;

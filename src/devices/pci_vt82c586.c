@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.4 2004-01-10 06:33:43 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.5 2004-01-11 23:53:36 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -83,9 +83,14 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 	switch (reg) {
 	case 0x00:
 		return PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_IDE << 16);
+	case 0x04:
+		return 0xffffffff;	/*  ???  */
 	case 0x08:
 		/*  Possibly not correct:  */
-		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_ATA, 0) + 0x01;		/*  Revision ???  */
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_IDE, 0) + 0x01;		/*  Revision ???  */
+
+	case 0x40:	/*  APO_IDECONF  */
+		return 0x00000003;	/*  channel 0 and 1 enabled  */
 	default:
 		return 0;
 	}
@@ -97,5 +102,8 @@ uint32_t pci_vt82c586_ide_rr(int reg)
  */
 void pci_vt82c586_ide_init(struct cpu *cpu, struct memory *mem)
 {
+	/*  TODO:  what about these base addresses and interrupt numbers? They work for Cobalt...  */
+	dev_wdc_init(cpu, mem, 0x100001f0, 0, 0);	/*  primary  */
+	dev_wdc_init(cpu, mem, 0x10000170, 0, 2);	/*  secondary  */
 }
 

@@ -221,3 +221,4 @@ HISTORY of mips64emul
 		casts instead of manually sign-extending values.
 		Casting sometimes increases performance, sometimes
 		decreases. It's tricky.
+		Importing mips64emul into CVS.

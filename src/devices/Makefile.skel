@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.28 2004-03-24 02:44:37 debug Exp $
+#  $Id: Makefile.skel,v 1.29 2004-03-29 23:51:30 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -25,7 +25,7 @@ OBJS=console.o \
 	dev_kn01_csr.o dev_kn02.o dev_kn210.o dev_kn230.o dev_dec_ioasic.o \
 	dev_sii.o dev_asc.o dev_wdsc.o \
 	dev_le.o dev_sgec.o \
-	dev_ps2_stuff.o dev_ps2_gs.o dev_ps2_gif.o \
+	dev_ps2_stuff.o dev_ps2_gs.o dev_ps2_gif.o dev_ps2_ohci.o \
 	bus_pci.o \
 	pci_dec21030.o pci_dec21143.o pci_vt82c586.o pci_ahc.o
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.73 2004-03-27 19:26:28 debug Exp $
+ *  $Id: machine.c,v 1.74 2004-03-29 23:51:27 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1125,12 +1125,13 @@ void machine_init(struct memory *mem)
 		 *
 		 *  Some things are not yet emulated (at all), and hence are detected incorrectly:
 		 *	sbus0 at mainbus0: controller type 2
-		 *	ohci0 at sbus0
+		 *	ohci0 at sbus0			(at 0x1f801600, according to linux)
 		 *	ohci0: OHCI version 1.0
 		 */
 
 		dev_ps2_gs_init(cpus[bootstrap_cpu], mem, 0x12000000);
 		ps2_data = dev_ps2_stuff_init(cpus[bootstrap_cpu], mem, 0x10000000, GLOBAL_gif_mem);
+		dev_ps2_ohci_init(cpus[bootstrap_cpu], mem, 0x1f801600);
 
 		cpus[bootstrap_cpu]->md_interrupt = ps2_interrupt;
 

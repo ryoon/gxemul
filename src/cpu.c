@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.50 2004-05-02 14:41:35 debug Exp $
+ *  $Id: cpu.c,v 1.51 2004-05-04 11:11:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -514,7 +514,7 @@ const char *cpu_flags(struct cpu *cpu)
  *  Execute one instruction on a cpu.  If we are in a delay slot, set cpu->pc
  *  to cpu->delay_jmpaddr after the instruction is executed.
  */
-int cpu_run_instr(struct cpu *cpu, long *instrcount)
+int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 {
 	struct coproc *cp0 = cpu->coproc[0];
 	int instr_fetched;
@@ -1934,12 +1934,15 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				case HI6_SWC3:	cpnr++;		/*  fallthrough  */
 				case HI6_SWC2:	cpnr++;
 				case HI6_SDC1:
-				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL) {
+				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
+						    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+						    ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
 							cpnr = -1;
 							break;
-						} else
+						} else {
 							coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
+						}
 						break;
 				default:	value = cpu->gpr[rt];
 				}
@@ -2047,11 +2050,14 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				case HI6_LDC2:
 				case HI6_LWC2:	cpnr++;
 				case HI6_LDC1:
-				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL) {
+				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
+						    (cpu->pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
+						    ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
-							break;
-						} else
-							coproc_register_write(cpu, cpu->coproc[cpnr], rt, &value); break;
+						} else {
+							coproc_register_write(cpu, cpu->coproc[cpnr], rt, &value);
+						}
+						break;
 				default:	cpu->gpr[rt] = value;
 				}
 			}

@@ -291,3 +291,5 @@ HISTORY of mips64emul
 		Adding simple (polled) input functionality to dev_zs.
 		Making some progress on SGI-IP22 (IP32 still works
 		best, though).
+		Fixing the mc146818 clock device in ARC/NEC and
+		SGI emulation modes, the year field was not correct.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.127 2004-07-03 18:38:09 debug Exp $
+$Id: HISTORY,v 1.128 2004-07-04 03:29:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -666,3 +666,6 @@ HISTORY of mips64emul
 		-Dxxx on each cc command line before.
 		More work on instruction latency support; trying to separate
 		the concepts of nr of cycles and nr of instructions.
+20040704	Working on R2000/R3000 caches.
+		Adding a '--caches' option to the configure script.
+		Various small optimizations.

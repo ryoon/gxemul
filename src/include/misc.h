@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.79 2004-07-04 01:41:23 debug Exp $
+ *  $Id: misc.h,v 1.80 2004-07-04 03:29:09 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -121,9 +121,9 @@ typedef uint64_t u_int64_t;
 #define	HPCMIPS_FB_YSIZE	480
 
 /*  Playstation 2:  */
-#define	PLAYSTATION2_BDA	0xa0001000ULL
-#define	PLAYSTATION2_OPTARGS	0x81fff100ULL
-#define	PLAYSTATION2_SIFBIOS	0xbfc10000ULL
+#define	PLAYSTATION2_BDA	0xffffffffa0001000ULL
+#define	PLAYSTATION2_OPTARGS	0xffffffff81fff100ULL
+#define	PLAYSTATION2_SIFBIOS	0xffffffffbfc10000ULL
 
 /*  SGI and ARC:  */
 #include "sgi_arcbios.h"
@@ -490,8 +490,14 @@ struct coproc {
 #define	MAX_TICK_FUNCTIONS	12
 
 /*  Number of "tiny" translation cache entries:  */
-#define	N_TRANSLATION_CACHE		4
 #define	N_TRANSLATION_CACHE_INSTR	4
+#define	N_TRANSLATION_CACHE_DATA	4
+
+struct translation_cache_entry {
+	int		wf;
+	uint64_t	vaddr_pfn;
+	uint64_t	paddr;
+};
 
 /*  This should be a value which the program counter
     can "never" have:  */
@@ -522,13 +528,10 @@ struct cpu {
 	 *  written to, translation_cached[] must be filled with zeros.
 	 */
 #ifdef USE_TINY_CACHE
-	int		translation_cached[N_TRANSLATION_CACHE];
-	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
-	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
-
-	int		translation_instr_cached[N_TRANSLATION_CACHE_INSTR];
-	uint64_t	translation_instr_cached_vaddr_pfn[N_TRANSLATION_CACHE_INSTR];
-	uint64_t	translation_instr_cached_paddr[N_TRANSLATION_CACHE_INSTR];
+	struct translation_cache_entry
+			translation_cache_instr[N_TRANSLATION_CACHE_INSTR];
+	struct translation_cache_entry
+			translation_cache_data[N_TRANSLATION_CACHE_DATA];
 #endif
 
 	/*  Special purpose registers:  */

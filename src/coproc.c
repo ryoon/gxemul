@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.53 2004-07-04 01:41:26 debug Exp $
+ *  $Id: coproc.c,v 1.54 2004-07-04 03:29:02 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1233,10 +1233,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 			case COP0_TLBWR:	/*  Write random  */
 #ifdef USE_TINY_CACHE
 				/*  Invalidate the translation cache...  */
-				for (i=0; i<N_TRANSLATION_CACHE; i++)
-					cpu->translation_cached[i] = 0;
 				for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-					cpu->translation_instr_cached[i] = 0;
+					cpu->translation_cache_instr[i].wf = 0;
+				for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
+					cpu->translation_cache_data[i].wf = 0;
 #endif
 
 				/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.198 2004-11-26 20:03:08 debug Exp $
+ *  $Id: cpu.c,v 1.199 2004-11-26 20:19:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1256,7 +1256,8 @@ int cpu_run_instr(struct cpu *cpu)
 		if (r >= cp0->nr_of_tlbs || r < 8)
 			r = cp0->nr_of_tlbs-1;
 		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
-		cp0->reg[COP0_COUNT] ++;
+		/*  TODO: Does the R3000 even have a counter register? :)  */
+		/*  cp0->reg[COP0_COUNT] ++;  */
 	} else {
 		cp0->reg[COP0_RANDOM] --;
 		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
@@ -1599,9 +1600,9 @@ int cpu_run_instr(struct cpu *cpu)
 						if (cp0->reg[COP0_COUNT] < cp0->reg[COP0_COMPARE] &&
 						    cp0->reg[COP0_COUNT] + (res-1) >= cp0->reg[COP0_COMPARE])
 							cpu_interrupt(cpu, 7);
-					}
 
-					cp0->reg[COP0_COUNT] += (res-1);
+						cp0->reg[COP0_COUNT] += (res-1);
+					}
 
 					return res;
 				}

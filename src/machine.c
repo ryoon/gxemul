@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.74 2004-03-29 23:51:27 debug Exp $
+ *  $Id: machine.c,v 1.75 2004-04-01 01:44:00 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1132,6 +1132,7 @@ void machine_init(struct memory *mem)
 		dev_ps2_gs_init(cpus[bootstrap_cpu], mem, 0x12000000);
 		ps2_data = dev_ps2_stuff_init(cpus[bootstrap_cpu], mem, 0x10000000, GLOBAL_gif_mem);
 		dev_ps2_ohci_init(cpus[bootstrap_cpu], mem, 0x1f801600);
+		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 
 		cpus[bootstrap_cpu]->md_interrupt = ps2_interrupt;
 
@@ -1160,8 +1161,13 @@ void machine_init(struct memory *mem)
 			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
 		}
 
+		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. THis contains the sbus controller type.  */
+		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
+
+		/*  TODO:  Is this neccessary?  */
 		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
 
+#if 0
 		debug("adding playstation 1 memory: 4 MB\n");
 		ps1_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
 		if (ps1_mem == NULL) {
@@ -1171,7 +1177,7 @@ void machine_init(struct memory *mem)
 
 		debug("adding playstation 1 cpu: R3000A\n");
 		ps1_subcpu = cpu_new(ps1_mem, -1, "R3000A");
-
+#endif
 		break;
 
 	case EMULTYPE_SGI:

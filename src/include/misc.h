@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.44 2004-03-27 19:27:04 debug Exp $
+ *  $Id: misc.h,v 1.45 2004-03-28 14:55:32 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -509,7 +509,17 @@ struct cpu {
 	/*  General purpose registers:  */
 	uint64_t	gpr[NGPRS];
 
-	/*  TODO: R5900 has 128-bit registers?  */
+	/*
+	 *  TODO:  The R5900 has 128-bit registers. I'm not really
+	 *  sure whether they are used a lot or not, at least with
+	 *  code produced with gcc they are not.  An important case
+	 *  however is lq and sq (load and store of 128-bit values).
+	 *  These "upper halves" of R5900 quadwords can be used in
+	 *  those cases.
+	 *
+	 *  TODO:  Generalize this.
+	 */
+	uint64_t	gpr_quadhi[NGPRS];
 
 	long		stats_opcode[N_HI6];
 	long		stats__special[N_SPECIAL];

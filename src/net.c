@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.53 2005-01-22 20:40:45 debug Exp $
+ *  $Id: net.c,v 1.54 2005-01-24 07:40:07 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1954,22 +1954,6 @@ static void net_gateway_init(struct net *net)
 	net->gateway_ethernet_addr[3] = 0x30;
 	net->gateway_ethernet_addr[4] = 0x20;
 	net->gateway_ethernet_addr[5] = 0x10;
-
-	debug("gateway: ");
-	net_debugaddr(&net->gateway_ipv4_addr, ADDR_IPV4);
-	debug(" (");
-	net_debugaddr(&net->gateway_ethernet_addr, ADDR_ETHERNET);
-	debug(")\n");
-
-	debug_indentation(iadd);
-	if (!net->nameserver_known)
-		debug("(could not determine host's nameserver)");
-	else {
-		debug("using real nameserver ");
-		net_debugaddr(&net->nameserver_ipv4, ADDR_IPV4);
-	}
-	debug("\n");
-	debug_indentation(-iadd);
 }
 
 
@@ -1981,12 +1965,33 @@ static void net_gateway_init(struct net *net)
  */
 void net_dumpinfo(struct net *net)
 {
+	int iadd = 4;
+
 	debug("net: ");
 
 	net_debugaddr(&net->netmask_ipv4, ADDR_IPV4);
 	debug("/%i", net->netmask_ipv4_len);
 
+	debug(" (max outgoing: TCP=%i, UDP=%i)\n",
+	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);
+
+	debug_indentation(iadd);
+
+	debug("gateway: ");
+	net_debugaddr(&net->gateway_ipv4_addr, ADDR_IPV4);
+	debug(" (");
+	net_debugaddr(&net->gateway_ethernet_addr, ADDR_ETHERNET);
+	debug(") ");
+
+	if (!net->nameserver_known) {
+		/*  debug("(could not determine host's nameserver)");  */
+	} else {
+		debug("using ns @ ");
+		net_debugaddr(&net->nameserver_ipv4, ADDR_IPV4);
+	}
 	debug("\n");
+
+	debug_indentation(-iadd);
 }
 
 
@@ -2036,20 +2041,10 @@ struct net *net_init(struct emul *emul, int init_flags,
 	net->nameserver_known = 0;
 	get_host_nameserver(net);
 
-	debug("net: ");
-
-	net_debugaddr(&net->netmask_ipv4, ADDR_IPV4);
-	debug("/%i", net->netmask_ipv4_len);
-
-	debug(" (max outgoing: TCP=%i, UDP=%i)\n",
-	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);
-
-	debug_indentation(iadd);
-
 	if (init_flags & NET_INIT_FLAG_GATEWAY)
 		net_gateway_init(net);
 
-	debug_indentation(-iadd);
+	net_dumpinfo(net);
 
 	/*  This is neccessary when using the real network:  */
 	signal(SIGPIPE, SIG_IGN);

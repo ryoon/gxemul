@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.517 2005-01-23 10:47:04 debug Exp $
+$Id: HISTORY,v 1.518 2005-01-24 07:40:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1542,3 +1542,4 @@ HISTORY of mips64emul
 		Began hacking on something to reply to Debian's DHCP requests,
 		but it's not working yet.
 20050123	Continuing the remodelling/cleanup.
+20050124	Continuing the remodelling/cleanup.

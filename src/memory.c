@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.146 2005-01-23 11:19:39 debug Exp $
+ *  $Id: memory.c,v 1.147 2005-01-24 07:40:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -37,11 +37,10 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
-#include "misc.h"
-
 #include "bintrans.h"
 #include "cop0.h"
 #include "memory.h"
+#include "misc.h"
 #include "mips_cpu.h"
 
 
@@ -1058,8 +1057,8 @@ do_return_ok:
  *
  *  Get the lowest and highest bintrans access since last time.
  */
-void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *extra,
-	uint64_t *low, uint64_t *high)
+void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
+	void *extra, uint64_t *low, uint64_t *high)
 {
 #ifdef BINTRANS
 	int i;
@@ -1098,6 +1097,18 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 				update_translation_table(cpu,
 				    mem->dev_baseaddr[i] + s + 0xffffffffa0000000ULL,
 				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
+			}
+
+			/*  ... and invalidate the "fast_vaddr_to_hostaddr"
+			    cache entries that contain pointers to this
+			    device:  */
+			for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++) {
+				if (cpu->bintrans_data_hostpage[i] >=
+				    mem->dev_bintrans_data[i] &&
+				    cpu->bintrans_data_hostpage[i] <
+				    mem->dev_bintrans_data[i] +
+				    mem->dev_length[i])
+					cpu->bintrans_data_hostpage[i] = NULL;
 			}
 
 			return;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.6 2005-01-23 11:19:39 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.7 2005-01-24 07:40:07 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -33,11 +33,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "misc.h"
-
 #include "bintrans.h"
 #include "memory.h"
 #include "mips_cpu.h"
+#include "misc.h"
 
 
 #ifdef BINTRANS

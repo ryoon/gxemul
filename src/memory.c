@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.19 2004-02-18 09:28:59 debug Exp $
+ *  $Id: memory.c,v 1.20 2004-03-09 00:04:40 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -638,8 +638,11 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 		return MEMORY_ACCESS_FAILED;
 
 
-	if (no_exceptions && cpu != NULL)
-		goto no_exception_access;
+	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
+		if (no_exceptions && cpu != NULL)
+			goto no_exception_access;
+
+/*  (*) = I need to access RAM devices easily without hardcoding stuff into the devices  */
 
 	/*
 	 *  TODO:  this optimization is a bit ugly;  TURBOchannel devices

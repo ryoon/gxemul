@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.46 2005-01-21 15:22:20 debug Exp $
+ *  $Id: net.c,v 1.47 2005-01-21 20:21:03 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1673,7 +1673,6 @@ static void get_host_nameserver(struct net *net)
 static void net_gateway_init(struct net *net)
 {
 	int iadd = 4;
-	unsigned int i;
 
 	net->gateway_ipv4_addr[0] =  10;
 	net->gateway_ipv4_addr[1] =   0;

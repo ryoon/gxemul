@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.124 2005-01-21 19:50:19 debug Exp $
+ *  $Id: emul.c,v 1.125 2005-01-21 20:21:03 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -584,7 +584,7 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
  */
 void emul_simple_init(struct emul *emul)
 {
-	int i, n, iadd=4;
+	int i, iadd=4;
 
 	if (emul->n_machines != 1) {
 		fprintf(stderr, "emul_simple_init(): n_machines != 1\n");

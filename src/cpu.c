@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.251 2005-01-21 19:58:36 debug Exp $
+ *  $Id: cpu.c,v 1.252 2005-01-21 20:21:03 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3866,7 +3866,6 @@ int cpu_run(struct emul *emul, struct machine *machine)
 {
 	struct cpu **cpus = machine->cpus;
 	int ncpus = machine->ncpus;
-	int te;
 	int64_t max_instructions_cached = machine->max_instructions;
 	int64_t max_random_cycles_per_chunk_cached =
 	    machine->max_random_cycles_per_chunk;

@@ -260,3 +260,8 @@ HISTORY of mips64emul
 		actually use more than one).
 20031228	Adding 'crime' and 'macepci' fake devices for SGI
 		emulation.
+		Finally implementing the cop0 'compare' register.
+		Improvements to the ns16550 device, but it is still
+		incomplete.
+		SGI userland is now reached, but interaction is broken
+		(due to the buggy ns16550).

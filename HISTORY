@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.123 2004-07-02 09:27:03 debug Exp $
+$Id: HISTORY,v 1.124 2004-07-02 13:45:33 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -651,4 +651,7 @@ HISTORY of mips64emul
 		tries to read at 2048-byte aligned offsets and move around
 		buffers to make it work.
 		Adding video off (screen blanking) support to BT459.
-		Making a 0.1.1 release.
+
+==============  RELEASE 0.1.1  ==============
+
+20040702(later)	Cleanup to remove compiler warnings (Compaq's and Solaris' cc).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_cons.c,v 1.4 2003-11-09 03:59:32 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -67,7 +67,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			}
 		}
         } else {
-		int ch = getchar();
+		int ch = console_readchar();
 		for (i=0; i<len; i++)
 			data[i] = ch;
 	}

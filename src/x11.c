@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.25 2004-10-17 15:31:45 debug Exp $
+ *  $Id: x11.c,v 1.26 2004-11-01 12:23:28 debug Exp $
  *
  *  X11-related functions.
  */
@@ -259,6 +259,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	fb_windows[fb_number].x11_display = x11_display;
 	fb_windows[fb_number].scaledown   = scaledown;
 
+	fb_windows[fb_number].fb_number = fb_number;
+
 	alloclen = xsize * ysize * alloc_depth / 8;
 	fb_windows[fb_number].ximage_data = malloc(alloclen);
 	if (fb_windows[fb_number].ximage_data == NULL) {
@@ -371,7 +373,7 @@ void x11_check_event(void)
 			x11_putpixel_fb(0, event.xmotion.x, event.xmotion.y, 1);
  */
 			console_mouse_coordinates(event.xmotion.x * fb_windows[found].scaledown,
-			    event.xmotion.y * fb_windows[found].scaledown);
+			    event.xmotion.y * fb_windows[found].scaledown, found);
 		}
 
 		if (event.type == ButtonPress) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.16 2004-10-17 15:31:39 debug Exp $
+ *  $Id: console.c,v 1.17 2004-11-01 12:23:26 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -58,9 +58,11 @@ static int console_fifo_tail;
 /*  Mouse coordinates:  */
 static int console_framebuffer_mouse_x;		/*  absolute x, 0-based  */
 static int console_framebuffer_mouse_y;		/*  absolute y, 0-based  */
+static int console_framebuffer_mouse_fb_nr;	/*  fb_number of last framebuffer cursor update  */
 
 static int console_mouse_x;		/*  absolute x, 0-based  */
 static int console_mouse_y;		/*  absolute y, 0-based  */
+static int console_mouse_fb_nr;		/*  framebuffer number of host movement, 0-based  */
 static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
 
 
@@ -257,12 +259,16 @@ void console_flush(void)
  *  console_mouse_coordinates():
  *
  *  Sets mouse coordinates. Called by for example an X11 event handler.
- *  x and y are absolute coordinates.
+ *  x and y are absolute coordinates, fb_nr is where the mouse movement
+ *  took place.
  */
-void console_mouse_coordinates(int x, int y)
+void console_mouse_coordinates(int x, int y, int fb_nr)
 {
+	/*  TODO: fb_nr isn't used yet.  */
+
 	console_mouse_x = x;
 	console_mouse_y = y;
+	console_mouse_fb_nr = fb_nr;
 }
 
 
@@ -289,22 +295,25 @@ void console_mouse_button(int button, int pressed)
  *
  *  TODO: Comment
  */
-void console_get_framebuffer_mouse(int *x, int *y)
+void console_get_framebuffer_mouse(int *x, int *y, int *fb_nr)
 {
 	*x = console_framebuffer_mouse_x;
 	*y = console_framebuffer_mouse_y;
+	*fb_nr = console_framebuffer_mouse_fb_nr;
 }
 
 
 /*
  *  console_set_framebuffer_mouse():
  *
- *  TODO: Comment
+ *  A framebuffer device calls this function when it sets the
+ *  position of a cursor (ie a mouse cursor).
  */
-void console_set_framebuffer_mouse(int x, int y)
+void console_set_framebuffer_mouse(int x, int y, int fb_nr)
 {
 	console_framebuffer_mouse_x = x;
 	console_framebuffer_mouse_y = y;
+	console_framebuffer_mouse_fb_nr = fb_nr;
 }
 
 
@@ -314,11 +323,12 @@ void console_set_framebuffer_mouse(int x, int y)
  *  Puts current mouse data into the variables pointed to by
  *  the arguments.
  */
-void console_getmouse(int *x, int *y, int *buttons)
+void console_getmouse(int *x, int *y, int *buttons, int *fb_nr)
 {
 	*x = console_mouse_x;
 	*y = console_mouse_y;
 	*buttons = console_mouse_buttons;
+	*fb_nr = console_mouse_fb_nr;
 }
 
 

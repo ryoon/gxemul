@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.13 2004-10-23 04:30:12 debug Exp $
+ *  $Id: lk201.c,v 1.14 2004-11-01 12:23:27 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -154,9 +154,10 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
  *  TODO:  Comment this better.
  */
 void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
-	int mouse_y, int mouse_buttons)
+	int mouse_y, int mouse_buttons, int mouse_fb_nr)
 {
 	int xsign, xdelta, ysign, ydelta, m;
+	int framebuffer_nr;
 
 	if (d->old_host_mouse_x == mouse_x &&
 	    d->old_host_mouse_y == mouse_y)
@@ -167,19 +168,33 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	d->old_host_mouse_x = mouse_x;
 	d->old_host_mouse_y = mouse_y;
 
-	if (d->old_host_mouse_stays_put > 120)
+	if (d->old_host_mouse_stays_put > 300 &&
+	    d->mouse_buttons == mouse_buttons)
 		return;
 
-	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y);
+	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y, &framebuffer_nr);
 
 	xdelta = mouse_x - d->mouse_x;
 	ydelta = mouse_y - d->mouse_y;
+
+	/*
+	 *  If the last framebuffer cursor placement was not in the
+	 *  same window as the last host cursor movement, then we
+	 *  we have to move to the leftmost extreme or rightmost
+	 *  extreme:
+	 */
+	if (framebuffer_nr != mouse_fb_nr) {
+		if (mouse_fb_nr > framebuffer_nr)
+			xdelta = 2000;
+		if (mouse_fb_nr < framebuffer_nr)
+			xdelta = -2000;
+	}
 
 	/*  If no change, then don't send any update!  */
 	if (xdelta == 0 && ydelta == 0 && d->mouse_buttons == mouse_buttons)
 		return;
 
-	m = 4 >> (d->old_host_mouse_stays_put / 4);
+	m = 4 >> (d->old_host_mouse_stays_put / 30);
 	if (m < 1)
 		m = 1;
 
@@ -232,7 +247,7 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
  */
 void lk201_tick(struct lk201_data *d)
 {
-	int mouse_x, mouse_y, mouse_buttons;
+	int mouse_x, mouse_y, mouse_buttons, mouse_fb_nr;
 
 	if (console_charavail()) {
 		unsigned char ch = console_readchar();
@@ -262,11 +277,12 @@ void lk201_tick(struct lk201_data *d)
 		 *  Note:  mouse_{x,y} are where the mouse is
 		 *  on the host's display.
 		 */
-		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons);
+		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons, &mouse_fb_nr);
 
 		if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
 		    mouse_buttons != d->mouse_buttons)
-			lk201_send_mouse_update_sequence(d, mouse_x, mouse_y, mouse_buttons);
+			lk201_send_mouse_update_sequence(d, mouse_x, mouse_y,
+			    mouse_buttons, mouse_fb_nr);
 	}
 }
 
@@ -322,7 +338,7 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 				    0x00, DCKBD_PORT);
 				break;
 			default:
-				fatal("[ lk201: keyboard control: 0x%x ]\n",
+				debug("[ lk201: keyboard control: 0x%x ]\n",
 				    idata);
 			}
 		}

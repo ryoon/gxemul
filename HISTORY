@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.287 2004-11-01 09:51:41 debug Exp $
+$Id: HISTORY,v 1.288 2004-11-01 12:23:26 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1094,5 +1094,9 @@ HISTORY of mips64emul
 		without -X is 0, with -X is 1.)
 		Minor update which makes it possible to switch to the left
 		monitor when running tripple-head, not just right as before.
-		(The mouse still feels weird, because it can be used in any
-		of the host's windows.)
+		When using more than one framebuffer window, and the host's
+		mouse cursor is in a different window than the emulated mouse
+		cursor, the emulated mouse will now try to move "very far",
+		so that it in practice changes screen.
+		Running Ultrix with dual- and tripple-head now feels really
+		great.

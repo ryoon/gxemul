@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.26 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.27 2004-11-01 12:23:26 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -40,7 +40,7 @@
 #include "dc7085.h"
 
 
-#define	MAX_QUEUE_LEN		3000
+#define	MAX_QUEUE_LEN		8192
 
 struct dc_data {
 	struct dc7085regs	regs;

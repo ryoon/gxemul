@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.93 2004-06-13 10:30:48 debug Exp $
+ *  $Id: machine.c,v 1.94 2004-06-13 13:07:22 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1728,7 +1728,7 @@ void machine_init(struct memory *mem)
 				dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
 
-				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);	/*  crime0  */
+				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */

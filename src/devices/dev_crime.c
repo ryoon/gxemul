@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.17 2004-06-13 10:31:43 debug Exp $
+ *  $Id: dev_crime.c,v 1.18 2004-06-13 13:07:23 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -95,9 +95,18 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	struct crime_data *d = extra;
 
 	/*
-	 *  Set crime version/revision:  (0x11 or 0xa1?)
+	 *  Set crime version/revision:
+	 *
+	 *  This might not be the most elegant or correct solution,
+	 *  but it seems that the IP32 PROM likes 0x11 for machines
+	 *  without graphics, and 0xa1 for machines with graphics.
+	 *
+	 *  NetBSD 2.0 complains about "unknown" crime for 0x11,
+	 *  but I guess that's something one has to live with.
+	 *
+	 *  (TODO?)
 	 */
-	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0xa1;
+	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = d->use_fb? 0xa1 : 0x11;
 
 	/*  Amount of memory.  Bit 8 of bank control set ==> 128MB instead of 32MB per bank (?)  */
 	/*  When the bank control registers contain the same value as the previous one, that
@@ -162,7 +171,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_crime_init():
  */
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb)
 {
 	struct crime_data *d;
 
@@ -173,6 +182,7 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t 
 	}
 	memset(d, 0, sizeof(struct crime_data));
 	d->irq_nr = irq_nr;
+	d->use_fb = use_fb;
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);

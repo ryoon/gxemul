@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.382 2005-03-11 08:53:26 debug Exp $
+ *  $Id: machine.c,v 1.383 2005-03-12 09:13:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2007,6 +2007,11 @@ void machine_setup(struct machine *machine)
 		#define PLATID_VENDOR_SHIFT             22
 		*/
 
+		/*
+		NOTE: See http://forums.projectmayo.com/viewtopic.php?topic=2743&forum=23
+		for info on framebuffer addresses.
+		*/
+
 		switch (machine->machine_subtype) {
 		case MACHINE_HPCMIPS_CASIO_BE300:
 			/*  166MHz VR4131  */
@@ -2073,7 +2078,7 @@ void machine_setup(struct machine *machine)
 			/*  16MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
 			/*  TODO:  */
-			hpcmips_fb_addr = 0x0a200000;
+			hpcmips_fb_addr = 0xa180100;
 			hpcmips_fb_xsize = 640;
 			hpcmips_fb_ysize = 240;
 			hpcmips_fb_xsize_mem = 640;

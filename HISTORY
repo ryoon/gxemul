@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.634 2005-03-11 08:53:24 debug Exp $
+$Id: HISTORY,v 1.635 2005-03-12 09:13:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1733,4 +1733,5 @@ Changelog for GXemul:
 		Some more OpenFirmware updates.
 		Faster loading of badly aligned ELF regions.
 20050311	Minor updates. Adding a dummy "NEC MobilePro 780" hpcmips
-		machine mode.
+		machine mode; disabling direct bintrans access to framebuffers
+		that are not 4K page aligned.

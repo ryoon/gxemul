@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.88 2005-03-05 12:31:26 debug Exp $
+ *  $Id: dev_fb.c,v 1.89 2005-03-12 09:13:43 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -840,6 +840,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	int x, y;
 	char title[400];
 	char *name2;
+	int flags;
 
 	d = malloc(sizeof(struct vfb_data));
 	if (d == NULL) {
@@ -951,9 +952,12 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	}
 	sprintf(name2, "fb [%s]", name);
 
+	flags = MEM_DEFAULT;
+	if ((baseaddr & 0xfff) == 0)
+		flags = MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK;
+
 	memory_device_register(mem, name2, baseaddr, size, dev_fb_access,
-	    d, /* MEM_DEFAULT */  MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
-	    d->framebuffer);
+	    d, flags, d->framebuffer);
 
 	machine_add_tickfunction(machine, dev_fb_tick, d, FB_TICK_SHIFT);
 	return d;

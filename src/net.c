@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.21 2004-07-20 06:46:06 debug Exp $
+ *  $Id: net.c,v 1.22 2004-07-20 13:57:01 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1256,7 +1256,6 @@ int net_ethernet_rx_avail(void *extra)
 
 		if (errno == ECONNREFUSED) {
 			fatal("[ ECONNREFUSED: TODO ]\n");
-			/*  TODO  */
 			tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
 			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED (refused connection)\n");
@@ -1275,7 +1274,7 @@ int net_ethernet_rx_avail(void *extra)
 		if (tcp_connections[con_id].state ==
 		    TCP_OUTSIDE_TRYINGTOCONNECT && res > 0) {
 			tcp_connections[con_id].state = TCP_OUTSIDE_CONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_CONNECTED\n");
+			debug("CHANGING TO TCP_OUTSIDE_CONNECTED\n");
 			net_ip_tcp_connectionreply(extra, con_id, 1, NULL, 0, 0);
 		}
 
@@ -1283,7 +1282,7 @@ int net_ethernet_rx_avail(void *extra)
 		    TCP_OUTSIDE_CONNECTED && res < 1) {
 			tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED\n");
+			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED\n");
 			continue;
 		}
 
@@ -1299,7 +1298,7 @@ int net_ethernet_rx_avail(void *extra)
 		    TCP_OUTSIDE_CONNECTED && res < 1 && res2 < 1) {
 			tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED, res<1 res2<1\n");
+			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED, res<1 res2<1\n");
 			continue;
 		}
 
@@ -1323,7 +1322,7 @@ int net_ethernet_rx_avail(void *extra)
 		} else {
 			tcp_connections[con_id].state =
 			    TCP_OUTSIDE_DISCONNECTED;
-			fatal("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read res<=0\n");
+			debug("CHANGING TO TCP_OUTSIDE_DISCONNECTED, read res<=0\n");
 			net_ip_tcp_connectionreply(extra, con_id, 0, NULL, 0, 0);
 		}
 

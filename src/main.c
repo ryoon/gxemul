@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.197 2005-01-31 19:31:32 debug Exp $
+ *  $Id: main.c,v 1.198 2005-02-01 06:17:44 debug Exp $
  */
 
 #include <stdio.h>
@@ -236,9 +236,9 @@ static void usage(char *progname, int longusage)
 	    progname);
 
 	if (!longusage) {
-		printf("\nRun  %s -h  for help on command line options.\n\n",
+		printf("\nRun  %s -h  for help on command line options.\n",
 		    progname);
-		goto ret;
+		return;
 	}
 
 	printf("\nMachine selection options:\n");
@@ -337,10 +337,10 @@ static void usage(char *progname, int longusage)
 	printf("  -V        start up in the single-step debugger, paused\n");
 	printf("  -v        verbose debug messages\n");
 	printf("\n");
-ret:
-	printf("You must specify one or more names of files that you wish "
-	    "to load into memory.\n"
-	    "Supported formats:  ELF a.out ecoff srec syms raw\n"
+	printf("If you are selecting a machine type to emulate directly "
+	    "on the command line,\nthen you must specify one or more names"
+	    " of files that you wish to load into\n"
+	    "memory. Supported formats are:   ELF a.out ecoff srec syms raw\n"
 	    "where syms is the text produced by running 'nm' (or 'nm -S') "
 	    "on a binary.\n"
 	    "To load a raw binary into memory, add \"address:\" in front "
@@ -782,8 +782,21 @@ int main(int argc, char *argv[])
 		n_emuls --;
 
 	/*  Simple initialization, from command line arguments:  */
-	if (n_emuls > 0)
+	if (n_emuls > 0) {
+		/*  Make sure that there are no configuration files as well:  */
+		for (i=1; i<argc; i++)
+			if (argv[i][0] == '@') {
+				fprintf(stderr, "You can either start one "
+				    "emulation with one machine directly from "
+				    "the command\nline, or start one or more "
+				    "emulations using configuration files."
+				    " Not both.\n");
+				exit(1);
+			}
+
+		/*  Initialize one emul:  */
 		emul_simple_init(emuls[0]);
+	}
 
 	/*  Initialize emulations from config files:  */
 	for (i=1; i<argc; i++) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.16 2005-03-12 12:58:13 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.17 2005-03-12 21:52:49 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -52,12 +52,22 @@
 /*  #define debug fatal  */
 
 
+static void recalc_kiu_int_assert(struct cpu *cpu, struct vr41xx_data *d)
+{
+	if (d->kiu_int_assert != 0)
+		cpu_interrupt(cpu, 8 + d->kiu_irq_nr);
+	else
+		cpu_interrupt_ack(cpu, 8 + d->kiu_irq_nr);
+}
+
+
 /*
  *  dev_vr41xx_tick():
  */
 void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 {
 	struct vr41xx_data *d = extra;
+	int keychange = 0;
 
 	/*
 	 *  UGLY! TODO: fix this.
@@ -106,6 +116,10 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 	 *  ofs a:
 	 *	800=SHIFT 4=CTRL
 	 */
+
+	if (d->d0 != 0 || d->d1 != 0 || d->d2 != 0 ||
+	    d->d3 != 0 || d->d4 != 0 || d->d5 != 0)
+		keychange = 1;
 
 	/*  Release all keys:  */
 	d->d0 = d->d1 = d->d2 = d->d3 = d->d4 = d->d5 = 0;
@@ -227,6 +241,14 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 				break;
 			}
 		}
+
+		keychange = 1;
+	}
+
+	if (keychange) {
+		/*  4=lost data, 2=data complete, 1=key input detected  */
+		d->kiu_int_assert |= 3;
+		recalc_kiu_int_assert(cpu, d);
 	}
 }
 
@@ -243,12 +265,18 @@ static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
 	uint64_t odata = 0;
 
 	switch (ofs) {
-	case 0:	odata = d->d0; break;
-	case 2:	odata = d->d1; break;
-	case 4:	odata = d->d2; break;
-	case 6:	odata = d->d3; break;
-	case 8:	odata = d->d4; break;
-	case 0xa:odata = d->d5; break;
+	case KIUDAT0:
+		odata = d->d0; break;
+	case KIUDAT1:
+		odata = d->d1; break;
+	case KIUDAT2:
+		odata = d->d2; break;
+	case KIUDAT3:
+		odata = d->d3; break;
+	case KIUDAT4:
+		odata = d->d4; break;
+	case KIUDAT5:
+		odata = d->d5; break;
 	case KIUSCANREP:
 		if (writeflag == MEM_WRITE) {
 			debug("[ vr41xx KIU: setting KIUSCANREP to 0x%04x ]\n",
@@ -267,15 +295,24 @@ static uint64_t vr41xx_kiu(struct cpu *cpu, int ofs, uint64_t idata,
 			debug("[ vr41xx KIU: unimplemented read from "
 			    "KIUSCANS ]\n");
 		break;
+	case KIUINT:
+		/*  Interrupt. A wild guess: zero-on-write  */
+		if (writeflag == MEM_WRITE) {
+			d->kiu_int_assert &= ~idata;
+		} else {
+			odata = d->kiu_int_assert;
+		}
+		recalc_kiu_int_assert(cpu, d);
+		break;
 	case KIURST:
 		/*  Reset.  */
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
-			fatal("[ vr41xx KIU: unimplemented write to offset "
+			debug("[ vr41xx KIU: unimplemented write to offset "
 			    "0x%x, data=0x%016llx ]\n", ofs, (long long)idata);
 		else
-			fatal("[ vr41xx KIU: unimplemented read from offset "
+			debug("[ vr41xx KIU: unimplemented read from offset "
 			    "0x%x ]\n", ofs);
 	}
 
@@ -422,6 +459,7 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	/*  TODO: VRC4173 has the KIU at offset 0x100?  */
 	d->kiu_offset = 0x180;
 	d->kiu_console_handle = console_start_slave_inputonly(machine, "kiu");
+	d->kiu_irq_nr = 7;	/*  TODO?  */
 
 	switch (cpumodel) {
 	case 4101:

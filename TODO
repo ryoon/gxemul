@@ -88,8 +88,10 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  Cobalt:
 			PCI:  Tulip ethernet and harddisk controller
 
-		o)  SGI machines (sgimips):
-			More ARCBIOS stuff?
+		o)  SGI and ARC machines (sgimips, arc):
+			x)  More ARCBIOS stuff must be implemented
+			x)  SMP?
+			x)  ARC: NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
 
 		o)  hpcmips:
 			framebuffer(s)
@@ -104,9 +106,6 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  Playstation 1? R3000A. Weird hardware?
 			No FPU, but something as coproc 2.
 			(Perhaps the PS1 is a subset of the PS2.)
-
-		o)  ARC:
-			x)  NEC-RD94 = NEC RISCstation 2250. Has a TGA framebuffer.
 
 		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
 			(R4300 or R4000? 4MB RAM?)
@@ -141,7 +140,11 @@ Most important stuff (but these are all non-trivial tasks):
 		    host (separately, but in cooperation with the emulated CPUs'
 		    caches).  A small number (say ~ 32) of small cache blocks
 		    (a few KBs at most) might do it.
+		o)  Move the -H (fill mem with random) functionality into the
+			memory.c subsystem, not machine.c or wherever it is now
 		o)  ECC stuff, simulation of memory errors?
+		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
+			(using manual swap-out of blocks to disk)
 
 	File handling:
 		o)  Read function argument types from binaries? (ELF?)
@@ -163,6 +166,8 @@ Most important stuff (but these are all non-trivial tasks):
 
 	Profile the whole emulator, and try to increase performance. As
 		of now it is utterly slow.
+
+	Interactive/graphical single step debugger?
 
 	Statistics:  (this could be interesting)
 		o)  memory accesses (to measure cache efficiency and

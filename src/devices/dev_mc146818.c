@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.41 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.42 2004-10-18 03:10:14 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -117,6 +117,11 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 				    mc_data->interrupt_every_x_cycles;
 		}
 	}
+
+	if (mc_data->reg[MC_REGC*4] & MC_REGC_UF ||
+	    mc_data->reg[MC_REGC*4] & MC_REGC_AF ||
+	    mc_data->reg[MC_REGC*4] & MC_REGC_PF)
+		mc_data->reg[MC_REGC*4] |= MC_REGC_IRQF;
 }
 
 
@@ -352,7 +357,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			return 1;
 		default:
 			mc_data->reg[relative_addr] = data[0];
-			/*  debug("[ mc146818: unimplemented write to relative_addr = %08lx ]\n", (long)relative_addr);  */
+			/*  fatal("[ mc146818: unimplemented write to "
+			    "relative_addr = %08lx ]\n",
+			    (long)relative_addr);  */
 			return 1;
 		}
 	} else {

@@ -371,3 +371,9 @@ HISTORY of mips64emul
 		to the running kernel.
 		DECstation rtc year should be either 72 or 73, anything else
 		will cause Ultrix to give a warning about invalid year.
+20040306	Combinint playstation2's dmac, interrupt, and timer devices
+		into one (ps2_stuff).
+		Adding some R5900 instructions: mfsa, mtsa, pmfhi, pmflo, por,
+		lq, and sq.  (Most of them are just guesses, though.)
+		Implementing my own XImage putpixel routine, which can be
+		inlined... significantly faster than normal XPutPixel. :-)

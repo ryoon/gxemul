@@ -251,3 +251,4 @@ HISTORY of mips64emul
 		Trying to get more of the SCSI controller emulation
 		to work.
 20031124	Raw binaries can now be loaded into memory.
+20031204	Adding srec binary support.

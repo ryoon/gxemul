@@ -148,7 +148,6 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images (?)
-		o)  'srec' binaries?
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.85 2004-06-11 17:03:52 debug Exp $
+$Id: HISTORY,v 1.86 2004-06-12 17:17:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -515,3 +515,14 @@ HISTORY of mips64emul
 20040611	More crime/mace progress, and some more work on pckbc.
 		KN5800 progress: adding a XMI->BI adapter device; a disk
 		controller is detected (but it is just a dummy so far).
+20040612	Adding "dev_unreadable", which simplifies making memory
+		areas unreadable. (NetBSD on SGI-IP22 no longer detects
+		non-existant hpc1 and hpc2 busses.)
+		Implementing rudimentary support for IP22 "local0" and
+		"local1" interrupts, and "mappable" local interrupts.
+		Some progress on the WDSC SCSI controller on IP22, enough
+		to let NetBSD get past the disk detection and enter
+		userland!  :-)
+		The zs (zilog serial) device now works well enough to let
+		NetBSD/sgimips be interacted with on IP22. :-)  (Though
+		it is very ugly and hardcoded.)

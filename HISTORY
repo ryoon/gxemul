@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.111 2004-06-29 00:18:23 debug Exp $
+$Id: HISTORY,v 1.112 2004-06-29 01:25:31 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -619,3 +619,7 @@ HISTORY of mips64emul
 		Adding a small program which removes "zero holes" from
 		harddisk image files.
 20040629	More minor fixes.
+20040629(later)	Adding -A3 (NEC RISCstation 2200) (this is similar to
+		the 2250 model that NetBSD/arc can already boot all the
+		way into userland and be interacted with), and -A4
+		(Deskstation Tyne).

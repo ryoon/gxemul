@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.113 2004-06-28 01:53:38 debug Exp $
+ *  $Id: machine.c,v 1.114 2004-06-29 01:25:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1820,12 +1820,17 @@ void machine_init(struct memory *mem)
 		} else {
 			switch (machine) {
 
-			case MACHINE_ARC_NEC:
+			case MACHINE_ARC_NEC_RD94:
+			case MACHINE_ARC_NEC_R94:
 				/*
 				 *  "NEC-RD94" (NEC RISCstation 2250)
+				 *  "NEC-R94" (NEC RISCstation 2200)
 				 */
 
-				strcat(machine_name, " (NEC-RD94, NEC RISCstation 2250)");
+				if (machine == MACHINE_ARC_NEC_RD94)
+					strcat(machine_name, " (NEC-RD94, NEC RISCstation 2250)");
+				else
+					strcat(machine_name, " (NEC-R94; NEC RISCstation 2200)");
 
 				/*  TODO:  sync devices and component tree  */
 
@@ -1891,6 +1896,24 @@ void machine_init(struct memory *mem)
 
 				break;
 
+			case MACHINE_ARC_DESKTECH_TYNE:
+				/*
+				 *  "Deskstation Tyne" (?)
+				 *
+				 *  TODO
+				 *
+				 *  0x100000b0000 (or 100000b8000?) is VGA "text" framebuffer.
+				 *  0x900000003b5 = cursor control when outputing to the
+				 *  framebuffer.
+				 *  0x90000000064 written by kbd_cmd() in NetBSD.
+				 */
+
+				strcat(machine_name, " (Deskstation Tyne)");
+
+				/*  PC kbd  */  dev_random_init(mem, 0x90000000060, 5);
+
+				break;
+
 			default:
 				fatal("Unimplemented ARC machine type %i\n", machine);
 				exit(1);
@@ -1915,12 +1938,20 @@ void machine_init(struct memory *mem)
 			}
 		} else {
 			switch (machine) {
-			case MACHINE_ARC_NEC:
+			case MACHINE_ARC_NEC_RD94:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
 				break;
 			case MACHINE_ARC_PICA:
 				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_NEC_R94:
+				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_DESKTECH_TYNE:
+				strncpy(arcbios_sysid.VendorId,  "DESKTECH", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
 			}
@@ -2008,13 +2039,21 @@ void machine_init(struct memory *mem)
 		default:
 			/*  ARC:  */
 			switch (machine) {
-			case MACHINE_ARC_NEC:
+			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_PICA:
 				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "PICA-61", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_NEC_R94:
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "NEC-R94", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_DESKTECH_TYNE:
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "DESKTECH-TYNE", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n", machine);

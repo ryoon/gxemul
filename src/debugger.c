@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.60 2005-01-28 09:32:10 debug Exp $
+ *  $Id: debugger.c,v 1.61 2005-01-28 09:36:25 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1486,7 +1486,7 @@ static struct cmd cmds[] = {
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
-	{ "emuls", "", 0, debugger_cmd_emul,
+	{ "emuls", "", 0, debugger_cmd_emuls,
 		"print a summary of all current emuls" },
 
 	{ "help", "", 0, debugger_cmd_help,

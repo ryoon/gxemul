@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.12 2005-01-28 09:21:03 debug Exp $
+ *  $Id: emul_parse.c,v 1.13 2005-01-28 09:36:25 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -195,6 +195,7 @@ static char cur_machine_subtype[50];
 static char cur_machine_bootname[150];
 static char cur_machine_bootarg[250];
 static char cur_machine_slow_serial[10];
+static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
@@ -310,6 +311,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
 		cur_machine_slow_serial[0] = '\0';
+		cur_machine_prom_emulation[0] = '\0';
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
@@ -400,6 +402,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		m->slow_serial_interrupts_hack_for_linux =
 		    parse_on_off(cur_machine_slow_serial);
 
+		if (!cur_machine_prom_emulation[0])
+			strcpy(cur_machine_prom_emulation, "yes");
+		m->prom_emulation = parse_on_off(cur_machine_prom_emulation);
+
 		if (!cur_machine_random_mem_contents[0])
 			strcpy(cur_machine_random_mem_contents, "no");
 		m->random_mem_contents =
@@ -468,6 +474,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	ACCEPT_SIMPLE_WORD("bootname", cur_machine_bootname);
 	ACCEPT_SIMPLE_WORD("bootarg", cur_machine_bootarg);
 	ACCEPT_SIMPLE_WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slow_serial);
+	ACCEPT_SIMPLE_WORD("prom_emulation", cur_machine_prom_emulation);
 	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
 	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
 	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);

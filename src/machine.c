@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.304 2005-01-28 09:21:03 debug Exp $
+ *  $Id: machine.c,v 1.305 2005-01-28 09:36:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4062,6 +4062,9 @@ void machine_dumpinfo(struct machine *m)
 	else
 		debug("fixed at %i Hz", m->emulated_hz);
 	debug("\n");
+
+	if (!m->prom_emulation)
+		debug("PROM emulation disabled\n");
 
 	for (i=0; i<m->ncpus; i++)
 		cpu_dumpinfo(m->cpus[i]);

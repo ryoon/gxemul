@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.182 2004-09-29 06:28:40 debug Exp $
+ *  $Id: machine.c,v 1.183 2004-09-29 06:33:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2602,9 +2602,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emul->emulation_type == EMULTYPE_ARC) {
 				/*  TODO: serial console for ARC?  */
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEIN=serial(0)", &addr);
+				add_environment_string(cpu, "CONSOLEIN=multi()serial(0)", &addr);
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-				add_environment_string(cpu, "CONSOLEOUT=serial(0)", &addr);
+				add_environment_string(cpu, "CONSOLEOUT=multi()serial(0)", &addr);
 			} else {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.65 2004-07-18 13:07:10 debug Exp $
+ *  $Id: memory.c,v 1.66 2004-07-19 10:23:43 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1098,7 +1098,7 @@ exception:
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
-	uint64_t paddr, endaddr = vaddr + len - 1;
+	uint64_t paddr;
 	int cache, no_exceptions, ok, offset;
 	unsigned char *memblock;
 
@@ -1248,13 +1248,16 @@ into the devices  */
 
 
 #if 0
-	/*  Accesses that cross memory blocks are bad:  */
-	endaddr = paddr + len - 1;
-	endaddr &= ~(mem->memblock_size - 1);
-	if ( (paddr & ~(mem->memblock_size - 1)) != endaddr ) {
-		debug("memory access crosses memory block? "
-		    "paddr=%016llx len=%i\n", (long long)paddr, (int)len);
-		return MEMORY_ACCESS_FAILED;
+	{
+		/*  Accesses that cross memblocks are bad:  */
+		uint64_t endaddr = paddr + len - 1;
+		endaddr &= ~(mem->memblock_size - 1);
+		if ( (paddr & ~(mem->memblock_size - 1)) != endaddr ) {
+			fatal("memory access crosses memory block? "
+			    "paddr=%016llx len=%i\n", (long long)paddr,
+			    (int)len);
+			return MEMORY_ACCESS_FAILED;
+		}
 	}
 #endif
 

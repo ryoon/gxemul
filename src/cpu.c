@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.191 2004-11-20 08:57:15 debug Exp $
+ *  $Id: cpu.c,v 1.192 2004-11-22 04:46:04 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1003,6 +1003,9 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
+	uint64_t *reg = &cpu->coproc[0]->reg[0];
+	int exc_model = cpu->cpu_type.exc_model;
+
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
@@ -1018,7 +1021,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 		switch (exccode) {
 		case EXCEPTION_INT:
-			debug(" cause_im=0x%02x", (int)((cpu->coproc[0]->reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
+			debug(" cause_im=0x%02x", (int)((reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
 			break;
 		case EXCEPTION_SYS:
 			debug(" v0=%i", (int)cpu->gpr[GPR_V0]);
@@ -1051,87 +1054,89 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
-	if (cpu->cpu_type.exc_model == EXC3K) {
-		cpu->coproc[0]->reg[COP0_CAUSE] &= ~R2K3K_CAUSE_EXCCODE_MASK;
+	if (exc_model == EXC3K) {
+		reg[COP0_CAUSE] &= ~R2K3K_CAUSE_EXCCODE_MASK;
+#if 0
 		if (exccode >= 16) {
 			fatal("exccode = %i  (there are only 16 exceptions on R3000 and lower)\n", exccode);
 			cpu->running = 0;
 			return;
 		}
+#endif
 	} else
-		cpu->coproc[0]->reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
+		reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
 
 	/*  ... and OR in the exception code:  */
-	cpu->coproc[0]->reg[COP0_CAUSE] |= (exccode << CAUSE_EXCCODE_SHIFT);
+	reg[COP0_CAUSE] |= (exccode << CAUSE_EXCCODE_SHIFT);
 
 	/*  Always set CE (according to the R5000 manual):  */
-	cpu->coproc[0]->reg[COP0_CAUSE] &= ~CAUSE_CE_MASK;
-	cpu->coproc[0]->reg[COP0_CAUSE] |= (coproc_nr << CAUSE_CE_SHIFT);
+	reg[COP0_CAUSE] &= ~CAUSE_CE_MASK;
+	reg[COP0_CAUSE] |= (coproc_nr << CAUSE_CE_SHIFT);
 
 	/*  TODO:  On R4000, vaddr should NOT be set on bus errors!!!  */
 #if 0
 	if (exccode == EXCEPTION_DBE) {
-		cpu->coproc[0]->reg[COP0_BADVADDR] = vaddr;
+		reg[COP0_BADVADDR] = vaddr;
 		/*  sign-extend vaddr, if it is 32-bit  */
 		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
-			cpu->coproc[0]->reg[COP0_BADVADDR] |=
+			reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
 	}
 #endif
 
 	if (tlb || (exccode >= EXCEPTION_MOD && exccode <= EXCEPTION_ADES) ||
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED) {
-		cpu->coproc[0]->reg[COP0_BADVADDR] = vaddr;
+		reg[COP0_BADVADDR] = vaddr;
 		/*  sign-extend vaddr, if it is 32-bit  */
 		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
-			cpu->coproc[0]->reg[COP0_BADVADDR] |=
+			reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
 
-		if (cpu->cpu_type.exc_model == EXC3K) {
-			cpu->coproc[0]->reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
-			cpu->coproc[0]->reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);
+		if (exc_model == EXC3K) {
+			reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
+			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << R2K3K_CONTEXT_BADVPN_SHIFT) & R2K3K_CONTEXT_BADVPN_MASK);
 
-			cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & R2K3K_ENTRYHI_VPN_MASK)
+			reg[COP0_ENTRYHI] = (vaddr & R2K3K_ENTRYHI_VPN_MASK)
 			    + (vaddr_asid << R2K3K_ENTRYHI_ASID_SHIFT);
 		} else {
-			cpu->coproc[0]->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
-			cpu->coproc[0]->reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
+			reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
+			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
 
-			cpu->coproc[0]->reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
-			cpu->coproc[0]->reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
-			cpu->coproc[0]->reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
-			cpu->coproc[0]->reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
+			reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
+			reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
+			reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
+			reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
 
-			/*  cpu->coproc[0]->reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+			/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
 
 			if (cpu->cpu_type.mmu_model == MMU10K)
-				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
+				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
 			else
-				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
+				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
 		}
 	}
 
-	if (cpu->cpu_type.exc_model == EXC4K && cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL) {
+	if (exc_model == EXC4K && reg[COP0_STATUS] & STATUS_EXL) {
 		/*
 		 *  Don't set EPC if STATUS_EXL is set, for R4000 and up.
 		 *  This actually happens when running IRIX and Ultrix, when
 		 *  they handle interrupts and/or tlb updates, I think, so
 		 *  printing this with debug() looks better than with fatal().
 		 */
-		debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);
+		/*  debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
 		if (cpu->delay_slot) {
-			cpu->coproc[0]->reg[COP0_EPC] = cpu->pc_last - 4;
-			cpu->coproc[0]->reg[COP0_CAUSE] |= CAUSE_BD;
+			reg[COP0_EPC] = cpu->pc_last - 4;
+			reg[COP0_CAUSE] |= CAUSE_BD;
 		} else {
-			cpu->coproc[0]->reg[COP0_EPC] = cpu->pc_last;
-			cpu->coproc[0]->reg[COP0_CAUSE] &= ~CAUSE_BD;
+			reg[COP0_EPC] = cpu->pc_last;
+			reg[COP0_CAUSE] &= ~CAUSE_BD;
 		}
 	}
 
 	cpu->delay_slot = NOT_DELAYED;
 
-	if (cpu->cpu_type.exc_model == EXC3K) {
+	if (exc_model == EXC3K) {
 		/*  Userspace tlb, vs others:  */
 		if (tlb && !(vaddr & 0x80000000ULL) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
@@ -1141,7 +1146,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	} else {
 		/*  R4000:  */
 		if (tlb && (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS)
-		    && !(cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)) {
+		    && !(reg[COP0_STATUS] & STATUS_EXL)) {
 			if (x_64)
 				cpu->pc = 0xffffffff80000080ULL;
 			else
@@ -1150,14 +1155,14 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			cpu->pc = 0xffffffff80000180ULL;
 	}
 
-	if (cpu->cpu_type.exc_model == EXC3K) {
+	if (exc_model == EXC3K) {
 		/*  R2000/R3000:  Shift the lowest 6 bits to the left two steps:  */
-		cpu->coproc[0]->reg[COP0_STATUS] =
-		    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) +
-		    ((cpu->coproc[0]->reg[COP0_STATUS] & 0xf) << 2);
+		reg[COP0_STATUS] =
+		    (reg[COP0_STATUS] & ~0x3f) +
+		    ((reg[COP0_STATUS] & 0xf) << 2);
 	} else {
 		/*  R4000:  */
-		cpu->coproc[0]->reg[COP0_STATUS] |= STATUS_EXL;
+		reg[COP0_STATUS] |= STATUS_EXL;
 	}
 }
 
@@ -1541,10 +1546,11 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->bintrans_instructions_executed = 0;
 			res = bintrans_attempt_translate(cpu,
 			    cpu->pc_bintrans_paddr, 1);
+
 			if (res >= 0) {
 				/*  debug("BINTRANS translation + hit,"
 				    " pc = %016llx\n", (long long)cached_pc);  */
-				if (res > 0) {
+				if (res > 0 || cpu->pc != cached_pc) {
 					if (instruction_trace_cached)
 						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					if (res & BINTRANS_DONT_RUN_NEXT)

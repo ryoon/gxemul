@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.19 2004-11-22 02:17:58 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.20 2004-11-22 04:46:04 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -47,15 +47,17 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-unsigned char bintrans_i386_runchunk[11] = {
+unsigned char bintrans_i386_runchunk[13] = {
 	0x55,					/*  push   %ebp  */
 	0x89, 0xe5,				/*  mov    %esp,%ebp  */
+	0x60,					/*  pusha  */
 
 	/*  In all translated code, esi points to the cpu struct.  */
 
 	0x8b, 0x75, 0x08,			/*  mov    0x8(%ebp),%esi  */
 	0xff, 0x55, 0x0c,			/*  call   *0xc(%ebp)  */
 
+	0x61,					/*  popa  */
 	0xc9,					/*  leave  */
 	0xc3					/*  ret  */
 };

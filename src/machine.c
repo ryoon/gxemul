@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.6 2003-11-08 11:31:24 debug Exp $
+ *  $Id: machine.c,v 1.7 2003-11-08 14:40:39 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -42,6 +42,7 @@
 #include "dec_kn01.h"
 #include "dec_kn02.h"
 #include "dec_kn03.h"
+#include "dec_kmin.h"
 
 
 extern int emulation_type;
@@ -66,6 +67,7 @@ extern struct memory *GLOBAL_gif_mem;
 
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
+/*  TODO:  struct kmin_csr *kmin_csr;  */
 
 
 /*
@@ -314,26 +316,34 @@ void machine_init(struct memory *mem)
 			machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
 			if (emulated_ips == 0)
 				emulated_ips = 33000000;
+			if (physical_ram_in_mb > 128)
+				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*
-			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000 ? slotsize 64MB?)
+			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
 			 *  tc slot 1:   0x14000000
 			 *  tc slot 2:   0x18000000
-			 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1c000000)
-			 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00	(0x1c0c0000)
-			 *  scc0 at ioasic0 offset 0x100000				(0x1c100000)
-			 *  scc1 at ioasic0 offset 0x180000: console			(0x1c180000)
-			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1c200000)
-			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000)
+			 *  ioasic0 at tc0 slot 3 offset 0x0				(0x1c000000) slot 0
+			 *  asic regs							(0x1c040000) slot 1
+			 *  station's ether address					(0x1c080000) slot 2
+			 *  le0 at ioasic0 offset 0xc0000: address 00:00:00:00:00:00	(0x1c0c0000) slot 3
+			 *  scc0 at ioasic0 offset 0x100000				(0x1c100000) slot 4
+			 *  scc1 at ioasic0 offset 0x180000: console			(0x1c180000) slot 6
+			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1c200000) slot 8
+			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
+			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			dev_scc_init(cpus[0], mem, 0x1c180000, 0, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, 5, 0, emulated_ips);
-			dev_asc_init(cpus[0], mem, 0x1c300000, 0);
+			dev_scc_init(cpus[0], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
+			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, 0, emulated_ips);
+			dev_asc_init(cpus[0], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards. TODO: irqs  */
-			dev_turbochannel_init(cpus[0], mem, 0, 0x10000000, 0x103fffff, "PMAG-BA", 0);
-			dev_turbochannel_init(cpus[0], mem, 1, 0x14000000, 0x143fffff, "", 0);
-			dev_turbochannel_init(cpus[0], mem, 2, 0x18000000, 0x183fffff, "", 0);
+			dev_turbochannel_init(cpus[0], mem, 0, 0x10000000, 0x103fffff, "PMAG-BA", KMIN_INT_TC0);
+			dev_turbochannel_init(cpus[0], mem, 1, 0x14000000, 0x143fffff, "", KMIN_INT_TC1);
+			dev_turbochannel_init(cpus[0], mem, 2, 0x18000000, 0x183fffff, "", KMIN_INT_TC2);
+
+			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
+			/*  TODO:  kmin_csr = dev_kmin_init(cpus[0], mem, KMIN_REG_INTR);  */
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb  */
 			serial_console_name      = "osconsole=3";
@@ -344,7 +354,7 @@ void machine_init(struct memory *mem)
 			if (emulated_ips == 0)
 				emulated_ips = 40000000;
 			if (physical_ram_in_mb > 480)
-				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
+				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*
 			 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
@@ -357,17 +367,21 @@ void machine_init(struct memory *mem)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			dev_scc_init(cpus[0], mem, 0x1f980000, 0, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1fa00000, KN03_INT_RTC, 0, emulated_ips);	/*  slot 8?  */
-			dev_asc_init(cpus[0], mem, 0x1fb00000, 0);
+			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);
+			dev_scc_init(cpus[0], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
+			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, 0, emulated_ips);
+			dev_asc_init(cpus[0], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
-			dev_turbochannel_init(cpus[0], mem, 0, 0x1e000000, 0x1e3fffff, "PMAG-BA", 0);
-			dev_turbochannel_init(cpus[0], mem, 1, 0x1e800000, 0x1ebfffff, "", 0);
-			dev_turbochannel_init(cpus[0], mem, 2, 0x1f000000, 0x1f3fffff, "", 0);
+			dev_turbochannel_init(cpus[0], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-BA", KN03_INTR_TC_0 +8);
+			dev_turbochannel_init(cpus[0], mem, 1, KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "", KN03_INTR_TC_1 +8);
+			dev_turbochannel_init(cpus[0], mem, 2, KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "", KN03_INTR_TC_2 +8);
 
-			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb  */
-			serial_console_name      = "osconsole=3";	/*  serial  */
+			/*  TODO: interrupts  */
+			/*  shared (turbochannel) interrupts are +8  */
+
+			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
+			serial_console_name      = "osconsole=3";	/*  ?  */
 			break;
 
 		case MACHINE_5800:		/*  type 5, KN5800  */

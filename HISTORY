@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.226 2004-09-16 22:56:31 debug Exp $
+$Id: HISTORY,v 1.227 2004-09-17 20:30:04 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -947,3 +947,7 @@ HISTORY of mips64emul
 		need to be rewritten later.
 20040917	Finally making the coprocessor instructions disassemblable
 		even when not running.
+		Doing some testing for the 0.2.1 release.
+
+==============  RELEASE 0.2.1  ==============
+

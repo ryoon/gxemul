@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.201 2004-10-23 04:30:13 debug Exp $
+ *  $Id: machine.c,v 1.202 2004-10-23 18:35:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2494,7 +2494,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		debug("system = 0x%x\n", system);
 
 		for (i=0; i<emul->ncpus; i++) {
-			uint32_t cpuaddr, fpu, picache, pdcache, sdcache;
+			uint32_t cpuaddr, fpu, picache, pdcache, sdcache = 0;
 			int cache_size, cache_line_size;
 			unsigned int jj;
 			char arc_cpu_name[100];

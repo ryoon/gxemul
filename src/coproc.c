@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.73 2004-10-21 03:32:07 debug Exp $
+ *  $Id: coproc.c,v 1.74 2004-10-23 18:35:37 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -619,7 +619,8 @@ void coproc_register_write(struct cpu *cpu,
 #define	FPU_OP_C	7
 #define	FPU_OP_ABS	8
 #define	FPU_OP_NEG	9
-/*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W, RSQRT, TRUNC.L, TRUNC.W  */
+/*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W,
+ RSQRT, TRUNC.L, TRUNC.W  */
 
 
 struct internal_float_value {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.45 2004-10-22 06:41:50 debug Exp $
+ *  $Id: dev_asc.c,v 1.46 2004-10-23 18:35:36 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -432,7 +432,8 @@ fatal("TODO.......asdgasin\n");
 
 			/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
 			if (d->xferp->msg_out_len == 6 &&
-			    d->xferp->msg_out[0] == 0x80 &&
+			    (d->xferp->msg_out[0] == 0x80 ||
+			     d->xferp->msg_out[0] == 0xc0) &&
 			    d->xferp->msg_out[1] == 0x01 &&
 			    d->xferp->msg_out[2] == 0x03 &&
 			    d->xferp->msg_out[3] == 0x01 &&

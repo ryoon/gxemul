@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.47 2004-10-17 15:31:44 debug Exp $
+ *  $Id: diskimage.c,v 1.48 2004-10-23 18:35:37 debug Exp $
  *
  *  Disk image support.
  *
@@ -359,6 +359,21 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 	    disk_id, xferp->cmd[0]);
 
 	/*  fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x ]\n", disk_id, xferp->cmd[0]);  */
+#if 0
+{
+	static FILE *f = NULL;
+	if (f == NULL)
+		f = fopen("scsi_log.txt", "w"); 
+	if (f != NULL) {
+		int i;
+		fprintf(f, "id=%i cmd =", disk_id);
+		for (i=0; i<xferp->cmd_len; i++)
+			fprintf(f, " %02x", xferp->cmd[i]);
+		fprintf(f, "\n");
+		fflush(f);
+	}
+}
+#endif
 
 	switch (xferp->cmd[0]) {
 

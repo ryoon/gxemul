@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.4 2004-10-21 04:44:06 debug Exp $
+ *  $Id: dev_pica.c,v 1.5 2004-10-23 18:35:36 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -141,9 +141,8 @@ int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+/*	struct pica_data *d = (struct pica_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 	odata = 0;
@@ -164,9 +163,8 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pica_data *d = (struct pica_data *) extra;
+/*	struct pica_data *d = (struct pica_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 	odata = 0;

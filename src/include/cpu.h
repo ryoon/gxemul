@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.15 2005-02-11 09:29:49 debug Exp $
+ *  $Id: cpu.h,v 1.16 2005-02-11 22:55:48 debug Exp $
  *
  *  See cpu.c.
  */
@@ -49,10 +49,6 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
-
-#define	NO_BYTE_ORDER_OVERRIDE		-1
-#define	EMUL_LITTLE_ENDIAN		0
-#define	EMUL_BIG_ENDIAN			1
 
 
 struct cpu_family {

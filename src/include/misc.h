@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.223 2005-02-11 22:48:20 debug Exp $
+ *  $Id: misc.h,v 1.224 2005-02-11 22:55:49 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -91,6 +91,11 @@ struct cpu;
 struct emul;
 struct machine;
 struct memory;
+
+
+#define NO_BYTE_ORDER_OVERRIDE          -1
+#define EMUL_LITTLE_ENDIAN              0
+#define EMUL_BIG_ENDIAN                 1
 
 
 /*  Debug stuff:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.21 2003-12-30 03:07:11 debug Exp $
+ *  $Id: machine.c,v 1.22 2003-12-30 03:47:42 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -819,6 +819,7 @@ void machine_init(struct memory *mem)
 				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
+				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc0  */
 			}
 
 			/*  Common stuff for both SGI and ARC:  */

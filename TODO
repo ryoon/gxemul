@@ -106,7 +106,7 @@ mips64emul TODO
 			scsi controller(s): sii, asc
 			ethernet controller(s): le, fddi?
 			serial controllers: dc, ssc, scc
-			download the ROM from my DECstation 5000/125 and see if I can get it to run.
+			nvram on decstation 5000/125:  when using X11, set console=g or similar
 			DECstation 5840? "xbi-based SMP"
 		o)  SGI and ARC machines (sgimips, arc):
 			x)  Finish the SGI O2 framebuffer and keyboard support

@@ -330,3 +330,4 @@ HISTORY of mips64emul
 20040218	TURBOchannel slots that are empty now return a DBE exception,
 		so that Ultrix and DECstation PROMs don't complain about
 		broken TURBOchannel ROMs.
+		Working some more on the machine-dependant interrupt stuff.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.62 2004-06-12 14:30:06 debug Exp $
+ *  $Id: devices.h,v 1.63 2004-06-12 17:12:17 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -479,7 +479,7 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_zs.c:  */
-#define	DEV_ZS_LENGTH			0x8
+#define	DEV_ZS_LENGTH			0x10
 int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 

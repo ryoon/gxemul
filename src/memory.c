@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.4 2003-11-24 04:27:07 debug Exp $
+ *  $Id: memory.c,v 1.5 2004-01-05 01:07:55 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -421,6 +421,21 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 	}
 */
 	/*  TLB refill  */
+
+	/*
+	 *  Special case for SGI IP22 machines:
+	 *
+	 *  If a weird address such as 0x9000000080000000 is touched,
+	 *  simply return some other (semi-valid) address.  This is used
+	 *  by NetBSD/sgimips to disable the L2 cache.
+	 *
+	 *  TODO:  Make this correct.
+	 */
+
+	if ((vaddr >> 60) == 9) {
+		*return_addr = 0x1fcffff0;
+		return 1;
+	}
 
 exception:
 	if (no_exceptions)

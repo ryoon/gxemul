@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.29 2004-01-05 06:41:34 debug Exp $
+ *  $Id: machine.c,v 1.30 2004-01-06 02:00:21 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "devices.h"
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.4 2003-11-08 08:43:54 debug Exp $
+ *  $Id: emul.c,v 1.5 2004-01-06 02:00:21 debug Exp $
  *
  *  Emulation startup.
  */
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "diskimage.h"
 #include "console.h"

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.5 2003-12-20 21:20:12 debug Exp $
+ *  $Id: dec_prom.c,v 1.6 2004-01-06 02:00:21 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 

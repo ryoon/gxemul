@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.7 2004-01-05 06:41:50 debug Exp $
+ *  $Id: memory.c,v 1.8 2004-01-06 02:00:21 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -34,6 +34,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "memory.h"
 #include "misc.h"
 
 
@@ -46,6 +47,80 @@ extern int trace_on_bad_address;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
+
+
+/*
+ *  memory_readmax64():
+ *
+ *  Read at most 64 bits of data from a buffer.  Length is given by
+ *  len, and the byte order by cpu->byte_order.
+ *
+ *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
+ *  helper function.
+ */
+uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
+{
+	int i;
+	uint64_t x = 0;
+
+	if (cpu == NULL) {
+		fatal("memory_readmax64(): cpu = NULL\n");
+		exit(1);
+	}
+
+	if (len < 1 || len > 8) {
+		fatal("memory_readmax64(): len = %i\n", len);
+		exit(1);
+	}
+
+	/*  Switch byte order for incoming data, if neccessary:  */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN)
+		for (i=0; i<len; i++) {
+			x <<= 8;
+			x |= buf[i];
+		}
+	else
+		for (i=len-1; i>=0; i--) {
+			x <<= 8;
+			x |= buf[i];
+		}
+
+	return x;
+}
+
+
+/*
+ *  memory_writemax64():
+ *
+ *  Write at most 64 bits of data to a buffer.  Length is given by
+ *  len, and the byte order by cpu->byte_order.
+ *
+ *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
+ *  helper function.
+ */
+void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t data)
+{
+	int i;
+	uint64_t x = 0;
+
+	if (cpu == NULL) {
+		fatal("memory_readmax64(): cpu = NULL\n");
+		exit(1);
+	}
+
+	if (len < 1 || len > 8) {
+		fatal("memory_readmax64(): len = %i\n", len);
+		exit(1);
+	}
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		for (i=0; i<len; i++)
+			buf[i] = (data >> (i*8)) & 255;
+	} else {
+		for (i=0; i<len; i++)
+			buf[len - 1 - i] = (data >> (i*8)) & 255;
+	}
+}
 
 
 /*

@@ -26,13 +26,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.18 2004-01-05 01:24:35 debug Exp $
+ *  $Id: misc.h,v 1.19 2004-01-06 02:00:24 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
  *  TODO:  separate into smaller, more orthogonal files.
- *         perhaps cpu.h, opcodes.h (all the opcodes),
- *         memory.h?
+ *         perhaps cpu.h, opcodes.h (all the opcodes)?
  */
 
 #include <inttypes.h>
@@ -763,12 +762,14 @@ void machine_init(struct memory *mem);
 
 
 /*  memory.c:  */
+#if 0
 struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, size_t physical_max, int max_bits);
 int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length);
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
 void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
 	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *);
+#endif
 
 
 /*  mips16.c:  */

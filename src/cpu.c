@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.14 2004-01-05 06:41:22 debug Exp $
+ *  $Id: cpu.c,v 1.15 2004-01-06 02:00:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -36,6 +36,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "memory.h"
 #include "misc.h"
 #include "console.h"
 #include "devices.h"

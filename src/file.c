@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.11 2004-01-05 01:50:28 debug Exp $
+ *  $Id: file.c,v 1.12 2004-01-06 02:00:21 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -47,6 +47,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "memory.h"
 #include "misc.h"
 
 #include "exec_aout.h"

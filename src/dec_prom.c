@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.18 2004-07-07 07:28:08 debug Exp $
+ *  $Id: dec_prom.c,v 1.19 2004-07-07 20:32:18 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -169,6 +169,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
  *	0x0c	strcmp()
  *	0x14	strlen()
  *	0x24	getchar()
+ *	0x2c	puts()
  *	0x30	printf()
  *	0x38	iopoll()
  *	0x54	bootinit()
@@ -191,7 +192,7 @@ void decstation_prom_emul(struct cpu *cpu)
 	int vector = cpu->pc & 0xfff;
 	int callback = (cpu->pc & 0xf000)? 1 : 0;
 	unsigned char buf[100];
-	unsigned char ch1, ch2;
+	unsigned char ch1, ch2, ch3;
 	uint64_t slot_base = 0x10000000, slot_size = 0;
 
 	if (!callback) {
@@ -230,6 +231,13 @@ void decstation_prom_emul(struct cpu *cpu)
 		/*  debug("[ DEC PROM getchar() ]\n");  */
 		cpu->gpr[GPR_V0] = console_readchar();
 		break;
+	case 0x2c:		/*  puts()  */
+		i = 0;
+		while ((ch = read_char_from_memory(cpu, GPR_A0, i++)) != '\0')
+			console_putchar(ch);
+		console_putchar('\n');
+		cpu->gpr[GPR_V0] = 0;
+		break;
 	case 0x30:		/*  printf()  */
 		if (register_dump || instruction_trace)
 			debug("PROM printf(0x%08lx): \n", (long)cpu->gpr[GPR_A0]);
@@ -239,7 +247,9 @@ void decstation_prom_emul(struct cpu *cpu)
 			ch = read_char_from_memory(cpu, GPR_A0, i++);
 			switch (ch) {
 			case '%':
-				ch = read_char_from_memory(cpu, GPR_A0, i++);
+				ch = '0';
+				while (ch >= '0' && ch <= '9')
+					ch = read_char_from_memory(cpu, GPR_A0, i++);
 				switch (ch) {
 				case '%':
 					printf("%%");
@@ -268,13 +278,16 @@ void decstation_prom_emul(struct cpu *cpu)
 						break;
 					case 's':
 						/*  Print a "%s" string.  */
+						j = 0; ch3 = '\n';
 						while (ch2) {
-							ch2 = read_char_from_memory(cpu, argreg, i++);
-							if (ch2)
+							ch2 = read_char_from_memory(cpu, argreg, j++);
+							if (ch2) {
 								printf("%c", ch2);
+								ch3 = ch2;
+							}
 						}
 						/*  TODO:  without this newline, output looks ugly  */
-						printf("\n");
+						/*  printf("\n");  */
 						break;
 					}
 					argreg ++;

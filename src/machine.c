@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.129 2004-07-07 06:33:41 debug Exp $
+ *  $Id: machine.c,v 1.130 2004-07-07 20:32:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1358,19 +1358,19 @@ void machine_init(struct memory *mem)
 			add_environment_string(tmps, &addr);
 		}
 
+		/*  These are needed for Sprite to boot:  */
 		{
 			char tmps[300];
+
 			sprintf(tmps, "boot=%s", bootarg);
 			add_environment_string(tmps, &addr);
-		}
 
-		{
-			char tmps[300];
-			sprintf(tmps, "bitmap=0x%x", (uint32_t)(DEC_MEMMAP_ADDR +
-			    sizeof(memmap.pagesize)));
+			sprintf(tmps, "bitmap=0x%x", (uint32_t)(
+			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize)));
 			add_environment_string(tmps, &addr);
 
-			sprintf(tmps, "bitmaplen=0x%x", (uint32_t)sizeof(memmap.bitmap));
+			sprintf(tmps, "bitmaplen=0x%x",
+			    physical_ram_in_mb * 1048576 / 4096 / 8);
 			add_environment_string(tmps, &addr);
 		}
 

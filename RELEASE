@@ -1,10 +1,14 @@
-$Id: RELEASE,v 1.73 2005-01-08 15:50:29 debug Exp $
+$Id: RELEASE,v 1.74 2005-01-09 03:41:18 debug Exp $
 
 The next release will most probably be 0.2.4. Some of the features I'd like
 to have time to implement and test:
 
 	x)  better support for non-DECstation modes
+		o)  for example, netbooting OpenBSD/sgi snapshots,
+		    or work more on ARC modes (NetBSD/arc 2.0 scsi problems)
 	x)  stable bintrans for 64-bit CPUs (R4000 etc)
+		o)  everything that works without bintrans should work 
+		    with bintrans
 	x)  fix the Linux-related problems for good, if at all possible
 
 

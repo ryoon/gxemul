@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.10 2005-01-16 16:32:16 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.11 2005-01-16 16:39:51 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -235,6 +235,8 @@ int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem,
 		/*  (part & 0xffff) << 12  */
 		/*  (rev  & 0xf) << 28  */
 		odata = (2 << 28) | (0xc003 << 12) | (0x2aa << 1);
+		break;
+	case 0x20008:	/*  Fifo status  */
 		break;
 	case 0x20200:
 		break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.34 2004-10-17 02:02:24 debug Exp $
+ *  $Id: bintrans.c,v 1.35 2004-10-17 13:36:05 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -45,7 +45,13 @@
  *	"the next virtual page" as well).
  *
  *	If memory is overwritten, any translated block for that page must
- *	be invalidated.
+ *	be invalidated. (It is removed from the cache so that it cannot be
+ *	found on lookups, and the code chunk is overwritten with a simple
+ *	return instruction which does nothing. The later is needed because
+ *	other translated code chunks may still try to jump to this one.)
+ *		TODO: instead of just returning, maybe a hint should be
+ *		given that the block has been removed, so that other blocks
+ *		jumping to this block will also be invalidated?
  *
  *	Check before running a basic block that no external
  *		exceptions will occur for the duration of the
@@ -140,6 +146,7 @@ void bintrans_init(void)
 
 /*  Instructions that can be translated:  */
 #define	INSTR_NOP		0
+#define	INSTR_JAL		1
 
 
 /*  Function declaration, should be the same as in bintrans_*.c:  */
@@ -148,8 +155,10 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 size_t bintrans_chunk_header_len(void);
 void bintrans_write_chunkhead(unsigned char *p);
 void bintrans_write_chunkreturn(unsigned char **addrp);
+void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
+	int flag_pc, int flag_ninstr);
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment);
+	int *pc_increment, uint64_t addr_a, uint64_t addr_b);
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -177,7 +186,7 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#define	CODE_CHUNK_SPACE_SIZE		(2 * 1048576)
+#define	CODE_CHUNK_SPACE_SIZE		(4 * 1048576)
 #define	CODE_CHUNK_SPACE_MARGIN		16384
 
 /*
@@ -216,6 +225,7 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_entry *tep, *prev;
+	unsigned char *p;
 
 	tep = translation_entry_array[entry_index];
 	prev = NULL;
@@ -224,6 +234,11 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 		if (paddr >= tep->paddr && paddr < tep->paddr + tep->len) {
 			/*  printf("bintrans_invalidate(): invalidating"
 			    " %016llx\n", (long long)paddr);  */
+
+			/*  Overwrite the translated chunk so that it is
+			    just a header and a return instruction:  */
+			p = tep->chunk + bintrans_chunk_header_len();
+			bintrans_write_chunkreturn(&p);
 
 			/*  Remove the translation entry from the list:  */
 			if (prev == NULL)
@@ -304,8 +319,10 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int pc_increment = 0;
 	int n_translated = 0;
 	int res, hi6, special6, rd;
+	uint64_t addr, addr2;
 	uint64_t p;
 	unsigned char instr[4];
+	unsigned char instr2[4];
 	unsigned char *host_mips_page;
 	unsigned char *chunk_addr, *chunk_addr2;
 	struct translation_entry *tep;
@@ -379,11 +396,40 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			if (rd == 0) {
 				/*  NOP  */
 				res = bintrans_write_instruction(
-				    &chunk_addr, INSTR_NOP, &pc_increment);
+				    &chunk_addr, INSTR_NOP, &pc_increment,
+				    0, 0);
 				if (!res)
 					try_to_translate = 0;
 				else
 					n_translated += res;
+			} else
+				try_to_translate = 0;
+		} else if (hi6 == HI6_JAL && (p & 0xfff) != 0xffc) {
+			/*  JAL  */
+
+			/*  Read the next instruction:  */
+			*((uint32_t *)&instr2[0]) =
+			    *((uint32_t *)(host_mips_page + ((p+4) & 0xfff)));
+
+			if (instr2[0] == instr2[1] &&
+			    instr2[0] == instr2[2] &&
+			    instr2[0] == instr2[3] &&
+			    instr2[0] == 0x00) {
+				/*  NOP in delay slot  */
+				addr = instr[0] + (instr[1] << 8) +
+				    (instr[2] << 16) + (instr[3] & 0x03);
+				addr <<= 2;
+				addr2 = (vaddr & ~0xfff) | (p & 0xfff);
+				addr2 += 8;
+				addr |= (addr2 & ~0x0fffffffULL);
+				res = bintrans_write_instruction(
+				    &chunk_addr, INSTR_JAL, &pc_increment,
+				    addr, addr2);
+				/*  Success: JAL+NOP were translated.  */
+				if (res)
+					n_translated += 2;
+				/*  End of basic block.  */
+				try_to_translate = 0;
 			} else
 				try_to_translate = 0;
 		} else
@@ -406,7 +452,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 		return -1;
 
 	/*  Flush the pc, to let it have a correct (emulated) value:  */
-	bintrans_write_pcflush(&chunk_addr, &pc_increment);
+	bintrans_write_pcflush(&chunk_addr, &pc_increment, 1, 1);
 
 	/*  Add code chunk header...  */
 	bintrans_write_chunkhead(translation_code_chunk_space

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_mips.c,v 1.1 2004-10-17 01:48:10 debug Exp $
+ *  $Id: bintrans_mips.c,v 1.2 2004-10-17 13:36:05 debug Exp $
  *
  *  MIPS specific code (64-bit) for dynamic binary translation.
  *  NOTE: This code will not work on 32-bit MIPS machines.
@@ -90,7 +90,8 @@ void bintrans_write_chunkreturn(unsigned char **addrp)
  *
  *  TODO: Comment.
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
+void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
+	int flag_pc, int flag_ninstr)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 	int inc = *pc_increment;
@@ -99,18 +100,22 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	if (inc == 0)
 		return;
 
-	/*  Increment cpu->pc:  */
-	*a++ = (0xdc850000 + ofs);	/*  ld a1, ofs(a0)  */
-	*a++ = (0x64a30000 + inc);	/*  daddiu v1,a1,inc  */
-	*a++ = (0xfc830000 + ofs);	/*  sd v1, ofs(a0)  */
+	if (flag_pc) {
+		/*  Increment cpu->pc:  */
+		*a++ = (0xdc850000 + ofs);	/*  ld a1, ofs(a0)  */
+		*a++ = (0x64a30000 + inc);	/*  daddiu v1,a1,inc  */
+		*a++ = (0xfc830000 + ofs);	/*  sd v1, ofs(a0)  */
+	}
 
-	/*  Increment the instruction count:  */
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-            - ((size_t)&dummy_cpu);
-	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = (0x8c850000 + ofs);	/*  lw a1, ofs(a0)  */
-	*a++ = (0x24a30000 + inc);	/*  daddiu v1,a1,inc  */
-	*a++ = (0xac830000 + ofs);	/*  sw v1, ofs(a0)  */
+	if (flag_ninstr) {
+		/*  Increment the instruction count:  */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	            - ((size_t)&dummy_cpu);
+		inc /= 4;	/*  nr of instructions instead of bytes  */
+		*a++ = (0x8c850000 + ofs);	/*  lw a1, ofs(a0)  */
+		*a++ = (0x24a30000 + inc);	/*  daddiu v1,a1,inc  */
+		*a++ = (0xac830000 + ofs);	/*  sw v1, ofs(a0)  */
+	}
 
 	*pc_increment = 0;
 	*addrp = (unsigned char *) a;
@@ -123,7 +128,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment)
+	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 	int res = 0;

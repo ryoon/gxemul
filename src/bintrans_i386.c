@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.6 2004-10-16 14:48:43 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.7 2004-10-17 13:36:05 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -90,7 +90,8 @@ void bintrans_write_chunkreturn(unsigned char **addrp)
  *
  *  TODO: Comment.
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
+void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
+	int flag_pc, int flag_ninstr)
 {
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
@@ -99,25 +100,29 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	if (inc == 0)
 		return;
 
-	/*  Add inc to cpu->pc.  */
-	*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */
-	*a++ = 0x81; *a++ = 0x80; *a++ = ofs & 255;
-	    *a++ = (ofs >> 8); *a++ = (ofs >> 16); *a++ = (ofs >> 24);
-	    *a++ = (inc & 255); *a++ = (inc >> 8); *a++ = (inc >> 16);
-	    *a++ = (inc >> 24);  /*  addl $inc,ofs(%eax)  */
-	ofs += 4;
-	*a++ = 0x83; *a++ = 0x90; *a++ = ofs & 255; *a++ = (ofs >> 8);
-	    *a++ = 0; *a++ = 0; *a++ = 0;  /*  adcl $0,ofs+4(%eax)  */
+	if (flag_pc) {
+		/*  Add inc to cpu->pc.  */
+		*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */
+		*a++ = 0x81; *a++ = 0x80; *a++ = ofs & 255;
+		    *a++ = (ofs >> 8); *a++ = (ofs >> 16); *a++ = (ofs >> 24);
+		    *a++ = (inc & 255); *a++ = (inc >> 8); *a++ = (inc >> 16);
+		    *a++ = (inc >> 24);  /*  addl $inc,ofs(%eax)  */
+		ofs += 4;
+		*a++ = 0x83; *a++ = 0x90; *a++ = ofs & 255; *a++ = (ofs >> 8);
+		    *a++ = 0; *a++ = 0; *a++ = 0;  /*  adcl $0,ofs+4(%eax)  */
+	}
 
-	/*  ... and add inc (nr of instructions) to the counter:  */
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-            - ((size_t)&dummy_cpu);
-	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */
-	*a++ = 0x81; *a++ = 0x80; *a++ = (ofs & 255); *a++ = (ofs >> 8);
-	    *a++ = (ofs >> 16); *a++ = (ofs >> 24);
-	    *a++ = (inc & 255); *a++ = (inc >> 8);
-	    *a++ = (inc >> 16); *a++ = (inc >> 24);  /*  addl $inc,ofs(%eax)  */
+	if (flag_ninstr) {
+		/*  ... and add inc (nr of instructions) to the counter:  */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	            - ((size_t)&dummy_cpu);
+		inc /= 4;	/*  nr of instructions instead of bytes  */
+		*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */
+		*a++ = 0x81; *a++ = 0x80; *a++ = (ofs & 255); *a++ = (ofs >> 8);
+		    *a++ = (ofs >> 16); *a++ = (ofs >> 24);
+		    *a++ = (inc & 255); *a++ = (inc >> 8);
+		    *a++ = (inc >> 16); *a++ = (inc >> 24);  /*  addl $inc,ofs(%eax)  */
+	}
 
 	*pc_increment = 0;
 	*addrp = a;
@@ -130,7 +135,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment)
+	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
 {
 	unsigned char *addr = *addrp;
 	int res = 0;

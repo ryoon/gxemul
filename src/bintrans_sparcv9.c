@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.5 2004-10-16 14:48:43 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.6 2004-10-17 13:36:05 debug Exp $
  *
  *  UltraSparc specific code for dynamic binary translation.
  *
@@ -89,7 +89,8 @@ void bintrans_write_chunkreturn(unsigned char **addrp)
  *
  *  TODO: Comment.
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
+void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
+	int flag_pc, int flag_ninstr)
 {
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
@@ -98,24 +99,28 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	if (inc == 0)
 		return;
 
-	/*  Increment cpu->pc: (assuming %o5 is available for use)  */
-	*a++ = 0xda; *a++ = 0x5a; *a++ = 0x20 + (ofs >> 8);
-	    *a++ = (ofs & 255);		/*  ldx [ %o0 + ofs ], %o5  */
-	*a++ = 0x9a; *a++ = 3; *a++ = 0x60 + (inc >> 8);
-	    *a++ = (inc & 255);		/*  add %o5, inc, %o5  */
-	*a++ = 0xda; *a++ = 0x72; *a++ = 0x20 + (ofs >> 8);
-	    *a++ = (ofs & 255);		/*  stx %o5, [ %o0 + ofs ]  */
+	if (flag_pc) {
+		/*  Increment cpu->pc: (assuming %o5 is available for use)  */
+		*a++ = 0xda; *a++ = 0x5a; *a++ = 0x20 + (ofs >> 8);
+		    *a++ = (ofs & 255);		/*  ldx [ %o0 + ofs ], %o5  */
+		*a++ = 0x9a; *a++ = 3; *a++ = 0x60 + (inc >> 8);
+		    *a++ = (inc & 255);		/*  add %o5, inc, %o5  */
+		*a++ = 0xda; *a++ = 0x72; *a++ = 0x20 + (ofs >> 8);
+		    *a++ = (ofs & 255);		/*  stx %o5, [ %o0 + ofs ]  */
+	}
 
-	/*  Increment the instruction count:  */
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-            - ((size_t)&dummy_cpu);
-	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = 0xc4; *a++ = 0x02; *a++ = 0x20 + (ofs >> 8);
-	    *a++ = (ofs & 255);		/*  ld [ %o0 + ofs ], %g2  */
-	*a++ = 0x84; *a++ = 0x00; *a++ = 0xa0 + (inc >> 8);
-	    *a++ = (inc & 255);		/*  add  %g2, inc, %g2  */
-	*a++ = 0xc4; *a++ = 0x22; *a++ = 0x20 + (ofs >> 8);
-	    *a++ = (ofs & 255);		/*  st %g2, [ %o0 + ofs ]  */
+	if (flag_ninstr) {
+		/*  Increment the instruction count:  */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	            - ((size_t)&dummy_cpu);
+		inc /= 4;	/*  nr of instructions instead of bytes  */
+		*a++ = 0xc4; *a++ = 0x02; *a++ = 0x20 + (ofs >> 8);
+		    *a++ = (ofs & 255);		/*  ld [ %o0 + ofs ], %g2  */
+		*a++ = 0x84; *a++ = 0x00; *a++ = 0xa0 + (inc >> 8);
+		    *a++ = (inc & 255);		/*  add  %g2, inc, %g2  */
+		*a++ = 0xc4; *a++ = 0x22; *a++ = 0x20 + (ofs >> 8);
+		    *a++ = (ofs & 255);		/*  st %g2, [ %o0 + ofs ]  */
+	}
 
 	*pc_increment = 0;
 	*addrp = a;
@@ -128,7 +133,7 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment)
+	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
 {
 	unsigned char *addr = *addrp;
 	int res = 0;

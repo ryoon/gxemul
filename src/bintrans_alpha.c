@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.10 2004-10-16 14:48:43 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.11 2004-10-17 13:36:05 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -118,7 +118,8 @@ void bintrans_write_chunkreturn(unsigned char **addrp)
  *
  *  TODO: Comment.
  */
-void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
+void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment,
+	int flag_pc, int flag_ninstr)
 {
 	unsigned char *a = *addrp;
 	int inc = *pc_increment;
@@ -127,31 +128,35 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	if (inc == 0)
 		return;
 
-	/*
-	 *  p[0x918 / 8] += 0x7fff;   (where a0 = p, which is a long long ptr)
-	 *
-	 *   0:   18 09 30 a4     ldq     t0,2328(a0)
-	 *   4:   ff 7f 21 20     lda     t0,32767(t0)
-	 *   8:   18 09 30 b4     stq     t0,2328(a0)
-	 */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-	*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	if (flag_pc) {
+		/*
+		 *  p[0x918 / 8] += 0x7fff;   (where a0 = p, which is a long long ptr)
+		 *
+		 *   0:   18 09 30 a4     ldq     t0,2328(a0)
+		 *   4:   ff 7f 21 20     lda     t0,32767(t0)
+		 *   8:   18 09 30 b4     stq     t0,2328(a0)
+		 */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	}
 
-	/*
-	 *  Also increment the "number of executed instructions", which
-	 *  is an int.
-	 *
-	 *   0:   44 44 30 a0     ldl     t0,17476(a0)
-	 *   4:   89 07 21 20     lda     t0,1929(t0)
-	 *   8:   44 44 30 b0     stl     t0,17476(a0)
-	 */
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
-	    - ((size_t)&dummy_cpu);
-	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
-	*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;
+	if (flag_ninstr) {
+		/*
+		 *  Also increment the "number of executed instructions", which
+		 *  is an int.
+		 *
+		 *   0:   44 44 30 a0     ldl     t0,17476(a0)
+		 *   4:   89 07 21 20     lda     t0,1929(t0)
+		 *   8:   44 44 30 b0     stl     t0,17476(a0)
+		 */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+		    - ((size_t)&dummy_cpu);
+		inc /= 4;	/*  nr of instructions instead of bytes  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;
+	}
 
 	*pc_increment = 0;
 	*addrp = a;
@@ -164,9 +169,10 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
  *  TODO: Comment.
  */
 int bintrans_write_instruction(unsigned char **addrp, int instr,
-	int *pc_increment)
+	int *pc_increment, uint64_t addr_a, uint64_t addr_b)
 {
-	unsigned char *addr = *addrp;
+	unsigned char *a;
+	int ofs;
 	int res = 0;
 
 	switch (instr) {
@@ -174,13 +180,38 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 		/*  Add nothing, but succeed.  */
 		res = 1;
 		break;
+	case INSTR_JAL:
+		/*  JAL to addr_a, set r31 = addr_b  */
+		/*  printf("JAL addr_a=%016llx, addr_b=%016llx\n",
+		    addr_a, addr_b);  */
+		bintrans_write_pcflush(addrp, pc_increment, 0, 1);
+		a = *addrp;
+
+		/*
+		 */
+		/*  pc = addr_a  */
+		ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
+
+#if 0
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+#endif
+		/*  r31 = addr_b  */
+		ofs = ((size_t)&dummy_cpu.gpr[31]) - ((size_t)&dummy_cpu);
+#if 0
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+#endif
+		*addrp = a;
+		res = 1;
+		break;
 	default:
 		fatal("bintrans_write_instruction(): unimplemented "
 		    "instruction %i\n", instr);
 		exit(1);
 	}
-
-	*addrp = addr;
 
 	return res;
 }

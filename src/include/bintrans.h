@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.8 2004-10-17 02:02:23 debug Exp $
+ *  $Id: bintrans.h,v 1.9 2004-10-17 13:36:04 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */
@@ -36,7 +36,7 @@
 #include "misc.h"
 
 
-#define	MAX_TRANSLATE_DEPTH	4
+#define	MAX_TRANSLATE_DEPTH	3
 
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr);
 int bintrans_runchunk(struct cpu *cpu, uint64_t paddr);

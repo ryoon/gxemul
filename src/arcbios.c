@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.44 2004-12-05 14:17:21 debug Exp $
+ *  $Id: arcbios.c,v 1.45 2004-12-05 18:07:50 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -840,7 +840,6 @@ void arcbios_emul(struct cpu *cpu)
 {
 	int vector = cpu->pc & 0xfff;
 	int i, j;
-	int mb_left;
 	unsigned char ch2;
 	unsigned char buf[40];
 

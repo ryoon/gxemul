@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.4 2003-12-22 11:40:28 debug Exp $
  *  
  *  NS16550 serial controller.
  */
@@ -42,6 +42,7 @@
 struct ns_data {
 	int	reg[8];
 	int	irqnr;
+	int	addrmult;
 };
 
 
@@ -74,6 +75,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	d->reg[com_lsr] &= ~LSR_RXRDY;
 	if (console_charavail())
 		d->reg[com_lsr] |= LSR_RXRDY;
+
+	relative_addr /= d->addrmult;
 
 	switch (relative_addr) {
 	case com_data:	/*  com_data or com_dlbl  */
@@ -127,7 +130,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 /*
  *  dev_ns16550_init():
  */
-void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
 {
 	struct ns_data *d;
 
@@ -138,7 +141,8 @@ void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	}
 	memset(d, 0, sizeof(struct ns_data));
 	d->irqnr = irq_nr;
+	d->addrmult = addrmult;
 
-	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH, dev_ns16550_access, d);
+	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
 }
 

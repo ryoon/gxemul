@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.149 2005-01-09 01:55:31 debug Exp $
+ *  $Id: main.c,v 1.150 2005-01-15 05:54:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -549,7 +549,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		emul->physical_ram_in_mb = 32;
 
 	if (emul->emulation_type == EMULTYPE_SGI && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 48;
+		emul->physical_ram_in_mb = 64;
 
 	if (emul->emulation_type == EMULTYPE_HPCMIPS &&
 	    emul->physical_ram_in_mb == 0) {
@@ -586,7 +586,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		emul->physical_ram_in_mb = 64;
 
 	if (emul->emulation_type == EMULTYPE_ARC && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 48;
+		emul->physical_ram_in_mb = 32;
 
 	if (emul->emulation_type == EMULTYPE_DEC &&
 	    emul->machine == MACHINE_PMAX_3100 && emul->physical_ram_in_mb == 0)

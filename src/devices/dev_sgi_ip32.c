@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.5 2005-01-13 06:25:39 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.6 2005-01-15 05:53:59 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -78,7 +78,7 @@ struct macepci_data {
  */
 void dev_crime_tick(struct cpu *cpu, void *extra)
 {
-	int j, carry, old, new;
+	int j, carry, old, new, add_byte;
 	uint64_t what_to_add = (1<<CRIME_TICKSHIFT)
 	    * CRIME_SPEED_DIV_FACTOR / CRIME_SPEED_MUL_FACTOR;
 	struct crime_data *d = extra;
@@ -87,7 +87,9 @@ void dev_crime_tick(struct cpu *cpu, void *extra)
 	carry = 0;
 	while (j < 8) {
 		old = d->reg[CRIME_TIME + 7 - j];
-		new = old + ((what_to_add >> (j * 8)) & 255) + carry;
+		add_byte = what_to_add >> ((int64_t)j * 8);
+		add_byte &= 255;
+		new = old + add_byte + carry;
 		d->reg[CRIME_TIME + 7 - j] = new & 255;
 		if (new >= 256)
 			carry = 1;
@@ -130,6 +132,12 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	d->reg[CRM_MEM_BANK_CTRL1 + 6] = 0x0;	/*  lowest bit set = 128MB, clear = 32MB  */
 	d->reg[CRM_MEM_BANK_CTRL1 + 7] = 0x1;	/*  address * 32MB  */
 
+	if (relative_addr >= CRIME_TIME && relative_addr < CRIME_TIME+8) {
+		if (writeflag == MEM_READ)
+			memcpy(data, &d->reg[relative_addr], len);
+		return 1;
+	}
+
 	if (writeflag == MEM_WRITE)
 		memcpy(&d->reg[relative_addr], data, len);
 	else
@@ -158,10 +166,6 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 	case 0x1c:
 	case 0x34:
 #endif
-#if 1
-	case CRIME_TIME:
-	case CRIME_TIME+4:
-#endif
 		/*  don't dump debug info for these  */
 		break;
 	default:
@@ -169,7 +173,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 			debug("[ crime: read from 0x%x, len=%i:", (int)relative_addr, len);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
-			debug(" ]\n", len);
+			debug(" ]\n");
 		} else {
 			debug("[ crime: write to 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.16 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.17 2005-01-15 05:53:59 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -264,7 +264,7 @@ odata = random();	/*  testhack for the ip32 prom  */
 			d->bitdepth = 8 << ((d->plane0ctrl >> 13) & 3);
 			debug("[ sgi_gbe: setting color depth to %i bits ]\n", d->bitdepth);
 			if (d->bitdepth != 8)
-				fatal("sgi_gbe: warning: bitdepth %i not really implemented yet\n");
+				fatal("sgi_gbe: warning: bitdepth %i not really implemented yet\n", d->bitdepth);
 		} else
 			odata = d->plane0ctrl;
 		break;

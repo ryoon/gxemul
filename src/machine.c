@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.273 2005-01-11 02:41:29 debug Exp $
+ *  $Id: machine.c,v 1.274 2005-01-15 05:54:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2210,6 +2210,11 @@ Why is this here? TODO
 				strcat(emul->machine_name, " (O2)");
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
+				dev_ram_init(mem, 0x07ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
+				dev_ram_init(mem, 0x10000000ULL,           128, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x11ffff00ULL,           256, DEV_RAM_MIRROR, 0x01ffff00);
+				dev_ram_init(mem, 0x12000000ULL,           128, DEV_RAM_MIRROR, 0x02000000);
+				dev_ram_init(mem, 0x17ffff00ULL,           256, DEV_RAM_MIRROR, 0x03ffff00);
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
@@ -2218,7 +2223,6 @@ Why is this here? TODO
 				dev_sgi_gbe_init(cpu, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
 
-				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
 				/*
 				 *  A combination of NetBSD and Linux info:
 				 *
@@ -3451,13 +3455,46 @@ config[77] = 0x30;
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "cpufreq=3", &addr);
+			add_environment_string(cpu, "AutoLoad=No", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "dbaud=9600", &addr);
+			add_environment_string(cpu, "diskless=0", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "volume=80", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "sgilogo=y", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "monitor=h", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "TimeZone=PST8PDT", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "nogfxkbd=1", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "OSLoadPartition=OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "OSLoadFilename=/unix", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "OSLoader=sash", &addr);
+
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "rbaud=9600", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "nogfxkbd=1", &addr);
+			add_environment_string(cpu, "rebound=y", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "crt_option=1", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "keybd=US", &addr);
+
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "cpufreq=3", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "dbaud=9600", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "eaddr=10:20:30:40:50:60", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -3466,16 +3503,6 @@ config[77] = 0x30;
 			add_environment_string(cpu, "showconfig=istrue", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "diagmode=v", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "SystemPartition=dksc (0,0,8)", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLoadPartition=dksc (0,0,0)", &addr);
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "root=dks0d0s0", &addr);
-
-			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
 		} else {
 			char *tmp;
 			tmp = malloc(strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2);

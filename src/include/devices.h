@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.4 2003-12-20 21:34:48 debug Exp $
+ *  $Id: devices.h,v 1.5 2003-12-22 11:38:28 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -159,7 +159,7 @@ void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100

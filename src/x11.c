@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.3 2003-11-07 00:25:32 debug Exp $
+ *  $Id: x11.c,v 1.4 2003-11-08 13:34:09 debug Exp $
  *
  *  X11-related functions.
  */
@@ -52,7 +52,7 @@ int x11_fb_winxsize = 0, x11_fb_winysize = 0;
 
 
 Display *x11_display = NULL;
-int x11_screen;
+int x11_screen, screen_depth;
 unsigned long fg_COLOR, bg_COLOR;
 /*  int x11_winx, x11_winy; int x11_winxsize, x11_winysize;  */
 
@@ -138,6 +138,7 @@ void x11_init(void)
 	}
 
 	x11_screen = DefaultScreen(x11_display);
+	screen_depth = DefaultDepth(x11_display, x11_screen);
 
 	strcpy(bg, "Black");
 	strcpy(fg, "White");
@@ -163,7 +164,7 @@ void x11_init(void)
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 {
 	int fb_number = 0;
-	int bytes_per_pixel = 3;
+	int bytes_per_pixel = screen_depth / 8;
 
 	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
 		if (fb_windows[fb_number].x11_fb_winxsize == 0)

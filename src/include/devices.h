@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.11 2004-01-02 22:19:29 debug Exp $
+ *  $Id: devices.h,v 1.12 2004-01-03 03:11:08 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -127,7 +127,7 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_gt_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_gt.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004

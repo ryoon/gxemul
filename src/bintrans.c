@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.109 2004-12-07 13:12:08 debug Exp $
+ *  $Id: bintrans.c,v 1.110 2004-12-09 01:40:44 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -332,7 +332,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 
 #if 1
 /*  printf("A paddr=%016llx\n", (long long)paddr);  */
-/*  This doesn't work yet.  */
+/*  Sometimes this works.  */
 quick_attempt_translate_again:
 #endif
 /*printf("B: ");
@@ -353,6 +353,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		n_quick_jumps = 0;
 		tep = NULL;
 		debug("bintrans: Starting over!\n");
+		clear_all_chunks_from_all_tables(cpu);
 	}
 
 
@@ -758,6 +759,8 @@ run_it:
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
 
+	enter_chunks_into_tables(cpu, cpu->pc, &tep->chunk[0]);
+
 	old_n_executed = cpu->bintrans_instructions_executed;
 
 	bintrans_runchunk(cpu, f);
@@ -817,7 +820,7 @@ run_it:
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    translation_code_chunk_space;
-						goto run_it;	/*  see further down  */
+						goto run_it;
 					}
 					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
 						return cpu->bintrans_instructions_executed;
@@ -847,7 +850,6 @@ run_it:
 					cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
 					cpu->pc_bintrans_paddr = paddr;
 
-					/*  Why doesn't this work? TODO  */
 /*
 printf("C: ");
 printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",

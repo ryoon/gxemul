@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.122 2004-12-07 12:41:52 debug Exp $
+ *  $Id: coproc.c,v 1.123 2004-12-09 01:40:44 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -362,6 +362,7 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 					tbl1->haddr_entry[b] = NULL;
 				tbl1->paddr_entry[b] = paddr_page;
 			}
+			tbl1->bintrans_chunks[b] = NULL;
 			break;
 		default:
 			;
@@ -393,6 +394,7 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 /*		printf("tbl1 = %p\n", tbl1); */
 		p = tbl1->haddr_entry[b];
 		p_paddr = tbl1->paddr_entry[b];
+		tbl1->bintrans_chunks[b] = NULL;
 /*		printf("   p = %p\n", p);
 */		if (p != NULL || p_paddr != 0) {
 /*			printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
@@ -407,6 +409,62 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 				cpu->next_free_vth_table = tbl1;
 			}
 		}
+		break;
+	default:
+		;
+	}
+}
+
+
+/*
+ *  clear_all_chunks_from_all_tables():
+ */
+void clear_all_chunks_from_all_tables(struct cpu *cpu)
+{
+	int a, b;
+	struct vth32_table *tbl1;
+	void *p;
+	uint32_t p_paddr;
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		for (a=0; a<0x400; a++) {
+			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+			if (tbl1 != cpu->vaddr_to_hostaddr_nulltable) {
+				for (b=0; b<0x400; b++)
+					tbl1->bintrans_chunks[b] = NULL;
+			}
+		}
+		break;
+	default:
+		;
+	}
+}
+
+
+/*
+ *  enter_chunks_into_tables():
+ */
+void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *chunk0)
+{
+	int i;
+
+	int a, b;
+	struct vth32_table *tbl1;
+	void *p;
+	uint32_t p_paddr;
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		a = (vaddr >> 22) & 0x3ff;
+		b = (vaddr >> 12) & 0x3ff;
+		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+		p = tbl1->haddr_entry[b];
+		p_paddr = tbl1->paddr_entry[b];
+		if (p != NULL && p_paddr != 0) {
+			tbl1->bintrans_chunks[b] = chunk0;
+		} else
+			tbl1->bintrans_chunks[b] = NULL;
 		break;
 	default:
 		;

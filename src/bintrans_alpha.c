@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.80 2004-12-07 12:41:52 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.81 2004-12-09 01:40:44 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -118,7 +118,7 @@ static int map_MIPS_to_Alpha[32] = {
 
 struct cpu dummy_cpu;
 struct coproc dummy_coproc;
-
+struct vth32_table dummy_vth32_table;
 
 unsigned char bintrans_alpha_imb[32] = {
 	0x86, 0x00, 0x00, 0x00,		/*  imb   */
@@ -1039,7 +1039,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p)
 {
-	unsigned char *a, *skip=NULL;
+	unsigned char *a, *skip=NULL, *fail;
 	int ofs;
 	uint64_t alpha_addr, subaddr;
 
@@ -1063,104 +1063,190 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	}
 
 	if (potential_chunk_p == NULL) {
-		/*  Not much we can do here if this wasn't to the same
-		    physical page...  */
+		if (bintrans_32bit_only) {
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_A1);
+			/*
+			 *  Special case for 32-bit addressing:
+			 *
+			 *  t1 = 1023;
+			 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+			 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+			 *  t1 = a1 & 4095;
+			 *
+			 *  f8 1f 5f 20     lda     t1,1023 * 8
+			 *  83 76 22 4a     srl     a1,19,t2
+			 *  84 36 21 4a     srl     a1, 9,t3
+			 *  03 00 62 44     and     t2,t1,t2
+			 */
+			*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
+			*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
+			*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
+			*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
 
-		*a++ = 0xfc; *a++ = 0xff; *a++ = 0x84; *a++ = 0x20;	/*  lda t3,-4(t3)  */
+			/*
+			 *  t10 is vaddr_to_hostaddr_table0
+			 *
+			 *  a3 = tbl0[t2]  (load entry from tbl0)
+			 *  12 04 03 43     addq    t10,t2,a2
+			 */
+			*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
 
-		/*
-		 *  Compare the old pc (t3) and the new pc (t0). If they are on the
-		 *  same virtual page (which means that they are on the same physical
-		 *  page), then we can check the right chunk pointer, and if it
-		 *  is non-NULL, then we can jump there.  Otherwise just return.
-		 *
-		 *  00 f0 5f 20     lda     t1,-4096
-		 *  01 00 22 44     and     t0,t1,t0
-		 *  04 00 82 44     and     t3,t1,t3
-		 *  a3 05 24 40     cmpeq   t0,t3,t2
-		 *  01 00 60 f4     bne     t2,7c <ok2>
-		 *  01 80 fa 6b     ret
-		 */
-		*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and  */
-		*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;	/*  and  */
-		*a++ = 0xa3; *a++ = 0x05; *a++ = 0x24; *a++ = 0x40;	/*  cmpeq  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  04 00 82 44     and     t3,t1,t3  */
+			*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
 
-		/*  Don't execute too many instructions. (see comment below)  */
-		*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
-			*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  00 00 72 a6     ldq     a3,0(a2)  */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
 
-		/*  15 bits at a time, which means max 60 bits, but
-		    that should be enough. the top 4 bits are probably
-		    not used by userland alpha code. (TODO: verify this)  */
-		alpha_addr = (size_t)chunks;
-		subaddr = (alpha_addr >> 45) & 0x7fff;
+			/*  fc 0f 5f 20     lda     t1,0xffc  */
+			*a++ = 0xfc; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
 
-		/*
-		 *  00 00 3f 20     lda     t0,0
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 *  21 f7 21 48     sll     t0,0xf,t0
-		 *  34 12 21 20     lda     t0,4660(t0)
-		 */
+			/*
+			 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+			 *  13 04 64 42     addq    a3,t3,a3
+			 */
+			*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
 
-		/*  Start with the topmost 15 bits:  */
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			/*  34 12 73 22     lda     a3,ofs(a3)  */
+			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x73; *a++ = 0x22;
 
-		subaddr = (alpha_addr >> 30) & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			/*  02 00 22 46     and     a1,t1,t1  */
+			*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
 
-		subaddr = (alpha_addr >> 15) & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
-		*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+			/*  00 00 73 a6     ldq     a3,0(a3)  */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
 
-		subaddr = alpha_addr & 0x7fff;
-		*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			/*
+			 *  NULL? Then just return.
+			 *  01 00 60 f6     bne     a3,f8 <okzz>
+			 */
+			fail = a;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
+			bintrans_write_chunkreturn(&a);
+			*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
-		/*
-		 *  t2 = pc
-		 *  t1 = t2 & 0xfff
-		 *  t0 += t1
-		 *
-		 *  ff 0f 5f 20     lda     t1,4095
-		 *  02 00 62 44     and     t2,t1,t1
-		 *  01 04 22 40     addq    t0,t1,t0
-		 */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T2);
-		*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
-		*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
+			/*
+			 *  02 04 53 40     addq    t1,a3,t1
+			 *  00 00 22 a0     ldl     t0,0(t1)
+			 */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x53; *a++ = 0x40;
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0x22; *a++ = 0xa0;
 
-		/*
-		 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
-		 *  If it is zero, then skip the following.
-		 *  Add cpu->chunk_base_address to t0.
-		 *  Jump to t0.
-		 */
+			/*  No translation? Then return.  */
+			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
-		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+			/*  ldq t2,chunk_base_address(a0)  */
+			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 
-		/*  ldl t2,chunk_base_address(a0)  */
-		ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
-		/*  addq t0,t2,t0  */
-		*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+			/*  addq t0,t2,t0  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
 
-		/*  00 00 e1 6b     jmp     (t0)  */
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
+			/*  00 00 e1 6b     jmp     (t0)  */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
 
-		/*  Failure, then return to the main loop.  */
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  Return to the main translation loop.  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		} else {
+			/*  Not much we can do here if this wasn't to the same
+			    physical page...  */
+
+			*a++ = 0xfc; *a++ = 0xff; *a++ = 0x84; *a++ = 0x20;	/*  lda t3,-4(t3)  */
+
+			/*
+			 *  Compare the old pc (t3) and the new pc (t0). If they are on the
+			 *  same virtual page (which means that they are on the same physical
+			 *  page), then we can check the right chunk pointer, and if it
+			 *  is non-NULL, then we can jump there.  Otherwise just return.
+			 *
+			 *  00 f0 5f 20     lda     t1,-4096
+			 *  01 00 22 44     and     t0,t1,t0
+			 *  04 00 82 44     and     t3,t1,t3
+			 *  a3 05 24 40     cmpeq   t0,t3,t2
+			 *  01 00 60 f4     bne     t2,7c <ok2>
+			 *  01 80 fa 6b     ret
+			 */
+			*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x44;	/*  and  */
+			*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;	/*  and  */
+			*a++ = 0xa3; *a++ = 0x05; *a++ = 0x24; *a++ = 0x40;	/*  cmpeq  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf4;	/*  bne  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+			/*  Don't execute too many instructions. (see comment below)  */
+			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
+				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
+			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+			/*  15 bits at a time, which means max 60 bits, but
+			    that should be enough. the top 4 bits are probably
+			    not used by userland alpha code. (TODO: verify this)  */
+			alpha_addr = (size_t)chunks;
+			subaddr = (alpha_addr >> 45) & 0x7fff;
+
+			/*
+			 *  00 00 3f 20     lda     t0,0
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 *  21 f7 21 48     sll     t0,0xf,t0
+			 *  34 12 21 20     lda     t0,4660(t0)
+			 */
+
+			/*  Start with the topmost 15 bits:  */
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x3f; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+			subaddr = (alpha_addr >> 30) & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+			subaddr = (alpha_addr >> 15) & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+			*a++ = 0x21; *a++ = 0xf7; *a++ = 0x21; *a++ = 0x48;	/*  sll  */
+
+			subaddr = alpha_addr & 0x7fff;
+			*a++ = (subaddr & 255); *a++ = (subaddr >> 8); *a++ = 0x21; *a++ = 0x20;
+
+			/*
+			 *  t2 = pc
+			 *  t1 = t2 & 0xfff
+			 *  t0 += t1
+			 *
+			 *  ff 0f 5f 20     lda     t1,4095
+			 *  02 00 62 44     and     t2,t1,t1
+			 *  01 04 22 40     addq    t0,t1,t0
+			 */
+			bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T2);
+			*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+			*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq  */
+
+			/*
+			 *  Load the chunk pointer (actually, a 32-bit offset) into t0.
+			 *  If it is zero, then skip the following.
+			 *  Add cpu->chunk_base_address to t0.
+			 *  Jump to t0.
+			 */
+
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
+			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
+
+			/*  ldq t2,chunk_base_address(a0)  */
+			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
+			/*  addq t0,t2,t0  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
+
+			/*  00 00 e1 6b     jmp     (t0)  */
+			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
+
+			/*  Failure, then return to the main loop.  */
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		}
 	} else {
 		/*
 		 *  Just to make sure that we don't become too unreliant
@@ -1253,7 +1339,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 			*a++ = 0x00; *a++ = 0x00; *a++ = 0x21; *a++ = 0xa0;	/*  ldl t0,0(t0)  */
 			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
-			/*  ldl t2,chunk_base_address(a0)  */
+			/*  ldq t2,chunk_base_address(a0)  */
 			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 			/*  addq t0,t2,t0  */

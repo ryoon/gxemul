@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.175 2004-12-08 17:05:13 debug Exp $
+ *  $Id: misc.h,v 1.176 2004-12-09 01:40:43 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -346,6 +346,7 @@ struct r4000_cache_line {
 struct vth32_table {
 	void			*haddr_entry[1024];
 	uint32_t		paddr_entry[1024];
+	uint32_t		*bintrans_chunks[1024];
 	struct vth32_table	*next_free;
 	int			refcount;
 };
@@ -564,6 +565,8 @@ void arcbios_set_default_exception_handler(struct cpu *cpu);
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void clear_all_chunks_from_all_tables(struct cpu *cpu);
+void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *chunk0);
 void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
 void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);

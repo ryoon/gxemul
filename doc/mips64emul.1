@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.21 2004-09-26 18:26:00 debug Exp $
+.\" $Id: mips64emul.1,v 1.22 2004-09-28 02:56:06 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -75,9 +75,9 @@ line option -D2 or -G22, respectively, in this example.
 
 (There is an exception to the normal invocation usage mentioned above;
 if you want to use the DECstation emulation mode, and have a bootable
-DECstation harddisk image, then just supplying the diskimage via the
--d option is sufficient. The filename of the kernel can then be skipped,
-as the emulator runs the bootblocks from the diskimage directly and 
+DECstation harddisk or CDROM image, then just supplying the diskimage via 
+the -d option is sufficient. The filename of the kernel can then be 
+skipped, as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
 .SH EXAMPLE
 The following command will start NetBSD/pmax on an emulated DECstation 
@@ -88,7 +88,7 @@ The following command will start NetBSD/pmax on an emulated DECstation
 
 .fi
 if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
-You may wish to add -XNM128 to use the X11 framebuffer feature and 
+You may wish to add -X -M128 to use the X11 framebuffer feature and 
 increase the amount of emulated RAM to 128 MB. Read the
 documentation for more details.
 .SH AUTHOR

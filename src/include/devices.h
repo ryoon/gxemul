@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.15 2004-01-05 03:26:59 debug Exp $
+ *  $Id: devices.h,v 1.16 2004-01-05 06:40:59 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -239,16 +239,16 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length);
 int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
-/*  dev_sii.c:  */
-#define	DEV_SII_LENGTH			0x0000000000000100
-void dev_sii_tick(struct cpu *cpu, void *);
-int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
-
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+
+/*  dev_sgi_cpuinfo.c:  */
+#define	DEV_SGI_CPUINFO_BASE		0x9600000000000000
+#define	DEV_SGI_CPUINFO_LENGTH		0x0001000000000000
+int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_gbe.c:  */
 #define	DEV_SGI_GBE_LENGTH		0x1000000
@@ -259,6 +259,18 @@ void dev_sgi_gbe_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_SGI_IP22_LENGTH		0x100
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sgi_nasid.c:  */
+#define	DEV_SGI_NASID_BASE		0x9200000000000000
+#define	DEV_SGI_NASID_LENGTH		0x0000000100000000
+int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_nasid_init(struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sii.c:  */
+#define	DEV_SII_LENGTH			0x0000000000000100
+void dev_sii_tick(struct cpu *cpu, void *);
+int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
 
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000

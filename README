@@ -1,17 +1,13 @@
 mips64emul
 ==========
 
-mips64emul is a MIPS machine emulator.  The goal is to simulate a MIPS CPU and
+mips64emul is a MIPS machine emulator.  The goal is to emulate MIPS CPUs and
 enough surrounding hardware well enough to run unmodified operating systems
-as if they were running on a real machine.  This is a spare time project,
+as if they were running on real machines.  This is a spare time project,
 and the emulator isn't fully functional yet.
 
 To compile, type './configure' and then 'make'.  (If this doesn't work, then
 please mail me a bug report.)
-
-A test program can be rebuilt by typing 'make test', if you have a cross-
-compiler suite set up with the same names as the Makefile uses, but the test
-program is not neccesary for the emulator to work.
 
 Real operating system kernels can be downloaded from various places. Here are
 links to some kernels that can be experimented with:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.6 2003-11-11 14:25:01 debug Exp $
+ *  $Id: x11.c,v 1.7 2003-11-20 05:07:03 debug Exp $
  *
  *  X11-related functions.
  */
@@ -180,7 +180,7 @@ void x11_init(void)
  *
  *  Initialize a framebuffer window.
  */
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
+struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 {
 	int x, y, fb_number = 0;
 	int bytes_per_pixel = screen_depth / 8;
@@ -224,6 +224,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 	    fb_windows[fb_number].x11_fb_gc, 0,0, fb_windows[fb_number].x11_fb_winxsize, fb_windows[fb_number].x11_fb_winysize);
 
 	fb_windows[fb_number].x11_display = x11_display;
+	fb_windows[fb_number].scaledown   = scaledown;
 
 	fb_windows[fb_number].ximage_data = malloc(bytes_per_pixel * xsize * ysize);
 	if (fb_windows[fb_number].ximage_data == NULL) {
@@ -262,6 +263,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 void x11_check_event(void)
 {
 	XEvent event;
+	int i, found;
 
 	if (x11_display == NULL)
 		return;
@@ -283,17 +285,31 @@ void x11_check_event(void)
 
 		if (event.type == MotionNotify) {
 			debug("[ X11 MotionNotify: %i,%i ]\n", event.xmotion.x, event.xmotion.y);
+
+			/*  Which window?  */
+			found = -1;
+			for (i=0; i<n_framebuffer_windows; i++)
+				if (event.xmotion.window == fb_windows[i].x11_fb_window)
+					found = i;
+
 			x11_putpixel_fb(0, event.xmotion.x, event.xmotion.y, 1);
+
+			console_mouse_coordinates(event.xmotion.x * fb_windows[found].scaledown,
+			    event.xmotion.y * fb_windows[found].scaledown);
 		}
 
 		if (event.type == ButtonPress) {
 			debug("[ X11 ButtonPress: %i ]\n", event.xbutton.button);
-			/*  TODO:  which button  */
+			/*  button = 1,2,3 = left,middle,right  */
+
+			console_mouse_button(event.xbutton.button, 1);
 		}
 
 		if (event.type == ButtonRelease) {
 			debug("[ X11 ButtonRelease: %i ]\n", event.xbutton.button);
-			/*  TODO:  which button  */
+			/*  button = 1,2,3 = left,middle,right  */
+
+			console_mouse_button(event.xbutton.button, 0);
 		}
 
 		if (event.type==KeyPress) {

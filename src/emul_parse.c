@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.9 2005-01-28 01:31:08 debug Exp $
+ *  $Id: emul_parse.c,v 1.10 2005-01-28 08:49:00 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -194,6 +194,7 @@ static char cur_machine_type[50];
 static char cur_machine_subtype[50];
 static char cur_machine_bootname[150];
 static char cur_machine_bootarg[250];
+static char cur_machine_slow_serial[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
@@ -304,6 +305,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootname[0] = '\0';
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
+		cur_machine_slow_serial[0] = '\0';
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
@@ -360,7 +362,8 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
  *  parse__machine():
  *
  *  Simple words: name, cpu, type, subtype, load, use_x11, x11_scaledown,
- *                bintrans, disk, bootname, bootarg
+ *                bintrans, disk, bootname, bootarg,
+ *		  slow_serial_interrupts_hack_for_linux
  *
  *  TODO: more words?
  */
@@ -389,6 +392,11 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		if (!cur_machine_use_x11[0])
 			strcpy(cur_machine_use_x11, "no");
 		m->use_x11 = parse_on_off(cur_machine_use_x11);
+
+		if (!cur_machine_slow_serial[0])
+			strcpy(cur_machine_slow_serial, "no");
+		m->slow_serial_interrupts_hack_for_linux =
+		    parse_on_off(cur_machine_slow_serial);
 
 		if (!cur_machine_bintrans[0])
 			strcpy(cur_machine_bintrans, "no");
@@ -435,6 +443,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	ACCEPT_SIMPLE_WORD("subtype", cur_machine_subtype);
 	ACCEPT_SIMPLE_WORD("bootname", cur_machine_bootname);
 	ACCEPT_SIMPLE_WORD("bootarg", cur_machine_bootarg);
+	ACCEPT_SIMPLE_WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slow_serial);
 	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
 	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
 	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.41 2005-01-26 11:57:13 debug Exp $
+$Id: technical.html,v 1.42 2005-01-28 08:48:59 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -538,17 +538,23 @@ emulator. If everything goes well, you should see something like this:
 		--oformat=elf64-bigmips" "../mips64emul"
 
 	Starting tests:
-	  test_addu.S
-	  test_daddu.S
-	  test_dummy.S
-	  test_clo_clz.S
-	  test_dclo_dclz.S
+	  test_addu.S (-a)
+	  test_addu.S (-a -b)
+	  test_clo_clz.S (-a)
+	  test_clo_clz.S (-a -b)
+	  ..
+	  test_unaligned.S (-a)
+	  test_unaligned.S (-a -b)
 
-	Done. (5 tests done)
-	    PASS:      5
+	Done. (12 tests done)
+	    PASS:     12
 	    FAIL:      0
 
-	All tests OK
+	----------------
+
+	  All tests OK
+
+	----------------
 </pre>
 
 <p>

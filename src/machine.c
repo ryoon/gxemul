@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.301 2005-01-27 23:45:31 debug Exp $
+ *  $Id: machine.c,v 1.302 2005-01-28 08:49:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4079,6 +4079,16 @@ void machine_dumpinfo(struct machine *m)
 
 	if (m->ncpus > 1)
 		debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
+
+	if (m->slow_serial_interrupts_hack_for_linux)
+		debug("Using slow_serial_interrupts_hack_for_linux\n");
+
+	if (m->use_x11) {
+		debug("Using X11");
+		if (m->x11_scaledown > 1)
+			debug(", scaledown %i", m->x11_scaledown);
+		debug("\n");
+	}
 
 	diskimage_dump_info(m);
 }

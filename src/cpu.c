@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.38 2004-03-24 00:48:44 debug Exp $
+ *  $Id: cpu.c,v 1.39 2004-03-25 20:58:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -371,7 +371,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 /*		tlb_dump = 1;  */
 	}
 
-	if (vaddr > 0 && vaddr < 0x1000) {
+	if (vaddr != 0 && vaddr < 0x1000) {
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
@@ -531,7 +531,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 	int cpnr;					/*  coprocessor nr  */
 
-	uint64_t addr, result_value;			/*  for load/store  */
+	uint64_t addr, value, result_value;		/*  for load/store  */
 	int wlen, st, signd, linked, dataflag = 0;
 	unsigned char d[8];
 
@@ -1112,8 +1112,17 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
 
-			if (rs == 31)
+			if (rs == 31) {
+#if 0
+				/*  TODO:  This should be done _after_ the instruction following the JR,
+					that is, the branch delay, as GPR_V0 can be modified there.  */
+				int x;
+				for (x=0; x<cpu->trace_tree_depth; x++)
+					debug("  ");
+				debug("retval 0x%llx\n", cpu->gpr[GPR_V0]);
+#endif
 				cpu->trace_tree_depth --;
+			}
 
 			break;
 		case SPECIAL_JALR:
@@ -1186,6 +1195,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		case SPECIAL_SLT:
 		case SPECIAL_SLTU:
 		case SPECIAL_TEQ:
+		case SPECIAL_DADD:
 		case SPECIAL_DADDU:
 		case SPECIAL_DSUBU:
 		case SPECIAL_MOVZ:
@@ -1250,6 +1260,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				if (special6 == SPECIAL_NOR)	instr_mnem = "nor";
 				if (special6 == SPECIAL_SLT)	instr_mnem = "slt";
 				if (special6 == SPECIAL_SLTU)	instr_mnem = "sltu";
+				if (special6 == SPECIAL_DADD)	instr_mnem = "dadd";
 				if (special6 == SPECIAL_DADDU)	instr_mnem = "daddu";
 				if (special6 == SPECIAL_DSUBU)	instr_mnem = "dsubu";
 				if (special6 == SPECIAL_MOVZ)	instr_mnem = "movz";
@@ -1453,6 +1464,11 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			}
 			if (special6 == SPECIAL_SLTU) {
 				cpu->gpr[rd] = cpu->gpr[rs] < cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_DADD) {
+				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
+				/*  TODO:  exception on overflow  */
 				break;
 			}
 			if (special6 == SPECIAL_DADDU) {
@@ -1918,7 +1934,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 			if (st) {
 				/*  store:  */
-				uint64_t value;
 				int cpnr = 1, success;
 
 				switch (hi6) {
@@ -1927,11 +1942,16 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				case HI6_SDC1:
 				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
+							cpnr = -1;
 							break;
 						} else
-							coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value); break;
+							coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
+						break;
 				default:	value = cpu->gpr[rt];
 				}
+
+				if (cpnr < 0)
+					break;
 
 				if (wlen == 4) {
 					/*  Special case for 32-bit stores... (perhaps not worth it)  */
@@ -1962,7 +1982,6 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				}
 			} else {
 				/*  load:  */
-				uint64_t value;
 				int cpnr = 1;
 				int success;
 
@@ -2033,7 +2052,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				case 8:		t = "0x%016llx"; break;
 				default:	t = "0x%02llx";
 				}
-				debug(t, (long long)cpu->gpr[rt]);
+				debug(t, (long long)value);
 				debug("]\n");
 			}
 			break;

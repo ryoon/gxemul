@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.19 2005-03-09 07:22:03 debug Exp $
+$Id: guestoses.html,v 1.20 2005-03-15 20:15:07 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax in GXemul</a>
   <li><a href="#netbsdarcinstall">How to install NetBSD/arc in GXemul</a>
+  <li><a href="#netbsdhpcmipsinstall">How to install NetBSD/hpcmips in GXemul</a>
 <!--
   <li><a href="#netbsdsgimips">How to run NetBSD/sgimips in GXemul</a>
 -->
@@ -278,6 +279,74 @@ image, using the following command:
 Using <b>-b</b> (enabling dynamic binary translation), as in the instructions
 above, is not 100% stable. If you experiment weird crashes, try removing that
 option and try again.
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdhpcmipsinstall"></a>
+<h3>How to install NetBSD/hpcmips in GXemul:</h3>
+
+There is no automatic install program for NetBSD/hpcmips, but it is 
+possible to create a harddisk image manually, and then booting the GENERIC 
+hpcmips kernel using that disk.
+
+<font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+
+<p>
+<ol start="1">
+  <li>Compile gxemul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that you will install NetBSD/hpcmips onto:<pre>
+	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=990000</b>
+
+</pre>
+  <li>Now you need to place the hpcmips distribution on the harddisk image.
+	You can do this by mounting the disk image loopback (if your
+	host operating system supports that). An alternative is to install
+	NetBSD/pmax (according to the <a href="#netbsdinstall">instructions
+	above</a>), and then run the following commands to place the
+	distribution files onto the hpcmips disk:<pre>
+	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d nbsd_hpcmips.img</b>
+	(log in as root)
+	disklabel -i -I sd1
+	  (a, 4.2BSD, 1c, 800M, b, swap, a, 99M, P, W, y, Q)
+	newfs /dev/sd1a
+	mount /dev/sd1a /mnt
+	cd /mnt
+
+	(if you installed NetBSD/pmax from a CDROM, and did not configure
+	networking, then you need to do these as well)
+	ifconfig le0 10.0.0.1
+	route add default 10.0.0.254
+	echo nameserver 10.0.0.254 > /etc/resolv.conf
+
+	ftp ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/sets/etc.tgz 
+	ftp ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/sets/base.tgz
+	tar xvfpz etc.tgz; tar zxvfp base.tgz
+	cd /; umount /mnt; sync; halt
+
+</pre>
+  <li>Download a generic hpcmips kernel:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+
+</pre>
+</ol>
+
+<p>
+You can now use the generic NetBSD/hpcmips kernel to boot from the harddisk
+image, using the following command:
+<p>
+<pre>
+	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img netbsd-GENERIC</b>
+
+</pre>
 
 
 

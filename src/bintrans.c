@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.132 2005-01-10 03:06:31 debug Exp $
+ *  $Id: bintrans.c,v 1.133 2005-01-10 22:30:41 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -667,7 +667,9 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				try_to_translate = 0;
 			break;
 
+#if 0
 		case HI6_LQ_MDMX:
+#endif
 		case HI6_LD:
 		case HI6_LWU:
 		case HI6_LW:
@@ -677,7 +679,9 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		case HI6_LH:
 		case HI6_LBU:
 		case HI6_LB:
+#if 0
 		case HI6_SQ:
+#endif
 		case HI6_SD:
 		case HI6_SW:
 		case HI6_SWL:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.103 2005-01-10 01:39:09 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.104 2005-01-10 22:30:42 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -727,6 +727,12 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	alpha_rd = map_MIPS_to_Alpha[rd];
 	if (alpha_rd < 0)
 		alpha_rd = ALPHA_T0;
+
+	switch (instruction_type) {
+	case SPECIAL_DIV:
+	case SPECIAL_DIVU:
+		return 0;
+	}
 
 	switch (instruction_type) {
 	case SPECIAL_DADDU:
@@ -1448,7 +1454,8 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a, *fail, *generic64bit = NULL, *doloadstore = NULL,
+	unsigned char *a, *fail, *generic64bit = NULL, *generic64bitA = NULL;
+	unsigned char *doloadstore = NULL,
 	    *ok_unaligned_load3, *ok_unaligned_load2, *ok_unaligned_load1;
 	uint32_t *b;
 	int ofs, alignment, load = 0, alpha_rs, alpha_rt, unaligned = 0;
@@ -1594,25 +1601,23 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		}
 	} else {
 		/*
-		 *  If the highest 32 bits of the address are either 0x00000000
-		 *  or 0xffffffff, then the tables used for 32-bit load/stores
+		 *  If the highest 33 bits of the address are either all ones
+		 *  or all zeroes, then the tables used for 32-bit load/stores
 		 *  can be used.
-		 *
-
-TODO: Check the highest _33_ bits, not 32.
-
-		 *  81 16 24 4a     srl     a1,0x20,t0
-		 *  03 00 20 e4     beq     t0,14 <ok1>
-		 *  01 30 20 40     addl    t0,0x1,t0
-		 *  01 00 20 e4     beq     t0,14 <ok1>
-		 *  01 00 e0 c3     br      18 <nook>
 		 */
-		*a++ = 0x81; *a++ = 0x16; *a++ = 0x24; *a++ = 0x4a;
-		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
-		*a++ = 0x01; *a++ = 0x30; *a++ = 0x20; *a++ = 0x40;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+		*a++ = 0x81; *a++ = 0xf6; *a++ = 0x23; *a++ = 0x4a;	/*  srl a1,0x1f,t0  */
+		*a++ = 0x01; *a++ = 0x30; *a++ = 0x20; *a++ = 0x44;	/*  and t0,0x1,t0  */
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<noll>  */
+		*a++ = 0x81; *a++ = 0x16; *a++ = 0x24; *a++ = 0x4a;	/*  srl a1,0x20,t0  */
+		*a++ = 0x01; *a++ = 0x30; *a++ = 0x20; *a++ = 0x40;	/*  addl t0,0x1,t0  */
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<ok>  */
 		generic64bit = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br <generic>  */
+		/*  <noll>:  */
+		*a++ = 0x81; *a++ = 0x16; *a++ = 0x24; *a++ = 0x4a;	/*  srl a1,0x20,t0  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<ok>  */
+		generic64bitA = a;
+		*a++ = 0x04; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br <generic>  */
 
 		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
 		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
@@ -1647,6 +1652,8 @@ TODO: Check the highest _33_ bits, not 32.
 
 		if (generic64bit != NULL)
 			*generic64bit = ((size_t)a - (size_t)generic64bit - 4) / 4;
+		if (generic64bitA != NULL)
+			*generic64bitA = ((size_t)a - (size_t)generic64bitA - 4) / 4;
 
 		*addrp = a;
 		b = (uint32_t *) *addrp;

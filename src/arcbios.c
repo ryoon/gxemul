@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.52 2004-12-19 06:57:12 debug Exp $
+ *  $Id: arcbios.c,v 1.53 2004-12-19 07:34:56 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -99,6 +99,10 @@ static int arcbios_console_maxx, arcbios_console_maxy;
 int arcbios_console_curx = 0, arcbios_console_cury = 0;
 static int arcbios_console_reverse = 0;
 int arcbios_console_curcolor = 0x1f;
+
+/*  Open file handles:  */
+#define	MAX_HANDLES	10
+static int file_handle_in_use[MAX_HANDLES];
 
 
 /*
@@ -901,7 +905,7 @@ void arcbios_private_emul(struct cpu *cpu)
 void arcbios_emul(struct cpu *cpu)
 {
 	int vector = cpu->pc & 0xfff;
-	int i, j;
+	int i, j, handle;
 	unsigned char ch2;
 	unsigned char buf[40];
 
@@ -1030,8 +1034,9 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		break;
 	case 0x3c:		/*  GetComponent(char *name)  */
-		fatal("[ ARCBIOS GetComponent(0x%016llx) ]\n",
-		    (long long)cpu->gpr[GPR_A0]);
+		fatal("[ ARCBIOS GetComponent(\"");
+		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		fatal("\") ]\n");
 
 /*  "scsi(0)disk(0)rdisk(0)partition(0)"  */
 
@@ -1064,24 +1069,44 @@ cpu->gpr[GPR_V0] = 0;
 		cpu->gpr[GPR_V0] = time(NULL);
 		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
-		debug("[ ARCBIOS Open(0x%x,0x%x,0x%x) ]\n", (int)cpu->gpr[GPR_A0],
+		debug("[ ARCBIOS Open(\"");
+		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		debug("\",0x%x,0x%x)", (int)cpu->gpr[GPR_A0],
 		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
-		/*  cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;  */
 
 		/*
-		 *  TODO: This is hardcoded to successfully open
-		 *  anything, and return it as descriptor 3.
-		 *  It is used by the Windows NT SETUPLDR program
-		 *  to load stuff from the boot partition.
+		 *  TODO: This is hardcoded to successfully open anything.
+		 *  It is used by the Windows NT SETUPLDR program to load
+		 *  stuff from the boot partition.
 		 */
 
-		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
-		store_32bit_word(cpu, cpu->gpr[GPR_A2], 3);
+		/*  cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;  */
+
+		handle = 3;
+		cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
+
+		while (file_handle_in_use[handle]) {
+			handle ++;
+			if (handle >= MAX_HANDLES) {
+				cpu->gpr[GPR_V0] = ARCBIOS_EMFILE;
+				break;
+			}
+		}
+
+		if (cpu->gpr[GPR_V0] == ARCBIOS_ESUCCESS) {
+			debug(" = handle %i ]\n", handle);
+			store_32bit_word(cpu, cpu->gpr[GPR_A2], handle);
+		} else
+			debug(" = ERROR %i ]\n", (int)cpu->gpr[GPR_V0]);
 		break;
 	case 0x60:		/*  Close(uint32_t handle)  */
-		debug("[ ARCBIOS Close(0x%x) ]\n", (int)cpu->gpr[GPR_A0]);
-		/*  TODO  */
-		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+		debug("[ ARCBIOS Close(%i) ]\n", (int)cpu->gpr[GPR_A0]);
+		if (!file_handle_in_use[cpu->gpr[GPR_A0]]) {
+			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
+		} else {
+			file_handle_in_use[cpu->gpr[GPR_A0]] = 0;
+			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
+		}
 		break;
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
@@ -1317,5 +1342,20 @@ void arcbios_set_default_exception_handler(struct cpu *cpu)
 	store_32bit_word(cpu, 0x80000184, 0x375a8888);
 	store_32bit_word(cpu, 0x80000188, 0x03400008);
 	store_32bit_word(cpu, 0x8000018c, 0x00000000);
+}
+
+
+/*
+ *  arcbios_init():
+ *
+ *  Should be called before any other arcbios function is used.
+ */
+void arcbios_init(void)
+{
+	int i;
+
+	/*  File handles 0, 1, and 2 are stdin, stdout, and stderr.  */
+	for (i=0; i<MAX_HANDLES; i++)
+		file_handle_in_use[i] = i<3? 1 : 0;
 }
 

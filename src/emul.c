@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.97 2004-12-19 06:57:12 debug Exp $
+ *  $Id: emul.c,v 1.98 2004-12-19 07:34:56 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -413,6 +413,10 @@ void emul_start(struct emul *emul)
 		}
 	}
 
+	if ((emul->emulation_type == EMULTYPE_ARC ||
+	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
+		arcbios_init();
+
 	if (emul->userland_emul) {
 		/*
 		 *  For userland only emulation, no machine emulation is
@@ -486,8 +490,9 @@ void emul_start(struct emul *emul)
 		debug("using random cycle chunks (1 to %i cycles)\n",
 		    emul->max_random_cycles_per_chunk);
 
-	/*  Special hack for ARC emulation:  (TODO: how about SGI?)  */
-	if (emul->emulation_type == EMULTYPE_ARC && emul->prom_emulation)
+	/*  Special hack for ARC/SGI emulation:  */
+	if ((emul->emulation_type == EMULTYPE_ARC ||
+	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
 		add_arc_components(emul);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",

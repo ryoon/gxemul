@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.170 2004-09-05 02:19:18 debug Exp $
+ *  $Id: machine.c,v 1.171 2004-09-05 02:27:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -72,8 +72,6 @@ extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int emulated_hz;
-extern int machine;
-extern char *machine_name;
 extern int physical_ram_in_mb;
 extern int use_x11;
 extern char *boot_kernel_filename;
@@ -858,7 +856,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		framebuffer_console_name = "osconsole=0,3";
 		serial_console_name      = "osconsole=1";
 
-		switch (machine) {
+		switch (emul->machine) {
 		case MACHINE_PMAX_3100:		/*  type  1, KN01  */
 			/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC, R2020 Memory coprocessor  */
 			machine_name = "DEC PMAX 3100 (KN01)";
@@ -1344,7 +1342,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			char bootpath[200];
 
 #if 0
-			if (machine == MACHINE_PMAX_3100)
+			if (emul->machine == MACHINE_PMAX_3100)
 				strcpy(bootpath, "rz(0,0,0)");
 			else
 #endif
@@ -1634,23 +1632,23 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
-			sprintf(short_machine_name, "SGI-IP%i", machine);
-			sprintf(machine_name, "SGI-IP%i", machine);
+			sprintf(short_machine_name, "SGI-IP%i", emul->machine);
+			sprintf(machine_name, "SGI-IP%i", emul->machine);
 
 			/*  Super-special case for IP24:  */
-			if (machine == 24)
+			if (emul->machine == 24)
 				sprintf(short_machine_name, "SGI-IP22");
 
 			/*  Special cases for IP20,22,24,26 memory offset:  */
-			if (machine == 20 || machine == 22 ||
-			    machine == 24 || machine == 26) {
+			if (emul->machine == 20 || emul->machine == 22 ||
+			    emul->machine == 24 || emul->machine == 26) {
 				sgi_ram_offset = 128*1048576;
 				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
 				dev_ram_init(mem, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
 			}
 
 			/*  Special cases for IP28,30 memory offset:  */
-			if (machine == 28 || machine == 30) {
+			if (emul->machine == 28 || emul->machine == 30) {
 				sgi_ram_offset = 0x20000000;	/*  TODO: length below should maybe not be 128MB?  */
 				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
@@ -1662,7 +1660,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other machine types?  */
-			switch (machine) {
+			switch (emul->machine) {
 			case 19:
 				strcat(machine_name, " (Everest IP19)");
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
@@ -1733,7 +1731,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				break;
 			case 22:
 			case 24:
-				if (machine == 22) {
+				if (emul->machine == 22) {
 					strcat(machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
 					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9000, 0);
 				} else {
@@ -1992,14 +1990,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strcat(machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
 				break;
 			default:
-				fatal("unimplemented SGI machine type IP%i\n", machine);
+				fatal("unimplemented SGI machine type IP%i\n",
+				    emul->machine);
 				exit(1);
 			}
 		} else {
-			switch (machine) {
+			switch (emul->machine) {
 
 			case MACHINE_ARC_NEC_RD94:
 			case MACHINE_ARC_NEC_R94:
@@ -2008,7 +2007,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  "NEC-R94" (NEC RISCstation 2200)
 				 */
 
-				if (machine == MACHINE_ARC_NEC_RD94)
+				if (emul->machine == MACHINE_ARC_NEC_RD94)
 					strcat(machine_name, " (NEC-RD94, NEC RISCstation 2250)");
 				else
 					strcat(machine_name, " (NEC-R94; NEC RISCstation 2200)");
@@ -2168,7 +2167,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				break;
 
 			default:
-				fatal("Unimplemented ARC machine type %i\n", machine);
+				fatal("Unimplemented ARC machine type %i\n",
+				    emul->machine);
 				exit(1);
 			}
 		}
@@ -2187,19 +2187,23 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emul->emulation_type == EMULTYPE_SGI) {
-			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
-			switch (machine) {
+			/*  Vendor ID, max 8 chars:  */
+			strncpy(arcbios_sysid.VendorId,  "SGI", 3);
+			switch (emul->machine) {
 			case 22:
-				strncpy(arcbios_sysid.ProductId, "87654321", 8);	/*  some kind of ID?  */
+				strncpy(arcbios_sysid.ProductId,
+				    "87654321", 8);	/*  some kind of ID?  */
 				break;
 			case 32:
-				strncpy(arcbios_sysid.ProductId, "8", 1);		/*  6 or 8 (?)  */
+				strncpy(arcbios_sysid.ProductId, "8", 1);
+				    /*  6 or 8 (?)  */
 				break;
 			default:
-				snprintf(arcbios_sysid.ProductId, 8, "IP%i", machine);
+				snprintf(arcbios_sysid.ProductId, 8, "IP%i",
+				    emul->machine);
 			}
 		} else {
-			switch (machine) {
+			switch (emul->machine) {
 			case MACHINE_ARC_NEC_RD94:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
@@ -2342,7 +2346,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			break;
 		default:
 			/*  ARC:  */
-			switch (machine) {
+			switch (emul->machine) {
 			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
@@ -2364,7 +2368,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0, 1, 20, 0, 0x0, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			default:
-				fatal("Unimplemented ARC machine type %i\n", machine);
+				fatal("Unimplemented ARC machine type %i\n",
+				    emul->machine);
 				exit(1);
 			}
 		}

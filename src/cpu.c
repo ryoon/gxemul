@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.130 2004-09-05 02:19:18 debug Exp $
+ *  $Id: cpu.c,v 1.131 2004-09-05 02:27:09 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -46,8 +46,6 @@
 #include "devices.h"
 #include "memory.h"
 
-
-extern int machine;
 
 extern int show_trace_tree;
 extern int old_show_trace_tree;

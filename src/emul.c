@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.54 2004-09-05 02:19:18 debug Exp $
+ *  $Id: emul.c,v 1.55 2004-09-05 02:27:09 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -58,7 +58,6 @@ char **extra_argv;
 
 extern int booting_from_diskimage;
 
-extern int machine;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int instruction_trace;
@@ -637,13 +636,14 @@ void emul_start(struct emul *emul)
 	 */
 	debug("adding memory: %i MB", physical_ram_in_mb);
 	memory_amount = (uint64_t)physical_ram_in_mb * 1048576;
-	if (emul->emulation_type == EMULTYPE_SGI && (machine == 20 ||
-	    machine == 22 || machine == 24 || machine == 26)) {
+	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 20 ||
+	    emul->machine == 22 || emul->machine == 24 ||
+	    emul->machine == 26)) {
 		debug(" (offset by 128MB, SGI hack)");
 		memory_amount += 128 * 1048576;
 	}
-	if (emul->emulation_type == EMULTYPE_SGI && (machine == 28 ||
-	    machine == 30)) {
+	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 28 ||
+	    emul->machine == 30)) {
 		debug(" (offset by 512MB, SGI hack)");
 		memory_amount += 0x20000000;
 	}

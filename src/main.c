@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.74 2004-09-05 02:19:19 debug Exp $
+ *  $Id: main.c,v 1.75 2004-09-05 02:27:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -57,7 +57,6 @@ int quiet_mode = 0;
  *         completely.
  */
 
-int machine = MACHINE_NONE;
 char *machine_name = NULL;
 
 int random_mem_contents = 0;
@@ -263,11 +262,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
-			machine = atoi(optarg);
+			emul->machine = atoi(optarg);
 			break;
 		case 'B':
 			emul->emulation_type = EMULTYPE_PS2;
-			machine = 0;
+			emul->machine = 0;
 			break;
 		case 'b':
 			emul->bintrans_enable = 1;
@@ -278,7 +277,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'D':
 			emul->emulation_type = EMULTYPE_DEC;
-			machine = atoi(optarg);
+			emul->machine = atoi(optarg);
 			break;
 		case 'd':
 			diskimage_add(optarg);
@@ -286,23 +285,23 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'E':
 			emul->emulation_type = EMULTYPE_COBALT;
-			machine = 0;
+			emul->machine = 0;
 			break;
 		case 'e':
 			emul->emulation_type = EMULTYPE_MESHCUBE;
-			machine = 0;
+			emul->machine = 0;
 			break;
 		case 'F':
 			emul->emulation_type = EMULTYPE_HPCMIPS;
-			machine = 0;
+			emul->machine = 0;
 			break;
 		case 'G':
 			emul->emulation_type = EMULTYPE_SGI;
-			machine = atoi(optarg);
+			emul->machine = atoi(optarg);
 			break;
 		case 'g':
 			emul->emulation_type = EMULTYPE_NETGEAR;
-			machine = 0;
+			emul->machine = 0;
 			break;
 		case 'I':
 			emulated_hz = atoi(optarg);
@@ -421,7 +420,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R5900");
 
-	if (emul->emulation_type == EMULTYPE_DEC && machine > 1 &&
+	if (emul->emulation_type == EMULTYPE_DEC && emul->machine > 1 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R3000A");
 
@@ -443,20 +442,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && machine == 35 &&
+	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 35 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R12000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && (machine == 25 ||
-	    machine == 27 || machine == 28 || machine == 30 || machine == 32)
-	    && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 25 ||
+	    emul->machine == 27 || emul->machine == 28 || emul->machine == 30
+	    || emul->machine == 32) && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R10000");
 
-	if (emul->emulation_type == EMULTYPE_SGI &&
-	    (machine == 21 || machine == 26) && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 21 ||
+	    emul->machine == 26) && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R8000");
 
-	if (emul->emulation_type == EMULTYPE_SGI && machine == 24 &&
+	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 24 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R5000");
 
@@ -485,8 +484,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;
 
-	if (emul->emulation_type == EMULTYPE_DEC && machine == MACHINE_PMAX_3100
-	    && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_DEC &&
+	    emul->machine == MACHINE_PMAX_3100 && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 24;
 
 	if (physical_ram_in_mb == 0)

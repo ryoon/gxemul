@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.27 2004-09-02 02:13:14 debug Exp $
+ *  $Id: dec_prom.c,v 1.28 2004-09-05 02:27:09 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -47,7 +47,6 @@
 #include "dec_kn03.h"
 
 
-extern int machine;
 extern int register_dump;
 extern int instruction_trace;
 extern int show_nr_of_instructions;
@@ -409,7 +408,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		debug("[ DEC PROM slot_address(%i) ]\n", (int)cpu->gpr[GPR_A0]);
 		/*  TODO:  This is too hardcoded.  */
 		/*  TODO 2:  Should these be physical or virtual addresses?  */
-		switch (machine) {
+		switch (cpu->emul->machine) {
 		case MACHINE_3MAX_5000:
 			slot_base = KN02_PHYS_TC_0_START;	/*  0x1e000000  */
 			slot_size = 4*1048576;		/*  4 MB  */
@@ -444,7 +443,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		/*  debug("[ DEC PROM getsysid() ]\n");  */
 		/*  TODO:  why did I add the 0x82 stuff???  */
 		cpu->gpr[GPR_V0] = ((uint32_t)0x82 << 24)
-		    + (machine << 16) + (0x3 << 8);
+		    + (cpu->emul->machine << 16) + (0x3 << 8);
 		break;
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",

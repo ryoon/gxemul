@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.34 2004-07-16 18:19:30 debug Exp $
+#  $Id: configure,v 1.35 2004-07-16 18:58:16 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -152,7 +152,7 @@ if [ z"$CC" = z ]; then
 fi
 
 
-if $CC -V 2> /dev/null | grep -q -i compaq; then
+if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
 	COMPAQCC=YES
 fi
 
@@ -328,10 +328,10 @@ else
 	if [ z"`uname`" = zSunOS ]; then
 		#  "cc", the system's default compiler:
 		if [ z"$CC" = zcc ]; then
-			COPTIM="-xO5 -fast $COPTIM"
+			COPTIM="-xO5 -xdepend $COPTIM"
 		fi
 		printf "#define SOLARIS\n" >> config.h
-		OTHERLIBS="-lrt -lsocket $OTHERLIBS"
+		OTHERLIBS="-lsocket $OTHERLIBS"
 	else
 		#  gcc or something else:
 		$CC _testprog.c -o _testprog -O 2> /dev/null
@@ -388,6 +388,19 @@ if grep peephole _testprog.error; then
 else
 	if [ -x _testprog ]; then
 		COPTIM="-fpeephole $COPTIM"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+
+#  -fmove-all-movables
+$CC $CFLAGS -fmove-all-movables _testprog.c -o _testprog 1> _testprog.stdout 2> _testprog.error
+cat _testprog.stdout >> _testprog.error
+if grep movables _testprog.error; then
+	rm -f _testprog.error
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fmove-all-movables $COPTIM"
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout

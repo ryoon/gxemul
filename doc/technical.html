@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.14 2004-07-14 15:05:32 debug Exp $
+$Id: technical.html,v 1.15 2004-07-16 18:18:32 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -76,7 +76,7 @@ Documentation</a>.
   <li><a href="#overview">Overview</a>
   <li><a href="#optimizations">Optimizations</a>
   <li><a href="#net">Networking</a>
-  <li><a href="#devices">Emulation of hardware device</a>
+  <li><a href="#devices">Emulation of hardware devices</a>
   <p>
   <li><a href="#feedback">Feedback</a>
 </ul>
@@ -185,6 +185,8 @@ As far as I have understood it, there seems to be two different ways to go:
 		portability is maintained. (It would be sad if the networking
 		portion of a portable emulator isn't as portable as the
 		rest of the emulator.)
+	  <li>The emulator can be run as a normal user process, does
+		not require root privilegies.
 	  <li>Connecting from the emulated OS to the host's OS should
 		not be problematic.
 	  <li>The emulated OS will experience the network just as a single
@@ -337,7 +339,7 @@ fragmentation issue mentioned above.
 
 <p><br>
 <a name="devices"></a>
-<h3>Emulation of hardware device</h3>
+<h3>Emulation of hardware devices</h3>
 
 Each file in the device/ directory is responsible for one hardware
 device. These are used from src/machine.c, when initializing which hardware a

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.15 2004-06-27 16:52:34 debug Exp $
+ *  $Id: x11.c,v 1.16 2004-06-29 08:27:18 debug Exp $
  *
  *  X11-related functions.
  */
@@ -382,11 +382,16 @@ void x11_check_event(void)
 		}
 
 		if (event.type==KeyPress) {
-			char text[10];
+			char text[15];
 			KeySym key;
 
-			if (XLookupString(&event.xkey,text,10,&key,0)==1) {
-				console_makeavail(text[0]);
+			memset(text, sizeof(text), 0);
+
+			if (XLookupString(&event.xkey, text,
+			    sizeof(text), &key, 0) == 1) {
+				int i = 0;
+				while (i < sizeof(text) && text[i])
+					console_makeavail(text[i++]);
 			}
 		}
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.24 2004-07-04 13:17:49 debug Exp $
+ *  $Id: emul.c,v 1.25 2004-07-04 15:50:56 debug Exp $
  *
  *  Emulation startup.
  */
@@ -167,9 +167,9 @@ void load_bootblock(void)
 		    bootblock_buf, sizeof(bootblock_buf));
 
 		/*  Ultrix boots at 0x80600000, NetBSD at 0x80700000:  */
-		store_buf(0x80600000, (char *)bootblock_buf,
+		store_buf(0xa0600000, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
-		store_buf(0x80700000, (char *)bootblock_buf,
+		store_buf(0xa0700000, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
 
 		/*  Run uncached!  */

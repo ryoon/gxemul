@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.21 2004-06-28 05:21:01 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.22 2004-06-28 05:41:08 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -89,6 +89,8 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	struct dc_data *d = extra;
 	int avail;
 
+	d->regs.dc_csr &= ~CSR_RDONE;
+
 	if ((d->regs.dc_csr & CSR_MSE) && !(d->regs.dc_csr & CSR_TRDY)) {
 		int scanner_start = d->tx_scanner;
 
@@ -120,7 +122,6 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 
 	avail = d->cur_rx_queue_pos_write != d->cur_rx_queue_pos_read;
 
-	d->regs.dc_csr &= ~CSR_RDONE;
 	if (avail && (d->regs.dc_csr & CSR_MSE))
 		d->regs.dc_csr |= CSR_RDONE;
 

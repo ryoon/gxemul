@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.31 2004-09-05 04:22:42 debug Exp $
+ *  $Id: arcbios.c,v 1.32 2004-09-28 15:14:28 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -609,18 +609,24 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			int i, nread = 0;
+			/*  Before going into the loop, make sure stdout
+			    is flushed.  */
+			fflush(stdout);
 			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
+				int x;
 				unsigned char ch;
 
-				if (!console_charavail())
-					break;
+				/*  Read from STDIN is blocking (at least that seems to
+				    be how NetBSD's arcdiag wants it)  */
+				while ((x = console_readchar()) < 0)
+					;
 
-				ch = console_readchar();
+				ch = x;
 				nread ++;
 				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
 			}
 			store_32bit_word(cpu, cpu->gpr[GPR_A3], nread);
-			cpu->gpr[GPR_V0] = nread? 0: 1;	/*  TODO ?  */
+			cpu->gpr[GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
 		} else {
 			fatal("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
 			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
@@ -669,13 +675,13 @@ void arcbios_emul(struct cpu *cpu)
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<strlen((char *)buf); j++) {
-				memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
-				cpu->gpr[GPR_V0] = SGI_ENV_STRINGS + i + strlen((char *)buf) + 1;
+				cpu->gpr[GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
 				return;
 			}
 		}

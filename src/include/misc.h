@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.109 2004-09-26 00:55:57 debug Exp $
+ *  $Id: misc.h,v 1.110 2004-09-28 15:14:27 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -156,7 +156,7 @@ typedef uint64_t u_int64_t;
 #define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000ULL
 #define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000ULL
 #define	ARC_ARGV_START		0xffffffffbfc90000ULL
-#define	SGI_ENV_STRINGS		0xffffffffbfc98000ULL
+#define	ARC_ENV_STRINGS		0xffffffffbfc98000ULL
 #define	SGI_SYSID_ADDR		0xffffffffbfca1800ULL
 #define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00ULL
 #define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80ULL

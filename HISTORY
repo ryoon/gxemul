@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.233 2004-09-28 08:18:22 debug Exp $
+$Id: HISTORY,v 1.234 2004-09-28 15:14:25 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -964,4 +964,4 @@ HISTORY of mips64emul
 		support any delta. Also adding bgtzk and blezl as possible
 		instructions for the speed-hack jumps. (This needs to be
 		tested more.)
-20040928	Minor updates.
+20040928	Minor updates. Some ARC stuff ("arcdiag" runs now).

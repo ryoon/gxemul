@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.179 2004-09-05 04:56:02 debug Exp $
+ *  $Id: machine.c,v 1.180 2004-09-28 15:14:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2431,8 +2431,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    ARC_PRIVATE_ENTRIES + i*4);
 		}
 
+		/*  Hahaha, this is so ugly.  */
+		/*  TODO: Make it less ugly by not hardcoding everything.  */
+
 		cpu->gpr[GPR_A0] = 10;
 		cpu->gpr[GPR_A1] = ARC_ARGV_START;
+		cpu->gpr[GPR_A2] = ARC_ENV_STRINGS;
 
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
@@ -2596,7 +2600,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  TODO:  not needed?  */
 		cpu->gpr[GPR_SP] = emul->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
-		addr = SGI_ENV_STRINGS;
+		addr = ARC_ENV_STRINGS;
 
 		if (emul->use_x11) {
 			if (emul->emulation_type == EMULTYPE_ARC) {

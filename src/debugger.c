@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.72 2005-01-31 06:02:20 debug Exp $
+ *  $Id: debugger.c,v 1.73 2005-01-31 06:31:53 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -383,8 +383,8 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 {
 	if (!m->bintrans_enabled_from_start) {
-		printf("You must have enabled bintrans from the start of the simulation.\n"
-		    "It is not possible to turn on afterwards.\n");
+		printf("You must have enabled bintrans from the start of the "
+		    "simulation.\nIt is not possible to turn on afterwards.\n");
 		return;
 	}
 
@@ -454,7 +454,8 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 
 	if (cmd_line[0] == '\0') {
 		printf("syntax: devstate devnr\n");
-		printf("Use 'devices' to get a list of current device numbers.\n");
+		printf("Use 'devices' to get a list of current device "
+		    "numbers.\n");
 		return;
 	}
 
@@ -477,7 +478,8 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 	}
 
 	if (mem->dev_f_state[i] == NULL) {
-		printf("No state function has been implemented yet for that device type.\n");
+		printf("No state function has been implemented yet "
+		    "for that device type.\n");
 		return;
 	}
 
@@ -1342,11 +1344,12 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line)
 	}
 
 	printf("Generic assignments:   x = expr\n");
-	printf("where x must be a register, and expr can be a register, a numeric value, or\n"
-	    "a symbol name (+ an optional numeric offset). In case there are multiple\n"
-	    "matches (ie a symbol that has the same name as a register), you may add a\n"
-	    "prefix character as a hint: '%%' for registers, '@' for symbols, and\n"
-	    "'$' for numeric values. Use 0x for hexadecimal values.\n");
+	printf("where x must be a register, and expr can be a register, a "
+	    "numeric value, or\na symbol name (+ an optional numeric offset)."
+	    " In case there are multiple\nmatches (ie a symbol that has the "
+	    "same name as a register), you may add a\nprefix character as a "
+	    "hint: '%%' for registers, '@' for symbols, and\n'$' for numeric"
+	    " values. Use 0x for hexadecimal values.\n");
 }
 
 
@@ -1394,16 +1397,19 @@ void debugger_assignment(struct machine *m, char *cmd)
 		printf("No match for the right-hand side of the assignment.\n");
 		break;
 	case NAME_PARSE_MULTIPLE:
-		printf("Multiple matches for the right-hand side of the assignment.\n");
+		printf("Multiple matches for the right-hand side of the "
+		    "assignment.\n");
 		break;
 	default:
 		res_left = debugger_parse_name(m, left, 1, &tmp);
 		switch (res_left) {
 		case NAME_PARSE_NOMATCH:
-			printf("No match for the left-hand side of the assignment.\n");
+			printf("No match for the left-hand side of the "
+			    "assignment.\n");
 			break;
 		case NAME_PARSE_MULTIPLE:
-			printf("Multiple matches for the left-hand side of the assignment.\n");
+			printf("Multiple matches for the left-hand side "
+			    "of the assignment.\n");
 			break;
 		default:
 			debugger_cmd_print(m, left);

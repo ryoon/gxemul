@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.153 2005-01-30 22:42:02 debug Exp $
+ *  $Id: memory.c,v 1.154 2005-01-31 06:31:53 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -727,7 +727,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		goto have_paddr;
 	}
 
-	if (cache_flags & PHYSICAL) {
+	if (cache_flags & PHYSICAL || cpu->translate_address == NULL) {
 		paddr = vaddr;
 	} else {
 		ok = cpu->translate_address(cpu, vaddr, &paddr,

@@ -1,4 +1,4 @@
-$Id: TODO,v 1.115 2005-01-29 13:14:04 debug Exp $
+$Id: TODO,v 1.116 2005-01-31 06:31:52 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -38,17 +38,19 @@ a mess. Order is random. Don't trust it to be up-to-date.
 			+)  Irix, AIX, QNX
 			+)  MacOS X  (I've not tried this personally yet)
 			+)  Ultrix using gcc? (Inside the emulator)
+		o)  Make it possible to disable various CPU families? (for
+		    example PPC64)
 
 	CPU Emulation:
-		o)  Factor out the MIPS dependant parts of the cpu, so that
-		    the emulator can support other architectures (powerpc64,
-		    sparc64, and other intereting architectures.. 64-bit hppa?)
+		o)  Continue to factor out the MIPS dependant parts of the cpu,
+		    so that the emulator can support other architectures
+		    (powerpc64, sparc64, 64-bit hppa?, ...)
 		o)  Binary translation:
+			+)  use an Intermediate Representation!
 			+)  recursive translation?
 			+)  basic blocks instead of one-instruction? :)
-			+)  use an intermediate representation
 			+)  on Alpha: don't assume pca56-like byte load/store?
-			+)  write backend for UltraSparc and MIPS?
+			+)  write backends for UltraSparc and MIPS
 			+)  see src/bintrans.c for more info
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info):

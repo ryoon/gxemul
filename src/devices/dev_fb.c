@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.47 2004-07-11 07:02:25 debug Exp $
+ *  $Id: dev_fb.c,v 1.48 2004-07-14 19:55:43 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -702,12 +702,25 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 
 		/*  Is this far away from the previous updates? Then update:  */
 		if (d->update_y1 != -1) {
-			int diff1, diff2;
-			int fhmult = 6 * 22;	/*  an integer multiple of the (assumed) font height  */
+			int diffx1, diffx2, diffy1, diffy2;
+			/*  fhmult may be an integer multiple of the (assumed)
+			    font height, or any other number:  */
+			int short_distance = 6 * 22;
 
-			diff1 = y - d->update_y1;
-			diff2 = y - d->update_y2;
-			if (diff1 <= -fhmult || diff1 >= fhmult || diff2 < -fhmult || diff2 > fhmult)
+			diffx1 = abs(x - d->update_x1);
+			diffx2 = abs(x - d->update_x2);
+			diffy1 = abs(y - d->update_y1);
+			diffy2 = abs(y - d->update_y2);
+
+			if (diffx2 > diffx1)
+				diffx1 = diffx2;
+			if (diffy2 > diffy1)
+				diffy1 = diffy2;
+
+			/*  use diffx1 and diffy1 from here on  */
+
+			if (diffx1 >= short_distance &&
+			    diffy1 >= short_distance)
 				dev_fb_tick(cpu, d);
 		}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.22 2004-10-10 12:29:25 debug Exp $
+ *  $Id: dev_le.c,v 1.23 2004-10-13 11:53:22 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -64,6 +64,7 @@
 /*  #define LE_DEBUG  */
 /*  #define debug fatal  */
 
+extern int quiet_mode;
 
 #define	LE_MODE_LOOP		4
 #define	LE_MODE_DTX		2
@@ -591,19 +592,23 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (relative_addr < SRAM_SIZE && relative_addr + len <= SRAM_SIZE) {
 		if (writeflag == MEM_READ) {
 			memcpy(data, d->sram + relative_addr, len);
-			debug("[ le: read from SRAM offset 0x%05x:",
-			    relative_addr);
-			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" ]\n");
+			if (!quiet_mode) {
+				debug("[ le: read from SRAM offset 0x%05x:",
+				    relative_addr);
+				for (i=0; i<len; i++)
+					debug(" %02x", data[i]);
+				debug(" ]\n");
+			}
 			retval = 9;	/*  9 cycles  */
 		} else {
 			memcpy(d->sram + relative_addr, data, len);
-			debug("[ le: write to SRAM offset 0x%05x:",
-			    relative_addr);
-			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-			debug(" ]\n");
+			if (!quiet_mode) {
+				debug("[ le: write to SRAM offset 0x%05x:",
+				    relative_addr);
+				for (i=0; i<len; i++)
+					debug(" %02x", data[i]);
+				debug(" ]\n");
+			}
 			retval = 6;	/*  6 cycles  */
 		}
 		return 1;
@@ -636,8 +641,9 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case 0x100000:
 		if (writeflag==MEM_READ) {
 			odata = d->reg[d->reg_select];
-			debug("[ le: read from register 0x%02x: 0x%02x ]\n",
-			    d->reg_select, (int)odata);
+			if (!quiet_mode)
+				debug("[ le: read from register 0x%02x: 0x%02x ]\n",
+				    d->reg_select, (int)odata);
 			/*
 			 *  A read from csr1..3 should return "undefined"
 			 *  result if the stop bit is set.  However, Ultrix
@@ -645,8 +651,9 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			 *  a warning here.
 			 */
 		} else {
-			debug("[ le: write to register 0x%02x: 0x%02x ]\n",
-			    d->reg_select, (int)idata);
+			if (!quiet_mode)
+				debug("[ le: write to register 0x%02x: 0x%02x ]\n",
+				    d->reg_select, (int)idata);
 			/*
 			 *  A write to from csr1..3 when the stop bit is
 			 *  set should be ignored. However, Ultrix writes
@@ -661,11 +668,13 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case 0x100004:
 		if (writeflag==MEM_READ) {
 			odata = d->reg_select;
-			debug("[ le: read from register select: 0x%02x ]\n",
-			    (int)odata);
+			if (!quiet_mode)
+				debug("[ le: read from register select: 0x%02x ]\n",
+				    (int)odata);
 		} else {
-			debug("[ le: write to register select: 0x%02x ]\n",
-			    (int)idata);
+			if (!quiet_mode)
+				debug("[ le: write to register select: 0x%02x ]\n",
+				    (int)idata);
 			d->reg_select = idata & (N_REGISTERS - 1);
 			if (idata >= N_REGISTERS)
 				fatal("[ le: WARNING! register select %i (max is %i) ]\n",

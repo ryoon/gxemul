@@ -4,8 +4,8 @@ mips64emul TODO
 Most important stuff (but these are all non-trivial tasks):
 
   o)  DECstations:
-	x)  Make interrupt sharing more generic!
 	x)  write 'sii' or 'asc' SCSI interface stuff for pmax so that harddisk images can be used
+	x)  Make interrupt sharing more generic!
 	x)  try to install NetBSD/pmax onto a fake SCSI-disk
 	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
 	x)  try to run X inside NetBSD, using framebuffer(s) with mouse support!
@@ -78,11 +78,12 @@ Most important stuff (but these are all non-trivial tasks):
 			status words / control words, make this more portable/cleaner
 			scsi controller(s): sii, asc
 			ethernet controller(s): le, fddi?
-			serial controllers: dc (keyboard? mouse?), ssc, scc
+			serial controllers: dc, ssc, scc
 			download the ROM from my DECstation 5000/125 and
 				see if I can get it to run. (add an option to
 				the emulator to be "bare", ie no ROM emulation
 				in software)
+			DECstation 5840? "xbi-based SMP"
 
 		o)  Cobalt:
 			PCI:  Tulip ethernet and harddisk controller
@@ -144,8 +145,6 @@ Most important stuff (but these are all non-trivial tasks):
 
 	File handling:
 		o)  Read function argument types from binaries? (ELF?)
-		o)  Ability to read raw binary files into any memory location
-			(for ROM images, etc)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images (?)

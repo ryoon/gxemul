@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.37 2004-06-23 13:40:59 debug Exp $
+ *  $Id: dev_fb.c,v 1.38 2004-06-23 23:47:38 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -265,7 +265,10 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 void update_framebuffer(struct vfb_data *d, int addr, int len)
 {
 	int x, y, pixel, npixels;
-	long color_r, color_g, color_b, color;
+	long color_r, color_g, color_b;
+#ifdef WITH_X11
+	long color;
+#endif
 	int scaledown = d->vfb_scaledown;
 	int scaledownXscaledown = 1;
 
@@ -444,7 +447,10 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 void dev_fb_tick(struct cpu *cpu, void *extra)
 {
 	struct vfb_data *d = extra;
-	int need_to_flush_x11 = 0, need_to_redraw_cursor = 0;
+#ifdef WITH_X11
+	int need_to_flush_x11 = 0;
+	int need_to_redraw_cursor = 0;
+#endif
 
 	if (!use_x11)
 		return;
@@ -532,8 +538,9 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
 		    (d->update_x2 - d->update_x1)/d->vfb_scaledown + 1,
 		    (d->update_y2 - d->update_y1)/d->vfb_scaledown + 1);
-#endif
+
 		need_to_flush_x11 = 1;
+#endif
 
 		d->update_x1 = d->update_y1 = 99999;
 		d->update_x2 = d->update_y2 = -1;

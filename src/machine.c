@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.102 2004-06-22 22:26:45 debug Exp $
+ *  $Id: machine.c,v 1.103 2004-06-22 23:49:55 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1981,16 +1981,16 @@ case arc_CacheClass:
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
-			store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
-			store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
-			store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);
-			store_32bit_word(ARC_ARGV_START + 0xc, ARC_ARGV_START + 0x220);
-			store_32bit_word(ARC_ARGV_START + 0x10, ARC_ARGV_START + 0x240);
-			store_32bit_word(ARC_ARGV_START + 0x14, ARC_ARGV_START + 0x260);
-			store_32bit_word(ARC_ARGV_START + 0x18, ARC_ARGV_START + 0x280);
-			store_32bit_word(ARC_ARGV_START + 0x1c, ARC_ARGV_START + 0x2a0);
-			store_32bit_word(ARC_ARGV_START + 0x20, ARC_ARGV_START + 0x2c0);
-			store_32bit_word(ARC_ARGV_START + 0x24, ARC_ARGV_START + 0x2e0);
+			store_32bit_word(ARC_ARGV_START, (uint32_t)(ARC_ARGV_START + 0x100));
+			store_32bit_word(ARC_ARGV_START + 0x4, (uint32_t)(ARC_ARGV_START + 0x180));
+			store_32bit_word(ARC_ARGV_START + 0x8, (uint32_t)(ARC_ARGV_START + 0x200));
+			store_32bit_word(ARC_ARGV_START + 0xc, (uint32_t)(ARC_ARGV_START + 0x220));
+			store_32bit_word(ARC_ARGV_START + 0x10, (uint32_t)(ARC_ARGV_START + 0x240));
+			store_32bit_word(ARC_ARGV_START + 0x14, (uint32_t)(ARC_ARGV_START + 0x260));
+			store_32bit_word(ARC_ARGV_START + 0x18, (uint32_t)(ARC_ARGV_START + 0x280));
+			store_32bit_word(ARC_ARGV_START + 0x1c, (uint32_t)(ARC_ARGV_START + 0x2a0));
+			store_32bit_word(ARC_ARGV_START + 0x20, (uint32_t)(ARC_ARGV_START + 0x2c0));
+			store_32bit_word(ARC_ARGV_START + 0x24, (uint32_t)(ARC_ARGV_START + 0x2e0));
 			store_32bit_word(ARC_ARGV_START + 0x28, 0);
 		}
 

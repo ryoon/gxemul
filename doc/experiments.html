@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.54 2005-04-04 22:59:47 debug Exp $
+$Id: experiments.html,v 1.55 2005-04-05 14:43:30 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -573,11 +573,15 @@ probably doesn't work in GXemul.
       <li>Linux for Agenda VR3:
 	<br>Download <a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/">http://agenda-snow.sourceforge.net/kernel-old-versions/binary</a>/<a href="http://agenda-snow.sourceforge.net/kernel-old-versions/binary/root1.2.6.kernel-8.00">root1.2.6.kernel-8.00</a>
 	<br>and <a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/">http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O</a>/<a href="http://vr3.uid0.sk/cd/Software/VR3_Distributions/H2O/root1.2.6.cramfs">root1.2.6.cramfs</a>.
-	<br>(or <a href="http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs">http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs"</a>)
+	<br>(or <a href="http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs">http://www.ipsec.info/~www/agenda/dream-1-noxip.cramfs</a>)
 	<br>Try <b>gxemul -b -X -E hpc -e vr3 0xbf200000:root1.2.6.cramfs 0xbf000000:0:0xbf0005e0:root1.2.6.kernel-8.00</b>
 	<br>(or replace root1.2.6.cramfs with dream-1-noxip.cramfs)
-	<br>Remove -X to try with serial console instead of X, and remove
-		-b to try without (old) bintrans.
+	<br>Remove <b>-X</b> to try with serial console instead of X, and
+		remove <b>-b</b> to try without (old) bintrans.
+	<br>Add <b>-o 'init=/bin/sh'</b> to boot into a single-user shell.
+	<br>Add <b>-o 'init=/sbin/restore_defaults'</b> to run
+		a /sbin/restore_defaults (attempt to initialize the flash
+		memory).
       <p>
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>

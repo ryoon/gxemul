@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.400 2005-04-04 22:59:47 debug Exp $
+ *  $Id: machine.c,v 1.401 2005-04-05 14:43:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2239,30 +2239,33 @@ void machine_setup(struct machine *machine)
 
 		/*  Special case for the Agenda VR3:  */
 		if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
+			const int tmplen = 1000;
+			char *tmp = malloc(tmplen);
+
 			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
 
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 0, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
 			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
 			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
 
-			if (machine->use_x11)
-				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
-				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
-				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
-#if 0
-				    "init=/sbin/restore_defaults");
-#else
-				    );
-#endif
-			else
-				store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
-				    "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
-				    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0 "
-				    "console=ttyS0,115200 "
-#if 0
-				    "init=/sbin/restore_defaults");
-#else
-				    );
-#endif
+			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16,
+			    machine->boot_kernel_filename);
+
+			snprintf(tmp, tmplen, "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
+			    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
+			tmp[tmplen-1] = '\0';
+
+			if (!machine->use_x11)
+				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " console=ttyS0,115200");
+			tmp[tmplen-1] = '\0';
+
+			if (machine->boot_string_argument[0])
+				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp), " %s", machine->boot_string_argument);
+			tmp[tmplen-1] = '\0';
+
+			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
+
+			bootarg = tmp;
 		}
 
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));

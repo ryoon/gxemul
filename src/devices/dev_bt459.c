@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.10 2004-04-27 22:34:46 debug Exp $
+ *  $Id: dev_bt459.c,v 1.11 2004-05-07 00:42:19 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -47,6 +47,8 @@ struct bt459_data {
 	unsigned char	cur_addr_lo;
 
 	int		planes;
+	int		irq_nr;
+
 	int		cursor_on;
 	int		cursor_x;
 	int		cursor_y;
@@ -58,6 +60,22 @@ struct bt459_data {
 	struct vfb_data *vfb_data;
 	unsigned char	*rgb_palette;		/*  ptr to 256 * 3 (r,g,b)  */
 };
+
+
+/*
+ *  dev_bt459_tick():
+ */
+void dev_bt459_tick(struct cpu *cpu, void *extra)
+{
+	struct bt459_data *d = extra;
+	static int x;
+
+	if (d->irq_nr > 0)
+		cpu_interrupt(cpu, d->irq_nr);
+
+if (random() & 1)
+	cpu_interrupt_ack(cpu, d->irq_nr);
+}
 
 
 /*
@@ -96,6 +114,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	int on;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	if (d->irq_nr > 0)
+		cpu_interrupt_ack(cpu, d->irq_nr);
 
 	/*  ID register is read-only, should always be 0x4a or 0x4a4a4a:  */
 	if (d->planes == 24)
@@ -137,6 +158,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			debug("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
 			d->bt459_reg[btaddr] = idata;
 
+if (btaddr < 0x100)
+	fatal("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+
 			/*  Write to cursor bitmap:  */
 			if (btaddr >= 0x400)
 				bt459_sync_xysize(d);
@@ -161,7 +185,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			debug("[ bt459: write to BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, idata);
 
 			if (btaddr < 0x100) {
-				if (d->rgb_palette[btaddr * 3 + d->palette_sub_offset] != idata) {
+				if (d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset] != idata) {
 					d->vfb_data->update_x1 = 0;
 					d->vfb_data->update_x2 = d->vfb_data->xsize - 1;
 					d->vfb_data->update_y1 = 0;
@@ -170,11 +194,11 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 				/*  Actually, the palette should only be updated after the third write,
 				    but this should probably work fine too:  */
-				d->rgb_palette[btaddr * 3 + d->palette_sub_offset] = idata;
+				d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset] = idata;
 			}
 		} else {
 			if (btaddr < 0x100)
-				odata = d->rgb_palette[btaddr * 3 + d->palette_sub_offset];
+				odata = d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset];
 			debug("[ bt459: read from BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, odata);
 		}
 
@@ -241,7 +265,7 @@ on = 1;
 /*
  *  dev_bt459_init():
  */
-void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes)
+void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes, int irq_nr)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -252,10 +276,13 @@ void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 	d->vfb_data     = vfb_data;
 	d->rgb_palette  = vfb_data->rgb_palette;
 	d->planes       = planes;
+	d->irq_nr	= irq_nr;
 	d->cursor_x     = -1;
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH, dev_bt459_access, (void *)d);
+
+	cpu_add_tickfunction(cpu, dev_bt459_tick, d, 14);
 }
 

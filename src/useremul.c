@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.5 2004-02-09 13:42:51 debug Exp $
+ *  $Id: useremul.c,v 1.6 2004-02-09 15:19:48 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -55,6 +55,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 
 #include "memory.h"
@@ -92,7 +94,8 @@ void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_ar
 	uint64_t stacksize = 8 * 1048576;
 	uint64_t stack_margin = 16384;
 	uint64_t cur_argv;
-	int i;
+	int i, i2;
+	int envc = 1;
 
 	switch (userland_emul) {
 	case USERLAND_NETBSD_PMAX:
@@ -119,13 +122,25 @@ void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_ar
 	 */
 	store_32bit_word(stack_top - stack_margin, argc);
 
-	cur_argv = stack_top - stack_margin + 128 + argc * sizeof(uint32_t);
+	cur_argv = stack_top - stack_margin + 128 + (argc + envc) * sizeof(uint32_t);
 	for (i=0; i<argc; i++) {
 		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
 
 		store_32bit_word(stack_top - stack_margin + 4 + i*sizeof(uint32_t), cur_argv);
 		store_string(cur_argv, host_argv[i]);
 		cur_argv += strlen(host_argv[i]) + 1;
+	}
+
+	/*  Store a NULL value between the args and the environment strings:  */
+	store_32bit_word(stack_top - stack_margin + 4 + i*sizeof(uint32_t), 0);  i++;
+
+	/*  TODO: get environment strings from somewhere  */
+
+	/*  Store all environment strings:  */
+	for (i2 = 0; i2 < envc; i2 ++) {
+		store_32bit_word(stack_top - stack_margin + 4 + (i+i2)*sizeof(uint32_t), cur_argv);
+		store_string(cur_argv, "DISPLAY=localhost:0.0");
+		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
 }
 
@@ -152,6 +167,37 @@ unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
 	}
 
 	charbuf[MAXLEN-1] = 0;
+	return charbuf;
+}
+
+
+/*
+ *  get_userland_buf():
+ *
+ *  This can be used to retrieve buffers, for example inet_addr,
+ *  from the emulated memory.
+ *
+ *  Warning: returns a pointer to a static array.
+ *  TODO: combine this with get_userland_string() in some way
+ */
+unsigned char *get_userland_buf(struct cpu *cpu, uint64_t baseaddr, int len)
+{
+	static unsigned char charbuf[MAXLEN];
+	int i;
+
+	if (len > MAXLEN) {
+		fprintf(stderr, "get_userland_buf(): len is more than MAXLEN (%i > %i)\n",
+		    len, MAXLEN);
+		exit(1);
+	}
+
+	/*  TODO: address validity check  */
+	for (i=0; i<len; i++) {
+		memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i, 1, MEM_READ, CACHE_DATA);
+		debug(" %02x", charbuf[i]);
+	}
+	debug("\n");
+
 	return charbuf;
 }
 
@@ -424,6 +470,24 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
+		case SYS_dup:
+			debug("useremul_syscall(): netbsd dup(%i)\n", (int)arg0);
+			result_low = dup(arg0);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+			break;
+
+		case SYS_socket:
+			debug("useremul_syscall(): netbsd socket(%i,%i,%i)\n", (int)arg0, (int)arg1, (int)arg2);
+			result_low = socket(arg0,arg1,arg2);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+			break;
+
 		case SYS_issetugid:
 			debug("useremul_syscall(): netbsd issetugid()\n");
 			/*  TODO: actually call the real issetugid?  */
@@ -560,9 +624,9 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		arg2 = cpu->gpr[GPR_A2];
 		arg3 = cpu->gpr[GPR_A3];
 		/*  TODO:  stack arguments? Are these correct?  */
-		stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 4);
-		stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
-		stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 12);
+		stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 0);
+		stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 4);
+		stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
 
 		switch (sysnr) {
 
@@ -669,6 +733,108 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			}
 			break;
 
+		case ULTRIX_SYS_socket:
+			debug("useremul_syscall(): ultrix socket(%i,%i,%i)\n", (int)arg0, (int)arg1, (int)arg2);
+			result_low = socket(arg0,arg1,arg2);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+			break;
+
+		case ULTRIX_SYS_select:
+			debug("useremul_syscall(): ultrix select(%i,0x%x,0x%x,0x%x,0x%x): TODO\n",
+			    (int)arg0, (int)arg1, (int)arg2, (int)arg3, (int)stack0);
+
+			/*  TODO  */
+{
+int x;
+x = 1 << 3;
+result_low = select(4, x, NULL, NULL, NULL);
+}
+			break;
+
+		case ULTRIX_SYS_setsockopt:
+			debug("useremul_syscall(): ultrix setsockopt(%i,%i,%i,0x%x,%i): TODO\n",
+			    (int)arg0, (int)arg1, (int)arg2, (int)arg3, (int)stack0);
+			/*  TODO: len is not 4, len is stack0?  */
+			charbuf = get_userland_buf(cpu, arg3, 4);
+			/*  TODO: endianness of charbuf, etc  */
+			result_low = setsockopt(arg0, arg1, arg2, (void *)charbuf, 4);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+printf("setsockopt!!!! res = %i error=%i\n", result_low, error_code);
+			break;
+
+		case ULTRIX_SYS_connect:
+			debug("useremul_syscall(): ultrix connect(%i,0x%x,%i)\n",
+			    (int)arg0, (int)arg1, (int)arg2);
+			charbuf = get_userland_buf(cpu, arg1, arg2);
+			result_low = connect(arg0, (void *)charbuf, arg2);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+printf("connect!!!! res = %i error=%i\n", result_low, error_code);
+			break;
+
+		case ULTRIX_SYS_fcntl:
+			debug("useremul_syscall(): ultrix fcntl(%i,%i,0x%x): TODO\n",
+			    (int)arg0, (int)arg1, (int)arg2);
+			/*  TODO:  how about that third argument?  */
+			result_low = fcntl(arg0, arg1, arg2);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+printf("fcntl!!!! res = %i error=%i\n", result_low, error_code);
+			break;
+
+		case ULTRIX_SYS_stat43:
+			charbuf = get_userland_string(cpu, arg0);
+			debug("useremul_syscall(): ultrix stat(\"%s\", 0x%llx): TODO\n",
+			    charbuf, (long long)arg1);
+
+			if (arg1 != 0) {
+				struct stat st;
+				result_low = stat(charbuf, &st);
+				if ((int64_t)result_low < 0) {
+					error_flag = 1;
+					error_code = errno;
+				} else {
+					/*  Fill in the Ultrix stat struct at arg1:  */
+
+					/*  TODO  */
+				}
+			} else {
+				error_flag = 1;
+				error_code = 1111;	/*  TODO: ultrix ENOMEM?  */
+			}
+			break;
+
+		case ULTRIX_SYS_fstat:
+			debug("useremul_syscall(): ultrix fstat(%i, 0x%llx): TODO\n",
+			    (int)arg0, (long long)arg1);
+
+			if (arg1 != 0) {
+				struct stat st;
+				result_low = fstat(arg0, &st);
+				if ((int64_t)result_low < 0) {
+					error_flag = 1;
+					error_code = errno;
+				} else {
+					/*  Fill in the Ultrix stat struct at arg1:  */
+
+					/*  TODO  */
+				}
+			} else {
+				error_flag = 1;
+				error_code = 1111;	/*  TODO: ultrix ENOMEM?  */
+			}
+			break;
+
 		case ULTRIX_SYS_getpagesize:
 			debug("useremul_syscall(): ultrix getpagesize()\n");
 			result_low = 4096;
@@ -703,7 +869,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			    (long long)arg0, (long long)arg1, (long long)arg2);
 
 			if (arg1 != 0) {
-				int i;
+				int i, total = 0;
 
 				for (i=0; i<arg2; i++) {
 					uint32_t iov_base, iov_len;
@@ -719,14 +885,13 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 						/*  TODO: address validity check  */
 						memory_rw(cpu, cpu->mem, (uint64_t)iov_base, charbuf, iov_len, MEM_READ, CACHE_DATA);
-						write(descr, charbuf, iov_len);
+						total += write(descr, charbuf, iov_len);
 						free(charbuf);
 					}
 				}
+
+				result_low = total;
 			}
-
-			/*  TODO: result code  */
-
 			break;
 
 		case ULTRIX_SYS_gethostid:

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.28 2004-07-30 13:35:17 debug Exp $
+$Id: RELEASE,v 1.29 2004-07-31 14:26:52 debug Exp $
 
 Preliminary 0.2 release notes:
 
@@ -135,6 +135,9 @@ release, but will most probably work anyway.
 
 	OpenBSD/i386 3.2
 		gcc 2.95.3 20010125 (prerelease)
+
+	OpenBSD/pmax 2.7  (inside the emulator)
+		gcc 2.95.2 19991024 (release)
 
 	OpenBSD/pmax 2.8  (inside the emulator)
 		gcc 2.95.3 19991030 (prerelease)

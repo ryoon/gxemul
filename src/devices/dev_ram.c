@@ -23,9 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.2 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_ram.c,v 1.3 2004-01-06 10:33:58 debug Exp $
  *  
- *  A generic RAM (memory) device.
+ *  A generic RAM (memory) device.  Can also be used to mirror/alias another
+ *  part of RAM.
  */
 
 #include <stdio.h>
@@ -38,9 +39,13 @@
 #include "devices.h"
 
 
-/* #define RAM_DEBUG */
+/*  #define RAM_DEBUG  */
 
 struct ram_data {
+	int		mode;
+	uint64_t	otheraddress;
+
+	/*  If mode = DEV_RAM_RAM:  */
 	unsigned char	*data;
 	uint64_t	length;
 };
@@ -67,10 +72,20 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	}
 #endif
 
-	if (writeflag == MEM_WRITE)
-		memcpy(&d->data[relative_addr], data, len);
-	else
-		memcpy(data, &d->data[relative_addr], len);
+	switch (d->mode) {
+	case DEV_RAM_MIRROR:
+		/*  TODO:  how about caches?  */
+		return memory_rw(cpu, mem, d->otheraddress + relative_addr, data, len, writeflag, CACHE_DATA);
+	case DEV_RAM_RAM:
+		if (writeflag == MEM_WRITE)
+			memcpy(&d->data[relative_addr], data, len);
+		else
+			memcpy(data, &d->data[relative_addr], len);
+		break;
+	default:
+		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
+		exit(1);
+	}
 
 	return 1;
 }
@@ -79,7 +94,7 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 /*
  *  dev_ram_init():
  */
-void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length)
+void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
 
@@ -90,15 +105,26 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length)
 	}
 
 	memset(d, 0, sizeof(struct ram_data));
-	d->length = length;
-	d->data = malloc(length);
 
-	if (d->data == NULL) {
-		fprintf(stderr, "out of memory\n");
+	d->mode         = mode;
+	d->otheraddress = otheraddress;
+
+	switch (d->mode) {
+	case DEV_RAM_MIRROR:
+		break;
+	case DEV_RAM_RAM:
+		d->length = length;
+		d->data = malloc(length);
+		if (d->data == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		memset(d->data, 0, length);
+		break;
+	default:
+		fatal("dev_ram_access(): unknown mode %i\n", d->mode);
 		exit(1);
 	}
-
-	memset(d->data, 0, length);
 
 	memory_device_register(mem, "ram", baseaddr, length, dev_ram_access, d);
 }

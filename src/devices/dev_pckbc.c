@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.4 2004-01-06 23:19:52 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.5 2004-01-10 05:40:21 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller.
  */
@@ -108,7 +108,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			if (d->head != d->tail)
 				odata |= 1;
 
-			debug("[ pckbc: read from CTL: 0x%02x ]\n", odata);
+			/*  debug("[ pckbc: read from CTL: 0x%02x ]\n", odata);  */
 		} else {
 			debug("[ pckbc: write to CTL:");
 			for (i=0; i<len; i++)
@@ -124,6 +124,17 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 			pckbc_add_key(d, code);
 		}
+		break;
+	case 24:		/*  and 32, 48  */
+	case 56:
+		/*
+		 *  TODO:  These registers are read by SGI-IP32's PROM during bootup.
+		 *	I don't know what it is for yet.
+		 *
+		 *  How to make this device portable between SGI and others?
+		 *  Perhaps address/xxx = register number will be good enough.
+		 */
+		odata = 1;
 		break;
 	default:
 		if (writeflag==MEM_READ) {

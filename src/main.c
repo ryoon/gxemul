@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.12 2004-01-06 10:31:25 debug Exp $
+ *  $Id: main.c,v 1.13 2004-01-08 07:33:57 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -354,8 +354,8 @@ int get_cmd_args(int argc, char *argv[])
 	if (emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;
 
-	/*  Ugly hack for SGI-IP22:  (no memory aliasing is actually used yet)  */
-	if (emulation_type == EMULTYPE_SGI && machine == 22)
+	/*  Ugly hack for SGI-IP22 and IP20:  (no memory aliasing is actually used yet)  */
+	if (emulation_type == EMULTYPE_SGI && (machine == 22 || machine == 20))
 		physical_ram_in_mb += 128;
 
 	if (emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)

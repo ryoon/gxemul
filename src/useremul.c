@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.6 2004-02-09 15:19:48 debug Exp $
+ *  $Id: useremul.c,v 1.7 2004-02-09 15:32:18 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -724,6 +724,16 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			sync();
 			break;
 
+		case ULTRIX_SYS_getuid:
+			debug("useremul_syscall(): ultrix getuid()\n");
+			result_low = getuid();
+			break;
+
+		case ULTRIX_SYS_getgid:
+			debug("useremul_syscall(): ultrix getgid()\n");
+			result_low = getgid();
+			break;
+
 		case ULTRIX_SYS_dup:
 			debug("useremul_syscall(): ultrix dup(%i)\n", (int)arg0);
 			result_low = dup(arg0);
@@ -748,9 +758,9 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 			/*  TODO  */
 {
-int x;
+long x;
 x = 1 << 3;
-result_low = select(4, x, NULL, NULL, NULL);
+result_low = select(4, &x, NULL, NULL, NULL);
 }
 			break;
 

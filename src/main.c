@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.90 2004-09-05 03:38:20 debug Exp $
+ *  $Id: main.c,v 1.91 2004-09-05 03:39:46 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ int max_random_cycles_per_chunk = 0;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
-int tlb_dump = 0;
 int verbose = 0;
 int use_x11 = 0;
 int x11_scaledown = 1;
@@ -358,7 +357,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->show_trace_tree = 1;
 			break;
 		case 'U':
-			tlb_dump = 1;
+			emul->tlb_dump = 1;
 			break;
 		case 'u':
 			emul->userland_emul = atoi(optarg);

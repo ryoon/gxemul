@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.76 2004-09-05 03:35:39 debug Exp $
+ *  $Id: memory.c,v 1.77 2004-09-05 03:39:46 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -39,10 +39,7 @@
 #include "memory.h"
 
 
-extern int physical_ram_in_mb;
-extern int tlb_dump;
 extern int quiet_mode;
-extern int use_x11;
 
 
 /*
@@ -845,7 +842,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 	exccode = -1;
 	tlb_refill = 1;
 
-	if (tlb_dump && !no_exceptions) {
+	if (cpu->emul->tlb_dump && !no_exceptions) {
 		int i;
 		debug("{ vaddr=%016llx ==> ? }\n", (long long)vaddr);
 		for (i=0; i<cpu->cpu_type.nr_of_tlb_entries; i++) {

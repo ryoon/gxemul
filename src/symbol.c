@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.4 2004-01-06 10:31:00 debug Exp $
+ *  $Id: symbol.c,v 1.5 2004-01-11 16:52:48 debug Exp $
  *
  *  Address to symbol translation routines.
  */
@@ -47,6 +47,32 @@ struct symbol {
 
 struct symbol *first_symbol = NULL;
 int n_symbols = 0;
+
+
+/*
+ *  get_symbol_addr():
+ *
+ *  Returns 1 if a symbol is found, 0 otherwise.
+ *  If the symbol is found, and addr is non-NULL, *addr is set
+ *  to its address.
+ */
+int get_symbol_addr(char *symbol, uint64_t *addr)
+{
+	struct symbol *s;
+
+	s = first_symbol;
+	while (s != NULL) {
+		if (strcmp(symbol, s->name) == 0) {
+			if (addr != NULL)
+				*addr = s->addr;
+			return 1;
+		}
+
+		s = s->next;
+	}
+
+	return 0;
+}
 
 
 /*

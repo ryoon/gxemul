@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.12 2005-01-09 05:18:22 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.13 2005-01-09 05:57:44 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -103,8 +103,16 @@ static void bintrans_write_chunkreturn(unsigned char **addrp)
 static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
 
-	/*  TODO:  Or BINTRANS_DONT_RUN_NEXT into nr of instrs  */
+	/*  Or BINTRANS_DONT_RUN_NEXT into nr of instrs:  */
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	    - ((size_t)&dummy_cpu);
+	*a++ = 0xda022000 | ofs;	/*  ld  [ %o0 + ofs ], %o5  */
+	*a++ = 0x19000000 | (BINTRANS_DONT_RUN_NEXT >> 10);
+					/*  sethi  %hi(0x1000000), %o4  */
+	*a++ = 0x9a13000d;		/*  or  %o4, %o5, %o5  */
+	*a++ = 0xda222000 | ofs;	/*  st  %o5, [ %o0 + 0x124 ]  */
 
 	*a++ = 0x81c3e008;	/*  retl  */
 	*a++ = 0x01000000;	/*  nop  */
@@ -178,7 +186,40 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
  */
 static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
 {
-	return 0;
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+return 0;
+
+	/*
+	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED
+	 *  and cpu->delay_jmpaddr = gpr[rs].
+	 */
+
+	ofs = ((size_t)&dummy_cpu.delay_slot) - (size_t)&dummy_cpu;
+	*a++ = 0x9a102000 | TO_BE_DELAYED;	/*  mov TO_BE_DELAYED, %o5  */
+	*a++ = 0xda222000 | ofs;		/*  st %o5, [ %o5 + ofs ]   */
+
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = 0xda5a2000 + ofs;		/*  ldx [ %o0 + ofs ], %o5  */
+	ofs = ((size_t)&dummy_cpu.delay_jmpaddr) - (size_t)&dummy_cpu;
+	*a++ = 0xda722000 + ofs;		/*  stx %o5, [ %o0 + ofs ]  */
+
+#if 0
+        if (special == SPECIAL_JALR && rd != 0) {
+                /*  gpr[rd] = retaddr    (pc + 8)  */
+                a = (uint32_t *) *addrp;
+                /*  lda alpha_rd,8(t5)  */
+                *a++ = 0x20060008 | (alpha_rd << 21);
+                *addrp = (unsigned char *) a;
+                if (alpha_rd == ALPHA_T0)
+                        bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
+        } 
+#endif
+
+	*addrp = (unsigned char *) a;
+	bintrans_write_pc_inc(addrp);
+	return 1;
 }
 
 
@@ -222,27 +263,28 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 	uint32_t *a = (uint32_t *) *addrp;
 	int ofs;
 
-	if (rt != 0) {
-		/*
-		 *  Trick if imm&0x8000: Load it shifted only
-		 *  5 bits to the left instead of 6, and then
-		 *  do a sll by 1 to sign-extend it. :-)
-		 */
+	if (rt == 0)
+		return 0;
 
-		if (imm & 0x8000) {
-			/*  sethi %hi(0xXXXX0000), %o5  */
-			*a++ = 0x1b000000 | ((imm & 0xffff) << 5);
-			/*  sll  %o5, 1, %o5  */
-			*a++ = 0x9b2b6001;
-		} else {
-			/*  sethi %hi(0xXXXX0000), %o5  */
-			*a++ = 0x1b000000 | ((imm & 0xffff) << 6);
-		}
+	/*
+	 *  Trick if imm&0x8000: Load it shifted only
+	 *  5 bits to the left instead of 6, and then
+	 *  do a sll by 1 to sign-extend it. :-)  (Hm,
+	 *  it doesn't seem to work without an sra too.)
+	 */
 
-		/*  stx  %o5, [ %o0 + ofs ]  */
-		ofs = ((size_t)&dummy_cpu.gpr[rt]) - ((size_t)&dummy_cpu);
-		*a++ = 0xda722000 | ofs;
+	if (imm & 0x8000) {
+		*a++ = 0x1b000000 | ((imm & 0xffff) << 5);	/*  sethi %hi(0xXXXX0000), %o5  */
+		*a++ = 0x9b2b6001;				/*  sll  %o5, 1, %o5  */
+		*a++ = 0x9b3b6000;				/*  sra  %o5, 0, %o5  */
+	} else {
+		/*  sethi %hi(0xXXXX0000), %o5  */
+		*a++ = 0x1b000000 | ((imm & 0xffff) << 6);
 	}
+
+	/*  stx  %o5, [ %o0 + ofs ]  */
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - ((size_t)&dummy_cpu);
+	*a++ = 0xda722000 | ofs;
 
 	*addrp = (unsigned char *) a;
 	bintrans_write_pc_inc(addrp);
@@ -256,7 +298,37 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	int rd, int from_flag, int hi_flag)
 {
-	return 0;
+	uint32_t *a = (uint32_t *) *addrp;
+	int ofs;
+
+	if (from_flag) {
+		if (rd != 0) {
+			/*  mfhi or mflo  */
+			if (hi_flag)
+				ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+			else
+				ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+			*a++ = 0xda5a2000 + ofs;	/*  ldx [ %o0 + ofs ], %o5  */
+
+			ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+			*a++ = 0xda722000 + ofs;	/*  stx %o5, [ %o0 + ofs ]  */
+		}
+	} else {
+		/*  mthi or mtlo  */
+		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+		*a++ = 0xda5a2000 + ofs;	/*  ldx [ %o0 + ofs ], %o5  */
+
+		if (hi_flag)
+			ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+		else
+			ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+
+		*a++ = 0xda722000 + ofs;	/*  stx %o5, [ %o0 + ofs ]  */
+	}
+
+	*addrp = (unsigned char *) a;
+	bintrans_write_pc_inc(addrp);
+	return 1;
 }
 
 

@@ -65,6 +65,10 @@ struct pci_data *bus_pci_init(struct memory *mem);
  *  Individual devices:
  */
 
+/*  ahc:  */
+uint32_t pci_ahc_rr(int reg);
+void pci_ahc_init(struct cpu *, struct memory *mem);
+
 /*  dec21030:  */
 uint32_t pci_dec21030_rr(int reg);
 void pci_dec21030_init(struct cpu *, struct memory *mem);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.34 2004-07-17 20:09:51 debug Exp $
+ *  $Id: emul.c,v 1.35 2004-07-20 02:52:00 debug Exp $
  *
  *  Emulation startup.
  */
@@ -285,9 +285,15 @@ void emul(void)
 	if (use_x11)
 		x11_init();
 
-	/*  For userland only emulation, no machine emulation is needed.  */
-	if (!userland_emul)
+	if (userland_emul) {
+		/*
+		 *  For userland only emulation, no machine emulation is
+		 *  needed.
+		 */
+	} else {
 		machine_init(mem);
+		net_init();
+	}
 
 	/*  Fill memory with random bytes:  */
 	if (random_mem_contents) {
@@ -360,7 +366,6 @@ void emul(void)
 	    bootstrap_cpu,
 	    cpus[bootstrap_cpu]->pc, cpus[bootstrap_cpu]->gpr[GPR_GP]);
 
-	net_init();
 	console_init();
 
 	if (!verbose)

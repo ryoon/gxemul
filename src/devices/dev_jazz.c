@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.16 2005-02-18 07:22:30 debug Exp $
+ *  $Id: dev_jazz.c,v 1.17 2005-03-03 06:42:50 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
@@ -497,10 +498,9 @@ int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_jazz_init():
+ *  devinit_jazz():
  */
-struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_jazz(struct devinit *devinit)
 {
 	struct jazz_data *d = malloc(sizeof(struct jazz_data));
 	if (d == NULL) {
@@ -509,28 +509,34 @@ struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct jazz_data));
 
-	d->cpu = machine->cpus[0];	/*  TODO  */
+	d->cpu = devinit->machine->cpus[0];	/*  TODO  */
 
 	d->isa_int_enable_mask = 0xffff;
 
-	memory_device_register(mem, "jazz", baseaddr, DEV_JAZZ_LENGTH,
+	memory_device_register(devinit->machine->memory, "jazz",
+	    devinit->addr, DEV_JAZZ_LENGTH,
 	    dev_jazz_access, (void *)d, MEM_DEFAULT, NULL);
 
 	/*  At least for Magnum and Pica-61:  */
-	memory_device_register(mem, "jazz_led", 0x08000f000ULL, 4,
-	    dev_jazz_led_access, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "jazz_led",
+	    0x08000f000ULL, 4, dev_jazz_led_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "jazz_isa_20", 0x90000020ULL, 2,
-	    dev_jazz_access_20, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "jazz_isa_20",
+	    0x90000020ULL, 2, dev_jazz_access_20, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "jazz_isa_a0", 0x900000a0ULL, 2,
-	    dev_jazz_access_a0, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "jazz_isa_a0",
+	    0x900000a0ULL, 2, dev_jazz_access_a0, (void *)d, MEM_DEFAULT, NULL);
 
-	memory_device_register(mem, "pica_jazzio", 0xf0000000ULL, 4,
-	    dev_jazz_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, "pica_jazzio",
+	    0xf0000000ULL, 4, dev_jazz_access_jazzio, (void *)d,
+	    MEM_DEFAULT, NULL);
 
-	machine_add_tickfunction(machine, dev_jazz_tick, d, DEV_JAZZ_TICKSHIFT);
+	machine_add_tickfunction(devinit->machine, dev_jazz_tick,
+	    d, DEV_JAZZ_TICKSHIFT);
 
-	return d;
+	devinit->return_ptr = d;
+
+	return 1;
 }
 

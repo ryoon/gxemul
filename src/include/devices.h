@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.152 2005-02-26 17:37:24 debug Exp $
+ *  $Id: devices.h,v 1.153 2005-03-03 06:42:51 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -254,11 +254,6 @@ struct jazz_data {
 };
 size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);
-int dev_jazz_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr);
 
 /*  dev_kn01.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004

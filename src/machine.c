@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.374 2005-03-01 09:35:38 debug Exp $
+ *  $Id: machine.c,v 1.375 2005-03-03 06:42:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2739,8 +2739,8 @@ Why is this here? TODO
 					exit(1);
 				}
 
-				machine->jazz_data = dev_jazz_init(
-				    machine, mem, 0x80000000ULL);
+				machine->jazz_data = device_add(machine,
+				    "jazz addr=0x80000000");
 				machine->md_interrupt = jazz_interrupt;
 
 				switch (machine->machine_subtype) {
@@ -2805,8 +2805,8 @@ Why is this here? TODO
 
 				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
-				machine->jazz_data = dev_jazz_init(
-				    machine, mem, 0x80000000ULL);
+				machine->jazz_data = device_add(machine,
+				    "jazz addr=0x80000000");
 				machine->md_interrupt = jazz_interrupt;
 
 				dev_mc146818_init(machine, mem,

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.618 2005-03-03 06:24:39 debug Exp $
+$Id: HISTORY,v 1.619 2005-03-03 06:42:49 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1710,3 +1710,4 @@ HISTORY of mips64emul
 20050301	Adding an URISC cpu emulation mode (single-opcode machine).
 20050303	Adding some files to the experiments directory (rssb_as.c,
 		rssb_as.README, urisc_test.s).
+		Continuing on the device stuff.

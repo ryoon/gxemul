@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.20 2005-02-11 22:03:48 debug Exp $
+.\" $Id: mips64emul.1,v 1.21 2005-02-11 22:16:47 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -44,10 +44,11 @@
 .Op Ar @configfile ...
 .Sh DESCRIPTION
 .Nm
-is a MIPS machine emulator. MIPS-like processors and surrounding hardware
-components are emulated well enough to let unmodified operating systems run
-as if they were running on a real machine, and to assist in experiments
-involving MIPS-like code in general.
+is a MIPS machine emulator, which can be used in experiments involving 
+MIPS binary code. Several emulation modes are available. For some emulation
+modes, processors and surrounding hardware components are emulated well
+enough to let unmodified operating systems run as if they were running on
+a real machine.
 .Pp
 There are two ways to invoke the emulator: machine settings can be entered 
 directly on the command line, or they can be read from a configuration 
@@ -66,13 +67,15 @@ which specific emulation mode to use. For example, a MIPS-based machine
 from DEC (a DECstation) is very different from a MIPS-based machine
 from SGI. Use
 .Nm
-\-H
+.Fl H
 to get a list of available emulation modes.
 .Pp
 (There is an exception to the normal invocation usage mentioned above;
 if you want to use the DECstation emulation mode, and have a bootable
 DECstation harddisk or CDROM image, then just supplying the diskimage via 
-the -d option is sufficient. The filename of the kernel can then be 
+the
+.Fl d
+option is sufficient. The filename of the kernel can then be 
 skipped, as the emulator runs the bootblocks from the diskimage directly and 
 doesn't need the kernel as a separate file.)
 .Pp
@@ -214,9 +217,9 @@ as an X11 display to use for framebuffers.
 General options:
 .Bl -tag -width Ds
 .It Fl H
-Displays a list of possible CPU and machine types.
+Display a list of possible CPU and machine types.
 .It Fl h
-Displays a list of all available command line options.
+Display a list of all available command line options.
 .It Fl K
 Force the single-step debugger to be entered at the end of a simulation.
 .It Fl q

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.46 2004-12-10 03:02:30 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.47 2004-12-13 05:35:52 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -92,21 +92,106 @@ unsigned char bintrans_i386_runchunk[41] = {
 	0xc3					/*  ret  */
 };
 
+static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
+	/*  Don't execute too many instructions.  */
+	/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+	/*  7c 01                jl     <okk>  */
+	/*  c3                   ret    */
+	0x81, 0xfd,
+	(N_SAFE_BINTRANS_LIMIT-1) & 255, ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255, 0, 0,
+	0x7c, 0x01,
+	0xc3,
 
-#if 0
-/*
- *  bintrans_runchunk():
- */
-static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
-{
-	void (*f)(struct cpu *, unsigned char *);
-	f = (void *)&bintrans_i386_runchunk[0];
-	f(cpu, code);
-}
-#else
+	/*
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	0x89, 0xc3,
+	0xc1, 0xeb, 0x14,
+	0x81, 0xe3, 0xfc, 0x0f, 0, 0,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0
+	 *
+	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+	 */
+#define ofs_tabl0	(((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
+	0x8b, 0x8e,
+	ofs_tabl0 & 255, (ofs_tabl0 >> 8) & 255, (ofs_tabl0 >> 16) & 255, (ofs_tabl0 >> 24) & 255,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
+	 */
+	0x8b, 0x0c, 0x19,
+
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	0x89, 0xc3,
+	0xc1, 0xeb, 0x0a,
+	0x81, 0xe3, 0xfc, 0x0f, 0, 0,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b].chunks
+	 *
+	 *  8b 8c 19 56 34 12 00    mov    0x123456(%ecx,%ebx,1),%ecx
+	 */
+#define ofs_chunks	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
+	0x8b, 0x8c, 0x19,
+	    ofs_chunks & 255, (ofs_chunks >> 8) & 255, (ofs_chunks >> 16) & 255, (ofs_chunks >> 24) & 255,
+
+	/*
+	 *  ecx = NULL? Then return with failure.
+	 *
+	 *  83 f9 00                cmp    $0x0,%ecx
+	 *  75 01                   jne    <okzzz>
+	 */
+	0x83, 0xf9, 0x00,
+	0x75, 0x01,
+	0xc3,		/*  TODO: failure?  */
+
+	/*
+	 *  25 fc 0f 00 00          and    $0xffc,%eax
+	 *  01 c1                   add    %eax,%ecx
+	 *
+	 *  8b 01                   mov    (%ecx),%eax
+	 *
+	 *  83 f8 00                cmp    $0x0,%eax
+	 *  75 01                   jne    <ok>
+	 *  c3                      ret
+	 */
+	0x25, 0xfc, 0x0f, 0, 0,
+	0x01, 0xc1,
+
+	0x8b, 0x01,
+
+	0x83, 0xf8, 0x00,
+	0x75, 0x01,
+	0xc3,		/*  TODO: failure?  */
+
+	/*  03 86 78 56 34 12       add    0x12345678(%esi),%eax  */
+	/*  ff e0                   jmp    *%eax  */
+#define ofs_chunkbase	((size_t)&dummy_cpu.chunk_base_address - (size_t)&dummy_cpu)
+	0x03, 0x86,
+	    ofs_chunkbase & 255, (ofs_chunkbase >> 8) & 255, (ofs_chunkbase >> 16) & 255, (ofs_chunkbase >> 24) & 255,
+	0xff, 0xe0
+};
+
+
 static const void (*bintrans_runchunk)
     (struct cpu *, unsigned char *) = (void *)bintrans_i386_runchunk;
-#endif
+
+static void (*bintrans_jump_to_32bit_pc)
+    (struct cpu *) = (void *)bintrans_i386_jump_to_32bit_pc;
 
 
 /*
@@ -1395,7 +1480,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p, int forward)
 {
-	unsigned char *a, *skip=NULL, *failskip, *fail;
+	unsigned char *a, *skip=NULL, *failskip;
 	int ofs;
 	uint32_t i386_addr;
 
@@ -1440,6 +1525,15 @@ try_chunk_p:
 
 	if (potential_chunk_p == NULL) {
 		if (bintrans_32bit_only) {
+#if 1
+			/*  8b 86 78 56 34 12       mov    0x12345678(%esi),%eax  */
+			/*  ff e0                   jmp    *%eax  */
+			ofs = ((size_t)&dummy_cpu.bintrans_jump_to_32bit_pc) - (size_t)&dummy_cpu;
+			*a++ = 0x8b; *a++ = 0x86;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = 0xff; *a++ = 0xe0;
+
+#else
 			/*  Don't execute too many instructions.  */
 			/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
 			/*  7c 01                jl     <okk>  */
@@ -1537,6 +1631,7 @@ try_chunk_p:
 			*a++ = 0x03; *a++ = 0x86;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 			*a++ = 0xff; *a++ = 0xe0;
+#endif
 		} else {
 			/*  Not much we can do here if this wasn't to the same physical page...  */
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.85 2004-12-13 04:42:16 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.86 2004-12-13 05:35:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -249,7 +249,7 @@ static unsigned char bintrans_alpha_runchunk[200] = {
 	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
 };
 
-static unsigned char bintrans_alpha_jump_to_delayslot[25 * 4] = {
+static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	/*  Don't execute too many instructions. (see comment below)  */
 	(N_SAFE_BINTRANS_LIMIT-1)&255, ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255,
 		0x5f, 0x20,		/*  lda t1,safe limit - 1 */
@@ -257,9 +257,7 @@ static unsigned char bintrans_alpha_jump_to_delayslot[25 * 4] = {
 	0x01, 0x00, 0x20, 0xf4,		/*  bne  */
 	0x01, 0x80, 0xfa, 0x6b,		/*  ret  */
 
-	/*  bintrans_move_MIPS_reg_into_Alpha_reg(&a,
-	    MIPSREG_DELAY_JMPADDR, ALPHA_A1);  */
-	0x11, 0x14, 0x40, 0x41,		/*  addq s1,0,a1  */
+	0x11, 0x14, 0xc0, 0x40,		/*  addq t5,0,a1  */
 
 	/*
 	 *  Special case for 32-bit addressing:
@@ -344,8 +342,8 @@ static unsigned char bintrans_alpha_jump_to_delayslot[25 * 4] = {
 static const void (*bintrans_runchunk)
     (struct cpu *, unsigned char *) = (void *)bintrans_alpha_runchunk;
 
-static void (*bintrans_jump_to_delayslot)
-    (struct cpu *) = (void *)bintrans_alpha_jump_to_delayslot;
+static void (*bintrans_jump_to_32bit_pc)
+    (struct cpu *) = (void *)bintrans_alpha_jump_to_32bit_pc;
 
 
 /*
@@ -1122,7 +1120,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p, int forward)
 {
-	unsigned char *a, *skip=NULL, *fail;
+	unsigned char *a, *skip=NULL;
 	int ofs;
 	uint64_t alpha_addr, subaddr;
 
@@ -1148,7 +1146,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	if (potential_chunk_p == NULL) {
 		if (bintrans_32bit_only) {
 			/*  34 12 70 a7     ldq     t12,4660(a0)  */
-			ofs = (size_t)&dummy_cpu.bintrans_jump_to_delayslot - (size_t)&dummy_cpu;
+			ofs = (size_t)&dummy_cpu.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
 			/*  00 00 fb 6b     jmp     (t12)  */

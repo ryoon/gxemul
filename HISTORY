@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.384 2004-12-13 01:54:10 debug Exp $
+$Id: HISTORY,v 1.385 2004-12-13 05:35:51 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1311,3 +1311,5 @@ HISTORY of mips64emul
 		Updating some files in preparation for a 0.2.4 release.
 20041213	Updating the docs on how to install NetBSD 2.0/pmax, and also
 		some updates to the section on installing Debian.
+		32-bit bintrans backend optimization: don't inline large
+		chunks of code, such as general jumps.

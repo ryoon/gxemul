@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.18 2004-11-21 23:29:48 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.19 2004-11-22 02:17:58 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -613,11 +613,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	/*  TODO: Not yet  */
 	switch (instruction_type) {
-	case SPECIAL_SLLV:
 	case SPECIAL_DSLL:
 	case SPECIAL_DSLL32:
-	case SPECIAL_SRAV:
-	case SPECIAL_SRLV:
 	case SPECIAL_DSRA:
 	case SPECIAL_DSRA32:
 	case SPECIAL_DSRL:
@@ -811,16 +808,52 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  99                      cltd   */
 		*a++ = 0x99;
 		break;
+	case SPECIAL_SLLV:
+		/*  rd = rt << (rs&31)  (logical)     eax = ebx << (eax&31)  */
+		/*  xchg ebx,eax, then we can do   eax = eax << (ebx&31)  */
+		/*  93                      xchg   %eax,%ebx  */
+		/*  89 d9                   mov    %ebx,%ecx  */
+		/*  83 e1 1f                and    $0x1f,%ecx  */
+		/*  d3 e0                   shl    %cl,%eax  */
+		*a++ = 0x93;
+		*a++ = 0x89; *a++ = 0xd9;
+		*a++ = 0x83; *a++ = 0xe1; *a++ = 0x1f;
+		*a++ = 0xd3; *a++ = 0xe0;
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+	case SPECIAL_SRLV:
+		/*  rd = rt >> (rs&31)  (logical)     eax = ebx >> (eax&31)  */
+		/*  xchg ebx,eax, then we can do   eax = eax >> (ebx&31)  */
+		/*  93                      xchg   %eax,%ebx  */
+		/*  89 d9                   mov    %ebx,%ecx  */
+		/*  83 e1 1f                and    $0x1f,%ecx  */
+		/*  d3 e8                   shr    %cl,%eax  */
+		*a++ = 0x93;
+		*a++ = 0x89; *a++ = 0xd9;
+		*a++ = 0x83; *a++ = 0xe1; *a++ = 0x1f;
+		*a++ = 0xd3; *a++ = 0xe8;
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
+	case SPECIAL_SRAV:
+		/*  rd = rt >> (rs&31)  (arithmetic)     eax = ebx >> (eax&31)  */
+		/*  xchg ebx,eax, then we can do   eax = eax >> (ebx&31)  */
+		/*  93                      xchg   %eax,%ebx  */
+		/*  89 d9                   mov    %ebx,%ecx  */
+		/*  83 e1 1f                and    $0x1f,%ecx  */
+		/*  d3 f8                   sar    %cl,%eax  */
+		*a++ = 0x93;
+		*a++ = 0x89; *a++ = 0xd9;
+		*a++ = 0x83; *a++ = 0xe1; *a++ = 0x1f;
+		*a++ = 0xd3; *a++ = 0xf8;
+		/*  99                      cltd   */
+		*a++ = 0x99;
+		break;
 
 #if 0
 	/*  TODO:  These are from bintrans_alpha.c. Translate them to i386.  */
 
-	case SPECIAL_SLLV:
-		/*  rd = rt << (rs&31)  (logical)     t0 = t1 << (t0&31)  */
-		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
-		*a++ = 0x21; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sll t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
-		break;
 	case SPECIAL_DSLL:
 		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		break;
@@ -828,25 +861,12 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		sa += 32;
 		*a++ = 0x21; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sll t1,sa,t0  */
 		break;
-	case SPECIAL_SRAV:
-		/*  rd = rt >> (rs&31)  (arithmetic)     t0 = t1 >> (t0&31)  */
-		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
-		*a++ = 0x81; *a++ = 0x07; *a++ = 0x41; *a++ = 0x48;	/*  sra t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
-		break;
 	case SPECIAL_DSRA:
 		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
 		break;
 	case SPECIAL_DSRA32:
 		sa += 32;
 		*a++ = 0x81; *a++ = 0x17 + ((sa & 7) << 5); *a++ = 0x40 + (sa >> 3); *a++ = 0x48;	/*  sra t1,sa,t0  */
-		break;
-	case SPECIAL_SRLV:
-		/*  rd = rt >> (rs&31)  (logical)     t0 = t1 >> (t0&31)  */
-		*a++ = 0x22; *a++ = 0xf6; *a++ = 0x41; *a++ = 0x48;	/*  zapnot t1,0xf,t1 (use only lowest 32 bits)  */
-		*a++ = 0x01; *a++ = 0xf0; *a++ = 0x23; *a++ = 0x44;     /*  and t0,31,t0  */
-		*a++ = 0x81; *a++ = 0x06; *a++ = 0x41; *a++ = 0x48;	/*  srl t1,t0,t0  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;     /*  addl t0,0,t0  */
 		break;
 	case SPECIAL_DSRL:
 		/*  Note: bits of sa are distributed among two different bytes.  */

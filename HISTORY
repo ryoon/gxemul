@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.321 2004-11-22 01:23:16 debug Exp $
+$Id: HISTORY,v 1.322 2004-11-22 02:17:58 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1162,9 +1162,10 @@ HISTORY of mips64emul
 		when bintrans is enabled.
 20041121	Making tlbwr, tlbwi, tlbp, tlbr callable directly from
 		translated code.
-		Adding sltiu,slti,slt,sltu to the i386 backend.
+		Adding sltiu, slti, slt, and sltu to the i386 backend.
 20041122	More bintrans updates.
 		With the Alpha backend, the status and entryhi registers
 		can (in some cases) be written without exiting to the main
 		loop. Ultrix boot time until a usable desktop is reached
 		is about 1 min 35 seconds on the 533 MHz pca56.
+		Adding srlv, srav, and sllv to the i386 backend.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.7 2003-11-20 05:18:04 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.8 2003-11-24 02:28:57 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -55,6 +55,9 @@ struct dc_data {
 
 	int			tx_scanner;
 
+	unsigned char		keyb_buf[8];
+	int			keyb_buf_pos;
+
 	int			irqnr;
 	int			use_fb;
 
@@ -80,43 +83,79 @@ static void add_to_rx_queue(struct dc_data *d, unsigned char ch, int line_no)
 }
 
 
+/*
+ *  Converts ascii console input to LK201 keyboard scan codes.
+ */
 void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 {
 	int i, found=-1, shifted = 0, controlled = 0;
 
-	switch (ch) {
-	case '\b':
-		found = 0xbc;
-		break;
-	case '\n':
-		found = 0xbd;
-		break;
-	case '\t':
-		found = 0xbe;
-		break;
-	default:
-		if (ch >= 1 && ch <= 26) {
-			ch = 'a' + ch - 1;
-			controlled = 1;
-		}
+	if (d->keyb_buf_pos > 0 && d->keyb_buf_pos < sizeof(d->keyb_buf)) {
+		/*  Escape sequence:  */
+		d->keyb_buf[d->keyb_buf_pos] = ch;
+		d->keyb_buf_pos ++;
 
-		shifted = 0;
-		for (i=0; i<256; i++)
-			if (unshiftedAscii[i] == ch) {
-				found = i;
-				break;
+		if (d->keyb_buf_pos == 2) {
+			if (ch == '[')
+				return;
+			d->keyb_buf_pos = 0;
+			/*  not esc+[, output as normal key  */
+		} else {
+			/*  Inside an esc+[ sequence  */
+
+			switch (ch) {
+			case 'A':  found = 0xaa;  /*  Up     */  break;
+			case 'B':  found = 0xa9;  /*  Down   */  break;
+			case 'C':  found = 0xa8;  /*  Right  */  break;
+			case 'D':  found = 0xa7;  /*  Left   */  break;
+			/*  TODO: pageup, pagedown, ...  */
+			default:
 			}
 
-		if (found == -1) {
-			/*  unshift ch:  */
-			if (ch >= 'A' && ch <= 'Z')
-				ch = ch + ('a' - 'A');
+			d->keyb_buf_pos = 0;
+		}
+	} else
+		d->keyb_buf_pos = 0;
+
+	if (found == -1) {
+		switch (ch) {
+		case '\b':
+			found = 0xbc;
+			break;
+		case '\n':
+			found = 0xbd;
+			break;
+		case '\t':
+			found = 0xbe;
+			break;
+		case 27:	/*  esc  */
+			d->keyb_buf[0] = 27;
+			d->keyb_buf_pos = 1;
+			return;
+		default:
+			if (ch >= 1 && ch <= 26) {
+				ch = 'a' + ch - 1;
+				controlled = 1;
+			}
+
+			shifted = 0;
 			for (i=0; i<256; i++)
-				if (shiftedAscii[i] == ch) {
+				if (unshiftedAscii[i] == ch) {
 					found = i;
-					shifted = 1;
 					break;
 				}
+
+			if (found == -1) {
+				/*  unshift ch:  */
+				if (ch >= 'A' && ch <= 'Z')
+					ch = ch + ('a' - 'A');
+				for (i=0; i<256; i++)
+					if (shiftedAscii[i] == ch) {
+						found = i;
+						shifted = 1;
+						break;
+					}
+			}
 		}
 	}
 

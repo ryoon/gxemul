@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.27 2004-07-04 00:00:31 debug Exp $
+#  $Id: configure,v 1.28 2004-07-04 00:43:36 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -35,7 +35,7 @@ if [ z"$*" != z ]; then
 					else
 						echo "usage: $0 [options]"
 						echo "  --caches    enable cache emulation (implies --delays)"
-						echo "  --delays    enable instruction latency emulation"
+						echo "  --delays    enable instruction latency/delay emulation"
 						echo "  --nox11     configure without x11 support"
 						echo "  --mips16    enable MIPS16 instruction support"
 						exit

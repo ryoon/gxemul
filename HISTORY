@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.77 2004-06-06 10:23:23 debug Exp $
+$Id: HISTORY,v 1.78 2004-06-06 11:06:17 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -497,3 +497,4 @@ HISTORY of mips64emul
 		average, when using -N.
 20040515	Some more bintrans experiments.
 20040606	Adding ARCBIOS GetReadStatus() and Read().
+		Adding some instructions: tlt, tltu, tge, tgeu, tne.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.78 2004-04-09 05:11:55 debug Exp $
+ *  $Id: machine.c,v 1.79 2004-04-11 11:23:48 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -591,8 +591,8 @@ void machine_init(struct memory *mem)
 			 */
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  */
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-FA", KN02_IP_SLOT0 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);
+/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-FA", KN02_IP_SLOT0 +8);  */
 /*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-JA", KN02_IP_SLOT0 +8);  */
 /*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-RO", KN02_IP_SLOT0 +8);  */
 
@@ -912,7 +912,7 @@ void machine_init(struct memory *mem)
 		 *  loaded.
 		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 2;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
 		cpus[bootstrap_cpu]->gpr[GPR_A2] = DEC_PROM_MAGIC;
 		cpus[bootstrap_cpu]->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
@@ -922,7 +922,8 @@ void machine_init(struct memory *mem)
 
 		store_32bit_word(DEC_PROM_INITIAL_ARGV, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x10));
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+4, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x70));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, 0);
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0xe0));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
 
 		/*
 		 *  NOTE:  NetBSD and Ultrix expect their bootargs in different ways.
@@ -941,7 +942,7 @@ void machine_init(struct memory *mem)
 			init_bootpath = "rz(0,0,0)";
 		else
 #endif
-			init_bootpath = "3/rz0/";
+			init_bootpath = "5/rz0/";
 
 		tmp_ptr = rindex(last_filename, '/');
 		if (tmp_ptr == NULL)
@@ -962,8 +963,11 @@ void machine_init(struct memory *mem)
 			bootarg = "-a";
 		}
 
+		/*  TODO: make this nicer  */
+
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
 		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootarg);
+		store_string(DEC_PROM_INITIAL_ARGV+0xe0, "-a");
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;

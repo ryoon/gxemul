@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.17 2003-12-28 20:56:13 debug Exp $
+ *  $Id: machine.c,v 1.18 2003-12-28 21:32:48 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -867,7 +867,7 @@ void machine_init(struct memory *mem)
 		/*  add_environment_string("ConsoleIn=serial(0)", &addr);
 		    add_environment_string("ConsoleOut=serial(0)", &addr);  */
 		add_environment_string("ConsoleOut=arcs", &addr);
-		add_environment_string("cpufreq=300000000", &addr);
+		add_environment_string("cpufreq=2", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.11 2005-01-16 14:05:31 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.12 2005-01-16 14:13:44 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -333,7 +333,7 @@ struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uin
 	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
 	    0x10000, dev_sgi_ip30_5_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sgi_ip30_tick, d, 14);
+	cpu_add_tickfunction(cpu, dev_sgi_ip30_tick, d, 16);
 
 	return d;
 }

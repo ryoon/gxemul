@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.280 2005-01-16 14:05:32 debug Exp $
+ *  $Id: machine.c,v 1.281 2005-01-16 14:13:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3456,6 +3456,8 @@ config[77] = 0x30;
 			add_environment_string(cpu, "TimeZone=GMT", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "nogfxkbd=1", &addr);
+
+			/*  TODO: 'xio(0)pci(15)scsi(0)disk(1)rdisk(0)partition(0)' on IP30 at least  */
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)", &addr);

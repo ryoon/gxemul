@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.7 2003-12-30 05:48:31 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.8 2004-01-02 19:31:25 debug Exp $
  *  
  *  NS16550 serial controller.
  *
- *  TODO: fifo. Without the fifo functionality, NetBSD detects this device
- *  as a 8250 or 16450.
+ *  TODO: fifo. Without the fifo functionality, this device works like
+ *  a 8250 or 16450.
  */
 
 #include <stdio.h>
@@ -40,6 +40,9 @@
 #include "devices.h"
 
 #include "comreg.h"
+
+
+/*  #define DISABLE_FIFO  */
 
 
 struct ns_data {
@@ -114,8 +117,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 	d->reg[com_lsr] &= ~LSR_RXRDY;
 	d->reg[com_msr] = MSR_DCD | MSR_DSR | MSR_CTS;
 
+#ifdef DISABLE_FIFO
 	/*  FIFO turned off:  */
 	d->reg[com_iir] &= 0x0f;
+#endif
 
 	if (console_charavail()) {
 		d->reg[com_lsr] |= LSR_RXRDY;

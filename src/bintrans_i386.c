@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.49 2004-12-29 20:53:02 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.50 2004-12-29 22:03:23 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -186,7 +186,52 @@ static unsigned char bintrans_i386_jump_to_32bit_pc[76] = {
 	0xff, 0xe0
 };
 
-static unsigned char bintrans_i386_loadstore_32bit[1] = {
+static unsigned char bintrans_i386_loadstore_32bit[35] = {
+	/*
+	 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 14                shr    $20,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	0x89, 0xc3,
+	0xc1, 0xeb, 0x14,
+	0x81, 0xe3, 0xfc, 0x0f, 0x00, 0x00,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0
+	 *
+	 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
+	 */
+	0x8b, 0x8e,
+	ofs_tabl0 & 255, (ofs_tabl0 >> 8) & 255, (ofs_tabl0 >> 16) & 255, (ofs_tabl0 >> 24) & 255,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
+	 */
+	0x8b, 0x0c, 0x19,
+
+	/*
+	 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
+	 *
+	 *  89 c3                   mov    %eax,%ebx
+	 *  c1 eb 0a                shr    $10,%ebx
+	 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
+	 */
+	0x89, 0xc3,
+	0xc1, 0xeb, 0x0a,
+	0x81, 0xe3, 0xfc, 0x0f, 0x00, 0x00,
+
+	/*
+	 *  ecx = vaddr_to_hostaddr_table0[a][b]
+	 *
+	 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
+	 */
+	0x8b, 0x0c, 0x19,
+
+	/*  ret  */
 	0xc3
 };
 
@@ -1898,50 +1943,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  Here, edx:eax = vaddr  */
 
 	if (bintrans_32bit_only) {
-		/*
-		 *  ebx = ((vaddr >> 22) & 1023) * sizeof(void *)
-		 *
-		 *  89 c3                   mov    %eax,%ebx
-		 *  c1 eb 14                shr    $20,%ebx
-		 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-		 */
-		*a++ = 0x89; *a++ = 0xc3;
-		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x14;
-		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+		ofs = (size_t)bintrans_i386_loadstore_32bit;
 
-		/*
-		 *  ecx = vaddr_to_hostaddr_table0
-		 *
-		 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
-		 */
-		ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
-		*a++ = 0x8b; *a++ = 0x8e;
-		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+		ofs = ofs - ((size_t)a + 5);
 
-		/*
-		 *  ecx = vaddr_to_hostaddr_table0[a]
-		 *
-		 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
-		 */
-		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x19;
-
-		/*
-		 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
-		 *
-		 *  89 c3                   mov    %eax,%ebx
-		 *  c1 eb 0a                shr    $10,%ebx
-		 *  81 e3 fc 0f 00 00       and    $0xffc,%ebx
-		 */
-		*a++ = 0x89; *a++ = 0xc3;
-		*a++ = 0xc1; *a++ = 0xeb; *a++ = 0x0a;
-		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
-
-		/*
-		 *  ecx = vaddr_to_hostaddr_table0[a][b]
-		 *
-		 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
-		 */
-		*a++ = 0x8b; *a++ = 0x0c;  *a++ = 0x19;
+		*a++ = 0xe8; *a++ = ofs; *a++ = ofs >> 8;
+		    *a++ = ofs >> 16; *a++ = ofs >> 24;
 
 		/*
 		 *  ecx = NULL? Then return with failure.
@@ -1983,7 +1990,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 */
 		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
 		*a++ = 0x01; *a++ = 0xc1;
-
 	} else {
 		/*  64-bit generic case:  */
 
@@ -2021,8 +2027,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 
-	if (!load)
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+	if (!load) {
+		if (instruction_type == HI6_SD)
+			load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		else
+			load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+	}
 
 	switch (instruction_type) {
 	case HI6_LD:

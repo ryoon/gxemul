@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.222 2004-12-29 15:41:05 debug Exp $
+ *  $Id: cpu.c,v 1.223 2004-12-29 22:03:23 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3076,31 +3076,9 @@ int cpu_run_instr(struct cpu *cpu)
 				dir = -dir;
 
 			result_value = cpu->gpr[rt];
-#if 0
-			/*  Try to load and store, to make sure that all bytes in this store
-			    will be allowed to go through:  */
+
 			if (st) {
-				for (i=0; i<wlen; i++) {
-					unsigned char databyte;
-					int ok;
-
-					tmpaddr = addr + i*dir;
-					/*  Have we moved into another word/dword? Then stop:  */
-					if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
-						break;
-
-					/*  Load and store one byte:  */
-					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_READ, CACHE_DATA);
-					if (!ok)
-						return 1;
-					ok = memory_rw(cpu, cpu->mem, tmpaddr, &databyte, 1, MEM_WRITE, CACHE_DATA);
-					if (!ok)
-						return 1;
-				}
-			}
-#endif
-
-			{
+				/*  Store:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8];
 				int ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
@@ -3116,28 +3094,43 @@ int cpu_run_instr(struct cpu *cpu)
 					/*  debug("unaligned byte at %016llx, reg_ofs=%i reg=0x%016llx\n",
 					    tmpaddr, reg_ofs, (long long)result_value);  */
 
-					/*  Load or store one byte:  */
-					if (st) {
-						unsigned char databyte = (result_value >> (reg_ofs * 8)) & 255;
-						aligned_word[tmpaddr & (wlen-1)] = databyte;
-					} else {
-						unsigned char databyte = aligned_word[tmpaddr & (wlen-1)];
-						result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
-						result_value |= (uint64_t)databyte << (reg_ofs * 8);
-					}
+					/*  Store one byte:  */
+					aligned_word[tmpaddr & (wlen-1)] = (result_value >> (reg_ofs * 8)) & 255;
 
 					reg_ofs += reg_dir;
 				}
 
-				if (st) {
-					ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_WRITE, CACHE_DATA);
-					if (!ok)
-						return 1;
-				}
-			}
+				ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_WRITE, CACHE_DATA);
+				if (!ok)
+					return 1;
+			} else {
+				/*  Load:  */
+				uint64_t aligned_addr = addr & ~(wlen-1);
+				unsigned char aligned_word[8], databyte;
+				int ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
+				if (!ok)
+					return 1;
 
-			if (!st && rt != 0)
-				cpu->gpr[rt] = result_value;
+				for (i=0; i<wlen; i++) {
+					tmpaddr = addr + i*dir;
+					/*  Have we moved into another word/dword? Then stop:  */
+					if ( (tmpaddr & ~(wlen-1)) != (addr & ~(wlen-1)) )
+						break;
+
+					/*  debug("unaligned byte at %016llx, reg_ofs=%i reg=0x%016llx\n",
+					    tmpaddr, reg_ofs, (long long)result_value);  */
+
+					/*  Load one byte:  */
+					databyte = aligned_word[tmpaddr & (wlen-1)];
+					result_value &= ~((uint64_t)0xff << (reg_ofs * 8));
+					result_value |= (uint64_t)databyte << (reg_ofs * 8);
+
+					reg_ofs += reg_dir;
+				}
+
+				if (rt != 0)
+					cpu->gpr[rt] = result_value;
+			}
 
 			/*  Sign extend for 32-bit load lefts:  */
 			if (!st && signd && wlen == 4) {

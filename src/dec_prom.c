@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.15 2004-07-04 13:18:02 debug Exp $
+ *  $Id: dec_prom.c,v 1.16 2004-07-04 15:51:24 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -70,6 +70,8 @@ extern int use_x11;
  *	0x7c	clear_cache()
  *	0x80	getsysid()
  *	0x84	getbitmap()
+ *	0x88	disableintr()
+ *	0x8c	enableintr()
  *	0x9c	halt()
  *	0xa4	gettcinfo()
  *	0xac	rex()
@@ -285,6 +287,12 @@ void decstation_prom_emul(struct cpu *cpu)
 		    (int)cpu->gpr[GPR_A0]);
 		store_buf(cpu->gpr[GPR_A0], (char *)&memmap, sizeof(memmap));
 		cpu->gpr[GPR_V0] = sizeof((memmap.bitmap));
+		break;
+	case 0x88:		/*  disableintr()  */
+		debug("[ DEC PROM disableintr(): TODO ]\n");
+		break;
+	case 0x8c:		/*  enableintr()  */
+		debug("[ DEC PROM enableintr(): TODO ]\n");
 		break;
 	case 0x9c:		/*  halt()  */
 		debug("[ DEC PROM halt() ]\n");

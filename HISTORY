@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.421 2004-12-27 10:26:35 debug Exp $
+$Id: HISTORY,v 1.422 2004-12-28 20:38:54 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1389,3 +1389,4 @@ HISTORY of mips64emul
 		Regression tests are now run both with and without bintrans.
 20041227	Some hacks to the VR41xx code to allow Linux for BE300 to
 		get far enough to show the penguin on the framebuffer.
+20041228	Merging dev_kn01_csr.c and dev_vdac.c into dev_kn01.c.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.118 2004-12-27 10:26:15 debug Exp $
+ *  $Id: devices.h,v 1.119 2004-12-28 20:38:56 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -238,10 +238,20 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
 
-/*  dev_gt.c:  */
+/*  dev_kn01.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
 int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
+#define	DEV_VDAC_LENGTH			0x20
+#define	DEV_VDAC_MAPWA			    0x00
+#define	DEV_VDAC_MAP			    0x04
+#define	DEV_VDAC_MASK			    0x08
+#define	DEV_VDAC_MAPRA			    0x0c
+#define	DEV_VDAC_OVERWA			    0x10
+#define	DEV_VDAC_OVER			    0x14
+#define	DEV_VDAC_OVERRA			    0x1c
+int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
 
 /*  dev_kn02.c:  */
 #define	DEV_KN02_LENGTH		0x1000
@@ -553,18 +563,6 @@ int dev_zero_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
 void dev_random_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
 void dev_zero_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
-
-/*  dev_vdac.c:  */
-#define	DEV_VDAC_LENGTH			0x20
-#define	DEV_VDAC_MAPWA			    0x00
-#define	DEV_VDAC_MAP			    0x04
-#define	DEV_VDAC_MASK			    0x08
-#define	DEV_VDAC_MAPRA			    0x0c
-#define	DEV_VDAC_OVERWA			    0x10
-#define	DEV_VDAC_OVER			    0x14
-#define	DEV_VDAC_OVERRA			    0x1c
-int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
 
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

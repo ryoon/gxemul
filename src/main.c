@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.44 2004-06-27 01:06:48 debug Exp $
+ *  $Id: main.c,v 1.45 2004-06-28 05:21:37 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -59,6 +59,11 @@ char *machine_name = NULL;
 int random_mem_contents = 0;
 int physical_ram_in_mb = 0;
 
+int quiet_mode = 0;
+int show_opcode_statistics = 0;
+int prom_emulation = 1;
+int register_dump = 0;
+
 /*  PC Dumppoints: if the PC value ever matches one of these, we set
 	register_dump = instruction_trace = 1  */
 int n_dumppoints = 0;
@@ -67,15 +72,12 @@ uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
 int bintrans_enable = 0;
-int register_dump = 0;
 int instruction_trace = 0;
 int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
 int max_instructions = 0;
 int emulated_ips = 0;
-int show_opcode_statistics = 0;
 int speed_tricks = 1;
-int prom_emulation = 1;
 int userland_emul = 0;
 int ultrixboot_emul = 0;
 
@@ -89,7 +91,6 @@ int tlb_dump = 0;
 int verbose = 0;
 int use_x11 = 0;
 int x11_scaledown = 1;
-int quiet_mode = 0;
 
 
 /*

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.68 2004-06-27 01:09:19 debug Exp $
+ *  $Id: misc.h,v 1.69 2004-06-28 05:21:19 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -467,7 +467,7 @@ struct coproc {
 #define	MAX_TICK_FUNCTIONS	12
 
 #define	N_TRANSLATION_CACHE		4
-#define	N_TRANSLATION_CACHE_INSTR	4
+#define	N_TRANSLATION_CACHE_INSTR	5
 
 /*  This should be a value which the program counter
     can "never" have:  */
@@ -585,6 +585,14 @@ struct cpu {
 	uint64_t	gpr_quadhi[NGPRS];
 
 
+	/*
+	 *  Statistics:
+	 */
+	long		stats_opcode[N_HI6];
+	long		stats__special[N_SPECIAL];
+	long		stats__regimm[N_REGIMM];
+	long		stats__special2[N_SPECIAL];
+
 	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
 
 	/*  Data and Instruction caches:  */
@@ -601,14 +609,6 @@ struct cpu {
 	int		ticks_reset_value[MAX_TICK_FUNCTIONS];
 	void		(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void		*tick_extra[MAX_TICK_FUNCTIONS];
-
-	/*
-	 *  Statistics:
-	 */
-	long		stats_opcode[N_HI6];
-	long		stats__special[N_SPECIAL];
-	long		stats__regimm[N_REGIMM];
-	long		stats__special2[N_SPECIAL];
 };
 
 #define	CACHE_DATA			0

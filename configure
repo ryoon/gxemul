@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.25 2004-07-03 15:37:10 debug Exp $
+#  $Id: configure,v 1.26 2004-07-03 16:28:20 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -178,9 +178,9 @@ fi
 $CC _testprog.c -o _testprog -Wall 2> /dev/null
 if [ -x _testprog ]; then
 	CWARNINGS="-Wall $CWARNINGS"
+
+	#  Compaq's compiler always seems to warn about the long long type:
 	if [ z"$CC" = zccc ]; then
-#		CWARNINGS="$CWARNINGS -msg_disable longlongtype,questcompare2,intconcasttru,intconstsign,unusedtop,ptrmismatch1,cvtu32to64,duptypedef,intconsttrunc"
-#		CWARNINGS="$CWARNINGS -msg_disable longlongtype,intconsttrunc,cvtu32to64"
 		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
 	fi
 fi
@@ -224,7 +224,9 @@ if [ z"`uname`" = zHP-UX ]; then
 	#  TODO:  include correct strtoll and strtoull,
 	#  these are just fake!
 	echo 'NOTE: HPUX weirdness, strtol vs stroll etc.  You have been warned.'
-	COPTIM="-DHPUX -Dstrtoll=strtol -Dstrtoull=strtoul $COPTIM"
+	printf "#define HPUX\n" >> config.h
+	printf "#define strtoll strtol\n" >> config.h
+	printf "#define strtoull strtoul\n" >> config.h
 fi
 
 if [ z"$CC" = zccc ]; then
@@ -236,7 +238,7 @@ else
 		if [ z"$CC" = zcc ]; then
 			COPTIM="-xO5 -fast $COPTIM"
 		fi
-		COPTIM="-DSOLARIS $COPTIM"
+		printf "#define SOLARIS\n" >> config.h
 		OTHERLIBS="-lrt -lsocket $OTHERLIBS"
 	else
 		#  gcc or something else:

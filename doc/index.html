@@ -42,9 +42,9 @@ and various bits of information. Enjoy! :-)
 
 mips64emul is a MIPS machine emulator.
 
-The goals are to emulate 32-bit and 64-bit MIPS CPUs and enough surrounding hardware
+The goals are to emulate 32-bit and 64-bit MIPS-like CPUs and enough surrounding hardware
 to fake real machines, capable of running real (unmodified) operating systems,
-such as <a href="http://www.netbsd.org/">NetBSD</a> or <a href="http://www.kernel.org/">Linux</a>.
+such as <a href="http://www.netbsd.org/">NetBSD</a> or <a href="http://www.linux-mips.org/">Linux</a>.
 This is a spare time hobby project, and many things are not implemented yet.
 <p> 
 The emulator could be of interest for academic research and experiments, such as
@@ -95,7 +95,10 @@ an emulation mode.
   <li>Handheld "hpcmips" devices
 </ul>
 <p>
-Some notes about the list above:  The machines above have 64-bit
+At the moment, the only machine type emulated well enough to let an
+operating system be installed onto a disk image is the DECstation.
+<p>
+Some more notes about the list above:  The machines above have 64-bit
 capable CPUs, except most DECstations. There were upgrades from R3000 to
 R4000 available for some DECstations, but Ultrix was still running in 32-bit
 mode (I think).  Unfortunately, even if most of these machine types have
@@ -611,7 +614,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.25 2004-06-08 07:57:48 debug Exp $</pre>
+<pre>$Id: index.html,v 1.26 2004-06-11 11:25:19 debug Exp $</pre>
 
 </body>
 </html>

@@ -5,8 +5,8 @@ mips64emul
 Overview
 --------
 
-mips64emul is a MIPS machine emulator.  The goal is to emulate MIPS CPUs and
-enough surrounding hardware well enough to run unmodified operating systems
+mips64emul is a MIPS machine emulator.  The goal is to emulate MIPS-like CPUs
+and enough surrounding hardware well enough to run unmodified operating systems
 as if they were running on real machines.  This is a spare time hobby project,
 and many things are not implemented yet.
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.19 2004-08-12 03:18:22 debug Exp $
+$Id: technical.html,v 1.20 2004-08-24 10:45:20 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -62,6 +62,7 @@ Documentation</a>.
 <ul>
   <li><a href="#overview">Overview</a>
   <li><a href="#optimizations">Optimizations</a>
+  <li><a href="#speed">Speed</a>
   <li><a href="#net">Networking</a>
   <li><a href="#devices">Emulation of hardware devices</a>
   <p>
@@ -119,6 +120,36 @@ serial controller device may output a character to stdout when written to.
 <h3>Optimizations</h3>
 
 TODO.
+
+
+
+<p><br>
+<a name="speed"></a>
+<h3>Speed</h3>
+
+There is no dynamic binary translation yet (there was, but I ripped it all
+out in order to rewrite it cleanly some time later), so the whole emulator is
+basically a fetch-one-instruction-and-execute-it loop. This makes it very slow.
+As of 2004-08-24, on a 2.8 GHz Intel Xeon host the resulting emulated machine
+is rougly equal to a 7 MHz R3000 (or a 3.5 MHz R4000). The actual performance
+varies a lot, maybe between 5 and 10 million instructions per second, depending
+on workload.
+<p>
+By default, an emulated OS running under DECstation emulation which listens to
+interrupts from the mc146818 clock will get interrupts that are close to the
+host's clock. That is, if the emulated OS says it wants 100 interrupts per
+second, it will get approximately 100 interrupts per real second.
+<p>
+There is however a -I option, which sets the number of emulated cycles per
+seconds to a fixed value. Let's say you wish to make the emulated OS think it
+is running on a 40 MHz DECstation, and not a 7 MHz one, then you can add
+-I 40000000 to the command line. This will not make the emulation faster, of
+course. It might even make it seem slower; for example, if NetBSD/pmax waits
+2 seconds for SCSI devices to settle during bootup, those 2 seconds will take
+2*40000000 cycles (which will take more time than 2*7000000).
+<p>
+The -I option is also necessary if you want to run deterministic experiments,
+if a mc146818 device is present.
 
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.45 2004-11-08 20:20:33 debug Exp $
+ *  $Id: bintrans.c,v 1.46 2004-11-08 20:43:44 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -266,28 +266,21 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 		return;
 
 	/*  Nothing translated? Then simply return.  */
-	if (tep->chunk[offset_within_page] == NULL &&
-	    !(tep->length_and_flags[offset_within_page] & INSIDE_A_CHUNK) &&
-	    !(tep->length_and_flags[offset_within_page] & UNTRANSLATABLE))
+	if (tep->length_and_flags[offset_within_page] == 0)
 		return;
-
-	/*  Just untranslatable? Then clear the flags and return:  */
-	if ((tep->length_and_flags[offset_within_page] & UNTRANSLATABLE) &&
-	    !(tep->length_and_flags[offset_within_page] & INSIDE_A_CHUNK)) {
-		tep->length_and_flags[offset_within_page] = 0;
-		return;
-	}
 
 	/*  printf("bintrans_invalidate(): invalidating"
 	    " %016llx\n", (long long)paddr);  */
 
 	/*  Overwrite the translated chunk so that it is
 	    just a header and a return instruction:  */
-	p = tep->chunk[offset_within_page] +
-	    bintrans_chunk_header_len();
-	bintrans_write_chunkreturn(&p);
+	if (tep->chunk[offset_within_page] != NULL) {
+		p = tep->chunk[offset_within_page] +
+		    bintrans_chunk_header_len();
+		bintrans_write_chunkreturn(&p);
 
-	bintrans_host_cacheinvalidate(p, 80);		/*  TODO: len of return?  */
+		bintrans_host_cacheinvalidate(p, 80);		/*  TODO: len of return?  */
+	}
 
 	/*  Remove any entry which reaches this address:  */
 	i = 0;
@@ -664,8 +657,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 					try_to_translate = 0;
 					break;
 				}
-/*printf("beq r%i,r%i, %i   p = %08x, p+4+4*imm = %08x\n", rs,rt, imm,
-p, new_pc);*/
+printf("beq r%i,r%i, %i   p = %08x, p+4+4*imm = %08x chunk=%p\n", rs,rt, imm,
+p, new_pc, tep->chunk[new_pc / 4]);
 #if 0
 				switch (hi6) {
 				case HI6_BEQ:

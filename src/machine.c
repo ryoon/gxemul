@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.46 2004-02-19 10:40:47 debug Exp $
+ *  $Id: machine.c,v 1.47 2004-02-22 13:12:39 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -70,7 +70,7 @@ extern struct memory *GLOBAL_gif_mem;
 
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
-/*  struct kmin_csr *kmin_csr;  */
+struct threemin_ioasic_data *kmin_ioasic_data;
 
 
 /********************** Helper functions **********************/
@@ -252,15 +252,21 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
+	irq_nr -= 8;
 	debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
 
-	/*  TODO: CSR  */
-
 	if (assrt) {
+		/*  OR into the INTR:  */
+		kmin_ioasic_data->intr |= irq_nr;
+
 		/*  Assert MIPS interrupt 5:  */
 		cpu_interrupt(cpu, 5);
 	} else {
-		cpu_interrupt_ack(cpu, 5);
+		/*  AND out of the INTR:  */
+		kmin_ioasic_data->intr &= ~irq_nr;
+
+		if (kmin_ioasic_data->intr == 0)
+			cpu_interrupt_ack(cpu, 5);
 	}
 }
 
@@ -380,7 +386,8 @@ void machine_init(struct memory *mem)
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
 	char *bootarg = NULL;
-	char *tmp_ptr, *init_bootpath;
+	char *tmp_ptr;
+	char *init_bootpath;
 
 	/*  PCI stuff:  */
 	struct pci_data *pci_data;
@@ -528,7 +535,7 @@ void machine_init(struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			dev_threemin_ioasic_init(mem, 0x1c000000);
+			kmin_ioasic_data = dev_threemin_ioasic_init(mem, 0x1c000000);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.3 2003-11-07 00:24:46 debug Exp $
+ *  $Id: dev_fb.c,v 1.4 2003-11-07 02:16:54 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -327,7 +327,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 			int diff1, diff2;
 			diff1 = y - d->update_y1;
 			diff2 = y - d->update_y2;
-			if (diff1 < -40 || diff1 > 60 || diff2 < -40 || diff2 > 60)
+			if (diff1 < -30 || diff1 > 30 || diff2 < -30 || diff2 > 30)
 				dev_fb_tick(cpu, d);
 		}
 

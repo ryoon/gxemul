@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.74 2004-07-14 15:05:32 debug Exp $
+$Id: index.html,v 1.75 2004-07-17 11:59:53 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -75,6 +75,7 @@ Documentation for a specific release is included in its release tarball.
   <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
   <li><a href="#declinux">How to run Linux (Debian) for DECstation in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
+  <li><a href="#fbres">Changing the framebuffer resolution</a>
   <li><a href="#networking">Networking</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
@@ -916,6 +917,72 @@ Here are links to some of the kernels that I usually experiment with.
     </ul>
   </li>
 </ul>
+
+
+
+
+<p><br>
+<a name="fbres"></a>
+<h3>Changing the framebuffer resolution</h3>
+
+Running the emulator with the <b>-X</b> option turns on the X11 framebuffer.
+If the framebuffer device for the specific machine mode you are running is
+implemented well enough, then the framebuffer window will look exactly like
+the real machine's screen, pixel by pixel.
+<p>
+For many emulated graphics cards in the emulator (or emulation modes), the
+resolution is fixed. It is possible in some emulation modes, however, to change
+cards completely. The TURBOchannel cards on some of the emulated DECstation
+models support this. (The -D2 model is luckily one of these models.)
+This is not implemented as a command-line option yet, so you have to modify
+the source code to do this.
+<p>
+The <i>turbochannel_default_gfx_card</i> string defines
+the name of the graphics card. Look in src/machine.c for this line:
+<p>
+<pre>
+	<b>char *turbochannel_default_gfx_card = "PMAG-BA";</b>
+</pre>
+<p>
+Different cards have different resolution.
+<p>
+<center><table border="0">
+  <tr>
+    <td><u><b>Card name:</b></u></td>
+    <td><u><b>Resolution:</b></u></td>
+    <td><u><b>Color depth:</b></u></td>
+    <td><u><b>Comments:</b></u></td>
+  </tr>
+  <tr>
+    <td>PMAG-AA</td>
+    <td>1280 x 1024</td>
+    <td>B/W</td>
+    <td>(perhaps problems with the cursor?)</td>
+  </tr>
+  <tr>
+    <td>PMAG-BA</td>
+    <td>1024 x 864</td>
+    <td>8-bit color</td>
+    <td>Works fine in OpenBSD, NetBSD, Ultrix, Linux, Sprite</td>
+  </tr>
+  <tr>
+    <td>PMAGB-BA</td>
+    <td>1280 x 1024</td>
+    <td>8-bit color</td>
+    <td>Works fine in OpenBSD, NetBSD, Linux, Sprite</td>
+  </tr>
+  <tr>
+    <td valign="top">PMAG-FA</td>
+    <td valign="top">1280 x 1024</td>
+    <td valign="top">8/24-bit</td>
+    <td>Works fine in text-mode only with NetBSD and Ultrix,
+	<br>(3D acceleration is not emulated)</td>
+  </tr>
+</table></center>
+<p>
+If the framebuffer window is too large, is is possible to scale it down
+by adding <b>-Y2</b> to the command line.
+
 
 
 

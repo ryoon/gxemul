@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.11 2004-02-12 15:55:11 debug Exp $
+ *  $Id: emul.c,v 1.12 2004-02-19 10:26:05 debug Exp $
  *
  *  Emulation startup.
  */
@@ -100,7 +100,7 @@ void add_pc_dump_points(void)
 		 *  were automatically converted into the correct address.
 		 */
 
-		if ((dp >> 32) == 0 && (dp & 0x80000000))
+		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
 			dp |= 0xffffffff00000000;
 		dumppoint_pc[i] = dp;
 

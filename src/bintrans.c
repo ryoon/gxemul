@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.150 2005-02-08 17:18:33 debug Exp $
+ *  $Id: bintrans.c,v 1.151 2005-02-09 20:36:08 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -433,7 +433,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				break;
 			case SPECIAL_SYSCALL:
 			case SPECIAL_BREAK:
-				if (cpu->machine->userland_emul) {
+				if (cpu->machine->userland_emul != NULL) {
 					bintrans_write_chunkreturn_fail(&ca);
 					tep->flags[prev_p] |= UNTRANSLATABLE;
 					try_to_translate = 0;

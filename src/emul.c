@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.162 2005-02-07 06:14:50 debug Exp $
+ *  $Id: emul.c,v 1.163 2005-02-09 20:36:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -438,6 +438,16 @@ void emul_machine_setup(struct machine *m, int n_load,
 	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
 
+	/*  For userland-only, this decides which ARCH/cpu_name to use:  */
+	if (m->machine_type == MACHINE_USERLAND && m->userland_emul != NULL) {
+		useremul_name_to_useremul(NULL, m->userland_emul,
+		    &m->arch, &m->machine_name, &m->cpu_name);
+		if (m->arch == ARCH_NOARCH) {
+			printf("Unsupported userland emulation mode.\n");
+			exit(1);
+		}
+	}
+
 	if (m->machine_type == MACHINE_NONE) {
 		fatal("No machine type specified?\n");
 		exit(1);
@@ -447,8 +457,14 @@ void emul_machine_setup(struct machine *m, int n_load,
 
 	machine_memsize_fix(m);
 
-	/*  Create the system's memory:  */
-	debug("memory: %i MB", m->physical_ram_in_mb);
+	/*
+	 *  Create the system's memory:
+	 *
+	 *  (Don't print the amount for userland-only emulation; the
+	 *  size doesn't matter.)
+	 */
+	if (m->machine_type != MACHINE_USERLAND)
+		debug("memory: %i MB", m->physical_ram_in_mb);
 	memory_amount = (uint64_t)m->physical_ram_in_mb * 1048576;
 	if (m->memory_offset_in_mb > 0) {
 		/*
@@ -460,7 +476,8 @@ void emul_machine_setup(struct machine *m, int n_load,
 		memory_amount += 1048576 * m->memory_offset_in_mb;
 	}
 	m->memory = memory_new(memory_amount);
-	debug("\n");
+	if (m->machine_type != MACHINE_USERLAND)
+		debug("\n");
 
 	/*  Create CPUs:  */
 	if (m->cpu_name == NULL)
@@ -503,6 +520,11 @@ void emul_machine_setup(struct machine *m, int n_load,
 	else
 		m->bootstrap_cpu = 0;
 
+	/*  Set cpu->useremul_syscall:  */
+	if (m->userland_emul != NULL)
+		useremul_name_to_useremul(m->cpus[m->bootstrap_cpu],
+		    m->userland_emul, NULL, NULL, NULL);
+
 	if (m->use_x11)
 		x11_init(m);
 
@@ -525,7 +547,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		arcbios_init();
 
-	if (m->userland_emul) {
+	if (m->userland_emul != NULL) {
 		/*
 		 *  For userland-only emulation, no machine emulation
 		 *  is needed.
@@ -600,7 +622,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 		 *  The program's name will be in load_names[0], and the
 		 *  rest of the parameters in load_names[1] and up.
 		 */
-		if (m->userland_emul)
+		if (m->userland_emul != NULL)
 			break;
 
 		n_load --;
@@ -617,8 +639,8 @@ void emul_machine_setup(struct machine *m, int n_load,
 			m->cpus[i]->byte_order =
 			    m->cpus[m->bootstrap_cpu]->byte_order;
 
-	if (m->userland_emul)
-		useremul_init(m->cpus[m->bootstrap_cpu], n_load, load_names);
+	if (m->userland_emul != NULL)
+		useremul_setup(m->cpus[m->bootstrap_cpu], n_load, load_names);
 
 	/*  Startup the bootstrap CPU:  */
 	m->cpus[m->bootstrap_cpu]->bootstrap_cpu_flag = 1;
@@ -708,28 +730,42 @@ void emul_dumpinfo(struct emul *e)
 /*
  *  emul_simple_init():
  *
- *	o)  Initialize a network.
+ *  For a normal setup:
  *
+ *	o)  Initialize a network.
  *	o)  Initialize one machine.
+ *
+ *  For a userland-only setup:
+ *
+ *	o)  Initialize a "pseudo"-machine.
  */
 void emul_simple_init(struct emul *emul)
 {
 	int i, iadd=4;
+	struct machine *m;
 
 	if (emul->n_machines != 1) {
 		fprintf(stderr, "emul_simple_init(): n_machines != 1\n");
 		exit(1);
 	}
 
-	debug("Simple setup...\n");
-	debug_indentation(iadd);
+	m = emul->machines[0];
 
-	/*  Create a network:  */
-	emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY, "10.0.0.0", 8);
+	if (m->userland_emul == NULL) {
+		debug("Simple setup...\n");
+		debug_indentation(iadd);
 
-	/*  Create the machine(s):  */
-	for (i=0; i<emul->n_machines; i++)
-		emul_machine_setup(emul->machines[i], extra_argc, extra_argv);
+		/*  Create a network:  */
+		emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY,
+		    "10.0.0.0", 8);
+	} else {
+		/*  Userland pseudo-machine:  */
+		debug("Syscall emulation (userland-only) setup...\n");
+		debug_indentation(iadd);
+	}
+
+	/*  Create the machine:  */
+	emul_machine_setup(m, extra_argc, extra_argv);
 
 	debug_indentation(-iadd);
 }

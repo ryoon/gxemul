@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.26 2005-02-07 06:14:48 debug Exp $
+ *  $Id: machine.h,v 1.27 2005-02-09 20:36:06 debug Exp $
  */
 
 #include <sys/types.h>
@@ -153,7 +153,7 @@ struct machine {
 	int	emulated_hz;
 	int	max_random_cycles_per_chunk;
 	int	speed_tricks;
-	int	userland_emul;
+	char	*userland_emul;		/*  NULL for no userland emulation  */
 	int	force_netboot;
 	int	slow_serial_interrupts_hack_for_linux;
 	uint64_t file_loaded_end_addr;
@@ -224,8 +224,9 @@ struct machine {
 #define	MACHINE_ULTRA1		200
 
 
-/*  Specific machines:  */
+/*  Other "pseudo"-machines:  */
 #define	MACHINE_NONE		0
+#define	MACHINE_USERLAND	10000
 
 /*  DEC:  */
 #define	MACHINE_DEC_PMAX_3100		1

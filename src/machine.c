@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.339 2005-02-09 14:28:55 debug Exp $
+ *  $Id: machine.c,v 1.340 2005-02-09 20:36:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4398,6 +4398,10 @@ void machine_list_available_types_and_cpus(void)
 	    "mips64emul\ndocumentation for information about which machine"
 	    " types that actually\nwork. Use the alias when selecting a "  
 	    "machine type or subtype, not the\nreal name.\n");
+
+	debug("\n");
+
+	useremul_list_emuls();
 }
 
 

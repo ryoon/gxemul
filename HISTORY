@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.572 2005-02-09 14:32:01 debug Exp $
+$Id: HISTORY,v 1.573 2005-02-09 20:36:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1641,7 +1641,7 @@ HISTORY of mips64emul
 20050208	Everything now builds with --withoutmips.
 		Continuing on the documentation on how to run OpenBSD/sgi, but
 		no actual success yet.
-		sizeof => (int)sizeof in the configure script (suggested by
+		sizeof => (int)sizeof in the configure script (as suggested by
 		Nils Weller).
 20050209	Adding a check for -lm to the configure script.
 		Continuing on the cleanup: trying to make memory_rw non-MIPS
@@ -1649,3 +1649,4 @@ HISTORY of mips64emul
 		Trying to make a better fix for the cdrom-block-size problems
 		on FreeBSD. (It now works with a Windows NT 4.0 cdrom in my
 		drive.)
+		Began a clean-up of the userland subsystem.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.30 2005-01-30 14:22:15 debug Exp $
+ *  $Id: useremul.c,v 1.31 2005-02-09 20:36:09 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -35,9 +35,7 @@
  *		environment passing
  *		more syscalls
  *
- *	Other emulations?  Irix? Linux?
- *
- *	32-bit vs 64-bit problems? n32? o32?
+ *	32-bit vs 64-bit problems? MIPS n32, o32, n64?
  *
  *	Dynamic ELFs?
  *
@@ -51,10 +49,16 @@
  *	File descriptor (0,1,2) assumptions?
  *
  *
+ *  This module needs more cleanup.
+ *  -------------------------------
+ *
+ *
  *  NOTE:  This module (useremul.c) is just a quick hack to see if
  *         userland emulation works at all.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -63,49 +67,57 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-#include <fcntl.h>
 #include <time.h>
-#include <errno.h>
 
 #include "cpu.h"
-#include "cpu_mips.h"
-#include "emul.h"
-#include "machine.h"
 #include "misc.h"
 
 
 #ifndef ENABLE_USERLAND
 
 
-void useremul_init(struct cpu *cpu, int argc, char **host_argv)
-{
-}
-
-void useremul_syscall(struct cpu *cpu, uint32_t code)
-{
-}
+void useremul_setup(struct cpu *cpu, int argc, char **host_argv)  {  }
+void useremul_syscall(struct cpu *cpu, uint32_t code)  {  }
+void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
+	char **machine_name, char **cpu_name) { }
+void useremul_list_emuls(void)  {  }
+void useremul_init(void)  {  }
 
 
 #else	/*  ENABLE_USERLAND  */
 
 
+#include "cpu_mips.h"
+#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "syscall_netbsd.h"
 #include "sysctl_netbsd.h"
 #include "syscall_ultrix.h"
+
+struct syscall_emul {
+	char		*name;
+	int		arch;
+	char		*cpu_name;
+	void		(*f)(struct cpu *, uint32_t);
+
+	struct syscall_emul *next;
+};
+
+static struct syscall_emul *first_syscall_emul;
 
 /*  Max length of strings passed using syscall parameters:  */
 #define	MAXLEN		8192
 
 
 /*
- *  useremul_init():
+ *  useremul_setup():
  *
  *  Set up an emulated environment suitable for running
  *  userland code.  The program should already have been
  *  loaded into memory when this function is called.
  */
-void useremul_init(struct cpu *cpu, int argc, char **host_argv)
+void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 {
 	uint64_t stack_top = 0x7fff0000;
 	uint64_t stacksize = 8 * 1048576;
@@ -114,18 +126,15 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	int i, i2;
 	int envc = 1;
 
-	switch (cpu->machine->userland_emul) {
-	case USERLAND_NETBSD_PMAX:
+	if (strcasecmp(cpu->machine->userland_emul, "netbsd/pmax") == 0) {
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
 		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
 		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
-		break;
-	case USERLAND_ULTRIX_PMAX:
+	} else if (strcasecmp(cpu->machine->userland_emul, "ultrix") == 0) {
 		/*  TODO:  is this correct?  */
 		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
 		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
-		break;
-	default:
+	} else {
 		fprintf(stderr, "unknown userland emulation mode\n");
 		exit(1);
 	}
@@ -160,6 +169,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
+printf("B\n");
 }
 
 
@@ -224,13 +234,38 @@ static unsigned char *get_userland_buf(struct cpu *cpu,
 /*
  *  useremul_syscall():
  *
- *  Handle userland syscalls.  This function is called whenever
- *  a userland process runs a 'syscall' instruction.  The code
- *  argument is the code embedded into the syscall instruction.
- *  (This 'code' value is not necessarily used by specific
- *  emulations.)
+ *  Handle userland syscalls.  This function is called whenever a userland
+ *  process runs a 'syscall' instruction.  The code argument is the code
+ *  embedded into the syscall instruction, if any.  (This 'code' value is not
+ *  necessarily used by specific emulations.)
  */
 void useremul_syscall(struct cpu *cpu, uint32_t code)
+{
+	if (cpu->useremul_syscall == NULL) {
+		fatal("useremul_syscall(): cpu->useremul_syscall == NULL\n");
+	} else
+		cpu->useremul_syscall(cpu, code);
+}
+
+
+/*
+ *  useremul__linux():
+ *
+ *  Linux syscall emulation.
+ */
+static void useremul__linux(struct cpu *cpu, uint32_t code)
+{
+	fatal("useremul__linux(): TODO\n");
+	exit(1);
+}
+
+
+/*
+ *  useremul__netbsd():
+ *
+ *  NetBSD syscall emulation.
+ */
+static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 {
 	int error_flag = 0, result_high_set = 0;
 	uint64_t arg0,arg1,arg2,arg3,stack0,stack1,stack2;
@@ -246,62 +281,60 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 	uint32_t sysctl_name, sysctl_namelen, sysctl_oldp, sysctl_oldlenp, sysctl_newp, sysctl_newlen;
 	uint32_t name0, name1, name2, name3;
 
-	switch (cpu->machine->userland_emul) {
-	case USERLAND_NETBSD_PMAX:
-		sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
+	sysnr = cpu->cd.mips.gpr[MIPS_GPR_V0];
 
-		if (sysnr == NETBSD_SYS___syscall) {
-			sysnr = cpu->cd.mips.gpr[MIPS_GPR_A0] + (cpu->cd.mips.gpr[MIPS_GPR_A1] << 32);
-			arg0 = cpu->cd.mips.gpr[MIPS_GPR_A2];
-			arg1 = cpu->cd.mips.gpr[MIPS_GPR_A3];
-			/*  TODO:  stack arguments? Are these correct?  */
-			arg2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
-			arg3 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 16);
-			stack0 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 24);
-			stack1 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 32);
-			stack2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 40);
-		} else {
-			arg0 = cpu->cd.mips.gpr[MIPS_GPR_A0];
-			arg1 = cpu->cd.mips.gpr[MIPS_GPR_A1];
-			arg2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
-			arg3 = cpu->cd.mips.gpr[MIPS_GPR_A3];
-			/*  TODO:  stack arguments? Are these correct?  */
-			stack0 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 4);
-			stack1 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
-			stack2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 12);
-		}
+	if (sysnr == NETBSD_SYS___syscall) {
+		sysnr = cpu->cd.mips.gpr[MIPS_GPR_A0] + (cpu->cd.mips.gpr[MIPS_GPR_A1] << 32);
+		arg0 = cpu->cd.mips.gpr[MIPS_GPR_A2];
+		arg1 = cpu->cd.mips.gpr[MIPS_GPR_A3];
+		/*  TODO:  stack arguments? Are these correct?  */
+		arg2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
+		arg3 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 16);
+		stack0 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 24);
+		stack1 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 32);
+		stack2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 40);
+	} else {
+		arg0 = cpu->cd.mips.gpr[MIPS_GPR_A0];
+		arg1 = cpu->cd.mips.gpr[MIPS_GPR_A1];
+		arg2 = cpu->cd.mips.gpr[MIPS_GPR_A2];
+		arg3 = cpu->cd.mips.gpr[MIPS_GPR_A3];
+		/*  TODO:  stack arguments? Are these correct?  */
+		stack0 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 4);
+		stack1 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 8);
+		stack2 = load_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_SP] + 12);
+	}
 
-		switch (sysnr) {
+	switch (sysnr) {
 
-		case NETBSD_SYS_exit:
-			debug("useremul_syscall(): netbsd exit()\n");
-			cpu->running = 0;
-			cpu->machine->exit_without_entering_debugger = 1;
-			break;
+	case NETBSD_SYS_exit:
+		debug("useremul_syscall(): netbsd exit()\n");
+		cpu->running = 0;
+		cpu->machine->exit_without_entering_debugger = 1;
+		break;
 
-		case NETBSD_SYS_read:
-			debug("useremul_syscall(): netbsd read(%i,0x%llx,%lli)\n",
-			    (int)arg0, (long long)arg1, (long long)arg2);
+	case NETBSD_SYS_read:
+		debug("useremul_syscall(): netbsd read(%i,0x%llx,%lli)\n",
+		    (int)arg0, (long long)arg1, (long long)arg2);
 
-			if (arg2 != 0) {
-				charbuf = malloc(arg2);
-				if (charbuf == NULL) {
-					fprintf(stderr, "out of memory in useremul_syscall()\n");
-					exit(1);
-				}
-
-				result_low = read(arg0, charbuf, arg2);
-				if ((int64_t)result_low < 0) {
-					error_code = errno;
-					error_flag = 1;
-				}
-
-				/*  TODO: address validity check  */
-				memory_rw(cpu, cpu->mem, arg1, charbuf, arg2, MEM_WRITE, CACHE_DATA);
-
-				free(charbuf);
+		if (arg2 != 0) {
+			charbuf = malloc(arg2);
+			if (charbuf == NULL) {
+				fprintf(stderr, "out of memory in useremul_syscall()\n");
+				exit(1);
 			}
-			break;
+
+			result_low = read(arg0, charbuf, arg2);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+
+			/*  TODO: address validity check  */
+			memory_rw(cpu, cpu->mem, arg1, charbuf, arg2, MEM_WRITE, CACHE_DATA);
+
+			free(charbuf);
+		}
+		break;
 
 		case NETBSD_SYS_write:
 			descr   = arg0;
@@ -615,28 +648,49 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 			break;
 
-		default:
-			fatal("UNIMPLEMENTED netbsd syscall %i\n", sysnr);
-			error_flag = 1;
-			error_code = 78;  /*  ENOSYS  */
-		}
+	default:
+		fatal("UNIMPLEMENTED netbsd syscall %i\n", sysnr);
+		error_flag = 1;
+		error_code = 78;  /*  ENOSYS  */
+	}
 
-		/*
-		 *  NetBSD/mips return values:
-		 *
-		 *  a3 is 0 if the syscall was ok, otherwise 1.
-		 *  v0 (and sometimes v1) contain the result value.
-		 */
-		cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
-		if (error_flag)
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
-		else
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
-		if (result_high_set)
-			cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
-		break;
+	/*
+	 *  NetBSD/mips return values:
+	 *
+	 *  a3 is 0 if the syscall was ok, otherwise 1.
+	 *  v0 (and sometimes v1) contain the result value.
+	 */
+	cpu->cd.mips.gpr[MIPS_GPR_A3] = error_flag;
+	if (error_flag)
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = error_code;
+	else
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = result_low;
+	if (result_high_set)
+		cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
+}
 
-	case USERLAND_ULTRIX_PMAX:
+
+/*
+ *  useremul__ultrix():
+ *
+ *  Ultrix syscall emulation.
+ */
+static void useremul__ultrix(struct cpu *cpu, uint32_t code)
+{
+	int error_flag = 0, result_high_set = 0;
+	uint64_t arg0,arg1,arg2,arg3,stack0,stack1,stack2;
+	int sysnr = 0;
+	uint64_t error_code = 0;
+	uint64_t result_low = 0;
+	uint64_t result_high = 0;
+	struct timeval tv;
+	struct timezone tz;
+	int descr;
+	uint64_t length, mipsbuf, flags;
+	unsigned char *charbuf;
+	uint32_t sysctl_name, sysctl_namelen, sysctl_oldp, sysctl_oldlenp, sysctl_newp, sysctl_newlen;
+	uint32_t name0, name1, name2, name3;
+
 		/*
 		 *  Ultrix/pmax gets the syscall number in register v0,
 		 *  and syscall arguments in registers a0, a1, ...
@@ -983,13 +1037,138 @@ TODO
 		if (result_high_set)
 			cpu->cd.mips.gpr[MIPS_GPR_V1] = result_high;
 /* TODO */
-		break;
+}
 
-	default:
-		fprintf(stderr, "useremul_syscall(): unimplemented syscall"
-		   " emulation %i\n", cpu->machine->userland_emul);
+
+/*
+ *  useremul_name_to_useremul():
+ *
+ *  Example:
+ *     Input:  name = "netbsd/pmax"
+ *     Output: sets *arch = ARCH_MIPS, *machine_name = "NetBSD/pmax",
+ *             and *cpu_name = "R3000".
+ */
+void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
+	char **machine_name, char **cpu_name)
+{
+	struct syscall_emul *sep;
+
+	sep = first_syscall_emul;
+
+	while (sep != NULL) {
+		if (strcasecmp(name, sep->name) == 0) {
+			if (cpu_family_ptr_by_number(sep->arch) == NULL) {
+				printf("\nSupport for the CPU family needed"
+				    " for '%s' userland emulation was not"
+				    " enabled at configuration time.\n",
+				    sep->name);
+				exit(1);
+			}
+
+			if (cpu != NULL)
+				cpu->useremul_syscall = sep->f;
+
+			if (arch != NULL)
+				*arch = sep->arch;
+
+			if (machine_name != NULL) {
+				*machine_name = strdup(sep->name);
+				if (*machine_name == NULL) {
+					printf("out of memory\n");
+					exit(1);
+				}
+			}
+
+			if (cpu_name != NULL) {
+				*cpu_name = strdup(sep->cpu_name);
+				if (*cpu_name == NULL) {
+					printf("out of memory\n");
+					exit(1);
+				}
+			}
+			return;
+		}
+
+		sep = sep->next;
+	}
+
+	fatal("Unknown userland emulation '%s'\n", name);
+	exit(1);
+}
+
+
+/*
+ *  add_useremul():
+ *
+ *  For internal use. Adds an emulation mode.
+ */
+static void add_useremul(char *name, int arch, char *cpu_name,
+	void (*f)(struct cpu *, uint32_t))
+{
+	struct syscall_emul *sep;
+
+	sep = malloc(sizeof(struct syscall_emul));
+	if (sep == NULL) {
+		printf("add_useremul(): out of memory\n");
 		exit(1);
 	}
+	memset(sep, 0, sizeof(sep));
+
+	sep->name     = name;
+	sep->arch     = arch;
+	sep->cpu_name = cpu_name;
+	sep->f        = f;
+
+	sep->next = first_syscall_emul;
+	first_syscall_emul = sep;
+}
+
+
+/*
+ *  useremul_list_emuls():
+ *
+ *  List all available userland emulation modes.  (Actually, only those which
+ *  have CPU support enabled.)
+ */
+void useremul_list_emuls(void)
+{
+	struct syscall_emul *sep;
+	int iadd = 8;
+
+	sep = first_syscall_emul;
+
+	if (sep == NULL)
+		return;
+
+	debug("The following userland-only (syscall) emulation modes are"
+	    " available:\n\n");
+	debug_indentation(iadd);
+
+	while (sep != NULL) {
+		if (cpu_family_ptr_by_number(sep->arch) != NULL) {
+			debug("%s (default CPU \"%s\")\n",
+			    sep->name, sep->cpu_name);
+		}
+
+		sep = sep->next;
+	}
+
+	debug_indentation(-iadd);
+	debug("\n");
+}
+
+
+/*
+ *  useremul_init():
+ *
+ *  This function should be called before any other useremul_*() function
+ *  is used.
+ */
+void useremul_init(void)
+{
+	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970", useremul__linux);
+	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000", useremul__netbsd);
+	add_useremul("Ultrix", ARCH_MIPS, "R3000", useremul__ultrix);
 }
 
 

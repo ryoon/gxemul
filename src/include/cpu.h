@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.13 2005-02-09 14:28:29 debug Exp $
+ *  $Id: cpu.h,v 1.14 2005-02-09 20:36:06 debug Exp $
  *
  *  See cpu.c.
  */
@@ -102,6 +102,8 @@ struct cpu {
 	struct memory	*mem;
 	int		(*translate_address)(struct cpu *, uint64_t vaddr,
 			    uint64_t *return_addr, int flags);
+	void		(*useremul_syscall)(struct cpu *cpu,
+			    uint32_t code);
 
 	/*  CPU-family dependant:  */
 	union {

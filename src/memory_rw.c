@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.2 2005-02-09 14:53:20 debug Exp $
+ *  $Id: memory_rw.c,v 1.3 2005-02-09 20:36:09 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -88,7 +88,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 #ifdef ENABLE_USERLAND
-	if (cpu->machine->userland_emul) {
+	if (cpu->machine->userland_emul != NULL) {
 		paddr = vaddr & 0x7fffffff;
 		goto have_paddr;
 	}
@@ -303,7 +303,7 @@ into the devices  */
 	 */
 	if (paddr >= mem->physical_max
 #ifdef ENABLE_USERLAND
-	    && !cpu->machine->userland_emul
+	    && cpu->machine->userland_emul == NULL
 #endif
 	    ) {
 		if ((paddr & 0xffff000000ULL) == 0x1f000000) {

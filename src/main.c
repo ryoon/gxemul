@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.204 2005-02-06 15:15:06 debug Exp $
+ *  $Id: main.c,v 1.205 2005-02-09 20:36:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -342,8 +342,8 @@ static void usage(int longusage)
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef ENABLE_USERLAND
-	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax,"
-	    " 2=Ultrix/pmax\n");
+	printf("  -u emul   userland-only (syscall) emulation (use -H to"
+	    " get a list of\n            available emulation modes)\n");
 #endif
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
@@ -548,7 +548,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'u':
-			m->userland_emul = atoi(optarg);
+			m->userland_emul = strdup(optarg);
+			if (m->userland_emul == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			m->machine_type = MACHINE_USERLAND;
 			msopts = 1;
 			break;
 		case 'V':
@@ -712,7 +717,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 #endif
 
 #ifndef ENABLE_USERLAND
-	if (m->userland_emul) {
+	if (m->userland_emul != NULL) {
 		fprintf(stderr, "FATAL: Userland emulation must be "
 		    "enabled at configure time (--userland).\n");
 		exit(1);
@@ -758,6 +763,7 @@ int main(int argc, char *argv[])
 	console_init();
 	cpu_init();
 	machine_init();
+	useremul_init();
 
 	emuls = malloc(sizeof(struct emul *));
 	if (emuls == NULL) {

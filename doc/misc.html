@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.26 2005-02-07 06:14:48 debug Exp $
+$Id: misc.html,v 1.27 2005-02-09 20:36:06 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -380,31 +380,37 @@ NetBSD/pmax into the host's OS' syscalls. For this to work, you have
 to add <b>--userland</b> to the command line when running ./configure.
 
 <p>
-For example, running /bin/hostname
-or /bin/date and similarly trivial programs from the NetBSD/pmax distribution
-works:
+For example, running /bin/hostname or /bin/date and similarly trivial
+programs from the NetBSD/pmax distribution works:
+
 <pre>
-	$ <b>./mips64emul -qu1 pmax_bin_hostname</b>
+	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_hostname</b>
 	tab.csbnet.se
-	$ <b>./mips64emul -qu1 pmax_bin_date</b>
+	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_date</b>
 	Sun Jan 25 02:26:14 GMT 2004
-	$ <b>./mips64emul -qu1 pmax_bin_sleep</b>
+	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sleep</b>
 	usage: pmax_bin_sleep seconds
-	$ <b>./mips64emul -qu1 pmax_bin_sleep 5</b>
-	$ <b>./mips64emul -qu1 pmax_bin_sync</b>
+	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sleep 5</b>
+	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sync</b>
 </pre>
-There's also an Ultrix4 emulation mode:
+
+<p>
+There's also an Ultrix emulation mode:
+
 <pre>
-	$ <b>./mips64emul -qu2 ultrix4_bin_date</b>
+	$ <b>./mips64emul -q -u ultrix ultrix4_bin_date</b>
 	UNIMPLEMENTED ultrix syscall 54
 	UNIMPLEMENTED ultrix syscall 62
 	Mon Feb  9 12:50:59 WET 2004
-	$ <b>./mips64emul -qu2 ultrix4_bin_hostname</b>
+	$ <b>./mips64emul -q -u ultrix ultrix4_bin_hostname</b>
 	tab.csbnet.se
 </pre>
+
+<p>
 NOTE: Userland syscall emulation is still in its beginning stages, so almost
 nothing works. It's mostly a proof-of-concept implementation, to show that 
 such cross-platform userland emulation is possible.
+
 <p>
 IRIX userland emulation might theoretically also be possible to add.
 

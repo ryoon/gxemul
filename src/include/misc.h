@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.221 2005-02-02 23:55:19 debug Exp $
+ *  $Id: misc.h,v 1.222 2005-02-09 20:36:07 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -128,11 +128,12 @@ int playstation2_sifbios_emul(struct cpu *cpu);
 
 
 /*  useremul.c:  */
-#define	USERLAND_NONE		0
-#define	USERLAND_NETBSD_PMAX	1
-#define	USERLAND_ULTRIX_PMAX	2
-void useremul_init(struct cpu *, int, char **);
+void useremul_setup(struct cpu *, int, char **);
 void useremul_syscall(struct cpu *cpu, uint32_t code);
+void useremul_name_to_useremul(struct cpu *, char *name,
+	int *arch, char **machine_name, char **cpu_name);
+void useremul_list_emuls(void);
+void useremul_init(void);
 
 
 #endif	/*  MISC_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.22 2005-02-09 14:28:28 debug Exp $
+ *  $Id: cpu_mips.c,v 1.23 2005-02-09 20:36:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2903,7 +2903,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    (instr[1] << 8) + instr[0]) >> 6;
 			imm &= 0xfffff;
 
-			if (cpu->machine->userland_emul)
+			if (cpu->machine->userland_emul != NULL)
 				useremul_syscall(cpu, imm);
 			else
 				mips_cpu_exception(cpu, EXCEPTION_SYS,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.50 2004-11-01 15:04:58 debug Exp $
+ *  $Id: diskimage.c,v 1.51 2004-11-22 06:14:55 debug Exp $
  *
  *  Disk image support.
  *
@@ -96,7 +96,7 @@ static int n_diskimages = 0;
  *  TODO: It seemed to work on Linux/i386, but not on Solaris/sparc (?).
  *  Anyway, most modern systems have fseeko(), so it shouldn't be a problem.
  */
-int my_fseek(FILE *f, off_t offset, int whence)
+static int my_fseek(FILE *f, off_t offset, int whence)
 {
 #ifdef HACK_FSEEKO
 	if (whence == SEEK_SET) {
@@ -230,7 +230,7 @@ int diskimage_exist(int disk_id)
 /*
  *  diskimage_recalc_size():
  */
-void diskimage_recalc_size(int id)
+static void diskimage_recalc_size(int id)
 {
 	struct stat st;
 	int res;
@@ -283,7 +283,8 @@ int64_t diskimage_getsize(int disk_id)
  *  Set the status and msg_in parts of a scsi_transfer struct
  *  to default values (msg_in = 0x00, status = 0x00).
  */
-void diskimage__return_default_status_and_message(struct scsi_transfer *xferp)
+static void diskimage__return_default_status_and_message(
+	struct scsi_transfer *xferp)
 {
 	scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
 	xferp->status[0] = 0x00;
@@ -297,7 +298,7 @@ void diskimage__return_default_status_and_message(struct scsi_transfer *xferp)
  *
  *  Used by the SPACE command.
  */
-void diskimage__switch_tape(int disk_id)
+static void diskimage__switch_tape(int disk_id)
 {
 	char tmpfname[1000];
 
@@ -1077,7 +1078,7 @@ printf(" XXX \n");
  *  read. (These are not the same as diskimage_access()).
  */
 #define	CDROM_SECTOR_SIZE	2048
-size_t diskimage_access__cdrom(int disk_id, off_t offset,
+static size_t diskimage_access__cdrom(int disk_id, off_t offset,
 	unsigned char *buf, size_t len)
 {
 	off_t aligned_offset;

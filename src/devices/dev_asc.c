@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.53 2004-11-20 21:41:24 debug Exp $
+ *  $Id: dev_asc.c,v 1.54 2004-11-22 06:14:53 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -134,7 +134,7 @@ char *asc_reg_names[0x10] = {
 
 
 /*  This is referenced below.  */
-int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
+static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 	int to_id, int dmaflag, int n_messagebytes);
 
 
@@ -158,7 +158,7 @@ void dev_asc_tick(struct cpu *cpu, void *extra)
  *
  *  Flush the fifo.
  */
-void dev_asc_fifo_flush(struct asc_data *d)
+static void dev_asc_fifo_flush(struct asc_data *d)
 {
 	d->fifo[0] = 0x00;
 	d->fifo_in = 0;
@@ -172,7 +172,7 @@ void dev_asc_fifo_flush(struct asc_data *d)
  *
  *  Reset the state of the asc.
  */
-void dev_asc_reset(struct asc_data *d)
+static void dev_asc_reset(struct asc_data *d)
 {
 	d->cur_state = STATE_DISCONNECTED;
 	d->atn = 0;
@@ -197,7 +197,7 @@ void dev_asc_reset(struct asc_data *d)
  *
  *  Read a byte from the asc FIFO.
  */
-int dev_asc_fifo_read(struct asc_data *d)
+static int dev_asc_fifo_read(struct asc_data *d)
 {
 	int res = d->fifo[d->fifo_out];
 
@@ -216,7 +216,7 @@ int dev_asc_fifo_read(struct asc_data *d)
  *
  *  Write a byte to the asc FIFO.
  */
-void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
+static void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
 {
 	d->fifo[d->fifo_in] = data;
 	d->fifo_in = (d->fifo_in + 1) % ASC_FIFO_LEN;
@@ -232,7 +232,7 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
  *
  *  Allocate memory for a new transfer.
  */
-void dev_asc_newxfer(struct asc_data *d)
+static void dev_asc_newxfer(struct asc_data *d)
 {
 	if (d->xferp != NULL) {
 		printf("WARNING! dev_asc_newxfer(): freeing previous"
@@ -257,12 +257,13 @@ void dev_asc_newxfer(struct asc_data *d)
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_asc_transfer(struct cpu *cpu, struct asc_data *d, int dmaflag)
+static int dev_asc_transfer(struct cpu *cpu, struct asc_data *d, int dmaflag)
 {
 	int res = 1, all_done = 1;
 	int len, i, ch;
 
-	debug(" { TRANSFER to/from id %i: ", d->reg_wo[NCR_SELID] & 7);
+	if (!quiet_mode)
+		debug(" { TRANSFER to/from id %i: ", d->reg_wo[NCR_SELID] & 7);
 
 	if (d->cur_phase == PHASE_DATA_IN) {
 		/*  Data coming into the controller from external device:  */
@@ -429,7 +430,8 @@ fatal("TODO.......asdgasin\n");
 
 			/*  If the disk wants more than we're DMAing, then this is a multitransfer:  */
 			if (d->xferp->data_out_offset != d->xferp->data_out_len) {
-				debug("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
+				if (!quiet_mode)
+					debug("[ asc: data_out, multitransfer len = %i, len2 = %i ]\n", len, len2);
 				if (d->xferp->data_out_offset > d->xferp->data_out_len)
 					fatal("[ asc data_out dma: too much? ]\n");
 				else
@@ -452,7 +454,8 @@ fatal("TODO.......asdgasin\n");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
 		}
 	} else if (d->cur_phase == PHASE_MSG_OUT) {
-		debug("MSG OUT: ");
+		if (!quiet_mode)
+			debug("MSG OUT: ");
 		/*  Data going from the controller to an external device:  */
 		if (!dmaflag) {
 			/*  There should already be one byte in msg_out, so we
@@ -504,14 +507,16 @@ fatal("TODO.......asdgasin\n");
 			res = 0;
 		}
 	} else if (d->cur_phase == PHASE_MSG_IN) {
-		debug(" MSG IN");
+		if (!quiet_mode)
+			debug(" MSG IN");
 		fatal("[ MACH HACK! ]");
 		/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
 		dev_asc_fifo_write(d, 0x07);
 		d->cur_phase = PHASE_COMMAND;
 		all_done = 0;
 	} else if (d->cur_phase == PHASE_COMMAND) {
-		debug(" COMMAND ==> select ");
+		if (!quiet_mode)
+			debug(" COMMAND ==> select ");
 		res = dev_asc_select(cpu, d, d->reg_ro[NCR_CFG1] & 7,
 		    d->reg_wo[NCR_SELID] & 7, dmaflag, 0);
 		return res;
@@ -544,7 +549,8 @@ fatal("TODO.......asdgasin\n");
 	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
 	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  4?  */
 
-	debug("}");
+	if (!quiet_mode)
+		debug("}");
 	return res;
 }
 
@@ -557,17 +563,20 @@ fatal("TODO.......asdgasin\n");
  *
  *  Return value: 1 if ok, 0 on error.
  */
-int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
+static int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 	int to_id, int dmaflag, int n_messagebytes)
 {
 	int ok, len, i, ch;
 
-	debug(" { SELECT id %i: ", to_id);
+	if (!quiet_mode)
+		debug(" { SELECT id %i: ", to_id);
 
 	/*
 	 *  Message bytes, if any:
 	 */
-	debug("msg:");
+	if (!quiet_mode)
+		debug("msg:");
+
 	if (n_messagebytes > 0) {
 		scsi_transfer_allocbuf(&d->xferp->msg_out_len,
 		    &d->xferp->msg_out, n_messagebytes);
@@ -575,7 +584,8 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 		i = 0;
 		while (n_messagebytes-- > 0) {
 			int ch = dev_asc_fifo_read(d);
-			debug(" %02x", ch);
+			if (!quiet_mode)
+				debug(" %02x", ch);
 			d->xferp->msg_out[i++] = ch;
 		}
 
@@ -598,12 +608,14 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 			return 0;
 		}
 	} else {
-		debug(" none");
+		if (!quiet_mode)
+			debug(" none");
 	}
 
 	/*  Special case: SELATNS (with STOP sequence):  */
 	if (d->cur_phase == PHASE_MSG_OUT) {
-		debug(" MSG OUT DEBUG");
+		if (!quiet_mode)
+			debug(" MSG OUT DEBUG");
 		if (d->xferp->msg_out_len != 1) {
 			fatal(" (SELATNS: msg out len == %i, should be 1)",
 			    d->xferp->msg_out_len);
@@ -619,16 +631,20 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 		d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
 		d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 1;
 
-		debug("}");
+		if (!quiet_mode)
+			debug("}");
 		return 1;
 	}
 
 	/*
 	 *  Command bytes:
 	 */
-	debug(", cmd: ");
+	if (!quiet_mode)
+		debug(", cmd: ");
+
 	if (!dmaflag) {
-		debug("[non-DMA] ");
+		if (!quiet_mode)
+			debug("[non-DMA] ");
 
 		scsi_transfer_allocbuf(&d->xferp->cmd_len,
 		    &d->xferp->cmd, d->n_bytes_in_fifo);
@@ -637,10 +653,12 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 		while (d->fifo_in != d->fifo_out) {
 			ch = dev_asc_fifo_read(d);
 			d->xferp->cmd[i++] = ch;
-			debug("%02x ", ch);
+			if (!quiet_mode)
+				debug("%02x ", ch);
 		}
 	} else {
-		debug("[DMA] ");
+		if (!quiet_mode)
+			debug("[DMA] ");
 		len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
 		if (len == 0)
 			len = 65536;
@@ -652,7 +670,8 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 			int ofs = d->dma_address_reg + i;
 			ch = d->dma[ofs & (sizeof(d->dma)-1)];
 			d->xferp->cmd[i] = ch;
-			debug("%02x ", ch);
+			if (!quiet_mode)
+				debug("%02x ", ch);
 		}
 
 		d->reg_ro[NCR_TCL] = len & 255;
@@ -682,7 +701,8 @@ int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
 	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
 	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  DONE (?)  */
 
-	debug("}");
+	if (!quiet_mode)
+		debug("}");
 
 	return ok;
 }
@@ -854,13 +874,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	d->reg_ro[12] = d->reg_wo[12];
 
 	if (regnr == NCR_CMD && writeflag == MEM_WRITE) {
-		debug(" ");
+		if (!quiet_mode)
+			debug(" ");
 
 		/*  TODO:  Perhaps turn off others here too?  */
 		d->reg_ro[NCR_INTR] &= ~NCRINTR_SBR;
 
 		if (idata & NCRCMD_DMA) {
-			debug("[DMA] ");
+			if (!quiet_mode)
+				debug("[DMA] ");
 
 			/*
 			 *  DMA commands load the transfer count from the
@@ -876,23 +898,27 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		switch (idata & ~NCRCMD_DMA) {
 
 		case NCRCMD_NOP:
-			debug("NOP");
+			if (!quiet_mode)
+				debug("NOP");
 			break;
 
 		case NCRCMD_FLUSH:
-			debug("FLUSH");
+			if (!quiet_mode)
+				debug("FLUSH");
 			/*  Flush the FIFO:  */
 			dev_asc_fifo_flush(d);
 			break;
 
 		case NCRCMD_RSTCHIP:
-			debug("RSTCHIP");
+			if (!quiet_mode)
+				debug("RSTCHIP");
 			/*  Hardware reset.  */
 			dev_asc_reset(d);
 			break;
 
 		case NCRCMD_RSTSCSI:
-			debug("RSTSCSI");
+			if (!quiet_mode)
+				debug("RSTSCSI");
 			/*  No interrupt if interrupts are disabled.  */
 			if (!(d->reg_wo[NCR_CFG1] & NCRCFG1_SRR))
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
@@ -902,12 +928,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			break;
 
 		case NCRCMD_ENSEL:
-			debug("ENSEL");
+			if (!quiet_mode)
+				debug("ENSEL");
 			/*  TODO  */
 			break;
 
 		case NCRCMD_ICCS:
-			debug("ICCS");
+			if (!quiet_mode)
+				debug("ICCS");
 			/*  Reveice a status byte + a message byte.  */
 
 			/*  TODO: how about other status and message bytes?  */
@@ -929,12 +957,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			break;
 
 		case NCRCMD_MSGOK:
-			debug("MSGOK");
 			/*  Message is being Rejected if ATN is set, otherwise Accepted.  */
-			if (d->atn)
-				debug("; Rejecting message");
-			else
-				debug("; Accepting message");
+			if (!quiet_mode) {
+				debug("MSGOK");
+				if (d->atn)
+					debug("; Rejecting message");
+				else
+					debug("; Accepting message");
+			}
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 
@@ -949,12 +979,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			break;
 
 		case NCRCMD_SETATN:
-			debug("SETATN");
+			if (!quiet_mode)
+				debug("SETATN");
 			d->atn = 1;
 			break;
 
 		case NCRCMD_RSTATN:
-			debug("RSTATN");
+			if (!quiet_mode)
+				debug("RSTATN");
 			d->atn = 0;
 			break;
 
@@ -967,19 +999,23 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			case NCRCMD_SELATN:
 			case NCRCMD_SELATNS:
 				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATNS) {
-					debug("SELATNS: select with atn and stop, id %i", d->reg_wo[NCR_SELID] & 7);
+					if (!quiet_mode)
+						debug("SELATNS: select with atn and stop, id %i", d->reg_wo[NCR_SELID] & 7);
 					d->cur_phase = PHASE_MSG_OUT;
 				} else {
-					debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+					if (!quiet_mode)
+						debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
 				}
 				n_messagebytes = 1;
 				break;
 			case NCRCMD_SELATN3:
-				debug("SELNATN: select with atn3, id %i", d->reg_wo[NCR_SELID] & 7);
+				if (!quiet_mode)
+					debug("SELNATN: select with atn3, id %i", d->reg_wo[NCR_SELID] & 7);
 				n_messagebytes = 3;
 				break;
 			case NCRCMD_SELNATN:
-				debug("SELNATN: select without atn, id %i", d->reg_wo[NCR_SELID] & 7);
+				if (!quiet_mode)
+					debug("SELNATN: select without atn, id %i", d->reg_wo[NCR_SELID] & 7);
 				n_messagebytes = 0;
 			}
 
@@ -1030,7 +1066,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			break;
 
 		case NCRCMD_TRPAD:
-			debug("TRPAD");
+			if (!quiet_mode)
+				debug("TRPAD");
 
 			dev_asc_newxfer(d);
 			{
@@ -1071,7 +1108,8 @@ break;
 #endif
 
 		case NCRCMD_TRANS:
-			debug("TRANS");
+			if (!quiet_mode)
+				debug("TRANS");
 
 			{
 				int ok;
@@ -1123,8 +1161,10 @@ break;
 
 	if (regnr == NCR_CFG1) {
 		/*  TODO: other bits  */
-		debug(" parity %s,", d->reg_ro[regnr] & NCRCFG1_PARENB? "enabled" : "disabled");
-		debug(" scsi_id %i", d->reg_ro[regnr] & 0x7);
+		if (!quiet_mode) {
+			debug(" parity %s,", d->reg_ro[regnr] & NCRCFG1_PARENB? "enabled" : "disabled");
+			debug(" scsi_id %i", d->reg_ro[regnr] & 0x7);
+		}
 	}
 
 #ifdef ASC_FULL_REGISTER_ACCESS_DEBUG

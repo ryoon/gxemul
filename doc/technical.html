@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.26 2004-11-21 23:29:47 debug Exp $
+$Id: technical.html,v 1.27 2004-11-22 06:14:54 debug Exp $
 
 Copyright (C) 2004  Anders Gavare.  All rights reserved.
 
@@ -126,13 +126,14 @@ There are two modes in which the emulator can run, <b>a</b>) a straight forward
 loop which fetches one instruction from emulated RAM, and executes it, and 
 <b>b</b>) using dynamic binary translation.
 
-<p>Mode <b>a</b> is very slow.
-On a 2.8 GHz Intel Xeon host the resulting emulated machine
-is rougly equal to a 7 MHz R3000 (or a 3.5 MHz R4000). The actual performance
-varies a lot, maybe between 5 and 10 million instructions per second, depending
-on workload.
+<p>
+Mode <b>a</b> is very slow. On a 2.8 GHz Intel Xeon host the resulting 
+emulated machine is rougly equal to a 7 MHz R3000 (or a 3.5 MHz R4000). 
+The actual performance varies a lot, maybe between 5 and 10 million 
+instructions per second, depending on workload.
 
-<b>Mode <b>b</b> ("bintrans") is still to be considered experimental, but 
+<p>
+Mode <b>b</b> ("bintrans") is still to be considered experimental, but 
 gives higher performance than mode <b>a</b>. It translates MIPS machine 
 code into machine code that can be executed on the host machine 
 on-the-fly. The translation itself obviously takes some time, but this is 

@@ -1,13 +1,15 @@
-$Id: RELEASE,v 1.54 2004-11-04 22:57:34 debug Exp $
+$Id: RELEASE,v 1.55 2004-11-22 06:14:52 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
-  0.2.x:  ?
+  0.2.3:  experimental bintrans.
+
+  0.2.X:  ?
 
   0.3:  some kind of major feature update; one or more of the following
         would be nice:
 
-		o)  dynamic bintrans (if/when it is working)
+		o)  stable bintrans
 		o)  ability to install Linux (Debian) onto a disk image
 		o)  better support for non-DECstation modes
 		o)  --long-command-line-options
@@ -96,7 +98,10 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
 
         x)  Lots of minor bug fixes.
 
-[  TODO: changes 0.2.2 -> 0.2.X?  ]
+  o)  0.2.2 -> 0.2.3:
+
+	x)  An experimental dynamic binary translation subsystem has been
+	    added, which improves speed. (Use -b to enable bintrans.)
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

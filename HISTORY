@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.643 2005-03-15 06:52:16 debug Exp $
+$Id: HISTORY,v 1.644 2005-03-15 07:37:43 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1749,3 +1749,4 @@ Changelog for GXemul:
 		machines and/or NICs.
 		Minor documentation updates (regarding configuration files).
 20050315	Adding dummy standby, suspend, and hibernate MIPS opcodes.
+		RTC interrupt hack for VR4121 (hpcmips).

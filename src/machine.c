@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.388 2005-03-14 19:14:04 debug Exp $
+ *  $Id: machine.c,v 1.389 2005-03-15 07:37:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2077,7 +2077,7 @@ void machine_setup(struct machine *machine)
 			    );
 			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
-			/*  16MHz VR4121  */
+			/*  166 (or 168) MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
 			/*  TODO:  */
 			hpcmips_fb_addr = 0xa180100;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.18 2005-03-12 23:38:57 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.19 2005-03-15 07:37:42 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -72,13 +72,20 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 
 	/*
 	 *  UGLY! TODO: fix this.
+	 *
+	 *  Interrupts should be triggered if the corresponding unit (for
+	 *  example the RTC unit) is activated.
 	 */
 	{
-		static int x = 0;
-		/*  TODO:  */
+		static unsigned int x = 0;
 		x++;
-		if (x > 100 && (x&3)==0)
-			cpu_interrupt(cpu, 8 + 3);
+
+		if (x > 100 && (x&3)==0) {
+			if (d->cpumodel == 4121)
+				cpu_interrupt(cpu, 3);
+			else
+				cpu_interrupt(cpu, 8 + 3);
+		}
 	}
 
 	/*
@@ -414,10 +421,16 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	/*  PMU:  0xc0 .. 0xfc  */
 	/*  RTC:  0x100 .. ?  */
 
-	case 0x13e:
+	case 0x13e:	/*  on 4181?  */
 		/*  RTC interrupt register...  */
 		/*  Ack. timer interrupts?  */
 		cpu_interrupt_ack(cpu, 8 + 3);
+		break;
+
+	case 0x1de:	/*  on 4121?  */
+		/*  RTC interrupt register...  */
+		/*  Ack. timer interrupts?  */
+		cpu_interrupt_ack(cpu, 3);
 		break;
 
 	default:

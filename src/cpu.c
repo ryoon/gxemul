@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.115 2004-08-02 23:55:46 debug Exp $
+ *  $Id: cpu.c,v 1.116 2004-08-05 00:39:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -66,7 +66,7 @@ extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
-extern int max_random_instructions_per_chunk;
+extern int max_random_cycles_per_chunk;
 extern int automatic_clock_adjustment;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
@@ -3028,7 +3028,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int te;
 	int64_t max_instructions_cached = max_instructions;
-	int64_t max_random_instructions_per_chunk_cached = max_random_instructions_per_chunk;
+	int64_t max_random_cycles_per_chunk_cached = max_random_cycles_per_chunk;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */
@@ -3076,14 +3076,14 @@ int cpu_run(struct cpu **cpus, int ncpus)
 				if (cpus[i]->running)
 					running = 1;
 
-			if (max_random_instructions_per_chunk_cached > 0) {
+			if (max_random_cycles_per_chunk_cached > 0) {
 				for (i=0; i<ncpus_cached; i++)
 					if (cpus[i]->running) {
-						a_few_instrs2 = a_few_cycles *
-						    cpus[i]->cpu_type.instrs_per_cycle;
-						if (a_few_instrs2 >= max_random_instructions_per_chunk_cached)
-							a_few_instrs2 = max_random_instructions_per_chunk_cached + 1;
-						j = random() % a_few_instrs2;
+						a_few_instrs2 = a_few_cycles;
+						if (a_few_instrs2 >= max_random_cycles_per_chunk_cached)
+							a_few_instrs2 = max_random_cycles_per_chunk_cached;
+						j = (random() % a_few_instrs2) + 1;
+						j *= cpus[i]->cpu_type.instrs_per_cycle;
 						while (j-- >= 1 && cpus[i]->running) {
 							int instrs_run = cpu_run_instr(cpus[i]);
 							if (i == 0)

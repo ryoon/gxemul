@@ -26,13 +26,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.1 2004-08-04 16:59:03 debug Exp $
+ *  $Id: mp.h,v 1.2 2004-08-05 00:39:03 debug Exp $
  *
  *  dev_mp definitions.
  */
 
-#define	DEV_MP_ADDRESS			0x0000000011000000
-#define	DEV_MP_LENGTH			0x0000000000000100
+#define	DEV_MP_ADDRESS			0x0000000011000000ULL
+#define	DEV_MP_LENGTH			0x0000000000000100ULL
 #define     DEV_MP_WHOAMI		    0x0000
 #define     DEV_MP_NCPUS		    0x0010
 #define     DEV_MP_STARTUPCPU		    0x0020
@@ -41,5 +41,6 @@
 #define     DEV_MP_PAUSE_CPU		    0x0050
 #define     DEV_MP_UNPAUSE_CPU		    0x0060
 #define     DEV_MP_STARTUPSTACK		    0x0070
+#define     DEV_MP_HARDWARE_RANDOM	    0x0080
 
 #endif	/*  MP_H  */

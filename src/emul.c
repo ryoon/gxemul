@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.35 2004-07-20 02:52:00 debug Exp $
+ *  $Id: emul.c,v 1.36 2004-08-05 00:39:06 debug Exp $
  *
  *  Emulation startup.
  */
@@ -64,6 +64,7 @@ extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int bootstrap_cpu;
 extern int use_random_bootstrap_cpu;
+extern int max_random_cycles_per_chunk;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int userland_emul;
@@ -361,6 +362,10 @@ void emul(void)
 
 	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
 	symbol_recalc_sizes();
+
+	if (max_random_cycles_per_chunk > 0)
+		debug("using random cycle chunks (1 to %i cycles)\n",
+		    max_random_cycles_per_chunk);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    bootstrap_cpu,

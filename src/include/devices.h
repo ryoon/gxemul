@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.89 2004-08-03 02:25:00 debug Exp $
+ *  $Id: devices.h,v 1.90 2004-08-05 00:39:03 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -291,16 +291,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
 
 /*  dev_mp.c:  */
-#define	DEV_MP_ADDRESS			0x0000000011000000
-#define	DEV_MP_LENGTH			0x0000000000000100
-#define	    DEV_MP_WHOAMI		    0x0000
-#define	    DEV_MP_NCPUS		    0x0010
-#define	    DEV_MP_STARTUPCPU		    0x0020
-#define	    DEV_MP_STARTUPADDR		    0x0030
-#define	    DEV_MP_PAUSE_ADDR		    0x0040
-#define	    DEV_MP_PAUSE_CPU		    0x0050
-#define	    DEV_MP_UNPAUSE_CPU		    0x0060
-#define	    DEV_MP_STARTUPSTACK		    0x0070
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 

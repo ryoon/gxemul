@@ -23,26 +23,34 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.9 2004-08-02 23:55:44 debug Exp $
+ *  $Id: dev_mp.c,v 1.10 2004-08-05 00:39:02 debug Exp $
  *  
- *  Multiprocessor support.  (This is a fake device, only for testing.)
- *
- *  TODO:  Find out how actual MIPS machines implement MP stuff.
- *
- *  TODO 2:  This is really broken and should be fixed some day.
- *  (Experimental stuff)
+ *  This is a fake multiprocessor (MP) device. It can be useful for
+ *  theoretical experiments, but probably bares no resemblance to any
+ *  actual multiprocessor controller for any MIPS-based machine.
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "memory.h"
 #include "misc.h"
+#include "memory.h"
 #include "devices.h"
 
+#include "mp.h"
 
 extern int register_dump;
 extern int instruction_trace;
 extern int ncpus;
+
+
+struct mp_data {
+	struct cpu	**cpus;
+	uint64_t	startup_addr;
+	uint64_t	stack_addr;
+	uint64_t	pause_addr;
+};
 
 
 /*
@@ -51,81 +59,83 @@ extern int ncpus;
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
 {
-	static uint64_t startup_addr = INITIAL_PC;
-	static uint64_t stack_addr = INITIAL_STACK_POINTER;
-	static uint64_t pause_addr;
-	int i;
-	uint64_t addr = 0;
+	struct mp_data *d = extra;
+	int i, which_cpu;
+	uint64_t idata = 0, odata = 0;
 
-	addr = memory_readmax64(cpu, data, len);
+        idata = memory_readmax64(cpu, data, len);
 
-	if (writeflag == MEM_READ && relative_addr == DEV_MP_WHOAMI) {
-		for (i=0; i<len; i++)
-			data[i] = cpu->cpu_id;
-		return 1;
-	}
+	/*
+	 *  NOTE: It is up to the user of this device to read or write
+	 *  correct addresses. (A write to NCPUS is pretty useless,
+	 *  for example.)
+	 */
 
-	if (writeflag == MEM_READ && relative_addr == DEV_MP_NCPUS) {
-		for (i=0; i<len; i++)
-			data[i] = ncpus;
-		return 1;
-	}
+	switch (relative_addr) {
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_STARTUPCPU) {
-		int which_cpu = data[0];
-		struct cpu **cpus = (struct cpu **) extra;
-		cpus[which_cpu]->pc = startup_addr;
-		cpus[which_cpu]->gpr[GPR_SP] = stack_addr;
-		cpus[which_cpu]->running = 1;
-		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", which_cpu, (long long)startup_addr);  */
-		return 1;
-	}
+	case DEV_MP_WHOAMI:
+		odata = cpu->cpu_id;
+		break;
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_STARTUPADDR) {
-		if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
-			addr |= 0xffffffff00000000ULL;
-		startup_addr = addr;
-		return 1;
-	}
+	case DEV_MP_NCPUS:
+		odata = ncpus;
+		break;
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_PAUSE_ADDR) {
-		pause_addr = addr;
-		/*  TODO... hm  */
-		return 1;
-	}
+	case DEV_MP_STARTUPCPU:
+		which_cpu = idata;
+		d->cpus[which_cpu]->pc = d->startup_addr;
+		d->cpus[which_cpu]->gpr[GPR_SP] = d->stack_addr;
+		d->cpus[which_cpu]->running = 1;
+		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", 
+		    which_cpu, (long long)d->startup_addr);  */
+		break;
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_PAUSE_CPU) {
+	case DEV_MP_STARTUPADDR:
+		if ((idata >> 32) == 0 && (idata & 0x80000000ULL))
+			idata |= 0xffffffff00000000ULL;
+		d->startup_addr = idata;
+		break;
+
+	case DEV_MP_PAUSE_ADDR:
+		d->pause_addr = idata;
+		break;
+
+	case DEV_MP_PAUSE_CPU:
 		/*  Pause all cpus except our selves:  */
-		int which_cpu = data[0];
+		which_cpu = idata;
 
 		for (i=0; i<ncpus; i++)
-			if (i!=which_cpu) {
-				struct cpu **cpus = (struct cpu **) extra;
-				cpus[i]->running = 0;
-			}
-		return 1;
-	}
+			if (i!=which_cpu)
+				d->cpus[i]->running = 0;
+		break;
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_UNPAUSE_CPU) {
+	case DEV_MP_UNPAUSE_CPU:
 		/*  Unpause all cpus except our selves:  */
-		int which_cpu = data[0];
-
+		which_cpu = idata;
 		for (i=0; i<ncpus; i++)
-			if (i!=which_cpu) {
-				struct cpu **cpus = (struct cpu **) extra;
-				cpus[i]->running = 1;
-			}
-		return 1;
+			if (i!=which_cpu)
+				d->cpus[i]->running = 1;
+		break;
+
+	case DEV_MP_STARTUPSTACK:
+		if ((idata >> 32) == 0 && (idata & 0x80000000ULL))
+			idata |= 0xffffffff00000000ULL;
+		d->stack_addr = idata;
+		break;
+
+	case DEV_MP_HARDWARE_RANDOM:
+		odata = random();
+		break;
+
+	default:
+		fatal("[ dev_mp: unimplemented relative addr 0x%x ]\n",
+		    relative_addr);
 	}
 
-	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_STARTUPSTACK) {
-		if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
-			addr |= 0xffffffff00000000ULL;
-		stack_addr = addr;
-		return 1;
-	}
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
-	return 0;
+	return 1;
 }
 
 
@@ -134,7 +144,18 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  */
 void dev_mp_init(struct memory *mem, struct cpu *cpus[])
 {
+	struct mp_data *d;
+	d = malloc(sizeof(struct mp_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct mp_data));
+	d->cpus = cpus;
+	d->startup_addr = INITIAL_PC;
+	d->stack_addr = INITIAL_STACK_POINTER;
+
 	memory_device_register(mem, "mp", DEV_MP_ADDRESS, DEV_MP_LENGTH,
-	    dev_mp_access, (void *)cpus);
+	    dev_mp_access, d);
 }
 

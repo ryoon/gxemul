@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.189 2004-08-03 13:10:52 debug Exp $
+$Id: HISTORY,v 1.190 2004-08-05 00:39:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -881,3 +881,7 @@ HISTORY of mips64emul
 		Adding a -A5 ARC emulation mode (Microsoft-Jazz, "MIPS Magnum")
 		which NetBSD seems to like. No interrupt specifics yet, so
 		it hangs while waiting for SCSI.
+20040804	Some dev_mp updates.
+		The -y switch has to do with number of cycles, not number
+		of instructions; variable names have been changed to reflect
+		this.

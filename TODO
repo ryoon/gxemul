@@ -1,3 +1,5 @@
+$Id: TODO,v 1.109 2005-01-19 14:26:52 debug Exp $
+
 mips64emul TODO
 ---------------
 
@@ -28,9 +30,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  see src/net.c
 
 	Configure script:
-		o)  Only enable Alpha prefetch on pca56 or higher, not on
-		    ev4, ev5.
-		o)  inet_ntoa detection on HP-UX is probably broken
+		o)  Only enable Alpha prefetch on pca56 etc, not on ev4, ev5.
 		o)  Use getopts?
 		o)  X11 libs and headers via command line option?
 		o)  Verify that the configure script, building and running

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.72 2004-12-13 05:28:10 debug Exp $
+ *  $Id: dev_fb.c,v 1.73 2004-12-15 16:31:58 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -359,6 +359,17 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 					r = d->framebuffer[fb_addr];
 					g = d->framebuffer[fb_addr + 1];
 					b = d->framebuffer[fb_addr + 2];
+					break;
+				/*  TODO: 15 and 16.  */
+				/*  Also copy to the scaledown code below  */
+				case 16:
+					r = d->framebuffer[fb_addr] >> 3;
+					g = (d->framebuffer[fb_addr] << 5) +
+					    (d->framebuffer[fb_addr + 1] >> 5);
+					b = d->framebuffer[fb_addr + 1] & 0x1f;
+					r *= 8;
+					g *= 4;
+					b *= 8;
 					break;
 				default:
 					r = g = b = random() & 255;

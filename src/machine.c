@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.242 2004-12-15 06:55:23 debug Exp $
+ *  $Id: machine.c,v 1.243 2004-12-15 16:32:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1675,13 +1675,23 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 	case EMULTYPE_HPCMIPS:
 		emul->machine_name = "hpcmips";
-		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
-		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
-		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips", 0);
 
 		/*
-		 *  NetBSD/hpcmips expects the following:
+		 *  NetBSD/hpcmips and possibly others expects the following:
 		 */
+
+		/*
+		 *  TODO:
+		 *
+		 *	Make this nicer!
+		 *
+		 *	Support multiple models!
+		 *
+		 *	Don't hardcode values!
+		 *
+		 *	Endianness! Don't just fill in the hpc_bootinfo stuff like this!
+		 */
+
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
 		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
 		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
@@ -1693,25 +1703,41 @@ void machine_init(struct emul *emul, struct memory *mem)
 		hpc_bootinfo.length = sizeof(hpc_bootinfo);
 		hpc_bootinfo.magic = HPC_BOOTINFO_MAGIC;
 		hpc_bootinfo.fb_addr = 0x80000000 + HPCMIPS_FB_ADDR;
-		hpc_bootinfo.fb_line_bytes = HPCMIPS_FB_XSIZE / 4;	/*  for 2-bits-per-pixel  */
+		hpc_bootinfo.fb_line_bytes = 512;
+		    /*  HPCMIPS_FB_XSIZE / 4;	for 2-bits-per-pixel  */
 		hpc_bootinfo.fb_width = HPCMIPS_FB_XSIZE;
 		hpc_bootinfo.fb_height = HPCMIPS_FB_YSIZE;
-		hpc_bootinfo.fb_type = BIFB_D2_M2L_3;
+		hpc_bootinfo.fb_type = BIFB_D16_FFFF; /*  BIFB_D2_M2L_3;  */
 		hpc_bootinfo.bi_cnuse = BI_CNUSE_BUILTIN;  /*  _BUILTIN or _SERIAL  */
 
 		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
 		hpc_bootinfo.platid_cpu = 1 << 14;
-		hpc_bootinfo.platid_machine = (2 << 22) + (1 << 16);
+		hpc_bootinfo.platid_machine =
+		      (3 << 22)		/*  22: vendor  3=casio */
+		    + (1 << 16)		/*  16: series  1=CASSIOPEIAE*/
+		    + (2 <<  8)		/*   8: model   2=EXXX*/
+		    + (3);		/*   0: submodel 3=E500 */
 /*
+#define PLATID_FLAGS_SHIFT              0
+#define PLATID_CPU_SUBMODEL_SHIFT       8
+#define PLATID_CPU_MODEL_SHIFT          14
+#define PLATID_CPU_SERIES_SHIFT         20
+#define PLATID_CPU_ARCH_SHIFT           26
+
 #define PLATID_SUBMODEL_SHIFT           0
 #define PLATID_MODEL_SHIFT              8
 #define PLATID_SERIES_SHIFT             16
 #define PLATID_VENDOR_SHIFT             22
 */
-		printf("hpc_bootinfo.platid_cpu     = 0x%x\n", hpc_bootinfo.platid_cpu);
-		printf("hpc_bootinfo.platid_machine = 0x%x\n", hpc_bootinfo.platid_machine);
+		printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
+		printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);
 		hpc_bootinfo.timezone = 0;
 		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
+
+		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
+		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
+		    256, HPCMIPS_FB_YSIZE, 16, "HPCmips", 0);
+
 		break;
 
 	case EMULTYPE_PS2:

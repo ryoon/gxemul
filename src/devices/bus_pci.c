@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.3 2004-01-06 14:28:12 debug Exp $
+ *  $Id: bus_pci.c,v 1.4 2004-01-14 06:11:09 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -181,7 +181,7 @@ void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
  *
  *  TODO:  Should 'mem' even be an incoming parameter here?
  */
-struct pci_data *bus_pci_init(struct memory *mem)
+struct pci_data *bus_pci_init(struct memory *mem, int irq_nr)
 {
 	struct pci_data *d;
 
@@ -191,6 +191,8 @@ struct pci_data *bus_pci_init(struct memory *mem)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pci_data));
+	d->irq_nr = irq_nr;
+
 	return d;
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.110 2004-07-19 15:04:08 debug Exp $
+ *  $Id: cpu.c,v 1.111 2004-07-25 03:03:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1054,13 +1054,13 @@ static int cpu_run_instr(struct cpu *cpu)
 		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
 		cp0->reg[COP0_COUNT] ++;
 	} else {
-		/*  TODO: double count blah blah  */
-		cp0->reg[COP0_COUNT] ++;
-
 		cp0->reg[COP0_RANDOM] --;
 		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
 		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
 			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
+
+		/*  TODO: double count blah blah  */
+		cp0->reg[COP0_COUNT] ++;
 
 		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
 			cpu_interrupt(cpu, 7);
@@ -1092,17 +1092,20 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  and we should return via gpr ra.
 			 */
 			if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
-				int rom_jal = 1;
+				int rom_jal;
 				switch (emulation_type) {
 				case EMULTYPE_DEC:
 					decstation_prom_emul(cpu);
+					rom_jal = 1;
 					break;
 				case EMULTYPE_PS2:
 					playstation2_sifbios_emul(cpu);
+					rom_jal = 1;
 					break;
 				case EMULTYPE_ARC:
 				case EMULTYPE_SGI:
 					arcbios_emul(cpu);
+					rom_jal = 1;
 					break;
 				default:
 					rom_jal = 0;
@@ -1118,8 +1121,7 @@ static int cpu_run_instr(struct cpu *cpu)
 					return 1;
 				}
 			}
-		}
-		if (cpu->delay_slot == TO_BE_DELAYED) {
+		} else /* if (cpu->delay_slot == TO_BE_DELAYED) */ {
 			/*  next instruction will be delayed  */
 			cpu->delay_slot = DELAYED;
 		}
@@ -1136,14 +1138,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			if (dumppoint_flag_r[i])
 				register_dump = 1;
 		}
-
-	if (!quiet_mode_cached) {
-		/*  Dump CPU registers for debugging:  */
-		if (register_dump) {
-			debug("\n");
-			cpu_register_dump(cpu);
-		}
-	}
 
 #ifdef ALWAYS_SIGNEXTEND_32
 	/*
@@ -1178,6 +1172,7 @@ static int cpu_run_instr(struct cpu *cpu)
 #endif
 
 #ifdef HAVE_PREFETCH
+	PREFETCH(&cpu->pc_last_was_in_host_ram);
 	PREFETCH(cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
 #endif
 
@@ -1195,6 +1190,13 @@ static int cpu_run_instr(struct cpu *cpu)
 	cpu->pc_last = cached_pc;
 
 	if (!quiet_mode_cached) {
+		/*  Dump CPU registers for debugging:  */
+		if (register_dump) {
+			debug("\n");
+			cpu_register_dump(cpu);
+		}
+
+		/*  Trace tree:  */
 		if (cpu->show_trace_delay > 0) {
 			cpu->show_trace_delay --;
 			if (cpu->show_trace_delay == 0 && show_trace_tree)
@@ -1304,14 +1306,20 @@ static int cpu_run_instr(struct cpu *cpu)
 		cpu->pc += sizeof(instr);
 		cached_pc = cpu->pc;
 
-		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
-			we are in usermode, then reverse endianness!  */
+		/*
+		 *  TODO:  If Reverse-endian is set in the status cop0 register
+		 *  and we are in usermode, then reverse endianness!
+		 */
 
-		/*  The rest of the code is written for little endian, so swap if neccessary:  */
+		/*
+		 *  The rest of the code is written for little endian, so
+		 *  swap if neccessary:
+		 */
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp, tmp2;
-			tmp  = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
-			tmp2 = instr[1]; instr[1] = instr[2]; instr[2] = tmp2;
+			instrword = instr[0]; instr[0] = instr[3];
+			    instr[3] = instrword;
+			instrword = instr[1]; instr[1] = instr[2];
+			    instr[2] = instrword;
 		}
 
 		if (instruction_trace_cached)
@@ -1386,7 +1394,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	 */
 
 	/*  Get the top 6 bits of the instruction:  */
-	hi6 = (instr[3] >> 2) & 0x3f;
+	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
 	if (show_opcode_statistics)
 		cpu->stats_opcode[hi6] ++;

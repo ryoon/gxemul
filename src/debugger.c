@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.5 2004-12-14 04:19:07 debug Exp $
+ *  $Id: debugger.c,v 1.6 2004-12-14 05:23:44 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -428,46 +428,46 @@ struct cmd {
 };
 
 static struct cmd cmds[] = {
-	"breakpoints", "", 0, debugger_cmd_breakpoints,
-		"show breakpoints",
+	{ "breakpoints", "", 0, debugger_cmd_breakpoints,
+		"show breakpoints" },
 
-	"continue", "", 0, debugger_cmd_continue,
-		"continue execution",
+	{ "continue", "", 0, debugger_cmd_continue,
+		"continue execution" },
 
-	"dump", "[addr]", 0, debugger_cmd_dump,
-		"dump memory contents in hex and ASCII",
+	{ "dump", "[addr]", 0, debugger_cmd_dump,
+		"dump memory contents in hex and ASCII" },
 
-	"help", "", 0, debugger_cmd_help,
-		"print this help message",
+	{ "help", "", 0, debugger_cmd_help,
+		"print this help message" },
 
-	"itrace", "", 0, debugger_cmd_itrace,
-		"toggle instruction_trace on or off",
+	{ "itrace", "", 0, debugger_cmd_itrace,
+		"toggle instruction_trace on or off" },
 
-	"quit",	"", 0, debugger_cmd_quit,
-		"quit the emulator",
+	{ "quit", "", 0, debugger_cmd_quit,
+		"quit the emulator" },
 
-	"quiet", "", 0, debugger_cmd_quiet,
-		"toggle quiet_mode on or off",
+	{ "quiet", "", 0, debugger_cmd_quiet,
+		"toggle quiet_mode on or off" },
 
-	"registers", "", 0, debugger_cmd_registers,
-		"dump each CPUs' register values",
+	{ "registers", "", 0, debugger_cmd_registers,
+		"dump each CPUs' register values" },
 
-	"step", "", 0, debugger_cmd_step,
-		"single step one instruction",
+	{ "step", "", 0, debugger_cmd_step,
+		"single step one instruction" },
 
-	"tlbdump", "", 0, debugger_cmd_tlbdump,
-		"dump each CPU's TLB contents",
+	{ "tlbdump", "", 0, debugger_cmd_tlbdump,
+		"dump each CPU's TLB contents" },
 
-	"trace", "", 0, debugger_cmd_trace,
-		"toggle show_trace_tree on or off",
+	{ "trace", "", 0, debugger_cmd_trace,
+		"toggle show_trace_tree on or off" },
 
-	"unassemble", "[addr]", 0, debugger_cmd_unassemble,
-		"dump memory contents as MIPS instructions",
+	{ "unassemble", "[addr]", 0, debugger_cmd_unassemble,
+		"dump memory contents as MIPS instructions" },
 
-	"version", "", 0, debugger_cmd_version,
-		"print version information",
+	{ "version", "", 0, debugger_cmd_version,
+		"print version information" },
 
-	NULL, NULL, 0, NULL, NULL
+	{ NULL, NULL, 0, NULL, NULL }
 };
 
 
@@ -610,7 +610,7 @@ void debugger(void)
 			matchlen ++;
 
 		/*  Check for a command name match:  */
-		n = i = 0;
+		n = i = i_match = 0;
 		while (cmds[i].name != NULL) {
 			if (strncasecmp(cmds[i].name, cmd, matchlen) == 0) {
 				cmds[i].tmp_flag = 1;

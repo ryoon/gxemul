@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.115 2004-06-29 02:30:16 debug Exp $
+ *  $Id: machine.c,v 1.116 2004-06-29 08:25:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -732,6 +732,8 @@ void machine_init(struct memory *mem)
 	char *framebuffer_console_name, *serial_console_name;
 	int color_fb_flag;
 	int boot_boardnumber = 3;
+	char *turbochannel_default_gfx_card = "PMAG-BA";
+		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO  */
 
 	/*  HPCmips:  */
 	struct xx {
@@ -837,7 +839,8 @@ void machine_init(struct memory *mem)
 			break;
 
 		case MACHINE_3MAX_5000:		/*  type  2, KN02  */
-			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC, R3220 Memory coprocessor  */
+			/*  Supposed to have 25MHz R3000 CPU, R3010 FPC,  */
+			/*  and a R3220 Memory coprocessor  */
 			machine_name = "DECstation 5000/200 (3MAX, KN02)";
 
 			if (emulated_ips == 0)
@@ -851,42 +854,58 @@ void machine_init(struct memory *mem)
 			/*  An R3220 memory thingy:  */
 			cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
 
-			/*  KN02 interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = kn02_interrupt;
-
 			/*
 			 *  According to NetBSD/pmax:
 			 *  asc0 at tc0 slot 5 offset 0x0
 			 *  le0 at tc0 slot 6 offset 0x0
 			 *  ibus0 at tc0 slot 7 offset 0x0
 			 *  dc0 at ibus0 addr 0x1fe00000
-			 *  mcclock0 at ibus0 addr 0x1fe80000: mc146818 or compatible
+			 *  mcclock0 at ibus0 addr 0x1fe80000: mc146818
+			 *
+			 *  kn02 shared irq numbers (IP) are offset by +8
+			 *  in the emulator
 			 */
 
-			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  */
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-BA", KN02_IP_SLOT0 +8);
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-FA", KN02_IP_SLOT0 +8);  */
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-JA", KN02_IP_SLOT0 +8);  */
-/*			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-RO", KN02_IP_SLOT0 +8);  */
+			/*  KN02 interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = kn02_interrupt;
 
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END, "", KN02_IP_SLOT1 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END, "", KN02_IP_SLOT2 +8);
+			/*  TURBOchannel slots 0, 1, and 2 are free for   */
+			/*  option cards.  Let's put in a graphics card:  */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
+			    turbochannel_default_gfx_card, KN02_IP_SLOT0 +8);
+
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
+			    "", KN02_IP_SLOT1 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
+			    "", KN02_IP_SLOT2 +8);
 
 			/*  TURBOchannel slots 3 and 4 are reserved.  */
 
-			/*  TURBOchannel slot 5 is PMAZ-AA (asc SCSI), 6 is PMAD-AA (LANCE ethernet).  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 5, KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END, "PMAZ-AA", KN02_IP_SCSI +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 6, KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END, "PMAD-AA", KN02_IP_LANCE +8);
+			/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 5,
+			    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
+			    "PMAZ-AA", KN02_IP_SCSI +8);
+
+			/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 6,
+			    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
+			    "PMAD-AA", KN02_IP_LANCE +8);
 
 			/*  TURBOchannel slot 7 is system stuff.  */
-			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
+			dev_dc7085_init(cpus[bootstrap_cpu], mem,
+			    KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem,
+			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC,
+			    1, emulated_ips);
 
-			/*  (kn02 shared irq numbers (IP) are offset by +8 in the emulator)  */
-			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu], mem, KN02_SYS_CSR);
+			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu],
+			    mem, KN02_SYS_CSR);
 
-			framebuffer_console_name = "osconsole=0,7";	/*  fb,keyb  */
+			framebuffer_console_name = "osconsole=0,7";
+								/*  fb,keyb  */
 			serial_console_name      = "osconsole=2";
 			boot_boardnumber = 5;
 			break;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.60 2005-01-31 19:31:31 debug Exp $
+ *  $Id: file.c,v 1.61 2005-01-31 20:21:16 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1294,8 +1294,6 @@ void file_load(struct machine *machine, struct memory *mem,
 		fprintf(stderr, "file_load(): byte_order == NULL\n");
 		exit(1);
 	}
-
-	*byte_orderp = EMUL_BIG_ENDIAN;
 
 	if (arch == ARCH_NOARCH) {
 		fprintf(stderr, "file_load(): FATAL ERROR: no arch?\n");

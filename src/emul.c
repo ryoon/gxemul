@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.152 2005-01-31 19:31:31 debug Exp $
+ *  $Id: emul.c,v 1.153 2005-01-31 20:21:16 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -48,6 +48,7 @@
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
+#include "mips_cpu_types.h"
 #include "misc.h"
 #include "net.h"
 #include "sgi_arcbios.h"
@@ -536,10 +537,13 @@ void emul_machine_setup(struct machine *m, int n_load,
 	}
 
 	while (n_load > 0) {
+		byte_order = NO_BYTE_ORDER_OVERRIDE;
+
 		file_load(m, m->memory, *load_names, &entrypoint,
 		    m->arch, &gp, &byte_order);
 
-		m->cpus[m->bootstrap_cpu]->byte_order = byte_order;
+		if (byte_order != NO_BYTE_ORDER_OVERRIDE)
+			m->cpus[m->bootstrap_cpu]->byte_order = byte_order;
 
 		switch (m->arch) {
 		case ARCH_MIPS:
@@ -607,8 +611,10 @@ void emul_machine_setup(struct machine *m, int n_load,
 	add_dump_points(m);
 
 	/*  TODO: This is MIPS-specific!  */
-	add_symbol_name(&m->symbol_context,
-	    0x9fff0000, 0x10000, "r2k3k_cache", 0);
+	if (m->machine_type == MACHINE_DEC &&
+	    m->cpus[m->bootstrap_cpu]->cd.mips.cpu_type.mmu_model == MMU3K)
+		add_symbol_name(&m->symbol_context,
+		    0x9fff0000, 0x10000, "r2k3k_cache", 0);
 
 	symbol_recalc_sizes(&m->symbol_context);
 

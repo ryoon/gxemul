@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.20 2005-01-31 19:31:32 debug Exp $
+ *  $Id: symbol.c,v 1.21 2005-01-31 20:21:16 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -197,7 +197,8 @@ void add_symbol_name(struct symbol_context *sc,
 	struct symbol *s;
 
 	if (sc->sorted_array) {
-		fprintf(stderr, "add_symbol_name(): the symbol array is already sorted\n");
+		fprintf(stderr, "add_symbol_name(): Internal error: the "
+		    "symbol array is already sorted\n");
 		exit(1);
 	}
 
@@ -210,12 +211,11 @@ void add_symbol_name(struct symbol_context *sc,
 		exit(1);
 	}
 
-	s->name = malloc(strlen(name) + 1);
+	s->name = strdup(name);
 	if (s->name == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	strcpy(s->name, name);
 	s->addr = addr;
 	s->len  = len;
 	s->type = type;
@@ -245,8 +245,6 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 	char b3[80]; int type;
 	char b4[80];
 	int cur_n_symbols = sc->n_symbols;
-
-	debug("\n");
 
 	f = fopen(fname, "r");
 	if (f == NULL) {

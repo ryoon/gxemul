@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.205 2005-01-25 20:12:20 debug Exp $
+$Id: index.html,v 1.206 2005-01-25 20:31:32 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -182,8 +182,7 @@ bug report.
 
 <p>
 (Note for Windows users: there is a small possibility that this will also
-work under Cygwin, but this is totally unsupported, as I have no such system
-to try it on.)
+work under Cygwin, but this is totally unsupported.)
 
 <p>
 The emulator's performance is highly dependent on both runtime settings
@@ -199,6 +198,7 @@ you could try the following:
 <p>
 A number of different configure options are available:
 <pre>
+        <i>--always32</i>     enable special checks to hunt down 32-bit vs 64-bit bugs
         <i>--caches</i>       enable cache emulation
         <i>--delays</i>       enable instruction latency/delay emulation
         <i>--mips16</i>       enable MIPS16 instruction support
@@ -207,6 +207,12 @@ A number of different configure options are available:
         <i>--userland</i>     enable userland emulation
 </pre>
 
+<p>
+<i>--always32</i> enables some special code which checks that the emulated
+CPU registers are always sign-extended correctly (ie that the top 33 bits
+are either all zeroes, or all ones). This causes an overall slowdown, so
+don't enable it unless you are debugging mips64emul, and suspect that there
+are sign-extension bugs.
 <p>
 <i>--caches</i> enables emulation of caches (R3000 only, so far). This causes an 
 overall slowdown, so don't enable it unless you need it. Enabling caches
@@ -283,6 +289,7 @@ devices such as:
 <ul>
   <li>a console I/O device (putchar() and getchar()...)
   <li>an inter-processor communication device, for SMP experiments
+  <li>a very simple linear framebuffer device (for simple graphics output)
 </ul>
 <p>
 This mode is useful if you wish to experiment with software for MIPS-like
@@ -299,29 +306,24 @@ for example for educational purposes or generic MIPS related experiments.
 
 While other emulators aim to emulate only one specific CPU type, eg R3000,
 mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
+Both 64-bit and 32-bit MIPS-like CPUs can be emulated.
 
 <p>
-Both 64-bit and 32-bit MIPS-like CPUs can be emulated. mips64emul is
-basically an instruction-level simulator; things that would happen in 
-several steps within a physical CPU are not necessarily simulated 
+mips64emul is basically an instruction-level simulator; things that would
+happen in several steps within a physical CPU are not necessarily simulated
 correctly or at all (eg. pipe-line stages).
 
 <p>
 Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
 now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
 R1x000 (at least the parts that are similar to R4000) is beginning to work
-as expected. Code targeted for MIPS32 and MIPS64 also happens to work, as
-long as no specific features of MIPS32/64 are used that didn't exist in
-R4000 etc.
+as expected. Code targeted for MIPS32 and MIPS64 also often work.
 
 <p>
-I have written an experimental dynamic binary translation subsystem.  
+I have written an experimental dynamic binary translation subsystem.
 This gives higher total performance than interpreting one instruction at a
-time and executing it. However, even with the binary translation 
-activated, mips64emul is not nearly as fast as some of the other emulators 
-out there that have speed as their number one priority.
-(If you wish to enable bintrans, add <b>-b</b> to the
-command line, but keep in mind that it is still experimental.)
+time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
+the command line, but keep in mind that it is still experimental.)
 
 
 
@@ -441,12 +443,24 @@ interacted with similar to a real machine:
 <p><br>
 
 <super>*</super> Although Linux runs under DECstation emulation, at the
-time of writing this Linux has no support for keyboards on the 5000/200
+time of writing this, Linux has no support for keyboards on the 5000/200
 (the specific DECstation model being emulated), so when the login prompt
 is reached you cannot interact with the system. Some people are
 <a href="http://meeting.ffis.de/Oldenburg2004/work.html">working on</a>
 improving the situation. Running in text-mode (emulated serial console) 
 works fine, though, but then you don't get to see the penguin in the corner.
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
+Kaj-Michael Lang noticed that the current CVS-version of
+<a href="http://www.linux-mips.org/">linux-mips</a> has
+support for keyboards now, on DECstation 5000/200, so it is
+possible to run Linux in mips64emul with framebuffer/keyboard.
+He has made a kernel available here:
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+&nbsp;]
+
 
 <p>
 It is non-trivial to get a specific operating system or OS kernel to

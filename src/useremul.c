@@ -23,9 +23,30 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.2 2004-01-25 02:20:06 debug Exp $
+ *  $Id: useremul.c,v 1.3 2004-01-25 14:14:27 debug Exp $
  *
  *  Userland (syscall) emulation.
+ *
+ *  TODO:
+ *
+ *	NetBSD/pmax:
+ *		environment passing
+ *		more syscalls
+ *
+ *	Other emulations?  Irix? Linux?
+ *
+ *	32-bit vs 64-bit problems? n32? o32?
+ *
+ *	Dynamic ELFs?
+ *
+ *	Try to prefix "/emul/mips/" or similar to all filenames,
+ *		and only if that fails, try the given filename
+ *
+ *	Automagic errno translation?
+ *
+ *	Memory allocation? mmap etc.
+ *
+ *	File descriptor (0,1,2) assumptions?
  */
 
 #include <stdio.h>
@@ -34,6 +55,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #include "memory.h"
 #include "misc.h"
@@ -63,18 +85,13 @@ extern char *last_filename;
  *  TODO:  Most of this is just a quick hack to see if
  *         userland emulation works at all.
  */
-void useremul_init(struct cpu *cpu, struct memory *mem)
+void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_argv)
 {
-	char *tmp_ptr;
 	uint64_t stack_top = 0x7fff0000;
 	uint64_t stacksize = 8 * 1048576;
-	uint64_t stack_margin = 8192;
-	uint64_t argc;
-	uint64_t argv = stack_top - stack_margin + 64;
-	uint64_t argv0 = stack_top - stack_margin + 128;
-	uint64_t argv1 = stack_top - stack_margin + 512;
-
-	/*  TODO: envp?  */
+	uint64_t stack_margin = 16384;
+	uint64_t cur_argv;
+	int i;
 
 	switch (userland_emul) {
 	case USERLAND_NETBSD_PMAX:
@@ -91,27 +108,27 @@ void useremul_init(struct cpu *cpu, struct memory *mem)
 	cpu->gpr[GPR_SP] = stack_top - stack_margin;
 	add_symbol_name(stack_top - stacksize, stacksize, "userstack", 0);
 
-	argc = 1;	/*  1 or 2  :-)  */
-
-	/*  argc, argv, ..  */
+	/*
+	 *  Stack contents:  (TODO: emulation dependant?)
+	 */
 	store_32bit_word(stack_top - stack_margin, argc);
-	store_32bit_word(stack_top - stack_margin + 4, argv0);
-	store_32bit_word(stack_top - stack_margin + 8, 0 /* argv1 */ );
 
-	/*  Get argv[0] from last_filename:  */
-	tmp_ptr = rindex(last_filename, '/');
-	if (tmp_ptr == NULL)
-		tmp_ptr = last_filename;
-	else
-		tmp_ptr ++;
-	store_string(argv0, tmp_ptr);
+	cur_argv = stack_top - stack_margin + 128 + argc * sizeof(uint32_t);
+	for (i=0; i<argc; i++) {
+		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
 
-	store_string(argv1, "15");
+		store_32bit_word(stack_top - stack_margin + 4 + i*sizeof(uint32_t), cur_argv);
+		store_string(cur_argv, host_argv[i]);
+		cur_argv += strlen(host_argv[i]) + 1;
+	}
 }
 
 
 /*
  *  get_userland_string():
+ *
+ *  This can be used to retrieve strings, for example filenames,
+ *  from the emulated memory.
  *
  *  Warning: returns a pointer to a static array.
  */
@@ -190,6 +207,27 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			cpu->running = 0;
 			break;
 
+		case SYS_read:
+			debug("useremul_syscall(): netbsd read(%i,0x%llx,%lli)\n",
+			    (int)arg0, (long long)arg1, (long long)arg2);
+
+			if (arg2 > 0) {
+				charbuf = malloc(arg2);
+				if (charbuf == NULL) {
+					fprintf(stderr, "out of memory in useremul_syscall()\n");
+					exit(1);
+				}
+
+				read(arg0, charbuf, arg2);
+
+				/*  TODO: address validity check  */
+				memory_rw(cpu, cpu->mem, arg1, charbuf, arg2, MEM_WRITE, CACHE_DATA);
+
+				free(charbuf);
+			}
+
+			break;
+
 		case SYS_write:
 			descr   = arg0;
 			mipsbuf = arg1;
@@ -207,8 +245,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				/*  TODO: address validity check  */
 				memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
 
-				/*  TODO: file descriptors  */
-				write(STDOUT_FILENO, charbuf, length);
+				write(descr, charbuf, length);
 
 				free(charbuf);
 			}
@@ -217,11 +254,46 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 		case SYS_open:
 			charbuf = get_userland_string(cpu, arg0);
-			debug("useremul_syscall(): netbsd open(\"%s\", 0x%llx)\n",
-			    charbuf, cpu->gpr[GPR_A1]);
+			debug("useremul_syscall(): netbsd open(\"%s\", 0x%llx, 0x%llx)\n",
+			    charbuf, (long long)arg1, (long long)arg2);
 
-			error_flag = 1;
-			error_code = 2;  /*  ENOENT  */
+			result_low = open(charbuf, arg1, arg2);
+			if (result_low != 0) {
+				error_flag = 1;
+				error_code = errno;
+			}
+			break;
+
+		case SYS_access:
+			charbuf = get_userland_string(cpu, arg0);
+			debug("useremul_syscall(): netbsd access(\"%s\", 0x%llx)\n",
+			    charbuf, (long long) arg1);
+
+			result_low = access(charbuf, arg1);
+			if (result_low != 0) {
+				error_flag = 1;
+				error_code = errno;
+			}
+			break;
+
+		case SYS_getuid:
+			debug("useremul_syscall(): netbsd getuid()\n");
+			result_low = getuid();
+			break;
+
+		case SYS_geteuid:
+			debug("useremul_syscall(): netbsd geteuid()\n");
+			result_low = geteuid();
+			break;
+
+		case SYS_getgid:
+			debug("useremul_syscall(): netbsd getgid()\n");
+			result_low = getgid();
+			break;
+
+		case SYS_getegid:
+			debug("useremul_syscall(): netbsd getegid()\n");
+			result_low = getegid();
 			break;
 
 		case SYS_getfsstat:
@@ -230,13 +302,38 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			flags   = arg2;
 			debug("useremul_syscall(): netbsd getfsstat(0x%llx,%lli,0x%llx)\n",
 			    (long long)mipsbuf, (long long)length, (long long)flags);
+
 			result_low = 0;		/*  nr of mounted filesystems, for now  (TODO)  */
+
+			/*  Fill in the struct statfs buffer at arg0...
+				copy data from the host's getfsstat(). TODO  */
+#if 1
+			result_low = 1;
+			store_32bit_word(mipsbuf + 0, 0);	/*  f_spare2  */
+			store_32bit_word(mipsbuf + 4, 1024);	/*  f_bsize  */
+			store_32bit_word(mipsbuf + 8, 65536);	/*  f_iosize  */
+			store_32bit_word(mipsbuf + 12, 100);	/*  f_blocks  */
+			store_32bit_word(mipsbuf + 16, 50);	/*  f_bfree  */
+			store_32bit_word(mipsbuf + 20, 10);	/*  f_bavail  */
+			store_32bit_word(mipsbuf + 24, 50);	/*  f_files  */
+			store_32bit_word(mipsbuf + 28, 25);	/*  f_ffree  */
+			store_32bit_word(mipsbuf + 28, 0x1234);	/*  f_fsid  */
+			store_32bit_word(mipsbuf + 32, 0);	/*  f_owner  */
+			store_32bit_word(mipsbuf + 36, 0);	/*  f_type  */
+			store_32bit_word(mipsbuf + 40, 0);	/*  f_flags  */
+			store_32bit_word(mipsbuf + 44, 0);	/*  f_fspare[0]  */
+			store_32bit_word(mipsbuf + 48, 0);	/*  f_fspare[1]  */
+			store_string(mipsbuf + 52, "ffs");	/*  f_typename  */
+#define MFSNAMELEN 16
+#define	MNAMELEN 90
+			store_string(mipsbuf + 52 + MFSNAMELEN, "/");	/*  f_mntonname  */
+			store_string(mipsbuf + 52 + MFSNAMELEN + MNAMELEN, "ffs");	/*  f_mntfromname  */
+#endif
 			break;
 
 		case SYS_break:
 			debug("useremul_syscall(): netbsd break(0x%llx): TODO\n", (long long)arg0);
-			error_flag = 1;
-			error_code = 78;	/*  TODO  */
+			/*  TODO  */
 			break;
 
 		case SYS_readlink:
@@ -284,7 +381,26 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		case SYS_mmap:
 			debug("useremul_syscall(): netbsd mmap(0x%x,%i,%i,%i,%i,0x%llx): TODO\n",
 			    arg0, arg1, arg2, arg3, stack0, (long long)stack1);
-			/*  Return NULL for now  */
+
+			if ((int32_t)stack0 == -1) {
+				/*
+				 *  Anonymous allocation:
+				 *
+				 *  TODO:  Fix this!!!
+				 *  This quick hack simply allocates anonymous
+				 *  mmap memory approximately below the stack... :-!
+				 *  This will probably not work with dynamically
+				 *  loaded libraries and such.
+				 */
+				static uint32_t mmap_anon_ptr = 0x70000000;
+				mmap_anon_ptr -= arg1;
+				/*  round down to page boundary:  */
+				mmap_anon_ptr &= ~4095;
+				debug("ANON: %i bytes at 0x%08x (TODO: not working yet?)\n", (int)arg1, mmap_anon_ptr);
+				result_low = mmap_anon_ptr;
+			} else {
+				/*  Return NULL for now  */
+			}
 			break;
 
 		case SYS_issetugid:
@@ -292,9 +408,57 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			/*  TODO: actually call the real issetugid?  */
 			break;
 
-		case SYS___fstat13:
-			debug("useremul_syscall(): netbsd __fstat13(%lli,0x%llx)\n",
+		case SYS_nanosleep:
+			debug("useremul_syscall(): netbsd nanosleep(0x%llx,0x%llx)\n",
 			    (long long)arg0, (long long)arg1);
+
+			if (arg0 != 0) {
+				uint32_t sec = load_32bit_word(arg0 + 0);
+				uint32_t nsec = load_32bit_word(arg0 + 4);
+				struct timespec ts;
+				ts.tv_sec = sec;
+				ts.tv_nsec = nsec;
+				result_low = nanosleep(&ts, NULL);
+				if (result_low)
+					fprintf(stderr, "netbsd emulation nanosleep() failed\n");
+				/*  TODO: arg1  */
+			} else {
+				error_flag = 1;
+				error_code = 14;  /*  EFAULT  */
+			}
+			break;
+
+		case SYS___fstat13:
+			debug("useremul_syscall(): netbsd __fstat13(%lli,0x%llx): TODO\n",
+			    (long long)arg0, (long long)arg1);
+
+			error_flag = 1;
+			error_code = 9;  /*  EBADF  */
+			break;
+
+		case SYS___getcwd:
+			debug("useremul_syscall(): netbsd __getcwd(0x%llx,%lli): TODO\n",
+			    (long long)arg0, (long long)arg1);
+			if (arg1 > 0 && arg1 < 500000) {
+				char buf[arg1];
+				int i;
+
+				getcwd(buf, sizeof(buf));
+
+				/*  zero-terminate in host's space:  */
+				buf[sizeof(buf)-1] = 0;
+				for (i = 0; i<sizeof(buf) && i < arg1; i++)
+					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
+
+				/*  zero-terminate in emulated space:  */
+				memory_rw(cpu, cpu->mem, arg0 + arg1-1, &buf[sizeof(buf)-1], 1, MEM_WRITE, CACHE_NONE);
+			}
+			result_low = arg0;
+			break;
+
+		case SYS___sigaction14:
+			debug("useremul_syscall(): netbsd __sigaction14(%lli,0x%llx,0x%llx): TODO\n",
+			    (long long)arg0, (long long)arg1, (long long)arg2);
 
 			error_flag = 1;
 			error_code = 9;  /*  EBADF  */

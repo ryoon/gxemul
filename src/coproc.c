@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.124 2004-12-10 01:32:56 debug Exp $
+ *  $Id: coproc.c,v 1.125 2004-12-13 05:28:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -423,8 +423,6 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 {
 	int a, b;
 	struct vth32_table *tbl1;
-	void *p;
-	uint32_t p_paddr;
 
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
@@ -451,12 +449,11 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 {
 #ifdef BINTRANS
-	int i;
-
 	paddr &= ~0xfff;
 
 	if (cpu->emul->bintrans_enable) {
 #if 0
+		int i;
 		uint64_t tlb_paddr;
 		uint64_t tlb_vaddr;
 		switch (cpu->cpu_type.mmu_model) {

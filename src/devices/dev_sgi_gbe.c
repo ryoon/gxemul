@@ -23,9 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.2 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.3 2004-01-06 10:49:25 debug Exp $
  *  
- *  SGI "gbe", whatever that means :)
+ *  SGI "gbe", whatever that means :)  Perhaps something to do with
+ *  graphics. Framebuffer. Something.
  */
 
 #include <stdio.h>
@@ -57,6 +58,10 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		memcpy(&d->reg[relative_addr], data, len);
 	else
 		memcpy(data, &d->reg[relative_addr], len);
+
+	/*
+	 *  Linux/sgimips seems to write palette data to offset 0x50000 - 0x503xx.
+	 */
 
 	switch (relative_addr) {
 	default:

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.7 2005-02-11 22:19:17 debug Exp $
+$Id: intro.html,v 1.8 2005-02-12 10:31:00 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -79,9 +79,9 @@ experiments, such as when learning how to write an OS for a MIPS-like
 machine, or profiling SMP, memory, or system call usage.
 
 <p>
-The emulator is written in C, depends on no external libraries (except X11,
-which is optional), and should compile and run on any Unix-like system. If
-it doesn't, then that is a bug.
+The emulator is written in C, does not depend on external libraries (except
+X11, but that is optional), and should compile and run on any Unix-like
+system. If it doesn't, then that is a bug.
 
 <p>
 The emulator contains code which tries to emulate the workings of MIPS-like
@@ -158,7 +158,8 @@ bug report.
 
 <p>
 (Note for Windows users: there is a small possibility that this will also
-work under Cygwin, but this is totally unsupported.)
+work with Cygwin. If it works, then it is because the Cygwin environment
+is Unix-like enough; Windows is not a target platform for mips64emul.)
 
 <p>
 The emulator's performance is highly dependent on both runtime settings

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.24 2004-11-11 00:45:16 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.25 2004-11-11 13:57:31 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -162,7 +162,7 @@ static void bintrans_write_pcflush(unsigned char **addrp, int *pc_inc,
  *  bintrans_write_instruction__addiu():
  */
 static int bintrans_write_instruction__addiu(unsigned char **addrp,
-	int *pc_inc, int rt, int rs, int imm)
+	int *pc_inc, int rt, int rs, int imm, int daddiu_flag)
 {
 	unsigned char *a;
 	unsigned int uimm;
@@ -186,10 +186,19 @@ static int bintrans_write_instruction__addiu(unsigned char **addrp,
 
 	uimm = imm & 0xffff;
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+
+	if (daddiu_flag) {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	} else {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+	}
 	*a++ = (uimm & 255); *a++ = (uimm >> 8); *a++ = 0x21; *a++ = 0x20;
 
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;
+	if (!daddiu_flag) {
+		/*  sign extend, 32->64 bits  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;
+	}
+
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
@@ -424,7 +433,7 @@ static int bintrans_write_instruction__slti(unsigned char **addrp,
  *  bintrans_write_instruction__addu():
  */
 static int bintrans_write_instruction__addu(unsigned char **addrp,
-	int *pc_inc, int rd, int rs, int rt)
+	int *pc_inc, int rd, int rs, int rt, int daddu_flag)
 {
 	unsigned char *a;
 	int ofs;
@@ -439,12 +448,19 @@ static int bintrans_write_instruction__addu(unsigned char **addrp,
 	a = *addrp;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
 
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+	if (daddu_flag) {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;	/*  addq t0,t1,t0  */
+	} else {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x40;	/*  addl t0,t1,t0  */
+	}
 
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x22; *a++ = 0x40;
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
@@ -459,7 +475,7 @@ static int bintrans_write_instruction__addu(unsigned char **addrp,
  *  bintrans_write_instruction__subu():
  */
 static int bintrans_write_instruction__subu(unsigned char **addrp,
-	int *pc_inc, int rd, int rs, int rt)
+	int *pc_inc, int rd, int rs, int rt, int dsubu_flag)
 {
 	unsigned char *a;
 	int ofs;
@@ -474,12 +490,19 @@ static int bintrans_write_instruction__subu(unsigned char **addrp,
 	a = *addrp;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 
-	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+	if (dsubu_flag) {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+		*a++ = 0x21; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;	/*  subq t0,t1,t0  */
+	} else {
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+		*a++ = 0x21; *a++ = 0x01; *a++ = 0x22; *a++ = 0x40;	/*  subl t0,t1,t0  */
+	}
 
-	*a++ = 0x21; *a++ = 0x01; *a++ = 0x22; *a++ = 0x40;
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
@@ -640,8 +663,8 @@ static int bintrans_write_instruction__slt(unsigned char **addrp,
 	int ofs;
 
 	/*
-	 *  48 04 30 a0     ldl     t0,1096(a0)
-	 *  4c 04 50 a0     ldl     t1,1100(a0)
+	 *  48 04 30 a4     ldq     t0,1096(a0)
+	 *  4c 04 50 a4     ldq     t1,1100(a0)
 	 *  a1 09 22 40     cmplt   t0,t1,t0
 	 *  1f 04 ff 5f     fnop
 	 *  88 08 30 b4     stq     t0,2184(a0)
@@ -649,10 +672,10 @@ static int bintrans_write_instruction__slt(unsigned char **addrp,
 	a = *addrp;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
 
 	*a++ = 0xa1; *a++ = 0x09; *a++ = 0x22; *a++ = 0x40;
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
@@ -675,8 +698,8 @@ static int bintrans_write_instruction__sltu(unsigned char **addrp,
 	int ofs;
 
 	/*
-	 *  48 04 30 a0     ldl     t0,1096(a0)
-	 *  4c 04 50 a0     ldl     t1,1100(a0)
+	 *  48 04 30 a4     ldq     t0,1096(a0)
+	 *  4c 04 50 a4     ldq     t1,1100(a0)
 	 *  a1 03 22 40     cmpult  t0,t1,t0
 	 *  1f 04 ff 5f     fnop
 	 *  88 08 30 b4     stq     t0,2184(a0)
@@ -684,10 +707,10 @@ static int bintrans_write_instruction__sltu(unsigned char **addrp,
 	a = *addrp;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
 
 	*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
@@ -832,7 +855,7 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
  *  bintrans_write_instruction__lw():
  */
 static int bintrans_write_instruction__lw(unsigned char **addrp,
-	int *pc_inc, int rt, int imm, int rs, int load_type)
+	int *pc_inc, int rt, int imm, int rs, int load_type, int bigendian)
 {
 	unsigned char *jumppast1, *jumppast1b=NULL, *jumppast1c,
 	    *jumppast2;
@@ -859,6 +882,7 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 	*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
 
 	switch (load_type) {
+	case LOAD_TYPE_SD:
 	case LOAD_TYPE_SW:
 	case LOAD_TYPE_SH:
 	case LOAD_TYPE_SB:
@@ -889,6 +913,21 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x61; *a++ = 0x20;
 
 	switch (load_type) {
+	case LOAD_TYPE_LD:
+	case LOAD_TYPE_SD:
+		/*
+		 *  if (t2 & 7)		check for misalignment
+		 *	return;
+		 *
+		 *  02 f0 60 44     and     t2,0x7,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0xf0; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LWU:
 	case LOAD_TYPE_LW:
 	case LOAD_TYPE_SW:
 		/*
@@ -966,37 +1005,145 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 
-/*  TODO: big endian byte order?  */
-
 	switch (load_type) {
+	case LOAD_TYPE_LD:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa4;			/*  ldq t0,0(t3)  */
+		if (bigendian) {
+			/*  remember original 8 bytes of t0:  */
+			*a++ = 0x05; *a++ = 0x04; *a++ = 0x3f; *a++ = 0x40;		/*  addq t0,zero,t4  */
+
+			/*  swap lowest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
+			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+
+			/*  swap highest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  or the results together:  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+		}
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
 	case LOAD_TYPE_LW:
+	case LOAD_TYPE_LWU:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;			/*  ldl from memory  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;		/*  addl t0,zero,t0 (sign extend) 32->64  */
+		}
+		if (load_type == LOAD_TYPE_LWU) {
+			/*  Use only lowest 32 bits:  */
+			*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot t0,0xf,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
 		break;
 	case LOAD_TYPE_LHU:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
-		break;
 	case LOAD_TYPE_LH:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
-		*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextw   t0,t0  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x31; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,1,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x43; *a++ = 0x44;		/*  or t1,t2,t0  */
+		}
+		if (load_type == LOAD_TYPE_LH) {
+			*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextw   t0,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
 		break;
 	case LOAD_TYPE_LBU:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
-		break;
 	case LOAD_TYPE_LB:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextb   t0,t0  */
+		if (load_type == LOAD_TYPE_LB) {
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextb   t0,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_SD:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;	/*  ldq gpr[rt]  */
+		if (bigendian) {
+			/*  remember original 8 bytes of t0:  */
+			*a++ = 0x05; *a++ = 0x04; *a++ = 0x3f; *a++ = 0x40;		/*  addq t0,zero,t4  */
+
+			/*  swap lowest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
+			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+
+			/*  swap highest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  or the results together:  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+		}
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb4;			/*  stq to memory  */
 		break;
 	case LOAD_TYPE_SW:
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+		}
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
 		break;
 	case LOAD_TYPE_SH:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0x30;	/*  ldwu t0,gpr[rt](a0)  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x31; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,1,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x43; *a++ = 0x44;		/*  or t1,t2,t0  */
+		}
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
 		break;
 	case LOAD_TYPE_SB:
@@ -1038,6 +1185,7 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
 
 	switch (load_type) {
+	case LOAD_TYPE_SD:
 	case LOAD_TYPE_SW:
 	case LOAD_TYPE_SH:
 	case LOAD_TYPE_SB:
@@ -1069,6 +1217,21 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x61; *a++ = 0x20;
 
 	switch (load_type) {
+	case LOAD_TYPE_LD:
+	case LOAD_TYPE_SD:
+		/*
+		 *  if (t2 & 7)		check for misalignment
+		 *	return;
+		 *
+		 *  02 f0 60 44     and     t2,0x7,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0xf0; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LWU:
 	case LOAD_TYPE_LW:
 	case LOAD_TYPE_SW:
 		/*
@@ -1147,37 +1310,145 @@ static int bintrans_write_instruction__lw(unsigned char **addrp,
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 
-/*  TODO: big endian byte order?  */
-
 	switch (load_type) {
+	case LOAD_TYPE_LD:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa4;			/*  ldq t0,0(t3)  */
+		if (bigendian) {
+			/*  remember original 8 bytes of t0:  */
+			*a++ = 0x05; *a++ = 0x04; *a++ = 0x3f; *a++ = 0x40;		/*  addq t0,zero,t4  */
+
+			/*  swap lowest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
+			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+
+			/*  swap highest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  or the results together:  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+		}
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
 	case LOAD_TYPE_LW:
+	case LOAD_TYPE_LWU:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;			/*  ldl from memory  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;		/*  addl t0,zero,t0 (sign extend) 32->64  */
+		}
+		if (load_type == LOAD_TYPE_LWU) {
+			/*  Use only lowest 32 bits:  */
+			*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot t0,0xf,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
 		break;
 	case LOAD_TYPE_LHU:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
-		break;
 	case LOAD_TYPE_LH:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
-		*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextw   t0,t0  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x31; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,1,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x43; *a++ = 0x44;		/*  or t1,t2,t0  */
+		}
+		if (load_type == LOAD_TYPE_LH) {
+			*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextw   t0,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
 		break;
 	case LOAD_TYPE_LBU:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
-		break;
 	case LOAD_TYPE_LB:
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextb   t0,t0  */
+		if (load_type == LOAD_TYPE_LB) {
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextb   t0,t0  */
+		}
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_SD:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;	/*  ldq gpr[rt]  */
+		if (bigendian) {
+			/*  remember original 8 bytes of t0:  */
+			*a++ = 0x05; *a++ = 0x04; *a++ = 0x3f; *a++ = 0x40;		/*  addq t0,zero,t4  */
+
+			/*  swap lowest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  save result in (top 4 bytes of) t5. get back top bits of t4:  */
+			*a++ = 0x26; *a++ = 0x17; *a++ = 0x24; *a++ = 0x48;		/*  sll t0,0x20,t5  */
+			*a++ = 0x81; *a++ = 0x16; *a++ = 0xa4; *a++ = 0x48;		/*  srl t4,0x20,t0  */
+
+			/*  swap highest 4 bytes:  */
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+
+			/*  or the results together:  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x44;		/*  or t5,t0,t0  */
+		}
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb4;			/*  stq to memory  */
 		break;
 	case LOAD_TYPE_SW:
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x62; *a++ = 0x48;		/*  sll t2,16,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x50; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,2,t2  */
+			*a++ = 0x23; *a++ = 0x17; *a++ = 0x61; *a++ = 0x48;		/*  sll t2,8,t2  */
+			*a++ = 0x02; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t1  */
+			*a++ = 0xc3; *a++ = 0x70; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,3,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x62; *a++ = 0x44;		/*  or t2,t1,t0  */
+		}
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
 		break;
 	case LOAD_TYPE_SH:
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0x30;	/*  ldwu t0,gpr[rt](a0)  */
+		if (bigendian) {
+			*a++ = 0x62; *a++ = 0x31; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,1,t1  */
+			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
+			*a++ = 0x01; *a++ = 0x04; *a++ = 0x43; *a++ = 0x44;		/*  or t1,t2,t0  */
+		}
 		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
 		break;
 	case LOAD_TYPE_SB:
@@ -1425,7 +1696,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		 */
 		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 		    - ((size_t)&dummy_cpu);
-		*a++ = 0xc0; *a++ = 0x01; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
@@ -1619,7 +1890,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	 */
 	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
 	    - ((size_t)&dummy_cpu);
-	*a++ = 0xc0; *a++ = 0x01; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+	*a++ = 0xc0; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 	*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
 	*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */

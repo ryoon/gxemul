@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.304 2004-11-10 19:54:26 debug Exp $
+$Id: HISTORY,v 1.305 2004-11-11 13:57:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1128,3 +1128,4 @@ HISTORY of mips64emul
 20041108	Some updates.
 20041109	More updates. Bintrans experiments mostly.
 20041110	Some minor bintrans updates.
+20041111	Minor updates.

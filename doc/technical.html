@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.23 2004-11-10 15:41:32 debug Exp $
+$Id: technical.html,v 1.24 2004-11-11 13:57:31 debug Exp $
 
 Copyright (C) 2004  Anders Gavare.  All rights reserved.
 
@@ -139,11 +139,13 @@ As of 2004-08-24, on a 2.8 GHz Intel Xeon host the resulting emulated machine
 is rougly equal to a 7 MHz R3000 (or a 3.5 MHz R4000). The actual performance
 varies a lot, maybe between 5 and 10 million instructions per second, depending
 on workload.
+
 <p>
 By default, an emulated OS running under DECstation emulation which listens to
 interrupts from the mc146818 clock will get interrupts that are close to the
 host's clock. That is, if the emulated OS says it wants 100 interrupts per
 second, it will get approximately 100 interrupts per real second.
+
 <p>
 There is however a -I option, which sets the number of emulated cycles per
 seconds to a fixed value. Let's say you wish to make the emulated OS think it
@@ -152,9 +154,22 @@ is running on a 40 MHz DECstation, and not a 7 MHz one, then you can add
 course. It might even make it seem slower; for example, if NetBSD/pmax waits
 2 seconds for SCSI devices to settle during bootup, those 2 seconds will take
 2*40000000 cycles (which will take more time than 2*7000000).
+
 <p>
 The -I option is also necessary if you want to run deterministic experiments,
 if a mc146818 device is present.
+
+<p>
+Some emulators make claims such as "x times slowdown," but in the case of
+mips64emul, the host is often not a MIPS-based machine, and hence comparing
+one MIPS instruction to a host instruction doesn't work. Performance depends on
+a lot of factors, including (but not limited to) host architecture, host speed,
+which compiler and compiler flags were used to build mips64emul, what the
+workload is, and so on. (For example, if an emulated operating system tries
+to read a block from disk, from its point of view the read was instantaneous
+(no waiting). So 1 MIPS in an emulated OS might have taken more than one
+million instructions on a real machine.)
+
 
 
 

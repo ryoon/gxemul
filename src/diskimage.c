@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.7 2004-03-11 05:30:39 debug Exp $
+ *  $Id: diskimage.c,v 1.8 2004-04-02 05:47:23 debug Exp $
  *
  *  Disk image support.
  *
@@ -148,9 +148,14 @@ int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned cha
 		memcpy(retbuf+32, "V0.0", 4);
 		break;
 	case SCSIBLOCKCMD_READ_CAPACITY:
-		debug("READ_CAPACITY");
-		fatal("\nscsi READ_CAPACITY: TODO\n");
-		exit(1);
+		fatal("[ SCSI READ_CAPACITY: TODO ]\n");
+		break;
+	case 0x03:
+	case 0x08:
+	case 0x15:
+	case 0x1a:
+	case 0x1b:
+		fatal("[ SCSI 0x%02x: TODO ]\n", buf[0]);
 		break;
 	default:
 		fatal("unimplemented SCSI command 0x%02x\n", buf[0]);

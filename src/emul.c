@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.176 2005-03-09 07:27:00 debug Exp $
+ *  $Id: emul.c,v 1.177 2005-03-13 09:36:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -612,6 +612,8 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		case ARCH_URISC:
 			break;
 		case ARCH_HPPA:
+			break;
+		case ARCH_ALPHA:
 			break;
 		default:
 			fatal("emul_machine_setup(): Internal error: "

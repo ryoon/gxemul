@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.117 2005-03-09 07:33:38 debug Exp $
+#  $Id: configure,v 1.118 2005-03-13 09:36:06 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -54,6 +54,7 @@
 #
 ###############################################################################
 
+ENABLEALPHA=YES
 ENABLEHPPA=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
@@ -71,6 +72,8 @@ if [ z"$*" != z ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
+		else if [ z$a = z--disable-alpha ]; then
+			ENABLEALPHA=NO
 		else if [ z$a = z--disable-hppa ]; then
 			ENABLEHPPA=NO
 		else if [ z$a = z--disable-mips ]; then
@@ -100,6 +103,7 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 			echo "  --disable-x         don't include X11 support"
 			printf "\nCPU selection options:\n"
+			echo "  --disable-alpha     disable Alpha CPU emulation"
 			echo "  --disable-hppa      disable HPPA CPU emulation"
 			echo "  --disable-mips      disable MIPS CPU emulation"
 			echo "  --disable-ppc       disable PPC CPU emulation"
@@ -115,7 +119,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -156,30 +160,35 @@ if [ z$MIPS16 = zYES ]; then
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
 fi
+if [ z$ENABLEALPHA = zYES ]; then
+	printf "#define ENABLE_ALPHA\n" >> config.h
+else
+	echo 'Disabling Alpha emulation support.'
+fi
 if [ z$ENABLEHPPA = zYES ]; then
 	printf "#define ENABLE_HPPA\n" >> config.h
 else
-	echo 'Disabling HPPA support.'
+	echo 'Disabling HPPA emulation support.'
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
 else
-	echo 'Disabling MIPS support.'
+	echo 'Disabling MIPS emulation support.'
 fi
 if [ z$ENABLEPPC = zYES ]; then
 	printf "#define ENABLE_PPC\n" >> config.h
 else
-	echo 'Disabling PPC support.'
+	echo 'Disabling PPC emulation support.'
 fi
 if [ z$ENABLESPARC = zYES ]; then
 	printf "#define ENABLE_SPARC\n" >> config.h
 else
-	echo 'Disabling SPARC support.'
+	echo 'Disabling SPARC emulation support.'
 fi
 if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
 else
-	echo 'Disabling URISC support.'
+	echo 'Disabling URISC emulation support.'
 fi
 
 
@@ -407,6 +416,37 @@ fi
 if [ z$OSF1 = zYES ]; then
 	CFLAGS="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $CFLAGS"
 fi
+
+
+#  Check for weird 'alpha' define.
+printf "checking for weird 'alpha' define... "
+printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+#ifdef alpha
+printf(\"1\");
+#undef alpha
+#ifdef alpha
+printf(\"2\");
+#endif
+#endif
+printf(\"\\\n\");return 0;}\n" > _testm.c
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE alpha define TEST"
+	printf " PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z1 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef alpha" >> config.h
+	else
+		if [ z`./_testm` = z12 ]; then
+			printf "yes, but workaround not possible\n"
+			exit
+		else
+			printf "no\n"
+		fi
+	fi
+fi
+rm -f _testm*
 
 
 #  Check for weird 'hppa' define.

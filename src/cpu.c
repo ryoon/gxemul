@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.290 2005-03-09 07:26:59 debug Exp $
+ *  $Id: cpu.c,v 1.291 2005-03-13 09:36:08 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -36,9 +36,6 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "cpu_mips.h"
-#include "cpu_ppc.h"
-#include "cpu_sparc.h"
 #include "machine.h"
 #include "misc.h"
 
@@ -486,7 +483,7 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
  *  Allocates a cpu_family struct and calls an init function for the
  *  family to fill in reasonable data and pointers.
  */
-static void add_cpu_family(int (*family_init)(struct cpu_family *))
+static void add_cpu_family(int (*family_init)(struct cpu_family *), int arch)
 {
 	struct cpu_family *fp, *tmp;
 	int res;
@@ -508,7 +505,7 @@ static void add_cpu_family(int (*family_init)(struct cpu_family *))
 		free(fp);
 		return;
 	}
-
+	fp->arch = arch;
 	fp->next = NULL;
 
 	/*  Add last in family chain:  */
@@ -536,15 +533,7 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
 	/*  YUCK! This is too hardcoded! TODO  */
 
 	while (fp != NULL) {
-		if (arch == ARCH_HPPA && strcmp("HPPA", fp->name) == 0)
-			return fp;
-		if (arch == ARCH_MIPS && strcmp("MIPS", fp->name) == 0)
-			return fp;
-		if (arch == ARCH_PPC && strcmp("PPC", fp->name) == 0)
-			return fp;
-		if (arch == ARCH_SPARC && strcmp("SPARC", fp->name) == 0)
-			return fp;
-		if (arch == ARCH_URISC && strcmp("URISC", fp->name) == 0)
+		if (arch == fp->arch)
 			return fp;
 		fp = fp->next;
 	}
@@ -560,10 +549,12 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
  */
 void cpu_init(void)
 {
-	add_cpu_family(hppa_cpu_family_init);
-	add_cpu_family(mips_cpu_family_init);
-	add_cpu_family(ppc_cpu_family_init);
-	add_cpu_family(sparc_cpu_family_init);
-	add_cpu_family(urisc_cpu_family_init);
+	/*  Note: These are registered in alphabetic order.  */
+	add_cpu_family(alpha_cpu_family_init, ARCH_ALPHA);
+	add_cpu_family(hppa_cpu_family_init, ARCH_HPPA);
+	add_cpu_family(mips_cpu_family_init, ARCH_MIPS);
+	add_cpu_family(ppc_cpu_family_init, ARCH_PPC);
+	add_cpu_family(sparc_cpu_family_init, ARCH_SPARC);
+	add_cpu_family(urisc_cpu_family_init, ARCH_URISC);
 }
 

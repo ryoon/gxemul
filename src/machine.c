@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.13 2003-12-20 22:03:40 debug Exp $
+ *  $Id: machine.c,v 1.14 2003-12-22 10:13:02 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -776,20 +776,31 @@ void machine_init(struct memory *mem)
 		 *	    [Disk]
 		 */
 
-		if (emulation_type == EMULTYPE_SGI) {
-			uint32_t system;
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, "SGI-IP32", 0  /*  ROOT  */);
-			debug("SGI system = 0x%x\n", system);
-		} else {
-			uint32_t system;
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
-			debug("ARC system = 0x%x\n", system);
+		{
+			uint32_t system, cpu;
+			int i;
 
-			/*  TODO:  sync devices and component tree  */
-			dev_pckbc_init(mem, 0x2000005001, 0);
-			dev_ns16550_init(mem, 0x2000006000, 0);
+			if (emulation_type == EMULTYPE_SGI) {
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "SGI-IP32", 0  /*  ROOT  */);
+			} else {
+				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
+
+				/*  TODO:  sync devices and component tree  */
+				dev_pckbc_init(mem, 0x2000005001, 0);
+				dev_ns16550_init(mem, 0x2000006000, 0);
+			}
+
+			/*  Common stuff for both SGI and ARC:  */
+			debug("system = 0x%x\n", system);
+
+			for (i=0; i<ncpus; i++) {
+				cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
+				    0, 1, 20, 0, 0x0, "R5000", system);
+				/*  TODO:  FPU and cache (per cpu)  */
+				debug("cpu%i = 0x%x\n", i, cpu);
+			}
 		}
 
 		add_symbol_name(0xbfc10000, 0x10000, "[ARCBIOS entry]", 0);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.35 2004-01-07 00:53:28 debug Exp $
+ *  $Id: machine.c,v 1.36 2004-01-09 04:20:15 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -952,7 +952,7 @@ void machine_init(struct memory *mem)
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");
-				dev_crime_init(mem, 0x14000000);		/*  crime0  */
+				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
 				/*  mte (?) at 0x15000000  */
 				dev_sgi_gbe_init(mem, 0x16000000);		/*  gbe?  framebuffer?  */
 				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
@@ -965,8 +965,21 @@ void machine_init(struct memory *mem)
 				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
 				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 
-				/*  PCI devices:  */
-				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  0, 0, pci_dec21143_init, pci_dec21143_rr);
+				/*
+				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
+				 *
+				 *	# PCI network devices
+				 *	ne*             at pci? dev ? function ?
+				 *
+				 *	# O2 SCSI
+				 *	ahc0            at pci0 dev 1 function ?
+				 *	ahc1            at pci0 dev 2 function ?
+				 */
+
+				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
+				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
+				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
+
 				break;
 			case 35:
 				strcat(machine_name, " (Origin 3000)");

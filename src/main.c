@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.92 2004-09-05 03:42:52 debug Exp $
+ *  $Id: main.c,v 1.93 2004-09-05 03:46:41 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,7 +64,6 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int single_step = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
 int max_random_cycles_per_chunk = 0;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.63 2004-09-05 03:42:52 debug Exp $
+ *  $Id: emul.c,v 1.64 2004-09-05 03:46:41 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,7 +59,6 @@ char **extra_argv;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
-extern int single_step;
 extern int max_random_cycles_per_chunk;
 extern int ncpus;
 extern struct cpu **cpus;
@@ -135,13 +134,24 @@ static void fix_console(void)
 
 
 /*
+ *  Global (static) debugger variables:
+ *
+ *  (TODO: How to make these non-global in a nice way?)
+ */
+
+static struct emul *debugger_emul;
+static char last_cmd[MAX_CMD_LEN];
+static int last_cmd_len = 0;
+
+
+/*
  *  debugger_activate():
  *
  *  This is a signal handler for CTRL-C.
  */
 static void debugger_activate(int x)
 {
-	if (single_step) {
+	if (debugger_emul->single_step) {
 		/*  Already in the debugger. Do nothing.  */
 		int i;
 		for (i=0; i<MAX_CMD_LEN+1; i++)
@@ -152,7 +162,7 @@ static void debugger_activate(int x)
 		fflush(stdout);
 	} else {
 		/*  Enter the single step debugger.  */
-		single_step = 1;
+		debugger_emul->single_step = 1;
 
 		/*  Discard any chars in the input queue:  */
 		while (console_charavail())
@@ -162,10 +172,6 @@ static void debugger_activate(int x)
 	/*  Reactivate the signal handler:  */
 	signal(SIGINT, debugger_activate);
 }
-
-
-static char last_cmd[MAX_CMD_LEN];
-static int last_cmd_len = 0;
 
 
 /*
@@ -305,9 +311,6 @@ static void debugger_tlbdump(struct emul *emul)
 		}
 	}
 }
-
-
-struct emul *debugger_emul;
 
 
 /*
@@ -474,7 +477,7 @@ void debugger(void)
 		}
 	}
 
-	single_step = 0;
+	debugger_emul->single_step = 0;
 	debugger_emul->instruction_trace = old_instruction_trace;
 	debugger_emul->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;

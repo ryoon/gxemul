@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.140 2004-09-05 03:38:19 debug Exp $
+ *  $Id: cpu.c,v 1.141 2004-09-05 03:46:40 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -50,7 +50,6 @@
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
-extern int single_step;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
@@ -3190,8 +3189,8 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 				if (cpus[i]->running)
 					running = 1;
 
-			if (single_step) {
-				if (single_step == 1) {
+			if (emul->single_step) {
+				if (emul->single_step == 1) {
 					old_instruction_trace =
 					    emul->instruction_trace;
 					old_quiet_mode =
@@ -3201,7 +3200,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 					emul->instruction_trace = 1;
 					emul->show_trace_tree = 1;
 					quiet_mode = 0;
-					single_step = 2;
+					emul->single_step = 2;
 				}
 
 				for (i=0; i<ncpus_cached; i++) {
@@ -3211,7 +3210,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						int instrs_run = cpu_run_instr(cpus[i]);
 						if (i == 0)
 							cpu0instrs += instrs_run;
-						if (single_step)
+						if (emul->single_step)
 							debugger();
 					}
 				}

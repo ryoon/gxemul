@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.90 2005-01-30 00:37:04 debug Exp $
+#  $Id: configure,v 1.91 2005-01-30 00:47:54 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -356,6 +356,20 @@ if [ z$NOX11 = z ]; then
 fi
 
 
+COPTIM=$CFLAGS
+
+
+if [ z$HPUX = zYES ]; then
+	COPTIM="-D_XOPEN_SOURCE_EXTENDED $COPTIM"
+	printf "#define HPUX\n" >> config.h
+fi
+
+
+if [ z$OSF1 = zYES ]; then
+	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $COPTIM"
+fi
+
+
 #  CWARNINGS:
 printf "checking whether -Wall can be used... "
 $CC $CFLAGS _testprog.c -o _testprog -Wall 2> /dev/null
@@ -373,6 +387,128 @@ else
 	printf "no\n"
 fi
 rm -f _testprog
+
+
+if [ z"$COMPAQCC" = zYES ]; then
+	#  -O4 is possible, but is -O3 better?
+	COPTIM="-O4 $COPTIM"
+else
+	if [ z"`uname`" = zSunOS ]; then
+		#  "cc", the system's default compiler:
+		if [ z"$SUNCC" = zYES ]; then
+			COPTIM="-xO5 -xdepend $COPTIM"
+		fi
+		printf "#define SOLARIS\n" >> config.h
+		OTHERLIBS="-lsocket $OTHERLIBS"
+	else
+		#  gcc or something else:
+		$CC $COPTIM _testprog.c -o _testprog -O 2> /dev/null
+		if [ -x _testprog ]; then
+			rm -f _testprog
+			$CC $COPTIM _testprog.c -o _testprog -O2 2> /dev/null
+			if [ -x _testprog ]; then
+				COPTIM="-O2 $COPTIM"
+			else
+				COPTIM="-O $COPTIM"
+			fi
+		fi
+	fi
+fi
+rm -f _testprog
+
+
+#  -fschedule-insns causes bugs on i386 with gcc,
+#  but works OK on my alpha with ccc (compaq's cc).
+if [ z"$COMPAQCC" = zYES ]; then
+	printf "checking whether -fschedule-insns2 can be used... "
+	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-fschedule-insns2 $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+	rm -f _testprog
+
+	printf "checking whether -fschedule-insns can be used... "
+	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-fschedule-insns $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+	rm -f _testprog
+
+#	#  -intrinsics
+#	$CC $COPTIM _testprog.c -o _testprog -intrinsics 2> /dev/null
+#	if [ -x _testprog ]; then
+#		COPTIM="-intrinsics $COPTIM"
+#	fi
+#	rm -f _testprog
+
+	#  -fast
+	printf "checking whether -fast can be used... "
+	$CC $COPTIM _testprog.c -o _testprog -fast 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-fast $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+	rm -f _testprog
+fi
+
+
+#  -fpeephole
+printf "checking whether -fpeephole can be used... "
+$CC $COPTIM -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
+cat _testprog.stdout >> _testprog.error
+if grep peephole _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fpeephole $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+
+#  -fmove-all-movables
+printf "checking whether -fmove-all-movables can be used... "
+$CC $COPTIM -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
+cat _testprog.stdout >> _testprog.error
+if grep movables _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fmove-all-movables $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+
+#  -fomit-frame-pointer
+printf "checking whether -fomit-frame-pointer can be used... "
+$CC $COPTIM -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
+cat _testprog.stdout >> _testprog.error
+if grep frame _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fomit-frame-pointer $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -lrt for nanosleep?
@@ -521,6 +657,58 @@ fi
 rm -f _tests.[co] _tests
 
 
+#  Check for 64-bit off_t:
+printf "checking for 64-bit off_t... "
+printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(off_t));return 0;}\n" > _testoff.c
+$CC $COPTIM _testoff.c -o _testoff 2> /dev/null
+if [ ! -x _testoff ]; then
+	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
+else
+	if [ z`./_testoff` = z8 ]; then
+		printf "yes\n"
+	else
+		$CC $COPTIM -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
+		if [ ! -x _testoff ]; then
+			printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM!\n"
+		else
+			if [ z`./_testoff` = z8 ]; then
+				COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
+				printf "using -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE\n"
+			else
+				printf "NO\n"
+				printf "Warning! No 64-bit off_t. Continuing anyway.\n"
+			fi
+		fi
+	fi
+fi
+rm -f _testoff.c _testoff
+
+
+#  Check for u_int8_t etc:
+printf "checking for u_int8_t... "
+printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(u_int8_t));return 0;}\n" > _testuint.c
+$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+if [ ! -x _testuint ]; then
+	rm -f _testuint*
+	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+	int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(uint8_t));return 0;}\n" > _testuint.c
+	$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
+	if [ ! -x _testuint ]; then
+		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"
+		exit
+	fi
+
+	printf "typedef uint8_t u_int8_t;\ntypedef uint16_t u_int16_t;\n" >> config.h
+	printf "typedef uint32_t u_int32_t;\ntypedef uint64_t u_int64_t;\n" >> config.h
+	printf "uint8_t\n"
+else
+	printf "yes\n"
+fi
+rm -f _testuint.c _testuint
+
+
 ###############################################################################
 #
 #  Dynamic binary translation (BINTRANS):
@@ -600,24 +788,6 @@ fi
 
 
 ###############################################################################
-#
-#  COPTIM:
-#
-###############################################################################
-
-COPTIM=$CFLAGS
-
-
-if [ z$HPUX = zYES ]; then
-	COPTIM="-D_XOPEN_SOURCE_EXTENDED $COPTIM"
-	printf "#define HPUX\n" >> config.h
-fi
-
-
-if [ z$OSF1 = zYES ]; then
-	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $COPTIM"
-fi
-
 
 #  Prefetch support?
 printf "checking for prefetch support... "
@@ -637,180 +807,6 @@ if [ z$PREFSUP = z ]; then
 	printf "#define PREFETCH(x) { }\n" >> config.h
 	echo "no"
 fi
-
-
-#  Check for 64-bit off_t:
-printf "checking for 64-bit off_t... "
-printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(off_t));return 0;}\n" > _testoff.c
-$CC $COPTIM _testoff.c -o _testoff 2> /dev/null
-if [ ! -x _testoff ]; then
-	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
-else
-	if [ z`./_testoff` = z8 ]; then
-		printf "yes\n"
-	else
-		$CC $COPTIM -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
-		if [ ! -x _testoff ]; then
-			printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM!\n"
-		else
-			if [ z`./_testoff` = z8 ]; then
-				COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
-				printf "using -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE\n"
-			else
-				printf "NO\n"
-				printf "Warning! No 64-bit off_t. Continuing anyway.\n"
-			fi
-		fi
-	fi
-fi
-rm -f _testoff.c _testoff
-
-
-#  Check for u_int8_t etc:
-printf "checking for u_int8_t... "
-printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(u_int8_t));return 0;}\n" > _testuint.c
-$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
-if [ ! -x _testuint ]; then
-	rm -f _testuint*
-	printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
-	int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(uint8_t));return 0;}\n" > _testuint.c
-	$CC $COPTIM _testuint.c -o _testuint 2> /dev/null
-	if [ ! -x _testuint ]; then
-		printf "no\n\nERROR: No u_int8_t or uint8_t. Aborting\n"
-		exit
-	fi
-
-	printf "typedef uint8_t u_int8_t;\ntypedef uint16_t u_int16_t;\n" >> config.h
-	printf "typedef uint32_t u_int32_t;\ntypedef uint64_t u_int64_t;\n" >> config.h
-	printf "uint8_t\n"
-else
-	printf "yes\n"
-fi
-rm -f _testuint.c _testuint
-
-
-if [ z"$COMPAQCC" = zYES ]; then
-	#  -O4 is possible, but is -O3 better?
-	COPTIM="-O4 $COPTIM"
-else
-	if [ z"`uname`" = zSunOS ]; then
-		#  "cc", the system's default compiler:
-		if [ z"$SUNCC" = zYES ]; then
-			COPTIM="-xO5 -xdepend $COPTIM"
-		fi
-		printf "#define SOLARIS\n" >> config.h
-		OTHERLIBS="-lsocket $OTHERLIBS"
-	else
-		#  gcc or something else:
-		$CC $COPTIM _testprog.c -o _testprog -O 2> /dev/null
-		if [ -x _testprog ]; then
-			rm -f _testprog
-			$CC $COPTIM _testprog.c -o _testprog -O2 2> /dev/null
-			if [ -x _testprog ]; then
-				COPTIM="-O2 $COPTIM"
-			else
-				COPTIM="-O $COPTIM"
-			fi
-		fi
-	fi
-fi
-rm -f _testprog
-
-
-#  -fschedule-insns causes bugs on i386 with gcc,
-#  but works OK on my alpha with ccc (compaq's cc).
-if [ z"$COMPAQCC" = zYES ]; then
-	printf "checking whether -fschedule-insns2 can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-fschedule-insns2 $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-	rm -f _testprog
-
-	printf "checking whether -fschedule-insns can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fschedule-insns 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-fschedule-insns $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-	rm -f _testprog
-
-#	#  -intrinsics
-#	$CC $COPTIM _testprog.c -o _testprog -intrinsics 2> /dev/null
-#	if [ -x _testprog ]; then
-#		COPTIM="-intrinsics $COPTIM"
-#	fi
-#	rm -f _testprog
-
-	#  -fast
-	printf "checking whether -fast can be used... "
-	$CC $COPTIM _testprog.c -o _testprog -fast 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-fast $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-	rm -f _testprog
-fi
-
-
-#  -fpeephole
-printf "checking whether -fpeephole can be used... "
-$CC $COPTIM -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
-cat _testprog.stdout >> _testprog.error
-if grep peephole _testprog.error > /dev/null 2>&1; then
-	printf "no\n"
-else
-	if [ -x _testprog ]; then
-		COPTIM="-fpeephole $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-fi
-rm -f _testprog _testprog.error _testprog.stdout
-
-
-#  -fmove-all-movables
-printf "checking whether -fmove-all-movables can be used... "
-$CC $COPTIM -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
-cat _testprog.stdout >> _testprog.error
-if grep movables _testprog.error > /dev/null 2>&1; then
-	printf "no\n"
-else
-	if [ -x _testprog ]; then
-		COPTIM="-fmove-all-movables $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-fi
-rm -f _testprog _testprog.error _testprog.stdout
-
-
-#  -fomit-frame-pointer
-printf "checking whether -fomit-frame-pointer can be used... "
-$CC $COPTIM -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
-cat _testprog.stdout >> _testprog.error
-if grep frame _testprog.error > /dev/null 2>&1; then
-	printf "no\n"
-else
-	if [ -x _testprog ]; then
-		COPTIM="-fomit-frame-pointer $COPTIM"
-		printf "yes\n"
-	else
-		printf "no\n"
-	fi
-fi
-rm -f _testprog _testprog.error _testprog.stdout
 
 
 ###############################################################################

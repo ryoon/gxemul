@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.59 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_fb.c,v 1.60 2004-11-17 20:55:50 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -523,8 +523,8 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		if ((int64_t)low == -1)
 			break;
 
-		printf("low = %016llx high=%016llx\n",
-			(long long)low, (long long)high);
+		/*  printf("low=%016llx high=%016llx\n",
+		    (long long)low, (long long)high);  */
 
 		x = (low % d->bytes_per_line) * 8 / d->bit_depth;
 		y = low / d->bytes_per_line;

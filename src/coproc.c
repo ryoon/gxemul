@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.23 2004-03-25 20:58:39 debug Exp $
+ *  $Id: coproc.c,v 1.24 2004-04-06 14:05:55 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -744,6 +744,10 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 	/*  TODO: RM5200 idle (?)  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
+
+/*  TODO  */
+if (cp->coproc_nr==1)
+	return;
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);

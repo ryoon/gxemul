@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.234 2005-01-17 08:15:52 debug Exp $
+ *  $Id: cpu.c,v 1.235 2005-01-17 09:55:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -63,6 +63,7 @@ static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
+static char *cop0_names[] = COP0_NAMES;
 
 
 /*
@@ -976,6 +977,11 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	for (coprocnr=0; coprocnr<4; coprocnr++) {
+		int nm1 = 1;
+
+		if (bits32)
+			nm1 = 3;
+
 		if (!(coprocs & (1<<coprocnr)))
 			continue;
 		if (cpu->coproc[coprocnr] == NULL) {
@@ -986,26 +992,30 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		/*  Coprocessor registers:  */
 		/*  TODO: multiple selections per register?  */
-		if (bits32) {
+		for (i=0; i<32; i++) {
 			/*  32-bit:  */
-			for (i=0; i<32; i++) {
-				if ((i & 3) == 0)
-					debug("cpu%i:", cpu->cpu_id);
-				debug("  c%i,%02i = %08x", coprocnr, i,
-				    (int)cpu->coproc[coprocnr]->reg[i]);
-				if ((i & 3) == 3)
-					debug("\n");
-			}
-		} else {
-			/*  64-bit:  */
-			for (i=0; i<32; i++) {
-				if ((i & 1) == 0)
-					debug("cpu%i:", cpu->cpu_id);
-				debug("  c%i,%02i = %016llx", coprocnr, i,
-				    (long long)cpu->coproc[coprocnr]->reg[i]);
-				if ((i & 1) == 1)
-					debug("\n");
-			}
+			if ((i & nm1) == 0)
+				debug("cpu%i:", cpu->cpu_id);
+
+			if (cpu->emul->show_symbolic_register_names &&
+			    coprocnr == 0)
+				debug(" %8s", cop0_names[i]);
+			else
+				debug(" c%i,%02i", coprocnr, i);
+
+			if (bits32)
+				debug("=%08x", (int)cpu->coproc[coprocnr]->reg[i]);
+			else
+				debug("=%016llx", (long long)
+				    cpu->coproc[coprocnr]->reg[i]);
+
+			if ((i & nm1) == nm1)
+				debug("\n");
+
+			/*  Skip the last 16 cop0 registers on R3000 etc.  */
+			if (coprocnr == 0 && cpu->cpu_type.isa_level < 3
+			    && i == 15)
+				i = 31;
 		}
 
 		/*  Floating point control registers:  */

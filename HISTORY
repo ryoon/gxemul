@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.484 2005-01-17 08:40:52 debug Exp $
+$Id: HISTORY,v 1.485 2005-01-17 09:55:56 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1485,3 +1485,4 @@ HISTORY of mips64emul
 		and using %08x instead of %016llx when emulating 32-bit CPUs
 		in more places than before).
 		Removing the dummy sgi_nasid and sgi_cpuinfo devices.
+		Also using symbolic names for coprocessor 0 registers.

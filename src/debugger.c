@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.36 2005-01-17 08:15:58 debug Exp $
+ *  $Id: debugger.c,v 1.37 2005-01-17 09:55:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -36,8 +36,8 @@
  *
  *	Add more functionality that already exists elsewhere in the emulator.
  *
- *	Nicer looking output of register dumps (coprocessor 0 and 1 registers,
- *	etc). Warn about weird/invalid register contents.
+ *	Nicer looking output of register dumps, floating point registers,
+ *	etc. Warn about weird/invalid register contents.
  *
  *	Many other TODOs.
  */
@@ -83,6 +83,7 @@ static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
 
 static char *regnames[] = MIPS_REGISTER_NAMES;
+static char *cop0_names[] = COP0_NAMES;
 
 #define	MAX_CMD_LEN		63
 #define	N_PREVIOUS_CMDS		50
@@ -246,7 +247,24 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 				}
 		}
 
-		/*  TODO: Coprocessor registers.  */
+		if (!match_register) {
+			/*  Check for a symbolic coproc0 name:  */
+			int nr;
+			for (nr=0; nr<32; nr++)
+				if (strcmp(name, cop0_names[nr]) == 0) {
+					if (writeflag) {
+						coproc_register_write(emul->cpus[cpunr],
+						    emul->cpus[cpunr]->coproc[0], nr,
+						    valuep, 1);
+					} else {
+						/*  TODO: Use coproc_register_read instead?  */
+						*valuep = emul->cpus[cpunr]->coproc[0]->reg[nr];
+					}
+					match_register = 1;
+				}
+		}
+
+		/*  TODO: Coprocessor 1,2,3 registers.  */
 	}
 
 	/*  Check for a number match:  */

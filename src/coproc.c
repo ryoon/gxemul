@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.142 2005-01-10 23:22:23 debug Exp $
+ *  $Id: coproc.c,v 1.143 2005-01-17 09:55:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -45,7 +45,8 @@
 #include "opcodes.h"
 
 
-char *cop0_names[32] = COP0_NAMES;
+static char *cop0_names[] = COP0_NAMES;
+static char *regnames[] = MIPS_REGISTER_NAMES;
 
 
 /*  FPU control registers:  */
@@ -719,7 +720,7 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_LO)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_HI)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_ERROREPC)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_RESERVED_22) {
+	if (cp->coproc_nr==0 && reg_nr==COP0_RESERV22) {
 		/*  Used by Linux on Linksys WRT54G  */
 		unimpl = 0;
 	}
@@ -933,7 +934,7 @@ void coproc_register_write(struct cpu *cpu,
 		/*  Most of these are actually TODOs:  */
 		case COP0_ERROREPC:
 		case COP0_DEPC:
-		case COP0_RESERVED_22:	/*  Used by Linux on Linksys WRT54G  */
+		case COP0_RESERV22:	/*  Used by Linux on Linksys WRT54G  */
 		case COP0_DESAVE:
 		case COP0_PERFCNT:
 		case COP0_ERRCTL:	/*  R10000  */
@@ -2000,7 +2001,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MFCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMFCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\tr%i,r%i\n", copz==COPz_DMFCz? "dmfc" : "mfc", cpnr, rt, rd);
+			debug("%s%i\t%s,%s\n",
+			    copz==COPz_DMFCz? "dmfc" : "mfc", cpnr,
+			    regnames[rt], cop0_names[rd]);
 			return;
 		}
 		coproc_register_read(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
@@ -2017,7 +2020,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MTCz << 21))
 	              || ((function & 0x03e007f8) == (COPz_DMTCz << 21)))) {
 		if (unassemble_only) {
-			debug("%s%i\tr%i,r%i\n", copz==COPz_DMTCz? "dmtc" : "mtc", cpnr, rt, rd);
+			debug("%s%i\t%s,%s\n",
+			    copz==COPz_DMTCz? "dmtc" : "mtc", cpnr,
+			    regnames[rt], cop0_names[rd]);
 			return;
 		}
 		tmpvalue = cpu->gpr[rt];
@@ -2039,7 +2044,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
 			if (unassemble_only) {
-				debug("cfc%i\tr%i,r%i\n", cpnr, rt, fs);
+				debug("cfc%i\t%s,copr%i\n", cpnr,
+				    regnames[rt], fs);
 				return;
 			}
 			cpu->gpr[rt] = cp->fcr[fs] & 0xffffffffULL;
@@ -2051,7 +2057,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
 			if (unassemble_only) {
-				debug("ctc%i\tr%i,r%i\n", cpnr, rt, fs);
+				debug("ctc%i\t%s,copr%i\n", cpnr,
+				    regnames[rt], fs);
 				return;
 			}
 

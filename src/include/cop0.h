@@ -2,7 +2,7 @@
 #define	COP0_H
 
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.4 2005-01-09 01:55:28 debug Exp $
+ *  $Id: cop0.h,v 1.5 2005-01-17 09:55:57 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -38,16 +38,17 @@
 	has other bits/registers than an R3000...
     TODO 2: CPUs like the R10000 are probably even a bit more different.  */
 
-/*  Coprocessor 0's registers:  */
-#define	COP0_NAMES	{ "INDEX", "RANDOM", "ENTRYLO0", "ENTRYLO1", \
-			  "CONTEXT", "PAGEMASK", "WIRED", "RESERVED_7", \
-			  "BADVADDR", "COUNT", "ENTRYHI", "COMPARE", \
-			  "STATUS", "CAUSE", "EPC", "PRID", \
-			  "CONFIG", "LLADDR", "WATCHLO", "WATCHHI", \
-			  "XCONTEXT", "RESERVED_21", "RESERVED_22", "DEBUG", \
-			  "DEPC", "PERFCNT", "ERRCTL", "CACHEERR", \
-			  "TAGDATA_LO", "TAGDATA_HI", "ERROREPC", "DESAVE" \
-			}
+/*  Coprocessor 0's registers' names: (max 8 characters long)  */
+#define	COP0_NAMES	{ \
+	"index", "random", "entrylo0", "entrylo1", \
+	"context", "pagemask", "wired", "reserv7", \
+	"badvaddr", "count", "entryhi", "compare", \
+	"status", "cause", "epc", "prid", \
+	"config", "lladdr", "watchlo", "watchhi", \
+	"xcontext", "reserv21", "reserv22", "debug", \
+	"depc", "perfcnt", "errctl", "cacheerr", \
+	"tagdatlo", "tagdathi", "errorepc", "desave" }
+
 #define	COP0_INDEX		0
 #define	   INDEX_P		    0x80000000UL	/*  Probe failure bit. Set by tlbp  */
 #define	   INDEX_MASK		    0x3f
@@ -84,7 +85,7 @@
 #define	   PAGEMASK_MASK	    0x01ffe000
 #define	   PAGEMASK_SHIFT	    13
 #define	COP0_WIRED		6
-#define	COP0_RESERVED_7		7
+#define	COP0_RESERV7		7
 #define	COP0_BADVADDR		8
 #define	COP0_COUNT		9
 #define	COP0_ENTRYHI		10
@@ -144,7 +145,7 @@
 #define	   XCONTEXT_BADVPN2_MASK    0x7ffffff0
 #define	   XCONTEXT_BADVPN2_SHIFT   4
 #define	COP0_FRAMEMASK		21		/*  R10000  */
-#define	COP0_RESERVED_22	22
+#define	COP0_RESERV22		22
 #define	COP0_DEBUG		23
 #define	COP0_DEPC		24
 #define	COP0_PERFCNT		25

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.12 2004-07-11 13:51:01 debug Exp $
+ *  $Id: net.c,v 1.13 2004-07-12 08:41:28 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -85,8 +85,8 @@ unsigned char gateway_addr[6] = { 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
 unsigned char gateway_ipv4[4] = { 10, 0, 0, 254 };
 
 /*  TODO  */
-static int net_socket = -1;
-static int last_source_udp_id;
+static int last_udp_id = 0;
+static int net_udp_socket = -1;
 static int last_source_udp_port;
 static uint32_t last_source_udp_ip;
 static unsigned char last_source_udp_mac[6];
@@ -275,6 +275,11 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	ssize_t res;
 	struct sockaddr_in remote_ip;
 
+	if ((packet[20] & 0x3f) != 0) {
+		fatal("[ net_ip_udp(): WARNING! fragmented UDP packet, TODO ]\n");
+		return;
+	}
+
 	srcport = (packet[34] << 8) + packet[35];
 	dstport = (packet[36] << 8) + packet[37];
 	udp_len = (packet[38] << 8) + packet[39];
@@ -290,20 +295,19 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	}
 	debug(" ]\n");
 
-	if (net_socket < 0) {
-		net_socket = socket(AF_INET, SOCK_DGRAM, 0);
-		if (net_socket < 0) {
+	if (net_udp_socket < 0) {
+		net_udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if (net_udp_socket < 0) {
 			fatal("[ net: UDP: socket() returned %i ]\n",
-			    net_socket);
+			    net_udp_socket);
 			return;
 		}
 
-		/*  Set net_socket to non-blocking:  */
-		res = fcntl(net_socket, F_GETFL);
-		fcntl(net_socket, F_SETFL, res | O_NONBLOCK);
+		/*  Set net_udp_socket to non-blocking:  */
+		res = fcntl(net_udp_socket, F_GETFL);
+		fcntl(net_udp_socket, F_SETFL, res | O_NONBLOCK);
 	}
 
-	last_source_udp_id = (packet[18] << 8) + packet[19] + 1;
 	last_source_udp_port = srcport;
 	last_source_udp_ip = (packet[26] << 24) + (packet[27] << 16)
 	    + (packet[28] << 8) + packet[29];
@@ -317,7 +321,7 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	((unsigned char *)&remote_ip.sin_addr)[3] = packet[33];
 	remote_ip.sin_port = htons(dstport);
 
-	res = sendto(net_socket, packet + 42, len - 42,
+	res = sendto(net_udp_socket, packet + 42, len - 42,
 	    0, (const struct sockaddr *)&remote_ip, sizeof(remote_ip));
 
 	if (res != len-42)
@@ -479,28 +483,77 @@ static void net_arp(void *extra, unsigned char *packet, int len)
  */
 int net_ethernet_rx_avail(void *extra)
 {
-	if (net_socket >= 0) {
+	while (net_udp_socket >= 0) {
 		ssize_t res;
-		unsigned char buf[10000];
+		unsigned char buf[70000];
+		unsigned char udp_data[70008];
 		struct sockaddr_in from;
 		socklen_t from_len = sizeof(from);
+		int ip_len, udp_len;
+		struct ethernet_packet_link *lp;
+		int max_per_packet;
+		int bytes_converted = 0;
+		int this_packets_data_length;
+		int fragment_ofs = 0;
 
-		res = recvfrom(net_socket, buf, sizeof(buf),
+		res = recvfrom(net_udp_socket, buf, sizeof(buf),
 		    0, (struct sockaddr *)&from, &from_len);
 
-		if (res >= 0) {
-			/*
-			 *  Create a UDP packet:
-			 *	Ethernet = 14 bytes
-			 *	IP = 20 bytes
-			 *	UDP = 8 bytes + data
-			 */
-			struct ethernet_packet_link *lp;
-			int ip_len = 20 + 8 + res;
-			int udp_len = 8 + res;
+		/*  No more incoming UDP? Then break.  */
+		if (res < 0)
+			break;
+
+		last_udp_id ++;
+
+		/*
+		 *  We now have a UDP packet of size 'res' which we need
+		 *  turn into one or more ethernet packets for the emulated
+		 *  operating system.  Ethernet packets are at most 1518
+		 *  bytes long. With some margin, that means we can have
+		 *  about 1500 bytes per packet.
+		 *
+		 *	Ethernet = 14 bytes
+		 *	IP = 20 bytes
+		 *	UDP = 8 bytes + data
+		 *
+		 *  So data can be at most max_per_packet - 42. For UDP
+		 *  fragments, each multiple should (?) be a multiple of
+		 *  8 bytes.
+		 */
+		max_per_packet = 1500;
+
+		/*  UDP:  */
+		udp_len = res + 8;
+		udp_data[0] = ((unsigned char *)&from)[2];
+		udp_data[1] = ((unsigned char *)&from)[3];
+		udp_data[2] = (last_source_udp_port >> 8) & 0xff;
+		udp_data[3] = (last_source_udp_port >> 0) & 0xff;
+		udp_data[4] = udp_len >> 8;
+		udp_data[5] = udp_len & 0xff;
+		udp_data[6] = 0;
+		udp_data[7] = 0;
+		memcpy(udp_data + 8, buf, res);
+		/*
+		 *  TODO:  UDP checksum, if neccessary. At least NetBSD
+		 *  and OpenBSD accept UDP packets with 0x0000 in the
+		 *  checksum field anyway.
+		 */
+
+		while (bytes_converted < udp_len) {
+			this_packets_data_length = udp_len - bytes_converted;
+
+			/*  Do we need to fragment?  */
+			if (this_packets_data_length > max_per_packet-34) {
+				this_packets_data_length =
+				    max_per_packet - 34;
+				while (this_packets_data_length & 7)
+					this_packets_data_length --;
+			}
+
+			ip_len = 20 + this_packets_data_length;
 
 			lp = net_allocate_packet_link(extra,
-			    14 + 20 + 8 + res);
+			    14 + 20 + this_packets_data_length);
 
 			/*  Ethernet header:  */
 			memcpy(lp->data + 0, last_source_udp_mac, 6);
@@ -513,10 +566,13 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[15] = 0x00;	/*  tos  */
 			lp->data[16] = ip_len >> 8;
 			lp->data[17] = ip_len & 0xff;
-			lp->data[18] = last_source_udp_id >> 8;
-			lp->data[19] = last_source_udp_id & 0xff;
-			lp->data[20] = 0x40;	/*  TODO: ofs  */
-			lp->data[21] = 0;	/*  TODO: ofs  */
+			lp->data[18] = last_udp_id >> 8;
+			lp->data[19] = last_udp_id & 0xff;
+			lp->data[20] = (fragment_ofs >> 8);
+			if (bytes_converted + this_packets_data_length
+			    < udp_len)
+				lp->data[20] |= 0x20;	/*  More fragments  */
+			lp->data[21] = fragment_ofs & 0xff;
 			lp->data[22] = 0x40;	/*  ttl  */
 			lp->data[23] = 17;	/*  p = UDP  */
 			lp->data[26] = ((unsigned char *)&from)[4];
@@ -529,16 +585,11 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[33] = (last_source_udp_ip >> 0) & 0xff;
 			net_ip_checksum(lp->data + 14, 10, 20);
 
-			/*  UDP:  */
-			lp->data[34] = ((unsigned char *)&from)[2];
-			lp->data[35] = ((unsigned char *)&from)[3];
-			lp->data[36] = (last_source_udp_port >> 8) & 0xff;
-			lp->data[37] = (last_source_udp_port >> 0) & 0xff;
-			lp->data[38] = udp_len >> 8;
-			lp->data[39] = udp_len & 0xff;
-			memcpy(lp->data + 42, buf, res);
+			memcpy(lp->data+34, udp_data + bytes_converted,
+			    this_packets_data_length);
 
-			/*  TODO:  UDP checksum, if neccessary  */
+			bytes_converted += this_packets_data_length;
+			fragment_ofs = bytes_converted / 8;
 		}
 	}
 
@@ -615,9 +666,9 @@ int net_ethernet_rx(void *extra, unsigned char **packetp, int *lenp)
  */
 void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 {
-#if 0
-	int i;
+	int i, n;
 
+#if 0
 	debug("[ net: ethernet: ");
 	for (i=0; i<6; i++)
 		debug("%02x", packet[i]);
@@ -640,16 +691,34 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 		return;
 	}
 
-	/*  ARP:  */
-	if (len == 60 && packet[12] == 0x08 && packet[13] == 0x06) {
-		net_arp(extra, packet + 14, len - 14);
+	/*  IP:  */
+	if (packet[12] == 0x08 && packet[13] == 0x00) {
+		/*  Routed via the gateway?  */
+		if (memcmp(packet+0, gateway_addr, 6) == 0) {
+			net_ip(extra, packet, len);
+			return;
+		}
+
+		/*  Broadcast? (DHCP does this.)  */
+		n = 0;
+		for (i=0; i<6; i++)
+			if (packet[i] == 0xff)
+				n++;
+		if (n == 6) {
+			fatal("[ net: TX: IP broadcast: TODO ]\n");
+			return;
+		}
+
+		fatal("[ net: TX: IP packet not for gateway, and not broadcast: ");
+		for (i=0; i<14; i++)
+			fatal("%02x", packet[i]);
+		fatal(" ]\n");
 		return;
 	}
 
-	/*  IP, routed via the gateway:  */
-	if (packet[12] == 0x08 && packet[13] == 0x00 &&
-	    memcmp(packet+0, gateway_addr, 6) == 0) {
-		net_ip(extra, packet, len);
+	/*  ARP:  */
+	if (len == 60 && packet[12] == 0x08 && packet[13] == 0x06) {
+		net_arp(extra, packet + 14, len - 14);
 		return;
 	}
 

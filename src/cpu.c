@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.85 2004-07-03 20:09:55 debug Exp $
+ *  $Id: cpu.c,v 1.86 2004-07-04 00:30:39 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -123,19 +123,19 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 		exit(1);
 	}
 
-	/*
-	 *  MIPS Code and Data caches:
-	 *
-	 *  TODO: There aren't really any caches :-)
-	 *  Most of the code related to cache handling is just good enough
-	 *  to fake it to the emulated OS.
-	 */
+	/*  Data and Instruction caches:  */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
-		cpu->cache_size[i] = 32768;
+		cpu->cache_size[i] = 16384;
+		cpu->cache_linesize[i] = 16;
+		cpu->cache_mask[i] = cpu->cache_size[i] - 1;
+		cpu->cache_miss_penalty[i] = 10;	/*  TODO ?  */
 		cpu->cache[i] = malloc(cpu->cache_size[i]);
 		if (cpu->cache[i] == NULL) {
 			fprintf(stderr, "out of memory\n");
 		}
+
+		/*  Set cache_last_paddr to something "impossible":  */
+		cpu->cache_last_paddr[i] = IMPOSSIBLE_PADDR;
 	}
 
 	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
@@ -802,16 +802,21 @@ int cpu_run_instr(struct cpu *cpu)
 		 *
 		 *  2)  Fallback to reading from memory the usual way.
 		 */
-		if (cpu->pc_last_was_in_host_ram && (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
-			uint64_t paddr = cpu->pc_last_physical_page | (cached_pc & 0xfff);
-			int offset = paddr & ((1 << cpu->mem->bits_per_memblock) - 1);
+		if (cpu->pc_last_was_in_host_ram &&
+		    (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
+			uint64_t paddr = cpu->pc_last_physical_page
+			    | (cached_pc & 0xfff);
 
-			/*  NOTE: This only works on the host if offset is aligned correctly!  (TODO)  */
-			*(uint32_t *)instr = *(uint32_t *)(cpu->pc_last_host_memblock + offset);
+			/*  NOTE: This only works on the host if offset is
+			    aligned correctly!  (TODO)  */
+			*(uint32_t *)instr = *(uint32_t *)
+			    (cpu->pc_last_host_4k_page + (paddr & 0xfff));
 
-			/*  TODO:  Make sure this works with dynamic binary translation...  */
+			/*  TODO:  Make sure this works with
+			    dynamic binary translation...  */
                 } else {
-			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
+			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
+			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 		}
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.77 2004-07-03 19:45:21 debug Exp $
+ *  $Id: misc.h,v 1.78 2004-07-04 00:31:01 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -49,6 +49,7 @@
  *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using
  *  -D if you want it. (This is done by ./configure --delays)
  */
+#define USE_TINY_CACHE
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
@@ -164,7 +165,7 @@ struct cpu_type_def {
 	char		exc_model;		/*  EXC3K or EXC4K  */
 	char		mmu_model;		/*  MMU3K or MMU4K  */
 	char		isa_level;		/*  1, 2, 3, 4, 5  */
-	unsigned char	nr_of_tlb_entries;	/*  48, 64, ...  */
+	int		nr_of_tlb_entries;	/*  48, 64, ...  */
 	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4, for example  */
 };
 
@@ -488,6 +489,9 @@ struct coproc {
     can "never" have:  */
 #define	PC_LAST_PAGE_IMPOSSIBLE_VALUE	3
 
+/*  An "impossible" paddr:  */
+#define	IMPOSSIBLE_PADDR		0x1212343456566767ULL
+
 
 struct cpu {
 	int		cpu_id;
@@ -509,6 +513,7 @@ struct cpu {
 	 *  most recent lookups into the TLB.  Whenever the TLB is
 	 *  written to, translation_cached[] must be filled with zeros.
 	 */
+#ifdef USE_TINY_CACHE
 	int		translation_cached_i;
 	int		translation_cached[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
@@ -518,7 +523,7 @@ struct cpu {
 	int		translation_instr_cached[N_TRANSLATION_CACHE_INSTR];
 	uint64_t	translation_instr_cached_vaddr_pfn[N_TRANSLATION_CACHE_INSTR];
 	uint64_t	translation_instr_cached_paddr[N_TRANSLATION_CACHE_INSTR];
-
+#endif
 
 	/*  Special purpose registers:  */
 	uint64_t	pc;
@@ -530,25 +535,24 @@ struct cpu {
 	/*
 	 *  For faster memory lookup when running instructions:
 	 *
-	 *  Reading memory to load instructions is a very common
-	 *  thing in the emulator, and an instruction is very often
-	 *  read from just after the previous instruction.  That means
-	 *  that we don't have to go through the TLB each time.
+	 *  Reading memory to load instructions is a very common thing in the
+	 *  emulator, and an instruction is very often read from the address
+	 *  following the previously executed instruction. That means that we
+	 *  don't have to go through the TLB each time.
 	 *
-	 *  We then get the vaddr -> paddr translation for free.
-	 *  There is an even better case when the paddr is a RAM
-	 *  address (as opposed to an address in a memory mapped
-	 *  device). Then we can figure out the address in the
-	 *  host's memory directly, and skip the paddr -> host
+	 *  We then get the vaddr -> paddr translation for free. There is an
+	 *  even better case when the paddr is a RAM address (as opposed to an
+	 *  address in a memory mapped device). Then we can figure out the
+	 *  address in the host's memory directly, and skip the paddr -> host
 	 *  address calculation as well.
 	 *
-	 *  A modification to the TLB should set the virtual_page
-	 *  variable to an "impossible" value, so that there won't
-	 *  be a hit on the next instruction.
+	 *  A modification to the TLB should set the virtual_page variable to
+	 *  an "impossible" value, so that there won't be a hit on the next
+	 *  instruction.
 	 */
 	uint64_t	pc_last_virtual_page;
 	uint64_t	pc_last_physical_page;
-	unsigned char	*pc_last_host_memblock;
+	unsigned char	*pc_last_host_4k_page;
 	int		pc_last_was_in_host_ram;
 
 	/*  General purpose registers:  */
@@ -584,8 +588,8 @@ struct cpu {
 #endif
 
 	int		rmw;		/*  Read-Modify-Write  */
-	uint64_t	rmw_addr;		/*  Address of rmw modification  */
-	int		rmw_len;		/*  Length of rmw modification  */
+	uint64_t	rmw_addr;	/*  Address of rmw modification  */
+	int		rmw_len;	/*  Length of rmw modification  */
 
 	/*
 	 *  TODO:  The R5900 has 128-bit registers. I'm not really
@@ -608,13 +612,17 @@ struct cpu {
 	long		stats__regimm[N_REGIMM];
 	long		stats__special2[N_SPECIAL];
 
-	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
-
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];
 	int		cache_size[2];
+	int		cache_linesize[2];
+	int		cache_mask[2];
 	int		cache_valid[2];
-	uint64_t	last_cached_address[2];
+	int		cache_miss_penalty[2];
+	uint64_t	cache_last_paddr[2];
+
+	/*  TODO: remove this once cache functions correctly  */
+	int		r10k_cache_disable_TODO;
 
 	/*
 	 *  Hardware devices, run every x clock ticks/instructions.

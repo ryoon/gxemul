@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.21 2005-01-16 08:37:14 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.22 2005-01-23 13:43:02 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "imcreg.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
@@ -381,8 +382,8 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgi_ip22_init():
  */
-struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, int guiness_flag)
+struct sgi_ip22_data *dev_sgi_ip22_init(struct machine *machine,
+	struct memory *mem, uint64_t baseaddr, int guiness_flag)
 {
 	struct sgi_ip22_data *d = malloc(sizeof(struct sgi_ip22_data));
 	if (d == NULL) {
@@ -404,7 +405,7 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem,
 	    DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access,
 	    (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 14);
+	machine_add_tickfunction(machine, dev_sgi_ip22_tick, d, 14);
 
 	return d;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,53 +23,41 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  *  SUCH DAMAGE.
- *   
  *
- *  $Id: pci_dec21143.c,v 1.6 2005-01-23 13:43:02 debug Exp $
  *
- *  DEC 21143 PCI ethernet.
+ *  $Id: cpu_common.c,v 1.1 2005-01-23 13:43:07 debug Exp $
  *
- *  TODO:  This more or less just a dummy device, so far.
+ *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <sys/types.h>
 
-#include "memory.h"
+#include "mips_cpu.h"
 #include "misc.h"
-#include "devices.h"
-#include "bus_pci.h"
 
 
 /*
- *  pci_dec21143_rr():
+ *  cpu_interrupt():
+ *
+ *  Assert an interrupt.
+ *  Return value is 1 if the interrupt was asserted, 0 otherwise.
  */
-uint32_t pci_dec21143_rr(int reg)
+int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	switch (reg) {
-	case 0x00:
-		return PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);
-	case 0x04:
-		return 0xffffffff;
-	case 0x08:
-		return PCI_CLASS_CODE(PCI_CLASS_NETWORK, PCI_SUBCLASS_NETWORK_ETHERNET, 0) + 0x41;		/*  Revision 4.1  */
-	case 0x10:
-		return 0x9ca00001;	/*  1ca00000, I/O space  (I have no idea about these...)  */
-	case 0x14:
-		return 0x9ca10000;	/*  1ca10000, mem space  (I have no idea about these...)  */
-	case 0x3c:
-		return 0x00000100;	/*  interrupt pin A  */
-	default:
-		return 0;
-	}
+	return mips_cpu_interrupt(cpu, irq_nr);
 }
 
 
 /*
- *  pci_dec21143_init():
+ *  cpu_interrupt_ack():
+ *
+ *  Acknowledge an interrupt.
+ *  Return value is 1 if the interrupt was deasserted, 0 otherwise.
  */
-void pci_dec21143_init(struct machine *machine, struct memory *mem)
+int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
+	return mips_cpu_interrupt_ack(cpu, irq_nr);
 }
 

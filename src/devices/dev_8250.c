@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.12 2005-01-09 01:55:24 debug Exp $
+ *  $Id: dev_8250.c,v 1.13 2005-01-23 13:43:01 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -126,8 +127,8 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_8250_init():
  */
-void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int addrmult)
+void dev_8250_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int addrmult)
 {
 	struct dev_8250_data *d;
 
@@ -148,6 +149,6 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "8250", baseaddr,
 	    DEV_8250_LENGTH * addrmult, dev_8250_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_8250_tick, d, 13);
+	machine_add_tickfunction(machine, dev_8250_tick, d, 13);
 }
 

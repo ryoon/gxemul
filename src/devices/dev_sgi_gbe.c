@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.18 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.19 2005-01-23 13:43:02 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -37,6 +37,7 @@
 
 #include "console.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -362,7 +363,8 @@ odata = random();	/*  testhack for the ip32 prom  */
 /*
  *  dev_sgi_gbe_init():
  */
-void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+void dev_sgi_gbe_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct sgi_gbe_data *d;
 
@@ -376,12 +378,12 @@ void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	d->yres = GBE_DEFAULT_YRES;
 	d->bitdepth = 8;
 	d->control = 0x20aa000;		/*  or 0x00000001?  */
-	d->fb_data = dev_fb_init(cpu, mem, FAKE_GBE_FB_ADDRESS,
+	d->fb_data = dev_fb_init(machine, mem, FAKE_GBE_FB_ADDRESS,
 	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE", 0);
 	set_grayscale_palette(d->fb_data, 256);
 
 	memory_device_register(mem, "sgi_gbe", baseaddr, DEV_SGI_GBE_LENGTH,
 	    dev_sgi_gbe_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_sgi_gbe_tick, d, 18);
+	machine_add_tickfunction(machine, dev_sgi_gbe_tick, d, 18);
 }
 

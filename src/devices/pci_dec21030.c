@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.12 2005-01-09 01:55:26 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.13 2005-01-23 13:43:02 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -249,7 +249,7 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
 /*
  *  pci_dec21030_init():
  */
-void pci_dec21030_init(struct cpu *cpu, struct memory *mem)
+void pci_dec21030_init(struct machine *machine, struct memory *mem)
 {
 	struct dec21030_data *d;
 
@@ -269,7 +269,7 @@ void pci_dec21030_init(struct cpu *cpu, struct memory *mem)
 	 *  TODO:  I have no idea about how/where this framebuffer should
 	 *  be in relation to the pci device
 	 */
-	d->vfb_data = dev_fb_init(cpu, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
+	d->vfb_data = dev_fb_init(machine, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
 	    dec21030_default_xsize, dec21030_default_ysize,
 	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA", 0);
 }

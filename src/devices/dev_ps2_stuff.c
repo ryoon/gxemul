@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.11 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.12 2005-01-23 13:43:02 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -251,8 +252,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_ps2_stuff_init():
  */
-struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr)
+struct ps2_data *dev_ps2_stuff_init(struct machine *machine,
+	struct memory *mem, uint64_t baseaddr)
 {
 	struct ps2_data *d;
 
@@ -267,7 +268,8 @@ struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "ps2_stuff", baseaddr,
 	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_ps2_stuff_tick, d, TICK_STEPS_SHIFT);
+	machine_add_tickfunction(machine,
+	    dev_ps2_stuff_tick, d, TICK_STEPS_SHIFT);
 
 	return d;
 }

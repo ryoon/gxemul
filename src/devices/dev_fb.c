@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.81 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_fb.c,v 1.82 2005-01-23 13:43:02 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -795,7 +795,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
  *
  *  xsize and ysize are ignored if vfb_type is VFB_DEC_VFB01 or 02.
  */
-struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
+struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
 	int xsize, int ysize, int bit_depth, char *name, int logo)
 {
@@ -853,7 +853,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
 
-	d->vfb_scaledown = cpu->machine->x11_scaledown;
+	d->vfb_scaledown = machine->x11_scaledown;
 
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
 	size = d->ysize * d->bytes_per_line;
@@ -898,9 +898,9 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	title[sizeof(title)-1] = '\0';
 
 #ifdef WITH_X11
-	if (cpu->machine->use_x11)
+	if (machine->use_x11)
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    title, cpu->machine->x11_scaledown, cpu->machine);
+		    title, machine->x11_scaledown, machine);
 	else
 #endif
 		d->fb_window = NULL;
@@ -910,7 +910,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
 	    d->framebuffer);
 
-	cpu_add_tickfunction(cpu, dev_fb_tick, d, FB_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_fb_tick, d, FB_TICK_SHIFT);
 	return d;
 }
 

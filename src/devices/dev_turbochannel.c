@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.37 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.38 2005-01-23 13:43:02 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "sfbreg.h"
@@ -146,8 +147,9 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
  *  TODO: When running for example dual-head, maybe the name of each
  *        framebuffer should include the card slot number?
  */
-void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
-	uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq)
+void dev_turbochannel_init(struct machine *machine, struct memory *mem,
+	int slot_nr, uint64_t baseaddr, uint64_t endaddr,
+	char *device_name, int irq)
 {
 	struct vfb_data *fb;
 	struct turbochannel_data *d;
@@ -201,29 +203,29 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 
 	if (strcmp(device_name, "PMAD-AA")==0) {
 		/*  le in NetBSD, Lance ethernet  */
-		dev_le_init(cpu, mem, baseaddr, 0, 0, irq, DEV_LE_LENGTH);
+		dev_le_init(machine, mem, baseaddr, 0, 0, irq, DEV_LE_LENGTH);
 		/*  One ROM at 0x1c03e0, and one at 0x3c0000.  */
 		rom_skip = 0x300;
 		rom_offset = 0x1c0000;
 		rom_length = 0x201000;
 	} else if (strcmp(device_name, "PMAZ-AA")==0) {
 		/*  asc in NetBSD, SCSI  */
-		dev_asc_init(cpu, mem, baseaddr, irq, d,
+		dev_asc_init(machine, mem, baseaddr, irq, d,
 		    DEV_ASC_DEC, NULL, NULL);
 		rom_offset = 0xc0000;
 		/*  There is a copy at 0x0, at least that's where Linux
 		    looks for the rom signature  */
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name, 1);
+		fb = dev_fb_init(machine, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name, 1);
 		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);	/*  palette  */
 		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);	/*  cursor  */
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
-		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC,
+		fb = dev_fb_init(machine, mem, baseaddr, VFB_GENERIC,
 		    1024,864, 1024,1024,8, device_name, 1);
-		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
+		dev_bt459_init(machine, mem, baseaddr + VFB_CFB_BT459,
 		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
 		/*  ROM at both 0x380000 and 0x3c0000?  */
 		rom_offset = 0x380000;
@@ -231,21 +233,21 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	} else if (strcmp(device_name, "PMAGB-BA")==0) {
 		/*  sfb in NetBSD  */
 		/*  TODO: This is not working with Ultrix yet.  */
-		fb = dev_fb_init(cpu, mem, baseaddr + SFB_OFFSET_VRAM,
+		fb = dev_fb_init(machine, mem, baseaddr + SFB_OFFSET_VRAM,
 		    VFB_GENERIC, 1280,1024, 1280,1024,8, device_name, 1);
-		dev_sfb_init(cpu, mem, baseaddr + SFB_ASIC_OFFSET, fb);
+		dev_sfb_init(machine, mem, baseaddr + SFB_ASIC_OFFSET, fb);
 		/*  TODO: the CLEAR doesn't get through, as the address
 			range is already in use by the asic  */
-		dev_bt459_init(cpu, mem, baseaddr + SFB_OFFSET_BT459,
+		dev_bt459_init(machine, mem, baseaddr + SFB_OFFSET_BT459,
 		    baseaddr + SFB_CLEAR, fb, 8, irq, BT459_BBA);
 		rom_offset = 0x0;	/*  ? TODO  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */
-		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PX, irq);
+		dev_px_init(machine, mem, baseaddr, DEV_PX_TYPE_PX, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DA")==0) {
 		/*  pxg in NetBSD  */
-		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PXG, irq);
+		dev_px_init(machine, mem, baseaddr, DEV_PX_TYPE_PXG, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-EA")==0) {
 		/*  pxg+ in NetBSD: TODO  (not supported by the kernel I've tried)  */
@@ -253,22 +255,22 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-FA")==0) {
 		/*  "pxg+ Turbo" in NetBSD  */
-		dev_px_init(cpu, mem, baseaddr, DEV_PX_TYPE_PXGPLUSTURBO, irq);
+		dev_px_init(machine, mem, baseaddr, DEV_PX_TYPE_PXGPLUSTURBO, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DV")==0) {
 		/*  xcfb in NetBSD: TODO  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV", 1);
+		fb = dev_fb_init(machine, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV", 1);
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-JA")==0) {
 		/*  "Truecolor", mixed 8- and 24-bit  */
-		dev_pmagja_init(cpu, mem, baseaddr, irq);
+		dev_pmagja_init(machine, mem, baseaddr, irq);
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */
-		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO", 1);
+		fb = dev_fb_init(machine, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO", 1);
 		/*  TODO: bt463 at offset 0x040000, not bt459  */
-		dev_bt459_init(cpu, mem, baseaddr + 0x40000, 0, fb, 8, irq, 0);		/*  TODO: type  */
+		dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, fb, 8, irq, 0);		/*  TODO: type  */
 		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);				/*  cursor  */
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.6 2005-01-21 19:50:18 debug Exp $
+ *  $Id: machine.h,v 1.7 2005-01-23 13:43:05 debug Exp $
  */
 
 #include <sys/time.h>
@@ -38,10 +38,13 @@
 #define	MAX_BREAKPOINTS		8
 #define	BREAKPOINT_FLAG_R	1
 
+#define	MAX_TICK_FUNCTIONS	14
+
 #include "symbol.h"
 
 struct diskimage;
 struct emul;
+struct memory;
 
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
@@ -54,7 +57,25 @@ struct machine {
 	int	machine_subtype;
 	char	*machine_name;
 
-	char	*cpu_name;
+	/*
+	 *  The "mainbus":
+	 *
+	 *	o)  memory
+	 *	o)  devices
+	 *	o)  CPUs
+	 */
+
+	struct memory *memory;
+
+	/*  Hardware devices, run every x clock cycles.  */
+	int	n_tick_entries;
+	int	ticks_till_next[MAX_TICK_FUNCTIONS];
+	int	ticks_reset_value[MAX_TICK_FUNCTIONS];
+	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
+	void	*tick_extra[MAX_TICK_FUNCTIONS];
+
+	char	*cpu_name;  /*  TODO: remove this, there could be several
+				cpus with different names in a machine  */
 	int	bootstrap_cpu;
 	int	use_random_bootstrap_cpu;
 	int	ncpus;
@@ -213,14 +234,18 @@ struct machine {
 
 /*  machine.c:  */
 struct machine *machine_new(char *name, struct emul *emul);
+void machine_add_tickfunction(struct machine *machine,
+	void (*func)(struct cpu *, void *), void *extra, int clockshift);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
 int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
 int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
 int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16);
-void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
-void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
+void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data,
+	uint64_t data32);
+void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data,
+	uint64_t data32);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct machine *machine);

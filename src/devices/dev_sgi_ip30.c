@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.14 2005-01-16 16:32:15 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.15 2005-01-23 13:43:02 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
@@ -325,7 +326,8 @@ int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgi_ip30_init():
  */
-struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine,
+	struct memory *mem, uint64_t baseaddr)
 {
 	struct sgi_ip30_data *d = malloc(sizeof(struct sgi_ip30_data));
 	if (d == NULL) {
@@ -345,7 +347,7 @@ struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uin
 	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
 	    0x10000, dev_sgi_ip30_5_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sgi_ip30_tick, d, 16);
+	machine_add_tickfunction(machine, dev_sgi_ip30_tick, d, 16);
 
 	return d;
 }

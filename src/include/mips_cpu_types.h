@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_types.h,v 1.11 2005-01-23 10:47:17 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.1 2005-01-23 13:43:05 debug Exp $
  *
  *  MIPS CPU types.
  */

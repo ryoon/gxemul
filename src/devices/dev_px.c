@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.21 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_px.c,v 1.22 2005-01-23 13:43:02 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -77,6 +77,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -649,8 +650,8 @@ odata = random();
 /*
  *  dev_px_init():
  */
-void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int px_type, int irq_nr)
+void dev_px_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int px_type, int irq_nr)
 {
 	struct px_data *d;
 
@@ -695,7 +696,7 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		exit(1);
 	}
 
-	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC,
+	d->vfb_data = dev_fb_init(machine, d->fb_mem, 0, VFB_GENERIC,
 	    PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name, 1);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (2)\n");
@@ -704,13 +705,13 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	switch (d->type) {
 	case DEV_PX_TYPE_PX:
-		dev_bt459_init(cpu, mem, baseaddr + 0x200000, 0,
+		dev_bt459_init(machine, mem, baseaddr + 0x200000, 0,
 		    d->vfb_data, 8, irq_nr, BT459_PX);
 		break;
 	case DEV_PX_TYPE_PXG:
 	case DEV_PX_TYPE_PXGPLUS:
 	case DEV_PX_TYPE_PXGPLUSTURBO:
-		dev_bt459_init(cpu, mem, baseaddr + 0x300000, 0,
+		dev_bt459_init(machine, mem, baseaddr + 0x300000, 0,
 		    d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
 		break;
 	default:
@@ -719,6 +720,6 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "px", baseaddr, DEV_PX_LENGTH,
 	    dev_px_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_px_tick, d, 14);
+	machine_add_tickfunction(machine, dev_px_tick, d, 14);
 }
 

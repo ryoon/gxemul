@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.62 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_asc.c,v 1.63 2005-01-23 13:43:01 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -58,6 +58,7 @@
 
 #include "devices.h"
 #include "diskimage.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -1192,7 +1193,7 @@ break;
  *
  *  Register an 'asc' device.
  */
-void dev_asc_init(struct cpu *cpu, struct memory *mem,
+void dev_asc_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, void *turbochannel,
 	int mode,
 	size_t (*dma_controller)(void *dma_controller_data,
@@ -1231,6 +1232,6 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 		    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->dma);
 	}
 
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
+	machine_add_tickfunction(machine, dev_asc_tick, d, 15);
 }
 

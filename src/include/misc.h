@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.208 2005-01-23 11:19:37 debug Exp $
+ *  $Id: misc.h,v 1.209 2005-01-23 13:43:05 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -140,8 +140,6 @@ struct memory {
 #define	MEM_WRITE			1
 
 
-#define	MAX_TICK_FUNCTIONS	12
-
 #define	CACHE_DATA			0
 #define	CACHE_INSTRUCTION		1
 #define	CACHE_NONE			2
@@ -182,7 +180,12 @@ void arcbios_set_default_exception_handler(struct cpu *cpu);
 void arcbios_init(void);
 
 
-/*  debugger:  */
+/*  cpu_common.c:  */
+int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
+int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
+
+
+/*  debugger.c:  */
 void debugger_activate(int x);
 void debugger(void);
 void debugger_init(struct emul **emuls, int n_emuls);

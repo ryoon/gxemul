@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.17 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_rd94.c,v 1.18 2005-01-23 13:43:02 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -37,6 +37,7 @@
 #include "bus_pci.h"
 #include "cop0.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -179,7 +180,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_rd94_init():
  */
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
+struct pci_data *dev_rd94_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int pciirq)
 {
 	struct rd94_data *d = malloc(sizeof(struct rd94_data));
@@ -193,7 +194,7 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
 	    dev_rd94_access, (void *)d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_rd94_tick, d, RD94_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_rd94_tick, d, RD94_TICK_SHIFT);
 
 	return d->pci_data;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.25 2005-01-15 07:32:56 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.26 2005-01-23 13:43:02 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -283,8 +284,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_ns16550_init():
  */
-void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int addrmult, int in_use)
+void dev_ns16550_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int addrmult, int in_use)
 {
 	struct ns_data *d;
 
@@ -307,6 +308,6 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "ns16550", baseaddr,
 	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d,
 	    MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, NS16550_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_ns16550_tick, d, NS16550_TICK_SHIFT);
 }
 

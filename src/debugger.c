@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.51 2005-01-23 11:19:39 debug Exp $
+ *  $Id: debugger.c,v 1.52 2005-01-23 13:43:07 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -55,12 +55,12 @@
 
 #include "console.h"
 #include "cop0.h"
-#include "cpu_types.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
+#include "mips_cpu_types.h"
 #include "net.h"
 
 #ifdef HACK_STRTOLL

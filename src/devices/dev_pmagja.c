@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.11 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.12 2005-01-23 13:43:02 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
@@ -183,8 +184,8 @@ for (i=0; i<len; i++)
 /*
  *  dev_pmagja_init():
  */
-void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr)
+void dev_pmagja_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr)
 {
 	struct pmagja_data *d;
 
@@ -202,14 +203,15 @@ void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		fprintf(stderr, "dev_pmagja_init(): out of memory (1)\n");
 		exit(1);
 	}
-	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC, XSIZE, YSIZE, XSIZE, YSIZE, 24, "PMAG-JA", 1);
+	d->vfb_data = dev_fb_init(machine, d->fb_mem, 0, VFB_GENERIC,
+	    XSIZE, YSIZE, XSIZE, YSIZE, 24, "PMAG-JA", 1);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "dev_pmagja_init(): out of memory (2)\n");
 		exit(2);
 	}
 
 	/*  TODO: not bt459, but a bt463:  */
-	dev_bt459_init(cpu, mem, baseaddr + 0x40000, 0, d->vfb_data, 8, irq_nr, 0);	/*  palette  (TODO: type)  */
+	dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, d->vfb_data, 8, irq_nr, 0);	/*  palette  (TODO: type)  */
 	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);			/*  cursor  */
 
 	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,

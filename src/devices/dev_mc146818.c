@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.63 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.64 2005-01-23 13:43:02 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -91,12 +91,10 @@ struct mc_data {
  */
 static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 {
-	int64_t emulated_hz;
+	int64_t emulated_hz = cpu->machine->emulated_hz;
+#if 0
 	static int warning_printed = 0;
 
-	emulated_hz = cpu->machine->emulated_hz;
-
-#if 0
 	/*
 	 *  A hack to make Ultrix run, even on very fast host machines.
 	 *
@@ -560,8 +558,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
  *  This needs to work for both DECstation emulation and other machine types,
  *  so it contains both rtc related stuff and the station's Ethernet address.
  */
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int access_style, int addrdiv)
+void dev_mc146818_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int access_style, int addrdiv)
 {
 	unsigned char ether_address[6];
 	int i, dev_len;
@@ -640,6 +638,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	mc146818_update_time(d);
 
-	cpu_add_tickfunction(cpu, dev_mc146818_tick, d, TICK_STEPS_SHIFT);
+	machine_add_tickfunction(machine, dev_mc146818_tick,
+	    d, TICK_STEPS_SHIFT);
 }
 

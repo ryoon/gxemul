@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.26 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_vga.c,v 1.27 2005-01-23 13:43:02 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -90,7 +91,8 @@ struct vga_data {
  *  been written to. It will redraw all characters within the range start..end
  *  using the right palette.
  */
-void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
+static void vga_update(struct machine *machine, struct vga_data *d,
+	int start, int end)
 {
 	int fg, bg, i, x,y, subx, line;
 
@@ -141,7 +143,8 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 
 				/*  TODO: don't hardcode  */
 				if (addr < 480*640*3)
-					dev_fb_access(cpu, cpu->mem, addr, &pixel[0],
+					dev_fb_access(machine->cpus[0],
+					    machine->memory, addr, &pixel[0],
 					    sizeof(pixel), MEM_WRITE, d->fb);
 			}
 		}
@@ -190,14 +193,15 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->font_size = 8;
 			d->font = font8x8;
 			d->max_y = VGA_MEM_MAXY;
-			vga_update(cpu, d, 0, d->max_x * d->max_y * 2 -1);
+			vga_update(cpu->machine, d, 0,
+			    d->max_x * d->max_y * 2 -1);
 			vga_update_cursor(d);
 		} else if (y >= 30 && d->font_size > 11) {
 			/*  Switch to 8x10 font:  */
 			debug("SWITCHING to 8x10 font\n");
 			d->font_size = 11;	/*  NOTE! 11  */
 			d->font = font8x10;
-			vga_update(cpu, d, 0, d->max_x * 44 * 2 -1);
+			vga_update(cpu->machine, d, 0, d->max_x * 44 * 2 -1);
 			d->max_y = 43;
 			vga_update_cursor(d);
 		}
@@ -216,7 +220,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			}
 
 			if (modified)
-				vga_update(cpu, d, relative_addr,
+				vga_update(cpu->machine, d, relative_addr,
 				    relative_addr + len-1);
 		} else
 			memcpy(data, d->videomem + relative_addr, len);
@@ -326,8 +330,9 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
  *  Register a VGA text console device. max_x and max_y could be something
  *  like 80 and 25, respectively.
  */
-void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
-	uint64_t control_base, int max_x, int max_y, char *name)
+void dev_vga_init(struct machine *machine, struct memory *mem,
+	uint64_t videomem_base, uint64_t control_base, int max_x, int max_y,
+	char *name)
 {
 	struct vga_data *d;
 	int r,g,b,i, x,y;
@@ -373,7 +378,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	d->font_size = 16;
 	d->font = font8x16;
 
-	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
+	d->fb = dev_fb_init(machine, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
 	i = 0;
@@ -401,6 +406,6 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
 	/*  Make sure that the first line is in synch.  */
-	vga_update(cpu, d, 0, max_x * 2 -1);
+	vga_update(machine, d, 0, max_x * 2 -1);
 }
 

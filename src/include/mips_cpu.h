@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.1 2005-01-23 11:19:37 debug Exp $
+ *  $Id: mips_cpu.h,v 1.2 2005-01-23 13:43:05 debug Exp $
  */
 
 #include "misc.h"
@@ -55,7 +55,7 @@ struct mips_cpu_type_def {
 	char		mmu_model;		/*  MMU3K or MMU4K  */
 	char		isa_level;		/*  1, 2, 3, 4, 5, 32, 64  */
 	int		nr_of_tlb_entries;	/*  32, 48, 64, ...  */
-	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4, for example  */
+	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4  */
 	int		default_picache;
 	int		default_pdcache;
 	int		default_pilinesize;
@@ -100,10 +100,10 @@ struct coproc {
 	uint64_t	fcr[N_FCRS];
 };
 
-#define	N_COPROCS		4
+#define	N_COPROCS	4
 
-#define	NGPRS		32			/*  General purpose registers  */
-#define	NFPUREGS	32			/*  Floating point registers  */
+#define	NGPRS		32		/*  General purpose registers  */
+#define	NFPUREGS	32		/*  Floating point registers  */
 
 /*  These should all be 2 characters wide:  */
 #define MIPS_REGISTER_NAMES	{ \
@@ -112,7 +112,7 @@ struct coproc {
 	"s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", \
 	"t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"  }
 
-#define	MIPS_GPR_ZERO	0		/*  zero  */
+#define	MIPS_GPR_ZERO		0		/*  zero  */
 #define	MIPS_GPR_AT		1		/*  at  */
 #define	MIPS_GPR_V0		2		/*  v0  */
 #define	MIPS_GPR_V1		3		/*  v1  */
@@ -177,7 +177,7 @@ struct r4000_cache_line {
 #define	BINTRANS_N_MASK			0x0ffffff
 
 #define	N_SAFE_BINTRANS_LIMIT_SHIFT	14
-#define	N_SAFE_BINTRANS_LIMIT		((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
+#define	N_SAFE_BINTRANS_LIMIT	((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
 
 #define	N_BINTRANS_VADDR_TO_HOST	20
 
@@ -190,15 +190,14 @@ struct vth32_table {
 	int			refcount;
 };
 
-#define	MAX_TICK_FUNCTIONS	12
-
 struct cpu {
+	/*  Pointer back to the machine this CPU is in:  */
+	struct machine	*machine;
+
 	int		byte_order;
 	int		running;
 	int		bootstrap_cpu_flag;
 	int		cpu_id;
-
-	struct machine	*machine;
 
 	struct mips_cpu_type_def cpu_type;
 
@@ -358,15 +357,6 @@ struct cpu {
 	int		cache_linesize[2];
 	int		cache_mask[2];
 	int		cache_miss_penalty[2];
-
-	/*
-	 *  Hardware devices, run every x clock cycles.
-	 */
-	int		n_tick_entries;
-	int		ticks_till_next[MAX_TICK_FUNCTIONS];
-	int		ticks_reset_value[MAX_TICK_FUNCTIONS];
-	void		(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
-	void		*tick_extra[MAX_TICK_FUNCTIONS];
 };
 
 
@@ -396,13 +386,11 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name);
 void cpu_show_full_statistics(struct machine *m);
-void cpu_add_tickfunction(struct cpu *cpu, 
-        void (*func)(struct cpu *, void *), void *extra, int clockshift);
 void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
 void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t addr, int bintrans);
-int cpu_interrupt(struct cpu *cpu, int irq_nr);
-int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
+int mips_cpu_interrupt(struct cpu *cpu, int irq_nr);
+int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
         /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
         int vaddr_asid, int x_64);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.9 2005-01-09 01:55:26 debug Exp $
+ *  $Id: pci_ahc.c,v 1.10 2005-01-23 13:43:02 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -135,7 +135,7 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 /*
  *  pci_ahc_init():
  */
-void pci_ahc_init(struct cpu *cpu, struct memory *mem)
+void pci_ahc_init(struct machine *machine, struct memory *mem)
 {
 	struct ahc_data *d;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.18 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_scc.c,v 1.19 2005-01-23 13:43:02 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -48,6 +48,7 @@
 
 #include "console.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -387,8 +388,8 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
  *	scc_nr = 0 or 1
  *	addmul = 1 in most cases, 8 on SGI?
  */
-void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int use_fb, int scc_nr, int addrmul)
+void *dev_scc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul)
 {
 	struct scc_data *d;
 
@@ -407,7 +408,7 @@ void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH,
 	    dev_scc_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);
+	machine_add_tickfunction(machine, dev_scc_tick, d, 10);
 
 	return (void *) d;
 }

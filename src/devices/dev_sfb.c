@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sfb.c,v 1.4 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sfb.c,v 1.5 2005-01-23 13:43:02 debug Exp $
  *  
  *  SFB TURBOchannel framebuffer.
  *
@@ -92,8 +92,8 @@ int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_sfb_init():
  */
-void dev_sfb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	struct vfb_data *fb)
+void dev_sfb_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, struct vfb_data *fb)
 {
 	struct sfb_data *d;
 

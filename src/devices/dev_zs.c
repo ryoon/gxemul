@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.16 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_zs.c,v 1.17 2005-01-23 13:43:02 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -185,8 +186,8 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_zs_init():
  */
-void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int addrmult)
+void dev_zs_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int addrmult)
 {
 	struct zs_data *d;
 
@@ -202,6 +203,6 @@ void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
 	    dev_zs_access, d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_zs_tick, d, ZS_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_zs_tick, d, ZS_TICK_SHIFT);
 }
 

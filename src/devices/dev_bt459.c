@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.53 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_bt459.c,v 1.54 2005-01-23 13:43:02 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -571,9 +571,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_bt459_init():
  */
-void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int planes,
-	int irq_nr, int type)
+void dev_bt459_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t baseaddr_irq, struct vfb_data *vfb_data,
+	int planes, int irq_nr, int type)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -629,7 +629,7 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		memory_device_register(mem, "bt459_irq", baseaddr_irq, 0x10000,
 		    dev_bt459_irq_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_bt459_tick, d, BT459_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_bt459_tick, d, BT459_TICK_SHIFT);
 
 	memory_device_register_statefunction(mem, d, bt459_state);
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.22 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.23 2005-01-23 13:43:02 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -364,7 +365,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
  *
  *  Attached to separate memory by dev_ps2_gs_init().
  */
-void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+void dev_ps2_gif_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct gif_data *d;
 
@@ -376,11 +378,12 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct gif_data));
 
 	d->transparent_text = 0;
-	d->cpu = cpu;
+	d->cpu = machine->cpus[0];		/*  TODO  */
 	d->xsize = 640; d->ysize = 480;
 	d->bytes_per_pixel = 3;
 
-	d->vfb_data = dev_fb_init(cpu, cpu->mem, PS2_FB_ADDR, VFB_PLAYSTATION2,
+	d->vfb_data = dev_fb_init(machine, machine->memory, PS2_FB_ADDR,
+	    VFB_PLAYSTATION2,
 	    d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2", 0);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "could not initialize fb, out of memory\n");

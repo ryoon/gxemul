@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.9 2005-01-19 07:46:50 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.10 2005-01-23 13:43:02 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -36,9 +36,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 #include "bcureg.h"
 
@@ -178,7 +179,7 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_vr41xx_init():
  */
-struct vr41xx_data *dev_vr41xx_init(struct cpu *cpu,
+struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	struct memory *mem, int cpumodel)
 {
 	uint64_t baseaddr = 0;
@@ -213,7 +214,7 @@ struct vr41xx_data *dev_vr41xx_init(struct cpu *cpu,
 	memory_device_register(mem, "vr41xx", baseaddr,
 	    DEV_VR41XX_LENGTH, dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_vr41xx_tick, d, DEV_VR41XX_TICKSHIFT);
+	machine_add_tickfunction(machine, dev_vr41xx_tick, d, DEV_VR41XX_TICKSHIFT);
 
 	return d;
 }

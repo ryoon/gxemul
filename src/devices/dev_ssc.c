@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.15 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_ssc.c,v 1.16 2005-01-23 13:43:02 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -39,6 +39,7 @@
 
 #include "console.h"
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -228,8 +229,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_ssc_init():
  */
-void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int use_fb, uint32_t *csrp)
+void dev_ssc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *csrp)
 {
 	struct ssc_data *d;
 
@@ -246,6 +247,6 @@ void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
 	    dev_ssc_access, d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_ssc_tick, d, 14);
+	machine_add_tickfunction(machine, dev_ssc_tick, d, 14);
 }
 

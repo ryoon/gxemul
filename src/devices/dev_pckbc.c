@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.32 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.33 2005-01-23 13:43:02 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "console.h"
@@ -595,8 +596,9 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
  *
  *  Type should be PCKBC_8042 or PCKBC_8242.
  */
-void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int type, int keyboard_irqnr, int mouse_irqnr, int in_use)
+void dev_pckbc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr,
+	int in_use)
 {
 	struct pckbc_data *d;
 	int len = DEV_PCKBC_LENGTH;
@@ -620,6 +622,6 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "pckbc", baseaddr,
 	    len, dev_pckbc_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, PCKBC_TICKSHIFT);
+	machine_add_tickfunction(machine, dev_pckbc_tick, d, PCKBC_TICKSHIFT);
 }
 

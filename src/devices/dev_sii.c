@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.10 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sii.c,v 1.11 2005-01-23 13:43:02 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
@@ -393,8 +394,8 @@ int dev_sii_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sii_init():
  */
-void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	uint64_t buf_start, uint64_t buf_end, int irq_nr)
+void dev_sii_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr)
 {
 	struct sii_data *d = malloc(sizeof(struct sii_data));
 	if (d == NULL) {
@@ -412,6 +413,6 @@ void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "sii", baseaddr, DEV_SII_LENGTH,
 	    dev_sii_access, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sii_tick, d, 10);
+	machine_add_tickfunction(machine, dev_sii_tick, d, 10);
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.9 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_jazz.c,v 1.10 2005-01-23 13:43:02 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "devices.h"
+#include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
@@ -477,7 +478,7 @@ int dev_jazz_access_jazzio(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_jazz_init():
  */
-struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
+struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr)
 {
 	struct jazz_data *d = malloc(sizeof(struct jazz_data));
@@ -487,7 +488,7 @@ struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct jazz_data));
 
-	d->cpu = cpu;
+	d->cpu = machine->cpus[0];	/*  TODO  */
 
 	d->isa_int_enable_mask = 0xffff;
 
@@ -507,7 +508,7 @@ struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
 	memory_device_register(mem, "pica_jazzio", 0xf0000000ULL, 4,
 	    dev_jazz_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_jazz_tick, d, DEV_JAZZ_TICKSHIFT);
+	machine_add_tickfunction(machine, dev_jazz_tick, d, DEV_JAZZ_TICKSHIFT);
 
 	return d;
 }

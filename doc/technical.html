@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.37 2005-01-10 23:21:31 debug Exp $
+$Id: technical.html,v 1.38 2005-01-23 13:43:04 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -408,7 +408,7 @@ Each device should have the following:
   <li>An init function in dev_foo.c. It would typically look
 	something like this:
 <pre>
-	void dev_foo_init(struct cpu *cpu, struct memory *mem,
+	void dev_foo_init(struct machine *machine, struct memory *mem,
 	    uint64_t baseaddr, int irq_nr)
 	{
 		struct foo_data *d;
@@ -426,7 +426,7 @@ Each device should have the following:
 
 		/*  This should only be here if the device
 		    has a tick function:  */
-		cpu_add_tickfunction(cpu, dev_foo_tick, d,
+		machine_add_tickfunction(machine, dev_foo_tick, d,
 		    FOO_TICKSHIFT);
 	}
 </pre><br>

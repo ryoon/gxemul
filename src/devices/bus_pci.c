@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.7 2005-01-09 01:55:24 debug Exp $
+ *  $Id: bus_pci.c,v 1.8 2005-01-23 13:43:01 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -135,8 +135,10 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  *
  *  Add a PCI device to a bus_pci device.
  */
-void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
-	int bus, int device, int function, void (*init)(struct cpu *, struct memory *), uint32_t (*read_register)(int reg))
+void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
+	struct memory *mem, int bus, int device, int function,
+	void (*init)(struct machine *, struct memory *),
+	uint32_t (*read_register)(int reg))
 {
 	struct pci_device *new_device;
 
@@ -172,7 +174,7 @@ void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
 
 	/*  Call the PCI device' init function:  */
 	if (init != NULL)
-		init(cpu, mem);
+		init(machine, mem);
 }
 
 

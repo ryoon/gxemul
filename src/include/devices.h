@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.132 2005-01-16 14:05:32 debug Exp $
+ *  $Id: devices.h,v 1.133 2005-01-23 13:43:05 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -40,6 +40,7 @@
 #include <inttypes.h>
 
 struct cpu;
+struct machine;
 struct memory;
 struct pci_data;
 
@@ -63,7 +64,7 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem,
 /*  dev_8250.c:  */
 #define	DEV_8250_LENGTH		8
 int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+void dev_8250_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 /*  dev_asc.c:  */
 #define	DEV_ASC_DEC_LENGTH		0x40000
@@ -71,7 +72,7 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 #define	DEV_ASC_DEC		1
 #define	DEV_ASC_PICA		2
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+void dev_asc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	int irq_nr, void *turbochannel, int mode,
 	size_t (*dma_controller)(void *dma_controller_data,
 		unsigned char *data, size_t len, int writeflag),
@@ -92,7 +93,7 @@ struct au1x00_ic_data {
 };
 
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct au1x00_ic_data *dev_au1x00_init(struct cpu *cpu, struct memory *mem);
+struct au1x00_ic_data *dev_au1x00_init(struct machine *machine, struct memory *mem);
 
 /*  dev_bt431.c:  */
 #define	DEV_BT431_LENGTH		0x20
@@ -115,7 +116,7 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 #define	BT459_BBA		3	/*  sfb  */
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data;
-void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+void dev_bt459_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int color_fb_flag, int irq_nr, int type);
 
 /*  dev_cons.c:  */
@@ -136,7 +137,7 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned cha
 /*  see dc7085.h for more info  */
 void dev_dc7085_tick(struct cpu *cpu, void *);
 int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+void dev_dc7085_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
 
 /*  dev_dec5800.c:  */
 #define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
@@ -145,18 +146,18 @@ struct dec5800_data {
 	uint32_t	vector_0x50;
 };
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct dec5800_data *dev_dec5800_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 /*  16 slots, 0x2000 bytes each  */
 #define	DEV_DECBI_LENGTH			0x20000
 int dev_decbi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_decbi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_decbi_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_DECCCA_LENGTH			0x10000	/*  ?  */
 #define	DEC_DECCCA_BASEADDR			0x19000000	/*  ?  I just made this up  */
 int dev_deccca_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_deccca_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_deccca_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_DECXMI_LENGTH			0x800000
 int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_decxmi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_decxmi_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_fb.c:  */
 #define	DEV_FB_LENGTH			0x3c0000	/*  3c0000 to not colide with turbochannel rom, otherwise size = (4*1024*1024)  */
@@ -206,7 +207,7 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	int from_x, int from_y);
 void dev_fb_tick(struct cpu *, void *);
 int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,
+struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int vfb_type,
 	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name, int logo);
 
 /*  dev_fdc.c:  */
@@ -217,7 +218,7 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 /*  dev_gt.c:  */
 #define	DEV_GT_LENGTH			0x0000000000001000
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
+struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
 
 /*  dev_jazz.c:  */
 #define	DEV_JAZZ_LENGTH			0x280
@@ -251,7 +252,7 @@ struct jazz_data {
 size_t dev_jazz_dma_controller(void *dma_controller_data,
 	unsigned char *data, size_t len, int writeflag);
 int dev_jazz_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct jazz_data *dev_jazz_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_kn01.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
@@ -301,12 +302,12 @@ struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t b
 /*  dev_le.c:  */
 #define	DEV_LE_LENGTH			0x1c0200
 int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len);
+void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len);
 
 /*  dev_m700_fb.c:  */
 #define	DEV_M700_FB_LENGTH		0x10000		/*  TODO?  */
 int dev_m700_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_m700_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t baseaddr2);
+void dev_m700_fb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t baseaddr2);
 
 /*  dev_n64_bios.c:  */
 #define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)
@@ -317,7 +318,7 @@ void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult, int in_use);
+void dev_ns16550_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult, int in_use);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
@@ -329,7 +330,7 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
+void dev_mc146818_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
 
 /*  dev_mp.c:  */
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -341,18 +342,18 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 #define	PCKBC_8242		1
 #define	PCKBC_JAZZ		3
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
+void dev_pckbc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
 
-/*  dev_ps2_gs.c:  */
+/*  dev_ps2_gif.c:  */
 #define	DEV_PS2_GIF_LENGTH		0x10000
 #define	DEV_PS2_GIF_FAKE_BASE		0x50000000
 int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_ps2_gif_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_gs.c:  */
 #define	DEV_PS2_GS_LENGTH		0x0000000000002000
 int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ps2_gs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_ps2_gs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_ohci.c:  */
 #define	DEV_PS2_OHCI_LENGTH		0x1000
@@ -362,7 +363,7 @@ void dev_ps2_ohci_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 /*  dev_ps2_spd.c:  */
 #define	DEV_PS2_SPD_LENGTH		0x800
 int dev_ps2_spd_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ps2_spd_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_ps2_spd_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_stuff.c:  */
 #include "ps2_dmacreg.h"
@@ -383,12 +384,12 @@ struct ps2_data {
 };
 #define	DEV_PS2_STUFF_LENGTH		0x10000
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct ps2_data *dev_ps2_stuff_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_pmagja.c:  */
 #define	DEV_PMAGJA_LENGTH		0x3c0000
 int dev_pmagja_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_pmagja_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_px.c:  */
 struct px_data {
@@ -411,7 +412,7 @@ struct px_data {
 #define	DEV_PX_TYPE_PXGPLUSTURBO	3
 #define	DEV_PX_LENGTH			0x3c0000
 int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_type, int irq_nr);
+void dev_px_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int px_type, int irq_nr);
 
 /*  dev_ram.c:  */
 #define	DEV_RAM_RAM		0
@@ -422,30 +423,23 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mo
 /*  dev_rd94.c:  */
 #define	DEV_RD94_LENGTH			0x1000
 int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int pciirq);
+struct pci_data *dev_rd94_init(struct machine *machien, struct memory *mem, uint64_t baseaddr, int pciirq);
 
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len, int tx);
-void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
+void *dev_scc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
 
 /*  dev_sfb.c:  */
 #define	DEV_SFB_LENGTH		0x400000
 int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sfb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	struct vfb_data *vfb_data);
-
-/*  dev_sgi_cpuinfo.c:  */
-#define	DEV_SGI_CPUINFO_BASE		0x9600000000000000ULL
-#define	DEV_SGI_CPUINFO_LENGTH		0x0001000000000000ULL
-int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr);
+void dev_sfb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data);
 
 /*  dev_sgi_gbe.c:  */
 #define	DEV_SGI_GBE_LENGTH		0x1000000
 int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+void dev_sgi_gbe_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip19.c:  */
 #define	DEV_SGI_IP19_LENGTH		0x100000
@@ -475,7 +469,7 @@ struct sgi_ip22_data {
 	uint32_t	unknown_timer;
 };
 int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int guiness_flag);
+struct sgi_ip22_data *dev_sgi_ip22_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int guiness_flag);
 
 /*  dev_sgi_ip30.c:  */
 #define	DEV_SGI_IP30_LENGTH		0x80000
@@ -500,7 +494,7 @@ struct sgi_ip30_data {
 	uint64_t		reg_0x00000;
 };
 int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct sgi_ip30_data *dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip32.c:  */
 #define	DEV_CRIME_LENGTH		0x0000000000001000
@@ -510,7 +504,7 @@ struct crime_data {
 	int		use_fb;
 };
 int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
 #define	DEV_MACE_LENGTH			0x100
 struct mace_data {
 	unsigned char	reg[DEV_MACE_LENGTH];
@@ -523,7 +517,7 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq);
 #define	DEV_SGI_MEC_LENGTH		0x1000
 int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
+void dev_sgi_mec_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr);
 #define	DEV_SGI_UST_LENGTH		0x10000
 int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
@@ -534,19 +528,13 @@ void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
 /*  dev_sgi_mardigras.c:  */
 #define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
 int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
-/*  dev_sgi_nasid.c:  */
-#define	DEV_SGI_NASID_BASE		0x9200000000000000ULL
-#define	DEV_SGI_NASID_LENGTH		0x0000000100000000ULL
-int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_nasid_init(struct memory *mem, uint64_t baseaddr);
+void dev_sgi_mardigras_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */
 #define	DEV_SII_LENGTH			0x100
 void dev_sii_tick(struct cpu *cpu, void *);
 int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
+void dev_sii_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
 
 /*  dev_sn_fb.c:  */
 #define	DEV_SN_LENGTH		0x1000
@@ -556,12 +544,12 @@ void dev_sn_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000
 int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *);
+void dev_ssc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *);
 
 /*  dev_turbochannel.c:  */
 #define	DEV_TURBOCHANNEL_LEN		0x0470
 int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq);
+void dev_turbochannel_init(struct machine *machine, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq);
 
 /*  dev_unreadable.c:  */
 int dev_unreadable_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -573,7 +561,7 @@ void dev_zero_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
 
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base, uint64_t control_base, int max_x, int max_y, char *name);
+void dev_vga_init(struct machine *machine, struct memory *mem, uint64_t videomem_base, uint64_t control_base, int max_x, int max_y, char *name);
 
 /*  dev_vr41xx.c:  */
 #define	DEV_VR41XX_LENGTH		0x1000		/*  TODO?  */
@@ -588,23 +576,23 @@ struct vr41xx_data {
 };
 
 int dev_vr41xx_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct vr41xx_data *dev_vr41xx_init(struct cpu *cpu, struct memory *mem, int cpumodel);
+struct vr41xx_data *dev_vr41xx_init(struct machine *machine, struct memory *mem, int cpumodel);
 
 /*  dev_wdc.c:  */
 #define	DEV_WDC_LENGTH			0x8
 int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive);
+void dev_wdc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive);
 
 /*  dev_wdsc.c:  */
 #define	DEV_WDSC_NREGS			0x100		/*  8-bit register select  */
 #define	DEV_WDSC_LENGTH			0x10
 int dev_wdsc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_wdsc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int controller_nr, int irq_nr);
+void dev_wdsc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int controller_nr, int irq_nr);
 
 /*  dev_zs.c:  */
 #define	DEV_ZS_LENGTH			0x10
 int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+void dev_zs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 /*  lk201.c:  */
 struct lk201_data {

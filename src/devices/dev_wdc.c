@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.12 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_wdc.c,v 1.13 2005-01-23 13:43:02 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -423,8 +423,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
  *
  *  base_drive should be 0 for the primary device, and 2 for the secondary.
  */
-void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int base_drive)
+void dev_wdc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int base_drive)
 {
 	struct wdc_data *d;
 
@@ -442,6 +442,6 @@ void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
 	    dev_wdc_access, d, MEM_DEFAULT, NULL);
 
-/*	cpu_add_tickfunction(cpu, dev_wdc_tick, d, 10);  */
+/*	machine_add_tickfunction(machine, dev_wdc_tick, d, 10);  */
 }
 

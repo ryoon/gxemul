@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.11 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.12 2005-01-23 13:43:02 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -217,7 +217,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_crime_init():
  */
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem,
+struct crime_data *dev_crime_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int use_fb)
 {
 	struct crime_data *d;
@@ -233,7 +233,7 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH,
 	    dev_crime_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);
+	machine_add_tickfunction(machine, dev_crime_tick, d, CRIME_TICKSHIFT);
 
 	return d;
 }
@@ -830,7 +830,7 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_sgi_mec_init():
  */
-void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem,
+void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr)
 {
 	struct sgi_mec_data *d = malloc(sizeof(struct sgi_mec_data));
@@ -847,7 +847,7 @@ void dev_sgi_mec_init(struct cpu *cpu, struct memory *mem,
 	    DEV_SGI_MEC_LENGTH, dev_sgi_mec_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sgi_mec_tick, d, MEC_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_sgi_mec_tick, d, MEC_TICK_SHIFT);
 }
 
 

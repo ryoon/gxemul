@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.255 2005-01-23 11:19:38 debug Exp $
+ *  $Id: cpu.c,v 1.256 2005-01-23 13:43:06 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -42,12 +42,12 @@
 #include "bintrans.h"
 #include "console.h"
 #include "cop0.h"
-#include "cpu_types.h"
 #include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "mips_cpu.h"
+#include "mips_cpu_types.h"
 #include "opcodes.h"
 #include "symbol.h"
 
@@ -345,36 +345,6 @@ void cpu_show_full_statistics(struct machine *m)
 						    s2, special2_names[s2], m->cpus[i]->stats__special2[s2]);
 		}
 	}
-}
-
-
-/*
- *  cpu_add_tickfunction():
- *
- *  Adds a tick function (a function called every now and then, depending on
- *  clock cycle count).
- */
-void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
-	void *extra, int clockshift)
-{
-	int n = cpu->n_tick_entries;
-
-	if (n >= MAX_TICK_FUNCTIONS) {
-		fprintf(stderr, "cpu_add_tickfunction(): too many tick functions\n");
-		exit(1);
-	}
-
-	/*  Don't use too low clockshifts, that would be too inefficient with bintrans.  */
-	if (clockshift < N_SAFE_BINTRANS_LIMIT_SHIFT)
-		fatal("WARNING! clockshift = %i, less than N_SAFE_BINTRANS_LIMIT_SHIFT (%i)\n",
-		    clockshift, N_SAFE_BINTRANS_LIMIT_SHIFT);
-
-	cpu->ticks_till_next[n]   = 0;
-	cpu->ticks_reset_value[n] = 1 << clockshift;
-	cpu->tick_func[n]         = func;
-	cpu->tick_extra[n]        = extra;
-
-	cpu->n_tick_entries ++;
 }
 
 
@@ -1153,18 +1123,14 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 
 
 /*
- *  cpu_interrupt():
+ *  mips_cpu_interrupt():
  *
- *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS interrupt.
- *  0 and 1 are ignored (software interrupts).
+ *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
+ *  interrupt. 0 and 1 are ignored (software interrupts).
  *
- *  If it is >= 8, then it is an external (machine dependant) interrupt.
- *  cpu->md_interrupt() is called. That function may call cpu_interrupt()
- *  using low values (2..7). There's no actual check to make sure that
- *  there's no recursion, so the md_interrupt routine has to make sure of
- *  this.
+ *  If irq_nr is >= 8, then this function calls md_interrupt().
  */
-int cpu_interrupt(struct cpu *cpu, int irq_nr)
+int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->md_interrupt != NULL)
@@ -1184,12 +1150,15 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 
 
 /*
- *  cpu_interrupt_ack():
+ *  mips_cpu_interrupt_ack():
  *
- *  Acknowledge an interrupt. If irq_nr is 2..7, then it is a MIPS interrupt.
- *  If it is >= 8, then it is machine dependant.
+ *  Acknowledge an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
+ *  interrupt.  Interrupts 0..1 are ignored (software interrupts).
+ *
+ *  If irq_nr is >= 8, then it is machine dependant, and md_interrupt() is
+ *  called.
  */
-int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
+int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->md_interrupt != NULL)
@@ -3825,7 +3794,6 @@ do_return:
  */
 void cpu_run_init(struct emul *emul, struct machine *machine)
 {
-	struct cpu **cpus = machine->cpus;
 	int ncpus = machine->ncpus;
 	int te;
 
@@ -3841,9 +3809,9 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
 	 *  n is at most as much as the lowest number of cycles/tick
 	 *  for any hardware device.
 	 */
-	for (te=0; te<cpus[0]->n_tick_entries; te++) {
-		if (cpus[0]->ticks_reset_value[te] < machine->a_few_cycles)
-			machine->a_few_cycles = cpus[0]->ticks_reset_value[te];
+	for (te=0; te<machine->n_tick_entries; te++) {
+		if (machine->ticks_reset_value[te] < machine->a_few_cycles)
+			machine->a_few_cycles = machine->ticks_reset_value[te];
 	}
 
 	machine->a_few_cycles >>= 1;
@@ -4007,14 +3975,14 @@ int cpu_run(struct emul *emul, struct machine *machine)
 				cpu0instrs /= i;
 			}
 
-			for (te=0; te<cpus[0]->n_tick_entries; te++) {
-				cpus[0]->ticks_till_next[te] -= cpu0instrs;
+			for (te=0; te<machine->n_tick_entries; te++) {
+				machine->ticks_till_next[te] -= cpu0instrs;
 
-				if (cpus[0]->ticks_till_next[te] <= 0) {
-					while (cpus[0]->ticks_till_next[te] <= 0)
-						cpus[0]->ticks_till_next[te] +=
-						    cpus[0]->ticks_reset_value[te];
-					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
+				if (machine->ticks_till_next[te] <= 0) {
+					while (machine->ticks_till_next[te] <= 0)
+						machine->ticks_till_next[te] +=
+						    machine->ticks_reset_value[te];
+					machine->tick_func[te](cpus[0], machine->tick_extra[te]);
 				}
 			}
 
@@ -4071,18 +4039,17 @@ int cpu_run(struct emul *emul, struct machine *machine)
 void cpu_run_deinit(struct emul *emul, struct machine *machine)
 {
 	int te;
-	struct cpu **cpus = machine->cpus;
 
 	/*
 	 *  Two last ticks of every hardware device.  This will allow
 	 *  framebuffers to draw the last updates to the screen before
 	 *  halting.
-	 *
-	 *  (TODO: do this per cpu?)
 	 */
-        for (te=0; te<cpus[0]->n_tick_entries; te++) {
-		cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
-		cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
+        for (te=0; te<machine->n_tick_entries; te++) {
+		machine->tick_func[te](machine->cpus[0],
+		    machine->tick_extra[te]);
+		machine->tick_func[te](machine->cpus[0],
+		    machine->tick_extra[te]);
 	}
 
 	debug("cpu_run_deinit(): All CPUs halted.\n");

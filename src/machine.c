@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.292 2005-01-23 11:19:39 debug Exp $
+ *  $Id: machine.c,v 1.293 2005-01-23 13:43:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -139,6 +139,39 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->show_symbolic_register_names = 1;
 
 	return m;
+}
+
+
+/*
+ *  machine_add_tickfunction():
+ *
+ *  Adds a tick function (a function called every now and then, depending on
+ *  clock cycle count) to a machine.
+ */
+void machine_add_tickfunction(struct machine *machine, void (*func)
+	(struct cpu *, void *), void *extra, int clockshift)
+{
+	int n = machine->n_tick_entries;
+
+	if (n >= MAX_TICK_FUNCTIONS) {
+		fprintf(stderr, "machine_add_tickfunction(): too "
+		    "many tick functions\n");
+		exit(1);
+	}
+
+	/*  Don't use too low clockshifts, that would be too inefficient
+	    with bintrans.  */
+	if (clockshift < N_SAFE_BINTRANS_LIMIT_SHIFT)
+		fatal("WARNING! clockshift = %i, less than "
+		    "N_SAFE_BINTRANS_LIMIT_SHIFT (%i)\n",
+		    clockshift, N_SAFE_BINTRANS_LIMIT_SHIFT);
+
+	machine->ticks_till_next[n]   = 0;
+	machine->ticks_reset_value[n] = 1 << clockshift;
+	machine->tick_func[n]         = func;
+	machine->tick_extra[n]        = extra;
+
+	machine->n_tick_entries ++;
 }
 
 
@@ -1116,11 +1149,11 @@ void machine_init(struct machine *machine)
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 
 		/*  This works with 'mmon':  */
-		dev_ns16550_init(cpu, mem, 0x10800000, 0, 4, 1);
+		dev_ns16550_init(machine, mem, 0x10800000, 0, 4, 1);
 
 		dev_mp_init(mem, machine->cpus);
 
-		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
+		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
 
 		break;
@@ -1162,15 +1195,15 @@ void machine_init(struct machine *machine)
 			 *  mcclock0 at ibus0 addr 0x1d000000: mc146818 or compatible
 			 *  0x1e000000 = system status and control register
 			 */
-			fb = dev_fb_init(cpu, mem, KN01_PHYS_FBUF_START,
+			fb = dev_fb_init(machine, mem, KN01_PHYS_FBUF_START,
 			    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
 			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01", 1);
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
-			dev_le_init(cpu, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
-			dev_sii_init(cpu, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, machine->use_x11);
-			dev_mc146818_init(cpu, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
+			dev_le_init(machine, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
+			dev_sii_init(machine, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
+			dev_dc7085_init(machine, mem, KN01_SYS_DZ, KN01_INT_DZ, machine->use_x11);
+			dev_mc146818_init(machine, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -1217,19 +1250,19 @@ void machine_init(struct machine *machine)
 			 *  cards that occupy several slots. How to solve
 			 *  this nicely?
 			 */
-			dev_turbochannel_init(cpu, mem, 0,
+			dev_turbochannel_init(machine, mem, 0,
 			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
 			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KN02_IP_SLOT0 +8);
 
-			dev_turbochannel_init(cpu, mem, 1,
+			dev_turbochannel_init(machine, mem, 1,
 			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
 			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KN02_IP_SLOT1 +8);
 
-			dev_turbochannel_init(cpu, mem, 2,
+			dev_turbochannel_init(machine, mem, 2,
 			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
 			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
@@ -1238,19 +1271,19 @@ void machine_init(struct machine *machine)
 			/*  TURBOchannel slots 3 and 4 are reserved.  */
 
 			/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
-			dev_turbochannel_init(cpu, mem, 5,
+			dev_turbochannel_init(machine, mem, 5,
 			    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
 			    "PMAZ-AA", KN02_IP_SCSI +8);
 
 			/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
-			dev_turbochannel_init(cpu, mem, 6,
+			dev_turbochannel_init(machine, mem, 6,
 			    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
 			    "PMAD-AA", KN02_IP_LANCE +8);
 
 			/*  TURBOchannel slot 7 is system stuff.  */
-			dev_dc7085_init(cpu, mem,
+			dev_dc7085_init(machine, mem,
 			    KN02_SYS_DZ, KN02_IP_DZ +8, machine->use_x11);
-			dev_mc146818_init(cpu, mem,
+			dev_mc146818_init(machine, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
 			kn02_csr = dev_kn02_init(cpu, mem, KN02_SYS_CSR);
@@ -1287,11 +1320,11 @@ void machine_init(struct machine *machine)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
-			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
-			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8,
+			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
+			dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+			dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+			dev_mc146818_init(machine, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
+			dev_asc_init(machine, mem, 0x1c300000, KMIN_INTR_SCSI +8,
 			    NULL, DEV_ASC_DEC, NULL, NULL);
 
 			/*
@@ -1301,19 +1334,19 @@ void machine_init(struct machine *machine)
 			 *
 			 *  TODO: irqs 
 			 */
-			dev_turbochannel_init(cpu, mem, 0,
+			dev_turbochannel_init(machine, mem, 0,
 			    0x10000000, 0x103fffff,
 			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KMIN_INT_TC0);
 
-			dev_turbochannel_init(cpu, mem, 1,
+			dev_turbochannel_init(machine, mem, 1,
 			    0x14000000, 0x143fffff,
 			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KMIN_INT_TC1);
 
-			dev_turbochannel_init(cpu, mem, 2,
+			dev_turbochannel_init(machine, mem, 2,
 			    0x18000000, 0x183fffff,
 			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
@@ -1354,15 +1387,15 @@ void machine_init(struct machine *machine)
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000);
 
-			dev_le_init(cpu, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
+			dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 
 			dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
-			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, KN03_SYS_SCSI,
+			dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
+			dev_asc_init(machine, mem, KN03_SYS_SCSI,
 			    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 			/*
@@ -1372,19 +1405,19 @@ void machine_init(struct machine *machine)
 			 *
 			 *  TODO: irqs 
 			 */
-			dev_turbochannel_init(cpu, mem, 0,
+			dev_turbochannel_init(machine, mem, 0,
 			    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
 			    machine->n_gfx_cards >= 1?
 				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_0 +8);
 
-			dev_turbochannel_init(cpu, mem, 1,
+			dev_turbochannel_init(machine, mem, 1,
 			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END,
 			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    KN03_INTR_TC_1 +8);
 
-			dev_turbochannel_init(cpu, mem, 2,
+			dev_turbochannel_init(machine, mem, 2,
 			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END,
 			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
@@ -1418,11 +1451,11 @@ void machine_init(struct machine *machine)
 			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
-			dec5800_csr = dev_dec5800_init(cpu, mem, 0x10000000);
-			dev_decbi_init(cpu, mem, 0x10000000);
-			dev_ssc_init(cpu, mem, 0x10140000, 2, machine->use_x11, &dec5800_csr->csr);
-			dev_decxmi_init(cpu, mem, 0x11800000);
-			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
+			dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
+			dev_decbi_init(mem, 0x10000000);
+			dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &dec5800_csr->csr);
+			dev_decxmi_init(mem, 0x11800000);
+			dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
 
 			break;
 
@@ -1456,7 +1489,7 @@ void machine_init(struct machine *machine)
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
 			dev_kn210_init(cpu, mem, 0x10080000);
-			dev_ssc_init(cpu, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
+			dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
 		case MACHINE_DEC_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -1492,12 +1525,12 @@ void machine_init(struct machine *machine)
 			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
 
 			/*  TURBOchannel slots (0 and 1):  */
-			dev_turbochannel_init(cpu, mem, 0,
+			dev_turbochannel_init(machine, mem, 0,
 			    0x10000000, 0x103fffff,
 			    machine->n_gfx_cards >= 2?
 				turbochannel_default_gfx_card : "",
 			    XINE_INTR_TC_0 +8);
-			dev_turbochannel_init(cpu, mem, 1,
+			dev_turbochannel_init(machine, mem, 1,
 			    0x14000000, 0x143fffff,
 			    machine->n_gfx_cards >= 3?
 				turbochannel_default_gfx_card : "",
@@ -1507,19 +1540,19 @@ void machine_init(struct machine *machine)
 			 *  TURBOchannel slot 2 is hardwired to be used by
 			 *  the framebuffer: (NOTE: 0x8000000, not 0x18000000)
 			 */
-			dev_turbochannel_init(cpu, mem, 2,
+			dev_turbochannel_init(machine, mem, 2,
 			    0x8000000, 0xbffffff, "PMAG-DV", 0);
 
 			/*
 			 *  TURBOchannel slot 3: fixed, ioasic
 			 *  (the system stuff), 0x1c000000
 			 */
-			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, XINE_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpu, mem, 0x1c100000,
+			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, XINE_INTR_LANCE +8, 4*65536);
+			dev_scc_init(machine, mem, 0x1c100000,
 			    XINE_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-			dev_mc146818_init(cpu, mem, 0x1c200000,
+			dev_mc146818_init(machine, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, 0x1c300000,
+			dev_asc_init(machine, mem, 0x1c300000,
 			    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
@@ -1550,7 +1583,7 @@ void machine_init(struct machine *machine)
 			 *  asc (scsi) at 0x17100000.
 			 */
 
-			dev_ssc_init(cpu, mem, 0x10140000, 0, machine->use_x11, NULL);		/*  TODO:  not irq 0  */
+			dev_ssc_init(machine, mem, 0x10140000, 0, machine->use_x11, NULL);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
 			dev_dec5500_ioboard_init(cpu, mem, 0x17000000);
@@ -1559,9 +1592,9 @@ void machine_init(struct machine *machine)
 
 			/*  The asc controller might be TURBOchannel-ish?  */
 #if 0
-			dev_turbochannel_init(cpu, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
+			dev_turbochannel_init(machine, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-			dev_asc_init(cpu, mem, 0x17100000, 0, NULL, DEV_ASC_DEC, NULL, NULL);		/*  irq?  */
+			dev_asc_init(machine, mem, 0x17100000, 0, NULL, DEV_ASC_DEC, NULL, NULL);		/*  irq?  */
 #endif
 
 			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -1587,12 +1620,12 @@ void machine_init(struct machine *machine)
 			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
-			dev_mc146818_init(cpu, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
-			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, machine->use_x11);		/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, machine->use_x11); */	/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
-			dev_le_init(cpu, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
-			dev_sii_init(cpu, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
+			dev_mc146818_init(machine, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
+			dev_dc7085_init(machine, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, machine->use_x11);		/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(machine, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, machine->use_x11); */	/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
+			dev_le_init(machine, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
+			dev_sii_init(machine, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
 			kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
 
 			serial_console_name = "osconsole=0";
@@ -1819,8 +1852,8 @@ void machine_init(struct machine *machine)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpu, mem, 0x10000000, machine->emulated_hz);	*/
-		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
-		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1, 1);
+		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
+		dev_ns16550_init(machine, mem, 0x1c800000, 5, 1, 1);
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -1832,12 +1865,12 @@ void machine_init(struct machine *machine)
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
-		pci_data = dev_gt_init(cpu, mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
-		/*  bus_pci_add(cpu, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
-		bus_pci_add(cpu, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
-		bus_pci_add(cpu, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-		bus_pci_add(cpu, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
-		/*  bus_pci_add(cpu, pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
+		pci_data = dev_gt_init(machine, mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
+		/*  bus_pci_add(machine, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
+		bus_pci_add(machine, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		bus_pci_add(machine, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
+		bus_pci_add(machine, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
+		/*  bus_pci_add(machine, pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -1882,9 +1915,9 @@ void machine_init(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
-			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
+			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
-			vr41xx_data = dev_vr41xx_init(cpu, mem, 4131);
+			vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
 			cpu->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -1912,9 +1945,9 @@ void machine_init(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
-			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
+			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
-			vr41xx_data = dev_vr41xx_init(cpu, mem, 4121);
+			vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			cpu->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
@@ -1963,7 +1996,7 @@ void machine_init(struct machine *machine)
 		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		if (hpcmips_fb_addr != 0)
-			dev_fb_init(cpu, mem, hpcmips_fb_addr, VFB_HPCMIPS,
+			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
 			    hpcmips_fb_xsize, hpcmips_fb_ysize,
 			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
 			    hpcmips_fb_bits, "HPCmips", 0);
@@ -1990,8 +2023,8 @@ void machine_init(struct machine *machine)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		dev_ps2_gs_init(cpu, mem, 0x12000000);
-		ps2_data = dev_ps2_stuff_init(cpu, mem, 0x10000000);
+		dev_ps2_gs_init(machine, mem, 0x12000000);
+		ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 
@@ -2005,7 +2038,7 @@ void machine_init(struct machine *machine)
 #if 0
 		/*  Harddisk controller present flag:  */
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
-		dev_ps2_spd_init(cpu, mem, 0x14000000);
+		dev_ps2_spd_init(machine, mem, 0x14000000);
 #endif
 
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
@@ -2100,8 +2133,8 @@ void machine_init(struct machine *machine)
 				break;
 			case 19:
 				strcat(machine->machine_name, " (Everest IP19)");
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
-				dev_scc_init(cpu, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpu, mem, 0x18000000);
 
@@ -2142,14 +2175,14 @@ void machine_init(struct machine *machine)
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
 
 				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
-				dev_zs_init(cpu, mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
-				dev_zs_init(cpu, mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
+				dev_zs_init(machine, mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
+				dev_zs_init(machine, mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
 
 				/*  WDSC SCSI controller:  */
-				dev_wdsc_init(cpu, mem, 0x1fb8011f, 0, 0);
+				dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
 				dev_unreadable_init(mem, 0x1fb00000, 0x10000);		/*  hpc1  */
@@ -2173,10 +2206,10 @@ void machine_init(struct machine *machine)
 			case 24:
 				if (machine->machine_subtype == 22) {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
-					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9000, 0);
+					sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 				} else {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
-					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9880, 1);
+					sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 				}
 
 /*
@@ -2214,21 +2247,21 @@ Why is this here? TODO
 				 */
 
 				/*  zsc0 serial console.  */
-				dev_zs_init(cpu, mem, 0x1fbd9830,
+				dev_zs_init(machine, mem, 0x1fbd9830,
 				    8 + 32 + 3 + 64*5, 1);
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
-				dev_pckbc_init(cpu, mem, 0x1fbd9840, PCKBC_8242,
+				dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
 				    0, 0, machine->use_x11);  /*  TODO: irq numbers  */
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
 
 	 			/*  wdsc0: SCSI  */
-				dev_wdsc_init(cpu, mem, 0x1fbc4000, 0, 8 + 1);
+				dev_wdsc_init(machine, mem, 0x1fbc4000, 0, 8 + 1);
 
 				/*  wdsc1: SCSI  TODO: irq nr  */
-				dev_wdsc_init(cpu, mem, 0x1fbcc000, 1, 8 + 1);
+				dev_wdsc_init(machine, mem, 0x1fbcc000, 1, 8 + 1);
 
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
@@ -2248,7 +2281,7 @@ Why is this here? TODO
 				strcat(machine->machine_name, " (Everest IP25)");
 
 				 /*  serial? irix?  */
-				dev_scc_init(cpu, mem,
+				dev_scc_init(machine, mem,
 				    0x400086000ULL, 0, machine->use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
@@ -2268,14 +2301,14 @@ Why is this here? TODO
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				break;
 			case 27:
 				strcat(machine->machine_name, " (Origin 200/2000, Onyx2)");
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
 				break;
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
@@ -2292,7 +2325,7 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (Octane)");
 
-				sgi_ip30_data = dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
+				sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
 				cpu->md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(mem,    0xa0000000ULL,
@@ -2314,13 +2347,13 @@ Why is this here? TODO
 				 *  program dumps something there, but it doesn't look like
 				 *  readable text.  (TODO)
 				 */
-				dev_ns16550_init(cpu, mem, 0x1f620170, 0, 1,
+				dev_ns16550_init(machine, mem, 0x1f620170, 0, 1,
 				    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
-				dev_ns16550_init(cpu, mem, 0x1f620178, 0, 1,
+				dev_ns16550_init(machine, mem, 0x1f620178, 0, 1,
 				    0);  /*  TODO: irq?  */
 
 				/*  MardiGras graphics:  */
-				dev_sgi_mardigras_init(cpu, mem, 0x1c000000);
+				dev_sgi_mardigras_init(machine, mem, 0x1c000000);
 
 				break;
 			case 32:
@@ -2335,9 +2368,9 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
-				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
+				crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
-				dev_sgi_gbe_init(cpu, mem, 0x16000000);	/*  gbe?  framebuffer?  */
+				dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
 
 				/*
@@ -2378,24 +2411,24 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-				dev_pckbc_init(cpu, mem, 0x1f320000,
+				dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
-				dev_sgi_mec_init(cpu, mem, 0x1f280000, MACE_ETHERNET);
+				dev_sgi_mec_init(machine, mem, 0x1f280000, MACE_ETHERNET);
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-				dev_ns16550_init(cpu, mem, 0x1f390000,
+				dev_ns16550_init(machine, mem, 0x1f390000,
 				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
 				    machine->use_x11? 0 : 1);	/*  com0  */
-				dev_ns16550_init(cpu, mem, 0x1f398000,
+				dev_ns16550_init(machine, mem, 0x1f398000,
 				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
 				    0);				/*  com1  */
 
-				dev_mc146818_init(cpu, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -2406,18 +2439,18 @@ Why is this here? TODO
 				 */
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
-				/*  bus_pci_add(cpu, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
+				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
 #if 0
-				bus_pci_add(cpu, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
+				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
-				/*  bus_pci_add(cpu, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
+				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;
 			case 35:
 				strcat(machine->machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
-				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
 				break;
 			case 53:
 				strcat(machine->machine_name, " (Origin 350)");
@@ -2459,13 +2492,13 @@ Why is this here? TODO
 
 				/*  TODO: interrupt controller!  */
 
-				pci_data = dev_rd94_init(cpu, mem, 0x80000000ULL, 0);
+				pci_data = dev_rd94_init(machine, mem, 0x80000000ULL, 0);
 
 				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
-				dev_mc146818_init(cpu, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
-				dev_pckbc_init(cpu, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
-				dev_ns16550_init(cpu, mem, 0x80006000ULL, 3, 1, machine->use_x11? 0 : 1);  /*  com0  */
-				dev_ns16550_init(cpu, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
+				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
+				dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
+				dev_ns16550_init(machine, mem, 0x80006000ULL, 3, 1, machine->use_x11? 0 : 1);  /*  com0  */
+				dev_ns16550_init(machine, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
 				/*  lpt at 0x80008000  */
 				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
@@ -2473,10 +2506,10 @@ Why is this here? TODO
 				case MACHINE_ARC_NEC_RD94:
 				case MACHINE_ARC_NEC_R94:
 					/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-					bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+					bus_pci_add(machine, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 					break;
 				case MACHINE_ARC_NEC_R96:
-					dev_fb_init(cpu, mem, 0x100e00000ULL,
+					dev_fb_init(machine, mem, 0x100e00000ULL,
 					    VFB_GENERIC, 640,480, 1024,480,
 					    8, "necvdfrb", 1);
 					break;
@@ -2564,12 +2597,12 @@ Why is this here? TODO
 				}
 
 				jazz_data = dev_jazz_init(
-				    cpu, mem, 0x80000000ULL);
+				    machine, mem, 0x80000000ULL);
 				cpu->md_interrupt = jazz_interrupt;
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
-					dev_vga_init(cpu, mem,
+					dev_vga_init(machine, mem,
 					    0x400b8000ULL, 0x600003c0ULL,
 					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
 					arcbios_console_init(cpu, 0x400b8000ULL,
@@ -2583,7 +2616,7 @@ Why is this here? TODO
 
 					/*  VXL. TODO  */
 					/*  control at 0x60100000?  */
-					dev_fb_init(cpu, mem, 0x60200000ULL,
+					dev_fb_init(machine, mem, 0x60200000ULL,
 					    VFB_GENERIC, 1024,768, 1024,768,
 					    8, "VXL", 1);
 					break;
@@ -2591,22 +2624,22 @@ Why is this here? TODO
 
 				dev_sn_init(cpu, mem, 0x80001000ULL, 8 + 4);
 
-				dev_asc_init(cpu, mem,
+				dev_asc_init(machine, mem,
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
 				    dev_jazz_dma_controller, jazz_data);
 
 				dev_fdc_init(mem, 0x80003000ULL, 0);
 
-				dev_mc146818_init(cpu, mem,
+				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
-				dev_pckbc_init(cpu, mem, 0x80005000ULL,
+				dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 
-				dev_ns16550_init(cpu, mem,
+				dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
 				    machine->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem,
+				dev_ns16550_init(machine, mem,
 				    0x80007000ULL, 8 + 9, 1, 0);
 
 				break;
@@ -2624,23 +2657,23 @@ Why is this here? TODO
 				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
 				jazz_data = dev_jazz_init(
-				    cpu, mem, 0x80000000ULL);
+				    machine, mem, 0x80000000ULL);
 				cpu->md_interrupt = jazz_interrupt;
 
-				dev_mc146818_init(cpu, mem,
+				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
 #if 0
-				dev_pckbc_init(cpu, mem, 0x80005000ULL,
+				dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 #endif
-				dev_ns16550_init(cpu, mem,
+				dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
 				    machine->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem,
+				dev_ns16550_init(machine, mem,
 				    0x80007000ULL, 8 + 9, 1, 0);
 
-				dev_m700_fb_init(cpu, mem,
+				dev_m700_fb_init(machine, mem,
 				    0x180080000ULL, 0x100000000ULL);
 
 				break;
@@ -2655,27 +2688,27 @@ Why is this here? TODO
 
 				strcat(machine->machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(cpu, mem, 0x1000b8000ULL, 0x9000003c0ULL,
+				dev_vga_init(machine, mem, 0x1000b8000ULL, 0x9000003c0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, machine->machine_name);
 
 				arcbios_console_init(cpu, 0x1000b8000ULL,
 				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
-				dev_ns16550_init(cpu, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem, 0x9000002f8ULL, 0, 1, 0);
-				dev_ns16550_init(cpu, mem, 0x9000003e8ULL, 0, 1, 0);
-				dev_ns16550_init(cpu, mem, 0x9000002e8ULL, 0, 1, 0);
+				dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1);
+				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0);
+				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0);
+				dev_ns16550_init(machine, mem, 0x9000002e8ULL, 0, 1, 0);
 
-				dev_mc146818_init(cpu, mem,
+				dev_mc146818_init(machine, mem,
 				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
 
 #if 0
-				dev_wdc_init(cpu, mem, 0x9000001f0ULL, 0, 0);
-				dev_wdc_init(cpu, mem, 0x900000170ULL, 0, 2);
+				dev_wdc_init(machine, mem, 0x9000001f0ULL, 0, 0);
+				dev_wdc_init(machine, mem, 0x900000170ULL, 0, 2);
 #endif
 				/*  PC kbd  */
-				dev_pckbc_init(cpu, mem, 0x900000060ULL,
+				dev_pckbc_init(machine, mem, 0x900000060ULL,
 				    PCKBC_8042, 0, 0, machine->use_x11);
 
 				break;
@@ -3606,7 +3639,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
 		cpu->md_interrupt = au1x00_interrupt;
-		au1x00_ic_data = dev_au1x00_init(cpu, mem);
+		au1x00_ic_data = dev_au1x00_init(machine, mem);
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?
@@ -3652,7 +3685,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  http://www.idt.com/products/pages/Integrated_Processors-79RC32334.html
 		 */
 
-		dev_8250_init(cpu, mem, 0x18000800, 0, 4);
+		dev_8250_init(machine, mem, 0x18000800, 0, 4);
 
 		break;
 
@@ -3726,7 +3759,7 @@ for (i=0; i<32; i++)
 		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
 }
 
-		dev_zs_init(cpu, mem, 0x1e950000, 0, 1);
+		dev_zs_init(machine, mem, 0x1e950000, 0, 1);
 
 		break;
 
@@ -3804,4 +3837,5 @@ void machine_dumpinfo(struct machine *m)
 
 	diskimage_dump_info(m);
 }
+
 

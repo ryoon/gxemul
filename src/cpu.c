@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.16 2004-01-08 07:34:36 debug Exp $
+ *  $Id: cpu.c,v 1.17 2004-01-08 08:29:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1620,7 +1620,6 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
 				break;
 			}
-
 			cpu->gpr[rt] = result_value;
 
 			/*

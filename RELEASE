@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.3 2004-05-04 16:00:08 debug Exp $
+$Id: RELEASE,v 1.4 2004-06-18 12:23:53 debug Exp $
 
 
 	    =====================================================
@@ -24,6 +24,8 @@ The following things have to work before a release to become a reality:
 	    _inside_ the emulated environment,
 		DONE: NetBSD/pmax and Ultrix 4.5 both seem to install
 		without errors on the -D2 model.
+		The emulator compiles just fine inside NetBSD/pmax, and
+		runs (although very slowly).
 
 	o)  regression tests  (yes, the skeleton is there, but it isn't used
 	    yet),

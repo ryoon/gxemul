@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.22 2004-12-26 14:15:29 debug Exp $
+ *  $Id: debugger.c,v 1.23 2004-12-26 18:16:51 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -36,6 +36,8 @@
  *
  *	Nicer looking output of register and TLB dumps, floating point
  *	registers too. Warn about weird/invalid register contents.
+ *
+ *	Many other TODOs.
  */
 
 #include <ctype.h>
@@ -130,7 +132,7 @@ void debugger_activate(int x)
  *  Some examples:
  *
  *	"0x7fff1234"		==> numeric value (hex, in this case)
- *	"pc", "r5", "hi"	==> register
+ *	"pc", "r5", "hi", "lo"	==> register
  *	"memcpy+64"		==> symbol (plus offset)
  *
  *  Register names can be preceeded by "x:" where x is the CPU number. (CPU
@@ -180,9 +182,17 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 
 		/*  Register name:  */
 		if (strcasecmp(name, "pc") == 0) {
-			if (writeflag)
+			if (writeflag) {
 				emul->cpus[cpunr]->pc = *valuep;
-			else
+				if (emul->cpus[cpunr]->delay_slot) {
+					printf("NOTE: Clearing the delay slot flag! (It was set before.)\n");
+					emul->cpus[cpunr]->delay_slot = 0;
+				}
+				if (emul->cpus[cpunr]->nullify_next) {
+					printf("NOTE: Clearing the nullify-next flag! (It was set before.)\n");
+					emul->cpus[cpunr]->nullify_next = 0;
+				}
+			} else
 				*valuep = emul->cpus[cpunr]->pc;
 			match_register = 1;
 		}
@@ -213,6 +223,8 @@ static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 				match_register = 1;
 			}
 		}
+
+		/*  TODO: Coprocessor registers.  */
 	}
 
 	/*  Check for a number match:  */
@@ -746,16 +758,9 @@ static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 {
-	uint64_t tmp;
 	int i, cpuid = -1;
-	int regnr = -1;		/*  -1 means the pc register  */
-	int coprocreg = 0;
-	char *p = cmd_line;
 
-	while (*p == ' ')
-		p++;
-
-	if (*p != '\0') {
+	if (cmd_line[0] != '\0') {
 		cpuid = strtoull(cmd_line, NULL, 0);
 		if (cpuid < 0 || cpuid >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", cpuid);

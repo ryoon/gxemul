@@ -152,10 +152,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  see src/useremul.c
 
 	Terminal based interactive debugger:
-		o)  Add more of the functionality that exists elsewhere
-		    in the emulator, so that it is useful from the debugger:
-			x)  breakpoints/watchpoints, ...
-			x)  ability to _change_ values, not just watch them
+		o)  see src/debugger.c
 
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register

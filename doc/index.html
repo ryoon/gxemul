@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.178 2004-12-26 13:38:46 debug Exp $
+$Id: index.html,v 1.179 2004-12-26 18:17:20 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -122,7 +122,10 @@ supported (ELF, a.out, ECOFF, SREC, raw binaries).
 <p>
 You do not need any MIPS compiler toolchain to build or use mips64emul.
 If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from mips64emul.
+such a toolchain, but that is completely separate from mips64emul. (There
+is also a <a href="technical.html#regtest">regression testing</a> framework,
+which requires that a GNU CC for mips64-unknown-elf or similar is available,
+but it is not required to build the emulator.)
 
 <p>
 (MIPS is a registered trademark of MIPS Technologies. mips64emul is 

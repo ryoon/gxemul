@@ -1,4 +1,4 @@
-$Id: README,v 1.31 2004-07-13 10:57:46 debug Exp $
+$Id: README,v 1.32 2004-07-17 20:10:32 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next
 stable release will probably not happen very soon, as there are lots of
@@ -18,8 +18,8 @@ mips64emul 0.2
 Overview
 --------
 
-mips64emul is a MIPS machine emulator. The goals are to emulate 32-bit and
-64-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
+mips64emul is a MIPS machine emulator. The goals are to emulate 64-bit and
+32-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
 capable of running real (unmodified) operating systems, such as NetBSD, Linux,
 or OpenBSD. This is a spare time hobby project, and many things are not
 implemented yet.

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.22 2004-07-17 19:37:56 debug Exp $
+$Id: RELEASE,v 1.23 2004-07-17 20:10:32 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -208,6 +208,9 @@ freely available, so I guess thanking them like this is in order:
 
 
 See individual files for details.
+
+And thanks to everyone who has provided me with feedback, ideas, 
+patches, or encouraged me to work on specific issues.
 
 Don't hesitate to send feedback to me. My email address is at the top of
 this file.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.146 2004-08-02 23:55:46 debug Exp $
+ *  $Id: machine.c,v 1.147 2004-08-03 01:00:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2036,6 +2036,8 @@ void machine_init(struct memory *mem)
 				 */
 
 				strcat(machine_name, " (Deskstation Tyne)");
+
+				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b7f60ULL, 0x900000003d0ULL);
 
 				/*  PC kbd  */
 				dev_random_init(mem, 0x90000000060ULL, 5);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.145 2005-01-18 06:22:59 debug Exp $
+ *  $Id: coproc.c,v 1.146 2005-01-18 13:08:32 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -814,8 +814,8 @@ void coproc_register_write(struct cpu *cpu,
 			    tmp2 != 0x0ff &&
 			    tmp2 != 0x3ff &&
 			    tmp2 != 0xfff)
-				fatal("cpu%i: trying to write an invalid pagemask %08lx to COP0_PAGEMASK\n",
-				    cpu->cpu_id, (long)tmp2);
+				fatal("cpu%i: trying to write an invalid pagemask 0x%08lx to COP0_PAGEMASK\n",
+				    cpu->cpu_id, (long)tmp);
 			unimpl = 0;
 			break;
 		case COP0_WIRED:

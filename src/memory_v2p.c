@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.18 2005-01-18 06:23:00 debug Exp $
+ *  $Id: memory_v2p.c,v 1.19 2005-01-18 13:08:32 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -76,9 +76,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #ifdef V2P_MMU4100
 	const int pagemask_mask = PAGEMASK_MASK_R4100;
 	const int pagemask_shift = PAGEMASK_SHIFT_R4100;
+	const int pfn_shift = 10;
 #else
 	const int pagemask_mask = PAGEMASK_MASK;
 	const int pagemask_shift = PAGEMASK_SHIFT;
+	const int pfn_shift = 12;
 #endif
 #endif	/*  !V2P_MMU3K  */
 
@@ -364,7 +366,7 @@ bugs are triggered.  */
 						pfn = ((odd? cached_lo1 : cached_lo0)
 						    & ENTRYLO_PFN_MASK)
 						    >> ENTRYLO_PFN_SHIFT;
-						paddr = (pfn << 12) |
+						paddr = (pfn << pfn_shift) |
 						    (vaddr & pmask);
 #endif
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.4 2005-01-26 16:17:14 debug Exp $
+ *  $Id: emul_parse.c,v 1.5 2005-01-26 16:47:28 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -173,9 +173,10 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 #define	PARSESTATE_EMUL			1
 #define	PARSESTATE_NET			2
 #define	PARSESTATE_MACHINE		3
-#define	PARSESTATE_MACHINE_NAME		4
 
 static char cur_machine_name[100];
+static char cur_machine_cpu[100];
+static int cur_machine_type, cur_machine_subtype;
 
 
 /*
@@ -230,7 +231,11 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_LEFT_PARENTHESIS);
 
+		/*  A "zero state":  */
 		cur_machine_name[0] = '\0';
+		cur_machine_cpu[0] = '\0';
+		cur_machine_type = MACHINE_NONE;
+		cur_machine_subtype = 0;
 		return;
 	}
 
@@ -290,8 +295,13 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_name, "no_name");
 
 		m = emul_add_machine(e, cur_machine_name);
-m->machine_type = 2;
-m->machine_subtype = 2;
+cur_machine_type = cur_machine_subtype = 2;
+		m->machine_type = cur_machine_type;
+		m->machine_subtype = cur_machine_subtype;
+
+		if (cur_machine_cpu[0])
+			m->cpu_name = strdup(cur_machine_cpu);
+
 		emul_machine_setup(m);
 
 		*parsestate = PARSESTATE_EMUL;
@@ -299,33 +309,27 @@ m->machine_subtype = 2;
 	}
 
 	if (strcmp(word, "name") == 0) {
-		*parsestate = PARSESTATE_MACHINE_NAME;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_LEFT_PARENTHESIS);
+		read_one_word(f, cur_machine_name, sizeof(cur_machine_name),
+		    line, EXPECT_WORD);
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
+		return;
+	}
+
+	if (strcmp(word, "cpu") == 0) {
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		read_one_word(f, cur_machine_cpu, sizeof(cur_machine_cpu),
+		    line, EXPECT_WORD);
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_RIGHT_PARENTHESIS);
 		return;
 	}
 
 	fatal("line %i: not expecting '%s' here\n", *line, word);
 	exit(1);
-}
-
-
-/*
- *  parse__machine_name():
- */
-static void parse__machine_name(struct emul *e, FILE *f, int *in_emul,
-	int *line, int *parsestate, char *word, size_t maxbuflen)
-{
-	if (word[0] == ')') {
-		fatal("line %i: no name specified\n", *line);
-		exit(1);
-	}
-
-	strncpy(cur_machine_name, word, sizeof(cur_machine_name));
-	cur_machine_name[sizeof(cur_machine_name) - 1] = '\0';
-
-	read_one_word(f, word, maxbuflen, line, EXPECT_RIGHT_PARENTHESIS);
-	*parsestate = PARSESTATE_MACHINE;
 }
 
 
@@ -367,10 +371,6 @@ void emul_parse_config(struct emul *e, FILE *f)
 		case PARSESTATE_MACHINE:
 			parse__machine(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
-			break;
-		case PARSESTATE_MACHINE_NAME:
-			parse__machine_name(e, f, &in_emul, &line,
-			    &parsestate, word, sizeof(word));
 			break;
 		default:
 			fatal("INTERNAL ERROR in emul_parse.c ("

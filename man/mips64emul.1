@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.12 2005-01-09 01:55:29 debug Exp $
+.\" $Id: mips64emul.1,v 1.13 2005-01-26 16:47:27 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -44,6 +44,12 @@
 .I ...
 ]
 ]
+
+.B mips64emul
+[
+.I options
+]
+.I @configfile
 .SH DESCRIPTION
 .B mips64emul
 is a MIPS machine emulator. The goals are to emulate
@@ -60,7 +66,13 @@ subdirectory of the
 .B mips64emul
 distribution.
 
-For a normal invocation of the emulator, you need to supply the
+There are two ways to invoke the emulator: settings can be entered 
+directly on the command line, or they can be read from a configuration 
+file. Please read the documentation for more information about the 
+configure files.
+
+The easiest way to use the emulator is to supply settings directly on the 
+command line. The most important thing you need to supply is the
 .I file
 argument. This is the name of a MIPS binary file (an ELF32, ELF64,
 a.out, ECOFF, SREC, or a raw binary image) which you wish to run in the 
@@ -88,6 +100,15 @@ The following command will start NetBSD/pmax on an emulated DECstation
 .fi
 netbsddisk.img should be a raw disk image containing a NetBSD/pmax
 filesystem.
+
+The following command will start an emulation session based on settings in 
+the configuration file "mysession". The -v option tells mips64emul to be
+verbose.
+.nf
+
+	mips64emul \-v @mysession
+
+.fi
 
 Please read the documentation for more details.
 .SH AUTHOR

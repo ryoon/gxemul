@@ -364,3 +364,10 @@ HISTORY of mips64emul
 		in -D4 and -D7 modes.
 		-D11 (DEC5500) polled getchar added (to the 'ssc' device).
 		Adding the 'madd' instruction (including R5900 weird stuff).
+20040304(later)	Playstation 2's GIF can now copy 640x16 pixel chunks, allowing
+		NetBSD to scroll up the framebuffer.  The cursor also works
+		better now.
+		Playstation 2 bootinfo RTC data should now be passed correctly
+		to the running kernel.
+		DECstation rtc year should be either 72 or 73, anything else
+		will cause Ultrix to give a warning about invalid year.

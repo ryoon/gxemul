@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.192 2004-08-05 22:22:28 debug Exp $
+$Id: HISTORY,v 1.193 2004-08-07 01:14:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -891,4 +891,5 @@ HISTORY of mips64emul
 		enough to let a Linux kernel print some boot messages.
 		Adding the 'deret' instruction.
 20040806	Adding include/impactsr-bsd.h (a newer version of what was in
-		mgras.h before, and this time with only a BSD-style license).
+		mgras.h before, and this time with only a BSD-style license),
+		but it is not used yet.

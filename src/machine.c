@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.154 2004-08-05 22:45:10 debug Exp $
+ *  $Id: machine.c,v 1.155 2004-08-07 01:14:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1695,6 +1695,10 @@ void machine_init(struct memory *mem)
 				 *  wdsc0 at hpc0 offset 0x44000: WD33C93 SCSI, rev=0, target 7
 				 *  scsibus2 at wdsc0: 8 targets, 8 luns per target
 				 *  dsclock0 at hpc0 offset 0x60000
+				 *
+				 *  According to Linux/IP22:
+				 *  tty00 at 0xbfbd9830 (irq = 45) is a Zilog8530
+				 *  tty01 at 0xbfbd9838 (irq = 45) is a Zilog8530
 				 *
 				 *  and according to NetBSD 2.0_BETA (20040606):
 				 *

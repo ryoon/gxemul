@@ -1,4 +1,6 @@
-$Id: README,v 1.1 2004-07-02 18:12:19 debug Exp $
+$Id: README,v 1.2 2004-07-02 18:20:42 debug Exp $
+(This should be in sync with doc/technical.html)
+
 
 README for mips64emul devices
 -----------------------------
@@ -96,4 +98,19 @@ Each device should have the following:
 			/*  Return successfully.  */
 			return 1;
 		}
+
+
+The return value of the access function has until 20040702 been a 
+true/false value; 1 for success, or 0 for device access failure. A device 
+access failure will be seen as a MIPS DBE exception from the CPU.
+
+Right now I'm converting the devices to support arbitrary memory latency 
+values. The return value is now the number of cycles that the read or 
+write access took. A value of 1 means one cycle, a value of 10 means 10 
+cycles. Negative values are used for device access failures, and the 
+absolute value of the value is then the number of cycles; a value of -5 
+means that the access failed, and took 5 cycles.
+
+To be compatible with pre-20040702 devices, a return value of 0 is treated 
+by the caller (in src/memory.c) as a value of -1.
 

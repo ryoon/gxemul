@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.80 2005-03-13 09:36:08 debug Exp $
+ *  $Id: file.c,v 1.81 2005-03-30 06:45:21 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1607,6 +1607,13 @@ void file_load(struct machine *machine, struct memory *mem,
 	if ((buf[0]=='S' && buf[1]>='0' && buf[1]<='9')) {
 		file_load_srec(machine, mem, filename, entrypointp);
 		goto ret;
+	}
+
+	/*  gzipped files are not supported:  */
+	if (buf[0]==0x1f && buf[1]==0x8b) {
+		fprintf(stderr, "\nYou need to gunzip the file before you"
+		    " try to use it.\n");
+		exit(1);
 	}
 
 	/*

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.161 2004-11-25 07:44:30 debug Exp $
+ *  $Id: misc.h,v 1.162 2004-11-25 08:44:27 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -589,6 +589,8 @@ struct cpu {
 	uint64_t	gpr[NGPRS];
 
 	struct memory	*mem;
+	int		(*translate_address)(struct cpu *, uint64_t vaddr,
+			    uint64_t *return_addr, int flags);
 
 	/*
 	 *  The translation_cached stuff is used to speed up the

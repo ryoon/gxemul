@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.195 2004-11-25 07:44:31 debug Exp $
+ *  $Id: cpu.c,v 1.196 2004-11-25 08:44:28 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -253,6 +253,14 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	 *  as they are not used before pc_last_virtual_page.)
 	 */
 	cpu->pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		cpu->translate_address = translate_address_mmu3k;
+		break;
+	default:
+		cpu->translate_address = translate_address_generic;
+	}
 
 	return cpu;
 }

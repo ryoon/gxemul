@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.108 2004-11-25 07:44:31 debug Exp $
+ *  $Id: coproc.c,v 1.109 2004-11-25 08:44:28 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -309,13 +309,6 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		struct vth32_table *tbl1;
 		void *p;
 		uint32_t p_paddr;
-
-#if 0
-if ((vaddr_page & 0xc0000000) >= 0xc0000000) {
-/*	printf("vaddr_page = %08x\n", (int)vaddr_page); */
-	return;
-}
-#endif
 
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
@@ -1667,7 +1660,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	/*  Write the new entry:  */
 
 	if (cpu->cpu_type.mmu_model == MMU3K) {
-		cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];	/*  & R2K3K_ENTRYHI_VPN_MASK;  */
+		cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];
 		cp->tlbs[index].lo0 = cp->reg[COP0_ENTRYLO0];
 	} else {
 		/*  R4000:  */

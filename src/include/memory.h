@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.18 2004-11-24 05:53:18 debug Exp $
+ *  $Id: memory.h,v 1.19 2004-11-25 08:44:27 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -50,7 +50,11 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, 
 
 unsigned char *memory_paddr_to_hostaddr(struct memory *mem, uint64_t paddr, int writeflag);
 
-int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
+int translate_address_mmu3k(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+int translate_address_generic(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int flags);
+
 #define FLAG_WRITEFLAG          1
 #define FLAG_NOEXCEPTIONS       2
 #define FLAG_INSTR              4

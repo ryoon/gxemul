@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.26 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_scc.c,v 1.27 2005-02-25 06:14:30 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -56,11 +56,14 @@
 #include "sccreg.h"
 
 
-#define	N_SCC_PORTS	2
-#define	N_SCC_REGS	16
-#define	MAX_QUEUE_LEN	1024
+#define	SCC_TICK_SHIFT		14
+
+#define	N_SCC_PORTS		2
+#define	N_SCC_REGS		16
+#define	MAX_QUEUE_LEN		1024
 
 /*  #define SCC_DEBUG  */
+
 
 struct scc_data {
 	int		irq_nr;
@@ -472,7 +475,7 @@ void *dev_scc_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH,
 	    dev_scc_access, d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_scc_tick, d, 10);
+	machine_add_tickfunction(machine, dev_scc_tick, d, SCC_TICK_SHIFT);
 
 	return (void *) d;
 }

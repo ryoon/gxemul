@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.146 2005-02-24 15:38:34 debug Exp $
+ *  $Id: devices.h,v 1.147 2005-02-25 06:14:31 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -488,11 +488,6 @@ void dev_sfb_init(struct machine *machine, struct memory *mem, uint64_t baseaddr
 int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_gbe_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
-/*  dev_sgi_ip19.c:  */
-#define	DEV_SGI_IP19_LENGTH		0x100000
-int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
-
 /*  dev_sgi_ip20.c:  */
 #define	DEV_SGI_IP20_LENGTH		0x40
 #define	DEV_SGI_IP20_BASE		0x1fb801c0
@@ -597,14 +592,6 @@ void dev_ssc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr
 #define	DEV_TURBOCHANNEL_LEN		0x0470
 int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_turbochannel_init(struct machine *machine, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq);
-
-/*  dev_unreadable.c:  */
-int dev_unreadable_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-int dev_random_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra);
-int dev_zero_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra);
-void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
-void dev_random_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
-void dev_zero_init(struct memory *mem, uint64_t baseaddr, uint64_t len);
 
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

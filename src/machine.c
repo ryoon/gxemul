@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.363 2005-02-24 15:38:35 debug Exp $
+ *  $Id: machine.c,v 1.364 2005-02-25 06:14:32 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2221,10 +2221,10 @@ void machine_setup(struct machine *machine)
 				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "serial zs");	/*  serial? netbsd?  */
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
-				dev_sgi_ip19_init(cpu, mem, 0x18000000);
+				device_add_a(machine, "sgi_ip19", 0x18000000);
 
 				/*  Irix' <everest_du_init+0x130> reads this device:  */
-				dev_random_init(mem, 0x10006000, 16);
+				device_add_al(machine, "random", 0x10006000, 16);
 
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
 				store_32bit_word(cpu, 0xa0000000 + 0x3000,
@@ -2269,14 +2269,15 @@ void machine_setup(struct machine *machine)
 				/*  WDSC SCSI controller:  */
 				dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
 
-				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
-				dev_unreadable_init(mem, 0x1fb00000, 0x10000);		/*  hpc1  */
-				dev_unreadable_init(mem, 0x1f980000, 0x10000);		/*  hpc2  */
+				/*  Return memory read errors so that hpc1
+				    and hpc2 are not detected:  */
+				device_add_al(machine, "unreadable", 0x1fb00000, 0x10000);
+				device_add_al(machine, "unreadable", 0x1f980000, 0x10000);
 
-				/*  Return nothing for gio slots 0, 1, and 2:  */
-				dev_unreadable_init(mem, 0x1f400000, 0x1000);	/*  gio0 slot 0  */
-				dev_unreadable_init(mem, 0x1f600000, 0x1000);	/*  gio0 slot 1  */
-				dev_unreadable_init(mem, 0x1f000000, 0x1000);	/*  gio0 slot 2  */
+				/*  Return nothing for gio slots 0, 1, and 2: */
+				device_add_al(machine, "unreadable", 0x1f400000, 0x1000);	/*  gio0 slot 0  */
+				device_add_al(machine, "unreadable", 0x1f600000, 0x1000);	/*  gio0 slot 1  */
+				device_add_al(machine, "unreadable", 0x1f000000, 0x1000);	/*  gio0 slot 2  */
 
 				break;
 			case 21:
@@ -2284,7 +2285,7 @@ void machine_setup(struct machine *machine)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 
-				dev_random_init(mem, 0x418000200ULL, 0x20000);
+				device_add_al(machine, "random", 0x418000200ULL, 0x20000);
 
 				break;
 			case 22:
@@ -2354,13 +2355,13 @@ Why is this here? TODO
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
-				dev_unreadable_init(mem, 0x1fb00000, 0x10000);
-				dev_unreadable_init(mem, 0x1f980000, 0x10000);
+				device_add_al(machine, "unreadable", 0x1fb00000, 0x10000);
+				device_add_al(machine, "unreadable", 0x1f980000, 0x10000);
 
 				/*  Similarly for gio slots 0, 1, and 2:  */
-				dev_unreadable_init(mem, 0x1f400000, 0x1000);	/*  gio0 slot 0  */
-				dev_unreadable_init(mem, 0x1f600000, 0x1000);	/*  gio0 slot 1  */
-				dev_unreadable_init(mem, 0x1f000000, 0x1000);	/*  gio0 slot 2  */
+				device_add_al(machine, "unreadable", 0x1f400000, 0x1000);	/*  gio0 slot 0  */
+				device_add_al(machine, "unreadable", 0x1f600000, 0x1000);	/*  gio0 slot 1  */
+				device_add_al(machine, "unreadable", 0x1f000000, 0x1000);	/*  gio0 slot 2  */
 
 				break;
 			case 25:
@@ -2373,8 +2374,7 @@ Why is this here? TODO
 				    0x400086000ULL, 0, machine->use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
-				dev_sgi_ip19_init(cpu, mem,
-				    0x18000000);
+				device_add_a(machine, "sgi_ip19", 0x18000000);
 
 				/*
 				 *  Memory size, not 4096 byte pages, but 256
@@ -2409,7 +2409,7 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (Impact Indigo2 ?)");
 
-				dev_random_init(mem, 0x1fbe0000ULL, 1);
+				device_add_al(machine, "random", 0x1fbe0000ULL, 1);
 
 				/*  Something at paddr 0x1880fb0000.  */
 
@@ -3798,7 +3798,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  "usb_ohci=base:0x10100000,len:0x100000,irq:26"
 		 */
 
-		dev_random_init(mem, 0x1017fffc, 4);
+		device_add_al(machine, "random", 0x1017fffc, 4);
 
 		/*
 		 *  TODO:  A Linux kernel wants "memsize" from somewhere... I

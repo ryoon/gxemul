@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.12 2005-02-22 05:52:58 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.13 2005-02-25 06:14:30 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -35,11 +35,13 @@
 #include <string.h>
 
 #include "cpu.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
 
+
+#define	DEV_SGI_IP19_LENGTH	0x100000
 
 struct sgi_ip19_data {
 	uint64_t	cycle_counter;
@@ -110,9 +112,9 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_sgi_ip19_init():
+ *  devinit__sgi_ip19():
  */
-void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+int devinit_sgi_ip19(struct devinit *devinit)
 {
 	struct sgi_ip19_data *d = malloc(sizeof(struct sgi_ip19_data));
 	if (d == NULL) {
@@ -121,7 +123,10 @@ void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct sgi_ip19_data));
 
-	memory_device_register(mem, "sgi_ip19", baseaddr, DEV_SGI_IP19_LENGTH,
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_SGI_IP19_LENGTH,
 	    dev_sgi_ip19_access, (void *)d, MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

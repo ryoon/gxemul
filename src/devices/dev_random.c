@@ -25,10 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.9 2005-02-25 06:14:30 debug Exp $
+ *  $Id: dev_random.c,v 1.1 2005-02-25 06:14:30 debug Exp $
  *  
- *  A simple device which returns an error for all accesses (both reads and
- *  writes).
+ *  A simple device which returns random data for all reads, and discards all
+ *  writes.
  */
 
 #include <stdio.h>
@@ -42,24 +42,32 @@
 
 
 /*
- *  dev_unreadable_access():
+ *  dev_random_access():
+ *
+ *  Returns 1 if ok, 0 on error.
  */
-int dev_unreadable_access(struct cpu *cpu, struct memory *mem,
+int dev_random_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	return 0;
+	if (writeflag == MEM_READ) {
+		int i;
+		for (i=0; i<len; i++)
+			data[i] = random();
+	}
+
+	return 1;
 }
 
 
 /*
- *  devinit_unreadable():
+ *  devinit_random():
  */
-int devinit_unreadable(struct devinit *devinit)
+int devinit_random(struct devinit *devinit)
 {
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr, devinit->len,
-	    dev_unreadable_access, NULL, MEM_DEFAULT, NULL);
+	    dev_random_access, NULL, MEM_DEFAULT, NULL);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.16 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.17 2005-02-25 06:14:30 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -83,10 +83,12 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 0x10018:
 		/*
-		 *  If this is not implemented, the IP30 PROM complains during bootup:
+		 *  If this is not implemented, the IP30 PROM complains during
+		 *  bootup:
 		 *
 		 *           *FAILED*
-		 *    Address: 0xffffffffaff10018, Expected: 0x0000000000000001, Received: 0x0000000000000000
+		 *    Address: 0xffffffffaff10018, Expected:
+		 *        0x0000000000000001, Received: 0x0000000000000000
 		 */
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x10018 = idata;
@@ -131,9 +133,12 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip30: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip30: unimplemented read from address"
+			    " 0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -158,7 +163,8 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
-	/*  0x114 + 0x40 * (wid - 8): 0x80000000 for "alive", according to Linux/IP30  */
+	/*  0x114 + 0x40 * (wid - 8): 0x80000000 for "alive",
+	    according to Linux/IP30  */
 
 	case 0x114 + 0x40 * (12 - 8):
 		fatal("[ IP30: asdvasdvnb ]\n");
@@ -167,10 +173,12 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem,
 
 	case 0x0029c:
 		/*
-		 *  If this is not implemented, the IP30 PROM complains during bootup:
+		 *  If this is not implemented, the IP30 PROM complains during
+		 *  bootup:
 		 *
 		 *           *FAILED*
-		 *    Address: 0xffffffffb000029c, Expected: 0x0000000000000001, Received: 0x0000000000000000
+		 *    Address: 0xffffffffb000029c, Expected:
+		 *	0x0000000000000001, Received: 0x0000000000000000
 		 */
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x0029c = idata;
@@ -180,9 +188,12 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_2: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_2: unimplemented write to "
+			    "address 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip30_2: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip30_2: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -208,24 +219,31 @@ int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0xb4:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_3: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_3: unimplemented write to "
+			    "address 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
 			odata = 2;	/*  should be 2, or Irix loops  */
 		}
 		break;
 	case 0x00104:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_3: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_3: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			odata = 64;	/*  should be 64, or the PROM complains  */
+			odata = 64;	/*  should be 64, or the PROM
+					    complains  */
 		}
 		break;
 	case 0x00284:
 		/*
-		 *  If this is not implemented, the IP30 PROM complains during bootup:
+		 *  If this is not implemented, the IP30 PROM complains during
+		 *  bootup:
 		 *
 		 *           *FAILED*
-		 *    Address: 0xffffffffbf000284, Expected: 0x0000000000000001, Received: 0x0000000000000000
+		 *    Address: 0xffffffffbf000284, Expected:
+		 *	   0x0000000000000001, Received: 0x0000000000000000
 		 */
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x00284 = idata;
@@ -235,9 +253,12 @@ int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_3: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_3: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip30_3: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip30_3: unimplemented read from "
+			    "address 0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -263,10 +284,12 @@ int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x000b0:
 		/*
-		 *  If this is not implemented, the IP30 PROM complains during bootup:
+		 *  If this is not implemented, the IP30 PROM complains during
+		 *  bootup:
 		 *
 		 *           *FAILED*
-		 *    Address: 0xffffffffbf6000b0, Expected: 0x0000000000000001, Received: 0x0000000000000000
+		 *    Address: 0xffffffffbf6000b0, Expected:
+		 *        0x0000000000000001, Received: 0x0000000000000000
 		 */
 		if (writeflag == MEM_WRITE) {
 			d->reg_0x000b0 = idata;
@@ -276,9 +299,12 @@ int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_4: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_4: unimplemented write to address"
+			    " 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip30_4: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip30_4: unimplemented read from address"
+			    " 0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -311,9 +337,12 @@ int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip30_5: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip30_5: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip30_5: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip30_5: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -338,7 +367,8 @@ struct sgi_ip30_data *dev_sgi_ip30_init(struct machine *machine,
 	memset(d, 0, sizeof(struct sgi_ip30_data));
 
 	memory_device_register(mem, "sgi_ip30_1", baseaddr,
-	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_2", 0x10000000,
 	    0x10000, dev_sgi_ip30_2_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_3", 0x1f000000,

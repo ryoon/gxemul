@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.51 2004-11-22 06:14:55 debug Exp $
+ *  $Id: diskimage.c,v 1.52 2004-11-28 19:31:09 debug Exp $
  *
  *  Disk image support.
  *
@@ -79,6 +79,9 @@ extern int quiet_mode;
 
 static struct diskimage *diskimages[MAX_DISKIMAGES];
 static int n_diskimages = 0;
+
+
+static struct scsi_transfer *first_free_scsi_transfer_alloc = NULL;
 
 
 /**************************************************************************/
@@ -139,10 +142,15 @@ struct scsi_transfer *scsi_transfer_alloc(void)
 {
 	struct scsi_transfer *p;
 
-	p = malloc(sizeof(struct scsi_transfer));
-	if (p == NULL) {
-		fprintf(stderr, "scsi_transfer_alloc(): out of memory\n");
-		exit(1);
+	if (first_free_scsi_transfer_alloc != NULL) {
+		p = first_free_scsi_transfer_alloc;
+		first_free_scsi_transfer_alloc = p->next_free;
+	} else {
+		p = malloc(sizeof(struct scsi_transfer));
+		if (p == NULL) {
+			fprintf(stderr, "scsi_transfer_alloc(): out of memory\n");
+			exit(1);
+		}
 	}
 
 	memset(p, 0, sizeof(struct scsi_transfer));
@@ -178,7 +186,8 @@ void scsi_transfer_free(struct scsi_transfer *p)
 	if (p->status != NULL)
 		free(p->status);
 
-	free(p);
+	p->next_free = first_free_scsi_transfer_alloc;
+	first_free_scsi_transfer_alloc = p;
 }
 
 

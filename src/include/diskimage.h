@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.18 2004-10-17 15:31:43 debug Exp $
+ *  $Id: diskimage.h,v 1.19 2004-11-28 19:31:08 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -35,6 +35,8 @@
 
 /*  Transfer command, sent from a SCSI controller device to a disk:  */
 struct scsi_transfer {
+	struct scsi_transfer	*next_free;
+
 	/*  These should be set by the SCSI controller device before the call:  */
 	unsigned char		*msg_out;
 	size_t			msg_out_len;

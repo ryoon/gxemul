@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.h,v 1.9 2005-01-09 01:55:28 debug Exp $
+ *  $Id: console.h,v 1.10 2005-02-04 11:36:46 debug Exp $
  *
  *  Generic console functions.  (See console.c for more info.)
  */
@@ -38,6 +38,7 @@
 void console_init(struct emul *);
 void console_deinit(void);
 void console_sigcont(int x);
+void console_slave(char *arg);
 void console_makeavail(char ch);
 int console_charavail(void);
 int console_readchar(void);

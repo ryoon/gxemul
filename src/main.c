@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.202 2005-02-02 19:33:51 debug Exp $
+ *  $Id: main.c,v 1.203 2005-02-04 11:36:47 debug Exp $
  */
 
 #include <stdio.h>
@@ -35,6 +35,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "console.h"
 #include "cpu.h"
 #include "diskimage.h"
 #include "emul.h"
@@ -49,8 +50,10 @@ extern int show_opcode_statistics;
 
 extern int optind;
 extern char *optarg;
+
 int extra_argc;
 char **extra_argv;
+char *progname;
 
 
 /*****************************************************************************
@@ -216,11 +219,39 @@ unsigned long long mystrtoull(const char *s, char **endp, int base)
 
 
 /*
+ *  internal_w():
+ *
+ *  For internal use by mips64emul itself.
+ */
+void internal_w(char *arg)
+{
+	if (arg == NULL || strncmp(arg, "W@", 2) != 0) {
+		printf("-W is for internal use by mips64emul,"
+		    " not for manual use.\n");
+		exit(1);
+	}
+
+	arg += 2;
+
+	switch (arg[0]) {
+	case 'S':
+		console_slave(arg + 1);
+		break;
+	default:
+		printf("internal_w(): UNIMPLEMENTED arg = '%s'\n", arg);
+	}
+}
+
+
+/*****************************************************************************/
+
+
+/*
  *  usage():
  *
  *  Prints program usage to stdout.
  */
-static void usage(char *progname, int longusage)
+static void usage(int longusage)
 {
 	printf("mips64emul");
 #ifdef VERSION
@@ -360,14 +391,13 @@ static void usage(char *progname, int longusage)
 int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
 	int ch, res, using_switch_d = 0, using_switch_Z = 0;
-	char *progname = argv[0];
 	char *type = NULL, *subtype = NULL;
 	int n_cpus_set = 0;
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
 	while ((ch = getopt(argc, argv, "A:abC:D:d:E:e:G:HhI:iJj:KM:m:"
-	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
+	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			m->arch = ARCH_MIPS;
@@ -414,7 +444,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			machine_list_available_types_and_cpus();
 			exit(1);
 		case 'h':
-			usage(progname, 1);
+			usage(1);
 			exit(1);
 		case 'I':
 			m->emulated_hz = atoi(optarg);
@@ -527,6 +557,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'v':
 			verbose ++;
 			break;
+		case 'W':
+			internal_w(optarg);
+			exit(0);
 		case 'X':
 			m->use_x11 = 1;
 			msopts = 1;
@@ -564,7 +597,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		default:
 			printf("Invalid option.\n");
-			usage(progname, 0);
+			usage(0);
 			exit(1);
 		}
 	}
@@ -625,7 +658,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		if (using_switch_d) {
 			/*  Booting directly from a disk image...  */
 		} else {
-			usage(progname, 0);
+			usage(0);
 			printf("\nNo filename given. Aborting.\n");
 			exit(1);
 		}
@@ -718,6 +751,8 @@ int main(int argc, char *argv[])
 	struct emul **emuls;
 	int n_emuls;
 	int i;
+
+	progname = argv[0];
 
 	srandom(time(NULL));
 	cpu_init();

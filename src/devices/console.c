@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.25 2005-01-22 07:56:10 debug Exp $
+ *  $Id: console.c,v 1.26 2005-02-04 11:36:45 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -37,6 +37,7 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
@@ -49,8 +50,11 @@
 #include "misc.h"
 
 
-struct termios console_oldtermios;
-struct termios console_curtermios;
+static struct termios console_oldtermios;
+static struct termios console_curtermios;
+
+/*  For 'slave' mode:  */
+static struct termios console_slave_tios;
 
 static int console_initialized = 0;
 static int console_stdout_pending;
@@ -162,6 +166,101 @@ void console_sigcont(int x)
 
 
 /*
+ *  d_avail():
+ *
+ *  Returns 1 if anything is available on a descriptor.
+ */
+static int d_avail(int d)
+{
+	fd_set rfds;
+	struct timeval tv;
+
+	FD_ZERO(&rfds);
+	FD_SET(d, &rfds);
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	return select(d+1, &rfds, NULL, NULL, &tv);
+}
+
+
+/*
+ *  console_slave_sigcont():
+ *
+ *  See comment for console_sigcont. This is for used by console_slave().
+ */
+static void console_slave_sigcont(int x)
+{
+	/*  Make sure our 'current' termios setting is active:  */
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
+
+	/*  Reset the signal handler:  */
+	signal(SIGCONT, console_slave_sigcont);
+}
+
+
+/*
+ *  console_slave():
+ *
+ *  This function is used when running with X11, and mips64emul opens up
+ *  separate xterms for each emulated terminal or serial port.
+ */
+void console_slave(char *arg)
+{
+	int inputd, outputd;
+	int len;
+	char *p;
+	char buf[200];
+
+	printf("console_slave(): arg = '%s'\n", arg);
+	/*  arg = '3,6' or similar, input and output descriptors  */
+
+	inputd = atoi(arg);
+	p = strchr(arg, ',');
+	if (p == NULL) {
+		printf("console_slave(): bad arg '%s'\n", arg);
+		sleep(5);
+		exit(1);
+	}
+	outputd = atoi(p+1);
+
+	/*  Set the terminal to raw mode:  */
+	tcgetattr(STDIN_FILENO, &console_slave_tios);
+
+	console_slave_tios.c_lflag &= ~ICANON;
+	console_slave_tios.c_cc[VTIME] = 0;
+	console_slave_tios.c_cc[VMIN] = 1;
+	console_slave_tios.c_lflag &= ~ECHO;
+	console_slave_tios.c_iflag &= ~ICRNL;
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
+
+	signal(SIGINT, SIG_IGN);
+	signal(SIGCONT, console_slave_sigcont);
+
+	for (;;) {
+		/*  TODO: select() on both inputd and stdin  */
+
+		if (d_avail(inputd)) {
+			len = read(inputd, buf, sizeof(buf) - 1);
+			if (len < 1)
+				exit(0);
+			buf[len] = '\0';
+			printf("%s", buf);
+			fflush(stdout);
+		}
+
+		if (d_avail(STDIN_FILENO)) {
+			len = read(STDIN_FILENO, buf, sizeof(buf));
+			if (len < 1)
+				exit(0);
+			write(outputd, buf, len);
+		}
+
+		usleep(10);
+	}
+}
+
+
+/*
  *  console_makeavail():
  *
  *  Put a character in the queue, so that it will be avaiable,
@@ -184,17 +283,7 @@ void console_makeavail(char ch)
  */
 int console_stdin_avail(void)
 {
-	fd_set rfds;
-	struct timeval tv;
-	int result;
-	int s = STDIN_FILENO;
-
-	FD_ZERO(&rfds);
-	FD_SET(s, &rfds);
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	result = select(s+1, &rfds, NULL, NULL, &tv);
-	return result;
+	return d_avail(STDIN_FILENO);
 }
 
 

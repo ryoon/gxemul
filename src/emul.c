@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.165 2005-02-11 09:29:50 debug Exp $
+ *  $Id: emul.c,v 1.166 2005-02-13 11:40:59 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -839,7 +839,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-	console_init_main(emuls[0]);		/*  TODO: what is a good argument?  */
+	console_init_main(emuls[0]);	/*  TODO: what is a good argument?  */
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.75 2005-02-11 09:29:50 debug Exp $
+ *  $Id: file.c,v 1.76 2005-02-13 11:40:59 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -321,7 +321,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 	 */
 	unencode(f_magic, &exechdr.f.f_magic, uint16_t);
 	switch (f_magic) {
-	case ((ECOFF_MAGIC_MIPSEB & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB >> 8) & 0xff):
+	case ((ECOFF_MAGIC_MIPSEB & 0xff) << 8) +
+	    ((ECOFF_MAGIC_MIPSEB >> 8) & 0xff):
 		format_name = "MIPS1 BE";
 		encoding = ELFDATA2MSB;
 		break;
@@ -335,7 +336,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		format_name = "MIPS1 LE";
 		encoding = ELFDATA2LSB;
 		break;
-	case ((ECOFF_MAGIC_MIPSEB2 & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB2 >> 8) & 0xff):
+	case ((ECOFF_MAGIC_MIPSEB2 & 0xff) << 8) +
+	    ((ECOFF_MAGIC_MIPSEB2 >> 8) & 0xff):
 		format_name = "MIPS2 BE";
 		encoding = ELFDATA2MSB;
 		break;
@@ -343,7 +345,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		format_name = "MIPS2 LE";
 		encoding = ELFDATA2LSB;
 		break;
-	case ((ECOFF_MAGIC_MIPSEB3 & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB3 >> 8) & 0xff):
+	case ((ECOFF_MAGIC_MIPSEB3 & 0xff) << 8) +
+	    ((ECOFF_MAGIC_MIPSEB3 >> 8) & 0xff):
 		format_name = "MIPS3 BE";
 		encoding = ELFDATA2MSB;
 		break;
@@ -352,7 +355,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		encoding = ELFDATA2LSB;
 		break;
 	default:
-		fprintf(stderr, "%s: unknown ecoff format, magic = 0x%04x\n", filename, f_magic);
+		fprintf(stderr, "%s: unimplemented ECOFF format, magic = "
+		    "0x%04x\n", filename, (int)f_magic);
 		exit(1);
 	}
 
@@ -630,8 +634,9 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		for (sym_nr=0; sym_nr<nsymbols; sym_nr++) {
 			uint64_t value, strindex;
 
-			unencode(strindex, &extsyms[sym_nr].es_strindex, uint32_t);
-			unencode(value,    &extsyms[sym_nr].es_value,    uint32_t);
+			unencode(strindex, &extsyms[sym_nr].es_strindex,
+			    uint32_t);
+			unencode(value, &extsyms[sym_nr].es_value, uint32_t);
 
 			extsyms[sym_nr].es_strindex = strindex;
 			extsyms[sym_nr].es_value    = value;
@@ -743,7 +748,8 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 				buf[i] -= '0';
 			else if (buf[i] == '\r' || buf[i] == '\n') {
 			} else
-				fatal("invalid characters '%c' in S-record\n", buf[i]);
+				fatal("invalid characters '%c' in S-record\n",
+				    buf[i]);
 
 			if (i >= 4) {
 				if (i & 1)
@@ -778,10 +784,12 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 				vaddr = (bytes[0] << 8) + bytes[1];
 				break;
 			case 2:	data_start = 3;
-				vaddr = (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
+				vaddr = (bytes[0] << 16) + (bytes[1] << 8) +
+				    bytes[2];
 				break;
 			case 3:	data_start = 4;
-				vaddr = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
+				vaddr = (bytes[0] << 24) + (bytes[1] << 16) +
+				    (bytes[2] << 8) + bytes[3];
 			}
 			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
 			    &bytes[data_start], count - 1 - data_start,
@@ -793,9 +801,11 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 		case 9:
 			/*  switch again, to get the entry point:  */
 			switch (buf[1]) {
-			case 7:	entry = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
+			case 7:	entry = (bytes[0] << 24) + (bytes[1] << 16) +
+				    (bytes[2] << 8) + bytes[3];
 				break;
-			case 8:	entry = (bytes[0] << 16) + (bytes[1] << 8) + bytes[2];
+			case 8:	entry = (bytes[0] << 16) + (bytes[1] << 8) +
+				    bytes[2];
 				break;
 			case 9:	entry = (bytes[0] << 8) + bytes[1];
 				break;
@@ -950,18 +960,21 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		fseek(f, 0, SEEK_SET);
 		len = fread(&hdr64, 1, sizeof(Elf64_Ehdr), f);
 		if (len < (signed int)sizeof(Elf64_Ehdr)) {
-			fprintf(stderr, "%s: not an ELF64 file image\n", filename);
+			fprintf(stderr, "%s: not an ELF64 file image\n",
+			    filename);
 			exit(1);
 		}
 		break;
 	default:
-		fprintf(stderr, "%s: unknown ELF class '%i'\n", filename, hdr32.e_ident[EI_CLASS]);
+		fprintf(stderr, "%s: unknown ELF class '%i'\n",
+		    filename, hdr32.e_ident[EI_CLASS]);
 		exit(1);
 	}
 
 	encoding = hdr32.e_ident[EI_DATA];
 	if (encoding != ELFDATA2LSB && encoding != ELFDATA2MSB) {
-		fprintf(stderr, "%s: unknown data encoding '%i'\n", filename, hdr32.e_ident[EI_DATA]);
+		fprintf(stderr, "%s: unknown data encoding '%i'\n",
+		    filename, hdr32.e_ident[EI_DATA]);
 		exit(1);
 	}
 
@@ -977,13 +990,15 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		unencode(eshentsize, &hdr64.e_shentsize, Elf64_Quarter);
 		unencode(eshoff,     &hdr64.e_shoff,     Elf64_Off);
 		if (ephentsize != sizeof(Elf64_Phdr)) {
-			fprintf(stderr, "%s: incorrect phentsize? %i, should be %i\n",
-			    filename, ephentsize, (int)sizeof(Elf64_Phdr));
+			fprintf(stderr, "%s: incorrect phentsize? %i, should "
+			    "be %i\n", filename, (int)ephentsize,
+			    (int)sizeof(Elf64_Phdr));
 			exit(1);
 		}
 		if (eshentsize != sizeof(Elf64_Shdr)) {
-			fprintf(stderr, "%s: incorrect phentsize? %i, should be %i\n",
-			    filename, ephentsize, (int)sizeof(Elf64_Shdr));
+			fprintf(stderr, "%s: incorrect phentsize? %i, should "
+			    "be %i\n", filename, (int)ephentsize,
+			    (int)sizeof(Elf64_Shdr));
 			exit(1);
 		}
 	} else {
@@ -998,19 +1013,22 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		unencode(eshentsize, &hdr32.e_shentsize, Elf32_Half);
 		unencode(eshoff,     &hdr32.e_shoff,     Elf32_Off);
 		if (ephentsize != sizeof(Elf32_Phdr)) {
-			fprintf(stderr, "%s: incorrect phentsize? %i, should be %i\n",
-			    filename, ephentsize, (int)sizeof(Elf32_Phdr));
+			fprintf(stderr, "%s: incorrect phentsize? %i, should "
+			    "be %i\n", filename, (int)ephentsize,
+			    (int)sizeof(Elf32_Phdr));
 			exit(1);
 		}
 		if (eshentsize != sizeof(Elf32_Shdr)) {
-			fprintf(stderr, "%s: incorrect phentsize? %i, should be %i\n",
-			    filename, ephentsize, (int)sizeof(Elf32_Shdr));
+			fprintf(stderr, "%s: incorrect phentsize? %i, should "
+			    "be %i\n", filename, (int)ephentsize,
+			    (int)sizeof(Elf32_Shdr));
 			exit(1);
 		}
 	}
 
 	if ( etype != ET_EXEC ) {
-		fprintf(stderr, "%s is not an ELF Executable file, type = %i\n", filename, etype);
+		fprintf(stderr, "%s is not an ELF Executable file, type = %i\n",
+		    filename, etype);
 		exit(1);
 	}
 
@@ -1200,7 +1218,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		int sh_name, sh_type, sh_flags, sh_link, sh_info, sh_entsize;
 		uint64_t sh_addr, sh_size, sh_addralign;
 		off_t sh_offset;
-		int n_entries;		/*  for reading the symbol / string tables  */
+		int n_entries;	/*  for reading the symbol / string tables  */
 
 		/*  debug("section header %i at %016llx\n", i,
 		    (long long) eshoff+i*eshentsize);  */
@@ -1213,32 +1231,33 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 				fprintf(stderr, "couldn't read header\n");
 				exit(1);
 			}
-			unencode(sh_name,      &shdr64.sh_name,      Elf64_Half);
-			unencode(sh_type,      &shdr64.sh_type,      Elf64_Half);
-			unencode(sh_flags,     &shdr64.sh_flags,     Elf64_Xword);
-			unencode(sh_addr,      &shdr64.sh_addr,      Elf64_Addr);
-			unencode(sh_offset,    &shdr64.sh_offset,    Elf64_Off);
-			unencode(sh_size,      &shdr64.sh_size,      Elf64_Xword);
-			unencode(sh_link,      &shdr64.sh_link,      Elf64_Half);
-			unencode(sh_info,      &shdr64.sh_info,      Elf64_Half);
-			unencode(sh_addralign, &shdr64.sh_addralign, Elf64_Xword);
-			unencode(sh_entsize,   &shdr64.sh_entsize,   Elf64_Xword);
+			unencode(sh_name,    &shdr64.sh_name, Elf64_Half);
+			unencode(sh_type,    &shdr64.sh_type, Elf64_Half);
+			unencode(sh_flags,   &shdr64.sh_flags, Elf64_Xword);
+			unencode(sh_addr,    &shdr64.sh_addr, Elf64_Addr);
+			unencode(sh_offset,  &shdr64.sh_offset, Elf64_Off);
+			unencode(sh_size,    &shdr64.sh_size, Elf64_Xword);
+			unencode(sh_link,    &shdr64.sh_link, Elf64_Half);
+			unencode(sh_info,    &shdr64.sh_info, Elf64_Half);
+			unencode(sh_addralign, &shdr64.sh_addralign,
+			    Elf64_Xword);
+			unencode(sh_entsize, &shdr64.sh_entsize, Elf64_Xword);
 		} else {
 			len = fread(&shdr32, 1, sizeof(Elf32_Shdr), f);
 			if (len != sizeof(Elf32_Shdr)) {
 				fprintf(stderr, "couldn't read header\n");
 				exit(1);
 			}
-			unencode(sh_name,      &shdr32.sh_name,      Elf32_Word);
-			unencode(sh_type,      &shdr32.sh_type,      Elf32_Word);
-			unencode(sh_flags,     &shdr32.sh_flags,     Elf32_Word);
-			unencode(sh_addr,      &shdr32.sh_addr,      Elf32_Addr);
-			unencode(sh_offset,    &shdr32.sh_offset,    Elf32_Off);
-			unencode(sh_size,      &shdr32.sh_size,      Elf32_Word);
-			unencode(sh_link,      &shdr32.sh_link,      Elf32_Word);
-			unencode(sh_info,      &shdr32.sh_info,      Elf32_Word);
-			unencode(sh_addralign, &shdr32.sh_addralign, Elf32_Word);
-			unencode(sh_entsize,   &shdr32.sh_entsize,   Elf32_Word);
+			unencode(sh_name,      &shdr32.sh_name,    Elf32_Word);
+			unencode(sh_type,      &shdr32.sh_type,    Elf32_Word);
+			unencode(sh_flags,     &shdr32.sh_flags,   Elf32_Word);
+			unencode(sh_addr,      &shdr32.sh_addr,    Elf32_Addr);
+			unencode(sh_offset,    &shdr32.sh_offset,  Elf32_Off);
+			unencode(sh_size,      &shdr32.sh_size,    Elf32_Word);
+			unencode(sh_link,      &shdr32.sh_link,    Elf32_Word);
+			unencode(sh_info,      &shdr32.sh_info,    Elf32_Word);
+			unencode(sh_addralign, &shdr32.sh_addralign,Elf32_Word);
+			unencode(sh_entsize,   &shdr32.sh_entsize, Elf32_Word);
 		}
 
 		/*  debug("sh_name=%04lx, sh_type=%08lx, sh_flags=%08lx"
@@ -1267,7 +1286,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					exit(1);
 				}
 
-				len = fread(symbols_sym64, 1, sh_entsize * n_entries, f);
+				len = fread(symbols_sym64, 1, sh_entsize *
+				    n_entries, f);
 			} else {
 				if (symbols_sym32 != NULL)
 					free(symbols_sym32);
@@ -1277,11 +1297,13 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					exit(1);
 				}
 
-				len = fread(symbols_sym32, 1, sh_entsize * n_entries, f);
+				len = fread(symbols_sym32, 1,
+				    sh_entsize * n_entries, f);
 			}
 
 			if (len != sh_size) {
-				fprintf(stderr, "could not read symbols from %s\n", filename);
+				fprintf(stderr, "could not read symbols from "
+				    "%s\n", filename);
 				exit(1);
 			}
 
@@ -1292,10 +1314,11 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		}
 
 		/*
-		 *  TODO:  This is incorrect, there may be several strtab sections.
+		 *  TODO:  This is incorrect, there may be several strtab
+		 *         sections.
 		 *
-		 *  For now, the simple/stupid guess that the largest string table
-		 *  is the one to use seems to be good enough.
+		 *  For now, the simple/stupid guess that the largest string
+		 *  table is the one to use seems to be good enough.
 		 */
 
 		if (sh_type == SHT_STRTAB && sh_size > symbol_length) {
@@ -1313,7 +1336,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			fseek(f, sh_offset, SEEK_SET);
 			len = fread(symbol_strings, 1, sh_size, f);
 			if (len != sh_size) {
-				fprintf(stderr, "could not read symbols from %s\n", filename);
+				fprintf(stderr, "could not read symbols from "
+				    "%s\n", filename);
 				exit(1);
 			}
 
@@ -1490,7 +1514,8 @@ void file_load(struct machine *machine, struct memory *mem,
 	if (size > 24000000) {
 		fprintf(stderr, "\nThis file is very large (%lli bytes)\n",
 		    (long long)size);
-		fprintf(stderr, "Are you sure it is a kernel and not a disk image?\n");
+		fprintf(stderr, "Are you sure it is a kernel and not a disk "
+		    "image?\n");
 		exit(1);
 	}
 
@@ -1499,7 +1524,8 @@ void file_load(struct machine *machine, struct memory *mem,
 	fclose(f);
 
 	if (len < (signed int)sizeof(buf)) {
-		fprintf(stderr, "\nThis file is too small to contain anything useful\n");
+		fprintf(stderr, "\nThis file is too small to contain "
+		    "anything useful\n");
 		exit(1);
 	}
 
@@ -1562,13 +1588,14 @@ void file_load(struct machine *machine, struct memory *mem,
 		if (buf[i] < 32 && buf[i] != '\t' &&
 		    buf[i] != '\n' && buf[i] != '\r' &&
 		    buf[i] != '\f') {
-			fprintf(stderr, "\nThe file format of '%s' is unknown.\n", filename);
+			fprintf(stderr, "\nThe file format of '%s' is "
+			    "unknown.\n", filename);
 			for (i=0; i<(signed)sizeof(buf); i++)
 				fprintf(stderr, " %02x", buf[i]);
-			fprintf(stderr, "\n");
-			fprintf(stderr, "Possible explanations:\n\n");
-			fprintf(stderr, "  o)  If this is a disk image, you forgot '-d' on the command line.\n");
-			fprintf(stderr, "  o)  This is an unsupported binary format.\n");
+			fprintf(stderr, "\nPossible explanations:\n\n"
+			    "  o)  If this is a disk image, you forgot '-d' "
+			    "on the command line.\n"
+			    "  o)  This is an unsupported binary format.\n");
 			exit(1);
 		}
 

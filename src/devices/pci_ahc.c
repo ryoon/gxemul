@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare136.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.12 2005-02-02 19:10:02 debug Exp $
+ *  $Id: pci_ahc.c,v 1.13 2005-02-13 11:40:58 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -63,11 +63,14 @@ uint32_t pci_ahc_rr(int reg)
 
 	switch (reg) {
 	case 0x00:
-		return PCI_VENDOR_ADP + ((uint32_t)PCI_PRODUCT_ADP_2940U << 16);
+		return PCI_VENDOR_ADP +
+		    ((uint32_t)PCI_PRODUCT_ADP_2940U << 16);
 	case 0x04:
 		return 0x02900007;
 	case 0x08:
-		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_SCSI, 0) + 0x1;		/*  Revision ?  */
+		/*  Revision ?  */
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+		    PCI_SUBCLASS_MASS_STORAGE_SCSI, 0) + 0x1;
 	case 0x0c:
 		return 0x00004008;
 	case 0x10:
@@ -127,17 +130,21 @@ int dev_ahc_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			fatal("[ ahc: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			fatal("[ ahc: unimplemented write to address 0x%x, "
+			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		else
-			fatal("[ ahc: unimplemented read from address 0x%x ]\n", relative_addr);
+			fatal("[ ahc: unimplemented read from address 0x%x ]\n",
+			    (int)relative_addr);
 	}
 
 #if 0
 	if (ok) {
 		if (writeflag == MEM_WRITE)
-			fatal("[ ahc: write to address 0x%x, data=0x%02x ]\n", relative_addr, (int)idata);
+			fatal("[ ahc: write to address 0x%x, data=0x%02x ]\n",
+			    (int)relative_addr, (int)idata);
 		else
-			fatal("[ ahc: read from address 0x%x: 0x%02x ]\n", relative_addr, (int)odata);
+			fatal("[ ahc: read from address 0x%x: 0x%02x ]\n",
+			    (int)relative_addr, (int)odata);
 	}
 #endif
 
@@ -162,7 +169,8 @@ void pci_ahc_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct ahc_data));
 
-	/*  TODO:  this address is based on what NetBSD/sgimips uses...  fix this  */
+	/*  TODO:  this address is based on what NetBSD/sgimips uses...
+	    fix this  */
 	memory_device_register(mem, "ahc", 0x18000000, 0x100,
 	    dev_ahc_access, d, MEM_DEFAULT, NULL);
 }

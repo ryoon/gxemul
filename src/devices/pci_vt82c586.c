@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.10 2005-01-23 13:43:03 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.11 2005-02-13 11:40:58 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -54,13 +54,17 @@ uint32_t pci_vt82c586_isa_rr(int reg)
 
 	switch (reg) {
 	case 0x00:
-		return PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_ISA << 16);
+		return PCI_VENDOR_VIATECH +
+		    (PCI_PRODUCT_VIATECH_VT82C586_ISA << 16);
 	case 0x04:
 		return 0xffffffff;	/*  ???  */
 	case 0x08:
-		return PCI_CLASS_CODE(PCI_CLASS_BRIDGE, PCI_SUBCLASS_BRIDGE_ISA, 0) + 39;	/*  Revision 37 or 39  */
+		/*  Revision 37 or 39  */
+		return PCI_CLASS_CODE(PCI_CLASS_BRIDGE,
+		    PCI_SUBCLASS_BRIDGE_ISA, 0) + 39;
 	case 0x0c:
-		return 0x00800000;	/*  Bit 7 of Header-type byte ==> multi-function device  */
+		/*  Bit 7 of Header-type byte ==> multi-function device  */
+		return 0x00800000;
 	default:
 		return 0;
 	}
@@ -84,15 +88,17 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 
 	switch (reg) {
 	case 0x00:
-		return PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_IDE << 16);
+		return PCI_VENDOR_VIATECH +
+		    (PCI_PRODUCT_VIATECH_VT82C586_IDE << 16);
 	case 0x04:
 		return 0xffffffff;	/*  ???  */
 	case 0x08:
 		/*  Possibly not correct:  */
-		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_IDE, 0) + 0x01;		/*  Revision ???  */
-
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE,
+		    PCI_SUBCLASS_MASS_STORAGE_IDE, 0) + 0x01;
 	case 0x40:	/*  APO_IDECONF  */
-		return 0x00000003;	/*  channel 0 and 1 enabled  */
+		/*  channel 0 and 1 enabled  */
+		return 0x00000003;
 	default:
 		return 0;
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.23 2005-02-06 15:15:04 debug Exp $
+ *  $Id: lk201.c,v 1.24 2005-02-13 11:40:58 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -231,13 +231,16 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 		/*  Reverse sign of x:  (this is needed for some reason)  */
 		xsign ^= 1;
 
-		d->add_to_rx_queue(d->add_data, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + (mouse_buttons & 7), DCMOUSE_PORT);
+		d->add_to_rx_queue(d->add_data, MOUSE_START_FRAME +
+		    MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign +
+		    (mouse_buttons & 7), DCMOUSE_PORT);
 		d->add_to_rx_queue(d->add_data, xdelta, DCMOUSE_PORT);
 		d->add_to_rx_queue(d->add_data, ydelta, DCMOUSE_PORT);
 		break;
 	default:
 		/*  TODO:  prompt mode and perhaps more stuff  */
-		fatal("[ lk201: mouse mode 0x%02x unknown: TODO ]\n", d->mouse_mode);
+		fatal("[ lk201: mouse mode 0x%02x unknown: TODO ]\n",
+		    d->mouse_mode);
 	}
 }
 
@@ -258,11 +261,18 @@ void lk201_tick(struct lk201_data *d)
 		if (d->use_fb)
 			lk201_convert_ascii_to_keybcode(d, ch);
 		else {
-			/*  This is ugly, but necessary because different machines
-				seem to use different ports for their serial console:  */
-			d->add_to_rx_queue(d->add_data, ch, DCKBD_PORT);	/*  DEC MIPSMATE 5100  */
+			/*
+			 *  This is ugly, but necessary because different
+			 *  machines seem to use different ports for their
+			 *  serial console:
+			 *
+			 *  DEC MIPSMATE 5100 uses the keyboard port.
+			 *  DECstation 3100 (PMAX) uses the printer port.
+			 *  All others seem to use the comm port.
+			 */
+			d->add_to_rx_queue(d->add_data, ch, DCKBD_PORT);
 			d->add_to_rx_queue(d->add_data, ch, DCCOMM_PORT);
-			d->add_to_rx_queue(d->add_data, ch, DCPRINTER_PORT);	/*  DECstation 3100 (PMAX)  */
+			d->add_to_rx_queue(d->add_data, ch, DCPRINTER_PORT);
 		}
 	}
 
@@ -370,7 +380,8 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 			 *        other bits and bytes?
 			 */
 			debug(" (mouse self-test request)");
-			d->add_to_rx_queue(d->add_data, 0xa0 | d->mouse_revision, DCMOUSE_PORT);
+			d->add_to_rx_queue(d->add_data,
+			    0xa0 | d->mouse_revision, DCMOUSE_PORT);
 			d->add_to_rx_queue(d->add_data, 0x02, DCMOUSE_PORT);
 			d->add_to_rx_queue(d->add_data, 0x00, DCMOUSE_PORT);
 			d->add_to_rx_queue(d->add_data, 0x00, DCMOUSE_PORT);

@@ -18,6 +18,10 @@ do_devices:
 regtest:
 	cd tests; make run_tests; cd ..
 
+install:
+	@echo "There is no automatic 'make install'. You need to manually copy"
+	@echo "the mips64emul binary manually to where you want it to reside."
+
 clean:
 	rm -f $(BIN) *core
 	cd src; $(MAKE) clean; cd ..

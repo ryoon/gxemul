@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.14 2004-11-01 12:23:27 debug Exp $
+ *  $Id: lk201.c,v 1.15 2004-11-05 23:06:45 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -168,7 +168,7 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	d->old_host_mouse_x = mouse_x;
 	d->old_host_mouse_y = mouse_y;
 
-	if (d->old_host_mouse_stays_put > 300 &&
+	if (d->old_host_mouse_stays_put > 500 &&
 	    d->mouse_buttons == mouse_buttons)
 		return;
 
@@ -194,7 +194,7 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	if (xdelta == 0 && ydelta == 0 && d->mouse_buttons == mouse_buttons)
 		return;
 
-	m = 4 >> (d->old_host_mouse_stays_put / 30);
+	m = 4 >> (d->old_host_mouse_stays_put / 20);
 	if (m < 1)
 		m = 1;
 

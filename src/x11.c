@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.28 2004-11-05 00:31:01 debug Exp $
+ *  $Id: x11.c,v 1.29 2004-11-05 23:06:47 debug Exp $
  *
  *  X11-related functions.
  */
@@ -41,6 +41,7 @@
 #ifndef	WITH_X11
 
 /*  Dummy functions:  */
+void x11_redraw_cursor(int i) { }
 void x11_redraw(int x) { }
 void x11_putpixel_fb(int fb_number, int x, int y, int color) { }
 void x11_init(struct emul *emul) { }
@@ -66,6 +67,89 @@ int n_framebuffer_windows = 0;
 
 
 /*
+ *  x11_redraw_cursor():
+ *
+ *  Redraw a framebuffer's X11 cursor.
+ */
+void x11_redraw_cursor(int i)
+{
+	/*  Remove old cursor, if any:  */
+	if (fb_windows[i].x11_display != NULL && fb_windows[i].OLD_cursor_on) {
+		XPutImage(fb_windows[i].x11_display,
+		    fb_windows[i].x11_fb_window,
+		    fb_windows[i].x11_fb_gc, fb_windows[i].fb_ximage,
+		    fb_windows[i].OLD_cursor_x/fb_windows[i].scaledown,
+		    fb_windows[i].OLD_cursor_y/fb_windows[i].scaledown,
+		    fb_windows[i].OLD_cursor_x/fb_windows[i].scaledown,
+		    fb_windows[i].OLD_cursor_y/fb_windows[i].scaledown,
+		    fb_windows[i].OLD_cursor_xsize/fb_windows[i].scaledown + 1,
+		    fb_windows[i].OLD_cursor_ysize/fb_windows[i].scaledown + 1);
+	}
+
+	if (fb_windows[i].x11_display != NULL && fb_windows[i].cursor_on) {
+		int x, y;
+		XImage *xtmp;
+
+		xtmp = XSubImage(fb_windows[i].fb_ximage,
+		    fb_windows[i].cursor_x/fb_windows[i].scaledown,
+		    fb_windows[i].cursor_y/fb_windows[i].scaledown,
+		    fb_windows[i].cursor_xsize/fb_windows[i].scaledown + 1,
+		    fb_windows[i].cursor_ysize/fb_windows[i].scaledown + 1);
+		if (xtmp == NULL) {
+			fatal("out of memory in x11_redraw_cursor()\n");
+			return;
+		}
+
+		for (y=0; y<fb_windows[i].cursor_ysize; y++)
+			for (x=0; x<fb_windows[i].cursor_xsize; x++) {
+				int px = x/fb_windows[i].scaledown;
+				int py = y/fb_windows[i].scaledown;
+				int p = fb_windows[i].cursor_pixels[y][x];
+				unsigned long oldcol;
+
+				switch (p) {
+				case CURSOR_COLOR_TRANSPARENT:
+					break;
+				case CURSOR_COLOR_INVERT:
+					oldcol = XGetPixel(xtmp, px, py);
+					if (oldcol != fb_windows[i].
+					    x11_graycolor[N_GRAYCOLORS-1].pixel)
+						oldcol = fb_windows[i].
+						    x11_graycolor[N_GRAYCOLORS-1].pixel;
+					else
+						oldcol = fb_windows[i].
+						    x11_graycolor[0].pixel;
+					XPutPixel(xtmp, px, py, oldcol);
+					break;
+				default:	/*  Normal grayscale:  */
+					XPutPixel(xtmp, px, py, fb_windows[i].
+					    x11_graycolor[p].pixel);
+				}
+			}
+
+		XPutImage(fb_windows[i].x11_display,
+		    fb_windows[i].x11_fb_window,
+		    fb_windows[i].x11_fb_gc,
+		    xtmp,
+		    0, 0,
+		    fb_windows[i].cursor_x/fb_windows[i].scaledown,
+		    fb_windows[i].cursor_y/fb_windows[i].scaledown,
+		    fb_windows[i].cursor_xsize/fb_windows[i].scaledown,
+		    fb_windows[i].cursor_ysize/fb_windows[i].scaledown);
+
+		XDestroyImage(xtmp);
+
+		fb_windows[i].OLD_cursor_on = fb_windows[i].cursor_on;
+		fb_windows[i].OLD_cursor_x = fb_windows[i].cursor_x;
+		fb_windows[i].OLD_cursor_y = fb_windows[i].cursor_y;
+		fb_windows[i].OLD_cursor_xsize = fb_windows[i].cursor_xsize;
+		fb_windows[i].OLD_cursor_ysize = fb_windows[i].cursor_ysize;
+		XFlush(fb_windows[i].x11_display);
+	}
+}
+
+
+/*
  *  x11_redraw():
  *
  *  Redraw X11 windows.
@@ -73,24 +157,7 @@ int n_framebuffer_windows = 0;
 void x11_redraw(int i)
 {
 	x11_putimage_fb(i);
-
-	if (fb_windows[i].x11_display != NULL && fb_windows[i].cursor_on) {
-		XPutImage(fb_windows[i].x11_display,
-		    fb_windows[i].x11_fb_window,
-		    fb_windows[i].x11_fb_gc,
-		    fb_windows[i].cursor_ximage,
-		    0, 0,
-		    fb_windows[i].cursor_x/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_y/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_xsize/fb_windows[i].scaledown,
-		    fb_windows[i].cursor_ysize/fb_windows[i].scaledown);
-		fb_windows[i].OLD_cursor_on = fb_windows[i].cursor_on;
-		fb_windows[i].OLD_cursor_x = fb_windows[i].cursor_x;
-		fb_windows[i].OLD_cursor_y = fb_windows[i].cursor_y;
-		fb_windows[i].OLD_cursor_xsize = fb_windows[i].cursor_xsize;
-		fb_windows[i].OLD_cursor_ysize = fb_windows[i].cursor_ysize;
-	}
-
+	x11_redraw_cursor(i);
 	XFlush(fb_windows[i].x11_display);
 }
 
@@ -350,6 +417,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 			exit(1);
 		}
 
+#if 0
 		fb_windows[fb_number].cursor_ximage =
 		    XCreateImage(fb_windows[fb_number].x11_display,
 		    CopyFromParent, fb_windows[fb_number].x11_screen_depth,
@@ -367,6 +435,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 				XPutPixel(fb_windows[fb_number].cursor_ximage,
 				    x, y, fb_windows[fb_number].
 				    x11_graycolor[N_GRAYCOLORS-1].pixel);
+#endif
 	}
 
 	return &fb_windows[fb_number];

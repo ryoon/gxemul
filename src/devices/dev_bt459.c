@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.34 2004-11-04 23:56:36 debug Exp $
+ *  $Id: dev_bt459.c,v 1.35 2004-11-05 23:06:45 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -77,18 +77,17 @@ struct bt459_data {
 
 	int		palette_sub_offset;	/*  0, 1, or 2  */
 
-	int		video_on;
-
 	struct vfb_data *vfb_data;
 
 	/*
 	 *  There is one pointer to the framebuffer's RGB palette,
 	 *  and then a local copy of the palette.  256 * 3 bytes (r,g,b).
-	 *  The reason for this is that when we need to blank the screen,
-	 *  we can set the framebuffer's palette to all zeroes, but keep
-	 *  our own copy intact, to be reused later again when the
-	 *  screen is unblanked.
+	 *  The reason for this is that when we need to blank the screen
+	 *  (ie video_on = 0), we can set the framebuffer's palette to all
+	 *  zeroes, but keep our own copy intact, to be reused later again
+	 *  when the screen is unblanked.
 	 */
+	int		video_on;
 	unsigned char	*rgb_palette;		/*  256 * 3 (r,g,b)  */
 	unsigned char	local_rgb_palette[256 * 3];
 };
@@ -98,13 +97,14 @@ struct bt459_data {
  *  bt459_update_X_cursor():
  *
  *  This routine takes the color values in the cursor RAM area, and put them
- *  in the framebuffer window's cursor_ximage.
+ *  in the framebuffer window's cursor_pixels.
  *
  *  d->cursor_xsize and ysize are also updated.
  */
 static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 {
 	int i, x,y, xmax=0, ymax=0;
+	int bw_only = 1;
 
 	/*  First, let's calculate the size of the cursor:  */
 	for (y=0; y<64; y++)
@@ -119,16 +119,28 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 				int color = (data >> (6-2*i)) & 3;
 				if (color != 0)
 					xmax = x + i;
+				if (color != 0 && color != 3)
+					bw_only = 0;
 			}
 		}
 
 	d->cursor_xsize = xmax + 1;
 	d->cursor_ysize = ymax + 1;
 
+	/*
+	 *  It seems that when Ultrix wants to use a full white block cursor,
+	 *  it uses color 3. This is all good and well, but later, when it
+	 *  uses a graphical mouse cursor (pointer shape), 0 means transparent,
+	 *  1 isn't used, 2 means white, and 3 means black. So it's all in
+	 *  reverse. The 'bw_only' flag is useful for this.
+	 *
+	 *  TODO: Is there a way to know which color scheme is used, without
+	 *  this kind of hack?
+	 */
+
 #ifdef WITH_X11
-	/*  Now let's use XPutPixel to set cursor_ximage pixels:  */
-	if (cpu->emul->use_x11) {
-		for (y=0; y<=ymax; y++)
+	if (cpu->emul->use_x11 && d->vfb_data->fb_window != NULL) {
+		for (y=0; y<=ymax; y++) {
 			for (x=0; x<=xmax; x+=4) {
 				struct fb_window *win = d->vfb_data->fb_window;
 				int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
@@ -136,18 +148,35 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 
 				for (i=0; i<4; i++) {
 					int color = (data >> (6-2*i)) & 3;
+					int pixelvalue;
 
-					/*
-					 *  TODO:  Better (color averaging)
-					 *  scaledown.
-					 */
-					XPutPixel(win->cursor_ximage,
-					    (x + i) / win->scaledown,
-					    y / win->scaledown,
-					    win->x11_graycolor[color * 5].pixel);
+					if (bw_only) {
+						if (color)
+							pixelvalue =
+							    CURSOR_COLOR_INVERT;
+						else
+							pixelvalue = 0;
+					} else {
+						/*  0 = transparent  */
+						/*  1 = unknown  */
+						/*  2 = white  */
+						/*  3 = black  */
+						pixelvalue = CURSOR_COLOR_TRANSPARENT;
+						if (color == 2)
+							pixelvalue =
+							    N_GRAYCOLORS - 1;
+						if (color == 3)
+							pixelvalue = 0;
+					}
+
+					win->cursor_pixels[y][x+i] =
+					    pixelvalue;
+/* printf("%i", color); */
 				}
 			}
-
+/* printf("\n"); */
+		}
+/* printf("\n"); */
 		/*
 		 *  Make sure the cursor is redrawn, if it is on:
 		 *
@@ -155,10 +184,45 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 		 *  but if the old and new differ, the cursor is redrawn.
 		 *  (Hopefully this will "never" overflow.)
 		 */
-		if (d->vfb_data->fb_window->cursor_on)
+/*		if (d->vfb_data->fb_window->cursor_on)
 			d->vfb_data->fb_window->cursor_on ++;
+*/		if (d->cursor_on)
+			d->cursor_on ++;
 	}
 #endif
+}
+
+
+/*
+ *  bt459_update_cursor_position():
+ */
+static void bt459_update_cursor_position(struct bt459_data *d,
+	int old_cursor_on)
+{
+	int new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) +
+	    ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - d->cursor_x_add;
+	int new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) +
+	    ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - d->cursor_y_add;
+
+	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y ||
+	    d->cursor_on != old_cursor_on) {
+		int on;
+		int ysize_mul = 1;
+
+		d->cursor_x = new_cursor_x;
+		d->cursor_y = new_cursor_y;
+
+		if (!quiet_mode)
+			debug("[ bt459: cursor = %03i,%03i ]\n",
+			    d->cursor_x, d->cursor_y);
+
+		on = d->cursor_on;
+		if (d->cursor_xsize == 0 || d->cursor_ysize == 0)
+			on = 0;
+
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y,
+		    on, d->cursor_xsize, d->cursor_ysize*ysize_mul);
+	}
 }
 
 
@@ -168,10 +232,12 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 void dev_bt459_tick(struct cpu *cpu, void *extra)
 {
 	struct bt459_data *d = extra;
+	int old_cursor_on = d->cursor_on;
 
 	if (d->need_to_update_cursor_shape) {
 		d->need_to_update_cursor_shape = 0;
 		bt459_update_X_cursor(cpu, d);
+		bt459_update_cursor_position(d, old_cursor_on);
 	}
 
 	/*
@@ -218,7 +284,7 @@ int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 #ifdef BT459_DEBUG
-	falal("[ bt459: IRQ ack ]\n");
+	fatal("[ bt459: IRQ ack ]\n");
 #endif
 
 	d->interrupts_enable = 1;
@@ -239,8 +305,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int btaddr, new_cursor_x, new_cursor_y;
-	int old_cursor_on = d->cursor_on;
+	int btaddr, old_cursor_on = d->cursor_on;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -407,45 +472,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		}
 	}
 
-	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) +
-	    ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - d->cursor_x_add;
-	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) +
-	    ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - d->cursor_y_add;
+	bt459_update_cursor_position(d, old_cursor_on);
 
-	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y ||
-	    d->cursor_on != old_cursor_on) {
-		int ysize_mul = 1;
-
-		d->cursor_x = new_cursor_x;
-		d->cursor_y = new_cursor_y;
-
-		/*
-		 *  Ugly hack for Ultrix:
-		 *
-		 *  Ultrix and NetBSD assume that the cursor works differently.
-		 *  Ultrix uses the 370,38 coordinates, but draws the cursor
-		 *  upwards. NetBSD draws it downwards.  Ultrix also makes the
-		 *  cursor smaller (?).
-		 *
-		 *  TODO: This actually depends on which ultrix kernel you use.
-		 *  Clearly, the BT459 emulation is not implemented well
-		 *  enough yet.
-		 *
-		 *  TODO:  Find out why? Is it because of special BT459
-		 *  commands?
-		 */
-#if 0
-		if (!(d->bt459_reg[BT459_REG_CCR] & 1)) {
-/*			ysize_mul = 4; */
-			d->cursor_y += 5 - (d->cursor_ysize * ysize_mul);
-		}
-#endif
-		if (!quiet_mode)
-			debug("[ bt459: cursor = %03i,%03i ]\n",
-			    d->cursor_x, d->cursor_y);
-		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y,
-		    d->cursor_on, d->cursor_xsize, d->cursor_ysize*ysize_mul);
-	}
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -482,7 +510,7 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->type		= type;
 	d->cursor_x     = -1;
 	d->cursor_y     = -1;
-	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
+	d->cursor_xsize = d->cursor_ysize = 0;	/*  anything  */
 	d->video_on     = 1;
 
 	/*
@@ -496,8 +524,8 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		d->cursor_y_add =  37;
 		break;
 	case BT459_BA:
-		d->cursor_x_add = 219;
-		d->cursor_y_add =  34;
+		d->cursor_x_add = 220;
+		d->cursor_y_add =  35;
 		break;
 	case BT459_BBA:
 		if (vfb_data->xsize == 1280) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.55 2004-11-05 00:30:56 debug Exp $
+ *  $Id: dev_fb.c,v 1.56 2004-11-05 23:06:45 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -206,8 +206,9 @@ void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
 	}
 #endif
 
-	console_set_framebuffer_mouse(cursor_x, cursor_y,
-	    d->fb_window->fb_number);
+	if (d->fb_window != NULL)
+		console_set_framebuffer_mouse(cursor_x, cursor_y,
+		    d->fb_window->fb_number);
 
 	/*  debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n",
 	    cursor_x, cursor_y, cursor_xsize, cursor_ysize, on);  */
@@ -615,15 +616,7 @@ skip_update:
 	if (need_to_redraw_cursor) {
 		/*  Paint new cursor:  */
 		if (d->fb_window->cursor_on) {
-			XPutImage(d->fb_window->x11_display,
-			    d->fb_window->x11_fb_window,
-			    d->fb_window->x11_fb_gc,
-			    d->fb_window->cursor_ximage,
-			    0, 0,
-			    d->fb_window->cursor_x/d->vfb_scaledown,
-			    d->fb_window->cursor_y/d->vfb_scaledown,
-			    d->fb_window->cursor_xsize/d->vfb_scaledown,
-			    d->fb_window->cursor_ysize/d->vfb_scaledown);
+			x11_redraw_cursor(d->fb_window->fb_number);
 			d->fb_window->OLD_cursor_on = d->fb_window->cursor_on;
 			d->fb_window->OLD_cursor_x = d->fb_window->cursor_x;
 			d->fb_window->OLD_cursor_y = d->fb_window->cursor_y;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.132 2004-11-05 00:31:00 debug Exp $
+ *  $Id: misc.h,v 1.133 2004-11-05 23:06:46 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -1003,6 +1003,10 @@ void useremul_syscall(struct cpu *cpu, uint32_t code);
 
 /*  x11.c:  */
 #define N_GRAYCOLORS            16
+#define	CURSOR_COLOR_TRANSPARENT	-1
+#define	CURSOR_COLOR_INVERT		-2
+#define	CURSOR_MAXY		64
+#define	CURSOR_MAXX		64
 /*  Framebuffer windows:  */
 struct fb_window {
 	int		fb_number;
@@ -1024,7 +1028,8 @@ struct fb_window {
 	XImage		*fb_ximage;
 	unsigned char	*ximage_data;
 
-	XImage		*cursor_ximage;
+	/*  -1 means transparent, 0 and up are grayscales  */
+	int		cursor_pixels[CURSOR_MAXY][CURSOR_MAXX];
 	int		cursor_x;
 	int		cursor_y;
 	int		cursor_xsize;
@@ -1037,6 +1042,7 @@ struct fb_window {
 	int		OLD_cursor_on;
 #endif
 };
+void x11_redraw_cursor(int);
 void x11_redraw(int);
 void x11_putpixel_fb(int, int x, int y, int color);
 #ifdef WITH_X11

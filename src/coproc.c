@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.132 2004-12-29 13:51:03 debug Exp $
+ *  $Id: coproc.c,v 1.133 2004-12-29 15:41:05 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1103,7 +1103,7 @@ store_nan:
 		else if (fmt == FMT_D)
 			r = 0x7fffffffffffffffULL;
 		else
-			r = 0;
+			r = 0x7fffffffULL;
 	}
 
 	/*
@@ -1185,7 +1185,7 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		if (fabs(float_value[1].f) > 0.00000000001)
 			nf = float_value[0].f / float_value[1].f;
 		else {
-			/*  debug("DIV by zero !!!!\n");  */
+			fatal("DIV by zero !!!!\n");
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}
@@ -1197,7 +1197,7 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		if (float_value[0].f >= 0.0)
 			nf = sqrt(float_value[0].f);
 		else {
-			debug("SQRT by less than zero, %f !!!!\n", float_value[0].f);
+			fatal("SQRT by less than zero, %f !!!!\n", float_value[0].f);
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}

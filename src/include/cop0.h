@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cop0.h,v 1.2 2004-12-15 05:27:33 debug Exp $
+ *  $Id: cop0.h,v 1.3 2004-12-29 15:41:04 debug Exp $
  *
  *  Misc. definitions for coprocessor 0.
  */
@@ -169,8 +169,8 @@
 #define	EXCEPTION_NAMES		{ \
 	"INT", "MOD", "TLBL", "TLBS", "ADEL", "ADES", "IBE", "DBE",	\
 	"SYS", "BP", "RI", "CPU", "OV", "TR", "VCEI", "FPE",		\
-	"16?", "17?", "18?", "19?", "20?", "21?", "22?", "WATCH",	\
-	"24?", "25?", "26?", "27?", "28?", "29?", "30?", "VCED" }
+	"16?", "17?", "C2E", "19?", "20?", "21?", "MDMX", "WATCH",	\
+	"MCHECK", "25?", "26?", "27?", "28?", "29?", "CACHEERR", "VCED" }
 
 /*  CP0's CAUSE exception codes:  */
 #define	EXCEPTION_INT		0	/*  Interrupt  */

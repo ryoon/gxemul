@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes.h,v 1.1 2004-12-06 13:15:05 debug Exp $
+ *  $Id: opcodes.h,v 1.2 2004-12-29 15:41:04 debug Exp $
  *
  *  MIPS opcodes, gathered from various sources.
  */
@@ -42,7 +42,7 @@
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
-	"sc", "swc1", "swc2", "swc3", "scd", "sdc1", "opcode_3e", "sd"			/*  0x38 - 0x3f  */	}
+	"sc", "swc1", "swc2", "swc3", "scd", "sdc1", "sdc2", "sd"			/*  0x38 - 0x3f  */	}
 
 #define	REGIMM_NAMES	{	\
 	"bltz", "bgez", "bltzl", "bgezl", "regimm_04", "regimm_05", "regimm_06", "regimm_07",			/*  0x00 - 0x07  */	\
@@ -233,8 +233,8 @@
 #define	HI6_SWC2			0x3a	/*  111010  */	/*  MIPS I  */
 #define	HI6_SWC3			0x3b	/*  111011  */	/*  MIPS I  */
 #define	HI6_SCD				0x3c	/*  111100  */	/*  MIPS III  */
-#define	HI6_SDC1			0x3d	/*  111101  */  /*  ???  */
-/*					0x3e	    111110  */
+#define	HI6_SDC1			0x3d	/*  111101  */  /*  MIPS II  */
+#define	HI6_SDC2			0x3e	/*  111110  */  /*  MIPS II  */
 #define	HI6_SD				0x3f	/*  111111  */	/*  MIPS III  */
 
 

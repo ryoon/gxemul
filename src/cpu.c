@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.221 2004-12-29 12:04:17 debug Exp $
+ *  $Id: cpu.c,v 1.222 2004-12-29 15:41:05 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -637,6 +637,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case HI6_SWC2:
 	case HI6_SWC3:
 	case HI6_SDC1:
+	case HI6_SDC2:
 	case HI6_LWL:   
 	case HI6_LWR:
 	case HI6_LDL:
@@ -908,6 +909,22 @@ void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i & 1) == 1)
 					debug("\n");
 			}
+		}
+
+		/*  Floating point control registers:  */
+		if (coprocnr == 1) {
+			for (i=0; i<32; i++)
+				switch (i) {
+				case 0:	printf("cpu%i: fcr0  (fcir) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					break;
+				case 25:printf("cpu%i: fcr25 (fccr) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					break;
+				case 31:printf("cpu%i: fcr31 (fcsr) = 0x%08x\n",
+					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					break;
+				}
 		}
 	}
 }
@@ -2441,6 +2458,7 @@ int cpu_run_instr(struct cpu *cpu)
 	case HI6_SWC2:
 	case HI6_SWC3:
 	case HI6_SDC1:
+	case HI6_SDC2:
 	case HI6_LWL:	/*  Unaligned load/store  */
 	case HI6_LWR:
 	case HI6_LDL:
@@ -2656,6 +2674,7 @@ int cpu_run_instr(struct cpu *cpu)
 		case HI6_SWC2:
 		case HI6_SWC3:
 		case HI6_SDC1:
+		case HI6_SDC2:
 			/*  These are the default "assumptions".  */
 			linked = 0;
 			st = 1;
@@ -2688,10 +2707,11 @@ int cpu_run_instr(struct cpu *cpu)
 			case HI6_LDC2:	{ wlen = 8; st = 0; signd = 0; }  break;
 
 			case HI6_SH:	{ wlen = 2;         signd = 0; }  break;
-			case HI6_SWC1:	{                   signd = 0; }  break;
-			case HI6_SWC2:	{                   signd = 0; }  break;
+			case HI6_SDC1:
+			case HI6_SDC2:	wlen = 8;
+			case HI6_SWC1:
+			case HI6_SWC2:
 			case HI6_SWC3:	{                   signd = 0; }  break;
-			case HI6_SDC1:	{ wlen = 8;         signd = 0; }  break;
 
 			case HI6_LL:	{           st = 0; signd = 1; linked = 1; }  break;
 			case HI6_LLD:	{ wlen = 8; st = 0; signd = 0; linked = 1; }  break;
@@ -2798,7 +2818,23 @@ int cpu_run_instr(struct cpu *cpu)
 								cpnr = -1;
 								break;
 							} else {
-								coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
+								/*  Special handling of 64-bit stores
+								    on 32-bit CPUs, and on newer CPUs
+								    in 32-bit compatiblity mode:  */
+								if ((hi6==HI6_SDC1 || hi6==HI6_SDC2) &&
+								    (cpu->cpu_type.isa_level <= 2 ||
+								    !(cp0->reg[COP0_STATUS] & STATUS_FR))) {
+									uint64_t a, b;
+									coproc_register_read(cpu,
+									    cpu->coproc[cpnr], rt, &a);
+									coproc_register_read(cpu,
+									    cpu->coproc[cpnr], rt^1, &b);
+									if (rt & 1)
+										fatal("WARNING: SDCx in 32-bit mode from odd register!\n");
+									value = (a & 0xffffffffULL)
+									    | (b << 32);
+								} else
+									coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
 							}
 							break;
 					default:
@@ -2922,8 +2958,28 @@ int cpu_run_instr(struct cpu *cpu)
 						    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
 							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 						} else {
-							coproc_register_write(cpu, cpu->coproc[cpnr], rt, &value,
-							    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+							/*  Special handling of 64-bit loads
+							    on 32-bit CPUs, and on newer CPUs
+							    in 32-bit compatiblity mode:  */
+							if ((hi6==HI6_LDC1 || hi6==HI6_LDC2) &&
+							    (cpu->cpu_type.isa_level <= 2 ||
+							    !(cp0->reg[COP0_STATUS] & STATUS_FR))) {
+								uint64_t a, b;
+								a = (int64_t)(int32_t) (value & 0xffffffffULL);
+								b = (int64_t)(int32_t) (value >> 32);
+								coproc_register_write(cpu,
+								    cpu->coproc[cpnr], rt, &a,
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+								coproc_register_write(cpu,
+								    cpu->coproc[cpnr], rt ^ 1, &b,
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+								if (rt & 1)
+									fatal("WARNING: LDCx in 32-bit mode to odd register!\n");
+							} else {
+								coproc_register_write(cpu,
+								    cpu->coproc[cpnr], rt, &value,
+								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
+							}
 						}
 						break;
 				default:	if (rt != 0)

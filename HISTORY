@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.424 2004-12-29 13:51:02 debug Exp $
+$Id: HISTORY,v 1.425 2004-12-29 15:41:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1392,4 +1392,6 @@ HISTORY of mips64emul
 20041228	Merging dev_kn01_csr.c and dev_vdac.c into dev_kn01.c.
 20041229	Various updates to the debugger (nicer tlb output and other
 		things).
-		Some floating point fixes.
+		Some floating point fixes in src/coproc.c (mov is not
+		an arithmetic instruction), and in src/cpu.c (ldcX/sdcX in
+		32-bit mode uses register pairs).

@@ -327,3 +327,6 @@ HISTORY of mips64emul
 20040211	Adding decprom_dump_txt_to_bin.c to the experiments/ dir.
 		Adding a section to doc/ on how to use DECstation PROM dumps.
 		Adding a hello world example to doc/ as well.
+20040218	TURBOchannel slots that are empty now return a DBE exception,
+		so that Ultrix and DECstation PROMs don't complain about
+		broken TURBOchannel ROMs.

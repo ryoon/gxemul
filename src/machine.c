@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.55 2004-03-01 17:12:02 debug Exp $
+ *  $Id: machine.c,v 1.56 2004-03-04 03:13:37 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -713,9 +713,9 @@ void machine_init(struct memory *mem)
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 
-			/*  TURBOchannel slots (0 and 1). TODO: irqs  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "", 0);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", 0);
+			/*  TURBOchannel slots (0 and 1):  */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "", XINE_INTR_TC_0 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", XINE_INTR_TC_1 +8);
 
 			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer: (NOTE: 0x8000000, not 0x18000000)  */
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
@@ -726,7 +726,7 @@ void machine_init(struct memory *mem)
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, XINE_INTR_SCSI +8);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
-			serial_console_name      = "osconsole=2";
+			serial_console_name      = "osconsole=3";
 			break;
 
 		case MACHINE_5500:	/*  type 11, KN220  */
@@ -734,12 +734,13 @@ void machine_init(struct memory *mem)
 
 			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  A wild guess. TODO:  not irq 0  */
 
-			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing"  */
+			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
+			dev_dec5500_ioboard_init(cpus[bootstrap_cpu], mem, 0x17000000);
 
 			break;
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
-			machine_name = "DEC MIPSMATE 5100";
+			machine_name = "DEC MIPSMATE 5100 (KN230)";
 			if (emulated_ips == 0)
 				emulated_ips = 20000000;
 			if (physical_ram_in_mb > 128)
@@ -880,7 +881,7 @@ void machine_init(struct memory *mem)
 
 		/*
 		 *  The KN5800 (SMP system) uses a CCA (console communications area):
-		 *  (VAX documentation might prove useful for this.)
+		 *  (See VAX 6000 documentation for details.)
 		 */
 		{
 			char tmps[300];
@@ -896,9 +897,21 @@ void machine_init(struct memory *mem)
 		}
 
 		add_environment_string("scsiid0=7", &addr);
-		add_environment_string("", &addr);	/*  the end  */
+		add_environment_string("bootmode=a", &addr);
+		add_environment_string("testaction=q", &addr);
+		add_environment_string("haltaction=h", &addr);
+		add_environment_string("more=24", &addr);
 
-/*  cpus[bootstrap_cpu]->gpr[GPR_SP] = physical_ram_in_mb*1048576 + 0x80000000 - 0x2100;  */
+		/*  Used in at least Ultrix on the 5100:  */
+		add_environment_string("scsiid=7", &addr);
+		add_environment_string("baud0=9600", &addr);
+		add_environment_string("baud1=9600", &addr);
+		add_environment_string("baud2=9600", &addr);
+		add_environment_string("baud3=9600", &addr);
+		add_environment_string("iooption=0x1", &addr);
+
+		/*  The end:  */
+		add_environment_string("", &addr);
 
 		break;
 

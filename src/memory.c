@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.110 2004-11-24 04:34:48 debug Exp $
+ *  $Id: memory.c,v 1.111 2004-11-24 05:53:19 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -117,6 +117,28 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 			data >>= 8;
 		}
 	}
+}
+
+
+/*
+ *  zeroed_alloc():
+ *
+ *  Allocates a block of memory using mmap(), and if that fails, try
+ *  malloc() + memset().
+ */
+void *zeroed_alloc(size_t s)
+{
+	void *p = mmap(NULL, s, PROT_READ | PROT_WRITE,
+	    MAP_ANON | MAP_PRIVATE, -1, 0);
+	if (p == NULL) {
+		p = malloc(s);
+		if (p == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		memset(p, 0, s);
+	}
+	return p;
 }
 
 

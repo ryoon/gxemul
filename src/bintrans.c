@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.81 2004-11-24 04:34:48 debug Exp $
+ *  $Id: bintrans.c,v 1.82 2004-11-24 05:53:19 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -133,14 +133,15 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp, uint
 static int bintrans_write_instruction__loadstore(unsigned char **addrp, int rt, int imm, int rs, int instruction_type, int bigendian);
 static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int imm);
 static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, int from_flag, int hi_flag);
-static int bintrans_write_instruction__rfe(unsigned char **addrp);
 static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
-static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype);
+static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int itype);
 
 #define	TLB_TLBWI	0
 #define	TLB_TLBWR	1
 #define	TLB_TLBP	2
 #define	TLB_TLBR	3
+#define	TLB_RFE		4
+#define	TLB_ERET	5
 
 
 #define	BINTRANS_CACHE_N_INDEX_BITS	14
@@ -542,7 +543,13 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
+switch (cpu->cpu_type.mmu_model) {
+case MMU3K:
 			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
+	break;
+default:
+	translated = try_to_translate = 0;
+}
 			n_translated += translated;
 			break;
 
@@ -575,7 +582,12 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		case HI6_COP0:
 			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
 				/*  rfe:  */
-				translated = bintrans_write_instruction__rfe(&ca);
+				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_RFE);
+				n_translated += translated;
+ 				try_to_translate = 0;
+			} else if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x18) {
+				/*  eret:  */
+				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_ERET);
 				n_translated += translated;
  				try_to_translate = 0;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0 && (instr[1]&7)==0 && instr[0]==0) {
@@ -604,19 +616,19 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
 				/*  tlbwi:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBWI);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBWI);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 6) {
 				/*  tlbwr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBWR);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBWR);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 8) {
 				/*  tlbp:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBP);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBP);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 1) {
 				/*  tlbr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb(&ca, TLB_TLBR);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBR);
 				n_translated += translated;
 			} else
 				try_to_translate = 0;
@@ -792,9 +804,36 @@ run_it:
  */
 void bintrans_init_cpu(struct cpu *cpu)
 {
+	int i;
+
 	cpu->chunk_base_address   = translation_code_chunk_space;
 	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
 	cpu->bintrans_fast_tlbpr  = coproc_tlbpr;
+	cpu->bintrans_fast_rfe    = coproc_rfe;
+	cpu->bintrans_fast_eret   = coproc_eret;
+
+	/*  Initialize vaddr->hostaddr translation tables:  */
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		cpu->vaddr_to_hostaddr_nulltable =
+		    zeroed_alloc(1024 * sizeof(void *));
+
+		cpu->vaddr_to_hostaddr_tbl0 =
+		    zeroed_alloc(1024 * sizeof(void *));
+
+		for (i=0; i<1024; i++)
+			cpu->vaddr_to_hostaddr_tbl0[i] = cpu->vaddr_to_hostaddr_nulltable;
+
+		for (i=0; i<64; i++) {
+			cpu->vaddr_to_hostaddr_tbl1[i] =
+			    zeroed_alloc(1024 * sizeof(void *));
+			cpu->vaddr_to_hostaddr_tbl1_freelist[i] =
+			    i == 63? -1 : i+1;
+			cpu->vaddr_to_hostaddr_tbl1_refcount[i] = 0;
+		}
+		cpu->vaddr_to_hostaddr_tbl1_freelist_head = 0;
+		break;
+	}
 }
 
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.17 2004-11-24 04:34:47 debug Exp $
+ *  $Id: memory.h,v 1.18 2004-11-24 05:53:18 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -40,6 +40,8 @@
 /*  memory.c:  */
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len);
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t data);
+
+void *zeroed_alloc(size_t s);
 
 struct memory *memory_new(uint64_t physical_max);
 

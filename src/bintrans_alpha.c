@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.56 2004-11-24 04:34:48 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.57 2004-11-24 05:53:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1224,10 +1224,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			return 0;
 	}
 
-
-return 0;
-
-
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 0, 1);
 
 	a = *addrp;
@@ -1284,6 +1280,55 @@ return 0;
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
+	/*
+	 *  t1 = 1023;
+	 *  t2 = (a1 >> 22) & t1;
+	 *  t3 = (a1 >> 12) & t1;
+	 *
+	 *  ff 03 5f 20     lda     t1,1023
+	 *  83 d6 22 4a     srl     a1,22,t2
+	 *  84 96 21 4a     srl     a1,12,t3
+	 *  03 00 62 44     and     t2,t1,t2
+	 *  04 00 82 44     and     t3,t1,t3
+	 *  23 77 60 48     sll     t2,0x3,t2
+	 *  24 77 80 48     sll     t3,0x3,t3
+	 *  02 00 22 46     and     a1,t1,t1
+	 */
+	*a++ = 0xff; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;
+	*a++ = 0x83; *a++ = 0xd6; *a++ = 0x22; *a++ = 0x4a;
+	*a++ = 0x84; *a++ = 0x96; *a++ = 0x21; *a++ = 0x4a;
+	*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
+	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
+	*a++ = 0x23; *a++ = 0x77; *a++ = 0x60; *a++ = 0x48;
+	*a++ = 0x24; *a++ = 0x77; *a++ = 0x80; *a++ = 0x48;
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
+
+	/*
+	 *  a2 = vaddr_to_hostaddr_tbl0
+	 *  a3 = tbl0[t2]  (load entry from tbl0)
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+	 *
+	 *  00 00 50 a6     ldq     a2,0(a0)
+	 *  12 04 43 42     addq    a2,t2,a2
+	 *  00 00 72 a6     ldq     a3,0(a2)
+	 *  13 04 64 42     addq    a3,t3,a3
+	 *  00 00 73 a6     ldq     a3,0(a3)
+	 */
+	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_tbl0) - (size_t)&dummy_cpu;
+	*a++ = ofs&255; *a++ = ofs>>8; *a++ = 0x50; *a++ = 0xa6;
+	*a++ = 0x12; *a++ = 0x04; *a++ = 0x43; *a++ = 0x42;
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
+	*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
+	*a++ = 0x00; *a++ = 0x00; *a++ = 0x73; *a++ = 0xa6;
+
+	/*
+	 *  NULL? Then return failure.
+	 *  01 00 60 f6     bne     a3,f8 <okzz>
+	 */
+	fail = a;
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
+	bintrans_write_chunkreturn_fail(&a);
+	*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
 
 
@@ -1747,9 +1792,10 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 
 
 /*
- *  bintrans_write_instruction__tlb():
+ *  bintrans_write_instruction__tlb_rfe_etc():
  */
-static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
+static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
+	int itype)
 {
 	uint32_t *a;
 	int ofs;
@@ -1759,6 +1805,8 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	case TLB_TLBWR:
 	case TLB_TLBP:
 	case TLB_TLBR:
+	case TLB_RFE:
+	case TLB_ERET:
 		break;
 	default:
 		return 0;
@@ -1808,8 +1856,16 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype)
 	case TLB_TLBR:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
 		break;
-	default:
+	case TLB_TLBWR:
+	case TLB_TLBWI:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
+		break;
+	case TLB_RFE:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
+		break;
+	case TLB_ERET:
+		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
+		break;
 	}
 
 	*a++ = 0xa7700000 | ofs;	/*  ldq t12,0(a0)  */

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.44 2005-02-26 17:37:23 debug Exp $
+$Id: technical.html,v 1.45 2005-02-26 17:46:19 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -385,9 +385,14 @@ ftp, though.
 <a name="devices"></a>
 <h3>Emulation of hardware devices</h3>
 
-Each file in the device/ directory is responsible for one hardware
-device. These are used from src/machine.c, when initializing which hardware a
-particular machine model will be using.
+Each file in the device/ directory is responsible for one hardware device.
+These are used from src/machine.c, when initializing which hardware a
+particular machine model will be using, or when adding devices to a 
+machine using the <b>device()</b> command in configuration files.
+
+<p>
+<font color="#ff0000">NOTE: 2005-02-26: I'm currently rewriting the
+device registry subsystem.</font>
 
 <p>
 (I'll be using the name 'foo' as the name of the device in all these
@@ -432,13 +437,11 @@ Each device should have the following:
 		machine_add_tickfunction(machine, dev_foo_tick, d,
 		    FOO_TICKSHIFT);
 
+		/*  Return 1 if the device was successfully added.  */
 	        return 1;       
 	}       
 </pre><br>
 
-  <li>The init function, the access function (described further down)
-	and DEV_FOO_LENGTH should be defined in include/devices.h.
-  <p>
   <li>At the top of dev_foo.c, the foo_data struct should be defined.
 <pre>
 	struct foo_data {

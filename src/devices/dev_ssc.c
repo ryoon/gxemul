@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.7 2004-03-05 13:05:42 debug Exp $
+ *  $Id: dev_ssc.c,v 1.8 2004-03-09 00:05:55 debug Exp $
  *  
- *  Serial controller on DECsystem 5400.
+ *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
  *
  *  Described around page 80 in the kn210tm1.pdf.
@@ -41,10 +41,56 @@
 #include "devices.h"
 
 
+#define SSC_DEBUG
+
 struct ssc_data {
 	int		irq_nr;
 	int		use_fb;
+
+	int		rx_ctl;
+	int		tx_ctl;
+
+	uint32_t	*csrp;
 };
+
+
+/*
+ *  dev_ssc_tick():
+ */
+void dev_ssc_tick(struct cpu *cpu, void *extra)
+{
+	struct ssc_data *d = extra;
+
+	d->tx_ctl |= 0x80;	/*  transmitter always ready  */
+
+	d->rx_ctl &= ~0x80;
+	if (console_charavail())
+		d->rx_ctl |= 0x80;
+
+	/*  rx interrupts enabled, and char avail?  */
+	if (d->rx_ctl & 0x40 && d->rx_ctl & 0x80) {
+		/*  TODO:  This is for 5800 only!  */
+
+		if (d->csrp != NULL) {
+			unsigned char txvector = 0xf8;
+			(*d->csrp) |= 0x10000000;
+			memory_rw(cpu, cpu->mem, 0x40000050, &txvector, 1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+			cpu_interrupt(cpu, 2);
+		}
+	}
+
+	/*  tx interrupts enabled?  */
+	if (d->tx_ctl & 0x40) {
+		/*  TODO:  This is for 5800 only!  */
+
+		if (d->csrp != NULL) {
+			unsigned char txvector = 0xfc;
+			(*d->csrp) |= 0x10000000;
+			memory_rw(cpu, cpu->mem, 0x40000050, &txvector, 1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+			cpu_interrupt(cpu, 2);
+		}
+	}
+}
 
 
 /*
@@ -55,36 +101,64 @@ struct ssc_data {
 int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
+	struct ssc_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	dev_ssc_tick(cpu, extra);
 
 	switch (relative_addr) {
 	case 0x0080:	/*  receive status  */
 		if (writeflag==MEM_READ) {
-			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
-			if (console_charavail())
-				odata = 128;
+			odata = d->rx_ctl;
+#ifdef SSC_DEBUG
+			debug("[ ssc: read from 0x%08lx: 0x%02x ]\n", (long)relative_addr, odata);
+#endif
 		} else {
-			/*  debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+			d->rx_ctl = idata;
+
+			/*  TODO:  This only works for 5800  */
+			if (d->csrp != NULL) {
+				(*d->csrp) &= ~0x10000000;
+				cpu_interrupt_ack(cpu, 2);
+			}
+#ifdef SSC_DEBUG
+			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+#endif
 		}
 
 		break;
 	case 0x0084:	/*  receive data  */
 		if (writeflag==MEM_READ) {
-			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
+#ifdef SSC_DEBUG
+			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
+#endif
 			if (console_charavail())
 				odata = console_readchar();
 		} else {
-			/*  debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+#ifdef SSC_DEBUG
+			debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+#endif
 		}
 
 		break;
 	case 0x0088:	/*  transmit status  */
 		if (writeflag==MEM_READ) {
-			/*  debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);  */
-			odata = 128;
+			odata = d->tx_ctl;
+#ifdef SSC_DEBUG
+			debug("[ ssc: read from 0x%08lx: 0x%04x ]\n", (long)relative_addr, odata);
+#endif
 		} else {
-			/*  debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
+			d->tx_ctl = idata;
+
+			/*  TODO:  This only works for 5800  */
+			if (d->csrp != NULL) {
+				(*d->csrp) &= ~0x10000000;
+				cpu_interrupt_ack(cpu, 2);
+			}
+#ifdef SSC_DEBUG
+			debug("[ ssc: write to  0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
+#endif
 		}
 
 		break;
@@ -100,9 +174,13 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case 0x0100:
 		if (writeflag==MEM_READ) {
 			odata = 128;
-			/*  debug("[ ssc: read from 0x%08lx: 0x%08lx ]\n", (long)relative_addr, (long)odata);  */
+#ifdef SSC_DEBUG
+			debug("[ ssc: read from 0x%08lx: 0x%08lx ]\n", (long)relative_addr, (long)odata);
+#endif
 		} else {
-			/*  debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
+#ifdef SSC_DEBUG
+			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+#endif
 		}
 
 		break;
@@ -110,7 +188,9 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag==MEM_READ) {
 			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
 		} else {
-			/*  debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
+#ifdef SSC_DEBUG
+			debug("[ ssc: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+#endif
 		}
 
 		break;
@@ -122,6 +202,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		}
 	}
 
+	dev_ssc_tick(cpu, extra);
+
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
@@ -132,7 +214,7 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 /*
  *  dev_ssc_init():
  */
-void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb)
+void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *csrp)
 {
 	struct ssc_data *d;
 
@@ -144,7 +226,9 @@ void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	memset(d, 0, sizeof(struct ssc_data));
 	d->irq_nr = irq_nr;
 	d->use_fb = use_fb;
+	d->csrp   = csrp;
 
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH, dev_ssc_access, d);
+	cpu_add_tickfunction(cpu, dev_ssc_tick, d, 12);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.62 2004-03-08 03:21:21 debug Exp $
+ *  $Id: machine.c,v 1.63 2004-03-09 00:05:51 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -73,6 +73,7 @@ struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
 struct dec_ioasic_data *dec_ioasic_data;
 struct ps2_data *ps2_data;
+struct dec5800_data *dec5800_csr;
 
 
 /********************** Helper functions **********************/
@@ -662,6 +663,8 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 
 		case MACHINE_5800:		/*  type 5, KN5800  */
 			machine_name = "DECsystem 5800";
+
+/*  TODO: this is incorrect, banks multiply by 8 etc  */
 			if (physical_ram_in_mb < 48)
 				fprintf(stderr, "WARNING! 5800 will probably not run with less than 48MB RAM. Continuing anyway.\n");
 
@@ -679,8 +682,8 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
-			dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11);
+			dec5800_csr = dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
 			dev_decxmi_init(cpus[bootstrap_cpu], mem, 0x11800000);
 
 			break;
@@ -715,7 +718,7 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
 			dev_kn210_init(cpus[bootstrap_cpu], mem, 0x10080000);
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  TODO:  not irq 0  */
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -790,7 +793,7 @@ dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PH
 			 *  asc (scsi) at 0x17100000.
 			 */
 
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);		/*  TODO:  not irq 0  */
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11, NULL);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
 			dev_dec5500_ioboard_init(cpus[bootstrap_cpu], mem, 0x17000000);

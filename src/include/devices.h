@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.40 2004-03-08 03:22:27 debug Exp $
+ *  $Id: devices.h,v 1.41 2004-03-09 00:05:54 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -105,8 +105,12 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 
 /*  dev_dec5800.c:  */
 #define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
+struct dec5800_data {
+        uint32_t        csr;
+	uint32_t	vector_0x50;
+};
 int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_decxmi.c:  */
 #define	DEV_DECXMI_LENGTH			0x800000
@@ -378,7 +382,7 @@ void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64
 /*  dev_ssc.c:  */
 #define	DEV_SSC_LENGTH			0x1000
 int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *);
 
 /*  dev_turbochannel.c:  */
 #define	DEV_TURBOCHANNEL_LEN		0x0470

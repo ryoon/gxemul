@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.44 2004-12-10 02:11:32 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.45 2004-12-10 02:25:10 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2016,6 +2016,8 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	case TLB_TLBWI:
 	case TLB_RFE:
 	case TLB_ERET:
+	case TLB_SYSCALL:
+	case TLB_BREAK:
 		break;
 	default:
 		return 0;
@@ -2044,6 +2046,12 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 		*a++ = 0x6a; *a++ = (itype == TLB_TLBWR);
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
+	case TLB_SYSCALL:
+	case TLB_BREAK:
+		/*  push randomflag  */
+		*a++ = 0x6a; *a++ = (itype == TLB_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
+		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
+		break;
 	case TLB_RFE:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
 		break;
@@ -2063,17 +2071,14 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0xff; *a++ = 0xd0;
 
 	switch (itype) {
-	case TLB_TLBP:
-	case TLB_TLBR:
-	case TLB_TLBWR:
-	case TLB_TLBWI:
-		/*  83 c4 08                add    $8,%esp  */
-		*a++ = 0x83; *a++ = 0xc4; *a++ = 8;
-		break;
 	case TLB_RFE:
 	case TLB_ERET:
 		/*  83 c4 04                add    $4,%esp  */
 		*a++ = 0x83; *a++ = 0xc4; *a++ = 4;
+		break;
+	default:
+		/*  83 c4 08                add    $8,%esp  */
+		*a++ = 0x83; *a++ = 0xc4; *a++ = 8;
 		break;
 	}
 
@@ -2084,8 +2089,14 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 
 	*addrp = a;
 
-	if (itype != TLB_ERET)
+	switch (itype) {
+	case TLB_ERET:
+	case TLB_SYSCALL:
+	case TLB_BREAK:
+		break;
+	default:
 		bintrans_write_pc_inc(addrp);
+	}
 
 	return 1;
 }

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.35 2004-08-12 03:18:21 debug Exp $
+$Id: RELEASE,v 1.36 2004-08-22 20:53:41 debug Exp $
 
 I'm working on POST-0.2 now.
 
@@ -55,96 +55,20 @@ and a configure + Makefile.skel combination for configuring and building the
 emulator.
 
 
-The following platforms and compilers have been used to build the emulator
-at one time or another; not all of them have been tested for this specific
-release, but will most probably work anyway.
-
-	FreeBSD/alpha 4.9
-		gcc version 2.95.4 20020320 [FreeBSD]
-		gcc version 3.3
-		gcc version 3.3.1 [FreeBSD]
-		gcc version 3.3.2
-		gcc version 3.4 20030730 (experimental)
-		ccc 6.4.9.005-1
-
-	FreeBSD/i386 4.9
-		gcc version 2.95.4 20020320 [FreeBSD]
-
-	GNU 0.3 (i386)
-		gcc 3.3.4   (./configure --nox11)
-
-	HP-UX/hppa B.11.00 (32-bit)
-		gcc 3.3.2
-		(NOTE: HP's default cc did NOT work)
-
-	HP-UX/hppa B.11.11 (32-bit)
-		ccom: HP92453-01 B.11.11.28706.GP HP C Compiler
-		gcc version 3.3.2 20030829 (prerelease)
-
-	HP-UX/ia64 B.11.23
-		cc: HP aC++/ANSI C B3910B A.05.56 [June 09 2004] [aCC6_beta]
-		gcc 3.3.3
-
-	Linux/alpha
-		gcc version 2.95.4 20011002 (Debian prerelease)
-		gcc version 3.3.1 (Linux 2.4.18, Debian)
-
-	Linux/amd64
-		gcc version 3.2.3 20030502 (Red Hat Linux 3.2.3-34)
-
-	Linux/i386
-		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
-		gcc version 3.3.3 (SuSE Linux)
-		gcc 3.3.4 (Linux-2.6.7, Slackware)
-
-	Linux/ia64
-		gcc version 2.96 20000731 (Debian GNU/Linux IA64 experimental)
-		gcc version 3.3.3 (Linux 2.4.17 (Debian))
-
-	NetBSD/i386
-		1.6: gcc version 2.95.3 20010315 (release) (NetBSD nb3)
-		2.0/-current: gcc 3.3.3
-
-	NetBSD/pmax 1.6.2  (inside the emulator)
-		gcc 2.95.3 20010315 (release) (NetBSD nb3)
-
-	OpenBSD/i386 3.2
-		gcc 2.95.3 20010125 (prerelease)
-
-	OpenBSD/pmax (inside the emulator)
-		2.7: gcc 2.95.2 19991024 (release)
-		2.8-beta: gcc 2.95.3 19991030 (prerelease)
-
-	OpenBSD/sparc64
-		gcc 2.95.3 20010125 (prerelease, propolice)
-
-	Solaris/sparc (SunOS 5.9)
-		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
-		gcc version 2.95.3 20010315 (release)
-
-	Tru64/alpha v5.1 (OSF/1)
-		Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
-		gcc version 3.3 (TWW)
+Building the emulator should work on most Unix-like systems.  One system
+which is specifically known to NOT work is Ultrix/RISC inside the
+emulator; Ultrix chokes on the configure script and the default cc in
+Ultrix doesn't work.
 
 
-Platforms/compilers that have been tried and did NOT work when they were 
-tried are:
-
-	HP-UX/hppa B.11.00
-		using HP-UX' default cc   (gcc 3.3.2 works fine though)
-
-	Ultrix/MIPS  (inside the emulator)
-		chokes on the configure script, and
-		the default cc does NOT work
-
-
-Only a few files in the include/ directory are written by me, the rest are
-from other sources (such as NetBSD).  The license text says that "All
-advertising materials mentioning features or use of this software" must
-display acknowledgements.  Even though I do NOT feel I mention features or
-use of the header files (the "software") in any advertising materials, I am
-still very greatful for the fact that these people have made their files
-available for re-use, so I guess thanking them like this is in order:
+Regarding files in the include/ directory:  only a few of these are
+written by me, the rest are from other sources (such as NetBSD).  The
+license text says that "All advertising materials mentioning features or
+use of this software" must display acknowledgements.  Even though I do NOT
+feel I mention features or use of the header files (the "software") in any
+advertising materials, I am still very greatful for the fact that these
+people have made their files available for re-use, so I guess thanking
+them like this is in order:
 
     This product includes software developed by the University of
     California, Berkeley and its contributors.
@@ -196,7 +120,8 @@ available for re-use, so I guess thanking them like this is in order:
     Wasabi Systems, Inc.  [by Simon Burge]
 
 
-See individual files for details.
+See individual files for details, if you plan to redistribute mips64emul 
+or reuse code.
 
 And thanks to everyone who has provided me with feedback, ideas, 
 patches, or encouraged me to work on specific issues.

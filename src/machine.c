@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.79 2004-04-11 11:23:48 debug Exp $
+ *  $Id: machine.c,v 1.80 2004-04-11 15:47:45 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -465,6 +465,7 @@ void machine_init(struct memory *mem)
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
 	int color_fb_flag;
+	int boot_boardnumber = 3;
 
 	/*  HPCmips:  */
 	struct xx {
@@ -614,6 +615,7 @@ void machine_init(struct memory *mem)
 
 			framebuffer_console_name = "osconsole=0,7";	/*  fb,keyb  */
 			serial_console_name      = "osconsole=2";
+			boot_boardnumber = 5;
 			break;
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
@@ -937,12 +939,24 @@ void machine_init(struct memory *mem)
 		 *
 		 *  TODO:  Make this nicer.
 		 */
+{
+		int bootdev_id;
+		char bootpath[200];
+
 #if 0
 		if (machine == MACHINE_PMAX_3100)
-			init_bootpath = "rz(0,0,0)";
+			strcpy(bootpath, "rz(0,0,0)");
 		else
 #endif
-			init_bootpath = "5/rz0/";
+			strcpy(bootpath, "5/rz1/");
+
+		bootdev_id = diskimage_bootdev();
+
+		bootpath[0] = '0' + boot_boardnumber;
+		bootpath[4] = '0' + bootdev_id;
+
+		init_bootpath = bootpath;
+}
 
 		tmp_ptr = rindex(last_filename, '/');
 		if (tmp_ptr == NULL)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.133 2005-01-23 13:43:05 debug Exp $
+ *  $Id: devices.h,v 1.134 2005-01-25 07:14:50 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -57,9 +57,10 @@ struct dec_ioasic_data {
 	uint32_t	reg[N_DEC_IOASIC_REGS];
 	int		(*(dma_func[MAX_IOASIC_DMA_FUNCTIONS]))(struct cpu *, void *, uint64_t addr, size_t dma_len, int tx);
 	void		*dma_func_extra[MAX_IOASIC_DMA_FUNCTIONS];
+	int		rackmount_flag;
 };
 int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int rackmount_flag);
 
 /*  dev_8250.c:  */
 #define	DEV_8250_LENGTH		8

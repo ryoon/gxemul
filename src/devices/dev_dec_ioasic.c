@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.8 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.9 2005-01-25 07:14:49 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -39,6 +39,8 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
+
+#include "dec_kn03.h"
 #include "tc_ioasicreg.h"
 
 #define IOASIC_DEBUG
@@ -145,9 +147,12 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	case IOASIC_INTR:
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10];
-		else {
+			/*  Note/TODO: How about other models than KN03?  */
+			if (!d->rackmount_flag)
+				odata |= KN03_INTR_PROD_JUMPER;
+		} else {
 			/*  Clear bits on write.  */
 			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~idata;
 
@@ -200,9 +205,14 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_dec_ioasic_init():
+ *
+ *  For DECstation "type 4", the rackmount_flag selects which model type
+ *  the IOASIC should identify itself as (5000 for zero, 5900 if rackmount_flag
+ *  is non-zero). It is probably not meaningful on other machines than
+ *  type 4.
  */
 struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
-	struct memory *mem, uint64_t baseaddr)
+	struct memory *mem, uint64_t baseaddr, int rackmount_flag)
 {
 	struct dec_ioasic_data *d = malloc(sizeof(struct dec_ioasic_data));
 	if (d == NULL) {
@@ -210,6 +220,8 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct dec_ioasic_data));
+
+	d->rackmount_flag = rackmount_flag;
 
 	memory_device_register(mem, "dec_ioasic", baseaddr,
 	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d, MEM_DEFAULT, NULL);

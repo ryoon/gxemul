@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.294 2005-01-24 11:28:31 debug Exp $
+ *  $Id: machine.c,v 1.295 2005-01-25 07:14:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1319,7 +1319,7 @@ void machine_init(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
 			dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
@@ -1385,7 +1385,7 @@ void machine_init(struct machine *machine)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
 
 			dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 
@@ -1522,7 +1522,7 @@ void machine_init(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
 			 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(machine, mem, 0,

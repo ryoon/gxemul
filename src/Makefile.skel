@@ -1,11 +1,11 @@
 #
-#  $Id: Makefile.skel,v 1.12 2004-07-05 23:10:12 debug Exp $
+#  $Id: Makefile.skel,v 1.13 2004-07-08 00:39:52 debug Exp $
 #
 #  Makefile for mips64emul src
 #
 
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
-OBJS=main.o emul.o file.o machine.o memory.o \
+OBJS=main.o emul.o file.o machine.o \
 	diskimage.o net.o \
 	bintrans.o useremul.o \
 	cpu.o coproc.o mips16.o symbol.o \
@@ -17,6 +17,8 @@ all: $(OBJS)
 $(OBJS): Makefile
 
 bintrans.c: bintrans_alpha.c bintrans_i386.c
+
+cpu: memory.c
 
 clean:
 	rm -f $(OBJS) *core

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.353 2004-12-04 13:08:38 debug Exp $
+$Id: HISTORY,v 1.354 2004-12-04 19:20:44 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1244,3 +1244,5 @@ HISTORY of mips64emul
 		More updates to dev_vga. Adding a 8x10 font.
 		Adding a hack so that the framebuffer logo is visible at
 		startup with dev_vga. (It disappears at the first scroll.)
+		A minor fix for a bug which was triggered when running
+		dual- or tripple-head, on 2 or 3 actual X11 displays.

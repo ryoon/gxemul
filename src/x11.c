@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.31 2004-11-20 21:41:26 debug Exp $
+ *  $Id: x11.c,v 1.32 2004-12-04 19:19:57 debug Exp $
  *
  *  X11-related functions.
  */
@@ -481,7 +481,8 @@ void x11_check_event(void)
 				/*  Which window?  */
 				found = -1;
 				for (i=0; i<n_framebuffer_windows; i++)
-					if (event.xmotion.window == fb_windows[i].x11_fb_window)
+					if (fb_windows[fb_nr].x11_display == fb_windows[i].x11_display &&
+					    event.xmotion.window == fb_windows[i].x11_fb_window)
 						found = i;
 /*
 				x11_putpixel_fb(0, event.xmotion.x, event.xmotion.y, 1);

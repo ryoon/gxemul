@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.133 2005-01-03 01:26:54 debug Exp $
+ *  $Id: memory.c,v 1.134 2005-01-09 00:37:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -835,22 +835,6 @@ into the devices  */
 				i = 0;
 		} while (i != start);
 	}
-
-
-#if 0
-	{
-		/*  Accesses that cross memblocks are bad:  */
-		uint64_t endaddr = paddr + len - 1;
-		endaddr &= ~(mem->memblock_size - 1);
-		if ( (paddr & ~(mem->memblock_size - 1)) != endaddr ) {
-			fatal("memory access crosses memory block? "
-			    "paddr=%016llx len=%i\n", (long long)paddr,
-			    (int)len);
-			return MEMORY_ACCESS_FAILED;
-		}
-	}
-#endif
-
 
 
 	/*

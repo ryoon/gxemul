@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.65 2004-06-23 02:01:32 debug Exp $
+ *  $Id: cpu.c,v 1.66 2004-06-24 00:36:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2658,19 +2658,34 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
  */
 int cpu_run(struct cpu **cpus, int ncpus)
 {
-	int i, s1, s2, te;
+	int i, j, s1, s2, te;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
 	int running, cpu0instrs;
 	struct rusage rusage;
 	struct timeval starttime;
+	int a_few_cycles = 1048576;
 
+	/*
+	 *  Instead of doing { one cycle, check hardware ticks }, we
+	 *  can do { n cycles, check hardware ticks }, as long as
+	 *  n is at most as much as the lowest number of cycles/tick
+	 *  for any hardware device.
+	 */
+	for (te=0; te<cpus[0]->n_tick_entries; te++)
+		if (cpus[0]->ticks_reset_value[te] < a_few_cycles)
+			a_few_cycles = cpus[0]->ticks_reset_value[te];
+
+	debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);
+
+	/*  For performance measurement:  */
 	getrusage(RUSAGE_SELF, &rusage);
 	starttime = rusage.ru_utime;
 
+	/*  The main loop:  */
 	running = 1;
 	while (running) {
-		ncycles_chunk_end = ncycles + (1 << 14);
+		ncycles_chunk_end = ncycles + (1 << 15);
 
 		/*  Do a chunk of cycles:  */
 		do {
@@ -2679,15 +2694,13 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 			/*  Run instructions from each CPU:  */
 			for (i=0; i<ncpus; i++)
-				if (cpus[i]->running) {
-					int x = cpu_run_instr(cpus[i], &ncycles);
-					if (i==0)
-						cpu0instrs = x;
-					running = 1;
-				}
-
-			if (cpu0instrs < 1)
-				cpu0instrs = 1;
+				for (j=0; j<a_few_cycles; j++)
+					if (cpus[i]->running) {
+						int x = cpu_run_instr(cpus[i], &ncycles);
+						if (i==0)
+							cpu0instrs += x;
+						running = 1;
+					}
 
 			/*
 			 *  Hardware 'ticks':  (clocks, interrupt sources...)
@@ -2709,7 +2722,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 		/*  Check for X11 events:  */
 		if (use_x11) {
-			if (ncycles > ncycles_flushx11 + (1<<17)) {
+			if (ncycles > ncycles_flushx11 + (1<<16)) {
 				x11_check_event();
 				ncycles_flushx11 = ncycles;
 			}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.36 2004-12-15 03:34:32 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.37 2004-12-18 03:26:14 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -47,9 +47,8 @@
 struct dc_data {
 	struct dc7085regs	regs;
 
-#ifdef SLOWSERIALINTERRUPTS
+	/*  For slow_serial_interrupts_hack_for_linux:  */
 	int			just_transmitted_something;
-#endif
 
 	unsigned char		rx_queue_char[MAX_QUEUE_LEN];
 	char			rx_queue_lineno[MAX_QUEUE_LEN];
@@ -102,16 +101,16 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	struct dc_data *d = extra;
 	int avail;
 
-#ifdef SLOWSERIALINTERRUPTS
-	/*
-	 *  Special hack to prevent Linux from Oopsing. (This makes
-	 *  interrupts not come as fast as possible.)
-	 */
-	if (d->just_transmitted_something) {
-		d->just_transmitted_something --;
-		return;
+	if (cpu->emul->slow_serial_interrupts_hack_for_linux) {
+		/*
+		 *  Special hack to prevent Linux from Oopsing. (This makes
+		 *  interrupts not come as fast as possible.)
+		 */
+		if (d->just_transmitted_something) {
+			d->just_transmitted_something --;
+			return;
+		}
 	}
-#endif
 
 	d->regs.dc_csr &= ~CSR_RDONE;
 
@@ -215,6 +214,8 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 
 			d->regs.dc_csr &= ~CSR_RDONE;
 			cpu_interrupt_ack(cpu, d->irqnr);
+
+			d->just_transmitted_something = 4;
 		}
 		break;
 	case 0x10:	/*  TCR:  */
@@ -240,11 +241,7 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
 			d->regs.dc_csr &= ~CSR_TRDY;
 			cpu_interrupt_ack(cpu, d->irqnr);
 
-#ifdef SLOWSERIALINTERRUPTS
-			d->just_transmitted_something = 2;
-#endif
-
-			goto do_return;
+			d->just_transmitted_something = 4;
 		} else {
 			/*  read:  */
 			d->regs.dc_msr_tdr |= MSR_DSR2 | MSR_CD2 | MSR_DSR3 | MSR_CD3;

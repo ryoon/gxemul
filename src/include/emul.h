@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.14 2004-12-14 21:55:39 debug Exp $
+ *  $Id: emul.h,v 1.15 2004-12-18 03:26:15 debug Exp $
  */
 
 #include "misc.h"
@@ -80,6 +80,8 @@ struct emul {
 	int	speed_tricks;
 	int	userland_emul;
 	int	force_netboot;
+	int	slow_serial_interrupts_hack_for_linux;
+
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
 

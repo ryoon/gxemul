@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.404 2004-12-17 04:01:14 debug Exp $
+$Id: HISTORY,v 1.405 2004-12-18 03:26:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1355,3 +1355,4 @@ HISTORY of mips64emul
 		Adding a dummy dev_sgi_mec.
 20041217	The default framebuffer and model settings for -F (hpcmips)
 		should now be almost like Cassiopeia E-500.
+		Changing -DSLOWSERIALINTERRUPTS into a command line option, -U.

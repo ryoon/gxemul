@@ -1,10 +1,14 @@
-$Id: RELEASE,v 1.67 2004-12-15 17:34:27 debug Exp $
+$Id: RELEASE,v 1.68 2004-12-18 03:26:13 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
-  0.2.X:  ?
+  0.2.4, or perhaps skip directly to 0.3
 
-  0.3:  some kind of major feature update
+Features I'd like to have time to implement:
+
+	x)  more support for non-DECstation modes
+	x)  stable bintrans for 64-bit CPUs (R4000 etc)
+	x)  fix the Linux-related problems for good (How to do this?)
 
 
 A 0.3 release would need to be tested a lot, to make sure that everything 

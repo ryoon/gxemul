@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.139 2004-12-14 21:55:40 debug Exp $
+ *  $Id: main.c,v 1.140 2004-12-18 03:26:15 debug Exp $
  */
 
 #include <stdio.h>
@@ -182,7 +182,7 @@ static void usage(char *progname, int longusage)
 	printf("  -s        show opcode usage statistics after simulation\n");
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
-	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
+	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
 #ifdef ENABLE_USERLAND
 	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
 #endif
@@ -225,7 +225,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtu:VvXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -366,6 +366,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 't':
 			emul->show_trace_tree = 1;
+			break;
+		case 'U':
+			emul->slow_serial_interrupts_hack_for_linux = 1;
 			break;
 		case 'u':
 			emul->userland_emul = atoi(optarg);

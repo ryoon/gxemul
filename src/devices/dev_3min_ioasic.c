@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_3min_ioasic.c,v 1.1 2004-01-24 21:12:17 debug Exp $
+ *  $Id: dev_3min_ioasic.c,v 1.2 2004-02-22 13:14:41 debug Exp $
  *  
  *  DECstation "3MIN" ioasic.
  */
@@ -38,9 +38,7 @@
 #include "devices.h"
 
 
-struct threemin_ioasic_data {
-	int	dummy;
-};
+/*  #define KMIN_DEBUG  */
 
 
 /*
@@ -55,9 +53,29 @@ int dev_threemin_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 
 	idata = memory_readmax64(cpu, data, len);
 
+#ifdef KMIN_DEBUG
+	if (writeflag == MEM_WRITE)
+		fatal("[ threemin_ioasic: write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+	else
+		fatal("[ threemin_ioasic: read from address 0x%llx ]\n", (long long)relative_addr);
+#endif
+
 	switch (relative_addr) {
+	case 0x40100:
+		if (writeflag == MEM_WRITE)
+			d->csr = idata;
+		else
+			odata = d->csr;
+		break;
 	case 0x40110:
-		odata = 32;
+		if (writeflag == MEM_READ)
+			odata = d->intr;
+		break;
+	case 0x40120:
+		if (writeflag == MEM_WRITE)
+			d->imsk = idata;
+		else
+			odata = d->imsk;
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
@@ -76,7 +94,7 @@ int dev_threemin_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 /*
  *  dev_threemin_ioasic_init():
  */
-void dev_threemin_ioasic_init(struct memory *mem, uint64_t baseaddr)
+struct threemin_ioasic_data *dev_threemin_ioasic_init(struct memory *mem, uint64_t baseaddr)
 {
 	struct threemin_ioasic_data *d = malloc(sizeof(struct threemin_ioasic_data));
 	if (d == NULL) {
@@ -86,5 +104,7 @@ void dev_threemin_ioasic_init(struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct threemin_ioasic_data));
 
 	memory_device_register(mem, "threemin_ioasic", baseaddr, DEV_THREEMIN_IOASIC_LENGTH, dev_threemin_ioasic_access, (void *)d);
+
+	return d;
 }
 

@@ -1,8 +1,13 @@
-/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.3 2004-06-25 04:31:04 debug Exp $  */
+/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.4 2004-07-11 01:01:01 debug Exp $  */
 /*
  *  Magic addition, ECOFF_MAGIC_MIPSEB2:
  *    "MIPSEB MIPS-II COFF executable (impure) not stripped", 0x0163
+ *
+ *  I also commented out ECOFF_BADMAG, to avoid warnings on Solaris.
  */
+
+#ifndef EXEC_ECOFF_MIPS_H
+#define EXEC_ECOFF_MIPS_H
 
 /*	$NetBSD: ecoff_machdep.h,v 1.18 2002/03/05 14:12:29 simonb Exp $	*/
 
@@ -63,6 +68,8 @@
 #define ECOFF_MAGIC_MIPSEB2	0x6301	/* mips2, big-endian  (mips64emul addition) */
 #define ECOFF_MAGIC_MIPSEL3	0x0142	/* mips3, little-endian */
 
+#if 0
+/*  commented out in mips64emul, to avoid warnings on Solaris  */
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define ECOFF_BADMAG(ep) \
     (!								\
@@ -73,7 +80,7 @@
 #if BYTE_ORDER == BIG_ENDIAN
 #define ECOFF_BADMAG(ep) ((ep)->f.f_magic != ECOFF_MAGIC_MIPSEB)
 #endif
-
+#endif	/*  mips64emul  */
 
 #define ECOFF_SEGMENT_ALIGNMENT(ep) ((ep)->a.vstamp < 23 ? 8 : 16)
 
@@ -130,3 +137,6 @@ struct ecoff_extsym {
 	unsigned	:1;
 	unsigned	es_symauxindex:20;
 };
+
+#endif	/*  EXEC_ECOFF_MIPS_H  */
+

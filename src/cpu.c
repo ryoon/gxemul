@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.27 2004-01-29 20:47:54 debug Exp $
+ *  $Id: cpu.c,v 1.28 2004-01-30 03:10:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -444,7 +444,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (tlb && vaddr == 0) {
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
-		tlb_dump = 1;
+/*		tlb_dump = 1;  */
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
@@ -808,41 +808,45 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		if (!instr_fetched)
 			return 0;
 
-		if (bintrans_enable) {
+		if (bintrans_enable && (cpu->delay_slot==0 && cpu->nullify_next==0)) {
 			/*
 			 *  Binary translation:
 			 */
-			if (instr_fetched == INSTR_BINTRANS) {
-				/*  Cache hit:  */
-				int result;
+			int result = 0;
+			uint64_t paddr = cpu->mem->bintrans_last_paddr;
 
-				fatal("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx): TODO\n",
-				    (long long)cpu->pc, (long long)cpu->mem->bintrans_last_paddr);
-
-				result = bintrans_try_to_run(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
-
-				if (result) {
-					fatal("!!! bintrans_try_to_run() returned 1 :-)\n");
-					exit(1);
-				}
-
-				exit(1);
-			} else {
-				int result;
+			if (instr_fetched != INSTR_BINTRANS) {
 				/*  Cache miss:  */
 
-				fatal("BINTRANS cache miss (pc = 0x%08llx, paddr = 0x%08llx): TODO\n",
-				    (long long)cpu->pc, (long long)cpu->mem->bintrans_last_paddr);
+				/*  debug("BINTRANS cache miss (pc = 0x%08llx, paddr = 0x%08llx)\n",
+				    (long long)cpu->pc, (long long)paddr);  */
 
-				result = bintrans_try_to_add(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
+				result = bintrans_try_to_add(cpu, cpu->mem, paddr);
+			}
 
-				/*  If a code chunk was added to the cache, then try to run it now:  */
+			if (instr_fetched == INSTR_BINTRANS || result) {
+				/*  Cache hit:  */
+
+				/*  debug("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx)\n",
+				    (long long)cpu->pc, (long long)paddr);  */
+
+				result = bintrans_try_to_run(cpu, cpu->mem, paddr);
+
 				if (result) {
-					result = bintrans_try_to_run(cpu, cpu->mem, cpu->mem->bintrans_last_paddr);
-					if (result) {
-						fatal("!!! bintrans_try_to_run() returned 1 :-)\n");
-						exit(1);
+					if (instruction_trace) {
+						int offset;
+						char *symbol = get_symbol_name(cpu->pc_last, &offset);
+						if (symbol != NULL && offset==0)
+							debug("<%s>\n", symbol);
+
+						debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\tbintrans...\n",
+						    cpu->cpu_id, cpu->pc_last,
+						    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 					}
+
+					/*  TODO: misc stuff?  */
+
+					return 0;
 				}
 			}
 		}
@@ -1154,7 +1158,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			break;
 		case SPECIAL_JR:
 			if (cpu->delay_slot) {
-				fatal("jump inside a jump's delay slot, or similar. TODO\n");
+				fatal("jr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 0;
 			}
@@ -1178,7 +1182,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			break;
 		case SPECIAL_JALR:
 			if (cpu->delay_slot) {
-				fatal("jump inside a jump's delay slot, or similar. TODO\n");
+				fatal("jalr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 0;
 			}
@@ -1768,7 +1772,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		case HI6_BEQL:
 		case HI6_BNEL:
 			if (cpu->delay_slot) {
-				fatal("jump inside a jump's delay slot, or similar. TODO\n");
+				fatal("b*: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 0;
 			}
@@ -2234,7 +2238,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	case HI6_J:
 	case HI6_JAL:
 		if (cpu->delay_slot) {
-			fatal("jump inside a jump's delay slot, or similar. TODO\n");
+			fatal("j/jal: jump inside a jump's delay slot, or similar. TODO\n");
 			cpu->running = 0;
 			return 0;
 		}

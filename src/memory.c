@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.16 2004-01-29 20:47:45 debug Exp $
+ *  $Id: memory.c,v 1.17 2004-01-30 03:10:13 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -602,6 +602,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	int shrcount, mask;
 	int offset;
 	int cachemask[2];
+	int transl_cache_hit = 0;
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
@@ -673,7 +674,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 				    mem->dev_name[i], (long)paddr);
 				return MEMORY_ACCESS_FAILED;
 			}
-			return MEMORY_ACCESS_OK;
+			goto do_return_ok;
 		}
 	}
 
@@ -726,7 +727,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 					for (i=0; i<len; i++)
 						cpu->cache[cache][(addr+i) & cachemask[cache]] = data[i];
 				}
-				return MEMORY_ACCESS_OK;
+				goto do_return_ok;
 			} else {
 				/*  Reload caches if neccessary:  */
 				/*  TODO  */
@@ -797,7 +798,7 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 				}
 			}
 
-			return MEMORY_ACCESS_OK;
+			goto do_return_ok;
 		}
 	}
 
@@ -815,14 +816,8 @@ no_exception_access:
 
 		if (writeflag == MEM_WRITE)
 			bintrans_invalidate(mem, paddr, len);
-		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION) {
-			/*  TODO: return something more than just 1 or 0.  */
-
-			int transl_cache_hit;
-			transl_cache_hit = bintrans_check_cache(mem, paddr);
-			if (transl_cache_hit)
-				return INSTR_BINTRANS;
-		}
+		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION)
+			transl_cache_hit = bintrans_check_cache(mem, paddr, NULL);
 	}
 
 	/*
@@ -850,7 +845,7 @@ no_exception_access:
 			    the same thing happens):  */
 			if (writeflag == MEM_READ) {
 				memset(data, 0, len);
-				return MEMORY_ACCESS_OK;
+				goto do_return_ok;
 			}
 
 			/*  Allocate a pagetable, OR a memblock:  */
@@ -884,7 +879,12 @@ no_exception_access:
 	else
 		memcpy(data, memblock + offset, len);
 
-	return MEMORY_ACCESS_OK;
+
+do_return_ok:
+	if (transl_cache_hit)
+		return INSTR_BINTRANS;
+	else
+		return MEMORY_ACCESS_OK;
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.60 2004-04-02 05:49:34 debug Exp $
+$Id: HISTORY,v 1.61 2004-04-06 02:31:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -428,3 +428,5 @@ HISTORY of mips64emul
 20040330	Some minor updates to the documentation.
 20040401	Adding a dummy ps2 OHCI device.
 20040402	Progress on the asc SCSI controller.
+20040406	Hack to allow ./configure, make to work on HP-UX B.11.00
+		on HPPA-RISC, gcc 3.3.2. (Does not work with HP's cc.)

@@ -125,6 +125,8 @@ Most important stuff (but these are all non-trivial tasks):
 
 		o)  newsmips?
 
+		o)  mipsco?
+
 	Framebuffer stuff:
 		o)  "Sprites", or overlays  (useful for cursors...)
 		o)  2D and 3D acceleration

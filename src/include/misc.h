@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.48 2004-04-09 05:11:19 debug Exp $
+ *  $Id: misc.h,v 1.49 2004-05-06 03:52:08 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -470,6 +470,8 @@ struct coproc {
 
 #define	MAX_TICK_FUNCTIONS	8
 
+#define	N_TRANSLATION_CACHE	3
+
 struct cpu {
 	int		cpu_id;
 	int		byte_order;
@@ -507,6 +509,7 @@ struct cpu {
 
 	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
 
+	int		bintrans_last_was_jump;
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
 
@@ -531,6 +534,12 @@ struct cpu {
 	 *  TODO:  Generalize this.
 	 */
 	uint64_t	gpr_quadhi[NGPRS];
+
+	/*  translation_cached must be set to 0 every time the TLB is written to  */
+	int		translation_cached_i;
+	int		translation_cached[N_TRANSLATION_CACHE];
+	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
+	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
 
 	long		stats_opcode[N_HI6];
 	long		stats__special[N_SPECIAL];

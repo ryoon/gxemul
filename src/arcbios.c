@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.5 2003-11-07 10:33:06 debug Exp $
+ *  $Id: arcbios.c,v 1.6 2003-12-15 06:00:31 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -84,6 +84,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 /*
  *  arcbios_emul():  ARCBIOS emulation
  *
+ *	0x24	GetPeer(node)
  *	0x28	GetChild(node)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
@@ -100,8 +101,12 @@ void arcbios_emul(struct cpu *cpu)
 	char buf[40];
 
 	switch (vector) {
+	case 0x24:		/*  GetPeer(node)  */
+		debug("[ ARCBIOS GetPeer(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
+		cpu->gpr[GPR_V0] = 0;
+		break;
 	case 0x28:		/*  GetChild(node)  */
-		debug("[ ARCBIOS GetChild(node): TODO ]\n");
+		debug("[ ARCBIOS GetChild(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x44:		/*  GetSystemId()  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.4 2003-11-08 08:43:38 debug Exp $
+ *  $Id: mips16.c,v 1.5 2003-12-15 06:00:38 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -97,6 +97,26 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 		}
 
 		y = (HI6_LD << 26) + (mips16_reg8_to_reg32[rd] << 16) + (rs << 21) + imm;
+		goto mips16_ret;
+	}
+
+	/*  sd y,D(S)    0xf900, 0xff00, RD_y|RD_PC, I3  */
+	if ((x & 0xff00) == 0xf900) {
+		wlen = 8;	/*  for sd  */
+		rd = (x >> 5) & 0x07;
+		rs = (x >> 8) & 0x07;
+
+/*  TODO  */
+
+		if (cpu->mips16_extend)
+			imm = (cpu->mips16_extend & 0x7ff) + ((x & 0x1f) << 11);
+		else {
+			imm = (x & 0x1f) * wlen;
+			if (imm >= 0x10)
+				imm |= 0xffe0;		/*  sign-extend  */
+		}
+
+		y = (HI6_SD << 26) + (mips16_reg8_to_reg32[rd] << 16) + (rs << 21) + imm;
 		goto mips16_ret;
 	}
 

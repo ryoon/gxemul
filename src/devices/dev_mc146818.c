@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.31 2004-07-08 00:39:26 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.32 2004-07-08 01:16:18 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -53,7 +53,7 @@ extern struct cpu **cpus;
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /* #define MC146818_DEBUG */
-#define	TICK_STEPS_SHIFT	10
+#define	TICK_STEPS_SHIFT	9
 
 
 #define	N_REGISTERS	256

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.45 2004-07-08 00:56:22 debug Exp $
+ *  $Id: dev_fb.c,v 1.46 2004-07-08 01:16:18 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -719,14 +719,14 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 		if (y2 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y2;
 		if (y2 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y2;
 
-#if 0
-		/*  An update covering more than one line will automatically force an update
-		    of all the affected lines:  */
+		/*
+		 *  An update covering more than one line will automatically
+		 *  force an update of all the affected lines:
+		 */
 		if (y != y2) {
 			d->update_x1 = 0;
 			d->update_x2 = d->xsize-1;
 		}
-#endif
 	}
 
 	/*
@@ -736,12 +736,19 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	 *  Calling memcpy() is probably overkill, as it usually is just one
 	 *  or a few bytes that are read/written at a time.
 	 */
-	if (writeflag == MEM_WRITE)
-		for (i=0; i<len; i++)
-			d->framebuffer[relative_addr + i] = data[i];
-	else
-		for (i=0; i<len; i++)
-			data[i] = d->framebuffer[relative_addr + i];
+	if (writeflag == MEM_WRITE) {
+		if (len > 8)
+			memcpy(d->framebuffer + relative_addr, data, len);
+		else
+			for (i=0; i<len; i++)
+				d->framebuffer[relative_addr + i] = data[i];
+	} else {
+		if (len > 8)
+			memcpy(data, d->framebuffer + relative_addr, len);
+		else
+			for (i=0; i<len; i++)
+				data[i] = d->framebuffer[relative_addr + i];
+	}
 
 	return 1;
 }

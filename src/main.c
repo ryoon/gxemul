@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.101 2004-09-05 04:56:02 debug Exp $
+ *  $Id: main.c,v 1.102 2004-09-05 04:56:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -44,10 +44,6 @@ extern char *optarg;
 int extra_argc;
 char **extra_argv;
 
-
-/*
- *  Global emulation variables:
- */
 
 int quiet_mode = 0;
 

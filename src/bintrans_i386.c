@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.55 2005-01-02 23:34:39 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.56 2005-01-03 01:15:55 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1866,7 +1866,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
 	unsigned char *a, *retfail, *generic64bit, *doloadstore;
-	int ofs, alignment, load=0;
+	int ofs, alignment, load=0, unaligned=0;
 
 	/*  TODO: Not yet:  */
 	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ)
@@ -1889,6 +1889,22 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		if (rt == 0)
 			return 0;
 	}
+
+	switch (instruction_type) {
+	case HI6_LWL:
+	case HI6_LWR:
+	case HI6_LDL:
+	case HI6_LDR:
+	case HI6_SWL:
+	case HI6_SWR:
+	case HI6_SDL:
+	case HI6_SDR:
+		unaligned = 1;
+	}
+
+	/*  TODO  */
+	if (unaligned)
+		return 0;
 
 	a = *addrp;
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.437 2005-01-02 23:34:38 debug Exp $
+$Id: HISTORY,v 1.438 2005-01-03 01:15:54 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1413,3 +1413,4 @@ HISTORY of mips64emul
 20050103	Adding fast 32-bit load/store for 64-bit mode emulation to
 		the i386 backend too (similar to the Alpha code). Not really
 		tested yet, though.
+		Playing around with bintranslated lwl and lwr for Alpha.

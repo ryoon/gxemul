@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.103 2004-10-24 06:29:58 debug Exp $
+ *  $Id: devices.h,v 1.104 2004-10-25 01:54:05 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -270,6 +270,11 @@ struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t b
 int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len);
 
+/*  dev_m700_fb.c:  */
+#define	DEV_M700_FB_LENGTH		0x10000		/*  TODO?  */
+int dev_m700_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_m700_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t baseaddr2);
+
 /*  dev_n64_bios.c:  */
 #define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)
 int dev_n64_bios_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -323,10 +328,21 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int 
 #define	DEV_PICA_LENGTH			0x280
 struct pica_data {
 	struct cpu	*cpu;
+
+	/*  Jazz stuff:  */
 	uint32_t	int_enable_mask;
 	uint32_t	int_asserted;
+
+	/*  ISA stuff:  */
+	uint32_t	isa_int_enable_mask;
+	uint32_t	isa_int_asserted;
+
 	int		interval;
 	int		interval_start;
+
+	int		pica_timer_value;
+	int		pica_timer_current;
+
 	uint64_t	dma_translation_table_base;
 	uint64_t	dma_translation_table_limit;
 	uint32_t	dma0_mode;

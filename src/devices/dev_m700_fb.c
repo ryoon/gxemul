@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.1 2004-10-25 01:54:03 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.2 2004-10-25 01:54:40 debug Exp $
  *  
  *  Olivetty M700 framebuffer.
+ *
+ *  TODO: This is enough to show the penguin and some text, with Linux,
+ *  but that's about it.
  */
 
 #include <math.h>

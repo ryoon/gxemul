@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.207 2004-10-24 10:46:23 debug Exp $
+ *  $Id: machine.c,v 1.208 2004-10-25 01:54:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -513,26 +513,44 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  Acer PICA-61 interrupts:
+ *
+ *  0..7			MIPS interrupts
+ *  8 + x, where x = 0..15	Jazz interrupts
+ *  8 + x, where x = 16..31	ISA interrupt (irq nr + 16)
  */
 void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	uint32_t irq;
+	int isa = 0;
+
 	irq_nr -= 8;
 
 	/*  debug("pica_interrupt() irq_nr = %i, assrt = %i\n",
 		irq_nr, assrt);  */
 
+	if (irq_nr >= 16) {
+		isa = 1;
+		irq_nr -= 16;
+	}
+
 	irq = 1 << irq_nr;
 
-	if (assrt)
-		pica_data->int_asserted |= irq;
-	else
-		pica_data->int_asserted &= ~irq;
+	if (isa) {
+		if (assrt)
+			pica_data->isa_int_asserted |= irq;
+		else
+			pica_data->isa_int_asserted &= ~irq;
+	} else {
+		if (assrt)
+			pica_data->int_asserted |= irq;
+		else
+			pica_data->int_asserted &= ~irq;
+	}
 
 	/*  debug("   %08x %08x\n", pica_data->int_asserted,
 		pica_data->int_enable_mask);  */
-
-	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
+	/*  debug("   %08x %08x\n", pica_data->isa_int_asserted,
+		pica_data->isa_int_enable_mask);  */
 
 	if (pica_data->int_asserted /* & pica_data->int_enable_mask */
 	    & ~0x8000 )
@@ -540,6 +558,12 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	else
 		cpu_interrupt_ack(cpu, 3);
 
+	if (pica_data->isa_int_asserted & pica_data->isa_int_enable_mask)
+		cpu_interrupt(cpu, 4);
+	else
+		cpu_interrupt_ack(cpu, 4);
+
+	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
 	if (pica_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
 	else
@@ -2176,22 +2200,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(emul->machine_name, " (Acer PICA-61)");
 
-				dev_ram_init(mem, 0x800000000ULL,
-				    0x100000000ULL, DEV_RAM_MIRROR,
-				    0x2000000000ULL);
-				dev_ram_init(mem, 0x6000000000ULL,
-				    0x100000000ULL, DEV_RAM_MIRROR,
-				    0x2000000000ULL);
-				dev_ram_init(mem, 0x10000000000ULL,
-				    0x100000000ULL, DEV_RAM_MIRROR,
-				    0x2000000000ULL);
-
 				pica_data = dev_pica_init(
 				    cpu, mem, 0x2000000000ULL);
 				cpu->md_interrupt = pica_interrupt;
 
 				dev_vga_init(cpu, mem,
-				    0x20000b8000ULL, 0x20000003d0ULL,
+				    0x100000b8000ULL, 0x60000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				dev_asc_init(cpu, mem,
@@ -2283,6 +2297,37 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0, 1, emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
 				    0, 1, 0);
+
+				break;
+
+			case MACHINE_ARC_M700:
+				/*
+				 *  "Microsoft-Jazz", "Olivetti M700"
+				 *
+				 *  See http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html.
+				 */
+
+				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
+
+				pica_data = dev_pica_init(
+				    cpu, mem, 0x800000000ULL);
+				cpu->md_interrupt = pica_interrupt;
+
+				dev_mc146818_init(cpu, mem,
+				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
+
+#if 0
+				dev_pckbc_init(cpu, mem, 0x800005000ULL,
+				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
+#endif
+				dev_ns16550_init(cpu, mem,
+				    0x800006000ULL, 8 + 8, 1,
+				    emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem,
+				    0x800007000ULL, 8 + 9, 1, 0);
+
+				dev_m700_fb_init(cpu, mem,
+				    0x18000080000ULL, 0x10000000000ULL);
 
 				break;
 
@@ -2494,6 +2539,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case MACHINE_ARC_NEC_R98:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
+				break;
+			case MACHINE_ARC_M700:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.116 2004-10-23 04:30:13 debug Exp $
+ *  $Id: main.c,v 1.117 2004-10-25 01:54:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -112,7 +112,7 @@ void usage(char *progname)
 
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz, 6=NEC-R98)\n");
+	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz, 6=NEC-R98, 7=Olivetti M700)\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation\n");

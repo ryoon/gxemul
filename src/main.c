@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.15 2004-01-10 02:56:32 debug Exp $
+ *  $Id: main.c,v 1.16 2004-01-10 05:43:13 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -179,7 +179,7 @@ void usage(char *progname)
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");
-	printf("  -Q        no PROM emulation\n");
+	printf("  -Q        no built-in PROM emulation  (use this for running ROM images)\n");
 	printf("  -q        quiet mode (don't print debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
 	printf("  -r        register dumps before every instruction\n");

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.74 2004-06-29 02:30:32 debug Exp $
+ *  $Id: devices.h,v 1.75 2004-07-02 14:17:15 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -62,7 +62,7 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_8250.c:  */
-#define	DEV_8250_LENGTH		0x0000000000000008
+#define	DEV_8250_LENGTH		8
 int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
@@ -390,8 +390,8 @@ int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_sgi_cpuinfo.c:  */
-#define	DEV_SGI_CPUINFO_BASE		0x9600000000000000
-#define	DEV_SGI_CPUINFO_LENGTH		0x0001000000000000
+#define	DEV_SGI_CPUINFO_BASE		0x9600000000000000ULL
+#define	DEV_SGI_CPUINFO_LENGTH		0x0001000000000000ULL
 int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr);
 
@@ -441,8 +441,8 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_nasid.c:  */
-#define	DEV_SGI_NASID_BASE		0x9200000000000000
-#define	DEV_SGI_NASID_LENGTH		0x0000000100000000
+#define	DEV_SGI_NASID_BASE		0x9200000000000000ULL
+#define	DEV_SGI_NASID_LENGTH		0x0000000100000000ULL
 int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_nasid_init(struct memory *mem, uint64_t baseaddr);
 
@@ -452,7 +452,7 @@ int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */
-#define	DEV_SII_LENGTH			0x0000000000000100
+#define	DEV_SII_LENGTH			0x100
 void dev_sii_tick(struct cpu *cpu, void *);
 int dev_sii_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sii_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);

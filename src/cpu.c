@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.77 2004-07-02 13:35:26 debug Exp $
+ *  $Id: cpu.c,v 1.78 2004-07-02 14:17:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -417,7 +417,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	if (exccode == EXCEPTION_DBE) {
 		cpu->coproc[0]->reg[COP0_BADVADDR] = vaddr;
 		/*  sign-extend vaddr, if it is 32-bit  */
-		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000))
+		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
 			cpu->coproc[0]->reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
 	}
@@ -427,7 +427,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	    exccode == EXCEPTION_VCEI || exccode == EXCEPTION_VCED || tlb) {
 		cpu->coproc[0]->reg[COP0_BADVADDR] = vaddr;
 		/*  sign-extend vaddr, if it is 32-bit  */
-		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000))
+		if ((vaddr >> 32) == 0 && (vaddr & 0x80000000ULL))
 			cpu->coproc[0]->reg[COP0_BADVADDR] |=
 			    0xffffffff00000000ULL;
 
@@ -472,7 +472,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 	if (cpu->cpu_type.exc_model == EXC3K) {
 		/*  Userspace tlb, vs others:  */
-		if (tlb && !(vaddr & 0x80000000) &&
+		if (tlb && !(vaddr & 0x80000000ULL) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
 			cpu->pc = 0xffffffff80000000ULL;
 		else
@@ -1328,11 +1328,11 @@ int cpu_run_instr(struct cpu *cpu)
 				f1 = cpu->gpr[rs] & 0xffffffffULL;
 				/*  sign extend f1  */
 				if (f1 & 0x80000000ULL)
-					f1 |= (uint64_t)0xffffffff00000000ULL;
+					f1 |= 0xffffffff00000000ULL;
 				f2 = cpu->gpr[rt] & 0xffffffffULL;
 				/*  sign extend f2  */
 				if (f2 & 0x80000000ULL)
-					f2 |= (uint64_t)0xffffffff00000000ULL;
+					f2 |= 0xffffffff00000000ULL;
 				sum = f1 * f2;
 
 				cpu->lo = sum & 0xffffffffULL;
@@ -1734,15 +1734,23 @@ int cpu_run_instr(struct cpu *cpu)
 			 */
 			if (imm >= 0) {
 				/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */
-				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000) && (tmpvalue & 0x80000000)==0))
-				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000) && (tmpvalue & 0x8000000000000000)==0)) ) {
+				if (   ((hi6 == HI6_ADDI && (result_value &
+				    0x80000000ULL) && (tmpvalue &
+				    0x80000000ULL)==0))
+				    || ((hi6 == HI6_DADDI && (result_value &
+				    0x8000000000000000ULL) && (tmpvalue &
+				    0x8000000000000000ULL)==0)) ) {
 					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
 			} else {
 				/*  Turn around from 0x8000.. to 0x7fff.. ?  Then overflow.  */
-				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000)==0 && (tmpvalue & 0x80000000)))
-				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000)==0 && (tmpvalue & 0x8000000000000000))) ) {
+				if (   ((hi6 == HI6_ADDI && (result_value &
+				    0x80000000ULL)==0 && (tmpvalue &
+				    0x80000000ULL)))
+				    || ((hi6 == HI6_DADDI && (result_value &
+				    0x8000000000000000ULL)==0 && (tmpvalue &
+				    0x8000000000000000ULL))) ) {
 					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}

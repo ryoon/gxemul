@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.47 2004-06-29 00:04:41 debug Exp $
+ *  $Id: memory.c,v 1.48 2004-07-02 14:17:16 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -301,7 +301,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	 *  will still produce the correct result. At worst, we check the
 	 *  cache in vain, but the result should still be correct.)
 	 */
-	if ((vaddr & 0xc0000000) != 0x80000000) {
+	if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
 		int wf = 1 + (writeflag == MEM_WRITE);
 		int i;
 		uint64_t vaddr_shift_12 = vaddr >> 12;
@@ -386,7 +386,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		else
 			ksu = KSU_KERNEL;
 
-		vaddr &= (uint32_t)0xffffffff;
+		vaddr &= (uint32_t)0xffffffffULL;
 		pageshift = 12;
 
 		/*  These are needed later:  */
@@ -447,8 +447,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		}
 
 		/*  Sign-extend vaddr, if neccessary:  */
-		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000) {
-			vaddr |= (uint64_t)0xffffffff00000000;
+		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000ULL) {
+			vaddr |= 0xffffffff00000000ULL;
 		}
 
 		/*  This suppresses a gcc warning:  */
@@ -464,9 +464,9 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		use_tlb = 1;
 	else if (ksu == KSU_KERNEL) {
 		/*  kseg0, kseg1:  */
-		if ((vaddr >= 0x80000000 && vaddr <= 0xbfffffff) ||
-		    (vaddr >= (uint64_t)0xffffffff80000000 &&
-		     vaddr <= (uint64_t)0xffffffffbfffffff)) {
+		if ((vaddr >= 0x80000000ULL && vaddr <= 0xbfffffffULL) ||
+		    (vaddr >= (uint64_t)0xffffffff80000000ULL &&
+		     vaddr <= (uint64_t)0xffffffffbfffffffULL)) {
 			/*  Simply return, the address is already set  */
 			return 1;
 		}
@@ -733,9 +733,11 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 #if 0
 	/*  Debug message for DECstation PROM access:  */
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
-		if ((vaddr & 0xfff00000) == 0xbfc00000 && writeflag==MEM_READ) {
+		if ((vaddr & 0xfff00000ULL) == 0xbfc00000ULL
+		    && writeflag==MEM_READ) {
 			if ((vaddr & 0xffff) != 0x8030 && (vaddr & 0xffff) != 0x8064 &&
-			    (vaddr & 0xffff0000) != (DEC_PROM_STRINGS & 0xffff0000) &&
+			    (vaddr & 0xffff0000ULL) !=
+				(DEC_PROM_STRINGS & 0xffff0000ULL) &&
 			    (vaddr & 0xffff) != 0x8054 && (vaddr & 0xffff) != 0x8058 &&
 			    (vaddr & 0xffff) != 0x8080 && (vaddr & 0xffff) != 0x8084 &&
 			    (vaddr & 0xffff) != 0x80ac)
@@ -884,10 +886,11 @@ have_paddr:
 	 */
 
 	/*  vaddr shouldn't be used below anyway, except for in the following 'if'  */
-	if ((vaddr >> 32) == (uint32_t)0xffffffff)
-		vaddr &= (uint64_t)0xffffffff;
+	if ((vaddr >> 32) == 0xffffffffULL)
+		vaddr &= 0xffffffffULL;
 
-	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000 && vaddr <= 0xbfffffff)) {
+	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000ULL
+	    && vaddr <= 0xbfffffffULL)) {
 		if (cpu->cpu_type.mmu_model == MMU3K) {
 			int cachemask[2];
 
@@ -956,7 +959,7 @@ have_paddr:
 	 */
 
 	if (paddr >= mem->physical_max && !userland_emul) {
-		if ((paddr & 0xffffc00000) == 0x1fc00000) {
+		if ((paddr & 0xffffc00000ULL) == 0x1fc00000) {
 			/*  Ok, this is PROM stuff  */
 		} else {
 			/*  Semi-ugly hack:  allow for 1KB more, without giving a warning.

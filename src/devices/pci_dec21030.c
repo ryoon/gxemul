@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.5 2004-03-22 00:55:29 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.6 2004-07-02 14:17:14 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -69,7 +69,7 @@ int dec21030_default_ysize = 768;
 
 
 /*  TODO:  Ugly hack:  this causes the framebuffer to be in memory  */
-#define	FRAMEBUFFER_PADDR	0x4000000000
+#define	FRAMEBUFFER_PADDR	0x4000000000ULL
 #define	FRAMEBUFFER_BASE	0x201000
 
 
@@ -258,10 +258,15 @@ void pci_dec21030_init(struct cpu *cpu, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct dec21030_data));
 
-	/*  TODO:  this address is based on what NetBSD/arc uses...  fix this  */
-	memory_device_register(mem, "dec21030", 0x100000000000, 128*1048576, dev_dec21030_access, d);
+	/*  TODO:  this address is based on what NetBSD/arc uses...
+	    fix this  */
+	memory_device_register(mem, "dec21030", 0x100000000000ULL,
+	    128*1048576, dev_dec21030_access, d);
 
-	/*  TODO:  I have no idea about how/where this framebuffer should be in relation to the pci device  */
+	/*
+	 *  TODO:  I have no idea about how/where this framebuffer should
+	 *  be in relation to the pci device
+	 */
 	d->vfb_data = dev_fb_init(cpu, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
 	    dec21030_default_xsize, dec21030_default_ysize,
 	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA");

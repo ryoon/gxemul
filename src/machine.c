@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.119 2004-07-02 13:35:26 debug Exp $
+ *  $Id: machine.c,v 1.120 2004-07-02 14:17:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1708,13 +1708,22 @@ void machine_init(struct memory *mem)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (Everest IP25)");
-				dev_scc_init(cpus[bootstrap_cpu], mem, 0x400086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
-				/*  NOTE:  ip19! (perhaps not really the same)  */
-				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
+				 /*  serial? irix?  */
+				dev_scc_init(cpus[bootstrap_cpu], mem,
+				    0x400086000ULL, 0, use_x11, 0, 8);
 
-				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
-				store_32bit_word(0xa0000000 + 0x26d0, 30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
+				/*  NOTE: ip19! (perhaps not really the same  */
+				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem,
+				    0x18000000);
+
+				/*
+				 *  Memory size, not 4096 byte pages, but 256
+				 *  bytes?  (16 is size of kernel... approx)
+				 */
+				store_32bit_word(0xa0000000ULL + 0x26d0,
+				    30000);  /* (physical_ram_in_mb - 16)
+						 * (1048576 / 256));  */
 
 				break;
 			case 26:
@@ -1772,22 +1781,29 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (O2)");
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
-				dev_ram_init(mem,    0x40000000, 32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem,    0x40000000ULL,
+				    32 * 1048576, DEV_RAM_RAM, 0);
 
 #if 0
-				dev_ram_init(mem,    0x20000000, 32 * 1048576, DEV_RAM_RAM, 0);
-				dev_ram_init(mem, 0x40000000000, 32 * 1048576, DEV_RAM_RAM, 0);
-				dev_ram_init(mem, 0x41000000000, 32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem,    0x20000000ULL,
+				    32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem, 0x40000000000ULL,
+				    32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem, 0x41000000000ULL,
+				    32 * 1048576, DEV_RAM_RAM, 0);
 #else
-				dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem,    0x20000000ULL,
+				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x40000000000ULL,
+				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x41000000000ULL,
+				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 #endif
 				/*
-				dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
+				dev_ram_init(mem, 0x42000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x47000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem,    0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem,    0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
 
 				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, use_x11);	/*  crime0  */
@@ -1887,13 +1903,21 @@ void machine_init(struct memory *mem)
 
 				/*  TODO:  sync devices and component tree  */
 
-				pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 0);
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
-				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1);		/*  com1  */
+				pci_data = dev_rd94_init(cpus[bootstrap_cpu],
+				    mem, 0x2000000000ULL, 0);
+				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				    0x2000004000ULL, 0, MC146818_ARC_NEC,
+				    1, emulated_ips);	/*  ???  */
+				dev_pckbc_init(cpus[bootstrap_cpu], mem,
+				    0x2000005000ULL, PCKBC_8042, 0, 0);
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000006000ULL, 3, 1);	/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				    0x2000007000ULL, 0, 1);	/*  com1  */
 				/*  lpt at 0x2000008000  */
-				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
+
+				/*  fdc  */
+				dev_fdc_init(mem, 0x200000c000ULL, 0);
 
 				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
 				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
@@ -1938,30 +1962,30 @@ void machine_init(struct memory *mem)
 				/*  TODO:  lots of stuff  */
 
 				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
-				    0x2000002000, 0);  */
+				    0x2000002000ULL, 0);  */
 
 				/*  Linux:  0x800004000  */
 				/*  NetBSD: 0x2000004000  */
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
-				    0x800004000, 2, MC146818_ARC_PICA, 1,
+				    0x800004000ULL, 2, MC146818_ARC_PICA, 1,
 				    emulated_ips);
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
-				    0x2000004000, 2, MC146818_ARC_PICA, 1,
+				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1,
 				    emulated_ips);
 
 				/*  TODO: irq numbers  */
 				dev_pckbc_init(cpus[bootstrap_cpu], mem,
-				    0x2000005060, PCKBC_8042, 0, 0);
+				    0x2000005060ULL, PCKBC_8042, 0, 0);
 
 				/*  TODO: irq numbers  */
 				/*  Linux:  0x800006000  */
 				/*  NetBSD: 0x2000006000  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem,
-				    0x800006000, 0, 1);
+				    0x800006000ULL, 0, 1);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem,
-				    0x2000006000, 0, 1);
+				    0x2000006000ULL, 0, 1);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem,
-				    0x2000007000, 0, 1);
+				    0x2000007000ULL, 0, 1);
 
 				break;
 
@@ -1979,7 +2003,8 @@ void machine_init(struct memory *mem)
 
 				strcat(machine_name, " (Deskstation Tyne)");
 
-				/*  PC kbd  */  dev_random_init(mem, 0x90000000060, 5);
+				/*  PC kbd  */
+				dev_random_init(mem, 0x90000000060ULL, 5);
 
 				break;
 

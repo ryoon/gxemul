@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.8 2004-07-02 13:35:26 debug Exp $
+ *  $Id: symbol.c,v 1.9 2004-07-02 14:17:16 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -145,8 +145,8 @@ void add_symbol_name(uint64_t addr, uint64_t len, char *name, int type)
 {
 	struct symbol *s;
 
-	if ((addr >> 32) == 0 && (addr & 0x80000000))
-		addr |= 0xffffffff00000000;
+	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
+		addr |= 0xffffffff00000000ULL;
 
 	s = malloc(sizeof(struct symbol));
 	if (s == NULL) {

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.73 2004-07-02 13:35:25 debug Exp $
+ *  $Id: misc.h,v 1.74 2004-07-02 14:17:15 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -244,8 +244,8 @@ struct memory {
 #define	MEM_READ			0
 #define	MEM_WRITE			1
 
-#define	INITIAL_PC			0xffffffffbfc00000
-#define	INITIAL_STACK_POINTER		(0xffffffffa0008000 - 256)
+#define	INITIAL_PC			0xffffffffbfc00000ULL
+#define	INITIAL_STACK_POINTER		(0xffffffffa0008000ULL - 256)
 
 
 #define	N_COPROC_REGS		32
@@ -295,9 +295,9 @@ struct coproc {
 			  "TAGDATA_LO", "TAGDATA_HI", "ERROREPC", "DESAVE" \
 			}
 #define	COP0_INDEX		0
-#define	   INDEX_P		    0x80000000		/*  Probe failure bit. Set by tlbp  */
+#define	   INDEX_P		    0x80000000UL	/*  Probe failure bit. Set by tlbp  */
 #define	   INDEX_MASK		    0x3f
-#define	   R2K3K_INDEX_P	    0x80000000
+#define	   R2K3K_INDEX_P	    0x80000000UL
 #define	   R2K3K_INDEX_MASK	    0x3f00
 #define	   R2K3K_INDEX_SHIFT	    8
 #define	COP0_RANDOM		1
@@ -315,7 +315,7 @@ struct coproc {
 #define	   ENTRYLO_V		    0x02		/*  Valid bit  */
 #define	   ENTRYLO_G		    0x01		/*  Global bit  */
 /*  R2000/R3000 ENTRYLO:  */
-#define	   R2K3K_ENTRYLO_PFN_MASK   0xfffff000
+#define	   R2K3K_ENTRYLO_PFN_MASK   0xfffff000UL
 #define	   R2K3K_ENTRYLO_PFN_SHIFT  12
 #define	   R2K3K_ENTRYLO_N	    0x800
 #define	   R2K3K_ENTRYLO_D	    0x400
@@ -335,21 +335,21 @@ struct coproc {
 #define	COP0_COUNT		9
 #define	COP0_ENTRYHI		10
 /*  R4000 ENTRYHI:  */
-#define	   ENTRYHI_R_MASK	    0xc000000000000000
+#define	   ENTRYHI_R_MASK	    0xc000000000000000ULL
 #define	   ENTRYHI_R_SHIFT	    62
-#define	   ENTRYHI_VPN2_MASK_R10K   0x00000fffffffe000
-#define	   ENTRYHI_VPN2_MASK	    0x000000ffffffe000
+#define	   ENTRYHI_VPN2_MASK_R10K   0x00000fffffffe000ULL
+#define	   ENTRYHI_VPN2_MASK	    0x000000ffffffe000ULL
 #define	   ENTRYHI_VPN2_SHIFT	    13
 #define	   ENTRYHI_ASID		    0xff
 #define	   TLB_G		    (1 << 12)
 /*  R2000/R3000 ENTRYHI:  */
-#define	   R2K3K_ENTRYHI_VPN_MASK   0xfffff000
+#define	   R2K3K_ENTRYHI_VPN_MASK   0xfffff000UL
 #define	   R2K3K_ENTRYHI_VPN_SHIFT  12
 #define	   R2K3K_ENTRYHI_ASID_MASK  0xfc0
 #define	   R2K3K_ENTRYHI_ASID_SHIFT 6
 #define	COP0_COMPARE		11
 #define	COP0_STATUS		12
-#define	   STATUS_CU_MASK	    0xf0000000		/*  coprocessor usable bits  */
+#define	   STATUS_CU_MASK	    0xf0000000UL	/*  coprocessor usable bits  */
 #define	   STATUS_CU_SHIFT	    28
 #define	   STATUS_RP		    0x08000000		/*  reduced power  */
 #define	   STATUS_FR		    0x04000000		/*  1=32 float regs, 0=16  */
@@ -368,7 +368,7 @@ struct coproc {
 #define	   STATUS_IE		    0x01
 #define	   R5900_STATUS_EIE	    0x10000
 #define	COP0_CAUSE		13
-#define	   CAUSE_BD		    0x80000000		/*  branch delay flag  */
+#define	   CAUSE_BD		    0x80000000UL	/*  branch delay flag  */
 #define	   CAUSE_CE_MASK	    0x30000000		/*  which coprocessor  */
 #define	   CAUSE_CE_SHIFT	    28
 #define	   CAUSE_IP_MASK	    0xff00		/*  interrupt pending  */
@@ -383,7 +383,7 @@ struct coproc {
 #define	COP0_WATCHLO		18
 #define	COP0_WATCHHI		19
 #define	COP0_XCONTEXT		20
-#define	   XCONTEXT_R_MASK          0x180000000
+#define	   XCONTEXT_R_MASK          0x180000000ULL
 #define	   XCONTEXT_R_SHIFT         31
 #define	   XCONTEXT_BADVPN2_MASK    0x7ffffff0
 #define	   XCONTEXT_BADVPN2_SHIFT   4

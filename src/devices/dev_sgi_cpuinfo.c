@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_cpuinfo.c,v 1.4 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_sgi_cpuinfo.c,v 1.5 2004-07-02 14:17:14 debug Exp $
  *  
  *  SGI cpuinfo CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -58,8 +58,9 @@ int dev_sgi_cpuinfo_access(struct cpu *cpu, struct memory *mem, uint64_t relativ
 
 	/*  Read from/write to the sgi_cpuinfo:  */
 	switch (relative_addr) {
-	case 0x12000020d0:
-		odata = DEV_SGI_CPUINFO_BASE + 0x123400;		/*  I'm just making this up  (TODO)  */
+	case 0x12000020d0ULL:
+		/*  I'm just making this up  (TODO)  */
+		odata = DEV_SGI_CPUINFO_BASE + 0x123400;
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
@@ -87,6 +88,7 @@ void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct sgi_cpuinfo_data));
 
-	memory_device_register(mem, "sgi_cpuinfo", baseaddr, DEV_SGI_CPUINFO_LENGTH, dev_sgi_cpuinfo_access, (void *)d);
+	memory_device_register(mem, "sgi_cpuinfo", baseaddr,
+	    DEV_SGI_CPUINFO_LENGTH, dev_sgi_cpuinfo_access, (void *)d);
 }
 

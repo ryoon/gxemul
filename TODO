@@ -43,6 +43,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Use only one letter for selecting machine type (followed
 		    by a substring of the machine type), not one letter
 		    for each machine type as it is now.
+		o)  Set endianness for raw binaries?
 		o)  Long options?
 
 	CPU Emulation:

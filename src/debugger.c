@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.18 2004-12-22 16:12:58 debug Exp $
+ *  $Id: debugger.c,v 1.19 2004-12-23 03:47:37 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -409,6 +409,10 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 
 		printf(" (%i-bit, ",
 		    (ct->isa_level < 3 || ct->isa_level == 32)? 32 : 64);
+
+		printf("%s-endian, ", emul->cpus[i]->byte_order
+		    == EMUL_BIG_ENDIAN? "big" : "little");
+
 		printf("%i TLB entries", ct->nr_of_tlb_entries);
 
 		if (ct->default_picache || ct->default_pdcache)

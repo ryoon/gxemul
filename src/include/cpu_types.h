@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_types.h,v 1.4 2004-12-18 09:12:42 debug Exp $
+ *  $Id: cpu_types.h,v 1.5 2004-12-23 03:47:37 debug Exp $
  *
  *  CPU types.
  */
@@ -34,9 +34,7 @@
 #include <misc.h>
 
 /*  CPU types:  */
-#include "cpuregs.h"			/*  from NetBSD  */
-#define	MIPS_5K		129		/*  according to MIPS64 5K User's Manual  */
-#define	MIPS_5K_REV	    1		/*  according to MIPS64 5K User's Manual  */
+#include "cpuregs.h"
 
 #define	EXC3K		3
 #define	EXC4K		4
@@ -88,7 +86,8 @@
 	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4,14,14, 5, 5,18, 6 }, /*  instrs/cycle? cachelinesize & assoc.? RM7000A? */ \
 	{ "RM7900",	0 /*TODO*/, 0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	64, 4,14,14, 5, 5,18, 6 }, /*  instrs/cycle? cachelinesize? assoc = 4ways for all  */ \
 	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0 }, \
-	{ "5K",		0x100+MIPS_5K, 1,	0,	EXC4K, MMU4K,	5,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "4Kc",	0x100+MIPS_4Kc, 1 /*?*/,0,	EXC32, MMU32,  32,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
+	{ "5Kc",	0x100+MIPS_5Kc, 1,	0,	EXC64, MMU64,  64,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle? BOGUS, TODO  */ \
 	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2,13,12, 4, 4, 0, 0 }, /*  2ways I, 2ways D  */ \
 	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \

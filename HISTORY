@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.418 2004-12-22 18:06:00 debug Exp $
+$Id: HISTORY,v 1.419 2004-12-23 03:47:36 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1373,8 +1373,9 @@ HISTORY of mips64emul
 		Separating some more .h files from each other, and fixing
 		some Solaris compiler warnings.
 20041221	Minor updates.
-20041222	Minor updates; hpcmips (BE300) stuff.
+20041222	Minor updates; hpcmips (BE300, VR41xx) stuff.
 		The 'register' debugger command is now 'reg', and it can
 		be used to modify registers, not just read them.
 		The syntax for hpcmips (-F) is now -F xx, where xx is a
 		machine model identifier. (1 = BE300.)
+20041223	Some really minor updates.

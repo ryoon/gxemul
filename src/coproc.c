@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.130 2004-12-22 16:12:58 debug Exp $
+ *  $Id: coproc.c,v 1.131 2004-12-23 03:47:37 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -250,15 +250,17 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 							(TODO)  */
 			    ;
 			break;
-		case MIPS_5K:
+		case MIPS_4Kc:
+		case MIPS_5Kc:
 			/*  According to the MIPS64 5K User's Manual:  */
+			/*  TODO: How good does this work with 4K?  */
 			c->reg[COP0_CONFIG] =
 			      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
 			    | (   0 << 20)	/*  ISD:  instruction scheduling disable (=1)  */
 			    | (   0 << 17)	/*  DID:  dual issue disable  */
 			    | (   0 << 16)	/*  BM:   burst mode  */
 			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | (   2 << 13)	/*  1=32-bit only, 2=32/64  */
+			    | ((cpu->cpu_type.rev==MIPS_5Kc?2:1) << 13)	/*  1=32-bit only, 2=32/64  */
 			    | (   0 << 10)	/*  Architecture revision  */
 			    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
 			    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
@@ -284,8 +286,8 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 					break;
 		case MIPS_R6000:	fpu_rev = MIPS_R6010;	break;
 		case MIPS_R4000:	fpu_rev = MIPS_R4010;	break;
-
-		case MIPS_5K:		other_stuff = COP1_REVISION_DOUBLE | COP1_REVISION_SINGLE;
+		case MIPS_4Kc:		/*  TODO: Is this the same as 5Kc?  */
+		case MIPS_5Kc:		other_stuff = COP1_REVISION_DOUBLE | COP1_REVISION_SINGLE;
 		case MIPS_R5000:
 		case MIPS_RM5200:	fpu_rev = cpu->cpu_type.rev;
 					other_stuff |= 0x10;	/*  or cpu->cpu_type.sub ? TODO  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.50 2004-12-09 00:04:12 debug Exp $
+ *  $Id: arcbios.c,v 1.51 2004-12-19 06:02:11 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1227,7 +1227,9 @@ void arcbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = ARC_DSPSTAT_ADDR;
 		break;
 	case 0x888:
-		/*  Magical crash if there is no exception handling code.  */
+		/*
+		 *  Magical crash if there is no exception handling code.
+		 */
 		fatal("EXCEPTION, but no exception handler installed yet.\n");
 		quiet_mode = 0;
 		cpu_register_dump(cpu);

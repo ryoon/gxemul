@@ -65,6 +65,9 @@ o)  Playstation 2:
     ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
     Try running with  -X -B -q      (-X is required, for the framebuffer).
 
+    A Linux kernel (2.2.21-pre1-xr7) is available from
+    http://playstation2-linux.com/projects/xrhino-kernel/
+
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.
        Add  -X  to use a X-windows framebuffer, if the emulated machine

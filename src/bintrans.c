@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.24 2004-10-08 19:24:15 debug Exp $
+ *  $Id: bintrans.c,v 1.25 2004-10-08 19:42:26 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -167,12 +167,12 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 #endif	/*  ALPHA  */
 
 
-#define	BINTRANS_CACHE_N_INDEX_BITS	13
+#define	BINTRANS_CACHE_N_INDEX_BITS	14
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 #define	CODE_CHUNK_SPACE_SIZE		(2 * 1048576)
-#define	CODE_CHUNK_SPACE_MARGIN		65536
+#define	CODE_CHUNK_SPACE_MARGIN		16384
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where
@@ -290,8 +290,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	int res, hi6, special6, rd;
 	uint64_t p;
 	unsigned char instr[4];
-	unsigned char *chunk_addr = translation_code_chunk_space
-	    + translation_code_chunk_space_head;
+	unsigned char *chunk_addr;
 	struct translation_entry *tep;
 	int entry_index;
 
@@ -300,12 +299,24 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	 *  an empty chunk space.
 	 */
 	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+		struct translation_entry *next;
+		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 
-		fprintf(stderr, "TODO: remove all translation entries!!!\n");
-		exit(1);
+		for (i=0; i<n; i++) {
+			tep = translation_entry_array[i];
+			while (tep != NULL) {
+				next = tep->next;
+				free(tep);
+				tep = next;
+			}
+			translation_entry_array[i] = NULL;
+		}
 
 		translation_code_chunk_space_head = 0;
 	}
+
+	chunk_addr = translation_code_chunk_space
+	    + translation_code_chunk_space_head;
 
 	/*
 	 *  Some backends need a code chunk header, but assuming that

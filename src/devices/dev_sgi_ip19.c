@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.11 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.12 2005-02-22 05:52:58 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -63,14 +63,18 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x08:	/*  cpu id  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip19: unimplemented write to address 0x%x (cpu id), data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip19: unimplemented write to address "
+			    "0x%x (cpu id), data=0x%08x ]\n", (int)
+			    relative_addr, (int)idata);
 		} else {
 			odata = cpu->cpu_id;	/*  ?  TODO  */
 		}
 		break;
 	case 0x200:	/*  cpu available mask?  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip19: unimplemented write to address 0x%x (cpu available mask), data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip19: unimplemented write to address "
+			    "0x%x (cpu available mask), data=0x%08x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
 			/*  Max 16 cpus?  */
 			odata = ((1 << cpu->machine->ncpus) - 1) << 16;
@@ -78,7 +82,9 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 0x20000:	/*  cycle counter or clock  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip19: unimplemented write to address 0x%x (cycle counter), data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip19: unimplemented write to address "
+			    "0x%x (cycle counter), data=0x%08x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
 			d->cycle_counter += 100;
 			odata = d->cycle_counter;
@@ -87,9 +93,12 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip19: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip19: unimplemented write to address "
+			    "0x%x, data=0x%08x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip19: unimplemented read from address 0x%x: 0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip19: unimplemented read from address "
+			    "0x%x: 0x%08x ]\n", (int)relative_addr, (int)odata);
 		}
 	}
 

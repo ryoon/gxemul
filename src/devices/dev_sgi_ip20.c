@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.9 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.10 2005-02-22 05:52:58 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -34,9 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 extern int quiet_mode;
@@ -57,7 +57,8 @@ int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x38:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip20: write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip20: write to address 0x%x, "
+			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
 			/*
 			 *  TODO:
@@ -71,14 +72,18 @@ int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem,
 			/*  instruction_trace = 1;  quiet_mode = 0;  */
 			odata = random() & 0xff;
 
-			debug("[ sgi_ip20: read from address 0x%x: 0x%x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip20: read from address 0x%x: 0x%x ]\n",
+			    (int)relative_addr, (int)odata);
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip20: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip20: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip20: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip20: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -107,7 +112,8 @@ struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem,
 	 *  "sgi_ip20_int".
 	 */
 	memory_device_register(mem, "sgi_ip20_int", baseaddr,
-	    DEV_SGI_IP20_LENGTH, dev_sgi_ip20_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_SGI_IP20_LENGTH, dev_sgi_ip20_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 
 	return d;
 }

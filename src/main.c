@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.211 2005-02-19 13:18:31 debug Exp $
+ *  $Id: main.c,v 1.212 2005-02-22 05:53:01 debug Exp $
  */
 
 #include <stdio.h>
@@ -37,6 +37,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
@@ -722,11 +723,13 @@ int main(int argc, char *argv[])
 	progname = argv[0];
 
 	srandom(time(NULL));
+
 	console_init();
 	cpu_init();
+	device_init();
 	machine_init();
 	useremul_init();
-
+device_dumplist();
 	emuls = malloc(sizeof(struct emul *));
 	if (emuls == NULL) {
 		fprintf(stderr, "out of memory\n");

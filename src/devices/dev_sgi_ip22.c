@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.23 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.24 2005-02-22 05:52:58 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -41,6 +41,9 @@
 #include "misc.h"
 
 #include "imcreg.h"
+
+
+#define	SGI_IP22_TICK_SHIFT		14
 
 
 /*
@@ -79,41 +82,51 @@ int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case (IMC_CPUCTRL0 - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			/*  debug("[ sgi_ip22_imc: write to IMC_CPUCTRL0, data=0x%08x ]\n", (int)idata);  */
+			/*  debug("[ sgi_ip22_imc: write to "
+			    "IMC_CPUCTRL0, data=0x%08x ]\n", (int)idata);  */
 		} else {
-			/*  debug("[ sgi_ip22_imc: read from IMC_CPUCTRL0, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_CPUCTRL0, "
+			    "data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_SYSID - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_imc: unimplemented write IMC_SYSID, data=0x%08x ]\n", (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write "
+			    "IMC_SYSID, data=0x%08x ]\n", (int)idata);
 		} else {
 			/*  Lowest 4 bits are the revision bits.  */
 			odata = 3;  /*  + IMC_SYSID_HAVEISA;  */
-			/*  debug("[ sgi_ip22_imc: read from IMC_SYSID, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_SYSID, "
+			    "data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_WDOG - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			/*  debug("[ sgi_ip22_imc: write to IMC_WDOG, data=0x%08x ]\n", (int)idata);  */
+			/*  debug("[ sgi_ip22_imc: write to IMC_WDOG, "
+			    "data=0x%08x ]\n", (int)idata);  */
 		} else {
-			/*  debug("[ sgi_ip22_imc: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_WDOG, "
+			    "data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_MEMCFG0 - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_imc: unimplemented write IMC_MEMCFG0, data=0x%08x ]\n", (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write "
+			    "IMC_MEMCFG0, data=0x%08x ]\n", (int)idata);
 		} else {
 			odata = 0x3100 + (0x8000000 >> 22);  /*  ? TODO  */
-			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG0, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG0,"
+			    " data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_MEMCFG1 - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_imc: unimplemented write IMC_MEMCFG1, data=0x%08x ]\n", (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write "
+			    "IMC_MEMCFG1, data=0x%08x ]\n", (int)idata);
 		} else {
 			odata = 0;
-			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG1, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG1, "
+			    "data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_EEPROM - IP22_IMC_BASE):
@@ -122,17 +135,23 @@ int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
 		 *  but I have no idea how it works.
 		 */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_imc: write to IMC_EEPROM, data=0x%08x ]\n", (int)idata);
+			debug("[ sgi_ip22_imc: write to IMC_EEPROM, data="
+			    "0x%08x ]\n", (int)idata);
 		} else {
 			odata = random() & 0x1e;
-			debug("[ sgi_ip22_imc: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);
+			debug("[ sgi_ip22_imc: read from IMC_WDOG, "
+			    "data=0x%08x ]\n", (int)odata);
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_imc: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write to "
+			    "address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip22_imc: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_imc: unimplemented read from "
+			    "address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)odata);
 		}
 	}
 
@@ -160,18 +179,24 @@ int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x04:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_unknown: write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_unknown: write to address 0x%x,"
+			    " data=0x%08x ]\n", (int)relative_addr, (int)idata);
 		} else {
 			odata = d->unknown_timer;
 			d->unknown_timer += 100;
-			debug("[ sgi_ip22_unknown: read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_unknown: read from address 0x%x, "
+			    "data=0x%08x ]\n", (int)relative_addr, (int)odata);
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_unknown: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_unknown: unimplemented write to "
+			    "address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip22_unknown: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_unknown: unimplemented read from "
+			    "address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)odata);
 		}
 	}
 
@@ -206,9 +231,13 @@ int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_unknown2: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_unknown2: unimplemented write "
+			    "to address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip22_unknown2: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_unknown2: unimplemented read from "
+			    "address 0x%x, data=0x%08x ]\n",
+			    (int)relative_addr, (int)odata);
 		}
 	}
 
@@ -232,19 +261,23 @@ int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	if (writeflag == MEM_WRITE) {
-		debug("[ sgi_ip22_sysid: write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+		debug("[ sgi_ip22_sysid: write to address 0x%x, "
+		    "data=0x%08x ]\n", (int)relative_addr, (int)idata);
 	} else {
 		/*
 		 *  According to NetBSD's sgimips/ip22.c:
-		 *        printf("IOC rev %d, machine %s, board rev %d\n", (sysid >> 5) & 0x07,
-		 *                        (sysid & 1) ? "Indigo2 (Fullhouse)" : "Indy (Guiness)",
-		 *                        (sysid >> 1) & 0x0f);
+		 *
+		 *  printf("IOC rev %d, machine %s, board rev %d\n",
+		 *	(sysid >> 5) & 0x07,
+		 *	(sysid & 1) ? "Indigo2 (Fullhouse)" : "Indy (Guiness)",
+		 *	(sysid >> 1) & 0x0f);
 		 */
 
 		/*  IOC rev 1, Guiness, board rev 3:  */
 		odata = (1 << 5) + (3 << 1) + (d->guiness_flag? 0 : 1);
 
-		debug("[ sgi_ip22_sysid: read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+		debug("[ sgi_ip22_sysid: read from address 0x%x, data="
+		    "0x%08x ]\n", (int)relative_addr, (int)odata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -279,81 +312,83 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0x00:	/*  local0 irq stat  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: write to local0 IRQ STAT, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to local0 IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from local0 IRQ STAT, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from local0 IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x04:	/*  local0 irq mask  */
 		if (writeflag == MEM_WRITE) {
 			/*
-			 *  Ugly hack:  if an interrupt is asserted, and someone writes
-			 *  to this mask register, the interrupt should be masked.
-			 *  That is, sgi_ip22_interrupt() in src/machine.c has to be
-			 *  called to deal with this. The ugly solution I choose here is
-			 *  to deassert some interrupt which should never be used
-			 *  anyway.  (TODO: Fix this.)
+			 *  Ugly hack: if an interrupt is asserted, and someone
+			 *  writes to this mask register, the interrupt should
+			 *  be masked. That is, sgi_ip22_interrupt() in
+			 *  src/machine.c has to be called to deal with this.
+			 *  The ugly solution I choose here is to deassert
+			 *  some interrupt which should never be used anyway.
+			 *  (TODO: Fix this.)
 			 */
 			cpu_interrupt_ack(cpu, 8 + 63);
-			debug("[ sgi_ip22: write to local0 IRQ MASK, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to local0 IRQ MASK, "
+			    "data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from local0 IRQ MASK, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from local0 IRQ MASK, "
+			    "data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x08:	/*  local1 irq stat  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: write to local1 IRQ STAT, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to local1 IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from local1 IRQ STAT, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from local1 IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x0c:	/*  local1 irq mask  */
 		if (writeflag == MEM_WRITE) {
 			/*  See commen above, about local0 irq mask.  */
 			cpu_interrupt_ack(cpu, 8 + 63);
-			debug("[ sgi_ip22: write to local1 IRQ MASK, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to local1 IRQ MASK, "
+			    "data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from local1 IRQ MASK, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from local1 IRQ MASK, "
+			    "data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x10:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: write to mappable IRQ STAT, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to mappable IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from mappable IRQ STAT, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from mappable IRQ STAT, "
+			    "data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x14:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: write to mappable local0 IRQ MASK, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to mappable local0 IRQ "
+			    "MASK, data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from mappable local0 IRQ MASK, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from mappable local0 IRQ "
+			    "MASK, data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x18:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: write to mappable local1 IRQ MASK, data=0x%llx ]\n",
-			    (long long)idata);
+			debug("[ sgi_ip22: write to mappable local1 IRQ "
+			    "MASK, data=0x%llx ]\n", (long long)idata);
 		} else {
-			debug("[ sgi_ip22: read from mappable local1 IRQ MASK, data=0x%llx ]\n",
-			    (long long)odata);
+			debug("[ sgi_ip22: read from mappable local1 IRQ "
+			    "MASK, data=0x%llx ]\n", (long long)odata);
 		}
 		break;
 	case 0x38:	/*  timer count  */
 		if (writeflag == MEM_WRITE) {
-			/*  Two byte values are written to this address, sequentially...  TODO  */
+			/*  Two byte values are written to this address,
+			    sequentially...  TODO  */
 		} else {
 			/*  The timer is decreased by the tick function.  */
 		}
@@ -368,9 +403,12 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip22: unimplemented write to address "
+			    "0x%x, data=0x%02x ]\n", (int)relative_addr,
+			    (int)idata);
 		} else {
-			debug("[ sgi_ip22: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip22: unimplemented read from address "
+			    "0x%llx ]\n", (long long)relative_addr);
 		}
 	}
 
@@ -400,14 +438,16 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct machine *machine,
 	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8,
 	    dev_sgi_ip22_sysid_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_imc", IP22_IMC_BASE,
-	    DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d,
+	    MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_unknown", 0x1fa01000, 0x10,
 	    dev_sgi_ip22_unknown_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip22_unknown2", IP22_UNKNOWN2_BASE,
 	    DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access,
 	    (void *)d, MEM_DEFAULT, NULL);
 
-	machine_add_tickfunction(machine, dev_sgi_ip22_tick, d, 14);
+	machine_add_tickfunction(machine, dev_sgi_ip22_tick, d,
+	    SGI_IP22_TICK_SHIFT);
 
 	return d;
 }

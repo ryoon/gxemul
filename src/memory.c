@@ -9,6 +9,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.134 2005-01-09 00:37:45 debug Exp $
+ *  $Id: memory.c,v 1.135 2005-01-09 01:55:31 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -629,6 +631,18 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 #include "memory_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU3K
+
+#define TRANSLATE_ADDRESS	translate_address_mmu8k
+#define	V2P_MMU8K
+#include "memory_v2p.c"
+#undef TRANSLATE_ADDRESS
+#undef V2P_MMU8K
+
+#define TRANSLATE_ADDRESS	translate_address_mmu10k
+#define	V2P_MMU10K
+#include "memory_v2p.c"
+#undef TRANSLATE_ADDRESS
+#undef V2P_MMU10K
 
 #define TRANSLATE_ADDRESS	translate_address_generic
 #include "memory_v2p.c"

@@ -9,6 +9,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.7 2004-12-18 06:01:14 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.8 2005-01-09 01:55:25 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *

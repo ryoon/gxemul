@@ -12,6 +12,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -26,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.14 2004-12-07 12:56:46 debug Exp $
+ *  $Id: bintrans.h,v 1.15 2005-01-09 01:55:28 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */

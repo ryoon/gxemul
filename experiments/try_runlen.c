@@ -9,6 +9,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: try_runlen.c,v 1.3 2004-10-21 02:46:31 debug Exp $
+ *  $Id: try_runlen.c,v 1.4 2005-01-09 01:55:27 debug Exp $
  *
  *  Run length test.
  *  This program takes a text file of the following format as input:

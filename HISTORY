@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.453 2005-01-09 01:05:45 debug Exp $
+$Id: HISTORY,v 1.454 2005-01-09 01:55:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1429,3 +1429,6 @@ HISTORY of mips64emul
 20050109	dev_dec5500_ioboard.c and dev_sgec.c => dev_kn220.c.
 		dev_crime.c, _mace.c, and _macepci.c => dev_sgi_ip32.c.
 		Also adding dev_sgi_mec, _ust, and _mte into dev_sgi_ip32.c.
+		A slight license change. Still revised BSD-style, though.
+		memory_v2p.c is now included separately for MMU10K and
+		MMU8K.

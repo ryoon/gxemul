@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -9,6 +9,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.14 2005-01-09 00:38:17 debug Exp $
+ *  $Id: memory_v2p.c,v 1.15 2005-01-09 01:55:31 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -58,6 +60,11 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	const int n_tlbs = 64;
 	const int pmask = 0xfff;
 #else
+#ifdef V2P_MMU10K
+	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK_R10K;
+#else
+	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK;
+#endif
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	int pageshift, n_tlbs;
 	int pmask;
@@ -263,10 +270,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			/*  Optimized for 4KB page size:  */
 			if (pmask == 0x1fff) {
 				pageshift = 12;
-				entry_vpn2 = (cached_hi &
-				    ENTRYHI_VPN2_MASK) >> 13;
-				vaddr_vpn2 = (vaddr &
-				    ENTRYHI_VPN2_MASK) >> 13;
+				entry_vpn2 = (cached_hi & vpn2_mask) >> 13;
+				vaddr_vpn2 = (vaddr & vpn2_mask) >> 13;
 				pmask = 0xfff;
 				odd = vaddr & 0x1000;
 			} else {
@@ -285,10 +290,8 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 				}
 
 				entry_vpn2 = (cached_hi &
-				    ENTRYHI_VPN2_MASK) >>
-				    (pageshift + 1);
-				vaddr_vpn2 = (vaddr &
-				    ENTRYHI_VPN2_MASK) >>
+				    vpn2_mask) >> (pageshift + 1);
+				vaddr_vpn2 = (vaddr & vpn2_mask) >>
 				    (pageshift + 1);
 				pmask >>= 1;
 				odd = (vaddr >> pageshift) & 1;
@@ -298,27 +301,22 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			v_bit = cached_lo0 & ENTRYLO_V;
 			d_bit = cached_lo0 & ENTRYLO_D;
 
-			switch (cpu->cpu_type.mmu_model) {
-			case MMU10K:
-				entry_vpn2 = (cached_hi & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);
-				vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);
-				break;
-			case MMU8K:
-				/*
-				 *  TODO:  I don't really know anything about the R8000.
-				 *  http://futuretech.mirror.vuurwerk.net/i2sec7.html
-				 *  says that it has a three-way associative TLB with
-				 *  384 entries, 16KB page size, and some other things.
-				 *
-				 *  It feels like things like the valid bit (ala R4000)
-				 *  and dirty bit are not implemented the same on R8000.
-				 *
-				 *  http://sgistuff.tastensuppe.de/documents/R8000_chipset.html
-				 *  also has some info, but no details.
-				 */
-				v_bit = 1;	/*  Big TODO  */
-				d_bit = 1;
-			}
+#ifdef V2P_MMU8K
+			/*
+			 *  TODO:  I don't really know anything about the R8000.
+			 *  http://futuretech.mirror.vuurwerk.net/i2sec7.html
+			 *  says that it has a three-way associative TLB with
+			 *  384 entries, 16KB page size, and some other things.
+			 *
+			 *  It feels like things like the valid bit (ala R4000)
+			 *  and dirty bit are not implemented the same on R8000.
+			 *
+			 *  http://sgistuff.tastensuppe.de/documents/R8000_chipset.html
+			 *  also has some info, but no details.
+			 */
+			v_bit = 1;	/*  Big TODO  */
+			d_bit = 1;
+#endif
 
 			entry_asid = cached_hi & ENTRYHI_ASID;
 			g_bit = cached_hi & TLB_G;

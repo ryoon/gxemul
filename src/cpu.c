@@ -9,6 +9,8 @@
  *  2. Redistributions in binary form must reproduce the above copyright  
  *     notice, this list of conditions and the following disclaimer in the 
  *     documentation and/or other materials provided with the distribution.
+ *  3. The name of the author may not be used to endorse or promote products
+ *     derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -23,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.229 2005-01-06 00:32:53 debug Exp $
+ *  $Id: cpu.c,v 1.230 2005-01-09 01:55:30 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -258,6 +260,12 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
 		cpu->translate_address = translate_address_mmu3k;
+		break;
+	case MMU8K:
+		cpu->translate_address = translate_address_mmu8k;
+		break;
+	case MMU10K:
+		cpu->translate_address = translate_address_mmu10k;
 		break;
 	default:
 		cpu->translate_address = translate_address_generic;

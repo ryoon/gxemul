@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.69 2004-12-18 03:41:29 debug Exp $
+$Id: RELEASE,v 1.70 2004-12-26 13:37:53 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -113,7 +113,7 @@ emulator; Ultrix chokes on the configure script and the default cc in
 Ultrix doesn't work.)
 
 
-Regarding files in the include/ directory:  only a few of these are
+Regarding files in the include/ directory:  only some of these are
 written by me, the rest are from other sources (such as NetBSD).  The
 license text says that "All advertising materials mentioning features or
 use of this software" must display acknowledgements.  Even though I do NOT

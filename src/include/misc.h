@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.9 2003-11-09 03:58:35 debug Exp $
+ *  $Id: misc.h,v 1.10 2003-11-20 05:24:29 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -765,6 +765,7 @@ struct fb_window {
 #ifdef WITH_X11
 	/*  x11_fb_winxsize > 0 for a valid fb_window  */
 	int		x11_fb_winxsize, x11_fb_winysize;
+	int		scaledown;
 	Display		*x11_display;
 	Window		x11_fb_window;
 	GC		x11_fb_gc;
@@ -780,7 +781,7 @@ void x11_putpixel_fb(int, int x, int y, int color);
 void x11_putimage_fb(int);
 #endif
 void x11_init(void);
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name);
+struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown);
 void x11_check_event(void);
 
 

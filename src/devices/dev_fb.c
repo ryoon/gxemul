@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.64 2004-11-25 11:19:58 debug Exp $
+ *  $Id: dev_fb.c,v 1.65 2004-11-25 20:03:56 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -838,18 +838,20 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 
 
 	/*  A nice bootup logo:  */
-	d->update_x1 = 0;
-	d->update_x2 = LOGO_XSIZE-1;
-	d->update_y1 = d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN;
-	d->update_y2 = d->visible_ysize-LOGO_BOTTOM_MARGIN;
-	for (y=0; y<LOGO_YSIZE; y++)
-		for (x=0; x<LOGO_XSIZE; x++) {
-			int s, a = ((y+d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN)*d->xsize
-			    + x) * d->bit_depth / 8;
-			int b = fb_logo[(y*LOGO_XSIZE+x) / 8] & (128 >> (x&7));
-			for (s=0; s<d->bit_depth / 8; s++)
-				d->framebuffer[a+s] = b? 0 : 255;
-		}
+	if (logo) {
+		d->update_x1 = 0;
+		d->update_x2 = LOGO_XSIZE-1;
+		d->update_y1 = d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN;
+		d->update_y2 = d->visible_ysize-LOGO_BOTTOM_MARGIN;
+		for (y=0; y<LOGO_YSIZE; y++)
+			for (x=0; x<LOGO_XSIZE; x++) {
+				int s, a = ((y+d->visible_ysize-LOGO_YSIZE-LOGO_BOTTOM_MARGIN)*d->xsize
+				    + x) * d->bit_depth / 8;
+				int b = fb_logo[(y*LOGO_XSIZE+x) / 8] & (128 >> (x&7));
+				for (s=0; s<d->bit_depth / 8; s++)
+					d->framebuffer[a+s] = b? 0 : 255;
+			}
+	}
 
 	snprintf(title, sizeof(title), "mips64emul: %ix%ix%i %s framebuffer",
 	    d->visible_xsize, d->visible_ysize, d->bit_depth, name);
@@ -864,8 +866,8 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 		d->fb_window = NULL;
 
 	memory_device_register(mem, name, baseaddr, size, dev_fb_access,
-	    d, MEM_DEFAULT
-	    /*  MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK  */,
+	    d, /* MEM_DEFAULT */
+	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
 	    d->framebuffer);
 
 	cpu_add_tickfunction(cpu, dev_fb_tick, d, FB_TICK_SHIFT);

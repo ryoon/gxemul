@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.2 2004-11-25 10:53:32 debug Exp $
+ *  $Id: memory_v2p.c,v 1.3 2004-11-25 20:03:57 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -182,8 +182,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		ksu = KSU_KERNEL;
 
 	/*  These are needed later:  */
-	vaddr_asid = (cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK)
-	    >> R2K3K_ENTRYHI_ASID_SHIFT;
+	vaddr_asid = cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK;
 	vaddr_vpn2 = (vaddr & R2K3K_ENTRYHI_VPN_MASK) >> 12;
 #else
 	/*
@@ -303,7 +302,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 			cached_lo0 = cp0->tlbs[i].lo0;
 
 			entry_vpn2 = (cached_hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
-			entry_asid = (cached_hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
+			entry_asid = cached_hi & R2K3K_ENTRYHI_ASID_MASK;
 			g_bit = cached_lo0 & R2K3K_ENTRYLO_G;
 			v_bit = cached_lo0 & R2K3K_ENTRYLO_V;
 			d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
@@ -419,9 +418,10 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 						 *  lation cache (if enabled)
 						 *  and return:
 						 */
-						insert_into_tiny_cache(cpu,
-						    instr, d_bit? MEM_WRITE : MEM_READ,
-						    vaddr, paddr);
+						if (!cpu->emul->bintrans_enable)
+							insert_into_tiny_cache(cpu,
+							    instr, d_bit? MEM_WRITE : MEM_READ,
+							    vaddr, paddr);
 
 						*return_addr = paddr;
 						return d_bit? 2 : 1;
@@ -483,6 +483,10 @@ exception:
 		else
 			exccode = EXCEPTION_TLBL;
 	}
+
+#ifdef V2P_MMU3K
+	vaddr_asid >>= R2K3K_ENTRYHI_ASID_SHIFT;
+#endif
 
 	cpu_exception(cpu, exccode, tlb_refill, vaddr,
 	    0, vaddr_vpn2, vaddr_asid, x_64);

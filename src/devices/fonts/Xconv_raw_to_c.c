@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  mips64emul: $Id: Xconv_raw_to_c.c,v 1.2 2004/08/03 00:31:59 debug Exp $
+ *  gxemul: $Id: Xconv_raw_to_c.c,v 1.2 2004/08/03 00:31:59 debug Exp $
  *  $ycx2: Xconv_raw_to_c.c,v 1.2 2003/11/25 01:20:24 debug Exp $
  *
  *  Convert a raw binary file into an unsigned char array, usable from C.

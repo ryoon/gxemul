@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.64 2004-11-26 15:36:20 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.65 2004-11-26 20:03:08 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -588,7 +588,7 @@ rt0:
 static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
-	unsigned char *a;
+	unsigned char *a, *unmodified = NULL;
 	int load64 = 0, store = 1, ofs;
 
 	switch (instruction_type) {
@@ -606,6 +606,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRA32:
 	case SPECIAL_SLT:
 	case SPECIAL_SLTU:
+	case SPECIAL_MOVZ:
+	case SPECIAL_MOVN:
 		load64 = 1;
 	}
 
@@ -754,12 +756,27 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 		break;
+	case SPECIAL_MOVZ:
+		/*  if rt=0 then rd=rs  ==>  if t1!=0 then t0=unmodified else t0=rd  */
+		/*  00 00 40 f4     bne     t1,unmodified  */
+		unmodified = a;
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x40; *a++ = 0xf4;
+		break;
+	case SPECIAL_MOVN:
+		/*  if rt!=0 then rd=rs  ==>  if t1=0 then t0=unmodified else t0=rd  */
+		/*  00 00 40 e4     beq     t1,unmodified  */
+		unmodified = a;
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;
+		break;
 	}
 
 	if (store) {
 		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 	}
+
+	if (unmodified != NULL)
+		*unmodified = ((size_t)a - (size_t)unmodified - 4) / 4;
 
 	*addrp = a;
 rd0:
@@ -1819,6 +1836,14 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 		return 0;
 	}
 
+
+/*  TODO: ERET modifies the PC register, so we shouldn't
+	save and restore it here.  */
+if (itype == TLB_ERET)
+	return 0;
+
+
+
 	a = (uint32_t *) *addrp;
 
 	/*  a0 = pointer to the cpu struct  */
@@ -1886,7 +1911,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 
 	*addrp = (unsigned char *) a;
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	if (itype != TLB_ERET)
+		bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+
 	return 1;
 }
 

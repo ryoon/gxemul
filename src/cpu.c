@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.197 2004-11-26 09:05:33 debug Exp $
+ *  $Id: cpu.c,v 1.198 2004-11-26 20:03:08 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -826,32 +826,61 @@ void cpu_register_dump(struct cpu *cpu)
 	debug("\n");
 
 	/*  General registers:  */
-	for (i=0; i<32; i++) {
-		if ((i & 3) == 0)
-			debug("cpu%i:", cpu->cpu_id);
-		if (cpu->cpu_type.isa_level < 3 ||
-		    cpu->cpu_type.isa_level == 32)
+	if (cpu->cpu_type.rev == MIPS_R5900) {
+		/*  128-bit:  */
+		for (i=0; i<32; i++) {
+			if ((i & 1) == 0)
+				debug("cpu%i:", cpu->cpu_id);
+			debug(" r%02i=%016llx%016llx", i,
+			    (long long)cpu->gpr_quadhi[i],
+			    (long long)cpu->gpr[i]);
+			if ((i & 1) == 1)
+				debug("\n");
+		}
+	} else if (cpu->cpu_type.isa_level < 3 ||
+	    cpu->cpu_type.isa_level == 32) {
+		/*  32-bit:  */
+		for (i=0; i<32; i++) {
+			if ((i & 3) == 0)
+				debug("cpu%i:", cpu->cpu_id);
 			debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
-		else
-			debug("  r%02i = %016llx", i, (long long)cpu->gpr[i]);
-		if ((i & 3) == 3)
-			debug("\n");
+			if ((i & 3) == 3)
+				debug("\n");
+		}
+	} else {
+		/*  64-bit:  */
+		for (i=0; i<32; i++) {
+			if ((i & 1) == 0)
+				debug("cpu%i:", cpu->cpu_id);
+			debug("    r%02i = %016llx", i, (long long)cpu->gpr[i]);
+			if ((i & 1) == 1)
+				debug("\n");
+		}
 	}
 
 	/*  Coprocessor 0 registers:  */
 	/*  TODO: multiple selections per register?  */
-	for (i=0; i<32; i++) {
-		if ((i & 3) == 0)
-			debug("cpu%i:", cpu->cpu_id);
-		if (cpu->cpu_type.isa_level < 3 ||
-		    cpu->cpu_type.isa_level == 32)
+	if (cpu->cpu_type.isa_level < 3 ||
+	    cpu->cpu_type.isa_level == 32) {
+		/*  32-bit:  */
+		for (i=0; i<32; i++) {
+			if ((i & 3) == 0)
+				debug("cpu%i:", cpu->cpu_id);
 			debug("  c0,%02i = %08x", i,
 			    (int)cpu->coproc[0]->reg[i]);
-		else
+			if ((i & 3) == 3)
+				debug("\n");
+		}
+	} else {
+		/*  64-bit:  */
+		for (i=0; i<32; i++) {
+			if ((i & 1) == 0)
+				debug("cpu%i:", cpu->cpu_id);
 			debug("  c0,%02i = %016llx", i,
 			    (long long)cpu->coproc[0]->reg[i]);
-		if ((i & 3) == 3)
-			debug("\n");
+			if ((i & 1) == 1)
+				debug("\n");
+		}
 	}
 }
 
@@ -1143,6 +1172,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	cpu->delay_slot = NOT_DELAYED;
+	cpu->nullify_next = 0;
 
 	if (exc_model == EXC3K) {
 		/*  Userspace tlb, vs others:  */
@@ -1295,7 +1325,7 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  cleared (in cpu_interrupt_ack()), so we don't need to do a full
 	 *  check each time.
 	 */
-	if (cpu->cached_interrupt_is_possible) {
+	if (cpu->cached_interrupt_is_possible && !cpu->nullify_next) {
 		if (cpu->cpu_type.exc_model == EXC3K) {
 			/*  R3000:  */
 			int enabled, mask;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.25 2004-11-26 06:42:41 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.26 2004-11-26 20:03:08 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -630,6 +630,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_DSRL32:
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
+	case SPECIAL_MOVZ:
+	case SPECIAL_MOVN:
 		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
 	}
@@ -1684,7 +1686,10 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+
+	if (itype != TLB_ERET)
+		bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+
 	return 1;
 }
 

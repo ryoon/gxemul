@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.88 2004-11-26 16:17:24 debug Exp $
+ *  $Id: bintrans.c,v 1.89 2004-11-26 20:03:08 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -464,6 +464,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			case SPECIAL_DSRL32:
 			case SPECIAL_SLT:
 			case SPECIAL_SLTU:
+			case SPECIAL_MOVZ:
+			case SPECIAL_MOVN:
 			case SPECIAL_MULT:
 			case SPECIAL_MULTU:
 			case SPECIAL_SYNC:

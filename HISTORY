@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.94 2004-06-23 00:37:19 debug Exp $
+$Id: HISTORY,v 1.95 2004-06-23 02:01:40 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -569,8 +569,4 @@ HISTORY of mips64emul
 		a few percent speed increase overall.
 		Increasing performance by assuming that instruction loads
 		(reading from memory) will be at the same page as the last
-		load.  First by assuming that a vaddr -> paddr translation
-		for instruction loads almost always is preserved (gaining
-		about 15% speed), and then that a paddr -> host memblock
-		translation also holds if the instruction is in normal RAM
-		(which led to another 15% speed increase).  :-)
+		load.  (Several percent speedup.)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.c,v 1.4 2005-03-01 09:54:01 debug Exp $
+ *  $Id: cpu_urisc.c,v 1.5 2005-03-01 14:09:45 debug Exp $
  *
  *  URISC CPU emulation.  See http://en.wikipedia.org/wiki/URISC for more
  *  information about the "instruction set".
@@ -38,6 +38,9 @@
  *	Optional: The accumulator register should always be in sync with the
  *	memory word following the word at address 0.
  *
+ *	This implementation of URISC emulation supports any wordlen 8*n,
+ *	where 1 <= n <= 8. (I think.)
+ *
  *
  *  TODO:
  *
@@ -47,7 +50,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "misc.h"
 

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.58 2004-07-07 03:14:53 debug Exp $
+$Id: index.html,v 1.59 2004-07-09 04:36:43 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -295,13 +295,13 @@ You need to do the following:
 	$ <b>./configure; make</b>
 
 </pre>
-  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=900000000</b>
+
+</pre>
+  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
 
 </pre>
   <li>Start the emulator like this:<pre>
@@ -317,8 +317,47 @@ You need to do the following:
 <p>
 Then proceed like you would do if you were installing NetBSD on a real
 DECstation.  Even if the emulator is running on a very fast host system,
-you should expect the installation to take quite some time. On a
-2.8 GHz Xeon-based PC, a full install takes approximately an hour.
+you should expect the installation to take quite some time.
+
+
+<table>
+<tr><td width=150>&nbsp;</td><td>
+
+<p><br>
+<font color="#ff0000">2004-07-09 Update: NOTE: THE FOLLOWING DOES NOT WORK
+YET:</font>
+Network emulation is partially implemented, but there is no support for
+TCP yet, which is needed for a network install.  WHEN SUPPORT FOR TCP
+<i>IS</i> IMPLEMENTED, you will (probably) be able to do an install via
+the network instead of from the pmax cdrom image.
+<ul>
+  <li>Skip step 3 above.
+  <li>Replace step 4 above with the following:
+  <li>Download <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>.
+  <li>Run: <b>gunzip netbsd-INSTALL.gz</b>
+  <li>Run: <b>./mips64emul -X -D2 -d netbsddisk.img netbsd-INSTALL</b>
+  <li>Proceed with the installation as you would if you were installing
+	NetBSD on a real DECstation via the network. Choose 'ftp' instead
+	of 'cdrom', and enter the following networking parameters when
+	asked:<pre>
+	Which device shall I use? [le0]: <b>le0</b>
+	..
+	Your DNS domain: <b>your.domain.com</b>
+	Your host name: <b>foo</b>
+	Your IPv4 number: <b>10.0.0.1</b>             <font color="#ff0000">&lt;--- these are important</font>
+	IPv4 Netmask [0xff000000]: <b>0xff000000</b>  <font color="#ff0000">&lt;---</font>
+	IPv4 gateway: <b>10.0.0.254</b>               <font color="#ff0000">&lt;---</font>
+	IPv4 name server: <b>129.16.1.3</b>           <font color="#ff0000">&lt;--- replace this with your actual real-world nameserver</font>
+
+</pre>
+  <li>To the outside world, it will look like you are connecting from
+	the host's IP.
+</ul>
+<p><br>
+
+</td></td></tr>
+</table>
+
 
 <p>
 When the installation is completed, the following command should start
@@ -342,22 +381,22 @@ well, with a slight modification (the <b>-j</b> argument differs).
 	$ <b>./configure; make</b>
 
 </pre>
-  <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
-	it is called /dev/cd0c here, replace that with the name of your
-	CDROM drive, or the name of a .iso image file.)
-<p>
   <li>Create an empty harddisk image, which will be the root disk
 	that Ultrix installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=rootdisk.img bs=1 count=512 seek=900000000</b>
 
 </pre>
+  <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
+	it is called /dev/cd0c here, replace that with the name of your
+	CDROM drive, or the name of a .iso image file.)
+<p>
   <li>Start the emulator like this:<pre>
 	$ <b>./mips64emul -X -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
-
 </pre>
-  <li>Once the first stage of the installation is done (restoring the root filesystem),
+	Once the first stage of the installation is done (restoring the root filesystem),
 	you need to restart the emulator, booting from the new rootdisk,
-	to continue the installation process:<pre>
+	to continue the installation process. This is done by removing the
+	'b' bootflag from the second diskimage argument:<pre>
 	$ <b>./mips64emul -X -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
@@ -408,7 +447,8 @@ emulator like this:
 	    The Regents of the University of California.  All rights reserved.
 	
 	NetBSD 1.6.2 (RAMDISK) #0: Wed Feb 11 06:38:58 UTC 2004
-	    autobuild@tgm.netbsd.org:/autobuild/netbsd-1-6-PATCH002/sgimips/OBJ/autobuild/netbsd-1-6-PATCH002/src/sys/arch/sgimips/compile/RAMDISK
+	    autobuild@tgm.netbsd.org:/autobuild/netbsd-1-6-PATCH002/sgimips/OBJ/autobuild/
+	netbsd-1-6-PATCH002/src/sys/arch/sgimips/compile/RAMDISK
 	32768 KB memory, 29988 KB free, 0 for ARCS, 1740 KB in 435 buffers
 	mainbus0 (root): SGI-IP32 [SGI, 8], 1 processor
 	cpu0 at mainbus0: MIPS R5000 CPU (0x2321) Rev. 2.1 with built-in FPU Rev. 1.0

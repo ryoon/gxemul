@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.16 2004-01-10 05:43:13 debug Exp $
+ *  $Id: main.c,v 1.17 2004-01-11 16:53:16 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -62,8 +62,9 @@ int physical_ram_in_mb = 0;
 /*  PC Dumppoints: if the PC value ever matches one of these, we set
 	register_dump = instruction_trace = 1  */
 int n_dumppoints = 0;
+char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
-int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
+int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
 int register_dump = 0;
 int instruction_trace = 0;
@@ -269,15 +270,13 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'P':
 		case 'p':
-			new_pc_dumppoint = strtoull(optarg, NULL, 0);
-			if ((new_pc_dumppoint >> 32) == 0 && (new_pc_dumppoint & 0x80000000))
-				new_pc_dumppoint |= 0xffffffff00000000;
 			if (n_dumppoints >= MAX_PC_DUMPPOINTS) {
 				fprintf(stderr, "too many pc dumppoints\n");
 				exit(1);
 			}
+			dumppoint_string[n_dumppoints] = optarg;
 			dumppoint_flag_r[n_dumppoints] = (ch == 'P') ? 1 : 0;
-			dumppoint_pc[n_dumppoints++] = new_pc_dumppoint;
+			n_dumppoints ++;
 			break;
 		case 'Q':
 			prom_emulation = 0;
@@ -397,9 +396,6 @@ int get_cmd_args(int argc, char *argv[])
 		use_x11 = 0;
 	}
 #endif
-
-	for (i=0; i<n_dumppoints; i++)
-		debug("pc dumppoint %i: %016llx\n", i, (long long)dumppoint_pc[i]);
 
 	return 0;
 }

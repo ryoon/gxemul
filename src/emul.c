@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.7 2004-01-06 11:40:39 debug Exp $
+ *  $Id: emul.c,v 1.8 2004-01-11 16:53:30 debug Exp $
  *
  *  Emulation startup.
  */
@@ -60,7 +60,60 @@ extern int use_x11;
 extern int x11_scaledown;
 extern int quiet_mode;
 
+extern int n_dumppoints;
+extern char *dumppoint_string[];
+extern uint64_t dumppoint_pc[];
+extern int dumppoint_flag_r[];
 
+
+/*
+ *  add_pc_dump_points():
+ *
+ *  Take the strings dumppoint_string[] and convert to addresses
+ *  (and store them in dumppoint_pc[]).
+ */
+void add_pc_dump_points(void)
+{
+	int i;
+	int string_flag;
+	uint64_t dp;
+
+	for (i=0; i<n_dumppoints; i++) {
+		string_flag = 0;
+		dp = strtoull(dumppoint_string[i], NULL, 0);
+
+		/*  If conversion resulted in 0, then perhaps it is a symbol:  */
+		if (dp == 0) {
+			uint64_t addr;
+			int res = get_symbol_addr(dumppoint_string[i], &addr);
+			if (!res)
+				fprintf(stderr, "WARNING! PC dumppoint '%s' could not be parsed\n", dumppoint_string[i]);
+			else {
+				dp = addr;
+				string_flag = 1;
+			}
+		}
+
+		/*
+		 *  TODO:  It would be nice if things like   symbolname+0x1234
+		 *  were automatically converted into the correct address.
+		 */
+
+		if ((dp >> 32) == 0 && (dp & 0x80000000))
+			dp |= 0xffffffff00000000;
+		dumppoint_pc[i] = dp;
+
+		debug("pc dumppoint %i: %016llx", i, (long long)dp);
+		if (string_flag)
+			debug(" (%s)", dumppoint_string[i]);
+		debug("\n");
+	}
+}
+
+
+/*
+ *  fix_console():
+ */
 void fix_console(void)
 {
 	console_deinit();
@@ -147,6 +200,9 @@ void emul(void)
 
 	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
 	symbol_recalc_sizes();
+
+	/*  Add PC dump points:  */
+	add_pc_dump_points();
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
 	    bootstrap_cpu,

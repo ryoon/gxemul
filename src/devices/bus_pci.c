@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.1 2004-01-06 06:47:00 debug Exp $
+ *  $Id: bus_pci.c,v 1.2 2004-01-06 09:00:55 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -53,6 +53,9 @@
  */
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, uint64_t *data, int writeflag, struct pci_data *pci_data)
 {
+	struct pci_device *dev, *found;
+	int bus, device, function, registernr;
+
 	if (writeflag == MEM_READ)
 		*data = 0;
 
@@ -70,53 +73,38 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (writeflag == MEM_WRITE) {
 			debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n", (long long)*data);
 		} else {
-			switch (pci_data->pci_addr) {
-			case 0x80000000 + (0 << 16) + (0 << 11):	/*  bus 0, device 0  */
-				*data = PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64011 << 16);
-				break;
-			case 0x80000000 + (0 << 16) + (7 << 11):	/*  bus 0, device 7  */
-				*data = PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);
-				break;
-/*			case 0x80000000 + (0 << 16) + (8 << 11):  */	/*  bus 0, device 8  */
-/*				*data = PCI_VENDOR_SYMBIOS + (PCI_PRODUCT_SYMBIOS_860 << 16);  */
-/*				break;  */
-/*			case 0x80000000 + (0 << 16) + (9 << 11):  */	/*  bus 0, device 9  */
-/*				*data = PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_ISA << 16);  */
-/*				break;  */
-/*			case 0x80000000 + (0 << 16) + (12 << 11):  */	/*  bus 0, device 12  */
-/*				*data = PCI_VENDOR_DEC + (PCI_PRODUCT_DEC_21142 << 16);  */
-/*				break;  */
-			default:
+			/*  Get the bus, device, and function numbers from the address:  */
+			bus        = (pci_data->pci_addr >> 16) & 0xff;
+			device     = (pci_data->pci_addr >> 11) & 0x1f;
+			function   = (pci_data->pci_addr >> 8)  & 0x7;
+			registernr = (pci_data->pci_addr)       & 0xff;
+
+			/*  Scan through the linked list of pci_device entries.  */
+			dev = pci_data->first_device;
+			found = NULL;
+
+			while (dev != NULL && found == NULL) {
+				if (dev->bus == bus && dev->function == function && dev->device == device)
+					found = dev;
+				dev = dev->next;
+			}
+
+			if (found == NULL) {
 				if ((pci_data->pci_addr & 0xff) == 0)
 					*data = 0xffffffff;
-				else {
-					switch (pci_data->pci_addr) {
-					case 0x80000008:	/*  GT-64011 revision: 1  */
-						*data = 0x1;
-						break;
-					case 0x80003804:	/*  tulip  */
-						*data = 0xffffffff;
-						break;
-					case 0x80003808:	/*  tulip card revision: 4.1 */
-						*data = 0x41;
-						break;
-					case 0x80003810:	/*  tulip  */
-						*data = 0x9ca00001;	/*  1ca00000, I/O space  */
-						break;
-					case 0x80003814:	/*  tulip  */
-						*data = 0x9ca10000;	/*  1ca10000, mem space  */
-						break;
-					case 0x8000383c:	/*  tulip card  */
-						*data = 0x00000100;	/*  interrupt pin A  */
-						break;
-					default:
-						*data = 0;
-					}
-					debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx, returning: 0x%08lx ]\n",
-					    (long)pci_data->pci_addr, (long)*data);
-				}
+				else
+					*data = 0;
+				return 1;
 			}
+
+			*data = 0;
+			if (found->read_register != NULL)
+				*data = found->read_register(registernr);
+
+			debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device %i, function %i, register 0x%02x): 0x%08lx ]\n",
+			    (long)pci_data->pci_addr, bus, device, function, registernr, (long)*data);
 		}
+
 		break;
 	default:
 		if (writeflag==MEM_READ) {
@@ -128,6 +116,52 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	}
 
 	return 1;
+}
+
+
+/*
+ *  bus_pci_add():
+ *
+ *  Add a PCI device to a bus_pci device.
+ */
+void bus_pci_add(struct pci_data *pci_data, struct memory *mem,
+	int bus, int device, int function, void (*init)(struct memory *mem), uint32_t (*read_register)(int reg))
+{
+	struct pci_device *new_device;
+
+	/*  Make sure this bus/device/function number isn't already in use:  */
+	new_device = pci_data->first_device;
+	while (new_device != NULL) {
+		if (new_device->bus == bus &&
+		    new_device->device == device &&
+		    new_device->function == function) {
+			fatal("bus_pci_add(): (bus %i, device %i, function %i) already in use\n",
+			    bus, device, function);
+			return;
+		}
+		new_device = new_device->next;
+	}
+
+	new_device = malloc(sizeof(struct pci_device));
+	if (new_device == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	memset(new_device, 0, sizeof(struct pci_device));
+	new_device->bus           = bus;
+	new_device->device        = device;
+	new_device->function      = function;
+	new_device->init          = init;
+	new_device->read_register = read_register;
+
+	/*  Add the new device first in the PCI bus' chain:  */
+	new_device->next = pci_data->first_device;
+	pci_data->first_device = new_device;
+
+	/*  Call the PCI device' init function:  */
+	if (init != NULL)
+		init(mem);
 }
 
 

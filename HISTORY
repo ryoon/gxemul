@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.669 2005-04-04 20:08:55 debug Exp $
+$Id: HISTORY,v 1.670 2005-04-04 21:50:28 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1797,4 +1797,4 @@ Changelog for GXemul:
 		kernels.)
 		The Linux VR3 kernel boots in both serial console mode and
 		using the framebuffer, but it panics relatively early.
-20050404	Continuing on the AHC.
+20050404	Continuing on the AHC, and some other minor updates.

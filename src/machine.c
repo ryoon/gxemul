@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.398 2005-04-03 00:04:45 debug Exp $
+ *  $Id: machine.c,v 1.399 2005-04-04 21:50:05 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2967,6 +2967,11 @@ Why is this here? TODO
 					machine->main_console_handle = i;
 				else
 					machine->main_console_handle = j;
+
+#if 0
+Not yet.
+				dev_wdc_init(machine, mem, 0x900001f0ULL, 8+16 + 14, 0);
+#endif
 
 				break;
 

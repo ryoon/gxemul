@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.80 2005-04-04 21:29:29 debug Exp $
+ *  $Id: diskimage.c,v 1.81 2005-04-04 21:50:05 debug Exp $
  *
  *  Disk image support.
  *
@@ -1599,13 +1599,16 @@ void diskimage_dump_info(struct machine *machine)
 
 		switch (d->type) {
 		case DISKIMAGE_SCSI:
-			debug("SCSI ");
+			debug("SCSI");
+			break;
+		case DISKIMAGE_IDE:
+			debug("IDE");
 			break;
 		default:
-			debug("UNKNOWN type %i ", d->type);
+			debug("UNKNOWN type %i", d->type);
 		}
 
-		debug("%s", d->is_a_tape? "TAPE" :
+		debug(" %s", d->is_a_tape? "TAPE" :
 			(d->is_a_cdrom? "CD-ROM" : "DISK"));
 		debug(" id %i, ", d->id);
 		debug("%s, ", d->writable? "read/write" : "read-only");

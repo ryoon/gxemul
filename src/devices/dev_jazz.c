@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.17 2005-03-03 06:42:50 debug Exp $
+ *  $Id: dev_jazz.c,v 1.18 2005-04-04 21:50:04 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -237,10 +237,10 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case R4030_SYS_ISA_VECTOR:
 		/*  ?  */
-printf("R4030_SYS_ISA_VECTOR\n");
+printf("R4030_SYS_ISA_VECTOR: w=%i\n", writeflag);
 		{
 			uint32_t x = d->isa_int_asserted
-			    /* & d->int_enable_mask */;
+			    & d->isa_int_enable_mask;
 			odata = 0;
 			while (odata < 16) {
 				if (x & (1 << odata))

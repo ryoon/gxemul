@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.9 2005-04-06 22:15:53 debug Exp $
+ *  $Id: dev_pcic.c,v 1.10 2005-04-06 23:13:36 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -239,7 +239,10 @@ int devinit_pcic(struct devinit *devinit)
 	dev_wdc_init(devinit->machine, devinit->machine->memory,
 	    0x14000180, 8 + 32 + 9, 0);
 
-	/*  TODO: Linux/MobilePro looks at 0x14000170 for this...  */
+	/*  TODO: Linux/MobilePro looks at 0x14000170 and 0x1f0...  */
+	/*  Yuck. Now there are two. How should this be solved nicely?  */
+	dev_wdc_init(devinit->machine, devinit->machine->memory,
+	    0x140001f0, 8 + 32 + 9, 0);
 
 	return 1;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.405 2005-04-06 22:15:54 debug Exp $
+ *  $Id: machine.c,v 1.406 2005-04-06 23:13:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2295,9 +2295,9 @@ void machine_setup(struct machine *machine)
 		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
 		bootstr = machine->boot_kernel_filename;
-		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8);
+		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
 		store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0);
-		store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
+		store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16, bootstr);
 
 		/*  Special case for the Agenda VR3:  */
 		if (machine->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3) {
@@ -2306,12 +2306,8 @@ void machine_setup(struct machine *machine)
 
 			cpu->cd.mips.gpr[MIPS_GPR_A0] = 2;	/*  argc  */
 
-			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 0, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16);
 			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
 			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
-
-			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 16,
-			    machine->boot_kernel_filename);
 
 			snprintf(tmp, tmplen, "root=/dev/rom video=vr4181fb:xres:160,yres:240,bpp:4,"
 			    "gray,hpck:3084,inv ether=0,0x03fe0300,eth0");
@@ -2328,6 +2324,16 @@ void machine_setup(struct machine *machine)
 			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64, tmp);
 
 			bootarg = tmp;
+		} else if (machine->boot_string_argument[0]) {
+			cpu->cd.mips.gpr[MIPS_GPR_A0] ++;	/*  argc  */
+
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 4, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64);
+			store_32bit_word(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 8, 0);
+
+			store_string(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 512 + 64,
+			    machine->boot_string_argument);
+
+			bootarg = machine->boot_string_argument;
 		}
 
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
@@ -4506,10 +4512,9 @@ void machine_memsize_fix(struct machine *m)
 		}
 	}
 
-	/*  Special hack for WRT54G and Agenda VR3:  */
+	/*  Special hack for WRT54G and hpcmips machines:  */
 	if (m->machine_type == MACHINE_WRT54G ||
-	    (m->machine_type == MACHINE_HPCMIPS &&
-	    m->machine_subtype == MACHINE_HPCMIPS_AGENDA_VR3)) {
+	    m->machine_type == MACHINE_HPCMIPS) {
 		m->dbe_on_nonexistant_memaccess = 0;
 	}
 

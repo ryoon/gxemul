@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.674 2005-04-06 21:16:44 debug Exp $
+$Id: HISTORY,v 1.675 2005-04-06 23:13:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1809,3 +1809,7 @@ Changelog for GXemul:
 		irq 17), and some other interrupt-related cleanups.
 		Reducing the memory overhead per bintranslated page. (Hopefully
 		this makes things faster, or at least not slower...)
+20050407	Some more cleanup regarding command line argument passing for
+		the hpcmips modes.
+		Playing with Linux kernels for MobilePro 770 and 800; they get
+		as far as mounting a root filesystem, but then crash.

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.187 2005-01-05 20:29:42 debug Exp $
+$Id: index.html,v 1.188 2005-01-08 15:30:57 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -269,40 +269,9 @@ The machine types that are emulated best at the moment are:
 
 <p>
 There is code in mips64emul for emulation of many other machine types;
-the degree to which these work range from just outputing characters via an 
-emulated serial controller, to "almost" being able to run a complete OS.
-
-<p>
-<ul>
-  <li><a href="http://www.netbsd.org/Ports/sgimips/">Silicon Graphics'</a>
-	MIPS-based machines
-  <li>Other <a href="http://www.netbsd.org/Ports/arc/">ARC machines</a>
-	(some NEC RISCstation/RISCserver machines,
-	Deskstation Tyne, Microsoft-Jazz MIPS Magnum and Olivetti M700)
-  <li><a href="http://www.netbsd.org/Ports/cobalt/">Cobalt</a>
-  <li><a href="http://www.netbsd.org/Ports/playstation2/">Sony Playstation 2</a>
-  <li>"<a href="http://www.netbsd.org/Ports/hpcmips/">HPCmips</a>" (Casio BE-300),
-	<a href="http://www.netbsd.org/Ports/newsmips/history.html">Sony NeWS</a>,
-	<a href="http://www.meshcube.org/">MeshCube</a>,
-	<a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>,
-	Linksys WRT54G
-</ul>
-
-<p>
-Unfortunately, even if most of these machine types have 64-bit CPUs in
-them (or 128-bit, the Playstation 2), operating systems often run in
-32-bit mode on them.
-
-<p>
-There are other machines that use/used MIPS processors, for example the
-Playstation (1) and the Nintendo 64 game systems, but no free OS is ported
-to those platforms as far as I know, so they might not be too interesting
-to emulate.
-
-<p>
-Playstation 2 is among the emulated machine types, but the emulation done
-by mips64emul is <i>not</i> suitable for playing games. Running Linux and
-NetBSD is a lot more fun :-)
+the degree to which these work range from "almost" being able to run
+a complete OS, to almost completely unsupported (perhaps just enough
+support to output a few boot messages via serial console).
 
 <p>
 In addition to specific machine types, a "bare" machine can be emulated.
@@ -317,6 +286,7 @@ devices such as:
 This mode is useful if you wish to experiment with software for MIPS-like
 systems, but do not with to target any specific real-world machine type, 
 for example for educational purposes or generic MIPS related experiments.
+
 
 
 
@@ -337,9 +307,7 @@ necessarily simulated correctly or at all (eg. pipe-line stages).
 <p>
 I have written an experimental dynamic binary translation subsystem.  
 This gives higher total performance than interpreting one instruction at a
-time and executing it. So far, bintrans seems to work with R3000-style
-emulation. (With R4000-style emulation, or generic 64-bit emulation, there
-are still bugs.) If you wish to enable bintrans, add <b>-b</b> to the
+time and executing it. If you wish to enable bintrans, add <b>-b</b> to the
 command line, but keep in mind that it is still experimental.
 
 <p>

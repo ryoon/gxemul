@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.59 2005-01-06 00:27:11 debug Exp $
+ *  $Id: arcbios.c,v 1.60 2005-01-08 15:30:57 debug Exp $
  *
  *  ARCBIOS emulation.
  *

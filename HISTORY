@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.448 2005-01-05 23:43:55 debug Exp $
+$Id: HISTORY,v 1.449 2005-01-08 15:30:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1425,3 +1425,4 @@ HISTORY of mips64emul
 20050106	Adding another hpcmips model (Casio E-105, -F2), and doing
 		some updates to the VR41xx code. NetBSD/hpcmips prints some
 		boot messages.
+20050108	Minor updates.

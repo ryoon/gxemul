@@ -1,11 +1,11 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.61 2004-09-17 21:11:19 debug Exp $
+#  $Id: configure,v 1.62 2004-10-02 06:47:26 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
-#  sub directories. A config.h file is also created.
+#  sub-directories. A config.h file is also created.
 #
 #
 #  --->   FOR NORMAL USE, JUST RUN ./configure WITHOUT OPTIONS!
@@ -16,7 +16,7 @@
 #  the results.
 #
 #
-#  The main things that need to be detected are:
+#  The main things that are detected by this script:
 #
 #    o)  which compiler to use  (overridden by setting CC)
 #    o)  which compiler flags to use  (overridden by setting CFLAGS)

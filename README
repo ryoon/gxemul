@@ -1,4 +1,4 @@
-$Id: README,v 1.41 2004-09-28 09:13:28 debug Exp $
+$Id: README,v 1.42 2004-10-02 06:47:26 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -36,5 +36,7 @@ information on how to use the emulator.
 Feedback
 --------
 
-Send comments to md1gavan@mdstud.chalmers.se.
+If you have found mips64emul useful in some way, or found a bug which is 
+not already listed in the BUGS or TODO files, then don't hesitate to send 
+feedback to md1gavan(at)mdstud.chalmers.se.
 

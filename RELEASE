@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.16 2004-07-13 11:08:25 debug Exp $
+$Id: RELEASE,v 1.17 2004-07-14 15:05:46 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -42,10 +42,11 @@ Release notes for mips64emul 0.2
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
 
-mips64emul is a MIPS machine emulator. The goals are to emulate 32-bit and
-64-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
-capable of running real (unmodified) operating systems, such as NetBSD or
-Linux.
+mips64emul is a MIPS machine emulator. The goals are to emulate 64-bit and
+32-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
+capable of running real (unmodified) operating systems, such as NetBSD, Linux,
+or OpenBSD, and to assist in experimenting with MIPS-like code in general.
+This is a spare time hobby project, and many things are not implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
@@ -94,44 +95,44 @@ release, but will most probably work anyway.
 		gcc version 3.4 20030730 (experimental)
 		ccc 6.4.9.005-1
 
+	GNU 0.3
+		gcc 3.3.4   (./configure --nox11)
+
+	HP-UX B.11.00
+		gcc 3.3.2
+
 	Linux/i386
 		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
 		gcc 3.3.4 (Linux-2.6.7, Slackware)
 
-	OpenBSD/i386 3.2
-		gcc 2.95.3 20010125 (prerelease)
-
-	OpenBSD/sparc64
-		gcc 2.95.3 20010125 (prerelease, propolice)
-
-	OpenBSD/pmax 2.8
-		gcc 2.95.3 19991030 (prerelease)
-			(with CFLAGS="-Dstrtoull=strtoul -Dstrtoll=strtol")
-
-	NetBSD/pmax 1.6.2  (inside the emulator itself)
-		default gcc (2.9x.y) seems to work
-
 	NetBSD/i386 2.0/-current
 		gcc 3.3.3
 
-	GNU 0.3
-		gcc 3.3.4
-			(with --nox11)
+	NetBSD/pmax 1.6.2  (inside the emulator)
+		gcc 2.95.3 20010315 (release) (NetBSD nb3)
+
+	OpenBSD/i386 3.2
+		gcc 2.95.3 20010125 (prerelease)
+
+	OpenBSD/pmax 2.8  (inside the emulator)
+		gcc 2.95.3 19991030 (prerelease)
+			(with CFLAGS="-Dstrtoull=strtoul -Dstrtoll=strtol")
+
+	OpenBSD/sparc64
+		gcc 2.95.3 20010125 (prerelease, propolice)
 
 	Solaris/sparc (SunOS 5.9)
 		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
 		gcc version 2.95.3 20010315 (release)
 
-	HP-UX B.11.00
-		gcc 3.3.2
-
 
 Platforms/compilers that are known NOT to work are:
 
-	HP-UX B.11.00
+	HP-UX/hppa B.11.00
 		using HP-UX' default cc   (gcc 3.3.2 works fine though)
 
-	Ultrix/MIPS  (inside the emulator itself)
+	Ultrix/MIPS  (inside the emulator)
+		chokes on the configure script, and
 		the default cc does NOT work
 
 

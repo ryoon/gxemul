@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.104 2005-01-09 01:55:31 debug Exp $
+ *  $Id: emul.c,v 1.105 2005-01-10 22:30:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -277,7 +277,7 @@ static void add_arc_components(struct emul *emul)
 	uint64_t start = cpu->pc & 0x1fffffff;
 	uint64_t len = 0x800000 - start;
 	int i;
-	uint64_t scsicontroller, scsidevice;
+	uint64_t scsicontroller, scsidevice, scsidisk;
 
 	/*  NOTE/TODO: magic 8MB end of load program area  */
 	arcbios_add_memory_descriptor(cpu,
@@ -294,6 +294,7 @@ static void add_arc_components(struct emul *emul)
 	for (i=0; i<MAX_DISKIMAGES; i++)
 		if (diskimages[i] != NULL) {
 			int a, b, flags = COMPONENT_FLAG_Input;
+			char component_string[100];
 			char *name = "DEC     RZ58     (C) DEC2000";
 
 			/*  Read-write, or read-only?  */
@@ -317,15 +318,23 @@ static void add_arc_components(struct emul *emul)
 			    a, flags, 1, 2, i, 0xffffffff,
 			    name, scsicontroller, NULL, 0);
 
-#if 0
-/*  Yuck, experimental.  */
-printf("%i = 0x%016llx\n", i, (long long)scsidevice);
-#endif
-
-			arcbios_addchild_manual(cpu,
+			scsidisk = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_PeripheralClass,
 			    b, flags, 1, 2, 0, 0xffffffff, NULL,
 			    scsidevice, NULL, 0);
+
+			/*
+			 *  Add device string to component address mappings:
+			 *  "scsi(0)disk(0)rdisk(0)partition(0)"
+			 */
+
+			snprintf(component_string, sizeof(component_string),
+			    "scsi(0)disk(%i)", i);
+			arcbios_add_string_to_component(component_string, scsidevice);
+
+			snprintf(component_string, sizeof(component_string),
+			    "scsi(0)disk(%i)rdisk(0)", i);
+			arcbios_add_string_to_component(component_string, scsidevice);
 		}
 }
 

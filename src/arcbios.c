@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.61 2005-01-09 01:55:30 debug Exp $
+ *  $Id: arcbios.c,v 1.62 2005-01-10 22:30:29 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -104,8 +104,39 @@ static int arcbios_console_reverse = 0;
 int arcbios_console_curcolor = 0x1f;
 
 /*  Open file handles:  */
+#define	MAX_OPEN_STRINGLEN	200
 #define	MAX_HANDLES	10
 static int file_handle_in_use[MAX_HANDLES];
+static unsigned char *file_handle_string[MAX_HANDLES];
+
+#define	MAX_STRING_TO_COMPONENT		20
+static unsigned char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
+static uint64_t arcbios_string_to_component_value[MAX_STRING_TO_COMPONENT];
+static int arcbios_n_string_to_components = 0;
+
+
+/*
+ *  arcbios_add_string_to_component():
+ */
+void arcbios_add_string_to_component(char *string, uint64_t component)
+{
+	if (arcbios_n_string_to_components >= MAX_STRING_TO_COMPONENT) {
+		printf("Too many string-to-component mappings.\n");
+		exit(1);
+	}
+
+	arcbios_string_to_component[arcbios_n_string_to_components] = malloc(strlen(string) + 1);
+	if (arcbios_string_to_component[arcbios_n_string_to_components] == NULL) {
+		fprintf(stderr, "out of memory in arcbios_add_string_to_component()\n");
+		exit(1);
+	}
+	memcpy(arcbios_string_to_component[arcbios_n_string_to_components], string, strlen(string) + 1);
+	debug("adding component mapping: 0x%016llx = %s\n",
+	    (long long)component, string);
+
+	arcbios_string_to_component_value[arcbios_n_string_to_components] = component;
+	arcbios_n_string_to_components ++;
+}
 
 
 /*
@@ -887,6 +918,7 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x14	Restart()
  *	0x18	Reboot()
  *	0x1c	EnterInteractiveMode()
+ *	0x20	ReturnFromMain()
  *	0x24	GetPeer(node)
  *	0x28	GetChild(node)
  *	0x2c	GetParent(node)
@@ -926,6 +958,7 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x14:		/*  Restart()  */
 	case 0x18:		/*  Reboot()  */
 	case 0x1c:		/*  EnterInteractiveMode()  */
+	case 0x20:		/*  ReturnFromMain()  */
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
 		for (i=0; i<cpu->emul->ncpus; i++)
@@ -1043,14 +1076,44 @@ void arcbios_emul(struct cpu *cpu)
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
 		debug("\") ]\n");
 
-		/*  "scsi(0)disk(0)rdisk(0)partition(0)"  */
+		if (cpu->gpr[GPR_A0] == 0) {
+			fatal("[ ARCBIOS GetComponent: NULL ptr ]\n");
+		} else {
+			unsigned char buf[500];
+			int match_index = -1;
+			int match_len = 0;
 
-		cpu->gpr[GPR_V0] = 0;
+			memset(buf, 0, sizeof(buf));
+			for (i=0; i<sizeof(buf); i++) {
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				if (buf[i] == '\0')
+					i = sizeof(buf);
+			}
+			buf[sizeof(buf) - 1] = '\0';
 
-		/*  TODO  */
-#if 0
-cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
-#endif
+			/*  "scsi(0)disk(0)rdisk(0)partition(0)" and such.  */
+			printf("GetComponent(\"%s\")\n", buf);
+
+			/*  Default to NULL return value.  */
+			cpu->gpr[GPR_V0] = 0;
+
+			/*  Scan the string to component table:  */
+			for (i=0; i<arcbios_n_string_to_components; i++) {
+				int m = 0;
+				while (buf[m] && arcbios_string_to_component[i][m] &&
+				    arcbios_string_to_component[i][m] == buf[m])
+					m++;
+				if (m > match_len) {
+					match_len = m;
+					match_index = i;
+				}
+			}
+
+			if (match_index >= 0) {
+				printf("Longest match: '%s'\n", arcbios_string_to_component[match_index]);
+				cpu->gpr[GPR_V0] = arcbios_string_to_component_value[match_index];
+			}
+		}
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");
@@ -1075,12 +1138,12 @@ cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
 		break;
 	case 0x50:		/*  GetTime()  */
 		debug("[ ARCBIOS GetTime() ]\n");
-		cpu->gpr[GPR_V0] = 0x80001000;
+		cpu->gpr[GPR_V0] = 0xffffffff80001000;
 		/*  TODO!  */
 		break;
 	case 0x54:		/*  GetRelativeTime()  */
 		debug("[ ARCBIOS GetRelativeTime() ]\n");
-		cpu->gpr[GPR_V0] = time(NULL);
+		cpu->gpr[GPR_V0] = (int64_t)(int32_t)time(NULL);
 		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
 		debug("[ ARCBIOS Open(\"");
@@ -1088,23 +1151,42 @@ cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
 		debug("\",0x%x,0x%x)", (int)cpu->gpr[GPR_A0],
 		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
 
-		/*
-		 *  TODO: This is hardcoded to successfully open anything.
-		 *  It is used by the Windows NT SETUPLDR program to load
-		 *  stuff from the boot partition.
-		 */
-
-		/*  cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;  */
+		cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;
 
 		handle = 3;
-		cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
-
+		/*  TODO: Starting at 0 would require some updates...  */
 		while (file_handle_in_use[handle]) {
 			handle ++;
 			if (handle >= MAX_HANDLES) {
 				cpu->gpr[GPR_V0] = ARCBIOS_EMFILE;
 				break;
 			}
+		}
+
+		if (handle >= MAX_HANDLES) {
+			fatal("[ ARCBIOS Open: out of file handles ]\n");
+		} else if (cpu->gpr[GPR_A0] == 0) {
+			fatal("[ ARCBIOS Open: NULL ptr ]\n");
+		} else {
+			/*
+			 *  TODO: This is hardcoded to successfully open anything.
+			 *  It is used by the Windows NT SETUPLDR program to load
+			 *  stuff from the boot partition.
+			 */
+			unsigned char *buf = malloc(MAX_OPEN_STRINGLEN);
+			if (buf == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			memset(buf, 0, MAX_OPEN_STRINGLEN);
+			for (i=0; i<MAX_OPEN_STRINGLEN; i++) {
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				if (buf[i] == '\0')
+					i = MAX_OPEN_STRINGLEN;
+			}
+			buf[MAX_OPEN_STRINGLEN - 1] = '\0';
+			file_handle_string[handle] = buf;
+			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 
 		if (cpu->gpr[GPR_V0] == ARCBIOS_ESUCCESS) {
@@ -1122,6 +1204,9 @@ cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
 			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
 		} else {
 			file_handle_in_use[cpu->gpr[GPR_A0]] = 0;
+			if (file_handle_string[cpu->gpr[GPR_A0]] != NULL)
+				free(file_handle_string[cpu->gpr[GPR_A0]]);
+			file_handle_string[cpu->gpr[GPR_A0]] = NULL;
 			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 		break;
@@ -1213,7 +1298,8 @@ cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			cpu->gpr[GPR_V0] = console_charavail()? 0 : 1;
 		} else {
-			fatal("[ ARCBIOS GetReadStatus(%i) ]\n", (int)cpu->gpr[GPR_A0]);
+			fatal("[ ARCBIOS GetReadStatus(%i) from something other than STDIN: TODO ]\n",
+			    (int)cpu->gpr[GPR_A0]);
 			/*  TODO  */
 			cpu->gpr[GPR_V0] = 1;
 		}
@@ -1399,20 +1485,20 @@ void arcbios_set_default_exception_handler(struct cpu *cpu)
 	 *  03400008        jr      k0
 	 *  00000000        nop
 	 */
-	store_32bit_word(cpu, 0x80000000, 0x3c1abfc8);
-	store_32bit_word(cpu, 0x80000004, 0x375a8888);
-	store_32bit_word(cpu, 0x80000008, 0x03400008);
-	store_32bit_word(cpu, 0x8000000c, 0x00000000);
+	store_32bit_word(cpu, 0xffffffff80000000ULL, 0x3c1abfc8);
+	store_32bit_word(cpu, 0xffffffff80000004ULL, 0x375a8888);
+	store_32bit_word(cpu, 0xffffffff80000008ULL, 0x03400008);
+	store_32bit_word(cpu, 0xffffffff8000000cULL, 0x00000000);
 
-	store_32bit_word(cpu, 0x80000080, 0x3c1abfc8);
-	store_32bit_word(cpu, 0x80000084, 0x375a8888);
-	store_32bit_word(cpu, 0x80000088, 0x03400008);
-	store_32bit_word(cpu, 0x8000008c, 0x00000000);
+	store_32bit_word(cpu, 0xffffffff80000080ULL, 0x3c1abfc8);
+	store_32bit_word(cpu, 0xffffffff80000084ULL, 0x375a8888);
+	store_32bit_word(cpu, 0xffffffff80000088ULL, 0x03400008);
+	store_32bit_word(cpu, 0xffffffff8000008cULL, 0x00000000);
 
-	store_32bit_word(cpu, 0x80000180, 0x3c1abfc8);
-	store_32bit_word(cpu, 0x80000184, 0x375a8888);
-	store_32bit_word(cpu, 0x80000188, 0x03400008);
-	store_32bit_word(cpu, 0x8000018c, 0x00000000);
+	store_32bit_word(cpu, 0xffffffff80000180ULL, 0x3c1abfc8);
+	store_32bit_word(cpu, 0xffffffff80000184ULL, 0x375a8888);
+	store_32bit_word(cpu, 0xffffffff80000188ULL, 0x03400008);
+	store_32bit_word(cpu, 0xffffffff8000018cULL, 0x00000000);
 }
 
 
@@ -1426,7 +1512,9 @@ void arcbios_init(void)
 	int i;
 
 	/*  File handles 0, 1, and 2 are stdin, stdout, and stderr.  */
-	for (i=0; i<MAX_HANDLES; i++)
+	for (i=0; i<MAX_HANDLES; i++) {
 		file_handle_in_use[i] = i<3? 1 : 0;
+		file_handle_string[i] = NULL;
+	}
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.53 2004-12-19 07:34:56 debug Exp $
+ *  $Id: arcbios.c,v 1.54 2004-12-19 08:36:55 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1034,13 +1034,15 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		break;
 	case 0x3c:		/*  GetComponent(char *name)  */
-		fatal("[ ARCBIOS GetComponent(\"");
+		debug("[ ARCBIOS GetComponent(\"");
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
-		fatal("\") ]\n");
+		debug("\") ]\n");
 
-/*  "scsi(0)disk(0)rdisk(0)partition(0)"  */
+		/*  "scsi(0)disk(0)rdisk(0)partition(0)"  */
 
-cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[GPR_V0] = 0;
+
+		/*  TODO  */
 
 		break;
 	case 0x44:		/*  GetSystemId()  */

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.187 2004-12-19 07:34:54 debug Exp $
+ *  $Id: misc.h,v 1.188 2004-12-19 08:36:54 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -155,6 +155,7 @@ static void *no_map_anon_mmap(void *addr, size_t len, int prot, int flags,
 #define	MACHINE_ARC_JAZZ_MAGNUM		5
 #define	MACHINE_ARC_NEC_R98		6
 #define	MACHINE_ARC_JAZZ_M700		7
+#define	MACHINE_ARC_NEC_R96		8
 
 
 /*

@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.14 2004-12-18 23:34:57 debug Exp $
+ *  $Id: dev_rd94.c,v 1.15 2004-12-19 08:36:53 debug Exp $
  *  
- *  RD94 jazzio.
+ *  Used by NEC-RD94, -R94, and -R96.
  */
 
 #include <stdio.h>
@@ -120,13 +120,17 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		} else {
 			odata = 0;	/*  return value does not matter?  */
 		}
-		debug("[ rd94: intstat4 ]\n");
+		fatal("[ rd94: intstat4 ]\n");
 		cpu_interrupt_ack(cpu, 6);
 		break;
 	case RD94_SYS_CPUID:
 		if (writeflag == MEM_WRITE) {
+			fatal("[ rd94: write to CPUID: 0x%llx ]\n",
+			    (long long)idata);
 		} else {
 			odata = cpu->cpu_id;
+			fatal("[ rd94: read from CPUID: 0x%llx ]\n",
+			    (long long)odata);
 		}
 		break;
 	case RD94_SYS_EXT_IMASK:
@@ -155,9 +159,9 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			fatal("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
 		} else {
-			debug("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
+			fatal("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
 		}
 	}
 

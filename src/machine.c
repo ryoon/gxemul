@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.250 2004-12-19 06:57:12 debug Exp $
+ *  $Id: machine.c,v 1.251 2004-12-19 08:36:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2217,31 +2217,50 @@ Why is this here? TODO
 
 			case MACHINE_ARC_NEC_RD94:
 			case MACHINE_ARC_NEC_R94:
+			case MACHINE_ARC_NEC_R96:
 				/*
 				 *  "NEC-RD94" (NEC RISCstation 2250)
 				 *  "NEC-R94" (NEC RISCstation 2200)
+				 *  "NEC-R96" (NEC Express RISCserver)
+				 *
+				 *  http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out (NEC-R96)
 				 */
 
-				if (emul->machine == MACHINE_ARC_NEC_RD94)
+				switch (emul->machine) {
+				case MACHINE_ARC_NEC_RD94:
 					strcat(emul->machine_name, " (NEC-RD94, NEC RISCstation 2250)");
-				else
+					break;
+				case MACHINE_ARC_NEC_R94:
 					strcat(emul->machine_name, " (NEC-R94; NEC RISCstation 2200)");
+					break;
+				case MACHINE_ARC_NEC_R96:
+					strcat(emul->machine_name, " (NEC-R96; NEC Express RISCserver)");
+					break;
+				}
 
 				/*  TODO: interrupt controller!  */
 
 				pci_data = dev_rd94_init(cpu, mem, 0x80000000ULL, 0);
+
 				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
 				dev_mc146818_init(cpu, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
 				dev_pckbc_init(cpu, mem, 0x80005000ULL, PCKBC_8042, 0, 0, emul->use_x11);
 				dev_ns16550_init(cpu, mem, 0x80006000ULL, 3, 1, emul->use_x11? 0 : 1);  /*  com0  */
 				dev_ns16550_init(cpu, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
 				/*  lpt at 0x80008000  */
-
-				/*  fdc  */
 				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
-				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+				switch (emul->machine) {
+				case MACHINE_ARC_NEC_RD94:
+				case MACHINE_ARC_NEC_R94:
+					/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
+					bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+					break;
+				case MACHINE_ARC_NEC_R96:
+					dev_fb_init(cpu, mem, 0x100e00000ULL,
+					    VFB_GENERIC, 640,480, 1024,480,
+					    8, "necvdfrb", 1);
+				}
 				break;
 
 			case MACHINE_ARC_NEC_R98:
@@ -2401,6 +2420,7 @@ Why is this here? TODO
 				 *  "Deskstation Tyne" (?)
 				 *
 				 *  TODO
+				 *  http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html
 				 */
 
 				strcat(emul->machine_name, " (Deskstation Tyne)");
@@ -2482,6 +2502,10 @@ Why is this here? TODO
 			case MACHINE_ARC_NEC_R94:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
+				break;
+			case MACHINE_ARC_NEC_R96:
+				strncpy(arcbios_sysid.VendorId,  "MIPS DUO", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "blahblah", 8);	/*  NOTE: max 8 chars  */
 				break;
 			case MACHINE_ARC_NEC_R98:
 				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
@@ -2599,6 +2623,10 @@ Why is this here? TODO
 			case MACHINE_ARC_NEC_R94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 2, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */ , NULL, 0);
+				break;
+			case MACHINE_ARC_NEC_R96:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 2, 0, 0xffffffff, "NEC-R96", 0  /*  ROOT  */ , NULL, 0);
 				break;
 			case MACHINE_ARC_NEC_R98:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
@@ -2751,11 +2779,46 @@ Why is this here? TODO
 
 		if (emul->emulation_type == EMULTYPE_ARC &&
 		    ( emul->machine == MACHINE_ARC_NEC_RD94 ||
-		    emul->machine == MACHINE_ARC_NEC_R94 )) {
-			/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
-			/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
-			if (emul->use_x11)
-				arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system, NULL, 0);
+		    emul->machine == MACHINE_ARC_NEC_R94 ||
+		    emul->machine == MACHINE_ARC_NEC_R96 )) {
+			uint64_t jazzbus;
+
+			jazzbus = arcbios_addchild_manual(cpu,
+			    COMPONENT_CLASS_AdapterClass,
+			    COMPONENT_TYPE_MultiFunctionAdapter,
+			    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
+			    system, NULL, 0);
+
+			switch (emul->machine) {
+			case MACHINE_ARC_NEC_RD94:
+			case MACHINE_ARC_NEC_R94:
+				if (emul->use_x11)
+					arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_ControllerClass,
+					    COMPONENT_TYPE_DisplayController,
+					    0, 1, 2, 0, 0x0, "10110004",
+					    system, NULL, 0);
+				break;
+			case MACHINE_ARC_NEC_R96:
+				if (emul->use_x11) {
+					uint64_t x;
+					x = arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_ControllerClass,
+					    COMPONENT_TYPE_DisplayController,
+					    COMPONENT_FLAG_ConsoleOut |
+					      COMPONENT_FLAG_Output,
+					    1, 2, 0, 0x0, "necvdfrb",
+					    jazzbus, NULL, 0);
+					arcbios_addchild_manual(cpu,
+					    COMPONENT_CLASS_PeripheralClass,
+					    COMPONENT_TYPE_MonitorPeripheral,
+					    COMPONENT_FLAG_ConsoleOut |
+						COMPONENT_FLAG_Output,
+					    1, 2, 0, 0xffffffff, "640x480",
+					    x, NULL, 0);
+				}
+				break;
+			}
 		}
 
 		if (emul->emulation_type == EMULTYPE_ARC &&

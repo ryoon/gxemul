@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.140 2004-12-18 03:26:15 debug Exp $
+ *  $Id: main.c,v 1.141 2004-12-19 08:36:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -119,7 +119,8 @@ static void usage(char *progname, int longusage)
 
 	printf("\n");
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700)\n");
+	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700,\n");
+	printf("            8=NEC-R96)\n");
 	printf("  -a        emulate a generic test machine\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
@@ -446,6 +447,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default nr of CPUs (for SMP systems):  */
 
 	if (!n_cpus_set) {
+		if (emul->emulation_type == EMULTYPE_ARC &&
+		    emul->machine == MACHINE_ARC_NEC_R96)
+			emul->ncpus = 2;
+
 		if (emul->emulation_type == EMULTYPE_ARC &&
 		    emul->machine == MACHINE_ARC_NEC_R98)
 			emul->ncpus = 4;

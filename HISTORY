@@ -410,4 +410,6 @@ HISTORY of mips64emul
 		Some progress on various SGI emulation modes.
 20040325	Minor updates.
 20040326	Fixed a 'madd' bug (r5900). NetBSD/playstation2 now reaches
-		userland correctly.
+		userland correctly.  And a simple fix which allows NetBSD
+		timer interrupts to be triggered; NetBSD uses T_MODE_CMPE
+		(compare), while Linux uses _OVFE (overflow).

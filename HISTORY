@@ -303,3 +303,5 @@ HISTORY of mips64emul
 		amounts of emulated RAM.
 		TGA (DEC 21030) PCI graphics device. NetBSD/arc can boot with
 		this card and use it as a framebuffer console.
+20040107	Adding a fix (partly incorrect) to daddi, to allow Linux/sgimips
+		to boot in 64-bit mode.

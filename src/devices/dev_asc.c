@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.6 2003-11-20 03:42:35 debug Exp $
+ *  $Id: dev_asc.c,v 1.7 2003-11-24 23:46:56 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -72,6 +72,7 @@ struct asc_data {
 	/*  Incoming dma data:  */
 	unsigned char	*incoming_data;
 	int		incoming_len;
+	int		incoming_data_addr;
 
 	/*  DMA:  */
 	uint32_t	dma_address_reg;
@@ -183,7 +184,7 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
  */
 void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes)
 {
-	int ok, len, i, retlen;
+	int ok, len, i, retlen, ch, addr;
 	unsigned char *buf, *retbuf;
 
 	debug(" { TRANSFER from id %i to id %i: ", from_id, to_id);
@@ -211,7 +212,7 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 			}
 			i = 0;
 			while (d->fifo_in != d->fifo_out) {
-				int ch = dev_asc_fifo_read(d);
+				ch = dev_asc_fifo_read(d);
 				buf[i++] = ch;
 				debug("%02x ", ch);
 			}
@@ -228,7 +229,7 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 			}
 
 			for (i=0; i<len; i++) {
-				int ch = d->dma[i];
+				ch = d->dma[i];
 				buf[i] = ch;
 				debug("%02x ", ch);
 			}
@@ -249,13 +250,22 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 			/*  Give the resulting buffer data to the controller.  */
 			d->incoming_data = retbuf;
 			d->incoming_len = retlen;
+			d->incoming_data_addr = 0;
 			/*  retbuf should be freed once it is used  */
 		}
 	} else {
 		/*  Data coming into the controller from external device:  */
 		if (!dmaflag) {
-			fatal("TODO: non-dma transf\n");
-			exit(1);
+			/*  TODO: non-dma transfer  */
+			len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+
+			len--;
+			ch = d->incoming_data[d->incoming_data_addr];
+			d->incoming_data_addr ++;
+			dev_asc_fifo_write(d, ch);
+
+			d->reg_ro[NCR_TCL] = len & 255;
+			d->reg_ro[NCR_TCM] = (len >> 8) & 255;
 		} else {
 			/*  Copy from the incoming buf into dma memory:  */
 			if (d->incoming_data == NULL) {
@@ -313,18 +323,18 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5) + d->n_bytes_in_fifo;
 
-	if (regnr == NCR_FIFO) {
-		if (writeflag == MEM_WRITE)
-			dev_asc_fifo_write(d, idata);
-		else
-			odata = dev_asc_fifo_read(d);
-	}
-
 	if (regnr < 0x10) {
-		if (writeflag==MEM_WRITE)
-			d->reg_wo[regnr] = idata;
-		else
-			odata = d->reg_ro[regnr];
+		if (regnr == NCR_FIFO) {
+			if (writeflag == MEM_WRITE)
+				dev_asc_fifo_write(d, idata);
+			else
+				odata = dev_asc_fifo_read(d);
+		} else {
+			if (writeflag==MEM_WRITE)
+				d->reg_wo[regnr] = idata;
+			else
+				odata = d->reg_ro[regnr];
+		}
 
 		if (writeflag==MEM_READ) {
 			debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], odata);
@@ -515,10 +525,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+				d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;	/*  ?  */
 
-				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ?  */
+				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ?  */
 				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 				d->cur_state = STATE_INITIATOR;		/*  ?  */
+
+				/*  ?  */
+				dev_asc_fifo_write(d, 0x01);
+				dev_asc_fifo_write(d, 0x00);
 			} else {
 				dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);

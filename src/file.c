@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.14 2004-01-09 12:35:09 debug Exp $
+ *  $Id: file.c,v 1.15 2004-01-11 16:25:19 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -640,7 +640,7 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 		vaddr += len;
 	}
 
-	debug("'%s': 0x%x bytes loaded at 0x%08llx", p, ftell(f), (long long)entry);
+	debug("'%s': 0x%llx bytes loaded at 0x%08llx", p, (long long) (ftell(f) - skip), (long long)entry);
 	if (skip > 0)
 		debug(" (0x%llx bytes of header skipped)", (long long)skip);
 	debug("\n");

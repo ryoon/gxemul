@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.36 2005-02-16 06:30:10 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.37 2005-02-16 08:41:59 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -268,9 +268,15 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		debug("cpu%i: ctr = 0x", x);
 		if (bits32)
-			debug("%08x\n", (int)cpu->cd.ppc.ctr);
+			debug("%08x", (int)cpu->cd.ppc.ctr);
 		else
-			debug("%016llx\n", (long long)cpu->cd.ppc.ctr);
+			debug("%016llx", (long long)cpu->cd.ppc.ctr);
+
+		debug("  xer = 0x", x);
+		if (bits32)
+			debug("%08x\n", (int)cpu->cd.ppc.xer);
+		else
+			debug("%016llx\n", (long long)cpu->cd.ppc.xer);
 
 		if (bits32) {
 			/*  32-bit:  */
@@ -304,8 +310,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	}
 
 	if (coprocs) {
-		debug("cpu%i: xer = 0x%016llx  fpscr = 0x%08x\n", x,
-		    (long long)cpu->cd.ppc.xer, (int)cpu->cd.ppc.fpscr);
+		debug("cpu%i: fpscr = 0x%08x\n", x, (int)cpu->cd.ppc.fpscr);
 
 		/*  TODO: show floating-point values :-)  */
 
@@ -1182,12 +1187,47 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		rt = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
-		tmp = ~cpu->cd.ppc.gpr[ra];
-		cpu->cd.ppc.gpr[rt] = tmp + (int64_t)imm + 1;
-		/*  TODO: is this CA correct?  */
 		cpu->cd.ppc.xer &= ~PPC_XER_CA;
-		if (((tmp >> 63) & 1) == ((cpu->cd.ppc.gpr[rt] >> 63) & 1))
-			cpu->cd.ppc.xer |= PPC_XER_CA;
+		if (cpu->cd.ppc.bits == 32) {
+			tmp = (~cpu->cd.ppc.gpr[ra]) & 0xffffffff;
+			cpu->cd.ppc.gpr[rt] = tmp + imm + 1;
+			/*  TODO: is this CA correct?  */
+printf("subfic: tmp = %016llx\n", (long long)tmp);
+printf("subfic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
+			if ((tmp >> 32) != (cpu->cd.ppc.gpr[rt] >> 32))
+				cpu->cd.ppc.xer |= PPC_XER_CA;
+cpu->cd.ppc.xer |= PPC_XER_CA;
+			/*  High 32 bits are probably undefined in
+			    32-bit mode (I hope)  */
+		} else {
+			/*
+			 *  Ugly, but I can't figure out a way right now how
+			 *  to get the carry bit out of a 64-bit addition,
+			 *  without access to more-than-64-bit operations in C.
+			 */
+			tmp = ~cpu->cd.ppc.gpr[ra];
+			tmp2 = (tmp >> 32);	/*  High 32 bits  */
+			tmp &= 0xffffffff;	/*  Low 32 bits  */
+
+			tmp += imm + 1;
+			if ((tmp >> 32) == 0) {
+				/*  No change to upper 32 bits  */
+			} else if ((tmp >> 32) == 1) {
+				/*  Positive change:  */
+				tmp2 ++;
+			} else {
+				/*  Negative change:  */
+				tmp2 --;
+			}
+
+			tmp &= 0xffffffff;
+
+			/*  TODO: is this CA calculation correct?  */
+			if ((tmp2 >> 32) != 0)
+				cpu->cd.ppc.xer |= PPC_XER_CA;
+
+			cpu->cd.ppc.gpr[rt] = (tmp2 << 32) + tmp;
+		}
 		break;
 
 	case PPC_HI6_CMPLI:
@@ -1234,14 +1274,44 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		ra = (iword >> 16) & 31;
 		rc = hi6 == PPC_HI6_ADDIC_DOT;
 		imm = (int16_t)(iword & 0xffff);
-		tmp = cpu->cd.ppc.gpr[rt];
-		cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] + imm;
-		/*  TODO: Is this CA bit stuff correct?  */
 		cpu->cd.ppc.xer &= ~PPC_XER_CA;
-		if (((tmp >> 63) & 1) == ((cpu->cd.ppc.gpr[rt] >> 63) & 1))
-			cpu->cd.ppc.xer |= PPC_XER_CA;
+		if (cpu->cd.ppc.bits == 32) {
+			tmp = cpu->cd.ppc.gpr[ra] & 0xffffffff;
+			cpu->cd.ppc.gpr[rt] = tmp + (int64_t)imm;
+			/*  TODO: is this CA correct?  */
+printf("addic: tmp = %016llx\n", (long long)tmp);
+printf("addic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
+			if ((tmp >> 32) != 0)
+				cpu->cd.ppc.xer |= PPC_XER_CA;
+			/*  High 32 bits are probably undefined in
+			    32-bit mode (I hope)  */
+		} else {
+			/*  See comment about ugliness regarding SUBFIC  */
+			tmp = cpu->cd.ppc.gpr[ra];
+			tmp2 = (tmp >> 32);	/*  High 32 bits  */
+			tmp &= 0xffffffff;	/*  Low 32 bits  */
+
+			tmp += (int64_t)imm;
+			if ((tmp >> 32) == 0) {
+				/*  No change to upper 32 bits  */
+			} else if ((tmp >> 32) == 1) {
+				/*  Positive change:  */
+				tmp2 ++;
+			} else {
+				/*  Negative change:  */
+				tmp2 --;
+			}
+
+			tmp &= 0xffffffff;
+
+			/*  TODO: is this CA calculation correct?  */
+			if ((tmp2 >> 32) != 0)
+				cpu->cd.ppc.xer |= PPC_XER_CA;
+
+			cpu->cd.ppc.gpr[rt] = (tmp2 << 32) + tmp;
+		}
 		if (rc)
-			update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
+			update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
 		break;
 
 	case PPC_HI6_ADDI:
@@ -1758,10 +1828,24 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case PPC_31_ADDE:
 			case PPC_31_ADDEO:
-				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] +
-				    cpu->cd.ppc.gpr[rb];
-				if (cpu->cd.ppc.xer & PPC_XER_CA)
-					cpu->cd.ppc.gpr[rt] ++;
+				cpu->cd.ppc.xer &= PPC_XER_CA;
+				if (cpu->cd.ppc.bits == 32) {
+					tmp = (int32_t)cpu->cd.ppc.gpr[ra];
+					tmp2 = tmp;
+printf("adde: tmp2 = %016llx\n", (long long)tmp2);
+					tmp += (int32_t)cpu->cd.ppc.gpr[rb];
+					if (cpu->cd.ppc.xer & PPC_XER_CA)
+						tmp ++;
+printf("adde: tmp  = %016llx\n\n", (long long)tmp);
+					/*  TODO: is this CA correct?  */
+					if ((tmp >> 32) != (tmp2 >> 32))
+						cpu->cd.ppc.xer |= PPC_XER_CA;
+					/*  High 32 bits are probably undefined
+					    in 32-bit mode (I hope)  */
+					cpu->cd.ppc.gpr[rt] = tmp;
+				} else {
+					fatal("ADDE 64-bit, TODO\n");
+				}
 				break;
 			case PPC_31_MULLW:
 			case PPC_31_MULLWO:
@@ -1776,10 +1860,26 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case PPC_31_SUBFE:
 			case PPC_31_SUBFEO:
-				cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] +
-				    cpu->cd.ppc.gpr[rb];
-				if (cpu->cd.ppc.xer & PPC_XER_CA)
-					cpu->cd.ppc.gpr[rt] ++;
+				cpu->cd.ppc.xer &= PPC_XER_CA;
+				if (cpu->cd.ppc.bits == 32) {
+					tmp = (~cpu->cd.ppc.gpr[ra])
+					    & 0xffffffff;
+					tmp2 = tmp;
+					tmp += (cpu->cd.ppc.gpr[rb] &
+					    0xffffffff);
+					if (cpu->cd.ppc.xer & PPC_XER_CA)
+						tmp ++;
+printf("subfe: tmp2 = %016llx\n", (long long)tmp2);
+printf("subfe: tmp  = %016llx\n\n", (long long)tmp);
+					/*  TODO: is this CA correct?  */
+					if ((tmp >> 32) != (tmp2 >> 32))
+						cpu->cd.ppc.xer |= PPC_XER_CA;
+					/*  High 32 bits are probably undefined
+					    in 32-bit mode (I hope)  */
+					cpu->cd.ppc.gpr[rt] = tmp;
+				} else {
+					fatal("SUBFE 64-bit, TODO\n");
+				}
 				break;
 			}
 			if (rc)

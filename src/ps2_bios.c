@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.19 2005-01-19 14:24:23 debug Exp $
+ *  $Id: ps2_bios.c,v 1.20 2005-01-20 08:34:03 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -71,14 +71,17 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0x200;		/*  TODO  */
 		break;
 	case 1:			/*  halt(int mode)  */
-		debug("[ SIFBIOS halt(0x%llx) ]\n", (long long)cpu->gpr[GPR_A1]);
+		debug("[ SIFBIOS halt(0x%llx) ]\n",
+		    (long long)cpu->gpr[GPR_A1]);
 		cpu->running = 0;
 		break;
 	case 2:			/*  setdve(int mode)  */
-		debug("[ SIFBIOS setdve(0x%llx) ]\n", (long long)cpu->gpr[GPR_A1]);
+		debug("[ SIFBIOS setdve(0x%llx) ]\n",
+		    (long long)cpu->gpr[GPR_A1]);
 		break;
 	case 3:			/*  putchar(int ch)  */
-		/*  debug("[ SIFBIOS putchar(0x%x) ]\n", (char)cpu->gpr[GPR_A1]);  */
+		/*  debug("[ SIFBIOS putchar(0x%x) ]\n",
+		    (char)cpu->gpr[GPR_A1]);  */
 		console_putchar(cpu->gpr[GPR_A1]);
 		break;
 	case 4:			/*  getchar()  */
@@ -111,7 +114,9 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
 		break;
 	case 64:
-		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n", (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
+		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n",
+		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2],
+		    (int)cpu->gpr[GPR_A3]);
 
 		/*
 		 *  This is really really ugly:   TODO
@@ -120,60 +125,83 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		 *  This should really be a callback thingy...
 		 *
 		 *  NetBSD has a done-word which should be set to 1.
-		 *  Linux has one done-word which should be set to 1, and one which should be set to 0.
+		 *  Linux has one done-word which should be set to 1, and
+		 *  one which should be set to 0.
 		 *
-		 *  The code as it is right now probably overwrites stuff in memory
-		 *  that shouldn't be touched. Not good.
+		 *  The code as it is right now probably overwrites stuff in
+		 *  memory that shouldn't be touched. Not good.
 		 *
-		 *  Linux:     err = sbios_rpc(SBR_IOPH_INIT, NULL, &result);
-		 *		err should be 0 (just as NetBSD),  and result should be set to 0 as well.
+		 *  Linux: err = sbios_rpc(SBR_IOPH_INIT, NULL, &result);
+		 *         err should be 0 (just as NetBSD),
+		 *         and result should be set to 0 as well.
 		 */
 		{
 			uint32_t tmpaddr;
 
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);
+			fatal("  +0: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);
+			fatal("  +4: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);
+			fatal("  +8: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
+			fatal(" +12: %08x\n", tmpaddr);
 
 			/*  TODO: This is probably netbsd specific  */
 			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
 			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
-			store_32bit_word(cpu, tmpaddr, 1);		/*  "done" word for NetBSD  */
-			store_32bit_word(cpu, tmpaddr + 4, 1);		/*  "done" word A for Linux */
 
-			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0, 0);		/*  "done" word B for Linux */
+			/*  "done" word for NetBSD:  */
+			store_32bit_word(cpu, tmpaddr, 1);
+			/*  "done" word A for Linux:  */
+			store_32bit_word(cpu, tmpaddr + 4, 1);
+			/*  "done" word B for Linux:  */
+			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0, 0);
 		}
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 65:
-		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n", (int)cpu->gpr[GPR_A1]);
+		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n",
+		    (int)cpu->gpr[GPR_A1]);
 
 		/*
-		 *  Linux uses this to allocate "heap" for the OHCI USB controller.
-		 *  TODO:  This naïve implementation does not allow for a "free iop
-		 *  heap" function: :-/
+		 *  Linux uses this to allocate "heap" for the OHCI USB
+		 *  controller.
+		 *
+		 *  TODO:  This naïve implementation does not allow for a
+		 *  "free iop heap" function: :-/
 		 */
 
 		{
 			uint32_t tmpaddr;
-			static uint32_t return_addr = 0x1000;  /*  0xbc000000;  */
+			static uint32_t return_addr = 0x1000;
+				/*  0xbc000000;  */
 			uint32_t size;
 
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x (result should be placed here)\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x (*arg)\n", tmpaddr);
-			size = load_32bit_word(cpu, tmpaddr + 0);			fatal("      size = %08x\n", size);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x (*func (void *, int))\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x (*para)\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);
+			fatal("  +0: %08x (result should be placed here)\n",
+			    tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);
+			fatal("  +4: %08x (*arg)\n", tmpaddr);
+			size = load_32bit_word(cpu, tmpaddr + 0);
+			fatal("      size = %08x\n", size);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);
+			fatal("  +8: %08x (*func (void *, int))\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
+			fatal(" +12: %08x (*para)\n", tmpaddr);
 
 			/*  TODO: This is probably netbsd specific  */
 			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
 			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
-			store_32bit_word(cpu, tmpaddr, 1);		/*  "done" word for NetBSD  */
-			store_32bit_word(cpu, tmpaddr + 4, 1);		/*  "done" word A for Linux */
+
+			/*  "done" word for NetBSD:  */
+			store_32bit_word(cpu, tmpaddr, 1);
+			/*  "done" word A for Linux:  */
+			store_32bit_word(cpu, tmpaddr + 4, 1);
 
 			/*  Result:  */
-			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0, return_addr);
+			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0,
+			    return_addr);
 
 			return_addr += size;
 			/*  Round up to next page:  */
@@ -183,9 +211,11 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	default:
+		quiet_mode = 0;
 		cpu_register_dump(cpu, 1, 0x1);
 		printf("\n");
-		fatal("Playstation 2 SIFBIOS emulation: unimplemented call nr 0x%x\n", callnr);
+		fatal("Playstation 2 SIFBIOS emulation: "
+		    "unimplemented call nr 0x%x\n", callnr);
 		cpu->running = 0;
 	}
 }

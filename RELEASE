@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.44 2004-10-21 02:38:52 debug Exp $
+$Id: RELEASE,v 1.45 2004-10-23 19:38:28 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -28,6 +28,8 @@ combinations as possible of the following must be tested:
 	o)  different configure flags
 	o)  different guest OSes
 	o)  different runtime flags (eg. bintrans enabled or not)
+
+	o)  no dead web links in the documentation
 
 ------------------------------------------------------------------------------
 

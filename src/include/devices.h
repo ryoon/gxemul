@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.119 2004-12-28 20:38:56 debug Exp $
+ *  $Id: devices.h,v 1.120 2005-01-04 16:45:36 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -238,6 +238,38 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq);
 
+/*  dev_jazz.c:  */
+#define	DEV_JAZZ_LENGTH			0x280
+struct jazz_data {
+	struct cpu	*cpu;
+
+	/*  Jazz stuff:  */
+	uint32_t	int_enable_mask;
+	uint32_t	int_asserted;
+
+	/*  ISA stuff:  */
+	uint32_t	isa_int_enable_mask;
+	uint32_t	isa_int_asserted;
+
+	int		interval;
+	int		interval_start;
+
+	int		jazz_timer_value;
+	int		jazz_timer_current;
+
+	uint64_t	dma_translation_table_base;
+	uint64_t	dma_translation_table_limit;
+	uint32_t	dma0_mode;
+	uint32_t	dma0_enable;
+	uint32_t	dma0_count;
+	uint32_t	dma0_addr;
+	/*  same for dma1,2,3 actually (TODO)  */
+};
+size_t dev_jazz_dma_controller(void *dma_controller_data,
+	unsigned char *data, size_t len, int writeflag);
+int dev_jazz_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
 /*  dev_kn01.c:  */
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
 int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -333,38 +365,6 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 #define	PCKBC_PICA		3
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
-
-/*  dev_pica.c:  */
-#define	DEV_PICA_LENGTH			0x280
-struct pica_data {
-	struct cpu	*cpu;
-
-	/*  Jazz stuff:  */
-	uint32_t	int_enable_mask;
-	uint32_t	int_asserted;
-
-	/*  ISA stuff:  */
-	uint32_t	isa_int_enable_mask;
-	uint32_t	isa_int_asserted;
-
-	int		interval;
-	int		interval_start;
-
-	int		pica_timer_value;
-	int		pica_timer_current;
-
-	uint64_t	dma_translation_table_base;
-	uint64_t	dma_translation_table_limit;
-	uint32_t	dma0_mode;
-	uint32_t	dma0_enable;
-	uint32_t	dma0_count;
-	uint32_t	dma0_addr;
-	/*  same for dma1,2,3 actually (TODO)  */
-};
-size_t dev_pica_dma_controller(void *dma_controller_data,
-	unsigned char *data, size_t len, int writeflag);
-int dev_pica_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_gs.c:  */
 #define	DEV_PS2_GIF_LENGTH		0x0000000000010000

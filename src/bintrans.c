@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.49 2004-11-09 04:28:42 debug Exp $
+ *  $Id: bintrans.c,v 1.50 2004-11-09 05:01:44 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -174,7 +174,7 @@ int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_inc, int rs);
 int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_inc, int rd, int rs);
 int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int rd, int from_flag, int hi_flag);
 int bintrans_write_instruction__branch(unsigned char **addrp, int *pc_inc, int branch_type, int rt, int rs, int imm, unsigned char **potential_chunk_p);
-int bintrans_write_instruction__jal(unsigned char **addrp, int *pc_inc, int imm, int link);
+int bintrans_write_instruction__jal(unsigned char **addrp, int *pc_inc, int imm, int link, unsigned char **chunks);
 
 #define	LOAD_TYPE_LW	0
 #define	LOAD_TYPE_LHU	1
@@ -740,17 +740,15 @@ try_to_translate = 0;
 				try_to_translate = 0;
 				break;
 			}
-#if 1
 			if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
 				imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
 				    (instr[1] << 8) + instr[0]) & 0x03ffffff;
 				pc_inc += sizeof(instr);
-				bintrans_write_instruction__jal(&ca, &pc_inc, imm, hi6 == HI6_JAL);
+				bintrans_write_instruction__jal(&ca, &pc_inc, imm, hi6 == HI6_JAL, &tep->chunk[0]);
 				n_translated += 2;
 				p += sizeof(instr);
 				pc_inc = sizeof(instr);	/*  will be decreased later  */
 			}
-#endif
 			try_to_translate = 0;
 			break;
 		case HI6_LW:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.152 2005-01-18 07:28:50 debug Exp $
+ *  $Id: main.c,v 1.153 2005-01-19 08:44:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -48,29 +48,72 @@ int extra_argc;
 char **extra_argv;
 
 
+/*****************************************************************************/
+
+
+/*  NOTE: quiet_mode is global  */
 int quiet_mode = 0;
+
+
+static int debug_indent = 0;
+static int debug_currently_at_start_of_line = 1;
+
+
+/*
+ *  va_debug():
+ *
+ *  Used internally by debug() and fatal().
+ */
+static void va_debug(va_list argp, char *fmt)
+{
+	char buf[DEBUG_BUFSIZE + 1];
+	int i;
+
+	buf[0] = buf[DEBUG_BUFSIZE] = 0;
+	vsnprintf(buf, DEBUG_BUFSIZE, fmt, argp);
+
+	if (debug_currently_at_start_of_line) {
+		for (i=0; i<debug_indent; i++)
+			printf(" ");
+	}
+
+	printf("%s", buf);
+	debug_currently_at_start_of_line = 0;
+
+	if (buf[strlen(buf) - 1] == '\n' ||
+	    buf[strlen(buf) - 1] == '\r')
+		debug_currently_at_start_of_line = 1;
+}
+
+
+/*
+ *  debug_indentation():
+ *
+ *  Modify the debug indentation.
+ */
+void debug_indentation(int diff)
+{
+	debug_indent += diff;
+	if (debug_indent < 0)
+		fprintf(stderr, "WARNING: debug_indent less than 0!\n");
+}
 
 
 /*
  *  debug():
  *
- *  This can be used instead of manually using printf() all the time,
- *  if fancy output, such as bold text, is needed.
+ *  Debug output (ignored if quiet_mode is set).
  */
 void debug(char *fmt, ...)
 {
 	va_list argp;
-	char buf[DEBUG_BUFSIZE + 1];
 
 	if (quiet_mode)
 		return;
 
-	buf[0] = buf[DEBUG_BUFSIZE] = 0;
 	va_start(argp, fmt);
-	vsnprintf(buf, DEBUG_BUFSIZE, fmt, argp);
+	va_debug(argp, fmt);
 	va_end(argp);
-
-	printf("%s", buf);
 }
 
 
@@ -83,15 +126,14 @@ void debug(char *fmt, ...)
 void fatal(char *fmt, ...)
 {
 	va_list argp;
-	char buf[DEBUG_BUFSIZE + 1];
 
-	buf[0] = buf[DEBUG_BUFSIZE] = 0;
 	va_start(argp, fmt);
-	vsnprintf(buf, DEBUG_BUFSIZE, fmt, argp);
+	va_debug(argp, fmt);
 	va_end(argp);
-
-	printf("%s", buf);
 }
+
+
+/*****************************************************************************/
 
 
 /*

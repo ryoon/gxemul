@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.63 2005-01-09 01:55:30 debug Exp $
+ *  $Id: diskimage.c,v 1.64 2005-01-19 08:44:53 debug Exp $
  *
  *  Disk image support.
  *
@@ -1434,23 +1434,28 @@ int diskimage_is_a_tape(int i)
  */
 void diskimage_dump_info(void)
 {
-	int i;
+	int i, iadd=4;
 
 	for (i=0; i<MAX_DISKIMAGES; i++)
 		if (diskimages[i] != NULL) {
-			debug("adding diskimage id=%i: '%s', %s, %lli bytes (%s%li sectors)%s\n",
-			    i, diskimages[i]->fname,
-			    diskimages[i]->writable? "read/write" : "read-only",
-			    (long long) diskimages[i]->total_size,
+			debug("diskimage %i: %s\n", i, diskimages[i]->fname);
 
-			    diskimages[i]->is_a_tape? "TAPE, " : (
+			debug_indentation(iadd);
+
+			debug("%s, %s, ",
+			    diskimages[i]->is_a_tape? "TAPE" : (
 				diskimages[i]->is_a_cdrom?
-					"CD-ROM, " : "DISK, "
-				),
+					"CD-ROM" : "DISK"),
+			    diskimages[i]->writable?
+				"read/write" : "read-only");
 
-			    (long int) (diskimages[i]->total_size / 512),
+			debug("%lli bytes (%lli sectors)%s\n",
+			    (long long) diskimages[i]->total_size,
+			    (long long) (diskimages[i]->total_size / 512),
 			    diskimages[i]->is_boot_device?
 					", BOOT DEVICE" : "");
+
+			debug_indentation(-iadd);
 		}
 }
 

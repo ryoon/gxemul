@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.284 2005-01-17 15:33:57 debug Exp $
+ *  $Id: machine.c,v 1.285 2005-01-19 08:44:53 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1907,8 +1907,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
 
-		printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
-		printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);
+		/*  printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
+		    printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);  */
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
 		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 

@@ -25,14 +25,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.43 2005-01-18 12:43:50 debug Exp $
+ *  $Id: net.c,v 1.44 2005-01-19 08:44:53 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
  *
  *	NOTE:	This is just an ugly hack, and just barely enough to get some
  *		Internet networking up and running for the guest OS.
- *
  *
  *	TODO:	o)  TCP: fin/ack stuff, and connection time-outs and
  *                  connection refused (reset on connect?), resend
@@ -1637,8 +1636,7 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 /*
  *  net_init():
  *
- *  This function should be called before any other net_*() functions are
- *  used.
+ *  This function should be called before any other net_*() functions are used.
  */
 void net_init(void)
 {
@@ -1668,6 +1666,8 @@ void net_init(void)
 	 *
 	 *  TODO: This is hardcoded to use /etc/resolv.conf. Not all
 	 *        operating systems use that filename.
+	 *
+	 *  TODO: This is hardcoded for AF_INET (that is, IPv4).
 	 *
 	 *  TODO: This assumes that the first nameserver listed is the
 	 *        one to use.
@@ -1708,7 +1708,7 @@ void net_init(void)
 				if (res < 1)
 					break;
 
-				debug("net_init(): using nameserver");
+				debug("net: using nameserver");
 				for (i=0; i<sizeof(nameserver_ipv4); i++)
 					debug("%c%i",
 					    i? '.' : ' ',
@@ -1722,7 +1722,7 @@ void net_init(void)
 	}
 
 	if (!net_nameserver_known)
-		debug("net_init(): no nameserver\n");
+		debug("net: could not determine which nameserver to use\n");
 
 	signal(SIGPIPE, SIG_IGN);
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.200 2005-01-17 13:29:45 debug Exp $
+ *  $Id: misc.h,v 1.201 2005-01-19 08:44:52 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -478,6 +478,7 @@ struct cpu {
 
 
 /*  main.c:  */
+void debug_indentation(int diff);
 void debug(char *fmt, ...);
 void fatal(char *fmt, ...);
 

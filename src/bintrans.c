@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.134 2005-01-14 03:36:18 debug Exp $
+ *  $Id: bintrans.c,v 1.135 2005-01-19 08:44:53 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -113,9 +113,10 @@ int bintrans_pc_is_in_cache(struct cpu *cpu, uint64_t pc) { return 0; }
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr) { }
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr) { return 0; }
 void bintrans_init_cpu(struct cpu *cpu) { }
-void bintrans_init(void)
+void bintrans_init(struct memory *mem)
 {
-	fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
+	fatal("\n***  NOT starting bintrans, as mips64emul "
+	    "was compiled without such support!\n\n");
 }
 
 #else
@@ -1010,12 +1011,10 @@ void bintrans_init_cpu(struct cpu *cpu)
  *
  *  Should be called before any other bintrans_*() function is used.
  */
-void bintrans_init(void)
+void bintrans_init(struct memory *mem)
 {
 	int res, i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	size_t s;
-
-	debug("bintrans: EXPERIMENTAL!\n");
 
 	/*
 	 *  The entry array must be NULLed, as these are pointers to
@@ -1038,7 +1037,7 @@ void bintrans_init(void)
 		}
 	}
 
-	debug("bintrans: translation_code_chunk_space = %i MB at %p\n",
+	debug("bintrans: %i MB translation cache at %p\n",
 	    (int)(s/1048576), translation_code_chunk_space);
 
 	/*

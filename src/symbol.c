@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.18 2005-01-18 14:55:17 debug Exp $
+ *  $Id: symbol.c,v 1.19 2005-01-19 08:44:53 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -287,7 +287,7 @@ void symbol_readfile(struct symbol_context *sc, char *fname)
 
 	fclose(f);
 
-	debug("    %i symbols\n", sc->n_symbols - cur_n_symbols);
+	debug("%i symbols\n", sc->n_symbols - cur_n_symbols);
 }
 
 

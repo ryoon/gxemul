@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.41 2005-01-17 18:25:21 debug Exp $
+ *  $Id: x11.c,v 1.42 2005-01-19 08:44:53 debug Exp $
  *
  *  X11-related functions.
  */
@@ -340,7 +340,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 		emul->x11_current_display_name_nr %= emul->x11_n_display_names;
 	}
 
-	debug("x11_fb_init(): framebuffer window %i, %ix%i, DISPLAY=%s\n",
+	debug("[ x11_fb_init(): framebuffer window %i, %ix%i, DISPLAY=%s ]\n",
 	    fb_number, xsize, ysize, display_name? display_name : "(default)");
 
 	x11_display = XOpenDisplay(display_name);

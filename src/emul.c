@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.113 2005-01-18 07:28:50 debug Exp $
+ *  $Id: emul.c,v 1.114 2005-01-19 08:44:53 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -369,7 +369,7 @@ static void add_arc_components(struct emul *emul)
 void emul_start(struct emul *emul)
 {
 	struct memory *mem;
-	int i;
+	int i, iadd=4;
 	uint64_t addr, memory_amount;
 
 	/*  Print startup message:  */
@@ -378,14 +378,13 @@ void emul_start(struct emul *emul)
 	debug("-" VERSION);
 #endif
 	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
+	debug("Read the documentation and/or source code for other Copyright notices.\n");
+
+	debug("Setting up...\n");
+	debug_indentation(iadd);
 
 	srandom(time(NULL));
-
 	atexit(fix_console);
-
-	/*  Initialize dynamic binary translation, if available:  */
-	if (emul->bintrans_enable)
-		bintrans_init();
 
 	/*  Create the system's memory:  */
 	debug("adding main memory: %i MB", emul->physical_ram_in_mb);
@@ -410,6 +409,10 @@ void emul_start(struct emul *emul)
 	}
 	memset(emul->cpus, 0, sizeof(struct cpu *) * emul->ncpus);
 
+	/*  Initialize dynamic binary translation, if available:  */
+	if (emul->bintrans_enable)
+		bintrans_init(mem);
+
 	debug("adding cpu0");
 	if (emul->ncpus > 1)
 		debug(" .. cpu%i", emul->ncpus-1);
@@ -425,8 +428,6 @@ void emul_start(struct emul *emul)
 		emul->bootstrap_cpu = random() % emul->ncpus;
 	else
 		emul->bootstrap_cpu = 0;
-
-	diskimage_dump_info();
 
 	if (emul->use_x11)
 		x11_init(emul);
@@ -451,13 +452,15 @@ void emul_start(struct emul *emul)
 
 	if (emul->userland_emul) {
 		/*
-		 *  For userland only emulation, no machine emulation is
-		 *  needed.
+		 *  For userland-only emulation, no machine emulation or
+		 *  network emulation is needed.
 		 */
 	} else {
 		machine_init(emul, mem);
 		net_init();
 	}
+
+	diskimage_dump_info();
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (emul->booting_from_diskimage)
@@ -524,8 +527,10 @@ void emul_start(struct emul *emul)
 	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
 		add_arc_components(emul);
 
+	debug_indentation(-iadd);
+
 	i = 0;
-	debug("starting emulation: cpu%i ", emul->bootstrap_cpu);
+	debug("Starting emulation: cpu%i ", emul->bootstrap_cpu);
 	if (emul->bootstrap_cpu >= 10)  i++;
 	if (emul->bootstrap_cpu >= 100)  i++;
 	if (emul->bootstrap_cpu >= 1000)  i++;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.70 2005-01-18 07:28:50 debug Exp $
+ *  $Id: arcbios.c,v 1.71 2005-01-19 08:44:53 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -131,8 +131,8 @@ void arcbios_add_string_to_component(char *string, uint64_t component)
 		exit(1);
 	}
 	memcpy(arcbios_string_to_component[arcbios_n_string_to_components], string, strlen(string) + 1);
-	debug("adding component mapping: 0x%016llx = %s\n",
-	    (long long)component, string);
+	debug("adding ARC component mapping: 0x%08x = %s\n",
+	    (int)component, string);
 
 	arcbios_string_to_component_value[arcbios_n_string_to_components] = component;
 	arcbios_n_string_to_components ++;

@@ -150,9 +150,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
-		o)  zlib support (should be optional) for:
-			x)  loading gzipped kernels directly
-			x)  (read-only) disk images (?)
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)?
 		o)  Better handling of tape files

@@ -1,0 +1,80 @@
+<html>
+<head><title>mips64emul documentation</title>
+<meta name="robots" content="nofollow">
+</head>
+<body bgcolor=#ffffff text=#000000 link=#4040f0 vlink=#404040 alink=#ff0000>
+
+<p>
+<table width=100%>
+  <tr><td width=100% bgcolor=#808070><font color=#ffffe0 size=6>
+  <b>mips64emul</b></font></td></tr></table>
+
+<p>
+<table width=100%>
+  <tr><td width=100% bgcolor=#b0b0b0><font color=#8f2f2f size=4>
+	Documentation
+  </font></td></tr>
+</table>
+
+<ul>
+  <li><a href="#overview">Overview</a>
+  <li><a href="#build">How to compile/build the emulator</a>
+  <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#feedback">Feedback</a>
+</ul>
+
+
+<p><br>
+<a name="overview"></a>
+<h4>Overview:</h4>
+
+Sorry, there is almost no documentation for mips64emul at this point in time,
+except for reading the <a href="../">source code</a> itself.
+
+
+<p><br>
+<a name="build"></a>
+<h4>How to compile/build the emulator:</h4>
+
+Uncompress the .tar.gz file, and run
+<pre>
+	$ <b>./configure</b>
+	$ <b>make</b>
+</pre>
+
+
+<p><br>
+<a name="disk"></a>
+<h4>How to start the emulator with a disk image:</h4>
+
+Simply add <i>-d diskimagefilename</i> to the command line. For example, if you
+want to run a NetBSD/pmax kernel on an emulated DECstation machine, you
+would use a command line such as this:
+<pre>
+	$ <b>./mips64emul -D2 -q -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
+</pre>
+Only emulated machine types
+that have a <b><i>working</i></b> SCSI or IDE controller support disk images.
+DECstation type 2 (3MAX) has a SCSI controller, so we're lucky.
+<p>
+<font color=#f00000><h1>NOTE: Disk images are not really supported yet.</h1></font>
+<p>
+It is possible to have more than one disk. For each -d argument, a disk
+image is added; the first will be SCSI target 0, the second will be target 1, and so on.
+<pre>
+	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d disk2.raw netbsd-pmax-INSTALL</b>
+</pre>
+
+
+<p><br>
+<a name="feedback"></a>
+<h4>Feedback:</h4>
+
+If you have comments, don't hesitate to mail me at
+md1gavan @mdstud.chalmers.se.
+
+
+<hr>
+
+</body>
+</html>

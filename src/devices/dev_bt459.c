@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.9 2004-04-24 22:38:43 debug Exp $
+ *  $Id: dev_bt459.c,v 1.10 2004-04-27 22:34:46 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -158,7 +158,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case 0xc:		/*  Color map:  */
 		if (writeflag == MEM_WRITE) {
 			idata &= 255;
-			fatal("[ bt459: write to BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, idata);
+			debug("[ bt459: write to BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, idata);
 
 			if (btaddr < 0x100) {
 				if (d->rgb_palette[btaddr * 3 + d->palette_sub_offset] != idata) {
@@ -175,7 +175,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		} else {
 			if (btaddr < 0x100)
 				odata = d->rgb_palette[btaddr * 3 + d->palette_sub_offset];
-			fatal("[ bt459: read from BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, odata);
+			debug("[ bt459: read from BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, odata);
 		}
 
 		d->palette_sub_offset ++;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.74 2005-01-31 19:31:31 debug Exp $
+ *  $Id: debugger.c,v 1.75 2005-01-31 21:56:42 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1815,10 +1815,6 @@ void debugger_init(struct emul **emuls, int n_emuls)
 	if (n_emuls > 1) {
 		fprintf(stderr, "\nWARNING: Multiple simultaneous"
 		    " emulations isn't really supported yet.\n\n");
-	}
-	if (emuls[0]->n_machines > 1) {
-		fprintf(stderr, "\nWARNING: Emulating multiple machines"
-		    " simultaneously isn't really supported yet.\n\n");
 	}
 
 	for (i=0; i<N_PREVIOUS_CMDS; i++) {

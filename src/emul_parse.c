@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.21 2005-01-31 19:44:13 debug Exp $
+ *  $Id: emul_parse.c,v 1.22 2005-01-31 21:56:42 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -330,6 +330,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_bootname[0] = '\0';
 		cur_machine_bootarg[0] = '\0';
 		cur_machine_n_load = 0;
+		cur_machine_n_disk = 0;
 		cur_machine_n_x11_disp = 0;
 		cur_machine_slowsi[0] = '\0';
 		cur_machine_debugger_on_badaddr[0] = '\0';

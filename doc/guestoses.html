@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.18 2005-03-06 07:41:59 debug Exp $
+$Id: guestoses.html,v 1.19 2005-03-09 07:22:03 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -50,21 +50,21 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
-  <li><a href="#netbsdarcinstall">How to install NetBSD/arc in the emulator</a>
+  <li><a href="#netbsdinstall">How to install NetBSD/pmax in GXemul</a>
+  <li><a href="#netbsdarcinstall">How to install NetBSD/arc in GXemul</a>
 <!--
-  <li><a href="#netbsdsgimips">How to run NetBSD/sgimips in the emulator</a>
+  <li><a href="#netbsdsgimips">How to run NetBSD/sgimips in GXemul</a>
 -->
-  <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
-  <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in the emulator</a>
+  <li><a href="#openbsdinstall">How to install OpenBSD/pmax in GXemul</a>
+  <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in GXemul</a>
 <!--
-  <li><a href="#openbsdsgiinstall">How to run OpenBSD/sgi in the emulator</a>
+  <li><a href="#openbsdsgiinstall">How to run OpenBSD/sgi in GXemul</a>
 -->
-  <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
-  <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
-  <li><a href="#declinux">How to install Debian GNU/Linux for DECstation in the emulator</a>
-  <li><a href="#declinuxredhat">How to run Redhat Linux for DECstation in the emulator</a>
-  <li><a href="#mach">How to run Mach/PMAX in the emulator</a>
+  <li><a href="#ultrixinstall">How to install Ultrix/RISC in GXemul</a>
+  <li><a href="#sprite">How to run Sprite for DECstation in GXemul</a>
+  <li><a href="#declinux">How to install Debian GNU/Linux for DECstation in GXemul</a>
+  <li><a href="#declinuxredhat">How to run Redhat Linux for DECstation in GXemul</a>
+  <li><a href="#mach">How to run Mach/PMAX in GXemul</a>
 </ul>
 
 
@@ -95,7 +95,7 @@ system, the harddisk image looks and acts like a real disk.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>How to install NetBSD/pmax in the emulator:</h3>
+<h3>How to install NetBSD/pmax in GXemul:</h3>
 
 To install NetBSD/pmax onto a harddisk image in the emulator, follow these
 instructions:
@@ -205,7 +205,7 @@ the emulator is less stable than for R3000.
 
 <p><br>
 <a name="netbsdarcinstall"></a>
-<h3>How to install NetBSD/arc in the emulator:</h3>
+<h3>How to install NetBSD/arc in GXemul:</h3>
 
 It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -289,7 +289,7 @@ option and try again.
 
 <p><br>
 <a name="netbsdsgimips"></a>
-<h3>How to run NetBSD/sgimips in the emulator:</h3>
+<h3>How to run NetBSD/sgimips in GXemul:</h3>
 
 <a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
 can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
@@ -325,7 +325,7 @@ for a in etc.tgz base.tgz comp.tgz; do tar zxvfp $a; done
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>How to install OpenBSD/pmax in the emulator:</h3>
+<h3>How to install OpenBSD/pmax in GXemul:</h3>
 
 Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
 You should first read the section above on how to install NetBSD/pmax,
@@ -471,7 +471,7 @@ enter <b>rcons</b> if you are using the graphical framebuffer,
 
 <p><br>
 <a name="openbsdarcinstall"></a>
-<h3>How to install OpenBSD/arc in the emulator:</h3>
+<h3>How to install OpenBSD/arc in GXemul:</h3>
 
 It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -542,7 +542,7 @@ to try to remove that from the command line.)
 
 <p><br>
 <a name="openbsdsgiinstall"></a>
-<h3>How to run OpenBSD/sgi in the emulator:</h3>
+<h3>How to run OpenBSD/sgi in GXemul:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
 can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
@@ -652,7 +652,7 @@ TODO...
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>How to install Ultrix/RISC in the emulator:</h3>
+<h3>How to install Ultrix/RISC in GXemul:</h3>
 
 The following instructions should guide you through an install of Ultrix
 onto a disk image:
@@ -740,7 +740,7 @@ file in the emulator.
 
 <p><br>
 <a name="sprite"></a>
-<h3>How to run Sprite for DECstation in the emulator:</h3>
+<h3>How to run Sprite for DECstation in GXemul:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
 The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
@@ -808,7 +808,7 @@ adding <b>-b</b> to the command line options).
 
 <p><br>
 <a name="declinux"></a>
-<h3>How to install Debian GNU/Linux for DECstation in the emulator:</h3>
+<h3>How to install Debian GNU/Linux for DECstation in GXemul:</h3>
 
 <p>
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
@@ -894,7 +894,7 @@ CTRL-C and type <b>quit</b>, and then:
 
 <p>
 <ol start="5">
-  <li>Download a normal kernel (not a RAMDISK one).<pre>
+  <li>Download a normal kernel (<i>not</i> a RAMDISK kernel):<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
 	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
 
@@ -942,7 +942,7 @@ example), but at least it doesn't Oops that often.&nbsp;]
 
 <p><br>
 <a name="declinuxredhat"></a>
-<h3>How to run Redhat Linux for DECstation in the emulator</h3>
+<h3>How to run Redhat Linux for DECstation in GXemul:</h3>
 
 <p>
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
@@ -1030,7 +1030,7 @@ It should work with framebuffer/keyboard.&nbsp;]
 
 <p><br>
 <a name="mach"></a>
-<h3>How to run Mach/PMAX in the emulator:</h3>
+<h3>How to run Mach/PMAX in GXemul:</h3>
 
 <p>
 Read the following link if you want to know more about Mach in general:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.6 2004-03-04 06:12:54 debug Exp $
+ *  $Id: ps2_bios.c,v 1.7 2004-03-04 18:44:40 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -81,6 +81,12 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 	case 3:			/*  putchar(int ch)  */
 		/*  debug("[ SIFBIOS putchar(0x%x) ]\n", (char)cpu->gpr[GPR_A1]);  */
 		console_putchar(cpu->gpr[GPR_A1]);
+		break;
+	case 4:			/*  getchar()  */
+		/*  debug("[ SIFBIOS getchar() ]\n";  */
+		cpu->gpr[GPR_V0] = 0;
+		if (console_charavail())
+			cpu->gpr[GPR_V0] = console_readchar();
 		break;
 	case 16:		/*  dma_init()  */
 		debug("[ SIFBIOS dma_init() ]\n");

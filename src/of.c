@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.3 2005-03-09 09:12:47 debug Exp $
+ *  $Id: of.c,v 1.4 2005-03-09 18:30:30 debug Exp $
  *
  *  OpenFirmware emulation.
  */
@@ -172,11 +172,22 @@ int of_emul(struct cpu *cpu)
 		switch (handle) {
 		case HANDLE_MEMORY:
 			if (strcmp(tmpstr, "available") == 0) {
-				/*  TODO  */
-				store_32bit_word(cpu, base + ofs, 33*4);
+				store_32bit_word(cpu, base + ofs, 2*8);
+				/*  TODO.  {start, size}  */
+				store_32bit_word(cpu, buf, 0);
+				store_32bit_word(cpu, buf+4,
+				    cpu->machine->physical_ram_in_mb * 1048576
+				    - 65536);
+				store_32bit_word(cpu, buf+8, 0);
+				store_32bit_word(cpu, buf+12, 0);
 			} else if (strcmp(tmpstr, "reg") == 0) {
 				/*  TODO  */
-				store_32bit_word(cpu, base + ofs, 33*4);
+				store_32bit_word(cpu, base + ofs, 33*8);
+				store_32bit_word(cpu, buf, 0);
+				store_32bit_word(cpu, buf+4,
+				    cpu->machine->physical_ram_in_mb * 1048576);
+				store_32bit_word(cpu, buf+8, 0);
+				store_32bit_word(cpu, buf+12, 0);
 			} else {
 				fatal("[ of: getprop(%i,\"%s\"): not yet"
 				    " implemented ]\n", (int)handle, arg[1]);
@@ -210,11 +221,14 @@ int of_emul(struct cpu *cpu)
 			    " implemented ]\n", (int)handle, arg[1]);
 			cpu->cd.ppc.gpr[3] = -1;
 		}
+	} else if (strcmp(service, "instance-to-package") == 0) {
+		/*  TODO: a package handle  */
+		store_32bit_word(cpu, base + ofs, 1000);
 	} else {
 		quiet_mode = 0;
-		cpu_register_dump(cpu->machine, cpu, 1, 0x1);
+		cpu_register_dump(cpu->machine, cpu, 1, 0);
 		printf("\n");
-		fatal("of_emul(): unimplemented service \"%s\"\n", service);
+		fatal("[ of_emul(): unimplemented service \"%s\" ]\n", service);
 		cpu->running = 0;
 		cpu->dead = 1;
 	}

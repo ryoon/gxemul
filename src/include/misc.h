@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.128 2004-11-01 12:23:27 debug Exp $
+ *  $Id: misc.h,v 1.129 2004-11-03 00:36:48 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -1004,6 +1004,8 @@ void useremul_syscall(struct cpu *cpu, uint32_t code);
 /*  x11.c:  */
 /*  Framebuffer windows:  */
 struct fb_window {
+	int		fb_number;
+
 #ifdef WITH_X11
 	/*  x11_fb_winxsize > 0 for a valid fb_window  */
 	int		x11_fb_winxsize, x11_fb_winysize;
@@ -1011,8 +1013,6 @@ struct fb_window {
 	Display		*x11_display;
 	Window		x11_fb_window;
 	GC		x11_fb_gc;
-
-	int		fb_number;
 
 	XImage		*fb_ximage;
 	unsigned char	*ximage_data;
@@ -1028,9 +1028,6 @@ struct fb_window {
 	int		OLD_cursor_xsize;
 	int		OLD_cursor_ysize;
 	int		OLD_cursor_on;
-
-#else
-	int		dummy;
 #endif
 };
 void x11_redraw(void);

@@ -63,6 +63,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			o)  the special2 stuff is a mess right now
 			o)  warn and/or cause exceptions for unimplemented
 			    instructions (depending on CPU type)
+		o)  Make the "speed-hack jump" stuff work with everything
+			(openbsd/arc, ultrix, linux, ...)
 		o)  R2000/R3000:
 			x)  Make sure that registers (INCLUDING coprocessor
 			    registers) are always sign-extended. (32-bit stuff)

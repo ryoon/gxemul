@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.51 2004-11-01 16:56:51 debug Exp $
+$Id: RELEASE,v 1.52 2004-11-03 00:36:46 debug Exp $
 
 I'm currently working on what will become 0.2.2.
 The release "road map" at the moment looks something like this:
@@ -60,14 +60,14 @@ similar to how it would run on a real physical machine, only a lot slower.
 
 The following guest operating systems have been verified to work:
 
-    Operating system   Emulated machine
-    ----------------   ----------------
-    NetBSD/pmax        DECstation 5000/200
-    OpenBSD/pmax       DECstation 5000/200
-    Ultrix/RISC        DECstation 5000/200
-    Sprite             DECstation 5000/200
-    NetBSD/arc         Acer PICA-61
-    OpenBSD/arc        Acer PICA-61
+    Operating system             Emulated machine
+    ----------------             ----------------
+    NetBSD 1.6.2/pmax            DECstation 5000/200
+    OpenBSD 2.8-BETA/pmax        DECstation 5000/200
+    Ultrix 4.2-4.5/RISC          DECstation 5000/200
+    Sprite demo harddisk image   DECstation 5000/200
+    NetBSD 1.6.2/arc             Acer PICA-61
+    OpenBSD 2.3/arc              Acer PICA-61
 
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,

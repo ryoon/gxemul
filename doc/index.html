@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.142 2004-11-01 15:04:57 debug Exp $
+$Id: index.html,v 1.143 2004-11-03 00:36:47 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -711,10 +711,14 @@ root password, and so on.
 Once you have completed the installation procedure, the following command
 will let you boot from the new rootdisk image:
 <pre>
-	$ <b>./mips64emul -D2 -X -M64 -d openbsddisk.img -j bsd</b>
+	$ <b>./mips64emul -D2 -X -M64 -o '-aN' -d openbsddisk.img -j bsd</b>
 </pre>
-When asked for which root device to use, enter <b>rz0</b>.
-<br>When asked for which terminal type to use, when logging in as root,
+
+<p>
+(Normally, you would be asked about which root device to use (rz0), but 
+using -o '-aN' supresses that.)
+<p>
+When asked for which terminal type to use, when logging in as root,
 enter <b>rcons</b> if you are using the graphical framebuffer,
 <b>vt100</b> for text-mode.
 <br>Use <b>startx</b> to start X windows.

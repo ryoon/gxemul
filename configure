@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.67 2004-10-17 15:06:50 debug Exp $
+#  $Id: configure,v 1.68 2004-11-03 00:36:46 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -204,6 +204,7 @@ if [ z"$CC" = z ]; then
 fi
 
 
+rm -f _testprog
 printf "$CC $CFLAGS\n"
 
 
@@ -248,10 +249,10 @@ if [ z$NOX11 = z ]; then
 	XOK=0
 
 	XINCLUDE=-I/usr/X11R6/include
-	$CC _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+	$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
 
 	XLIB="-L/usr/X11R6/lib -lX11"
-	$CC _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+	$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
 	if [ -x _test_x11 ]; then
 		XOK=1
@@ -261,11 +262,11 @@ if [ z$NOX11 = z ]; then
 
 	if [ z$XOK = z0 ]; then
 		XINCLUDE=""
-		$CC _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+		$CC $CFLAGS _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
 
 		#  -lsocket for Solaris
 		XLIB="-lX11 -lsocket"
-		$CC _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+		$CC $CFLAGS _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
 		if [ -x _test_x11 ]; then
 			XOK=1
@@ -294,7 +295,7 @@ fi
 
 #  CWARNINGS:
 printf "checking whether -Wall can be used... "
-$CC _testprog.c -o _testprog -Wall 2> /dev/null
+$CC $CFLAGS _testprog.c -o _testprog -Wall 2> /dev/null
 if [ -x _testprog ]; then
 	printf "yes\n"
 	CWARNINGS="-Wall $CWARNINGS"
@@ -315,9 +316,9 @@ rm -f _testprog
 printf "checking whether -lrt is required for nanosleep... "
 printf "#include <time.h>\n#include <stdio.h>
 int main(int argc, char *argv[]){nanosleep(NULL,NULL);return 0;}\n" > _testns.c
-$CC _testns.c -o _testns 2> /dev/null
+$CC $CFLAGS _testns.c -o _testns 2> /dev/null
 if [ ! -x _testns ]; then
-	$CC -lrt _testns.c -o _testns 2> /dev/null
+	$CC $CFLAGS -lrt _testns.c -o _testns 2> /dev/null
 	if [ ! -x _testns ]; then
 		printf "WARNING! COULD NOT COMPILE WITH nanosleep AT ALL!\n"
 	else
@@ -334,9 +335,9 @@ rm -f _testns.c _testns
 #  -lresolv for inet_aton?
 printf "checking whether -lresolv is required for inet_aton... "
 printf "extern void (*inet_aton)(void); int main(int argc, char *argv[]) { void *x; x = inet_aton; return 0; }\n" > _testr.c
-$CC _testr.c -o _testr 2> /dev/null
+$CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
-	$CC -lresolv _testr.c -o _testr 2> /dev/null
+	$CC $CFLAGS -lresolv _testr.c -o _testr 2> /dev/null
 	if [ ! -x _testr ]; then
 		printf "WARNING! COULD NOT COMPILE WITH inet_aton AT ALL!\n"
 	else
@@ -357,7 +358,7 @@ printf "#include <stdlib.h>
 #include <stdio.h>
 int main(int argc, char *argv[]) {
   long long x = strtoll(argv[1], NULL, 0); return 0;}\n" > _tests.c
-$CC _tests.c -o _tests 2> /dev/null
+$CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
 	printf "missing\n"
 	printf "WARNING! strtoll missing from libc. Hack: using strtoll = strtol and
@@ -378,11 +379,39 @@ printf "#include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 int main(int argc, char *argv[]) { fseeko(NULL, 0, 0); return 0;}\n" > _tests.c
-$CC _tests.c -o _tests 2> /dev/null
+$CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
 	printf "no\n"
 	printf "WARNING! fseeko missing from libc. Using a hack, which probably doesn't work.\n"
 	printf "#define HACK_FSEEKO\n" >> config.h
+else
+	printf "yes\n"
+fi
+rm -f _tests.[co] _tests
+
+
+#  MAP_ANON missing? (On some HP-UX systems? Use MAP_ANONYMOUS instead.)
+printf "checking for MAP_ANON... "
+rm -f _tests
+printf "#include <stdio.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+int main(int argc, char *argv[]) { int x = MAP_ANON; return 0;}\n" > _tests.c
+$CC $CFLAGS _tests.c -o _tests 2> /dev/null
+if [ ! -x _tests ]; then
+	printf "#include <stdio.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+int main(int argc, char *argv[]) { int x = MAP_ANONYMOUS; return 0;}\n" > _tests.c
+	$CC $CFLAGS _tests.c -o _tests 2> /dev/null
+	if [ ! -x _tests ]; then
+		printf "no\n"
+		printf "WARNING! Neither MAP_ANON nor MAP_ANONYMOUS work on this system. Aborting.\n"
+		exit
+	else
+		printf "using MAP_ANONYMOUS\n"
+		printf "#define MAP_ANON MAP_ANONYMOUS\n" >> config.h
+	fi
 else
 	printf "yes\n"
 fi
@@ -470,7 +499,7 @@ fi
 
 
 if [ z"`uname`" = zOSF1 ]; then
-	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE $COPTIM"
+	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $COPTIM"
 fi
 
 
@@ -479,7 +508,7 @@ printf "checking for prefetch support... "
 if [ z"`uname -m`" = zalpha ]; then
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
-	$CC -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+	$CC $COPTIM -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
 	if [ -x _alpha_asm_test ]; then
 #		printf "#define HAVE_PREFETCH\n" >> config.h
 		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h

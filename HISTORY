@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.90 2004-06-17 23:52:11 debug Exp $
+$Id: HISTORY,v 1.91 2004-06-21 10:54:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -547,3 +547,9 @@ HISTORY of mips64emul
 		enter userland :-)  No interrupt specifics are implemented
 		yet, so it hangs while doing terminal output.
 20040618	Experimenting with the WDSC SCSI controller for IP20,22,24.
+20040620	Adding a program which converts SGI prom dumps from text
+		capture to binary, and some hacks to try to make such an
+		IP22 PROM to work better in the emulator.
+20040621	Removing the Nintendo 64 emulation mode, as it is too
+		uninteresting to support.
+		Adding some SCSI tape device support.

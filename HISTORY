@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.145 2004-07-09 08:14:41 debug Exp $
+$Id: HISTORY,v 1.146 2004-07-09 09:31:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -713,3 +713,6 @@ HISTORY of mips64emul
 		Some updates to the man page.
 20040709(later)	Fix to the TURBOchannel code to allow Sprite to get past the
 		card detection. Seems to still work with Ultrix and NetBSD.
+		This also makes Linux/DECstation properly recognize both the
+		Lance controller and the SCSI controller. Linux 2.4.26 from
+		Debian boots nicely in framebuffer mode :-)

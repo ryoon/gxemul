@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.130 2004-12-15 01:59:59 debug Exp $
+ *  $Id: memory.c,v 1.131 2004-12-22 16:12:58 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -68,7 +68,7 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 	}
 #endif
 
-	/*  Switch byte order for incoming data, if neccessary:  */
+	/*  Switch byte order for incoming data, if necessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
 		for (i=0; i<len; i++) {
 			x <<= 8;
@@ -613,7 +613,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		}
 		return 1;
 	} else {
-		/*  Reload caches if neccessary:  */
+		/*  Reload caches if necessary:  */
 
 		/*  No!  Not when not emulating caches fully. (TODO?)  */
 		cpu->cache_last_paddr[cache] = paddr;

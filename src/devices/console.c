@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.19 2004-12-20 02:48:39 debug Exp $
+ *  $Id: console.c,v 1.20 2004-12-22 16:12:54 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -251,7 +251,7 @@ void console_putchar(int ch)
 /*
  *  console_flush():
  *
- *  Flushes stdout, if neccessary, and resets console_stdout_pending to zero.
+ *  Flushes stdout, if necessary, and resets console_stdout_pending to zero.
  */
 void console_flush(void)
 {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.40 2004-12-18 09:17:45 debug Exp $
+ *  $Id: net.c,v 1.41 2004-12-22 16:12:58 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1277,7 +1277,7 @@ int net_ethernet_rx_avail(void *extra)
 		udp_data[7] = 0;
 		memcpy(udp_data + 8, buf, res);
 		/*
-		 *  TODO:  UDP checksum, if neccessary. At least NetBSD
+		 *  TODO:  UDP checksum, if necessary. At least NetBSD
 		 *  and OpenBSD accept UDP packets with 0x0000 in the
 		 *  checksum field anyway.
 		 */
@@ -1550,7 +1550,7 @@ int net_ethernet_rx(void *extra, unsigned char **packetp, int *lenp)
  *  net_ethernet_tx():
  *
  *  Transmit an ethernet packet, as seen from the emulated ethernet controller.
- *  If the packet can be handled here, it will not neccessarily be transmitted
+ *  If the packet can be handled here, it will not necessarily be transmitted
  *  to the outside world.
  */
 void net_ethernet_tx(void *extra, unsigned char *packet, int len)

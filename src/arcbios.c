@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.56 2004-12-20 02:48:41 debug Exp $
+ *  $Id: arcbios.c,v 1.57 2004-12-22 16:12:58 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -282,9 +282,9 @@ static void handle_esc_seq(struct cpu *cpu)
 
 
 /*
- *  scroll_if_neccessary():
+ *  scroll_if_necessary():
  */
-static void scroll_if_neccessary(struct cpu *cpu)
+static void scroll_if_necessary(struct cpu *cpu)
 {
 	/*  Scroll?  */
 	if (arcbios_console_cury >= arcbios_console_maxy) {
@@ -370,7 +370,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 			if (arcbios_console_curx >= arcbios_console_maxx) {
 				arcbios_console_curx = 0;
 				arcbios_console_cury ++;
-				scroll_if_neccessary(cpu);
+				scroll_if_necessary(cpu);
 			}
 			arcbios_putcell(cpu, ch, arcbios_console_curx,
 			    arcbios_console_cury);
@@ -378,7 +378,7 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 		}
 	}
 
-	scroll_if_neccessary(cpu);
+	scroll_if_necessary(cpu);
 
 	/*  Update cursor position:  */
 	addr = (arcbios_console_curx >= arcbios_console_maxx?
@@ -421,7 +421,7 @@ uint64_t arcbios_get_scsicontroller(void)
  *  arcbios_add_memory_descriptor():
  *
  *  NOTE: arctype is the ARC type, not the SGI type. This function takes
- *  care of converting, when neccessary.
+ *  care of converting, when necessary.
  */
 void arcbios_add_memory_descriptor(struct cpu *cpu,
 	uint64_t base, uint64_t len, int arctype)
@@ -434,7 +434,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	base /= 4096;
 	len /= 4096;
 
-/*  TODO: Huh? Why isn't it neccessary to convert from arc to sgi types?  */
+/*  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?  */
 #if 0
 	if (cpu->emul->emulation_type == EMULTYPE_SGI) {
 		/*  arctype is SGI style  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.141 2004-12-19 08:36:55 debug Exp $
+ *  $Id: main.c,v 1.142 2004-12-22 16:12:58 debug Exp $
  */
 
 #include <stdio.h>
@@ -477,6 +477,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	    && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R3000");
 
+	if (emul->emulation_type == EMULTYPE_HPCMIPS
+	    && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "VR4131");
+
 	if (emul->emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RM5200");
 
@@ -535,6 +539,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->emulation_type == EMULTYPE_SGI && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 48;
+
+	if (emul->emulation_type == EMULTYPE_HPCMIPS && emul->physical_ram_in_mb == 0)
+		emul->physical_ram_in_mb = 16;
 
 	if (emul->emulation_type == EMULTYPE_MESHCUBE && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 64;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cp_removeblocks.c,v 1.9 2004-11-29 14:14:54 debug Exp $
+ *  $Id: cp_removeblocks.c,v 1.10 2004-12-22 16:12:56 debug Exp $
  *
  *  This program copies a file, but only those blocks that are not zero-
  *  filled.  Typical usage would be if you have a harddisk image stored
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 *  Copy the last byte explicitly, if neccessary.
+	 *  Copy the last byte explicitly, if necessary.
 	 *  (This causes f2 to get the correct file size.)
 	 */
 	if (!wrote_last && in_pos > 0) {

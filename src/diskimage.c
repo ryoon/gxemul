@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.58 2004-12-20 02:48:42 debug Exp $
+ *  $Id: diskimage.c,v 1.59 2004-12-22 16:12:58 debug Exp $
  *
  *  Disk image support.
  *
@@ -314,7 +314,7 @@ static void diskimage__switch_tape(int disk_id)
  *
  *  The xferp points to a scsi_transfer struct, containing msg_out, command,
  *  and data_out coming from the SCSI controller device.  This function
- *  interprets the command, and (if neccessary) creates responses in
+ *  interprets the command, and (if necessary) creates responses in
  *  data_in, msg_in, and status.
  *
  *  Returns:
@@ -761,7 +761,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
 		/*  TODO: how about return code?  */
 
-		/*  Is this really neccessary?  */
+		/*  Is this really necessary?  */
 		/*  fsync(fileno(diskimages[disk_id]->f));  */
 
 		diskimage__return_default_status_and_message(xferp);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.17 2004-12-22 08:08:22 debug Exp $
+ *  $Id: debugger.c,v 1.18 2004-12-22 16:12:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -569,6 +569,10 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 	} else if (regnr == -1) {
 		emul->cpus[cpuid]->pc = tmp;
 	}
+
+	/*  Note/TODO: this is a bit conservative...  */
+	if (coprocreg)
+		emul->cpus[cpuid]->cached_interrupt_is_possible = 1;
 }
 
 

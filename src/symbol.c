@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.15 2004-10-17 15:31:45 debug Exp $
+ *  $Id: symbol.c,v 1.16 2004-12-22 16:12:58 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -312,7 +312,7 @@ int sym_addr_compare(const void *a, const void *b)
  *
  *  Recalculate sizes of symbols that have size = 0, by creating an array
  *  containing all symbols, qsort()-ing that array according to address, and
- *  recalculating the size fields if neccessary.
+ *  recalculating the size fields if necessary.
  */
 void symbol_recalc_sizes(struct symbol_context *sc)
 {

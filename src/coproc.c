@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.129 2004-12-20 02:48:41 debug Exp $
+ *  $Id: coproc.c,v 1.130 2004-12-22 16:12:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -498,7 +498,7 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 /*
  *  invalidate_translation_caches():
  *
- *  This is neccessary for every change to the TLB, and when the ASID is
+ *  This is necessary for every change to the TLB, and when the ASID is
  *  changed, so that for example user-space addresses are not cached when
  *  they should not be.
  */
@@ -1769,7 +1769,7 @@ void coproc_rfe(struct cpu *cpu)
 	    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 
 	/*  Changing from kernel to user mode?
-	    Then this is neccessary:  */
+	    Then this is necessary:  */
 	if (!oldmode && 
 	    (cpu->coproc[0]->reg[COP0_STATUS] &
 	    MIPS1_SR_KU_CUR))
@@ -1814,7 +1814,7 @@ void coproc_eret(struct cpu *cpu)
 		newmode = 1;
 
 	/*  Changing from kernel to user mode?
-	    Then this is neccessary:  TODO  */
+	    Then this is necessary:  TODO  */
 	if (oldmode && !newmode)
 		invalidate_translation_caches(cpu, 0, 0, 1, 0);
 }

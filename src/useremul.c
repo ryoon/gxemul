@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.20 2004-10-17 15:31:45 debug Exp $
+ *  $Id: useremul.c,v 1.21 2004-12-22 16:12:58 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -221,7 +221,7 @@ static unsigned char *get_userland_buf(struct cpu *cpu,
  *  Handle userland syscalls.  This function is called whenever
  *  a userland process runs a 'syscall' instruction.  The code
  *  argument is the code embedded into the syscall instruction.
- *  (This 'code' value is not neccessarily used by specific
+ *  (This 'code' value is not necessarily used by specific
  *  emulations.)
  */
 void useremul_syscall(struct cpu *cpu, uint32_t code)

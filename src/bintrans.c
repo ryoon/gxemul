@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.119 2004-12-20 02:48:41 debug Exp $
+ *  $Id: bintrans.c,v 1.120 2004-12-22 16:12:58 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -784,7 +784,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	/*  chunk_len = nr of bytes occupied by the new code chunk  */
 	chunk_len = (size_t)ca - (size_t)ca2;
 
-	/*  Invalidate the host's instruction cache, if neccessary:  */
+	/*  Invalidate the host's instruction cache, if necessary:  */
 	bintrans_host_cacheinvalidate(ca2, chunk_len);
 
 	translation_code_chunk_space_head += chunk_len;

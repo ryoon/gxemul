@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.50 2004-12-20 02:48:39 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.51 2004-12-22 16:12:54 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -226,7 +226,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	case MC146818_SGI:
 		/*
 		 *  This device was originally written for DECstation
-		 *  emulation, so no changes are neccessary for that access
+		 *  emulation, so no changes are necessary for that access
 		 *  style.
 		 *
 		 *  SGI access bytes 0x0..0xd at offsets 0x0yz..0xdyz, where yz

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.49 2004-12-20 02:48:39 debug Exp $
+ *  $Id: dev_bt459.c,v 1.50 2004-12-22 16:12:54 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -486,7 +486,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		} else {
 			odata = d->bt459_reg[btaddr];
 
-			/*  Perhaps this hack is not neccessary:  */
+			/*  Perhaps this hack is not necessary:  */
 			if (btaddr == BT459_REG_ID && len==1)
 				odata = (odata >> 16) & 255;
 

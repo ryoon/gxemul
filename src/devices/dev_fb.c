@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.76 2004-12-20 02:48:39 debug Exp $
+ *  $Id: dev_fb.c,v 1.77 2004-12-22 16:12:54 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -741,7 +741,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 	/*
 	 *  If the framebuffer is modified, then we should keep a track
 	 *  of which area(s) we modify, so that the display isn't updated
-	 *  unneccessarily.
+	 *  unnecessarily.
 	 */
 	if (writeflag == MEM_WRITE && cpu->emul->use_x11) {
 		int x, y, x2,y2;

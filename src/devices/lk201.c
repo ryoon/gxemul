@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.18 2004-11-18 08:38:10 debug Exp $
+ *  $Id: lk201.c,v 1.19 2004-12-22 16:12:54 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -254,7 +254,7 @@ void lk201_tick(struct lk201_data *d)
 		if (d->use_fb)
 			lk201_convert_ascii_to_keybcode(d, ch);
 		else {
-			/*  This is ugly, but neccessary because different machines
+			/*  This is ugly, but necessary because different machines
 				seem to use different ports for their serial console:  */
 			d->add_to_rx_queue(d->add_data, ch, DCKBD_PORT);	/*  DEC MIPSMATE 5100  */
 			d->add_to_rx_queue(d->add_data, ch, DCCOMM_PORT);

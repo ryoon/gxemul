@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.416 2004-12-22 08:01:06 debug Exp $
+$Id: HISTORY,v 1.417 2004-12-22 16:12:53 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -439,7 +439,7 @@ HISTORY of mips64emul
 20040407	The bug is triggered by gunzip during NetBSD/pmax install.
 20040408	Fixing a bug (non-nul-terminated string) which caused X11
 		cursors to not display on Solaris.
-		Unneccessary X11 redraws are skipped (removes some weird
+		Unnecessary X11 redraws are skipped (removes some weird
 		delays that existed before), and cursors are redrawn on
 		window exposure. (The cursor functionality has been moved
 		from dev_fb.c to x11.c.)
@@ -765,7 +765,7 @@ HISTORY of mips64emul
 		yet handled.
 		Linux doesn't use 64-bit file offsets by default, which is
 		needed when using large disk images (more than 2GB), so the
-		configure script has now been modified to add neccessary
+		configure script has now been modified to add necessary
 		compiler flags for Linux.
 20040713	Trying out some minor optimizations.
 		Refreshing the UDP implementation in src/net.c a little.
@@ -1252,7 +1252,7 @@ HISTORY of mips64emul
 		Adding a hack for mmap() which supports anonymous mapping
 		using /dev/zero, but not using MAP_ANON{,YMOUS}.
 		Separating out opcodes.h, cop0.h, and cpu_types.h from misc.h.
-20041207	Minor bintrans update. (In some cases, it isn't neccessary
+20041207	Minor bintrans update. (In some cases, it isn't necessary
 		to return to the main loop, when translating from a new page.)
 		Some other minor i386 bintrans backend optimizations.
 		And some other minor updates.

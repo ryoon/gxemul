@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.115 2004-12-16 04:36:57 debug Exp $
+ *  $Id: devices.h,v 1.116 2004-12-22 16:12:57 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -569,6 +569,11 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_pal
 /*  dev_vga.c:  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base, uint64_t control_base, int max_x, int max_y, char *name);
+
+/*  dev_vr41xx.c:  */
+#define	DEV_VR41XX_LENGTH		0x1000		/*  TODO?  */
+int dev_vr41xx_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_vr41xx_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_wdc.c:  */
 #define	DEV_WDC_LENGTH			0x8

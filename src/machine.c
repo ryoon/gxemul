@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.257 2004-12-22 08:01:08 debug Exp $
+ *  $Id: machine.c,v 1.258 2004-12-22 16:12:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1747,9 +1747,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
 		    256, HPCMIPS_FB_YSIZE, 16, "HPCmips", 0);
 
-		/*  BE300 devices:  */
+		/*
+		 *  BE300 devices:
+		 */
+
 		dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
 		    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+
+		dev_vr41xx_init(cpu, mem, 0xf000000);
 
 		break;
 
@@ -1814,7 +1819,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
 		store_32bit_word(cpu, 0xa0000000 + emul->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
-		/*  TODO:  Is this neccessary?  */
+		/*  TODO:  Is this necessary?  */
 		cpu->gpr[GPR_SP] = 0x80007f00;
 
 		break;

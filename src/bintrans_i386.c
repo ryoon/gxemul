@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.47 2004-12-13 05:35:52 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.48 2004-12-22 16:12:58 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -44,7 +44,7 @@ struct vth32_table dummy_vth32_table;
 /*
  *  bintrans_host_cacheinvalidate()
  *
- *  Invalidate the host's instruction cache. On i386, this isn't neccessary,
+ *  Invalidate the host's instruction cache. On i386, this isn't necessary,
  *  so this is an empty function.
  */
 static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)

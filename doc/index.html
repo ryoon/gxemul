@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.174 2004-12-22 08:01:07 debug Exp $
+$Id: index.html,v 1.175 2004-12-22 16:12:55 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -299,7 +299,7 @@ mips64emul does not. The ideal goal would be to support "all" MIPS-like CPUs.
 Right now, both R3000-style (32-bit) and R4000-style (64-bit) CPUs can
 be emulated. mips64emul is basically an instruction-level simulator;
 things that would happen in several steps within a physical CPU are not 
-neccessarily simulated correctly or at all (eg. pipe-line stages).
+necessarily simulated correctly or at all (eg. pipe-line stages).
 
 <p>
 I have written an experimental dynamic binary translation subsystem.  
@@ -1531,7 +1531,7 @@ Here are links to some of the kernels that I usually experiment with.
 	<br>TODO: Update this section.
       <p>
       <li>Linux for BE300: <a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try running <b>./mips64emul -FXt -M16 -CVR4131 vmlinux</b>
+	<br>Try running <b>./mips64emul -FXt vmlinux</b>
     </ul>
   </li>
 
@@ -1887,7 +1887,7 @@ large disk image without using up much space at all.
 
 <p>
 Using gzip and gunzip on disk images can be <i>very</i> slow, as these 
-files can be multiple gigabytes large, but this is usually neccessary for
+files can be multiple gigabytes large, but this is usually necessary for
 transfering disk images over the internet. If you receive a gzipped disk 
 image, say disk.img.gz, and run a naive
 <p>

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.219 2004-12-15 05:27:34 debug Exp $
+ *  $Id: cpu.c,v 1.220 2004-12-22 16:12:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1598,7 +1598,7 @@ int cpu_run_instr(struct cpu *cpu)
 		/*  TODO:  If Reverse-endian is set in the status cop0 register, and
 			we are in usermode, then reverse endianness!  */
 
-		/*  The rest of the code is written for little endian, so swap if neccessary:  */
+		/*  The rest of the code is written for little endian, so swap if necessary:  */
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			int tmp;
 			tmp  = instr16[0]; instr16[0] = instr16[1]; instr16[1] = tmp;
@@ -1609,7 +1609,7 @@ int cpu_run_instr(struct cpu *cpu)
 		/*
 		 *  Translate into 32-bit instruction, little endian (instr[3..0]):
 		 *
-		 *  This ugly loop is neccessary because if we would get an exception between
+		 *  This ugly loop is necessary because if we would get an exception between
 		 *  reading an extend instruction and the next instruction, and execution
 		 *  continues on the second instruction, the extend data would be lost. So the
 		 *  entire instruction (the two parts) need to be read in. If an exception is
@@ -1727,7 +1727,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 		/*
 		 *  The rest of the code is written for little endian, so
-		 *  swap if neccessary:
+		 *  swap if necessary:
 		 */
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			instrword = instr[0]; instr[0] = instr[3];
@@ -2201,7 +2201,7 @@ int cpu_run_instr(struct cpu *cpu)
 						low_add = (cpu->gpr[rs] << i);
 						high_add = (cpu->gpr[rs] >> (64-i));
 						if (i==0)			/*  WEIRD BUG in the compiler? Or maybe I'm just stupid  */
-							high_add = 0;		/*  these lines are neccessary, a >> 64 doesn't seem to do anything  */
+							high_add = 0;		/*  these lines are necessary, a >> 64 doesn't seem to do anything  */
 						if (cpu->lo + low_add < cpu->lo)
 							cpu->hi ++;
 						cpu->lo += low_add;
@@ -2591,7 +2591,7 @@ int cpu_run_instr(struct cpu *cpu)
 			return 1;
 		case HI6_LUI:
 			cpu->gpr[rt] = (imm << 16);
-			/*  No sign-extending neccessary, as imm already
+			/*  No sign-extending necessary, as imm already
 			    was sign-extended if it was negative.  */
 			break;
 		case HI6_SLTI:
@@ -3228,7 +3228,7 @@ int cpu_run_instr(struct cpu *cpu)
 			/*
 			 *  Execute the coprocessor function. The
 			 *  coproc_function code outputs instruction
-			 *  trace, if neccessary.
+			 *  trace, if necessary.
 			 */
 			coproc_function(cpu, cpu->coproc[cpnr], imm, 0, 1);
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.8 2004-10-24 06:29:56 debug Exp $
+ *  $Id: dev_pica.c,v 1.9 2004-10-24 07:58:03 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -60,6 +60,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 	unsigned char tr[sizeof(uint32_t)];
 	uint32_t phys_addr;
 
+#if 0
 	fatal("[ dev_pica_dma_controller(): writeflag=%i, len=%i, data =",
 	    writeflag, (int)len);
 	for (i=0; i<len; i++)
@@ -69,6 +70,7 @@ size_t dev_pica_dma_controller(void *dma_controller_data,
 	fatal(" table=%08x",
 	    d->dma_translation_table_base);
 	fatal(" ]\n");
+#endif
 
 	if (!(d->dma0_enable & R4030_DMA_ENAB_RUN)) {
 		fatal("[ dev_pica_dma_controller(): dma not enabled? ]\n");

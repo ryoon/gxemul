@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.126 2004-10-24 06:29:56 debug Exp $
+$Id: index.html,v 1.127 2004-10-24 07:55:24 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -61,6 +61,7 @@ SUCH DAMAGE.
   <li><a href="#cpus">Which CPU types does mips64emul emulate?</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
+  <li><a href="#netbsdarcinstall">How to install NetBSD/arc in the emulator</a>
   <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
   <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in the emulator</a>
   <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
@@ -234,17 +235,18 @@ snapshots, so this list may be incomplete.
 <h3>Which machines does mips64emul emulate?</h3>
 
 A few different machine types are emulated.
-The machine type that is emulated best so far is:
+The machine types that are emulated best at the moment are:
 <ul>
   <li>DECstation/DECsystem machines, made by Digital Equipment Corp.
+  <li>Acer Pica-61 (an ARC machine)
 </ul>
 <p>
 Some other machine types are also emulated, but the degree to which the 
 emulation works for these is generally not very high.
 <ul>
-  <li>Silicon Graphics MIPS-based machines
-  <li>ARC (NEC RISCstation 2250 and 2200, RISCserver 4200,
-	Acer Pica-61, Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
+  <li>Silicon Graphics' MIPS-based machines
+  <li>Other ARC machines (NEC RISCstation 2250 and 2200, RISCserver 4200,
+	Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
   <li>Cobalt
   <li>Sony Playstation 2
   <li>Skeletons for generic
@@ -313,7 +315,8 @@ TX79/R5900 (128-bit).
 This table sums up the guest OSes that run well enough to be considered
 "working" in the emulator, that is, they can be installed onto some kind
 of harddisk image and be interacted with similar to a real machine:
-<p>
+
+<p><br>
  <center>
   <table border="1">
     <tr><td>
@@ -383,16 +386,15 @@ of harddisk image and be interacted with similar to a real machine:
     </td></tr>
   </table>
  </center>
-<p>
-It is non-trivial to get a specific operating system or OS kernel to
-run in the emulator, so don't expect the list above to grow too quickly.
-The DECstation mode is the one that works best. After that comes
-some SGI emulation modes for running *BSD or Linux, however there is no
-SCSI or ethernet support for any SGI mode yet.
+
+<p><br>
+(It is non-trivial to get a specific operating system or OS kernel to
+run in the emulator, so don't expect the list above to grow too quickly.)
 <p>
 There is no guarantee that anything
 specific will run in the emulator, but NetBSD (or possibly Linux) is a
 good starting point for someone who wants to experiment.
+
 
 
 
@@ -484,6 +486,78 @@ Use <b>startx</b> to start X windows.
 If you want to run without the X framebuffer, use this instead:<pre>
 	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
 </pre>
+
+
+
+
+
+
+<p><br>
+<a name="netbsdarcinstall"></a>
+<h3>How to install NetBSD/arc in the emulator:</h3>
+
+It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the
+emulator.
+
+<p>
+To install NetBSD/arc from a CDROM image onto an emulated harddisk image,
+follow these instructions:
+
+<p>
+<ol start="1">
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=800000</b>
+
+</pre>
+  <li>Download a NetBSD/arc CDROM image from ftp:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
+	76873728 bytes, md5 = efce79ecd6d0421551ab1eae7e6a34ee
+
+</pre>
+  <li>Download a NetBSD/arc installation (ramdisk) kernel,
+	and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	$ <b>./mips64emul -A2 -d nbsd_arc.img -d arccd.iso netbsd.RAMDISK</b>
+
+</pre>
+  <li>From now on, you have to use your imagination, as there is no
+	automatic installation program for NetBSD/arc. Here are some tips
+	and hints on how you can proceed with the install:<pre>
+	$ <b>mount /dev/cd0a /mnt2</b>
+	$ <b>disklabel -i -I sd0</b>    (for example 'a', '4.2BSD', '1c',
+	    '600M', 'b', 'swap', '601M', '$', 'P', 'W', 'y', and 'Q')
+	$ <b>newfs /dev/sd0a</b>
+	$ <b>mount /dev/sd0a /mnt</b>
+	$ <b>cd /mnt</b>
+	$ <b>for a in /mnt2/arc/binary/sets/*.tgz; do tar xvzpf $a; done</b>
+	$ <b>cd /; umount /mnt; umount /mnt2</b>
+	$ <b>halt</b>
+
+</pre>
+  <li>Download a generic NetBSD/arc kernel,
+	and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
+
+</pre>
+</ol>
+
+<p>
+You can now use the generic NetBSD/arc kernel to boot from the harddisk 
+image, using the following command:
+<p>
+<pre>
+	$ <b>./mips64emul -A2 -d nbsd_arc.img netbsd-GENERIC</b>
+
+</pre>
+
 
 
 
@@ -634,15 +708,59 @@ enter <b>rcons</b> if you are using the graphical framebuffer,
 <a name="openbsdarcinstall"></a>
 <h3>How to install OpenBSD/arc in the emulator:</h3>
 
-<pre>
-TODO
-wget -np -l 0 -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/
-mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/
+It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
+emulator.
 
-<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
+<p>
+(You should be aware of the fact that OpenBSD for the ARC platform died at 
+release 2.3, so this will not give you an up-to-date OpenBSD system.
+See
+<a href="http://www.openbsd.org/arc.html">http://www.openbsd.org/arc.html</a>
+for more information.)
+
+<p>
+To install OpenBSD/arc onto an emulated harddisk image, follow these
+instructions:
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=obsd_arc.img bs=1024 count=1 seek=700000</b>
+
+</pre>
+  <li>Download the entire arc directory from the ftp server: (approx. 75 MB)<pre>
+	$ <b>wget -np -l 0 -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
 
 </pre>
 
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	I recommend using <b>mkisofs</b> for that purpose. If you don't already
+	have mkisofs installed on your system, you need to install that in
+	order to do this.<pre>
+	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	$ <b>./mips64emul -X -A2 -d obsd_arc.img -d openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</b>
+
+</pre>
+	and proceed like you would do if you were installing OpenBSD
+	on a real Acer PICA-61.
+</ol>
+
+<p>
+Once the install has finished, the following command should let you 
+boot from the harddisk image:
+<p>
+<pre>
+	$ <b>./mips64emul -X -A2 -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
+
+</pre>
 
 
 
@@ -1032,14 +1150,18 @@ Here are links to some of the kernels that I usually experiment with.
 	<br>gunzip, and try with <b>-A1</b> (NEC RISCstation 2250, add <b>-X -N</b> for a graphical framebuffer),
 		<b>-A3</b> (NEC RISCstation 2200),
 	<br><b>-A2</b> (Acer PICA-61), <b>-X -A4</b> (Deskstation Tyne), or <b>-A5</b> (Microsoft Jazz, MIPS Magnum)
+	<br>Read <a href="#netbsdarcinstall">this section</a> about how
+		to install NetBSD/arc onto a harddisk image.
+      <p>
+      <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
+	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
+	<br>Try running with <b>-X -A2</b> or <b>-X -A4</b>.
+	<br>Read <a href="#openbsdarcinstall">this section</a> about how
+		to install OpenBSD/arc onto a harddisk image.
       <p>
       <li>Linux:
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
 	<br>gunzip, and run with <b>-A2</b> (Acer PICA-61)
-      <p>
-      <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
-	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
-	<br>This is a very old OpenBSD kernel. Try running with <b>-X -A2</b> or <b>-X -A4</b>.
       <p>
       <li>Pandora:
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/">ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo</a>/<a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/milo-0.27.1.tar.gz">milo-0.27.1.tar.gz</a>

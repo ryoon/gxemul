@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.7 2003-11-20 05:07:03 debug Exp $
+ *  $Id: x11.c,v 1.8 2003-12-29 01:22:49 debug Exp $
  *
  *  X11-related functions.
  */
@@ -42,7 +42,7 @@
 void x11_redraw(void) { }
 void x11_putpixel_fb(int fb_number, int x, int y, int color) { }
 void x11_init(void) { }
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name) { return NULL; }
+struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown) { return NULL; }
 void x11_check_event(void) { }
 int x11_fb_winxsize = 0, x11_fb_winysize = 0;
 

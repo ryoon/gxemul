@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.54 2005-01-26 08:22:58 debug Exp $
+ *  $Id: debugger.c,v 1.55 2005-01-26 08:27:09 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -63,6 +63,7 @@
 #include "mips_cpu.h"
 #include "mips_cpu_types.h"
 #include "net.h"
+#include "x11.h"
 
 #ifdef HACK_STRTOLL
 #define strtoll strtol
@@ -1661,8 +1662,10 @@ static char *debugger_readline(void)
 		 *  The usleep() call might make it a tiny bit nicer on other
 		 *  running processes, but it is still very ugly.
 		 */
-		while ((ch = console_readchar()) < 0)
+		while ((ch = console_readchar()) < 0) {
+			x11_check_event();
 			usleep(1);
+		}
 
 		if ((ch == '\b' || ch == 127) && cursor_pos > 0) {
 			/*  Backspace.  */

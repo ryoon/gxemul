@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.45 2005-01-26 08:22:59 debug Exp $
+ *  $Id: x11.c,v 1.46 2005-01-26 08:27:09 debug Exp $
  *
  *  X11-related functions.
  */
@@ -520,7 +520,8 @@ void x11_check_event(void)
 			}
 
 			if (event.type == MotionNotify) {
-				debug("[ X11 MotionNotify: %i,%i ]\n", event.xmotion.x, event.xmotion.y);
+				/*  debug("[ X11 MotionNotify: %i,%i ]\n",
+				    event.xmotion.x, event.xmotion.y);  */
 
 				/*  Which window?  */
 				found = -1;

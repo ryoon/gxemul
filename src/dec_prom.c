@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.32 2004-10-13 23:48:37 debug Exp $
+ *  $Id: dec_prom.c,v 1.33 2004-10-13 23:52:49 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -254,9 +254,11 @@ void decstation_prom_emul(struct cpu *cpu)
 			ch2 = ch;
 
 			if (ch == '\b') {
-				console_putchar(ch2);
-				console_putchar(' ');
-				console_putchar(ch2);
+				if (i > 0) {
+					console_putchar(ch2);
+					console_putchar(' ');
+					console_putchar(ch2);
+				}
 			} else
 				console_putchar(ch2);
 
@@ -266,8 +268,9 @@ void decstation_prom_emul(struct cpu *cpu)
 				/*  It seems that trailing newlines
 				    are not included in the buffer.  */
 			} else if (ch != '\b') {
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch2,
-				    sizeof(ch2), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i,
+				    &ch2, sizeof(ch2), MEM_WRITE,
+				    CACHE_DATA | NO_EXCEPTIONS);
 				i++;
 			} else {
 				if (i > 0)
@@ -292,7 +295,8 @@ void decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x30:		/*  printf()  */
 		if (cpu->emul->register_dump || cpu->emul->instruction_trace)
-			debug("PROM printf(0x%08lx): \n", (long)cpu->gpr[GPR_A0]);
+			debug("PROM printf(0x%08lx): \n",
+			    (long)cpu->gpr[GPR_A0]);
 
 		i = 0; ch = -1; argreg = GPR_A1;
 		while (ch != '\0') {
@@ -301,7 +305,8 @@ void decstation_prom_emul(struct cpu *cpu)
 			case '%':
 				ch = '0';
 				while (ch >= '0' && ch <= '9')
-					ch = read_char_from_memory(cpu, GPR_A0, i++);
+					ch = read_char_from_memory(
+					    cpu, GPR_A0, i++);
 				switch (ch) {
 				case '%':
 					printf("%%");

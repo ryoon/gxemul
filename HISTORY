@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.328 2004-11-25 10:55:44 debug Exp $
+$Id: HISTORY,v 1.329 2004-11-26 09:07:20 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1185,3 +1185,4 @@ HISTORY of mips64emul
 		There is now one translate_address() for R3000-style MMUs,
 		and one for the other types. (This gives a tiny speed
 		improvement.)
+20041126	Minor updates, bintrans.

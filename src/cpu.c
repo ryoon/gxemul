@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.196 2004-11-25 08:44:28 debug Exp $
+ *  $Id: cpu.c,v 1.197 2004-11-26 09:05:33 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3338,12 +3338,13 @@ void cpu_show_cycles(struct emul *emul,
 		printf("emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
 	}
 
-	printf("total nr of cycles = %lli", (long long) ncycles);
+	printf("cycles=%lli", (long long) ncycles);
 
 	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
-		printf(" (%lli instructions)", (long long) ninstrs);
+		printf(" (%lli instrs)", (long long) ninstrs);
 
-	printf(", instr/sec: %lli cur, %lli avg",
+	/*  Instructions per second, and average so far:  */
+	printf("; i/s=%lli avg=%lli",
 	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
@@ -3353,10 +3354,10 @@ void cpu_show_cycles(struct emul *emul,
 
 	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level < 3 ||
 	    emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level == 32)
-		printf(", pc=%08x",
+		printf("; pc=%08x",
 		    (int)emul->cpus[emul->bootstrap_cpu]->pc);
 	else
-		printf(", pc=%016llx",
+		printf("; pc=%016llx",
 		    (long long)emul->cpus[emul->bootstrap_cpu]->pc);
 
 	printf(" <%s> ]\n", symbol? symbol : "no symbol");

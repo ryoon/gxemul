@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.110 2004-11-26 09:05:33 debug Exp $
+ *  $Id: coproc.c,v 1.111 2004-11-26 09:07:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1672,12 +1672,19 @@ unsigned char *memblock = NULL;
 vaddr =  cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
 paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
 
+/*  TODO: This is ugly.  */
 if (paddr < 0x10000000)
 	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
 
 if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 	memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 
+	/*  TODO: Hahaha, this is even uglier than the thing
+		above. Some OSes seem to map code pages read/write,
+		which causes the bintrans cache to be invalidated
+		even when it doesn't have to be. By only mapping
+		pages below a "commonly used" address which separates
+		code from data, we gain a tiny bit performance.  */
 	if (vaddr < 0x10000000)
 		wf = 0;
 

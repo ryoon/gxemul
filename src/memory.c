@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.117 2004-11-25 11:20:01 debug Exp $
+ *  $Id: memory.c,v 1.118 2004-11-26 09:05:33 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -666,7 +666,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
 	uint64_t paddr;
-	int cache, no_exceptions, ok, offset;
+	int cache, no_exceptions, ok = 1, offset;
 	unsigned char *memblock;
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
@@ -982,16 +982,16 @@ no_exception_access:
 
 	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
 
-	update_translation_table(cpu, vaddr & ~0xfff,
-	    memblock + (offset & ~0xfff), writeflag == MEM_WRITE? 1 : 0,
-	    paddr & ~0xfff);
+	if (cpu->emul->bintrans_enable)
+		update_translation_table(cpu, vaddr & ~0xfff,
+		    memblock + (offset & ~0xfff),
+		    cache == CACHE_INSTRUCTION?
+			(writeflag == MEM_WRITE? 1 : 0)
+			: ok - 1,
+/*		    writeflag == MEM_WRITE? 1 : 0,  */
+		    paddr & ~0xfff);
 
 	if (writeflag == MEM_WRITE) {
-#ifdef BINTRANS
-		if (cpu->emul->bintrans_enable)
-			bintrans_invalidate(cpu, paddr);
-#endif
-
 		if (len == sizeof(uint32_t) && (offset & 3)==0)
 			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
 		else if (len == sizeof(uint8_t))

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.37 2004-06-24 16:29:32 debug Exp $
+$Id: index.html,v 1.38 2004-06-24 22:12:06 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -112,26 +112,29 @@ clauses. Please check individual files if you plan to reuse code from mips64emul
 <a name="emulmodes"></a>
 <h4>Which machines does mips64emul emulate?</h4>
 
-A few different machine types are emulated. Here, "emulated" does not mean
-that the machine type is emulated <i>well</i>, just that there is such
-an emulation mode.
-
+A few different machine types are emulated.
+The machine types that are emulated best are:
 <ul>
   <li>DECstation/DECsystem machines, made by Digital Equipment Corp.
   <li>Silicon Graphics MIPS-based machines
-  <li>A NEC RISCstation 2250 (an "ARC" compliant machine)
-  <li>Cobalt
-  <li>Sony Playstation 2
-  <li>Handheld "hpcmips" devices
 </ul>
 <p>
 At the moment, the only machine type emulated well enough to let an
 operating system be installed onto a disk image is the DECstation.
 <p>
-Some more notes about the list above:  The machines above have 64-bit
-capable CPUs, except most DECstations. There were upgrades from R3000 to
-R4000 available for some DECstations, but Ultrix was still running in 32-bit
-mode (I think).  Unfortunately, even if most of these machine types have
+Some other machine types are also emulated, but are not as close to
+run an entire OS as the machine types above.
+<ul>
+  <li>ARC (a NEC RISCstation 2250, and an Acer Pica-61)
+  <li>Cobalt
+  <li>Sony Playstation 2
+  <li>Handheld "hpcmips" devices
+</ul>
+<p>
+Some more notes about the list above:  The machines above all have 64-bit
+capable CPUs, except early DECstations models. There were upgrades from
+R3000 to R4000 available for some DECstations, but I think Ultrix was still
+running in 32-bit mode.  Unfortunately, even if most of these machine types have
 64-bit CPUs in them (or even 128-bit, the Playstation 2's R5900 CPU
 is a bit weird), operating systems often run in 32-bit mode on them.
 <p>
@@ -147,12 +150,14 @@ NetBSD is a lot more fun :-)
 In addition to specific machine types, a "bare" machine can be emulated.
 This mode is used when the emulator is started without specifying which
 machine type to emulate.
-A bare machine consists of just a CPU and some experimental devices such
+A bare machine consists of one or more CPUs and a few experimental devices such
 as:
 <ul>
   <li>a console I/O device (think putchar() and getchar()...)
   <li>an inter-processor communication device, for SMP experiments
 </ul>
+This mode is useful if you wish to experiment with software for MIPS-like
+systems, but do not with to target any specific real-world machine type.
 
 
 <p><br>

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.101 2004-06-24 21:37:39 debug Exp $
+$Id: HISTORY,v 1.102 2004-06-24 22:12:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -588,3 +588,6 @@ HISTORY of mips64emul
 		Separating the tiny translation cache into two, one for
 		code and one for data. This gives a few percent speed
 		increase.
+20040625(early)	I think now is a good time for a "feature freeze",
+		to let the code stabilize and then make some kind of
+		first release.

@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.15 2004-06-22 22:25:33 debug Exp $
+ *  $Id: bintrans.c,v 1.16 2004-06-22 22:52:59 debug Exp $
  *
- *  Binary translation.
+ *  Dynamic binary translation.
  *
  *
  *
@@ -33,21 +33,11 @@
  *         place to write down comments.
  *
  *
- *	Keep a cache of a certain number of blocks. Least-recently-used
- *		blocks are replaced.
- *
- *	Don't translate blindly. (?)  Try to wait until we are sure that
- *		a block is actualy used more than once before translating
- *		it. (We can either keep an absolute count of lots of
- *		memory addresses, or utilize some kind of random function.
- *		In the later case, if a block is run many times, it will
- *		have a higher probability of being translated.)
+ *	Keep a cache of a certain number of blocks.
  *
  *	Simple basic-block stuff. Only simple-enough instructions are
  *		translated. (for example, the 'cache' and 'tlbwr' instructions
  *		are NOT simple enough)
- *
- *	Invalidate a block if it is overwritten.
  *
  *	Translate code in physical ram, not virtual.
  *		Why?  This will keep things translated over process
@@ -56,20 +46,26 @@
  *	Do not translate over MIPS page boundaries (4 KB).  (Perhaps translation
  *		over page boundaries can be allowed in kernel space...?)
  *
+ *	If memory is overwritten, any translated block for that page must
+ *		be invalidated.
+ *
  *	Check before running a basic block that no external
  *		exceptions will occur for the duration of the
- *		block.  (External = from a clock device or other
- *		hardware device.)
+ *		block, and count down so that we can run for as
+ *		long as possible in bintrans mode.
+ *		(External = from a hardware device.)
  *
  *	Check for exceptions inside the block, for those instructions
  *		that require that.  Update the instruction counter by
  *		the number of successfully executed instructions only.
  *
- *	Register allocation, set registers before running the block
- *		and read them back afterwards (for example on Alpha)
- *	OR:
- *		manually manipulate the emulated cpu's registers in the
- *		host's "struct cpu". (For example on i386.)
+ *	Don't do dynamic register allocation:
+ *		For alpha, manipulate the cpu struct for "uncommon"
+ *			registers, store common registers in alpha
+ *			registers and write back at end. (TODO:
+ *			experiments must reveal which registers are
+ *			common and which aren't.)
+ *		For i386, manipulate the cpu struct directly.
  *
  *	Multiple target archs (alpha, i386, sparc, mips :-), ...)
  *		Try to use arch specific optimizations, such as prefetch
@@ -77,19 +73,17 @@
  *		Not all instructions will be easily translated to all
  *		backends.
  *
- *	Allow load/store if all such load/stores are confined
- *		to a specific page of virtual memory (or somewhere in kernel
- *		memory, in which case access are allowed to cross page
- *		boundaries), so that any code not requiring TLB updates
- *		will still run without intervention.
- *		The loads/stores will go to physical RAM, so they have
- *		to be translated (once) via the TLB.
+ *	How to do loads/stores?
+ *		Caches of some kind, or hard-coded at translation time?
+ *		Hard-coded would mean that a translation is valid as
+ *		long as the TLB entries that that translation entry
+ *		depends on aren't modified.
  *
  *	Testing:  Running regression tests with and without the binary
  *		translator enabled should obviously result in the exact
  *		same results, or something is wrong.
  *
- *	How about loops?
+ *	JUMPS:  Blocks need to be glued together efficiently.
  *
  *
  *  The general idea would be something like this:
@@ -99,21 +93,19 @@
  *  be added, in addition to the translated instructions.
  *
  *	o)  Check for the current PC in the translation cache.
+ *
  *	o)  If the current PC is not found, then make a decision
  *		regarding making a translation attempt, or not.
  *		Fallback to normal instruction execution in cpu.c.
+ *
  *	o)  If there is a code block for the current PC in the
  *		translation cache, do a couple of checks and then
  *		run the block. Update registers and other values
  *		as neccessary.
  *
  *  The checks would include:
- *	boundaries for load/store memory accesses  (these must be
- *		to pages that are accessible without modifying the TLB,
- *		that is, they either have to be to addresses which
- *		are in the TLB or to kseg0/1 addresses)
- *	no external interrupts should occur for enough number
- *		of cycles
+ *	don't start running inside a delay slot or "likely" slot.
+ *	nr of cycles until the next hardware interrupt occurs
  */
 
 
@@ -129,15 +121,21 @@
  *  No bintrans, then let's supply dummy functions:
  */
 
-void bintrans_init(void);
+void bintrans_init(void)
+{
+fatal("NOT starting bintrans, as mips64emul was compiled without such support!\n");
+}
 
 #else
 
+/*  Include host architecture specific bintrans code:  */
+
 #ifdef ALPHA
 #include "bintrans_alpha.c"
+#else
+#error Unsupported host architecture for bintrans.
 #endif
 
-#endif
 
 
 /*
@@ -147,8 +145,11 @@ void bintrans_init(void);
  */
 void bintrans_init(void)
 {
-	printf("starting bintrans\n");
+	debug("starting bintrans\n");
 
 	/*  TODO  */
 }
+
+
+#endif	/*  BINTRANS  */
 

@@ -23,9 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.10 2004-03-04 03:15:15 debug Exp $
+ *  $Id: dev_scc.c,v 1.11 2004-03-24 00:27:53 debug Exp $
  *  
- *  Serial controller on some DECsystems. (Z8530 ?)
+ *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
+ *  Most of the code in here is written for DECsystem emulation, though.
  *
  *  NOTE:
  *	Each scc device is responsible for two lines; the first scc device
@@ -61,6 +62,7 @@ struct scc_data {
 	int		irq_nr;
 	int		use_fb;
 	int		scc_nr;
+	int		addrmul;
 
 	int		register_select_in_progress[N_SCC_PORTS];
 	int		register_selected[N_SCC_PORTS];
@@ -192,6 +194,18 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 	idata = memory_readmax64(cpu, data, len);
 
+	/*  relative_addr /= d->addrmul;  */  /*  See SGI comment below instead.  */
+	/*
+	 *  SGI writes command to 0x0f, and data to 0x1f.
+	 *  (TODO: This works for port nr 0, how about port nr 1?)
+	 */
+	if ((relative_addr & 0x0f) == 0xf) {
+		if (relative_addr == 0x0f)
+			relative_addr = 1;
+		else
+			relative_addr = 5;
+	}
+
 	port = relative_addr / 8;
 	relative_addr &= 7;
 
@@ -302,8 +316,9 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
  *
  *	use_fb = non-zero when using graphical console + keyboard
  *	scc_nr = 0 or 1
+ *	addmul = 1 in most cases, 8 on SGI?
  */
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr)
+void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul)
 {
 	struct scc_data *d;
 
@@ -313,9 +328,10 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct scc_data));
-	d->irq_nr = irq_nr;
-	d->scc_nr = scc_nr;
-	d->use_fb = use_fb;
+	d->irq_nr  = irq_nr;
+	d->scc_nr  = scc_nr;
+	d->use_fb  = use_fb;
+	d->addrmul = addrmul;
 
 	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
 

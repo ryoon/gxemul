@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.4 2003-11-08 08:45:57 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.5 2003-11-08 14:42:25 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -79,10 +79,6 @@ static void add_to_rx_queue(struct dc_data *d, unsigned char ch, int line_no)
 void convert_ascii_to_keybcode(struct dc_data *d, unsigned char ch)
 {
 	int i, found=-1, shifted = 0, controlled = 0;
-
-	/*  Ugly hack:  CTRL-B (host) ==> CTRL-C (emulator)  */
-	if (ch == 2)
-		ch = 3;
 
 	switch (ch) {
 	case '\b':
@@ -148,6 +144,11 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 
 	if (console_charavail()) {
 		unsigned char ch = console_readchar();
+
+		/*  Ugly hack:  CTRL-B (host) ==> CTRL-C (emulator)  */
+		if (ch == 2)
+			ch = 3;
+
 		if (d->use_fb)
 			convert_ascii_to_keybcode(d, ch);
 		else {

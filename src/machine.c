@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.133 2004-07-10 06:36:29 debug Exp $
+ *  $Id: machine.c,v 1.134 2004-07-10 07:50:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -80,6 +80,7 @@ extern char *machine_name;
 extern int physical_ram_in_mb;
 extern int use_x11;
 extern char *boot_kernel_filename;
+extern char *boot_string_argument;
 
 uint64_t file_loaded_end_addr = 0;
 
@@ -1305,7 +1306,7 @@ void machine_init(struct memory *mem)
 
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
 		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootarg);
-		store_string(DEC_PROM_INITIAL_ARGV+0xe0, "-a");
+		store_string(DEC_PROM_INITIAL_ARGV+0xe0, boot_string_argument);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;
@@ -2315,7 +2316,7 @@ void machine_init(struct memory *mem)
 		strcpy(bootstr, init_bootpath);
 		strcat(bootstr, boot_kernel_filename);
 
-		bootarg = "-a";
+		bootarg = boot_string_argument;		/*  -a, for example  */
 
 		/*
 		 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html

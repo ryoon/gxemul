@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.53 2004-07-07 01:33:46 debug Exp $
+ *  $Id: main.c,v 1.54 2004-07-10 07:50:58 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -81,6 +81,7 @@ int emulated_hz = 0;
 int speed_tricks = 1;
 int userland_emul = 0;
 char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
+char *boot_string_argument = "-a";		/*  overridden with -o  */
 
 int bootstrap_cpu;
 int use_random_bootstrap_cpu = 0;
@@ -205,6 +206,8 @@ void usage(char *progname)
 	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
+	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
+	printf("            Default arg is -a. The other useful arg would be -s.\n");
 	printf("  -n nr     set nr of CPUs  (default = %i)\n", DEFAULT_NCPUS);
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
@@ -241,7 +244,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -302,6 +305,9 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'n':
 			ncpus = atoi(optarg);
+			break;
+		case 'o':
+			boot_string_argument = optarg;
 			break;
 		case 'P':
 		case 'p':

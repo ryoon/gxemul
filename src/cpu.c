@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.47 2004-04-14 23:36:24 debug Exp $
+ *  $Id: cpu.c,v 1.48 2004-04-15 15:05:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2574,11 +2574,11 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 /*
  *  cpu_show_cycles():
  */
-void cpu_show_cycles(struct timeval *starttime, long ncycles)
+void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 {
 	int offset;
 	char *symbol;
-	long long mseconds;
+	int64_t mseconds;
 	struct rusage rusage;
 
 	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
@@ -2591,8 +2591,8 @@ void cpu_show_cycles(struct timeval *starttime, long ncycles)
 	if (mseconds == 0)
 		mseconds = 1;
 
-	printf("[ %li cycles, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
-	    (long) ncycles,
+	printf("[ %lli cycles, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
+	    (long long) ncycles,
 	    (long long) ((long long)1000 * ncycles / mseconds),
 	    bootstrap_cpu,
 	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
@@ -2607,8 +2607,8 @@ void cpu_show_cycles(struct timeval *starttime, long ncycles)
 int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int i, s1, s2;
-	long ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
-	long ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
+	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
+	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
 	int dcount;
 	int running;
 	struct rusage rusage;

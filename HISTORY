@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.344 2004-12-01 22:14:48 debug Exp $
+$Id: HISTORY,v 1.345 2004-12-02 16:28:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1224,3 +1224,7 @@ HISTORY of mips64emul
 
 ==============  RELEASE 0.2.3  ==============
 
+20041202	If ALWAYS_SIGNEXTEND_32 is defined in misc.h, and an
+		incorrectly extended register is detected, the emulator now
+		exits instead of continues.
+		Removing the LAST_USED_TLB_EXPERIMENT stuff.

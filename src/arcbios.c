@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.35 2004-10-17 15:31:44 debug Exp $
+ *  $Id: arcbios.c,v 1.36 2004-12-02 16:28:03 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -430,7 +430,7 @@ void arcbios_private_emul(struct cpu *cpu)
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
 		debug("\n");
 		fatal("ARCBIOS: unimplemented PRIVATE vector 0x%x\n", vector);
-		exit(1);
+		cpu->running = 0;
 	}
 }
 
@@ -710,7 +710,7 @@ void arcbios_emul(struct cpu *cpu)
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
 		debug("\n");
 		fatal("ARCBIOS: unimplemented vector 0x%x\n", vector);
-		exit(1);
+		cpu->running = 0;
 	}
 }
 

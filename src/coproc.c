@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.117 2004-12-01 22:08:41 debug Exp $
+ *  $Id: coproc.c,v 1.118 2004-12-02 16:28:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -410,6 +410,45 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	}
 }
 #endif
+
+
+/*
+ *  invalidate_translation_caches_paddr():
+ *
+ *  Invalidate based on physical address.
+ */
+void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
+{
+#ifdef BINTRANS
+	int i;
+
+	paddr &= ~0xfff;
+
+	if (cpu->emul->bintrans_enable) {
+		uint64_t tlb_paddr;
+		uint64_t tlb_vaddr;
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			for (i=0; i<64; i++) {
+				tlb_paddr = cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK;
+				tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
+				if ((cpu->coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
+				    tlb_paddr == paddr)
+					invalidate_table_entry(cpu, tlb_vaddr);
+			}
+
+			if (paddr < 0x20000000) {
+				invalidate_table_entry(cpu, 0x80000000 + paddr);
+				invalidate_table_entry(cpu, 0xa0000000 + paddr);
+			}
+		}
+	}
+
+	/*  TODO: Don't invalidate everything.  */
+	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+		cpu->bintrans_data_hostpage[i] = NULL;
+#endif
+}
 
 
 /*
@@ -1592,28 +1631,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	if (randomflag) {
-#ifdef LAST_USED_TLB_EXPERIMENT
-		/*
-		 *  This is an experimental thing which
-		 *  finds the index with lowest
-		 *  last_used value, instead of just a
-		 *  random entry:
-		 */
-		int i, found=-1;
-		uint64_t minimum_last_used;
-		for (i=(cpu->cpu_type.mmu_model == MMU3K)? 8 : cp->reg[COP0_WIRED]; i<cp->nr_of_tlbs; i++)
-			if (found==-1 || cp->tlbs[i].last_used < minimum_last_used) {
-				minimum_last_used = cp->tlbs[i].last_used;
-				found = i;
-			}
-		index = found;
-#else
-		/*  This is the non-experimental, normal behaviour:  */
 		if (cpu->cpu_type.mmu_model == MMU3K)
 			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
 		else
 			index = cp->reg[COP0_RANDOM] & RANDOM_MASK;
-#endif
 	} else {
 		if (cpu->cpu_type.mmu_model == MMU3K)
 			index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
@@ -1673,39 +1694,36 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	/*  Write the new entry:  */
 
 	if (cpu->cpu_type.mmu_model == MMU3K) {
-uint64_t vaddr, paddr;
-int wf = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_D? 1 : 0;
-unsigned char *memblock = NULL;
+		uint64_t vaddr, paddr;
+		int wf = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_D? 1 : 0;
+		unsigned char *memblock = NULL;
 
 		cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];
 		cp->tlbs[index].lo0 = cp->reg[COP0_ENTRYLO0];
 
-vaddr =  cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
-paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
+		vaddr =  cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
+		paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
 
-/*  TODO: This is ugly.  */
-if (paddr < 0x10000000)
-	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
+		/*  TODO: This is ugly.  */
+		if (paddr < 0x10000000)
+			memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
 
-if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
-	memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
+		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
+			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 
-	/*  bintrans_invalidate(cpu, paddr);  */
+			/*  bintrans_invalidate(cpu, paddr);  */
 
-	/*  TODO: Hahaha, this is even uglier than the thing
-		above. Some OSes seem to map code pages read/write,
-		which causes the bintrans cache to be invalidated
-		even when it doesn't have to be. By only mapping
-		pages below a "commonly used" address which separates
-		code from data, we gain a tiny bit performance.  */
-	if (vaddr < 0x10000000)
-		wf = 0;
+			/*  TODO: Hahaha, this is even uglier than the thing
+				above. Some OSes seem to map code pages read/write,
+				which causes the bintrans cache to be invalidated
+				even when it doesn't have to be. By only mapping
+				pages below a "commonly used" address which separates
+				code from data, we gain a tiny bit performance.  */
+			if (vaddr < 0x10000000)
+				wf = 0;
 
-	update_translation_table(cpu, vaddr, memblock, wf, paddr);
-}
-
-
-
+			update_translation_table(cpu, vaddr, memblock, wf, paddr);
+		}
 	} else {
 		/*  R4000:  */
 		g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;

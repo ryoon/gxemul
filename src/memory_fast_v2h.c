@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.3 2004-12-01 22:08:41 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.4 2004-12-02 16:28:03 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -61,6 +61,18 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 
 	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i\n",
 	    cpu, (long long)vaddr, writeflag);  */
+
+#if 1
+/*
+ *  TODO:
+ *
+ *  Why doesn't this work yet?
+ */
+if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
+	return NULL;
+}
+#endif
+
 
 	vaddr_page = vaddr & ~0xfff;
 	i = start_and_stop = cpu->bintrans_next_index;
@@ -154,7 +166,7 @@ unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
 		cpu->bintrans_next_index = MAX - 1;
 	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
 	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
-	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
+	cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;  /*  ok - 1;  */
 	return memblock + offset;
 }
 

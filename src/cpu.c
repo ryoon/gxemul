@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.207 2004-12-01 08:25:47 debug Exp $
+ *  $Id: cpu.c,v 1.208 2004-12-02 16:28:03 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1421,12 +1421,14 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
 	if (cpu->cpu_type.mmu_model == MMU3K) {
+		int warning = 0;
 		uint64_t x;
 
 		if (cpu->gpr[0] != 0) {
 			fatal("\nWARNING: r0 was not zero! (%016llx)\n\n",
 			    (long long)cpu->gpr[0]);
 			cpu->gpr[0] = 0;
+			warning = 1;
 		}
 
 		/*  Sign-extend ALL registers, including coprocessor registers and tlbs:  */
@@ -1438,6 +1440,7 @@ int cpu_run_instr(struct cpu *cpu)
 			if (x != cpu->gpr[i]) {
 				fatal("\nWARNING: r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
 				    i, (long long)x, (long long)cpu->gpr[i]);
+				warning = 1;
 			}
 		}
 		for (i=0; i<32; i++) {
@@ -1449,6 +1452,7 @@ int cpu_run_instr(struct cpu *cpu)
 			if (x != cpu->coproc[0]->reg[i]) {
 				fatal("\nWARNING: cop0,r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
 				    i, (long long)x, (long long)cpu->coproc[0]->reg[i]);
+				warning = 1;
 			}
 		}
 		for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
@@ -1460,6 +1464,7 @@ int cpu_run_instr(struct cpu *cpu)
 			if (x != cpu->coproc[0]->tlbs[i].hi) {
 				fatal("\nWARNING: tlb[%i].hi was not sign-extended correctly (%016llx != %016llx)\n\n",
 				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].hi);
+				warning = 1;
 			}
 
 			x = cpu->coproc[0]->tlbs[i].lo0;
@@ -1470,7 +1475,13 @@ int cpu_run_instr(struct cpu *cpu)
 			if (x != cpu->coproc[0]->tlbs[i].lo0) {
 				fatal("\nWARNING: tlb[%i].lo0 was not sign-extended correctly (%016llx != %016llx)\n\n",
 				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].lo0);
+				warning = 1;
 			}
+		}
+
+		if (warning) {
+			fatal("Halting. pc = %016llx\n", (long long)cpu->pc);
+			cpu->running = 0;
 		}
 	}
 #endif

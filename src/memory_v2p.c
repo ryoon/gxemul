@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.4 2004-11-27 08:49:16 debug Exp $
+ *  $Id: memory_v2p.c,v 1.5 2004-12-02 16:28:03 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -385,9 +385,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 
 						paddr = (pfn << pageshift) |
 						    (vaddr & pmask);
-#ifdef LAST_USED_TLB_EXPERIMENT
-						cp0->tlbs[i].last_used = cp0->reg[COP0_COUNT];
-#endif
+
 						/*
 						 *  Enter into the tiny trans-
 						 *  lation cache (if enabled)

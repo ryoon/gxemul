@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.75 2004-12-01 14:23:02 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.76 2004-12-02 16:28:03 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1765,15 +1765,18 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 
 		switch (rd) {
 		case COP0_INDEX:
-
-		/*  TODO: Some bits are not writable on R3000  */
-		case COP0_ENTRYLO0:
-		case COP0_ENTRYLO1:
+			break;
 
 		case COP0_EPC:
 			break;
 
+#if 0
+		/*  TODO: Some bits are not writable  */
+		case COP0_ENTRYLO0:
+		case COP0_ENTRYLO1:
+
 		case COP0_ENTRYHI:
+#endif
 			/*
 			 *  Entryhi is ok to write to, as long as the
 			 *  ASID isn't changed. (That would require

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.97 2004-12-01 22:42:29 debug Exp $
+ *  $Id: bintrans.c,v 1.98 2004-12-02 16:28:03 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -151,7 +151,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int it
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 #ifndef BINTRANS_SIZE_IN_MB
-#define BINTRANS_SIZE_IN_MB	20
+#define BINTRANS_SIZE_IN_MB		20
 #endif
 
 #define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
@@ -383,9 +383,7 @@ quick_attempt_translate_again:
 	 *  Make sure that this page will not be written to by translated
 	 *  code:
 	 */
-	update_translation_table(cpu, 0x80000000 + paddr, NULL, -1, 0);
-	update_translation_table(cpu, 0xa0000000 + paddr, NULL, -1, 0);
-
+	invalidate_translation_caches_paddr(cpu, paddr);
 
 	/*
 	 *  Try to translate a chunk of code:
@@ -636,17 +634,7 @@ quick_attempt_translate_again:
 			imm = (instr[1] << 8) + instr[0];
 			if (imm >= 32768)
 				imm -= 65536;
-#if 0
-switch (cpu->cpu_type.mmu_model) {
-case MMU3K:
-#endif
 			translated = try_to_translate = bintrans_write_instruction__loadstore(&ca, rt, imm, rs, hi6, byte_order_cached_bigendian);
-#if 0
-	break;
-default:
-	translated = try_to_translate = 0;
-}
-#endif
 			n_translated += translated;
 			break;
 

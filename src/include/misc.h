@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.166 2004-12-01 14:57:44 debug Exp $
+ *  $Id: misc.h,v 1.167 2004-12-02 16:28:02 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -53,7 +53,6 @@
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
-/*  #define LAST_USED_TLB_EXPERIMENT  */
 
 
 #include <sys/types.h>
@@ -305,10 +304,6 @@ struct tlb {
 	uint64_t	hi;
 	uint64_t	lo1;
 	uint64_t	lo0;
-#ifdef LAST_USED_TLB_EXPERIMENT
-	/*  This is set to coproc0's count value at TLB accesses:  */
-	uint64_t	last_used;
-#endif
 };
 
 struct coproc {
@@ -982,6 +977,7 @@ void arcbios_set_64bit_mode(int enable);
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
 void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 	unsigned char *host_page, int writeflag, uint64_t paddr_page);
+void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
 void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,

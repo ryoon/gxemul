@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.27 2004-06-22 01:31:55 debug Exp $
+ *  $Id: diskimage.c,v 1.28 2004-06-22 16:18:51 debug Exp $
  *
  *  Disk image support.
  *
@@ -555,10 +555,18 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				size *= logical_block_size;
 			}
 
+			if (diskimages[disk_id]->filemark) {
+				/*  At end of file, switch to the next automagically:  */
+				diskimages[disk_id]->tape_filenr ++;
+				diskimage__switch_tape(disk_id);
+
+				diskimages[disk_id]->filemark = 0;
+			}
+
 			ofs = diskimages[disk_id]->tape_offset;
 
-			/*  fatal("[ READ tape, cmd[1]=%02x size=%i, ofs=%lli ]\n",
-			    xferp->cmd[1], (int)size, (long long)ofs);  */
+			/*  fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i, ofs=%lli ]\n",
+			    disk_id, diskimages[disk_id]->tape_filenr, xferp->cmd[1], (int)size, (long long)ofs);  */
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
@@ -619,10 +627,6 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->status[0] = 0x02;	/*  CHECK CONDITION  */
 
 			diskimages[disk_id]->filemark = 1;
-
-			/*  At end of file, switch to the next automagically:  */
-			diskimages[disk_id]->tape_filenr ++;
-			diskimage__switch_tape(disk_id);
 		} else
 			diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
 
@@ -735,9 +739,6 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		if (diskimages[disk_id]->filemark) {
 			xferp->data_in[2] = 0x80;
-
-			/*  TODO: when to clear filemark?  */
-			diskimages[disk_id]->filemark = 0;
 		}
 		debug(": [2]=0x%02x ", xferp->data_in[2]);
 
@@ -802,6 +803,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		diskimages[disk_id]->tape_offset = 0;
 		diskimages[disk_id]->tape_filenr = 0;
+		diskimages[disk_id]->filemark = 0;
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -834,6 +836,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			debug("{ switching to tape file %i }", diskimages[disk_id]->tape_filenr);
 			diskimage__switch_tape(disk_id);
+			diskimages[disk_id]->filemark = 0;
 			break;
 		default:
 			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n", xferp->cmd[1] & 7);

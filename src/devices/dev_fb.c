@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.36 2004-06-22 23:30:03 debug Exp $
+ *  $Id: dev_fb.c,v 1.37 2004-06-23 13:40:59 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -35,8 +35,11 @@
  *	generic (any resolution, several bit depths possible)
  *
  *
+ *  TODO:  There is still a bug when redrawing the cursor. The underlying
+ *         image is moved 1 pixel (?), or something like that.
+ *
  *  TODO:  This should actually be independant of X11, but that
- *  might be too hard to do right now.
+ *         might be too hard to do right now.
  *
  *  TODO:  playstation 2 pixels are stored in another format, actually
  */
@@ -482,8 +485,8 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
 			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
 			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
-			    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown,
-			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown);
+			    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown + 1,
+			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown + 1);
 		}
 	}
 #endif

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.395 2005-03-30 22:57:35 debug Exp $
+ *  $Id: machine.c,v 1.396 2005-03-31 06:14:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2093,6 +2093,36 @@ void machine_setup(struct machine *machine)
 			    + (2)		/*   0: submodel 2=E105  */
 			    );
 			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
+			/*  131 MHz VR4121  */
+			machine->machine_name = "NEC MobilePro 770";
+			/*  TODO:  */
+			hpcmips_fb_addr = 0xa000000;
+			hpcmips_fb_xsize = 640;
+			hpcmips_fb_ysize = 240;
+			hpcmips_fb_xsize_mem = 800;
+			hpcmips_fb_ysize_mem = 240;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_FFFF;
+
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  6 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (1 << 22)		/*  22: vendor  1=NEC  */
+			    + (2 << 16)		/*  16: series  2="NEC MCR" */
+			    + (2 <<  8)		/*   8: model   2="MCR 5XX" */
+			    + (4)		/*   0: submodel 4="MCR 520A" */
+			    );
+			break;
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
 			/*  166 (or 168) MHz VR4121  */
 			machine->machine_name = "NEC MobilePro 780";
@@ -2121,6 +2151,36 @@ void machine_setup(struct machine *machine)
 			    + (2 << 16)		/*  16: series  2="NEC MCR" */
 			    + (2 <<  8)		/*   8: model   2="MCR 5XX" */
 			    + (8)		/*   0: submodel 8="MCR 530A" */
+			    );
+			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
+			/*  131 MHz VR4121  */
+			machine->machine_name = "NEC MobilePro 800";
+			/*  TODO:  */
+			hpcmips_fb_addr = 0xa000000;
+			hpcmips_fb_xsize = 800;
+			hpcmips_fb_ysize = 600;
+			hpcmips_fb_xsize_mem = 800;
+			hpcmips_fb_ysize_mem = 600;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_FFFF;
+
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
+			machine->main_console_handle =
+			    machine->vr41xx_data->kiu_console_handle;
+
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
+			      (1 << 26)		/*  1 = MIPS  */
+			    + (1 << 20)		/*  1 = VR  */
+			    + (1 << 14)		/*  1 = VR41XX  */
+			    + (3 <<  8)		/*  6 = VR4121  */
+			    );
+			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_machine,
+			      (1 << 22)		/*  22: vendor  1=NEC  */
+			    + (2 << 16)		/*  16: series  2="NEC MCR" */
+			    + (3 <<  8)		/*   8: model   3="MCR 7XX" */
+			    + (2)		/*   0: submodel 2="MCR 700A" */
 			    );
 			break;
 		default:
@@ -2637,7 +2697,7 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 0
+#if 1
 				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
 				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
@@ -4381,7 +4441,9 @@ void machine_default_cputype(struct machine *m)
 		case MACHINE_HPCMIPS_CASIO_E105:
 			m->cpu_name = strdup("VR4121");
 			break;
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_770:
 		case MACHINE_HPCMIPS_NEC_MOBILEPRO_780:
+		case MACHINE_HPCMIPS_NEC_MOBILEPRO_800:
 			m->cpu_name = strdup("VR4121");
 			break;
 		default:
@@ -4914,7 +4976,7 @@ void machine_init(void)
 
 	/*  HPCmips:  */
 	me = machine_entry_new("Handheld MIPS (HPC)",
-	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 3);
+	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 5);
 	me->aliases[0] = "hpcmips";
 	me->aliases[1] = "hpc";
 	me->subtype[0] = machine_entry_subtype_new(
@@ -4926,8 +4988,14 @@ void machine_init(void)
 	me->subtype[1]->aliases[0] = "e-105";
 	me->subtype[1]->aliases[1] = "e105";
 	me->subtype[2] = machine_entry_subtype_new(
+	    "NEC MobilePro 770", MACHINE_HPCMIPS_NEC_MOBILEPRO_770, 1);
+	me->subtype[2]->aliases[0] = "mobilepro770";
+	me->subtype[3] = machine_entry_subtype_new(
 	    "NEC MobilePro 780", MACHINE_HPCMIPS_NEC_MOBILEPRO_780, 1);
-	me->subtype[2]->aliases[0] = "mobilepro780";
+	me->subtype[3]->aliases[0] = "mobilepro780";
+	me->subtype[4] = machine_entry_subtype_new(
+	    "NEC MobilePro 800", MACHINE_HPCMIPS_NEC_MOBILEPRO_800, 1);
+	me->subtype[4]->aliases[0] = "mobilepro800";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.1 2005-01-26 08:22:57 debug Exp $
+ *  $Id: arcbios.h,v 1.2 2005-01-26 09:03:52 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -37,6 +37,7 @@
  */
 
 #include "misc.h"
+#include "sgi_arcbios.h"
 
 struct cpu;
 
@@ -58,6 +59,23 @@ void arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
 void arcbios_init(void);
+
+
+/*  For internal use in arcbios.c:  */
+
+struct emul_arc_child {
+	uint32_t			ptr_peer;
+	uint32_t			ptr_child;
+	uint32_t			ptr_parent;
+	struct arcbios_component	component;
+};
+
+struct emul_arc_child64 {
+	uint64_t			ptr_peer;
+	uint64_t			ptr_child;
+	uint64_t			ptr_parent;
+	struct arcbios_component64	component;
+};
 
 
 #endif	/*  ARCBIOS_H  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.78 2005-01-26 08:57:28 debug Exp $
+ *  $Id: arcbios.c,v 1.79 2005-01-26 09:03:53 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -52,26 +52,15 @@
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
-#include "sgi_arcbios.h"
 #include "x11.h"
 
 
 extern int quiet_mode;
 
 
-struct emul_arc_child {
-	uint32_t			ptr_peer;
-	uint32_t			ptr_child;
-	uint32_t			ptr_parent;
-	struct arcbios_component	component;
-};
-
-struct emul_arc_child64 {
-	uint64_t			ptr_peer;
-	uint64_t			ptr_child;
-	uint64_t			ptr_parent;
-	struct arcbios_component64	component;
-};
+/*
+ *  TODO: all this should be _per machine_!
+ */
 
 /*  Configuration data:  */
 #define	MAX_CONFIG_DATA		50

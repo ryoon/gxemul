@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.11 2004-01-11 23:52:38 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.12 2004-01-19 12:49:12 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -127,7 +127,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	/*  Different ways of accessing the registers:  */
 	switch (mc_data->access_style) {
 	case MC146818_PC_CMOS:
-		if (relative_addr == 0x70) {
+		if (relative_addr == 0x70 || relative_addr == 0x00) {
 			if (writeflag == MEM_WRITE) {
 				mc_data->last_addr = data[0];
 				return 1;
@@ -135,7 +135,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 				data[0] = mc_data->last_addr;
 				return 1;
 			}
-		} else if (relative_addr == 0x71)
+		} else if (relative_addr == 0x71 || relative_addr == 0x01)
 			relative_addr = mc_data->last_addr;
 		else {
 			fatal("[ mc146818: not accessed as an MC146818_PC_CMOS device! ]\n");
@@ -382,7 +382,10 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->reg[0x79] = 0x55;
 	mc_data->reg[0x7d] = 0xaa;
 
-	memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access, (void *)mc_data);
+	if (access_style == MC146818_PC_CMOS)
+		memory_device_register(mem, "mc146818", baseaddr, 2, dev_mc146818_access, (void *)mc_data);
+	else
+		memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access, (void *)mc_data);
 	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
 }
 

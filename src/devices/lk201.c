@@ -23,12 +23,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.8 2004-07-11 07:02:25 debug Exp $
+ *  $Id: lk201.c,v 1.9 2004-08-26 13:27:09 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
- *
- *  TODO:  Host vs emulated cursor position... see below.
  */
 
 #include <stdio.h>

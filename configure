@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.52 2004-08-24 14:53:15 debug Exp $
+#  $Id: configure,v 1.53 2004-08-26 13:27:08 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -139,8 +139,12 @@ echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
 printf "checking which C compiler to use... "
 
 if [ z"`uname|cut -c 1-6`" = zCYGWIN ]; then
-	#  Assume gcc on Cygwin (Windows) systems.
-	CC=gcc
+	CYGWIN=YES
+
+	if [ z"$CC" = z ]; then
+		#  Assume gcc on Cygwin (Windows) systems.
+		CC=gcc
+	fi
 fi
 
 if [ z"$CC" = z ]; then
@@ -192,6 +196,10 @@ fi
 if $CC -v 2>&1 | grep gcc 1> /dev/null 2> /dev/null; then
 	GCCCC=YES
 	CCTYPE="GNU CC"
+fi
+
+if [ z$CYGWIN = zYES ]; then
+	CCTYPE="$CCTYPE (Cygwin)"
 fi
 
 echo "C compiler type: $CCTYPE"

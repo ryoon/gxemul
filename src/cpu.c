@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.247 2005-01-20 18:14:34 debug Exp $
+ *  $Id: cpu.c,v 1.248 2005-01-20 18:50:51 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1508,8 +1508,11 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 */
 		cp0->reg[COP0_COUNT] = (int64_t)(int32_t)(cp0->reg[COP0_COUNT] + 1);
 
-		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
+		if (cpu->compare_register_set &&
+		    cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE]) {
 			cpu_interrupt(cpu, 7);
+			cpu->compare_register_set = 0;
+		}
 	}
 
 
@@ -1913,8 +1916,11 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						/*  TODO: 32-bit or 64-bit?  */
 						int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
 						int diff = x - y;
-						if (diff < 0 && diff + (res-1) >= 0)
+						if (diff < 0 && diff + (res-1) >= 0
+						    && cpu->compare_register_set) {
 							cpu_interrupt(cpu, 7);
+							cpu->compare_register_set = 0;
+						}
 
 						cp0->reg[COP0_COUNT] = (int64_t)
 						    (int32_t)(cp0->reg[COP0_COUNT] + res-1);

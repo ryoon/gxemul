@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.202 2005-01-19 14:24:21 debug Exp $
+ *  $Id: misc.h,v 1.203 2005-01-20 18:50:50 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -301,6 +301,8 @@ struct cpu {
 	struct coproc	*coproc[N_COPROCS];
 
 	void		(*md_interrupt)(struct cpu *, int irq_nr, int);
+
+	int		compare_register_set;
 
 	/*  Special purpose registers:  */
 	uint64_t	pc;

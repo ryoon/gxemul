@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.4 2004-03-08 03:22:57 debug Exp $
+ *  $Id: dev_px.c,v 1.5 2004-03-11 05:31:41 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -63,7 +63,6 @@
  *	Actually interpret the values in each command, don't just
  *		assume NetBSD/Ultrix usage.
  *	Factor out the DMA read (main memory vs sram).
- *	Factor out the little endian/big endian word reads.
  *	Interrupts?
  *	Make sure that everything works with both NetBSD and Ultrix.
  */
@@ -95,6 +94,23 @@ void dev_px_tick(struct cpu *cpu, void *extra)
 	if (d->intr & STIC_INT_P_EN)		/*  or _WE ?  */
 		cpu_interrupt(cpu, d->irq_nr);
 #endif
+}
+
+
+/*
+ *  px_readword():
+ *
+ *  Helper function to read 32-bit words from DMA memory,
+ *  to allow both little and big endian accesses.
+ *  (DECstations probably only use little endian access,
+ *  but endianness-independance is probably nice to have anyway.)
+ */
+uint32_t px_readword(struct cpu *cpu, unsigned char *dma_buf, int ofs)
+{
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
+		return dma_buf[ofs+0] + (dma_buf[ofs+1] << 8) + (dma_buf[ofs+2] << 16) + (dma_buf[ofs+3] << 24);
+	else
+		return dma_buf[ofs+3] + (dma_buf[ofs+2] << 8) + (dma_buf[ofs+1] << 16) + (dma_buf[ofs+0] << 24);
 }
 
 
@@ -334,20 +350,28 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		/*  Ugly test code:  */
 		unsigned char pixels[16 * 3];
 		int pixels_len = 16;
-		uint32_t v1, v2;
+		uint32_t v1, v2, fgcolor;
 		int x, y, x2,y2, i, maxi;
 		int xbit;
 		int suby;
+		int fg_r, fg_g, fg_b;
 
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			v1 = dma_buf[52] + (dma_buf[53] << 8) + (dma_buf[54] << 16) + (dma_buf[55] << 24);
-		else
-			v1 = dma_buf[55] + (dma_buf[54] << 8) + (dma_buf[53] << 16) + (dma_buf[52] << 24);
+		v1 = px_readword(cpu, dma_buf, 52);
+		v2 = px_readword(cpu, dma_buf, 56);
+		fgcolor = px_readword(cpu, dma_buf, 64);
 
-		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-			v2 = dma_buf[56] + (dma_buf[57] << 8) + (dma_buf[58] << 16) + (dma_buf[59] << 24);
+		/*  TODO:  Which one is r, which one is g, and which one is b?  */
+		/*  TODO 2:  Use the BT459 palette, these values are hardcoded for NetBSD and Ultrix grayscale only  */
+		fg_r = (fgcolor >> 16) & 255;
+		fg_g = (fgcolor >> 8) & 255;
+		fg_b = fgcolor & 255;
+		if (fg_r == 0)
+			fg_r = fg_g = fg_b = 0;
 		else
-			v2 = dma_buf[59] + (dma_buf[58] << 8) + (dma_buf[57] << 16) + (dma_buf[56] << 24);
+		if (fg_r == 7)
+			fg_r = fg_g = fg_b = 192;
+		else
+			fg_r = fg_g = fg_b = 255;
 
 		x = (v1 >> 19) & 2047;
 		y = ((v1 - 63) >> 3) & 1023;
@@ -378,16 +402,17 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 				for (xbit = 0; xbit < 8; xbit ++) {
 					if (bytesperpixel == 3) {
 						/*  24-bit:  */
-						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
-						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
-						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
-						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
-						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
-						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+						/*  TODO:  Which one is r, which one is g, which one is b?  */
+						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_r : 0;
+						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_g : 0;
+						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_b : 0;
+						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_r : 0;
+						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_g : 0;
+						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_b : 0;
 					} else {
 						/*  8-bit:  */
-						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
-						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? (fgcolor & 255) : 0;
+						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? (fgcolor & 255) : 0;
 					}
 				}
 

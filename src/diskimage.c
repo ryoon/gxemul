@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.33 2004-07-01 23:07:13 debug Exp $
+ *  $Id: diskimage.c,v 1.34 2004-07-02 08:08:27 debug Exp $
  *
  *  Disk image support.
  *
@@ -900,6 +900,55 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 
 /*
+ *  diskimage_access__cdrom():
+ *
+ *  This is a special-case function, called from diskimage_access(). On my
+ *  FreeBSD 4.9 system, the cdrom device /dev/cd0c seems to not be able to
+ *  handle something like "fseek(512); fread(512);" but it handles
+ *  "fseek(2048); fread(512);" just fine.  So, if diskimage_access() fails
+ *  in reading a block of data, this function is called as an attempt to
+ *  align reads at 2048-byte sectors instead.
+ *
+ *  (Ugly hack.  TODO: how to solve this cleanly?)
+ *
+ *  NOTE:  Returns the number of bytes read, 0 if nothing was successfully
+ *  read. (These are not the same as diskimage_access()).
+ */
+#define	CDROM_SECTOR_SIZE	2048
+size_t diskimage_access__cdrom(int disk_id, off_t offset,
+	unsigned char *buf, size_t len)
+{
+	off_t aligned_offset;
+	size_t bytes_read, total_copied = 0;
+	unsigned char cdrom_buf[CDROM_SECTOR_SIZE];
+	int buf_ofs, i = 0;
+
+	aligned_offset = (offset / CDROM_SECTOR_SIZE) * CDROM_SECTOR_SIZE;
+	fseek(diskimages[disk_id]->f, aligned_offset, SEEK_SET);
+
+	while (len != 0) {
+		bytes_read = fread(cdrom_buf, 1, CDROM_SECTOR_SIZE,
+		    diskimages[disk_id]->f);
+		if (bytes_read != CDROM_SECTOR_SIZE)
+			return 0;
+
+		/*  Copy (part of) cdrom_buf into buf:  */
+		buf_ofs = offset - aligned_offset;
+		while (buf_ofs < CDROM_SECTOR_SIZE && len != 0) {
+			buf[i ++] = cdrom_buf[buf_ofs ++];
+			total_copied ++;
+			len --;
+		}
+
+		aligned_offset += CDROM_SECTOR_SIZE;
+		offset = aligned_offset;
+	}
+
+	return total_copied;
+}
+
+
+/*
  *  diskimage_access():
  *
  *  Read from or write to a disk image.
@@ -942,6 +991,12 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
 		len_done = fwrite(buf, 1, len, diskimages[disk_id]->f);
 	} else {
 		len_done = fread(buf, 1, len, diskimages[disk_id]->f);
+
+		/*  Special case for CD-ROMs:  */
+		if (len_done == 0)
+			len_done = diskimage_access__cdrom(disk_id,
+			    offset, buf, len);
+
 		if (len_done < (ssize_t)len)
 			memset(buf + len_done, 0, len-len_done);
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.19 2004-02-24 21:58:46 debug Exp $
+ *  $Id: file.c,v 1.20 2004-03-08 01:30:18 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -279,6 +279,30 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 	unencode(a_gp,    &exechdr.a.gp_value, uint32_t);
 	debug("'%s': entrypoint 0x%08x, gp = 0x%08x\n",
 	    filename, (int)a_entry, (int)a_gp);
+
+	/*
+	 *  Special hack for a MACH/pmax kernel, I don't know how applicable
+	 *  this is for other files:
+	 *  there are no sections (!), and a_magic = 0x0108 instead of
+	 *  0x0107 as it is on most other (E)COFF files I've seen.
+	 *
+	 *  Then load everything after the header to the text start address.
+	 */
+	if (f_nscns == 0 && a_magic == 0x108) {
+		uint64_t where = a_tstart;
+		total_len = 0;
+		fseek(f, 0x50, SEEK_SET);
+		while (!feof(f)) {
+			chunk_size = 256;
+			len = fread(buf, 1, chunk_size, f);
+
+			if (len > 0)
+				memory_rw(cpu, mem, where, &buf[0], len, MEM_WRITE, 0);
+			where += len;
+			total_len += len;
+		}
+		debug("'%s': MACH/pmax hack (!), read 0x%x bytes\n", filename, total_len);
+	}
 
 	/*  Go through all the section headers:  */
 	for (secn=0; secn<f_nscns; secn++) {

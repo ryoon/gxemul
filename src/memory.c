@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.50 2004-07-03 20:06:32 debug Exp $
+ *  $Id: memory.c,v 1.51 2004-07-04 00:30:24 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -49,9 +49,6 @@ extern int userland_emul;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
-
-
-#define USE_TINY_CACHE
 
 
 /*
@@ -134,9 +131,11 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t da
 /*
  *  memory_new():
  *
- *  This function creates a new memory object.  An emulated machine needs one of these.
+ *  This function creates a new memory object. An emulated machine needs one
+ *  of these.
  */
-struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_t physical_max, int max_bits)
+struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock,
+	uint64_t physical_max, int max_bits)
 {
 	struct memory *mem;
 	int n, ok;
@@ -191,14 +190,16 @@ struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_
  *
  *  Returns 1 if there's something string-like at addr, otherwise 0.
  */
-int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length)
+int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
+	int min_string_length)
 {
 	int cur_length = 0;
 	unsigned char c;
 
 	for (;;) {
 		c = '\0';
-		memory_rw(cpu, mem, addr+cur_length, &c, sizeof(c), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpu, mem, addr+cur_length, &c, sizeof(c), MEM_READ,
+		    CACHE_NONE | NO_EXCEPTIONS);
 		if (c=='\n' || c=='\t' || c=='\r' || (c>=' ' && c<127)) {
 			cur_length ++;
 			if (cur_length >= min_string_length)
@@ -228,7 +229,8 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 	while (output_index < bufsize-1) {
 		c = '\0';
-		memory_rw(cpu, mem, addr+len, &c, sizeof(c), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpu, mem, addr+len, &c, sizeof(c), MEM_READ,
+		    CACHE_NONE | NO_EXCEPTIONS);
 		buf[output_index] = c;
 		if (c>=' ' && c<127) {
 			len ++;
@@ -438,7 +440,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 */
 		case 0xc:
 			if (emulation_type == EMULTYPE_SGI && machine >= 25) {
-				*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
+				*return_addr = vaddr &
+				    (((uint64_t)1 << 44) - 1);
 				return 1;
 			}
 			break;
@@ -689,6 +692,258 @@ exception:
 
 
 /*
+ *  memory_paddr_to_hostaddr():
+ *
+ *  Translate a physical MIPS address into a host address.
+ *  Return value is a pointer to a host memblock, or NULL on failure.
+ *  On reads, a NULL return value should be interpreted as reading all zeroes.
+ */
+unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+	uint64_t paddr, int writeflag)
+{
+	unsigned char *memblock;
+	void **table;
+	int entry, shrcount, mask, bits_per_memblock, bits_per_pagetable;
+
+	bits_per_memblock  = mem->bits_per_memblock;
+	bits_per_pagetable = mem->bits_per_pagetable;
+	memblock = NULL;
+	table = mem->first_pagetable;
+	mask = (1 << bits_per_pagetable) - 1;
+	shrcount = mem->max_bits - bits_per_pagetable;
+
+	/*
+	 *  Step through the pagetables until we find the correct memory
+	 *  block:
+	 */
+	while (shrcount >= bits_per_memblock) {
+		/*  printf("addr = %016llx\n", paddr);  */
+		entry = (paddr >> shrcount) & mask;
+		/*  printf("   entry = %x\n", entry);  */
+
+		if (table[entry] == NULL) {
+			size_t alloclen;
+
+			/*
+			 *  Special case:  reading from a nonexistant memblock
+			 *  returns all zeroes, and doesn't allocate anything.
+			 *  (If any intermediate pagetable is nonexistant, then
+			 *  the same thing happens):
+			 */
+			if (writeflag == MEM_READ)
+				return NULL;
+
+			/*  Allocate a pagetable, OR a memblock:  */
+			if (shrcount == bits_per_memblock)
+				alloclen = mem->memblock_size;
+			else
+				alloclen = mem->entries_per_pagetable
+				    * sizeof(void *);
+
+			/*  printf("  allocating for entry %i, len=%i\n",
+			    entry, alloclen);  */
+
+			table[entry] = malloc(alloclen);
+			if (table[entry] == NULL) {
+				fatal("out of memory\n");
+				exit(1);
+			}
+			memset(table[entry], 0, alloclen);
+		}
+
+		if (shrcount == bits_per_memblock)
+			memblock = (unsigned char *) table[entry];
+		else
+			table = (void **) table[entry];
+
+		shrcount -= bits_per_pagetable;
+	}
+
+	return memblock;
+}
+
+
+/*
+ *  memory_cache_R3000():
+ *
+ *  R3000 specific cache handling.
+ *
+ *  Return value is 1 if a jump to do_return_ok is supposed to happen directly
+ *  after this routine is finished, 0 otherwise.
+ */
+int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
+	int writeflag, size_t len, unsigned char *data)
+{
+#ifdef ENABLE_CACHE_EMULATION
+	unsigned char *memblock;
+	struct memory *mem = cpu->mem;
+	int offset;
+#endif
+	unsigned int i;
+	int cache_isolated = 0, addr, hit, which_cache = cache;
+
+
+	if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
+		which_cache ^= 1;
+
+	/*  Is this a cache hit or miss?  */
+	hit = (cpu->cache_last_paddr[which_cache]
+		& ~cpu->cache_mask[which_cache])
+	    == (paddr & ~(cpu->cache_mask[which_cache]));
+
+#ifdef ENABLE_INSTRUCTION_DELAYS
+	if (!hit)
+		cpu->instruction_delay += cpu->cpu_type.instrs_per_cycle
+		    * cpu->cache_miss_penalty[cache];
+#endif
+
+	/*
+	 *  The cache miss bit is only set on cache reads, and only to the
+	 *  data cache. (?)
+	 *
+	 *  (TODO: is this correct? I don't remember where I got this from.)
+	 */
+	if (cache == CACHE_DATA && writeflag==MEM_READ) {
+		cpu->coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
+		if (!hit)
+			cpu->coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+	}
+
+	/*
+	 *  Is the Data cache isolated?  Then don't access main memory:
+	 */
+	if (cache == CACHE_DATA &&
+	    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+		cache_isolated = 1;
+
+	addr = paddr & cpu->cache_mask[which_cache];
+
+#ifdef ENABLE_CACHE_EMULATION
+	/*
+	 *  If there was a miss and the cache is not isolated, reload cache
+	 *  contents from main memory.
+	 *
+	 *  Then access the cache.
+	 */
+	/*
+	fatal("L1 CACHE isolated=%i hit=%i write=%i cache=%i"
+	    " vaddr=%016llx paddr=%016llx => addr in"
+	    " cache = 0x%lx\n", cache_isolated, hit, writeflag,
+	    which_cache, (long long)vaddr, (long long)paddr,
+	    addr);
+	*/
+
+	if (!hit && !cache_isolated) {
+		unsigned char *dst, *src;
+		uint64_t old_cached_paddr =
+		    cpu->cache_last_paddr[which_cache];
+
+		/*  Flush the cache to main memory:  */
+		if (old_cached_paddr != IMPOSSIBLE_PADDR) {
+			memblock = memory_paddr_to_hostaddr(
+			    mem, old_cached_paddr, MEM_WRITE);
+			offset = old_cached_paddr & ((1 <<
+			    mem->bits_per_memblock) - 1)
+			    & ~cpu->cache_mask[which_cache];
+
+			src = cpu->cache[which_cache];
+			dst = memblock + (offset &
+			    ~cpu->cache_mask[which_cache]);
+
+			if (memblock == NULL) {
+				fatal("BUG in memory.c! Hm.\n");
+			} else {
+				memcpy(dst, src, cpu->cache_size[which_cache]);
+			}
+			/*  offset is the offset within
+			 *  the memblock:
+			 *  printf("read: offset = 0x%x\n", offset);
+			 */
+		}
+
+		/*  Copy from main memory into the cache:  */
+		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
+		offset = paddr & ((1 << mem->bits_per_memblock) - 1)
+		    & ~cpu->cache_mask[which_cache];
+		/*  offset is offset within the memblock:
+		 *  printf("write: offset = 0x%x\n", offset);
+		 */
+		dst = cpu->cache[which_cache];
+
+		if (memblock == NULL) {
+			if (writeflag == MEM_READ)
+			memset(dst, 0, cpu->cache_size[which_cache]);
+		} else {
+			src = memblock + (offset &
+			    ~cpu->cache_mask[which_cache]);
+			memcpy(dst, src, cpu->cache_size[which_cache]);
+		}
+
+		cpu->cache_last_paddr[which_cache] = paddr;
+	}
+
+	if (writeflag==MEM_READ) {
+		for (i=0; i<len; i++)
+			data[i] = cpu->cache[which_cache][(addr+i) &
+			    cpu->cache_mask[which_cache]];
+	} else {
+		for (i=0; i<len; i++)
+			cpu->cache[which_cache][(addr+i) &
+			    cpu->cache_mask[which_cache]] = data[i];
+	}
+
+	/*  Run instructions directly from the cache:  */
+	if (cache == CACHE_INSTRUCTION) {
+		cpu->pc_last_was_in_host_ram = 1;
+		cpu->pc_last_host_4k_page =
+		    cpu->cache[which_cache] + (addr & ~0xfff);
+	}
+
+	/*  Write-through! (Write to main memory as well.)  */
+	if (writeflag == MEM_READ || cache_isolated)
+		return 1;
+
+#else
+
+	/*
+	 *  R2000/R3000 without correct cache emulation:
+	 *
+	 *  TODO: This is just enough to trick NetBSD/pmax and Ultrix into
+	 *  being able to detect the cache sizes and think that the caches
+	 *  are actually working, but they are not.
+	 */
+
+	if (cache != CACHE_DATA)
+		return 0;
+
+	/*  Data cache isolated?  Then don't access main memory:  */
+	if (cache_isolated) {
+		/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx paddr=%016llx => addr in cache = 0x%lx\n",
+		    writeflag, cache, (long long)vaddr, (long long)paddr, addr);  */
+
+		if (writeflag==MEM_READ) {
+			for (i=0; i<len; i++)
+				data[i] = cpu->cache[cache][(addr+i) &
+				    cpu->cache_mask[cache]];
+		} else {
+			for (i=0; i<len; i++)
+				cpu->cache[cache][(addr+i) &
+				    cpu->cache_mask[cache]] = data[i];
+		}
+		return 1;
+	} else {
+		/*  Reload caches if neccessary:  */
+
+		/*  No!  Not when not emulating caches fully. (TODO?)  */
+		cpu->cache_last_paddr[cache] = paddr;
+	}
+#endif
+
+	return 0;
+}
+
+
+/*
  *  memory_rw():
  *
  *  Read or write data from/to memory.
@@ -719,16 +974,9 @@ exception:
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
-	uint64_t endaddr = vaddr + len - 1;
-	uint64_t paddr;
-	int cache, no_exceptions;
+	uint64_t paddr, endaddr = vaddr + len - 1;
+	int cache, no_exceptions, ok, offset;
 	unsigned char *memblock;
-	int bits_per_memblock, bits_per_pagetable;
-	int ok, hit;
-	int entry;
-	void **table;
-	int shrcount, mask;
-	int offset;
 	int transl_cache_hit = 0;
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
@@ -833,8 +1081,11 @@ into the devices  */
 #ifdef ENABLE_INSTRUCTION_DELAYS
 				if (res == 0)
 					res = -1;
-				cpu->instruction_delay += ( (abs(res) - 1)
-				    * cpu->cpu_type.instrs_per_cycle);
+
+				if (cpu != NULL)
+					cpu->instruction_delay +=
+					    ( (abs(res) - 1) *
+					     cpu->cpu_type.instrs_per_cycle );
 #endif
 				/*
 				 *  If accessing the memory mapped device
@@ -873,92 +1124,69 @@ into the devices  */
 		return MEMORY_ACCESS_FAILED;
 	}
 
-	/*
-	 *  Use i/d cache?
-	 *
-	 *  TODO: This is mostly an ugly hack to make the cache size detection
-	 *  for R2000/R3000 work with a netbsd kernel.
-	 */
 
-	/*  vaddr shouldn't be used below anyway, except for in the following 'if'  */
+	/*
+	 *  Data and instruction cache emulation:
+	 */
+	/*  vaddr shouldn't be used below anyway,
+	    except for in the next 'if' statement:  */
 	if ((vaddr >> 32) == 0xffffffffULL)
 		vaddr &= 0xffffffffULL;
 
-	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000ULL
-	    && vaddr <= 0xbfffffffULL)) {
-		if (cpu->cpu_type.mmu_model == MMU3K) {
-			int cachemask[2];
+	/*  if not uncached addess  (TODO: generalize this)  */
+	if (!(cache_flags & PHYSICAL) && cache != CACHE_NONE &&
+	    !(vaddr >= 0xa0000000ULL && vaddr <= 0xbfffffffULL)) {
+		int ok;
 
-			cachemask[0] = cpu->cache_size[0] - 1;
-			cachemask[1] = cpu->cache_size[1] - 1;
-
-			if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
-				cache ^= 1;
-
-			hit = (cpu->last_cached_address[cache] & ~cachemask[cache])
-			    == (paddr & ~(cachemask[cache]));
-			if (writeflag==MEM_READ) {
-				cpu->coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
-				if (!hit)
-					cpu->coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
-			}
-
-			/*  Data cache isolated?  Then don't access main memory:  */
-			if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
-				int addr = paddr & cachemask[cache];
-				/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx paddr=%016llx => addr in cache = 0x%lx\n",
-				    writeflag, cache, (long long)vaddr, (long long)paddr, addr);  */
-				if (writeflag==MEM_READ) {
-					unsigned int i;
-					for (i=0; i<len; i++)
-						data[i] = cpu->cache[cache][(addr+i) & cachemask[cache]];
-				} else {
-					unsigned int i;
-					for (i=0; i<len; i++)
-						cpu->cache[cache][(addr+i) & cachemask[cache]] = data[i];
-				}
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			ok = memory_cache_R3000(cpu, cache, paddr,
+			    writeflag, len, data);
+			if (ok)
 				goto do_return_ok;
-			} else {
-				/*  Reload caches if neccessary:  */
-				/*  TODO  */
-				cpu->last_cached_address[cache] = paddr;
-			}
-		} else {
+			break;
+
+		case MMU10K:
 			/*  other cpus:  */
 
 			/*
 			 *  SUPER-UGLY HACK for SGI-IP32 PROM, R10000:
 			 *  K0 bits == 0x3 means uncached...
 			 *
-			 *  It seems that during bootup, the SGI-IP32 prom stores
-			 *  a return pointers a 0x80000f10, then tests memory by
-			 *  writing bit patterns to 0xa0000xxx, and then when it's
-			 *  done, reads back the return pointer from 0x80000f10.
+			 *  It seems that during bootup, the SGI-IP32 prom
+			 *  stores a return pointers a 0x80000f10, then tests
+			 *  memory by writing bit patterns to 0xa0000xxx, and
+			 *  then when it's done, reads back the return pointer
+			 *  from 0x80000f10.
 			 *
-			 *  I need to find the correct way to disconnect the cache
-			 *  from the main memory for R10000.  (TODO !!!)
+			 *  I need to find the correct way to disconnect the
+			 *  cache from the main memory for R10000.  (TODO !!!)
 			 */
 /* 			if ((cpu->coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
-			if (cpu->r10k_cache_disable_TODO) {
+			if (cache == CACHE_DATA &&
+			    cpu->r10k_cache_disable_TODO) {
 				paddr &= ((512*1024)-1);
 				paddr += 512*1024;
 			}
+			break;
+
+		default:
+			/*  R4000 etc  */
+			/*  TODO  */
+			;
 		}
 	}
 
 
 	/*
-	 *  Outside of physical RAM?  (For userland emulation only,
-	 *  we're using the host's virtual memory and don't care about
-	 *  memory sizes.)
+	 *  Outside of physical RAM?  (For userland emulation we're using
+	 *  the host's virtual memory and don't care about memory sizes,
+	 *  so this doesn't apply.)
 	 */
-
 	if (paddr >= mem->physical_max && !userland_emul) {
 		if ((paddr & 0xffffc00000ULL) == 0x1fc00000) {
 			/*  Ok, this is PROM stuff  */
 		} else {
-			/*  Semi-ugly hack:  allow for 1KB more, without giving a warning.
-			    This allows some memory detection schemes to work ok.  */
 			if (paddr >= mem->physical_max + 0 * 1024) {
 				char *symbol;
 				int offset;
@@ -987,17 +1215,25 @@ into the devices  */
 				/*  Return all zeroes? (Or 0xff? TODO)  */
 				memset(data, 0, len);
 
-				/*  For real data/instruction accesses, there can be exceptions:  */
+				/*
+				 *  For real data/instruction accesses, cause
+				 *  an exceptions on an illegal read:
+				 */
 				if (cache != CACHE_NONE) {
-					if (paddr >= mem->physical_max && paddr < mem->physical_max + 1048576)
-						cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
+					if (paddr >= mem->physical_max &&
+					    paddr < mem->physical_max+1048576)
+						cpu_exception(cpu,
+						    EXCEPTION_DBE, 0, vaddr, 0,
+						    0, 0, 0);
 				}
 			}
+
+			/*  Hm? Shouldn't there be a DBE exception for
+			    invalid writes as well?  TODO  */
 
 			goto do_return_ok;
 		}
 	}
-
 
 
 no_exception_access:
@@ -1005,68 +1241,24 @@ no_exception_access:
 	/*
 	 *  Uncached access:
 	 */
-	bits_per_memblock  = mem->bits_per_memblock;
-	bits_per_pagetable = mem->bits_per_pagetable;
-	memblock = NULL;
-
-	/*  Step through the pagetables until we find the correct memory block:  */
-	table = mem->first_pagetable;
-	mask = (1 << bits_per_pagetable) - 1;
-	shrcount = mem->max_bits - bits_per_pagetable;
-
-	while (shrcount >= bits_per_memblock) {
-		/*  printf("addr = %016llx\n", paddr);  */
-		entry = (paddr >> shrcount) & mask;
-		/*  printf("   entry = %x\n", entry);  */
-
-		if (table[entry] == NULL) {
-			size_t alloclen;
-
-			/*  Special case:  reading from a nonexistant memblock
-			    returns all zeroes, and doesn't allocate anything.
-			    (If any intermediate pagetable is nonexistant, then
-			    the same thing happens):  */
-			if (writeflag == MEM_READ) {
-				memset(data, 0, len);
-				goto do_return_ok;
-			}
-
-			/*  Allocate a pagetable, OR a memblock:  */
-			if (shrcount == bits_per_memblock)
-				alloclen = mem->memblock_size;
-			else
-				alloclen = mem->entries_per_pagetable * sizeof(void *);
-
-			/*  printf("  allocating for entry %i, len=%i\n", entry, alloclen);  */
-
-			table[entry] = malloc(alloclen);
-			if (table[entry] == NULL) {
-				fatal("out of memory\n");
-				exit(1);
-			}
-			memset(table[entry], 0, alloclen);
-		}
-
-		if (shrcount == bits_per_memblock)
-			memblock = (unsigned char *) table[entry];
-		else
-			table = (void **) table[entry];
-
-		shrcount -= bits_per_pagetable;
+	memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
+	if (memblock == NULL) {
+		if (writeflag == MEM_READ)
+			memset(data, 0, len);
+		goto do_return_ok;
 	}
 
-
-	offset = paddr & ((1 << bits_per_memblock) - 1);
+	offset = paddr & ((1 << mem->bits_per_memblock) - 1);
 
 	if (writeflag == MEM_WRITE) {
-		if (len == sizeof(uint32_t))
+		if (len == sizeof(uint32_t) && (offset & 3)==0)
 			*(uint32_t *)(memblock + offset) = *(uint32_t *)data;
 		else if (len == sizeof(uint8_t))
 			*(uint8_t *)(memblock + offset) = *(uint8_t *)data;
 		else
 			memcpy(memblock + offset, data, len);
 	} else {
-		if (len == sizeof(uint32_t))
+		if (len == sizeof(uint32_t) && (offset & 3)==0)
 			*(uint32_t *)data = *(uint32_t *)(memblock + offset);
 		else if (len == sizeof(uint8_t))
 			*(uint8_t *)data = *(uint8_t *)(memblock + offset);
@@ -1075,7 +1267,8 @@ no_exception_access:
 
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_last_was_in_host_ram = 1;
-			cpu->pc_last_host_memblock = memblock;
+			cpu->pc_last_host_4k_page = memblock
+			    + (offset & ~0xfff);
 		}
 	}
 

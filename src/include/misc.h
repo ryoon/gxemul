@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.36 2004-03-06 12:55:22 debug Exp $
+ *  $Id: misc.h,v 1.37 2004-03-08 03:21:42 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -847,6 +847,7 @@ struct fb_window {
 	Window		x11_fb_window;
 	GC		x11_fb_gc;
 	XImage		*fb_ximage;
+	XImage		*cursor_ximage;
 	unsigned char	*ximage_data;
 #else
 	int		dummy;

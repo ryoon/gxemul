@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.22 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_bt459.c,v 1.23 2004-07-05 14:01:15 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -39,6 +39,8 @@
 
 #include "bt459.h"
 
+
+extern int use_x11;
 
 #ifdef WITH_X11
 #include <X11/Xlib.h>     
@@ -174,25 +176,27 @@ void bt459_update_X_cursor(struct bt459_data *d)
 
 #ifdef WITH_X11
 	/*  Now let's use XPutPixel to set cursor_ximage pixels:  */
-	for (y=0; y<=ymax; y++)
-		for (x=0; x<=xmax; x+=4) {
-			struct fb_window *win = d->vfb_data->fb_window;
-			int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
-			unsigned char data = d->bt459_reg[reg];
+	if (use_x11) {
+		for (y=0; y<=ymax; y++)
+			for (x=0; x<=xmax; x+=4) {
+				struct fb_window *win = d->vfb_data->fb_window;
+				int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
+				unsigned char data = d->bt459_reg[reg];
 
-			for (i=0; i<4; i++) {
-				int color = (data >> (6-2*i)) & 3;
+				for (i=0; i<4; i++) {
+					int color = (data >> (6-2*i)) & 3;
 
-				/*
-				 *  TODO:  Better (color averaging)
-				 *  scaledown.
-				 */
-				XPutPixel(win->cursor_ximage,
-				    (x + i) / win->scaledown,
-				    y / win->scaledown,
-				    x11_graycolor[color * 5].pixel);
+					/*
+					 *  TODO:  Better (color averaging)
+					 *  scaledown.
+					 */
+					XPutPixel(win->cursor_ximage,
+					    (x + i) / win->scaledown,
+					    y / win->scaledown,
+					    x11_graycolor[color * 5].pixel);
+				}
 			}
-		}
+	}
 #endif
 }
 

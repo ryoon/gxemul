@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.12 2004-03-05 13:06:23 debug Exp $
+ *  $Id: dev_asc.c,v 1.13 2004-03-11 05:31:00 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -295,14 +295,12 @@ int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, in
 				memcpy(d->dma, d->incoming_data, len);
 				free(d->incoming_data);
 				d->incoming_data = NULL;
-
+/*
 				d->reg_ro[NCR_TCL] = len & 255;
 				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
-
+*/
 				/*  Successful DMA transfer:  */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
-d->reg_ro[NCR_TCL] = 0;
-d->reg_ro[NCR_TCM] = 0;
 			}
 		}
 	}
@@ -377,6 +375,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	}
 
 	/*  Some registers are read/write. Copy contents of reg_wo to reg_ro:  */
+	d->reg_ro[ 0] = d->reg_wo[0];	/*  Transfer count lo and  */
+	d->reg_ro[ 1] = d->reg_wo[1];	/*  middle  */
 	d->reg_ro[ 2] = d->reg_wo[2];
 	d->reg_ro[ 3] = d->reg_wo[3];
 	d->reg_ro[ 8] = d->reg_wo[8];
@@ -428,6 +428,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ? probably 7  */
 			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
+			d->cur_state = STATE_TARGET;
 			break;
 		case NCRCMD_MSGOK:
 			debug("MSGOK");
@@ -438,8 +439,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				debug("; Accepting message");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;	/*  ?  */
-			d->cur_state = STATE_TARGET;
+			if (d->cur_state == STATE_INITIATOR)
+				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ? probably 0  */
+			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 5;	/*  ?  */
 			break;
 		case NCRCMD_SETATN:
 			debug("SETATN");
@@ -486,6 +488,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				    idata & NCRCMD_DMA? 1 : 0, n_messagebytes);
 				d->reg_ro[NCR_STEP] &= ~7;
 				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
+				d->cur_state = STATE_INITIATOR;
 			} else {
 				/*
 				 *  Selection failed, non-existant scsi ID:
@@ -539,29 +542,28 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				    idata & NCRCMD_DMA? 1 : 0, 0);
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 				if (ok) {
+					d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
-					dev_asc_fifo_write(d, 0x00);
+					dev_asc_fifo_write(d, 0x00);  	/*  0 = command complete  */
 					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
 				}
 				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ?  */
 				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
-				d->cur_state = STATE_INITIATOR;		/*  ?  */
+/*				d->cur_state = STATE_INITIATOR;  */	/*  ?  */
 			} else {
 				int ok;
 				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 				if (ok) {
+					d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
 					dev_asc_fifo_write(d, 0x00);
 					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
 				}
-				d->reg_ro[NCR_STEP] &= ~7;
-				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
+				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 			}
 			break;
 		default:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.217 2004-12-14 04:19:07 debug Exp $
+ *  $Id: cpu.c,v 1.218 2004-12-14 04:27:07 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3184,8 +3184,12 @@ int cpu_run_instr(struct cpu *cpu)
 			break;
 		default:
 			/*  R4000 etc:  (TODO: How about supervisor mode?)  */
-			if (cached_pc <= 0x7fffffff) /* ((cp0->reg[COP0_STATUS] & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT) != KSU_KERNEL) */
+			if (((cp0->reg[COP0_STATUS] & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT) != KSU_KERNEL)
 				tmp = 1;
+			if (cp0->reg[COP0_STATUS] & STATUS_ERL)
+				tmp = 0;
+			if (cp0->reg[COP0_STATUS] & STATUS_EXL)
+				tmp = 0;
 			break;
 		}
 		if (cpu->coproc[cpnr] == NULL ||

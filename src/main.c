@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.52 2004-07-05 23:10:12 debug Exp $
+ *  $Id: main.c,v 1.53 2004-07-07 01:33:46 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -87,8 +87,7 @@ int use_random_bootstrap_cpu = 0;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
-int automatic_clock_adjustment = 0;
-int64_t automatic_clock_adjustment_curhz = 0;
+int automatic_clock_adjustment = 1;
 
 int show_trace_tree = 0;
 int tlb_dump = 0;
@@ -181,7 +180,6 @@ void usage(char *progname)
 			printf("\n");
 	}
 
-	printf("  -c        automatic clock tick interval adjustment (EXPERIMENTAL)\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\" as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
 	printf("                b     specifies that this is the boot device\n");
@@ -197,8 +195,8 @@ void usage(char *progname)
 	printf("  -F        try to emulate a hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -h        display this help message\n");
-	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
-	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
+	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
+	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
 	printf("  -j name   set the name of the kernel  (default = \"netbsd\")\n");
@@ -243,7 +241,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "A:BbC:cD:d:EFG:HhI:iJj:M:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJj:M:m:Nn:P:p:QqRrSsTtUu:vXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -259,9 +257,6 @@ int get_cmd_args(int argc, char *argv[])
 		case 'C':
 			strncpy(emul_cpu_name, optarg,
 			    sizeof(emul_cpu_name) - 1);
-			break;
-		case 'c':
-			automatic_clock_adjustment = 1;
 			break;
 		case 'D':
 			emulation_type = EMULTYPE_DEC;
@@ -285,6 +280,7 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'I':
 			emulated_hz = atoi(optarg);
+			automatic_clock_adjustment = 0;
 			break;
 		case 'i':
 			instruction_trace = 1;
@@ -384,10 +380,6 @@ int get_cmd_args(int argc, char *argv[])
 		printf("implicitly turning of -q and turning on -v, because of -t\n");
 		verbose = 1;
 	}
-
-	if (automatic_clock_adjustment && emulated_hz != 0)
-		printf("WARNING! -I %i is ignored because of -c.\n",
-		    emulated_hz);
 
 
 	/*  Default CPU type:  */

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.53 2004-07-04 15:52:02 debug Exp $
+$Id: index.html,v 1.54 2004-07-07 01:33:45 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -220,30 +220,37 @@ This table sums up the guest OSes that run well enough to be considered
 "working" in the emulator, that is, they can be installed onto some kind
 of harddisk image and be interacted with similar to a real machine:
 <p>
+ <center>
   <table border="1">
-    <tr>
-      <td><b>Emulation mode:</b></td>
-      <td><b>Guest OS:</b></td>
-      <td><b>Suitable command line arguments:</b></td>
-    </tr>
+    <tr><td>
+	  <table border="0">
+	    <tr>
+	      <td valign=top><b><u>Guest OS:</u></b></td>
+	      <td width=20>&nbsp;</td>
+	      <td valign=top><b><u>Emulation mode:</u></b></td>
+	      <td width=20>&nbsp;</td>
+	      <td valign=top><b><u>Suitable command line arguments:</u></b></td>
+	    </tr>
 
-    <tr>
-      <td>DECstation</td>
-      <td>NetBSD/pmax</td>
-      <td>-D2 -I5000000 -d rootdisk_name name_of_netbsd_pmax_kernel
-	<br>(add -NX for graphical framebuffer)
-	</td>
-    </tr>
+	    <tr>
+	      <td valign=top>NetBSD/pmax</td>
+	      <td></td>
+	      <td valign=top>DECstation</td>
+	      <td></td>
+	      <td valign=top>-X -D2 -d rootdisk.img</td>
+	    </tr>
 
-    <tr>
-      <td>DECstation</td>
-      <td>Ultrix/pmax</td>
-      <td>-j -D2 -I5000000 -d rootdisk_name name_of_ultrix_kernel
-	<br>(add -NX for graphical framebuffer)
-	</td>
-    </tr>
-
+	    <tr>
+	      <td valign=top>Ultrix/RISC</td>
+	      <td></td>
+	      <td valign=top>DECstation</td>
+	      <td></td>
+	      <td valign=top>-X -D2 -j vmunix -d rootdisk.img</td>
+	    </tr>
+	  </table>
+    </td></tr>
   </table>
+ </center>
 <p>
 Some other emulation modes, most notably SGI emulation modes,
 work relatively well with NetBSD, but not well enough
@@ -341,12 +348,11 @@ NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1
 http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
 running on an emulated DECstation 5000 supports this:
 <pre>
-	$ <b>./mips64emul -D2 -X -Y2 -I4000000 -M12 netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -XY2 -M12 netbsd-INSTALL</b>
 </pre>
 -D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
 framebuffer; -Y2 is used to scale down the window by a factor 2x2;
--I4000000 lets the emulated clock chip on DECstations have
-a more realistic pace; and -M12 sets the amount of emulated memory to 12 MB.
+and -M12 sets the amount of emulated memory to 12 MB.
 The result should looks something like this:
 <p>
 <center>
@@ -366,7 +372,7 @@ Here are links to some of the kernels that I usually experiment with.
       <li>NetBSD/pmax:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2 -I4000000</b>
+	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
 	Read <a href="#netbsdinstall">here</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
@@ -482,10 +488,10 @@ You need to do the following:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>./mips64emul -D2 -N -X -I4000000 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
+	$ <b>./mips64emul -X -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
 </pre>
 	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -I4000000 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
+	$ <b>./mips64emul -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
 </pre>
 	but then make sure you choose 'vt100' when prompted with which terminal
 	type to use, and not 'rcons'.
@@ -500,11 +506,11 @@ you should expect the installation to take quite some time. On a
 <p>
 When the installation is completed, the following command should start
 NetBSD from the harddisk image:<pre>
-	$ <b>./mips64emul -D2 -N -X -I4000000 -d netbsddisk.img</b>
+	$ <b>./mips64emul -X -D2 -d netbsddisk.img</b>
 </pre>
 <p>
 If you want to run without the X framebuffer, use this instead:<pre>
-	$ <b>./mips64emul -D2 -I4000000 -d netbsddisk.img</b>
+	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
 </pre>
 
 <p>

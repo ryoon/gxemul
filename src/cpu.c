@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.97 2004-07-05 23:10:12 debug Exp $
+ *  $Id: cpu.c,v 1.98 2004-07-07 01:33:46 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -65,10 +65,7 @@ extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
 extern int show_opcode_statistics;
-
 extern int automatic_clock_adjustment;
-extern int64_t automatic_clock_adjustment_curhz;
-
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
@@ -2745,16 +2742,15 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 	int offset;
 	char *symbol;
 	int64_t mseconds, ninstrs;
-	struct rusage rusage;
+	struct timeval tv;
 	int h, m, s, ms, d;
 
 	static int64_t mseconds_last = 0;
 	static int64_t ninstrs_last = -1;
 
-	getrusage(RUSAGE_SELF, &rusage);
-	mseconds = (rusage.ru_utime.tv_sec -
-		    starttime->tv_sec) * 1000
-	    + (rusage.ru_utime.tv_usec - starttime->tv_usec) / 1000;
+	gettimeofday(&tv, NULL);
+	mseconds = (tv.tv_sec - starttime->tv_sec) * 1000
+	         + (tv.tv_usec - starttime->tv_usec) / 1000;
 
 	if (mseconds == 0)
 		mseconds = 1;
@@ -2765,15 +2761,23 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 	if (automatic_clock_adjustment) {
+		static int first_adjustment = 1;
+
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
 		    / cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
-		if (cur_cycles_per_second < 500000)
-			cur_cycles_per_second = 500000;
+		if (cur_cycles_per_second < 1000000)
+			cur_cycles_per_second = 1000000;
 
-		automatic_clock_adjustment_curhz = cur_cycles_per_second;
+		if (first_adjustment) {
+			emulated_hz = cur_cycles_per_second;
+			first_adjustment = 0;
+		} else
+			emulated_hz = (7 * emulated_hz +
+			    cur_cycles_per_second) / 8;
+		fatal("[ updating emulated_hz to %lli Hz ]\n", emulated_hz);
 	}
 
 
@@ -2782,25 +2786,29 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 		goto do_return;
 
 
-	d = emulated_hz / 1000;
-	if (d < 1)
-		d = 1;
+	printf("[ ");
 
-	ms = ncycles / d;
-	h = ms / 3600000;
-	ms -= 3600000 * h;
-	m = ms / 60000;
-	ms -= 60000 * m;
-	s = ms / 1000;
-	ms -= 1000 * s;
+	if (!automatic_clock_adjustment) {
+		d = emulated_hz / 1000;
+		if (d < 1)
+			d = 1;
+		ms = ncycles / d;
+		h = ms / 3600000;
+		ms -= 3600000 * h;
+		m = ms / 60000;
+		ms -= 60000 * m;
+		s = ms / 1000;
+		ms -= 1000 * s;
 
-	printf("[ emulated time = %02i:%02i:%02i.%03i", h, m, s, ms);
-	printf(" (total nr of cycles = %lli", (long long) ncycles);
+		printf("emulated time = %02i:%02i:%02i.%03i; ", h, m, s, ms);
+	}
+
+	printf("total nr of cycles = %lli", (long long) ncycles);
 
 	if (cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instructions)", (long long) ninstrs);
 
-	printf(", instr/sec: %lli cur, %lli avg)",
+	printf(", instr/sec: %lli cur, %lli avg, ",
 	    (long long) ((long long)1000 * (ninstrs-ninstrs_last)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
@@ -2864,7 +2872,6 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
 		/*  TODO: how about overflow of ncycles?  */
 	int running, ncpus_cached = ncpus;
-	struct rusage rusage;
 	struct timeval starttime;
 	int a_few_cycles = 1048576, a_few_instrs;
 
@@ -2882,8 +2889,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	/*  debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);  */
 
 	/*  For performance measurement:  */
-	getrusage(RUSAGE_SELF, &rusage);
-	starttime = rusage.ru_utime;
+	gettimeofday(&starttime, NULL);
 
 	/*  The main loop:  */
 	running = 1;

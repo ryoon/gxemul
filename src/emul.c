@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.26 2004-07-05 19:25:04 debug Exp $
+ *  $Id: emul.c,v 1.27 2004-07-07 01:33:46 debug Exp $
  *
  *  Emulation startup.
  */
@@ -54,7 +54,6 @@ extern int bintrans_enable;
 extern char emul_cpu_name[50];
 extern int emulation_type;
 extern int machine;
-extern int emulated_hz;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int bootstrap_cpu;

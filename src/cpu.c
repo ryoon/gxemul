@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.19 2004-01-09 04:19:52 debug Exp $
+ *  $Id: cpu.c,v 1.20 2004-01-09 16:24:02 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -55,6 +55,7 @@ extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
 extern int speed_tricks;
+extern int prom_emulation;
 extern int tlb_dump;
 
 extern int bootstrap_cpu;
@@ -466,7 +467,11 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			cpu->coproc[0]->reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
 
 			/*  cpu->coproc[0]->reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
-			cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
+
+			if (cpu->cpu_type.exc_model == MMU10K)
+				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
+			else
+				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
 		}
 	}
 
@@ -700,7 +705,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	 *  This assumes that a jal was made to a ROM address,
 	 *  and we should return via gpr ra.
 	 */
-	if ((cpu->pc & 0xfff00000) == 0xbfc00000) {
+	if (prom_emulation && (cpu->pc & 0xfff00000) == 0xbfc00000) {
 		int rom_jal = 1;
 		switch (emulation_type) {
 		case EMULTYPE_DEC:
@@ -1844,7 +1849,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 
 					/*  COP0_LLADDR is updated for diagnostic purposes.  */
 					/*  (On R10K, this does not happen.)  */
-					if (cpu->cpu_type.rev != MIPS_R10000)
+					if (cpu->cpu_type.exc_model != MMU10K)
 						cpu->coproc[0]->reg[COP0_LLADDR] = (addr >> 4) & 0xffffffff;
 				} else {
 					/*  st == 1:  Store  */

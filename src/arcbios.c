@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.83 2005-01-29 13:45:41 debug Exp $
+ *  $Id: arcbios.c,v 1.84 2005-01-29 14:34:22 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -124,6 +124,28 @@ void arcbios_add_string_to_component(char *string, uint64_t component)
 
 	arcbios_string_to_component_value[arcbios_n_string_to_components] = component;
 	arcbios_n_string_to_components ++;
+}
+
+
+/*
+ *  arcbios_get_dsp_stat():
+ *
+ *  Fills in an arcbios_dsp_stat struct with valid data.
+ */
+void arcbios_get_dsp_stat(struct cpu *cpu, struct arcbios_dsp_stat *dspstat)
+{
+	memset(dspstat, 0, sizeof(struct arcbios_dsp_stat));
+
+	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
+	    CursorXPosition, arcbios_console_curx + 1);
+	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
+	    CursorYPosition, arcbios_console_cury + 1);
+	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
+	    CursorMaxXPosition, ARC_CONSOLE_MAX_X);
+	store_16bit_word_in_host(cpu, (unsigned char *)&dspstat->
+	    CursorMaxYPosition, ARC_CONSOLE_MAX_Y);
+	dspstat->ForegroundColor = arcbios_console_curcolor;
+	dspstat->HighIntensity = arcbios_console_curcolor ^ 0x08;
 }
 
 

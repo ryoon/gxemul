@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.71 2005-01-23 11:19:39 debug Exp $
+ *  $Id: diskimage.c,v 1.72 2005-01-29 14:34:22 debug Exp $
  *
  *  Disk image support.
  *
@@ -482,7 +482,7 @@ int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 	    scsi_id, xferp->cmd[0]);
 #endif
 
-#if 0
+#if 1
 {
 	static FILE *f = NULL;
 	if (f == NULL)
@@ -1200,15 +1200,28 @@ printf(" XXX \n");
 		break;
 
 	case 0xbd:
-		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+		fatal("[ SCSI 0x%02x (len %i), TODO: ", xferp->cmd[0],
+		    xferp->cmd_len);
+		for (i=0; i<xferp->cmd_len; i++)
+			fatal(" %02x", xferp->cmd[i]);
+		fatal(" ]\n");
 
 		/*
 		 *  Used by Windows NT?
 		 *
 		 *  Not documented in http://www.danbbs.dk/~dino/SCSI/SCSI2-D.html.
-		 *
-		 *  TODO
+		 *  Google gave the answer "MECHANISM_STATUS" for ATAPI. Hm.
 		 */
+
+		if (xferp->cmd_len < 12) {
+			fatal("WEIRD LEN?\n");
+		} else {
+			retlen = xferp->cmd[8] * 256 + xferp->cmd[9];
+		}
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len,
+		    &xferp->data_in, retlen, 1);
 
 		diskimage__return_default_status_and_message(xferp);
 		break;

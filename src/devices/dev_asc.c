@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.63 2005-01-23 13:43:01 debug Exp $
+ *  $Id: dev_asc.c,v 1.64 2005-01-29 14:34:21 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -349,7 +349,9 @@ fatal("TODO..............\n");
 					unsigned char *n;
 
 if (d->dma_controller != NULL)
-	printf("WARNING!!!!!!!!! BUG!!!! Unexpected stuff...\n");
+	printf("WARNING!!!!!!!!! BUG!!!! Unexpected stuff..."
+	    "len2=%i d->xferp->data_in_len=%i\n", (int)len2,
+	    (int)d->xferp->data_in_len);
 
 					all_done = 0;
 					/*  fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.312 2005-01-29 13:45:42 debug Exp $
+ *  $Id: machine.c,v 1.313 2005-01-29 14:34:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -65,12 +65,6 @@
 #include "sgi_arcbios.h"
 #include "arcbios_other.h"
 #include "crimereg.h"
-
-#define	ARC_CONSOLE_MAX_X	80
-#define	ARC_CONSOLE_MAX_Y	30
-extern int arcbios_console_curcolor;
-extern int arcbios_console_curx;
-extern int arcbios_console_cury;
 
 /*  For DECstation emulation:  */
 #include "dec_prom.h"
@@ -2898,14 +2892,7 @@ Why is this here? TODO
 		}
 		store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
 
-		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
-		/*  TODO:  get maxx and maxy from the current terminal settings?  */
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorXPosition, arcbios_console_curx + 1);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorYPosition, arcbios_console_cury + 1);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, ARC_CONSOLE_MAX_X);
-		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, ARC_CONSOLE_MAX_Y);
-		arcbios_dsp_stat.ForegroundColor = arcbios_console_curcolor;
-		arcbios_dsp_stat.HighIntensity = arcbios_console_curcolor ^ 0x08;
+		arcbios_get_dsp_stat(cpu, &arcbios_dsp_stat);
 		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*

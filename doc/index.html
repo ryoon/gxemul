@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.143 2004-11-03 00:36:47 debug Exp $
+$Id: index.html,v 1.144 2004-11-03 15:47:34 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -503,6 +503,21 @@ If you want to run without the X framebuffer, use this instead:<pre>
 </pre>
 
 
+<!--
+<p>
+If you are serious about running NetBSD/pmax, you might want to try
+adding one or more pre-compiled packages. The following command, for example,
+will install an old version of the Dillo web browser: (run these
+commands as root inside the emulator)
+<pre>
+        # <b>setenv FTP_PASSIVE_MODE YES</b>
+        # <b>pkg_add -v ftp://ftp.netbsd.org/pub/NetBSD/packages/1.6.1/pmax/All/dillo-0.8.0.tgz</b>
+</pre>
+<p>
+Adding packages this way is <i>really</i> slow, and sometimes does not
+work if the host isn't fast enough. (The ftp connections time out.)
+-->
+
 
 
 
@@ -557,6 +572,7 @@ follow these instructions:
 	$ <b>cd ../etc; echo "rc_configured=YES" &gt;&gt; rc.conf</b>
 	$ <b>cat > /mnt/etc/fstab</b>
 	    /dev/sd0a / ffs rw 1 1
+	    /dev/sd0b none swap sw 0 0
 	    (ctrl-d)
 	$ <b>cd /; umount /mnt; umount /mnt2</b>
 	$ <b>halt</b>

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.52 2004-11-03 00:36:46 debug Exp $
+$Id: RELEASE,v 1.53 2004-11-03 15:47:33 debug Exp $
 
 I'm currently working on what will become 0.2.2.
 The release "road map" at the moment looks something like this:
@@ -83,8 +83,8 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
 
   o)  0.2.1 -> 0.2.2:
 
-        x)  Acer PICA-61 is now emulated well enough to let NetBSD/arc or
-            OpenBSD/arc be installed onto a harddisk image.
+        x)  Acer PICA-61 is now emulated well enough to let NetBSD/arc and
+            OpenBSD/arc be installed onto harddisk images.
 
         x)  Some parts of TCP/IP networking work when running Ultrix as
             the guest OS. (Network support should still be considered

@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.2 2003-11-08 14:40:56 debug Exp $
+ *  $Id: diskimage.c,v 1.3 2003-11-20 03:42:17 debug Exp $
  *
  *  Disk image support.
+ *
+ *  TODO:  diskimage_remove() ?
+ *         Actually test diskimage_access() to see that it works.
  */
 
 #include <stdio.h>
@@ -63,6 +66,68 @@ int diskimage_exist(int disk_id)
 	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
 		return 0;
 
+	return 1;
+}
+
+
+/*
+ *  diskimage_scsicommand():
+ *
+ *  Returns 1 if ok, 0 on error.
+ *  If ok, then *return_buf_ptr is set to a newly malloced buffer. It is up to
+ *  the caller to free this buffer. *return_len is set to the length.
+ */
+int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned char **return_buf_ptr, int *return_len)
+{
+	unsigned char *retbuf = NULL;
+	int retlen = 0;
+
+	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL || len<1)
+		return 0;
+
+	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ", disk_id, buf[0]);
+	switch (buf[0]) {
+	case SCSICMD_INQUIRY:
+		debug("INQUIRY");
+		if (len != 6)
+			debug(" (weird len=%i)", len);
+		if (buf[1] != 0x00) {
+			fatal(" INQUIRY with buf[1]=0x%02x not yet implemented\n");
+			exit(1);
+		}
+		/*  Return values:  */
+		retlen = buf[4];
+		if (retlen < 36) {
+			fatal("WARNING: SCSI inquiry len=%i, <36!\n", retlen);
+			retlen = 36;
+		}
+		retbuf = malloc(retlen);
+		if (retbuf == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		memset(retbuf, 0, sizeof(retbuf));
+		retbuf[0] = 0x00;	/*  Direct-access disk  */
+		retbuf[1] = 0x00;	/*  non-removable  */
+		retbuf[2] = 0x02;	/*  SCSI-2  */
+		retbuf[6] = 0x04;	/*  ACKREQQ  */
+		retbuf[7] = 0x60;	/*  WBus32, WBus16  */
+		memcpy(retbuf+8, "VENDORID", 8);
+		memcpy(retbuf+16, "PRODUCT ID      ", 16);
+		memcpy(retbuf+32, "V0.0", 4);
+		break;
+	case SCSIBLOCKCMD_READ_CAPACITY:
+		debug("READ_CAPACITY");
+		fatal("\nscsi READ_CAPACITY: TODO\n");
+		exit(1);
+		break;
+	default:
+		debug("unimplemented command");
+	}
+	debug(" ]\n");
+
+	*return_buf_ptr = retbuf;
+	*return_len = retlen;
 	return 1;
 }
 
@@ -176,10 +241,11 @@ void diskimage_dump_info(void)
 	int i;
 
 	for (i=0; i<n_diskimages; i++) {
-		debug("adding diskimage %i: '%s', %s, %li bytes\n",
+		debug("adding diskimage %i: '%s', %s, %li bytes (%li sectors)\n",
 		    i, diskimages[i]->fname,
 		    diskimages[i]->writable? "read/write" : "read-only",
-		    (long int) diskimages[i]->total_size);
+		    (long int) diskimages[i]->total_size,
+		    (long int) (diskimages[i]->total_size / 512));
 	}
 }
 

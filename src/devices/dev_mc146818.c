@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.4 2003-12-22 19:45:52 debug Exp $
  *  
  *  MC146818 real-time clock, used by DECstation machines.
  *
@@ -58,6 +58,7 @@ struct mc_data {
 
 	int	register_choice;
 	int	reg[N_REGISTERS];
+	int	addrdiv;
 
 	int	timebase_hz;
 	int	interrupt_hz;
@@ -110,6 +111,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		mc_data->last_addr = data[0];
 		return 1;
 	}
+
+	relative_addr /= mc_data->addrdiv;
 
 	if (relative_addr == 0x71)
 		relative_addr = mc_data->last_addr;
@@ -242,7 +245,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_mc146818_init():
  */
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int emulated_ips)
+void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int addrdiv, int emulated_ips)
 {
 	unsigned char ether_address[6];
 	int i;
@@ -258,6 +261,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->irq_nr        = irq_nr;
 	mc_data->pc_style_cmos = pc_style_cmos;
 	mc_data->emulated_ips  = emulated_ips;
+	mc_data->addrdiv       = addrdiv;
 
 	/*  Station Ethernet Address:  */
 	for (i=0; i<6; i++)
@@ -292,7 +296,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 	mc_data->reg[0x79] = 0x55;
 	mc_data->reg[0x7d] = 0xaa;
 
-	memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH, dev_mc146818_access, (void *)mc_data);
+	memory_device_register(mem, "mc146818", baseaddr, DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access, (void *)mc_data);
 	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, 0);	/*  0 = every cycle  */
 }
 

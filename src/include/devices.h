@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.5 2003-12-22 11:38:28 debug Exp $
+ *  $Id: devices.h,v 1.6 2003-12-22 19:45:55 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -166,7 +166,7 @@ void dev_ns16550_init(struct memory *mem, uint64_t baseaddr, int irq_nr, int add
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int emulated_ips);
+void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int addrdiv, int emulated_ips);
 
 /*  dev_mp.c:  */
 #define	DEV_MP_ADDRESS			0x0000000011000000

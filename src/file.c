@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.35 2004-10-14 12:11:29 debug Exp $
+ *  $Id: file.c,v 1.36 2004-10-17 15:31:44 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:

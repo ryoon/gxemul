@@ -2,7 +2,7 @@
 #define	MISC_H
 
 /*
- *  Copyright (C) 2003,2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.117 2004-10-17 15:06:51 debug Exp $
+ *  $Id: misc.h,v 1.118 2004-10-17 15:31:43 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *

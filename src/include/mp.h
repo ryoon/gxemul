@@ -2,7 +2,7 @@
 #define	MP_H
 
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mp.h,v 1.2 2004-08-05 00:39:03 debug Exp $
+ *  $Id: mp.h,v 1.3 2004-10-17 15:31:43 debug Exp $
  *
  *  dev_mp definitions.
  */

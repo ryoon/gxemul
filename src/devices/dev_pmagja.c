@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.6 2004-07-16 18:19:32 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.7 2004-10-17 15:31:39 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *

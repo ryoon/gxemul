@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.12 2004-07-26 03:50:14 debug Exp $
+ *  $Id: dev_zs.c,v 1.13 2004-10-17 15:31:40 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *

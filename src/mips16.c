@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003, 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.7 2004-06-22 23:29:47 debug Exp $
+ *  $Id: mips16.c,v 1.8 2004-10-17 15:31:45 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.2 2004-10-14 13:14:41 debug Exp $
+ *  $Id: dev_pica.c,v 1.3 2004-10-17 15:31:39 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: decprom_dump_txt_to_bin.c,v 1.1 2004-02-11 07:28:31 debug Exp $
+ *  $Id: decprom_dump_txt_to_bin.c,v 1.2 2004-10-17 15:31:42 debug Exp $
  *
  *  decprom_dump_txt_to_bin.c
  *

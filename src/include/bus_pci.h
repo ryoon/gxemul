@@ -2,7 +2,7 @@
 #define	PCI_BUS_H
 
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.6 2004-06-11 10:14:27 debug Exp $
+ *  $Id: bus_pci.h,v 1.7 2004-10-17 15:31:43 debug Exp $
  */
 
 #include "memory.h"

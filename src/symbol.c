@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.14 2004-09-05 04:56:02 debug Exp $
+ *  $Id: symbol.c,v 1.15 2004-10-17 15:31:45 debug Exp $
  *
  *  Address to symbol translation routines.
  *

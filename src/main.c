@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.111 2004-10-16 18:15:13 debug Exp $
+ *  $Id: main.c,v 1.112 2004-10-17 15:31:45 debug Exp $
  */
 
 #include <stdio.h>
@@ -103,7 +103,7 @@ void usage(char *progname)
 	int i;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
-	printf("mips64emul-%s  Copyright (C) 2003-2004 by Anders Gavare\n",
+	printf("mips64emul-%s  Copyright (C) 2003-2004  Anders Gavare\n",
 #ifdef VERSION
 	    VERSION
 #else

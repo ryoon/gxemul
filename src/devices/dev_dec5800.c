@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.3 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.4 2004-10-17 15:31:39 debug Exp $
  *  
  *  DEC 5800 (SMP capable system).
  *

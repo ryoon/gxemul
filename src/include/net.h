@@ -2,7 +2,7 @@
 #define	NET_H
 
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.2 2004-07-05 19:25:03 debug Exp $
+ *  $Id: net.h,v 1.3 2004-10-17 15:31:43 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */

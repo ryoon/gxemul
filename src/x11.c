@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003, 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.24 2004-08-03 01:00:19 debug Exp $
+ *  $Id: x11.c,v 1.25 2004-10-17 15:31:45 debug Exp $
  *
  *  X11-related functions.
  */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.9 2004-07-11 15:25:23 debug Exp $
+ *  $Id: dev_kn02.c,v 1.10 2004-10-17 15:31:39 debug Exp $
  *  
  *  DEC (KN02) stuff.  See include/dec_kn02.h for more info.
  */

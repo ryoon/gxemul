@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.16 2004-07-26 03:50:14 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.17 2004-10-17 15:31:39 debug Exp $
  *  
  *  SGI IP22 stuff.
  */

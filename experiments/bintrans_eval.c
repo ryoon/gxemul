@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_eval.c,v 1.1 2004-07-25 02:13:21 debug Exp $
+ *  $Id: bintrans_eval.c,v 1.2 2004-10-17 15:31:42 debug Exp $
  *
  *  Bintrans algorithm evaluation.
  */

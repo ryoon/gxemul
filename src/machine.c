@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.324 2005-01-31 20:04:37 debug Exp $
+ *  $Id: machine.c,v 1.325 2005-01-31 21:10:34 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -53,12 +53,12 @@
 #include "arcbios.h"
 #include "bus_pci.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "devices.h"
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 #include "symbol.h"
 
@@ -79,23 +79,6 @@
 
 /*  HPC:  */
 #include "hpc_bootinfo.h"
-
-/*  TODO: Move this somewhere else!  */
-uint64_t file_loaded_end_addr = 0;
-
-struct kn230_csr *kn230_csr;
-struct kn02_csr *kn02_csr;
-struct dec_ioasic_data *dec_ioasic_data;
-struct ps2_data *ps2_data;
-struct dec5800_data *dec5800_csr;
-struct au1x00_ic_data *au1x00_ic_data;
-struct vr41xx_data *vr41xx_data = NULL;
-struct jazz_data *jazz_data;
-struct crime_data *crime_data;
-struct mace_data *mace_data;
-struct sgi_ip20_data *sgi_ip20_data;
-struct sgi_ip22_data *sgi_ip22_data;
-struct sgi_ip30_data *sgi_ip30_data;
 
 
 struct machine_entry_subtype {
@@ -585,7 +568,7 @@ void store_16bit_word_in_host(struct cpu *cpu,
 /*
  *  DECstation KN02 interrupts:
  */
-void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void kn02_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int current;
 
@@ -594,13 +577,13 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR in the irq_nr into the CSR:  */
-		kn02_csr->csr[0] |= irq_nr;
+		m->kn02_csr->csr[0] |= irq_nr;
 	} else {
 		/*  AND out the irq_nr from the CSR:  */
-		kn02_csr->csr[0] &= ~irq_nr;
+		m->kn02_csr->csr[0] &= ~irq_nr;
 	}
 
-	current = kn02_csr->csr[0] & kn02_csr->csr[2];
+	current = m->kn02_csr->csr[0] & m->kn02_csr->csr[2];
 	if (current == 0)
 		cpu_interrupt_ack(cpu, 2);
 	else
@@ -613,18 +596,18 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *
  *  TC slot 3 = system slot.
  */
-void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void kmin_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	/*  debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt)
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KMIN_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, KMIN_INT_TC3);
@@ -634,18 +617,18 @@ void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  DECstation KN03 interrupts:
  */
-void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void kn03_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
 
 	if (assrt)
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KN03_INT_ASIC);
 	else
 		cpu_interrupt_ack(cpu, KN03_INT_ASIC);
@@ -655,18 +638,19 @@ void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  DECstation MAXINE interrupts:
  */
-void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void maxine_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
 	if (assrt)
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
 	else
-		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
+		m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
-	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
+	if (m->dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & m->dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, XINE_INT_TC3);
 	else
 		cpu_interrupt_ack(cpu, XINE_INT_TC3);
@@ -676,11 +660,11 @@ void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  DECstation KN230 interrupts:
  */
-void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void kn230_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	int r2 = 0;
 
-	kn230_csr->csr |= irq_nr;
+	m->kn230_csr->csr |= irq_nr;
 
 	switch (irq_nr) {
 	case KN230_CSR_INTR_SII:
@@ -698,22 +682,22 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR in the irq_nr mask into the CSR:  */
-		kn230_csr->csr |= irq_nr;
+		m->kn230_csr->csr |= irq_nr;
 
 		/*  Assert MIPS interrupt 2 or 3:  */
 		cpu_interrupt(cpu, r2);
 	} else {
 		/*  AND out the irq_nr mask from the CSR:  */
-		kn230_csr->csr &= ~irq_nr;
+		m->kn230_csr->csr &= ~irq_nr;
 
 		/*  If the CSR interrupt bits are all zero, clear the bit in the cause register as well.  */
 		if (r2 == 2) {
 			/*  irq 2:  */
-			if ((kn230_csr->csr & (KN230_CSR_INTR_DZ0 | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
+			if ((m->kn230_csr->csr & (KN230_CSR_INTR_DZ0 | KN230_CSR_INTR_OPT0 | KN230_CSR_INTR_OPT1)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		} else {
 			/*  irq 3:  */
-			if ((kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) == 0)
+			if ((m->kn230_csr->csr & (KN230_CSR_INTR_SII | KN230_CSR_INTR_LANCE)) == 0)
 				cpu_interrupt_ack(cpu, r2);
 		}
 	}
@@ -727,7 +711,7 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *  8 + x, where x = 0..15	Jazz interrupts
  *  8 + x, where x = 16..31	ISA interrupt (irq nr + 16)
  */
-void jazz_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void jazz_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	uint32_t irq;
 	int isa = 0;
@@ -746,34 +730,34 @@ void jazz_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (isa) {
 		if (assrt)
-			jazz_data->isa_int_asserted |= irq;
+			m->jazz_data->isa_int_asserted |= irq;
 		else
-			jazz_data->isa_int_asserted &= ~irq;
+			m->jazz_data->isa_int_asserted &= ~irq;
 	} else {
 		if (assrt)
-			jazz_data->int_asserted |= irq;
+			m->jazz_data->int_asserted |= irq;
 		else
-			jazz_data->int_asserted &= ~irq;
+			m->jazz_data->int_asserted &= ~irq;
 	}
 
-	/*  debug("   %08x %08x\n", jazz_data->int_asserted,
-		jazz_data->int_enable_mask);  */
-	/*  debug("   %08x %08x\n", jazz_data->isa_int_asserted,
-		jazz_data->isa_int_enable_mask);  */
+	/*  debug("   %08x %08x\n", m->jazz_data->int_asserted,
+		m->jazz_data->int_enable_mask);  */
+	/*  debug("   %08x %08x\n", m->jazz_data->isa_int_asserted,
+		m->jazz_data->isa_int_enable_mask);  */
 
-	if (jazz_data->int_asserted /* & jazz_data->int_enable_mask  */
+	if (m->jazz_data->int_asserted /* & m->jazz_data->int_enable_mask  */
 	    & ~0x8000 )
 		cpu_interrupt(cpu, 3);
 	else
 		cpu_interrupt_ack(cpu, 3);
 
-	if (jazz_data->isa_int_asserted & jazz_data->isa_int_enable_mask)
+	if (m->jazz_data->isa_int_asserted & m->jazz_data->isa_int_enable_mask)
 		cpu_interrupt(cpu, 4);
 	else
 		cpu_interrupt_ack(cpu, 4);
 
 	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
-	if (jazz_data->int_asserted & 0x8000)
+	if (m->jazz_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
@@ -787,7 +771,8 @@ void jazz_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *	x = 0..15 for level1
  *	x = 16..31 for level2
  */
-void vr41xx_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	/*  debug("vr41xx_interrupt(): irq_nr=%i assrt=%i\n",
@@ -795,25 +780,25 @@ void vr41xx_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (irq_nr < 16) {
 		if (assrt)
-			vr41xx_data->sysint1 |= (1 << irq_nr);
+			m->vr41xx_data->sysint1 |= (1 << irq_nr);
 		else
-			vr41xx_data->sysint1 &= ~(1 << irq_nr);
+			m->vr41xx_data->sysint1 &= ~(1 << irq_nr);
 	} else if (irq_nr < 32) {
 		irq_nr -= 16;
 		if (assrt)
-			vr41xx_data->sysint2 |= (1 << irq_nr);
+			m->vr41xx_data->sysint2 |= (1 << irq_nr);
 		else
-			vr41xx_data->sysint2 &= ~(1 << irq_nr);
+			m->vr41xx_data->sysint2 &= ~(1 << irq_nr);
 	}
 
 	/*  TODO: Which hardware interrupt pin?  */
 
 	/*  debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
-	    vr41xx_data->sysint1, vr41xx_data->msysint1,
-	    vr41xx_data->sysint2, vr41xx_data->msysint2);  */
+	    m->vr41xx_data->sysint1, m->vr41xx_data->msysint1,
+	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);  */
 
-	if ((vr41xx_data->sysint1 & vr41xx_data->msysint1) |
-	    (vr41xx_data->sysint2 & vr41xx_data->msysint2))
+	if ((m->vr41xx_data->sysint1 & m->vr41xx_data->msysint1) |
+	    (m->vr41xx_data->sysint2 & m->vr41xx_data->msysint2))
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
@@ -823,7 +808,7 @@ void vr41xx_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  Playstation 2 interrupt routine:
  */
-void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
@@ -831,9 +816,9 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	if (assrt) {
 		/*  OR into the INTR:  */
 		if (irq_nr < 0x10000)
-			ps2_data->intr |= irq_nr;
+			m->ps2_data->intr |= irq_nr;
 		else
-			ps2_data->dmac_reg[0x601] |= (irq_nr >> 16);
+			m->ps2_data->dmac_reg[0x601] |= (irq_nr >> 16);
 
 		/*  Assert interrupt:   TODO: masks  */
 		if (irq_nr >= 0x10000)
@@ -843,14 +828,14 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	} else {
 		/*  AND out of the INTR:  */
 		if (irq_nr < 0x10000)
-			ps2_data->intr &= ~irq_nr;
+			m->ps2_data->intr &= ~irq_nr;
 		else
-			ps2_data->dmac_reg[0x601] &= ~(irq_nr >> 16);
+			m->ps2_data->dmac_reg[0x601] &= ~(irq_nr >> 16);
 
 		/*  TODO: masks  */
-		if ((ps2_data->intr & 0xffff) == 0)
+		if ((m->ps2_data->intr & 0xffff) == 0)
 			cpu_interrupt_ack(cpu, 2);
-		if ((ps2_data->dmac_reg[0x601] & 0xffff) == 0)
+		if ((m->ps2_data->dmac_reg[0x601] & 0xffff) == 0)
 			cpu_interrupt_ack(cpu, 3);
 	}
 }
@@ -859,7 +844,8 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 /*
  *  SGI "IP22" interrupt routine:
  */
-void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void sgi_ip22_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
 	/*
 	 *  SGI-IP22 specific interrupt stuff:
@@ -877,39 +863,39 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	newmask = 1 << (irq_nr & 31);
 
 	if (irq_nr >= 64) {
-		int m = irq_nr / 64;
-		uint32_t new = 1 << m;
+		int ms = irq_nr / 64;
+		uint32_t new = 1 << ms;
 		if (assrt)
-			sgi_ip22_data->reg[4] |= new;
+			m->sgi_ip22_data->reg[4] |= new;
 		else
-			sgi_ip22_data->reg[4] &= ~new;
+			m->sgi_ip22_data->reg[4] &= ~new;
 		/*  TODO: is this enough?  */
 		irq_nr &= 63;
 	}
 
 	if (irq_nr < 32) {
 		if (assrt)
-			sgi_ip22_data->reg[0] |= newmask;
+			m->sgi_ip22_data->reg[0] |= newmask;
 		else
-			sgi_ip22_data->reg[0] &= ~newmask;
+			m->sgi_ip22_data->reg[0] &= ~newmask;
 	} else {
 		if (assrt)
-			sgi_ip22_data->reg[2] |= newmask;
+			m->sgi_ip22_data->reg[2] |= newmask;
 		else
-			sgi_ip22_data->reg[2] &= ~newmask;
+			m->sgi_ip22_data->reg[2] &= ~newmask;
 	}
 
 	/*  Read stat and mask for local0:  */
-	stat = sgi_ip22_data->reg[0];
-	mask = sgi_ip22_data->reg[1];
+	stat = m->sgi_ip22_data->reg[0];
+	mask = m->sgi_ip22_data->reg[1];
 	if ((stat & mask) == 0)
 		cpu_interrupt_ack(cpu, 2);
 	else
 		cpu_interrupt(cpu, 2);
 
 	/*  Read stat and mask for local1:  */
-	stat = sgi_ip22_data->reg[2];
-	mask = sgi_ip22_data->reg[3];
+	stat = m->sgi_ip22_data->reg[2];
+	mask = m->sgi_ip22_data->reg[3];
 	if ((stat & mask) == 0)
 		cpu_interrupt_ack(cpu, 3);
 	else
@@ -927,7 +913,8 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *
  *  according to Linux/IP30.
  */
-void sgi_ip30_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void sgi_ip30_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
 	uint64_t newmask;
 	uint64_t stat, mask;
@@ -940,9 +927,9 @@ void sgi_ip30_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	newmask = (int64_t)1 << irq_nr;
 
 	if (assrt)
-		sgi_ip30_data->isr |= newmask;
+		m->sgi_ip30_data->isr |= newmask;
 	else
-		sgi_ip30_data->isr &= ~newmask;
+		m->sgi_ip30_data->isr &= ~newmask;
 
 just_assert_and_such:
 
@@ -952,8 +939,8 @@ just_assert_and_such:
 	cpu_interrupt_ack(cpu, 5);
 	cpu_interrupt_ack(cpu, 6);
 
-	stat = sgi_ip30_data->isr;
-	mask = sgi_ip30_data->imask0;
+	stat = m->sgi_ip30_data->isr;
+	mask = m->sgi_ip30_data->imask0;
 
 	if ((stat & mask) & 0x000000000000ffffULL)
 		cpu_interrupt(cpu, 2);
@@ -971,7 +958,8 @@ just_assert_and_such:
 /*
  *  SGI "IP32" interrupt routine:
  */
-void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void sgi_ip32_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
 	/*
 	 *  The 64-bit word at crime offset 0x10 is CRIME_INTSTAT,
@@ -1005,7 +993,7 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	 */
 	if (irq_nr & MACE_PERIPH_SERIAL) {
 		/*  Read current MACE interrupt bits:  */
-		memcpy(x, mace_data->reg + mace_addr, sizeof(uint32_t));
+		memcpy(x, m->mace_data->reg + mace_addr, sizeof(uint32_t));
 		mace_interrupts = 0;
 		for (i=0; i<sizeof(uint32_t); i++) {
 			/*  SGI is big-endian...  */
@@ -1021,7 +1009,7 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		/*  Write back MACE interrupt bits:  */
 		for (i=0; i<4; i++)
 			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(mace_data->reg + mace_addr, x, sizeof(uint32_t));
+		memcpy(m->mace_data->reg + mace_addr, x, sizeof(uint32_t));
 
 		irq_nr = MACE_PERIPH_SERIAL;
 		if (mace_interrupts == 0)
@@ -1033,7 +1021,7 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	/*  Hopefully _MISC and _SERIAL will not be both on at the same time.  */
 	if (irq_nr & MACE_PERIPH_MISC) {
 		/*  Read current MACE interrupt bits:  */
-		memcpy(x, mace_data->reg + mace_addr, sizeof(uint32_t));
+		memcpy(x, m->mace_data->reg + mace_addr, sizeof(uint32_t));
 		mace_interrupts = 0;
 		for (i=0; i<sizeof(uint32_t); i++) {
 			/*  SGI is big-endian...  */
@@ -1049,7 +1037,7 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		/*  Write back MACE interrupt bits:  */
 		for (i=0; i<4; i++)
 			x[3-i] = mace_interrupts >> (i*8);
-		memcpy(mace_data->reg + mace_addr, x, sizeof(uint32_t));
+		memcpy(m->mace_data->reg + mace_addr, x, sizeof(uint32_t));
 
 		irq_nr = MACE_PERIPH_MISC;
 		if (mace_interrupts == 0)
@@ -1059,7 +1047,7 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	}
 
 	/*  Read CRIME_INTSTAT:  */
-	memcpy(x, crime_data->reg + crime_addr, sizeof(uint64_t));
+	memcpy(x, m->crime_data->reg + crime_addr, sizeof(uint64_t));
 	crime_interrupts = 0;
 	for (i=0; i<8; i++) {
 		/*  SGI is big-endian...  */
@@ -1075,10 +1063,10 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	/*  Write back CRIME_INTSTAT:  */
 	for (i=0; i<8; i++)
 		x[7-i] = crime_interrupts >> (i*8);
-	memcpy(crime_data->reg + crime_addr, x, sizeof(uint64_t));
+	memcpy(m->crime_data->reg + crime_addr, x, sizeof(uint64_t));
 
 	/*  Read CRIME_INTMASK:  */
-	memcpy(x, crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
+	memcpy(x, m->crime_data->reg + CRIME_INTMASK, sizeof(uint64_t));
 	crime_interrupts_mask = 0;
 	for (i=0; i<8; i++) {
 		crime_interrupts_mask <<= 8;
@@ -1111,26 +1099,27 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *  Special case: if irq_nr == 64+8, then this just updates the CPU
  *  interrupt assertions.
  */
-void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void au1x00_interrupt(struct machine *m, struct cpu *cpu,
+	int irq_nr, int assrt)
 {
-	uint32_t m;
+	uint32_t ms;
 
 	irq_nr -= 8;
 	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
 
 	if (irq_nr < 64) {
-		m = 1 << (irq_nr & 31);
+		ms = 1 << (irq_nr & 31);
 
 		if (assrt)
-			au1x00_ic_data->request0_int |= m;
+			m->au1x00_ic_data->request0_int |= ms;
 		else
-			au1x00_ic_data->request0_int &= ~m;
+			m->au1x00_ic_data->request0_int &= ~ms;
 
 		/*  TODO: Controller 1  */
 	}
 
-	if ((au1x00_ic_data->request0_int &
-	    au1x00_ic_data->mask) != 0)
+	if ((m->au1x00_ic_data->request0_int &
+	    m->au1x00_ic_data->mask) != 0)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
@@ -1337,7 +1326,7 @@ void machine_setup(struct machine *machine)
 			 */
 
 			/*  KN02 interrupts:  */
-			cpu->cd.mips.md_interrupt = kn02_interrupt;
+			machine->md_interrupt = kn02_interrupt;
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1384,7 +1373,8 @@ void machine_setup(struct machine *machine)
 			dev_mc146818_init(machine, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
-			kn02_csr = dev_kn02_init(cpu, mem, KN02_SYS_CSR);
+			machine->kn02_csr =
+			    dev_kn02_init(cpu, mem, KN02_SYS_CSR);
 
 			framebuffer_console_name = "osconsole=0,7";
 								/*  fb,keyb  */
@@ -1401,7 +1391,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*  KMIN interrupts:  */
-			cpu->cd.mips.md_interrupt = kmin_interrupt;
+			machine->md_interrupt = kmin_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
@@ -1417,7 +1407,7 @@ void machine_setup(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 			dev_le_init(machine, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
 			dev_scc_init(machine, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, machine->use_x11, 0, 1);
 			dev_scc_init(machine, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, machine->use_x11, 1, 1);
@@ -1469,7 +1459,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  KN03 interrupts:  */
-			cpu->cd.mips.md_interrupt = kn03_interrupt;
+			machine->md_interrupt = kn03_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
@@ -1483,14 +1473,14 @@ void machine_setup(struct machine *machine)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
+			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000, 0);
 
 			dev_le_init(machine, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 
-			dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
-			dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
-			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
+			machine->dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
+			machine->dec_ioasic_data->dma_func_extra[2] = dev_scc_init(machine, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, machine->use_x11, 0, 1);
+			machine->dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
+			machine->dec_ioasic_data->dma_func_extra[3] = dev_scc_init(machine, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, machine->use_x11, 1, 1);
 
 			dev_mc146818_init(machine, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(machine, mem, KN03_SYS_SCSI,
@@ -1549,9 +1539,9 @@ void machine_setup(struct machine *machine)
 			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
-			dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
+			machine->dec5800_csr = dev_dec5800_init(machine, mem, 0x10000000);
 			dev_decbi_init(mem, 0x10000000);
-			dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &dec5800_csr->csr);
+			dev_ssc_init(machine, mem, 0x10140000, 2, machine->use_x11, &machine->dec5800_csr->csr);
 			dev_decxmi_init(mem, 0x11800000);
 			dev_deccca_init(mem, DEC_DECCCA_BASEADDR);
 
@@ -1601,7 +1591,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
 			/*  Maxine interrupts:  */
-			cpu->cd.mips.md_interrupt = maxine_interrupt;
+			machine->md_interrupt = maxine_interrupt;
 
 			/*
 			 *  Something at address 0xca00000. (?)
@@ -1620,7 +1610,7 @@ void machine_setup(struct machine *machine)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
 			 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
+			machine->dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000, 0);
 
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(machine, mem, 0,
@@ -1710,7 +1700,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
 			/*  KN230 interrupts:  */
-			cpu->cd.mips.md_interrupt = kn230_interrupt;
+			machine->md_interrupt = kn230_interrupt;
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -1724,7 +1714,7 @@ void machine_setup(struct machine *machine)
 			/* dev_dc7085_init(machine, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, machine->use_x11); */	/*  NOTE: CSR_INTR  */
 			dev_le_init(machine, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(machine, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
-			kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
+			machine->kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
 
 			serial_console_name = "osconsole=0";
 			break;
@@ -1858,7 +1848,7 @@ void machine_setup(struct machine *machine)
 		xx.c.common.type = BTINFO_SYMTAB;
 		xx.c.nsym = 0;
 		xx.c.ssym = 0;
-		xx.c.esym = file_loaded_end_addr;
+		xx.c.esym = machine->file_loaded_end_addr;
 
 		store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
@@ -2015,8 +2005,8 @@ void machine_setup(struct machine *machine)
 
 			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
-			vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
-			cpu->cd.mips.md_interrupt = vr41xx_interrupt;
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
+			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2045,8 +2035,8 @@ void machine_setup(struct machine *machine)
 
 			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
-			vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			cpu->cd.mips.md_interrupt = vr41xx_interrupt;
+			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
+			machine->md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2122,11 +2112,11 @@ void machine_setup(struct machine *machine)
 		 */
 
 		dev_ps2_gs_init(machine, mem, 0x12000000);
-		ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
+		machine->ps2_data = dev_ps2_stuff_init(machine, mem, 0x10000000);
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 
-		cpu->cd.mips.md_interrupt = ps2_interrupt;
+		machine->md_interrupt = ps2_interrupt;
 
 		add_symbol_name(&machine->symbol_context,
 		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
@@ -2269,7 +2259,7 @@ void machine_setup(struct machine *machine)
 				 */
 
 				/*  int0 at mainbus0 addr 0x1fb801c0  */
-				sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
+				machine->sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
@@ -2304,10 +2294,10 @@ void machine_setup(struct machine *machine)
 			case 24:
 				if (machine->machine_subtype == 22) {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
-					sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
+					machine->sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9000, 0);
 				} else {
 					strcat(machine->machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
-					sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
+					machine->sgi_ip22_data = dev_sgi_ip22_init(machine, mem, 0x1fbd9880, 1);
 				}
 
 /*
@@ -2315,7 +2305,7 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x88000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 */
-				cpu->cd.mips.md_interrupt = sgi_ip22_interrupt;
+				machine->md_interrupt = sgi_ip22_interrupt;
 
 				/*
 				 *  According to NetBSD 1.6.2:
@@ -2423,8 +2413,8 @@ Why is this here? TODO
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine->machine_name, " (Octane)");
 
-				sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
-				cpu->cd.mips.md_interrupt = sgi_ip30_interrupt;
+				machine->sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
+				machine->md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(mem,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
@@ -2466,7 +2456,7 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
-				crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
+				machine->crime_data = dev_crime_init(machine, mem, 0x14000000, 2, machine->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(machine, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
@@ -2492,8 +2482,9 @@ Why is this here? TODO
 				 * 	  1f398000	  com1 (serial)
 				 * 	  1f3a0000	  mcclock0
 				 */
-				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				cpu->cd.mips.md_interrupt = sgi_ip32_interrupt;
+
+				machine->mace_data = dev_mace_init(mem, 0x1f310000, 2);
+				machine->md_interrupt = sgi_ip32_interrupt;
 
 				/*
 				 *  IRQ mapping is really ugly.  TODO: fix
@@ -2694,9 +2685,9 @@ Why is this here? TODO
 					exit(1);
 				}
 
-				jazz_data = dev_jazz_init(
+				machine->jazz_data = dev_jazz_init(
 				    machine, mem, 0x80000000ULL);
-				cpu->cd.mips.md_interrupt = jazz_interrupt;
+				machine->md_interrupt = jazz_interrupt;
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
@@ -2724,7 +2715,7 @@ Why is this here? TODO
 
 				dev_asc_init(machine, mem,
 				    0x80002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
-				    dev_jazz_dma_controller, jazz_data);
+				    dev_jazz_dma_controller, machine->jazz_data);
 
 				dev_fdc_init(mem, 0x80003000ULL, 0);
 
@@ -2754,9 +2745,9 @@ Why is this here? TODO
 
 				strcat(machine->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
-				jazz_data = dev_jazz_init(
+				machine->jazz_data = dev_jazz_init(
 				    machine, mem, 0x80000000ULL);
-				cpu->cd.mips.md_interrupt = jazz_interrupt;
+				machine->md_interrupt = jazz_interrupt;
 
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
@@ -3743,8 +3734,8 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-		cpu->cd.mips.md_interrupt = au1x00_interrupt;
-		au1x00_ic_data = dev_au1x00_init(machine, mem);
+		machine->md_interrupt = au1x00_interrupt;
+		machine->au1x00_ic_data = dev_au1x00_init(machine, mem);
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?

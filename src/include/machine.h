@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.20 2005-01-30 22:42:00 debug Exp $
+ *  $Id: machine.h,v 1.21 2005-01-31 21:10:34 debug Exp $
  */
 
 #include <sys/types.h>
@@ -46,6 +46,21 @@ struct diskimage;
 struct emul;
 struct fb_window;
 struct memory;
+
+/*  Ugly:  */
+struct kn230_csr;
+struct kn02_csr;
+struct dec_ioasic_data;
+struct ps2_data;
+struct dec5800_data;
+struct au1x00_ic_data;
+struct vr41xx_data;
+struct jazz_data;
+struct crime_data;
+struct mace_data;
+struct sgi_ip20_data;
+struct sgi_ip22_data;
+struct sgi_ip30_data;
 
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
@@ -77,6 +92,9 @@ struct machine {
 	void	(*tick_func[MAX_TICK_FUNCTIONS])(struct cpu *, void *);
 	void	*tick_extra[MAX_TICK_FUNCTIONS];
 
+	void	(*md_interrupt)(struct machine *m, struct cpu *cpu,
+		    int irq_nr, int assert);
+
 	char	*cpu_name;  /*  TODO: remove this, there could be several
 				cpus with different names in a machine  */
 	int	byte_order_override;
@@ -92,7 +110,6 @@ struct machine {
 	int64_t	ncycles_flush;
 	int	a_few_cycles;
 	int	a_few_instrs;
-
 
 	struct diskimage *first_diskimage;
 
@@ -133,17 +150,30 @@ struct machine {
 	int	userland_emul;
 	int	force_netboot;
 	int	slow_serial_interrupts_hack_for_linux;
-
+	uint64_t file_loaded_end_addr;
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
 
 	int	automatic_clock_adjustment;
-
 	int	exit_without_entering_debugger;
-
 	int	show_trace_tree;
 
 	int	n_gfx_cards;
+
+	/*  Yuck, this is ugly:  */
+	struct kn230_csr *kn230_csr;
+	struct kn02_csr *kn02_csr;
+	struct dec_ioasic_data *dec_ioasic_data;
+	struct ps2_data *ps2_data;
+	struct dec5800_data *dec5800_csr;
+	struct au1x00_ic_data *au1x00_ic_data;
+	struct vr41xx_data *vr41xx_data;       
+	struct jazz_data *jazz_data;
+	struct crime_data *crime_data;
+	struct mace_data *mace_data;
+	struct sgi_ip20_data *sgi_ip20_data;
+	struct sgi_ip22_data *sgi_ip22_data;
+	struct sgi_ip30_data *sgi_ip30_data;
 
 	/*  X11/framebuffer stuff:  */
 	int	use_x11;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.6 2005-01-31 05:45:52 debug Exp $
+ *  $Id: cpu_mips.c,v 1.7 2005-01-31 21:10:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1423,8 +1423,8 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->cd.mips.md_interrupt != NULL)
-			cpu->cd.mips.md_interrupt(cpu, irq_nr, 1);
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(cpu->machine, cpu, irq_nr, 1);
 		else
 			fatal("mips_cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
@@ -1451,8 +1451,8 @@ int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->cd.mips.md_interrupt != NULL)
-			cpu->cd.mips.md_interrupt(cpu, irq_nr, 0);
+		if (cpu->machine->md_interrupt != NULL)
+			cpu->machine->md_interrupt(cpu->machine, cpu, irq_nr, 0);
 		else
 			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.61 2005-01-31 20:21:16 debug Exp $
+ *  $Id: file.c,v 1.62 2005-01-31 21:10:34 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -88,9 +88,6 @@ struct aout_symbol {
 	uint32_t	type;
 	uint32_t	addr;
 };
-
-
-extern uint64_t file_loaded_end_addr;
 
 
 #define	unencode(var,dataptr,typ)	{				\
@@ -568,7 +565,7 @@ unknown_coff_symbols:
 
 	*entrypointp = a_entry;
 	*gpp = a_gp;
-	file_loaded_end_addr = end_addr;
+	m->file_loaded_end_addr = end_addr;
 
 	if (encoding == ELFDATA2LSB)
 		*byte_orderp = EMUL_LITTLE_ENDIAN;

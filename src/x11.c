@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.50 2005-01-31 19:31:32 debug Exp $
+ *  $Id: x11.c,v 1.51 2005-01-31 21:10:35 debug Exp $
  *
  *  X11-related functions.
  */
@@ -352,6 +352,8 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 
 	if (x11_display == NULL) {
 		fatal("x11_fb_init(\"%s\"): couldn't open display\n", name);
+		if (display_name != NULL)
+			fatal("display_name = '%s'\n", display_name);
 		exit(1);
 	}
 

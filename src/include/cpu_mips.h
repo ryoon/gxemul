@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.4 2005-01-30 14:06:43 debug Exp $
+ *  $Id: cpu_mips.h,v 1.5 2005-01-31 21:10:34 debug Exp $
  */
 
 #include "misc.h"
@@ -215,9 +215,6 @@ struct mips_cpu {
 	struct mips_coproc *coproc[N_MIPS_COPROCS];
 
 	int		compare_register_set;
-
-/*  TODO: Move to machine.h  */
-void(*md_interrupt)(struct cpu *, int irq_nr, int);
 
 	/*  Special purpose registers:  */
 	uint64_t	pc;

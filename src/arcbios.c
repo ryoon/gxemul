@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.11 2004-01-02 22:20:58 debug Exp $
+ *  $Id: arcbios.c,v 1.12 2004-01-05 01:24:49 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -131,12 +131,12 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 
 		/*  debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);  */
 
-		if (eparent == parent && epeer == 0) {
+		if ((uint32_t)eparent == (uint32_t)parent && (uint32_t)epeer == 0) {
 			epeer = a;
 			store_32bit_word(peeraddr + 0x00, epeer);
 			/*  debug("[ addchild: adding 0x%08x as peer to 0x%08x ]\n", a, peeraddr);  */
 		}
-		if (peeraddr == parent && echild == 0) {
+		if ((uint32_t)peeraddr == (uint32_t)parent && (uint32_t)echild == 0) {
 			echild = a;
 			store_32bit_word(peeraddr + 0x04, echild);
 			/*  debug("[ addchild: adding 0x%08x as child to 0x%08x ]\n", a, peeraddr);  */

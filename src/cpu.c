@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.62 2004-06-22 22:26:09 debug Exp $
+ *  $Id: cpu.c,v 1.63 2004-06-22 23:29:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -675,7 +675,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 #endif
 
 	/*  Read an instruction from memory:  */
-#ifdef SUPPORT_MIPS16
+#ifdef ENABLE_MIPS16
 	if (cpu->mips16 && (cpu->pc & 1)) {
 		/*  16-bit instruction word:  */
 		unsigned char instr16[2];

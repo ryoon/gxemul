@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.61 2004-06-22 22:27:07 debug Exp $
+ *  $Id: misc.h,v 1.62 2004-06-22 23:29:49 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -57,10 +57,12 @@ typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
 #endif
 
-/*  These can be defined, but they reduce speed of the emulator.
-    Don't enable them unless you need them.  */
+/*
+ *  These can be defined, but they reduce speed of the emulator.
+ *  Don't enable them unless you need them.
+ */
 
-#define SUPPORT_MIPS16
+/*  ENABLE_MIPS16 should be defined on the commandline using -D, if you want it  */
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 /*  #define MFHILO_DELAY  */
@@ -199,7 +201,7 @@ struct cpu_type_def {
 struct cpu;
 
 struct memory {
-	size_t		physical_max;		/*  must be less than or equal to 1 << max_bits  */
+	uint64_t	physical_max;		/*  must be less than or equal to 1 << max_bits  */
 	int		max_bits;
 
 	int		bits_per_pagetable;
@@ -479,8 +481,10 @@ struct cpu {
 	uint64_t	hi;
 	uint64_t	lo;
 
+#ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */
 	uint16_t	mips16_extend;		/*  set on 'extend' instructions to the entire 16-bit extend instruction  */
+#endif
 
 	int		trace_tree_depth;
 	int		instruction_delay;

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.17 2004-06-19 11:57:39 debug Exp $
+#  $Id: configure,v 1.18 2004-06-22 23:29:49 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -17,14 +17,22 @@
 #    o)  binary translation (on supported platforms)
 #
 
-if [ z$1 != z ]; then
-	if [ z$1 = z--nox11 ]; then
-		NOX11=YES
-	else
-		echo "usage: $0 [options]"
-		echo "  --nox11       configure without x11 support"
-		exit
-	fi
+if [ z"$*" != z ]; then
+	#  Parse command line options:
+	for a in $*; do
+		if [ z$a = z--nox11 ]; then
+			NOX11=YES
+		else
+			if [ z$a = z--mips16 ]; then
+				MIPS16=YES
+			else
+				echo "usage: $0 [options]"
+				echo "  --nox11       configure without x11 support"
+				echo "  --mips16      enable MIPS16 instruction support"
+				exit
+			fi
+		fi
+	done
 fi
 
 rm -f _Makefile.header
@@ -149,6 +157,14 @@ else
 fi
 
 
+#  MIPS16 support:
+
+if [ z$MIPS16 = zYES ]; then
+	echo 'Enabling MIPS16 support.   NOTE: MIPS16 support is not really working yet.'
+	COPTIM="-DENABLE_MIPS16 $COPTIM"
+fi
+
+
 #############################################################################
 #
 #  BINTRANS:
@@ -177,6 +193,7 @@ if [ z"`uname`" = zHP-UX ]; then
 	#  This is not an optimization, actually, just flags:
 	#  TODO:  include correct strtoll and strtoull,
 	#  these are just fake!
+	echo 'NOTE: HPUX weirdness, strtol vs stroll etc.  You have been warned.'
 	COPTIM="-DHPUX -Dstrtoll=strtol -Dstrtoull=strtoul $COPTIM"
 fi
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.464 2005-01-10 03:06:30 debug Exp $
+$Id: HISTORY,v 1.465 2005-01-10 22:30:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1443,3 +1443,4 @@ HISTORY of mips64emul
 20050110	Changing the default bintrans cache to 16 MB, and some other
 		minor updates.
 		Adding div and divu to the i386 backend (but not Alpha yet).
+		More work on ARC emulation.

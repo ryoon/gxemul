@@ -1,6 +1,9 @@
-$Id: RELEASE,v 1.103 2005-03-31 14:09:14 debug Exp $
+$Id: RELEASE,v 1.104 2005-03-31 22:26:59 debug Exp $
 
-I'm now working on post-0.3.
+I'm now working on post-0.3. The next release will be 0.3.1.
+
+I'm not sure how far away the 0.3.1 release is; there are many many things
+that I'd like to have time to experiment with before that.
 
 ------------------------------------------------------------------------------
 
@@ -10,39 +13,36 @@ Release notes for GXemul 0.3.1
 Copyright (C) 2003-2005  Anders Gavare.
 
 
-GXemul is an experimental instruction-level machine emulator. It can be used to 
-run binary code for (among others) MIPS-based machines. Several emulation modes 
-are available. For some emulation modes, processors and surrounding hardware    
-components are emulated well enough to let unmodified operating systems (eg.
-NetBSD) run as if they were running on a real machine.
+GXemul is an experimental instruction-level machine emulator. It can be
+used to run binary code for (among others) MIPS-based machines. Several
+emulation modes are available. For some emulation modes, processors and
+surrounding hardware components are emulated well enough to let unmodified
+operating systems run as if they were running on a real machine.
 
+I have verified that the following "guest" operating systems can run
+inside the emulator:
 
-The emulator can be used for many different things. One of the most interesting
-uses is to run complete "guest" operating systems. I have verified that the
-following operating systems can run inside the emulator:
+     Guest operating system              Emulated machine
+     ----------------------              ----------------
+     NetBSD/pmax 2.0 (and 1.6.2)         DECstation 5000/200
+     OpenBSD/pmax 2.8-BETA               DECstation 5000/200
+     Ultrix 4.2-4.5                      DECstation 5000/200
+     Sprite demo harddisk image          DECstation 5000/200
+     Debian GNU/Linux for DECstation     DECstation 5000/200
+     Redhat Linux 7.1 for mips           DECstation 5000/200
+     NetBSD/arc 1.6.2                    Acer PICA-61
+     OpenBSD/arc 2.3                     Acer PICA-61
+     NetBSD/hpcmips 2.0                  NEC MobilePro 770, 780, 800
 
+A couple of other emulation modes exist. Some of these modes are almost 
+working well enough to run complete guest operating systems, but most are 
+just skeletons. The modes that work are listed in the documentation.
 
-       Guest operating system               Emulated machine
-       ----------------------               ----------------
-
-       NetBSD/pmax 2.0 (and 1.6.2)          DECstation 5000/200
-       OpenBSD/pmax 2.8-BETA                DECstation 5000/200
-       Ultrix 4.2-4.5                       DECstation 5000/200
-       Sprite demo harddisk image           DECstation 5000/200
-       Debian GNU/Linux for DECstation      DECstation 5000/200
-       Redhat Linux 7.1 for mips            DECstation 5000/200
-       NetBSD/arc 1.6.2                     Acer PICA-61
-       OpenBSD/arc 2.3                      Acer PICA-61
-       NetBSD/hpcmips 2.0                   NEC MobilePro 770, 780, 800
-
-
-A couple of other emulation modes exist (for SGI's MIPS-based machines,
-Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
-of a curiosity, and should not be considered working yet.
-
-The emulator can also be used for other experiments; it does not have to 
-run entire guest operating systems.
-
+The emulator can also be used in other experiments; it does not have to
+run entire guest operating systems. It is important to remember, though,
+that GXemul does not simulate things smaller than an instruction; this
+means that pipe-line stalls, penalties caused by branch-prediction misses,
+and other effects are not simulated.
 
 The most important changes from version 0.3 to 0.3.1 are:
 
@@ -51,12 +51,8 @@ The most important changes from version 0.3 to 0.3.1 are:
 	x)  NetBSD/hpcmips can now be installed and run from a harddisk
 	    image on an emulated NEC MobilePro 770, 780, or 800.
 
-	x)  ...
-
-
 This release has a number of known bugs, listed in the BUGS file, but feel
 free to drop me an email regarding other bugs.
-
 
 Files included in this release are:
 
@@ -72,13 +68,11 @@ Files included in this release are:
   src, devices, and include   Source code.
   tests                       Regression tests.
 
-
 To build the emulator, run the ./configure script, and then run make.
 
 Building the emulator should work on most Unix-like systems. (One system which
 is specifically known to NOT work is Ultrix/RISC inside the emulator; Ultrix
 chokes on the configure script and the default cc in Ultrix doesn't work.)
-
 
 Regarding files in the include/ directory:  only some of these are written by
 me, the rest are from other sources (such as NetBSD). The license text says
@@ -143,7 +137,6 @@ them like this is in order:
     arcbios_other.h is Copyright (c) 1996 M. Warner Losh.
 
     This product includes software developed by Marc Horowitz.
-
 
 See individual files for license details, if you plan to redistribute GXemul
 or reuse code.

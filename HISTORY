@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.663 2005-03-31 06:14:57 debug Exp $
+$Id: HISTORY,v 1.664 2005-03-31 22:26:59 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1785,3 +1785,4 @@ Changelog for GXemul:
 		Adding a MobilePro 770 mode (same as 780, but different
 		framebuffer address which allows bintrans = fast scrolling),
 		and a MobilePro 800 (with 800x600 pixels framebuffer :-).
+20050401	Minor updates.

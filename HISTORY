@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.446 2005-01-05 21:56:07 debug Exp $
+$Id: HISTORY,v 1.447 2005-01-05 22:25:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1421,4 +1421,4 @@ HISTORY of mips64emul
 		Unaligned stores that cause tlb refill exceptions should now
 		cause TLBS exceptions, not TLBL.
 		Adding experimental swl and swr to the Alpha backend.
-		Adding lwl and lwr to the i386 backend.
+		Adding lwl, lwr, swl, and swr to the i386 backend.

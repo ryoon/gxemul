@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.60 2005-01-05 21:56:08 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.61 2005-01-05 22:25:49 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2428,6 +2428,213 @@ TODO: top 33 bits!!!!!!!
 	case HI6_SB:
 		/*  88 01                   mov    %al,(%ecx)  */
 		*a++ = 0x88; *a++ = 0x01;
+		break;
+
+	case HI6_SWL:
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
+		*a++ = 5;
+		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
+		/*  83 e0 03                and    $0x03,%eax  */
+		*a++ = 0x83; *a++ = 0xe0; *a++ = alignment;
+		/*  89 c3                   mov    %eax,%ebx  */
+		*a++ = 0x89; *a++ = 0xc3;
+
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+
+		/*  ALIGNED LOAD:  */
+		/*  8b 11                   mov    (%ecx),%edx  */
+		*a++ = 0x8b; *a++ = 0x11;
+
+		/*
+		 *  CASE 0:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swl:	0x89 0x.. 0x.. 0x..
+		 */
+		/*  83 fb 00                cmp    $0x0,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  81 e2 00 ff ff ff       and    $0xffffff00,%edx  */
+		/*  c1 e8 18                shr    $0x18,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0x00; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff;
+		*a++ = 0xc1; *a++ = 0xe8; *a++ = 0x18;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret0 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 1:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swl:	0xab 0x89 0x.. 0x..
+		 */
+		/*  83 fb 01                cmp    $0x1,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x01;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  81 e2 00 00 ff ff       and    $0xffff0000,%edx  */
+		/*  c1 e8 10                shr    $0x10,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0x00; *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
+		*a++ = 0xc1; *a++ = 0xe8; *a++ = 0x10;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret1 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 2:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swl:	0xcd 0xab 0x89 0x..
+		 */
+		/*  83 fb 02                cmp    $0x2,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x02;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  81 e2 00 00 00 ff       and    $0xff000000,%edx  */
+		/*  c1 e8 08                shr    $0x08,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0x00; *a++ = 0x00; *a++ = 0x00; *a++ = 0xff;
+		*a++ = 0xc1; *a++ = 0xe8; *a++ = 0x08;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret2 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 3:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swl:	0xef 0xcd 0xab 0x89
+		 */
+		/*  eax = eax :-)  */
+
+		/*  okret:  */
+		*okret0 = (size_t)a - (size_t)okret0 - 1;
+		*okret1 = (size_t)a - (size_t)okret1 - 1;
+		*okret2 = (size_t)a - (size_t)okret2 - 1;
+
+		/*  Store back to memory:  */
+		/*  89 01                   mov    %eax,(%ecx)  */
+		*a++ = 0x89; *a++ = 0x01;
+		break;
+
+	case HI6_SWR:
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
+		*a++ = 5;
+		*a++ = imm; *a++ = imm >> 8; *a++ = 0xff; *a++ = 0xff;
+		/*  83 e0 03                and    $0x03,%eax  */
+		*a++ = 0x83; *a++ = 0xe0; *a++ = alignment;
+		/*  89 c3                   mov    %eax,%ebx  */
+		*a++ = 0x89; *a++ = 0xc3;
+
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rt]);
+
+		/*  ALIGNED LOAD:  */
+		/*  8b 11                   mov    (%ecx),%edx  */
+		*a++ = 0x8b; *a++ = 0x11;
+
+		/*
+		 *  CASE 0:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swr:	0xef 0xcd 0xab 0x89
+		 */
+		/*  83 fb 00                cmp    $0x0,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  eax = eax, so do nothing  */
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret0 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 1:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swr:	0x12 0xef 0xcd 0xab
+		 */
+		/*  83 fb 01                cmp    $0x1,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x01;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  81 e2 ff 00 00 00       and    $0x000000ff,%edx  */
+		/*  c1 e0 08                shl    $0x08,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0xff; *a++ = 0x00; *a++ = 0x00; *a++ = 0x00;
+		*a++ = 0xc1; *a++ = 0xe0; *a++ = 0x08;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret1 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 2:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swr:	0x12 0x34 0xef 0xcd
+		 */
+		/*  83 fb 02                cmp    $0x2,%ebx  */
+		/*  75 01                   jne    <skip>  */
+		*a++ = 0x83; *a++ = 0xfb; *a++ = 0x02;
+		*a++ = 0x75; skip = a; *a++ = 0x01;
+
+		/*  81 e2 ff ff 00 00       and    $0x0000ffff,%edx  */
+		/*  c1 e0 10                shl    $0x10,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0xff; *a++ = 0xff; *a++ = 0x00; *a++ = 0x00;
+		*a++ = 0xc1; *a++ = 0xe0; *a++ = 0x10;
+		*a++ = 0x09; *a++ = 0xd0;
+
+		/*  eb 00                   jmp    <okret>  */
+		*a++ = 0xeb; okret2 = a; *a++ = 0;
+
+		*skip = (size_t)a - (size_t)skip - 1;
+
+		/*
+		 *  CASE 3:
+		 *	memory (edx):	0x12 0x34 0x56 0x78
+		 *	register (eax):	0x89abcdef
+		 *	mem after swr:	0x12 0x34 0x56 0xef
+		 */
+		/*  81 e2 ff ff ff 00       and    $0x00ffffff,%edx  */
+		/*  c1 e0 18                shl    $0x18,%eax  */
+		/*  09 d0                   or     %edx,%eax  */
+		*a++ = 0x81; *a++ = 0xe2; *a++ = 0xff; *a++ = 0xff; *a++ = 0xff; *a++ = 0x00;
+		*a++ = 0xc1; *a++ = 0xe0; *a++ = 0x18;
+		*a++ = 0x09; *a++ = 0xd0;
+
+
+		/*  okret:  */
+		*okret0 = (size_t)a - (size_t)okret0 - 1;
+		*okret1 = (size_t)a - (size_t)okret1 - 1;
+		*okret2 = (size_t)a - (size_t)okret2 - 1;
+
+		/*  Store back to memory:  */
+		/*  89 01                   mov    %eax,(%ecx)  */
+		*a++ = 0x89; *a++ = 0x01;
 		break;
 
 	default:

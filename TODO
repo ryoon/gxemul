@@ -113,8 +113,10 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			Has an R3000A as a subsystem (!)
 		o)  hpcmips:  framebuffer(s) and harddisk controller,
 			among other things
+		o)  newsmips:
+			o)  NetBSD/newsmips, get it to detect a "real"
+			    model, right now everything is 100% bogus
 		o)  Less interesting platforms:
-			o)  newsmips? (NetBSD)
 			o)  mipsco? (NetBSD)
 			o)  other embedded / evaluation MIPS boards
 			o)  Playstation 1? R3000A. Weird hardware?

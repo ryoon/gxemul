@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.212 2004-10-29 06:41:08 debug Exp $
+ *  $Id: machine.c,v 1.213 2004-10-29 06:51:16 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3070,12 +3070,15 @@ for (i=0; i<32; i++)
 		 *  "R4000/4400 and apbus based models"
 		 *	NWS-5000
 		 *
-		 *  For example:
+		 *  For example: (found using google)
 		 *
 		 *    cpu_model = news3700
 		 *    SONY NET WORK STATION, Model NWS-3710, Machine ID #30145
 		 *    cpu0: MIPS R3000 (0x220) Rev. 2.0 with MIPS R3010 Rev.2.0
 		 *    64KB/4B direct-mapped I, 64KB/4B direct-mapped w-thr. D
+		 *
+		 *  See http://katsu.watanabe.name/doc/sonynews/model.html
+		 *  for more details.
 		 */
 		emul->machine_name = "Sony NeWS (NET WORK STATION)";
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.51 2004-07-05 21:22:23 debug Exp $
+ *  $Id: main.c,v 1.52 2004-07-05 23:10:12 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -76,7 +76,7 @@ int bintrans_enable = 0;
 int instruction_trace = 0;
 int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
-int max_instructions = 0;
+int64_t max_instructions = 0;
 int emulated_hz = 0;
 int speed_tricks = 1;
 int userland_emul = 0;

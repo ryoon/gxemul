@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.96 2004-07-05 23:06:20 debug Exp $
+ *  $Id: cpu.c,v 1.97 2004-07-05 23:10:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -79,7 +79,6 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
-
 
 
 /*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.3 2004-07-05 21:08:42 debug Exp $
+ *  $Id: net.c,v 1.4 2004-07-05 23:10:12 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -112,6 +112,64 @@ struct ethernet_packet_link *net_allocate_packet_link(void *extra, int len)
 
 
 /*
+ *  net_ip_icmp():
+ *
+ *  Handle an ICMP packet.
+ *
+ *  The IP header (at offset 14) could look something like
+ *
+ *	ver=45 tos=00 len=0054 id=001a ofs=0000 ttl=ff p=01 sum=a87e
+ *	src=0a000005 dst=03050607
+ *
+ *  and the ICMP specific data (beginning at offset 34):
+ *
+ *	type=08 code=00 chksum=b8bf
+ *	000c0008d5cee94089190c0008090a0b
+ *	0c0d0e0f101112131415161718191a1b
+ *	1c1d1e1f202122232425262728292a2b
+ *	2c2d2e2f3031323334353637
+ */
+static void net_ip_icmp(void *extra, unsigned char *packet, int len)
+{
+	int type;
+	struct ethernet_packet_link *lp;
+
+	type = packet[34];
+
+	switch (type) {
+	case 8:	/*  ECHO request  */
+		debug("[ ICMP echo ]\n");
+		lp = net_allocate_packet_link(extra, len);
+
+		/*  Copy the old packet first:  */
+		memcpy(lp->data, packet, len);
+
+		/*  Switch to and from ethernet addresses:  */
+		memcpy(lp->data + 0, packet + 6, 6);
+		memcpy(lp->data + 6, packet + 0, 6);
+
+		/*  Switch to and from IP addresses:  */
+		memcpy(lp->data + 26, packet + 30, 4);
+		memcpy(lp->data + 30, packet + 26, 4);
+
+		/*  Change from echo REQUEST to echo REPLY:  */
+		lp->data[34] = 0x00;
+
+		/*  Zero out the ICMP and IP checksums:  */
+		lp->data[36] = lp->data[37] = 0xff;
+		lp->data[24] = lp->data[25] = 0x00;
+
+		/*  Decrease the TTL:  */
+		lp->data[22] --;
+
+		break;
+	default:
+		fatal("[ net: ICMP type %i not yet implemented ]\n", type);
+	}
+}
+
+
+/*
  *  net_ip():
  *
  *  Handle an IP packet, coming from the emulated NIC.
@@ -120,10 +178,36 @@ static void net_ip(void *extra, unsigned char *packet, int len)
 {
 	int i;
 
-	fatal("[ net: IP: ");
-	for (i=0; i<len; i++)
-		fatal("%02x", packet[i]);
-	fatal(" ]\n");
+	debug("[ net: IP: ");
+	debug("ver=%02x ", packet[14]);
+	debug("tos=%02x ", packet[15]);
+	debug("len=%02x%02x ", packet[16], packet[17]);
+	debug("id=%02x%02x ",  packet[18], packet[19]);
+	debug("ofs=%02x%02x ", packet[20], packet[21]);
+	debug("ttl=%02x ", packet[22]);
+	debug("p=%02x ", packet[23]);
+	debug("sum=%02x%02x ", packet[24], packet[25]);
+	debug("src=%02x%02x%02x%02x ",
+	    packet[26], packet[27], packet[28], packet[29]);
+	debug("dst=%02x%02x%02x%02x ",
+	    packet[30], packet[31], packet[32], packet[33]);
+	for (i=34; i<len; i++)
+		debug("%02x", packet[i]);
+	debug(" ]\n");
+
+	if (packet[14] == 0x45) {
+		/*  IPv4:  */
+		switch (packet[23]) {
+		case 1:	/*  ICMP  */
+			net_ip_icmp(extra, packet, len);
+			break;
+		default:
+			fatal("[ net: IP: UNIMPLEMENTED protocol %i ]\n",
+			    packet[23]);
+		}
+	} else
+		fatal("[ net: IP: UNIMPLEMENTED ip, first byte = 0x%02x ]\n",
+		    packet[14]);
 }
 
 
@@ -152,6 +236,7 @@ static void net_arp(void *extra, unsigned char *packet, int len)
 {
 	int i;
 
+	/*  TODO: This debug dump assumes ethernet->IPv4 translation:  */
 	debug("[ net: ARP: ");
 	for (i=0; i<2; i++)
 		debug("%02x", packet[i]);
@@ -162,13 +247,13 @@ static void net_arp(void *extra, unsigned char *packet, int len)
 	debug("%02x", packet[4]);
 	debug(" ");
 	debug("%02x", packet[5]);
-	debug(" ");
+	debug(" req=");
 	debug("%02x", packet[6]);	/*  Request type  */
 	debug("%02x", packet[7]);
-	debug(" ");
+	debug(" from=");
 	for (i=8; i<18; i++)
 		debug("%02x", packet[i]);
-	debug(" ");
+	debug(" to=");
 	for (i=18; i<28; i++)
 		debug("%02x", packet[i]);
 	debug(" ]\n");
@@ -302,6 +387,7 @@ int net_ethernet_rx(void *extra, unsigned char **packetp, int *lenp)
  */
 void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 {
+#if 0
 	int i;
 
 	debug("[ net: ethernet: ");
@@ -317,7 +403,7 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 	for (i=14; i<len; i++)
 		debug("%02x", packet[i]);
 	debug(" ]\n");
-
+#endif
 	/*  ARP:  */
 	if (len == 60 && packet[12] == 0x08 && packet[13] == 0x06) {
 		net_arp(extra, packet + 14, len - 14);
@@ -328,6 +414,12 @@ void net_ethernet_tx(void *extra, unsigned char *packet, int len)
 	if (packet[12] == 0x08 && packet[13] == 0x00 &&
 	    memcmp(packet+0, gateway_addr, 6) == 0) {
 		net_ip(extra, packet, len);
+		return;
+	}
+
+	/*  IPv6:  */
+	if (packet[12] == 0x86 && packet[13] == 0xdd) {
+		/*  TODO. Ignore for now.  */
 		return;
 	}
 

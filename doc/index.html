@@ -219,11 +219,11 @@ NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1
 http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
 running on an emulated DECstation 5000 supports this:
 <pre>
-	$ <b>./mips64emul -D2 -X -Y2 -q -I1000000 -M12 netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -X -Y2 -q -I4000000 -M12 netbsd-INSTALL</b>
 </pre>
 -D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
 framebuffer; -Y2 is used to scale down the window by a factor 2x2; -q supresses
-debug output; -I1000000 lets the emulated clock chip on DECstations have
+debug output; -I4000000 lets the emulated clock chip on DECstations have
 a more realistic pace; and -M12 sets the amount of emulated memory to 12 MB.
 The result should looks something like this:
 <p>
@@ -258,7 +258,7 @@ You need to do the following:
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d netbsd_pmax_rootdisk.img  \
+	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img  \
 		-d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 </ol>
@@ -283,7 +283,7 @@ Then, following these steps should boot the OS from the root disk image:
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz</a>
 </pre>
   <li>Start the emulator with the root disk image and the GENERIC kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d netbsd_pmax_rootdisk.img netbsd-GENERIC</b>
+	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img netbsd-GENERIC</b>
 </pre>
 </ol>
 <p>
@@ -614,7 +614,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.27 2004-06-15 21:27:34 debug Exp $</pre>
+<pre>$Id: index.html,v 1.28 2004-06-17 08:30:40 debug Exp $</pre>
 
 </body>
 </html>

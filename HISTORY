@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.574 2005-02-10 05:54:59 debug Exp $
+$Id: HISTORY,v 1.575 2005-02-10 06:48:04 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1651,3 +1651,4 @@ HISTORY of mips64emul
 		drive.)
 		Began a clean-up of the userland subsystem.
 20050210	Continuing the userland cleanup.
+		IBM's Hello World example for Linux/PPC64 runs fine now.

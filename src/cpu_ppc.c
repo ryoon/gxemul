@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.15 2005-02-09 14:53:20 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.16 2005-02-10 06:48:06 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -550,7 +550,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	uint32_t iword;
 	unsigned char buf[4];
-	int r, hi6, rt, rs, ra, imm;
+	int r, hi6, rt, rs, ra, xo, lev, sh, me, rc, imm;
 	uint64_t tmp;
 	uint64_t cached_pc;
 
@@ -585,7 +585,19 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			tmp = 0;
 		else
 			tmp = cpu->cd.ppc.gpr[ra];
-		cpu->cd.ppc.gpr[rt] += imm;
+		cpu->cd.ppc.gpr[rt] = tmp + imm;
+		break;
+
+	case PPC_HI6_SC:
+		lev = (iword >> 5) & 0x7f;
+		if (cpu->machine->userland_emul != NULL) {
+			useremul_syscall(cpu, lev);
+		} else {
+			fatal("[ PPC: pc = 0x%016llx, sc not yet "
+			    "implemented ]\n", (long long)cached_pc);
+			cpu->running = 0;
+			return 0;
+		}
 		break;
 
 	case PPC_HI6_ORI:
@@ -598,6 +610,39 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			imm = (iword & 0xffff) << 16;
 		tmp = cpu->cd.ppc.gpr[rs];
 		cpu->cd.ppc.gpr[ra] = tmp | (uint32_t)imm;
+		break;
+
+	case PPC_HI6_30:
+		xo = (iword >> 2) & 7;
+		switch (xo) {
+		case PPC_30_RLDICR:
+			if (cpu->cd.ppc.bits == 32) {
+				/*  TODO: Illegal instruction.  */
+				break;
+			}
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			sh = ((iword >> 11) & 31) | ((iword & 2) << 4);
+			me = ((iword >> 6) & 31) | (iword & 0x20);
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			tmp = cpu->cd.ppc.gpr[rs];
+			/*  TODO: Fix this, its performance is awful:  */
+			while (sh-- != 0) {
+				int b = (tmp >> 63) & 1;
+				tmp = (tmp << 1) | b;
+			}
+			while (me++ < 63)
+				tmp &= ~((uint64_t)1 << (63-me));
+			cpu->cd.ppc.gpr[ra] = tmp;
+			break;
+		default:
+			debug("unimplemented hi6_30, xo = 0x%x", xo);
+		}
 		break;
 
 	default:

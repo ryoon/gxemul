@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.33 2005-02-10 05:55:01 debug Exp $
+ *  $Id: useremul.c,v 1.34 2005-02-10 06:48:06 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -91,9 +91,10 @@ void useremul_init(void)  {  }
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "syscall_linux_ppc.h"
 #include "syscall_netbsd.h"
-#include "sysctl_netbsd.h"
 #include "syscall_ultrix.h"
+#include "sysctl_netbsd.h"
 
 struct syscall_emul {
 	char		*name;
@@ -145,9 +146,10 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
  */
 void useremul__linux_setup(struct cpu *cpu, int argc, char **host_argv)
 {
-	fatal("useremul__linux_setup(): TODO\n");
+	debug("useremul__linux_setup(): TODO\n");
 
-	/*  TODO  */
+	/*  What is a good stack pointer? TODO  */
+	cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
 }
 
 
@@ -288,28 +290,32 @@ static unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
 /*
  *  get_userland_buf():
  *
- *  This can be used to retrieve buffers, for example inet_addr,
- *  from the emulated memory.
+ *  This can be used to retrieve buffers, for example inet_addr, from
+ *  emulated memory.
  *
- *  Warning: returns a pointer to a static array.
+ *  NOTE: This function returns a pointer to a malloced buffer. It is up to
+ *        the caller to use free().
+ *
  *  TODO: combine this with get_userland_string() in some way
  */
 static unsigned char *get_userland_buf(struct cpu *cpu,
 	uint64_t baseaddr, int len)
 {
-	static unsigned char charbuf[MAXLEN];
+	unsigned char *charbuf;
 	int i;
 
-	if (len > MAXLEN) {
-		fprintf(stderr, "get_userland_buf(): len is more than MAXLEN (%i > %i)\n",
-		    len, MAXLEN);
+	charbuf = malloc(len);
+	if (charbuf == NULL) {
+		fprintf(stderr, "get_userland_buf(): out of memory (trying"
+		    " to allocate %i bytes)\n", len);
 		exit(1);
 	}
 
 	/*  TODO: address validity check  */
 	for (i=0; i<len; i++) {
-		memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i, 1, MEM_READ, CACHE_DATA);
-		debug(" %02x", charbuf[i]);
+		memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i, 1,
+		    MEM_READ, CACHE_DATA);
+		/*  debug(" %02x", charbuf[i]);  */
 	}
 	debug("\n");
 
@@ -338,11 +344,46 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
  *  useremul__linux():
  *
  *  Linux syscall emulation.
+ *
+ *  TODO: How to make this work nicely with non-PPC archs.
  */
 static void useremul__linux(struct cpu *cpu, uint32_t code)
 {
-	fatal("useremul__linux(): TODO\n");
-	exit(1);
+	int nr;
+	unsigned char *cp;
+	uint64_t arg0, arg1, arg2, arg3;
+
+	if (code != 0) {
+		fatal("useremul__linux(): code %i: TODO\n", (int)code);
+		exit(1);
+	}
+
+	nr = cpu->cd.ppc.gpr[0];
+	arg0 = cpu->cd.ppc.gpr[3];
+	arg1 = cpu->cd.ppc.gpr[4];
+	arg2 = cpu->cd.ppc.gpr[5];
+	arg3 = cpu->cd.ppc.gpr[6];
+
+	switch (nr) {
+
+	case LINUX_PPC_SYS_exit:
+		debug("[ exit(%i) ]\n", (int)arg0);
+		cpu->running = 0;
+		break;
+
+	case LINUX_PPC_SYS_write:
+		debug("[ write(%i,0x%llx,%lli) ]\n",
+		    (int)arg0, (long long)arg1, (long long)arg2);
+		cp = get_userland_buf(cpu, arg1, arg2);
+		write(arg0, cp, arg2);
+		free(cp);
+		break;
+
+	default:
+		fatal("useremul__linux(): syscall %i not yet implemented\n",
+		    nr);
+		cpu->running = 0;
+	}
 }
 
 
@@ -944,6 +985,7 @@ result_low = select(4, &fdset, NULL, NULL, NULL);
 				error_code = errno;
 				error_flag = 1;
 			}
+			free(charbuf);
 printf("setsockopt!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			break;
 
@@ -957,6 +999,7 @@ printf("setsockopt!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 				error_flag = 1;
 			}
 printf("connect!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
+			free(charbuf);
 			break;
 
 		case ULTRIX_SYS_fcntl:

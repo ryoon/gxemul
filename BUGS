@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.27 2005-01-30 19:16:24 debug Exp $
+$Id: BUGS,v 1.28 2005-01-31 21:25:52 debug Exp $
 
 If you encounter any bugs not listed here, and not listed in the TODO, 
 then feel free to report them to me.
@@ -23,11 +23,15 @@ Serious bugs:
       that gives weight to this theory is that the serial driver in Linux is
       still being developed.)  But this is just a guess.
 
-  o)  bintrans bugs.  (For example, NetBSD/sgimips for IP22/24 hangs during
+  x)  bintrans bugs.  (For example, NetBSD/sgimips for IP22/24 hangs during
       boot with bintrans enabled.)
 
 
 Less serious bugs / issues:
+
+  o)  building on Debian/Alpha seems to run into the same problems as
+      on my FreeBSD/Alpha box earlier (which was the reason for a 0.2.4.1
+      release).
 
   o)  the ssnop instruction doesn't align on a cycle boundary
 

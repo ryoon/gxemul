@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.96 2005-01-31 20:04:37 debug Exp $
+#  $Id: configure,v 1.97 2005-01-31 21:25:52 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -195,8 +195,10 @@ fi
 if [ z"`uname`" = zHP-UX ]; then
 	HPUX=YES
 
-	if [ -f /usr/local/pa64/bin/gcc ]; then
-		CC=/usr/local/pa64/bin/gcc
+	if [ z$CC = z ]; then
+		if [ -f /usr/local/pa64/bin/gcc ]; then
+			CC=/usr/local/pa64/bin/gcc
+		fi
 	fi
 fi
 

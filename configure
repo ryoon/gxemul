@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.41 2004-07-25 23:56:34 debug Exp $
+#  $Id: configure,v 1.42 2004-07-26 00:20:11 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -364,11 +364,31 @@ if [ z"`uname`" = zOSF1 ]; then
 fi
 
 
-if [ z"`uname`" = zLinux ]; then
-	#  A special hack is needed to support off_t > 32 bits on
-	#  32-bit Linux machines:
-	COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
+#  Check for 64-bit off_t:
+printf "checking for 64-bit off_t... "
+printf "#include <stdio.h>\n#include <inttypes.h>\n#include <sys/types.h>\n
+int main(int argc, char *argv[]){printf(\"%%i\\\n\", sizeof(off_t));return 0;}\n" > _testoff.c
+$CC _testoff.c -o _testoff 2> /dev/null
+if [ ! -x _testoff ]; then
+	printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM AT ALL!\n"
+else
+	if [ z`./_testoff` = z8 ]; then
+		printf "ok\n"
+	else
+		$CC -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE _testoff.c -o _testoff 2> /dev/null
+		if [ ! -x _testoff ]; then
+			printf "\nWARNING! COULD NOT COMPILE off_t TEST PROGRAM!\n"
+		else
+			if [ z`./_testoff` = z8 ]; then
+				COPTIM="-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE $COPTIM"
+				printf "using -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE\n"
+			else
+				printf "NOT OK\n"
+			fi
+		fi
+	fi
 fi
+rm -f _testoff.c _testoff
 
 
 if [ z"$COMPAQCC" = zYES ]; then

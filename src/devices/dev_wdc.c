@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.21 2005-03-28 23:04:49 debug Exp $
+ *  $Id: dev_wdc.c,v 1.22 2005-03-29 00:26:20 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -63,6 +63,10 @@ struct wdc_data {
 	unsigned char	inbuf[WDC_INBUF_SIZE];
 	int		inbuf_head;
 	int		inbuf_tail;
+
+	int		write_in_progress;
+	int		write_count;
+	int64_t		write_offset;
 
 	int		error;
 	int		precomp;
@@ -248,9 +252,70 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 #ifdef DATA_DEBUG
 			debug("[ wdc: read from DATA: 0x%04x ]\n", odata);
 #endif
+
+
+
+			if (d->inbuf_tail != d->inbuf_head)
+				cpu_interrupt(cpu, d->irq_nr);
+
+
 		} else {
-			fatal("[ wdc: write to DATA: 0x%04x ]\n", idata);
-			/*  TODO  */
+			int inbuf_len;
+#ifdef DATA_DEBUG
+			debug("[ wdc: write to DATA (len=%i): 0x%08lx ]\n",
+			    (int)len, (long)idata);
+#endif
+			if (!d->write_in_progress) {
+				fatal("[ wdc: write to DATA, but not "
+				    "expecting any? (len=%i): 0x%08lx ]\n",
+				    (int)len, (long)idata);
+			}
+
+			switch (len) {
+			case 4:	wdc_addtoinbuf(d, idata & 0xff);
+				wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+				wdc_addtoinbuf(d, (idata >> 16) & 0xff);
+				wdc_addtoinbuf(d, (idata >> 24) & 0xff);
+				break;
+			case 2:	wdc_addtoinbuf(d, idata & 0xff);
+				wdc_addtoinbuf(d, (idata >> 8) & 0xff);
+				break;
+			case 1:	wdc_addtoinbuf(d, idata); break;
+			default:fatal("wdc: unimplemented write len %i\n", len);
+				exit(1);
+			}
+
+			inbuf_len = d->inbuf_head - d->inbuf_tail;
+			while (inbuf_len < 0)
+				inbuf_len += WDC_INBUF_SIZE;
+
+#if 0
+			if ((inbuf_len % (512 * d->write_count)) == 0) {
+#endif
+			if ((inbuf_len % 512) == 0) {
+				int count = 1;	/*  d->write_count;  */
+				char *buf = malloc(count * 512);
+				if (buf == NULL) {
+					fprintf(stderr, "out of memory\n");
+					exit(1);
+				}
+
+				for (i=0; i<512 * count; i++)
+					buf[i] = wdc_get_inbuf(d);
+
+				diskimage_access(cpu->machine,
+				    d->drive + d->base_drive, 1,
+				    d->write_offset, buf, 512 * count);
+				free(buf);
+
+				d->write_count --;
+				d->write_offset += 512;
+
+				cpu_interrupt(cpu, d->irq_nr);
+
+				if (d->write_count == 0)
+					d->write_in_progress = 0;
+			}
 		}
 		break;
 
@@ -312,7 +377,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			    (d->drive << 4) + (d->head);
 			debug("[ wdc: read from SDH: 0x%02x (sectorsize %i,"
 			    " lba=%i, drive %i, head %i) ]\n",
-			    odata, d->sectorsize, d->lba, d->drive, d->head);
+			    (int)odata, d->sectorsize, d->lba, d->drive, d->head);
 		} else {
 			d->sectorsize = (idata >> 6) & 3;
 			d->lba   = (idata >> 5) & 1;
@@ -320,7 +385,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			d->head  = idata & 0xf;
 			debug("[ wdc: write to SDH: 0x%02x (sectorsize %i,"
 			    " lba=%i, drive %i, head %i) ]\n",
-			    idata, d->sectorsize, d->lba, d->drive, d->head);
+			    (int)idata, d->sectorsize, d->lba, d->drive, d->head);
 		}
 		break;
 
@@ -332,6 +397,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata |= WDCS_DRDY;
 			if (d->inbuf_head != d->inbuf_tail)
 				odata |= WDCS_DRQ;
+			if (d->write_in_progress)
+				odata |= WDCS_DRQ;
 			if (d->error)
 				odata |= WDCS_ERR;
 
@@ -340,11 +407,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			    d->drive + d->base_drive))
 				odata = 0xff;
 
-			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 #if 0
-/* ?? */		if (cpu->coproc[0]->reg[COP0_STATUS] & (1 <<
-			    (d->irq_nr + 8)))
-				cpu_interrupt_ack(cpu, d->irq_nr);
+			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 #endif
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
@@ -387,6 +451,38 @@ printf("WDC read from offset %lli\n", (long long)offset);
 				}
 				cpu_interrupt(cpu, d->irq_nr);
 				break;
+			case WDCC_WRITE:
+				debug("[ wdc: WRITE to drive %i, head %i, "
+				    "cylinder %i, sector %i, nsecs %i ]\n",
+				    d->drive, d->head, d->cyl_hi*256+d->cyl_lo,
+				    d->sector, d->seccnt);
+				/*  TODO:  HAHA! This should be removed
+				    quickly  */
+				{
+					int cyl = d->cyl_hi * 256+ d->cyl_lo;
+					int count = d->seccnt? d->seccnt : 256;
+					uint64_t offset = 512 * (d->sector - 1
+					    + d->head * 63 + 16*63*cyl);
+
+#if 0
+/*  LBA:  */
+if (d->lba)
+	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
+#endif
+printf("WDC write to offset %lli\n", (long long)offset);
+
+					d->write_in_progress = 1;
+					d->write_count = count;
+					d->write_offset = offset;
+
+					/*  TODO: result code  */
+				}
+/*  TODO: Really interrupt here?  */
+#if 0
+				cpu_interrupt(cpu, d->irq_nr);
+#endif
+				break;
+
 			case WDCC_IDP:	/*  Initialize drive parameters  */
 				debug("[ wdc: IDP drive %i (TODO) ]\n",
 				    d->drive);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.653 2005-03-28 22:22:43 debug Exp $
+$Id: HISTORY,v 1.654 2005-03-29 00:26:19 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1767,3 +1767,4 @@ Changelog for GXemul:
 		shifted and ctrled keys are now working in userland (ie
 		NetBSD/hpcmips' ramdisk installer).
 		Also adding simple cursor key support to the VR41xx kiu.
+20050329	Some progress on the wdc.

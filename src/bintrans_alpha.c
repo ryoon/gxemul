@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.99 2005-01-06 01:22:52 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.100 2005-01-09 00:37:36 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -416,7 +416,7 @@ static void bintrans_write_quickjump(unsigned char *quickjump_code,
 	int ofs;
 	uint64_t alpha_addr = chunkoffset +
 	    (size_t)translation_code_chunk_space;
-	unsigned char *a = quickjump_code;
+	uint32_t *a = (uint32_t *)quickjump_code;
 
 	ofs = (alpha_addr - ((size_t)a+4)) / 4;
 
@@ -424,7 +424,7 @@ static void bintrans_write_quickjump(unsigned char *quickjump_code,
 	    chunkoffset, (long long)alpha_addr, (long long)a, ofs);  */
 
 	if (ofs > -0xfffff && ofs < 0xfffff) {
-		*a++ = ofs & 255; *a++ = (ofs >> 8) & 255; *a++ = 0xe0 + ((ofs >> 16) & 0x1f); *a++ = 0xc3;	/*  br <chunk>  */
+		*a++ = 0xc3e00000 | (ofs & 0x1fffff);	/*  br <chunk>  */
 	}
 }
 

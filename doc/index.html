@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.188 2005-01-08 15:30:57 debug Exp $
+$Id: index.html,v 1.189 2005-01-09 00:37:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -295,29 +295,31 @@ for example for educational purposes or generic MIPS related experiments.
 <a name="cpus"></a>
 <h3>Which CPU types does mips64emul emulate?</h3>
 
-While other emulators aim to emulate only one specific CPU type (eg R3000),
-mips64emul does not. The ideal goal would be to support "all" MIPS-like CPUs.
+While other emulators aim to emulate only one specific CPU type, eg R3000,
+mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
 
 <p>
-Right now, both R3000-style (32-bit) and R4000-style (64-bit) CPUs can
-be emulated. mips64emul is basically an instruction-level simulator;
-things that would happen in several steps within a physical CPU are not 
-necessarily simulated correctly or at all (eg. pipe-line stages).
+Both 64-bit and 32-bit MIPS-like CPUs can be emulated. mips64emul is
+basically an instruction-level simulator; things that would happen in 
+several steps within a physical CPU are not necessarily simulated 
+correctly or at all (eg. pipe-line stages).
+
+<p>
+Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
+now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
+R1x000 (at least the parts that are similar to R4000) is beginning to work
+as expected. Code targeted for MIPS32 and MIPS64 also happens to work, as
+long as no specific features of MIPS32/64 are used that didn't exist in
+R4000 etc.
 
 <p>
 I have written an experimental dynamic binary translation subsystem.  
 This gives higher total performance than interpreting one instruction at a
-time and executing it. If you wish to enable bintrans, add <b>-b</b> to the
-command line, but keep in mind that it is still experimental.
-
-<p>
-MIPS CPUs have a lot of overlapping, in order to remain somewhat 
-compatible with each other, which means that other CPU types
-can be faked as well. For example,
-if you run NetBSD/sgimips with the <b>-C R12000</b> command line option,
-the CPU type will be a generic 64-bit MIPS-like CPU, which 
-NetBSD sees as an R12000. However, if the emulated OS actually depends on
-R12000-specific features, it will most likely fail.
+time and executing it. However, even with the binary translation 
+activated, mips64emul is not nearly as fast as some of the other emulators 
+out there that have speed as their number one priority.
+(If you wish to enable bintrans, add <b>-b</b> to the
+command line, but keep in mind that it is still experimental.)
 
 
 

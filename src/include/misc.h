@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.43 2004-03-25 21:00:51 debug Exp $
+ *  $Id: misc.h,v 1.44 2004-03-27 19:27:04 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -98,6 +98,7 @@ typedef uint64_t u_int64_t;
 
 /*  Playstation 2:  */
 #define	PLAYSTATION2_BDA	0xa0001000
+#define	PLAYSTATION2_OPTARGS	0x81fff100
 #define	PLAYSTATION2_SIFBIOS	0xbfc10000
 
 /*  SGI and ARC:  */

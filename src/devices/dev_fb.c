@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.31 2004-04-24 22:39:22 debug Exp $
+ *  $Id: dev_fb.c,v 1.32 2004-06-21 22:55:27 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -442,7 +442,7 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 void dev_fb_tick(struct cpu *cpu, void *extra)
 {
 	struct vfb_data *d = extra;
-	int need_to_flush_x11 = 0;
+	int need_to_flush_x11 = 0, need_to_redraw_cursor = 0;
 
 	if (!use_x11)
 		return;
@@ -482,6 +482,22 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			addr2 += d->bytes_per_line * q;
 		}
 
+		/*  Did we just paint over the mouse cursor?  */
+		if ( (d->update_x1 >= d->fb_window->cursor_x &&
+		      d->update_x1 < (d->fb_window->cursor_x + d->fb_window->cursor_xsize)) ||
+		     (d->update_x2 >= d->fb_window->cursor_x &&
+		      d->update_x2 < (d->fb_window->cursor_x + d->fb_window->cursor_xsize)) ||
+		     (d->update_x1 <  d->fb_window->cursor_x &&
+		      d->update_x2 >= (d->fb_window->cursor_x + d->fb_window->cursor_xsize)) ) {
+			if ( (d->update_y1 >= d->fb_window->cursor_y &&
+			      d->update_y1 < (d->fb_window->cursor_y + d->fb_window->cursor_ysize)) ||
+			     (d->update_y2 >= d->fb_window->cursor_y &&
+			      d->update_y2 < (d->fb_window->cursor_y + d->fb_window->cursor_ysize)) ||
+			     (d->update_y1 <  d->fb_window->cursor_y &&
+			      d->update_y2 >= (d->fb_window->cursor_y + d->fb_window->cursor_ysize)) )
+				need_to_redraw_cursor = 1;
+		}
+
 #ifdef WITH_X11
 		XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window, d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
 		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
@@ -499,7 +515,8 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 skip_update:
 
 #ifdef WITH_X11
-	if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
+	if (need_to_redraw_cursor ||
+	    d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
 	    d->fb_window->cursor_x != d->fb_window->OLD_cursor_x ||
 	    d->fb_window->cursor_y != d->fb_window->OLD_cursor_y ||
 	    d->fb_window->cursor_xsize != d->fb_window->OLD_cursor_xsize ||

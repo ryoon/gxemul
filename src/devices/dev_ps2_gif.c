@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.4 2003-11-24 23:42:35 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  */
@@ -206,9 +206,11 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
 			dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
 
+#if 0
 			test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
 			test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
 			test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
+#endif
 		} else if (data[0] == 0x04 && data[1] == 0x00 && len > 300) {			/*  Possibly "output 8x16 character":  */
 			int xbase, ybase, x, y;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.200 2004-11-28 12:26:36 debug Exp $
+ *  $Id: cpu.c,v 1.201 2004-11-28 17:19:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -274,6 +274,10 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 static void cpu_show_full_statistics(struct emul *emul, struct cpu **cpus)
 {
 	int i, s1, s2;
+
+	if (emul->bintrans_enable)
+		printf("\nNOTE: Dynamic binary translation is used; this list of opcode usage\n"
+		    "      only includes instructions that were interpreted manually!\n");
 
 	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i opcode statistics:\n", i);

@@ -23,11 +23,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.26 2004-11-26 20:03:08 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.27 2004-11-28 17:19:12 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
- *
  *  See bintrans.c for more information.  Included from bintrans.c.
+ *
+ *  Translated code uses the following:
+ *
+ *	esi		points to the cpu struct
+ *	ebp		contains cpu->bintrans_instructions_executed
  */
 
 
@@ -47,7 +51,10 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-unsigned char bintrans_i386_runchunk[13] = {
+#define ofs_i	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+
+
+unsigned char bintrans_i386_runchunk[27] = {
 	0x55,					/*  push   %ebp  */
 	0x89, 0xe5,				/*  mov    %esp,%ebp  */
 	0x60,					/*  pusha  */
@@ -55,7 +62,12 @@ unsigned char bintrans_i386_runchunk[13] = {
 	/*  In all translated code, esi points to the cpu struct.  */
 
 	0x8b, 0x75, 0x08,			/*  mov    0x8(%ebp),%esi  */
-	0xff, 0x55, 0x0c,			/*  call   *0xc(%ebp)  */
+	0x8b, 0x5d, 0x0c,			/*  mov    0xc(%ebp),%ebx  */
+	0x8b, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
+						/*  mov    nr_instr(%esi),%ebp  */
+	0xff, 0xd3,				/*  call   *%ebx  */
+	0x89, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
+						/*  mov    %ebp,0x1234(%esi)  */
 
 	0x61,					/*  popa  */
 	0xc9,					/*  leave  */
@@ -114,16 +126,10 @@ static void bintrans_write_chunkreturn(unsigned char **addrp)
 static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 {
 	unsigned char *a = *addrp;
-	int ofs;
-	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
 
-	/*  81 8e 45 23 01 00 00 00 00 01    orl    $0x1000000,0x12345(%esi)  */
-	*a++ = 0x81; *a++ = 0x8e;
-	*a++ = ofs & 255;
-	*a++ = (ofs >> 8) & 255;
-	*a++ = (ofs >> 16) & 255;
-	*a++ = (ofs >> 24) & 255;
-	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x01;
+	/*  81 cd 00 00 00 01    orl    $0x1000000,%ebp  */
+	*a++ = 0x81; *a++ = 0xcd;
+	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x01;	/*  TODO: not hardcoded  */
 
 	*a++ = 0xc3;		/*  ret  */
 	*addrp = a;
@@ -177,25 +183,20 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 	if (flag_ninstr) {
 		pc_inc /= 4;
 
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
-
-		if (pc_inc < 0x7c) {
-			/*  83 86 xx xx xx xx yy    addl   $yy,xx(%esi)  */
-			*a++ = 0x83; *a++ = 0x86;
-			*a++ = ofs & 255;
-			*a++ = (ofs >> 8) & 255;
-			*a++ = (ofs >> 16) & 255;
-			*a++ = (ofs >> 24) & 255;
+		if (pc_inc == 1) {
+			/*  45   inc %ebp  */
+			*a++ = 0x45;
+		} else if (pc_inc < 0x7c) {
+			/*  83 c5 yy    addl   $yy,%ebp  */
+			*a++ = 0x83; *a++ = 0xc5;
 			*a++ = pc_inc;
 		} else {
-			/*  81 86 xx xx xx xx yy yy   addl   $yy,xx(%esi)  */
-			*a++ = 0x81; *a++ = 0x86;
-			*a++ = ofs & 255;
-			*a++ = (ofs >> 8) & 255;
-			*a++ = (ofs >> 16) & 255;
-			*a++ = (ofs >> 24) & 255;
-			*a++ = pc_inc & 255;
-			*a++ = (pc_inc >> 8) & 255;
+			/*  81 c5 yy yy yy yy   addl   $yy,%ebp  */
+			*a++ = 0x81; *a++ = 0xc5;
+			*a++ = pc_inc;
+			*a++ = pc_inc >> 8;
+			*a++ = pc_inc >> 16;
+			*a++ = pc_inc >> 24;
 		}
 	}
 
@@ -913,20 +914,18 @@ rd0:
  */
 static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag)
 {
-	unsigned char *a;
+	unsigned char *a, *failskip;
 	int ofs;
 
-	if (mtcflag) {
+	if (mtcflag && flag64bit) {
 		/*  mtc: */
-		/*  TODO:  see bintrans_alpha.c  */
-		bintrans_write_chunkreturn_fail(addrp);
 		return 0;
 	}
 
 	/*
 	 *  NOTE: Only a few registers are readable without side effects.
 	 */
-	if (rt == 0)
+	if (rt == 0 && !mtcflag)
 		return 0;
 
 	if (coproc_nr >= 1)
@@ -943,32 +942,142 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	 *
 	 *************************************************************/
 
-	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
-
 	/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
+	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
 	*a++ = 0x8b; *a++ = 0x96;
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
 	/*  here, edx = cpu->coproc[0]  */
 
-	ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+	if (mtcflag) {
+		/*  mtc  */
 
-	/*  8b 82 38 30 00 00       mov    0x3038(%edx),%eax  */
-	*a++ = 0x8b; *a++ = 0x82;
-	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+		/*  TODO: This code only works for mtc0, not dmtc0  */
 
-	if (flag64bit) {
-		/*  Load high 32 bits:  (note: edx gets overwritten)  */
-		/*  8b 92 3c 30 00 00       mov    0x303c(%edx),%edx  */
-		ofs += 4;
-		*a++ = 0x8b; *a++ = 0x92;
+		/*  8b 9a 38 30 00 00       mov    0x3038(%edx),%ebx  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0x8b; *a++ = 0x9a;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-	} else {
-		/*  99                      cltd  */
-		*a++ = 0x99;
-	}
 
-	store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		load_into_eax_edx(&a, &dummy_cpu.gpr[rt]);
+
+		/*
+		 *  Here:  eax contains the value in register rt,
+		 *         ebx contains the coproc register rd value.
+		 *
+		 *  In the general case, only allow mtc if it does not
+		 *  change the coprocessor register!
+		 */
+
+		switch (rd) {
+		case COP0_INDEX:
+			break;
+
+		case COP0_ENTRYLO0:
+		case COP0_ENTRYLO1:
+			/*  TODO: Not all bits are writable!  */
+			break;
+
+		case COP0_EPC:
+			break;
+
+		case COP0_STATUS:
+			/*  Only allow updates to the status register if
+			    the interrupt enable bits were changed, but no
+			    other bits!  */
+			/*  89 c1                   mov    %eax,%ecx  */
+			/*  89 da                   mov    %ebx,%edx  */
+			/*  81 e1 fe 00 ff ff       and    $0xffff00fe,%ecx  */
+			/*  81 e2 fe 00 ff ff       and    $0xffff00fe,%edx  */
+			/*  39 ca                   cmp    %ecx,%edx  */
+			/*  74 01                   je     <ok>  */
+			*a++ = 0x89; *a++ = 0xc1;
+			*a++ = 0x89; *a++ = 0xda;
+			*a++ = 0x81; *a++ = 0xe1; *a++ = 0xfe;
+			    *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
+			*a++ = 0x81; *a++ = 0xe2; *a++ = 0xfe;
+			    *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
+			*a++ = 0x39; *a++ = 0xca;
+			*a++ = 0x74; failskip = a; *a++ = 0x00;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
+
+			/*  Only allow the update if it would NOT cause
+			    an interrupt exception:  */
+
+			/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
+			ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+			*a++ = 0x8b; *a++ = 0x96;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+			/*  8b 9a 38 30 00 00       mov    0x3038(%edx),%ebx  */
+			ofs = ((size_t)&dummy_coproc.reg[COP0_CAUSE]) - (size_t)&dummy_coproc;
+			*a++ = 0x8b; *a++ = 0x9a;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+			/*  21 c3                   and    %eax,%ebx  */
+			/*  81 e3 00 ff 00 00       and    $0xff00,%ebx  */
+			/*  83 fb 00                cmp    $0x0,%ebx  */
+			/*  74 01                   je     <ok>  */
+			*a++ = 0x21; *a++ = 0xc3;
+			*a++ = 0x81; *a++ = 0xe3; *a++ = 0x00;
+			    *a++ = 0xff; *a++ = 0x00; *a++ = 0x00;
+			*a++ = 0x83; *a++ = 0xfb; *a++ = 0x00;
+			*a++ = 0x74; failskip = a; *a++ = 0x00;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
+
+			break;
+
+		default:
+			/*  39 d8                   cmp    %ebx,%eax  */
+			/*  74 01                   je     <ok>  */
+			*a++ = 0x39; *a++ = 0xd8;
+			*a++ = 0x74; failskip = a; *a++ = 0x00;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
+		}
+
+		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
+		ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+		*a++ = 0x8b; *a++ = 0x96;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		/*  8d 9a 38 30 00 00       lea    0x3038(%edx),%ebx  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0x8d; *a++ = 0x9a;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		/*  Sign-extend eax into edx:eax, and store it in
+		    coprocessor register rd:  */
+		/*  99		cltd  */
+		*a++ = 0x99;
+
+		/*  89 03                   mov    %eax,(%ebx)  */
+		/*  89 53 04                mov    %edx,0x4(%ebx)  */
+		*a++ = 0x89; *a++ = 0x03;
+		*a++ = 0x89; *a++ = 0x53; *a++ = 0x04;
+	} else {
+		/*  mfc  */
+
+		/*  8b 82 38 30 00 00       mov    0x3038(%edx),%eax  */
+		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
+		*a++ = 0x8b; *a++ = 0x82;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+		if (flag64bit) {
+			/*  Load high 32 bits:  (note: edx gets overwritten)  */
+			/*  8b 92 3c 30 00 00       mov    0x303c(%edx),%edx  */
+			ofs += 4;
+			*a++ = 0x8b; *a++ = 0x92;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+		} else {
+			/*  99                      cltd  */
+			*a++ = 0x99;
+		}
+
+		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+	}
 
 	*addrp = a;
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
@@ -1133,7 +1242,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks,
 	int only_care_about_chunk_p, int p)
 {
-	unsigned char *a, *skip=NULL;
+	unsigned char *a, *skip=NULL, *failskip;
 	int ofs;
 	uint32_t i386_addr;
 
@@ -1180,15 +1289,15 @@ try_chunk_p:
 		/*  Not much we can do here if this wasn't to the same physical page...  */
 
 		/*  Don't execute too many instructions.  */
-		/*  81 be 38 30 00 00 f0 1f 00 00    cmpl   $0x1ff0,0x3038(%esi)  */
-		/*  7c 01                            jl     <okk>  */
-		/*  c3                               ret    */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
-		*a++ = 0x81; *a++ = 0xbe;
-		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-		*a++ = 0xf0; *a++ = 0x1f; *a++ = 0; *a++ = 0;
-		*a++ = 0x7c; *a++ = 0x01;
-		*a++ = 0xc3;
+		/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+		/*  7c 01                jl     <okk>  */
+		/*  c3                   ret    */
+		*a++ = 0x81; *a++ = 0xfd;
+		*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+		*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+		*a++ = 0x7c; failskip = a; *a++ = 0x01;
+		bintrans_write_chunkreturn_fail(&a);
+		*failskip = (size_t)a - (size_t)failskip - 1;
 
 		/*
 		 *  Compare the old pc (ecx:ebx) and the new pc (edx:eax). If they are on the
@@ -1256,17 +1365,16 @@ try_chunk_p:
 		 *  we go on with the fast path (bintrans), otherwise we
 		 *  abort by returning.
 		 */
-		/*  81 be 38 30 00 00 f0 1f 00 00    cmpl   $0x1ff0,0x3038(%esi)  */
-		/*  7c 01                            jl     <okk>  */
-		/*  c3                               ret    */
+		/*  81 fd f0 1f 00 00    cmpl   $0x1ff0,%ebp  */
+		/*  7c 01                jl     <okk>  */
+		/*  c3                   ret    */
 		if (!only_care_about_chunk_p) {
-			ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
-			*a++ = 0x81; *a++ = 0xbe;
-			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = 0x81; *a++ = 0xfd;
 			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
 			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
-			*a++ = 0x7c; *a++ = 0x01;
-			*a++ = 0xc3;
+			*a++ = 0x7c; failskip = a; *a++ = 0x01;
+			bintrans_write_chunkreturn_fail(&a);
+			*failskip = (size_t)a - (size_t)failskip - 1;
 		}
 
 		/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.65 2004-11-26 20:03:08 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.66 2004-11-28 17:19:12 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1659,7 +1659,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	/*
 	 *  NOTE: Only a few registers are readable without side effects.
 	 */
-	if (rt == 0 && mtcflag==0)
+	if (rt == 0 && !mtcflag)
 		return 0;
 
 	if (coproc_nr >= 1)

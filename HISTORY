@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.332 2004-11-28 12:26:34 debug Exp $
+$Id: HISTORY,v 1.333 2004-11-28 17:19:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1198,3 +1198,8 @@ HISTORY of mips64emul
 		Making the default cache size for R3000 4KB instr, 4 KB data;
 		a real R3000 could have 64KB each, but emulated OSes run
 		faster when they think the cache is smaller :-)
+		Updates to the i386 backend: the nr of executed instructions
+		is now placed in ebp at all times, and some support for
+		mtc0 similar to how it is done in the Alpha backend has been
+		added. A full NetBSD/pmax 1.6.2 install can now be done in
+		5 minutes 35 seconds, on a 2.8 GHz Xeon host (with -bD2 -M20).

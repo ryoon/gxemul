@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.99 2004-12-05 14:17:13 debug Exp $
+ *  $Id: bintrans.c,v 1.100 2004-12-05 16:05:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -701,8 +701,12 @@ quick_attempt_translate_again:
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 100)
+		if (translated && try_to_translate && n_translated > 80
+		    && prev_p < 1023 && !delayed_branch) {
+			bintrans_write_instruction__delayedbranch(
+			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4);
 			try_to_translate = 0;
+		}
 
 		p += sizeof(instr);
 

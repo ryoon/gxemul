@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.355 2004-12-05 14:17:22 debug Exp $
+$Id: HISTORY,v 1.356 2004-12-05 16:05:28 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1247,3 +1247,4 @@ HISTORY of mips64emul
 		A minor fix for a bug which was triggered when running
 		dual- or tripple-head, on 2 or 3 actual X11 displays.
 20041205	Fixing a bintrans bug.
+		Some other minor updates (some of them bintrans related).

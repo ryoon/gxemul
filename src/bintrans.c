@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.68 2004-11-19 06:58:02 debug Exp $
+ *  $Id: bintrans.c,v 1.69 2004-11-20 04:16:24 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -306,7 +306,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 				f = (size_t)tep->chunk[offset_within_page] +
 				    translation_code_chunk_space;
-				cpu->bintrans_instructions_executed = 0;
 				goto run_it;	/*  see further down  */
 			}
 			break;
@@ -421,6 +420,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			case SPECIAL_DSRL32:
 			case SPECIAL_SLT:
 			case SPECIAL_SLTU:
+			case SPECIAL_MULT:
+			case SPECIAL_MULTU:
 			case SPECIAL_SYNC:
 				rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 				rt = instr[2] & 31;
@@ -584,7 +585,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 500)
+		if (n_translated > 300)
 			try_to_translate = 0;
 
 		p += sizeof(instr);
@@ -627,7 +628,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 
 	/*  RUN the code chunk:  */
 	f = ca2;
-	cpu->bintrans_instructions_executed = 0;
 run_it:
 
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",

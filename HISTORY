@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.314 2004-11-19 09:09:08 debug Exp $
+$Id: HISTORY,v 1.315 2004-11-20 04:16:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1135,7 +1135,8 @@ HISTORY of mips64emul
 		Ultrix 4.5 boots into a usable desktop on my home machine in
 		3min 28sec, compared to 6-8 minutes without bintrans.
 20041113	Some minor bintrans updates.
-20041114	More bintrans updates. Ultrix now boots in exactly 3 minutes.
+20041114	More bintrans updates. Ultrix now boots in exactly 3 minutes
+		on my home machine.
 20041115	More bintrans updates.
 20041116	Bintrans updates.
 20041117	Working on dev_dec_ioasic and related issues.
@@ -1151,3 +1152,5 @@ HISTORY of mips64emul
 		Time to reach Ultrix 4.5's graphical login on a 2.8 GHz Xeon
 		host is now down to 20 seconds!
 		Adding bgez, bltz, bgtz, and blez to the i386 backend.
+20041120	Minor updates (bintrans related mostly).
+		Time to reach Ultrix login on the Xeon is now 11 seconds.

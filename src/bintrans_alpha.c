@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004  Anders Gavare682.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.40 2004-11-20 02:45:05 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.41 2004-11-20 04:16:24 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -529,7 +529,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	int rd, int rs, int rt, int sa, int instruction_type)
 {
 	unsigned char *a;
-	int load64 = 0;
+	int load64 = 0, store = 1, ofs;
 
 	switch (instruction_type) {
 	case SPECIAL_DADDU:
@@ -549,8 +549,17 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		load64 = 1;
 	}
 
-	if (rd == 0)
-		goto rd0;
+	switch (instruction_type) {
+	case SPECIAL_MULT:
+	case SPECIAL_MULTU:
+		if (rd != 0)
+			return 0;
+		store = 0;
+		break;
+	default:
+		if (rd == 0)
+			goto rd0;
+	}
 
 	a = *addrp;
 
@@ -653,10 +662,36 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	case SPECIAL_SLTU:
 		*a++ = 0xa1; *a++ = 0x03; *a++ = 0x22; *a++ = 0x40;     /*  cmpult t0,t1,t0  */
 		break;
+	case SPECIAL_MULT:
+	case SPECIAL_MULTU:
+		if (instruction_type == SPECIAL_MULTU) {
+			/*  21 f6 21 48     zapnot  t0,0xf,t0  */
+			/*  22 f6 41 48     zapnot  t1,0xf,t1  */
+			*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;
+			*a++ = 0x22; *a++ = 0xf6; *a++ = 0x41; *a++ = 0x48;
+		}
+
+		/*  03 04 22 4c     mulq    t0,t1,t2  */
+		*a++ = 0x03; *a++ = 0x04; *a++ = 0x22; *a++ = 0x4c;
+
+		/*  01 10 60 40     addl    t2,0,t0  */
+		*a++ = 0x01; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
+
+		ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+		/*  81 17 64 48     sra     t2,0x20,t0  */
+		*a++ = 0x81; *a++ = 0x17; *a++ = 0x64; *a++ = 0x48;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
+		ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+		break;
 	}
 
-	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
+	if (store) {
+		*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
+	}
 
 	*addrp = a;
 rd0:

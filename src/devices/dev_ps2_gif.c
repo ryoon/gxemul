@@ -23,11 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.14 2004-07-16 18:19:32 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.15 2004-07-18 13:06:10 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
- *  TODO:  Convert memory_rw() accesses into direct framebuffer reads and
+ *  TODO:  Convert dev_fb_access() accesses into direct framebuffer reads and
  *         writes, to improve performance.
  *
  *  TODO 2:  The way things are now, rgb bytes are copied from emulated
@@ -44,11 +44,14 @@
 #include "devices.h"
 
 
+#define	PS2_FB_ADDR	0x60000000000ULL  /*  hopefully nothing else here  */
+
+
 struct gif_data {
+	struct cpu	*cpu;
 	int		xsize, ysize;
 	int		bytes_per_pixel;
 	int		transparent_text;
-	struct memory	*fb_mem;
 	struct vfb_data *vfb_data;
 };
 
@@ -156,8 +159,11 @@ void test_triangle(struct gif_data *d,
 			xlen --;
 		}
 
-		memory_rw(NULL, d->fb_mem, (y*d->xsize + xofs) * d->bytes_per_pixel,
-		    line + xofs * d->bytes_per_pixel, savedxlen * d->bytes_per_pixel, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+		dev_fb_access(d->cpu, d->cpu->mem,
+		    (y*d->xsize + xofs) * d->bytes_per_pixel,
+		    line + xofs * d->bytes_per_pixel,
+		    savedxlen * d->bytes_per_pixel,
+		    MEM_WRITE, d->vfb_data);
 
 		if (y<y2) {
 			xstart += xpy12;
@@ -245,7 +251,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 					/*  There are three bytes (r,g,b) at data[addr + 0] .. [addr + 2].
 					    TODO: This should be translated to a direct update of the framebuffer.  */
 
-					memory_rw(NULL, d->fb_mem, fb_addr, data + addr, 3, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+					dev_fb_access(d->cpu, d->cpu->mem,
+					    fb_addr, data + addr, 3, MEM_WRITE, d->vfb_data);
 
 					fb_addr += d->bytes_per_pixel;
 					addr += 4;
@@ -294,11 +301,17 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
 					unsigned char pixels[3];
 
-					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+					dev_fb_access(d->cpu, d->cpu->mem,
+					    fb_addr, pixels, sizeof(pixels),
+					    MEM_READ, d->vfb_data);
+
 					pixels[0] = 0xff - pixels[0];
 					pixels[1] = 0xff - pixels[1];
 					pixels[2] = 0xff - pixels[2];
-					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+
+					dev_fb_access(d->cpu, d->cpu->mem,
+					    fb_addr, pixels, sizeof(pixels),
+					    MEM_WRITE, d->vfb_data);
 				}
 		} else if (data[0] == 0x01 && data[1] == 0x00 && len == 80) {			/*  Linux "output cursor":  */
 			int xbase, ybase, xend, yend, x, y;
@@ -317,11 +330,17 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
 					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
 					unsigned char pixels[3];
 
-					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+					dev_fb_access(d->cpu, d->cpu->mem,
+					    fb_addr, pixels, sizeof(pixels),
+					    MEM_READ, d->vfb_data);
+
 					pixels[0] = 0xff - pixels[0];
 					pixels[1] = 0xff - pixels[1];
 					pixels[2] = 0xff - pixels[2];
-					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+
+					dev_fb_access(d->cpu, d->cpu->mem,
+					    fb_addr, pixels, sizeof(pixels),
+					    MEM_WRITE, d->vfb_data);
 				}
 		} else {		/*  Unknown command:  */
 			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
@@ -354,16 +373,12 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct gif_data));
 
 	d->transparent_text = 0;
-
-	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 4 * 1048576, DEFAULT_MAX_BITS);
-	if (d->fb_mem == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-
+	d->cpu = cpu;
 	d->xsize = 640; d->ysize = 480;
 	d->bytes_per_pixel = 3;
-	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0x00000000, VFB_PLAYSTATION2, d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
+
+	d->vfb_data = dev_fb_init(cpu, cpu->mem, PS2_FB_ADDR, VFB_PLAYSTATION2,
+	    d->xsize, d->ysize, d->xsize, d->ysize, 24, "Playstation 2");
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "could not initialize fb, out of memory\n");
 		exit(1);

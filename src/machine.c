@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.54 2004-02-29 01:59:43 debug Exp $
+ *  $Id: machine.c,v 1.55 2004-03-01 17:12:02 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -364,8 +364,6 @@ void sgi_mace_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	/*  TODO:  how should all this be done nicely?  */
 	static uint32_t mace_interrupts = 0;
 
-/*	printf("sgi_mace_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irqnr, mace_interrupts);  */
-
 	if (assrt) {
 		mace_interrupts |= irq_nr;
 		cpu_interrupt(cpu, 2);
@@ -374,6 +372,8 @@ void sgi_mace_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		if (mace_interrupts == 0)
 			cpu_interrupt_ack(cpu, 2);
 	}
+
+	/*  printf("sgi_mace_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irq_nr, mace_interrupts);  */
 }
 
 
@@ -584,6 +584,10 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_3MAXPLUS_5000:	/*  type 4, KN03  */
 			machine_name = "DECsystem 5900 or 5000 (3MAX+) (KN03)";
+
+			/*  5000/240 (KN03-GA, R3000): 40 MHz  */
+			/*  5000/260 (KN05-NB, R4000): 60 MHz  */
+			/*  TODO: are both these type 4?  */
 			if (emulated_ips == 0)
 				emulated_ips = 40000000;
 			if (physical_ram_in_mb > 480)
@@ -1173,16 +1177,38 @@ void machine_init(struct memory *mem)
 
 				/*
 				 *  According to NetBSD:
-				 *  imc0 at mainbus0 addr 0x1fa00000, revision 0
+				 *
+				 *  imc0 at mainbus0 addr 0x1fa00000, Revision 0
 				 *  gio0 at imc0
 				 *  hpc0 at gio0 addr 0x1fb80000: SGI HPC3
-				 *  wdsc0 at hpc0 offset 0x44000  (SCSI)
-				 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03  (ethernet)
-				 *  zsc0 at hpc0 offset 0x59830  (serial console, 2 channels)
+				 *  zsc0 at hpc0 offset 0x59830
+				 *  zstty0 at zsc0 channel 1 (console i/o)
+				 *  zstty1 at zsc0 channel 0
+				 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03	(Ethernet)
+				 *  wdsc0 at hpc0 offset 0x44000: UNKNOWN SCSI, rev=12, target 7
+				 *  scsibus2 at wdsc0: 8 targets, 8 luns per target
 				 *  dsclock0 at hpc0 offset 0x60000
+				 *  hpc1 at gio0 addr 0x1fb00000: SGI HPC3
+				 *  zsc at hpc1 offset 0x59830 not configured
+				 *  sq at hpc1 offset 0x54000 not configured
+				 *  wdsc at hpc1 offset 0x44000 not configured
+				 *  dsclock at hpc1 offset 0x60000 not configured
+				 *  hpc2 at gio0 addr 0x1f980000: SGI HPC3
+				 *  zsc at hpc2 offset 0x59830 not configured
+				 *  sq at hpc2 offset 0x54000 not configured
+				 *  wdsc at hpc2 offset 0x44000 not configured
+				 *  dsclock at hpc2 offset 0x60000 not configured
 				 */
-				dev_wdsc_init(mem, 0x1fbc4000); 	 	/*  wdsc0  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  zsc0 serial console  */
+				dev_wdsc_init(mem, 0x1fbc4000); 	 			/*  wdsc0  */
+
+				/*  How about these?  They are not detected by NetBSD:  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb59830, 8, 1);	/*  zsc1 serial  */
+				dev_wdsc_init(mem, 0x1fb44000); 	 			/*  wdsc1  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1f9d9830, 8, 1);	/*  zsc2 serial  */
+				dev_wdsc_init(mem, 0x1f9c4000); 	 			/*  wdsc2  */
+
 				dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
 				break;
 			case 27:
@@ -1228,8 +1254,8 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
-				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 8, 0x1);	/*  serial??  */
-				pci_data = dev_macepci_init(mem, 0x1f080000, 8);	/*  macepci0  */
+				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 0, 0x1);	/*  serial??  */
+				pci_data = dev_macepci_init(mem, 0x1f080000, 0);	/*  macepci0  */
 				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
 				/*
 				 *  A combination of NetBSD and Linux info:
@@ -1257,9 +1283,9 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200, 0x800);	/*  keyb+mouse (mace irq numbers)  */
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 0, 0x100);	/*  com1  */
 				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -1270,7 +1296,7 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 				 */
 
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
+/*				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
 				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;
@@ -1405,13 +1431,16 @@ case arc_CacheClass:
 
 		addr = SGI_ENV_STRINGS;
 
-		/*  This works with NetBSD/sgimips and NetBSD/arc:  */
-		/*  add_environment_string("ConsoleOut=arcs", &addr);  */
+		if (use_x11) {
+			if (emulation_type == EMULTYPE_ARC) {
+				add_environment_string("ConsoleIn=multi()key()keyboard()console()", &addr);
+				add_environment_string("ConsoleOut=multi()video()monitor()console()", &addr);
+			} else {
+				add_environment_string("ConsoleIn=keyboard()", &addr);
+				add_environment_string("ConsoleOut=video()", &addr);
+			}
 
-		if (use_x11 && emulation_type == EMULTYPE_ARC) {
-			add_environment_string("ConsoleIn=multi()key()keyboard()console()", &addr);
-			add_environment_string("ConsoleOut=multi()video()monitor()console()", &addr);
-			add_environment_string("console=g?", &addr);		/*  g? ???  */
+			add_environment_string("console=g", &addr);
 		} else {
 			add_environment_string("ConsoleIn=serial(0)", &addr);
 			add_environment_string("ConsoleOut=serial(0)", &addr);
@@ -1420,7 +1449,8 @@ case arc_CacheClass:
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
 		add_environment_string("eaddr=00:00:00:00:00:00", &addr);
-		add_environment_string("verbose=1", &addr);
+		add_environment_string("verbose=istrue", &addr);
+		add_environment_string("showconfig=istrue", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;

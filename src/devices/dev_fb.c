@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.30 2004-04-11 07:58:47 debug Exp $
+ *  $Id: dev_fb.c,v 1.31 2004-04-24 22:39:22 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -557,16 +557,16 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	int i;
 
 #ifdef FB_DEBUG
-	if (writeflag == MEM_WRITE) {
-		debug("[ dev_fb: write  to addr=%08lx, data = ", (long)relative_addr);
+	if (writeflag == MEM_WRITE) { if (data[0]) {
+		fatal("[ dev_fb: write  to addr=%08lx, data = ", (long)relative_addr);
 		for (i=0; i<len; i++)
-			debug("%02x ", data[i]);
-		debug("]\n");
+			fatal("%02x ", data[i]);
+		fatal("]\n");
 	} else {
-		debug("[ dev_fb: read from addr=%08lx, data = ", (long)relative_addr);
+		fatal("[ dev_fb: read from addr=%08lx, data = ", (long)relative_addr);
 		for (i=0; i<len; i++)
-			debug("%02x ", d->framebuffer[relative_addr + i]);
-		debug("]\n");
+			fatal("%02x ", d->framebuffer[relative_addr + i]);
+		fatal("]\n");
 	}
 #endif
 

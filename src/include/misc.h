@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.7 2003-11-08 08:45:16 debug Exp $
+ *  $Id: misc.h,v 1.8 2003-11-08 11:38:04 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -45,7 +45,7 @@
 /*  These can be defined, but they reduce speed of the emulator.
     Don't enable them unless you need them.  */
 
-#define SUPPORT_MIPS16
+/*  #define SUPPORT_MIPS16  */
 /*  #define ALWAYS_SIGNEXTEND_32  */
 /*  #define HALT_IF_PC_ZERO  */
 

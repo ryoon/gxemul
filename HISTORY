@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.383 2004-12-13 01:48:47 debug Exp $
+$Id: HISTORY,v 1.384 2004-12-13 01:54:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1309,4 +1309,5 @@ HISTORY of mips64emul
 		do. This makes Debian seem more stable.
 		Decreasing the bintrans cache to 20 MB again.
 		Updating some files in preparation for a 0.2.4 release.
-20041213	Updating the docs on how to install NetBSD 2.0/pmax.
+20041213	Updating the docs on how to install NetBSD 2.0/pmax, and also
+		some updates to the section on installing Debian.

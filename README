@@ -1,12 +1,4 @@
-$Id: README,v 1.32 2004-07-17 20:10:32 debug Exp $
-
-Version 0.1.1 of the emulator was released at 2004-07-02.  The next
-stable release will probably not happen very soon, as there are lots of
-things I'd like to experiment with that might make the code unstable.
-
-I'll probably call the next release 0.2, since it will be different enough
-from the 0.1 and 0.1.1 releases to warrant a big version increase.
-
+$Id: README,v 1.33 2004-07-30 11:24:01 debug Exp $
 
 Preliminary 0.2 README:
 
@@ -14,15 +6,19 @@ Preliminary 0.2 README:
 mips64emul 0.2
 ==============
 
+Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
+
 
 Overview
 --------
 
-mips64emul is a MIPS machine emulator. The goals are to emulate 64-bit and
-32-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
-capable of running real (unmodified) operating systems, such as NetBSD, Linux,
-or OpenBSD. This is a spare time hobby project, and many things are not
-implemented yet.
+mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs
+and enough surrounding hardware to fake real machines, capable of running real
+(unmodified) operating systems, such as NetBSD, Linux, or OpenBSD, and to
+assist in experiments involving MIPS-like code in general.
+
+This is a spare time hobby project, and many things are not implemented 
+yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.)
@@ -35,7 +31,7 @@ To compile, type './configure' and then 'make'.  This should work on most
 Unix-like systems, if not then please mail me a bug report.
 
 Please read the the documentation in the doc/ sub-directory for more detailed
-information.
+information on how to use the emulator.
 
 
 Feedback

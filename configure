@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.44 2004-07-26 01:26:43 debug Exp $
+#  $Id: configure,v 1.45 2004-07-30 11:24:02 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -319,6 +319,8 @@ rm -f _tests.[co] _tests
 
 printf "checking for bintrans backend... "
 
+BINTRANS=NO
+
 if [ z"`uname -m`" = zalpha ]; then
 	printf "#define ALPHA\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
@@ -333,28 +335,35 @@ if [ z"`uname -m`" = zalpha ]; then
 	fi
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf "alpha\n"
-else
+	BINTRANS=YES
+fi
+
+#  TODO: interpret all i?86 as i386!
 if [ z"`uname -m`" = zi386 ]; then
 	printf "#define I386\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
 	printf "i386\n"
+	BINTRANS=YES
 else
-#  TODO: interpret all i?86 as i386!
-if [ z"`uname -m`" = zi686 ]; then
-	printf "#define I386\n" >> config.h
-	printf "#define BINTRANS\n" >> config.h
-	printf "i386\n"
-else
+	if [ z"`uname -m`" = zi686 ]; then
+		printf "#define I386\n" >> config.h
+		printf "#define BINTRANS\n" >> config.h
+		printf "i386\n"
+		BINTRANS=YES
+	fi
+fi
+
 if [ z"`uname -m`" = zsun4u ]; then
 	printf "#define SPARCV9\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
 	printf "sparcv9\n"
-else
+	BINTRANS=YES
+fi
+
+if [ z$BINTRANS = zNO ]; then
 	printf "not supported on this arch\n"
 fi
-fi
-fi
-fi
+
 
 #############################################################################
 #

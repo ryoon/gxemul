@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.19 2004-07-25 22:42:03 debug Exp $
+ *  $Id: bintrans.c,v 1.20 2004-07-30 11:24:03 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -161,6 +161,9 @@ void bintrans_host_cacheinvalidate(void);
 void bintrans_init(void)
 {
 	debug("starting bintrans\n");
+
+	fatal("TODO: bintrans is not (re)implemented yet\n");
+	exit(1);
 
 	/*  TODO  */
 }

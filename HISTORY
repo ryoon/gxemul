@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.180 2004-07-30 10:31:13 debug Exp $
+$Id: HISTORY,v 1.181 2004-07-30 11:24:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -851,3 +851,4 @@ HISTORY of mips64emul
 20040730	Removing mgras.h, as I'm not sure a file dual-licensed this way
 		would work. (Dual-licensing as two separate files would work
 		though.)
+		Preparing for the upcoming release (0.2).

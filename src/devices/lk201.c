@@ -23,10 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.5 2004-05-06 03:52:35 debug Exp $
+ *  $Id: lk201.c,v 1.6 2004-06-28 00:54:52 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
+ *
+ *  TODO:  Host vs emulated cursor position... see below.
  */
 
 #include <stdio.h>
@@ -150,6 +152,10 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
  *
  *  mouse_x,y,buttons contains the "goal", d->mouse_* contains the
  *  current state.
+ *
+ *  TODO:  Take the framebuffer's "physical" cursor into concideration,
+ *  to try to make the emulated cursor appear under the host's cursor
+ *  on the framebuffer.
  */
 void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x, int mouse_y, int mouse_buttons)
 {

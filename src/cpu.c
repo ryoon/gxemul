@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.42 2004-03-27 19:26:54 debug Exp $
+ *  $Id: cpu.c,v 1.43 2004-03-28 01:23:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -573,6 +573,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	for (i=0; i<n_dumppoints; i++)
 		if (cpu->pc == dumppoint_pc[i]) {
 			instruction_trace = 1;
+			quiet_mode = 0;
 			if (dumppoint_flag_r[i])
 				register_dump = 1;
 		}
@@ -1233,12 +1234,12 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					debug("%s\tr%i\n", instr_mnem, rs);
 
 				instr_mnem = NULL;
-				if (special6 == SPECIAL_MULT && rd!=0)	instr_mnem = "mult_xx";
-				if (instr_mnem)
-					debug("%s\tr%i,r%i,r%i\n", instr_mnem, rd, rs, rt);
-
-				instr_mnem = NULL;
-				if (special6 == SPECIAL_MULT)	instr_mnem = "mult";
+				if (special6 == SPECIAL_MULT) {
+					if (rd!=0)
+						debug("mult_xx\tr%i,r%i,r%i\n", rd, rs, rt);
+					else
+						instr_mnem = "mult";
+				}
 				if (special6 == SPECIAL_MULTU)	instr_mnem = "multu";
 				if (special6 == SPECIAL_DMULT)	instr_mnem = "dmult";
 				if (special6 == SPECIAL_DMULTU)	instr_mnem = "dmultu";
@@ -1279,6 +1280,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				break;
 			}
 			if (special6 == SPECIAL_MULT) {
+#if 0
 				int64_t f1, f2, sum;
 				f1 = cpu->gpr[rs];
 				if (f1 & 0x80000000) {		/*  sign extend  */
@@ -1291,28 +1293,26 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					f2 |= ((uint64_t)0xffffffff << 32);
 				}
 				sum = f1 * f2;
+#else
+				int64_t sum = (int32_t)cpu->gpr[rs] * (int32_t)cpu->gpr[rt];
+#endif
+				cpu->lo = sum & 0xffffffff;
+				cpu->hi = ((uint64_t)sum >> 32) & 0xffffffff;
+
+				/*  sign-extend:  */
+				if (cpu->lo & 0x80000000)
+					cpu->lo |= 0xffffffff00000000;
+				if (cpu->hi & 0x80000000)
+					cpu->hi |= 0xffffffff00000000;
 
 				/*  NOTE:  The stuff about rd!=0 is just a guess, judging
 					from how some NetBSD code seems to execute.
 					It is not documented in the MIPS64 ISA docs :-/  */
 
-				if (rd!=0) {
+				if (rd != 0) {
 					if (cpu->cpu_type.rev != MIPS_R5900)
 						debug("WARNING! mult_xx is an undocumented instruction!");
-					cpu->gpr[rd] = sum & 0xffffffff;
-
-					/*  sign-extend:  */
-					if (cpu->gpr[rd] & 0x80000000)
-						cpu->gpr[rd] |= 0xffffffff00000000;
-				} else {
-					cpu->lo = sum & 0xffffffff;
-					cpu->hi = (sum >> 32) & 0xffffffff;
-
-					/*  sign-extend:  */
-					if (cpu->lo & 0x80000000)
-						cpu->lo |= 0xffffffff00000000;
-					if (cpu->hi & 0x80000000)
-						cpu->hi |= 0xffffffff00000000;
+					cpu->gpr[rd] = cpu->lo;
 				}
 				break;
 			}
@@ -2492,8 +2492,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				debug("pextlw\tr%i,r%i,r%i\n", rd, rs, rt);
 
 			cpu->gpr[rd] =
-			    ((cpu->gpr[rt] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
-			    | (cpu->gpr[rs] & 0xffffffff);
+			    ((cpu->gpr[rs] & 0xffffffff) << 32)		/*  TODO: switch rt and rs?  */
+			    | (cpu->gpr[rt] & 0xffffffff);
 		} else {
 			if (!instruction_trace) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.21 2004-07-20 01:10:10 debug Exp $
+ *  $Id: dev_le.c,v 1.22 2004-10-10 12:29:25 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -483,10 +483,17 @@ void le_register_fix(struct le_data *d)
 		d->reg[0] &= ~(LE_RXON | LE_TXON);
 
 	/*  The STOP bit clears a lot of stuff:  */
+#if 0
+	/*  According to the LANCE manual: (doesn't work with Ultrix)  */
 	if (d->reg[0] & LE_STOP)
 		d->reg[0] &= ~(LE_SERR | LE_BABL | LE_CERR | LE_MISS | LE_MERR
 		    | LE_RINT | LE_TINT | LE_IDON | LE_INTR | LE_INEA
 		    | LE_RXON | LE_TXON | LE_TDMD);
+#else
+	/*  Works with Ultrix:  */
+	if (d->reg[0] & LE_STOP)
+		d->reg[0] &= ~(LE_IDON);
+#endif
 }
 
 

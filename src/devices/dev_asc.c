@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.36 2004-09-05 05:06:55 debug Exp $
+ *  $Id: dev_asc.c,v 1.37 2004-10-10 12:29:25 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -638,12 +638,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 				odata = d->reg_ro[regnr];
 		}
 
-		if (writeflag==MEM_READ) {
-			debug("[ asc: read from %s: 0x%02x",
-			    asc_reg_names[regnr], (int)odata);
-		} else {
-			debug("[ asc: write to  %s: 0x%02x",
-			    asc_reg_names[regnr], (int)idata);
+		if (!quiet_mode) {
+			if (writeflag==MEM_READ) {
+				debug("[ asc: read from %s: 0x%02x",
+				    asc_reg_names[regnr], (int)odata);
+			} else {
+				debug("[ asc: write to  %s: 0x%02x",
+				    asc_reg_names[regnr], (int)idata);
+			}
 		}
 	} else if (relative_addr >= 0x300 && relative_addr < 0x600
 	    && d->turbochannel != NULL) {
@@ -654,12 +656,14 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	} else if (relative_addr == 0x40000) {
 		if (writeflag==MEM_READ) {
 			odata = d->dma_address_reg;
-			debug("[ asc: read from DMA address reg: 0x%08x",
-			    (int)odata);
+			if (!quiet_mode)
+				debug("[ asc: read from DMA address reg: 0x%08x",
+				    (int)odata);
 		} else {
 			d->dma_address_reg = idata;
-			debug("[ asc: write to  DMA address reg: 0x%08x",
-			    (int)idata);
+			if (!quiet_mode)
+				debug("[ asc: write to  DMA address reg: 0x%08x",
+				    (int)idata);
 		}
 	} else if (relative_addr >= 0x80000 && relative_addr+len-1 <= 0x9ffff) {
 		if (writeflag==MEM_READ) {

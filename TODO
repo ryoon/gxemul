@@ -18,7 +18,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    memory latencies should be emulated as correctly as
 		    possible.
 
-	Binary translation:  src/bintrans.c
+	Binary translation:
+		o)  see src/bintrans.c
+		o)  ultrasparc instruction cache flush
 
 	Network layer:  src/net.c
 		o)  TCP: fin/ack stuff, and connection time-outs and

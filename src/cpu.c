@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.119 2004-08-18 09:04:13 debug Exp $
+ *  $Id: cpu.c,v 1.120 2004-08-18 12:56:16 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -699,15 +699,27 @@ void cpu_register_dump(struct cpu *cpu)
 
 	symbol = get_symbol_name(cpu->pc, &offset);
 
-	debug("cpu%i:  hi  = %016llx  lo  = %016llx  pc  = %016llx",
-	    cpu->cpu_id, cpu->hi, cpu->lo, cpu->pc);
+	if (cpu->cpu_type.isa_level < 3 ||
+	    cpu->cpu_type.isa_level == 32)
+		debug("cpu%i:  hi  = %08x  lo  = %08x  pc  = %08x",
+		    cpu->cpu_id, (int)cpu->hi, (int)cpu->lo, (int)cpu->pc);
+	else
+		debug("cpu%i:  hi  = %016llx  lo  = %016llx  pc  = %016llx",
+		    cpu->cpu_id, (long long)cpu->hi,
+		    (long long)cpu->lo, (long long)cpu->pc);
+
 	if (symbol != NULL)
 		debug(" <%s>", symbol);
 	debug("\n");
+
 	for (i=0; i<32; i++) {
 		if ((i & 3) == 0)
 			debug("cpu%i:", cpu->cpu_id);
-		debug("  r%02i = %016llx", i, cpu->gpr[i]);
+		if (cpu->cpu_type.isa_level < 3 ||
+		    cpu->cpu_type.isa_level == 32)
+			debug("  r%02i = %08x", i, (int)cpu->gpr[i]);
+		else
+			debug("  r%02i = %016llx", i, (long long)cpu->gpr[i]);
 		if ((i & 3) == 3)
 			debug("\n");
 	}

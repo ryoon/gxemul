@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.43 2004-08-18 12:35:46 debug Exp $
+ *  $Id: emul.c,v 1.44 2004-08-18 12:56:17 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -166,6 +166,10 @@ void debugger_activate(int x)
 	} else {
 		/*  Enter the single step debugger.  */
 		single_step = 1;
+
+		/*  Discard any chars in the input queue:  */
+		while (console_charavail())
+			console_readchar();
 	}
 
 	/*  Reactivate the signal handler:  */

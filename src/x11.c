@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.12 2004-06-23 13:41:08 debug Exp $
+ *  $Id: x11.c,v 1.13 2004-06-25 04:19:31 debug Exp $
  *
  *  X11-related functions.
  */
@@ -162,6 +162,13 @@ void x11_init(void)
 
 	x11_screen = DefaultScreen(x11_display);
 	screen_depth = DefaultDepth(x11_display, x11_screen);
+
+	if (((screen_depth / 8) * 8) != screen_depth) {
+		fatal("***\n***  %i BITS COLOR, not really supported yet\n***\n",
+		    screen_depth);
+		/*  Round up to nearest 8:  */
+		screen_depth = ((screen_depth - 1) | 7) + 1;
+	}
 
 	x11_using_truecolor = screen_depth==24? 1 : 0;
 	if (!x11_using_truecolor)

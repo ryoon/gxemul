@@ -353,3 +353,12 @@ HISTORY of mips64emul
 20040228	Progress on the scc controller; -D4 works in both serial
 		console mode and with keyboard (graphical console), but no
 		mouse yet.
+20040301	SGI mace interrupts are now done using the new machine-
+		independant interrupt system.
+20040303	Fixing an R5900 bug; the lowest 6 bits have special meaning
+		for coprocessor functions, not just 5 bits as on non-R5900
+		CPUs. (This fixes a bug which caused NetBSD to crash.)
+20040304	Adding enough (fake) DMA capabilities to the ioasic device
+		to allow Ultrix to print boot messages in the -D3, -D4,
+		and -D7 modes, and also print graphical console messages
+		in -D4 and -D7 modes.

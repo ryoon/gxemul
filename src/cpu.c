@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.244 2005-01-19 14:24:22 debug Exp $
+ *  $Id: cpu.c,v 1.245 2005-01-19 15:02:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -641,7 +641,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 		if (cpu->cpu_type.isa_level < 3 ||
 		    cpu->cpu_type.isa_level == 32)
-			debug("0x%8x", (int)addr);
+			debug("0x%08x", (int)addr);
 		else
 			debug("0x%016llx", (long long)addr);
 
@@ -891,7 +891,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 			if (cpu->cpu_type.isa_level < 3 ||
 			    cpu->cpu_type.isa_level == 32)
-				debug("0x%8x", (int)addr);
+				debug("0x%08x", (int)addr);
 			else
 				debug("0x%016llx", (long long)addr);
 			break;

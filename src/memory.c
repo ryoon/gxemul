@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.120 2004-11-28 21:09:45 debug Exp $
+ *  $Id: memory.c,v 1.121 2004-11-29 09:00:18 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1060,17 +1060,18 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 				return;
 
 			/*  Invalidate any pages of this device that might
-			    be in the bintrans load/store cache:  */
+			    be in the bintrans load/store cache, by marking
+			    the pages read-only.  */
 
 			/*  TODO: This only works for R3000-style physical addresses!  */
 
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
 				update_translation_table(cpu,
-				    (size_t)mem->dev_baseaddr[i] + s + 0x80000000ULL,
-				    NULL, 0, 0x0);
+				    mem->dev_baseaddr[i] + s + 0x80000000ULL,
+				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
 				update_translation_table(cpu,
-				    (size_t)mem->dev_baseaddr[i] + s + 0xa0000000ULL,
-				    NULL, 0, 0x0);
+				    mem->dev_baseaddr[i] + s + 0xa0000000ULL,
+				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
 			}
 
 			return;

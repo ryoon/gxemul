@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.335 2004-11-28 19:31:07 debug Exp $
+$Id: HISTORY,v 1.336 2004-11-29 09:00:17 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1206,3 +1206,4 @@ HISTORY of mips64emul
 		Adding mult and multu to the i386 bintrans backend.
 		Reducing the number of malloc/free calls used by the
 		diskimage subsystem.
+20041129	Minor updates to the Alpha bintrans backend.

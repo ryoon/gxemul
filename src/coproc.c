@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.113 2004-11-28 21:09:45 debug Exp $
+ *  $Id: coproc.c,v 1.114 2004-11-29 09:00:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -346,7 +346,11 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 				/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
 				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
 			}
-			if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
+			if (writeflag == -1) {
+				/*  Forced downgrade to read-only:  */
+				tbl1->haddr_entry[b] = host_page;
+				tbl1->paddr_entry[b] = paddr_page;
+			} else if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
 				/*  Don't degrade a page from writable to readonly.  */
 			} else {
 				if (host_page != NULL || paddr_page == 0)

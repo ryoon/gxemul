@@ -7,9 +7,6 @@ Please report any bugs you find to me.  Here is a list of KNOWN bugs:
       emulation):
 	x)  NetBSD/pmax works with X with -CR3000, but not with -CR4000.
             Reason and solution unknown at this point.
-
-        x)  Different versions of Ultrix behave differently in repect to the
-            vertical retrace interrupts from the BT459.  I haven't been able
-            to write a single version of the interrupt mechanism which works
-            with all versions.
+            Temporary workaround:  Don't use -CR4000 if you want to run
+            X11 inside emulated NetBSD/pmax.
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.17 2005-03-12 21:52:49 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.18 2005-03-12 23:38:57 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -38,6 +38,7 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
@@ -486,6 +487,9 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	/*  At least on VR4131:  */
 	dev_ns16550_init(machine, mem, baseaddr + 0x800, 8 + 9, 1,
 	    1, "vr41xx siu");
+
+	/*  Hm... maybe this should not be here.  TODO  */
+	device_add(machine, "pcic addr=0x140003e0");
 
 	machine_add_tickfunction(machine, dev_vr41xx_tick, d,
 	    DEV_VR41XX_TICKSHIFT);

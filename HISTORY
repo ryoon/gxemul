@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.636 2005-03-12 12:58:12 debug Exp $
+$Id: HISTORY,v 1.637 2005-03-12 23:38:56 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1737,3 +1737,4 @@ Changelog for GXemul:
 		that are not 4K page aligned.
 20050312	Adding an ugly KIU hack to the VR41xx device (which enables
 		NetBSD/hpcmips MobilePro 780 keyboard input).
+20050313	Adding a dummy "pcic" device (a pcmcia card controller).

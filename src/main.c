@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.23 2004-02-24 00:16:54 debug Exp $
+ *  $Id: main.c,v 1.24 2004-02-26 15:13:41 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -77,6 +77,7 @@ int show_opcode_statistics = 0;
 int speed_tricks = 1;
 int prom_emulation = 1;
 int userland_emul = 0;
+int ultrixboot_emul = 0;
 
 int bootstrap_cpu;
 int use_random_bootstrap_cpu = 0;
@@ -176,6 +177,7 @@ void usage(char *progname)
 	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
+	printf("  -j        ultrixboot-style emulation (instead of NetBSD-style, for DECstation)\n");
 	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
@@ -215,7 +217,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABbC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -262,6 +264,9 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'J':
 			speed_tricks = 0;
+			break;
+		case 'j':
+			ultrixboot_emul = 1;
 			break;
 		case 'M':
 			physical_ram_in_mb = atoi(optarg);

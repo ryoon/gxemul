@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.98 2004-12-19 07:34:56 debug Exp $
+ *  $Id: emul.c,v 1.99 2004-12-19 12:12:42 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -312,6 +312,11 @@ static void add_arc_components(struct emul *emul)
 			    COMPONENT_CLASS_ControllerClass,
 			    a, flags, 1, 2, i, 0xffffffff,
 			    name, scsicontroller, NULL, 0);
+
+#if 0
+/*  Yuck, experimental.  */
+printf("%i = 0x%016llx\n", i, (long long)scsidevice);
+#endif
 
 			arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_PeripheralClass,

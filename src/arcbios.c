@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.54 2004-12-19 08:36:55 debug Exp $
+ *  $Id: arcbios.c,v 1.55 2004-12-19 12:12:42 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -892,6 +892,7 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x3c	GetComponent(name)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
+ *	0x50	GetTime()
  *	0x54	GetRelativeTime()
  *	0x5c	Open(path, mode, &fileid)
  *	0x60	Close(handle)
@@ -899,6 +900,8 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x6c	Write(handle, buf, len, &returnlen)
  *	0x70	Seek(handle, &offset, len)
  *	0x78	GetEnvironmentVariable(char *)
+ *	0x7c	SetEnvironmentVariable(char *, char *)
+ *	0x80	GetFileInformation(handle, buf)
  *	0x88	FlushAllCaches()
  *	0x90	GetDisplayStatus(uint32_t handle)
  */
@@ -1043,7 +1046,9 @@ void arcbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;
 
 		/*  TODO  */
-
+#if 0
+cpu->gpr[GPR_V0] = 0xffffffffbfca8404;
+#endif
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");
@@ -1065,6 +1070,11 @@ void arcbios_emul(struct cpu *cpu)
 			if (nr >= arc_n_memdescriptors)
 				cpu->gpr[GPR_V0] = 0;
 		}
+		break;
+	case 0x50:		/*  GetTime()  */
+		debug("[ ARCBIOS GetTime() ]\n");
+		cpu->gpr[GPR_V0] = 0x80001000;
+		/*  TODO!  */
 		break;
 	case 0x54:		/*  GetRelativeTime()  */
 		debug("[ ARCBIOS GetRelativeTime() ]\n");
@@ -1098,12 +1108,15 @@ void arcbios_emul(struct cpu *cpu)
 		if (cpu->gpr[GPR_V0] == ARCBIOS_ESUCCESS) {
 			debug(" = handle %i ]\n", handle);
 			store_32bit_word(cpu, cpu->gpr[GPR_A2], handle);
+			file_handle_in_use[handle] = 1;
 		} else
 			debug(" = ERROR %i ]\n", (int)cpu->gpr[GPR_V0]);
 		break;
 	case 0x60:		/*  Close(uint32_t handle)  */
 		debug("[ ARCBIOS Close(%i) ]\n", (int)cpu->gpr[GPR_A0]);
 		if (!file_handle_in_use[cpu->gpr[GPR_A0]]) {
+			fatal("ARCBIOS Close(%i): bad handle\n",
+			    (int)cpu->gpr[GPR_A0]);
 			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
 		} else {
 			file_handle_in_use[cpu->gpr[GPR_A0]] = 0;
@@ -1205,9 +1218,39 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
 		if (cpu->gpr[GPR_A0] != ARCBIOS_STDOUT) {
+			/*
+			 *  TODO: this is just a test
+			 */
+			int disk_id = 0;
+			int res, i;
+			unsigned char *tmp_buf;
+
 			fatal("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
 			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
 			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
+
+			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			if (tmp_buf == NULL) {
+				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				break;
+			}
+
+			for (i=0; i<cpu->gpr[GPR_A2]; i++)
+				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i,
+				    &tmp_buf[i], sizeof(char), MEM_READ,
+				    CACHE_NONE);
+
+			res = diskimage_access(disk_id, 1,
+			    arcbios_current_seek_offset, tmp_buf,
+			    cpu->gpr[GPR_A2]);
+
+			if (res) {
+				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
+				arcbios_current_seek_offset += cpu->gpr[GPR_A2];
+				cpu->gpr[GPR_V0] = 0;
+			} else
+				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
+			free(tmp_buf);
 		} else {
 			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 				unsigned char ch = '\0';
@@ -1273,6 +1316,30 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		/*  Return NULL if string wasn't found.  */
 		cpu->gpr[GPR_V0] = 0;
+		break;
+	case 0x7c:		/*  SetEnvironmentVariable(char *, char *)  */
+		debug("[ ARCBIOS SetEnvironmentVariable(\"");
+		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		debug("\",\"");
+		dump_mem_string(cpu, cpu->gpr[GPR_A1]);
+		debug("\") ]\n");
+		/*  TODO: This is a dummy.  */
+		cpu->gpr[GPR_V0] = 0;
+		break;
+	case 0x80:		/*  GetFileInformation()  */
+		debug("[ ARCBIOS GetFileInformation(%i,0x%x) ]\n",
+		    cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1]);
+
+		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 0, 0);
+		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 8, 100000000);
+		store_64bit_word(cpu, cpu->gpr[GPR_A1] + 16, 0);
+		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 24, 1);
+		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 28, 0);
+		store_32bit_word(cpu, cpu->gpr[GPR_A1] + 32, 0);
+		/*  TODO  */
+		/*  this doesn't work yet  */
+		cpu->gpr[GPR_V0] = 0;
+
 		break;
 	case 0x88:		/*  FlushAllCaches()  */
 		debug("[ ARCBIOS FlushAllCaches(): TODO ]\n");

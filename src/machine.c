@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.75 2004-04-01 01:44:00 debug Exp $
+ *  $Id: machine.c,v 1.76 2004-04-02 05:46:58 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1140,6 +1140,12 @@ void machine_init(struct memory *mem)
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
 
+#if 1
+		/*  Harddisk controller present flag:  */
+		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+		dev_ps2_spd_init(cpus[bootstrap_cpu], mem, 0x14000000);
+#endif
+
 		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
 		store_string(PLAYSTATION2_OPTARGS, bootstr);
@@ -1161,7 +1167,7 @@ void machine_init(struct memory *mem)
 			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
 		}
 
-		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. THis contains the sbus controller type.  */
+		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
 		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this neccessary?  */
@@ -1333,8 +1339,8 @@ void machine_init(struct memory *mem)
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
 				store_32bit_word(0xa0000000 + 0x3000, 0xbaddeed2);
 
-				/*  Memory size, not 4096 byte pages, but 256 bytes?  */
-				store_32bit_word(0xa0000000 + 0x26d0, physical_ram_in_mb * (1048576 / 256));
+				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
+				store_32bit_word(0xa0000000 + 0x26d0, 30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
 
 				break;
 			case 20:
@@ -1404,8 +1410,8 @@ void machine_init(struct memory *mem)
 				/*  NOTE:  ip19! (perhaps not really the same)  */
 				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
 
-				/*  Memory size, not 4096 byte pages, but 256 bytes?  */
-				store_32bit_word(0xa0000000 + 0x26d0, physical_ram_in_mb * (1048576 / 256));
+				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
+				store_32bit_word(0xa0000000 + 0x26d0, 30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
 
 				break;
 			case 26:
@@ -1639,10 +1645,10 @@ case arc_CacheClass:
 			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
 			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=video()");
 		} else {
-#if 1
+#if 0
 			store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 #else
-			store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
+			store_string(ARC_ARGV_START + 0x180, "console=d");	/*  Irix  */
 #endif
 			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
 			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");

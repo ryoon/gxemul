@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.270 2005-01-09 01:55:31 debug Exp $
+ *  $Id: machine.c,v 1.271 2005-01-09 04:17:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1298,10 +1298,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 
 			dec5800_csr = dev_dec5800_init(cpu, mem, 0x10000000);
-			dev_ssc_init(cpu, mem, 0x10140000, 2, emul->use_x11, &dec5800_csr->csr);
-			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
-			dev_decxmi_init(cpu, mem, 0x11800000);
 			dev_decbi_init(cpu, mem, 0x10000000);
+			dev_ssc_init(cpu, mem, 0x10140000, 2, emul->use_x11, &dec5800_csr->csr);
+			dev_decxmi_init(cpu, mem, 0x11800000);
+			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
 
 			break;
 

@@ -25,9 +25,10 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.7 2005-01-09 04:04:42 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.8 2005-01-09 04:17:18 debug Exp $
  *  
- *  Emulation of devices found in a DECsystem 58x0 (SMP capable system).
+ *  Emulation of devices found in a DECsystem 58x0, where x is the number
+ *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
  *
  *	o)  timers and misc stuff
  *	o)  BI  (Backplane Interconnect)
@@ -42,10 +43,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "emul.h"
+#include "memory.h"
+#include "misc.h"
 
 
 /*
@@ -162,7 +164,7 @@ struct dec5800_data *dev_dec5800_init(struct cpu *cpu,
 	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "dec5800_vectors",
 	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_dec5800_tick, d, 13);
+	cpu_add_tickfunction(cpu, dev_dec5800_tick, d, 14);
 
 	return d;
 }

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.28 2005-02-15 16:45:10 debug Exp $
+ *  $Id: machine.h,v 1.29 2005-02-18 06:01:16 debug Exp $
  */
 
 #include <sys/types.h>
@@ -297,7 +297,6 @@ int machine_name_to_type(char *stype, char *ssubtype,
 	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,
 	void (*func)(struct cpu *, void *), void *extra, int clockshift);
-unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
 int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);

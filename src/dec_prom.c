@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.54 2005-02-11 19:56:31 debug Exp $
+ *  $Id: dec_prom.c,v 1.55 2005-02-18 06:01:17 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -53,6 +53,21 @@
 
 
 extern int quiet_mode;
+
+
+/*
+ *  mem_readchar():
+ *
+ *  Reads a byte from emulated RAM, using a MIPS register as a base address.
+ *  (Helper function.)
+ */
+static unsigned char mem_readchar(struct cpu *cpu, int regbase, int offset)
+	{
+	unsigned char ch;
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
+	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+	return ch;
+}
 
 
 /*
@@ -107,7 +122,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		 *  is ignored, and a file handle value of 1 is returned.
 		 */
 		if (file_opened) {
-			fatal("\ndec_jumptable_func(): opening more than one file isn't supported yet.\n");
+			fatal("\ndec_jumptable_func(): opening more than one "
+			    "file isn't supported yet.\n");
 			cpu->running = 0;
 			cpu->dead = 1;
 		}
@@ -123,12 +139,15 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 
 			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in "
+				    "dec_prom.c, allocating %i bytes ]\n",
+				    (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
-			    current_file_offset, tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
+			    current_file_offset, tmp_buf,
+			    cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data
 			    to emulated memory:  */
@@ -136,8 +155,10 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 				uint64_t dst = cpu->cd.mips.gpr[MIPS_GPR_A1];
 				store_buf(cpu, dst, (char *)tmp_buf,
 				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A2];
-				current_file_offset += cpu->cd.mips.gpr[MIPS_GPR_A2];
+				cpu->cd.mips.gpr[MIPS_GPR_V0] =
+				    cpu->cd.mips.gpr[MIPS_GPR_A2];
+				current_file_offset +=
+				    cpu->cd.mips.gpr[MIPS_GPR_A2];
 			}
 
 			free(tmp_buf);
@@ -234,8 +255,8 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x0c:		/*  strcmp():  */
 		i = j = 0;
 		do {
-			ch1 = read_char_from_memory(cpu, MIPS_GPR_A0, i++);
-			ch2 = read_char_from_memory(cpu, MIPS_GPR_A1, j++);
+			ch1 = mem_readchar(cpu, MIPS_GPR_A0, i++);
+			ch2 = mem_readchar(cpu, MIPS_GPR_A1, j++);
 		} while (ch1 == ch2 && ch1 != '\0');
 
 		/*  If ch1=='\0', then strings are equal.  */
@@ -249,7 +270,7 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x14:		/*  strlen():  */
 		i = 0;
 		do {
-			ch2 = read_char_from_memory(cpu, MIPS_GPR_A0, i++);
+			ch2 = mem_readchar(cpu, MIPS_GPR_A0, i++);
 		} while (ch2 != 0);
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = i - 1;
 		break;
@@ -314,13 +335,14 @@ int decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x2c:		/*  puts()  */
 		i = 0;
-		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
+		while ((ch = mem_readchar(cpu, MIPS_GPR_A0, i++)) != '\0')
 			console_putchar(cpu->machine->main_console_handle, ch);
 		console_putchar(cpu->machine->main_console_handle, '\n');
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x30:		/*  printf()  */
-		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
+		if (cpu->machine->register_dump ||
+		    cpu->machine->instruction_trace)
 			debug("PROM printf(0x%08lx): \n",
 			    (long)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 
@@ -331,13 +353,14 @@ int decstation_prom_emul(struct cpu *cpu)
 
 			printfbuf[0] = printfbuf[sizeof(printfbuf)-1] = '\0';
 
-			ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++);
+			ch = mem_readchar(cpu, MIPS_GPR_A0, i++);
 			switch (ch) {
 			case '%':
 				ch = '0';
 				while (ch >= '0' && ch <= '9')
-					ch = read_char_from_memory(
-					    cpu, MIPS_GPR_A0, i++);
+					ch = mem_readchar(cpu,
+					    MIPS_GPR_A0, i++);
+
 				switch (ch) {
 				case '%':
 					strcpy(printfbuf, "%%");
@@ -354,31 +377,45 @@ int decstation_prom_emul(struct cpu *cpu)
 						ch = '\0';
 						strcpy(printfbuf, "[...]\n");
 #else
-						printf("[ decstation_prom_emul(): too many arguments ]");
-						argreg = MIPS_GPR_A3;	/*  This reuses the last argument,
-								which is utterly incorrect. (TODO)  */
+						printf("[ decstation_prom_emul"
+						    "(): too many arguments ]");
+						/*  This reuses the last arg,
+						    which is utterly incorrect.
+						    (TODO)  */
+						argreg = MIPS_GPR_A3;
 #endif
 					}
-					ch2 = argdata = cpu->cd.mips.gpr[argreg];
+
+					ch2 = argdata =
+					    cpu->cd.mips.gpr[argreg];
 
 					switch (ch) {
 					case 'c':
 						sprintf(printfbuf, "%c", ch2);
 						break;
 					case 'd':
-						sprintf(printfbuf, "%d", argdata);
+						sprintf(printfbuf, "%d",
+						    argdata);
 						break;
 					case 'x':
-						sprintf(printfbuf, "%x", argdata);
+						sprintf(printfbuf, "%x",
+						    argdata);
 						break;
 					case 's':
 						/*  Print a "%s" string.  */
 						j = 0; ch3 = '\n';
 						while (ch2) {
-							ch2 = read_char_from_memory(cpu, argreg, j++);
+							ch2 = mem_readchar(cpu,
+							    argreg, j++);
 							if (ch2) {
-								snprintf(printfbuf+strlen(printfbuf),
-								    sizeof(printfbuf)-1-strlen(printfbuf),
+								snprintf(
+								    printfbuf +
+								    strlen(
+								    printfbuf),
+								    sizeof(
+								    printfbuf)-
+								    1-strlen(
+								    printfbuf),
 								    "%c", ch2);
 								ch3 = ch2;
 							}
@@ -388,7 +425,8 @@ int decstation_prom_emul(struct cpu *cpu)
 					argreg ++;
 					break;
 				default:
-					printf("[ unknown printf format char '%c' ]", ch);
+					printf("[ unknown printf format char"
+					    " '%c' ]", ch);
 				}
 				break;
 			case '\0':
@@ -565,7 +603,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0xa8:		/*  int execute_cmd(char *)  */
 		i = 0;
-		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
+		while ((ch = mem_readchar(cpu, MIPS_GPR_A0, i++)) != '\0')
 			console_putchar(cpu->machine->main_console_handle, ch);
 		console_putchar(cpu->machine->main_console_handle, '\n');
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.349 2005-02-16 17:42:59 debug Exp $
+ *  $Id: machine.c,v 1.350 2005-02-18 06:01:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -254,20 +254,6 @@ void machine_add_tickfunction(struct machine *machine, void (*func)
 int int_to_bcd(int i)
 {
 	return (i/10) * 16 + (i % 10);
-}
-
-
-/*
- *  read_char_from_memory():
- *
- *  Reads a byte from emulated RAM. (Helper function.)
- */
-unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
-{
-	unsigned char ch;
-	cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
-	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
-	return ch;
 }
 
 

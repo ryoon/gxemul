@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.284 2005-02-11 09:29:50 debug Exp $
+ *  $Id: cpu.c,v 1.285 2005-02-18 06:01:17 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -324,7 +324,8 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 void cpu_show_cycles(struct machine *machine,
 	struct timeval *starttime, int64_t ncycles, int forced)
 {
-	uint64_t offset;
+	uint64_t offset, pc;
+	int is_32bit = 0, instrs_per_cycle;
 	char *symbol;
 	int64_t mseconds, ninstrs;
 	struct timeval tv;
@@ -338,6 +339,14 @@ void cpu_show_cycles(struct machine *machine,
 		return;
 	}
 
+	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level
+	    < 3 || machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.
+	    isa_level == 32)
+		is_32bit = 1;
+	pc = machine->cpus[machine->bootstrap_cpu]->cd.mips.pc;
+	instrs_per_cycle = machine->cpus[machine->bootstrap_cpu]->
+	    cd.mips.cpu_type.instrs_per_cycle;
+
 	gettimeofday(&tv, NULL);
 	mseconds = (tv.tv_sec - starttime->tv_sec) * 1000
 	         + (tv.tv_usec - starttime->tv_usec) / 1000;
@@ -348,7 +357,7 @@ void cpu_show_cycles(struct machine *machine,
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = ncycles * machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
+	ninstrs = ncycles * instrs_per_cycle;
 
 	if (machine->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
@@ -356,7 +365,7 @@ void cpu_show_cycles(struct machine *machine,
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
+		    / instrs_per_cycle;
 
 		if (cur_cycles_per_second < 1000000)
 			cur_cycles_per_second = 1000000;
@@ -398,7 +407,7 @@ void cpu_show_cycles(struct machine *machine,
 
 	printf("cycles=%lli", (long long) ncycles);
 
-	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle > 1)
+	if (instrs_per_cycle > 1)
 		printf(" (%lli instrs)", (long long) ninstrs);
 
 	/*  Instructions per second, and average so far:  */
@@ -407,16 +416,12 @@ void cpu_show_cycles(struct machine *machine,
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	symbol = get_symbol_name(&machine->symbol_context,
-	    machine->cpus[machine->bootstrap_cpu]->cd.mips.pc, &offset);
+	symbol = get_symbol_name(&machine->symbol_context, pc, &offset);
 
-	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level < 3 ||
-	    machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level == 32)
-		printf("; pc=%08x",
-		    (int)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
+	if (is_32bit)
+		printf("; pc=%08x", (int)pc);
 	else
-		printf("; pc=%016llx",
-		    (long long)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
+		printf("; pc=%016llx", (long long)pc);
 
 	printf(" <%s> ]\n", symbol? symbol : "no symbol");
 

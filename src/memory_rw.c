@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.5 2005-02-14 21:44:37 debug Exp $
+ *  $Id: memory_rw.c,v 1.6 2005-02-18 06:01:18 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -123,10 +123,12 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		paddr = vaddr;
 	} else {
 		ok = cpu->translate_address(cpu, vaddr, &paddr,
-		    (writeflag? FLAG_WRITEFLAG : 0) + (no_exceptions? FLAG_NOEXCEPTIONS : 0)
+		    (writeflag? FLAG_WRITEFLAG : 0) +
+		    (no_exceptions? FLAG_NOEXCEPTIONS : 0)
 		    + (cache==CACHE_INSTRUCTION? FLAG_INSTR : 0));
-		/*  If the translation caused an exception, or was invalid in some way,
-			we simply return without doing the memory access:  */
+		/*  If the translation caused an exception, or was invalid in
+		    some way, we simply return without doing the memory
+		    access:  */
 		if (!ok)
 			return MEMORY_ACCESS_FAILED;
 	}
@@ -169,12 +171,9 @@ have_paddr:
 #endif	/*  MEM_MIPS  */
 
 
-	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
+	if (!(cache_flags & PHYSICAL))
 		if (no_exceptions)
 			goto no_exception_access;
-
-/*  (*) = I need to access RAM devices easily without hardcoding stuff 
-into the devices  */
 
 
 #ifndef MEM_USERLAND
@@ -204,21 +203,32 @@ into the devices  */
 					len = mem->dev_length[i] - paddr;
 
 #ifdef BINTRANS
-				if (bintrans_cached && mem->dev_flags[i] & MEM_BINTRANS_OK) {
+				if (bintrans_cached && mem->dev_flags[i] &
+				    MEM_BINTRANS_OK) {
 					int wf = writeflag == MEM_WRITE? 1 : 0;
 
 					if (writeflag) {
-						if (paddr < mem->dev_bintrans_write_low[i])
-						    mem->dev_bintrans_write_low[i] = paddr & ~0xfff;
-						if (paddr > mem->dev_bintrans_write_high[i])
-						    mem->dev_bintrans_write_high[i] = paddr | 0xfff;
+						if (paddr < mem->
+						    dev_bintrans_write_low[i])
+							mem->
+							dev_bintrans_write_low
+							    [i] =
+							    paddr & ~0xfff;
+						if (paddr > mem->
+						    dev_bintrans_write_high[i])
+							mem->
+						 	dev_bintrans_write_high
+							    [i] = paddr | 0xfff;
 					}
 
-					if (!(mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK))
+					if (!(mem->dev_flags[i] &
+					    MEM_BINTRANS_WRITE_OK))
 						wf = 0;
 
-					update_translation_table(cpu, vaddr & ~0xfff,
-					    mem->dev_bintrans_data[i] + (paddr & ~0xfff),
+					update_translation_table(cpu,
+					    vaddr & ~0xfff,
+					    mem->dev_bintrans_data[i] +
+					    (paddr & ~0xfff),
 					    wf, orig_paddr & ~0xfff);
 				}
 #endif
@@ -239,12 +249,13 @@ into the devices  */
 				 *  failed, then return with a DBE exception.
 				 */
 				if (res <= 0) {
-					debug("%s device '%s' addr %08lx failed\n",
-					    writeflag? "writing to" : "reading from",
+					debug("%s device '%s' addr %08lx "
+					    "failed\n", writeflag?
+					    "writing to" : "reading from",
 					    mem->dev_name[i], (long)paddr);
 #ifdef MEM_MIPS
-					mips_cpu_exception(cpu, EXCEPTION_DBE, 0,
-					    vaddr, 0, 0, 0, 0);
+					mips_cpu_exception(cpu, EXCEPTION_DBE,
+					    0, vaddr, 0, 0, 0, 0);
 #endif
 					return MEMORY_ACCESS_FAILED;
 				}
@@ -326,22 +337,30 @@ into the devices  */
 				uint64_t offset;
 
 				if (!quiet_mode) {
-					fatal("[ memory_rw(): writeflag=%i ", writeflag);
+					fatal("[ memory_rw(): writeflag=%i ",
+					    writeflag);
 					if (writeflag) {
 						unsigned int i;
 						debug("data={", writeflag);
 						if (len > 16) {
 							int start2 = len-16;
 							for (i=0; i<16; i++)
-								debug("%s%02x", i?",":"", data[i]);
+								debug("%s%02x",
+								    i?",":"",
+								    data[i]);
 							debug(" .. ");
 							if (start2 < 16)
 								start2 = 16;
-							for (i=start2; i<len; i++)
-								debug("%s%02x", i?",":"", data[i]);
+							for (i=start2; i<len;
+							    i++)
+								debug("%s%02x",
+								    i?",":"",
+								    data[i]);
 						} else
 							for (i=0; i<len; i++)
-								debug("%s%02x", i?",":"", data[i]);
+								debug("%s%02x",
+								    i?",":"",
+								    data[i]);
 						debug("}");
 					}
 #ifdef MEM_MIPS
@@ -351,8 +370,11 @@ into the devices  */
 #else
 					symbol = "(unimpl for non-MIPS)";
 #endif
-					fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
-					    (long long)paddr, (long long)cpu->cd.mips.pc_last, symbol? symbol : "no symbol");
+					fatal(" paddr=%llx >= physical_max pc="
+					    "0x%08llx <%s> ]\n",
+					    (long long)paddr,
+					    (long long)cpu->cd.mips.pc_last,
+					    symbol? symbol : "no symbol");
 				}
 
 				if (cpu->machine->single_step_on_bad_addr) {
@@ -376,8 +398,8 @@ into the devices  */
 				 *  For real data/instruction accesses, cause
 				 *  an exceptions on an illegal read:
 				 */
-				if (cache != CACHE_NONE &&
-				    cpu->machine->dbe_on_nonexistant_memaccess) {
+				if (cache != CACHE_NONE && cpu->machine->
+				    dbe_on_nonexistant_memaccess) {
 					if (paddr >= mem->physical_max &&
 					    paddr < mem->physical_max+1048576)
 						mips_cpu_exception(cpu,

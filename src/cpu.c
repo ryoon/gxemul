@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.269 2005-01-30 01:04:00 debug Exp $
+ *  $Id: cpu.c,v 1.270 2005-01-30 11:38:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1733,7 +1733,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->machine->instruction_trace;
-	struct coproc *cp0 = cpu->coproc[0];
+	struct mips_coproc *cp0 = cpu->coproc[0];
 	int i, tmp, ninstrs_executed;
 	unsigned char instr[4];
 	uint32_t instrword;

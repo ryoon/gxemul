@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.69 2005-01-29 12:56:32 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.70 2005-01-30 11:38:15 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -39,7 +39,7 @@
 
 
 struct cpu dummy_cpu;
-struct coproc dummy_coproc;
+struct mips_coproc dummy_coproc;
 struct vth32_table dummy_vth32_table;
 
 

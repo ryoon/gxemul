@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.18 2005-01-14 03:36:19 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.19 2005-01-30 11:38:15 debug Exp $
  *
  *  UltraSPARC specific code for dynamic binary translation.
  *
@@ -33,7 +33,7 @@
  */
 
 struct cpu dummy_cpu;
-struct coproc dummy_coproc;
+struct mips_coproc dummy_coproc;
 struct vth32_table dummy_vth32_table;
 
 

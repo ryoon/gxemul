@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.109 2005-01-29 12:56:32 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.110 2005-01-30 11:38:15 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -116,7 +116,7 @@ static int map_MIPS_to_Alpha[32] = {
 
 
 struct cpu dummy_cpu;
-struct coproc dummy_coproc;
+struct mips_coproc dummy_coproc;
 struct vth32_table dummy_vth32_table;
 
 unsigned char bintrans_alpha_imb[32] = {

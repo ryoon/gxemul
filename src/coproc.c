@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.161 2005-01-30 00:37:08 debug Exp $
+ *  $Id: coproc.c,v 1.162 2005-01-30 11:38:15 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -63,11 +63,11 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 /*
  *  coproc_new():
  *
- *  Create a new coprocessor object.
+ *  Create a new MIPS coprocessor object.
  */
-struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
+struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 {
-	struct coproc *c;
+	struct mips_coproc *c;
 #ifdef ENABLE_MIPS16
 	const int m16 = 1;
 #else
@@ -75,13 +75,13 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 #endif
 	int IB, DB, SB, IC, DC, SC;
 
-	c = malloc(sizeof(struct coproc));
+	c = malloc(sizeof(struct mips_coproc));
 	if (c == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	memset(c, 0, sizeof(struct coproc));
+	memset(c, 0, sizeof(struct mips_coproc));
 	c->coproc_nr = coproc_nr;
 
 	if (coproc_nr == 0) {
@@ -785,10 +785,10 @@ static void invalidate_translation_caches(struct cpu *cpu,
 /*
  *  coproc_register_read();
  *
- *  Read a value from a coprocessor register.
+ *  Read a value from a MIPS coprocessor register.
  */
 void coproc_register_read(struct cpu *cpu,
-	struct coproc *cp, int reg_nr, uint64_t *ptr)
+	struct mips_coproc *cp, int reg_nr, uint64_t *ptr)
 {
 	int unimpl = 1;
 
@@ -844,10 +844,10 @@ void coproc_register_read(struct cpu *cpu,
 /*
  *  coproc_register_write();
  *
- *  Write a value to a coprocessor register.
+ *  Write a value to a MIPS coprocessor register.
  */
 void coproc_register_write(struct cpu *cpu,
-	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64)
+	struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64)
 {
 	int unimpl = 1;
 	int readonly = 0;
@@ -1253,7 +1253,7 @@ no_reasonable_result:
  *
  *  Stores a float value (actually a double) in fmt format.
  */
-static void fpu_store_float_value(struct coproc *cp, int fd,
+static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 	double nf, int fmt, int nan)
 {
 	int n_frac = 0, n_exp = 0, signofs=0;
@@ -1390,7 +1390,7 @@ store_nan:
  *  Only FPU_OP_C (compare) returns anything of interest, 1 for
  *  true, 0 for false.
  */
-static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
+static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 	int ft, int fs, int fd, int cond, int output_fmt)
 {
 	/*  Potentially two input registers, fs and ft  */
@@ -1542,7 +1542,7 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
  *  Returns 1 if function was implemented, 0 otherwise.
  *  Debug trace should be printed for known instructions.
  */
-static int fpu_function(struct cpu *cpu, struct coproc *cp,
+static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 	uint32_t function, int unassemble_only)
 {
 	int fd, fs, ft, fmt, cond, cc;
@@ -1801,7 +1801,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
  */
 void coproc_tlbpr(struct cpu *cpu, int readflag)
 {
-	struct coproc *cp = cpu->coproc[0];
+	struct mips_coproc *cp = cpu->coproc[0];
 	int i, found, g_bit;
 	uint64_t vpn2, xmask;
 
@@ -1914,7 +1914,7 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
  */
 void coproc_tlbwri(struct cpu *cpu, int randomflag)
 {
-	struct coproc *cp = cpu->coproc[0];
+	struct mips_coproc *cp = cpu->coproc[0];
 	int index, g_bit;
 	uint64_t oldvaddr;
 	int old_asid = -1;
@@ -2156,7 +2156,7 @@ void coproc_eret(struct cpu *cpu)
  *
  *  TODO:  This is a mess and should be restructured (again).
  */
-void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
+void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 	uint32_t function, int unassemble_only, int running)
 {
 	int co_bit, op, rt, rd, fs, copz;

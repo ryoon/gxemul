@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.7 2005-01-30 01:03:59 debug Exp $
+ *  $Id: mips_cpu.h,v 1.8 2005-01-30 11:38:14 debug Exp $
  */
 
 #include "misc.h"
@@ -70,10 +70,8 @@ struct mips_cpu_type_def {
 
 /*
  *  Coproc 0:
- *
- *  TODO:  48 or 64 is max for most processors, but 192 for R8000?
  */
-#define	N_COPROC_REGS		32
+#define	N_MIPS_COPROC_REGS	32
 struct mips_tlb {
 	uint64_t	hi;
 	uint64_t	lo0;
@@ -87,9 +85,9 @@ struct mips_tlb {
  */
 #define	N_FCRS			32
 
-struct coproc {
+struct mips_coproc {
 	int		coproc_nr;
-	uint64_t	reg[N_COPROC_REGS];
+	uint64_t	reg[N_MIPS_COPROC_REGS];
 
 	/*  Only for COP0:  */
 	struct mips_tlb	*tlbs;
@@ -100,10 +98,10 @@ struct coproc {
 	uint64_t	fcr[N_FCRS];
 };
 
-#define	N_COPROCS	4
+#define	N_MIPS_COPROCS		4
 
-#define	NGPRS		32		/*  General purpose registers  */
-#define	NFPUREGS	32		/*  Floating point registers  */
+#define	N_MIPS_GPRS		32	/*  General purpose registers  */
+#define	N_MIPS_FPRS		32	/*  Floating point registers  */
 
 /*
  *  These should all be 2 characters wide:
@@ -213,7 +211,7 @@ struct cpu {
 
 	struct mips_cpu_type_def cpu_type;
 
-	struct coproc	*coproc[N_COPROCS];
+	struct mips_coproc *coproc[N_MIPS_COPROCS];
 
 	void		(*md_interrupt)(struct cpu *, int irq_nr, int);
 
@@ -226,7 +224,7 @@ struct cpu {
 	uint64_t	lo;
 
 	/*  General purpose registers:  */
-	uint64_t	gpr[NGPRS];
+	uint64_t	gpr[N_MIPS_GPRS];
 
 	struct memory	*mem;
 	int		(*translate_address)(struct cpu *, uint64_t vaddr,
@@ -350,7 +348,7 @@ struct cpu {
 	 *
 	 *  TODO:  Generalize this.
 	 */
-	uint64_t	gpr_quadhi[NGPRS];
+	uint64_t	gpr_quadhi[N_MIPS_GPRS];
 
 
 	/*
@@ -373,7 +371,7 @@ struct cpu {
 
 
 /*  coproc.c:  */
-struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
+struct mips_coproc *coproc_new(struct cpu *cpu, int coproc_nr);
 void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
         uint64_t vaddr, uint64_t paddr0, uint64_t paddr1,
         int valid0, int valid1, int dirty0, int dirty1, int global, int asid,
@@ -383,14 +381,14 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 void clear_all_chunks_from_all_tables(struct cpu *cpu);
 void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr);
 void coproc_register_read(struct cpu *cpu,
-        struct coproc *cp, int reg_nr, uint64_t *ptr);
+        struct mips_coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,
-        struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
+        struct mips_coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
 void coproc_tlbpr(struct cpu *cpu, int readflag);
 void coproc_tlbwri(struct cpu *cpu, int randomflag);
 void coproc_rfe(struct cpu *cpu);
 void coproc_eret(struct cpu *cpu);
-void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
+void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
         uint32_t function, int unassemble_only, int running);
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.23 2004-07-03 19:48:15 debug Exp $
+ *  $Id: emul.c,v 1.24 2004-07-04 13:17:49 debug Exp $
  *
  *  Emulation startup.
  */
@@ -172,7 +172,8 @@ void load_bootblock(void)
 		store_buf(0x80700000, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
 
-		cpus[bootstrap_cpu]->pc = 0x80700000;
+		/*  Run uncached!  */
+		cpus[bootstrap_cpu]->pc = 0xa0700000;
 		break;
 	default:
 		fatal("Booting from disk without a separate kernel doesn't work in this emulation mode.\n");

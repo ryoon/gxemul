@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.192 2004-11-22 04:46:04 debug Exp $
+ *  $Id: cpu.c,v 1.193 2004-11-24 12:23:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3342,8 +3342,15 @@ void cpu_show_cycles(struct emul *emul,
 	symbol = get_symbol_name(&emul->symbol_context,
 	    emul->cpus[emul->bootstrap_cpu]->pc, &offset);
 
-	printf(", pc=%016llx <%s> ]\n",
-	    (long long)emul->cpus[emul->bootstrap_cpu]->pc, symbol? symbol : "no symbol");
+	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level < 3 ||
+	    emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level == 32)
+		printf(", pc=%08x",
+		    (int)emul->cpus[emul->bootstrap_cpu]->pc);
+	else
+		printf(", pc=%016llx",
+		    (long long)emul->cpus[emul->bootstrap_cpu]->pc);
+
+	printf(" <%s> ]\n", symbol? symbol : "no symbol");
 
 do_return:
 	ninstrs_last = ninstrs;

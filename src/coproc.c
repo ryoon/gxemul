@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.105 2004-11-24 10:37:43 debug Exp $
+ *  $Id: coproc.c,v 1.106 2004-11-24 12:23:24 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -415,7 +415,7 @@ static void invalidate_translation_caches(struct cpu *cpu,
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		if (all) {
-			int i, asid;
+			int i;
 			uint64_t tlb_vaddr;
 			switch (cpu->cpu_type.mmu_model) {
 			case MMU3K:
@@ -1627,7 +1627,10 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			oldvaddr |= 0xffffffff00000000ULL;
 		old_asid = (cp->tlbs[index].hi & R2K3K_ENTRYHI_ASID_MASK)
 		    >> R2K3K_ENTRYHI_ASID_SHIFT;
-		if (cp->tlbs[index].lo0 & ENTRYLO_V)
+
+/*  TODO: Bug? Why does this if need to be commented out?  */
+
+		/*  if (cp->tlbs[index].lo0 & ENTRYLO_V) */
 			invalidate_translation_caches(cpu, 0, oldvaddr, 0, 0);
 		break;
 	default:
@@ -1647,10 +1650,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0, 0);
 		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
 	}
-
-
-/*  TODO: This shouldn't be here. (Bug.)  */
-invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
 
 
 	/*  Write the new entry:  */

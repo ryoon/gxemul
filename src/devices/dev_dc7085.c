@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.15 2004-02-29 02:00:34 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.16 2004-04-11 08:29:04 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -99,8 +99,14 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 	if (avail && d->regs.dc_csr & CSR_MSE)
 		d->regs.dc_csr |= CSR_RDONE;
 
-	if (d->regs.dc_csr & CSR_RDONE && d->regs.dc_csr & CSR_RIE)
+	if (d->regs.dc_csr & CSR_RDONE && d->regs.dc_csr & CSR_RIE) {
 		cpu_interrupt(cpu, d->irqnr);
+
+		/*  We have to return here. NetBSD can handle both
+		    rx and tx interrupts simultaneously, but Ultrix
+		    doesn't like that.  */
+		return;
+	}
 
 	if (d->regs.dc_csr & CSR_MSE && !(d->regs.dc_csr & CSR_TRDY)) {
 		int scanner_start = d->tx_scanner;
@@ -135,7 +141,6 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 	int i;
 	struct dc_data *d = extra;
 
-	dev_dc7085_tick(cpu, extra);
 	idata = memory_readmax64(cpu, data, len);
 
 	/*  Always clear:  */
@@ -231,6 +236,8 @@ int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
+
+	dev_dc7085_tick(cpu, extra);
 
 	return 1;
 }

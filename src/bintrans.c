@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.104 2004-12-07 11:46:57 debug Exp $
+ *  $Id: bintrans.c,v 1.105 2004-12-07 11:52:02 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -778,8 +778,7 @@ run_it:
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
-		switch (cpu->cpu_type.mmu_model) {
-		case MMU3K:
+		if (bintrans_32bit_only) {
 			/*  32-bit special case:  */
 			a = (cpu->pc >> 22) & 0x3ff;
 			b = (cpu->pc >> 12) & 0x3ff;
@@ -841,8 +840,7 @@ run_it:
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */
-			switch (cpu->cpu_type.mmu_model) {
-			case MMU3K:
+			if (bintrans_32bit_only) {
 				/*  32-bit special case:  */
 				a = (cpu->pc >> 22) & 0x3ff;
 				b = (cpu->pc >> 12) & 0x3ff;

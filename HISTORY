@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.629 2005-03-09 06:37:18 debug Exp $
+$Id: HISTORY,v 1.630 2005-03-09 07:26:58 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1729,3 +1729,4 @@ Changelog for GXemul:
 20050309	Adding a hack for systems without inet_pton (such as Cygwin in
 		Windows) as suggested by Soohyun Cho. (And updating the
 		configure script too.)
+		Adding a dummy HPPA cpu family.

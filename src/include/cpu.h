@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.18 2005-03-01 06:48:23 debug Exp $
+ *  $Id: cpu.h,v 1.19 2005-03-09 07:26:58 debug Exp $
  *
  *  See cpu.c.
  */
@@ -41,6 +41,7 @@
 /*  This is needed for undefining 'mips' or 'ppc', on weird systems:  */
 #include "../config.h"
 
+#include "cpu_hppa.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
 #include "cpu_sparc.h"
@@ -106,6 +107,7 @@ struct cpu {
 
 	/*  CPU-family dependant:  */
 	union {
+		struct hppa_cpu   hppa;
 		struct mips_cpu   mips;
 		struct ppc_cpu    ppc;
 		struct sparc_cpu  sparc;

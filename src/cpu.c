@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.289 2005-03-05 08:42:25 debug Exp $
+ *  $Id: cpu.c,v 1.290 2005-03-09 07:26:59 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -536,6 +536,8 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
 	/*  YUCK! This is too hardcoded! TODO  */
 
 	while (fp != NULL) {
+		if (arch == ARCH_HPPA && strcmp("HPPA", fp->name) == 0)
+			return fp;
 		if (arch == ARCH_MIPS && strcmp("MIPS", fp->name) == 0)
 			return fp;
 		if (arch == ARCH_PPC && strcmp("PPC", fp->name) == 0)
@@ -558,6 +560,7 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
  */
 void cpu_init(void)
 {
+	add_cpu_family(hppa_cpu_family_init);
 	add_cpu_family(mips_cpu_family_init);
 	add_cpu_family(ppc_cpu_family_init);
 	add_cpu_family(sparc_cpu_family_init);

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.115 2005-03-09 06:37:19 debug Exp $
+#  $Id: configure,v 1.116 2005-03-09 07:26:58 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -54,6 +54,7 @@
 #
 ###############################################################################
 
+ENABLEHPPA=YES
 ENABLEMIPS=YES
 ENABLEPPC=YES
 ENABLESPARC=YES
@@ -70,6 +71,8 @@ if [ z"$*" != z ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--enable-mips16 ]; then
 			MIPS16=YES
+		else if [ z$a = z--disable-hppa ]; then
+			ENABLEHPPA=NO
 		else if [ z$a = z--disable-mips ]; then
 			ENABLEMIPS=NO
 		else if [ z$a = z--disable-ppc ]; then
@@ -97,6 +100,7 @@ if [ z"$*" != z ]; then
 			    "latency/delay emulation"
 			echo "  --disable-x         don't include X11 support"
 			printf "\nCPU selection options:\n"
+			echo "  --disable-hppa      disable HPPA CPU emulation"
 			echo "  --disable-mips      disable MIPS CPU emulation"
 			echo "  --disable-ppc       disable PPC CPU emulation"
 			echo "  --disable-sparc     disable SPARC CPU emulation"
@@ -111,7 +115,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -146,11 +150,16 @@ printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
 
 
 
-#  MIPS16, PPC, and SPARC support:
+#  Support for various CPU types:
 if [ z$MIPS16 = zYES ]; then
 	printf 'Enabling MIPS16 support.  '
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
+fi
+if [ z$ENABLEHPPA = zYES ]; then
+	printf "#define ENABLE_HPPA\n" >> config.h
+else
+	echo 'Disabling HPPA support.'
 fi
 if [ z$ENABLEMIPS = zYES ]; then
 	printf "#define ENABLE_MIPS\n" >> config.h
@@ -398,6 +407,37 @@ fi
 if [ z$OSF1 = zYES ]; then
 	CFLAGS="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE -D_POSIX_PII_SOCKET $CFLAGS"
 fi
+
+
+#  Check for weird 'hppa' define.
+printf "checking for weird 'hppa' define... "
+printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+#ifdef hppa
+printf(\"1\");
+#undef hppa
+#ifdef hppa
+printf(\"2\");
+#endif
+#endif
+printf(\"\\\n\");return 0;}\n" > _testm.c
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE hppa define TEST"
+	printf " PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z1 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef hppa" >> config.h
+	else
+		if [ z`./_testm` = z12 ]; then
+			printf "yes, but workaround not possible\n"
+			exit
+		else
+			printf "no\n"
+		fi
+	fi
+fi
+rm -f _testm*
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
@@ -979,7 +1019,44 @@ echo "" >> _Makefile.header
 printf "Regression test setup: (not really needed to build gxemul)\n"
 
 
-#  MIPS cross-compiler:
+#  64-bit HPPA cross-assembler:
+
+HPPA=''
+if [ z$ENABLEHPPA = zYES ]; then
+	printf "Checking for a GNU cross-assembler for 64-bit HPPA... "
+	echo 'nop' > _testprog.s
+
+	for HPPA_TRY in hppa64-unknown-elf hppa64-elf; do
+		printf '#!/bin/sh\n'$HPPA_TRY'-as _testprog.s' > _test.sh
+		printf ' -o _testprog.o\n' >> _test.sh
+		chmod 755 _test.sh
+		rm -f _testprog.o
+		./_test.sh > /dev/null 2> /dev/null
+		if [ -f _testprog.o ]; then
+			HPPA=$HPPA_TRY
+			break
+		fi
+		rm -f _testprog.o
+	done
+
+	if [ z$HPPA = z ]; then
+		echo "none"
+	else
+		echo $HPPA"-gcc"
+	fi
+fi
+rm -f _testprog* _test.sh
+
+# TODO: are these ok?  64-bit mode!
+#echo "HPPA_CC="$HPPA"-gcc -g -O2 -fno-builtin -fschedule-insns" \
+#	>> _Makefile.header
+echo "HPPA_AS="$HPPA"-as " >> _Makefile.header
+echo "HPPA_LD="$HPPA"-ld -Ttext 0xa800000000030000 -e main" \
+    "--oformat=elf64-bigmips" >> _Makefile.header
+echo "" >> _Makefile.header
+
+
+#  64-bit MIPS cross-compiler:
 
 MIPS=''
 if [ z$ENABLEMIPS = zYES ]; then

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.379 2005-03-08 22:58:59 debug Exp $
+ *  $Id: machine.c,v 1.380 2005-03-09 07:27:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4137,6 +4137,16 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_BAREHPPA:
+		machine->machine_name = "\"Bare\" HPPA machine";
+		break;
+
+	case MACHINE_TESTHPPA:
+		machine->machine_name = "HPPA test machine";
+
+		/*  TODO  */
+		break;
+
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -4409,6 +4419,12 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_BAREURISC:
 	case MACHINE_TESTURISC:
 		m->cpu_name = strdup("URISC");
+		break;
+
+	/*  HPPA:  */
+	case MACHINE_BAREHPPA:
+	case MACHINE_TESTHPPA:
+		m->cpu_name = strdup("HPPA2.0");
 		break;
 	}
 
@@ -4686,6 +4702,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for HPPA:  */
+	me = machine_entry_new("Test-machine for HPPA", ARCH_HPPA,
+	    MACHINE_TESTHPPA, 1, 0);
+	me->aliases[0] = "testhppa";
+	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Sun Ultra1:  */
 	me = machine_entry_new("Sun Ultra1", ARCH_SPARC, MACHINE_ULTRA1, 1, 0);
 	me->aliases[0] = "ultra1";
@@ -4843,6 +4867,14 @@ void machine_init(void)
 	    MACHINE_BAREMIPS, 1, 0);
 	me->aliases[0] = "baremips";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" HPPA machine:  */
+	me = machine_entry_new("Generic \"bare\" HPPA machine", ARCH_HPPA,
+	    MACHINE_BAREHPPA, 1, 0);
+	me->aliases[0] = "barehppa";
+	if (cpu_family_ptr_by_number(ARCH_HPPA) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

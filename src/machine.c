@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.335 2005-02-07 05:51:55 debug Exp $
+ *  $Id: machine.c,v 1.336 2005-02-07 06:14:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1236,7 +1236,7 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "\"Bare\" MIPS test machine";
 
-		dev_cons_init(machine, mem);	/*  TODO: include address here?  */
+		dev_cons_init(machine, mem, "console");	/*  TODO: include address here?  */
 
 		/*  This works with 'mmon' (MIPS):  */
 		machine->main_console_handle = dev_ns16550_init(machine, mem,

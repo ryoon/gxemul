@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.25 2005-02-06 15:15:05 debug Exp $
+ *  $Id: machine.h,v 1.26 2005-02-07 06:14:48 debug Exp $
  */
 
 #include <sys/types.h>
@@ -105,6 +105,7 @@ struct machine {
 	int	byte_order_override;
 	int	bootstrap_cpu;
 	int	use_random_bootstrap_cpu;
+	int	start_paused;
 	int	ncpus;
 	struct cpu **cpus;
 

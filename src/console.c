@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.4 2005-02-07 05:51:55 debug Exp $
+ *  $Id: console.c,v 1.5 2005-02-07 06:14:49 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -156,13 +156,6 @@ static void start_xterm(int handle)
 	char **a;
 	pid_t p;
 
-#if 0
-Hm...
-	if (!machine->use_x11) {
-		return handle;
-	}
-#endif
-
 	res = pipe(filedes);
 	if (res) {
 		printf("[ start_xterm(): pipe(): %i ]\n", errno);
@@ -178,16 +171,16 @@ Hm...
 	/*  printf("filedes = %i,%i\n", filedes[0], filedes[1]);  */
 	/*  printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);  */
 
-	/*  TODO: other names for xterm? For example a config file setting,
-	    or read from the environment?  */
-
-	a = malloc(sizeof(char *) * 15);
+	/*  NOTE/warning: Hardcoded max nr of args!  */
+	a = malloc(sizeof(char *) * 20);
 	if (a == NULL) {
 		fprintf(stderr, "console_start_slave(): out of memory\n");
 		exit(1);
 	}
 
-	a[0] = "xterm";
+	a[0] = getenv("XTERM");
+	if (a[0] == NULL)
+		a[0] = "xterm";
 	a[1] = "-title";
 	a[2] = console_handles[handle].name;
 	a[3] = "-e";

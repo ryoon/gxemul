@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.24 2005-02-02 23:55:20 debug Exp $
+ *  $Id: emul_parse.c,v 1.25 2005-02-07 06:14:50 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -216,6 +216,7 @@ static char cur_machine_byte_order[20];
 static char cur_machine_random_mem[10];
 static char cur_machine_random_cpu[10];
 static char cur_machine_force_netboot[10];
+static char cur_machine_start_paused[10];
 static char cur_machine_ncpus[10];
 static char cur_machine_n_gfx_cards[10];
 static char cur_machine_emulated_hz[10];
@@ -363,6 +364,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_random_mem[0] = '\0';
 		cur_machine_random_cpu[0] = '\0';
 		cur_machine_force_netboot[0] = '\0';
+		cur_machine_start_paused[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
 		cur_machine_n_gfx_cards[0] = '\0';
 		cur_machine_emulated_hz[0] = '\0';
@@ -499,6 +501,10 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_force_netboot, "no");
 		m->force_netboot = parse_on_off(cur_machine_force_netboot);
 
+		if (!cur_machine_start_paused[0])
+			strcpy(cur_machine_start_paused, "no");
+		m->start_paused = parse_on_off(cur_machine_start_paused);
+
 		/*  NOTE: Default nr of CPUs is 0:  */
 		if (!cur_machine_ncpus[0])
 			strcpy(cur_machine_ncpus, "0");
@@ -592,6 +598,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("n_gfx_cards", cur_machine_n_gfx_cards);
 	WORD("emulated_hz", cur_machine_emulated_hz);
 	WORD("memory", cur_machine_memory);
+	WORD("start_paused", cur_machine_start_paused);
 
 	if (strcmp(word, "load") == 0) {
 		read_one_word(f, word, maxbuflen,

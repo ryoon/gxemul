@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.50 2005-02-06 15:15:06 debug Exp $
+ *  $Id: dec_prom.c,v 1.51 2005-02-07 06:14:49 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -319,6 +319,11 @@ int decstation_prom_emul(struct cpu *cpu)
 
 		i = 0; ch = -1; argreg = MIPS_GPR_A1;
 		while (ch != '\0') {
+			char printfbuf[8000];
+			int x;
+
+			printfbuf[0] = printfbuf[sizeof(printfbuf)-1] = '\0';
+
 			ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++);
 			switch (ch) {
 			case '%':
@@ -328,7 +333,7 @@ int decstation_prom_emul(struct cpu *cpu)
 					    cpu, MIPS_GPR_A0, i++);
 				switch (ch) {
 				case '%':
-					printf("%%");
+					strcpy(printfbuf, "%%");
 					break;
 				case 'c':
 				case 'd':
@@ -340,7 +345,7 @@ int decstation_prom_emul(struct cpu *cpu)
 						/*  Linux booters seem to go
 						    over the edge sometimes: */
 						ch = '\0';
-						printf("[...]\n");
+						strcpy(printfbuf, "[...]\n");
 #else
 						printf("[ decstation_prom_emul(): too many arguments ]");
 						argreg = MIPS_GPR_A3;	/*  This reuses the last argument,
@@ -351,13 +356,13 @@ int decstation_prom_emul(struct cpu *cpu)
 
 					switch (ch) {
 					case 'c':
-						printf("%c", ch2);
+						sprintf(printfbuf, "%c", ch2);
 						break;
 					case 'd':
-						printf("%d", argdata);
+						sprintf(printfbuf, "%d", argdata);
 						break;
 					case 'x':
-						printf("%x", argdata);
+						sprintf(printfbuf, "%x", argdata);
 						break;
 					case 's':
 						/*  Print a "%s" string.  */
@@ -365,12 +370,12 @@ int decstation_prom_emul(struct cpu *cpu)
 						while (ch2) {
 							ch2 = read_char_from_memory(cpu, argreg, j++);
 							if (ch2) {
-								printf("%c", ch2);
+								snprintf(printfbuf,
+								    sizeof(printfbuf)-1-strlen(printfbuf),
+								    "%c", ch2);
 								ch3 = ch2;
 							}
 						}
-						/*  TODO:  without this newline, output looks ugly  */
-						/*  printf("\n");  */
 						break;
 					}
 					argreg ++;
@@ -382,8 +387,14 @@ int decstation_prom_emul(struct cpu *cpu)
 			case '\0':
 				break;
 			default:
-				printf("%c", ch);
+				sprintf(printfbuf, "%c", ch);
 			}
+
+			printfbuf[sizeof(printfbuf)-1] = '\0';
+
+			for (x=0; x<strlen(printfbuf); x++)
+				console_putchar(cpu->machine->
+				    main_console_handle, printfbuf[x]);
 		}
 		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
 			debug("\n");

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.139 2005-02-07 05:51:54 debug Exp $
+ *  $Id: devices.h,v 1.140 2005-02-07 06:14:48 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -125,8 +125,10 @@ void dev_bt459_init(struct machine *machine, struct memory *mem, uint64_t basead
 #define	DEV_CONS_LENGTH			0x0000000000000020
 #define	    DEV_CONS_PUTGETCHAR		    0x0000
 #define	    DEV_CONS_HALT		    0x0010
-int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_cons_init(struct machine *machine, struct memory *mem);
+int dev_cons_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+int dev_cons_init(struct machine *machine, struct memory *mem, char *name);
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010

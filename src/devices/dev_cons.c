@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.20 2005-02-06 15:15:03 debug Exp $
+ *  $Id: dev_cons.c,v 1.21 2005-02-07 06:14:47 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -98,7 +98,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_cons_init():
  */
-void dev_cons_init(struct machine *machine, struct memory *mem)
+int dev_cons_init(struct machine *machine, struct memory *mem, char *name)
 {
 	struct cons_data *d;
 	d = malloc(sizeof(struct cons_data));
@@ -108,9 +108,11 @@ void dev_cons_init(struct machine *machine, struct memory *mem)
 	}
 	memset(d, 0, sizeof(struct cons_data));
 
-	d->console_handle = console_start_slave(machine, "cons");
+	d->console_handle = console_start_slave(machine, name);
 
 	memory_device_register(mem, "cons", DEV_CONS_ADDRESS,
 	    DEV_CONS_LENGTH, dev_cons_access, d, MEM_DEFAULT, NULL);
+
+	return d->console_handle;
 }
 

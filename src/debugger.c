@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.83 2005-02-06 15:15:06 debug Exp $
+ *  $Id: debugger.c,v 1.84 2005-02-07 06:14:49 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -814,6 +814,32 @@ static void debugger_cmd_opcodestats(struct machine *m, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_pause():
+ */
+static void debugger_cmd_pause(struct machine *m, char *cmd_line)
+{
+	int cpuid = -1;
+
+	if (cmd_line[0] != '\0')
+		cpuid = atoi(cmd_line);
+	else {
+		printf("syntax: pause cpuid\n");
+		return;
+	}
+
+	if (cpuid < 0 || cpuid >= m->ncpus) {
+		printf("cpu%i doesn't exist.\n", cpuid);
+		return;
+	}
+
+	m->cpus[cpuid]->running ^= 1;
+
+	printf("cpu%i in machine \"%s\" is now %s\n", cpuid,
+	    m->name, m->cpus[cpuid]->running? "RUNNING" : "STOPPED");
+}
+
+
+/*
  *  debugger_cmd_print():
  */
 static void debugger_cmd_print(struct machine *m, char *cmd_line)
@@ -1368,6 +1394,9 @@ static struct cmd cmds[] = {
 
 	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
 		"show opcode statistics" },
+
+	{ "pause", "cpuid", 0, debugger_cmd_pause,
+		"pause (or unpause) a CPU" },
 
 	{ "print", "expr", 0, debugger_cmd_print,
 		"evaluate an expression without side-effects" },

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.17 2004-10-24 03:56:43 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.18 2004-10-24 04:10:14 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -124,6 +124,7 @@ int pckbc_get_code(struct pckbc_data *d, int port)
  *  ascii_to_scancodes():
  *
  *  Conversion from ASCII codes to default (US) keyboard scancodes.
+ *  (See on http://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html)
  */
 static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 {

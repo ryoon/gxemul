@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.49 2005-02-22 13:45:49 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.50 2005-02-22 14:04:25 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -753,13 +753,6 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			debug("%s\tr%i,r%i", mnem, ra, rb);
 			break;
-		case PPC_31_ANDC:
-			rs = (iword >> 21) & 31;
-			ra = (iword >> 16) & 31;
-			rb = (iword >> 11) & 31;
-			rc = iword & 1;
-			debug("andc%s\tr%i,r%i,r%i", rc?".":"", ra, rs, rb);
-			break;
 		case PPC_31_MFMSR:
 			rt = (iword >> 21) & 31;
 			debug("mfmsr\tr%i", rt);
@@ -778,6 +771,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_LWZX:
 		case PPC_31_LWZUX:
+		case PPC_31_STBX:
+		case PPC_31_STBUX:
 		case PPC_31_STWX:
 		case PPC_31_STWUX:
 			/*  rs for stores, rt for loads, actually  */
@@ -790,6 +785,12 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			case PPC_31_LWZUX:
 				mnem = power? "lux" : "lwzux";
+				break;
+			case PPC_31_STBX:
+				mnem = "stbx";
+				break;
+			case PPC_31_STBUX:
+				mnem = "stbux";
 				break;
 			case PPC_31_STWX:
 				mnem = power? "stx" : "stwx";
@@ -873,6 +874,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_SLW:
 		case PPC_31_AND:
+		case PPC_31_ANDC:
+		case PPC_31_NOR:
 		case PPC_31_OR:
 		case PPC_31_XOR:
 			rs = (iword >> 21) & 31;
@@ -886,6 +889,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				case PPC_31_SLW:  mnem =
 					power? "sl" : "slw"; break;
 				case PPC_31_AND:  mnem = "and"; break;
+				case PPC_31_ANDC: mnem = "andc"; break;
+				case PPC_31_NOR:  mnem = "nor"; break;
 				case PPC_31_OR:   mnem = "or"; break;
 				case PPC_31_XOR:  mnem = "or"; break;
 			}
@@ -1675,17 +1680,6 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  debug("[ %s r%i,r%i: TODO ]\n", mnem, ra, rb);  */
 			break;
 
-		case PPC_31_ANDC:
-			rs = (iword >> 21) & 31;
-			ra = (iword >> 16) & 31;
-			rb = (iword >> 11) & 31;
-			rc = iword & 1;
-			cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs]
-			    & ~cpu->cd.ppc.gpr[rb];
-			if (rc)
-				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
-			break;
-
 		case PPC_31_MFMSR:
 			rt = (iword >> 21) & 31;
 			/*  TODO: check pr  */
@@ -1712,22 +1706,31 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		case PPC_31_LWZX:
 		case PPC_31_LWZUX:
+		case PPC_31_STBX:
+		case PPC_31_STBUX:
 		case PPC_31_STWX:
 		case PPC_31_STWUX:
 			rs = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			update = 0;
-			if (xo == PPC_31_STWUX || xo == PPC_31_LWZUX)
+			switch (xo) {
+			case PPC_31_LWZUX:
+			case PPC_31_STBUX:
+			case PPC_31_STWUX:
 				update = 1;
+			}
 			if (ra == 0)
 				addr = 0;
 			else
 				addr = cpu->cd.ppc.gpr[ra];
 			addr += cpu->cd.ppc.gpr[rb];
 			load = 0;
-			if (xo == PPC_31_LWZX || xo == PPC_31_LWZUX)
+			switch (xo) {
+			case PPC_31_LWZX:
+			case PPC_31_LWZUX:
 				load = 1;
+			}
 
 			if (cpu->machine->instruction_trace) {
 				if (cpu->cd.ppc.bits == 32)
@@ -1737,6 +1740,13 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 			tmp_data_len = 4;
+			switch (xo) {
+			case PPC_31_STBX:
+			case PPC_31_STBUX:
+				tmp_data_len = 1;
+				break;
+			}
+
 			tmp = 0;
 
 			if (load) {
@@ -1972,6 +1982,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		case PPC_31_SLW:
 		case PPC_31_AND:
+		case PPC_31_ANDC:
+		case PPC_31_NOR:
 		case PPC_31_OR:
 		case PPC_31_XOR:
 			rs = (iword >> 21) & 31;
@@ -1989,6 +2001,14 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_AND:
 				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] &
 				    cpu->cd.ppc.gpr[rb];
+				break;
+			case PPC_31_ANDC:
+				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] &
+				    (~cpu->cd.ppc.gpr[rb]);
+				break;
+			case PPC_31_NOR:
+				cpu->cd.ppc.gpr[ra] = ~(cpu->cd.ppc.gpr[rs] |
+				    cpu->cd.ppc.gpr[rb]);
 				break;
 			case PPC_31_OR:
 				cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] |

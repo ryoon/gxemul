@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.539 2005-01-30 13:14:10 debug Exp $
+$Id: HISTORY,v 1.540 2005-01-30 13:18:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1587,3 +1587,4 @@ HISTORY of mips64emul
 		MIPS dependant stuff of the cpu struct into its own struct.
 		Renaming cpu.c to cpu_mips.c, and cpu_common.c to cpu.c.
 		Adding a dummy cpu_ppc.c.
+		Removing the UltraSPARC bintrans backend.

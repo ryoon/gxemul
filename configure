@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.91 2005-01-30 00:47:54 debug Exp $
+#  $Id: configure,v 1.92 2005-01-30 13:18:14 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -754,32 +754,32 @@ else
 #		BINTRANS=YES
 #	fi
 
-	#  UltraSPARC:
-	if [ z"`uname -m`" = zsun4u ]; then
-		if [ z$SPARCEXPERIMENTAL = z ]; then
-			echo "no"
-			printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
-			printf "enable experimental bintrans. (It isn't really working yet.)\n"
-		else
-			printf "#define SPARCV9\n" >> config.h
-			printf "#define BINTRANS\n" >> config.h
-			printf "sparcv9\n"
-		fi
-		BINTRANS=YES
-	else
-		if [ z"`uname -m`" = zsparc64 ]; then
-			if [ z$SPARCEXPERIMENTAL = z ]; then
-				echo "no"
-				printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
-				printf "enable experimental bintrans. (It isn't really working yet.)\n"
-			else
-				printf "#define SPARCV9\n" >> config.h
-				printf "#define BINTRANS\n" >> config.h
-				printf "sparcv9\n"
-			fi
-			BINTRANS=YES
-		fi
-	fi
+#	#  UltraSPARC:
+#	if [ z"`uname -m`" = zsun4u ]; then
+#		if [ z$SPARCEXPERIMENTAL = z ]; then
+#			echo "no"
+#			printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
+#			printf "enable experimental bintrans. (It isn't really working yet.)\n"
+#		else
+#			printf "#define SPARCV9\n" >> config.h
+#			printf "#define BINTRANS\n" >> config.h
+#			printf "sparcv9\n"
+#		fi
+#		BINTRANS=YES
+#	else
+#		if [ z"`uname -m`" = zsparc64 ]; then
+#			if [ z$SPARCEXPERIMENTAL = z ]; then
+#				echo "no"
+#				printf "NOTE! Set the SPARCEXPERIMENTAL environment variable to YES to\n"
+#				printf "enable experimental bintrans. (It isn't really working yet.)\n"
+#			else
+#				printf "#define SPARCV9\n" >> config.h
+#				printf "#define BINTRANS\n" >> config.h
+#				printf "sparcv9\n"
+#			fi
+#			BINTRANS=YES
+#		fi
+#	fi
 
 	if [ z$BINTRANS = zNO ]; then
 		printf "not supported yet on this arch\n"

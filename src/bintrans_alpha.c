@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.89 2004-12-29 18:00:35 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.90 2005-01-02 18:58:47 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -826,6 +826,9 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 	if ((instruction_type == SPECIAL_ADDU || instruction_type == SPECIAL_DADDU
 	    || instruction_type == SPECIAL_OR) && rt == 0) {
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
+		if (!load64) {
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
+		}
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 		*addrp = a;
 		goto rd0;

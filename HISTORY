@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.432 2005-01-02 16:04:05 debug Exp $
+$Id: HISTORY,v 1.433 2005-01-02 18:58:47 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1404,3 +1404,4 @@ HISTORY of mips64emul
 		Fix: SGI-IP27 is ARC64, not ARCS.
 20050101	Minor updates.
 20050102	Minor updates.
+		Fixing a 32-bit 'addu' bug in the bintrans backends.

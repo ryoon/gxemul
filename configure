@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.43 2004-07-26 00:39:36 debug Exp $
+#  $Id: configure,v 1.44 2004-07-26 01:26:43 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -239,9 +239,11 @@ if [ -x _testprog ]; then
 	printf "yes\n"
 	CWARNINGS="-Wall $CWARNINGS"
 
-	#  Compaq's compiler always seems to warn about the long long type:
+	#  Compaq's compiler always seems to warn about the long long type,
+	#  and unusedtop suppresses warnings about include files being
+	#  included more than once.
 	if [ z"$COMPAQCC" = zYES ]; then
-		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
+		CWARNINGS="$CWARNINGS -msg_disable longlongtype,unusedtop"
 	fi
 else
 	printf "no\n"
@@ -285,7 +287,7 @@ if [ ! -x _testr ]; then
 else
 	printf "no\n"
 fi
-rm -f _testr.c _testr
+rm -f _testr.[co] _testr
 
 
 #  strtoll/strtoull missing?
@@ -306,7 +308,7 @@ the case.\n"
 else
 	printf "found, ok\n"
 fi
-rm -f _tests.c _tests
+rm -f _tests.[co] _tests
 
 
 #############################################################################

@@ -36,6 +36,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 	Configure script:
 		o)  Only enable Alpha prefetch on pca56 or higher, not on
 		    ev4, ev5.
+		o)  inet_ntoa detection on HP-UX is probably broken
 		o)  Use getopts?
 		o)  X11 libs and headers via command line option?
 		o)  NetBSD X11 linking vs runtime issue?

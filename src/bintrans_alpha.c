@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.61 2004-11-24 13:51:49 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.62 2004-11-24 14:00:03 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1255,8 +1255,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			return 0;
 	}
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 0, 1);
-
 	a = *addrp;
 
 	/*
@@ -1553,7 +1551,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 0);
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }
 

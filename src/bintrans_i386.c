@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.23 2004-11-24 13:51:49 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.24 2004-11-24 14:00:04 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -1365,8 +1365,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			return 0;
 	}
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 0, 1);
-
 	a = *addrp;
 
 	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
@@ -1615,7 +1613,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 0);
+	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
 	return 1;
 }
 

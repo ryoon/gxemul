@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.95 2005-02-22 12:05:18 debug Exp $
+ *  $Id: arcbios.c,v 1.96 2005-03-20 11:11:39 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1220,7 +1220,10 @@ int arcbios_emul(struct cpu *cpu)
 		cpu->machine->exit_without_entering_debugger = 1;
 		break;
 	case 0x24:		/*  GetPeer(node)  */
-		{
+		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == 0) {
+			/*  NULL ptr argument: return NULL.  */
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
+		} else {
 			uint64_t peer;
 			cpu->memory_rw(cpu, cpu->mem,
 			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 * arc_wordlen,

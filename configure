@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.107 2005-02-13 18:36:33 debug Exp $
+#  $Id: configure,v 1.108 2005-02-19 13:00:36 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -389,9 +389,8 @@ fi
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
-if [ z$ENABLEMIPS = zYES ]; then
-	printf "checking for weird 'mips' define... "
-	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+printf "checking for weird 'mips' define... "
+printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef mips
 printf(\"1\");
 #undef mips
@@ -400,21 +399,20 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
-	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE mips define TEST"
-		printf " PROGRAM AT ALL!\n"
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE mips define TEST"
+	printf " PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z1 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef mips" >> config.h
 	else
-		if [ z`./_testm` = z1 ]; then
-			printf "yes, workaround applied\n"
-			echo "#undef mips" >> config.h
+		if [ z`./_testm` = z12 ]; then
+			printf "yes, but workaround not possible\n"
+			exit
 		else
-			if [ z`./_testm` = z12 ]; then
-				printf "yes, but workaround not possible\n"
-				exit
-			else
-				printf "no\n"
-			fi
+			printf "no\n"
 		fi
 	fi
 fi
@@ -423,9 +421,8 @@ rm -f _testm*
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined ppc like this.
-if [ z$ENABLEPPC = zYES ]; then
-	printf "checking for weird 'ppc' define... "
-	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+printf "checking for weird 'ppc' define... "
+printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef ppc
 printf(\"1\");
 #undef ppc
@@ -434,32 +431,30 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
-	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE ppc define TEST"
-		printf " PROGRAM AT ALL!\n"
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE ppc define TEST"
+	printf " PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z1 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef ppc" >> config.h
 	else
 		if [ z`./_testm` = z12 ]; then
-			printf "yes, workaround applied\n"
-			echo "#undef ppc" >> config.h
+			printf "yes, but workaround not possible\n"
+			exit
 		else
-			if [ z`./_testm` = z1 ]; then
-				printf "yes, but workaround not possible\n"
-				exit
-			else
-				printf "no\n"
-			fi
+			printf "no\n"
 		fi
 	fi
-	rm -f _testm*
 fi
+rm -f _testm*
 
 
 #  Similar to the mips define check above, although I don't know if
 #  any OS actually defined sparc like this.
-if [ z$ENABLESPARC = zYES ]; then
-	printf "checking for weird 'sparc' define... "
-	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
+printf "checking for weird 'sparc' define... "
+printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef sparc
 printf(\"1\");
 #undef sparc
@@ -468,25 +463,24 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
-	if [ ! -x _testm ]; then
-		printf "\nWARNING! COULD NOT COMPILE sparc define TEST "
-		printf "PROGRAM AT ALL!\n"
+$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+if [ ! -x _testm ]; then
+	printf "\nWARNING! COULD NOT COMPILE sparc define TEST "
+	printf "PROGRAM AT ALL!\n"
+else
+	if [ z`./_testm` = z1 ]; then
+		printf "yes, workaround applied\n"
+		echo "#undef sparc" >> config.h
 	else
 		if [ z`./_testm` = z12 ]; then
-			printf "yes, workaround applied\n"
-			echo "#undef sparc" >> config.h
+			printf "yes, but workaround not possible\n"
+			exit
 		else
-			if [ z`./_testm` = z1 ]; then
-				printf "yes, but workaround not possible\n"
-				exit
-			else
-				printf "no\n"
-			fi
+			printf "no\n"
 		fi
 	fi
-	rm -f _testm*
 fi
+rm -f _testm*
 
 
 #  CWARNINGS:
@@ -654,8 +648,8 @@ rm -f _testns.c _testns
 
 #  -lresolv for inet_pton?
 printf "checking whether -lresolv is required for inet_pton... "
-printf "extern void (*inet_pton)(void); int main(int argc, " > _testr.c
-printf "char *argv[]) { void *x; x = inet_pton; return 0; }\n" >> _testr.c
+printf "int inet_pton(void); int main(int argc, " > _testr.c
+printf "char *argv[]) { return inet_pton(); }\n" >> _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
 	$CC $CFLAGS _testr.c -lresolv -o _testr 2> /dev/null

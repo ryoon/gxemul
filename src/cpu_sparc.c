@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.6 2005-02-11 09:29:50 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.7 2005-02-19 13:00:37 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -37,7 +37,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "../config.h"
+#include "misc.h"
 
 
 #ifndef	ENABLE_SPARC
@@ -64,7 +64,6 @@ int sparc_cpu_family_init(struct cpu_family *fp)
 #include "cpu_sparc.h"
 #include "machine.h"
 #include "memory.h"
-#include "misc.h"
 #include "symbol.h"
 
 

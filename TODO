@@ -1,4 +1,4 @@
-$Id: TODO,v 1.120 2005-02-09 14:36:00 debug Exp $
+$Id: TODO,v 1.121 2005-02-19 13:00:36 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -96,6 +96,7 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Clean up stuff to make it possible to emulate multiple
 		    (different) machines simultaneously.
 		o)  Use same clock for all emulations and machines.
+		o)  Clean up the device stuff (registering of devices etc)
 		o)  Various SCSI and IDE controllers
 		o)  PS/2-style keyboard controller (for several machines)
 		o)  Generic busses;

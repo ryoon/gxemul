@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.11 2004-07-02 13:35:26 debug Exp $
+ *  $Id: dec_prom.c,v 1.12 2004-07-02 13:43:28 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -271,7 +271,8 @@ void decstation_prom_emul(struct cpu *cpu)
 	case 0x80:		/*  getsysid()  */
 		/*  debug("[ DEC PROM getsysid() ]\n");  */
 		/*  TODO:  why did I add the 0x82 stuff???  */
-		cpu->gpr[GPR_V0] = (0x82 << 24) + (machine << 16) + (0x3 << 8);
+		cpu->gpr[GPR_V0] = ((uint32_t)0x82 << 24)
+		    + (machine << 16) + (0x3 << 8);
 		break;
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n", (int)cpu->gpr[GPR_A0]);

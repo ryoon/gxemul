@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.51 2004-07-02 13:35:26 debug Exp $
+ *  $Id: coproc.c,v 1.52 2004-07-02 13:43:28 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -213,7 +213,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		case MIPS_5K:
 			/*  According to the MIPS64 5K User's Manual:  */
 			c->reg[COP0_CONFIG] =
-			      (   1 << 31)	/*  Config 1 present bit  */
+			      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
 			    | (   0 << 20)	/*  ISD:  instruction scheduling disable (=1)  */
 			    | (   0 << 17)	/*  DID:  dual issue disable  */
 			    | (   0 << 16)	/*  BM:   burst mode  */

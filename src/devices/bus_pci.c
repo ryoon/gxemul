@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.2 2004-01-06 09:00:55 debug Exp $
+ *  $Id: bus_pci.c,v 1.3 2004-01-06 14:28:12 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -72,6 +72,8 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case BUS_PCI_DATA:
 		if (writeflag == MEM_WRITE) {
 			debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n", (long long)*data);
+			if (*data == 0xffffffff)
+				pci_data->last_was_write_ffffffff = 1;
 		} else {
 			/*  Get the bus, device, and function numbers from the address:  */
 			bus        = (pci_data->pci_addr >> 16) & 0xff;
@@ -98,8 +100,14 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			}
 
 			*data = 0;
+
+			if (pci_data->last_was_write_ffffffff && registernr >= 0x10 && registernr <= 0x24)
+				*data = 0x00400000 - 1;		/*  TODO:  real length!!!  */
+			else
 			if (found->read_register != NULL)
 				*data = found->read_register(registernr);
+
+			pci_data->last_was_write_ffffffff = 0;
 
 			debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device %i, function %i, register 0x%02x): 0x%08lx ]\n",
 			    (long)pci_data->pci_addr, bus, device, function, registernr, (long)*data);
@@ -124,8 +132,8 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
  *
  *  Add a PCI device to a bus_pci device.
  */
-void bus_pci_add(struct pci_data *pci_data, struct memory *mem,
-	int bus, int device, int function, void (*init)(struct memory *mem), uint32_t (*read_register)(int reg))
+void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
+	int bus, int device, int function, void (*init)(struct cpu *, struct memory *), uint32_t (*read_register)(int reg))
 {
 	struct pci_device *new_device;
 
@@ -161,7 +169,7 @@ void bus_pci_add(struct pci_data *pci_data, struct memory *mem,
 
 	/*  Call the PCI device' init function:  */
 	if (init != NULL)
-		init(mem);
+		init(cpu, mem);
 }
 
 

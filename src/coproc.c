@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.41 2004-06-23 00:38:31 debug Exp $
+ *  $Id: coproc.c,v 1.42 2004-06-23 02:01:32 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1200,9 +1200,25 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				for (i=0; i<N_TRANSLATION_CACHE; i++)
 					cpu->translation_cached[i] = 0;
 
-				/*  ... and the last instruction page:  */
-				/*  (3 is an "impossible" value)  */
-				cpu->pc_last_virtual_page = 3;
+				/*
+				 *  ... and the last instruction page:
+				 *
+				 *  Some thoughts about this:  Code running in the
+				 *  kernel's physical address space has the same
+				 *  vaddr->paddr translation, so the last virtual page
+				 *  invalidation only needs to happen if we are for
+				 *  some extremely weird reason NOT running in the
+				 *  kernel's physical address space.
+				 *
+				 *  (An even insaner (but probably useless) optimization
+				 *  would be to only invalidate the last virtual page
+				 *  stuff if the TLB update actually affects the
+				 *  vaddr in question.)
+				 *
+				 *  (3 is an "impossible" value)
+				 */
+				if (cpu->pc < (uint64_t)0xffffffff80000000 || cpu->pc >= (uint64_t)0xffffffffc0000000)
+					cpu->pc_last_virtual_page = 3;
 
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)

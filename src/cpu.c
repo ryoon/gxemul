@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.64 2004-06-23 00:38:31 debug Exp $
+ *  $Id: cpu.c,v 1.65 2004-06-23 02:01:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -743,11 +743,29 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	} else
 #endif
 	    {
-		/*  32-bit instruction word:  */
-		instr_fetched = memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
+		/*
+		 *  Fetch a 32-bit instruction word from memory:
+		 *
+		 *  1)  The special case of reading an instruction from the
+		 *      same host RAM page as the last one is handled here,
+		 *      to gain a little bit performance.
+		 *
+		 *  2)  Fallback to reading from memory the usual way.
+		 */
+		if (cpu->pc_last_was_in_host_ram && (cpu->pc & ~0xfff) == cpu->pc_last_virtual_page) {
+			uint64_t paddr = cpu->pc_last_physical_page | (cpu->pc & 0xfff);
+			int offset = paddr & ((1 << cpu->mem->bits_per_memblock) - 1);
+			memcpy(instr, cpu->pc_last_host_memblock + offset, sizeof(instr));
 
-		if (!instr_fetched)
-			return 0;
+			/*  TODO:  Make sure this works with dynamic binary translation...  */
+
+			instr_fetched = MEMORY_ACCESS_OK;
+                } else {
+			instr_fetched = memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION);
+
+			if (!instr_fetched)
+				return 0;
+		}
 
 /* ***************************************************************************************** */
 #if 0

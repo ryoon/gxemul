@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.150 2005-01-30 22:42:01 debug Exp $
+ *  $Id: emul.c,v 1.151 2005-01-31 06:02:20 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -41,13 +41,13 @@
 #include "arcbios.h"
 #include "bintrans.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "emul.h"
 #include "console.h"
 #include "debugger.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 #include "net.h"
 #include "sgi_arcbios.h"
@@ -419,119 +419,119 @@ static void add_arc_components(struct machine *m)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-void emul_machine_setup(struct machine *machine, int n_load,
+void emul_machine_setup(struct machine *m, int n_load,
 	char **load_names)
 {
 	struct emul *emul;
 	int i, iadd=4;
-	uint64_t addr, memory_amount;
+	uint64_t addr, memory_amount, entrypoint = 0, gp = 0;
+	int byte_order;
 
-	emul = machine->emul;
+	emul = m->emul;
 
-	debug("machine \"%s\":\n", machine->name);
+	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
 
-	if (machine->machine_type == MACHINE_NONE) {
+	if (m->machine_type == MACHINE_NONE) {
 		fatal("No machine type specified?\n");
 		exit(1);
 	}
 
-	machine_memsize_fix(machine);
+	machine_memsize_fix(m);
 
 	/*  Create the system's memory:  */
-	debug("memory: %i MB", machine->physical_ram_in_mb);
-	memory_amount = (uint64_t)machine->physical_ram_in_mb * 1048576;
-	if (machine->memory_offset_in_mb > 0) {
+	debug("memory: %i MB", m->physical_ram_in_mb);
+	memory_amount = (uint64_t)m->physical_ram_in_mb * 1048576;
+	if (m->memory_offset_in_mb > 0) {
 		/*
 		 *  A special hack is used for some SGI models,
 		 *  where memory is offset by 128MB to leave room for
 		 *  EISA space and other things.
 		 */
-		debug(" (offset by %iMB)", machine->memory_offset_in_mb);
-		memory_amount += 1048576 * machine->memory_offset_in_mb;
+		debug(" (offset by %iMB)", m->memory_offset_in_mb);
+		memory_amount += 1048576 * m->memory_offset_in_mb;
 	}
-	machine->memory = memory_new(memory_amount);
+	m->memory = memory_new(memory_amount);
 	debug("\n");
 
 	/*  Create CPUs:  */
-	if (machine->cpu_name == NULL)
-		machine_default_cputype(machine);
-	if (machine->ncpus == 0) {
+	if (m->cpu_name == NULL)
+		machine_default_cputype(m);
+	if (m->ncpus == 0) {
 		/*  TODO: This should be moved elsewhere...  */
-		if (machine->machine_type == MACHINE_ARC &&
-		    machine->machine_subtype == MACHINE_ARC_NEC_R96)
-			machine->ncpus = 2;
-		else if (machine->machine_type == MACHINE_ARC &&
-		    machine->machine_subtype == MACHINE_ARC_NEC_R98)
-			machine->ncpus = 4;
+		if (m->machine_type == MACHINE_ARC &&
+		    m->machine_subtype == MACHINE_ARC_NEC_R96)
+			m->ncpus = 2;
+		else if (m->machine_type == MACHINE_ARC &&
+		    m->machine_subtype == MACHINE_ARC_NEC_R98)
+			m->ncpus = 4;
 		else
-			machine->ncpus = 1;
+			m->ncpus = 1;
 	}
-	machine->cpus = malloc(sizeof(struct cpu *) * machine->ncpus);
-	if (machine->cpus == NULL) {
+	m->cpus = malloc(sizeof(struct cpu *) * m->ncpus);
+	if (m->cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(machine->cpus, 0, sizeof(struct cpu *) * machine->ncpus);
+	memset(m->cpus, 0, sizeof(struct cpu *) * m->ncpus);
 
 	/*  Initialize dynamic binary translation, if available:  */
-	if (machine->bintrans_enable)
-		bintrans_init(machine->memory);
+	if (m->bintrans_enable)
+		bintrans_init(m->memory);
 
 	debug("cpu0");
-	if (machine->ncpus > 1)
-		debug(" .. cpu%i", machine->ncpus - 1);
+	if (m->ncpus > 1)
+		debug(" .. cpu%i", m->ncpus - 1);
 	debug(": ");
-	for (i=0; i<machine->ncpus; i++) {
-		machine->cpus[i] = cpu_new(machine->memory, machine,
-		    i, machine->cpu_name);
-		if (machine->bintrans_enable)
-			bintrans_init_cpu(machine->cpus[i]);
+	for (i=0; i<m->ncpus; i++) {
+		m->cpus[i] = cpu_new(m->memory, m, i, m->cpu_name);
+		if (m->bintrans_enable)
+			bintrans_init_cpu(m->cpus[i]);
 	}
 	debug("\n");
 
-	if (machine->use_random_bootstrap_cpu)
-		machine->bootstrap_cpu = random() % machine->ncpus;
+	if (m->use_random_bootstrap_cpu)
+		m->bootstrap_cpu = random() % m->ncpus;
 	else
-		machine->bootstrap_cpu = 0;
+		m->bootstrap_cpu = 0;
 
-	if (machine->use_x11)
-		x11_init(machine);
+	if (m->use_x11)
+		x11_init(m);
 
 	/*  Fill memory with random bytes:  */
-	if (machine->random_mem_contents) {
-		for (i=0; i<machine->physical_ram_in_mb*1048576; i+=256) {
+	/*  TODO: This is MIPS-specific!  */
+	if (m->random_mem_contents) {
+		for (i=0; i<m->physical_ram_in_mb * 1048576; i+=256) {
 			unsigned char data[256];
 			unsigned int j;
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0xffffffff80000000ULL + i;
-			memory_rw(machine->cpus[machine->bootstrap_cpu],
-			    machine->memory, addr, data, sizeof(data),
+			memory_rw(m->cpus[m->bootstrap_cpu],
+			    m->memory, addr, data, sizeof(data),
 			    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		}
 	}
 
-	if ((machine->machine_type == MACHINE_ARC ||
-	    machine->machine_type == MACHINE_SGI) && machine->prom_emulation)
+	if ((m->machine_type == MACHINE_ARC ||
+	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		arcbios_init();
 
-	if (machine->userland_emul) {
+	if (m->userland_emul) {
 		/*
 		 *  For userland-only emulation, no machine emulation
 		 *  is needed.
 		 */
 	} else {
-		machine_setup(machine);
+		machine_setup(m);
 	}
 
-	diskimage_dump_info(machine);
+	diskimage_dump_info(m);
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (n_load == 0) {
-		if (machine->first_diskimage != NULL)
-			load_bootblock(machine,
-			    machine->cpus[machine->bootstrap_cpu]);
+		if (m->first_diskimage != NULL)
+			load_bootblock(m, m->cpus[m->bootstrap_cpu]);
 		else {
 			fprintf(stderr, "No executable file(s) loaded, and "
 			    "we are not booting directly from a disk image."
@@ -541,15 +541,40 @@ void emul_machine_setup(struct machine *machine, int n_load,
 	}
 
 	while (n_load > 0) {
-		uint64_t entrypoint = 0, gp = 0;
-		int byte_order;
+		file_load(m, m->memory, *load_names, &entrypoint,
+		    m->arch, &gp, &byte_order);
 
-		file_load(machine, machine->memory, *load_names, &entrypoint,
-		    machine->arch, &gp, &byte_order);
+		m->cpus[m->bootstrap_cpu]->byte_order = byte_order;
 
-		machine->cpus[machine->bootstrap_cpu]->byte_order = byte_order;
-		machine->cpus[machine->bootstrap_cpu]->cd.mips.pc = entrypoint;
-		machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP] = gp;
+		switch (m->arch) {
+		case ARCH_MIPS:
+			m->cpus[m->bootstrap_cpu]->cd.mips.pc = entrypoint;
+
+			if ((m->cpus[m->bootstrap_cpu]->cd.mips.pc >> 32) == 0
+			    && (m->cpus[m->bootstrap_cpu]->
+			    cd.mips.pc & 0x80000000ULL))
+				m->cpus[m->bootstrap_cpu]->
+				    cd.mips.pc |= 0xffffffff00000000ULL;
+
+			m->cpus[m->bootstrap_cpu]->
+			    cd.mips.gpr[MIPS_GPR_GP] = gp;
+
+			if ((m->cpus[m->bootstrap_cpu]->
+			    cd.mips.gpr[MIPS_GPR_GP] >> 32) == 0 &&
+			    (m->cpus[m->bootstrap_cpu]->
+			    cd.mips.gpr[MIPS_GPR_GP] & 0x80000000ULL))
+				m->cpus[m->bootstrap_cpu]->
+				    cd.mips.gpr[MIPS_GPR_GP] |=
+				    0xffffffff00000000ULL;
+			break;
+		case ARCH_PPC:
+			m->cpus[m->bootstrap_cpu]->
+			    cd.ppc.pc = entrypoint;
+			break;
+		default:
+			fatal("emul_machine_setup(): Internal error.\n");
+			exit(1);
+		}
 
 		/*
 		 *  For userland emulation, the remaining items
@@ -559,73 +584,74 @@ void emul_machine_setup(struct machine *machine, int n_load,
 		 *  The program's name will be in load_names[0], and the
 		 *  rest of the parameters in load_names[1] and up.
 		 */
-		if (machine->userland_emul)
+		if (m->userland_emul)
 			break;
 
 		n_load --;
 		load_names ++;
 	}
 
-	if ((machine->cpus[machine->bootstrap_cpu]->cd.mips.pc >> 32) == 0 &&
-	    (machine->cpus[machine->bootstrap_cpu]->cd.mips.pc & 0x80000000ULL))
-		machine->cpus[machine->bootstrap_cpu]->cd.mips.pc |=
-		    0xffffffff00000000ULL;
-
-	if ((machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]
-			>> 32) == 0 &&
-	    (machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]
-			& 0x80000000ULL))
-		machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP] |=
-		    0xffffffff00000000ULL;
-
-	if (machine->byte_order_override != NO_BYTE_ORDER_OVERRIDE)
-		machine->cpus[machine->bootstrap_cpu]->byte_order =
-		    machine->byte_order_override;
+	if (m->byte_order_override != NO_BYTE_ORDER_OVERRIDE)
+		m->cpus[m->bootstrap_cpu]->byte_order =
+		    m->byte_order_override;
 
 	/*  Same byte order for all CPUs:  */
-	for (i=0; i<machine->ncpus; i++)
-		if (i != machine->bootstrap_cpu)
-			machine->cpus[i]->byte_order =
-			    machine->cpus[machine->bootstrap_cpu]->byte_order;
+	for (i=0; i<m->ncpus; i++)
+		if (i != m->bootstrap_cpu)
+			m->cpus[i]->byte_order =
+			    m->cpus[m->bootstrap_cpu]->byte_order;
 
-	if (machine->userland_emul)
-		useremul_init(machine->cpus[machine->bootstrap_cpu],
-		    n_load, load_names);
+	if (m->userland_emul)
+		useremul_init(m->cpus[m->bootstrap_cpu], n_load, load_names);
 
 	/*  Startup the bootstrap CPU:  */
-	machine->cpus[machine->bootstrap_cpu]->bootstrap_cpu_flag = 1;
-	machine->cpus[machine->bootstrap_cpu]->running            = 1;
+	m->cpus[m->bootstrap_cpu]->bootstrap_cpu_flag = 1;
+	m->cpus[m->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
-	add_dump_points(machine);
+	add_dump_points(m);
 
-	add_symbol_name(&machine->symbol_context,
+	/*  TODO: This is MIPS-specific!  */
+	add_symbol_name(&m->symbol_context,
 	    0x9fff0000, 0x10000, "r2k3k_cache", 0);
-	symbol_recalc_sizes(&machine->symbol_context);
 
-	if (machine->max_random_cycles_per_chunk > 0)
+	symbol_recalc_sizes(&m->symbol_context);
+
+	if (m->max_random_cycles_per_chunk > 0)
 		debug("using random cycle chunks (1 to %i cycles)\n",
-		    machine->max_random_cycles_per_chunk);
+		    m->max_random_cycles_per_chunk);
 
 	/*  Special hack for ARC/SGI emulation:  */
-	if ((machine->machine_type == MACHINE_ARC ||
-	    machine->machine_type == MACHINE_SGI) && machine->prom_emulation)
-		add_arc_components(machine);
+	if ((m->machine_type == MACHINE_ARC ||
+	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
+		add_arc_components(m);
 
-	debug("starting cpu%i at ", machine->bootstrap_cpu);
-	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level < 3 ||
-	    machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level == 32) {
-		debug("0x%08x", (int)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
-		if (machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP] != 0)
-			debug(" (gp=0x%08x)", (int)machine->cpus[
-			    machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]);
-	} else {
-		debug("0x%016llx", (long long)machine->cpus[
-		    machine->bootstrap_cpu]->cd.mips.pc);
-		if (machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]
-		    != 0)
-			debug(" (gp=0x%016llx)", (long long)machine->
-			    cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]);
+	debug("starting cpu%i at ", m->bootstrap_cpu);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		if (m->cpus[m->bootstrap_cpu]->
+		    cd.mips.cpu_type.isa_level < 3 ||
+		    m->cpus[m->bootstrap_cpu]->
+		    cd.mips.cpu_type.isa_level == 32) {
+			debug("0x%08x", (int)m->cpus[
+			    m->bootstrap_cpu]->cd.mips.pc);
+			if (m->cpus[m->bootstrap_cpu]->
+			    cd.mips.gpr[MIPS_GPR_GP] != 0)
+				debug(" (gp=0x%08x)", (int)m->cpus[
+				    m->bootstrap_cpu]->cd.mips.gpr[
+				    MIPS_GPR_GP]);
+		} else {
+			debug("0x%016llx", (long long)m->cpus[
+			    m->bootstrap_cpu]->cd.mips.pc);
+			if (m->cpus[m->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]
+			    != 0)
+				debug(" (gp=0x%016llx)", (long long)m->
+				    cpus[m->bootstrap_cpu]->cd.mips.gpr[
+				    MIPS_GPR_GP]);
+		}
+		break;
+	default:
+		debug("0x%016llx", (long long)entrypoint);
 	}
 	debug("\n");
 

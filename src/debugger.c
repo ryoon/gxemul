@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.71 2005-01-31 05:45:52 debug Exp $
+ *  $Id: debugger.c,v 1.72 2005-01-31 06:02:20 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -85,16 +85,21 @@ volatile int single_step = 0;
 int force_debugger_at_exit = 0;
 int show_opcode_statistics = 0;
 
+int old_instruction_trace = 0;
+int old_quiet_mode = 0;
+int old_show_trace_tree = 0;
+
+
+/*
+ *  Private (global) debugger variables:
+ */
+
 static volatile int ctrl_c;
 
 static int debugger_n_emuls;
 static struct emul **debugger_emuls;
 static struct emul *debugger_emul;
 static struct machine *debugger_machine;
-
-int old_instruction_trace = 0;
-int old_quiet_mode = 0;
-int old_show_trace_tree = 0;
 
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
@@ -156,7 +161,7 @@ void debugger_activate(int x)
  *  Some examples:
  *
  *	"0x7fff1234"		==> numeric value (hex, in this case)
- *	"pc", "r5", "hi", "t4"	==> register
+ *	"pc", "r5", "hi", "t4"	==> register (CPU dependant)
  *	"memcpy+64"		==> symbol (plus offset)
  *
  *  Register names can be preceeded by "x:" where x is the CPU number. (CPU

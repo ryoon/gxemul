@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.541 2005-01-30 14:22:14 debug Exp $
+$Id: HISTORY,v 1.542 2005-01-30 22:42:47 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1589,3 +1589,4 @@ HISTORY of mips64emul
 		Adding a dummy cpu_ppc.c.
 		Removing the UltraSPARC bintrans backend.
 		Many other minor updates.
+		src/file.c should now be free from MIPS-dependancies.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.319 2005-01-30 19:01:55 debug Exp $
+ *  $Id: machine.c,v 1.320 2005-01-30 22:42:01 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -175,7 +175,7 @@ struct machine *machine_new(char *name, struct emul *emul)
  *  Also, any errors/warnings are printed using fatal()/debug().
  */
 int machine_name_to_type(char *stype, char *ssubtype,
-	int *type, int *subtype)
+	int *type, int *subtype, int *arch)
 {
 	struct machine_entry *me;
 	int i, j, k;
@@ -189,6 +189,8 @@ int machine_name_to_type(char *stype, char *ssubtype,
 			if (strcasecmp(me->aliases[i], stype) == 0) {
 				/*  Found a type:  */
 				*type = me->machine_type;
+				*arch = me->arch;
+printf("ARCH = %i\n", me->arch);
 				if (me->n_subtypes == 0)
 					return 1;
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.19 2005-01-30 19:01:54 debug Exp $
+ *  $Id: machine.h,v 1.20 2005-01-30 22:42:00 debug Exp $
  */
 
 #include <sys/types.h>
@@ -54,8 +54,10 @@ struct machine {
 	/*  Name as choosen by the user:  */
 	char	*name;
 
-	int	machine_type;
-	int	machine_subtype;
+	int	arch;			/*  ARCH_MIPS, ARCH_PPC, ..  */
+	int	machine_type;		/*  MACHINE_DEC, ..  */
+	int	machine_subtype;	/*  MACHINE_DEC_3MAX_5000, ..  */
+
 	char	*machine_name;
 
 	/*
@@ -159,6 +161,7 @@ struct machine {
  *  Machine emulation types:
  */
 
+#define	ARCH_NOARCH		0
 #define	ARCH_MIPS		1
 #define	ARCH_PPC		2
 
@@ -249,7 +252,7 @@ struct machine {
 /*  machine.c:  */
 struct machine *machine_new(char *name, struct emul *emul);
 int machine_name_to_type(char *stype, char *ssubtype,
-	int *type, int *subtype);
+	int *type, int *subtype, int *arch);
 void machine_add_tickfunction(struct machine *machine,
 	void (*func)(struct cpu *, void *), void *extra, int clockshift);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.218 2005-01-30 13:39:44 debug Exp $
+ *  $Id: misc.h,v 1.219 2005-01-30 22:42:01 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -108,7 +108,9 @@ int decstation_prom_emul(struct cpu *cpu);
 
 /*  file.c:  */
 int file_n_executables_loaded(void);
-void file_load(struct memory *mem, char *filename, struct cpu *cpu);
+void file_load(struct machine *machine, struct memory *mem,
+	char *filename, uint64_t *entrypointp,
+	int arch, uint64_t *gpp, int *byte_order);
 
 
 /*  main.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.57 2005-01-30 14:22:15 debug Exp $
+ *  $Id: file.c,v 1.58 2005-01-30 22:42:01 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -51,7 +51,6 @@
 #include "exec_elf.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 #include "symbol.h"
 
@@ -131,7 +130,8 @@ extern uint64_t file_loaded_end_addr;
  *         formats, where text/data are aligned differently.
  */
 static void file_load_aout(struct machine *m, struct memory *mem,
-	char *filename, struct cpu *cpu, int osf1_hack)
+	char *filename, int osf1_hack,
+	uint64_t *entrypointp, int arch, int *byte_orderp)
 {
 	struct exec aout_header;
 	FILE *f;
@@ -192,7 +192,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		    len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0)
-			memory_rw(cpu, mem, vaddr, &buf[0], len,
+			memory_rw(m->cpus[0], mem, vaddr, &buf[0], len,
 			    MEM_WRITE, NO_EXCEPTIONS);
 		else {
 			if (osf1_hack)
@@ -265,12 +265,12 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 	fclose(f);
 
-	cpu->cd.mips.pc = entry;
+	*entrypointp = entry;
 
 	if (encoding == ELFDATA2LSB)
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+		*byte_orderp = EMUL_LITTLE_ENDIAN;
 	else
-		cpu->byte_order = EMUL_BIG_ENDIAN;
+		*byte_orderp = EMUL_BIG_ENDIAN;
 
 	n_executables_loaded ++;
 }
@@ -283,7 +283,8 @@ static void file_load_aout(struct machine *m, struct memory *mem,
  *  (read from the ecoff header) is stored in the specified CPU's registers.
  */
 static void file_load_ecoff(struct machine *m, struct memory *mem,
-	char *filename, struct cpu *cpu)
+	char *filename, uint64_t *entrypointp,
+	int arch, uint64_t *gpp, int *byte_orderp)
 {
 	struct ecoff_exechdr exechdr;
 	int f_magic, f_nscns, f_nsyms;
@@ -389,7 +390,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			len = fread(buf, 1, chunk_size, f);
 
 			if (len > 0)
-				memory_rw(cpu, mem, where, &buf[0], len,
+				memory_rw(m->cpus[0], mem, where, &buf[0], len,
 				    MEM_WRITE, NO_EXCEPTIONS);
 			where += len;
 			total_len += len;
@@ -466,8 +467,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					break;
 				}
 
-				memory_rw(cpu, mem, s_vaddr, &buf[0], len,
-				    MEM_WRITE, NO_EXCEPTIONS);
+				memory_rw(m->cpus[0], mem, s_vaddr, &buf[0],
+				    len, MEM_WRITE, NO_EXCEPTIONS);
 				s_vaddr += len;
 				total_len += len;
 			}
@@ -571,14 +572,14 @@ unknown_coff_symbols:
 
 	fclose(f);
 
-	cpu->cd.mips.pc               = a_entry;
-	cpu->cd.mips.gpr[MIPS_GPR_GP] = a_gp;
-	file_loaded_end_addr          = end_addr;
+	*entrypointp = a_entry;
+	*gpp = a_gp;
+	file_loaded_end_addr = end_addr;
 
 	if (encoding == ELFDATA2LSB)
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+		*byte_orderp = EMUL_LITTLE_ENDIAN;
 	else
-		cpu->byte_order = EMUL_BIG_ENDIAN;
+		*byte_orderp = EMUL_BIG_ENDIAN;
 
 	n_executables_loaded ++;
 }
@@ -593,7 +594,8 @@ unknown_coff_symbols:
  *      http://www.ndsu.nodak.edu/instruct/tareski/373f98/notes/srecord.htm
  *  or  http://www.amelek.gda.pl/avr/uisp/srecord.htm
  */
-static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_srec(struct machine *m, struct memory *mem,
+	char *filename, uint64_t *entrypointp)
 {
 	FILE *f;
 	unsigned char buf[516];
@@ -694,7 +696,7 @@ static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 			case 3:	data_start = 4;
 				vaddr = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
 			}
-			memory_rw(cpu, mem, vaddr, &bytes[data_start],
+			memory_rw(m->cpus[0], mem, vaddr, &bytes[data_start],
 			    count - 1 - data_start, MEM_WRITE, NO_EXCEPTIONS);
 			total_bytes_loaded += count - 1 - data_start;
 			break;
@@ -725,7 +727,7 @@ static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 	if (!entry_set)
 		debug("WARNING! no entrypoint found!\n");
 	else
-		cpu->cd.mips.pc = entry;
+		*entrypointp = entry;
 
 	n_executables_loaded ++;
 }
@@ -738,7 +740,8 @@ static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
  *  of the following form:     loadaddress:filename
  *  or    loadaddress:skiplen:filename
  */
-static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
+static void file_load_raw(struct machine *m, struct memory *mem,
+	char *filename, uint64_t *entrypointp)
 {
 	FILE *f;
 	int len;
@@ -777,7 +780,7 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 		len = fread(buf, 1, sizeof(buf), f);
 
 		if (len > 0)
-			memory_rw(cpu, mem, vaddr, &buf[0],
+			memory_rw(m->cpus[0], mem, vaddr, &buf[0],
 			    len, MEM_WRITE, NO_EXCEPTIONS);
 
 		vaddr += len;
@@ -791,7 +794,7 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 
 	fclose(f);
 
-	cpu->cd.mips.pc = entry;
+	*entrypointp = entry;
 
 	n_executables_loaded ++;
 }
@@ -809,7 +812,8 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
  *  executables.
  */
 static void file_load_elf(struct machine *m, struct memory *mem,
-	char *filename, struct cpu *cpu)
+	char *filename, uint64_t *entrypointp, int arch, uint64_t *gpp,
+	int *byte_order)
 {
 	Elf32_Ehdr hdr32;
 	Elf64_Ehdr hdr64;
@@ -1053,7 +1057,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 				while (i < len) {
 					size_t len_to_copy;
 					len_to_copy = (i + align_len) <= len? align_len : len - i;
-					memory_rw(cpu, mem, p_vaddr + ofs, &ch[i],
+					memory_rw(m->cpus[0], mem, p_vaddr + ofs, &ch[i],
 					    len_to_copy, MEM_WRITE, NO_EXCEPTIONS);
 					ofs += align_len;
 					i += align_len;
@@ -1230,17 +1234,17 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					debug("%016llx\n", (long long)addr);
 				else
 					debug("%08x\n", (int)addr);
-				cpu->cd.mips.gpr[MIPS_GPR_GP] = addr;
+				*gpp = addr;
 			}
 		}
 	}
 
-	cpu->cd.mips.pc = eentry;
+	*entrypointp = eentry;
 
 	if (encoding == ELFDATA2LSB)
-		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+		*byte_order = EMUL_LITTLE_ENDIAN;
 	else
-		cpu->byte_order = EMUL_BIG_ENDIAN;
+		*byte_order = EMUL_BIG_ENDIAN;
 
 	n_executables_loaded ++;
 }
@@ -1267,13 +1271,27 @@ int file_n_executables_loaded(void)
  *  If the filename doesn't exist, try to treat the name as
  *   "address:filename" and load the file as a raw binary.
  */
-void file_load(struct memory *mem, char *filename, struct cpu *cpu)
+void file_load(struct machine *machine, struct memory *mem,
+	char *filename, uint64_t *entrypointp,
+	int arch, uint64_t *gpp, int *byte_orderp)
 {
 	int iadd = 4;
 	FILE *f;
 	unsigned char minibuf[12];
 	int len, i;
 	off_t size;
+
+	if (byte_orderp == NULL) {
+		fprintf(stderr, "file_load(): byte_order == NULL\n");
+		exit(1);
+	}
+
+	*byte_orderp = EMUL_BIG_ENDIAN;
+
+	if (arch == ARCH_NOARCH) {
+		fprintf(stderr, "file_load(): FATAL ERROR: no arch?\n");
+		exit(1);
+	}
 
 	if (mem == NULL || filename == NULL) {
 		fprintf(stderr, "file_load(): mem or filename is NULL\n");
@@ -1289,7 +1307,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
-		file_load_raw(mem, filename, cpu);
+		file_load_raw(machine, mem, filename, entrypointp);
 		goto ret;
 	}
 
@@ -1315,17 +1333,20 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	/*  Is it an ELF?  */
 	if (minibuf[1]=='E' && minibuf[2]=='L' && minibuf[3]=='F') {
-		file_load_elf(cpu->machine, mem, filename, cpu);
+		file_load_elf(machine, mem, filename,
+		    entrypointp, arch, gpp, byte_orderp);
 		goto ret;
 	}
 
 	/*  Is it an a.out?  (Special case for DEC OSF1 kernels.)  */
 	if (minibuf[0]==0x00 && minibuf[1]==0x8b && minibuf[2]==0x01 && minibuf[3]==0x07) {
-		file_load_aout(cpu->machine, mem, filename, cpu, 0);
+		file_load_aout(machine, mem, filename, 0,
+		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}
 	if (minibuf[0]==0x00 && minibuf[2]==0x00 && minibuf[8]==0x7a && minibuf[9]==0x75) {
-		file_load_aout(cpu->machine, mem, filename, cpu, 1);
+		file_load_aout(machine, mem, filename, 1,
+		    entrypointp, arch, byte_orderp);
 		goto ret;
 	}
 
@@ -1347,13 +1368,14 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL2 ||
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEB3 ||
 	    minibuf[1]+256*minibuf[0] == ECOFF_MAGIC_MIPSEL3) {
-		file_load_ecoff(cpu->machine, mem, filename, cpu);
+		file_load_ecoff(machine, mem, filename, entrypointp,
+		    arch, gpp, byte_orderp);
 		goto ret;
 	}
 
 	/*  Is it a Motorola SREC file?  */
 	if ((minibuf[0]=='S' && minibuf[1]>='0' && minibuf[1]<='9')) {
-		file_load_srec(mem, filename, cpu);
+		file_load_srec(machine, mem, filename, entrypointp);
 		goto ret;
 	}
 
@@ -1365,20 +1387,20 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	 *  symbol file.
 	 */
 	for (i=0; i<(signed)sizeof(minibuf); i++)
-		if (minibuf[i] < 32)
-			if (minibuf[i] != '\t' && minibuf[i] != '\n' &&
-			    minibuf[i] != '\r' && minibuf[i] != '\f') {
-				fprintf(stderr, "\nThe file format of '%s' is unknown.\n", filename);
-				for (i=0; i<(signed)sizeof(minibuf); i++)
-					fprintf(stderr, " %02x", minibuf[i]);
-				fprintf(stderr, "\n");
-				fprintf(stderr, "Possible explanations:\n\n");
-				fprintf(stderr, "  o)  If this is a disk image, you forgot '-d' on the command line.\n");
-				fprintf(stderr, "  o)  This is an unsupported binary format.\n");
-				exit(1);
-			}
+		if (minibuf[i] < 32 && minibuf[i] != '\t' &&
+		    minibuf[i] != '\n' && minibuf[i] != '\r' &&
+		    minibuf[i] != '\f') {
+			fprintf(stderr, "\nThe file format of '%s' is unknown.\n", filename);
+			for (i=0; i<(signed)sizeof(minibuf); i++)
+				fprintf(stderr, " %02x", minibuf[i]);
+			fprintf(stderr, "\n");
+			fprintf(stderr, "Possible explanations:\n\n");
+			fprintf(stderr, "  o)  If this is a disk image, you forgot '-d' on the command line.\n");
+			fprintf(stderr, "  o)  This is an unsupported binary format.\n");
+			exit(1);
+		}
 
-	symbol_readfile(&cpu->machine->symbol_context, filename);
+	symbol_readfile(&machine->symbol_context, filename);
 
 ret:
 	debug_indentation(-iadd);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.149 2005-01-30 19:16:26 debug Exp $
+ *  $Id: emul.c,v 1.150 2005-01-30 22:42:01 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -541,8 +541,15 @@ void emul_machine_setup(struct machine *machine, int n_load,
 	}
 
 	while (n_load > 0) {
-		file_load(machine->memory, *load_names,
-		    machine->cpus[machine->bootstrap_cpu]);
+		uint64_t entrypoint = 0, gp = 0;
+		int byte_order;
+
+		file_load(machine, machine->memory, *load_names, &entrypoint,
+		    machine->arch, &gp, &byte_order);
+
+		machine->cpus[machine->bootstrap_cpu]->byte_order = byte_order;
+		machine->cpus[machine->bootstrap_cpu]->cd.mips.pc = entrypoint;
+		machine->cpus[machine->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP] = gp;
 
 		/*
 		 *  For userland emulation, the remaining items

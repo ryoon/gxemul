@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.194 2005-01-30 19:01:55 debug Exp $
+ *  $Id: main.c,v 1.195 2005-01-30 22:42:02 debug Exp $
  */
 
 #include <stdio.h>
@@ -331,10 +331,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
+			m->arch = ARCH_MIPS;
 			m->machine_type = MACHINE_ARC;
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'a':
+			m->arch = ARCH_MIPS;
 			m->machine_type = MACHINE_MIPSTEST;
 			m->machine_subtype = 0;
 			break;
@@ -347,6 +349,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'D':
+			m->arch = ARCH_MIPS;
 			m->machine_type = MACHINE_DEC;
 			m->machine_subtype = atoi(optarg);
 			break;
@@ -364,6 +367,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			msopts = 1;
 			break;
 		case 'G':
+			m->arch = ARCH_MIPS;
 			m->machine_type = MACHINE_SGI;
 			m->machine_subtype = atoi(optarg);
 			break;
@@ -530,7 +534,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		if (subtype == NULL)
 			subtype = "";
 		res = machine_name_to_type(type, subtype,
-		    &m->machine_type, &m->machine_subtype);
+		    &m->machine_type, &m->machine_subtype, &m->arch);
 		if (!res)
 			exit(1);
 	}

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.282 2004-10-29 06:41:05 debug Exp $
+$Id: HISTORY,v 1.283 2004-10-29 09:48:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1080,3 +1080,6 @@ HISTORY of mips64emul
 		now "-aN" which works fine with OpenBSD/arc and NetBSD/arc.
 20041027	Minor updates.
 20041029	Adding a Sony NeWS "newsmips" emulation mode skeleton (-f).
+		Foudn and fixed a bug which prevented Linux/IP32 from running
+		(the speed-hack-jump-optimization fix I made a few weeks ago
+		was buggy).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.213 2004-10-29 06:51:16 debug Exp $
+ *  $Id: machine.c,v 1.214 2004-10-29 09:48:24 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2573,8 +2573,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
 
-			strncpy(arc_cpu_name, emul->emul_cpu_name,
-			    sizeof(arc_cpu_name));
+			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
+			    "MIPS-%s", emul->emul_cpu_name);
 			arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
 			for (jj=0; jj<strlen(arc_cpu_name); jj++)
 				if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.171 2004-10-22 21:13:55 debug Exp $
+ *  $Id: cpu.c,v 1.172 2004-10-29 09:48:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2319,7 +2319,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			    cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt &&
 			    cpu->jump_to_self_reg == rs) {
-				if ((int64_t)cpu->gpr[rt] > 1 && imm <= -1) {
+				if ((int64_t)cpu->gpr[rt] > 1 && (int64_t)cpu->gpr[rt] < 40000
+				    && (imm >= -30000 && imm <= -1)) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
@@ -2331,11 +2332,12 @@ static int cpu_run_instr(struct cpu *cpu)
 
 					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
-				if ((int64_t)cpu->gpr[rt] < -1 && imm >= 1) {
+				if ((int64_t)cpu->gpr[rt] > -40000 && (int64_t)cpu->gpr[rt] < -1
+				     && (imm >= 1 && imm <= 30000)) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
-					while ((int64_t)cpu->gpr[rt] > 0)
+					while ((int64_t)cpu->gpr[rt] < 0)
 						cpu->gpr[rt] += (int64_t)imm;
 
 					if (instruction_trace_cached)

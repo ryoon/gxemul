@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.12 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.13 2004-10-29 09:48:23 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -43,6 +43,10 @@
 #define	FAKE_GBE_FB_ADDRESS	0x38000000
 
 #define	GBE_DEBUG
+
+#define	GBE_DEFAULT_XRES		640
+#define	GBE_DEFAULT_YRES		480
+
 
 struct sgi_gbe_data {
 	int		xres, yres;
@@ -365,8 +369,8 @@ void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sgi_gbe_data));
-	d->xres = 640;
-	d->yres = 480;
+	d->xres = GBE_DEFAULT_XRES;
+	d->yres = GBE_DEFAULT_YRES;
 	d->bitdepth = 8;
 	d->control = 0x20aa000;		/*  or 0x00000001?  */
 	d->fb_data = dev_fb_init(cpu, mem, FAKE_GBE_FB_ADDRESS,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.46 2004-06-28 23:26:17 debug Exp $
+ *  $Id: memory.c,v 1.47 2004-06-29 00:04:41 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -751,9 +751,12 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	 *  here if pc_last_was_in_host_ram is true,
 	 *  as it's done at instruction fetch time in
 	 *  cpu.c!  Only check if _in_host_ram == 0.
+	 *
+	 *  NOTE 2:  cpu may be NULL here, but "hopefully"
+	 *  not if cache == CACHE_INSTRUCTION.  (TODO)
 	 */
-	if (!cpu->pc_last_was_in_host_ram &&
-	    cache == CACHE_INSTRUCTION &&
+	if (cache == CACHE_INSTRUCTION &&
+	    !cpu->pc_last_was_in_host_ram &&
 	    (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
 		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
 		goto have_paddr;

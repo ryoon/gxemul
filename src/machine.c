@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.49 2004-02-24 00:16:53 debug Exp $
+ *  $Id: machine.c,v 1.50 2004-02-25 01:08:02 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -750,7 +750,7 @@ void machine_init(struct memory *mem)
 		 *  loaded.
 		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 2;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
 		cpus[bootstrap_cpu]->gpr[GPR_A2] = DEC_PROM_MAGIC;
 		cpus[bootstrap_cpu]->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
@@ -759,8 +759,9 @@ void machine_init(struct memory *mem)
 		store_32bit_word(INITIAL_STACK_POINTER + 0x14, BOOTINFO_ADDR);
 
 		store_32bit_word(DEC_PROM_INITIAL_ARGV, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x10));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+4, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x40));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, 0);
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+4, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x70));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0xc0));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
 
 		/*  For ultrixboot, these might work:  */
 		bootstr = "boot"; bootarg = "0/tftp/vmunix";
@@ -788,7 +789,8 @@ void machine_init(struct memory *mem)
 		bootarg = "-a";
 
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-		store_string(DEC_PROM_INITIAL_ARGV+0x40, bootarg);
+		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootstr);
+		store_string(DEC_PROM_INITIAL_ARGV+0xc0, bootarg);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;

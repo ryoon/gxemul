@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.131 2004-12-22 16:12:58 debug Exp $
+ *  $Id: memory.c,v 1.132 2005-01-02 23:45:23 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1065,10 +1065,10 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 
 			for (s=0; s<mem->dev_length[i]; s+=4096) {
 				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s + 0x80000000ULL,
+				    mem->dev_baseaddr[i] + s + 0xffffffff80000000ULL,
 				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
 				update_translation_table(cpu,
-				    mem->dev_baseaddr[i] + s + 0xa0000000ULL,
+				    mem->dev_baseaddr[i] + s + 0xffffffffa0000000ULL,
 				    mem->dev_bintrans_data[i] + s, -1, mem->dev_baseaddr[i] + s);
 			}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.135 2005-01-02 19:47:59 debug Exp $
+ *  $Id: coproc.c,v 1.136 2005-01-02 23:45:23 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -393,8 +393,13 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			bintrans_invalidate(cpu, paddr_page);
 
 		/*  This table stuff only works for 32-bit mode:  */
-		if ((vaddr_page >> 32) != 0 && (vaddr_page >> 32) != 0xffffffff)
-			return;
+		if (vaddr_page & 0x80000000ULL) {
+			if ((vaddr_page >> 32) != 0xffffffffULL)
+				return;
+		} else {
+			if ((vaddr_page >> 32) != 0)
+				return;
+		}
 
 		a = (vaddr_page >> 22) & 0x3ff;
 		b = (vaddr_page >> 12) & 0x3ff;
@@ -458,8 +463,13 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	uint32_t p_paddr;
 
 	/*  This table stuff only works for 32-bit mode:  */
-	if ((vaddr >> 32) != 0 && (vaddr >> 32) != 0xffffffff)
-		return;
+	if (vaddr & 0x80000000ULL) {
+		if ((vaddr >> 32) != 0xffffffffULL)
+			return;
+	} else {
+		if ((vaddr >> 32) != 0)
+			return;
+	}
 
 	a = (vaddr >> 22) & 0x3ff;
 	b = (vaddr >> 12) & 0x3ff;

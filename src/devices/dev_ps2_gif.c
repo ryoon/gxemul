@@ -23,12 +23,16 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.10 2004-03-28 14:55:49 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.11 2004-03-28 15:07:44 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
  *  TODO:  Convert memory_rw() accesses into direct framebuffer reads and
  *         writes, to improve performance.
+ *
+ *  TODO 2:  The way things are now, rgb bytes are copied from emulated
+ *           space to the framebuffer as rgb, but on X Windows servers on
+ *           big-endian machines that should be bgr.  (?) Hm...
  */
 
 #include <stdio.h>
@@ -209,7 +213,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			ysize = data[13*4 + 0] + (data[13*4 + 1] << 8);
 			ysize &= ~0xf;	/*  multple of 16  */
 
-			debug("[ gif: putchar at (%i,%i), size (%i,%i) ]\n", xbase, ybase, xsize, ysize);
+			/*  debug("[ gif: putchar at (%i,%i), size (%i,%i) ]\n", xbase, ybase, xsize, ysize);  */
 
 			/*
 			 *  NetBSD and Linux:
@@ -256,8 +260,8 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			x_size   = data[12*4 + 0] + ((data[12*4 + 1]) << 8);
 			y_size   = data[13*4 + 0] + ((data[13*4 + 1]) << 8);
 
-			fatal("[ gif: blockcopy (%i,%i) -> (%i,%i), size=(%i,%i) ]\n",
-			    x_source,y_source, x_dest,y_dest, x_size,y_size);
+			/*  debug("[ gif: blockcopy (%i,%i) -> (%i,%i), size=(%i,%i) ]\n",
+			    x_source,y_source, x_dest,y_dest, x_size,y_size);  */
 
 			framebuffer_blockcopyfill(d->vfb_data, 0, 0,0,0, x_dest,y_dest,
 			    x_dest + x_size - 1, y_dest + y_size - 1, x_source, y_source);
@@ -270,7 +274,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			xend  = (data[8*5 + 0] + (data[8*5 + 1] << 8)) / 16;
 			yend  = (data[8*5 + 2] + (data[8*5 + 3] << 8)) / 16;
 
-			debug("[ gif: linux \"clear\" (%i,%i)-(%i,%i) ]\n", xbase,ybase, xend,yend);
+			/*  debug("[ gif: linux \"clear\" (%i,%i)-(%i,%i) ]\n", xbase,ybase, xend,yend);  */
 
 			framebuffer_blockcopyfill(d->vfb_data, 1, 0,0,0, xbase,ybase, xend-1,yend-1, 0,0);
 		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  NetBSD "output cursor":  */

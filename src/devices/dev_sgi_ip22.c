@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.15 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.16 2004-07-26 03:50:14 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -94,6 +94,22 @@ int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
 			/*  debug("[ sgi_ip22_imc: write to IMC_WDOG, data=0x%08x ]\n", (int)idata);  */
 		} else {
 			/*  debug("[ sgi_ip22_imc: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);  */
+		}
+		break;
+	case (IMC_MEMCFG0 - IP22_IMC_BASE):
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22_imc: unimplemented write IMC_MEMCFG0, data=0x%08x ]\n", (int)idata);
+		} else {
+			odata = 0x3100 + (0x8000000 >> 22);  /*  ? TODO  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG0, data=0x%08x ]\n", (int)odata);  */
+		}
+		break;
+	case (IMC_MEMCFG1 - IP22_IMC_BASE):
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22_imc: unimplemented write IMC_MEMCFG1, data=0x%08x ]\n", (int)idata);
+		} else {
+			odata = 0;
+			/*  debug("[ sgi_ip22_imc: read from IMC_MEMCFG1, data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
 	case (IMC_EEPROM - IP22_IMC_BASE):
@@ -338,7 +354,13 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
 			/*  The timer is decreased by the tick function.  */
 		}
 		break;
+	case 0x3b:	/*  ?  */
+		odata = random();
+		break;
 	case 0x3c:	/*  timer control  */
+		break;
+	case 0x3f:	/*  ?  */
+		odata = random();
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

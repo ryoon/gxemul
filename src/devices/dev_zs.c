@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.11 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_zs.c,v 1.12 2004-07-26 03:50:14 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -126,9 +126,16 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			d->tx_done = 1;
 		}
 		break;
+
+/*  hehe, perhaps 0xb and 0xf are the second channel :-)  */
+
 	case 0xb:
 		if (writeflag==MEM_READ) {
 			odata = 0;
+#if 0
+	/*  TODO: Weird. Linux needs 4 here, NetBSD wants 0.  */
+	odata = 4;
+#endif
 			if (d->tx_done)
 				odata |= 2;
 			if (console_charavail())
@@ -137,6 +144,21 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);
 		} else {
 			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+		}
+		break;
+
+	/*  0xf is used by Linux:  */
+	case 0xf:
+		if (writeflag==MEM_READ) {
+			if (console_charavail())
+				odata = console_readchar();
+			else
+				odata = 0;
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
+		} else {
+			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
+			console_putchar(idata & 255);
+			d->tx_done = 1;
 		}
 		break;
 	default:

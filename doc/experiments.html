@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.27 2005-02-15 16:49:35 debug Exp $
+$Id: experiments.html,v 1.28 2005-02-18 06:32:39 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -110,24 +110,26 @@ are emulated, such as putchar device, and a simple framebuffer
 		halt();
 	}
 </pre>
-This hello world program is available here as well: <a href="hello.c">hello.c</a>
+This hello world program is available here as well:
+<a href="hello_mips.c">hello_mips.c</a>
 <p>
-I recommend that you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
-target, and install it. Other compilers could work too, but GCC is good because
-of its portability. Then try to compile the hello world program:
+I recommend that you build a GCC cross compiler for the
+<b>mips64-unknown-elf</b> target, and install it. Other compilers could
+work too, but GCC is good because of its portability. Then try to compile
+the hello world program:
 <pre>
-	$ <b>mips64-unknown-elf-gcc -O2 hello.c -mips4 -mabi=64 -c</b>
-	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
-	$ <b>file hello</b>
-	hello: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -qa hello</b>
+	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -mips4 -mabi=64 -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>
+	$ <b>file hello_mips</b>
+	hello_mips: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -qa hello_mips</b>
 	Hello world
 
-	$ <b>mips64-unknown-elf-gcc -O2 hello.c -c</b>
-	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello</b>
-	$ <b>file hello</b>
-	hello: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -qa hello</b>
+	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello_mips.o -o hello_mips</b>
+	$ <b>file hello_mips</b>
+	hello_mips: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -qa hello_mips</b>
 	Hello world
 </pre>
 
@@ -139,7 +141,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 
 <p>
 <pre>
-	$ <b>./mips64emul -Va hello</b>
+	$ <b>./mips64emul -Va hello_mips</b>
 	..
 	mips64emul&gt; <b>r</b>
 	cpu0:    pc = a800000000030078    <f>
@@ -180,6 +182,32 @@ will repeat the 's' command. Type 'quit' to quit.
 
 <p>
 Hopefully this is enough to get you inspired. :-)
+
+
+
+<p><br>
+<h4>Hello World for mips64emul's PPC mode</h4>
+
+mips64emul also has an experimental PowerPC emulation mode (which is only 
+enabled if --enable-ppc is supplied as a configure option).
+<a href="hello_ppc.c">hello_ppc.c</a> is similar to hello_mips.c, but 
+should be compiled and run as follows:
+<p>
+<pre>
+	$ <b>ppc-unknown-elf-gcc -O2 hello_ppc.c -c</b>
+	$ <b>ppc-unknown-elf-ld -e f hello_ppc.o -o hello_ppc</b>
+	$ <b>file hello_ppc</b>
+	hello_ppc: ELF 32-bit MSB executable, PowerPC or cisco 4500,
+	  version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -q -E testppc hello_ppc</b>
+	Hello world
+</pre>
+
+<p>
+[&nbsp;2005-02-18: I haven't yet been able to build a GCC for ppc64 (only the
+binutils toolchain), because the gcc sources seem to include Linux header files 
+that aren't present on my FreeBSD system. 32-bit PPC works ok, though.&nbsp;]
+
 
 
 
@@ -344,6 +372,10 @@ If the physical address is 0x10000000, then for MIPS that means that it
 can be accessed at virtual address 0xffffffffb0000000. (Actually it can be 
 accessed at 0xffffffff90000000 too, but devices should usually be accessed
 in a non-cached manner.)
+
+<p>
+(When using the bare PPC test machine, "testppc", the addresses are 
+0x10000000, 0x11000000 etc., so no need to add any virtual displacement.)
 
 <p>
 The <b>cons</b> and <b>mp</b> devices are mostly agnostic when it comes to 

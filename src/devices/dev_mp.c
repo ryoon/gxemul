@@ -25,11 +25,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.22 2005-02-13 11:51:06 debug Exp $
+ *  $Id: dev_mp.c,v 1.23 2005-02-18 06:32:39 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
- *  multiprocessor controller used in any real MIPS-based machine.
+ *  multiprocessor controller used in any real machine.
  */
 
 #include <stdio.h>
@@ -37,10 +37,10 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 #include "mp.h"
 
@@ -82,6 +82,11 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_STARTUPCPU:
+		if (cpu->machine->arch != ARCH_MIPS) {
+			fatal("dev_mp_access(): DEV_MP_STARTUPCPU:"
+			    " not for !MIPS yet\n");
+			exit(1);
+		}
 		which_cpu = idata;
 		d->cpus[which_cpu]->cd.mips.pc = d->startup_addr;
 		d->cpus[which_cpu]->cd.mips.gpr[MIPS_GPR_SP] = d->stack_addr;

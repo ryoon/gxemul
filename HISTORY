@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.162 2004-07-16 23:04:52 debug Exp $
+$Id: HISTORY,v 1.163 2004-07-17 10:27:17 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -792,3 +792,7 @@ HISTORY of mips64emul
 20040717	A little TCP progress; OpenBSD/pmax likes my SYN+ACK replies,
 		and tries to send out data, but NetBSD/pmax just drops the
 		SYN+ACK packets.
+		Trial-and-error led me to change the 64-bit ARCS component
+		struct again (Linux/IP30 likes it now). I'm not sure about all 
+		of the offsets yet, but some things seem to work.
+		More 64-bit ARCS updates (memory descriptors etc).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.25 2004-07-16 18:19:45 debug Exp $
+ *  $Id: arcbios.c,v 1.26 2004-07-17 10:27:19 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -307,7 +307,7 @@ uint64_t arcbios_addchild64(struct arcbios_component64 *host_tmp_component,
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x50,
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x40,
 				&buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -320,7 +320,7 @@ uint64_t arcbios_addchild64(struct arcbios_component64 *host_tmp_component,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		peeraddr += 0x60;
+		peeraddr += 0x50;
 		peeraddr += tmp + 1;
 		peeraddr = ((peeraddr - 1) | 3) + 1;
 
@@ -331,20 +331,20 @@ uint64_t arcbios_addchild64(struct arcbios_component64 *host_tmp_component,
 	store_64bit_word(a + 0x08, child);
 	store_64bit_word(a + 0x10, parent);
 	store_64bit_word(a+  0x18, host_tmp_component->Class);
-	store_64bit_word(a+  0x20, host_tmp_component->Type);
-	store_64bit_word(a+  0x28, host_tmp_component->Flags);
-	store_64bit_word(a+  0x30, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 32));
-	store_64bit_word(a+  0x38, host_tmp_component->Key);
-	store_64bit_word(a+  0x40, host_tmp_component->AffinityMask);
-	store_64bit_word(a+  0x48, host_tmp_component->ConfigurationDataSize);
-	store_64bit_word(a+  0x50, host_tmp_component->IdentifierLength);
-	store_64bit_word(a+  0x58, host_tmp_component->Identifier);
+	store_64bit_word(a+  0x1c, host_tmp_component->Type);
+	store_64bit_word(a+  0x20, host_tmp_component->Flags);
+	store_64bit_word(a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
+	store_64bit_word(a+  0x28, host_tmp_component->Key);
+	store_64bit_word(a+  0x30, host_tmp_component->AffinityMask);
+	store_64bit_word(a+  0x38, host_tmp_component->ConfigurationDataSize);
+	store_64bit_word(a+  0x40, host_tmp_component->IdentifierLength);
+	store_64bit_word(a+  0x48, host_tmp_component->Identifier);
 
-	arcbios_next_component_address += 0x60;
+	arcbios_next_component_address += 0x50;
 
 	if (host_tmp_component->IdentifierLength != 0) {
-		store_64bit_word(a + 0x58, a + 0x60);
-		store_string(a + 0x60, identifier);
+		store_64bit_word(a + 0x48, a + 0x50);
+		store_string(a + 0x50, identifier);
 		arcbios_next_component_address += strlen(identifier) + 1;
 	}
 
@@ -591,12 +591,19 @@ void arcbios_emul(struct cpu *cpu)
 			if ((uint32_t)cpu->gpr[GPR_A0] == (uint32_t)cpu->gpr[GPR_V0]) {
 				if (mb_left <= 0)
 					cpu->gpr[GPR_V0] = 0;
-				else
-					cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem);
+				else {
+					if (arc_64bit)
+						cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem64);
+					else
+						cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem);
+				}
 				break;
 			}
 
-			cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
+			if (arc_64bit)
+				cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem64);
+			else
+				cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
 		}
 		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */

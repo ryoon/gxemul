@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.139 2004-07-16 18:19:45 debug Exp $
+ *  $Id: machine.c,v 1.140 2004-07-17 10:27:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -759,6 +759,7 @@ void machine_init(struct memory *mem)
 	struct arcbios_sysid arcbios_sysid;
 	struct arcbios_dsp_stat arcbios_dsp_stat;
 	struct arcbios_mem arcbios_mem;
+	struct arcbios_mem64 arcbios_mem64;
 	uint64_t mem_base, mem_count, mem_bufaddr;
 	int mem_mb_left;
 	uint32_t system = 0;
@@ -1789,9 +1790,10 @@ void machine_init(struct memory *mem)
 				/*  This is something unknown:  */
 				dev_sgi_ip30_init(cpus[bootstrap_cpu], mem, 0x0ff00000);
 
-				/*  Something at paddr=1f022004: TODO  */
-
 				/*
+				 *  Something at paddr=1f022004: TODO
+				 *  Something at paddr=f8000003c  used by Linux/Octane
+				 *
 				 *  16550 serial port at paddr=1f620178, addr mul 1
 				 *  (Error messages are printed to this serial port by the PROM.)
 				 *
@@ -2106,34 +2108,67 @@ void machine_init(struct memory *mem)
 
 		mem_base += (sgi_ram_offset / 4096);
 
-		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
-		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+		/*  TODO: Make this nicer!  */
 
-		mem_mb_left = physical_ram_in_mb - 512;
-		mem_base = 512 * (1048576 / 4096);
-		mem_base += (sgi_ram_offset / 4096);
-		mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
-		while (mem_mb_left > 0) {
-			mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+		if (arc_wordlen == sizeof(uint64_t)) {
+			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
+			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
+			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
+			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 
+			mem_mb_left = physical_ram_in_mb - 512;
+			mem_base = 512 * (1048576 / 4096);
+			mem_base += (sgi_ram_offset / 4096);
+			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem64);
+			while (mem_mb_left > 0) {
+				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+
+				memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
+
+				store_buf(mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+				mem_bufaddr += sizeof(arcbios_mem64);
+
+				mem_mb_left -= 512;
+				mem_base += 512 * (1048576 / 4096);
+			}
+
+			/*  End of memory descriptors:  (pagecount = zero)  */
+			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
+			store_buf(mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+		} else {
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
+			mem_mb_left = physical_ram_in_mb - 512;
+			mem_base = 512 * (1048576 / 4096);
+			mem_base += (sgi_ram_offset / 4096);
+			mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
+			while (mem_mb_left > 0) {
+				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
+
+				memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+
+				store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+				mem_bufaddr += sizeof(arcbios_mem);
+
+				mem_mb_left -= 512;
+				mem_base += 512 * (1048576 / 4096);
+			}
+
+			/*  End of memory descriptors:  (pagecount = zero)  */
+			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
-			mem_bufaddr += sizeof(arcbios_mem);
-
-			mem_mb_left -= 512;
-			mem_base += 512 * (1048576 / 4096);
 		}
-
-		/*  End of memory descriptors:  (pagecount = zero)  */
-		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 		/*
 		 *  Components:   (this is an example of what a system could look like)
@@ -2283,6 +2318,8 @@ void machine_init(struct memory *mem)
 
 			/*  0x50 is used by Linux/IP30:  */
 			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0x50, SGI_SPB_ADDR + 0x700);
+			/*  0x90 is used by Linux/IP30:  */
+			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0x90, SGI_SPB_ADDR + 0x740);
 			/*  0xd8 is used by Linux/IP30:  */
 			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xd8, SGI_SPB_ADDR + 0x780);
 			/*  0xf0 is used by Irix:  */
@@ -2294,6 +2331,13 @@ void machine_init(struct memory *mem)
 			store_32bit_word(SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x28);  /*  addiu, 0x28 = getchild  */
 			store_32bit_word(SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
 			store_32bit_word(SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
+
+			/*  getmemorydescriptor  */
+			store_32bit_word(SGI_SPB_ADDR + 0x740 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x740 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x740 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x48);  /*  addiu, 0x48 = getmemorydescriptor  */
+			store_32bit_word(SGI_SPB_ADDR + 0x740 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x740 + 16, 0);				/*  nop  */
 
 			/*  write  */
 			store_32bit_word(SGI_SPB_ADDR + 0x780 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */

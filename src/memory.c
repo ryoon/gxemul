@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.40 2004-06-25 01:04:12 debug Exp $
+ *  $Id: memory.c,v 1.41 2004-06-27 01:06:30 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -383,7 +383,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		else
 			ksu = KSU_KERNEL;
 
-		vaddr &= 0xffffffff;
+		vaddr &= (uint32_t)0xffffffff;
 		pageshift = 12;
 
 		/*  These are needed later:  */
@@ -444,8 +444,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		}
 
 		/*  Sign-extend vaddr, if neccessary:  */
-		if ((vaddr >> 32) == 0 && vaddr & 0x80000000) {
-			vaddr |= 0xffffffff00000000;
+		if ((vaddr >> 32) == 0 && vaddr & (uint32_t)0x80000000) {
+			vaddr |= (uint64_t)0xffffffff00000000;
 		}
 
 		/*  This suppresses a gcc warning:  */
@@ -462,7 +462,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	else if (ksu == KSU_KERNEL) {
 		/*  kseg0, kseg1:  */
 		if ((vaddr >= 0x80000000 && vaddr <= 0xbfffffff) ||
-		    (vaddr >= 0xffffffff80000000 && vaddr <= 0xffffffffbfffffff)) {
+		    (vaddr >= (uint64_t)0xffffffff80000000 &&
+		     vaddr <= (uint64_t)0xffffffffbfffffff)) {
 			/*  Simply return, the address is already set  */
 			return 1;
 		}
@@ -841,8 +842,12 @@ have_paddr:
 	 *  TODO: This is mostly an ugly hack to make the cache size detection
 	 *  for R2000/R3000 work with a netbsd kernel.
 	 */
-	if ((vaddr >> 32) == 0xffffffff)
-		vaddr &= 0xffffffff;	/*  shouldn't be used below anyway  */
+#if 0
+	/*  vaddr shouldn't be used below anyway  */
+	if ((vaddr >> 32) == (uint32_t)0xffffffff)
+		vaddr &= (uint64_t)0xffffffff;
+#endif
+
 	if (cache == CACHE_DATA && !(vaddr >= 0xa0000000 && vaddr <= 0xbfffffff)) {
 		cachemask[0] = cpu->cache_size[0] - 1;
 		cachemask[1] = cpu->cache_size[1] - 1;

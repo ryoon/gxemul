@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.11 2004-10-17 13:36:05 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.12 2004-10-17 14:32:56 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -174,6 +174,7 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 	unsigned char *a;
 	int ofs;
 	int res = 0;
+	uint64_t v;
 
 	switch (instr) {
 	case INSTR_NOP:
@@ -188,22 +189,138 @@ int bintrans_write_instruction(unsigned char **addrp, int instr,
 		a = *addrp;
 
 		/*
+   0:   34 12 3f 20     lda     t0,4660
+   4:   01 00 21 24     ldah    t0,1(t0)
+   4:   21 17 22 48     sll     t0,0x10,t0
+   8:   dc fe 5f 20     lda     t1,-292
+   c:   01 00 42 24     ldah    t1,1(t1)
+  10:   01 04 41 44     or      t1,t0,t0
+  14:   28 01 30 b4     stq     t0,296(a0)
 		 */
 		/*  pc = addr_a  */
 		ofs = ((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu);
 
-#if 0
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+		/*  t0 = bits 48..63  */
+		v = (addr_a >> 48) & 0xffff;
+		/*  lda t0,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x3f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t0,1(t0)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x21; *a++ = 0x24;
+		}
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 32..47  */
+		v = (addr_a >> 32) & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 16..31  */
+		v = (addr_a >> 16) & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 0..15  */
+		v = addr_a & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  stq t0,ofs(a0):  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-#endif
+
+
+
 		/*  r31 = addr_b  */
 		ofs = ((size_t)&dummy_cpu.gpr[31]) - ((size_t)&dummy_cpu);
-#if 0
-		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
-		*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
+
+		/*  t0 = bits 48..63  */
+		v = (addr_b >> 48) & 0xffff;
+		/*  lda t0,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x3f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t0,1(t0)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x21; *a++ = 0x24;
+		}
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 32..47  */
+		v = (addr_b >> 32) & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 16..31  */
+		v = (addr_b >> 16) & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  sll t0,0x10,t0:  */
+		*a++ = 0x21; *a++ = 0x17; *a++ = 0x22; *a++ = 0x48;
+
+		/*  t1 = bits 0..15  */
+		v = addr_b & 0xffff;
+		/*  lda t1,v  */
+		*a++ = (v & 255); *a++ = (v >> 8); *a++ = 0x5f; *a++ = 0x20;
+		if (v & 0x8000) {
+			/*  ldah t1,1(t1)  */
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x42; *a++ = 0x24;
+		}
+
+		/*  or t1,t0,t0:  */
+		*a++ = 0x01; *a++ = 0x04; *a++ = 0x41; *a++ = 0x44;
+
+		/*  stq t0,ofs(a0):  */
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
-#endif
+
+
+
 		*addrp = a;
 		res = 1;
 		break;

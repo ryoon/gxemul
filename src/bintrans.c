@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.35 2004-10-17 13:36:05 debug Exp $
+ *  $Id: bintrans.c,v 1.36 2004-10-17 14:32:56 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -420,16 +420,18 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 				    (instr[2] << 16) + (instr[3] & 0x03);
 				addr <<= 2;
 				addr2 = (vaddr & ~0xfff) | (p & 0xfff);
+				addr |= ((addr2+4) & ~0x0fffffffULL);
 				addr2 += 8;
-				addr |= (addr2 & ~0x0fffffffULL);
 				res = bintrans_write_instruction(
 				    &chunk_addr, INSTR_JAL, &pc_increment,
 				    addr, addr2);
 				/*  Success: JAL+NOP were translated.  */
 				if (res)
 					n_translated += 2;
+/* printf("JAL, p=%016llx addr=%016llx addr2=%016llx\n",
+	(long long)p,(long long)addr,(long long)addr2); */
 				/*  End of basic block.  */
-				try_to_translate = 0;
+				break;
 			} else
 				try_to_translate = 0;
 		} else
@@ -517,10 +519,22 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	    (sizeof(uint64_t)-1)) + 1;
 
 
+	if (!run_flag)
+		return 0;
+
+
 	/*  RUN the code chunk:  */
 	cpu->bintrans_instructions_executed = 0;
 	f = (void *)tep->chunk;
+
+/* printf("BEFORE: pc=%016llx r31=%016llx\n",
+(long long)cpu->pc, (long long)cpu->gpr[31]); */
+
 	f(cpu);
+
+/* printf("AFTER:  pc=%016llx r31=%016llx\n",
+(long long)cpu->pc, (long long)cpu->gpr[31]); */
+
 	return cpu->bintrans_instructions_executed;
 }
 

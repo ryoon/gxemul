@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.6 2005-02-24 15:38:35 debug Exp $
+ *  $Id: device.c,v 1.7 2005-02-25 06:27:49 debug Exp $
  *
  *  Device registry framework.
  */
@@ -128,7 +128,7 @@ struct device_entry *device_lookup(char *name)
 		return NULL;
 
 	i = n_device_entries / 2;
-	step = i/2 + 1;
+	step = i/2;
 
 	for (;;) {
 		if (i < 0)
@@ -137,6 +137,9 @@ struct device_entry *device_lookup(char *name)
 			i = n_device_entries - 1;
 
 		/*  printf("device_lookup(): i=%i step=%i\n", i, step);  */
+		/*  printf("  name='%s', '%s'\n", name,
+		    device_entries[i].name);  */
+
 		r = strcmp(name, device_entries[i].name);
 
 		if (r < 0) {

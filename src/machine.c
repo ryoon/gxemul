@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.364 2005-02-25 06:14:32 debug Exp $
+ *  $Id: machine.c,v 1.365 2005-02-25 06:27:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1230,7 +1230,7 @@ void machine_setup(struct machine *machine)
 		machine->main_console_handle = dev_cons_init(
 		    machine, mem, DEV_CONS_ADDRESS, "console", 2);
 
-		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
+		device_add_a(machine, "mp", DEV_MP_ADDRESS);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);
@@ -3920,7 +3920,7 @@ for (i=0; i<32; i++)
 		machine->main_console_handle = dev_cons_init(
 		    machine, mem, DEV_CONS_ADDRESS, "console", 0);
 
-		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
+		device_add_a(machine, "mp", DEV_MP_ADDRESS);
 
 		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
 		    640,480, 640,480, 24, "generic", 1);

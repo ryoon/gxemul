@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.147 2005-02-25 06:14:31 debug Exp $
+ *  $Id: devices.h,v 1.148 2005-02-25 06:27:48 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -325,13 +325,6 @@ int dev_m700_fb_access(struct cpu *cpu, struct memory *mem,
 void dev_m700_fb_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, uint64_t baseaddr2);
 
-/*  dev_n64_bios.c:  */
-#define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)
-int dev_n64_bios_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
-
 /*  dev_ns16550.c:  */
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
@@ -355,12 +348,6 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	int writeflag, void *);
 void dev_mc146818_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, int access_style, int addrdiv);
-
-/*  dev_mp.c:  */
-int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
-	unsigned char *data, size_t len, int writeflag, void *);
-void dev_mp_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x10

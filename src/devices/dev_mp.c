@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.24 2005-02-22 12:05:16 debug Exp $
+ *  $Id: dev_mp.c,v 1.25 2005-02-25 06:27:48 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -38,7 +38,7 @@
 
 #include "cpu.h"
 #include "cpu_mips.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -166,10 +166,9 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 
 /*
- *  dev_mp_init():
+ *  devinit_mp():
  */
-void dev_mp_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_mp(struct devinit *devinit)
 {
 	struct mp_data *d;
 	d = malloc(sizeof(struct mp_data));
@@ -178,11 +177,14 @@ void dev_mp_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct mp_data));
-	d->cpus = machine->cpus;
+	d->cpus = devinit->machine->cpus;
 	d->startup_addr = INITIAL_PC;
 	d->stack_addr = INITIAL_STACK_POINTER;
 
-	memory_device_register(mem, "mp", baseaddr, DEV_MP_LENGTH,
+	memory_device_register(devinit->machine->memory,
+	    devinit->name, devinit->addr, DEV_MP_LENGTH,
 	    dev_mp_access, d, MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

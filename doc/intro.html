@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.4 2005-02-03 06:55:41 debug Exp $
+$Id: intro.html,v 1.5 2005-02-06 12:36:35 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,8 +52,8 @@ SUCH DAMAGE.
   <li><a href="#overview">Overview</a>
   <li><a href="#free">Is mips64emul free software?</a>
   <li><a href="#build">How to compile/build the emulator</a>
-  <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#cpus">Which CPU types does mips64emul emulate?</a>
+  <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
 </ul>
 
@@ -230,6 +230,36 @@ a CTRL-C is sent to the emulated program.
 
 
 <p><br>
+<a name="cpus"></a>
+<h3>Which CPU types does mips64emul emulate?</h3>
+
+While other emulators aim to emulate only one specific CPU type, eg R3000,
+mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
+Both 64-bit and 32-bit MIPS-like CPUs can be emulated.
+
+<p>
+mips64emul is basically an instruction-level simulator; things that would
+happen in several steps within a physical CPU are not necessarily simulated
+correctly or at all (eg. pipe-line stages or out-of-order execution).
+
+<p>
+Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
+now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
+R1x000 (at least the parts that are similar to R4000) is beginning to work
+as expected. Code targeted for MIPS32 and MIPS64 also often work.
+
+<p>
+I have written an experimental dynamic binary translation subsystem.
+This gives higher total performance than interpreting one instruction at a
+time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
+the command line, but keep in mind that it is still experimental.)
+
+
+
+
+
+
+<p><br>
 <a name="emulmodes"></a>
 <h3>Which machines does mips64emul emulate?</h3>
 
@@ -273,32 +303,6 @@ for example for educational purposes or generic MIPS related experiments.
 
 
 
-
-
-<p><br>
-<a name="cpus"></a>
-<h3>Which CPU types does mips64emul emulate?</h3>
-
-While other emulators aim to emulate only one specific CPU type, eg R3000,
-mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
-Both 64-bit and 32-bit MIPS-like CPUs can be emulated.
-
-<p>
-mips64emul is basically an instruction-level simulator; things that would
-happen in several steps within a physical CPU are not necessarily simulated
-correctly or at all (eg. pipe-line stages or out-of-order execution).
-
-<p>
-Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
-now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
-R1x000 (at least the parts that are similar to R4000) is beginning to work
-as expected. Code targeted for MIPS32 and MIPS64 also often work.
-
-<p>
-I have written an experimental dynamic binary translation subsystem.
-This gives higher total performance than interpreting one instruction at a
-time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
-the command line, but keep in mind that it is still experimental.)
 
 
 

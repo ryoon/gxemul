@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.45 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.46 2005-02-06 12:36:34 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -50,6 +50,8 @@
 
 struct dc_data {
 	struct dc7085regs	regs;
+
+	int			console_handle;
 
 	/*  For slow_serial_interrupts_hack_for_linux:  */
 	int			just_transmitted_something;
@@ -297,6 +299,8 @@ void dev_dc7085_init(struct machine *machine, struct memory *mem,
 
 	d->regs.dc_csr = CSR_TRDY | CSR_MSE;
 	d->regs.dc_tcr = 0x00;
+
+	d->console_handle = console_start_slave(machine, "DC7085");
 
 	lk201_init(&d->lk201, use_fb, add_to_rx_queue, d);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.27 2005-02-04 12:07:02 debug Exp $
+ *  $Id: console.c,v 1.1 2005-02-06 12:36:37 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -35,6 +35,7 @@
  *  NOTE: This stuff is non-reentrant.
  */
 
+#include <errno.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,12 +43,16 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
 #include "console.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+extern char *progname;
 
 
 static struct termios console_oldtermios;
@@ -76,6 +81,20 @@ static int console_mouse_y;		/*  absolute y, 0-based  */
 static int console_mouse_fb_nr;		/*  framebuffer number of
 					    host movement, 0-based  */
 static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
+
+
+struct console_handle {
+	int		in_use;
+	int		using_xterm;
+	char		*name;
+
+	int		w_descriptor;
+	int		r_descriptor;
+};
+
+/*  A simple array of console_handles  */
+static struct console_handle *console_handles = NULL;
+static int n_console_handles = 0;
 
 
 /*
@@ -180,83 +199,6 @@ static int d_avail(int d)
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 	return select(d+1, &rfds, NULL, NULL, &tv);
-}
-
-
-/*
- *  console_slave_sigcont():
- *
- *  See comment for console_sigcont. This is for used by console_slave().
- */
-static void console_slave_sigcont(int x)
-{
-	/*  Make sure our 'current' termios setting is active:  */
-	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
-
-	/*  Reset the signal handler:  */
-	signal(SIGCONT, console_slave_sigcont);
-}
-
-
-/*
- *  console_slave():
- *
- *  This function is used when running with X11, and mips64emul opens up
- *  separate xterms for each emulated terminal or serial port.
- */
-void console_slave(char *arg)
-{
-	int inputd, outputd;
-	int len;
-	char *p;
-	char buf[400];
-
-	/*  arg = '3,6' or similar, input and output descriptors  */
-	/*  printf("console_slave(): arg = '%s'\n", arg);  */
-
-	inputd = atoi(arg);
-	p = strchr(arg, ',');
-	if (p == NULL) {
-		printf("console_slave(): bad arg '%s'\n", arg);
-		sleep(5);
-		exit(1);
-	}
-	outputd = atoi(p+1);
-
-	/*  Set the terminal to raw mode:  */
-	tcgetattr(STDIN_FILENO, &console_slave_tios);
-
-	console_slave_tios.c_lflag &= ~ICANON;
-	console_slave_tios.c_cc[VTIME] = 0;
-	console_slave_tios.c_cc[VMIN] = 1;
-	console_slave_tios.c_lflag &= ~ECHO;
-	console_slave_tios.c_iflag &= ~ICRNL;
-	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
-
-	signal(SIGINT, SIG_IGN);
-	signal(SIGCONT, console_slave_sigcont);
-
-	for (;;) {
-		/*  TODO: select() on both inputd and stdin  */
-
-		if (d_avail(inputd)) {
-			len = read(inputd, buf, sizeof(buf) - 1);
-			if (len < 1)
-				exit(0);
-			buf[len] = '\0';
-			printf("%s", buf);
-			fflush(stdout);
-		}
-
-		if (d_avail(STDIN_FILENO)) {
-			len = read(STDIN_FILENO, buf, sizeof(buf));
-			if (len < 1)
-				exit(0);
-			write(outputd, buf, len);
-		}
-
-		usleep(10);
-	}
 }
 
 
@@ -443,77 +385,241 @@ void console_getmouse(int *x, int *y, int *buttons, int *fb_nr)
 }
 
 
-
-
-#if 0
-
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-
-int main(int argc, char *argv[], char **envp)
+/*
+ *  console_slave_sigcont():
+ *
+ *  See comment for console_sigcont. This is for used by console_slave().
+ */
+static void console_slave_sigcont(int x)
 {
-	int res;
-	char *a[15];
-	pid_t p;
+	/*  Make sure our 'current' termios setting is active:  */
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
 
+	/*  Reset the signal handler:  */
+	signal(SIGCONT, console_slave_sigcont);
+}
+
+
+/*
+ *  console_slave():
+ *
+ *  This function is used when running with X11, and mips64emul opens up
+ *  separate xterms for each emulated terminal or serial port.
+ */
+void console_slave(char *arg)
+{
+	int inputd, outputd;
+	int len;
+	char *p;
+	char buf[400];
+
+	/*  arg = '3,6' or similar, input and output descriptors  */
+	/*  printf("console_slave(): arg = '%s'\n", arg);  */
+
+	inputd = atoi(arg);
+	p = strchr(arg, ',');
+	if (p == NULL) {
+		printf("console_slave(): bad arg '%s'\n", arg);
+		sleep(5);
+		exit(1);
+	}
+	outputd = atoi(p+1);
+
+	/*  Set the terminal to raw mode:  */
+	tcgetattr(STDIN_FILENO, &console_slave_tios);
+
+	console_slave_tios.c_lflag &= ~ICANON;
+	console_slave_tios.c_cc[VTIME] = 0;
+	console_slave_tios.c_cc[VMIN] = 1;
+	console_slave_tios.c_lflag &= ~ECHO;
+	console_slave_tios.c_iflag &= ~ICRNL;
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
+
+	signal(SIGINT, SIG_IGN);
+	signal(SIGCONT, console_slave_sigcont);
+
+	for (;;) {
+		/*  TODO: select() on both inputd and stdin  */
+
+		if (d_avail(inputd)) {
+			len = read(inputd, buf, sizeof(buf) - 1);
+			if (len < 1)
+				exit(0);
+			buf[len] = '\0';
+			printf("%s", buf);
+			fflush(stdout);
+		}
+
+		if (d_avail(STDIN_FILENO)) {
+			len = read(STDIN_FILENO, buf, sizeof(buf));
+			if (len < 1)
+				exit(0);
+			write(outputd, buf, len);
+		}
+
+		usleep(10);
+	}
+}
+
+
+/*
+ *  console_new_handle():
+ *
+ *  Allocates a new console_handle struct, and returns a pointer to it.
+ *
+ *  For internal use.
+ */
+static struct console_handle *console_new_handle(char *name, int *handlep)
+{
+	struct console_handle *chp;
+	int i, n, found_free = -1;
+
+	/*  Reuse an old slot, if possible:  */
+	n = n_console_handles;
+	for (i=0; i<n; i++)
+		if (!console_handles[i].in_use) {
+			found_free = i;
+			break;
+		}
+
+	if (found_free == -1) {
+		/*  Let's realloc console_handles[], to make room
+		    for the new one:  */
+		console_handles = realloc(console_handles, sizeof(
+		    struct console_handle) * (n_console_handles + 1));
+		if (console_handles == NULL) {
+			printf("console_new_handle(): out of memory\n");
+			exit(1);
+		}
+		found_free = n_console_handles;
+		n_console_handles ++;
+	}
+
+	chp = &console_handles[found_free];
+	memset(chp, 0, sizeof(struct console_handle));
+
+	chp->in_use = 1;
+	chp->name = strdup(name);
+	if (chp->name == NULL) {
+		printf("console_new_handle(): out of memory\n");
+		exit(1);
+	}
+
+	*handlep = found_free;
+	return chp;
+}
+
+
+/*
+ *  console_start_slave():
+ *
+ *  When using X11:
+ *
+ *  This routine tries to start up an xterm, with another copy of mips64emul
+ *  inside. The other mips64emul copy is given arguments that will cause it
+ *  to run console_slave().
+ *
+ *  When not using X11:  Things will seem to work the same way without X11,
+ *  but no xterm will actually be started.
+ *
+ *  consolename should be something like "serial 0".
+ *
+ *  On success, an integer >= 0 is returned. This can then be used as a
+ *  'handle' when writing to or reading from an emulated console.
+ *
+ *  On failure, -1 is returned.
+ */
+int console_start_slave(struct machine *machine, char *consolename)
+{
 	int filedes[2];
 	int filedesB[2];
+	int res, i, handle;
+	char **a;
+	pid_t p;
+	struct console_handle *chp;
+
+	if (machine == NULL || consolename == NULL) {
+		printf("console_start_slave(): NULL ptr\n");
+		exit(1);
+	}
+
+	chp = console_new_handle(consolename, &handle);
+
+	if (!machine->use_x11) {
+		return handle;
+	}
+
+	chp->using_xterm = 1;
 
 	res = pipe(filedes);
 	if (res) {
-		printf("pipe(): %i\n", errno);
-		exit(1);
+		printf("[ console_start_slave(): pipe(): %i ]\n", errno);
+		return -1;
 	}
-
-	printf("filedes = %i,%i\n", filedes[0], filedes[1]);
 
 	res = pipe(filedesB);
 	if (res) {
-		printf("pipe(): %i\n", errno);
+		printf("[ console_start_slave(): pipe(): %i ]\n", errno);
+		return -1;
+	}
+
+	/*  printf("filedes = %i,%i\n", filedes[0], filedes[1]);  */
+	/*  printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);  */
+
+	/*  TODO: other names for xterm? For example a config file setting,
+	    or read from the environment?  */
+
+	a = malloc(sizeof(char *) * 15);
+	if (a == NULL) {
+		fprintf(stderr, "console_start_slave(): out of memory\n");
 		exit(1);
 	}
 
-	printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);
-
 	a[0] = "xterm";
 	a[1] = "-title";
-	a[2] = "mips64emul: 'other machine' serial 0";
+	a[2] = malloc(strlen(machine->name) + strlen(consolename) + 100);
+	if (a[2] == NULL) {
+		fprintf(stderr, "console_start_slave(): out of memory\n");
+		exit(1);
+	}
+	sprintf(a[2], "mips64emul: '%s' %s", machine->name, consolename);
 	a[3] = "-e";
-	a[4] = "./mips64emul";
+	a[4] = progname;
 	a[5] = malloc(50);
 	sprintf(a[5], "-WW@S%i,%i", filedes[0], filedesB[1]);
 	a[6] = NULL;
 
 	p = fork();
-	if (p == 0) {
+	if (p == -1) {
+		printf("[ console_start_slave(): ERROR while trying to "
+		    "fork(): %i ]\n", errno);
+		return -1;
+	} else if (p == 0) {
 		close(filedes[1]);
 		close(filedesB[0]);
-		res = execvp("xterm", a);
-		printf("res=%i errno=%i\n", res, errno);
+		res = execvp(a[0], a);
+		printf("[ console_start_slave(): ERROR while trying to "
+		    "execvp(\"");
+		while (a[0] != NULL) {
+			printf("%s", a[0]);
+			if (a[1] != NULL)
+				printf(" ");
+			a++;
+		}
+		printf("\"): %i ]\n", errno);
 		exit(1);
 	}
 
-	printf("Parent, p = %i\n", p);
-	sleep(2);
+close(filedes[0]);
+close(filedesB[1]);
 
-	write(filedes[1], "hejsan hoppsan", 14);
-	sleep(2);
-	write(filedes[1], "\nHohi\n", 6);
+	/*
+	 *  write to filedes[1], read from filedesB[0]
+	 */
 
-{
-char buf[200];
-int len;
-memset(buf, 0,200);
-len = read(filedesB[0], buf, 100);
-printf("len = %i, buf = '%s'\n", len, buf);
+	chp->w_descriptor = filedes[1];
+	chp->r_descriptor = filedesB[0];
+
+	return handle;
 }
-
-	sleep(5);
-}
-
-#endif
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.40 2004-08-18 09:37:40 debug Exp $
+ *  $Id: emul.c,v 1.41 2004-08-18 10:09:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -159,6 +159,7 @@ void debugger_activate(int x)
 		int i;
 		for (i=0; i<MAX_CMD_LEN+1; i++)
 			console_makeavail('\b');
+		console_makeavail(' ');
 		console_makeavail('\n');
 		printf("^C");
 		fflush(stdout);
@@ -287,21 +288,7 @@ void debugger(void)
 			last_cmd_len = cmd_len;
 		}
 
-		if (strcasecmp(cmd, "h") == 0 || strcasecmp(cmd, "?") == 0 ||
-		    strcasecmp(cmd, "help") == 0) {
-			printf("  continue       continue emulation\n");
-			printf("  dump [addr]    dumps emulated memory contents\n");
-			printf("  help           prints this help message\n");
-			printf("  quit           quits mips64emul\n");
-			printf("  registers      dump all CPUs' register values\n");
-			printf("  step           single step\n");
-			printf("  version        print mips64emul version\n");
-		} else if (strcasecmp(cmd, "quit") == 0 ||
-		    strcasecmp(cmd, "q") == 0) {
-			for (i=0; i<ncpus; i++)
-				cpus[i]->running = 0;
-			exit_debugger = 1;
-		} else if (strcasecmp(cmd, "c") == 0 ||
+		if (strcasecmp(cmd, "c") == 0 ||
 		    strcasecmp(cmd, "continue") == 0) {
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "d") == 0 ||
@@ -319,13 +306,40 @@ void debugger(void)
 			    address:  */
 			last_cmd_len = 1;
 			strcpy(last_cmd, "d");
-		} else if (strcasecmp(cmd, "s") == 0 ||
-		    strcasecmp(cmd, "step") == 0) {
-			return;
+		} else if (strcasecmp(cmd, "h") == 0 ||
+		    strcasecmp(cmd, "?") == 0 || strcasecmp(cmd, "help") == 0) {
+			printf("  continue       continue emulation\n");
+			printf("  dump [addr]    dumps emulated memory contents\n");
+			printf("  help           prints this help message\n");
+			printf("  itrace         toggle instruction_trace on or off\n");
+			printf("  quit           quits mips64emul\n");
+			printf("  registers      dump all CPUs' register values\n");
+			printf("  step           single step\n");
+			printf("  trace          toggle show_trace_tree on or off\n");
+			printf("  version        print mips64emul version\n");
+			last_cmd_len = 0;
+		} else if (strcasecmp(cmd, "i") == 0 ||
+		    strcasecmp(cmd, "itrace") == 0) {
+			old_instruction_trace = 1 - old_instruction_trace;
+			printf("instruction_trace = %s\n",
+			    old_instruction_trace? "ON" : "OFF");
+		} else if (strcasecmp(cmd, "quit") == 0 ||
+		    strcasecmp(cmd, "q") == 0) {
+			for (i=0; i<ncpus; i++)
+				cpus[i]->running = 0;
+			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "r") == 0 ||
 		    strcasecmp(cmd, "registers") == 0) {
 			for (i=0; i<ncpus; i++)
 				cpu_register_dump(cpus[i]);
+		} else if (strcasecmp(cmd, "s") == 0 ||
+		    strcasecmp(cmd, "step") == 0) {
+			return;
+		} else if (strcasecmp(cmd, "t") == 0 ||
+		    strcasecmp(cmd, "trace") == 0) {
+			old_show_trace_tree = 1 - old_show_trace_tree;
+			printf("show_trace_tree = %s\n",
+			    old_show_trace_tree? "ON" : "OFF");
 		} else if (strcasecmp(cmd, "v") == 0 ||
 		    strcasecmp(cmd, "version") == 0) {
 			printf("%s\n",

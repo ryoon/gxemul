@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.202 2004-08-18 09:51:42 debug Exp $
+$Id: HISTORY,v 1.203 2004-08-18 10:09:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -905,4 +905,4 @@ HISTORY of mips64emul
 20040818	Adding signal handlers to better cope with CTRL-Z and CTRL-C.
 		Adding a simple interactive single-step debugger which is
 		activated by CTRL-C. (Commands so far: continue, dump, help,
-		quit, registers, step, version)
+		itrace, quit, registers, step, trace, version)

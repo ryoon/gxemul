@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.67 2004-06-24 01:14:50 debug Exp $
+ *  $Id: cpu.c,v 1.68 2004-06-24 02:02:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2676,7 +2676,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		if (cpus[0]->ticks_reset_value[te] < a_few_cycles)
 			a_few_cycles = cpus[0]->ticks_reset_value[te];
 
-	debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);
+	/*  debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);  */
 
 	/*  For performance measurement:  */
 	getrusage(RUSAGE_SELF, &rusage);

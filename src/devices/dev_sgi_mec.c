@@ -23,14 +23,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mec.c,v 1.1 2004-12-16 04:37:21 debug Exp $
+ *  $Id: dev_sgi_mec.c,v 1.2 2004-12-18 06:01:01 debug Exp $
  *  
  *  SGI "mec" ethernet. Used in SGI-IP32.
  *
- *  TODO.
+ *  TODO. Study http://www.openbsd.org/cgi-bin/cvsweb/src/sys/arch/sgi/dev/if_mec.c
+ *  and/or NetBSD.
  */
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +39,7 @@
 
 #include "devices.h"
 #include "memory.h"
+#include "net.h"
 
 #include "if_mecreg.h"
 
@@ -47,10 +48,15 @@
 
 #define	MEC_TICK_SHIFT		14
 
+#define	MAX_TX_PACKET_LEN	1600
+
 struct sgi_mec_data {
 	uint64_t	reg[DEV_SGI_MEC_LENGTH / sizeof(uint64_t)];
 
 	int		irq_nr;
+
+	unsigned char	cur_tx_packet[MAX_TX_PACKET_LEN];
+	size_t		cur_tx_packet_len;
 };
 
 
@@ -77,14 +83,161 @@ static void mec_control_write(struct cpu *cpu, struct sgi_mec_data *d,
 
 
 /*
+ *  mec_try_tx():
+ */
+static void mec_try_tx(struct cpu *cpu, void *extra)
+{
+	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
+	uint64_t base, addr, dma_base;
+	int tx_ring_ptr, ringread, ringwrite, res, i, j;
+	unsigned char data[32];
+	int len, start_offset, dma_ptr_nr, dma_len;
+
+	base = d->reg[MEC_TX_RING_BASE / sizeof(uint64_t)];
+	tx_ring_ptr = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
+
+	if (base == 0)
+		return;
+
+	/*  printf("base = 0x%016llx\n", base);  */
+
+	tx_ring_ptr &= MEC_TX_RING_READ_PTR;
+	tx_ring_ptr >>= 16;
+
+	/*  Each tx descriptor is 128 bytes:  */
+	addr = base + tx_ring_ptr*128;
+	res = memory_rw(cpu, cpu->mem, addr,
+	    &data[0], sizeof(data), MEM_READ, PHYSICAL);
+	if (!res)
+		return;
+
+	/*  Is this packet transmitted already?  */
+	if (data[0] & 0x80)
+		goto skip;
+
+	len = data[6] * 256 + data[7];
+	start_offset = data[5] & 0x7f;
+
+	/*  Is this packet empty? Then don't transmit it.  */
+	if (len == 0)
+		return;
+
+	printf("{ mec: txdesc %i: ", tx_ring_ptr);
+	for (i=0; i<sizeof(data); i++) {
+		if ((i & 3) == 0)
+			printf(" ");
+		printf("%02x", data[i]);
+	}
+	printf(" }\n");
+
+	dma_ptr_nr = 0;
+
+	j = 0;
+	d->cur_tx_packet_len = len;
+
+	for (i=start_offset; i<start_offset+len; i++) {
+		unsigned char ch;
+
+		if ((i & 0x7f) == 0x00)
+			break;
+
+		res = memory_rw(cpu, cpu->mem, addr + i,
+		    &ch, sizeof(ch), MEM_READ, PHYSICAL);
+		/*  printf(" %02x", ch);  */
+
+		d->cur_tx_packet[j++] = ch;
+		if (j >= MAX_TX_PACKET_LEN) {
+			fatal("[ mec_try_tx: packet too large? ]\n");
+			break;
+		}
+	}
+	/*  printf("\n");  */
+
+	if (j < len) {
+		/*  Continue with DMA:  */
+		for (;;) {
+			dma_ptr_nr ++;
+			if (dma_ptr_nr >= 4)
+				break;
+			if (!(data[4] & (0x01 << dma_ptr_nr)))
+				break;
+			dma_base = (data[dma_ptr_nr * 8 + 4] << 24)
+			         + (data[dma_ptr_nr * 8 + 5] << 16)
+			         + (data[dma_ptr_nr * 8 + 6] <<  8)
+			         + (data[dma_ptr_nr * 8 + 7]);
+			dma_base &= 0xfffffff8ULL;
+			dma_len = (data[dma_ptr_nr * 8 + 2] << 8)
+			        + (data[dma_ptr_nr * 8 + 3]);
+
+			/*  printf("dma_base = %08x, dma_len = %i\n", (int)dma_base, dma_len);  */
+
+			while (dma_len > 0) {
+				unsigned char ch;
+				res = memory_rw(cpu, cpu->mem, dma_base,
+				    &ch, sizeof(ch), MEM_READ, PHYSICAL);
+				/*  printf(" %02x", ch);  */
+
+				d->cur_tx_packet[j++] = ch;
+				if (j >= MAX_TX_PACKET_LEN) {
+					fatal("[ mec_try_tx: packet too large? ]\n");
+					break;
+				}
+				dma_base ++;
+				dma_len --;
+			}
+		}
+	}
+
+	if (j < len)
+		fatal("[ mec_try_tx: not enough data? ]\n");
+
+	net_ethernet_tx(extra, d->cur_tx_packet, d->cur_tx_packet_len);
+
+	/*  see openbsd's if_mec.c for details  */
+	data[0] = 0x80;
+	data[5] = 0x80;
+	data[4] = 0x00;
+
+	res = memory_rw(cpu, cpu->mem, addr,
+	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
+	if (!res)
+		return;
+
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_PACKET_SENT;
+	cpu_interrupt(cpu, d->irq_nr);
+
+skip:
+	/*  Advance the ring Read ptr.  */
+	tx_ring_ptr = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
+	ringread = tx_ring_ptr & MEC_TX_RING_READ_PTR;
+	ringwrite = tx_ring_ptr & MEC_TX_RING_WRITE_PTR;
+
+	ringread = ((ringread >> 16) + 1) << 16;
+
+	d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)] =
+	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
+	    (ringread & MEC_TX_RING_READ_PTR);
+}
+
+
+/*
  *  dev_sgi_mec_tick():
  */
 void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 {
-	/*  struct sgi_mec_data *d = (struct sgi_mec_data *) extra;  */
+	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
 
-	/*  TODO  */
+
+	/*  Interrupts:  */
+	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK)
+		cpu_interrupt(cpu, d->irq_nr);
+	else
+		cpu_interrupt_ack(cpu, d->irq_nr);
+
+	/*  TX:  */
+	mec_try_tx(cpu, d);
 }
+
 
 /*
  *  dev_sgi_mec_access():
@@ -100,10 +253,21 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / sizeof(uint64_t);
 
-	/*  Treat all registers as read/write, by default.  */
-	if (writeflag == MEM_WRITE)
-		d->reg[regnr] = idata;
-	else
+	/*  Treat most registers as read/write, by default.  */
+	if (writeflag == MEM_WRITE) {
+		switch (relative_addr) {
+		case MEC_INT_STATUS:	/*  0x08  */
+			/*  Clear lowest bits on write:  (This is just a guess)  */
+			d->reg[regnr] = (idata & ~0xff) | ((d->reg[regnr] & ~idata) & 0xff);
+			break;
+		case MEC_TX_RING_PTR:	/*  0x30  */
+			d->reg[regnr] = (idata & MEC_TX_RING_WRITE_PTR)
+			    | (d->reg[regnr] & ~MEC_TX_RING_WRITE_PTR);
+			break;
+		default:
+			d->reg[regnr] = idata;
+		}
+	} else
 		odata = d->reg[regnr];
 
 	switch (relative_addr) {
@@ -111,9 +275,36 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag)
 			mec_control_write(cpu, d, idata);
 		break;
+	case MEC_INT_STATUS:	/*  0x08  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_INT_STATUS: 0x%016llx ]\n", (long long)idata);
+		break;
 	case MEC_DMA_CONTROL:	/*  0x10  */
 		if (writeflag)
-			debug("[ sgi_mec: write to DMA CONTROL: 0x%016llx ]\n", (long long)idata);
+			debug("[ sgi_mec: write to MEC_DMA_CONTROL: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_TX_ALIAS:	/*  0x20  */
+		/*  TODO?  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_TX_ALIAS: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_TX_RING_PTR:	/*  0x30  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_TX_RING_PTR: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_PHY_DATA:	/*  0x64  */
+		if (writeflag)
+			fatal("[ sgi_mec: write to MEC_PHY_DATA: 0x%016llx ]\n", (long long)idata);
+		else
+			odata = 0;	/*  ?  */
+		break;
+	case MEC_PHY_ADDRESS:	/*  0x6c  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_PHY_ADDRESS: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_PHY_READ_INITIATE:	/*  0x70  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_PHY_READ_INITIATE: 0x%016llx ]\n", (long long)idata);
 		break;
 	case MEC_STATION:	/*  0xa0  */
 		if (writeflag)
@@ -131,6 +322,19 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 			    (idata >> 24) & 255, (idata >> 16) & 255,
 			    (idata >>  8) & 255, (idata >>  0) & 255);
 		break;
+	case MEC_MULTICAST:	/*  0xb0  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_MULTICAST: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_TX_RING_BASE:	/*  0xb8  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_TX_RING_BASE: 0x%016llx ]\n", (long long)idata);
+		break;
+	case MEC_MCL_RX_FIFO:	/*  0x100  */
+		/*  TODO  */
+		if (writeflag)
+			debug("[ sgi_mec: write to MEC_MCL_RX_FIFO: 0x%016llx ]\n", (long long)idata);
+		break;
 	default:
 		if (writeflag == MEM_WRITE)
 			fatal("[ sgi_mec: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
@@ -142,6 +346,8 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
+
+	dev_sgi_mec_tick(cpu, extra);
 
 	return 1;
 }

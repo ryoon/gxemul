@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.121 2004-10-17 15:31:41 debug Exp $
+$Id: index.html,v 1.122 2004-10-18 04:53:59 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -65,6 +65,7 @@ SUCH DAMAGE.
   <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
   <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
   <li><a href="#declinux">How to install Debian GNU/Linux for DECstation in the emulator</a>
+  <li><a href="#mach">How to run Mach/PMAX in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#fbres">Changing the framebuffer resolution</a>
   <li><a href="#networking">Networking</a>
@@ -640,15 +641,14 @@ as well, with a slight modification (the <b>-j</b> argument differs).
   <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
 	it is called /dev/cd0c here, replace that with the name of your
 	CDROM drive, or the name of a .iso image file.)
-<p>
-  <li>Start the emulator like this:<pre>
-	$ <b>./mips64emul -X -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+	Then, start the emulator like this:<pre>
+	$ <b>./mips64emul -X -M128 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 </pre>
 	Once the first stage of the installation is done (restoring the root filesystem),
 	you need to restart the emulator, booting from the new rootdisk,
 	to continue the installation process. This is done by removing the
 	'b' bootflag from the second diskimage argument:<pre>
-	$ <b>./mips64emul -X -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+	$ <b>./mips64emul -X -M128 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
 
 </pre>
 </ol>
@@ -656,7 +656,7 @@ as well, with a slight modification (the <b>-j</b> argument differs).
 <p>
 When the installation is completed, the following command should start
 Ultrix from the harddisk image:<pre>
-	$ <b>./mips64emul -X -M64 -D2 -j vmunix -d rootdisk.img</b>
+	$ <b>./mips64emul -X -M128 -D2 -j vmunix -d rootdisk.img</b>
 </pre>
 
 <p>
@@ -809,6 +809,68 @@ The following <i>might</i> work:
 <font color="#ff0000">2004-09-24 NOTE: The installation dies with
 an Oops when running 'fdisk' or 'cfdisk'.
 </font>
+
+
+
+
+
+<p><br>
+<a name="mach"></a>
+<h3>How to run Mach/PMAX in the emulator:</h3>
+
+<p>
+Read the following link if you want to know more about Mach in general:
+<a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
+http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html</a>
+
+<font color="#ff0000">NOTE: Mach for DECstation requires some files
+(called 'startup' and 'emulator') which I haven't been able to find
+on the net. Without these, Mach will not get very far. These
+installation instructions are preliminary.
+</font>
+
+<p>
+The following steps should let you experiment with running Mach
+for DECstation in the emulator:
+
+<p>
+<ol>
+  <li>Compile mips64emul: (<b>NOTE: --caches</b>)<pre>
+	$ <b>./configure --caches; make</b>
+
+</pre>
+  <li>Download the pmax binary distribution for Mach 3.0:<pre>
+        <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
+	7263343 bytes, md5 = f9d76c240a6e169921a1df99ad560cc0
+
+</pre>
+  <li>Extract the Mach kernel:<pre>
+        $ <b>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY</b>
+
+</pre>
+  <li>Create an empty disk image:<pre>
+	$ <b>dd if=/dev/zero of=disk.img bs=1 count=512 seek=400000000</b>
+
+</pre>
+  <li>Load the contents of pmax.tar.Z onto the disk image. This is
+	complicated, and should be described in more detail some time.
+	For now, use your imagination. (For example using OpenBSD/pmax:
+	<i>disklabel -E rz1; newfs -O /dev/rz1a;
+	mount /dev/rz1a /mnt; cd /mnt; download pmax.tar.Z using ftp;
+	tar xzvf pmax.tar.Z; mv pmax_mach/* .; rmdir pmax_mach;
+	mkdir mach_servers;
+	cd mach_servers;
+	cp ../etc/mach_init .;
+	cp ../tests/test_service startup;
+	dd if=/dev/zero of=paging_file bs=65536 count=400;
+	cd /; sync; umount /mnt</i>)
+	<p>
+  <li>Start the emulator with the following command:<pre>
+	$ <b>./mips64emul -D2 -X -d disk.img pmax_mach/special/mach.boot.MK83.STD+ANY</b>
+
+</pre>
+</ol>
+
 
 
 

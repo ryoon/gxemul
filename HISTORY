@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.261 2004-10-17 13:36:02 debug Exp $
+$Id: HISTORY,v 1.262 2004-10-18 04:53:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1031,3 +1031,4 @@ HISTORY of mips64emul
 		Adding bintrans_mips.c for 64-bit MIPS hosts, but it is not
 		used yet.
 20041017	Minor updates.
+20041018	Update to dev_mc146818 to allow Mach to boot a bit further.

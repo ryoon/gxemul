@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.11 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.12 2004-01-11 16:31:34 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -166,7 +166,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 
 		/*  IER:  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
+			if (idata != 0)		/*  <-- to supress Linux' behaviour  */
+				debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
 			d->irq_enable = idata;
 /* cpu_interrupt_ack(cpu, d->irqnr); */
 			dev_ns16550_tick(cpu, d);

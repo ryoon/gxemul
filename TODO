@@ -118,7 +118,8 @@ This file is a mess. Don't trust it to be up-to-date.
 			Has an R3000A as a subsystem (!)
 		o)  Playstation 1? R3000A. Weird hardware? No FPU, but something as coproc 2.
 		o)  hpcmips:  framebuffer(s) and harddisk controller, among other things
-		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp  (R4300, 4MB RAM, really weird memory map)
+		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
+			(R4300, 4MB RAM, really weird memory map, probably not interesting)
 		o)  newsmips?
 		o)  mipsco?
 
@@ -135,13 +136,14 @@ This file is a mess. Don't trust it to be up-to-date.
 		o)  Move the polygon drawing stuff to its own module.
 		o)  Antialiased polygons? :-)
 
-	File handling:
+	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
 			x)  (read-only) disk images (?)
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)
+		o)  Better handling of tape files
 
 	Better X-windows functionality:
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.23 2004-04-15 15:45:42 debug Exp $
+ *  $Id: diskimage.c,v 1.24 2004-06-21 10:54:57 debug Exp $
  *
  *  Disk image support.
  *
@@ -49,6 +49,10 @@ struct diskimage {
 	int		writable;
 	int		is_a_cdrom;
 	int		is_boot_device;
+
+	int		is_a_tape;
+	uint64_t	tape_offset;
+	int		tape_filenr;
 
 	int		rpms;
 	int		ncyls;
@@ -222,6 +226,21 @@ int64_t diskimage_getsize(int disk_id)
 
 
 /*
+ *  diskimage__return_default_status_and_message():
+ *
+ *  Set the status and msg_in parts of a scsi_transfer struct
+ *  to default values (msg_in = 0x00, status = 0x00).
+ */
+void diskimage__return_default_status_and_message(struct scsi_transfer *xferp)
+{
+	scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+	xferp->status[0] = 0x00;
+	scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+	xferp->msg_in[0] = 0x00;
+}
+
+
+/*
  *  diskimage_scsicommand():
  *
  *  Perform a SCSI command on a disk image.
@@ -270,13 +289,7 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		if (xferp->cmd[1] != 0x00)
 			fatal("WARNING: TEST_UNIT_READY with cmd[1]=0x%02x not yet implemented\n");
 
-		/*  Return msg and status:  */
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_INQUIRY:
@@ -342,13 +355,26 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			}
 		}
 
-		/*  Return msg and status:  */
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
+		/*  Data for tape devices:  */
+		if (diskimages[disk_id]->is_a_tape) {
+			xferp->data_in[0] = 0x01;	/*  0x01 = tape  */
+			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
+			memcpy(xferp->data_in+16, "TAPE            ", 16);
 
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
+			if (emulation_type == EMULTYPE_DEC) {
+				/*
+				 *  TODO:  find out if these are correct.
+				 *
+				 *  The name might be TZK10, TSZ07, or TLZ04,
+				 *  or something completely different.
+				 */
+				memcpy(xferp->data_in+8,  "DEC     ", 8);
+				memcpy(xferp->data_in+16, "TZK10    (C) DEC", 16);
+				memcpy(xferp->data_in+32, "2000", 4);
+			}
+		}
 
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSIBLOCKCMD_READ_CAPACITY:
@@ -380,12 +406,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = (logical_block_size >> 8) & 255;
 		xferp->data_in[7] = logical_block_size & 255;
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_MODE_SENSE:
@@ -473,74 +494,95 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 29] = diskimages[disk_id]->rpms & 255;
 			break;
 		default:
-			fatal("MODE_SENSE for page %i is not yet implemented!!!\n", pagecode);
+			fatal("[ MODE_SENSE for page %i is not yet implemented! ]\n", pagecode);
 		}
 
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_READ:
 	case SCSICMD_READ_10:
 		debug("READ");
 
-		if (xferp->cmd[0] == SCSICMD_READ) {
-			if (xferp->cmd_len != 6)
-				debug(" (weird len=%i)", xferp->cmd_len);
+		/*
+		 *  For tape devices, read data at the current position.
+		 *  For disk and CDROM devices, the command bytes contain
+		 *  an offset telling us where to read from the device.
+		 */
 
-			/*
-			 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
-			 *  logical block address.
-			 *
-			 *  cmd[4] holds the number of logical blocks to transfer.
-			 *  (special case if the value is 0, actually means 256.)
-			 */
-			ofs = ((xferp->cmd[1] & 0x1f) << 16) +
-			      (xferp->cmd[2] << 8) + xferp->cmd[3];
-			retlen = xferp->cmd[4];
-			if (retlen == 0)
-				retlen = 256;
+		if (diskimages[disk_id]->is_a_tape) {
+			/*  bits 7..5 of cmd[1] are the LUN bits... TODO  */
+
+			size = (xferp->cmd[2] << 16) +
+			       (xferp->cmd[3] <<  8) +
+				xferp->cmd[4];
+
+			/*  debug("[ READ cmd[1]=%02x size=%i ]\n", xferp->cmd[1], (int)size);  */
+
+			/*  Bit 1 of cmd[1] is the SILI bit (TODO), and
+			    bit 0 is the "use fixed length" bit.  */
+
+			if (xferp->cmd[1] & 0x01) {
+				/*  Fixed block length:  */
+				size *= logical_block_size;
+			}
+
+			ofs = diskimages[disk_id]->tape_offset;
 		} else {
-			if (xferp->cmd_len != 10)
-				debug(" (weird len=%i)", xferp->cmd_len);
+			if (xferp->cmd[0] == SCSICMD_READ) {
+				if (xferp->cmd_len != 6)
+					debug(" (weird len=%i)", xferp->cmd_len);
 
-			/*
-			 *  cmd[2..5] hold the logical block address.
-			 *  cmd[7..8] holds the number of logical blocks to transfer.
-			 *  (if the value is 0 this means 0, not 65536.)
-			 */
-			ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
-			      (xferp->cmd[4] << 8) + xferp->cmd[5];
-			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
+				/*
+				 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
+				 *  logical block address.
+				 *
+				 *  cmd[4] holds the number of logical blocks to transfer.
+				 *  (special case if the value is 0, actually means 256.)
+				 */
+				ofs = ((xferp->cmd[1] & 0x1f) << 16) +
+				      (xferp->cmd[2] << 8) + xferp->cmd[3];
+				retlen = xferp->cmd[4];
+				if (retlen == 0)
+					retlen = 256;
+			} else {
+				if (xferp->cmd_len != 10)
+					debug(" (weird len=%i)", xferp->cmd_len);
+
+				/*
+				 *  cmd[2..5] hold the logical block address.
+				 *  cmd[7..8] holds the number of logical blocks to transfer.
+				 *  (if the value is 0 this means 0, not 65536.)
+				 */
+				ofs = (xferp->cmd[2] << 24) + (xferp->cmd[3] << 16) +
+				      (xferp->cmd[4] << 8) + xferp->cmd[5];
+				retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
+			}
+
+			size = retlen * logical_block_size;
+			ofs *= logical_block_size;
 		}
-
-		size = retlen * logical_block_size;
-		ofs *= logical_block_size;
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
 
-		debug("READ  ofs=%i size=%i\n", (int)ofs, (int)size);
+		debug("READ  ofs=%lli size=%i\n", (long long)ofs, (int)size);
 
 		diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
 		/*  TODO: how about return code?  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
+		if (diskimages[disk_id]->is_a_tape)
+			diskimages[disk_id]->tape_offset = ftell(diskimages[disk_id]->f);
 
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_WRITE:
 	case SCSICMD_WRITE_10:
 		debug("WRITE");
+
+		/*  TODO: tape  */
 
 		if (xferp->cmd[0] == SCSICMD_WRITE) {
 			if (xferp->cmd_len != 6)
@@ -591,12 +633,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		/*  Is this really neccessary?  */
 		/*  fsync(fileno(diskimages[disk_id]->f));  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_SYNCHRONIZE_CACHE:
@@ -608,12 +645,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		/*  TODO: actualy care about cmd[]  */
 		fsync(fileno(diskimages[disk_id]->f));
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_START_STOP_UNIT:
@@ -624,12 +656,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  TODO: actualy care about cmd[]  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_REQUEST_SENSE:
@@ -654,12 +681,111 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[7] = retlen - 7;		/*  additional sense length  */
 		/*  TODO  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
+		diskimage__return_default_status_and_message(xferp);
+		break;
 
+	case SCSICMD_READ_BLOCK_LIMITS:
+		debug("READ_BLOCK_LIMITS");
+
+		retlen = 6;
+
+		/*  TODO: bits 765 of buf[1] contains the LUN  */
+		if (xferp->cmd[1] != 0x00)
+			fatal("WARNING: READ_BLOCK_LIMITS with cmd[1]=0x%02x not yet implemented\n");
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+
+		/*
+		 *  data[0] is reserved, data[1..3] contain the maximum
+		 *  block length limit, data[4..5] contain the minimum
+		 *  limit.
+		 */
+
+		{
+			int max_limit = 32768;
+			int min_limit = 128;
+
+			xferp->data_in[1] = (max_limit >> 16) & 255;
+			xferp->data_in[2] = (max_limit >>  8) & 255;
+			xferp->data_in[3] =  max_limit        & 255;
+			xferp->data_in[4] = (min_limit >>  8) & 255;
+			xferp->data_in[5] =  min_limit        & 255;
+		}
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case SCSICMD_REWIND:
+		debug("REWIND");
+
+		/*  TODO: bits 765 of buf[1] contains the LUN  */
+		if ((xferp->cmd[1] & 0xe0) != 0x00)
+			fatal("WARNING: REWIND with cmd[1]=0x%02x not yet implemented\n");
+
+		/*  Close and reopen.  */
+
+		fclose(diskimages[disk_id]->f);
+		diskimages[disk_id]->f = fopen(diskimages[disk_id]->fname,
+		    diskimages[disk_id]->writable? "r+" : "r");
+		if (diskimages[disk_id]->f == NULL) {
+			fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n",
+			    diskimages[disk_id]->fname);
+			/*  TODO: return error  */
+		}
+
+		diskimages[disk_id]->tape_offset = 0;
+		diskimages[disk_id]->tape_filenr = 0;
+
+		diskimage__return_default_status_and_message(xferp);
+		break;
+
+	case SCSICMD_SPACE:
+		debug("SPACE");
+
+		/*  TODO: bits 765 of buf[1] contains the LUN  */
+		if ((xferp->cmd[1] & 0xe0) != 0x00)
+			fatal("WARNING: SPACE with cmd[1]=0x%02x not yet implemented\n");
+
+		/*
+		 *  Bits 2..0 of buf[1] contain the 'code' which describes
+		 *  how we should space, and buf[2..4] contain the number
+		 *  of operations.
+		 */
+		debug("[ SPACE: buf[] = %02x %02x %02x %02x %02x %02x ]\n",
+		    xferp->cmd[0],
+		    xferp->cmd[1],
+		    xferp->cmd[2],
+		    xferp->cmd[3],
+		    xferp->cmd[4],
+		    xferp->cmd[5]);
+
+		switch (xferp->cmd[1] & 7) {
+		case 1:	/*  file nr  */
+			diskimages[disk_id]->tape_filenr += (
+			    (xferp->cmd[2] << 16) +
+			    (xferp->cmd[3] << 8) + xferp->cmd[4]);
+
+			debug("{ switching to tape file %i }", diskimages[disk_id]->tape_filenr);
+			{
+				char tmpfname[1000];
+				snprintf(tmpfname, sizeof(tmpfname), "%s.%i",
+				    diskimages[disk_id]->fname, diskimages[disk_id]->tape_filenr);
+				tmpfname[sizeof(tmpfname)-1] = '\0';
+
+				fclose(diskimages[disk_id]->f);
+				diskimages[disk_id]->f = fopen(tmpfname, diskimages[disk_id]->writable? "r+" : "r");
+				if (diskimages[disk_id]->f == NULL) {
+					fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n", tmpfname);
+					/*  TODO: return error  */
+				}
+			}
+			break;
+		default:
+			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n", xferp->cmd[1] & 7);
+		}
+
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICDROM_READ_SUBCHANNEL:
@@ -673,12 +799,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  TODO  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	case SCSICMD_MODE_SELECT:
@@ -687,16 +808,11 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  TODO  */
 
-		/*  Return status and message:  */
-		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
-		xferp->status[0] = 0x00;
-		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
-		xferp->msg_in[0] = 0x00;
-
+		diskimage__return_default_status_and_message(xferp);
 		break;
 
 	default:
-		fatal("unimplemented SCSI command 0x%02x\n", xferp->cmd[0]);
+		fatal("unimplemented SCSI command 0x%02x, disk id=%i\n", xferp->cmd[0], disk_id);
 		exit(1);
 	}
 	debug(" ]\n");
@@ -724,6 +840,9 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 	if (len == 0)
 		return 1;
 
+	if (diskimages[disk_id]->f == NULL)
+		return 0;
+
 	fseek(diskimages[disk_id]->f, offset, SEEK_SET);
 
 	if (writeflag) {
@@ -739,8 +858,8 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 
 	/*  Warn about non-complete data transfers:  */
 	if (len_done != len) {
-		fatal("diskimage_access(): disk_id %i, transfer not completed. len=%i, len_done=%i\n",
-		    disk_id, len, len_done);
+		fatal("diskimage_access(): disk_id %i, offset %lli, transfer not completed. len=%i, len_done=%i\n",
+		    disk_id, (long long)offset, len, len_done);
 		return 0;
 	}
 
@@ -759,6 +878,7 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
  *	c	CD-ROM (instead of normal SCSI DISK)
  *	d	SCSI DISK (this is the default)
  *	r       read-only (don't allow changes to the file)
+ *	t	SCSI tape
  *	0-7	force a specific SCSI ID number
  *
  *  Returns an integer >= 0 identifying the disk image.
@@ -771,6 +891,7 @@ int diskimage_add(char *fname)
 	int prefix_b = 0;
 	int prefix_c = 0;
 	int prefix_d = 0;
+	int prefix_t = 0;
 	int prefix_id = -1;
 	int prefix_r = 0;
 
@@ -803,6 +924,9 @@ int diskimage_add(char *fname)
 				break;
 			case 'd':
 				prefix_d = 1;
+				break;
+			case 't':
+				prefix_t = 1;
 				break;
 			case 'r':
 				prefix_r = 1;
@@ -862,12 +986,16 @@ int diskimage_add(char *fname)
 	 *  An intelligent guess would be that filenames ending with .iso
 	 *  are CD-ROM images.
 	 */
-	if (prefix_c ||
-	    ((strlen(diskimages[id]->fname) > 4 &&
-	    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
-	    && !prefix_d)
-	   )
-		diskimages[id]->is_a_cdrom = 1;
+	if (prefix_t) {
+		diskimages[id]->is_a_tape = 1;
+	} else {
+		if (prefix_c ||
+		    ((strlen(diskimages[id]->fname) > 4 &&
+		    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
+		    && !prefix_d)
+		   )
+			diskimages[id]->is_a_cdrom = 1;
+	}
 
 	/*  Measure total_size:  */
 	f = fopen(fname, "r");

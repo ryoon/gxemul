@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.20 2004-03-19 14:26:39 debug Exp $
+ *  $Id: coproc.c,v 1.21 2004-03-22 00:54:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -104,6 +104,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R4000:
+		case MIPS_R4600:
 		case MIPS_RM5200:	/*  rm5200 is just a wild guess  */
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  Master/Checker present bit  */

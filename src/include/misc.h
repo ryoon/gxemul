@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.38 2004-03-10 02:09:49 debug Exp $
+ *  $Id: misc.h,v 1.39 2004-03-22 00:54:56 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -125,7 +125,7 @@ typedef uint64_t u_int64_t;
 
 /*  CPU types:  */
 #include "cpuregs.h"			/*  from NetBSD  */
-#define	MIPS_5K	129			/*  according to MIPS64 5K User's Manual  */
+#define	MIPS_5K		129		/*  according to MIPS64 5K User's Manual  */
 #define	MIPS_5K_REV	    1		/*  according to MIPS64 5K User's Manual  */
 
 struct cpu_type_def {
@@ -153,20 +153,22 @@ struct cpu_type_def {
 
 #define	CPU_TYPE_DEFS	{	\
 	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
+	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32 }, \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64 }, \
-	{ "R4300",	MIPS_R4300, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	32 }, /*  32, not 48?  */ \
+	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32 }, /*  No DCOUNT?  */ \
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
-	{ "R4700",	MIPS_R4700, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
+	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
+	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48 }, /*  No DCOUNT?  */ \
 	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU10K,	4,	64 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
-	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
+	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, /*  DCOUNT?  */ \
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48 }, /*  DCOUNT?  */ \
+	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48 }, /*  DCOUNT?  */ \
 	{ NULL } }
 

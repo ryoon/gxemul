@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.13 2004-04-06 15:36:09 debug Exp $
+ *  $Id: diskimage.c,v 1.14 2004-04-09 05:12:17 debug Exp $
  *
  *  Disk image support.
  *
@@ -255,7 +255,7 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
 		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
-		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
+		xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
 		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
 
@@ -408,6 +408,8 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
 		/*  TODO: how about return code?  */
 
+		fsync(fileno(diskimages[disk_id]->f));
+
 		/*  Return status and message:  */
 		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
 		xferp->status[0] = 0x00;
@@ -467,11 +469,31 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		break;
 
-	case SCSICMD_MODE_SELECT:
-	case 0x1e:
 	case SCSICDROM_READ_SUBCHANNEL:
 	case SCSICDROM_READ_TOC:
 		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+
+		retlen = xferp->cmd[4];
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+
+		/*  TODO  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_MODE_SELECT:
+	case 0x1e:
+	case 0x28:
+		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
+
+		/*  TODO  */
 
 		/*  Return status and message:  */
 		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.60 2005-01-28 18:07:55 debug Exp $
+ *  $Id: net.c,v 1.61 2005-02-02 20:12:45 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -42,6 +42,9 @@
  *		o)  Outgoing UDP packet fragment support.
  *		o)  IPv6
  *		o)  Incoming connections
+ *		o)  if multiple NICs are connected to the same network,
+ *		    they should be able to see each other's packets, and
+ *		    they should have different MAC addresses!
  *
  *
  *  The emulated NIC has a MAC address of (for example) 10:20:30:40:50:60.
@@ -72,7 +75,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

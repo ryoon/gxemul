@@ -28,20 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.7 2005-02-02 19:10:03 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.8 2005-02-02 20:12:44 debug Exp $
  */
 
 #include "misc.h"
-
-
-#ifndef ENABLE_PPC
-
-
-struct ppc_cpu {
-	int	dummy;
-};
-
-#else	/*  ENABLE_PPC  */
 
 
 struct cpu_family;
@@ -114,7 +104,5 @@ void ppc_cpu_dumpinfo(struct cpu *cpu);
 void ppc_cpu_list_available_types(void);
 int ppc_cpu_family_init(struct cpu_family *);
 
-
-#endif	/*  ENABLE_PPC  */
 
 #endif	/*  CPU_PPC_H  */

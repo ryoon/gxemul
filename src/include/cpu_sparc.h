@@ -28,21 +28,10 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.2 2005-02-02 19:10:03 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.3 2005-02-02 20:12:44 debug Exp $
  */
 
 #include "misc.h"
-
-
-#ifndef ENABLE_SPARC
-
-
-struct sparc_cpu {
-	int		dummy;
-};
-
-
-#else	/*  ENABLE_SPARC  */
 
 
 struct cpu_family;
@@ -55,7 +44,5 @@ struct sparc_cpu {
 /*  cpu_sparc.c:  */
 int sparc_cpu_family_init(struct cpu_family *);
 
-
-#endif	/*  ENABLE_SPARC  */
 
 #endif	/*  CPU_SPARC_H  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.553 2005-02-02 18:45:22 debug Exp $
+$Id: HISTORY,v 1.554 2005-02-02 20:12:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1615,3 +1615,4 @@ HISTORY of mips64emul
 		COFF files.
 		Adding a dummy cpu_sparc.c and include/cpu_sparc.h.
 		Cleaning up more to support multiple cpu families.
+		Various other minor updates.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.80 2005-02-01 14:39:38 debug Exp $
+ *  $Id: debugger.c,v 1.81 2005-02-02 20:12:45 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -377,6 +377,11 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: bintrans\n");
+		return;
+	}
+
 	if (!m->bintrans_enabled_from_start) {
 		printf("You must have enabled bintrans from the start of the "
 		    "simulation.\nIt is not possible to turn on afterwards.\n");
@@ -393,6 +398,11 @@ static void debugger_cmd_bintrans(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_continue(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: continue\n");
+		return;
+	}
+
 	exit_debugger = 1;
 }
 
@@ -405,6 +415,11 @@ static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 	int i;
 	struct memory *mem;
 	struct cpu *c;
+
+	if (*cmd_line) {
+		printf("syntax: devices\n");
+		return;
+	}
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -617,6 +632,11 @@ static void debugger_cmd_emuls(struct machine *m, char *cmd_line)
 {
 	int i, iadd = 4;
 
+	if (*cmd_line) {
+		printf("syntax: emuls\n");
+		return;
+	}
+
 	for (i=0; i<debugger_n_emuls; i++) {
 		struct emul *e = debugger_emuls[i];
 
@@ -700,6 +720,11 @@ static void debugger_cmd_help(struct machine *m, char *cmd_line);
  */
 static void debugger_cmd_itrace(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: itrace\n");
+		return;
+	}
+
 	old_instruction_trace = 1 - old_instruction_trace;
 	printf("instruction_trace = %s\n", old_instruction_trace? "ON":"OFF");
 	/*  TODO: how to preserve quiet_mode?  */
@@ -758,6 +783,11 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 {
 	int iadd = 4;
 
+	if (*cmd_line) {
+		printf("syntax: machine\n");
+		return;
+	}
+
 	debug("machine \"%s\":\n", m->name);
 	debug_indentation(iadd);
 	machine_dumpinfo(m);
@@ -770,6 +800,11 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_opcodestats(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: opcodestats\n");
+		return;
+	}
+
 	if (!show_opcode_statistics) {
 		printf("You need to start the emulator "
 		    "with -s, if you want to gather statistics.\n");
@@ -1024,6 +1059,11 @@ static void debugger_cmd_quit(struct machine *m, char *cmd_line)
 	int i, j, k;
 	struct emul *e;
 
+	if (*cmd_line) {
+		printf("syntax: quit\n");
+		return;
+	}
+
 	for (i=0; i<debugger_n_emuls; i++) {
 		single_step = 0;
 
@@ -1148,6 +1188,11 @@ static void debugger_cmd_tlbdump(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_trace(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: trace\n");
+		return;
+	}
+
 	old_show_trace_tree = 1 - old_show_trace_tree;
 	printf("show_trace_tree = %s\n", old_show_trace_tree? "ON" : "OFF");
 
@@ -1261,6 +1306,11 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_version(struct machine *m, char *cmd_line)
 {
+	if (*cmd_line) {
+		printf("syntax: version\n");
+		return;
+	}
+
 #ifdef VERSION
 	printf("%s, %s\n", VERSION, COMPILE_DATE);
 #else
@@ -1290,11 +1340,11 @@ static struct cmd cmds[] = {
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
-	{ "devstate", "devnr", 0, debugger_cmd_devstate,
-		"show current state of a device" },
-
 	{ "devices", "", 0, debugger_cmd_devices,
 		"print a list of memory-mapped devices" },
+
+	{ "devstate", "devnr", 0, debugger_cmd_devstate,
+		"show current state of a device" },
 
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },

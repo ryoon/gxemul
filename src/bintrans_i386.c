@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.71 2005-01-30 13:23:35 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.72 2005-02-02 20:12:45 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -506,7 +506,8 @@ rt0:
 /*
  *  bintrans_write_instruction__jr():
  */
-static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd, int special)
+static int bintrans_write_instruction__jr(unsigned char **addrp,
+	int rs, int rd, int special)
 {
 	unsigned char *a;
 	int ofs;
@@ -786,7 +787,8 @@ rt0:
 /*
  *  bintrans_write_instruction__jal():
  */
-static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int link)
+static int bintrans_write_instruction__jal(unsigned char **addrp,
+	int imm, int link)
 {
 	unsigned char *a;
 	uint32_t subimm;

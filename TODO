@@ -1,4 +1,4 @@
-$Id: TODO,v 1.116 2005-01-31 06:31:52 debug Exp $
+$Id: TODO,v 1.117 2005-02-02 20:12:43 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -41,10 +41,10 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Make it possible to disable various CPU families? (for
 		    example PPC64)
 
+	Emulation in general:
+		o)  Use same clock for all emulations and machines (?)
+
 	CPU Emulation:
-		o)  Continue to factor out the MIPS dependant parts of the cpu,
-		    so that the emulator can support other architectures
-		    (powerpc64, sparc64, 64-bit hppa?, ...)
 		o)  Binary translation:
 			+)  use an Intermediate Representation!
 			+)  recursive translation?

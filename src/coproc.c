@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.79 2004-11-01 15:04:58 debug Exp $
+ *  $Id: coproc.c,v 1.80 2004-11-04 22:57:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -378,7 +378,7 @@ void coproc_register_read(struct cpu *cpu,
  *  Write a value to a coprocessor register.
  */
 void coproc_register_write(struct cpu *cpu,
-	struct coproc *cp, int reg_nr, uint64_t *ptr)
+	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64)
 {
 	int unimpl = 1;
 	int readonly = 0;
@@ -423,7 +423,7 @@ void coproc_register_write(struct cpu *cpu,
 			cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
 			cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
 		}
-		return;
+		goto ret;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_PAGEMASK) {
 		tmp2 = tmp >> PAGEMASK_SHIFT;
@@ -434,13 +434,13 @@ void coproc_register_write(struct cpu *cpu,
 		    tmp2 != 0x0ff &&
 		    tmp2 != 0x3ff &&
 		    tmp2 != 0xfff)
-			debug("cpu%i: trying to write an invalid pagemask %08lx to COP0_PAGEMASK\n",
+			fatal("cpu%i: trying to write an invalid pagemask %08lx to COP0_PAGEMASK\n",
 			    cpu->cpu_id, (long)tmp2);
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED) {
 		if (cpu->cpu_type.mmu_model == MMU3K) {
-			debug("cpu%i: r2k/r3k wired register must always be 8\n", cpu->cpu_id);
+			fatal("cpu%i: r2k/r3k wired register must always be 8\n", cpu->cpu_id);
 			tmp = 8;
 		}
 		cp->reg[COP0_RANDOM] = cp->nr_of_tlbs-1;
@@ -489,7 +489,7 @@ void coproc_register_write(struct cpu *cpu,
 		 */
 /*		if (cpu->cpu_type.exc_model == EXC4K &&
 		    cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
-			return;
+			goto ret;
 */		/*  Otherwise, allow the write:  */
 		unimpl = 0;
 	}
@@ -503,7 +503,7 @@ void coproc_register_write(struct cpu *cpu,
 		tmp &= 0x3;	/*  only bits 2..0 can be written  */
 		cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
 		/*  fatal("0x%08x\n", cp->reg[reg_nr]);  */
-		return;
+		goto ret;
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS) {
@@ -515,7 +515,11 @@ void coproc_register_write(struct cpu *cpu,
 		/*  A write to the cause register only affects IM bits 0 and 1:  */
 		cp->reg[reg_nr] &= ~(0x3 << STATUS_IM_SHIFT);
 		cp->reg[reg_nr] |= (tmp & (0x3 << STATUS_IM_SHIFT));
-		return;
+		if (!(cp->reg[COP0_CAUSE] & STATUS_IM_MASK))
+	                cpu->cached_interrupt_is_possible = 0;
+		else
+	                cpu->cached_interrupt_is_possible = 1;
+		goto ret;
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_FRAMEMASK) {
@@ -578,16 +582,23 @@ void coproc_register_write(struct cpu *cpu,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
 
 		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
-		return;
+		goto ret;
 	}
 
 	if (readonly) {
-		debug("cpu%i: warning: write to READONLY coproc%i register "
+		fatal("cpu%i: warning: write to READONLY coproc%i register "
 		    "%i ignored\n", cpu->cpu_id, cp->coproc_nr, reg_nr);
 		return;
 	}
 
 	cp->reg[reg_nr] = tmp;
+
+ret:
+	if (!flag64) {
+		cp->reg[reg_nr] &= 0xffffffffULL;
+		if (cp->reg[reg_nr] & 0x80000000ULL)
+			cp->reg[reg_nr] |= 0xffffffff00000000ULL;
+	}
 }
 
 
@@ -1311,7 +1322,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 			if (tmpvalue & 0x80000000ULL)
 				tmpvalue |= 0xffffffff00000000ULL;
 		}
-		coproc_register_write(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
+		coproc_register_write(cpu, cpu->coproc[cpnr], rd,
+		    &tmpvalue, copz == COPz_DMTCz);
 		return;
 	}
 
@@ -1325,8 +1337,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 				debug("cfc%i\tr%i,r%i\n", cpnr, rt, fs);
 				return;
 			}
-			cpu->gpr[rt] = cp->fcr[fs];
-
+			cpu->gpr[rt] = cp->fcr[fs] & 0xffffffffULL;
+			if (cpu->gpr[rt] & 0x80000000ULL)
+				cpu->gpr[rt] |= 0xffffffff00000000ULL;
 			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
 			return;
 		case COPz_CTCz:		/*  Copy to FPU control register  */
@@ -1489,9 +1502,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 					cpu->pc_last_virtual_page =
 					    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
-				/*  Translation caches must be invalidated:  */
-				invalidate_translation_caches(cpu);
-
 				if (unassemble_only) {
 					if (op == COP0_TLBWI)
 						debug("tlbwi");
@@ -1516,6 +1526,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 					debug(", lo1=%016llx\n",
 					    (long long)cp->reg[COP0_ENTRYLO1]);
 				}
+
+
+				/*  Translation caches must be invalidated:  */
+				invalidate_translation_caches(cpu);
 
 				if (op == COP0_TLBWR) {
 #ifdef LAST_USED_TLB_EXPERIMENT

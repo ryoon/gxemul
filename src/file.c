@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.37 2004-10-20 03:22:27 debug Exp $
+ *  $Id: file.c,v 1.38 2004-11-04 22:57:36 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -941,7 +941,7 @@ static void file_load_elf(struct emul *emul, struct memory *mem,
 			unencode(p_align,   &phdr32.p_align,   Elf32_Word);
 		}
 
-		if (p_type == PT_LOAD || p_type == 0x70000000 || p_type == 0x70000002) {
+		if (p_type == PT_LOAD || (p_type & PF_MASKPROC) == PT_MIPS_REGINFO) {
 			if (p_type == PT_LOAD)
 				debug("'%s': loadable chunk %i @ %08llx, vaddr %016llx len=0x%llx\n",
 				    filename, i, p_offset, p_vaddr, p_memsz);

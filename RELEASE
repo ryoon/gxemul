@@ -1,13 +1,6 @@
-$Id: RELEASE,v 1.53 2004-11-03 15:47:33 debug Exp $
+$Id: RELEASE,v 1.54 2004-11-04 22:57:34 debug Exp $
 
-I'm currently working on what will become 0.2.2.
 The release "road map" at the moment looks something like this:
-
-  0.2.2:  there has been a number of minor updates since 0.2.1, so this
-          would at least be a bugfix release, but perhaps also contain some
-          new features.
-
-0.2.2 will most probably be released some time in November 2004. Then:
 
   0.2.x:  ?
 
@@ -38,7 +31,7 @@ combinations as possible of the following must be tested:
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.2
+Release notes for mips64emul 0.2.X
 ==================================
 
 Copyright (C) 2003-2004  Anders Gavare.
@@ -102,6 +95,8 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
             do much.)
 
         x)  Lots of minor bug fixes.
+
+[  TODO: changes 0.2.2 -> 0.2.X?  ]
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

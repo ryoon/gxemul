@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.13 2004-12-18 06:01:14 debug Exp $
+ *  $Id: dev_rd94.c,v 1.14 2004-12-18 23:34:57 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -39,6 +39,8 @@
 #include "misc.h"
 #include "rd94.h"
 
+
+#define	RD94_TICK_SHIFT		14
 
 struct rd94_data {
 	struct pci_data *pci_data;
@@ -183,7 +185,7 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
 	    dev_rd94_access, (void *)d, MEM_DEFAULT, NULL);
-	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);
+	cpu_add_tickfunction(cpu, dev_rd94_tick, d, RD94_TICK_SHIFT);
 
 	return d->pci_data;
 }

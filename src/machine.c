@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.248 2004-12-18 23:07:29 debug Exp $
+ *  $Id: machine.c,v 1.249 2004-12-18 23:34:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2112,30 +2112,8 @@ Why is this here? TODO
 				strcat(emul->machine_name, " (O2)");
 
 				/*  TODO:  Find out where the physical ram is actually located.  */
-				dev_ram_init(mem,    0x40000000ULL,
-				    32 * 1048576, DEV_RAM_RAM, 0);
-
-#if 0
-				dev_ram_init(mem,    0x20000000ULL,
-				    32 * 1048576, DEV_RAM_RAM, 0);
-				dev_ram_init(mem, 0x40000000000ULL,
-				    32 * 1048576, DEV_RAM_RAM, 0);
-				dev_ram_init(mem, 0x41000000000ULL,
-				    32 * 1048576, DEV_RAM_RAM, 0);
-#else
-				dev_ram_init(mem,    0x20000000ULL,
-				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x40000000000ULL,
-				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x41000000000ULL,
-				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-#endif
-				dev_ram_init(mem, 0x42000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem, 0x47000000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				/*
-				dev_ram_init(mem,    0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-				dev_ram_init(mem,    0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
-				*/
+				dev_ram_init(mem, 0x20000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 
 				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, emul->use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
@@ -2251,22 +2229,16 @@ Why is this here? TODO
 
 				/*  TODO: interrupt controller!  */
 
-				pci_data = dev_rd94_init(cpu,
-				    mem, 0x2000000000ULL, 0);
-				dev_sn_init(cpu, mem, 0x2000001000ULL, 0);
-				dev_mc146818_init(cpu, mem,
-				    0x2000004000ULL, 0, MC146818_ARC_NEC, 1);
-				dev_pckbc_init(cpu, mem,
-				    0x2000005000ULL, PCKBC_8042, 0, 0,
-				    emul->use_x11);
-				dev_ns16550_init(cpu, mem, 0x2000006000ULL,
-				    3, 1, emul->use_x11? 0 : 1);  /*  com0  */
-				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
-				    0, 1, 0);			  /*  com1  */
-				/*  lpt at 0x2000008000  */
+				pci_data = dev_rd94_init(cpu, mem, 0x80000000ULL, 0);
+				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
+				dev_mc146818_init(cpu, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
+				dev_pckbc_init(cpu, mem, 0x80005000ULL, PCKBC_8042, 0, 0, emul->use_x11);
+				dev_ns16550_init(cpu, mem, 0x80006000ULL, 3, 1, emul->use_x11? 0 : 1);  /*  com0  */
+				dev_ns16550_init(cpu, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
+				/*  lpt at 0x80008000  */
 
 				/*  fdc  */
-				dev_fdc_init(mem, 0x200000c000ULL, 0);
+				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
 				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
 				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
@@ -2403,24 +2375,24 @@ Why is this here? TODO
 				strcat(emul->machine_name, " (Microsoft Jazz, Olivetti M700)");
 
 				pica_data = dev_pica_init(
-				    cpu, mem, 0x800000000ULL);
+				    cpu, mem, 0x80000000ULL);
 				cpu->md_interrupt = pica_interrupt;
 
 				dev_mc146818_init(cpu, mem,
-				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
+				    0x80004000ULL, 2, MC146818_ARC_PICA, 1);
 
 #if 0
-				dev_pckbc_init(cpu, mem, 0x800005000ULL,
+				dev_pckbc_init(cpu, mem, 0x80005000ULL,
 				    PCKBC_PICA, 8 + 6, 8 + 7, emul->use_x11);
 #endif
 				dev_ns16550_init(cpu, mem,
-				    0x800006000ULL, 8 + 8, 1,
+				    0x80006000ULL, 8 + 8, 1,
 				    emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
-				    0x800007000ULL, 8 + 9, 1, 0);
+				    0x80007000ULL, 8 + 9, 1, 0);
 
 				dev_m700_fb_init(cpu, mem,
-				    0x18000080000ULL, 0x10000000000ULL);
+				    0x180080000ULL, 0x100000000ULL);
 
 				break;
 
@@ -2429,41 +2401,31 @@ Why is this here? TODO
 				 *  "Deskstation Tyne" (?)
 				 *
 				 *  TODO
-				 *
-				 *  0x100000b0000 (or 100000b8000?) is VGA "text" framebuffer.
-				 *  0x900000003b5 = cursor control when outputing to the
-				 *  framebuffer.
-				 *  0x90000000064 written by kbd_cmd() in NetBSD.
 				 */
 
 				strcat(emul->machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(cpu, mem, 0x100000b8000ULL,
-				    0x900000003c0ULL,
+				dev_vga_init(cpu, mem, 0x1000b8000ULL, 0x9000003c0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
 
-				arcbios_console_init(cpu, 0x100000b8000ULL,
-				    0x900000003c0ULL, ARC_CONSOLE_MAX_X,
+				arcbios_console_init(cpu, 0x1000b8000ULL,
+				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
-				dev_ns16550_init(cpu, mem, 0x900000003f8ULL,
-				    0, 1, emul->use_x11? 0 : 1);
-				dev_ns16550_init(cpu, mem, 0x900000002f8ULL,
-				    0, 1, 0);
-				dev_ns16550_init(cpu, mem, 0x900000003e8ULL,
-				    0, 1, 0);
-				dev_ns16550_init(cpu, mem, 0x900000002e8ULL,
-				    0, 1, 0);
+				dev_ns16550_init(cpu, mem, 0x9000003f8ULL, 0, 1, emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem, 0x9000002f8ULL, 0, 1, 0);
+				dev_ns16550_init(cpu, mem, 0x9000003e8ULL, 0, 1, 0);
+				dev_ns16550_init(cpu, mem, 0x9000002e8ULL, 0, 1, 0);
 
 				dev_mc146818_init(cpu, mem,
-				    0x90000000070ULL, 2, MC146818_PC_CMOS, 1);
+				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
 
 #if 0
-				dev_wdc_init(cpu, mem, 0x900000001f0ULL, 0, 0);
-				dev_wdc_init(cpu, mem, 0x90000000170ULL, 0, 2);
+				dev_wdc_init(cpu, mem, 0x9000001f0ULL, 0, 0);
+				dev_wdc_init(cpu, mem, 0x900000170ULL, 0, 2);
 #endif
 				/*  PC kbd  */
-				dev_pckbc_init(cpu, mem, 0x90000000060ULL,
+				dev_pckbc_init(cpu, mem, 0x900000060ULL,
 				    PCKBC_8042, 0, 0, emul->use_x11);
 
 				break;

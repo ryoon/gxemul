@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.10 2004-11-25 10:53:30 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.11 2004-12-18 23:34:57 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -260,7 +260,7 @@ void pci_dec21030_init(struct cpu *cpu, struct memory *mem)
 
 	/*  TODO:  this address is based on what NetBSD/arc uses...
 	    fix this  */
-	memory_device_register(mem, "dec21030", 0x100000000000ULL,
+	memory_device_register(mem, "dec21030", 0x100000000ULL,
 	    128*1048576, dev_dec21030_access, d, MEM_DEFAULT, NULL);
 
 	/*

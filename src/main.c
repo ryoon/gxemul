@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.34 2004-06-14 22:50:44 debug Exp $
+ *  $Id: main.c,v 1.35 2004-06-19 11:58:06 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -146,6 +146,15 @@ void usage(char *progname)
 {
 	int i;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+
+	printf("mips64emul-%s  Copyright (C) 2003-2004 by Anders Gavare\n",
+#ifdef VERSION
+	    VERSION
+#else
+	    "(no version)"
+#endif
+	    );
+	printf("Read the documentation and/or source code for other copyright notices.\n");
 
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A        try to emulate a generic ARC machine (default CPU = R4000)\n");

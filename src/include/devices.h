@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.93 2004-08-10 14:19:48 debug Exp $
+ *  $Id: devices.h,v 1.94 2004-08-11 03:12:10 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -78,6 +78,13 @@ struct au1x00_ic_data {
 	int		ic_nr;
 	uint32_t	request0_int;
 	uint32_t	request1_int;
+	uint32_t	config0;
+	uint32_t	config1;
+	uint32_t	config2;
+	uint32_t	source;
+	uint32_t	assign_request;
+	uint32_t	wakeup;
+	uint32_t	mask;
 };
 
 int dev_au1x00_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

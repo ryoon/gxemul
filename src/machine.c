@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.158 2004-08-10 20:06:23 debug Exp $
+ *  $Id: machine.c,v 1.159 2004-08-11 03:12:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -749,12 +749,16 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	else
 		au1x00_ic_data->request0_int &= ~m;
 
-	if (au1x00_ic_data->request0_int != 0)
+	if ((au1x00_ic_data->request0_int &
+	    au1x00_ic_data->mask) != 0)
 		cpu_interrupt(cpu, 2);
 	else
 		cpu_interrupt_ack(cpu, 2);
 
-	if (au1x00_ic_data->request1_int != 0)
+	/*  TODO: What _is_ request1?  */
+
+	if ((au1x00_ic_data->request1_int &
+	    au1x00_ic_data->mask) != 0)
 		cpu_interrupt(cpu, 3);
 	else
 		cpu_interrupt_ack(cpu, 3);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.2 2004-08-10 14:19:47 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.3 2004-08-11 03:12:10 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -47,6 +47,7 @@
 
 struct au1x00_uart_data {
 	int		uart_nr;
+	int		irq_nr;
 	uint32_t	int_enable;
 	uint32_t	modem_control;
 };
@@ -75,6 +76,92 @@ int dev_au1x00_ic_access(struct cpu *cpu, struct memory *mem,
 	/*  TODO  */
 
 	switch (relative_addr) {
+	case IC_CONFIG0_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->config0;
+		else
+			d->config0 |= idata;
+		break;
+	case IC_CONFIG0_CLEAR:
+		if (writeflag == MEM_READ)
+			odata = d->config0;
+		else
+			d->config0 &= ~idata;
+		break;
+	case IC_CONFIG1_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->config1;
+		else
+			d->config1 |= idata;
+		break;
+	case IC_CONFIG1_CLEAR:
+		if (writeflag == MEM_READ)
+			odata = d->config1;
+		else
+			d->config1 &= ~idata;
+		break;
+	case IC_CONFIG2_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->config2;
+		else
+			d->config2 |= idata;
+		break;
+	case IC_CONFIG2_CLEAR:	/*  or IC_REQUEST0_INT  */
+		if (writeflag == MEM_READ) {
+			odata = d->request0_int;
+d->request0_int = 0;	/*  TODO ?  */
+cpu_interrupt_ack(cpu, 2);
+		} else
+			d->config2 &= ~idata;
+		break;
+	case IC_SOURCE_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->source;
+		else
+			d->source |= idata;
+		break;
+	case IC_SOURCE_CLEAR:	/*  or IC_REQUEST1_INT  */
+		if (writeflag == MEM_READ)
+			odata = d->request1_int;
+		else
+			d->source &= ~idata;
+		break;
+	case IC_ASSIGN_REQUEST_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->assign_request;
+		else
+			d->assign_request |= idata;
+		break;
+	case IC_ASSIGN_REQUEST_CLEAR:
+		if (writeflag == MEM_READ)
+			odata = d->assign_request;
+		else
+			d->assign_request &= ~idata;
+		break;
+	case IC_WAKEUP_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->wakeup;
+		else
+			d->wakeup |= idata;
+		break;
+	case IC_WAKEUP_CLEAR:
+		if (writeflag == MEM_READ)
+			odata = d->wakeup;
+		else
+			d->wakeup &= ~idata;
+		break;
+	case IC_MASK_READ:	/*  READ or SET  */
+		if (writeflag == MEM_READ)
+			odata = d->mask;
+		else
+			d->mask |= idata;
+		break;
+	case IC_MASK_CLEAR:
+		if (writeflag == MEM_READ)
+			odata = d->mask;
+		else
+			d->mask &= ~idata;
+		break;
 	default:
 		if (writeflag == MEM_READ) {
 			debug("[ au1x00_ic%i: read from 0x%08lx: 0x%08x ]\n",
@@ -158,8 +245,6 @@ void dev_au1x00_pc_tick(struct cpu *cpu, void *extra)
 
 	if (d->reg[PC_COUNTER_CONTROL/4] & CC_EN1)
 		cpu_interrupt(cpu, 8 + d->irq_nr);
-	else
-		cpu_interrupt_ack(cpu, 8 + d->irq_nr);
 }
 
 
@@ -238,12 +323,12 @@ struct au1x00_ic_data *dev_au1x00_init(struct cpu *cpu, struct memory *mem)
 	d_ic0->ic_nr = 0;
 	d_ic1->ic_nr = 1;
 
-	d0->uart_nr = 0;
-	d1->uart_nr = 1;
-	d2->uart_nr = 2;
-	d3->uart_nr = 3;
+	d0->uart_nr = 0; d0->irq_nr = 0;
+	d1->uart_nr = 1; d1->irq_nr = 1;
+	d2->uart_nr = 2; d2->irq_nr = 2;
+	d3->uart_nr = 3; d3->irq_nr = 3;
 
-	d_pc->irq_nr = 0;
+	d_pc->irq_nr = 14;
 
 	memory_device_register(mem, "au1x00_ic0",
 	    IC0_BASE, 0x100, dev_au1x00_ic_access, d_ic0);

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.194 2004-08-10 02:31:29 debug Exp $
+$Id: HISTORY,v 1.195 2004-08-11 03:12:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -894,3 +894,6 @@ HISTORY of mips64emul
 		mgras.h before, and this time with only a BSD-style license),
 		but it is not used yet.
 20040810	Some Au1500 updates.
+20040811	Adding the 'clz', 'clo', 'dclz', and 'dclo' special2 (MIPS32
+		and MIPS64) instructions.
+		More Au1500 updates.

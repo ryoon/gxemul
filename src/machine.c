@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.185 2004-10-06 08:17:44 debug Exp $
+ *  $Id: machine.c,v 1.186 2004-10-07 15:10:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2056,6 +2056,24 @@ void machine_init(struct emul *emul, struct memory *mem)
 				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 				break;
 
+			case MACHINE_ARC_NEC_R98:
+				/*
+				 *  "NEC-R98" (NEC RISCserver 4200)
+				 *
+				 *  According to http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html:
+				 *
+				 *  Network adapter at "start: 0x 0 18600000, length: 0x1000, level: 4, vector: 9"
+				 *  Disk at "start: 0x 0 18c103f0, length: 0x1000, level: 5, vector: 6"
+				 *  Keyboard at "start: 0x 0 18c20060, length: 0x1000, level: 5, vector: 3"
+				 *  Serial at "start: 0x 0 18c103f8, length: 0x1000, level: 5, vector: 4"
+				 *  Serial at "start: 0x 0 18c102f8, length: 0x1000, level: 5, vector: 4"
+				 *  Parallel at "start: 0x 0 18c10278, length: 0x1000, level: 5, vector: 5"
+				 */
+
+				strcat(emul->machine_name, " (NEC-R98; NEC RISCserver 4200)");
+
+				break;
+
 			case MACHINE_ARC_PICA:
 				/*
 				 *  "PICA-61"
@@ -2242,6 +2260,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strncpy(arcbios_sysid.VendorId,  "MIPS MAG", 8);/*  NOTE: max 8 chars  */
 				strncpy(arcbios_sysid.ProductId, "ijkl", 4);	/*  NOTE: max 8 chars  */
 				break;
+			case MACHINE_ARC_NEC_R98:
+				strncpy(arcbios_sysid.VendorId,  "NEC W&S", 8);	/*  NOTE: max 8 chars  */
+				strncpy(arcbios_sysid.ProductId, "R98", 4);	/*  NOTE: max 8 chars  */
+				break;
 			}
 		}
 		store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
@@ -2385,6 +2407,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
+			case MACHINE_ARC_NEC_R98:
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				    0, 1, 20, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
+				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
 				    emul->machine);
@@ -2399,7 +2425,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		debug("system = 0x%x\n", system);
 
 		for (i=0; i<emul->ncpus; i++) {
-			uint32_t cpuaddr, fpu, cache;
+			uint32_t cpuaddr, fpu, picache, pdcache, sdcache;
 			unsigned int jj;
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
@@ -2415,22 +2441,46 @@ void machine_init(struct emul *emul, struct memory *mem)
 			strcat(arc_fpc_name, "FPC");
 
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-			    0, 1, 20, 0, 0xffffffff, arc_cpu_name, system);
+			    0, 1, 20, i, 0xffffffff, arc_cpu_name, system);
+
+			/*  TODO: Maybe this shouldn't be here?  */
 			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
 			    0, 1, 20, 0, 0xffffffff, arc_fpc_name, cpuaddr);
 
-			cache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
-			    COMPONENT_TYPE_SecondaryCache, 0, 1, 20,
+			picache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
+			    COMPONENT_TYPE_PrimaryICache, 0, 1, 20,
+			    /*
+			     *  Key bits:  0xXXYYZZZZ
+			     *  XX is refill-size.
+			     *  Cache line size is 1 << YY,
+			     *  Cache size is 4KB << ZZZZ.
+			     */
+			    0x01050002,	/*  32 bytes per line, 16 KB total  */
+			    0xffffffff, NULL, cpuaddr);
+
+			pdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
+			    COMPONENT_TYPE_PrimaryDCache, 0, 1, 20,
 			    /*
 			     *  Key bits:  0xYYZZZZ
 			     *  Cache line size is 1 << YY,
 			     *  Cache size is 4KB << ZZZZ.
 			     */
-			    0x40008,	/*  16 bytes per line, 1 MB total  */
-			    0xffffffff, "Cache", system);
+			    0x01050002,	/*  32 bytes per line, 16 KB total  */
+			    0xffffffff, NULL, cpuaddr);
 
-			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x, cache%i = 0x%x\n",
-			    i, cpuaddr, i, fpu, i, cache);
+			sdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
+			    COMPONENT_TYPE_SecondaryDCache, 0, 1, 20,
+			    /*
+			     *  Key bits:  0xYYZZZZ
+			     *  Cache line size is 1 << YY,
+			     *  Cache size is 4KB << ZZZZ.
+			     */
+			    0x01060008,	/*  64 bytes per line, 1 MB total  */
+			    0xffffffff, NULL, cpuaddr);
+
+			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x,"
+			    " picache = 0x%x pdcache = 0x%x sdcache = 0x%x\n",
+			    i, cpuaddr, i, fpu, picache, pdcache, sdcache);
 		}
 
 

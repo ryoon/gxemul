@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.103 2004-10-04 11:23:55 debug Exp $
+ *  $Id: main.c,v 1.104 2004-10-07 15:10:09 debug Exp $
  */
 
 #include <stdio.h>
@@ -114,7 +114,7 @@ void usage(char *progname)
 
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz)\n");
+	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz, 6=NEC-R98)\n");
 	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation (not yet!)\n");
@@ -205,6 +205,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
 	int ch, using_switch_d = 0;
 	char *progname = argv[0];
+	int n_cpus_set = 0;
 
 	emul->emul_cpu_name[0] =
 	    emul->emul_cpu_name[CPU_NAME_MAXLEN-1] = '\0';
@@ -285,6 +286,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'n':
 			emul->ncpus = atoi(optarg);
+			n_cpus_set = 1;
 			break;
 		case 'o':
 			emul->boot_string_argument = malloc(strlen(optarg) + 1);
@@ -384,6 +386,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 
+	/*  Default nr of CPUs (for SMP systems):  */
+
+	if (!n_cpus_set) {
+		if (emul->emulation_type == EMULTYPE_ARC &&
+		    emul->machine == MACHINE_ARC_NEC_R98)
+			emul->ncpus = 4;
+	}
+
+
 	/*  Default CPU type:  */
 
 	if (emul->emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
@@ -409,7 +420,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		strcpy(emul->emul_cpu_name, "RC32334");
 
 	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
-		strcpy(emul->emul_cpu_name, "R4000");
+		strcpy(emul->emul_cpu_name, "R4400");
 
 	if (emul->emulation_type == EMULTYPE_SGI && emul->machine == 35 &&
 	    !emul->emul_cpu_name[0])

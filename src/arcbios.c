@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.33 2004-09-29 05:35:17 debug Exp $
+ *  $Id: arcbios.c,v 1.34 2004-10-07 15:10:09 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -174,8 +174,8 @@ uint64_t arcbios_addchild(struct cpu *cpu,
 	store_32bit_word(cpu, a + 0x08, parent);
 	store_32bit_word(cpu, a+  0x0c, host_tmp_component->Class);
 	store_32bit_word(cpu, a+  0x10, host_tmp_component->Type);
-	store_32bit_word(cpu, a+  0x14, host_tmp_component->Flags);
-	store_32bit_word(cpu, a+  0x18, host_tmp_component->Version + 65536*host_tmp_component->Revision);
+	store_32bit_word(cpu, a+  0x14, host_tmp_component->Flags + 65536 * host_tmp_component->Version);
+	store_32bit_word(cpu, a+  0x18, host_tmp_component->Revision);
 	store_32bit_word(cpu, a+  0x1c, host_tmp_component->Key);
 	store_32bit_word(cpu, a+  0x20, host_tmp_component->AffinityMask);
 	store_32bit_word(cpu, a+  0x24, host_tmp_component->ConfigurationDataSize);
@@ -187,8 +187,11 @@ uint64_t arcbios_addchild(struct cpu *cpu,
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_32bit_word(cpu, a + 0x2c, a + 0x30);
 		store_string(cpu, a + 0x30, identifier);
-		arcbios_next_component_address += strlen(identifier) + 2;
+		if (identifier != NULL)
+			arcbios_next_component_address += strlen(identifier) + 1;
 	}
+
+	arcbios_next_component_address ++;
 
 	/*  Round up to next 0x4 bytes:  */
 	arcbios_next_component_address = ((arcbios_next_component_address - 1) | 3) + 1;
@@ -325,6 +328,7 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 	store_64bit_word(cpu, a + 0x10, parent);
 	store_64bit_word(cpu, a+  0x18, host_tmp_component->Class);
 	store_64bit_word(cpu, a+  0x1c, host_tmp_component->Type);
+/*  TODO: these are not in the right order... see the 32-bit version above for more info  */
 	store_64bit_word(cpu, a+  0x20, host_tmp_component->Flags);
 	store_64bit_word(cpu, a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
 	store_64bit_word(cpu, a+  0x28, host_tmp_component->Key);
@@ -338,8 +342,11 @@ uint64_t arcbios_addchild64(struct cpu *cpu,
 	if (host_tmp_component->IdentifierLength != 0) {
 		store_64bit_word(cpu, a + 0x48, a + 0x50);
 		store_string(cpu, a + 0x50, identifier);
-		arcbios_next_component_address += strlen(identifier) + 2;
+		if (identifier != NULL)
+			arcbios_next_component_address += strlen(identifier) + 1;
 	}
+
+	arcbios_next_component_address ++;
 
 	/*  Round up to next 0x8 bytes:  */
 	arcbios_next_component_address = ((arcbios_next_component_address - 1) | 7) + 1;

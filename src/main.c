@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.143 2004-12-22 17:50:00 debug Exp $
+ *  $Id: main.c,v 1.144 2004-12-26 16:14:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -109,7 +109,7 @@ static void usage(char *progname, int longusage)
 	    "(no version)"
 #endif
 	    );
-	printf("Read the documentation and/or source code for other copyright notices.\n");
+	printf("Read the documentation and/or source code for other Copyright notices.\n");
 	printf("\nusage: %s [options] file [...]\n", progname);
 
 	if (!longusage) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.3 2004-01-07 02:34:56 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.4 2004-03-04 03:14:30 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -55,8 +55,13 @@
 
 #define	MAX_XSIZE	2048
 
+#if 1
 int dec21030_default_xsize = 640;
 int dec21030_default_ysize = 480;
+#else
+int dec21030_default_xsize = 1024;
+int dec21030_default_ysize = 768;
+#endif
 
 
 /*  TODO:  Ugly hack:  this causes the framebuffer to be in memory  */

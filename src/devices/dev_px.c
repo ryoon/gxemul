@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.6 2004-03-11 06:22:30 debug Exp $
+ *  $Id: dev_px.c,v 1.7 2004-03-15 06:07:31 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -292,11 +292,17 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 
 	/*  NetBSD and Ultrix erasecols/eraserows  */
 	if (cmdword == 0x411) {
-		uint32_t v1, v2, lw;
+		uint32_t v1, v2, lw, attr;
 		int x,y,x2,y2;
 		int fb_y;
+		int bg_r, bg_g, bg_b;
 		unsigned char pixels[PX_XSIZE * 3];
 
+		lw = px_readword(cpu, dma_buf, 16);
+		attr = px_readword(cpu, dma_buf, 20);
+		v1 = px_readword(cpu, dma_buf, 24);
+		v2 = px_readword(cpu, dma_buf, 28);
+#if 0
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			lw = dma_buf[16] + (dma_buf[17] << 8) + (dma_buf[18] << 16) + (dma_buf[19] << 24);
 		else
@@ -311,6 +317,17 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 			v2 = dma_buf[28] + (dma_buf[29] << 8) + (dma_buf[30] << 16) + (dma_buf[31] << 24);
 		else
 			v2 = dma_buf[31] + (dma_buf[30] << 8) + (dma_buf[29] << 16) + (dma_buf[28] << 24);
+#endif
+		bg_r = (attr >> 16) & 255;
+		bg_g = (attr >> 8) & 255;
+		bg_b = attr & 255;
+		if (bg_r == 0)
+			bg_r = bg_g = bg_b = 0;
+		else
+		if (bg_r == 7)
+			bg_r = bg_g = bg_b = 192;
+		else
+			bg_r = bg_g = bg_b = 255;
 
 		v1 -= lw;
 		v2 -= lw;
@@ -328,7 +345,16 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 #ifdef PX_DEBUG
 		debug("[ px: clear/fill: v1 = 0x%08x  v2 = 0x%08x lw=%i x=%i y=%i x2=%i y2=%i ]\n", (int)v1, (int)v2, lw, x,y, x2,y2);
 #endif
-		memset(pixels, 0, (x2 - x) * bytesperpixel);	/*  TODO: other colors  */
+		if (bytesperpixel == 3) {
+			int xi;
+			for (xi=0; xi<x2-x; xi++) {
+				/*  TODO:  rgb order?  */
+				pixels[xi*3 + 0] = bg_r;
+				pixels[xi*3 + 1] = bg_g;
+				pixels[xi*3 + 2] = bg_b;
+			}
+		} else
+			memset(pixels, attr, (x2 - x) * bytesperpixel);
 
 		if (x < d->vfb_data->update_x1)
 			d->vfb_data->update_x1 = x;

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.76 2005-01-12 08:45:48 debug Exp $
+$Id: RELEASE,v 1.77 2005-01-12 23:04:13 debug Exp $
 
 The next release will most probably be 0.2.4.
 
@@ -65,7 +65,7 @@ The following guest operating systems have been verified to work:
     OpenBSD/arc 2.3                    Acer PICA-61
 
 
-(*) = not very stable yet, but it "often" works.
+(*) = not very stable yet, but it sometimes works.
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
 Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more

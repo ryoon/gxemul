@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.468 2005-01-12 07:42:37 debug Exp $
+$Id: HISTORY,v 1.469 2005-01-12 23:04:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1452,3 +1452,6 @@ HISTORY of mips64emul
 		disks in some rudimentary fashion.
 20050112	Testing for release 0.2.4.
 		Fixes to suppress compiler warnings.
+
+==============  RELEASE 0.2.4  ==============
+

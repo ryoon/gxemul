@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.6 2004-12-18 06:01:14 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.7 2004-12-20 02:48:39 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -32,9 +32,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
+#include "emul.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 struct sgi_ip19_data {

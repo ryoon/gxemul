@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.55 2004-12-19 12:12:42 debug Exp $
+ *  $Id: arcbios.c,v 1.56 2004-12-20 02:48:41 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -43,11 +43,12 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-#include "misc.h"
-
 #include "console.h"
 #include "diskimage.h"
+#include "emul.h"
 #include "memory.h"
+#include "misc.h"
+#include "sgi_arcbios.h"
 
 
 extern int quiet_mode;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.100 2004-12-20 02:13:01 debug Exp $
+ *  $Id: emul.c,v 1.101 2004-12-20 02:48:42 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -39,10 +39,12 @@
 #include "misc.h"
 
 #include "bintrans.h"
+#include "emul.h"
 #include "console.h"
 #include "diskimage.h"
 #include "memory.h"
 #include "net.h"
+#include "sgi_arcbios.h"
 
 #ifdef HACK_STRTOLL
 #define strtoll strtol

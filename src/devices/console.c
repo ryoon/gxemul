@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.18 2004-12-08 23:27:10 debug Exp $
+ *  $Id: console.c,v 1.19 2004-12-20 02:48:39 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -38,9 +38,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#include "console.h"
+#include "emul.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
 
 
 struct termios console_oldtermios;

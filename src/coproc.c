@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.128 2004-12-15 05:32:36 debug Exp $
+ *  $Id: coproc.c,v 1.129 2004-12-20 02:48:41 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -40,6 +40,7 @@
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu_types.h"
+#include "emul.h"
 #include "memory.h"
 #include "opcodes.h"
 
@@ -599,6 +600,7 @@ void coproc_register_read(struct cpu *cpu,
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_DEBUG)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_PERFCNT)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)	unimpl = 0;
 
 	if (cp->coproc_nr==1)	unimpl = 0;
@@ -674,7 +676,7 @@ void coproc_register_write(struct cpu *cpu,
 				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
 				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
 			}
-			goto ret;
+			return;
 		case COP0_PAGEMASK:
 			tmp2 = tmp >> PAGEMASK_SHIFT;
 			if (tmp2 != 0x000 &&
@@ -741,18 +743,6 @@ void coproc_register_write(struct cpu *cpu,
 				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
 			break;
 		case COP0_EPC:
-			/*
-			 *  According to the R4000 manual:
-			 *	"The processor does not write to the EPC register
-			 *	 when the EXL bit in the Status register is set to a 1."
-			 *
-			 *  Perhaps that refers to hardware updates of the register,
-			 *  not software.  If this code is enabled, NetBSD crashes.
-			 */
-/*			if (cpu->cpu_type.exc_model == EXC4K &&
-			    cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)
-				goto ret;
-*/			/*  Otherwise, allow the write:  */
 			unimpl = 0;
 			break;
 		case COP0_PRID:
@@ -764,7 +754,7 @@ void coproc_register_write(struct cpu *cpu,
 			tmp &= 0x3;	/*  only bits 2..0 can be written  */
 			cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
 			/*  fatal("0x%08x\n", cp->reg[reg_nr]);  */
-			goto ret;
+			return;
 		case COP0_STATUS:
 			oldmode = cp->reg[COP0_STATUS];
 			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
@@ -789,7 +779,7 @@ void coproc_register_write(struct cpu *cpu,
 		                cpu->cached_interrupt_is_possible = 0;
 			else
 		                cpu->cached_interrupt_is_possible = 1;
-			goto ret;
+			return;
 		case COP0_FRAMEMASK:
 			/*  TODO: R10000  */
 			unimpl = 0;
@@ -840,7 +830,7 @@ void coproc_register_write(struct cpu *cpu,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
 
 		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
-		goto ret;
+		return;
 	}
 
 	if (readonly) {
@@ -850,22 +840,6 @@ void coproc_register_write(struct cpu *cpu,
 	}
 
 	cp->reg[reg_nr] = tmp;
-
-ret:
-
-#if 0
-	/*
-	 *  TODO: Which things depend on this? It seems like some things
-	 *  use 32-bit instructions to write to registers, but then they
-	 *  should only be written to as 64-bit (reserved bits in some
-	 *  registers should be zero, etc).
-	 */
-	if (!flag64) {
-		cp->reg[reg_nr] &= 0xffffffffULL;
-		if (cp->reg[reg_nr] & 0x80000000ULL)
-			cp->reg[reg_nr] |= 0xffffffff00000000ULL;
-	}
-#endif
 }
 
 

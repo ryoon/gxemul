@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.254 2004-12-19 10:42:45 debug Exp $
+ *  $Id: machine.c,v 1.255 2004-12-20 02:48:42 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -53,16 +53,15 @@
 #include "bus_pci.h"
 #include "devices.h"
 #include "diskimage.h"
+#include "emul.h"
 #include "memory.h"
 #include "opcodes.h"
 #include "symbol.h"
 
-/*  For SGI emulation:  */
+/*  For SGI and ARC emulation:  */
 #include "sgi_arcbios.h"
 #include "arcbios_other.h"
 #include "crimereg.h"
-
-/*  For ARC emulation:  */
 #define	ARC_CONSOLE_MAX_X	80
 #define	ARC_CONSOLE_MAX_Y	30
 int arc_n_memdescriptors = 0;
@@ -80,6 +79,8 @@ extern int arcbios_console_cury;
 #include "dec_kmin.h"
 #include "dec_maxine.h"
 
+/*  HPC:  */
+#include "hpc_bootinfo.h"
 
 uint64_t file_loaded_end_addr = 0;
 

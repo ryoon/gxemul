@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.57 2004-12-19 10:42:45 debug Exp $
+ *  $Id: diskimage.c,v 1.58 2004-12-20 02:48:42 debug Exp $
  *
  *  Disk image support.
  *
@@ -48,6 +48,7 @@
 #include "misc.h"
 
 #include "diskimage.h"
+#include "emul.h"
 
 
 extern int quiet_mode;

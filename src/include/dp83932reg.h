@@ -1,8 +1,19 @@
-/*  mips64emul: $Id: dp83932reg.h,v 1.1 2004-10-25 02:52:00 debug Exp $  */
+/*  mips64emul: $Id: dp83932reg.h,v 1.2 2004-12-20 02:48:40 debug Exp $  */
 /*	$NetBSD: dp83932reg.h,v 1.2 2002/05/03 00:07:02 thorpej Exp $	*/
 
 #ifndef _DEV_IC_DP83932REG_H_
 #define	_DEV_IC_DP83932REG_H_
+
+#ifdef __attribute__
+#undef __attribute__
+#endif
+
+#ifdef __noreturn__
+#undef __noreturn__
+#endif
+
+#define __attribute__(x)  /*  */
+#define __noreturn__  /*  */
 
 /*-
  * Copyright (c) 2001 The NetBSD Foundation, Inc.

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: arcbios_other.h,v 1.1 2004-12-08 11:51:20 debug Exp $  */
+/*  mips64emul: $Id: arcbios_other.h,v 1.2 2004-12-20 02:48:40 debug Exp $  */
 /*	$NetBSD: arcbios.h,v 1.2 2000/01/23 21:01:50 soda Exp $	*/
 /*	$OpenBSD: arcbios.h,v 1.4 1997/05/01 15:13:30 pefo Exp $	*/
 
@@ -307,17 +307,17 @@ typedef struct arc_calls
 		char **,		/* argv */
 		char **);		/* envp */
 
-	volatile void (*halt)(void);	/* Halt 4 */
+	void (*halt)(void);	/* Halt 4 */
 
-	volatile void (*power_down)(void); /* PowerDown 5 */
+	void (*power_down)(void); /* PowerDown 5 */
 
-	volatile void (*restart)(void);	/* Restart 6 */
+	void (*restart)(void);	/* Restart 6 */
 
-	volatile void (*reboot)(void);	/* Reboot 7 */
+	void (*reboot)(void);	/* Reboot 7 */
 
-	volatile void (*enter_interactive_mode)(void); /* EnterInteractiveMode 8 */
+	void (*enter_interactive_mode)(void); /* EnterInteractiveMode 8 */
 
-	volatile void (*return_from_main)(void); /* ReturnFromMain 9 */
+	void (*return_from_main)(void); /* ReturnFromMain 9 */
 
 	arc_config_t *(*get_peer)(	/* GetPeer 10 */
 		arc_config_t *); 	/* Component */

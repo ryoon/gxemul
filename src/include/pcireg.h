@@ -1,5 +1,19 @@
-/*  mips64emul: $Id: pcireg.h,v 1.2 2004-06-11 10:14:27 debug Exp $  */
+/*  mips64emul: $Id: pcireg.h,v 1.3 2004-12-20 02:48:41 debug Exp $  */
 /*	$NetBSD: pcireg.h,v 1.37 2002/03/22 20:03:20 drochner Exp $	*/
+
+#ifndef _DEV_PCI_PCIREG_H_
+#define	_DEV_PCI_PCIREG_H_
+
+#ifdef __attribute__
+#undef __attribute__
+#endif
+
+#ifdef __noreturn__
+#undef __noreturn__
+#endif
+
+#define __attribute__(x)  /*  */
+#define __noreturn__  /*  */
 
 /*
  * Copyright (c) 1995, 1996, 1999, 2000
@@ -31,9 +45,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef _DEV_PCI_PCIREG_H_
-#define	_DEV_PCI_PCIREG_H_
 
 /*
  * Standardized PCI configuration information

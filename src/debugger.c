@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.13 2004-12-20 02:13:01 debug Exp $
+ *  $Id: debugger.c,v 1.14 2004-12-20 02:48:42 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -43,6 +43,7 @@
 #include "console.h"
 #include "cop0.h"
 #include "cpu_types.h"
+#include "emul.h"
 #include "memory.h"
 
 #ifdef HACK_STRTOLL

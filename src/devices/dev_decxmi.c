@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_decxmi.c,v 1.8 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_decxmi.c,v 1.9 2004-12-20 02:48:39 debug Exp $
  *  
  *  DEC 5800 XMI (this has to do with SMP...)
  *
@@ -35,10 +35,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
+#include "emul.h"
 #include "memory.h"
 #include "misc.h"
+
 #include "xmireg.h"
-#include "devices.h"
 
 
 struct decxmi_data {

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.15 2004-12-18 03:26:15 debug Exp $
+ *  $Id: emul.h,v 1.16 2004-12-20 02:48:40 debug Exp $
  */
 
 #include "misc.h"
@@ -110,4 +110,85 @@ struct emul {
 struct emul *emul_new(void);
 void emul_start(struct emul *emul);
 
+
+/*  Machine emulation types:  */
+#define	EMULTYPE_NONE		0
+#define	EMULTYPE_TEST		1
+#define	EMULTYPE_DEC		2
+#define	EMULTYPE_COBALT		3
+#define	EMULTYPE_HPCMIPS	4
+#define	EMULTYPE_PS2		5
+#define	EMULTYPE_SGI		6
+#define	EMULTYPE_ARC		7
+#define	EMULTYPE_MESHCUBE	8
+#define	EMULTYPE_NETGEAR	9
+#define	EMULTYPE_WRT54G		10
+#define	EMULTYPE_SONYNEWS	11
+
+/*  Specific machines:  */
+#define	MACHINE_NONE		0
+
+/*  DEC:  */
+#define	MACHINE_PMAX_3100	1
+#define	MACHINE_3MAX_5000	2
+#define	MACHINE_3MIN_5000	3
+#define	MACHINE_3MAXPLUS_5000	4
+#define	MACHINE_5800		5
+#define	MACHINE_5400		6
+#define	MACHINE_MAXINE_5000	7
+#define	MACHINE_5500		11
+#define	MACHINE_MIPSMATE_5100	12
+
+#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc04000ULL
+#define	DEC_PROM_EMULATION		0xffffffffbfc08000ULL
+#define	DEC_PROM_INITIAL_ARGV		(INITIAL_STACK_POINTER + 0x80)
+#define	DEC_PROM_STRINGS		0xffffffffbfc20000ULL
+#define	DEC_PROM_TCINFO			0xffffffffbfc2c000ULL
+#define	DEC_MEMMAP_ADDR			0xffffffffbfc30000ULL
+
+
+/*  HPCmips:  */
+#define	HPCMIPS_FB_ADDR		0x0a200000
+#define	HPCMIPS_FB_XSIZE	240
+#define	HPCMIPS_FB_YSIZE	320
+
+/*  Playstation 2:  */
+#define	PLAYSTATION2_BDA	0xffffffffa0001000ULL
+#define	PLAYSTATION2_OPTARGS	0xffffffff81fff100ULL
+#define	PLAYSTATION2_SIFBIOS	0xffffffffbfc10000ULL
+
+/*  SGI and ARC:  */
+#define	MACHINE_ARC_NEC_RD94		1
+#define	MACHINE_ARC_JAZZ_PICA		2
+#define	MACHINE_ARC_NEC_R94		3
+#define	MACHINE_ARC_DESKTECH_TYNE	4
+#define	MACHINE_ARC_JAZZ_MAGNUM		5
+#define	MACHINE_ARC_NEC_R98		6
+#define	MACHINE_ARC_JAZZ_M700		7
+#define	MACHINE_ARC_NEC_R96		8
+
+
+/*
+ *  Problem: kernels seem to be loaded at low addresses in RAM, so
+ *  storing environment strings and memory descriptors there is a bad
+ *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
+ *  be at physical address 0x1000 though.
+ */
+#define	SGI_SPB_ADDR		0xffffffff80001000ULL
+/*  0xbfc10000 is firmware callback vector stuff  */
+#define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000ULL
+#define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000ULL
+#define	ARC_ARGV_START		0xffffffffbfc90000ULL
+#define	ARC_ENV_STRINGS		0xffffffffbfc98000ULL
+#define	ARC_ENV_POINTERS	0xffffffffbfc9d000ULL
+#define	SGI_SYSID_ADDR		0xffffffffbfca1800ULL
+#define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00ULL
+#define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80ULL
+#define	ARC_CONFIG_DATA_ADDR	0xffffffffbfca2000ULL
+#define	FIRST_ARC_COMPONENT	0xffffffffbfca8000ULL
+#define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000ULL
+#define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000ULL
+
+
 #endif	/*  EMUL_H  */
+

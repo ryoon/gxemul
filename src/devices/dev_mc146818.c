@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.49 2004-12-18 23:07:28 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.50 2004-12-20 02:48:39 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -36,11 +36,13 @@
 #include <string.h>
 #include <time.h>
 
+#include "devices.h"
+#include "emul.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 #include "mc146818reg.h"
+
 
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 

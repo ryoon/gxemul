@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mec.c,v 1.5 2004-12-18 09:17:44 debug Exp $
+ *  $Id: dev_sgi_mec.c,v 1.6 2004-12-20 02:48:39 debug Exp $
  *  
  *  SGI "mec" ethernet. Used in SGI-IP32.
  *
@@ -174,6 +174,7 @@ skip_but_goto_next:
 	d->cur_rx_addr_index %= N_RX_ADDRESSES;
 
 skip:
+	;
 }
 
 

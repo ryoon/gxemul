@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.13 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_cons.c,v 1.14 2004-12-20 02:48:39 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -34,10 +34,11 @@
 
 #include <stdio.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "emul.h"
+#include "memory.h"
+#include "misc.h"
 
 
 /*

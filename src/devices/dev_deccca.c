@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_deccca.c,v 1.6 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_deccca.c,v 1.7 2004-12-20 02:48:39 debug Exp $
  *  
  *  "Console Communication Area" for a DEC 5800 SMP system.
  *
@@ -35,10 +35,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
+#include "emul.h"
+#include "memory.h"
+#include "misc.h"
 
 
 struct deccca_data {

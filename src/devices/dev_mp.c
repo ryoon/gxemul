@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.14 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_mp.c,v 1.15 2004-12-20 02:48:39 debug Exp $
  *  
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -34,10 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc.h"
-#include "memory.h"
 #include "devices.h"
-
+#include "emul.h"
+#include "memory.h"
+#include "misc.h"
 #include "mp.h"
 
 

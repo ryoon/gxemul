@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.31 2004-06-08 07:57:39 debug Exp $
+ *  $Id: main.c,v 1.32 2004-06-08 10:49:54 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -428,14 +428,14 @@ int get_cmd_args(int argc, char *argv[])
 
 #ifndef BINTRANS
 	if (bintrans_enable) {
-		fprintf(stderr, "Warning: %s was compiled without bintrans support. Ignoring -b.\n", argv[0]);
+		fprintf(stderr, "Warning: %s was compiled without bintrans support. Ignoring -b.\n", progname);
 		bintrans_enable = 0;
 	}
 #endif
 
 #ifndef WITH_X11
 	if (use_x11) {
-		fprintf(stderr, "Warning: %s was compiled without X11 support. Ignoring -X.\n", argv[0]);
+		fprintf(stderr, "Warning: %s was compiled without X11 support. Ignoring -X.\n", progname);
 		use_x11 = 0;
 	}
 #endif

@@ -25,16 +25,16 @@ Here are examples of kernels that can be experimented with:
   Try running with  -D1 or -D2.
 
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
-  Try running with  -E.
+  Try running with  -E -q.
 
   http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
   gunzip, and then try running with -E.
 
   A NetBSD/playstation2 snapshot kernel is available here:
   ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
-  Try running with  -X -B      (-X is required, for the framebuffer).
+  Try running with  -X -B -q      (-X is required, for the framebuffer).
 
-  NetBSD/sgimips:  (gunzip, and try running with  -G32)
+  NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
 
   Linux/SGI kernels:

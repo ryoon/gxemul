@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.10 2003-11-20 05:43:19 debug Exp $
+ *  $Id: dev_fb.c,v 1.11 2004-01-02 22:18:53 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -64,6 +64,10 @@ extern int use_x11;
 extern XColor x11_graycolor[16];
 extern int x11_using_truecolor;
 #endif
+
+
+/*  #define FB_DEBUG  */
+
 
 /*
  *  set_grayscale_palette():
@@ -320,7 +324,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	struct vfb_data *d = extra;
 	int i;
 
-/*
+#ifdef FB_DEBUG
 	if (writeflag == MEM_WRITE) {
 		debug("[ dev_fb: write  to addr=%08lx, data = ", (long)relative_addr);
 		for (i=0; i<len; i++)
@@ -332,7 +336,7 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 			debug("%02x ", d->framebuffer[relative_addr + i]);
 		debug("]\n");
 	}
-*/
+#endif
 
 	/*  See if a write actually modifies the framebuffer contents:  */
 	if (writeflag == MEM_WRITE) {
@@ -452,7 +456,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 		;
 	}
 
-	if (d->bit_depth == 4)
+	if (d->bit_depth == 2 || d->bit_depth == 4)
 		set_grayscale_palette(d, 1 << d->bit_depth);
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);

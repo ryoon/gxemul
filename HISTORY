@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.64 2004-04-06 15:40:52 debug Exp $
+$Id: HISTORY,v 1.65 2004-04-09 05:10:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -436,3 +436,10 @@ HISTORY of mips64emul
 		Adding WRITE, SYNCRONIZE_CACHE.
 		Mounting disks works in NetBSD :-)  It is a bit buggy,
 		though. Or something else is buggy.
+20040407	The bug is triggered by gunzip during NetBSD/pmax install.
+20040408	Fixing a bug (non-nul-terminated string) which caused X11
+		cursors to not display on Solaris.
+		Unneccessary X11 redraws are skipped (removes some weird
+		delays that existed before), and cursors are redrawn on
+		window exposure. (The cursor functionality has been moved
+		from dev_fb.c to x11.c.)

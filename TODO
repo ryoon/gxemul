@@ -133,6 +133,7 @@ mips64emul TODO
 			(ELF structure format)
 
 	Better X-windows functionality:
+		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
 			x)  How about multiple framebuffer windows?
@@ -148,6 +149,8 @@ mips64emul TODO
 			page coloring efficiency)
 		o)  nr-of-instructions-in-a-row-that-don't-affect-eachother,
 			and make histograms of this data
+		o)  nr of simultaneous ASIDs in use in the TLB  (x = time)
+		o)  position of read/write on (SCSI) disks   (x = time)
 
 	Make sure that the emulator compiles and runs on as many Unices as
 	possible, with different compilers and compiler settings. (Maybe on

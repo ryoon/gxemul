@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.19 2004-04-06 14:05:41 debug Exp $
+ *  $Id: dev_asc.c,v 1.20 2004-04-09 05:13:02 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -69,6 +69,7 @@ extern int instruction_trace;
 
 struct asc_data {
 	int		irq_nr;
+	int		irq_caused_last_time;
 
 	/*  Current state and transfer:  */
 	int		cur_state;
@@ -402,7 +403,20 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 		}
 
 		if ((d->xferp->msg_out[0] & 0x7) != 0x00) {
-			debug(" (LUNs not implemented yet) }");
+			debug(" (LUNs not implemented yet: 0x%02x) }",
+			    d->xferp->msg_out[0]);
+			return 0;
+		}
+
+		if ((d->xferp->msg_out[0] & ~0x7) != 0xc0) {
+			fatal(" (Unimplemented msg out: 0x%02x) }",
+			    d->xferp->msg_out[0]);
+			return 0;
+		}
+
+		if (d->xferp->msg_out_len > 1) {
+			fatal(" (Long msg out, not implemented yet;"
+			    " len=%i) }", d->xferp->msg_out_len);
 			return 0;
 		}
 	} else {
@@ -491,7 +505,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t idata = 0, odata = 0;
 
 
-	dev_asc_tick(cpu, extra);
+/*	dev_asc_tick(cpu, extra);  */
 	idata = memory_readmax64(cpu, data, len);
 	regnr = relative_addr / 4;
 
@@ -825,6 +839,6 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	    dev_asc_access, d);
 
 	/*  Tick every 2048th cycle:  */
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 11);
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);
 }
 

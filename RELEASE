@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.41 2004-09-28 09:12:31 debug Exp $
+$Id: RELEASE,v 1.42 2004-09-28 09:13:28 debug Exp $
 
-I'm currently working on post-0.2.1. These were the release notes for 0.2.1.
+I'm currently working on post-0.2.1.
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.1
+Release notes for mips64emul 0.2.X
 ==================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
@@ -30,10 +30,9 @@ Playstation 2, Cobalt, some ARC machines, etc) but these modes are more of
 a curiosity, and should not be considered working yet.
 
 
-NOTE:  This release (0.2.1) is more or less a clean-up of release 0.2, and
-       does NOT contain any major feature additions. In fact, 0.2.1 is a
-       bit slower than 0.2, so those looking for performance should keep
-       running 0.2.
+--------------------------------------------------
+TODO:  Feature additions 0.2.1 -> 0.2.X goes here.
+--------------------------------------------------
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

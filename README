@@ -1,10 +1,10 @@
-$Id: README,v 1.40 2004-09-28 09:12:31 debug Exp $
+$Id: README,v 1.41 2004-09-28 09:13:28 debug Exp $
 
-I'm currently working on post-0.2.1. This was the readme for 0.2.1.
+I'm currently working on post-0.2.1.
 
 ------------------------------------------------------------------------------
 
-mips64emul 0.2.1
+mips64emul 0.2.X
 ================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)

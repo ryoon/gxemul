@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.7 2005-03-29 00:26:20 debug Exp $
+ *  $Id: dev_pcic.c,v 1.8 2005-04-05 20:43:06 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -47,6 +47,9 @@
 #include "i82365reg.h"
 #include "pcmciareg.h"
 
+
+/*  #define debug fatal  */
+
 #define	DEV_PCIC_LENGTH		2
 
 struct pcic_data {
@@ -62,7 +65,7 @@ int dev_pcic_cis_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct pcic_data *d = (struct pcic_data *) extra;
+	/*  struct pcic_data *d = (struct pcic_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);
@@ -129,7 +132,7 @@ int dev_pcic_cis_access(struct cpu *cpu, struct memory *mem,
 	if (relative_addr < sizeof(x))
 		odata = x[relative_addr];
 
-printf("."); fflush(stdout);
+	debug("[ dev_pcic_cis_access: blah blah ]\n");
 }
 
 	if (writeflag == MEM_READ)
@@ -188,13 +191,13 @@ int dev_pcic_access(struct cpu *cpu, struct memory *mem,
 			break;
 		default:
 			if (writeflag == MEM_WRITE) {
-				fatal("[ pcic: unimplemented write to "
+				debug("[ pcic: unimplemented write to "
 				    "controller %i socket %c, regnr %i: "
 				    "data=0x%02x ]\n", controller_nr,
 				    socket_nr? 'B' : 'A',
 				    d->regnr & 0x3f, (int)idata);
 			} else {
-				fatal("[ pcic: unimplemented read from "
+				debug("[ pcic: unimplemented read from "
 				    "controller %i socket %c, regnr %i ]\n",
 				    controller_nr, socket_nr? 'B' : 'A',
 				    d->regnr & 0x3f);

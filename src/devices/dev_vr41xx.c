@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.25 2005-04-05 20:33:08 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.26 2005-04-05 20:43:06 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -96,6 +96,8 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 	 *  one used here.)
 	 *
 	 *  TODO: Make this work with "any" keyboard layout.
+	 *
+	 *  (Even MobilePro 770 seems to be different? Hm. TODO)
 	 *
 	 *  ofs 0:
 	 *	8000='o' 4000='.' 2000=DOWN  1000=UP

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.31 2004-05-04 15:57:37 debug Exp $
+ *  $Id: coproc.c,v 1.32 2004-05-06 03:51:46 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1195,6 +1195,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
+				/*  Invalidate the translation cache:  */
+				for (i=0; i<N_TRANSLATION_CACHE; i++)
+					cpu->translation_cached[i] = 0;
+
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)
 						debug("tlbwi");

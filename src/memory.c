@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.24 2004-04-25 00:51:13 debug Exp $
+ *  $Id: memory.c,v 1.25 2004-05-06 03:51:46 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -624,11 +624,33 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		paddr = vaddr;
 		ok = 1;
 	} else {
-		ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
-		/*  If the translation caused an exception, or was invalid in some way,
-			we simply return without doing the memory access:  */
-		if (!ok)
-			return MEMORY_ACCESS_FAILED;
+		ok = 0;
+		if (cpu != NULL && cpu->cpu_type.mmu_model == MMU3K) {
+			int wf = 1 + (writeflag == MEM_WRITE);
+
+			for (i=0; i<N_TRANSLATION_CACHE; i++) {
+				if (cpu->translation_cached[i] >= wf &&
+				    (vaddr >> 12) == (cpu->translation_cached_vaddr_pfn[i])) {
+					paddr = cpu->translation_cached_paddr[i] | (vaddr & 0xfff);
+					ok = 1;
+					break;
+				}
+			}
+		}
+
+		if (!ok) {
+			ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
+			/*  If the translation caused an exception, or was invalid in some way,
+				we simply return without doing the memory access:  */
+			if (!ok)
+				return MEMORY_ACCESS_FAILED;
+
+			/*  Enter into the cache:  */
+			cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
+			cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
+			cpu->translation_cached_paddr[cpu->translation_cached_i] = paddr & ~0xfff;
+			cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
+		}
 	}
 
 #if 0

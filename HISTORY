@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.112 2004-06-29 01:25:31 debug Exp $
+$Id: HISTORY,v 1.113 2004-06-29 08:29:18 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -623,3 +623,4 @@ HISTORY of mips64emul
 		the 2250 model that NetBSD/arc can already boot all the
 		way into userland and be interacted with), and -A4
 		(Deskstation Tyne).
+		Some more minor fixes.

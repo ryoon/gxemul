@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.127 2004-12-15 05:27:34 debug Exp $
+ *  $Id: coproc.c,v 1.128 2004-12-15 05:32:36 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -267,6 +267,9 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 		default:
 			;
 		}
+
+		/*  Make sure the status register is sign-extended nicely:  */
+		c->reg[COP0_STATUS] = (int64_t)(int32_t)c->reg[COP0_STATUS];
 	}
 
 	if (coproc_nr == 1) {

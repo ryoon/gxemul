@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.24 2005-02-11 09:29:50 debug Exp $
+ *  $Id: cpu_mips.c,v 1.25 2005-02-12 09:18:49 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -60,9 +60,6 @@ int mips_cpu_family_init(struct cpu_family *fp)
 /*  TODO: Maybe it isn't very nice to have these global like this...  */
 void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)  { }
-
-int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
-	int writeflag, size_t len, unsigned char *data)  {  return 0;  }
 
 
 #else   /*  ENABLE_MIPS  */

@@ -1,15 +1,7 @@
-$Id: BUGS,v 1.28 2005-01-31 21:25:52 debug Exp $
-
-If you encounter any bugs not listed here, and not listed in the TODO, 
-then feel free to report them to me.
+$Id: BUGS,v 1.29 2005-02-12 09:18:03 debug Exp $
 
 
 Serious bugs:
-
-  x)  NetBSD/pmax in the emulator sometimes crashes when running X. It is very
-      uncommon with -CR3000, a bit more common with -CR4000. Reason and
-      solution are unknown at this point.   (Update: Hm. This description is
-      very vague.)
 
   x)  An unknown math coprocessor bug. (Ultrix' dxclock sometimes looks
       weird.)

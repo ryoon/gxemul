@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.22 2004-04-12 08:19:28 debug Exp $
+ *  $Id: dev_asc.c,v 1.23 2004-04-13 08:57:39 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -274,9 +274,14 @@ fatal("TODO..............\n");
 				res = 0;
 			} else {
 				int len = d->xferp->data_in_len;
-
+				int len2 = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+printf("len=%i len2=%i addr=%08x\n", len, len2, d->dma_address_reg);
 				if (len + (d->dma_address_reg & ((sizeof(d->dma)-1))) > sizeof(d->dma))
 					len = sizeof(d->dma) - (d->dma_address_reg & ((sizeof(d->dma)-1)));
+
+				if (len != len2) {
+					fatal("{ asc: data in, len=%i len2=%i }\n", len, len2);
+				}
 
 #ifdef ASC_DEBUG
 				if (!quiet_mode)
@@ -288,8 +293,8 @@ fatal("TODO..............\n");
 
 				len = 0;
 
-				d->reg_wo[NCR_TCL] = len & 255;
-				d->reg_wo[NCR_TCM] = (len >> 8) & 255;
+				d->reg_ro[NCR_TCL] = len & 255;
+				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
 
 				/*  Successful DMA transfer:  */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
@@ -321,8 +326,8 @@ fatal("TODO.......asdgasin\n");
 #endif
 			len = 0;
 
-			d->reg_wo[NCR_TCL] = len & 255;
-			d->reg_wo[NCR_TCM] = (len >> 8) & 255;
+			d->reg_ro[NCR_TCL] = len & 255;
+			d->reg_ro[NCR_TCM] = (len >> 8) & 255;
 
 			/*  Successful DMA transfer:  */
 			d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
@@ -500,6 +505,8 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 
 		d->reg_ro[NCR_TCL] = len & 255;
 		d->reg_ro[NCR_TCM] = (len >> 8) & 255;
+
+		d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
 	}
 
 	/*
@@ -624,8 +631,10 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	 *  Some registers are read/write. Copy contents of
 	 *  reg_wo to reg_ro:
 	 */
+#if 0
 	d->reg_ro[ 0] = d->reg_wo[0];	/*  Transfer count lo and  */
 	d->reg_ro[ 1] = d->reg_wo[1];	/*  middle  */
+#endif
 	d->reg_ro[ 2] = d->reg_wo[2];
 	d->reg_ro[ 3] = d->reg_wo[3];
 	d->reg_ro[ 8] = d->reg_wo[8];

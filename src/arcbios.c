@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.18 2004-06-06 10:22:58 debug Exp $
+ *  $Id: arcbios.c,v 1.19 2004-06-06 10:32:33 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -364,7 +364,7 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		break;
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
-		if (cpu->gpr[GPR_A0] == 0) {	/*  0 = stdin?  */
+		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			int i, nread = 0;
 			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 				unsigned char ch;
@@ -391,7 +391,7 @@ void arcbios_emul(struct cpu *cpu)
 		 *  dev/arcbios/arcbios_tty.c, GetReadStatus should
 		 *  return 0 if there is something available.
 		 */
-		if (cpu->gpr[GPR_A0] == 0) {	/*  0 = stdin?  */
+		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
 			cpu->gpr[GPR_V0] = console_charavail()? 0 : 1;
 		} else {
 			fatal("[ ARCBIOS GetReadStatus(%i) ]\n", (int)cpu->gpr[GPR_A0]);
@@ -400,10 +400,12 @@ void arcbios_emul(struct cpu *cpu)
 		}
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
-		if (cpu->gpr[GPR_A0] != 1)	/*  1 = stdout?  */
+		if (cpu->gpr[GPR_A0] != ARCBIOS_STDOUT) {
 			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
 			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
 			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
+		}
+
 		for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 			unsigned char ch = '\0';
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);

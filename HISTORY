@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.256 2004-10-14 12:32:52 debug Exp $
+$Id: HISTORY,v 1.257 2004-10-14 13:14:41 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1021,4 +1021,5 @@ HISTORY of mips64emul
 		Working a bit on ARC stuff. Importing pica.h from NetBSD.
 		Minor updates to the ARC component tree for PICA-61.
 		Adding a dev_jazz.c (mostly for PICA-61).
-		Renaming dev_jazz.c into dev_pica.c.
+		Renaming dev_jazz.c into dev_pica.c. Working on PICA timer
+		and interrupt specifics.

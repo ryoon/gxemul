@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.1 2004-10-14 12:32:53 debug Exp $
+ *  $Id: dev_pica.c,v 1.2 2004-10-14 13:14:41 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -40,7 +40,9 @@
 #include "pica.h"
 
 
-#define	DEV_PICA_TICKSHIFT		12
+#define	DEV_PICA_TICKSHIFT		9
+
+#define	PICA_TIMER_IRQ			1
 
 
 /*
@@ -50,11 +52,12 @@ void dev_pica_tick(struct cpu *cpu, void *extra)
 {
 	struct pica_data *d = extra;
 
-	if (d->interval_start > 0 && d->interval > 0) {
+	if (d->interval_start > 0 && d->interval > 0
+	    && (d->int_enable_mask & (1 << PICA_TIMER_IRQ))) {
 		d->interval --;
 		if (d->interval <= 0) {
 			debug("[ pica: interval timer interrupt ]\n");
-			cpu_interrupt(cpu, 6);
+			cpu_interrupt(cpu, 8 + PICA_TIMER_IRQ);
 		}
 	}
 }
@@ -75,11 +78,43 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case R4030_SYS_ISA_VECTOR:
+		/*  ?  */
+		{
+			uint32_t x = d->int_asserted & d->int_enable_mask;
+			odata = 0;
+			while (odata < 16) {
+				if (x & (1 << odata))
+					break;
+				odata ++;
+			}
+			if (odata >= 16)
+				odata = 0;
+		}
+		break;
 	case R4030_SYS_IT_VALUE:  /*  Interval timer reload value  */
-		if (writeflag == MEM_WRITE)
+		if (writeflag == MEM_WRITE) {
 			d->interval_start = idata;
-		else
+			d->interval = d->interval_start;
+		} else
 			odata = d->interval_start;
+		break;
+	case R4030_SYS_IT_STAT:
+		/*  Accessing this word seems to acknowledge interrupts?  */
+		cpu_interrupt_ack(cpu, 8 + PICA_TIMER_IRQ);
+		if (writeflag == MEM_WRITE)
+			d->interval = idata;
+		else
+			odata = d->interval;
+		d->interval = d->interval_start;
+		break;
+	case R4030_SYS_EXT_IMASK:
+		if (writeflag == MEM_WRITE) {
+			d->int_enable_mask = idata;
+			/*  Do a "nonsense" interrupt recalibration:  */
+			cpu_interrupt_ack(cpu, 8);
+		} else
+			odata = d->int_enable_mask;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {

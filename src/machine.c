@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.191 2004-10-14 12:22:19 debug Exp $
+ *  $Id: machine.c,v 1.192 2004-10-14 13:14:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -78,7 +78,7 @@ struct dec_ioasic_data *dec_ioasic_data;
 struct ps2_data *ps2_data;
 struct dec5800_data *dec5800_csr;
 struct au1x00_ic_data *au1x00_ic_data;
-
+struct pica_data *pica_data;
 struct crime_data *crime_data;
 struct mace_data *mace_data;
 struct sgi_ip20_data *sgi_ip20_data;
@@ -504,6 +504,36 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 				cpu_interrupt_ack(cpu, r2);
 		}
 	}
+}
+
+
+/*
+ *  Acer PICA-61 interrupts:
+ *
+ *  TODO: Are all interrupts really on hardware interrupt line 6?
+ */
+void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	uint32_t irq;
+	irq_nr -= 8;
+
+	/*  fatal("pica_interrupt() irq_nr = %i, assrt = %i\n",
+		irq_nr, assrt);  */
+
+	irq = 1 << irq_nr;
+
+	if (assrt)
+		pica_data->int_asserted |= irq;
+	else
+		pica_data->int_asserted &= ~irq;
+
+	/*  printf("   %08x %08x\n", pica_data->int_asserted,
+		pica_data->int_enable_mask);  */
+
+	if (pica_data->int_asserted & pica_data->int_enable_mask)
+		cpu_interrupt(cpu, 6);
+	else
+		cpu_interrupt_ack(cpu, 6);
 }
 
 
@@ -2112,7 +2142,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strcat(emul->machine_name, " (Acer PICA-61)");
 
 				/*  NetBSD/arc:  */
-				dev_jazz_init(cpu, mem, 0x2000000000ULL);
+				pica_data = dev_pica_init(
+				    cpu, mem, 0x2000000000ULL);
+				cpu->md_interrupt = pica_interrupt;
 
 				/*  OpenBSD/arc and NetBSD/arc:  */
 				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL, 0x60000003b0ULL);  */

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.96 2004-10-14 12:32:54 debug Exp $
+ *  $Id: devices.h,v 1.97 2004-10-14 13:14:42 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -315,6 +315,7 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int 
 #define	DEV_PICA_LENGTH			0x280
 struct pica_data {
 	uint32_t	int_enable_mask;
+	uint32_t	int_asserted;
 	int		interval;
 	int		interval_start;
 };

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.19 2004-06-30 06:58:20 debug Exp $
+ *  $Id: x11.c,v 1.20 2004-07-01 23:06:54 debug Exp $
  *
  *  X11-related functions.
  */
@@ -393,9 +393,7 @@ void x11_check_event(void)
 
 			if (XLookupString(&event.xkey, text,
 			    sizeof(text), &key, 0) == 1) {
-				int i = 0;
-				while (i < sizeof(text) && text[i])
-					console_makeavail(text[i++]);
+				console_makeavail(text[0]);
 			}
 		}
 	}

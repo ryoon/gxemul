@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.8 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.9 2004-07-07 02:44:14 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -234,7 +234,7 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 	case SBIC_data:
 		debug(" (data): 0x%02x", (int)idata);
 
-		switch (d->reg[SBIC_cmd]) {
+		switch (d->reg[SBIC_cmd] & ~SBIC_CMD_SBT) {
 		case SBIC_CMD_XFER_INFO:
 			if (d->buf == NULL || d->buf_curptr >= d->buf_allocatedlen) {
 				fprintf(stderr, "fatal error in wdsc\n");

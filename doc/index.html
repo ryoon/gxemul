@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.55 2004-07-07 02:22:40 debug Exp $
+$Id: index.html,v 1.56 2004-07-07 02:44:15 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -61,8 +61,9 @@ and various bits of information. Enjoy! :-)
   <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
-  <li><a href="#use">How to use the emulator</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax inside the emulator</a>
+  <li><a href="#ultrixinstall">How to install Ultrix/RISC inside the emulator</a>
+  <li><a href="#experiments">Experiments with other kernels:</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
@@ -296,9 +297,101 @@ has been implemented, NetBSD is the way to go if you want to reach
 userland.
 
 
+
 <p><br>
-<a name="use"></a>
-<h3>How to use the emulator:</h3>
+<a name="netbsdinstall"></a>
+<h3>How to install NetBSD/pmax inside the emulator</h3>
+
+To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
+you first need to install NetBSD onto a disk image. To NetBSD, the disk 
+image looks and acts like a real SCSI disk, but it is just a normal 
+file in the host's filesystem.
+<p>
+You need to do the following:
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=900000000</b>
+
+</pre>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -X -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
+</pre>
+	Alternatively, if you don't want to use a graphical framebuffer:<pre>
+	$ <b>./mips64emul -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
+</pre>
+	but then make sure you choose 'vt100' when prompted with which terminal
+	type to use, and not 'rcons'.
+</ol>
+
+<p>
+Then proceed like you would do if you were installing NetBSD on a real
+DECstation.  Even if the emulator is running on a very fast host system,
+you should expect the installation to take quite some time. On a
+2.8 GHz Xeon-based PC, a full install takes approximately an hour.
+
+<p>
+When the installation is completed, the following command should start
+NetBSD from the harddisk image:<pre>
+	$ <b>./mips64emul -X -D2 -d netbsddisk.img</b>
+</pre>
+<p>
+If you want to run without the X framebuffer, use this instead:<pre>
+	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
+</pre>
+
+
+<p><br>
+<a name="ultrixinstall"></a>
+<h3>How to install Ultrix/RISC inside the emulator</h3>
+
+The instructions for installing NetBSD/pmax can be used to install Ultrix as
+well, with a slight modification (the <b>-j</b> argument differs).
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
+	it is called /dev/cd0c here, replace that with the name of your
+	CDROM drive, or the name of a .iso image file.)
+<p>
+  <li>Create an empty harddisk image, which will be the root disk
+	that Ultrix installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=rootdisk.img bs=1 count=512 seek=900000000</b>
+
+</pre>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -X -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+
+</pre>
+  <li>Once the first stage of the installation is done (restoring the root filesystem),
+	you need to restart the emulator, booting from the new rootdisk,
+	to continue the installation process:<pre>
+	$ <b>./mips64emul -X -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+
+</pre>
+</ol>
+
+<p>
+When the installation is completed, the following command should start
+Ultrix from the harddisk image:<pre>
+	$ <b>./mips64emul -X -D2 -j vmunix -d rootdisk.img</b>
+</pre>
+
+
+
+<p><br>
+<a name="experiments"></a>
+<h3>Experiments with other kernels:</h3>
 
 The emulator contains code which tries to emulate the workings of MIPS-like CPUs
 and surrounding hardware found in real machines, but no actual MIPS ROM code or
@@ -474,62 +567,6 @@ Here are links to some of the kernels that I usually experiment with.
 </ul>
 
 
-<p><br>
-<a name="netbsdinstall"></a>
-<h3>How to install NetBSD/pmax inside the emulator</h3>
-
-To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
-you first need to install NetBSD onto a disk image. To NetBSD, the disk 
-image looks and acts like a real SCSI disk, but it is just a normal 
-file in the host's filesystem.
-<p>
-You need to do the following:
-<ol>
-  <li>Compile mips64emul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
-  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
-
-</pre>
-  <li>Create an empty harddisk image, which will be the root disk
-	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=900000000</b>
-
-</pre>
-  <li>Start the emulator like this:<pre>
-	$ <b>./mips64emul -X -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
-</pre>
-	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
-</pre>
-	but then make sure you choose 'vt100' when prompted with which terminal
-	type to use, and not 'rcons'.
-</ol>
-
-<p>
-Then proceed like you would do if you were installing NetBSD on a real
-DECstation.  Even if the emulator is running on a very fast host system,
-you should expect the installation to take quite some time. On a
-2.8 GHz Xeon-based PC, a full install takes approximately an hour.
-
-<p>
-When the installation is completed, the following command should start
-NetBSD from the harddisk image:<pre>
-	$ <b>./mips64emul -X -D2 -d netbsddisk.img</b>
-</pre>
-<p>
-If you want to run without the X framebuffer, use this instead:<pre>
-	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
-</pre>
-
-<p>
-These installation instructions can be used for Ultrix as well,
-but then <b>-j vmunix</b> must be used, both during install and during
-normal boot.
-<b>-j <i>name</i></b> makes the bootstring contain <i>/name</i> as the
-filename to boot, instead of /netbsd, which is the default name.
 
 
 <p><br>

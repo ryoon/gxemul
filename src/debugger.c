@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.57 2005-01-26 19:08:45 debug Exp $
+ *  $Id: debugger.c,v 1.58 2005-01-26 19:14:26 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -616,7 +616,7 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 	}
 
 	addr_start = last_dump_addr;
-	addr_end = addr_start + 4 * 16;
+	addr_end = addr_start + 16 * 16;
 
 	/*  endaddr:  */
 	if (p != NULL) {

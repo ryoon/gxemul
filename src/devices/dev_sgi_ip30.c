@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.5 2004-07-18 10:52:55 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.6 2004-08-02 22:23:25 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -72,6 +72,10 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0x20:
+		/*  Memory bank configuration:  */
+		odata = 0x80010000ULL;
+		break;
 	case 0x10018:
 		/*
 		 *  If this is not implemented, the IP30 PROM complains during bootup:

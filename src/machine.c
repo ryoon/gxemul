@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.116 2004-06-29 08:25:07 debug Exp $
+ *  $Id: machine.c,v 1.117 2004-06-29 15:43:24 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -940,10 +940,21 @@ void machine_init(struct memory *mem)
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
-			/*  TURBOchannel slots 0, 1, and 2 are free for option cards. TODO: irqs  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "PMAG-BA", KMIN_INT_TC0);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", KMIN_INT_TC1);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x18000000, 0x183fffff, "", KMIN_INT_TC2);
+			/*
+			 *  TURBOchannel slots 0, 1, and 2 are free for
+			 *  option cards.  The first one will contain a
+			 *  graphics card by default.
+			 *
+			 *  TODO: irqs 
+			 */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			    0x10000000, 0x103fffff,
+			    turbochannel_default_gfx_card, KMIN_INT_TC0);
+
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			    0x14000000, 0x143fffff, "", KMIN_INT_TC1);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			    0x18000000, 0x183fffff, "", KMIN_INT_TC2);
 
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
 			/*  kmin_csr = dev_kmin_init(cpus[bootstrap_cpu], mem, KMIN_REG_INTR);  */
@@ -986,10 +997,24 @@ void machine_init(struct memory *mem)
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
-			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-AA", KN03_INTR_TC_0 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "", KN03_INTR_TC_1 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "", KN03_INTR_TC_2 +8);
+			/*
+			 *  TURBOchannel slots 0, 1, and 2 are free for
+			 *  option cards.  The first one will contain a
+			 *  graphics card by default.
+			 *
+			 *  TODO: irqs 
+			 */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
+			    turbochannel_default_gfx_card, KN03_INTR_TC_0 +8);
+
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "",
+			    KN03_INTR_TC_1 +8);
+
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "",
+			    KN03_INTR_TC_2 +8);
 
 			/*  TODO: interrupts  */
 			/*  shared (turbochannel) interrupts are +8  */
@@ -1093,16 +1118,28 @@ void machine_init(struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 
 			/*  TURBOchannel slots (0 and 1):  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "", XINE_INTR_TC_0 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", XINE_INTR_TC_1 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			    0x10000000, 0x103fffff, "", XINE_INTR_TC_0 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			    0x14000000, 0x143fffff, "", XINE_INTR_TC_1 +8);
 
-			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer: (NOTE: 0x8000000, not 0x18000000)  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
+			/*
+			 *  TURBOchannel slot 2 is hardwired to be used by
+			 *  the framebuffer: (NOTE: 0x8000000, not 0x18000000)
+			 */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			    0x8000000, 0xbffffff, "PMAG-DV", 0);
 
-			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, XINE_INTR_SCSI +8);
+			/*
+			 *  TURBOchannel slot 3: fixed, ioasic
+			 *  (the system stuff), 0x1c000000
+			 */
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000,
+			    XINE_INTR_SCC_0 +8, use_x11, 0, 1);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000,
+			    XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000,
+			    XINE_INTR_SCSI +8);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=3";

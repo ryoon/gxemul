@@ -1,0 +1,116 @@
+.\" $Id: mips64emul.1,v 1.1 2004-11-07 15:24:49 debug Exp $
+.\"
+.\" Copyright (C) 2004  Anders Gavare.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright
+.\"   notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"   notice, this list of conditions and the following disclaimer in the
+.\"   documentation and/or other materials provided with the distribution.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+.\" SUCH DAMAGE.
+.\" 
+.\" 
+.\" This is a minimal man page for mips64emul. Process this file with
+.\"     groff -man -Tascii mips64emul.1    or    nroff -man mips64emul.1
+.\"
+.TH mips64emul 1 "NOVEMBER 2004" mips64emul "User commands"
+.SH NAME
+.B mips64emul
+-- a MIPS machine emulator
+.SH SYNOPSIS
+.B mips64emul
+[
+.I options
+]
+[
+.I file
+[
+.I ...
+]
+]
+.SH DESCRIPTION
+.B mips64emul
+is a MIPS machine emulator. The goals are to emulate MIPS-like
+CPUs and enough surrounding hardware to be able to run unmodified
+operating systems (such as NetBSD, Ultrix, Linux, FreeBSD, or OpenBSD) as 
+if they were running on a real machine, and to assist in experiments
+involving MIPS-like code in general.
+
+Run
+.B mips64emul
+without arguments to get a list of available command line options.
+You should read the documentation provided in the
+.B doc/
+subdirectory of the
+.B mips64emul
+distribution for more information.
+
+For a normal invocation of the emulator, you need to supply the
+.I file
+argument. This is the name of a MIPS binary file (an ELF32, ELF64,
+a.out, ECOFF, SREC, or a raw binary image) which you wish to run in the 
+emulator. This file might be an operating system kernel, or perhaps a ROM 
+image file.
+
+Apart from the name of a MIPS binary, it is also necessary to select
+which specific emulation mode to use. For example, a MIPS-based machine
+from DEC (a DECstation) is very different from a MIPS-based machine
+from SGI. This selection is done by supplying the correct command 
+line option -D2 or -G22, respectively, in this example.
+
+(There is an exception to the normal invocation usage mentioned above;
+if you want to use the DECstation emulation mode, and have a bootable
+DECstation harddisk or CDROM image, then just supplying the diskimage via 
+the -d option is sufficient. The filename of the kernel can then be 
+skipped, as the emulator runs the bootblocks from the diskimage directly and 
+doesn't need the kernel as a separate file.)
+.SH EXAMPLES
+The following command will start NetBSD/pmax on an emulated DECstation 
+5000/200 (which is "type 2" in the DECstation world):
+.nf
+
+	mips64emul \-D2 \-d netbsddisk.img
+
+.fi
+if netbsddisk.img is a raw disk image containing a NetBSD/pmax filesystem.
+You may wish to add -X -M128 to use the X11 framebuffer feature and 
+increase the amount of emulated RAM to 128 MB.
+
+This will boot a NetBSD/cobalt kernel (called
+netbsd-GENERIC) on an emulated Cobalt machine:
+.nf
+
+	mips64emul \-E netbsd-GENERIC
+
+.fi
+
+Please read the documentation for more details.
+.SH AUTHOR
+Anders Gavare <md1gavan@mdstud.chalmers.se>
+.SH HISTORY
+2004-06-30: Release 0.1
+.br
+2004-07-02: Release 0.1.1
+.br
+2004-08-01: Release 0.2
+.br
+2004-09-18: Release 0.2.1
+.br
+2004-11-03: Release 0.2.2
+
+(MIPS is a registered trademark of MIPS Technologies. This project is not
+affiliated with MIPS Technologies in any way whatsoever.)

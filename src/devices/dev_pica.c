@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.16 2004-11-20 08:57:13 debug Exp $
+ *  $Id: dev_pica.c,v 1.17 2004-11-23 09:20:45 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -127,7 +127,7 @@ void dev_pica_tick(struct cpu *cpu, void *extra)
 	/*  Used by NetBSD/arc and OpenBSD/arc:  */
 	if (d->interval_start > 0 && d->interval > 0
 	    && (d->int_enable_mask & 2) /* Hm? */ ) {
-		d->interval --;
+		d->interval -= 2;
 		if (d->interval <= 0) {
 			debug("[ pica: interval timer interrupt ]\n");
 			cpu_interrupt(cpu, 8 + PICA_TIMER_IRQ);

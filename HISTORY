@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.322 2004-11-22 02:17:58 debug Exp $
+$Id: HISTORY,v 1.323 2004-11-23 09:20:44 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1169,3 +1169,7 @@ HISTORY of mips64emul
 		loop. Ultrix boot time until a usable desktop is reached
 		is about 1 min 35 seconds on the 533 MHz pca56.
 		Adding srlv, srav, and sllv to the i386 backend.
+20041123	Removing the special handling of high physical addresses for
+		DECstation emulation from the main memory handling code, and
+		replacing it with a mirror device instead. (This results in
+		a tiny increase in performance, and cleaner code.)

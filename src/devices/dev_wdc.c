@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.3 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_wdc.c,v 1.4 2004-01-19 12:53:32 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -214,16 +214,27 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case wd_data:	/*  0: data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
+
+#if 1
+			if (len == 4) {
+				odata += (wdc_get_inbuf(d) << 24);
+				odata += (wdc_get_inbuf(d) << 16);
+			}
+			if (len >= 2)
+				odata += (wdc_get_inbuf(d) << 8);
+			odata += wdc_get_inbuf(d);
+#else
 			switch (len) {
 			case 4:
 			case 2:	odata += (wdc_get_inbuf(d) << 8);
 			default:odata += wdc_get_inbuf(d);
 			}
-
 			if (len == 4) {
 				odata += (wdc_get_inbuf(d) << 24);
 				odata += (wdc_get_inbuf(d) << 16);
 			}
+#endif
+
 			debug("[ wdc: read from DATA: 0x%04x ]\n", odata);
 		} else {
 			debug("[ wdc: write to DATA: 0x%04x ]\n", idata);
@@ -309,6 +320,9 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			if (d->error)
 				odata |= WDCS_ERR;
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
+
+/* ?? */		if (cpu->coproc[0]->reg[COP0_STATUS] & (1 << (d->irq_nr + 8)))
+				cpu_interrupt_ack(cpu, d->irq_nr);
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
 			d->cur_command = idata;
@@ -327,7 +341,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 					unsigned char buf[512*256];
 					int cyl = d->cyl_hi * 256+ d->cyl_lo;
 					int count = d->seccnt? d->seccnt : 256;
-					uint64_t offset = 512 * (d->sector + d->head * 63 + 16*63*cyl);
+					uint64_t offset = 512 * (d->sector - 1 + d->head * 63 + 16*63*cyl);
 					diskimage_access(d->drive + d->base_drive, 0, offset, buf, 512 * count);
 					/*  TODO: result code  */
 					for (i=0; i<512 * count; i++)
@@ -360,8 +374,13 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
 				wdc_initialize_identify_struct(d);
-				for (i=0; i<sizeof(d->identify_struct); i++)
-					wdc_addtoinbuf(d, d->identify_struct[i]);
+				/*  The IDENTIFY data block is sent out in low/high byte order:  */
+				for (i=0; i<sizeof(d->identify_struct); i+=2) {
+					wdc_addtoinbuf(d, d->identify_struct[i+0]);
+					wdc_addtoinbuf(d, d->identify_struct[i+1]);
+				}
+
+				cpu_interrupt(cpu, d->irq_nr);
 				break;
 			default:
 				fatal("[ wdc: unknown command 0x%02x (drive %i, head %i, cylinder %i, sector %i, nsecs %i) ]\n",
@@ -405,5 +424,7 @@ void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 
 	memory_device_register(mem, "wdc_altstatus", baseaddr + 0x206, 1, dev_wdc_altstatus_access, d);
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH, dev_wdc_access, d);
+
+/*	cpu_add_tickfunction(cpu, dev_wdc_tick, d, 10);  */
 }
 

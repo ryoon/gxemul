@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.4 2004-08-03 19:07:30 debug Exp $
+ *  $Id: dev_vga.c,v 1.5 2004-08-26 13:48:22 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -55,11 +55,18 @@ struct vga_data {
 
 	unsigned char	selected_register;
 	unsigned char	reg[256];
+
+	int		cursor_x;
+	int		cursor_y;
 };
 
 
 /*
  *  vga_update():
+ *
+ *  This function should be called whenever any part of d->videomem[] has
+ *  been written to. It will redraw all characters within the range start..end
+ *  using the right palette.
  */
 void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 {
@@ -72,6 +79,11 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 		unsigned char ch = d->videomem[i];
 		fg = d->videomem[i+1] & 15;
 		bg = (d->videomem[i+1] >> 4) & 7;
+
+		/*  Blink is hard to do :-), but inversion might be ok too:  */
+		if (d->videomem[i+1] & 128) {
+			int tmp = fg; fg = bg; bg = tmp;
+		}
 
 		x = (i/2) % MAX_X; x *= 8;
 		y = (i/2) / MAX_X; y *= 16;
@@ -100,6 +112,8 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 
 /*
  *  dev_vga_access():
+ *
+ *  Reads and writes to the VGA video memory.
  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)
@@ -136,15 +150,34 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 /*
  *  vga_reg_write():
+ *
+ *  Writes to VGA control registers.
  */
 void vga_reg_write(struct vga_data *d, int regnr, int idata)
 {
 	debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n", regnr, idata);
+
+	if (regnr == 0xe || regnr == 0xf) {
+		int ofs = d->reg[0x0e] * 256 + d->reg[0x0f];
+		d->cursor_x = ofs % MAX_X;
+		d->cursor_y = ofs / MAX_X;
+
+		/*  TODO: Don't hardcode the cursor size.  */
+
+		/*  Block:  */
+		/*  dev_fb_setcursor(d->fb,
+		    d->cursor_x * 8, d->cursor_y * 16, 1, 8, 16);  */
+		/*  Line:  */
+		dev_fb_setcursor(d->fb,
+		    d->cursor_x * 8, d->cursor_y * 16 + 12, 1, 8, 3);
+	}
 }
 
 
 /*
  *  dev_vga_ctrl_access():
+ *
+ *  Reads and writes of the VGA control registers.
  */
 int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	unsigned char *data, size_t len, int writeflag, void *extra)

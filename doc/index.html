@@ -25,6 +25,7 @@ and various bits of information. Enjoy! :-)
   <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#build">How to compile/build the emulator</a>
   <li><a href="#use">How to use the emulator</a>
+  <li><a href="#netbsdinstall">How to install NetBSD/pmax inside the emulator</a>
   <li><a href="#cani">Can I run &lt;os-name&gt; in the emulator?</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
@@ -229,23 +230,127 @@ The result should looks something like this:
 
 
 <p><br>
+<a name="netbsdinstall"></a>
+<h4>How to install NetBSD/pmax inside the emulator</h4>
+
+<font color="#ff0000">NOTE: This is still highly experimental and buggy,
+and does not quite work yet!</font>
+<p>
+To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
+you first need to install NetBSD onto a disk image. To NetBSD, the disk 
+image looks and acts just like a real SCSI disk, but it is just a normal 
+file in the host's filesystem.
+<p>
+You need to do the following:
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+</pre>
+  <li>Download a NetBSD INSTALL kernel and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+</pre>
+  <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=1 seek=680000000</b>
+</pre>
+  <li>Start the emulator with both the installation ISO image and the
+	root disk image, and the kernel:<pre>
+	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d pmaxcd.iso  \
+		-d netbsd_pmax_rootdisk.img  netbsd-INSTALL</b>
+</pre>
+</ol>
+
+<p>
+Then proceed like you would if you would install NetBSD on a real
+DECstation.  Even if the emulator is running on a very fast host system,
+you should expect the installation to take quite some time.
+
+<p>
+Here are some screenshots taken during installation:
+<center>
+  <table border="0">
+    <tr>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_01.gif">
+		<img src="netbsdpmax_install_01_small.gif"></a>
+	</td>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_02.gif">
+		<img src="netbsdpmax_install_02_small.gif"></a>
+	</td>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_03.gif">
+		<img src="netbsdpmax_install_03_small.gif"></a>
+	</td>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_04.gif">
+		<img src="netbsdpmax_install_04_small.gif"></a>
+	</td>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_05.gif">
+		<img src="netbsdpmax_install_05_small.gif"></a>
+	</td>
+	<td width=105 align="center">
+	  <a href="netbsdpmax_install_06.gif">
+		<img src="netbsdpmax_install_06_small.gif"></a>
+	</td>
+    </tr>
+  </table>
+</center>
+<p>
+<font color="#ff0000">
+TODO:  The last screenshot above shows where the installation bugs out.
+gunzip says that the gzip data is invalid; perhaps the bug is
+that some instruction used by gunzip is not 100% correctly emulated.
+</font>
+
+<p>
+Once the installation is completed, following 
+these steps should boot the OS from the root disk image:
+<ol>
+  <li>Download a NetBSD GENERIC kernel and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-GENERIC.gz</a>
+</pre>
+  <li>Start the emulator with the root disk image and the GENERIC kernel:<pre>
+	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d netbsd_pmax_rootdisk.img netbsd-GENERIC</b>
+</pre>
+</ol>
+<p>
+<font color="#ff0000">
+TODO:  As there are boot programs and kernels on both the CDROM image and 
+on the harddisk image (after installation), it should not be neccessary to 
+have separate kernels in addition to the CDROM/disk images.  It should be 
+possible to boot right of the disk image.  As of right now, that
+functionality has not been implemented.
+</font>
+<p>
+Installing other OSes on other emulated machine types, when that becomes 
+possible, might be done similar to the NetBSD/pmax installation described 
+above.
+
+
+<p><br>
 <a name="cani"></a>
 <h4>Can I run &lt;os-name&gt; in the emulator?</h4>
 
-The answer is probably <b>NO</b>, unless &lt;os-name&gt; is one of a few things that I have tried
-myself.
-Under DECstation emulation, NetBSD, Linux, and some Ultrix kernels work.
-Under SGI emulation, NetBSD and Linux work a bit, but I've never gotten anything out of Irix except
-for a panic message or two.
+The answer is probably <i>no</i>, unless &lt;os-name&gt; is one of a few
+things that I have tried myself. Under DECstation emulation, NetBSD,
+Linux, and some Ultrix kernels work. Under SGI emulation, NetBSD and Linux
+work a bit, but I've never gotten anything out of Irix except for a panic
+message or two.
 <p>
-To sum it up: there is no guarantee that anything specific will run in the emulator,
-but NetBSD (or possibly Linux) is a good starting point for someone who wants to
-experiment. Linux kernels don't usually have ramdisks in them, so until some disk
-controller device has been implemented, NetBSD is the way to go if you want to
-reach userland.
+To sum it up: there is no guarantee that anything
+specific will run in the emulator, but NetBSD (or possibly Linux) is a
+good starting point for someone who wants to experiment. Linux kernels
+don't usually have ramdisks in them, so until some disk controller device
+has been implemented, NetBSD is the way to go if you want to reach
+userland.
 <p>
-Also, the set of OSes that work is obviously very different for different emulation
-modes.
+Also, the set of OSes that work is obviously very different for different 
+emulation modes.
 
 
 <p><br>
@@ -340,9 +445,7 @@ to use mips64emul when porting your code to MIPS.
 <a name="disk"></a>
 <h4>How to start the emulator with a disk image:</h4>
 
-<font color=#f00000><b>NOTE: No disk controller works yet, so diskimages CAN NOT actually be used!</b></font>
-<p>
-Simply add <i>-d diskimagefilename</i> to the command line. For example, if you
+Add <i>-d diskimagefilename</i> to the command line. For example, if you
 want to run a NetBSD/pmax kernel on an emulated DECstation machine, you
 would use a command line such as this:
 <pre>
@@ -353,6 +456,12 @@ It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on.
 <pre>
 	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d disk2.raw netbsd-pmax-INSTALL</b>
+</pre>
+If a filename has a "C:" prefix, or ends with ".iso", then it is treated 
+as a CDROM device instead of a normal disk device. For example, the following
+command would start the emulator with two CDROM images, and one harddisk image:
+<pre>
+	$ <b>./mips64emul -D2 -q -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
 </pre>
 
 
@@ -517,7 +626,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.17 2004-04-01 01:44:27 debug Exp $</pre>
+<pre>$Id: index.html,v 1.18 2004-04-09 05:13:35 debug Exp $</pre>
 
 </body>
 </html>

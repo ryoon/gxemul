@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.30 2004-01-29 20:48:17 debug Exp $
+ *  $Id: misc.h,v 1.31 2004-02-06 06:11:32 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -82,11 +82,11 @@ typedef uint64_t u_int64_t;
 
 #include "dec_prom.h"
 #include "dec_bootinfo.h"
-#define	DEC_PROM_CALLBACK_STRUCT	0xbfc08000
-#define	DEC_PROM_EMULATION		0xbfc10000
+#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc08000
+#define	DEC_PROM_EMULATION		0xffffffffbfc10000
 #define	DEC_PROM_INITIAL_ARGV		(INITIAL_STACK_POINTER + 0x80)
-#define	DEC_PROM_STRINGS		0xbfc20000
-#define	DEC_MEMMAP_ADDR			0xbfc30000
+#define	DEC_PROM_STRINGS		0xffffffffbfc20000
+#define	DEC_MEMMAP_ADDR			0xffffffffbfc30000
 
 
 /*  HPCmips:  */
@@ -178,6 +178,8 @@ struct cpu_type_def {
 #define	MAX_PC_DUMPPOINTS	16
 #define	MAX_DEVICES		22
 
+#define	BINTRANS_CACHEENTRIES	16
+
 struct cpu;
 
 struct memory {
@@ -204,6 +206,15 @@ struct memory {
 
 	/*  Stuff for binary translation:  */
 	uint64_t	bintrans_last_paddr;
+	void		*bintrans_last_host4kpage;
+	int		bintrans_last_chunk_nr;
+
+	long		bintrans_tickcount;
+	uint64_t	bintrans_paddr_start[BINTRANS_CACHEENTRIES];
+	uint64_t	bintrans_paddr_end[BINTRANS_CACHEENTRIES];
+	void		*bintrans_codechunk[BINTRANS_CACHEENTRIES];
+	size_t		bintrans_codechunk_len[BINTRANS_CACHEENTRIES];
+	size_t		bintrans_codechunk_time[BINTRANS_CACHEENTRIES];	/*  time for most recent use  */
 };
 
 /* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */

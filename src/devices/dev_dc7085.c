@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.9 2003-11-24 23:43:00 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.10 2003-12-29 09:49:33 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  *
@@ -207,7 +207,7 @@ void send_mouse_update_sequence(struct dc_data *d, int mouse_x, int mouse_y, int
 		/*  Do nothing (before the mouse is initialized)  */
 		break;
 	case MOUSE_INCREMENTAL:
-		add_to_rx_queue(d, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + mouse_buttons & 7, DCMOUSE_PORT);
+		add_to_rx_queue(d, MOUSE_START_FRAME + MOUSE_X_SIGN*xsign + MOUSE_Y_SIGN*ysign + (mouse_buttons & 7), DCMOUSE_PORT);
 		add_to_rx_queue(d, xdelta, DCMOUSE_PORT);
 		add_to_rx_queue(d, ydelta, DCMOUSE_PORT);
 		break;

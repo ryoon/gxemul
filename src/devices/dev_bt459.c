@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.7 2004-03-10 01:08:29 debug Exp $
+ *  $Id: dev_bt459.c,v 1.8 2004-03-15 06:07:06 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -156,7 +156,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	/*  NetBSD uses 370,37 as magic values.  */
 	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) + ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
-	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 38;
+	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
 
 	/*  TODO: what do the bits in the CCR do?  */
 	on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
@@ -164,15 +164,29 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 on = 1;
 
 	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y || on != d->cursor_on) {
+		int ysize_mul = 1;
+
 		d->cursor_x = new_cursor_x;
 		d->cursor_y = new_cursor_y;
 		d->cursor_on = on;
 
-		if (!(d->bt459_reg[BT459_REG_CCR] & 1))
-			d->cursor_y += 5 - d->cursor_ysize;
+		/*
+		 *  Ugly hack for Ultrix:
+		 *  Ultrix and NetBSD assume that the cursor works differently. Ultrix uses
+		 *  the 370,38 coordinates, but draws the cursor upwards. NetBSD draws it
+		 *  downwards.  Ultrix also makes the cursor smaller (?).
+		 *  TODO:  This actually depends on which ultrix kernel you use.
+		 *  Clearly, the BT459 emulation is not implemented well enough yet.
+		 *
+		 *  TODO:  Find out why? Is it because of special BT459 commands?
+		 */
+		if (!(d->bt459_reg[BT459_REG_CCR] & 1)) {
+/*			ysize_mul = 4; */
+			d->cursor_y += 5 - (d->cursor_ysize * ysize_mul);
+		}
 
 		debug("[ bt459: cursor = %03i,%03i ]\n", d->cursor_x, d->cursor_y);
-		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, d->cursor_xsize, d->cursor_ysize);
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, d->cursor_xsize, d->cursor_ysize * ysize_mul);
 	}
 
 	if (writeflag == MEM_READ)

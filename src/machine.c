@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.342 2005-02-11 09:29:50 debug Exp $
+ *  $Id: machine.c,v 1.343 2005-02-12 09:32:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1143,8 +1143,8 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 /*
  *  machine_setup():
  *
- *  This (rather large) function initializes memory, registers, and/or
- *  devices required by specific machine emulations.
+ *  This (rather large) function initializes memory, registers, and/or devices
+ *  required by specific machine emulations.
  */
 void machine_setup(struct machine *machine)
 {
@@ -1226,8 +1226,9 @@ void machine_setup(struct machine *machine)
 
 	case MACHINE_NONE:
 		printf("\nNo emulation type specified.\n\n"
-		    "For example, if you want to emulate a DECstation, you need to add -Dx to the\n"
-		    "command line, where x is the DECstation specific model type. Run mips64emul -h\n"
+		    "For example, if you want to emulate a DECstation, you "
+		    "need to add -Dx to the\ncommand line, where x is the "
+		    "DECstation specific model type. Run mips64emul -h\n"
 		    "to get help on all command line options.\n");
 		exit(1);
 
@@ -1238,9 +1239,10 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "\"Bare\" MIPS test machine";
 
-		dev_cons_init(machine, mem, "console");	/*  TODO: include address here?  */
+		dev_cons_init(machine, mem, "console");
 
 		/*  This works with 'mmon' (MIPS):  */
+		/*  TODO: Move or remove this!  */
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
 		    0x10800000, 2, 4, 1, "serial 0");
 
@@ -3914,7 +3916,8 @@ for (i=0; i<32; i++)
 		{
 			int i;
 			for (i=0; i<32; i++)
-				cpu->cd.mips.gpr[i] = 0x01230000 + (i << 8) + 0x55;
+				cpu->cd.mips.gpr[i] =
+				    0x01230000 + (i << 8) + 0x55;
 		}
 
 		machine->main_console_handle =

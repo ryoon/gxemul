@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.16 2005-02-12 09:19:07 debug Exp $
+$Id: experiments.html,v 1.17 2005-02-12 09:32:45 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -84,10 +84,16 @@ are emulated, such as putchar device, and a simple framebuffer
 	/*  Hello world for mips64emul  */
 
 	#define	PUTCHAR_ADDRESS		0xb0000000
+	#define	HALT_ADDRESS		0xb0000010
 
 	void printchar(char ch)
 	{
 		*((volatile unsigned char *) PUTCHAR_ADDRESS) = ch;
+	}
+
+	void halt(void)
+	{
+		*((volatile unsigned char *) HALT_ADDRESS) = 0;
 	}
 
 	void printstr(char *s)
@@ -99,8 +105,7 @@ are emulated, such as putchar device, and a simple framebuffer
 	void f(void)
 	{
 		printstr("Hello world\n");
-		for (;;)
-			;
+		halt();
 	}
 </pre>
 This hello world program is available here as well: <a href="hello.c">hello.c</a>
@@ -109,14 +114,14 @@ I recommend that you build a GCC cross compiler for the <b>mips64-unknown-elf</b
 target, and install it. Other compilers could work too, but GCC is good because
 of its portability. Then try to compile the hello world program:
 <pre>
-	$ <b>mips64-unknown-elf-gcc hello.c -mips4 -mabi=64 -c</b>
-	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
+	$ <b>mips64-unknown-elf-gcc -O2 hello.c -mips4 -mabi=64 -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
 	$ <b>file hello</b>
 	hello: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
 	$ <b>./mips64emul -qa hello</b>
 	Hello world
 
-	$ <b>mips64-unknown-elf-gcc hello.c -c</b>
+	$ <b>mips64-unknown-elf-gcc -O2 hello.c -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello</b>
 	$ <b>file hello</b>
 	hello: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
@@ -217,8 +222,8 @@ The "bare" MIPS machine has the following experimental devices:
     <td></td>
     <td align="left" valign="top">
 	<b>mp:</b>
-	<p>This device controls the behaviour of CPUs is an
-	emulated multi-processor system.
+	<p>This device controls the behaviour of CPUs in an emulated
+	multi-processor system.
 	<p>Source code:&nbsp;&nbsp;<font color="#0000f0">devices/dev_mp.c</font>
 	<br>Default physical address:&nbsp&nbsp;<font color="#0000f0">0x11000000</font>
     </td>

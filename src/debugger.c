@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.15 2004-12-20 03:26:57 debug Exp $
+ *  $Id: debugger.c,v 1.16 2004-12-22 08:01:08 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -454,23 +454,103 @@ static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
 
 
 /*
- *  debugger_cmd_registers():
+ *  debugger_cmd_reg():
  */
-static void debugger_cmd_registers(struct emul *emul, char *cmd_line)
+static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 {
-	int i, x = -1;
+	uint64_t tmp;
+	int i, cpuid = -1;
+	int dump = 1;
+	int regnr = -1;		/*  -1 means the pc register  */
+	char *p = cmd_line;
 
-	if (cmd_line[0] != '\0') {
-		x = strtoll(cmd_line + 1, NULL, 0);
-		if (x < 0 || x >= emul->ncpus) {
-			printf("cpu%i doesn't exist.\n", x);
-			return;
+	while (*p == ' ')
+		p++;
+
+	if (*p != '\0') {
+		if (isalpha((int)*p)) {
+			switch (*p) {
+			case 'p':
+			case 'P':
+				break;
+			case 'r':
+			case 'R':
+				while (isalpha((int)*p))
+					p++;
+				regnr = atoi(p);
+				break;
+			default:
+				printf("usage: reg [ cpuid | name=value ]\n");
+				printf("Possible names are:\n");
+				printf("    pc\n");
+				printf("value should be entered in hex.\n");
+				return;
+			}
+			dump = 0;
+		} else {
+			cpuid = strtoll(cmd_line + 1, NULL, 0);
+			if (cpuid < 0 || cpuid >= emul->ncpus) {
+				printf("cpu%i doesn't exist.\n", cpuid);
+				return;
+			}
 		}
 	}
 
-	for (i=0; i<emul->ncpus; i++)
-		if (x == -1 || i == x)
-			cpu_register_dump(emul->cpus[i]);
+	if (dump) {
+		for (i=0; i<emul->ncpus; i++)
+			if (cpuid == -1 || i == cpuid)
+				cpu_register_dump(emul->cpus[i]);
+		return;
+	}
+
+	if (cpuid < 0)
+		cpuid = 0;
+
+	if (emul->ncpus > 1)
+		printf("cpu%i: ", cpuid);
+
+	/*  Modify a register:  */
+	while (*p != '=' && *p)
+		p++;
+
+	if (regnr >= 0 && regnr < 32) {
+		printf("r%i", regnr);
+		tmp = emul->cpus[cpuid]->gpr[regnr];
+	} else if (regnr == -1) {
+		printf("pc");
+		tmp = emul->cpus[cpuid]->pc;
+	} else {
+		printf("Unimplemented register.\n");
+		return;
+	}
+
+	if (*p == '\0') {
+		/*  Just print the old value:  */
+		printf(" = %016llx\n", (long long)tmp);
+		return;
+	} else
+		printf(": %016llx ==> ", (long long)tmp);
+
+	tmp = strtoll(p+1, NULL, 16);
+
+	/*  Sign-extend, in some cases:  */
+	if (emul->cpus[cpuid]->cpu_type.isa_level < 3 ||
+	    emul->cpus[cpuid]->cpu_type.isa_level == 32) {
+		tmp = (int64_t)(int32_t) tmp;
+	}
+
+	printf("%016llx\n", (long long)tmp);
+
+	/*  Print a warning, in case the user didn't think about
+	    sign-extension:  */
+	if ((tmp >> 32) == 0) && (tmp & 0x80000000ULL))
+		printf("NOTE: Treated as a 64-bit value, not sign-extended.\n");
+
+	if (regnr >= 0 && regnr < 32) {
+		emul->cpus[cpuid]->gpr[regnr] = tmp;
+	} else if (regnr == -1) {
+		emul->cpus[cpuid]->pc = tmp;
+	}
 }
 
 
@@ -685,8 +765,8 @@ static struct cmd cmds[] = {
 	{ "quiet", "", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off" },
 
-	{ "registers", "[cpuid]", 0, debugger_cmd_registers,
-		"dump all CPUs' register values (or a specific one's)" },
+	{ "reg", "[cpuid | name=value]", 0, debugger_cmd_reg,
+		"show or modify register contents" },
 
 	{ "step", "[n]", 0, debugger_cmd_step,
 		"single-step one instruction (or n instructions)" },

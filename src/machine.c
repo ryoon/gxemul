@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.256 2004-12-20 03:26:57 debug Exp $
+ *  $Id: machine.c,v 1.257 2004-12-22 08:01:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1697,7 +1697,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		cpu->gpr[GPR_A2] = emul->physical_ram_in_mb * 1048576
 		    + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
-		bootstr = "netbsd";
+		bootstr = emul->boot_kernel_filename;
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8);
 		store_32bit_word(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 4, 0);
 		store_string(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
@@ -1746,6 +1746,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
 		    256, HPCMIPS_FB_YSIZE, 16, "HPCmips", 0);
+
+		/*  BE300 devices:  */
+		dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
+		    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
 
 		break;
 

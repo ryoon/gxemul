@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.14 2004-07-08 08:25:08 debug Exp $
+#  $Id: Makefile.skel,v 1.15 2004-07-09 04:37:49 debug Exp $
 #
 #  Makefile for mips64emul src
 #
@@ -16,9 +16,9 @@ all: $(OBJS)
 
 $(OBJS): Makefile
 
-bintrans.c: bintrans_alpha.c bintrans_i386.c
+bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c
 
-cpu.c: memory.c
+cpu.o: cpu.c memory.c
 
 clean:
 	rm -f $(OBJS) *core

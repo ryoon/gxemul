@@ -1,10 +1,10 @@
-$Id: RELEASE,v 1.32 2004-08-01 11:41:14 debug Exp $
+$Id: RELEASE,v 1.33 2004-08-03 00:31:58 debug Exp $
 
-I'm working on POST-0.2 now.  These were the release notes for 0.2:
+I'm working on POST-0.2 now.
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2
+Release notes for mips64emul 0.X
 ================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
@@ -21,33 +21,7 @@ This is a spare time hobby project, and many things are not implemented yet.
 affiliated with MIPS Technologies in any way whatsoever.) 
 
 
-Release 0.2 has a number of feature enhancements over 0.1 that are worth
-mentioning. These are the major changes:
-
-  o)  0.1 -> 0.1.1:
-
-	x)  Added support for booting directly from disk images and CDROM
-	    images (so far only for the DECstation emulation mode).
-
-  o)  0.1.1 -> 0.2:
-
-	x)  More "guest" operating systems now run to an acceptable degree in
-	    the emulator; apart from NetBSD/pmax and Ultrix/RISC, it is now
-	    also possible to run OpenBSD/pmax and Sprite for DECstation.
-
-	x)  Clock devices in the emulated environment should now adjust
-	    themselves to tick at approximately the same speed as the host's
-	    clock. (This can be overridden with a command-line option, to set
-	    a fixed emulation speed, regardless of the host's speed.)
-
-	x)  Networking support (TCP/IP) is partly implemented, enough to
-	    perform an install of NetBSD/pmax or OpenBSD/pmax via ftp or nfs.
-	    (This should be considered experimental.)
-
-	x)  The DECstation mouse pointer is now "de-accelerated" to attempt
-	    to follow the host's mouse pointer.
-
-	x)  Some minor performance enhancements.
+TODO:  Major feature changes, 0.2 -> 0.X goes here.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -203,10 +177,13 @@ freely available, so I guess thanking them like this is in order:
 
     This product includes software developed by Charles M. Hannum.
 
-    This product includes software developed under OpenBSD by Per Fogelstrom.
+    This product includes software developed under OpenBSD by Per Fogelström.
 
     This product includes software developed at Ludd, University of
     Luleå, Sweden and its contributors.
+
+    This product includes software developed by Hellmuth Michaelis
+    and Joerg Wunsch
 
 
 See individual files for details.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.22 2004-07-16 18:19:45 debug Exp $
+ *  $Id: x11.c,v 1.23 2004-08-03 00:31:58 debug Exp $
  *
  *  X11-related functions.
  */
@@ -35,6 +35,8 @@
 #include "misc.h"
 
 #include "console.h"
+
+#include "fonts/font8x16.c"
 
 
 #ifndef	WITH_X11

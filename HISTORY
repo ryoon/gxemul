@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.185 2004-08-02 23:55:43 debug Exp $
+$Id: HISTORY,v 1.186 2004-08-03 00:31:57 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -865,4 +865,6 @@ HISTORY of mips64emul
 ==============  RELEASE 0.2  ==============
 
 20040803	Adding a -y option, used to set how many (random) instructions
-		to run from each CPU at max.
+		to run from each CPU at max (useful for SMP instruction
+		interleave experiments).
+		Importing a 8x16 consoel font from FreeBSD (vt220l.816).

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.17 2004-01-02 23:55:30 debug Exp $
+ *  $Id: misc.h,v 1.18 2004-01-05 01:24:35 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -100,16 +100,16 @@
  *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
  *  be at physical address 0x1000 though.
  */
-#define	SGI_SPB_ADDR		0x80001000
+#define	SGI_SPB_ADDR		0xffffffff80001000
 /*  0xbfc10000 is firmware callback vector stuff  */
-#define	ARC_FIRMWARE_VECTORS	0xbfc80000
-#define	ARC_FIRMWARE_ENTRIES	0xbfc88000
-#define	ARC_ARGV_START		0xbfc90000
-#define	SGI_ENV_STRINGS		0xbfc98000
-#define	SGI_SYSID_ADDR		0xbfca1800
-#define	ARC_DSPSTAT_ADDR	0xbfca1c00
-#define	ARC_MEMDESC_ADDR	0xbfca1c80
-#define	FIRST_ARC_COMPONENT	0xbfca8000
+#define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000
+#define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000
+#define	ARC_ARGV_START		0xffffffffbfc90000
+#define	SGI_ENV_STRINGS		0xffffffffbfc98000
+#define	SGI_SYSID_ADDR		0xffffffffbfca1800
+#define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00
+#define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80
+#define	FIRST_ARC_COMPONENT	0xffffffffbfca8000
 
 /*  Nintendo 64:  */
 /*  nothing yet  */
@@ -148,7 +148,7 @@ struct cpu_type_def {
 	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32 }, \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R10000",	MIPS_R10000,0,		0,	EXC4K, MMU4K,	4,	64 }, \
+	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU4K,	4,	64 }, \
 	{ "R4300",	MIPS_R4300, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	32 }, /*  32, not 48?  */ \
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
@@ -529,7 +529,7 @@ struct cpu {
 	"sll", "special_01", "srl", "sra", "sllv", "special_05", "srlv", "srav",	/*  0x00 - 0x07  */	\
 	"jr", "jalr", "movz", "movn", "syscall", "break", "special_0e", "sync",		/*  0x08 - 0x0f  */	\
 	"mfhi", "mthi", "mflo", "mtlo", "dsllv", "special_15", "dsrlv", "dsrav",	/*  0x10 - 0x17  */	\
-	"mult", "multu", "div", "divu", "dmult", "special_1d", "ddiv", "ddivu",		/*  0x18 - 0x1f  */	\
+	"mult", "multu", "div", "divu", "dmult", "dmultu", "ddiv", "ddivu",		/*  0x18 - 0x1f  */	\
 	"add", "addu", "sub", "subu", "and", "or", "xor", "nor",			/*  0x20 - 0x27  */	\
 	"special_28", "special_29", "slt", "sltu", "special_2c", "daddu", "special_2e", "dsubu",  /*  0x28 - 0x2f  */	\
 	"special_30", "special_31", "special_32", "special_33", "teq", "special_35", "special_36", "special_37", /*  0x30 - 0x37  */	\
@@ -575,7 +575,7 @@ struct cpu {
 #define	    SPECIAL_DIV			    0x1a    /*  011010  */	/*  MIPS I  */
 #define	    SPECIAL_DIVU		    0x1b    /*	011011  */	/*  MIPS I  */
 #define	    SPECIAL_DMULT		    0x1c    /*  011100  */	/*  MIPS III  */
-/*					    0x1d	011101  */
+#define	    SPECIAL_DMULTU		    0x1d    /*  011101  */	/*  MIPS III  */
 #define	    SPECIAL_DDIV		    0x1e    /*  011110  */	/*  MIPS III  */
 #define	    SPECIAL_DDIVU		    0x1f    /*  011111  */	/*  MIPS III  */
 #define	    SPECIAL_ADD			    0x20    /*	100000  */	/*  MIPS I  */

@@ -301,4 +301,5 @@ HISTORY of mips64emul
 		if there are more than one.
 		Memory hole fix for ARCBIOS, and a fix for very large (>= 4GB)
 		amounts of emulated RAM.
-		Skeleton of a DEC 21030 (TGA) PCI graphics device.
+		TGA (DEC 21030) PCI graphics device. NetBSD/arc can boot with
+		this card and use it as a framebuffer console.

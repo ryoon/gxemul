@@ -1,20 +1,20 @@
-$Id: RELEASE,v 1.100 2005-03-13 10:32:13 debug Exp $
+$Id: RELEASE,v 1.101 2005-03-23 09:08:30 debug Exp $
 
 I'm now working on post-0.3.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.X
+Release notes for GXemul 0.3.1
 ==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
 
-GXemul is a machine emulator, which can be used to experiment with binary code
-for (among others) MIPS-based machines. Several emulation modes are available.
-For some emulation modes, processors and surrounding hardware components are
-emulated well enough to let unmodified operating systems run as if they were
-running on a real machine.
+GXemul is an experimental instruction-level machine emulator. It can be used to 
+run binary code for (among others) MIPS-based machines. Several emulation modes 
+are available. For some emulation modes, processors and surrounding hardware    
+components are emulated well enough to let unmodified operating systems (eg.
+NetBSD) run as if they were running on a real machine.
 
 
 The emulator can be used for many different things. One of the most interesting
@@ -43,13 +43,9 @@ The emulator can also be used for other experiments; it does not have to
 run entire guest operating systems.
 
 
-Summary of changes from version 0.3 to 0.3.X:
+The most important changes from version 0.3 to 0.3.1 are:
 
-	x)  Changing the name from mips64emul to GXemul.
-
-	x)  A fix which allows the i386 bintrans backend to compile with
-	    GCC 2.x. (This is similar to the 0.2.4 -> 0.2.4.1 fix for GCC
-	    2.x on Alpha.)
+	x)  Name change (from mips64emul to GXemul).
 
 	x)  ...
 

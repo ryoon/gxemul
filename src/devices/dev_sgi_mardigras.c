@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.3 2004-07-26 00:19:55 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.4 2004-07-26 00:24:40 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -46,7 +46,7 @@
 #define debug fatal
 
 
-#define	MARDIGRAS_FAKE_OFFSET	0x500000000 /*  hopefully available for use  */
+#define	MARDIGRAS_FAKE_OFFSET	0x500000000ULL	/*  hopefully available  */
 #define	MARDIGRAS_DEFAULT_XSIZE	1280
 #define	MARDIGRAS_DEFAULT_YSIZE	1024
 

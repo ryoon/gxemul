@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.44 2004-08-18 12:56:17 debug Exp $
+ *  $Id: emul.c,v 1.45 2004-08-18 12:59:06 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -362,18 +362,18 @@ void debugger(void)
 			strcpy(last_cmd, "d");
 		} else if (strcasecmp(cmd, "h") == 0 ||
 		    strcasecmp(cmd, "?") == 0 || strcasecmp(cmd, "help") == 0) {
-			printf("  continue       continue emulation\n");
+			printf("  continue       continues emulation\n");
 			printf("  dump [addr]    dumps emulated memory contents\n");
 			printf("  help           prints this help message\n");
-			printf("  itrace         toggle instruction_trace on or off (currently %s)\n",
+			printf("  itrace         toggles instruction_trace on or off (currently %s)\n",
 			    old_instruction_trace? "ON" : "OFF");
 			printf("  quit           quits mips64emul\n");
-			printf("  registers      dump all CPUs' register values\n");
-			printf("  step           single step\n");
-			printf("  tlbdump        dump each CPU's TLB contents\n");
-			printf("  trace          toggle show_trace_tree on or off (currently %s)\n",
+			printf("  registers      dumps all CPUs' register values\n");
+			printf("  step           single steps one instruction\n");
+			printf("  tlbdump        dumps each CPU's TLB contents\n");
+			printf("  trace          toggles show_trace_tree on or off (currently %s)\n",
 			    old_show_trace_tree? "ON" : "OFF");
-			printf("  version        print mips64emul version\n");
+			printf("  version        prints version info\n");
 			last_cmd_len = 0;
 		} else if (strcasecmp(cmd, "i") == 0 ||
 		    strcasecmp(cmd, "itrace") == 0) {

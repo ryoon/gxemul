@@ -116,11 +116,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)
 		o)  Playstation 2:
-			R5900 "weird" instructions (most needed by Linux
-				and NetBSD are already implemented, but
-				perhaps others are needed as well)
-			Hardware:  OHCI usb controller, keyboard,
-				IDE controller, ...
+			Hardware:  OHCI usb controller, keyboard, IDE, ...
 			Has an R3000A as a subsystem (!)
 		o)  hpcmips:  framebuffer(s) and harddisk controller,
 			among other things
@@ -141,9 +137,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Own experiments with ycx2.
 
 	File/disk handling:
-		o)  fseek() takes a long, which is 32-bit on most 32-bit
-		    machines :(  diskimage.c, fseeko() ? (single unix spec)
-		    or loop fseek() by using SEEK_CUR ... ?
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly

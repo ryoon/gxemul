@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.49 2004-08-11 20:36:14 debug Exp $
+#  $Id: configure,v 1.50 2004-08-11 20:41:24 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -173,24 +173,20 @@ printf "$CC $CFLAGS\n"
 
 CCTYPE="generic"
 
-
 if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
 	COMPAQCC=YES
 	CCTYPE="Compaq CC"
 fi
-
 
 if $CC -V 2>&1 | grep Sun 1> /dev/null 2> /dev/null; then
 	SUNCC=YES
 	CCTYPE="Solaris CC"
 fi
 
-
 if $CC -v 2>&1 | grep gcc 1> /dev/null 2> /dev/null; then
 	GCCCC=YES
 	CCTYPE="GNU CC"
 fi
-
 
 echo "C compiler type: $CCTYPE"
 

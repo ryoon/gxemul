@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.76 2005-01-09 01:55:24 debug Exp $
+#  $Id: configure,v 1.77 2005-01-09 03:18:28 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -764,7 +764,7 @@ for MIPS_TRY in mips64-unknown-elf mips-unknown-elf64; do
 	printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
-	if [ -e _testprog.o ]; then
+	if [ -f _testprog.o ]; then
 		MIPS_CC=$MIPS_TRY
 		break
 	fi

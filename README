@@ -1,10 +1,10 @@
-$Id: README,v 1.35 2004-08-01 11:41:14 debug Exp $
+$Id: README,v 1.36 2004-08-11 20:15:31 debug Exp $
 
-I'm working on POST-0.2 now.  This was the readme file for 0.2:
+I'm working on POST-0.2 now.
 
 ------------------------------------------------------------------------------
 
-mips64emul 0.2
+mips64emul 0.X
 ==============
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
@@ -15,11 +15,10 @@ Overview
 
 mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs
 and enough surrounding hardware to fake real machines, capable of running real
-(unmodified) operating systems, such as NetBSD, Linux, or OpenBSD, and to
-assist in experiments involving MIPS-like code in general.
+(unmodified) operating systems, such as NetBSD, Linux, FreeBSD, or OpenBSD, and
+to assist in experiments involving MIPS-like code in general.
 
-This is a spare time hobby project, and many things are not implemented 
-yet.
+This is a spare time hobby project, and many things are not implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.)

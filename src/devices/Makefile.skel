@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.44 2004-08-10 02:31:30 debug Exp $
+#  $Id: Makefile.skel,v 1.45 2004-08-11 20:15:32 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -35,13 +35,14 @@ all: $(OBJS)
 
 $(OBJS): Makefile
 
-dev_vga.o: build_fonts
+dev_vga.o: font8x16.c
 
-build_fonts:
+font8x16.c:
 	cd fonts; $(MAKE); cd ..
+	cp -f fonts/font8x16.c .
 
 clean:
-	rm -f $(OBJS) *core
+	rm -f $(OBJS) *core font8x16.c
 	cd fonts; $(MAKE) clean; cd ..
 
 clean_all: clean

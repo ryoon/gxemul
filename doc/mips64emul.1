@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.10 2004-08-05 14:48:46 debug Exp $
+.\" $Id: mips64emul.1,v 1.11 2004-08-11 20:15:14 debug Exp $
 .\"
 .\" Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 .\"
@@ -44,12 +44,11 @@
 ]
 .SH DESCRIPTION
 .B mips64emul
-is a MIPS machine emulator. The goals are to emulate
-64-bit and 32-bit MIPS-like CPUs and enough surrounding hardware
-to fake real machines, capable of running real (unmodified)
-operating systems, such as NetBSD, Linux, or OpenBSD, and to assist
-in experimenting with MIPS-like code in general. This is a spare time
-hobby project, and many things are not implemented yet.
+is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs and
+enough surrounding hardware to fake real machines, capable of running real 
+(unmodified) operating systems, such as NetBSD, Linux, FreeBSD, or OpenBSD,
+and to assist in experimenting with MIPS-like code in general. This is a
+spare time hobby project, and many things are not implemented yet.
 
 Run
 .B mips64emul

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.5 2004-03-04 03:13:15 debug Exp $
+ *  $Id: ps2_bios.c,v 1.6 2004-03-04 06:12:54 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -105,8 +105,14 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
 		break;
 	case 64:
-		debug("[ SIFBIOS 64(): TODO ]\n");
-		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
+		fatal("[ SIFBIOS 64(0x%x): TODO ]\n", cpu->gpr[GPR_A1]);
+		/*  TODO This is probably netbsd specific  */
+		{
+			uint32_t tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
+			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
+			store_32bit_word(tmpaddr, 1);		/*  "done" word  */
+		}
+		cpu->gpr[GPR_V0] = 0;
 		break;
 	default:
 		cpu_register_dump(cpu);

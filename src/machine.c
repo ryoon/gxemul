@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.58 2004-03-04 20:04:48 debug Exp $
+ *  $Id: machine.c,v 1.59 2004-03-05 13:05:17 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -741,6 +741,9 @@ void machine_init(struct memory *mem)
 			/*
 			 *  See KN220 docs for more info.
 			 *
+			 *  something at 0x10000000
+			 *  something at 0x10001000
+			 *  something at 0x10040000
 			 *  scc at 0x10140000
 			 *  qbus at (or around) 0x10080000
 			 *  dssi (disk controller) buffers at 0x10100000, registers at 0x10160000.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.2 2004-01-16 17:34:05 debug Exp $
+ *  $Id: pci_ahc.c,v 1.3 2004-03-01 17:11:25 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -61,7 +61,7 @@ uint32_t pci_ahc_rr(int reg)
 
 	switch (reg) {
 	case 0x00:
-		return PCI_VENDOR_ADP + (PCI_PRODUCT_ADP_2940U << 16);
+		return PCI_VENDOR_ADP + ((uint32_t)PCI_PRODUCT_ADP_2940U << 16);
 	case 0x04:
 		return 0x02900007;
 	case 0x08:

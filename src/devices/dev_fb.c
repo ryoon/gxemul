@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.14 2004-01-07 00:51:27 debug Exp $
+ *  $Id: dev_fb.c,v 1.15 2004-01-11 16:32:08 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -283,6 +283,18 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (d->update_x1 != -1) {
 		int y, addr, addr2, q = d->vfb_scaledown;
 
+		/*
+		 *  This make sure we don't update too often, but if we haven't
+		 *  been updating in a while (that is, updated_last_tick = 0),
+		 *  then start immediately. This might improve performance.
+		 */
+		if (d->updated_last_tick == 1) {
+			d->updated_last_tick = 0;
+			return;
+		}
+
+		d->updated_last_tick = 1;
+
 		if (d->update_x1 >= d->visible_xsize)	d->update_x1 = d->visible_xsize - 1;
 		if (d->update_x2 >= d->visible_xsize)	d->update_x2 = d->visible_xsize - 1;
 		if (d->update_y1 >= d->visible_ysize)	d->update_y1 = d->visible_ysize - 1;
@@ -311,7 +323,8 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		XFlush(d->fb_window->x11_display);
 #endif
 		d->update_x1 = d->update_y1 = d->update_x2 = d->update_y2 = -1;
-	}
+	} else
+		d->updated_last_tick = 0;
 }
 
 
@@ -358,10 +371,12 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	 *  unneccessarily.
 	 */
 	if (writeflag == MEM_WRITE && use_x11) {
-		int x, y;
+		int x, y, x2,y2;
 
 		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
 		y = relative_addr / d->bytes_per_line;
+		x2 = ((relative_addr + len) % d->bytes_per_line) * 8 / d->bit_depth;
+		y2 = (relative_addr + len) / d->bytes_per_line;
 
 		/*  Is this far away from the previous updates? Then update:  */
 		if (d->update_y1 != -1) {
@@ -375,12 +390,23 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		}
 
 		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		x += len * 8 / d->bit_depth;	/*  note: x2 is _after_ the last pixel  */
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
 
 		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
 		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
 
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (x2 < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x2;
+		if (x2 > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x2;
+
+		if (y2 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y2;
+		if (y2 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y2;
+
+		/*  An update covering more than one line will automatically force an update
+		    of all the affected lines:  */
+		if (y != y2) {
+			d->update_x1 = 0;
+			d->update_x2 = d->xsize-1;
+		}
 	}
 
 	/*
@@ -495,7 +521,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 
 	memory_device_register(mem, name, baseaddr, size, dev_fb_access, d);
 
-	cpu_add_tickfunction(cpu, dev_fb_tick, d, 19);
+	cpu_add_tickfunction(cpu, dev_fb_tick, d, 18);
 	return d;
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.49 2004-11-22 01:23:18 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.50 2004-11-22 08:54:19 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -89,6 +89,8 @@
 #define	ALPHA_T5		6
 #define	ALPHA_T6		7
 #define	ALPHA_T7		8
+#define	ALPHA_S0		9
+#define	ALPHA_S1		10
 #define	ALPHA_T8		22
 #define	ALPHA_T9		23
 
@@ -806,19 +808,17 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	 *  04 00 21 20     lda     t0,4(t0)		add 4
 	 *  c8 01 5f 20     lda     t1,456
 	 *  22 57 40 48     sll     t1,0x2,t1
-	 *  01 04 22 40     addq    t0,t1,t0		add (imm<<2)
-	 *  88 08 30 b4     stq     t0,2184(a0)		store pc
+	 *  0a 04 22 40     addq    t0,t1,s1		add (imm<<2)
 	 */
 
 	bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x21; *a++ = 0x20;  /*  lda  */
 	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x5f; *a++ = 0x20;  /*  lda  */
 	*a++ = 0x22; *a++ = 0x57; *a++ = 0x40; *a++ = 0x48;  /*  sll  */
-	*a++ = 0x01; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
+	*a++ = 0x0a; *a++ = 0x04; *a++ = 0x22; *a++ = 0x40;  /*  addq  */
 
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
+	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
+	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
 
 	b2 = a;
 	n = (size_t)b2 - (size_t)b - 4;
@@ -845,16 +845,14 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	 *  and cpu->delay_jmpaddr = gpr[rs].
 	 */
 
-	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T0);
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
+	bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_S1);
 
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
+	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
+	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T0);
-		*a++ = 8; *a++ = 0; *a++ = 0x21; *a++ = 0x20;  /*  lda t0,8(t0)  */
+		*a++ = 8; *a++ = 0; *a++ = 0x26; *a++ = 0x20;  /*  lda t0,8(t5)  */
 		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
 	}
 
@@ -936,8 +934,8 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 
 	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_JMPADDR);
 
-	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,TO_BE_DELAYED */
-	bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
+	/*  02 00 3f 21     lda     s0,TO_BE_DELAYED  */
+	*a++ = TO_BE_DELAYED; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x21;
 
 	/*  If the machine continues executing here, it will return
 	    to the main loop, which is fine.  */
@@ -963,16 +961,15 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 
 	if (!only_care_about_chunk_p) {
 		/*  Skip all of this if there is no branch:  */
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_SLOT, ALPHA_T2);
 		skip = a;
-		*a++ = 0; *a++ = 0; *a++ = 0x60; *a++ = 0xe4;  /*  beq t2,skip  */
+		*a++ = 0; *a++ = 0; *a++ = 0x20; *a++ = 0xe5;  /*  beq s0,skip  */
 
 		/*
 		 *  Perform the jump by setting cpu->delay_slot = 0
 		 *  and pc = cpu->delay_jmpaddr.
 		 */
-		*a++ = 0; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x20;  /*  lda t0,0 */
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, MIPSREG_DELAY_SLOT);
+		/*  00 00 3f 21     lda     s0,0  */
+		*a++ = 0; *a++ = 0; *a++ = 0x3f; *a++ = 0x21;
 
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_T0);
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_PC, ALPHA_T3);

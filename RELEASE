@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.71 2004-12-26 18:02:05 debug Exp $
+$Id: RELEASE,v 1.72 2005-01-01 17:23:07 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -31,7 +31,7 @@ combinations as possible of the following must be tested:
 Release notes for mips64emul 0.2.4
 ==================================
 
-Copyright (C) 2003-2004  Anders Gavare.
+Copyright (C) 2003-2005  Anders Gavare.
 
 
 mips64emul is a free MIPS machine emulator. The goals are to emulate

@@ -97,8 +97,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			+)  Own experiments with ycx2.
 
 	Emulation of specific machines and devices:
-		o)  SCSI controllers!
-		o)  "wdc" IDE controller!
+		o)  Various SCSI and IDE controllers
 		o)  PS/2-style keyboard controller (for several machines)
 		o)  Generic busses;
 			x)  PCI:  i/o and interrupts
@@ -116,9 +115,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 				set console=g or similar
 			x)  DECstation 5840? "xbi-based SMP"
 		o)  SGI and ARC machines (sgimips, arc):
+			x)  more ARCBIOS stuff
 			x)  Memory/interrupt controllers
 			x)  Finish the SGI O2 framebuffer and keyboard support
 			x)  IP30 (Linux with graphics support?)
+			x)  IP32 ("O2"): mec (ethernet), scsi, ps2 kbd ...
 			x)  SMP / NUMA?
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)

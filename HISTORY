@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.430 2004-12-30 18:38:21 debug Exp $
+$Id: HISTORY,v 1.431 2005-01-01 17:23:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1402,3 +1402,4 @@ HISTORY of mips64emul
 		R10000, and per-machine default TLB entries can now be set
 		for SGI and ARC machines.
 		Fix: SGI-IP27 is ARC64, not ARCS.
+20050101	Minor updates.

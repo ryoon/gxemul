@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.16 2004-05-11 16:23:32 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.17 2004-06-27 01:09:54 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -182,7 +182,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
 		fb = dev_fb_init(cpu, mem, baseaddr, VFB_GENERIC, 1024,864, 1024,1024,8, device_name);
-		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459, fb, 8, irq, BT459_BA);
+		dev_bt459_init(cpu, mem, baseaddr + VFB_CFB_BT459,
+		    baseaddr + 0x300000, fb, 8, irq, BT459_BA);
 		rom_offset = 0x3c0000;	/*  should be 380000, but something needs to be at 0x3c0000?  */
 	} else if (strcmp(device_name, "PMAG-CA")==0) {
 		/*  px in NetBSD  */
@@ -213,7 +214,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		/*  This works at least B/W in Ultrix, so far.  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO");
 		/*  TODO: bt463 at offset 0x040000, not bt459  */
-		dev_bt459_init(cpu, mem, baseaddr + 0x40000, fb, 8, irq, 0);		/*  TODO: type  */
+		dev_bt459_init(cpu, mem, baseaddr + 0x40000, 0, fb, 8, irq, 0);		/*  TODO: type  */
 		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);				/*  cursor  */
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {

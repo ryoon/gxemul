@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.12 2004-06-22 22:24:54 debug Exp $
+ *  $Id: dev_px.c,v 1.13 2004-06-27 01:09:54 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -699,12 +699,12 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 
 	switch (d->type) {
 	case DEV_PX_TYPE_PX:
-		dev_bt459_init(cpu, mem, baseaddr + 0x200000, d->vfb_data, 8, irq_nr, BT459_PX);
+		dev_bt459_init(cpu, mem, baseaddr + 0x200000, 0, d->vfb_data, 8, irq_nr, BT459_PX);
 		break;
 	case DEV_PX_TYPE_PXG:
 	case DEV_PX_TYPE_PXGPLUS:
 	case DEV_PX_TYPE_PXGPLUSTURBO:
-		dev_bt459_init(cpu, mem, baseaddr + 0x300000, d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
+		dev_bt459_init(cpu, mem, baseaddr + 0x300000, 0, d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
 		break;
 	default:
 		fatal("dev_px_init(): unimplemented px_type\n");

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.15 2003-12-30 03:05:27 debug Exp $
+ *  $Id: misc.h,v 1.16 2004-01-02 22:19:53 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -94,11 +94,22 @@
 
 /*  SGI and ARC:  */
 #include "sgi_arcbios.h"
+/*
+ *  Problem: kernels seem to be loaded at low addresses in RAM, so
+ *  storing environment strings and memory descriptors there is a bad
+ *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
+ *  be at physical address 0x1000 though.
+ */
 #define	SGI_SPB_ADDR		0x80001000
-#define	SGI_SYSID_ADDR		0x80001800
-#define	ARC_DSPSTAT_ADDR	0x80001c00
-#define	ARC_MEMDESC_ADDR	0x80001c80
-#define	SGI_ENV_STRINGS		0xbfc20000
+/*  0xbfc10000 is firmware callback vector stuff  */
+#define	ARC_FIRMWARE_VECTORS	0xbfc30000
+#define	ARC_FIRMWARE_ENTRIES	0xbfc38000
+#define	ARC_ARGV_START		0xbfc48000
+#define	SGI_ENV_STRINGS		0xbfc50000
+#define	SGI_SYSID_ADDR		0xbfc61800
+#define	ARC_DSPSTAT_ADDR	0xbfc61c00
+#define	ARC_MEMDESC_ADDR	0xbfc61c80
+#define	FIRST_ARC_COMPONENT	0xbfc70000
 
 /*  Nintendo 64:  */
 /*  nothing yet  */

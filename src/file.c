@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.5 2003-11-24 04:27:40 debug Exp $
+ *  $Id: file.c,v 1.6 2003-11-24 23:41:16 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -480,10 +480,6 @@ void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 
 		if (len > 0)
 			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, 0);
-		else {
-			fprintf(stderr, "could not read from %s\n", filename);
-			exit(1);
-		}
 
 		vaddr += len;
 	}

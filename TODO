@@ -1,9 +1,7 @@
-$Id: TODO,v 1.110 2005-01-21 13:13:12 debug Exp $
+$Id: TODO,v 1.111 2005-01-24 07:02:59 debug Exp $
 
-mips64emul TODO
----------------
-
-This file is a mess. Order is random. Don't trust it to be up-to-date.
+Here's a short list of what I have left to do on mips64emul. This file is
+a mess. Order is random. Don't trust it to be up-to-date.
 
 
 	Caches / memory hierarchies:

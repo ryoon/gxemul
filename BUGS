@@ -1,5 +1,7 @@
-Please report any bugs you find to me.  Here is a list of KNOWN bugs.  (Also,
-anything listed in TODO is not worth reporting.)
+$Id: BUGS,v 1.25 2005-01-24 07:02:59 debug Exp $
+
+If you encounter any bugs not listed here, and not listed in the TODO, 
+then feel free to report them to me.
 
 
 Serious bugs:

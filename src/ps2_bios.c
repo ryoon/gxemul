@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.10 2004-03-28 01:23:40 debug Exp $
+ *  $Id: ps2_bios.c,v 1.11 2004-03-30 01:01:25 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -147,6 +147,42 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		}
 		cpu->gpr[GPR_V0] = 0;
 		break;
+	case 65:
+		fatal("[ SIFBIOS alloc iop heap(0x%x) ]\n", cpu->gpr[GPR_A1]);
+
+		/*
+		 *  Linux uses this to allocate "heap" for the OHCI USB controller.
+		 *  TODO:  This naïve implementation does not allow for a "free iop
+		 *  heap" function: :-/
+		 */
+
+		{
+			uint32_t tmpaddr;
+			static uint32_t return_addr = 0x1000;  /*  0xbc000000;  */
+			uint32_t size;
+
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x (result should be placed here)\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x (*arg)\n", tmpaddr);
+			size = load_32bit_word(tmpaddr + 0);			fatal("      size = %08x\n", size);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x (*func (void *, int))\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x (*para)\n", tmpaddr);
+
+			/*  TODO: This is probably netbsd specific  */
+			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
+			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
+			store_32bit_word(tmpaddr, 1);		/*  "done" word for NetBSD  */
+			store_32bit_word(tmpaddr + 4, 1);		/*  "done" word A for Linux */
+
+			/*  Result:  */
+			store_32bit_word(cpu->gpr[GPR_A1] + 0, return_addr);
+
+			return_addr += size;
+			/*  Round up to next page:  */
+			return_addr += 4095;
+			return_addr &= ~4095;
+		}
+		cpu->gpr[GPR_V0] = 0;
+		break;
 	default:
 		cpu_register_dump(cpu);
 		printf("\n");
@@ -154,5 +190,4 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		cpu->running = 0;
 	}
 }
-
 

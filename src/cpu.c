@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.63 2004-06-22 23:29:47 debug Exp $
+ *  $Id: cpu.c,v 1.64 2004-06-23 00:38:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -136,6 +136,10 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 
 	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
 	cpu->coproc[1] = coproc_new(cpu, 1);	/*  FPU  */
+
+	/*  Choose some value which can't happen, for example 3.  */
+	cpu->pc_last_virtual_page = 3;
+	cpu->pc_last_physical_page = 0;
 
 	return cpu;
 }

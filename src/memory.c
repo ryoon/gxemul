@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.37 2004-06-22 22:26:09 debug Exp $
+ *  $Id: memory.c,v 1.38 2004-06-23 00:38:31 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -690,6 +690,23 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		}
 #endif
 
+	if (cache == CACHE_INSTRUCTION && (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
+		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
+
+		if (cpu->pc_last_was_in_host_ram) {
+			memblock = cpu->pc_last_host_memblock;
+
+			offset = paddr & ((1 << mem->bits_per_memblock) - 1);
+			memcpy(data, memblock + offset, len);
+
+			/*  TODO:  Make sure this works with dynamic binary translation...  */
+
+			return MEMORY_ACCESS_OK;
+		}
+
+		goto have_paddr;
+	}
+
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;
 	} else {
@@ -709,6 +726,18 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	 *  (TODO 2:  Is 48 bits ok?)
 	 */
 	paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
+
+
+	if (cache == CACHE_INSTRUCTION) {
+		cpu->pc_last_virtual_page = vaddr & ~0xfff;
+		cpu->pc_last_physical_page = paddr & ~0xfff;
+		cpu->pc_last_was_in_host_ram = 0;
+
+		/*  _last_was_in_host_ram will be set to 1 further down,
+		    if the page is actually in host ram  */
+	}
+
+have_paddr:
 
 
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
@@ -944,13 +973,19 @@ no_exception_access:
 		shrcount -= bits_per_pagetable;
 	}
 
+
 	offset = paddr & ((1 << bits_per_memblock) - 1);
 
 	if (writeflag == MEM_WRITE)
 		memcpy(memblock + offset, data, len);
-	else
+	else {
 		memcpy(data, memblock + offset, len);
 
+		if (cache == CACHE_INSTRUCTION) {
+			cpu->pc_last_was_in_host_ram = 1;
+			cpu->pc_last_host_memblock = memblock;
+		}
+	}
 
 do_return_ok:
 	if (bintrans_enable) {

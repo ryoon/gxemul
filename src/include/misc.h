@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.62 2004-06-22 23:29:49 debug Exp $
+ *  $Id: misc.h,v 1.63 2004-06-23 00:38:30 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -480,6 +480,30 @@ struct cpu {
 	uint64_t	pc_last;		/*  PC of last instruction   */
 	uint64_t	hi;
 	uint64_t	lo;
+
+	/*
+	 *  For faster memory lookup when running instructions:
+	 *
+	 *  Reading memory to load instructions is a very common
+	 *  thing in the emulator, and an instruction is very often
+	 *  read from just after the previous instruction.  That means
+	 *  that we don't have to go through the TLB each time.
+	 *
+	 *  We then get the vaddr -> paddr translation for free.
+	 *  There is an even better case when the paddr is a RAM
+	 *  address (as opposed to an address in a memory mapped
+	 *  device). Then we can figure out the address in the
+	 *  host's memory directly, and skip the paddr -> host
+	 *  address calculation as well.
+	 *
+	 *  A modification to the TLB should set the virtual_page
+	 *  variable to an "impossible" value, so that there won't
+	 *  be a hit on the next instruction.
+	 */
+	uint64_t	pc_last_virtual_page;
+	uint64_t	pc_last_physical_page;
+	unsigned char	*pc_last_host_memblock;
+	int		pc_last_was_in_host_ram;
 
 #ifdef ENABLE_MIPS16
 	int		mips16;			/*  non-zero if MIPS16 code is allowed  */

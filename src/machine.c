@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.89 2004-06-11 15:22:53 debug Exp $
+ *  $Id: machine.c,v 1.90 2004-06-12 14:29:46 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -85,6 +85,7 @@ struct dec5800_data *dec5800_csr;
 
 struct crime_data *crime_data;
 struct mace_data *mace_data;
+struct sgi_ip22_data *sgi_ip22_data;
 
 
 /********************** Helper functions **********************/
@@ -458,6 +459,51 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		if ((ps2_data->dmac_reg[0x601] & 0xffff) == 0)
 			cpu_interrupt_ack(cpu, 3);
 	}
+}
+
+
+void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	/*
+	 *  SGI-IP22 specific interrupt stuff:
+	 *
+	 *  irq_nr should be 8 + x, where x = 0..31 for local0,
+	 *  and 32..63 for local1 interrupts.
+	 */
+
+	uint32_t newmask;
+	uint32_t stat, mask;
+
+	irq_nr -= 8;
+	newmask = 1 << (irq_nr & 31);
+
+	if (irq_nr < 32) {
+		if (assrt)
+			sgi_ip22_data->reg[0] |= newmask;
+		else
+			sgi_ip22_data->reg[0] &= ~newmask;
+	} else {
+		if (assrt)
+			sgi_ip22_data->reg[2] |= newmask;
+		else
+			sgi_ip22_data->reg[2] &= ~newmask;
+	}
+
+	/*  Read stat and mask for local0:  */
+	stat = sgi_ip22_data->reg[0];
+	mask = sgi_ip22_data->reg[1];
+	if ((stat & mask) == 0)
+		cpu_interrupt_ack(cpu, 2);
+	else
+		cpu_interrupt(cpu, 2);
+
+	/*  Read stat and mask for local1:  */
+	stat = sgi_ip22_data->reg[2];
+	mask = sgi_ip22_data->reg[3];
+	if ((stat & mask) == 0)
+		cpu_interrupt_ack(cpu, 3);
+	else
+		cpu_interrupt(cpu, 3);
 }
 
 
@@ -1473,13 +1519,9 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
-				/*
-				 *  This would be one possible implementation of the 128MB mirroring
-				 *  on IP22 machines.  However, an optimization in memory.c when
-				 *  reading instructions assumes that instructions are read from
-				 *  physical RAM.   (TODO)
-				 */
-				/*  dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);  */
+				/*  0x1fbd9880 on "Guiness", or 0x1fbd9000 on "fullhouse" machines?  */
+				sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);
+				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
 
 				/*
 				 *  According to NetBSD:
@@ -1494,28 +1536,24 @@ void machine_init(struct memory *mem)
 				 *  wdsc0 at hpc0 offset 0x44000: UNKNOWN SCSI, rev=12, target 7
 				 *  scsibus2 at wdsc0: 8 targets, 8 luns per target
 				 *  dsclock0 at hpc0 offset 0x60000
-				 *  hpc1 at gio0 addr 0x1fb00000: SGI HPC3
-				 *  zsc at hpc1 offset 0x59830 not configured
-				 *  sq at hpc1 offset 0x54000 not configured
-				 *  wdsc at hpc1 offset 0x44000 not configured
-				 *  dsclock at hpc1 offset 0x60000 not configured
-				 *  hpc2 at gio0 addr 0x1f980000: SGI HPC3
-				 *  zsc at hpc2 offset 0x59830 not configured
-				 *  sq at hpc2 offset 0x54000 not configured
-				 *  wdsc at hpc2 offset 0x44000 not configured
-				 *  dsclock at hpc2 offset 0x60000 not configured
+				 *
+				 *  IRQ numbers are of the form 8 + x, where x = 0..31 for local0
+				 *  interrupts, and 32..63 for local1.
 				 */
 
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  zsc0 serial console  */
-				dev_wdsc_init(mem, 0x1fbc4000); 	 			/*  wdsc0  */
+				/*  zsc0 serial console. TODO: irq nr  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
 
-				/*  How about these?  They are not detected by NetBSD:  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb59830, 8, 1);	/*  zsc1 serial  */
-				dev_wdsc_init(mem, 0x1fb44000); 	 			/*  wdsc1  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1f9d9830, 8, 1);	/*  zsc2 serial  */
-				dev_wdsc_init(mem, 0x1f9c4000); 	 			/*  wdsc2  */
+	 			/*  wdsc0, SCSI.  TODO: irq nr  */
+				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 8 + 1);
 
-				dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
+				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
+				/*  dev_sq_init...  */
+
+				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
+				dev_unreadable_init(mem, 0x1fb00000, 0x10000);
+				dev_unreadable_init(mem, 0x1f980000, 0x10000);
+
 				break;
 			case 25:
 				/*  NOTE:  Special case for arc_wordlen:  */

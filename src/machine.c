@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.287 2005-01-20 14:25:19 debug Exp $
+ *  $Id: machine.c,v 1.288 2005-01-20 20:45:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1103,6 +1103,8 @@ void machine_init(struct machine *machine)
 		/*
 		 *  A "bare" test machine.
 		 */
+		cpu->byte_order = EMUL_BIG_ENDIAN;
+
 		machine->machine_name = "\"Bare\" test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
@@ -1118,6 +1120,8 @@ void machine_init(struct machine *machine)
 		break;
 
 	case MACHINE_DEC:
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
+
 		/*  An R2020 or R3220 memory thingy:  */
 		cpu->coproc[3] = coproc_new(cpu, 3);
 
@@ -1794,6 +1798,7 @@ void machine_init(struct machine *machine)
 		break;
 
 	case MACHINE_COBALT:
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		machine->machine_name = "Cobalt";
 
 		/*
@@ -1843,6 +1848,7 @@ void machine_init(struct machine *machine)
 		break;
 
 	case MACHINE_HPCMIPS:
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
 		/*
@@ -1959,6 +1965,7 @@ void machine_init(struct machine *machine)
 		break;
 
 	case MACHINE_PS2:
+		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 		machine->machine_name = "Playstation 2";
 
 		if (machine->physical_ram_in_mb != 32)
@@ -3704,6 +3711,7 @@ for (i=0; i<32; i++)
 		 *  See http://katsu.watanabe.name/doc/sonynews/model.html
 		 *  for more details.
 		 */
+		cpu->byte_order = EMUL_BIG_ENDIAN;
 		machine->machine_name = "Sony NeWS (NET WORK STATION)";
 
 {

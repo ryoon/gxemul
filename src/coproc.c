@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.153 2005-01-20 18:50:51 debug Exp $
+ *  $Id: coproc.c,v 1.154 2005-01-20 20:45:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2087,12 +2087,22 @@ void coproc_eret(struct cpu *cpu)
  *
  *  TODO:  This is a mess and should be restructured (again).
  */
-void coproc_function(struct cpu *cpu, struct coproc *cp,
+void coproc_function(struct cpu *cpu, struct coproc *cp, int cpnr,
 	uint32_t function, int unassemble_only, int running)
 {
 	int co_bit, op, rt, rd, fs, copz;
 	uint64_t tmpvalue;
-	int cpnr = cp->coproc_nr;
+
+	if (cp == NULL) {
+		if (unassemble_only) {
+			debug("cop%i\t0x%08x (coprocessor not available)\n",
+			    cpnr, (int)function);
+			return;
+		}
+		fatal("[ pc=0x%016llx cop%i\t0x%08x (coprocessor not "
+		    "available)\n", (long long)cpu->pc, cpnr, (int)function);
+		return;
+	}
 
 	/*  For quick reference:  */
 	copz = (function >> 21) & 31;
@@ -2145,7 +2155,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
 			if (unassemble_only) {
-				debug("cfc%i\t%s,copr%i\n", cpnr,
+				debug("cfc%i\t%s,r%i\n", cpnr,
 				    regnames[rt], fs);
 				return;
 			}
@@ -2158,7 +2168,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 			rt = (function >> 16) & 31;
 			fs = (function >> 11) & 31;
 			if (unassemble_only) {
-				debug("ctc%i\t%s,copr%i\n", cpnr,
+				debug("ctc%i\t%s,r%i\n", cpnr,
 				    regnames[rt], fs);
 				return;
 			}
@@ -2327,8 +2337,14 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 	}
 
 	/*  TODO: coprocessor R2020 on DECstation?  */
-	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff)
+	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff) {
+		if (unassemble_only) {
+			debug("decstation_R2020_thing\n");
+			return;
+		}
+		/*  TODO  */
 		return;
+	}
 
 	/*  TODO: RM5200 idle (?)  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.248 2005-01-20 18:50:51 debug Exp $
+ *  $Id: cpu.c,v 1.249 2005-01-20 20:45:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -730,7 +730,16 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			goto disasm_ret;
 		}
 
-		debug("%s\t%s", hi6_names[hi6], regname(cpu->machine, rt));
+		debug("%s\t", hi6_names[hi6]);
+
+		if (hi6 == HI6_SWC1 || hi6 == HI6_SWC2 || hi6 == HI6_SWC3 ||
+		    hi6 == HI6_SDC1 || hi6 == HI6_SDC2 ||
+		    hi6 == HI6_LWC1 || hi6 == HI6_LWC2 || hi6 == HI6_LWC3 ||
+		    hi6 == HI6_LDC1 || hi6 == HI6_LDC2)
+			debug("r%i", rt);
+		else
+			debug("%s", regname(cpu->machine, rt));
+
 		debug(",%i(%s)", imm, regname(cpu->machine, rs));
 
 		if (running) {
@@ -778,8 +787,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm &= ((1 << 26) - 1);
 
 		/*  Call coproc_function(), but ONLY disassembly, no exec:  */
-		coproc_function(cpu, cpu->coproc[hi6 - HI6_COP0], imm,
-		    1, running);
+		coproc_function(cpu, cpu->coproc[hi6 - HI6_COP0],
+		    hi6 - HI6_COP0, imm, 1, running);
 		return;
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
@@ -3489,7 +3498,8 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  coproc_function code outputs instruction
 			 *  trace, if necessary.
 			 */
-			coproc_function(cpu, cpu->coproc[cpnr], imm, 0, 1);
+			coproc_function(cpu, cpu->coproc[cpnr],
+			    cpnr, imm, 0, 1);
 		}
 		return 1;
 	case HI6_CACHE:

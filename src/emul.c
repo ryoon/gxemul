@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.76 2004-10-10 14:07:49 debug Exp $
+ *  $Id: emul.c,v 1.77 2004-10-13 18:37:44 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -400,6 +400,8 @@ void debugger(void)
 			printf("  itrace              toggles instruction_trace on or off (currently %s)\n",
 			    old_instruction_trace? "ON" : "OFF");
 			printf("  quit                quits mips64emul\n");
+			printf("  quiet               toggles quiet_mode on or off (currently %s)\n",
+			    old_quiet_mode? "ON" : "OFF");
 			printf("  registers           dumps all CPUs' register values\n");
 			printf("  step                single steps one instruction\n");
 			printf("  tlbdump             dumps each CPU's TLB contents\n");
@@ -415,8 +417,13 @@ void debugger(void)
 			    old_instruction_trace? "ON" : "OFF");
 			/*  TODO: how to preserve quiet_mode?  */
 			old_quiet_mode = 0;
-		} else if (strcasecmp(cmd, "quit") == 0 ||
-		    strcasecmp(cmd, "q") == 0) {
+			printf("quiet_mode = %s\n",
+			    old_quiet_mode? "ON" : "OFF");
+		} else if (strcasecmp(cmd, "quiet") == 0) {
+			old_quiet_mode = 1 - old_quiet_mode;
+			printf("quiet_mode = %s\n",
+			    old_quiet_mode? "ON" : "OFF");
+		} else if (strcasecmp(cmd, "quit") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
 				debugger_emul->cpus[i]->running = 0;
 			exit_debugger = 1;
@@ -438,6 +445,8 @@ void debugger(void)
 			    old_show_trace_tree? "ON" : "OFF");
 			/*  TODO: how to preserve quiet_mode?  */
 			old_quiet_mode = 0;
+			printf("quiet_mode = %s\n",
+			    old_quiet_mode? "ON" : "OFF");
 		} else if (strcasecmp(cmd, "u") == 0 ||
 		    strcasecmp(cmd, "unassemble") == 0) {
 			debugger_unasm(debugger_emul, last_unasm_addr, 16);

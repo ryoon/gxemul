@@ -1,13 +1,9 @@
 mips64emul TODO
 ---------------
 
-	Code cleanup:
-		o)  Fix the configure script for all conceivable platforms
-			(for example, find a Linux/i386 machine to try this on)
-		o)  Namespace consistency
-		o)  Struct encapsulation:
-			x)  no global variables, or at least as few as possible
-			    (this will simplify adding a GUI immensely)
+	Binary translation:  src/bintrans.c
+
+	Userland ABI emulation: src/useremul.c
 
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register states,
@@ -40,10 +36,6 @@ mips64emul TODO
 		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
 			(using manual swap-out of blocks to disk, ugly)
-
-	Binary translation:  src/bintrans.c
-
-	Userland ABI emulation: src/useremul.c
 
 	CPU Emulation:
 		o)  Instructions:

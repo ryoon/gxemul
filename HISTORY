@@ -339,3 +339,6 @@ HISTORY of mips64emul
 		messages, detects 16 XMI R3000 cpus, and get a NULL panic.
 		It's all fake, though, the CPUs don't actually work.
 		Still, better than nothing :-)
+20040225	An Ultrix OSF1 kernel with a ramdisk now boots :-)  (It was
+		a problem with ultrixboot not giving the same arguments as
+		NetBSD's boot program.)

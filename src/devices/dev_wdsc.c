@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.16 2005-01-16 08:37:14 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.17 2005-01-20 14:25:17 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -196,7 +196,8 @@ static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 			debug("SEL_ATN");
 			d->irq_pending = 1;
 			d->reg[SBIC_csr] = SBIC_CSR_SEL_TIMEO;
-			if (d->controller_nr == 0 && diskimage_exist(d->reg[SBIC_selid] & SBIC_SID_IDMASK)) {
+			if (d->controller_nr == 0 && diskimage_exist(
+			    cpu->machine, d->reg[SBIC_selid] & SBIC_SID_IDMASK)) {
 				if (d->xfer != NULL)
 					scsi_transfer_free(d->xfer);
 				d->xfer = scsi_transfer_alloc();

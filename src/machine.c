@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.286 2005-01-19 14:24:23 debug Exp $
+ *  $Id: machine.c,v 1.287 2005-01-20 14:25:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -119,7 +119,7 @@ struct machine *machine_new(void)
 	memset(m, 0, sizeof(struct machine));
 
 	/*  Sane default values:  */
-	m->emulation_type = EMULTYPE_NONE;
+	m->machine_type = MACHINE_NONE;
 	m->machine_subtype = MACHINE_NONE;
 	m->prom_emulation = 1;
 	m->speed_tricks = 1;
@@ -1071,7 +1071,7 @@ void machine_init(struct machine *machine)
 	char *short_machine_name = NULL;
 
 	/*  Generic bootstring stuff:  */
-	int bootdev_id = diskimage_bootdev();
+	int bootdev_id = diskimage_bootdev(machine);
 	char *bootstr = NULL;
 	char *bootarg = NULL;
 	char *init_bootpath;
@@ -1090,16 +1090,16 @@ void machine_init(struct machine *machine)
 
 	machine->machine_name = NULL;
 
-	switch (machine->emulation_type) {
+	switch (machine->machine_type) {
 
-	case EMULTYPE_NONE:
+	case MACHINE_NONE:
 		printf("\nNo emulation type specified.\n\n"
 		    "For example, if you want to emulate a DECstation, you need to add -Dx to the\n"
 		    "command line, where x is the DECstation specific model type. Run mips64emul -h\n"
 		    "to get help on all command line options.\n");
 		exit(1);
 
-	case EMULTYPE_TEST:
+	case MACHINE_TEST:
 		/*
 		 *  A "bare" test machine.
 		 */
@@ -1117,7 +1117,7 @@ void machine_init(struct machine *machine)
 
 		break;
 
-	case EMULTYPE_DEC:
+	case MACHINE_DEC:
 		/*  An R2020 or R3220 memory thingy:  */
 		cpu->coproc[3] = coproc_new(cpu, 3);
 
@@ -1674,7 +1674,7 @@ void machine_init(struct machine *machine)
 			} else {
 				/*  disk boot:  */
 				bootpath[0] = '0' + boot_scsi_boardnumber;
-				if (diskimage_is_a_tape(bootdev_id))
+				if (diskimage_is_a_tape(machine, bootdev_id))
 					bootpath[2] = 't';
 				bootpath[4] = '0' + bootdev_id;
 			}
@@ -1793,7 +1793,7 @@ void machine_init(struct machine *machine)
 
 		break;
 
-	case EMULTYPE_COBALT:
+	case MACHINE_COBALT:
 		machine->machine_name = "Cobalt";
 
 		/*
@@ -1842,7 +1842,7 @@ void machine_init(struct machine *machine)
 		    machine->physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
-	case EMULTYPE_HPCMIPS:
+	case MACHINE_HPCMIPS:
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
 		/*
@@ -1859,7 +1859,7 @@ void machine_init(struct machine *machine)
 		*/
 
 		switch (machine->machine_subtype) {
-		case HPCMIPS_CASIO_BE300:
+		case MACHINE_HPCMIPS_CASIO_BE300:
 			/*  166MHz VR4131  */
 			machine->machine_name = "Casio Cassiopeia BE-300";
 			hpcmips_fb_addr = 0x0a200000;
@@ -1889,7 +1889,7 @@ void machine_init(struct machine *machine)
 			    );
 			/*  TODO: Don't use model number for E500, it's a BE300!  */
 			break;
-		case HPCMIPS_CASIO_E105:
+		case MACHINE_HPCMIPS_CASIO_E105:
 			/*  131MHz VR4121  */
 			machine->machine_name = "Casio Cassiopeia E-105";
 			hpcmips_fb_addr = 0x0a200000;	/*  TODO?  */
@@ -1958,7 +1958,7 @@ void machine_init(struct machine *machine)
 
 		break;
 
-	case EMULTYPE_PS2:
+	case MACHINE_PS2:
 		machine->machine_name = "Playstation 2";
 
 		if (machine->physical_ram_in_mb != 32)
@@ -2024,8 +2024,8 @@ void machine_init(struct machine *machine)
 
 		break;
 
-	case EMULTYPE_SGI:
-	case EMULTYPE_ARC:
+	case MACHINE_SGI:
+	case MACHINE_ARC:
 		/*
 		 *  SGI and ARC emulation share a lot of code. (SGI is a special case of
 		 *  "almost ARC".)
@@ -2045,7 +2045,7 @@ void machine_init(struct machine *machine)
 			exit(1);
 		}
 
-		if (machine->emulation_type == EMULTYPE_SGI) {
+		if (machine->machine_type == MACHINE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(short_machine_name, "SGI-IP%i", machine->machine_subtype);
 			sprintf(machine->machine_name, "SGI-IP%i", machine->machine_subtype);
@@ -2074,7 +2074,7 @@ void machine_init(struct machine *machine)
 			sprintf(machine->machine_name, "ARC");
 		}
 
-		if (machine->emulation_type == EMULTYPE_SGI) {
+		if (machine->machine_type == MACHINE_SGI) {
 			/*  TODO:  Other SGI machine types?  */
 			switch (machine->machine_subtype) {
 			case 12:
@@ -2694,7 +2694,7 @@ Why is this here? TODO
 		arcbios_set_default_exception_handler(cpu);
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
-		if (machine->emulation_type == EMULTYPE_SGI) {
+		if (machine->machine_type == MACHINE_SGI) {
 			/*  Vendor ID, max 8 chars:  */
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);
 			switch (machine->machine_subtype) {
@@ -2773,7 +2773,7 @@ Why is this here? TODO
 		arc_n_memdescriptors = 0;
 
 		arc_reserved = 0x2000;
-		if (machine->emulation_type == EMULTYPE_SGI)
+		if (machine->machine_type == MACHINE_SGI)
 			arc_reserved = 0x4000;
 
 		arcbios_add_memory_descriptor(cpu, 0, arc_reserved, ARCBIOS_MEM_FirmwarePermanent);
@@ -2829,8 +2829,8 @@ Why is this here? TODO
 		if (short_machine_name == NULL)
 			fatal("ERROR: short_machine_name == NULL\n");
 
-		switch (machine->emulation_type) {
-		case EMULTYPE_SGI:
+		switch (machine->machine_type) {
+		case MACHINE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 2, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */ , NULL, 0);
 			break;
@@ -2892,7 +2892,7 @@ Why is this here? TODO
 			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
 			    "MIPS-%s", machine->cpu_name);
 
-			if (machine->emulation_type == EMULTYPE_ARC &&
+			if (machine->machine_type == MACHINE_ARC &&
 			    machine->machine_subtype == MACHINE_ARC_NEC_R96)
 				snprintf(arc_cpu_name, sizeof(arc_cpu_name),
 				    "MIPS-%s - Pr 4/5.0, Fp 5/0",
@@ -2914,7 +2914,7 @@ Why is this here? TODO
 			 *  really used by ARC implementations?
 			 *  At least SGI-IP32 uses it.
 			 */
-			if (machine->emulation_type == EMULTYPE_SGI)
+			if (machine->machine_type == MACHINE_SGI)
 				fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
 				    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);
 
@@ -3000,7 +3000,7 @@ Why is this here? TODO
 				debug("    sdcache @ 0x%llx\n",
 				    (long long)sdcache);
 
-			if (machine->emulation_type == EMULTYPE_SGI) {
+			if (machine->machine_type == MACHINE_SGI) {
 				/*  TODO:  Memory amount (and base address?)!  */
 				uint64_t memory = arcbios_addchild_manual(cpu, COMPONENT_CLASS_MemoryClass,
 				    COMPONENT_TYPE_MemoryUnit,
@@ -3017,7 +3017,7 @@ Why is this here? TODO
 		 *  the rest of device initialization?
 		 */
 
-		if (machine->emulation_type == EMULTYPE_SGI) {
+		if (machine->machine_type == MACHINE_SGI) {
 			/*  TODO: On which models is this required?  */
 			coproc_tlb_set_entry(cpu, 0, 1048576*16,
 			    0xc000000000000000ULL,
@@ -3025,7 +3025,7 @@ Why is this here? TODO
 			    1, 1, 1, 1, 1, 0, 2, 2);
 		}
 
-		if (machine->emulation_type == EMULTYPE_ARC &&
+		if (machine->machine_type == MACHINE_ARC &&
 		    ( machine->machine_subtype == MACHINE_ARC_NEC_RD94 ||
 		    machine->machine_subtype == MACHINE_ARC_NEC_R94 ||
 		    machine->machine_subtype == MACHINE_ARC_NEC_R96 )) {
@@ -3083,7 +3083,7 @@ Why is this here? TODO
 			}
 		}
 
-		if (machine->emulation_type == EMULTYPE_ARC &&
+		if (machine->machine_type == MACHINE_ARC &&
 		    (machine->machine_subtype == MACHINE_ARC_JAZZ_PICA
 		    || machine->machine_subtype == MACHINE_ARC_JAZZ_MAGNUM)) {
 			uint64_t jazzbus, ali_s3, vxl;
@@ -3401,7 +3401,7 @@ config[77] = 0x30;
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBLength, sizeof(arcbios_spb));
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Version, 1);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, machine->emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, machine->machine_type == MACHINE_SGI? 10 : 2);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
@@ -3420,7 +3420,7 @@ config[77] = 0x30;
 		if (bootdev_id < 0 || machine->force_netboot) {
 			snprintf(init_bootpath, 200, "tftp()\\");
 		} else {
-			if (diskimage_is_a_cdrom(bootdev_id))
+			if (diskimage_is_a_cdrom(machine, bootdev_id))
 				snprintf(init_bootpath, 200,
 				    "scsi()cdrom(%i)fdisk()\\", bootdev_id);
 			else
@@ -3467,7 +3467,7 @@ config[77] = 0x30;
 		 *  pointer to it to the ARC_ENV_POINTERS array.
 		 */
 		if (machine->use_x11) {
-			if (machine->emulation_type == EMULTYPE_ARC) {
+			if (machine->machine_type == MACHINE_ARC) {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=multi()key()keyboard()console()", &addr);
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -3484,7 +3484,7 @@ config[77] = 0x30;
 				add_environment_string(cpu, "console=g", &addr);
 			}
 		} else {
-			if (machine->emulation_type == EMULTYPE_ARC) {
+			if (machine->machine_type == MACHINE_ARC) {
 				/*  TODO: serial console for ARC?  */
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 				add_environment_string(cpu, "CONSOLEIN=multi()serial(0)", &addr);
@@ -3502,7 +3502,7 @@ config[77] = 0x30;
 			}
 		}
 
-		if (machine->emulation_type == EMULTYPE_SGI) {
+		if (machine->machine_type == MACHINE_SGI) {
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "AutoLoad=No", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -3583,7 +3583,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 
-	case EMULTYPE_MESHCUBE:
+	case MACHINE_MESHCUBE:
 		machine->machine_name = "MeshCube";
 
 		if (machine->physical_ram_in_mb != 64)
@@ -3626,7 +3626,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 
-	case EMULTYPE_NETGEAR:
+	case MACHINE_NETGEAR:
 		machine->machine_name = "NetGear WG602";
 
 		if (machine->use_x11)
@@ -3643,7 +3643,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		break;
 
-	case EMULTYPE_WRT54G:
+	case MACHINE_WRT54G:
 		machine->machine_name = "Linksys WRT54G";
 
 		if (machine->use_x11)
@@ -3683,7 +3683,7 @@ for (i=0; i<32; i++)
 
 		break;
 
-	case EMULTYPE_SONYNEWS:
+	case MACHINE_SONYNEWS:
 		/*
 		 *  There are several models, according to
 		 *  http://www.netbsd.org/Ports/newsmips/:
@@ -3717,7 +3717,7 @@ for (i=0; i<32; i++)
 		break;
 
 	default:
-		fatal("Unknown emulation type %i\n", machine->emulation_type);
+		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
 	}
 

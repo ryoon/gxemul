@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.72 2005-01-19 14:24:22 debug Exp $
+ *  $Id: arcbios.c,v 1.73 2005-01-20 14:25:19 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -54,9 +54,6 @@
 
 
 extern int quiet_mode;
-
-extern struct diskimage *diskimages[MAX_DISKIMAGES];
-extern int n_diskimages;
 
 
 struct emul_arc_child {
@@ -476,7 +473,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 /*  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?  */
 /*  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag doesn't care?  */
 #if 1
-	if (cpu->machine->emulation_type == EMULTYPE_SGI) {
+	if (cpu->machine->machine_type == MACHINE_SGI) {
 		/*  arctype is SGI style  */
 		/*  printf("%i => ", arctype); */
 		switch (arctype) {
@@ -902,8 +899,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
  *  See http://www.nondot.org/sabre/os/files/Partitions/Partitions.html
  *  for more info.
  */
-static void arcbios_get_msdos_partition_size(int scsi_id,
-	int partition_nr, uint64_t *start, uint64_t *size)
+static void arcbios_get_msdos_partition_size(struct machine *machine,
+	int scsi_id, int partition_nr, uint64_t *start, uint64_t *size)
 {
 	int res, i, partition_type, cur_partition = 0;
 	unsigned char sector[512];
@@ -912,7 +909,7 @@ static void arcbios_get_msdos_partition_size(int scsi_id,
 
 	/*  Partition 0 is the entire disk image:  */
 	*start = 0;
-	*size = diskimages[scsi_id]->total_size;
+	*size = diskimage_getsize(machine, scsi_id);
 	if (partition_nr == 0)
 		return;
 
@@ -922,7 +919,8 @@ ugly_goto:
 	/*  printf("reading MSDOS partition from offset 0x%llx\n",
 	    (long long)offset);  */
 
-	res = diskimage_access(scsi_id, 0, offset, sector, sizeof(sector));
+	res = diskimage_access(machine, scsi_id, 0, offset,
+	    sector, sizeof(sector));
 	if (!res) {
 		fatal("[ arcbios_get_msdos_partition_size(): couldn't "
 		    "read the disk image, id %i, offset 0x%llx ]\n",
@@ -1012,8 +1010,8 @@ static int arcbios_handle_to_scsi_id(int handle)
 /*
  *  arcbios_handle_to_start_and_size():
  */
-static void arcbios_handle_to_start_and_size(int handle, uint64_t *start,
-	uint64_t *size)
+static void arcbios_handle_to_start_and_size(struct machine *machine,
+	int handle, uint64_t *start, uint64_t *size)
 {
 	char *s = (char *)file_handle_string[handle];
 	char *s2;
@@ -1024,15 +1022,15 @@ static void arcbios_handle_to_start_and_size(int handle, uint64_t *start,
 
 	/*  This works for "partition(0)":  */
 	*start = 0;
-	*size = diskimages[scsi_id]->total_size;
+	*size = diskimage_getsize(machine, scsi_id);
 
 	s2 = strstr(s, "partition(");
 	if (s2 != NULL) {
 		int partition_nr = atoi(s2 + 10);
 		/*  printf("partition_nr = %i\n", partition_nr);  */
 		if (partition_nr != 0)
-			arcbios_get_msdos_partition_size(scsi_id,
-			    partition_nr, start, size);
+			arcbios_get_msdos_partition_size(machine,
+			    scsi_id, partition_nr, start, size);
 	}
 }
 
@@ -1050,7 +1048,7 @@ static int arcbios_getfileinformation(struct cpu *cpu)
 	uint64_t addr = cpu->gpr[GPR_A1];
 	uint64_t start, size;
 
-	arcbios_handle_to_start_and_size(handle, &start, &size);
+	arcbios_handle_to_start_and_size(cpu->machine, handle, &start, &size);
 
 	store_64bit_word(cpu, addr + 0, 0);
 	store_64bit_word(cpu, addr + 8, size);
@@ -1453,7 +1451,8 @@ void arcbios_emul(struct cpu *cpu)
 			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
 
-			arcbios_handle_to_start_and_size(handle, &partition_offset, &size);
+			arcbios_handle_to_start_and_size(cpu->machine,
+			    handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
 			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
@@ -1464,7 +1463,7 @@ void arcbios_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(disk_id, 0,
+			res = diskimage_access(cpu->machine, disk_id, 0,
 			    partition_offset + arcbios_current_seek_offset[handle],
 			    tmp_buf, cpu->gpr[GPR_A2]);
 
@@ -1509,7 +1508,8 @@ void arcbios_emul(struct cpu *cpu)
 			uint64_t size;		/*  dummy  */
 			unsigned char *tmp_buf;
 
-			arcbios_handle_to_start_and_size(handle, &partition_offset, &size);
+			arcbios_handle_to_start_and_size(cpu->machine,
+			    handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
 			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
@@ -1526,7 +1526,7 @@ void arcbios_emul(struct cpu *cpu)
 				    &tmp_buf[i], sizeof(char), MEM_READ,
 				    CACHE_NONE);
 
-			res = diskimage_access(disk_id, 1,
+			res = diskimage_access(cpu->machine, disk_id, 1,
 			    partition_offset + arcbios_current_seek_offset[handle], tmp_buf,
 			    cpu->gpr[GPR_A2]);
 

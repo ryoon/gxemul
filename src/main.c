@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.160 2005-01-20 08:33:58 debug Exp $
+ *  $Id: main.c,v 1.161 2005-01-20 14:25:20 debug Exp $
  */
 
 #include <stdio.h>
@@ -276,15 +276,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	    "Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
-			m->emulation_type = EMULTYPE_ARC;
+			m->machine_type = MACHINE_ARC;
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'a':
-			m->emulation_type = EMULTYPE_TEST;
+			m->machine_type = MACHINE_TEST;
 			m->machine_subtype = 0;
 			break;
 		case 'B':
-			m->emulation_type = EMULTYPE_PS2;
+			m->machine_type = MACHINE_PS2;
 			m->machine_subtype = 0;
 			break;
 		case 'b':
@@ -294,39 +294,39 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->cpu_name = strdup(optarg);
 			break;
 		case 'D':
-			m->emulation_type = EMULTYPE_DEC;
+			m->machine_type = MACHINE_DEC;
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'd':
-			diskimage_add(optarg);
+			diskimage_add(m, optarg);
 			using_switch_d = 1;
 			break;
 		case 'E':
-			m->emulation_type = EMULTYPE_COBALT;
+			m->machine_type = MACHINE_COBALT;
 			m->machine_subtype = 0;
 			break;
 		case 'e':
-			m->emulation_type = EMULTYPE_MESHCUBE;
+			m->machine_type = MACHINE_MESHCUBE;
 			m->machine_subtype = 0;
 			break;
 		case 'F':
-			m->emulation_type = EMULTYPE_HPCMIPS;
+			m->machine_type = MACHINE_HPCMIPS;
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'f':
-			m->emulation_type = EMULTYPE_SONYNEWS;
+			m->machine_type = MACHINE_SONYNEWS;
 			m->machine_subtype = 0;
 			break;
 		case 'G':
-			m->emulation_type = EMULTYPE_SGI;
+			m->machine_type = MACHINE_SGI;
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'g':
-			m->emulation_type = EMULTYPE_NETGEAR;
+			m->machine_type = MACHINE_NETGEAR;
 			m->machine_subtype = 0;
 			break;
 		case 'H':
-			m->emulation_type = EMULTYPE_WRT54G;
+			m->machine_type = MACHINE_WRT54G;
 			m->machine_subtype = 0;
 			break;
 		case 'h':
@@ -497,11 +497,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default nr of CPUs (for SMP systems):  */
 
 	if (!n_cpus_set) {
-		if (m->emulation_type == EMULTYPE_ARC &&
+		if (m->machine_type == MACHINE_ARC &&
 		    m->machine_subtype == MACHINE_ARC_NEC_R96)
 			m->ncpus = 2;
 
-		if (m->emulation_type == EMULTYPE_ARC &&
+		if (m->machine_type == MACHINE_ARC &&
 		    m->machine_subtype == MACHINE_ARC_NEC_R98)
 			m->ncpus = 4;
 	}
@@ -510,11 +510,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default CPU type: (overridden by -C)  */
 
 	if (m->cpu_name == NULL) {
-		switch (m->emulation_type) {
-		case EMULTYPE_PS2:
+		switch (m->machine_type) {
+		case MACHINE_PS2:
 			m->cpu_name = strdup("R5900");
 			break;
-		case EMULTYPE_DEC:
+		case MACHINE_DEC:
 			if (m->machine_subtype > 2)
 				m->cpu_name = strdup("R3000A");
 			if (m->machine_subtype > 1 && m->cpu_name == NULL)
@@ -522,15 +522,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			if (m->cpu_name == NULL)
 				m->cpu_name = strdup("R2000");
 			break;
-		case EMULTYPE_SONYNEWS:
+		case MACHINE_SONYNEWS:
 			m->cpu_name = strdup("R3000");
 			break;
-		case EMULTYPE_HPCMIPS:
+		case MACHINE_HPCMIPS:
 			switch (m->machine_subtype) {
-			case HPCMIPS_CASIO_BE300:
+			case MACHINE_HPCMIPS_CASIO_BE300:
 				m->cpu_name = strdup("VR4131");
 				break;
-			case HPCMIPS_CASIO_E105:
+			case MACHINE_HPCMIPS_CASIO_E105:
 				m->cpu_name = strdup("VR4121");
 				break;
 			default:
@@ -538,21 +538,21 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				exit(1);
 			}
 			break;
-		case EMULTYPE_COBALT:
+		case MACHINE_COBALT:
 			m->cpu_name = strdup("RM5200");
 			break;
-		case EMULTYPE_MESHCUBE:
+		case MACHINE_MESHCUBE:
 			m->cpu_name = strdup("R4400");
 			/*  TODO:  Should be AU1500, but Linux doesn't like
 			    the absence of caches in the emulator  */
 			break;
-		case EMULTYPE_NETGEAR:
+		case MACHINE_NETGEAR:
 			m->cpu_name = strdup("RC32334");
 			break;
-		case EMULTYPE_WRT54G:
+		case MACHINE_WRT54G:
 			m->cpu_name = strdup("BCM4712");
 			break;
-		case EMULTYPE_ARC:
+		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
 				m->cpu_name = strdup("R4000");
@@ -561,7 +561,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				m->cpu_name = strdup("R4400");
 			}
 			break;
-		case EMULTYPE_SGI:
+		case MACHINE_SGI:
 			if (m->machine_subtype <= 12)
 				m->cpu_name = strdup("R3000");
 			if (m->cpu_name == NULL && m->machine_subtype == 35)
@@ -594,33 +594,33 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default memory size: (overridden with -M)  */
 
 	if (m->physical_ram_in_mb == 0) {
-		switch (m->emulation_type) {
-		case EMULTYPE_PS2:
+		switch (m->machine_type) {
+		case MACHINE_PS2:
 			m->physical_ram_in_mb = 32;
 			break;
-		case EMULTYPE_SGI:
+		case MACHINE_SGI:
 			m->physical_ram_in_mb = 64;
 			break;
-		case EMULTYPE_HPCMIPS:
+		case MACHINE_HPCMIPS:
 			switch (m->machine_subtype) {
-			case HPCMIPS_CASIO_BE300:
+			case MACHINE_HPCMIPS_CASIO_BE300:
 				m->physical_ram_in_mb = 16;
 				break;
-			case HPCMIPS_CASIO_E105:
+			case MACHINE_HPCMIPS_CASIO_E105:
 				m->physical_ram_in_mb = 32;
 				break;
 			}
 			break;
-		case EMULTYPE_MESHCUBE:
+		case MACHINE_MESHCUBE:
 			m->physical_ram_in_mb = 64;
 			break;
-		case EMULTYPE_NETGEAR:
+		case MACHINE_NETGEAR:
 			m->physical_ram_in_mb = 16;
 			break;
-		case EMULTYPE_WRT54G:
+		case MACHINE_WRT54G:
 			m->physical_ram_in_mb = 32;
 			break;
-		case EMULTYPE_ARC:
+		case MACHINE_ARC:
 			switch (m->machine_subtype) {
 			case MACHINE_ARC_JAZZ_PICA:
 				m->physical_ram_in_mb = 64;
@@ -632,7 +632,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				m->physical_ram_in_mb = 32;
 			}
 			break;
-		case EMULTYPE_DEC:
+		case MACHINE_DEC:
 			switch (m->machine_subtype) {
 			case MACHINE_DEC_PMAX_3100:
 				m->physical_ram_in_mb = 24;
@@ -645,12 +645,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 	/*  Special hack for WRT54G:  */
-	if (m->emulation_type == EMULTYPE_WRT54G) {
+	if (m->machine_type == MACHINE_WRT54G) {
 		m->dbe_on_nonexistant_memaccess = 0;
 	}
 
 	/*  Special SGI memory offsets:  */
-	if (m->emulation_type == EMULTYPE_SGI) {
+	if (m->machine_type == MACHINE_SGI) {
 		switch (m->machine_subtype) {
 		case 20:
 		case 22:
@@ -672,11 +672,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  Default Boot string arguments: (overridden by -o)  */
 
 	if (!using_switch_o) {
-		switch (m->emulation_type) {
-		case EMULTYPE_ARC:
+		switch (m->machine_type) {
+		case MACHINE_ARC:
 			m->boot_string_argument = "-aN";
 			break;
-		case EMULTYPE_DEC:
+		case MACHINE_DEC:
 			m->boot_string_argument = "-a";
 			break;
 		}
@@ -692,7 +692,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 *  from that.
 	 */
 	if (extra_argc == 0) {
-		if (m->emulation_type == EMULTYPE_DEC && using_switch_d) {
+		if (m->machine_type == MACHINE_DEC && using_switch_d) {
 			m->booting_from_diskimage = 1;
 		} else {
 			usage(progname, 0);

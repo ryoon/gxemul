@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.2 2005-01-19 15:31:08 debug Exp $
+ *  $Id: machine.h,v 1.3 2005-01-20 14:25:18 debug Exp $
  */
 
 #include "misc.h"
@@ -38,13 +38,14 @@
 
 #include "symbol.h"
 
+struct diskimage;
 struct emul;
 
 struct machine {
 	/*  Pointer back to the emul struct we are in:  */
 	struct emul *emul;
 
-	int	emulation_type;
+	int	machine_type;
 	int	machine_subtype;
 	char	*machine_name;
 
@@ -53,6 +54,8 @@ struct machine {
 	int	use_random_bootstrap_cpu;
 	int	ncpus;
 	struct cpu **cpus;
+
+	struct diskimage *first_diskimage;
 
 	struct symbol_context symbol_context;
 
@@ -114,18 +117,18 @@ struct machine {
 
 
 /*  Machine emulation types:  */
-#define EMULTYPE_NONE           0
-#define EMULTYPE_TEST           1
-#define EMULTYPE_DEC            2
-#define EMULTYPE_COBALT         3
-#define EMULTYPE_HPCMIPS        4
-#define EMULTYPE_PS2            5
-#define EMULTYPE_SGI            6
-#define EMULTYPE_ARC            7
-#define EMULTYPE_MESHCUBE       8
-#define EMULTYPE_NETGEAR        9
-#define EMULTYPE_WRT54G         10
-#define EMULTYPE_SONYNEWS       11
+#define MACHINE_NONE           0
+#define MACHINE_TEST           1
+#define MACHINE_DEC            2
+#define MACHINE_COBALT         3
+#define MACHINE_HPCMIPS        4
+#define MACHINE_PS2            5
+#define MACHINE_SGI            6
+#define MACHINE_ARC            7
+#define MACHINE_MESHCUBE       8
+#define MACHINE_NETGEAR        9
+#define MACHINE_WRT54G         10
+#define MACHINE_SONYNEWS       11
 
 
 /*  Specific machines:  */
@@ -152,8 +155,8 @@ struct machine {
 
 /*  HPCmips:  */
 /*  Machine types:  */
-#define	HPCMIPS_CASIO_BE300	1
-#define	HPCMIPS_CASIO_E105	2
+#define	MACHINE_HPCMIPS_CASIO_BE300	1
+#define	MACHINE_HPCMIPS_CASIO_E105	2
 
 /*  Playstation 2:  */
 #define	PLAYSTATION2_BDA	0xffffffffa0001000ULL

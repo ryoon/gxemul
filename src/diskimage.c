@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.68 2005-01-20 08:12:25 debug Exp $
+ *  $Id: diskimage.c,v 1.69 2005-01-20 14:25:19 debug Exp $
  *
  *  Disk image support.
  *
@@ -35,6 +35,8 @@
  *         read will also return 10240 bytes (but all zeroes), and then after
  *         that return feof (which results in a filemark).  This is probably
  *         trivial to fix, but I don't feel like it right now.
+ *
+ *  TODO:  Non-SCSI disk images?
  *
  *  TODO:  diskimage_remove() ?
  *         Actually test diskimage_access() to see that it works.
@@ -47,16 +49,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "misc.h"
-
 #include "diskimage.h"
 #include "machine.h"
+#include "misc.h"
 
 
 extern int quiet_mode;
-
-struct diskimage *diskimages[MAX_DISKIMAGES];
-int n_diskimages = 0;
 
 
 static struct scsi_transfer *first_free_scsi_transfer_alloc = NULL;
@@ -207,37 +205,41 @@ void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len,
 /*
  *  diskimage_exist():
  *
- *  Returns 1 if the specified disk_id exists, 0 otherwise.
+ *  Returns 1 if the specified SCSI id exists, 0 otherwise.
  */
-int diskimage_exist(int disk_id)
+int diskimage_exist(struct machine *machine, int scsi_id)
 {
-	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
-		return 0;
+	struct diskimage *d = machine->first_diskimage;
 
-	return 1;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			return 1;
+		d = d->next;
+	}
+	return 0;
 }
 
 
 /*
  *  diskimage_recalc_size():
+ *
+ *  Recalculate a disk's size by stat()-ing it.
+ *  d is assumed to be non-NULL.
  */
-static void diskimage_recalc_size(int id)
+static void diskimage_recalc_size(struct diskimage *d)
 {
 	struct stat st;
 	int res;
 	off_t size = 0;
 
-	if (diskimages[id] == NULL || diskimages[id]->fname == NULL) {
-		fprintf(stderr, "ERROR: diskimage_recalc_size(): id %i is not in use (?)\n", id);
+	res = stat(d->fname, &st);
+	if (res) {
+		fprintf(stderr, "[ diskimage_recalc_size(): could not stat "
+		    "'%s' ]\n", d->fname);
 		return;
 	}
 
-	res = stat(diskimages[id]->fname, &st);
-	if (res)
-		fprintf(stderr, "diskimage_recalc_size(): could not stat '%s'\n",
-		    diskimages[id]->fname);
-	else
-		size = st.st_size;
+	size = st.st_size;
 
 	/*
 	 *  TODO:  CD-ROM devices, such as /dev/cd0c, how can one
@@ -245,26 +247,30 @@ static void diskimage_recalc_size(int id)
 	 *  For now, assume some large number, hopefully it will be
 	 *  enough to hold any cd-rom image.
 	 */
-	if (diskimages[id]->is_a_cdrom && size == 0)
+	if (d->is_a_cdrom && size == 0)
 		size = 762048000;
 
-	diskimages[id]->total_size = size;
-	diskimages[id]->ncyls = diskimages[id]->total_size / 1048576;
+	d->total_size = size;
+	d->ncyls = d->total_size / 1048576;
 }
 
 
 /*
  *  diskimage_getsize():
  *
- *  Returns -1 if the specified disk_id does not exists, otherwise
+ *  Returns -1 if the specified SCSI id does not exists, otherwise
  *  the size of the disk image is returned.
  */
-int64_t diskimage_getsize(int disk_id)
+int64_t diskimage_getsize(struct machine *machine, int scsi_id)
 {
-	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
-		return -1;
+	struct diskimage *d = machine->first_diskimage;
 
-	return diskimages[disk_id]->total_size;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			return d->total_size;
+		d = d->next;
+	}
+	return -1;
 }
 
 
@@ -287,25 +293,131 @@ static void diskimage__return_default_status_and_message(
 /*
  *  diskimage__switch_tape():
  *
- *  Used by the SPACE command.
+ *  Used by the SPACE command.  (d is assumed to be non-NULL.)
  */
-static void diskimage__switch_tape(int disk_id)
+static void diskimage__switch_tape(struct diskimage *d)
 {
 	char tmpfname[1000];
 
 	snprintf(tmpfname, sizeof(tmpfname), "%s.%i",
-	    diskimages[disk_id]->fname, diskimages[disk_id]->tape_filenr);
+	    d->fname, d->tape_filenr);
 	tmpfname[sizeof(tmpfname)-1] = '\0';
 
-	if (diskimages[disk_id]->f != NULL)
-		fclose(diskimages[disk_id]->f);
+	if (d->f != NULL)
+		fclose(d->f);
 
-	diskimages[disk_id]->f = fopen(tmpfname, diskimages[disk_id]->writable? "r+" : "r");
-	if (diskimages[disk_id]->f == NULL) {
-		fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n", tmpfname);
+	d->f = fopen(tmpfname, d->writable? "r+" : "r");
+	if (d->f == NULL) {
+		fprintf(stderr, "[ diskimage__switch_tape(): could not "
+		    "(re)open '%s' ]\n", tmpfname);
 		/*  TODO: return error  */
 	}
-	diskimages[disk_id]->tape_offset = 0;
+	d->tape_offset = 0;
+}
+
+
+/*
+ *  diskimage_access__cdrom():
+ *
+ *  This is a special-case function, called from diskimage__internal_access().
+ *  On my FreeBSD 4.9 system, the cdrom device /dev/cd0c seems to not be able
+ *  to handle something like "fseek(512); fread(512);" but it handles
+ *  "fseek(2048); fread(512);" just fine.  So, if diskimage__internal_access()
+ *  fails in reading a block of data, this function is called as an attempt to
+ *  align reads at 2048-byte sectors instead.
+ *
+ *  (Ugly hack.  TODO: how to solve this cleanly?)
+ *
+ *  NOTE:  Returns the number of bytes read, 0 if nothing was successfully
+ *  read. (These are not the same as diskimage_access()).
+ */
+#define	CDROM_SECTOR_SIZE	2048
+static size_t diskimage_access__cdrom(struct diskimage *d, off_t offset,
+	unsigned char *buf, size_t len)
+{
+	off_t aligned_offset;
+	size_t bytes_read, total_copied = 0;
+	unsigned char cdrom_buf[CDROM_SECTOR_SIZE];
+	int buf_ofs, i = 0;
+
+	aligned_offset = (offset / CDROM_SECTOR_SIZE) * CDROM_SECTOR_SIZE;
+	my_fseek(d->f, aligned_offset, SEEK_SET);
+
+	while (len != 0) {
+		bytes_read = fread(cdrom_buf, 1, CDROM_SECTOR_SIZE, d->f);
+		if (bytes_read != CDROM_SECTOR_SIZE)
+			return 0;
+
+		/*  Copy (part of) cdrom_buf into buf:  */
+		buf_ofs = offset - aligned_offset;
+		while (buf_ofs < CDROM_SECTOR_SIZE && len != 0) {
+			buf[i ++] = cdrom_buf[buf_ofs ++];
+			total_copied ++;
+			len --;
+		}
+
+		aligned_offset += CDROM_SECTOR_SIZE;
+		offset = aligned_offset;
+	}
+
+	return total_copied;
+}
+
+
+/*
+ *  diskimage__internal_access():
+ *
+ *  Read from or write to a struct diskimage.
+ *
+ *  Returns 1 if the access completed successfully, 0 otherwise.
+ */
+static int diskimage__internal_access(struct diskimage *d, int writeflag,
+	off_t offset, unsigned char *buf, size_t len)
+{
+	size_t lendone;
+	int res;
+
+	if (buf == NULL) {
+		fprintf(stderr, "diskimage__internal_access(): buf = NULL\n");
+		exit(1);
+	}
+	if (len == 0)
+		return 1;
+	if (d->f == NULL)
+		return 0;
+
+	res = my_fseek(d->f, offset, SEEK_SET);
+	if (res != 0) {
+		fatal("[ diskimage__internal_access(): fseek() failed on "
+		    "disk id %i \n", d->id);
+		return 0;
+	}
+
+	if (writeflag) {
+		if (!d->writable)
+			return 0;
+
+		lendone = fwrite(buf, 1, len, d->f);
+	} else {
+		lendone = fread(buf, 1, len, d->f);
+
+		/*  Special case for CD-ROMs:  */
+		if (lendone == 0)
+			lendone = diskimage_access__cdrom(d, offset, buf, len);
+
+		if (lendone < (ssize_t)len)
+			memset(buf + lendone, 0, len - lendone);
+	}
+
+	/*  Warn about non-complete data transfers:  */
+	if (lendone != (ssize_t)len) {
+		debug("[ diskimage__internal_access(): disk_id %i, offset %lli"
+		    ", transfer not completed. len=%i, len_done=%i ]\n",
+		    d->id, (long long)offset, len, lendone);
+		return 0;
+	}
+
+	return 1;
 }
 
 
@@ -324,7 +436,7 @@ static void diskimage__switch_tape(int disk_id)
  *	1 if otherwise ok,
  *	0 on error.
  */
-int diskimage_scsicommand(struct cpu *cpu, int disk_id,
+int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 	struct scsi_transfer *xferp)
 {
 	int retlen, i;
@@ -332,27 +444,41 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 	int64_t ofs;
 	int pagecode;
 	struct machine *machine = cpu->machine;
+	struct diskimage *d;
 
-	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
+	if (machine == NULL) {
+		fatal("[ diskimage_scsicommand(): machine == NULL ]\n");
 		return 0;
+	}
+
+	d = machine->first_diskimage;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			break;
+		d = d->next;
+	}
+	if (d == NULL) {
+		fprintf(stderr, "[ diskimage_scsicommand(): SCSI disk"
+		    " with id %i not connected? ]\n", scsi_id);
+	}
 
 	if (xferp->cmd == NULL) {
-		fatal("diskimage_scsicommand(): cmd == NULL\n");
+		fatal("[ diskimage_scsicommand(): cmd == NULL ]\n");
 		return 0;
 	}
 
 	if (xferp->cmd_len < 1) {
-		fatal("diskimage_scsicommand(): cmd_len == %i\n",
+		fatal("[ diskimage_scsicommand(): cmd_len == %i ]\n",
 		    xferp->cmd_len);
 		return 0;
 	}
 
 	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ",
-	    disk_id, xferp->cmd[0]);
+	    scsi_id, xferp->cmd[0]);
 
 #if 0
 	fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x ]\n",
-	    disk_id, xferp->cmd[0]);
+	    scsi_id, xferp->cmd[0]);
 #endif
 
 #if 0
@@ -362,7 +488,7 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 		f = fopen("scsi_log.txt", "w"); 
 	if (f != NULL) {
 		int i;
-		fprintf(f, "id=%i cmd =", disk_id);
+		fprintf(f, "id=%i cmd =", scsi_id);
 		for (i=0; i<xferp->cmd_len; i++)
 			fprintf(f, " %02x", xferp->cmd[i]);
 		fprintf(f, "\n");
@@ -425,7 +551,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *  the drives.
 		 */
 
-		if (machine->emulation_type == EMULTYPE_DEC) {
+		if (machine->machine_type == MACHINE_DEC) {
 			/*  DEC, RZ25 (rev 0900) is a 832527 sector large disk:  */
 			/*  DEC, RZ58 (rev 2000) is a 2698061 sector large disk:  */
 			memcpy(xferp->data_in+8,  "DEC     ", 8);
@@ -434,12 +560,12 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Some data is different for CD-ROM drives:  */
-		if (diskimages[disk_id]->is_a_cdrom) {
+		if (d->is_a_cdrom) {
 			xferp->data_in[0] = 0x05;	/*  0x05 = CD-ROM  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "CD-ROM          ", 16);
 
-			if (machine->emulation_type == EMULTYPE_DEC) {
+			if (machine->machine_type == MACHINE_DEC) {
 				/*  SONY, CD-ROM:  */
 				memcpy(xferp->data_in+8,  "SONY    ", 8);
 				memcpy(xferp->data_in+16, "CD-ROM          ", 16);
@@ -457,12 +583,12 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		}
 
 		/*  Data for tape devices:  */
-		if (diskimages[disk_id]->is_a_tape) {
+		if (d->is_a_tape) {
 			xferp->data_in[0] = 0x01;	/*  0x01 = tape  */
 			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
 			memcpy(xferp->data_in+16, "TAPE            ", 16);
 
-			if (machine->emulation_type == EMULTYPE_DEC) {
+			if (machine->machine_type == MACHINE_DEC) {
 				/*
 				 *  TODO:  find out if these are correct.
 				 *
@@ -496,12 +622,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in,
 		    8, 1);
 
-		diskimage_recalc_size(disk_id);
+		diskimage_recalc_size(d);
 
-		size = diskimages[disk_id]->total_size /
-		    diskimages[disk_id]->logical_block_size;
-		if (diskimages[disk_id]->total_size &
-		    (diskimages[disk_id]->logical_block_size-1))
+		size = d->total_size / d->logical_block_size;
+		if (d->total_size & (d->logical_block_size-1))
 			size ++;
 
 		xferp->data_in[0] = (size >> 24) & 255;
@@ -509,10 +633,10 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[2] = (size >> 8) & 255;
 		xferp->data_in[3] = size & 255;
 
-		xferp->data_in[4] = (diskimages[disk_id]->logical_block_size >> 24) & 255;
-		xferp->data_in[5] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
-		xferp->data_in[6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
-		xferp->data_in[7] = diskimages[disk_id]->logical_block_size & 255;
+		xferp->data_in[4] = (d->logical_block_size >> 24) & 255;
+		xferp->data_in[5] = (d->logical_block_size >> 16) & 255;
+		xferp->data_in[6] = (d->logical_block_size >> 8) & 255;
+		xferp->data_in[7] = d->logical_block_size & 255;
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -546,11 +670,11 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		pagecode = xferp->cmd[2] & 0x3f;
 
-		debug("[ MODE SENSE id %i, pagecode=%i ]\n", disk_id, pagecode);
+		debug("[ MODE SENSE id %i, pagecode=%i ]\n", scsi_id, pagecode);
 
 		/*  4 bytes of header for 6-byte command, 8 bytes of header for 10-byte command.  */
 		xferp->data_in[0] = retlen;		/*  mode data length  */
-		xferp->data_in[1] = diskimages[disk_id]->is_a_cdrom? 0x05 : 0x00;		/*  medium type  */
+		xferp->data_in[1] = d->is_a_cdrom? 0x05 : 0x00;		/*  medium type  */
 		xferp->data_in[2] = 0x00;		/*  device specific parameter  */
 		xferp->data_in[3] = 8 * 1;		/*  block descriptor length: 1 page (?)  */
 
@@ -560,9 +684,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0;			/*  nr of blocks, mid  */
 		xferp->data_in[7] = 0;			/*  nr of blocks, low */
 		xferp->data_in[8] = 0x00;		/*  reserved  */
-		xferp->data_in[9] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
-		xferp->data_in[10] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
-		xferp->data_in[11] = diskimages[disk_id]->logical_block_size & 255;
+		xferp->data_in[9] = (d->logical_block_size >> 16) & 255;
+		xferp->data_in[10] = (d->logical_block_size >> 8) & 255;
+		xferp->data_in[11] = d->logical_block_size & 255;
 
 		diskimage__return_default_status_and_message(xferp);
 
@@ -586,19 +710,19 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 11] = 1;	/*  TODO  */
 
 			/*  12,13 = physical sector size  */
-			xferp->data_in[12 + 12] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
-			xferp->data_in[12 + 13] = diskimages[disk_id]->logical_block_size & 255;
+			xferp->data_in[12 + 12] = (d->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 13] = d->logical_block_size & 255;
 			break;
 		case 4:		/*  rigid disk geometry page  */
 			xferp->data_in[12 + 0] = pagecode;
 			xferp->data_in[12 + 1] = 22;
-			xferp->data_in[12 + 2] = (diskimages[disk_id]->ncyls >> 16) & 255;
-			xferp->data_in[12 + 3] = (diskimages[disk_id]->ncyls >> 8) & 255;
-			xferp->data_in[12 + 4] = diskimages[disk_id]->ncyls & 255;
+			xferp->data_in[12 + 2] = (d->ncyls >> 16) & 255;
+			xferp->data_in[12 + 3] = (d->ncyls >> 8) & 255;
+			xferp->data_in[12 + 4] = d->ncyls & 255;
 			xferp->data_in[12 + 5] = 15;	/*  nr of heads  */
 
-			xferp->data_in[12 + 20] = (diskimages[disk_id]->rpms >> 8) & 255;
-			xferp->data_in[12 + 21] = diskimages[disk_id]->rpms & 255;
+			xferp->data_in[12 + 20] = (d->rpms >> 8) & 255;
+			xferp->data_in[12 + 21] = d->rpms & 255;
 			break;
 		case 5:		/*  flexible disk page  */
 			xferp->data_in[12 + 0] = pagecode;
@@ -612,14 +736,14 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[12 + 5] = 18;	/*  sectors per track  */
 
 			/*  6,7 = data bytes per sector  */
-			xferp->data_in[12 + 6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
-			xferp->data_in[12 + 7] = diskimages[disk_id]->logical_block_size & 255;
+			xferp->data_in[12 + 6] = (d->logical_block_size >> 8) & 255;
+			xferp->data_in[12 + 7] = d->logical_block_size & 255;
 
-			xferp->data_in[12 + 8] = (diskimages[disk_id]->ncyls >> 8) & 255;
-			xferp->data_in[12 + 9] = diskimages[disk_id]->ncyls & 255;
+			xferp->data_in[12 + 8] = (d->ncyls >> 8) & 255;
+			xferp->data_in[12 + 9] = d->ncyls & 255;
 
-			xferp->data_in[12 + 28] = (diskimages[disk_id]->rpms >> 8) & 255;
-			xferp->data_in[12 + 29] = diskimages[disk_id]->rpms & 255;
+			xferp->data_in[12 + 28] = (d->rpms >> 8) & 255;
+			xferp->data_in[12 + 29] = d->rpms & 255;
 			break;
 		default:
 			fatal("[ MODE_SENSE for page %i is not yet implemented! ]\n", pagecode);
@@ -637,7 +761,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *  an offset telling us where to read from the device.
 		 */
 
-		if (diskimages[disk_id]->is_a_tape) {
+		if (d->is_a_tape) {
 			/*  bits 7..5 of cmd[1] are the LUN bits... TODO  */
 
 			size = (xferp->cmd[2] << 16) +
@@ -649,21 +773,22 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			if (xferp->cmd[1] & 0x01) {
 				/*  Fixed block length:  */
-				size *= diskimages[disk_id]->logical_block_size;
+				size *= d->logical_block_size;
 			}
 
-			if (diskimages[disk_id]->filemark) {
+			if (d->filemark) {
 				/*  At end of file, switch to the next automagically:  */
-				diskimages[disk_id]->tape_filenr ++;
-				diskimage__switch_tape(disk_id);
+				d->tape_filenr ++;
+				diskimage__switch_tape(d);
 
-				diskimages[disk_id]->filemark = 0;
+				d->filemark = 0;
 			}
 
-			ofs = diskimages[disk_id]->tape_offset;
+			ofs = d->tape_offset;
 
-			fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i, ofs=%lli ]\n",
-			    disk_id, diskimages[disk_id]->tape_filenr, xferp->cmd[1], (int)size, (long long)ofs);
+			fatal("[ READ tape, id=%i file=%i, cmd[1]=%02x size=%i"
+			    ", ofs=%lli ]\n", scsi_id, d->tape_filenr,
+			    xferp->cmd[1], (int)size, (long long)ofs);
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
@@ -695,8 +820,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 			}
 
-			size = retlen * diskimages[disk_id]->logical_block_size;
-			ofs *= diskimages[disk_id]->logical_block_size;
+			size = retlen * d->logical_block_size;
+			ofs *= d->logical_block_size;
 		}
 
 		/*  Return data:  */
@@ -706,7 +831,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		diskimage__return_default_status_and_message(xferp);
 
-		diskimages[disk_id]->filemark = 0;
+		d->filemark = 0;
 
 		/*
 		 *  Failure? Then set check condition.
@@ -718,17 +843,17 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		 *   set to one in the sense data. The sense key shall
 		 *   be set to NO SENSE"..
 		 */
-		if (diskimages[disk_id]->is_a_tape && diskimages[disk_id]->f != NULL
-		    && feof(diskimages[disk_id]->f)) {
-			debug(" feof id=%i\n", disk_id);
+		if (d->is_a_tape && d->f != NULL && feof(d->f)) {
+			debug(" feof id=%i\n", scsi_id);
 			xferp->status[0] = 0x02;	/*  CHECK CONDITION  */
 
-			diskimages[disk_id]->filemark = 1;
+			d->filemark = 1;
 		} else
-			diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
+			diskimage__internal_access(d, 0, ofs,
+			    xferp->data_in, size);
 
-		if (diskimages[disk_id]->is_a_tape && diskimages[disk_id]->f != NULL)
-			diskimages[disk_id]->tape_offset = ftell(diskimages[disk_id]->f);
+		if (d->is_a_tape && d->f != NULL)
+			d->tape_offset = ftell(d->f);
 
 		/*  TODO: other errors?  */
 		break;
@@ -769,8 +894,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			retlen = (xferp->cmd[7] << 8) + xferp->cmd[8];
 		}
 
-		size = retlen * diskimages[disk_id]->logical_block_size;
-		ofs *= diskimages[disk_id]->logical_block_size;
+		size = retlen * d->logical_block_size;
+		ofs *= d->logical_block_size;
 
 		if (xferp->data_out_offset != size) {
 			debug(", data_out == NULL, wanting %i bytes, \n\n", (int)size);
@@ -782,11 +907,13 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		debug("WRITE ofs=%i size=%i offset=%i\n", (int)ofs, (int)size, (int)xferp->data_out_offset);
 
-		diskimage_access(disk_id, 1, ofs, xferp->data_out, size);
+		diskimage__internal_access(d, 1, ofs,
+		    xferp->data_out, size);
+
 		/*  TODO: how about return code?  */
 
 		/*  Is this really necessary?  */
-		/*  fsync(fileno(diskimages[disk_id]->f));  */
+		/*  fsync(fileno(d->f));  */
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -798,7 +925,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			debug(" (weird len=%i)", xferp->cmd_len);
 
 		/*  TODO: actualy care about cmd[]  */
-		fsync(fileno(diskimages[disk_id]->f));
+		fsync(fileno(d->f));
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -837,7 +964,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		xferp->data_in[0] = 0x80 + 0x70;	/*  0x80 = valid, 0x70 = "current errors"  */
 		xferp->data_in[2] = 0x00;		/*  SENSE KEY!  */
 
-		if (diskimages[disk_id]->filemark) {
+		if (d->filemark) {
 			xferp->data_in[2] = 0x80;
 		}
 		debug(": [2]=0x%02x ", xferp->data_in[2]);
@@ -892,20 +1019,19 @@ printf(" XXX \n");
 
 		/*  Close and reopen.  */
 
-		if (diskimages[disk_id]->f != NULL)
-			fclose(diskimages[disk_id]->f);
+		if (d->f != NULL)
+			fclose(d->f);
 
-		diskimages[disk_id]->f = fopen(diskimages[disk_id]->fname,
-		    diskimages[disk_id]->writable? "r+" : "r");
-		if (diskimages[disk_id]->f == NULL) {
-			fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n",
-			    diskimages[disk_id]->fname);
+		d->f = fopen(d->fname, d->writable? "r+" : "r");
+		if (d->f == NULL) {
+			fprintf(stderr, "[ diskimage: could not (re)open "
+			    "'%s' ]\n", d->fname);
 			/*  TODO: return error  */
 		}
 
-		diskimages[disk_id]->tape_offset = 0;
-		diskimages[disk_id]->tape_filenr = 0;
-		diskimages[disk_id]->filemark = 0;
+		d->tape_offset = 0;
+		d->tape_filenr = 0;
+		d->filemark = 0;
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -940,18 +1066,18 @@ printf(" XXX \n");
 				if (diff & (1 << 23))
 					diff = - (16777216 - diff);
 
-				diskimages[disk_id]->tape_filenr += diff;
+				d->tape_filenr += diff;
 			}
 
-			/*  At end of file, switch to the next automagically:  */
-			if (diskimages[disk_id]->filemark) {
-				diskimages[disk_id]->tape_filenr ++;
-				diskimages[disk_id]->filemark = 0;
+			/*  At end of file, switch to the next tape file:  */
+			if (d->filemark) {
+				d->tape_filenr ++;
+				d->filemark = 0;
 			}
 
-			debug("{ switching to tape file %i }", diskimages[disk_id]->tape_filenr);
-			diskimage__switch_tape(disk_id);
-			diskimages[disk_id]->filemark = 0;
+			debug("{ switching to tape file %i }", d->tape_filenr);
+			diskimage__switch_tape(d);
+			d->filemark = 0;
 			break;
 		default:
 			fatal("[ diskimage.c: unimplemented SPACE type %i ]\n", xferp->cmd[1] & 7);
@@ -980,12 +1106,10 @@ printf(" XXX \n");
 		scsi_transfer_allocbuf(&xferp->data_in_len,
 		    &xferp->data_in, retlen, 1);
 
-		diskimage_recalc_size(disk_id);
+		diskimage_recalc_size(d);
 
-		size = diskimages[disk_id]->total_size /
-		    diskimages[disk_id]->logical_block_size;
-		if (diskimages[disk_id]->total_size &
-		    (diskimages[disk_id]->logical_block_size-1))
+		size = d->total_size / d->logical_block_size;
+		if (d->total_size & (d->logical_block_size-1))
 			size ++;
 
 		xferp->data_in[0] = (size >> 24) & 255;
@@ -993,10 +1117,10 @@ printf(" XXX \n");
 		xferp->data_in[2] = (size >> 8) & 255;
 		xferp->data_in[3] = size & 255;
 
-		xferp->data_in[4] = (diskimages[disk_id]->logical_block_size >> 24) & 255;
-		xferp->data_in[5] = (diskimages[disk_id]->logical_block_size >> 16) & 255;
-		xferp->data_in[6] = (diskimages[disk_id]->logical_block_size >> 8) & 255;
-		xferp->data_in[7] = diskimages[disk_id]->logical_block_size & 255;
+		xferp->data_in[4] = (d->logical_block_size >> 24) & 255;
+		xferp->data_in[5] = (d->logical_block_size >> 16) & 255;
+		xferp->data_in[6] = (d->logical_block_size >> 8) & 255;
+		xferp->data_in[7] = d->logical_block_size & 255;
 
 		diskimage__return_default_status_and_message(xferp);
 		break;
@@ -1045,12 +1169,12 @@ printf(" XXX \n");
 		    xferp->data_out[1] == 0x05 &&
 		    xferp->data_out[2] == 0x00 &&
 		    xferp->data_out[3] == 0x08) {
-			diskimages[disk_id]->logical_block_size =
+			d->logical_block_size =
 			    (xferp->data_out[9] << 16) +
 			    (xferp->data_out[10] << 8) +
 			    xferp->data_out[11];
 			debug("[ setting logical_block_size to %i ]\n",
-			    diskimages[disk_id]->logical_block_size);
+			    d->logical_block_size);
 		} else {
 			int i;
 			fatal("[ unknown MODE_SELECT: cmd =");
@@ -1089,7 +1213,8 @@ printf(" XXX \n");
 		break;
 
 	default:
-		fatal("unimplemented SCSI command 0x%02x, disk id=%i\n", xferp->cmd[0], disk_id);
+		fatal("[ UNIMPLEMENTED SCSI command 0x%02x, disk id=%i ]\n",
+		    xferp->cmd[0], scsi_id);
 		exit(1);
 	}
 	debug(" ]\n");
@@ -1099,116 +1224,30 @@ printf(" XXX \n");
 
 
 /*
- *  diskimage_access__cdrom():
- *
- *  This is a special-case function, called from diskimage_access(). On my
- *  FreeBSD 4.9 system, the cdrom device /dev/cd0c seems to not be able to
- *  handle something like "fseek(512); fread(512);" but it handles
- *  "fseek(2048); fread(512);" just fine.  So, if diskimage_access() fails
- *  in reading a block of data, this function is called as an attempt to
- *  align reads at 2048-byte sectors instead.
- *
- *  (Ugly hack.  TODO: how to solve this cleanly?)
- *
- *  NOTE:  Returns the number of bytes read, 0 if nothing was successfully
- *  read. (These are not the same as diskimage_access()).
- */
-#define	CDROM_SECTOR_SIZE	2048
-static size_t diskimage_access__cdrom(int disk_id, off_t offset,
-	unsigned char *buf, size_t len)
-{
-	off_t aligned_offset;
-	size_t bytes_read, total_copied = 0;
-	unsigned char cdrom_buf[CDROM_SECTOR_SIZE];
-	int buf_ofs, i = 0;
-
-	aligned_offset = (offset / CDROM_SECTOR_SIZE) * CDROM_SECTOR_SIZE;
-	my_fseek(diskimages[disk_id]->f, aligned_offset, SEEK_SET);
-
-	while (len != 0) {
-		bytes_read = fread(cdrom_buf, 1, CDROM_SECTOR_SIZE,
-		    diskimages[disk_id]->f);
-		if (bytes_read != CDROM_SECTOR_SIZE)
-			return 0;
-
-		/*  Copy (part of) cdrom_buf into buf:  */
-		buf_ofs = offset - aligned_offset;
-		while (buf_ofs < CDROM_SECTOR_SIZE && len != 0) {
-			buf[i ++] = cdrom_buf[buf_ofs ++];
-			total_copied ++;
-			len --;
-		}
-
-		aligned_offset += CDROM_SECTOR_SIZE;
-		offset = aligned_offset;
-	}
-
-	return total_copied;
-}
-
-
-/*
  *  diskimage_access():
  *
- *  Read from or write to a disk image.
+ *  Read from or write to a disk image on a machine.
  *
  *  Returns 1 if the access completed successfully, 0 otherwise.
  */
-int diskimage_access(int disk_id, int writeflag, off_t offset,
-	unsigned char *buf, size_t len)
+int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
+	off_t offset, unsigned char *buf, size_t len)
 {
-	size_t len_done;
-	int res;
+	struct diskimage *d = machine->first_diskimage;
 
-	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES ||
-	    diskimages[disk_id]==NULL) {
-		fatal("WARNING: trying to access a non-existant disk image (%i)\n",
-		    disk_id);
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			break;
+		d = d->next;
+	}
+
+	if (d == NULL) {
+		fatal("[ diskimage_access(): ERROR: trying to access a "
+		    "non-existant SCSI disk image (%i)\n", scsi_id);
 		return 0;
 	}
 
-	if (buf == NULL) {
-		fprintf(stderr, "diskimage_access(): buf = NULL\n");
-		exit(1);
-	}
-
-	if (len == 0)
-		return 1;
-
-	if (diskimages[disk_id]->f == NULL)
-		return 0;
-
-	res = my_fseek(diskimages[disk_id]->f, offset, SEEK_SET);
-	if (res != 0) {
-		fatal("[ diskimage_access(): fseek() failed on disk id %i \n", disk_id);
-		return 0;
-	}
-
-	if (writeflag) {
-		if (!diskimages[disk_id]->writable)
-			return 0;
-
-		len_done = fwrite(buf, 1, len, diskimages[disk_id]->f);
-	} else {
-		len_done = fread(buf, 1, len, diskimages[disk_id]->f);
-
-		/*  Special case for CD-ROMs:  */
-		if (len_done == 0)
-			len_done = diskimage_access__cdrom(disk_id,
-			    offset, buf, len);
-
-		if (len_done < (ssize_t)len)
-			memset(buf + len_done, 0, len-len_done);
-	}
-
-	/*  Warn about non-complete data transfers:  */
-	if (len_done != (ssize_t)len) {
-		debug("diskimage_access(): disk_id %i, offset %lli, transfer not completed. len=%i, len_done=%i\n",
-		    disk_id, (long long)offset, len, len_done);
-		return 0;
-	}
-
-	return 1;
+	return diskimage__internal_access(d, writeflag, offset, buf, len);
 }
 
 
@@ -1226,10 +1265,12 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
  *	t	SCSI tape
  *	0-7	force a specific SCSI ID number
  *
+ *  machine is assumed to be non-NULL.
  *  Returns an integer >= 0 identifying the disk image.
  */
-int diskimage_add(char *fname)
+int diskimage_add(struct machine *machine, char *fname)
 {
+	struct diskimage *d, *d2;
 	int id;
 	char *cp;
 	int prefix_b = 0;
@@ -1286,44 +1327,62 @@ int diskimage_add(char *fname)
 
 	/*  Calculate which ID to use:  */
 	if (prefix_id == -1) {
-		/*  Find first free ID:  */
-		for (id = 0; id < MAX_DISKIMAGES; id++) {
-			if (diskimages[id] == NULL)
-				break;
-		}
+		int free = 0, collision = 1;
 
-		if (id >= MAX_DISKIMAGES) {
-			fprintf(stderr, "too many disk images\n");
-			exit(1);
+		while (collision) {
+			collision = 0;
+			d = machine->first_diskimage;
+			while (d != NULL) {
+				if (d->id == free) {
+					collision = 1;
+					break;
+				}
+				d = d->next;
+			}
+			if (!collision)
+				id = free;
 		}
 	} else {
 		id = prefix_id;
-		if (id < 0 || id >= MAX_DISKIMAGES) {
-			fprintf(stderr, "invalid id\n");
-			exit(1);
-		}
-		if (diskimages[id] != NULL) {
-			fprintf(stderr, "disk image id %i already in use\n", id);
-			exit(1);
+
+		d = machine->first_diskimage;
+		while (d != NULL) {
+			if (d->id == id) {
+				fprintf(stderr, "disk image SCSI id %i "
+				    "already in use\n", id);
+				exit(1);
+			}
+			d = d->next;
 		}
 	}
 
+	/*  Allocate a new diskimage struct:  */
+	d = malloc(sizeof(struct diskimage));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory in diskimage_add()\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct diskimage));
 
-	diskimages[id] = malloc(sizeof(struct diskimage));
-	if (diskimages[id] == NULL) {
+	d2 = machine->first_diskimage;
+	if (d2 == NULL) {
+		machine->first_diskimage = d;
+	} else {
+		while (d2->next != NULL)
+			d2 = d2->next;
+		d2->next = d;
+	}
+
+	d->type = DISKIMAGE_SCSI;
+	d->id = id;
+
+	d->fname = strdup(fname);
+	if (d->fname == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(diskimages[id], 0, sizeof(struct diskimage));
 
-	diskimages[id]->fname = malloc(strlen(fname) + 1);
-	if (diskimages[id]->fname == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
-	}
-	strcpy(diskimages[id]->fname, fname);
-
-	diskimages[id]->logical_block_size = 512;
+	d->logical_block_size = 512;
 
 	/*
 	 *  Is this a tape, CD-ROM or a normal disk?
@@ -1332,14 +1391,14 @@ int diskimage_add(char *fname)
 	 *  filenames ending with .iso are CD-ROM images.
 	 */
 	if (prefix_t) {
-		diskimages[id]->is_a_tape = 1;
+		d->is_a_tape = 1;
 	} else {
 		if (prefix_c ||
-		    ((strlen(diskimages[id]->fname) > 4 &&
-		    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
+		    ((strlen(d->fname) > 4 &&
+		    strcasecmp(d->fname + strlen(d->fname) - 4, ".iso") == 0)
 		    && !prefix_d)
 		   ) {
-			diskimages[id]->is_a_cdrom = 1;
+			d->is_a_cdrom = 1;
 
 			/*
 			 *  This is tricky. Should I use 512 or 2048 here?
@@ -1349,29 +1408,27 @@ int diskimage_add(char *fname)
 			 *
 			 *  TODO
 			 */
-			diskimages[id]->logical_block_size = 512;
+			d->logical_block_size = 512;
 		}
 	}
 
-	diskimage_recalc_size(id);
+	diskimage_recalc_size(d);
 
-	diskimages[id]->rpms = 3600;
+	d->rpms = 3600;
 
 	if (prefix_b)
-		diskimages[id]->is_boot_device = 1;
+		d->is_boot_device = 1;
 
-	diskimages[id]->writable = access(fname, W_OK) == 0? 1 : 0;
+	d->writable = access(fname, W_OK) == 0? 1 : 0;
 
-	if (diskimages[id]->is_a_cdrom || prefix_r)
-		diskimages[id]->writable = 0;
+	if (d->is_a_cdrom || prefix_r)
+		d->writable = 0;
 
-	diskimages[id]->f = fopen(fname, diskimages[id]->writable? "r+" : "r");
-	if (diskimages[id]->f == NULL) {
+	d->f = fopen(fname, d->writable? "r+" : "r");
+	if (d->f == NULL) {
 		perror(fname);
 		exit(1);
 	}
-
-	n_diskimages ++;
 
 	return id;
 }
@@ -1385,30 +1442,20 @@ int diskimage_add(char *fname)
  *  If no disk was used as boot device, then -1 is returned. (In practice,
  *  this is used to fake network (tftp) boot.)
  */
-int diskimage_bootdev(void)
+int diskimage_bootdev(struct machine *machine)
 {
-	int i;
-	int first_dev = -1;
-	int bootdev = -1;
-
-	for (i=0; i<MAX_DISKIMAGES; i++) {
-		if (diskimages[i] != NULL && first_dev < 0)
-			first_dev = i;
-
-		if (diskimages[i] != NULL && diskimages[i]->is_boot_device) {
-			if (bootdev == -1)
-				bootdev = i;
-			else {
-				fprintf(stderr, "more than one boot device? id %i and id %i\n",
-				    bootdev, i);
-			}
-		}
+	struct diskimage *d = machine->first_diskimage;
+	while (d != NULL) {
+		if (d->is_boot_device)
+			return d->id;
+		d = d->next;
 	}
 
-	if (bootdev < 0)
-		bootdev = first_dev;
+	d = machine->first_diskimage;
+	if (d != NULL)
+		return d->id;
 
-	return bootdev;
+	return -1;
 }
 
 
@@ -1417,12 +1464,16 @@ int diskimage_bootdev(void)
  *
  *  Returns 1 if a disk image is a SCSI CDROM, 0 otherwise.
  */
-int diskimage_is_a_cdrom(int i)
+int diskimage_is_a_cdrom(struct machine *machine, int scsi_id)
 {
-	if (i<0 || diskimages[i] == NULL)
-		return 0;
+	struct diskimage *d = machine->first_diskimage;
 
-	return diskimages[i]->is_a_cdrom;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			return d->is_a_cdrom;
+		d = d->next;
+	}
+	return 0;
 }
 
 
@@ -1433,47 +1484,54 @@ int diskimage_is_a_cdrom(int i)
  *  (Used in src/machine.c, to select 'rz' vs 'tz' for DECstation
  *  boot strings.)
  */
-int diskimage_is_a_tape(int i)
+int diskimage_is_a_tape(struct machine *machine, int scsi_id)
 {
-	if (i<0 || diskimages[i] == NULL)
-		return 0;
+	struct diskimage *d = machine->first_diskimage;
 
-	return diskimages[i]->is_a_tape;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+			return d->is_a_tape;
+		d = d->next;
+	}
+	return 0;
 }
 
 
 /*
  *  diskimage_dump_info():
  *
- *  Debug dump of all diskimages that are loaded.
- *
- *  TODO:  The word 'adding' isn't really correct, as all diskimages
- *         are actually already added when this function is called.
+ *  Debug dump of all diskimages that are loaded for a specific machine.
  */
-void diskimage_dump_info(void)
+void diskimage_dump_info(struct machine *machine)
 {
-	int i, iadd=4;
+	int iadd=4;
+	struct diskimage *d = machine->first_diskimage;
 
-	for (i=0; i<MAX_DISKIMAGES; i++)
-		if (diskimages[i] != NULL) {
-			debug("diskimage %i: %s\n", i, diskimages[i]->fname);
+	while (d != NULL) {
+		debug("diskimage: %s\n", d->fname);
+		debug_indentation(iadd);
 
-			debug_indentation(iadd);
-
-			debug("%s, %s, ",
-			    diskimages[i]->is_a_tape? "TAPE" : (
-				diskimages[i]->is_a_cdrom?
-					"CD-ROM" : "DISK"),
-			    diskimages[i]->writable?
-				"read/write" : "read-only");
-
-			debug("%lli bytes (%lli sectors)%s\n",
-			    (long long) diskimages[i]->total_size,
-			    (long long) (diskimages[i]->total_size / 512),
-			    diskimages[i]->is_boot_device?
-					", BOOT DEVICE" : "");
-
-			debug_indentation(-iadd);
+		switch (d->type) {
+		case DISKIMAGE_SCSI:
+			debug("SCSI ");
+			break;
+		default:
+			debug("UNKNOWN type %i ", d->type);
 		}
+
+		debug("%s", d->is_a_tape? "TAPE" :
+			(d->is_a_cdrom? "CD-ROM" : "DISK"));
+		debug(" id %i, ", d->id);
+		debug("%s, ", d->writable? "read/write" : "read-only");
+
+		debug("%lli bytes (%lli sectors)%s\n",
+		    (long long) d->total_size,
+		    (long long) (d->total_size / 512),
+		    d->is_boot_device? ", BOOT DEVICE" : "");
+
+		debug_indentation(-iadd);
+
+		d = d->next;
+	}
 }
 

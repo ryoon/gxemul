@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.10 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_wdc.c,v 1.11 2005-01-20 14:25:17 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -77,7 +77,7 @@ struct wdc_data {
  *
  *  Write to the inbuf at its head, read at its tail.
  */
-void wdc_addtoinbuf(struct wdc_data *d, int c)
+static void wdc_addtoinbuf(struct wdc_data *d, int c)
 {
 	d->inbuf[d->inbuf_head] = c;
 
@@ -92,7 +92,7 @@ void wdc_addtoinbuf(struct wdc_data *d, int c)
  *
  *  Read from the tail of inbuf.
  */
-uint64_t wdc_get_inbuf(struct wdc_data *d)
+static uint64_t wdc_get_inbuf(struct wdc_data *d)
 {
 	int c = d->inbuf[d->inbuf_tail];
 
@@ -109,11 +109,11 @@ uint64_t wdc_get_inbuf(struct wdc_data *d)
 /*
  *  wdc_initialize_identify_struct(d):
  */
-void wdc_initialize_identify_struct(struct wdc_data *d)
+static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 {
 	uint64_t total_size, cyls;
 
-	total_size = diskimage_getsize(d->drive + d->base_drive);
+	total_size = diskimage_getsize(cpu->machine, d->drive + d->base_drive);
 
 	memset(d->identify_struct, 0, sizeof(d->identify_struct));
 
@@ -182,7 +182,7 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Same as the normal status byte?  */
 	odata = 0;
-	if (diskimage_exist(d->drive + d->base_drive))
+	if (diskimage_exist(cpu->machine, d->drive + d->base_drive))
 		odata |= WDCS_DRDY;
 	if (d->inbuf_head != d->inbuf_tail)
 		odata |= WDCS_DRQ;
@@ -316,7 +316,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_command:	/*  7: command or status  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
-			if (diskimage_exist(d->drive + d->base_drive))
+			if (diskimage_exist(cpu->machine,
+			    d->drive + d->base_drive))
 				odata |= WDCS_DRDY;
 			if (d->inbuf_head != d->inbuf_tail)
 				odata |= WDCS_DRQ;
@@ -324,7 +325,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata |= WDCS_ERR;
 
 			/*  TODO:  Is this correct behaviour?  */
-			if (!diskimage_exist(d->drive + d->base_drive))
+			if (!diskimage_exist(cpu->machine,
+			    d->drive + d->base_drive))
 				odata = 0xff;
 
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
@@ -337,7 +339,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			d->cur_command = idata;
 
 			/*  TODO:  Is this correct behaviour?  */
-			if (!diskimage_exist(d->drive + d->base_drive))
+			if (!diskimage_exist(cpu->machine,
+			    d->drive + d->base_drive))
 				break;
 
 			/*  Handle the command:  */
@@ -351,7 +354,9 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 					int cyl = d->cyl_hi * 256+ d->cyl_lo;
 					int count = d->seccnt? d->seccnt : 256;
 					uint64_t offset = 512 * (d->sector - 1 + d->head * 63 + 16*63*cyl);
-					diskimage_access(d->drive + d->base_drive, 0, offset, buf, 512 * count);
+					diskimage_access(cpu->machine,
+					    d->drive + d->base_drive, 0,
+					    offset, buf, 512 * count);
 					/*  TODO: result code  */
 					for (i=0; i<512 * count; i++)
 						wdc_addtoinbuf(d, buf[i]);
@@ -382,7 +387,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				break;
 			case WDCC_IDENTIFY:
 				debug("[ wdc: IDENTIFY drive %i ]\n", d->drive);
-				wdc_initialize_identify_struct(d);
+				wdc_initialize_identify_struct(cpu, d);
 				/*  The IDENTIFY data block is sent out in low/high byte order:  */
 				for (i=0; i<sizeof(d->identify_struct); i+=2) {
 					wdc_addtoinbuf(d, d->identify_struct[i+0]);

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.23 2005-01-19 14:24:21 debug Exp $
+ *  $Id: emul.h,v 1.24 2005-01-20 14:25:18 debug Exp $
  */
 
 #include "misc.h"
@@ -38,6 +38,7 @@ struct machine;
 struct emul {
 	int		verbose;
 	int		single_step;
+
 	int		n_machines;
 	struct machine	**machines;
 };

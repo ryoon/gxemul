@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.59 2005-01-20 08:08:36 debug Exp $
+ *  $Id: dev_asc.c,v 1.60 2005-01-20 14:25:17 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -1026,7 +1026,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			}
 
 			/*  TODO: not just disk, but some generic SCSI device  */
-			target_exists = diskimage_exist(d->reg_wo[NCR_SELID] & 7);
+			target_exists = diskimage_exist(cpu->machine,
+			    d->reg_wo[NCR_SELID] & 7);
 
 			if (target_exists) {
 				/*

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.119 2005-01-20 06:38:45 debug Exp $
+ *  $Id: emul.c,v 1.120 2005-01-20 14:25:19 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -137,18 +137,19 @@ static void fix_console(void)
  */
 static void load_bootblock(struct machine *m, struct cpu *cpu)
 {
-	int boot_disk_id = diskimage_bootdev();
+	int boot_disk_id;
 	unsigned char minibuf[0x20];
 	unsigned char *bootblock_buf;
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
 	int n_blocks, res, readofs;
 
+	boot_disk_id = diskimage_bootdev(m);
 	if (boot_disk_id < 0)
 		return;
 
-	switch (m->emulation_type) {
-	case EMULTYPE_DEC:
+	switch (m->machine_type) {
+	case MACHINE_DEC:
 		/*
 		 *  The first few bytes of a disk contains information about
 		 *  where the bootblock(s) are located. (These are all 32-bit
@@ -165,7 +166,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		 *  nr of blocks to read and offset are repeated until nr of
 		 *  blocks to read is zero.
 		 */
-		res = diskimage_access(boot_disk_id, 0, 0,
+		res = diskimage_access(m, boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
 
 		bootblock_loadaddr = minibuf[0x10] + (minibuf[0x11] << 8)
@@ -189,7 +190,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 		readofs = 0x18;
 
 		for (;;) {
-			res = diskimage_access(boot_disk_id, 0, readofs,
+			res = diskimage_access(m, boot_disk_id, 0, readofs,
 			    minibuf, sizeof(minibuf));
 			if (!res) {
 				printf("couldn't read disk?\n");
@@ -216,7 +217,7 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 				exit(1);
 			}
 
-			res = diskimage_access(boot_disk_id, 0,
+			res = diskimage_access(m, boot_disk_id, 0,
 			    bootblock_offset, bootblock_buf, n_blocks * 512);
 			if (!res) {
 				fatal("WARNING: could not load bootblocks from"
@@ -301,6 +302,7 @@ static void add_arc_components(struct machine *m)
 	struct cpu *cpu = m->cpus[m->bootstrap_cpu];
 	uint64_t start = cpu->pc & 0x1fffffff;
 	uint64_t len = 0xc00000 - start;
+	struct diskimage *d;
 	int i;
 	uint64_t scsicontroller, scsidevice, scsidisk;
 
@@ -325,14 +327,15 @@ static void add_arc_components(struct machine *m)
 
 	/*  TODO: The device 'name' should defined be somewhere else.  */
 
-	for (i=0; i<MAX_DISKIMAGES; i++)
-		if (diskimages[i] != NULL) {
+	d = m->first_diskimage;
+	while (d != NULL) {
+		if (d->type == DISKIMAGE_SCSI) {
 			int a, b, flags = COMPONENT_FLAG_Input;
 			char component_string[100];
 			char *name = "DEC     RZ58     (C) DEC2000";
 
 			/*  Read-write, or read-only?  */
-			if (diskimages[i]->writable)
+			if (d->writable)
 				flags |= COMPONENT_FLAG_Output;
 			else
 				flags |= COMPONENT_FLAG_ReadOnly;
@@ -340,7 +343,7 @@ static void add_arc_components(struct machine *m)
 			a = COMPONENT_TYPE_DiskController;
 			b = COMPONENT_TYPE_DiskPeripheral;
 
-			if (diskimages[i]->is_a_cdrom) {
+			if (d->is_a_cdrom) {
 				flags |= COMPONENT_FLAG_Removable;
 				a = COMPONENT_TYPE_CDROMController;
 				b = COMPONENT_TYPE_FloppyDiskPeripheral;
@@ -349,7 +352,7 @@ static void add_arc_components(struct machine *m)
 
 			scsidevice = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_ControllerClass,
-			    a, flags, 1, 2, i, 0xffffffff,
+			    a, flags, 1, 2, d->id, 0xffffffff,
 			    name, scsicontroller, NULL, 0);
 
 			scsidisk = arcbios_addchild_manual(cpu,
@@ -362,32 +365,35 @@ static void add_arc_components(struct machine *m)
 			 *  "scsi(0)disk(0)rdisk(0)partition(0)"
 			 */
 
-			if (diskimages[i]->is_a_cdrom) {
+			if (d->is_a_cdrom) {
 				snprintf(component_string,
 				    sizeof(component_string),
-				    "scsi(0)cdrom(%i)", i);
+				    "scsi(0)cdrom(%i)", d->id);
 				arcbios_add_string_to_component(
 				    component_string, scsidevice);
 
 				snprintf(component_string,
 				    sizeof(component_string),
-				    "scsi(0)cdrom(%i)fdisk(0)", i);
+				    "scsi(0)cdrom(%i)fdisk(0)", d->id);
 				arcbios_add_string_to_component(
 				    component_string, scsidisk);
 			} else {
 				snprintf(component_string,
 				    sizeof(component_string),
-				    "scsi(0)disk(%i)", i);
+				    "scsi(0)disk(%i)", d->id);
 				arcbios_add_string_to_component(
 				    component_string, scsidevice);
 
 				snprintf(component_string,
 				    sizeof(component_string),
-				    "scsi(0)disk(%i)rdisk(0)", i);
+				    "scsi(0)disk(%i)rdisk(0)", d->id);
 				arcbios_add_string_to_component(
 				    component_string, scsidisk);
 			}
 		}
+
+		d = d->next;
+	}
 }
 
 
@@ -473,8 +479,8 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 		}
 	}
 
-	if ((m->emulation_type == EMULTYPE_ARC ||
-	    m->emulation_type == EMULTYPE_SGI) && m->prom_emulation)
+	if ((m->machine_type == MACHINE_ARC ||
+	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		arcbios_init();
 
 	if (m->userland_emul) {
@@ -486,7 +492,7 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 		machine_init(m);
 	}
 
-	diskimage_dump_info();
+	diskimage_dump_info(m);
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (m->booting_from_diskimage)
@@ -549,8 +555,8 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 		    m->max_random_cycles_per_chunk);
 
 	/*  Special hack for ARC/SGI emulation:  */
-	if ((m->emulation_type == EMULTYPE_ARC ||
-	    m->emulation_type == EMULTYPE_SGI) && m->prom_emulation)
+	if ((m->machine_type == MACHINE_ARC ||
+	    m->machine_type == MACHINE_SGI) && m->prom_emulation)
 		add_arc_components(m);
 
 	debug("starting emulation: cpu%i ", m->bootstrap_cpu);
@@ -609,7 +615,6 @@ static void emul_run(struct emul *emul)
 void emul_start(struct emul *emul)
 {
 	int i, n, iadd=4;
-	struct machine *m;
 
 	/*  Print startup message:  */
 	debug("mips64emul");

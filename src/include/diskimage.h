@@ -2,7 +2,7 @@
 #define	DISKIMAGE_H
 
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,25 +28,33 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.23 2005-01-09 01:55:28 debug Exp $
+ *  $Id: diskimage.h,v 1.24 2005-01-20 14:25:18 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
 
+#include <stdio.h>
 #include <sys/types.h>
 
+#include "misc.h"
 
-#define	MAX_DISKIMAGES		8
+/*  Diskimage types:  */
+#define	DISKIMAGE_SCSI		1
 
 struct diskimage {
+	struct diskimage *next;
+	int		type;		/*  DISKIMAGE_SCSI, etc  */
+	int		id;		/*  SCSI id  */
+
 	char		*fname;
+	FILE		*f;
+
 	off_t		total_size;
+	int		logical_block_size;
 
 	int		writable;
 	int		is_a_cdrom;
 	int		is_boot_device;
-
-	int		logical_block_size;
 
 	int		is_a_tape;
 	uint64_t	tape_offset;
@@ -55,8 +63,6 @@ struct diskimage {
 
 	int		rpms;
 	int		ncyls;
-
-	FILE		*f;
 };
 
 
@@ -64,7 +70,7 @@ struct diskimage {
 struct scsi_transfer {
 	struct scsi_transfer	*next_free;
 
-	/*  These should be set by the SCSI controller device before the call:  */
+	/*  These should be set by the SCSI controller before the call:  */
 	unsigned char		*msg_out;
 	size_t			msg_out_len;
 	unsigned char		*cmd;
@@ -85,22 +91,30 @@ struct scsi_transfer {
 	size_t			status_len;
 };
 
+
+struct machine;
+
 struct scsi_transfer *scsi_transfer_alloc(void);
 void scsi_transfer_free(struct scsi_transfer *);
-void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len, int clearflag);
+void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp,
+	size_t want_len, int clearflag);
 
 
-int diskimage_add(char *fname);
-int64_t diskimage_getsize(int disk_id);
-int diskimage_scsicommand(struct cpu *cpu, int disk_id, struct scsi_transfer *);
-int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *buf, size_t len);
-int diskimage_exist(int disk_id);
-int diskimage_bootdev(void);
-int diskimage_is_a_cdrom(int i);
-int diskimage_is_a_tape(int i);
-void diskimage_dump_info(void);
+int64_t diskimage_getsize(struct machine *machine, int scsi_id);
+int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
+	struct scsi_transfer *);
+int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
+	off_t offset, unsigned char *buf, size_t len);
+int diskimage_exist(struct machine *machine, int scsi_id);
+int diskimage_bootdev(struct machine *machine);
+int diskimage_add(struct machine *machine, char *fname);
+int diskimage_is_a_cdrom(struct machine *machine, int scsi_id);
+int diskimage_is_a_tape(struct machine *machine, int scsi_id);
+void diskimage_dump_info(struct machine *machine);
 
-/*  SCSI commands:  */
+/*
+ *  SCSI commands: 
+ */
 #define	SCSICMD_TEST_UNIT_READY		0x00	/*  Mandatory  */
 #define	SCSICMD_REQUEST_SENSE		0x03	/*  Mandatory  */
 #define	SCSICMD_INQUIRY			0x12	/*  Mandatory  */
@@ -129,4 +143,3 @@ void diskimage_dump_info(void);
 
 
 #endif	/*  DISKIMAGE_H  */
-

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.245 2005-01-19 15:02:00 debug Exp $
+ *  $Id: cpu.c,v 1.246 2005-01-20 14:25:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1611,17 +1611,17 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
 	    cpu->machine->prom_emulation) {
 		int rom_jal;
-		switch (cpu->machine->emulation_type) {
-		case EMULTYPE_DEC:
+		switch (cpu->machine->machine_type) {
+		case MACHINE_DEC:
 			decstation_prom_emul(cpu);
 			rom_jal = 1;
 			break;
-		case EMULTYPE_PS2:
+		case MACHINE_PS2:
 			playstation2_sifbios_emul(cpu);
 			rom_jal = 1;
 			break;
-		case EMULTYPE_ARC:
-		case EMULTYPE_SGI:
+		case MACHINE_ARC:
+		case MACHINE_SGI:
 			arcbios_emul(cpu);
 			rom_jal = 1;
 			break;

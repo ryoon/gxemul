@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.33 2004-06-22 01:10:59 debug Exp $
+ *  $Id: dev_fb.c,v 1.34 2004-06-22 16:19:02 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -447,10 +447,15 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (!use_x11)
 		return;
 
-	if (d->update_x2 != -1) {
-		int y, addr, addr2, q = d->vfb_scaledown;
+	/*  Do we need to redraw the cursor?  */
+	if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
+	    d->fb_window->cursor_x != d->fb_window->OLD_cursor_x ||
+	    d->fb_window->cursor_y != d->fb_window->OLD_cursor_y ||
+	    d->fb_window->cursor_xsize != d->fb_window->OLD_cursor_xsize ||
+	    d->fb_window->cursor_ysize != d->fb_window->OLD_cursor_ysize)
+		need_to_redraw_cursor = 1;
 
-		/*  Do we need to redraw the cursor?  */
+	if (d->update_x2 != -1) {
 		if ( (d->update_x1 >= d->fb_window->OLD_cursor_x &&
 		      d->update_x1 < (d->fb_window->OLD_cursor_x + d->fb_window->OLD_cursor_xsize)) ||
 		     (d->update_x2 >= d->fb_window->OLD_cursor_x &&
@@ -465,30 +470,27 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 			      d->update_y2 >= (d->fb_window->OLD_cursor_y + d->fb_window->OLD_cursor_ysize)) )
 				need_to_redraw_cursor = 1;
 		}
-
-		if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
-		    d->fb_window->cursor_x != d->fb_window->OLD_cursor_x ||
-		    d->fb_window->cursor_y != d->fb_window->OLD_cursor_y ||
-		    d->fb_window->cursor_xsize != d->fb_window->OLD_cursor_xsize ||
-		    d->fb_window->cursor_ysize != d->fb_window->OLD_cursor_ysize)
-			need_to_redraw_cursor = 1;
+	}
 
 #ifdef WITH_X11
-		if (need_to_redraw_cursor) {
-			/*  Remove old cursor, if any:  */
-			if (d->fb_window->OLD_cursor_on) {
-				XPutImage(d->fb_window->x11_display,
-				    d->fb_window->x11_fb_window,
-				    d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
-				    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
-				    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
-				    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
-				    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
-				    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown,
-				    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown);
-			}
+	if (need_to_redraw_cursor) {
+		/*  Remove old cursor, if any:  */
+		if (d->fb_window->OLD_cursor_on) {
+			XPutImage(d->fb_window->x11_display,
+			    d->fb_window->x11_fb_window,
+			    d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
+			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_x/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_y/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_xsize/d->vfb_scaledown,
+			    d->fb_window->OLD_cursor_ysize/d->vfb_scaledown);
 		}
+	}
 #endif
+
+	if (d->update_x2 != -1) {
+		int y, addr, addr2, q = d->vfb_scaledown;
 
 #ifdef FB_TICK_EVERYOTHER
 		/*

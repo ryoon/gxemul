@@ -23,10 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.3 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_unreadable.c,v 1.4 2004-08-03 02:25:01 debug Exp $
  *  
  *  A dummy device which returns memory read errors (unreadable),
- *  and a device which returns random data (random).
+ *  a device which returns random data (random), and a device which
+ *  returns zeros on read (zero).
  */
 
 #include <stdio.h>
@@ -69,6 +70,25 @@ int dev_random_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
+ *  dev_zero_access():
+ *
+ *  Returns 1 if ok, 0 on error.
+ */
+int dev_zero_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	if (writeflag == MEM_READ) {
+		int i;
+		for (i=0; i<len; i++)
+			data[i] = 0;
+	}
+
+	return 1;
+}
+
+
+/*
  *  dev_unreadable_init():
  */
 void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
@@ -87,4 +107,13 @@ void dev_random_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
 	    NULL);
 }
 
+
+/*
+ *  dev_zero_init():
+ */
+void dev_zero_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
+{
+	memory_device_register(mem, "zero", baseaddr, len, dev_zero_access,
+	    NULL);
+}
 

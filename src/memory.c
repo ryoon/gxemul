@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.51 2004-07-04 00:30:24 debug Exp $
+ *  $Id: memory.c,v 1.52 2004-07-04 01:41:26 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -265,6 +265,55 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 
 /*
+ *  insert_into_tiny_cache():
+ *
+ *  If the tiny cache is enabled (USE_TINY_CACHE), then this routine inserts
+ *  a vaddr to paddr translation first in the instruction (or data) tiny
+ *  translation cache.
+ */
+void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
+	uint64_t vaddr, uint64_t paddr)
+{
+#ifdef USE_TINY_CACHE
+	int i;
+
+	paddr &= ~0xfff;
+	vaddr >>= 12;
+
+	if (instr) {
+		/*  Code:  */
+		for (i=1; i<N_TRANSLATION_CACHE_INSTR; i++) {
+			cpu->translation_instr_cached[i] =
+			    cpu->translation_instr_cached[i-1];
+			cpu->translation_instr_cached_vaddr_pfn[i] = 
+			    cpu->translation_instr_cached_vaddr_pfn[i-1];
+			cpu->translation_instr_cached_paddr[i] =
+			    cpu->translation_instr_cached_paddr[i-1];
+		}
+
+		cpu->translation_instr_cached[0] = 1 + (writeflag == MEM_WRITE);
+		cpu->translation_instr_cached_vaddr_pfn[0] = vaddr;
+		cpu->translation_instr_cached_paddr[0] = paddr;
+	} else {
+		/*  Data:  */
+		for (i=1; i<N_TRANSLATION_CACHE; i++) {
+			cpu->translation_cached[i] =
+			    cpu->translation_cached[i-1];
+			cpu->translation_cached_vaddr_pfn[i] = 
+			    cpu->translation_cached_vaddr_pfn[i-1];
+			cpu->translation_cached_paddr[i] =
+			    cpu->translation_cached_paddr[i-1];
+		}
+
+		cpu->translation_cached[0] = 1 + (writeflag == MEM_WRITE);
+		cpu->translation_cached_vaddr_pfn[0] = vaddr;
+		cpu->translation_cached_paddr[0] = paddr;
+	}
+#endif
+}
+
+
+/*
  *  translate_address():
  *
  *  TODO:  This is long and ugly.
@@ -278,13 +327,10 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	int writeflag = flags & FLAG_WRITEFLAG? MEM_WRITE : MEM_READ;
 	int no_exceptions = flags & FLAG_NOEXCEPTIONS;
 	int instr = flags & FLAG_INSTR;
-	int ksu, exl, erl;
-	int x_64;
-	int use_tlb;
+	int ksu, exl, erl, use_tlb;
+	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	uint64_t vaddr_vpn2=0, vaddr_asid=0;
-	int g_bit, v_bit, d_bit, pageshift;
-	int exccode, tlb_refill;
-	int mmumodel3k, n_tlbs;
+	int pageshift, exccode, tlb_refill, mmumodel3k, n_tlbs;
 	struct coproc *cp0;
 
 	/*  Default to kernel's kseg0 or kseg1:  */
@@ -391,11 +437,18 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		vaddr &= (uint32_t)0xffffffffULL;
 		pageshift = 12;
 
+		x_64 = 0;
+
 		/*  These are needed later:  */
 		vaddr_asid = (cp0->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
 		vaddr_vpn2 = (vaddr & R2K3K_ENTRYHI_VPN_MASK) >> pageshift;
 	} else {
-		/*  R4000:  */
+		/*
+		 *  R4000 and others:
+		 *
+		 *  kx,sx,ux = 0 for 32-bit addressing,
+		 *  1 for 64-bit addressing. 
+		 */
 		ksu = (cp0->reg[COP0_STATUS] & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT;
 		exl = (cp0->reg[COP0_STATUS] & STATUS_EXL)? 1 : 0;
 		erl = (cp0->reg[COP0_STATUS] & STATUS_ERL)? 1 : 0;
@@ -403,12 +456,13 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		if (exl || erl)
 			ksu = KSU_KERNEL;
 
-		/*  kx,sx,ux = 0 for 32-bit addressing, 1 for 64-bit addressing.  */
-
 		switch (ksu) {
-		case KSU_KERNEL:	x_64 = (cp0->reg[COP0_STATUS] & STATUS_KX)? 1 : 0; break;
-		case KSU_SUPERVISOR:	x_64 = (cp0->reg[COP0_STATUS] & STATUS_SX)? 1 : 0; break;
-		case KSU_USER:		x_64 = (cp0->reg[COP0_STATUS] & STATUS_UX)? 1 : 0; break;
+		case KSU_KERNEL:     x_64 = cp0->reg[COP0_STATUS] & STATUS_KX;
+				     break;
+		case KSU_SUPERVISOR: x_64 = cp0->reg[COP0_STATUS] & STATUS_SX;
+				     break;
+		case KSU_USER:	     x_64 = cp0->reg[COP0_STATUS] & STATUS_UX;
+				     break;
 		default:
 			fatal("weird KSU?\n");
 			exit(1);
@@ -499,7 +553,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	}
 
 	if (use_tlb) {
-		int i;
+		int i, g_bit, v_bit, d_bit;
 		uint64_t cached_hi, cached_lo0, cached_lo1;
 		uint64_t entry_vpn2, entry_asid, pfn;
 
@@ -518,7 +572,8 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 				d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
 			} else {
 				/*  R4000 or similar:  */
-				int pmask = (cp0->tlbs[i].mask & PAGEMASK_MASK) | 0x1fff;
+				int pmask = (cp0->tlbs[i].mask &
+				    PAGEMASK_MASK) | 0x1fff;
 				cached_hi = cp0->tlbs[i].hi;
 				cached_lo0 = cp0->tlbs[i].lo0;
 				cached_lo1 = cp0->tlbs[i].lo1;
@@ -595,23 +650,15 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 #ifdef LAST_USED_TLB_EXPERIMENT
 						cp0->tlbs[i].last_used = cp0->reg[COP0_COUNT];
 #endif
+						/*
+						 *  Enter into the tiny trans-
+						 *  lation cache (if enabled)
+						 *  and return:
+						 */
+						insert_into_tiny_cache(cpu,
+						    instr, writeflag,
+						    vaddr, *return_addr);
 
-#ifdef USE_TINY_CACHE
-						/*  Enter into the tiny translation cache:  */
-						if (instr) {
-							/*  Code:  */
-							cpu->translation_instr_cached[cpu->translation_instr_cached_i] = 1 + (writeflag == MEM_WRITE);
-							cpu->translation_instr_cached_vaddr_pfn[cpu->translation_instr_cached_i] = vaddr >> 12;
-							cpu->translation_instr_cached_paddr[cpu->translation_instr_cached_i] = (*return_addr) & ~0xfff;
-							cpu->translation_instr_cached_i = (cpu->translation_instr_cached_i+1) % N_TRANSLATION_CACHE_INSTR;
-						} else {
-							/*  Data:  */
-							cpu->translation_cached[cpu->translation_cached_i] = 1 + (writeflag == MEM_WRITE);
-							cpu->translation_cached_vaddr_pfn[cpu->translation_cached_i] = vaddr >> 12;
-							cpu->translation_cached_paddr[cpu->translation_cached_i] = (*return_addr) & ~0xfff;
-							cpu->translation_cached_i = (cpu->translation_cached_i+1) % N_TRANSLATION_CACHE;
-						}
-#endif
 						return 1;
 					} else {
 						/*  TLB modification exception  */
@@ -628,7 +675,10 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		}
 	}
 
-	/*  We are here if for example userland code tried to access kernel memory.  */
+	/*
+	 *  We are here if for example userland code tried to access
+	 *  kernel memory.
+	 */
 
 #if 0
 	if (!use_tlb) {
@@ -661,29 +711,15 @@ exception:
 	if (no_exceptions)
 		return 0;
 
+	/*  TLB Load or Store exception:  */
 	if (exccode == -1) {
 		if (writeflag == MEM_WRITE)
-			exccode = EXCEPTION_TLBS;	/*  Store  */
+			exccode = EXCEPTION_TLBS;
 		else
-			exccode = EXCEPTION_TLBL;	/*  Load  */
-	}
-
-	if (mmumodel3k) {
-		x_64 = 0;
-	} else {
-		/*  R4000:  */
-		switch (ksu) {
-		case KSU_KERNEL:	x_64 = (cp0->reg[COP0_STATUS] & STATUS_KX)? 1 : 0; break;
-		case KSU_SUPERVISOR:	x_64 = (cp0->reg[COP0_STATUS] & STATUS_SX)? 1 : 0; break;
-		case KSU_USER:		x_64 = (cp0->reg[COP0_STATUS] & STATUS_UX)? 1 : 0; break;
-		default:
-			fatal("weird KSU?\n");
-			exit(1);
-		}
+			exccode = EXCEPTION_TLBL;
 	}
 
 	cpu_exception(cpu, exccode, tlb_refill, vaddr,
-/*	    cp0->tlbs[0].mask & PAGEMASK_MASK,  */
 	    0, vaddr_vpn2, vaddr_asid, x_64);
 
 	/*  Return failure:  */
@@ -709,7 +745,7 @@ unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	bits_per_pagetable = mem->bits_per_pagetable;
 	memblock = NULL;
 	table = mem->first_pagetable;
-	mask = (1 << bits_per_pagetable) - 1;
+	mask = mem->entries_per_pagetable - 1;
 	shrcount = mem->max_bits - bits_per_pagetable;
 
 	/*
@@ -842,8 +878,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		if (old_cached_paddr != IMPOSSIBLE_PADDR) {
 			memblock = memory_paddr_to_hostaddr(
 			    mem, old_cached_paddr, MEM_WRITE);
-			offset = old_cached_paddr & ((1 <<
-			    mem->bits_per_memblock) - 1)
+			offset = old_cached_paddr
+			    & (mem->memblock_size - 1)
 			    & ~cpu->cache_mask[which_cache];
 
 			src = cpu->cache[which_cache];
@@ -863,7 +899,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 		/*  Copy from main memory into the cache:  */
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
-		offset = paddr & ((1 << mem->bits_per_memblock) - 1)
+		offset = paddr & (mem->memblock_size - 1)
 		    & ~cpu->cache_mask[which_cache];
 		/*  offset is offset within the memblock:
 		 *  printf("write: offset = 0x%x\n", offset);
@@ -1248,7 +1284,7 @@ no_exception_access:
 		goto do_return_ok;
 	}
 
-	offset = paddr & ((1 << mem->bits_per_memblock) - 1);
+	offset = paddr & (mem->memblock_size - 1);
 
 	if (writeflag == MEM_WRITE) {
 		if (len == sizeof(uint32_t) && (offset & 3)==0)

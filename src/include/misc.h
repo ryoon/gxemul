@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.78 2004-07-04 00:31:01 debug Exp $
+ *  $Id: misc.h,v 1.79 2004-07-04 01:41:23 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -211,7 +211,7 @@ struct cpu_type_def {
 #define	DEBUG_BUFSIZE		1024
 
 #define	DEFAULT_RAM_IN_MB	32
-#define	MAX_PC_DUMPPOINTS	8
+#define	MAX_PC_DUMPPOINTS	5
 #define	MAX_DEVICES		22
 
 
@@ -221,26 +221,32 @@ struct cpu_type_def {
 struct cpu;
 
 struct memory {
-	uint64_t	physical_max;		/*  must be less than or equal to 1 << max_bits  */
+	/*  physical_max must be less than or equal to 1 << max_bits  */
+	uint64_t	physical_max;
 	int		max_bits;
 
+	/*  entries_per_pagetable is "1 << bits_per_pagetable" cached  */
 	int		bits_per_pagetable;
-	int		entries_per_pagetable;		/*  same as 1 << bits_per_pagetable  */
+	int		entries_per_pagetable;
 
+	/*  memblock_size is "1 << bits_per_memblock"  */
 	int		bits_per_memblock;
-	int		memblock_size;			/*  same as 1 << bits_per_memblock  */
+	int		memblock_size;
 
 	void		*first_pagetable;
 
 	int		n_mmapped_devices;
 	int		last_accessed_device;
-	uint64_t	mmap_dev_minaddr;		/*  might speed up things a little bit  */
-	uint64_t	mmap_dev_maxaddr;		/*  (actually maxaddr is the addr after the last address)  */
+	/*  The following two might speed up things a little bit.  */
+	/*  (actually maxaddr is the addr after the last address)  */
+	uint64_t	mmap_dev_minaddr;
+	uint64_t	mmap_dev_maxaddr;
 
 	const char	*dev_name[MAX_DEVICES];
 	uint64_t	dev_baseaddr[MAX_DEVICES];
 	uint64_t	dev_length[MAX_DEVICES];
-	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *);
+	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
+			    uint64_t,unsigned char *,size_t,int,void *);
 	void		*dev_extra[MAX_DEVICES];
 };
 
@@ -272,7 +278,8 @@ struct tlb {
 	uint64_t	lo1;
 	uint64_t	lo0;
 #ifdef LAST_USED_TLB_EXPERIMENT
-	uint64_t	last_used;		/*  set to coproc0's count value at access  */
+	/*  This is set to coproc0's count value at TLB accesses:  */
+	uint64_t	last_used;
 #endif
 };
 
@@ -482,8 +489,9 @@ struct coproc {
 
 #define	MAX_TICK_FUNCTIONS	12
 
+/*  Number of "tiny" translation cache entries:  */
 #define	N_TRANSLATION_CACHE		4
-#define	N_TRANSLATION_CACHE_INSTR	5
+#define	N_TRANSLATION_CACHE_INSTR	4
 
 /*  This should be a value which the program counter
     can "never" have:  */
@@ -514,12 +522,10 @@ struct cpu {
 	 *  written to, translation_cached[] must be filled with zeros.
 	 */
 #ifdef USE_TINY_CACHE
-	int		translation_cached_i;
 	int		translation_cached[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_vaddr_pfn[N_TRANSLATION_CACHE];
 	uint64_t	translation_cached_paddr[N_TRANSLATION_CACHE];
 
-	int		translation_instr_cached_i;
 	int		translation_instr_cached[N_TRANSLATION_CACHE_INSTR];
 	uint64_t	translation_instr_cached_vaddr_pfn[N_TRANSLATION_CACHE_INSTR];
 	uint64_t	translation_instr_cached_paddr[N_TRANSLATION_CACHE_INSTR];

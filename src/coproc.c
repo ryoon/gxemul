@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.52 2004-07-02 13:43:28 debug Exp $
+ *  $Id: coproc.c,v 1.53 2004-07-04 01:41:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -449,6 +449,15 @@ void coproc_register_write(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS) {
 		tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
 		unimpl = 0;
+
+#if 1
+		if (cpu->cpu_type.mmu_model == MMU3K) {
+			if (!(tmp & MIPS1_ISOL_CACHES)) {
+				cpu->cache_last_paddr[0] = IMPOSSIBLE_PADDR;
+				cpu->cache_last_paddr[1] = IMPOSSIBLE_PADDR;
+			}
+		}
+#endif
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_CAUSE) {
@@ -1222,11 +1231,13 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
+#ifdef USE_TINY_CACHE
 				/*  Invalidate the translation cache...  */
 				for (i=0; i<N_TRANSLATION_CACHE; i++)
 					cpu->translation_cached[i] = 0;
 				for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
 					cpu->translation_instr_cached[i] = 0;
+#endif
 
 				/*
 				 *  ... and the last instruction page:

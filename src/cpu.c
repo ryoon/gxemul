@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.88 2004-07-04 00:55:24 debug Exp $
+ *  $Id: cpu.c,v 1.89 2004-07-04 01:41:26 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -355,7 +355,7 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
  *	coproc_nr	coprocessor number (for some exceptions)
  *	vaddr_vpn2	vpn2 (for some exceptions)
  *	vaddr_asid	asid (for some exceptions)
- *	x_64		64-bit mode for R4000-style tlb misses
+ *	x_64		non-zero for 64-bit mode for R4000-style tlb misses
  */
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)

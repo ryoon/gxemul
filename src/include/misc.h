@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.21 2004-01-07 00:52:55 debug Exp $
+ *  $Id: misc.h,v 1.22 2004-01-09 16:24:34 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -134,6 +134,7 @@ struct cpu_type_def {
 #define	EXC4K		4
 #define	MMU3K		3
 #define	MMU4K		4
+#define	MMU10K		10
 
 /*  Bit-field values for the flags field:  */
 #define	NOLLSC		1
@@ -147,12 +148,12 @@ struct cpu_type_def {
 	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32 }, \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU4K,	4,	64 }, \
+	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64 }, \
 	{ "R4300",	MIPS_R4300, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	32 }, /*  32, not 48?  */ \
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
 	{ "R4700",	MIPS_R4700, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU4K,	4,	64 }, \
+	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU4K,	4,	64 }, /*  MMU10K etc.. ?  */  \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, \
@@ -297,6 +298,7 @@ struct coproc {
 /*  R4000 ENTRYHI:  */
 #define	   ENTRYHI_R_MASK	    0xc000000000000000
 #define	   ENTRYHI_R_SHIFT	    62
+#define	   ENTRYHI_VPN2_MASK_R10K   0x00000fffffffe000
 #define	   ENTRYHI_VPN2_MASK	    0x000000ffffffe000
 #define	   ENTRYHI_VPN2_SHIFT	    13
 #define	   ENTRYHI_ASID		    0xff
@@ -313,6 +315,7 @@ struct coproc {
 #define	   STATUS_RP		    0x08000000		/*  reduced power  */
 #define	   STATUS_FR		    0x04000000		/*  1=32 float regs, 0=16  */
 #define	   STATUS_RE		    0x02000000		/*  reverse endian bit  */
+#define	   STATUS_BEV		    0x00400000		/*  boot exception vectors (?)  */
 /*  STATUS_DS: TODO  */
 #define	   STATUS_IM_MASK	    0xff00
 #define	   STATUS_IM_SHIFT	    8
@@ -499,6 +502,8 @@ struct cpu {
 #define	CACHE_DATA			0
 #define	CACHE_INSTRUCTION		1
 #define	CACHE_NONE			2
+
+#define	CACHE_FLAGS_MASK		0x3
 
 #define	NO_EXCEPTIONS			8
 #define	PHYSICAL			16

@@ -23,9 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.5 2004-01-10 05:40:21 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.6 2004-01-11 23:52:53 debug Exp $
  *  
- *  Standard 8042 PC keyboard controller.
+ *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
+ *  controller.
+ *
+ *  TODO:  This is just a dummy device so far.
  */
 
 #include <stdio.h>
@@ -40,16 +43,29 @@
 
 #define	MAX_8042_QUEUELEN	256
 
+#define	PS2_TXBUF		0
+#define	PS2_RXBUF		1
+#define	PS2_CONTROL		2
+#define	PS2_STATUS		3
+
+#define	PS2	100
+
 struct pckbc_data {
-	int	reg[DEV_PCKBC_LENGTH];
-	int	irqnr;
+	int		reg[DEV_PCKBC_LENGTH];
+	int		keyboard_irqnr;
+	int		mouse_irqnr;
+	int		type;
+
+	int		clocksignal;
+	int		rx_int_enable;
+	int		tx_int_enable;
 
 	unsigned	key_queue[MAX_8042_QUEUELEN];
 	int		head, tail;
 };
 
 
-void pckbc_add_key(struct pckbc_data *d, int code)
+void pckbc_add_code(struct pckbc_data *d, int code)
 {
 	/*  Add at the head, read at the tail  */
 	d->head = (d->head+1) % MAX_8042_QUEUELEN;
@@ -71,6 +87,21 @@ int pckbc_get_key(struct pckbc_data *d)
 
 
 /*
+ *  dev_pckbc_tick():
+ */
+void dev_pckbc_tick(struct cpu *cpu, void *extra)
+{
+	struct pckbc_data *d = extra;
+
+	/*  Cause receive interrupt, if there's something in the receive buffer:  */
+	if (d->head != d->tail && d->rx_int_enable) {
+		cpu_interrupt(cpu, d->keyboard_irqnr);
+	} else
+		cpu_interrupt_ack(cpu, d->keyboard_irqnr);
+}
+
+
+/*
  *  dev_pckbc_access():
  *
  *  Returns 1 if ok, 0 on error.
@@ -78,14 +109,29 @@ int pckbc_get_key(struct pckbc_data *d)
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i, code;
+	int i, code, port_nr = 0;
 	struct pckbc_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  TODO:  this is almost 100% dummy  */
+	/*
+	 *  TODO:  this is almost 100% dummy
+	 */
+
+	/*  8242 PS2-style:  */
+	if (d->type == PCKBC_8242) {
+		relative_addr /= sizeof(uint64_t);	/*  if using 8-byte alignment  */
+		port_nr = (relative_addr >> 2);		/*  0 for keyboard, 1 for mouse  */
+		relative_addr &= 3;
+		relative_addr += PS2;
+	}
 
 	switch (relative_addr) {
+
+	/*
+	 *  8042 (PC):
+	 */
+
 	case 0:		/*  data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
@@ -122,20 +168,54 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			if (idata == 0xaa)
 				code = 0x55;
 
-			pckbc_add_key(d, code);
+			pckbc_add_code(d, code);
 		}
 		break;
-	case 24:		/*  and 32, 48  */
-	case 56:
-		/*
-		 *  TODO:  These registers are read by SGI-IP32's PROM during bootup.
-		 *	I don't know what it is for yet.
-		 *
-		 *  How to make this device portable between SGI and others?
-		 *  Perhaps address/xxx = register number will be good enough.
-		 */
-		odata = 1;
+
+	/*
+	 *  8242 (PS2):
+	 */
+
+	case PS2 + PS2_TXBUF:
+		if (writeflag==MEM_READ)
+			fatal("[ pckbc: read from port %i, PS2_TXBUF ]\n", port_nr);
+		else {
+			fatal("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+			if (idata == 0xff) {
+				/*  Keyboard reset. The keyboard should generate 2 status bytes,
+					possibly causing interrupt.  */
+				pckbc_add_code(d, 0xfa);		/*  ack  (?) */
+				pckbc_add_code(d, 0xaa);		/*  batery ok (?)  */
+			}
+		}
 		break;
+
+	case PS2 + PS2_RXBUF:
+		if (writeflag==MEM_READ)
+			fatal("[ pckbc: read from port %i, PS2_RXBUF ]\n", port_nr);
+		else
+			fatal("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+		break;
+
+	case PS2 + PS2_CONTROL:
+		if (writeflag==MEM_READ)
+			fatal("[ pckbc: read from port %i, PS2_CONTROL ]\n", port_nr);
+		else {
+			fatal("[ pckbc: write to port %i, PS2_CONTROL: 0x%llx ]\n", port_nr, (long long)idata);
+			d->clocksignal = (idata & 0x10) ? 1 : 0;
+			d->rx_int_enable = (idata & 0x08) ? 1 : 0;
+			d->tx_int_enable = (idata & 0x04) ? 1 : 0;
+		}
+		break;
+
+	case PS2 + PS2_STATUS:
+		if (writeflag==MEM_READ) {
+			odata = d->clocksignal + 0x08;	/* 0x08 = transmit buffer empty  */
+			fatal("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
+		} else
+			fatal("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
+		break;
+
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ pckbc: read from unimplemented reg %i ]\n", (int)relative_addr);
@@ -152,14 +232,18 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
 
+	dev_pckbc_tick(cpu, d);
+
 	return 1;
 }
 
 
 /*
  *  dev_pckbc_init():
+ *
+ *  Type should be PCKBC_8042 or PCKBC_8242.
  */
-void dev_pckbc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr)
 {
 	struct pckbc_data *d;
 
@@ -169,10 +253,13 @@ void dev_pckbc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pckbc_data));
-	d->irqnr = irq_nr;
+	d->type           = type;
+	d->keyboard_irqnr = keyboard_irqnr;
+	d->mouse_irqnr    = mouse_irqnr;
 
-	pckbc_add_key(d, 0x00);
+	/*  pckbc_add_code(d, 0x00);  */
 
 	memory_device_register(mem, "pckbc", baseaddr, DEV_PCKBC_LENGTH, dev_pckbc_access, d);
+	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, 9);
 }
 

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.49 2004-10-29 07:45:19 debug Exp $
+$Id: RELEASE,v 1.50 2004-11-01 12:33:55 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -89,6 +89,12 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
         x)  Some parts of TCP/IP networking work when running Ultrix as
             the guest OS. (Network support should still be considered
             experimental, though, even for NetBSD, OpenBSD, and Linux.)
+
+	x)  Ultrix running with more than one emulated graphics card (dual-
+	    or tripple-headed workstation setup) works better than before;
+	    when moving the host's mouse pointer from one framebuffer window
+	    to another, the emulated mouse is now moved so that it should
+	    appear on the correct emulated screen.
 
         x)  Mach (the microkernel) seems to boot and run on an emulated
             DECstation. (Unfortunately, I haven't found any "mach_servers"

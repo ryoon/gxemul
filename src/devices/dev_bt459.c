@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.38 2004-11-06 00:41:11 debug Exp $
+ *  $Id: dev_bt459.c,v 1.39 2004-11-06 01:51:18 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -131,6 +131,10 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 	 *  The 'bw_only' hack is because it is nicer to have the b/w
 	 *  text cursor invert whatever it is standing on, not just overwrite
 	 *  it with a big white box.
+	 *
+	 *  The following seems to work with NetBSD/OpenBSD/Ultrix/Sprite:
+	 *	0 = transparent, 1 and 2 = use the color specified by
+	 *	BT459_REG_CCOLOR_2, 3 = reverse of color 1/2.
 	 */
 
 #ifdef WITH_X11
@@ -153,25 +157,16 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 							pixelvalue = 0;
 					} else {
 						switch (color) {
-						case 1:	pixelvalue =
-							    d->bt459_reg[
-							    BT459_REG_CCOLOR_1];
+						case 1:
+						case 2:	pixelvalue = (d->bt459_reg[BT459_REG_CCOLOR_2] >> 4) & 0xf;
 							break;
-						case 2:	pixelvalue =
-							    d->bt459_reg[
-							    BT459_REG_CCOLOR_2];
-							break;
-						case 3:	pixelvalue =
-							    d->bt459_reg[
-							    BT459_REG_CCOLOR_3];
+						case 3:	pixelvalue = 15 -
+							    ((d->bt459_reg[BT459_REG_CCOLOR_2] >> 4) & 0xf);
 							break;
 						default:
 							pixelvalue =
 							    CURSOR_COLOR_TRANSPARENT;
 						}
-						/*  0xff => 0xf  */
-						if (pixelvalue >= N_GRAYCOLORS)
-							pixelvalue >>= 4;
 					}
 
 					win->cursor_pixels[y][x+i] =

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.101 2004-09-24 14:58:44 debug Exp $
+$Id: index.html,v 1.102 2004-09-24 15:07:06 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -86,13 +86,19 @@ SUCH DAMAGE.
 
 mips64emul is a MIPS machine emulator.
 
-The goals are to emulate MIPS-like CPUs and enough surrounding hardware
-to fake real machines, capable of running real (unmodified) operating systems
-(such as <a href="http://www.netbsd.org/">NetBSD</a>, <a href="http://www.linux-mips.org/">Linux</a>,
-<a href="http://www.freebsd.org/platforms/mips.html">FreeBSD</a>, 
-or <a href="http://www.openbsd.org/pmax.html">OpenBSD</a>),
-and to assist in experimenting with MIPS in general.
-This is a spare time hobby project, and many things are not implemented yet.
+The goals are to emulate MIPS-like
+CPUs and enough surrounding hardware to be able to run unmodified
+operating systems (such as
+<a href="http://www.netbsd.org/">NetBSD</a>,
+Ultrix,
+<a href="http://www.linux-mips.org/">Linux</a>,
+<a href="http://www.freebsd.org/platforms/mips.html">FreeBSD</a>,
+or
+<a href="http://www.openbsd.org/pmax.html">OpenBSD</a>)
+as if they were running on a real machine,
+and to assist in experiments involving MIPS-like code in general.
+<p>
+Note: This is a spare time hobby project, and many things are not implemented yet.
 <p>
 It is important to keep in mind that devices and CPUs are not really emulated
 correctly, they are only "faked" well enough to make eg. NetBSD run.
@@ -186,8 +192,8 @@ few syscalls are implemented, mostly as a proof-of-concept. This might
 cause a tiny slowdown, so don't enable it unless you need it.
 
 <p>
-(The possible configure options might differ between different releases and
-snapshots, so this list may be incomplete.)
+The possible configure options might differ between different releases and
+snapshots, so this list may be incomplete.
 
 
 

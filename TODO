@@ -171,6 +171,12 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Regression tests: tests/
 
+	Verify that building and running the emulator works on some platforms:
+		o)  Irix
+		o)  AIX
+		o)  QNX
+		o)  MacOS X  (I've not tried this personally, but others have)
+
 	Save state of the whole emulated machine, to be able to load it back
 		in later?  (Memory, all device's states, all registers and
 		so on.  Like taking a snapshot)

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.9 2004-11-01 09:26:09 debug Exp $
+ *  $Id: emul.h,v 1.10 2004-11-05 00:31:00 debug Exp $
  */
 
 #include "misc.h"
@@ -98,6 +98,9 @@ struct emul {
 
 	int	use_x11;
 	int	x11_scaledown;
+	int	x11_n_display_names;
+	char	**x11_display_names;
+	int	x11_current_display_name_nr;	/*  updated by x11.c  */
 };
 
 /*  emul.c:  */

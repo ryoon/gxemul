@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.294 2004-11-04 23:56:35 debug Exp $
+$Id: HISTORY,v 1.295 2004-11-05 00:30:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1114,7 +1114,7 @@ HISTORY of mips64emul
 
 20041103	Minor updates.
 20041104	Minor updates.
-20041105	Minor updates. Running with different framebuffer windows
-		on different X11 displays works (even with different bit
-		depths on different displays), but there is no command line
-		option for specifying display names yet.
+20041105	Running with different framebuffer windows on different X11
+		displays works now (even with different bit depths and
+		endiannesses on different displays). A new command line option
+		(-z) adds DISPLAYs that should be used.

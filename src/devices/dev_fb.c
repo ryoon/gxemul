@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.54 2004-11-04 23:56:36 debug Exp $
+ *  $Id: dev_fb.c,v 1.55 2004-11-05 00:30:56 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -853,7 +853,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 #ifdef WITH_X11
 	if (cpu->emul->use_x11)
 		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
-		    title, cpu->emul->x11_scaledown);
+		    title, cpu->emul->x11_scaledown, cpu->emul);
 	else
 #endif
 		d->fb_window = NULL;

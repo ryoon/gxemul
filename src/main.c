@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.126 2004-11-04 23:56:37 debug Exp $
+ *  $Id: main.c,v 1.127 2004-11-05 00:31:01 debug Exp $
  */
 
 #include <stdio.h>
@@ -194,6 +194,7 @@ static void usage(char *progname, int longusage)
 	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
 	printf("  -Z n      set nr of graphics cards, for emulating a dual-head or tripple-head\n"
 	       "            environment (only for DECstation emulation)\n");
+	printf("  -z disp   add disp as an X11 display to use for framebuffers\n");
 	printf("\n");
 
 ret:
@@ -223,7 +224,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -383,6 +384,25 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'Z':
 			emul->n_gfx_cards = atoi(optarg);
 			using_switch_Z = 1;
+			break;
+		case 'z':
+			emul->x11_n_display_names ++;
+			emul->x11_display_names = realloc(
+			    emul->x11_display_names,
+			    emul->x11_n_display_names * sizeof(char *));
+			if (emul->x11_display_names == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			emul->x11_display_names[emul->x11_n_display_names-1] =
+			    malloc(strlen(optarg) + 1);
+			if (emul->x11_display_names
+			    [emul->x11_n_display_names-1] == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			strcpy(emul->x11_display_names
+			    [emul->x11_n_display_names-1], optarg);
 			break;
 		default:
 			printf("Invalid option.\n");

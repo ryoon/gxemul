@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.27 2004-11-04 23:56:37 debug Exp $
+ *  $Id: x11.c,v 1.28 2004-11-05 00:31:01 debug Exp $
  *
  *  X11-related functions.
  */
@@ -35,6 +35,7 @@
 #include "misc.h"
 
 #include "console.h"
+#include "emul.h"
 
 
 #ifndef	WITH_X11
@@ -42,8 +43,9 @@
 /*  Dummy functions:  */
 void x11_redraw(int x) { }
 void x11_putpixel_fb(int fb_number, int x, int y, int color) { }
-void x11_init(void) { }
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
+void x11_init(struct emul *emul) { }
+struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
+	int scaledown, struct emul *emul)
     { return NULL; }
 void x11_check_event(void) { }
 /* int x11_fb_winxsize = 0, x11_fb_winysize = 0; */
@@ -143,10 +145,19 @@ void x11_putimage_fb(int i)
  *  It is then up to individual drivers, for example framebuffer devices,
  *  to initialize their own windows.
  */
-void x11_init(void)
+void x11_init(struct emul *emul)
 {
 	n_framebuffer_windows = 0;
 	memset(&fb_windows, 0, sizeof(fb_windows));
+
+	if (emul->x11_n_display_names > 0) {
+		int i;
+		for (i=0; i<emul->x11_n_display_names; i++)
+			printf("X11 display: %s\n",
+			    emul->x11_display_names[i]);
+	}
+
+	emul->x11_current_display_name_nr = 0;
 }
 
 
@@ -155,7 +166,8 @@ void x11_init(void)
  *
  *  Initialize a framebuffer window.
  */
-struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
+struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
+	int scaledown, struct emul *emul)
 {
 	Display *x11_display;
 	int x, y, fb_number = 0;
@@ -163,6 +175,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	XColor tmpcolor;
 	int i;
 	char fg[80], bg[80];
+	char *display_name;
 
 	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
 		if (fb_windows[fb_number].x11_fb_winxsize == 0)
@@ -178,18 +191,24 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name, int scaledown)
 	if (fb_number + 1 >= n_framebuffer_windows)
 		n_framebuffer_windows = fb_number + 1;
 
-	debug("x11_fb_init(): framebuffer window %i, %ix%i\n",
-	    fb_number, xsize, ysize);
-
 	memset(&fb_windows[fb_number], 0, sizeof(struct fb_window));
 
 	fb_windows[fb_number].x11_fb_winxsize = xsize;
 	fb_windows[fb_number].x11_fb_winysize = ysize;
 
-if (fb_number == 0)
-	x11_display = XOpenDisplay(NULL);
-else
-	x11_display = XOpenDisplay("izabella:0.0");
+	/*  Which display name?  */
+	display_name = NULL;
+	if (emul->x11_n_display_names > 0) {
+		display_name = emul->x11_display_names[
+		    emul->x11_current_display_name_nr];
+		emul->x11_current_display_name_nr ++;
+		emul->x11_current_display_name_nr %= emul->x11_n_display_names;
+	}
+
+	debug("x11_fb_init(): framebuffer window %i, %ix%i, DISPLAY=%s\n",
+	    fb_number, xsize, ysize, display_name? display_name : "(default)");
+
+	x11_display = XOpenDisplay(display_name);
 
 	if (x11_display == NULL) {
 		fatal("x11_fb_init(\"%s\"): couldn't open display\n", name);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.83 2004-11-01 09:26:10 debug Exp $
+ *  $Id: emul.c,v 1.84 2004-11-05 00:31:01 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -684,7 +684,7 @@ void emul_start(struct emul *emul)
 	diskimage_dump_info();
 
 	if (emul->use_x11)
-		x11_init();
+		x11_init(emul);
 
 	/*  Fill memory with random bytes:  */
 	if (emul->random_mem_contents) {

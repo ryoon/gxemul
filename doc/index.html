@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.144 2004-11-03 15:47:34 debug Exp $
+$Id: index.html,v 1.145 2004-11-05 00:30:58 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -856,6 +856,20 @@ Ultrix from the harddisk image:<pre>
 You can experiment with adding <b>-Z2</b> (for emulating a 
 dual-headed workstation) or even <b>-Z3</b> (tripple-headed), and also the
 <b>-Y2</b> option for scaling down the framebuffer windows by a factor 2x2.
+There is also a <b>-z</b> option for supplying names of X11 displays to 
+use. The following example starts Ultrix on an emulated tripple-headed 
+workstation, on three different displays (remote1:0.0, localhost:0.0, and 
+remote2:0.0), using no scaledown:<pre>
+        $ <b>./mips64emul -M64 -ND2 -jgenvmunix -d rootdisk.img -XZ3 \
+            -z remote1:0.0 -z localhost -z remote2:0.0</b>
+</pre>
+
+<p>
+The X11 displays may differ in bit depth and endianness. Unfortunately, 
+there is no way yet to set the scaledown factor on a per-window basis, so 
+the scaledown factor affects all windows.
+
+<p>
 (If you didn't use -Z<i>n</i> during the installation, and 
 compiled your own /vmunix, then it will not contain support for multiple 
 graphics cards. To overcome this problem, use the generic kernel, <b>-j 

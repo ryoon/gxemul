@@ -182,12 +182,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  (Mouse) cursor transparency masking
 		o)  More 2D and 3D framebuffer acceleration
 		o)  Hide the host's mouse cursor.
-		o)  Multi-head stuff with DECstation emulation:
-			x) Using different X11 displays for different
-			   framebuffer windows? (For those running a host
-			   with more than one display.)
 		o)  Non-resizable windows?  Or choose scaledown depending
 			on size (and center the image, with a black border)
+		o)  Different scaledown on different windows?
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation

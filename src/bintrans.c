@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.13 2004-06-08 10:50:12 debug Exp $
+ *  $Id: bintrans.c,v 1.14 2004-06-17 22:52:03 debug Exp $
  *
  *  Binary translation.
  *
@@ -132,7 +132,7 @@
 int bintrans_check_cache(struct memory *mem, uint64_t paddr, int *chunk_nr)
 {
 	int i;
-	int stepsize = BINTRANS_CACHEENTRIES / 2;
+	int stepsize = BINTRANS_CACHEENTRIES / 4;
 
 	/*  debug("bintrans_check_cache(): paddr=0x%016llx\n", (long long)paddr);  */
 
@@ -143,10 +143,9 @@ int bintrans_check_cache(struct memory *mem, uint64_t paddr, int *chunk_nr)
 	 *  two, 4 at minimum (?). It also requires all entries to
 	 *  always be sorted.
 	 */
+
 	i = BINTRANS_CACHEENTRIES / 2;
 	while (stepsize > 0) {
-		stepsize >>= 1;
-
 		if (i<0 || i>=BINTRANS_CACHEENTRIES) {
 			fatal("bintrans_check_cache(): internal error! i=%i\n", i);
 			exit(1);
@@ -166,6 +165,16 @@ int bintrans_check_cache(struct memory *mem, uint64_t paddr, int *chunk_nr)
 			i += stepsize;
 		else
 			i -= stepsize;
+
+		stepsize >>= 1;
+	}
+
+	if (paddr == mem->bintrans_paddr_start[0]) {
+		if (mem->bintrans_codechunk_len[0] != 0) {
+			if (chunk_nr != NULL)
+				*chunk_nr = 0;
+			return 1;
+		}
 	}
 #else
 	/*  Old, linear scan, O(n):  */
@@ -203,17 +212,20 @@ int bintrans_check_cache(struct memory *mem, uint64_t paddr, int *chunk_nr)
 void bintrans_invalidate(struct memory *mem, uint64_t paddr, uint64_t len)
 {
 	int i;
+	int stepsize = BINTRANS_CACHEENTRIES / 4;
 
-	/*  debug("bintrans_invalidate(): paddr=0x%016llx len=0x%llx\n",
+	/*  fatal("bintrans_invalidate(): paddr=0x%016llx len=0x%llx\n",
 	    (long long)paddr, (long long)len);  */
 
+	/*  Linear scan, O(n):  */
 	for (i=0; i<BINTRANS_CACHEENTRIES; i++) {
 		/*
 		 *  Invalidate codechunk[i] if any of the following is true:
 		 *
 		 *	paddr is within [start, end]
 		 *	paddr+len-1 is within [start, end]
-		 *	paddr is less than start, and paddr+len-1 is more than end
+		 *	paddr is less than start, and paddr+len-1 is
+		 *		more than end
 		 */
 		if (   (paddr >= mem->bintrans_paddr_start[i] && paddr <= mem->bintrans_paddr_end[i])
 		    || (paddr+len-1 >= mem->bintrans_paddr_start[i] && paddr+len-1 <= mem->bintrans_paddr_end[i])
@@ -305,7 +317,7 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 
 	static int blah_counter = 0;
 
-	if ((++blah_counter) & 15)
+	if ((++blah_counter) & 31)
 		return 0;
 
         mem->bintrans_tickcount ++;
@@ -516,7 +528,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			registerhint = rs;
+			if (registerhint == 0)
+				registerhint = rs;
 			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_LW, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
 		else
@@ -529,7 +542,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			registerhint = rs;
+			if (registerhint == 0)
+				registerhint = rs;
 			registerhint_write = 1;
 			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_SB, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
@@ -543,7 +557,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			registerhint = rs;
+			if (registerhint == 0)
+				registerhint = rs;
 			registerhint_write = 1;
 			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_SW, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
@@ -765,9 +780,12 @@ int bintrans_try_to_run(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 		uint64_t vaddr = cpu->gpr[reg];
 		unsigned char *hostpage;
 
-		if (vaddr < 0x80000000 || cpu->pc >= 0x80000000) {
+/*		if (vaddr < 0x80000000 || cpu->pc >= 0x80000000) {  */
+		{
+/*  printf("()() reg=%i, gpr[reg]=%016llx\n", reg, (long long)vaddr);  */
 			vaddr &= ~0xfff;
 			hostpage = translate_vaddrpage_to_hostpage(cpu, vaddr, &paddr);
+/*  printf("()() vaddr=%08x hostpage=%016llx\n", (int)vaddr, (long long)hostpage);  */
 
 			/*  No hostpage? Then don't run the translated
 			    code chunk.  */
@@ -783,6 +801,7 @@ int bintrans_try_to_run(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			}
 
 			hostaddrbase = (size_t)hostpage;
+/*  printf("()() hostaddrbase = %016llx\n", (long long)hostaddrbase);  */
 		}
 	}
 

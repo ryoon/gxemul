@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.1 2004-06-08 10:50:12 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.2 2004-06-17 22:52:03 debug Exp $
  *
  *  Alpha specific code for binary translation.
  *
@@ -552,7 +552,7 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp,
 
 		/*  14:   0a 00 20 f4     bne     t0,40 <f+0x40>  */
 		/*  jump past the ret  */
-		p[0] = 0x02; p[1] = 0x00; p[2] = 0x20; p[3] = 0xf4;  curlength += 4; p += 4;
+		p[0] = 0x01; p[1] = 0x00; p[2] = 0x20; p[3] = 0xf4;  curlength += 4; p += 4;
 
 		/*  44:   01 80 fa 6b     ret  */
 		p[0] = 0x01; p[1] = 0x80; p[2] = 0xfa; p[3] = 0x6b;  curlength += 4; p += 4;

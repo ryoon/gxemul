@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.74 2004-05-09 17:26:58 debug Exp $
+$Id: HISTORY,v 1.75 2004-05-11 16:23:12 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -493,3 +493,5 @@ HISTORY of mips64emul
 20040507	Fixing PMAG-BA color for Ultrix. (Ultrix relies on interrupts
 		coming from the TURBOchannel slot to update the palette.)
 20040508	Fixing cursor positioning for PMAG-BA.
+20040511	Prints current nr of instructions per seconds, not only
+		average, when using -N.

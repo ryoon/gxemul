@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.2 2004-08-03 01:25:25 debug Exp $
+ *  $Id: dev_vga.c,v 1.3 2004-08-03 01:51:35 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -40,7 +40,7 @@
 
 
 #define	MAX_X		80
-#define	MAX_Y		50
+#define	MAX_Y		25
 
 #define	VGA_FB_ADDR	0x123000000000ULL
 
@@ -68,18 +68,18 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 	start &= ~1;
 	end |= 1;
 
-	for (i=start; i<end; i+=2) {
+	for (i=start; i<=end; i+=2) {
 		unsigned char ch = d->videomem[i];
 		fg = d->videomem[i+1] & 15;
 		bg = (d->videomem[i+1] >> 4) & 7;
 
-		x = (i % 160) / 2 * 8;
-		y = (i / 160) * 16;
+		x = (i/2) % MAX_X; x *= 8;
+		y = (i/2) / MAX_X; y *= 16;
 
 		for (line = 0; line < 16; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
-				int addr = (640*y + x + subx) * 3;
+				int addr = (MAX_X*8 * (line+y) + x + subx) * 3;
 
 				pixel[0] = d->fb->rgb_palette[bg * 3 + 0];
 				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
@@ -93,7 +93,6 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 
 				dev_fb_access(cpu, cpu->mem, addr, &pixel[0], sizeof(pixel), MEM_WRITE, d->fb);
 			}
-			y++;
 		}
 	}
 }
@@ -204,8 +203,8 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	d->videomem_base = videomem_base;
 	d->control_base  = control_base;
 
-	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC, 640,480,
-	    640,480, 24, "VGA");
+	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
+	    8*MAX_X, 16*MAX_Y, 8*MAX_X, 16*MAX_Y, 24, "VGA");
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -225,7 +224,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 				i+=3;
 			}
 
-	memory_device_register(mem, "vga_mem", videomem_base, 80*50*2,
+	memory_device_register(mem, "vga_mem", videomem_base, sizeof(d->videomem),
 	    dev_vga_access, d);
 	memory_device_register(mem, "vga_ctrl", control_base, 16,
 	    dev_vga_ctrl_access, d);

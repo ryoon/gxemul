@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.147 2004-08-03 01:00:31 debug Exp $
+ *  $Id: machine.c,v 1.148 2004-08-03 01:51:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1996,6 +1996,7 @@ void machine_init(struct memory *mem)
 				strcat(machine_name, " (Acer PICA-61)");
 
 				/*  TODO:  lots of stuff  */
+				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b7f60ULL, 0x60000003d0ULL);
 
 				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
 				    0x2000002000ULL, 0, NULL);  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.2 2005-01-30 19:01:54 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.3 2005-01-31 05:45:51 debug Exp $
  */
 
 #include "misc.h"
@@ -59,6 +59,8 @@ struct ppc_cpu_type_def {
 
 struct ppc_cpu {
 	struct ppc_cpu_type_def cpu_type;
+
+	uint64_t	pc;		/*  Program Counter (TODO: CIA?)  */
 
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.4 2005-01-30 19:16:26 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.5 2005-01-31 05:45:52 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -38,7 +38,9 @@
 
 #include "cpu.h"
 #include "cpu_ppc.h"
+#include "machine.h"
 #include "misc.h"
+#include "symbol.h"
 
 
 /*
@@ -75,6 +77,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 
 	memset(cpu, 0, sizeof(struct cpu));
 	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
+	cpu->name               = cpu->cd.ppc.cpu_type.name;
 	cpu->mem                = mem;
 	cpu->machine            = machine;
 	cpu->cpu_id             = cpu_id;
@@ -128,6 +131,86 @@ void ppc_cpu_list_available_types(void)
 		i++;
 		if ((i % 6) == 0 || tdefs[i].name == NULL)
 			debug("\n");
+	}
+}
+
+
+/*
+ *  ppc_cpu_dumpinfo():
+ */
+void ppc_cpu_dumpinfo(struct cpu *cpu)
+{
+	struct ppc_cpu_type_def *ct = &cpu->cd.ppc.cpu_type;
+
+	debug(" (");
+
+	debug("I+D = %i+%i KB",
+	    (1 << ct->icache_shift) / 1024,
+	    (1 << ct->dcache_shift) / 1024);
+
+	if (ct->l2cache_shift) {
+		int kb = (1 << ct->l2cache_shift) / 1024;
+		debug(", L2 = %i %cB",
+		    kb >= 1024? kb / 1024 : kb,
+		    kb >= 1024? 'M' : 'K');
+	}
+
+	debug(")\n");
+}
+
+
+/*
+ *  ppc_cpu_register_dump():
+ *
+ *  Dump cpu registers in a relatively readable format.
+ *
+ *  gprs: set to non-zero to dump GPRs and hi/lo/pc
+ *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
+ */
+void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+{
+	char *symbol;
+	uint64_t offset;
+	int i, x = cpu->cpu_id;
+
+	if (gprs) {
+		/*  Special registers (pc, ...) first:  */
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->cd.ppc.pc, &offset);
+
+		debug("cpu%i: pc  = 0x%016llx", x, (long long)cpu->cd.ppc.pc);
+		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
+
+		debug("cpu%i: lr  = 0x%016llx  cr = 0x%08x\n", x,
+		    (long long)cpu->cd.ppc.lr, (int)cpu->cd.ppc.cr);
+
+		debug("cpu%i: ctr = 0x%016llx\n", x,
+		    (long long)cpu->cd.ppc.ctr);
+
+		for (i=0; i<PPC_NGPRS; i++) {
+			if ((i % 2) == 0)
+				debug("cpu%i:", x);
+			debug(" r%02i = 0x%016llx ", i,
+			    (long long)cpu->cd.ppc.gpr[i]);
+			if ((i % 2) == 1)
+				debug("\n");
+		}
+	}
+
+	if (coprocs) {
+		debug("cpu%i: xer = 0x%016llx  fpscr = 0x%08x\n", x,
+		    (long long)cpu->cd.ppc.xer, (int)cpu->cd.ppc.fpscr);
+
+		/*  TODO: show floating-point values :-)  */
+
+		for (i=0; i<PPC_NFPRS; i++) {
+			if ((i % 2) == 0)
+				debug("cpu%i:", x);
+			debug(" f%02i = 0x%016llx ", i,
+			    (long long)cpu->cd.ppc.fpr[i]);
+			if ((i % 2) == 1)
+				debug("\n");
+		}
 	}
 }
 

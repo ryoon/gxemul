@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.70 2005-01-30 19:01:55 debug Exp $
+ *  $Id: debugger.c,v 1.71 2005-01-31 05:45:52 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1017,7 +1017,7 @@ static void debugger_cmd_reg(struct machine *m, char *cmd_line)
 
 	for (i=0; i<m->ncpus; i++)
 		if (cpuid == -1 || i == cpuid)
-			cpu_register_dump(m->cpus[i], gprs, coprocs);
+			cpu_register_dump(m, m->cpus[i], gprs, coprocs);
 }
 
 
@@ -1181,7 +1181,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 
-		cpu_disassemble_instr(c, &buf[0], 0, addr, 0);
+		cpu_disassemble_instr(m, c, &buf[0], 0, addr, 0);
 
 		if (ctrl_c)
 			return;

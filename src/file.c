@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.58 2005-01-30 22:42:01 debug Exp $
+ *  $Id: file.c,v 1.59 2005-01-31 05:45:52 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -819,7 +819,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	Elf64_Ehdr hdr64;
 	FILE *f;
 	uint64_t eentry;
-	int len, i;
+	int len, i, ok, memory_rw_flags = NO_EXCEPTIONS;
 	int elf64, encoding, eflags;
 	int etype, emachine;
 	int ephnum, ephentsize, eshnum, eshentsize;
@@ -831,8 +831,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	Elf32_Sym sym32;
 	Elf64_Sym sym64;
 	int ofs;
-	int chunk_len = 1024;
-	int align_len;
+	int chunk_len = 1024, align_len;
 	char *symbol_strings = NULL; size_t symbol_length = 0;
 	Elf32_Sym *symbols_sym32 = NULL;  int n_symbols = 0;
 	Elf64_Sym *symbols_sym64 = NULL;
@@ -927,13 +926,29 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		exit(1);
 	}
 
-	if (emachine != EM_MIPS && emachine != EM_MIPS_RS3_LE) {
+	ok = 0;
+	switch (arch) {
+	case ARCH_MIPS:
+		switch (emachine) {
+		case EM_MIPS:
+		case EM_MIPS_RS3_LE:
+			ok = 1;
+		}
+		break;
+	case ARCH_PPC:
+		switch (emachine) {
+		case EM_PPC:
+			ok = 1;
+			memory_rw_flags |= PHYSICAL;
+		}
+	}
+	if (!ok) {
 		fprintf(stderr, "%s: this is a ", filename);
 		if (emachine >= 0 && emachine < N_ELF_MACHINE_TYPES)
 			fprintf(stderr, elf_machine_type[emachine]);
 		else
 			fprintf(stderr, "machine type '%i'", emachine);
-		fprintf(stderr, " ELF binary, not MIPS!\n");
+		fprintf(stderr, " ELF binary!\n");
 		exit(1);
 	}
 
@@ -1058,7 +1073,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					size_t len_to_copy;
 					len_to_copy = (i + align_len) <= len? align_len : len - i;
 					memory_rw(m->cpus[0], mem, p_vaddr + ofs, &ch[i],
-					    len_to_copy, MEM_WRITE, NO_EXCEPTIONS);
+					    len_to_copy, MEM_WRITE, memory_rw_flags);
 					ofs += align_len;
 					i += align_len;
 				}

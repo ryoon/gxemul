@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.274 2005-01-30 19:01:54 debug Exp $
+ *  $Id: cpu.c,v 1.275 2005-01-31 05:45:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -38,6 +38,7 @@
 #include "cpu.h"
 #include "cpu_mips.h"
 #include "cpu_ppc.h"
+#include "machine.h"
 #include "misc.h"
 
 
@@ -76,7 +77,13 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
  */
 void cpu_show_full_statistics(struct machine *m)
 {
-	cpu_show_full_statistics(m);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_show_full_statistics(m);
+		break;
+	default:
+		fatal("cpu_show_full_statistics(): not for PPC yet\n");
+	}
 }
 
 
@@ -91,7 +98,13 @@ void cpu_show_full_statistics(struct machine *m)
  */
 void cpu_tlbdump(struct machine *m, int x, int rawflag)
 {
-	mips_cpu_tlbdump(m, x, rawflag);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_tlbdump(m, x, rawflag);
+		break;
+	default:
+		fatal("cpu_tlbdump(): not for PPC yet\n");
+	}
 }
 
 
@@ -103,7 +116,14 @@ void cpu_tlbdump(struct machine *m, int x, int rawflag)
 void cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register)
 {
-	mips_cpu_register_match(m, name, writeflag, valuep, match_register);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_register_match(m, name, writeflag,
+		    valuep, match_register);
+		break;
+	default:
+		fatal("cpu_register_match(): not for PPC yet\n");
+	}
 }
 
 
@@ -113,10 +133,16 @@ void cpu_register_match(struct machine *m, char *name,
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  */
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-        int running, uint64_t addr, int bintrans)
+void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
+	unsigned char *instr, int running, uint64_t addr, int bintrans)
 {
-	mips_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_disassemble_instr(cpu, instr, running, addr, bintrans);
+		break;
+	default:
+		fatal("cpu_disassemble_instr(): not for PPC yet\n");
+	}
 }
 
 
@@ -128,9 +154,19 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
  *  gprs: set to non-zero to dump GPRs. (CPU dependant.)
  *  coprocs: set bit 0..x to dump registers in coproc 0..x. (CPU dependant.)
  */
-void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
+void cpu_register_dump(struct machine *m, struct cpu *cpu,
+	int gprs, int coprocs)
 {
-	mips_cpu_register_dump(cpu, gprs, coprocs);
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_register_dump(cpu, gprs, coprocs);
+		break;
+	case ARCH_PPC:
+		ppc_cpu_register_dump(cpu, gprs, coprocs);
+		break;
+	default:
+		fatal("cpu_register_dump(): ?\n");
+	}
 }
 
 
@@ -166,7 +202,13 @@ int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
  */
 void cpu_run_init(struct emul *emul, struct machine *machine)
 {
-	mips_cpu_run_init(emul, machine);
+	switch (machine->arch) {
+	case ARCH_MIPS:
+		mips_cpu_run_init(emul, machine);
+		break;
+	default:
+		fatal("cpu_run_init(): not for PPC yet\n");
+	}
 }
 
 
@@ -180,7 +222,14 @@ void cpu_run_init(struct emul *emul, struct machine *machine)
  */
 int cpu_run(struct emul *emul, struct machine *machine)
 {
-	return mips_cpu_run(emul, machine);
+	switch (machine->arch) {
+	case ARCH_MIPS:
+		return mips_cpu_run(emul, machine);
+		break;
+	default:
+		fatal("cpu_run(): not for PPC yet\n");
+		return 0;
+	}
 }
 
 
@@ -192,18 +241,37 @@ int cpu_run(struct emul *emul, struct machine *machine)
  */                             
 void cpu_run_deinit(struct emul *emul, struct machine *machine)
 {
-	mips_cpu_run_deinit(emul, machine);
+	switch (machine->arch) {
+	case ARCH_MIPS:
+		mips_cpu_run_deinit(emul, machine);
+		break;
+	default:
+		fatal("cpu_run_deinit(): not for PPC yet\n");
+	}
 }
 
 
 /*
  *  cpu_dumpinfo():
  *
- *  Dumps info about a CPU using debug().
+ *  Dumps info about a CPU using debug(). "cpu0: CPUNAME, running" (or similar)
+ *  is outputed, and it is up to CPU dependant code to complete the line.
  */
-void cpu_dumpinfo(struct cpu *cpu)
+void cpu_dumpinfo(struct machine *m, struct cpu *cpu)
 {
-	mips_cpu_dumpinfo(cpu);
+	debug("cpu%i: %s, %s", cpu->cpu_id, cpu->name,
+	    cpu->running? "running" : "stopped");
+
+	switch (m->arch) {
+	case ARCH_MIPS:
+		mips_cpu_dumpinfo(cpu);
+		break;
+	case ARCH_PPC:
+		ppc_cpu_dumpinfo(cpu);
+		break;
+	default:
+		fatal("cpu_dumpinfo(): ?\n");
+	}
 }
 
 

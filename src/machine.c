@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.320 2005-01-30 22:42:01 debug Exp $
+ *  $Id: machine.c,v 1.321 2005-01-31 05:45:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4163,7 +4163,7 @@ void machine_dumpinfo(struct machine *m)
 		debug("PROM emulation disabled\n");
 
 	for (i=0; i<m->ncpus; i++)
-		cpu_dumpinfo(m->cpus[i]);
+		cpu_dumpinfo(m, m->cpus[i]);
 
 	if (m->ncpus > 1)
 		debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);

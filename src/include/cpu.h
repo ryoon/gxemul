@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.5 2005-01-30 14:06:43 debug Exp $
+ *  $Id: cpu.h,v 1.6 2005-01-31 05:45:51 debug Exp $
  *
  *  See cpu.c.
  */
@@ -58,6 +58,7 @@ struct cpu {
 	int		running;
 	int		bootstrap_cpu_flag;
 	int		cpu_id;
+	char		*name;
 
 	struct memory	*mem;
 	int		(*translate_address)(struct cpu *, uint64_t vaddr,
@@ -78,15 +79,16 @@ void cpu_show_full_statistics(struct machine *m);
 void cpu_tlbdump(struct machine *m, int x, int rawflag);
 void cpu_register_match(struct machine *m, char *name, 
 	int writeflag, uint64_t *valuep, int *match_register);
-void cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
-void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
-        int running, uint64_t addr, int bintrans);
+void cpu_register_dump(struct machine *m, struct cpu *cpu,
+	int gprs, int coprocs);
+void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
+	unsigned char *instr, int running, uint64_t addr, int bintrans);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void cpu_run_init(struct emul *emul, struct machine *machine);
 int cpu_run(struct emul *emul, struct machine *machine);
 void cpu_run_deinit(struct emul *emul, struct machine *machine);
-void cpu_dumpinfo(struct cpu *cpu);
+void cpu_dumpinfo(struct machine *m, struct cpu *cpu);
 void cpu_list_available_types(void);
 
 

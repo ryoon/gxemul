@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.5 2005-01-30 19:01:55 debug Exp $
+ *  $Id: cpu_mips.c,v 1.6 2005-01-31 05:45:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -135,6 +135,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 
 	memset(cpu, 0, sizeof(struct cpu));
 	cpu->cd.mips.cpu_type   = cpu_type_defs[found];
+	cpu->name               = cpu->cd.mips.cpu_type.name;
 	cpu->mem                = mem;
 	cpu->machine            = machine;
 	cpu->cpu_id             = cpu_id;
@@ -4366,9 +4367,6 @@ void mips_cpu_run_deinit(struct emul *emul, struct machine *machine)
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
 	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
-
-	debug("cpu%i: %s, %s", cpu->cpu_id, ct->name,
-	    cpu->running? "running" : "stopped");
 
 	debug(" (%i-bit ", (ct->isa_level < 3 ||
 	    ct->isa_level == 32)? 32 : 64);

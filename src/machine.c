@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.97 2004-06-14 23:23:34 debug Exp $
+ *  $Id: machine.c,v 1.98 2004-06-14 23:49:03 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1480,8 +1480,10 @@ void machine_init(struct memory *mem)
 				sgi_ip20_data = dev_sgi_ip20_init(cpus[bootstrap_cpu], mem, DEV_SGI_IP20_BASE);
 
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
-
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);
+
+				/*  something at 0x1fa00000, perhaps 0x200 bytes long  */
+				/*  IP20 probably has a gio bus  */
 
 				break;
 			case 21:

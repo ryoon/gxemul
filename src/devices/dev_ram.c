@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.12 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_ram.c,v 1.13 2005-02-11 09:53:48 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -67,7 +67,8 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef RAM_DEBUG
 	if (writeflag==MEM_READ) {
-		debug("[ ram: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
+		debug("[ ram: read from 0x%x, len=%i ]\n",
+		    (int)relative_addr, (int)len);
 	} else {
 		int i;
 		debug("[ ram: write to 0x%x:", (int)relative_addr);
@@ -143,6 +144,7 @@ void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
 		exit(1);
 	}
 
-	memory_device_register(mem, "ram", baseaddr, length, dev_ram_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "ram", baseaddr, length,
+	    dev_ram_access, d, MEM_DEFAULT, NULL);
 }
 

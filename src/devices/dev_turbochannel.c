@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.38 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.39 2005-02-11 09:53:48 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -74,32 +74,57 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 	relative_addr += d->rom_skip;
 
 	if (writeflag == MEM_READ) {
-		debug("[ turbochannel: read from slot %i addr 0x%08lx (", d->slot_nr, (long)relative_addr);
+		debug("[ turbochannel: read from slot %i addr 0x%08lx (",
+		    d->slot_nr, (long)relative_addr);
 
 		relative_addr &= 0x7fff;
 
 		switch (relative_addr) {
-		case 0x3e0:  odata = 0x00000001; debug("ROM width"); break;
-		case 0x3e4:  odata = 0x00000004; debug("ROM stride"); break;
-		case 0x3e8:  odata = 0x00000001; debug("ROM size"); break;	/*  8KB * romsize  */
-		case 0x3ec:  odata = 0x00000001; debug("slot size"); break;	/*  4MB * slotsize  */
-
-		case 0x3f0:  odata = 0x55555555; debug("ROM signature byte 0"); break;
-		case 0x3f4:  odata = 0x00000000; debug("ROM signature byte 1"); break;
-		case 0x3f8:  odata = 0xaaaaaaaa; debug("ROM signature byte 2"); break;
-		case 0x3fc:  odata = 0xffffffff; debug("ROM signature byte 3"); break;
-
-		case 0x470:  odata = 0x00000000; debug("flags"); break;		/*  0=nothing, 1=parity  */
-
+		case 0x3e0:
+			odata = 0x00000001; debug("ROM width");
+			break;
+		case 0x3e4:
+			odata = 0x00000004; debug("ROM stride");
+			break;
+		case 0x3e8:
+			/*  8KB * romsize  */
+			odata = 0x00000001; debug("ROM size");
+			break;
+		case 0x3ec:
+			/*  4MB * slotsize  */
+			odata = 0x00000001; debug("slot size");
+			break;
+		case 0x3f0:
+			odata = 0x55555555; debug("ROM signature byte 0");
+			break;
+		case 0x3f4:
+			odata = 0x00000000; debug("ROM signature byte 1");
+			break;
+		case 0x3f8:
+			odata = 0xaaaaaaaa; debug("ROM signature byte 2");
+			break;
+		case 0x3fc:
+			odata = 0xffffffff; debug("ROM signature byte 3");
+			break;
+		case 0x470:
+			/*  0=nothing, 1=parity  */
+			odata = 0x00000000; debug("flags"); break;
 		default:
 			if (relative_addr >= 0x400 && relative_addr < 0x420)
-				odata = d->card_firmware_version[(relative_addr-0x400)/4];
-			else if (relative_addr >= 0x420 && relative_addr < 0x440)
-				odata = d->card_vendor_name[(relative_addr-0x420)/4];
-			else if (relative_addr >= 0x440 && relative_addr < 0x460)
-				odata = d->card_module_name[(relative_addr-0x440)/4];
-			else if (relative_addr >= 0x460 && relative_addr < 0x470)
-				odata = d->card_firmware_type[(relative_addr-0x460)/4];
+				odata = d->card_firmware_version[
+				    (relative_addr-0x400)/4];
+			else if (relative_addr >= 0x420 &&
+			    relative_addr < 0x440)
+				odata = d->card_vendor_name[
+				    (relative_addr-0x420)/4];
+			else if (relative_addr >= 0x440 &&
+			    relative_addr < 0x460)
+				odata = d->card_module_name[
+				    (relative_addr-0x440)/4];
+			else if (relative_addr >= 0x460 &&
+			    relative_addr < 0x470)
+				odata = d->card_firmware_type[
+				    (relative_addr-0x460)/4];
 			else {
 				debug("?");
 			}
@@ -128,7 +153,8 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
 
 		debug(") ]\n");
 	} else {
-		/*  debug("[ turbochannel: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
+		/*  debug("[ turbochannel: write to  0x%08lx: 0x%08x ]\n",
+		    (long)relative_addr, (int)idata);  */
 	}
 
 	if (writeflag == MEM_READ)
@@ -188,10 +214,11 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 	/*
 	 *  According to NetBSD/pmax:
 	 *
-	 *  PMAD-AA:  le1 at tc0 slot 2 offset 0x0: address 00:00:00:00:00:00  (ethernet)
+	 *  PMAD-AA:  le1 at tc0 slot 2 offset 0x0: address 00:00:00:00:00:00
 	 *  PMAG-AA:  mfb0 at tc0 slot 2 offset 0x0: 1280x1024x8
-	 *  PMAG-BA:  cfb0 at tc0 slot 2 offset 0x0cfb0: 1024x864x8            (vdac init failed)
-	 *  PMAG-CA:  px0 at tc0 slot 2 offset 0x0: 2D, 4x1 stamp, 8 plane     (PMAG-DA,EA,FA,FB are also pixelstamps)
+	 *  PMAG-BA:  cfb0 at tc0 slot 2 offset 0x0cfb0: 1024x864x8
+	 *  PMAG-CA:  px0 at tc0 slot 2 offset 0x0: 2D, 4x1 stamp, 8 plane
+	 *	(PMAG-DA,EA,FA,FB are also pixelstamps)
 	 *  PMAG-DV:  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8
 	 *  PMAG-JA:  "truecolor" in Ultrix
 	 *  PMAGB-BA: sfb0 at tc0 slot 0 offset 0x0: 0x0x8
@@ -217,9 +244,11 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 		    looks for the rom signature  */
 	} else if (strcmp(device_name, "PMAG-AA")==0) {
 		/*  mfb in NetBSD  */
-		fb = dev_fb_init(machine, mem, baseaddr + VFB_MFB_VRAM, VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name, 1);
-		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);	/*  palette  */
-		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);	/*  cursor  */
+		fb = dev_fb_init(machine, mem, baseaddr + VFB_MFB_VRAM,
+		    VFB_GENERIC, 1280, 1024, 2048, 1024, 8, device_name, 1);
+		/*  bt455 = palette, bt431 = cursor  */
+		dev_bt455_init(mem, baseaddr + VFB_MFB_BT455, fb);
+		dev_bt431_init(mem, baseaddr + VFB_MFB_BT431, fb, 8);
 		rom_offset = 0;
 	} else if (strcmp(device_name, "PMAG-BA")==0) {
 		/*  cfb in NetBSD  */
@@ -250,16 +279,19 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 		dev_px_init(machine, mem, baseaddr, DEV_PX_TYPE_PXG, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-EA")==0) {
-		/*  pxg+ in NetBSD: TODO  (not supported by the kernel I've tried)  */
+		/*  pxg+ in NetBSD: TODO  (not supported by the kernel
+		    I've tried)  */
 		fatal("TODO (see dev_turbochannel.c)\n");
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-FA")==0) {
 		/*  "pxg+ Turbo" in NetBSD  */
-		dev_px_init(machine, mem, baseaddr, DEV_PX_TYPE_PXGPLUSTURBO, irq);
+		dev_px_init(machine, mem, baseaddr,
+		    DEV_PX_TYPE_PXGPLUSTURBO, irq);
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-DV")==0) {
 		/*  xcfb in NetBSD: TODO  */
-		fb = dev_fb_init(machine, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV", 1);
+		fb = dev_fb_init(machine, mem, baseaddr + 0x2000000,
+		    VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV", 1);
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
 		rom_offset = 0x3c0000;
 	} else if (strcmp(device_name, "PMAG-JA")==0) {
@@ -268,21 +300,28 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */
-		fb = dev_fb_init(machine, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO", 1);
+		fb = dev_fb_init(machine, mem, baseaddr + 0x200000,
+		    VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO", 1);
 		/*  TODO: bt463 at offset 0x040000, not bt459  */
-		dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, fb, 8, irq, 0);		/*  TODO: type  */
-		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);				/*  cursor  */
+		dev_bt459_init(machine, mem, baseaddr + 0x40000, 0,
+		    fb, 8, irq, 0);		/*  TODO: type  */
+		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);  /*  cursor  */
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {
-		/*  If this slot is empty, then occupy the entire 4MB slot address range:  */
+		/*  If this slot is empty, then occupy the entire
+		    4MB slot address range:  */
 		rom_offset = 0;
 		rom_length = 4*1048576;
-	} else
-		fatal("warning: unknown TURBOchannel device name \"%s\"\n", device_name);
+	} else {
+		fatal("warning: unknown TURBOchannel device name \"%s\"\n",
+		    device_name);
+	}
 
 	d->rom_skip = rom_skip;
 
-	memory_device_register(mem, "turbochannel", baseaddr + rom_offset + rom_skip,
-	    rom_length - rom_skip, dev_turbochannel_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "turbochannel",
+	    baseaddr + rom_offset + rom_skip,
+	    rom_length - rom_skip, dev_turbochannel_access, d,
+	    MEM_DEFAULT, NULL);
 }
 

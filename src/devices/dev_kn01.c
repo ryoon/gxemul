@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.5 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_kn01.c,v 1.6 2005-02-11 09:53:48 debug Exp $
  *  
  *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
  *  and VDAC.
@@ -63,7 +63,7 @@ struct vdac_data {
 	unsigned char	cur_read_addr;
 	unsigned char	cur_write_addr;
 
-	int		sub_color;		/*  subcolor to be written next. 0, 1, or 2  */
+	int		sub_color;	/*  subcolor. 0, 1, or 2  */
 	unsigned char	cur_rgb[3];
 
 	unsigned char	*rgb_palette;		/*  ptr to 256 * 3 (r,g,b)  */
@@ -71,7 +71,7 @@ struct vdac_data {
 	unsigned char	cur_read_addr_overlay;
 	unsigned char	cur_write_addr_overlay;
 
-	int		sub_color_overlay;	/*  subcolor to be written next. 0, 1, or 2  */
+	int		sub_color_overlay;	/*  subcolor: 0, 1, or 2  */
 	unsigned char	cur_rgb_overlay[3];
 
 	unsigned char	rgb_palette_overlay[16 * 3];	/*  16 * 3 (r,g,b)  */
@@ -95,7 +95,8 @@ int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Read:  */
 	if (len != 2 || relative_addr != 0) {
-		fatal("[ kn01_csr: trying to read something which is not the first half-word of the csr ]");
+		fatal("[ kn01_csr: trying to read something which is not "
+		    "the first half-word of the csr ]");
 	}
 
 	csr = k->csr;
@@ -140,14 +141,16 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem,
 			if (d->sub_color > 2) {
 				/*  (Only update for color, not mono mode)  */
 				if (d->color_fb_flag)
-					memcpy(d->rgb_palette + 3*d->cur_write_addr, d->cur_rgb, 3);
+					memcpy(d->rgb_palette +
+					    3*d->cur_write_addr, d->cur_rgb, 3);
 
 				d->sub_color = 0;
 				d->cur_write_addr ++;
 			}
 		} else {
 			if (d->sub_color == 0) {
-				memcpy(d->cur_rgb, d->rgb_palette + 3*d->cur_read_addr, 3);
+				memcpy(d->cur_rgb, d->rgb_palette +
+				    3 * d->cur_read_addr, 3);
 			}
 			data[0] = d->cur_rgb[d->sub_color];
 			d->sub_color++;
@@ -183,7 +186,9 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem,
 			if (d->sub_color_overlay > 2) {
 				/*  (Only update for color, not mono mode)  */
 				if (d->color_fb_flag)
-					memcpy(d->rgb_palette_overlay + 3*d->cur_write_addr_overlay, d->cur_rgb_overlay, 3);
+					memcpy(d->rgb_palette_overlay +
+					    3 * d->cur_write_addr_overlay,
+					    d->cur_rgb_overlay, 3);
 
 				d->sub_color_overlay = 0;
 				d->cur_write_addr_overlay ++;
@@ -192,7 +197,9 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem,
 			}
 		} else {
 			if (d->sub_color_overlay == 0) {
-				memcpy(d->cur_rgb_overlay, d->rgb_palette_overlay + 3*d->cur_read_addr_overlay, 3);
+				memcpy(d->cur_rgb_overlay,
+				    d->rgb_palette_overlay +
+				    3 * d->cur_read_addr_overlay, 3);
 			}
 			data[0] = d->cur_rgb_overlay[d->sub_color_overlay];
 			d->sub_color_overlay++;
@@ -215,10 +222,12 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ vdac: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, data[0]);
+			debug("[ vdac: unimplemented write to address 0x%x,"
+			    " data=0x%02x ]\n", (int)relative_addr, data[0]);
 			d->vdac_reg[relative_addr] = data[0];
 		} else {
-			debug("[ vdac: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ vdac: unimplemented read from address 0x%x"
+			    " ]\n", (int)relative_addr);
 			data[0] = d->vdac_reg[relative_addr];
 		}
 	}
@@ -268,5 +277,4 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb)
 	memory_device_register(mem, "kn01_csr", baseaddr,
 	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k, MEM_DEFAULT, NULL);
 }
-
 

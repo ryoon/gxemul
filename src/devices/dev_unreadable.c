@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.7 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_unreadable.c,v 1.8 2005-02-11 09:53:48 debug Exp $
  *  
  *  A dummy device which returns memory read errors (unreadable),
  *  a device which returns random data (random), and a device which

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.8 2005-01-23 13:43:01 debug Exp $
+ *  $Id: bus_pci.c,v 1.9 2005-02-11 09:53:48 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -47,9 +47,9 @@
 /*
  *  bus_pci_access():
  *
- *  relative_addr should be either BUS_PCI_ADDR or BUS_PCI_DATA.  The uint64_t pointed
- *  to by data should contain the word to be written to the pci bus, or a placeholder
- *  for information read from the bus.
+ *  relative_addr should be either BUS_PCI_ADDR or BUS_PCI_DATA. The uint64_t
+ *  pointed to by data should contain the word to be written to the pci bus,
+ *  or a placeholder for information read from the bus.
  *
  *  Returns 1 if ok, 0 on error.
  */
@@ -65,31 +65,37 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	case BUS_PCI_ADDR:
 		if (writeflag == MEM_WRITE) {
-			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx ]\n", (long long)*data);
+			debug("[ bus_pci: write to  PCI ADDR: data = 0x%016llx"
+			    " ]\n", (long long)*data);
 			pci_data->pci_addr = *data;
 		} else {
-			debug("[ bus_pci: read from PCI ADDR (data = 0x%016llx) ]\n", (long long)pci_data->pci_addr);
+			debug("[ bus_pci: read from PCI ADDR (data = "
+			    "0x%016llx) ]\n", (long long)pci_data->pci_addr);
 			*data = pci_data->pci_addr;
 		}
 		break;
 	case BUS_PCI_DATA:
 		if (writeflag == MEM_WRITE) {
-			debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n", (long long)*data);
+			debug("[ bus_pci: write to PCI DATA: data = "
+			    "0x%016llx ]\n", (long long)*data);
 			if (*data == 0xffffffffULL)
 				pci_data->last_was_write_ffffffff = 1;
 		} else {
-			/*  Get the bus, device, and function numbers from the address:  */
+			/*  Get the bus, device, and function numbers from
+			    the address:  */
 			bus        = (pci_data->pci_addr >> 16) & 0xff;
 			device     = (pci_data->pci_addr >> 11) & 0x1f;
 			function   = (pci_data->pci_addr >> 8)  & 0x7;
 			registernr = (pci_data->pci_addr)       & 0xff;
 
-			/*  Scan through the linked list of pci_device entries.  */
+			/*  Scan through the list of pci_device entries.  */
 			dev = pci_data->first_device;
 			found = NULL;
 
 			while (dev != NULL && found == NULL) {
-				if (dev->bus == bus && dev->function == function && dev->device == device)
+				if (dev->bus == bus &&
+				    dev->function == function &&
+				    dev->device == device)
 					found = dev;
 				dev = dev->next;
 			}
@@ -104,25 +110,30 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 			*data = 0;
 
-			if (pci_data->last_was_write_ffffffff && registernr >= 0x10 && registernr <= 0x24)
-				*data = 0x00400000 - 1;		/*  TODO:  real length!!!  */
-			else
-			if (found->read_register != NULL)
+			if (pci_data->last_was_write_ffffffff &&
+			    registernr >= 0x10 && registernr <= 0x24) {
+				/*  TODO:  real length!!!  */
+				*data = 0x00400000 - 1;
+			} else if (found->read_register != NULL)
 				*data = found->read_register(registernr);
 
 			pci_data->last_was_write_ffffffff = 0;
 
-			debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx (bus %i, device %i, function %i, register 0x%02x): 0x%08lx ]\n",
-			    (long)pci_data->pci_addr, bus, device, function, registernr, (long)*data);
+			debug("[ bus_pci: read from PCI DATA, addr = 0x%08lx "
+			    "(bus %i, device %i, function %i, register "
+			    "0x%02x): 0x%08lx ]\n", (long)pci_data->pci_addr,
+			    bus, device, function, registernr, (long)*data);
 		}
 
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ bus_pci: read from unimplemented addr 0x%x ]\n", (int)relative_addr);
+			debug("[ bus_pci: read from unimplemented addr "
+			    "0x%x ]\n", (int)relative_addr);
 			*data = 0;
 		} else {
-			debug("[ bus_pci: write to unimplemented addr 0x%x:", (int)relative_addr);
+			debug("[ bus_pci: write to unimplemented addr "
+			    "0x%x:", (int)relative_addr);
 		}
 	}
 
@@ -148,8 +159,8 @@ void bus_pci_add(struct machine *machine, struct pci_data *pci_data,
 		if (new_device->bus == bus &&
 		    new_device->device == device &&
 		    new_device->function == function) {
-			fatal("bus_pci_add(): (bus %i, device %i, function %i) already in use\n",
-			    bus, device, function);
+			fatal("bus_pci_add(): (bus %i, device %i, function"
+			    " %i) already in use\n", bus, device, function);
 			return;
 		}
 		new_device = new_device->next;

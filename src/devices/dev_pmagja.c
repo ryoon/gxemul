@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.12 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.13 2005-02-11 09:53:48 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -36,10 +36,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
+
 
 #define	XSIZE		1280
 #define	YSIZE		1024
@@ -84,7 +85,8 @@ int i;
 for (i=0; i<len; i++)
   if (data[i] != 0 && data[i] != 1 && data[i]!=0xff)
 	if (writeflag)
-		fatal("[ pmagja: write to addr 0x%08llx: 0x%08llx ]\n", (long long)relative_addr, (long long)idata);
+		fatal("[ pmagja: write to addr 0x%08llx: 0x%08llx ]\n",
+		    (long long)relative_addr, (long long)idata);
 }
 #endif
 
@@ -92,10 +94,12 @@ for (i=0; i<len; i++)
 	case 0x0800c4:		/*  pip offset  */
 		if (writeflag==MEM_READ) {
 			odata = d->pip_offset;
-			debug("[ pmagja: read from pip offset: 0x%08llx ]\n", (long long)odata);
+			debug("[ pmagja: read from pip offset: 0x%08llx ]\n",
+			    (long long)odata);
 		} else {
 			d->pip_offset = idata;
-			debug("[ px: write to pip offset: 0x%08llx ]\n", (long long)idata);
+			debug("[ px: write to pip offset: 0x%08llx ]\n",
+			    (long long)idata);
 		}
 		break;
 	default:
@@ -110,23 +114,30 @@ for (i=0; i<len; i++)
 
 				if (writeflag) {
 					d->pixeldata[x + y*XSIZE] = data[i];
-					newdata[0] = d->vfb_data->rgb_palette[data[i] * 3 + 0];
-					newdata[1] = d->vfb_data->rgb_palette[data[i] * 3 + 1];
-					newdata[2] = d->vfb_data->rgb_palette[data[i] * 3 + 2];
-					dev_fb_access(cpu, d->fb_mem, (x + y*XSIZE) * 3, newdata, 3, writeflag, d->vfb_data);
+					newdata[0] = d->vfb_data->rgb_palette[
+					    data[i] * 3 + 0];
+					newdata[1] = d->vfb_data->rgb_palette[
+					    data[i] * 3 + 1];
+					newdata[2] = d->vfb_data->rgb_palette[
+					    data[i] * 3 + 2];
+					dev_fb_access(cpu, d->fb_mem, (x +
+					    y * XSIZE) * 3, newdata, 3,
+					    writeflag, d->vfb_data);
 				} else {
 					data[i] = d->pixeldata[x + y*XSIZE];
 				}
 			}
 			/*  Return success.  */
 			return 1;
-		} else if (relative_addr >= 0x100000 && relative_addr < 0x200000) {
+		} else if (relative_addr >= 0x100000 &&
+		    relative_addr < 0x200000) {
 			/*  24-bit access:  */
 #if 0
 {
 	if (writeflag)
 	    if (idata != 0)
-		fatal("[ pmagja: write to addr 0x%08llx: 0x%08llx ]\n", (long long)relative_addr, (long long)idata);
+		fatal("[ pmagja: write to addr 0x%08llx: 0x%08llx ]\n",
+		    (long long)relative_addr, (long long)idata);
 }
 #endif
 			int x, y, ofs;
@@ -151,7 +162,9 @@ for (i=0; i<len; i++)
 					if (ctype == 0xf)
 						data[2] = 255;
 
-					res = dev_fb_access(cpu, d->fb_mem, ofs*3, data, 3, MEM_WRITE, d->vfb_data);
+					res = dev_fb_access(cpu, d->fb_mem,
+					    ofs * 3, data, 3, MEM_WRITE,
+					    d->vfb_data);
 					ofs ++;
 				}
 			}
@@ -160,9 +173,13 @@ for (i=0; i<len; i++)
 		} else {
 			/*  Unknown:  */
 			if (writeflag==MEM_READ) {
-				fatal("[ pmagja: read from addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)odata);
+				fatal("[ pmagja: read from addr 0x%x: "
+				    "0x%llx ]\n", (int)relative_addr,
+				    (long long)odata);
 			} else {
-				fatal("[ pmagja: write to addr 0x%x: 0x%llx ]\n", (int)relative_addr, (long long)idata);
+				fatal("[ pmagja: write to addr 0x%x: "
+				    "0x%llx ]\n", (int)relative_addr,
+				    (long long)idata);
 			}
 		}
 	}
@@ -173,7 +190,8 @@ for (i=0; i<len; i++)
 #ifdef JA_DEBUG
 /*
 	if (!writeflag)
-		fatal("[ pmagja: read from addr 0x%08llx: 0x%08llx ]\n", (long long)relative_addr, (long long)odata);
+		fatal("[ pmagja: read from addr 0x%08llx: 0x%08llx ]\n",
+		    (long long)relative_addr, (long long)odata);
 */
 #endif
 
@@ -211,10 +229,12 @@ void dev_pmagja_init(struct machine *machine, struct memory *mem,
 	}
 
 	/*  TODO: not bt459, but a bt463:  */
-	dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, d->vfb_data, 8, irq_nr, 0);	/*  palette  (TODO: type)  */
-	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);			/*  cursor  */
+	dev_bt459_init(machine, mem, baseaddr + 0x40000, 0, d->vfb_data, 8,
+	    irq_nr, 0);	/*  palette  (TODO: type)  */
+	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);  /*  cursor  */
 
 	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,
-	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d, MEM_DEFAULT, NULL);
+	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d,
+	    MEM_DEFAULT, NULL);
 }
 

@@ -2,7 +2,7 @@
 #define	SYMBOL_H
 
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.h,v 1.3 2005-01-09 01:55:28 debug Exp $
+ *  $Id: symbol.h,v 1.4 2005-02-11 09:53:49 debug Exp $
  *
  *  Symbol handling routines.
  */
@@ -61,5 +61,6 @@ void add_symbol_name(struct symbol_context *, uint64_t addr,
 void symbol_readfile(struct symbol_context *, char *fname);
 void symbol_recalc_sizes(struct symbol_context *);
 void symbol_init(struct symbol_context *);
+
 
 #endif	/*  SYMBOL_H  */

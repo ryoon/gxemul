@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.15 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_kn02.c,v 1.16 2005-02-11 09:53:48 debug Exp $
  *  
  *  KN02 stuff ("3MAX", DECstation type 2).  See include/dec_kn02.h for more
  *  details.
@@ -79,9 +79,11 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ kn02: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ kn02: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ kn02: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ kn02: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -95,7 +97,8 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_kn02_init():
  */
-struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct kn02_csr *d;
 

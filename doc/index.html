@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.82 2004-08-01 11:07:47 debug Exp $
+$Id: index.html,v 1.83 2004-08-05 14:48:46 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -120,7 +120,7 @@ The code I have written is released under a 2-clause BSD-style license
 <p>
 Apart from the code I have written, some files are copied from other sources such
 as NetBSD, for example header files containing symbolic names of bitfields in device
-registers. They are also covered by similar licences, but with some additional
+registers. They are also covered by similar licenses, but with some additional
 clauses. Please check individual files if you plan to reuse code from mips64emul.
 
 
@@ -145,13 +145,13 @@ emulation works for these is generally not very high.
 </ul>
 <p>
 Some more notes about the list above:  The machines above all have 64-bit
-capable CPUs, except early DECstations models. There were upgrades from
-R3000 to R4000 available for some DECstations, but I think Ultrix was still
+capable CPUs, except early DECstation models. There were upgrades from
+R3000 to R4000 available for some DECstation, but I think Ultrix was still
 running in 32-bit mode.  Unfortunately, even if most of these machine types have
 64-bit CPUs in them (or even 128-bit, the Playstation 2's R5900 CPU
 is a bit weird), operating systems often run in 32-bit mode on them.
 <p>
-There are other machines that use/used MIPS cpus, for example the
+There are other machines that use/used MIPS processors, for example the
 Playstation (1) and the Nintendo 64 game systems, but no free OS is ported
 to those platforms as far as I know, so they might not be too interesting
 to emulate.
@@ -187,7 +187,7 @@ Uncompress the .tar.gz file, and run
 This should work on any Unix-like system. (If not, then please mail me a
 bug report.)
 <p>
-The emulator's performance is highly dependant on both runtime settings
+The emulator's performance is highly dependent on both runtime settings
 and on compiler settings, so you might want to experiment with different
 CC and CFLAGS environment variable values.
 <p>
@@ -530,7 +530,7 @@ and a half on a 2.8GHz Xeon PC.
 
 <p>
 NOTE: It is also possible to install via ftp instead of using a CDROM image. 
-This is not much less akward, you still need the simpleroot filesystem 
+This is not much less awkward, you still need the simpleroot filesystem 
 image, and you still have to manually add the X11 install sets and set the 
 root password, and so on.
 
@@ -712,7 +712,7 @@ emulator like this:
 	$ <b>./mips64emul -G32 -CR5000 -q netbsd-INSTALL</b>
 </pre>
 -G signifies that we want SGI emulation, and 32 is the SGI-specific machine type.
--q supresses debug messages. If everything works like it should, you should see NetBSD's boot messages...
+-q suppresses debug messages. If everything works like it should, you should see NetBSD's boot messages...
 <pre>
 	$ <b>./mips64emul -G32 -CR5000 -q netbsd-INSTALL</b>
 	zs channel 0 had address 0xbfbd9830
@@ -1281,7 +1281,7 @@ These are approximately the commands that I used:
         >><b>e -x 0xbfc00000:0xbfffffff</b>       <i>Dump the PROM data</i>
 </pre>
 <p>
-Remember that DECstations are little endian, so if the dump data
+Remember that DECstation are little endian, so if the dump data
 looks like this:
 <pre>
         bfc00000:  0x0bf0007e

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.276 2004-10-25 01:54:02 debug Exp $
+$Id: HISTORY,v 1.277 2004-10-25 02:02:02 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1068,4 +1068,6 @@ HISTORY of mips64emul
 		Pica. :-)
 		Updates to the documentation.
 20041025	Working on ISA interrupts for PICA.
-		Adding an Olivetti M700 emulation mode (-A7).
+		Adding an Olivetti M700 emulation mode (-A7). Writing a
+		skeleton G364 framebuffer for M700, enough to show the Linux
+		penguin and some text.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.38 2004-06-23 23:47:38 debug Exp $
+ *  $Id: dev_fb.c,v 1.39 2004-06-28 20:33:20 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -517,6 +517,10 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		if (d->update_x2 >= d->visible_xsize)	d->update_x2 = d->visible_xsize - 1;
 		if (d->update_y1 >= d->visible_ysize)	d->update_y1 = d->visible_ysize - 1;
 		if (d->update_y2 >= d->visible_ysize)	d->update_y2 = d->visible_ysize - 1;
+
+		/*  Without these, we might miss the right most / bottom pixel:  */
+		d->update_x2 += (q - 1);
+		d->update_y2 += (q - 1);
 
 		d->update_x1 = d->update_x1 / q * q;
 		d->update_x2 = d->update_x2 / q * q;

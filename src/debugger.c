@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.46 2005-01-21 17:51:23 debug Exp $
+ *  $Id: debugger.c,v 1.47 2005-01-21 17:53:13 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -38,6 +38,8 @@
  *
  *	Nicer looking output of register dumps, floating point registers,
  *	etc. Warn about weird/invalid register contents.
+ *
+ *	Ctrl-C doesn't enter the debugger on some OSes (HP-UX?)...
  *
  *	Many other TODOs.
  */

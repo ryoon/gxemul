@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.36 2004-06-21 09:38:49 debug Exp $
+ *  $Id: main.c,v 1.37 2004-06-22 22:25:47 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -188,13 +188,13 @@ void usage(char *progname)
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
-	printf("  -G ss     try to emulate an SGI machine (-G 32 for IP32), CPU = R5000\n");
+	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
 	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
-	printf("  -j        ultrixboot-style emulation (instead of NetBSD-style, for DECstation)\n");
+	printf("  -j        ultrixboot-style emulation, instead of NetBSD-style, for DECstation\n");
 	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
@@ -211,8 +211,7 @@ void usage(char *progname)
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
-	printf("  -u x      userland-only (syscall) emulation; x=1 (NetBSD/pmax), x=2 (Ultrix/\n");
-	printf("            pmax), or x=3 (IRIX)\n");
+	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);

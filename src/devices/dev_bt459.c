@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.17 2004-06-28 23:40:22 debug Exp $
+ *  $Id: dev_bt459.c,v 1.18 2004-06-29 08:25:37 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -219,7 +219,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				/*  Cursor control register:  */
 				switch (idata & 0xff) {
 				case 0x00:	d->cursor_on = 0; break;
-				case 0xc0:	d->cursor_on = 1; break;
+				case 0xc0:
+				case 0xc1:	d->cursor_on = 1; break;
 				default:
 					fatal("[ bt459: unimplemented CCR value 0x%08x ]\n", idata);
 				}
@@ -361,8 +362,10 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH,
 	    dev_bt459_access, (void *)d);
-	memory_device_register(mem, "bt459_irq", baseaddr_irq, 0x10000,
-	    dev_bt459_irq_access, (void *)d);
+
+	if (baseaddr_irq != 0)
+		memory_device_register(mem, "bt459_irq", baseaddr_irq, 0x10000,
+		    dev_bt459_irq_access, (void *)d);
 
 	cpu_add_tickfunction(cpu, dev_bt459_tick, d, BT459_TICK_SHIFT);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.27 2004-04-17 20:55:11 debug Exp $
+ *  $Id: coproc.c,v 1.28 2004-04-24 22:38:12 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -515,16 +515,65 @@ fatal("xcontext 0x%016llx\n", tmp);
  */
 int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 {
-	int fd, fs, fmt;
+	int fd, fs, ft, fmt, cond, cc;
 
 	fmt = (function >> 21) & 31;
+	ft = (function >> 16) & 31;
 	fs = (function >> 11) & 31;
+	cc = (function >> 8) & 7;
 	fd = (function >> 6) & 31;
+	cond = (function >> 0) & 15;
+
+	/*  mul.fmt: Floating-point multiply  */
+	if ((function & 0x0000003f) == 0x00000002) {
+		if (instruction_trace)
+			debug("mul.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+
+		/*  TODO: mul  */
+
+		cp->reg[fd] = cp->reg[fs] * cp->reg[ft];	/*  TODO...  */
+
+		return 1;
+	}
+
+	/*  div.fmt: Floating-point divide  */
+	if ((function & 0x0000003f) == 0x00000003) {
+		if (instruction_trace)
+			debug("div.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+
+		/*  TODO: div  */
+
+		cp->reg[fd] = 0; /* cp->reg[fs] / cp->reg[ft];	TODO...  */
+
+		return 1;
+	}
+
+	/*  c.cond.fmt: Floating-point compare  */
+	if ((function & 0x000000f0) == 0x00000030) {
+		if (instruction_trace)
+			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
+
+		/*  TODO: compare  */
+
+		return 1;
+	}
 
 	/*  cvt.s.fmt: Convert to single floating-point  */
 	if ((function & 0x001f003f) == 0x00000020) {
 		if (instruction_trace)
 			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
+
+		/*  TODO: convert from fs (format fmt) to fd  */
+
+		cp->reg[fd] = cp->reg[fs];	/*  TODO...  */
+
+		return 1;
+	}
+
+	/*  cvt.d.fmt: Convert to double floating-point  */
+	if ((function & 0x001f003f) == 0x00000021) {
+		if (instruction_trace)
+			debug("cvt.d.%i\tr%i,r%i\n", fmt, fd, fs);
 
 		/*  TODO: convert from fs (format fmt) to fd  */
 
@@ -559,8 +608,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	rt = (function >> 16) & 31;
 	rd = (function >> 11) & 31;
 
-	if (cpnr < 2 && ((function & 0x03e007f8) == (COPz_MFCz << 21))
-	             || ((function & 0x03e007f8) == (COPz_DMFCz << 21))) {
+	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MFCz << 21))
+	              || ((function & 0x03e007f8) == (COPz_DMFCz << 21)))) {
 		if (instruction_trace)
 			debug("%s%i\tr%i,r%i\n", copz==COPz_DMFCz? "dmfc" : "mfc", cpnr, rt, rd);
 
@@ -575,8 +624,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		return;
 	}
 
-	if (cpnr < 2 && ((function & 0x03e007f8) == (COPz_MTCz << 21))
-	             || ((function & 0x03e007f8) == (COPz_DMTCz << 21))) {
+	if (cpnr < 2 && (((function & 0x03e007f8) == (COPz_MTCz << 21))
+	              || ((function & 0x03e007f8) == (COPz_DMTCz << 21)))) {
 		if (instruction_trace)
 			debug("%s%i\tr%i,r%i\n", copz==COPz_DMTCz? "dmtc" : "mtc", cpnr, rt, rd);
 
@@ -839,15 +888,24 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
 
+#if 0
 	if (fpu_function(cpu, cp, function))
 		return;
+#endif
 
 	if (instruction_trace)
 		debug("cop%i\t%08lx\n", cpnr, function);
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
-
+{
+ static int count=0;
+ count ++;
+/* if (count > 20)
+	exit(1);
+*/
+ return;
+}
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
 }
 

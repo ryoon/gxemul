@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.10 2004-04-06 02:30:39 debug Exp $
+ *  $Id: useremul.c,v 1.11 2004-06-21 15:11:28 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -47,6 +47,10 @@
  *	Memory allocation? mmap etc.
  *
  *	File descriptor (0,1,2) assumptions?
+ *
+ *
+ *  NOTE:  This module (useremul.c) is just a quick hack to see if
+ *         userland emulation works at all.
  */
 
 #include <stdio.h>
@@ -80,13 +84,6 @@ extern char *last_filename;
  *  Set up an emulated environment suitable for running
  *  userland code.  The program should already have been
  *  loaded into memory when this function is called.
- *
- *  TODO:  The only emulation so far is NetBSD/pmax, so
- *         when something more is added, this will have to
- *         be generalized.
- *
- *  TODO:  Most of this is just a quick hack to see if
- *         userland emulation works at all.
  */
 void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_argv)
 {

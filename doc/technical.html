@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.3 2004-07-03 15:52:58 debug Exp $
+$Id: technical.html,v 1.4 2004-07-03 15:57:56 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -95,9 +95,9 @@ translated into valid physical addresses via the TLB, and some memory
 references are not valid. Invalid memory references cause exceptions.
 
 <p>
-When an instruction is read from memory, the emulator checks which opcode 
-it contains and executes the instruction. Executing an instruction usually 
-involves reading some register and writing some register, or perhaps a 
+After an instruction has been read from memory, the emulator checks which
+opcode it contains and executes the instruction. Executing an instruction
+usually involves reading some register and writing some register, or perhaps a 
 load from memory (or a store to memory). The program counter is increased 
 for every instruction.
 
@@ -125,16 +125,17 @@ TODO.
 <a name="devices"></a>
 <h3>Emulation of hardware device</h3>
 
-Basically, each file in the device/ directory is responsible for one hardware 
+Each file in the device/ directory is responsible for one hardware
 device. These are used from src/machine.c, when initializing which hardware a
 particular machine model will be using.
-<p>
 (I'll be using the name 'foo' as the name of the device in all these
 examples.  This is pseudo code, it might need some modification to 
 actually compile and run.)
 <p>
+
 Each device should have the following:
 <p>
+
 <ul>
   <li>An init function in dev_foo.c. It would typically look
 	something like this:

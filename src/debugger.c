@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.25 2004-12-29 18:41:00 debug Exp $
+ *  $Id: debugger.c,v 1.26 2004-12-29 22:25:17 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -701,6 +701,15 @@ static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_opcodestats():
+ */
+static void debugger_cmd_opcodestats(struct emul *emul, char *cmd_line)
+{
+	cpu_show_full_statistics(emul);
+}
+
+
+/*
  *  debugger_cmd_print():
  */
 static void debugger_cmd_print(struct emul *emul, char *cmd_line)
@@ -1154,6 +1163,9 @@ static struct cmd cmds[] = {
 
 	{ "machine", "", 0, debugger_cmd_machine,
 		"print a summary of the machine being emulated" },
+
+	{ "opcodestats", "", 0, debugger_cmd_opcodestats,
+		"show opcode statistics" },
 
 	{ "print", "expr", 0, debugger_cmd_print,
 		"evaluate an expression without side-effects" },

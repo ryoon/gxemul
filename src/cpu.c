@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.223 2004-12-29 22:03:23 debug Exp $
+ *  $Id: cpu.c,v 1.224 2004-12-29 22:25:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -272,7 +272,7 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
  *
  *  Show detailed statistics on opcode usage on each cpu.
  */
-static void cpu_show_full_statistics(struct emul *emul, struct cpu **cpus)
+void cpu_show_full_statistics(struct emul *emul)
 {
 	int i, s1, s2;
 
@@ -284,24 +284,24 @@ static void cpu_show_full_statistics(struct emul *emul, struct cpu **cpus)
 	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i opcode statistics:\n", i);
 		for (s1=0; s1<N_HI6; s1++) {
-			if (cpus[i]->stats_opcode[s1] > 0)
+			if (emul->cpus[i]->stats_opcode[s1] > 0)
 				printf("  opcode %02x (%7s): %li\n", s1,
-				    hi6_names[s1], cpus[i]->stats_opcode[s1]);
+				    hi6_names[s1], emul->cpus[i]->stats_opcode[s1]);
 			if (s1 == HI6_SPECIAL)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (cpus[i]->stats__special[s2] > 0)
+					if (emul->cpus[i]->stats__special[s2] > 0)
 						printf("      special %02x (%7s): %li\n",
-						    s2, special_names[s2], cpus[i]->stats__special[s2]);
+						    s2, special_names[s2], emul->cpus[i]->stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
-					if (cpus[i]->stats__regimm[s2] > 0)
+					if (emul->cpus[i]->stats__regimm[s2] > 0)
 						printf("      regimm %02x (%7s): %li\n",
-						    s2, regimm_names[s2], cpus[i]->stats__regimm[s2]);
+						    s2, regimm_names[s2], emul->cpus[i]->stats__regimm[s2]);
 			if (s1 == HI6_SPECIAL2)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (cpus[i]->stats__special2[s2] > 0)
+					if (emul->cpus[i]->stats__special2[s2] > 0)
 						printf("      special2 %02x (%7s): %li\n",
-						    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
+						    s2, special2_names[s2], emul->cpus[i]->stats__special2[s2]);
 		}
 	}
 }
@@ -3838,7 +3838,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		cpu_show_cycles(emul, &starttime, ncycles, 1);
 
 	if (emul->show_opcode_statistics)
-		cpu_show_full_statistics(emul, cpus);
+		cpu_show_full_statistics(emul);
 
 	fflush(stdout);
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.3 2005-01-27 18:49:44 debug Exp $
+$Id: experiments.html,v 1.4 2005-01-28 10:33:00 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -316,11 +316,11 @@ or snapshot of the emulator.
     <ul>
       <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>gunzip, and run with <b>-E</b>
+	<br>gunzip, and run with <b>-E cobalt</b>
       <p>
       <li>Linux:
 	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
-	<br>gunzip, and run with <b>-E</b>
+	<br>gunzip, and run with <b>-E cobalt</b>
     </ul>
   </li>
 
@@ -351,7 +351,7 @@ or snapshot of the emulator.
 		available here:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>Try running with <b>-f</b>.
+	<br>Try running with <b>-E sonynews</b>.
 	<br>There's also a boot floppy available, but the emulator currently
 		doesn't support booting from it:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs</a>
@@ -380,7 +380,7 @@ or snapshot of the emulator.
 	<a href="http://www.meshcube.org/feed/stable/">http://www.meshcube.org/feed/stable</a>/<a href="http://www.meshcube.org/feed/stable/kernel-image-mtx_2.4.24-3_mipsel.ipk">kernel-image-mtx_2.4.24-3_mipsel.ipk</a>
 	<br>(This is a Debian package, you can use <b>ar</b> and <b>tar</b>
 		to extract kernel.img from it.)
-	<br>Try running with <b>-e 0x80800000:kernel.img</b>.
+	<br>Try running with <b>-E meshcube 0x80800000:kernel.img</b>.
     </ul>
   </li>
 
@@ -392,7 +392,7 @@ or snapshot of the emulator.
 	<br>A Linux kernel is available from
 	<a href="ftp://downloads.netgear.com/files/wg602_v1715.zip">ftp://downloads.netgear.com/files/wg602_v1715.zip</a>
 	<br>(Unzip wg602_v1715.zip to get WG602_V1715.img.)
-	<br>Try running with <b>-g 0xbfc80000:0x40:WG602_V1715.img</b>.
+	<br>Try running with <b>-E netgear 0xbfc80000:0x40:WG602_V1715.img</b>.
 	<br>(It takes some time to decompress the kernel, so be patient.)
     </ul>
   </li>
@@ -411,7 +411,7 @@ or snapshot of the emulator.
 	<br>From offset 60 and forward in the bin file, there is a gzip file.
 	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
 	<br>$ <b>gunzip piggy.gz</b>
-	<br>$ <b>./mips64emul -H -t 0x80001000:piggy</b>
+	<br>$ <b>./mips64emul -E linksys -t 0x80001000:piggy</b>
 	<br>There's also a .bin file available from linksys:
 		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
     </ul>

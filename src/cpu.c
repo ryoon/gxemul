@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.102 2004-07-08 22:49:17 debug Exp $
+ *  $Id: cpu.c,v 1.103 2004-07-10 14:58:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2175,7 +2175,7 @@ int cpu_run_instr(struct cpu *cpu)
 #ifdef TLBMOD_LOADSTORE_STATISTICS
 					cpu->statistics_tagged_store_hits ++;
 #endif
-#if 0
+#if 1
 					switch (wlen) {
 					case 4:	*((uint32_t *)(cpu->last_store_host_page + (addr & 0xfff))) = *((uint32_t *)d); break;
 					case 1:	*((uint8_t  *)(cpu->last_store_host_page + (addr & 0xfff))) = *((uint8_t  *)d); break;
@@ -2224,7 +2224,7 @@ int cpu_run_instr(struct cpu *cpu)
 #ifdef TLBMOD_LOADSTORE_STATISTICS
 					cpu->statistics_tagged_load_hits ++;
 #endif
-#if 0
+#if 1
 					switch (wlen) {
 					case 4:	*((uint32_t *)d) = *((uint32_t *)(cpu->last_load_host_page + (addr & 0xfff))); break;
 					case 1:	*((uint8_t  *)d) = *((uint8_t  *)(cpu->last_load_host_page + (addr & 0xfff))); break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.8 2004-01-02 19:31:25 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.9 2004-01-03 02:12:20 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -113,7 +113,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		}
 
 	/*  Always ready to transmit:  */
-	d->reg[com_lsr] |= LSR_TXRDY;
+	d->reg[com_lsr] |= LSR_TXRDY | LSR_TSRE;
 	d->reg[com_lsr] &= ~LSR_RXRDY;
 	d->reg[com_msr] = MSR_DCD | MSR_DSR | MSR_CTS;
 

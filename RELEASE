@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.23 2004-07-17 20:10:32 debug Exp $
+$Id: RELEASE,v 1.24 2004-07-23 20:30:11 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -38,21 +38,39 @@ Release notes for mips64emul 0.2
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
+mips64emul is a MIPS machine emulator. The goals are to emulate MIPS-like CPUs
+and enough surrounding hardware to fake real machines, capable of running real
+(unmodified) operating systems, such as NetBSD, Linux, or OpenBSD, and to
+assist in experiments involving MIPS-like code in general.
 
-mips64emul is a MIPS machine emulator. The goals are to emulate 64-bit and
-32-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
-capable of running real (unmodified) operating systems, such as NetBSD, Linux,
-or OpenBSD, and to assist in experimenting with MIPS-like code in general.
 This is a spare time hobby project, and many things are not implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
-[ TODO: Key features of release 0.2 ]
+
+Release 0.2 has a number of feature enhancements over 0.1 that are worth
+mentioning. These are the major changes:
+
+  o)  0.1 -> 0.1.1:
+
+	x)  Added support for booting directly from disk images (and CDROM
+	    images) if the emulation mode supports it (DECstation only, so
+	    far).
+
+  o)  0.1.1 -> 0.2:
+
+	x)  More "guest" operating systems now run to an acceptable degree in
+	    the emulator; apart from NetBSD/pmax and Ultrix/RISC, it is now
+	    also possible to install/run OpenBSD/pmax and Sprite for
+	    DECstation.
+
+	x)  Networking support (TCP/IP) is partly implemented, enough to
+	    perform an install of NetBSD or OpenBSD via ftp or nfs.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
-free to drop me a line regarding other bugs.
+free to drop me an email regarding other bugs.
 
 
 Files included in this release are:
@@ -78,9 +96,9 @@ Files included in this release are:
 
   experiments/       Experimental code (not needed by the emulator itself).
 
-
 and a configure + Makefile.skel combination for configuring and building the
 emulator.
+
 
 The following platforms and compilers have been used to build the emulator
 at one time or another; not all of them have been tested for this specific

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.4 2004-01-19 12:53:32 debug Exp $
+ *  $Id: dev_wdc.c,v 1.5 2004-04-02 05:48:17 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -319,10 +319,16 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				odata |= WDCS_DRQ;
 			if (d->error)
 				odata |= WDCS_ERR;
-			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 
+			/*  TODO:  Is this correct behaviour?  */
+			if (!diskimage_exist(d->drive + d->base_drive))
+				odata = 0xff;
+
+			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
+#if 0
 /* ?? */		if (cpu->coproc[0]->reg[COP0_STATUS] & (1 << (d->irq_nr + 8)))
 				cpu_interrupt_ack(cpu, d->irq_nr);
+#endif
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
 			d->cur_command = idata;

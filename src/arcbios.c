@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  $Id: arcbios.c,v 1.3 2003-11-07 03:44:20 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -66,7 +66,7 @@ static unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int off
  */
 void dump_mem_string(struct cpu *cpu, uint64_t addr)
 {
-	int i, ch;
+	int i;
 
 	for (i=0; i<40; i++) {
 		char ch = '\0';
@@ -86,9 +86,11 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
  *
  *	0x28	GetChild(node)
  *	0x44	GetSystemId()
+ *	0x48	GetMemoryDescriptor(void *)
  *	0x6c	Write(handle, buf, len, &returnlen)
  *	0x78	GetEnvironmentVariable(char *)
  *	0x88	FlushAllCaches()
+ *	0x90	GetDisplayStatus(uint32_t handle)
  */
 void arcbios_emul(struct cpu *cpu)
 {
@@ -105,6 +107,13 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");
 		cpu->gpr[GPR_V0] = SGI_SYSID_ADDR;
+		break;
+	case 0x48:		/*  void *GetMemoryDescriptor(void *ptr)  */
+		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->gpr[GPR_A0]);
+		if ((uint32_t)cpu->gpr[GPR_A0] < (uint32_t)ARC_MEMDESC_ADDR)
+			cpu->gpr[GPR_V0] = ARC_MEMDESC_ADDR;
+		else
+			cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
 		if (cpu->gpr[GPR_A0] != 1)	/*  1 = stdout?  */
@@ -144,6 +153,11 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x88:		/*  FlushAllCaches()  */
 		debug("[ ARCBIOS FlushAllCaches(): TODO ]\n");
 		cpu->gpr[GPR_V0] = 0;
+		break;
+	case 0x90:		/*  void *GetDisplayStatus(handle)  */
+		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n", cpu->gpr[GPR_A0]);
+		/*  TODO:  handle different values of 'handle'?  */
+		cpu->gpr[GPR_V0] = ARC_DSPSTAT_ADDR;
 		break;
 	default:
 		cpu_register_dump(cpu);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.3 2003-11-07 00:25:32 debug Exp $
+ *  $Id: machine.c,v 1.4 2003-11-07 03:44:20 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -152,6 +152,21 @@ void store_32bit_word_in_host(unsigned char *data, uint32_t data32)
 
 
 /*
+ *  store_16bit_word_in_host():
+ *
+ *  Helper function.
+ */
+void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
+{
+	data[0] = (data16 >> 8) & 255;
+	data[1] = (data16) & 255;
+	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
+	}
+}
+
+
+/*
  *  machine_init():
  *
  *  Initialize memory and/or devices required by specific
@@ -177,6 +192,8 @@ void machine_init(struct memory *mem)
 	/*  ARCBIOS stuff:  */
 	struct arcbios_spb arcbios_spb;
 	struct arcbios_sysid arcbios_sysid;
+	struct arcbios_dsp_stat arcbios_dsp_stat;
+	struct arcbios_mem arcbios_mem;
 
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
@@ -666,9 +683,31 @@ void machine_init(struct memory *mem)
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
-		strcpy(arcbios_sysid.VendorId,  "SGI");		/*  NOTE: max 7 chars  */
-		strcpy(arcbios_sysid.ProductId, "fake");	/*  NOTE: max 7 chars  */
+		if (emulation_type == EMULTYPE_SGI) {
+			strncpy(arcbios_sysid.VendorId,  "SGI", 3);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "fake", 4);	/*  NOTE: max 8 chars  */
+		} else {
+			/*  NEC-RD94 = NEC RISCstation 2250  */
+			strncpy(arcbios_sysid.VendorId,  "NEC", 3);	/*  NOTE: max 8 chars  */
+			strncpy(arcbios_sysid.ProductId, "RD94", 4);	/*  NOTE: max 8 chars  */
+		}
 		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
+
+		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
+		/*  TODO:  get 79 and 24 from the current terminal settings?  */
+		store_16bit_word_in_host((char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
+		store_16bit_word_in_host((char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
+		arcbios_dsp_stat.ForegroundColor = 7;
+		arcbios_dsp_stat.HighIntensity = 15;
+		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
+
+		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+		store_32bit_word_in_host((char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
+		store_32bit_word_in_host((char *)&arcbios_mem.BasePage, 8*1048576 / 4096);
+		store_32bit_word_in_host((char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
+		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+		add_symbol_name(0xbfc10000, 0x10000, "[ARCBIOS entry]", 0);
 
 		for (i=0; i<100; i++)
 			store_32bit_word(0xbfc00000 + i*4, 0xbfc10000 + i*4);
@@ -680,8 +719,11 @@ void machine_init(struct memory *mem)
 		store_32bit_word(0x80018004, 0x80018200);
 		store_32bit_word(0x80018010, 0);
 
-		store_string(0x80018100, "kernel");
-		store_string(0x80018200, "-a");
+		bootstr = "kernel";
+		bootarg = "-a";
+
+		store_string(0x80018100, bootstr);
+		store_string(0x80018200, bootarg);
 
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 

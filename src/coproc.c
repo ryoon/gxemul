@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.18 2004-03-09 00:06:06 debug Exp $
+ *  $Id: coproc.c,v 1.19 2004-03-17 21:08:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -323,11 +323,22 @@ void coproc_register_write(struct cpu *cpu,
 			/*  char *symbol;
 			    int offset;
 			    symbol = get_symbol_name(cpu->pc_last, &offset);
-			    debug("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
-			tmp &= ~0xff;
+			    debug("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp); */
+			tmp &= (R2K3K_ENTRYLO_PFN_MASK |
+			    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
+			    R2K3K_ENTRYLO_V | R2K3K_ENTRYLO_G);
+		} else if (cpu->cpu_type.mmu_model == MMU4K) {
+			tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
+			    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
 		}
 	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYLO1)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYLO1) {
+		unimpl = 0;
+		if (cpu->cpu_type.mmu_model == MMU4K) {
+			tmp &= (ENTRYLO_PFN_MASK | ENTRYLO_C_MASK |
+			    ENTRYLO_D | ENTRYLO_V | ENTRYLO_G);
+		}
+	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_CONTEXT) {
 		uint64_t old = cp->reg[COP0_CONTEXT];
 		cp->reg[COP0_CONTEXT] = tmp;
@@ -529,7 +540,7 @@ if ((function & 0xfffff) == 0x39) {		/*  di  */
 					g_bit = cp->tlbs[i].hi & TLB_G;
 
 					cp->reg[COP0_PAGEMASK] = cp->tlbs[i].mask;
-					cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi;
+					cp->reg[COP0_ENTRYHI]  = cp->tlbs[i].hi & ~TLB_G;
 					cp->reg[COP0_ENTRYLO1] = cp->tlbs[i].lo1;
 					cp->reg[COP0_ENTRYLO0] = cp->tlbs[i].lo0;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.40 2004-11-07 13:23:46 debug Exp $
+ *  $Id: bintrans.c,v 1.41 2004-11-07 19:58:52 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -167,8 +167,18 @@ int bintrans_write_instruction__slt(unsigned char **addrp, int *pc_increment, in
 int bintrans_write_instruction__sltu(unsigned char **addrp, int *pc_increment, int rd, int rs, int rt);
 int bintrans_write_instruction__sll(unsigned char **addrp, int *pc_increment, int rd, int rt, int sa);
 int bintrans_write_instruction__lui(unsigned char **addrp, int *pc_increment, int rt, int imm);
+int bintrans_write_instruction__lw(unsigned char **addrp, int *pc_increment, int first_load, int first_store, int rt, int imm, int rs, int load_type);
 int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_increment, int rs);
 int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_increment, int rd, int rs);
+
+#define	LOAD_TYPE_LW	0
+#define	LOAD_TYPE_LHU	1
+#define	LOAD_TYPE_LH	2
+#define	LOAD_TYPE_LBU	3
+#define	LOAD_TYPE_LB	4
+#define	LOAD_TYPE_SW	5
+#define	LOAD_TYPE_SH	6
+#define	LOAD_TYPE_SB	7
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -196,8 +206,8 @@ int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_increment, i
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#define	CODE_CHUNK_SPACE_SIZE		(8 * 1048576)
-#define	CODE_CHUNK_SPACE_MARGIN		65536
+#define	CODE_CHUNK_SPACE_SIZE		(16 * 1048576)
+#define	CODE_CHUNK_SPACE_MARGIN		131072
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where
@@ -218,10 +228,12 @@ struct translation_page_entry {
 	uint64_t			paddr;
 
 	unsigned char			*chunk[1024];
-	char				flags[1024];
+	int				length_and_flags[1024];
 };
-#define	START_OF_CHUNK		1
-#define	UNTRANSLATABLE		2
+#define	LENMASK			0x0ffff
+#define	START_OF_CHUNK		0x10000
+#define	UNTRANSLATABLE		0x20000
+#define	TO_BE_INVALIDATED	0x40000
 
 struct translation_page_entry **translation_page_entry_array;
 
@@ -238,19 +250,19 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 	unsigned char *p;
 	uint64_t paddr_page = paddr & ~0xfff;
 	int offset_within_page = (paddr & 0xfff) / 4;
-	int ofs2;
+	int ofs2, chunklen, i,j;
 
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
 			/*  Nothing translated? Then simply return.  */
 			if (tep->chunk[offset_within_page] == NULL &&
-			    !(tep->flags[offset_within_page] & UNTRANSLATABLE))
+			    !(tep->length_and_flags[offset_within_page] & UNTRANSLATABLE))
 				return;
 
 			/*  Just untranslatable? Then clear the flags and return:  */
-			if (tep->flags[offset_within_page] & UNTRANSLATABLE) {
-				tep->flags[offset_within_page] = 0;
+			if (tep->length_and_flags[offset_within_page] & UNTRANSLATABLE) {
+				tep->length_and_flags[offset_within_page] = 0;
 				return;
 			}
 
@@ -265,16 +277,38 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 			bintrans_host_cacheinvalidate(p, 80);		/*  TODO: len of return?  */
 
+			/*  Remove any entry which reaches this address:  */
+			i = 0;
+			while (i < 1024) {
+				chunklen = tep->length_and_flags[i] & LENMASK;
+				/*  from i to i+chunklen-1  */
+				if (i <= offset_within_page && offset_within_page < i+chunklen) {
+					for (j=i; j<i+chunklen; j++)
+						tep->length_and_flags[j] |= TO_BE_INVALIDATED;
+				}
+				i++;
+			}
+
+			for (i=0; i<1024; i++)
+				if (tep->length_and_flags[i] & TO_BE_INVALIDATED) {
+					tep->chunk[i] = NULL;
+					tep->length_and_flags[i] = 0;
+				}
+
+#if 0
+			chunklen = tep->length_and_flags[offset_within_page] & LENMASK;
+
 			/*  If this was not the starting address of the
 			    chunk, then remove the addresses earlier as
 			    well:  */
-			if (!(tep->flags[offset_within_page] & START_OF_CHUNK)) {
+			if (!(tep->length_and_flags[offset_within_page] & START_OF_CHUNK)) {
 				ofs2 = offset_within_page;
 				while (ofs2 > 0) {
 					ofs2 --;
 					tep->chunk[ofs2] = NULL;
-					if (tep->flags[ofs2] & START_OF_CHUNK) {
-						tep->flags[ofs2] = 0;
+					chunklen = tep->length_and_flags[ofs2] & LENMASK;
+					if (tep->length_and_flags[ofs2] & START_OF_CHUNK) {
+						tep->length_and_flags[ofs2] = 0;
 						break;
 					}
 				}
@@ -291,13 +325,14 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 						break;
 
 					tep->chunk[ofs2] = NULL;
-					tep->flags[ofs2] = 0;
+					tep->length_and_flags[ofs2] = 0;
 				}
 			}
 
 			/*  Remove the translation entry:  */
 			tep->chunk[offset_within_page] = NULL;
-			tep->flags[offset_within_page] = 0;
+			tep->length_and_flags[offset_within_page] = 0;
+#endif
 
 			return;
 		}
@@ -331,7 +366,7 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 		if (tep->paddr == paddr_page) {
 			if (tep->chunk[offset_within_page] == NULL)
 				return -1;
-			if (!(tep->flags[offset_within_page] & START_OF_CHUNK))
+			if (!(tep->length_and_flags[offset_within_page] & START_OF_CHUNK))
 				return -1;
 
 			/*  printf("bintrans_runchunk(): chunk = %p\n",
@@ -386,6 +421,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	struct translation_page_entry *tep;
 	size_t chunk_len;
 	int rs,rt,rd,sa,imm;
+	int first_load, first_store;
 
 
 	/*  Abort if the current "environment" isn't safe enough:  */
@@ -407,9 +443,11 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
-			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+			if (tep->length_and_flags[offset_within_page] & UNTRANSLATABLE)
 				return -1;
-#if 1
+			if (tep->length_and_flags[offset_within_page] & START_OF_CHUNK)
+				return -1;
+#if 0
 			if (tep->chunk[offset_within_page] != NULL)
 				return -1;
 #endif
@@ -474,6 +512,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	try_to_translate = 1;
 	n_translated = 0;
 	pc_increment = 0;
+	first_load=1, first_store=1;
 
 	while (try_to_translate) {
 		/*  Read an instruction word from host memory:  */
@@ -637,6 +676,79 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			else
 				n_translated += res;
 			break;
+		case HI6_LW:
+		case HI6_LHU:
+		case HI6_LH:
+		case HI6_LBU:
+		case HI6_LB:
+		case HI6_SW:
+		case HI6_SH:
+		case HI6_SB:
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			rt = instr[2] & 31;
+			imm = (instr[1] << 8) + instr[0];
+			if (imm >= 32768)
+				imm -= 65536;
+
+			switch (hi6) {
+			case HI6_LW:
+				if (rt == 0) {
+					res = 0;
+				} else {
+					res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_LW);
+					first_load = 0;
+				}
+				break;
+			case HI6_LHU:
+				if (rt == 0) {
+					res = 0;
+				} else {
+					res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_LHU);
+					first_load = 0;
+				}
+				break;
+			case HI6_LH:
+				if (rt == 0) {
+					res = 0;
+				} else {
+					res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_LH);
+					first_load = 0;
+				}
+				break;
+			case HI6_LBU:
+				if (rt == 0) {
+					res = 0;
+				} else {
+					res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_LBU);
+					first_load = 0;
+				}
+				break;
+			case HI6_LB:
+				if (rt == 0) {
+					res = 0;
+				} else {
+					res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_LB);
+					first_load = 0;
+				}
+				break;
+			case HI6_SW:
+				res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_SW);
+				first_store = 0;
+				break;
+			case HI6_SH:
+				res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_SH);
+				first_store = 0;
+				break;
+			case HI6_SB:
+				res = bintrans_write_instruction__lw(&chunk_addr, &pc_increment, first_load, first_store, rt, imm, rs, LOAD_TYPE_SB);
+				first_store = 0;
+				break;
+			}
+			if (!res)
+				try_to_translate = 0;
+			else
+				n_translated += res;
+			break;
 		default:
 			try_to_translate = 0;
 		}
@@ -657,7 +769,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 
 	/*  Not enough translated? Then abort.  */
 	if (n_translated < 1) {
-		tep->flags[offset_within_page] |= UNTRANSLATABLE;
+		tep->length_and_flags[offset_within_page] |= UNTRANSLATABLE;
 		return -1;
 	}
 
@@ -688,13 +800,13 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	    (sizeof(uint64_t)-1)) + 1;
 
 	/*  Insert the translated chunk into the page entry:  */
-	tep->flags[offset_within_page] = START_OF_CHUNK;
+	tep->length_and_flags[offset_within_page] = START_OF_CHUNK | n_translated;
 	tep->chunk[offset_within_page] = chunk_addr2;
 
 	/*  ... and make sure all instructions are accounted for:  */
 	if (n_translated > 1) {
 		for (i=1; i<n_translated; i++) {
-			tep->flags[offset_within_page + i] = 0;
+			tep->length_and_flags[offset_within_page + i] = 0;
 			tep->chunk[offset_within_page + i] = chunk_addr2;
 		}
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.29 2004-11-05 23:06:47 debug Exp $
+ *  $Id: x11.c,v 1.30 2004-11-07 19:58:52 debug Exp $
  *
  *  X11-related functions.
  */
@@ -87,7 +87,7 @@ void x11_redraw_cursor(int i)
 	}
 
 	if (fb_windows[i].x11_display != NULL && fb_windows[i].cursor_on) {
-		int x, y;
+		int x, y, subx, suby;
 		XImage *xtmp;
 
 		xtmp = XSubImage(fb_windows[i].fb_ximage,
@@ -100,12 +100,25 @@ void x11_redraw_cursor(int i)
 			return;
 		}
 
-		for (y=0; y<fb_windows[i].cursor_ysize; y++)
-			for (x=0; x<fb_windows[i].cursor_xsize; x++) {
+		for (y=0; y<fb_windows[i].cursor_ysize; y+=fb_windows[i].scaledown)
+			for (x=0; x<fb_windows[i].cursor_xsize; x+=fb_windows[i].scaledown) {
 				int px = x/fb_windows[i].scaledown;
 				int py = y/fb_windows[i].scaledown;
-				int p = fb_windows[i].cursor_pixels[y][x];
+				int p = 0, n = 0, c = 0;
 				unsigned long oldcol;
+
+				for (suby=0; suby<fb_windows[i].scaledown; suby++)
+					for (subx=0; subx<fb_windows[i].scaledown; subx++) {
+						c = fb_windows[i].cursor_pixels[y+suby][x+subx];
+						if (c >= 0) {
+							p += c;
+							n++;
+						}
+					}
+				if (n > 0)
+					p /= n;
+				else
+					p = c;
 
 				switch (p) {
 				case CURSOR_COLOR_TRANSPARENT:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.175 2004-11-07 13:23:46 debug Exp $
+ *  $Id: cpu.c,v 1.176 2004-11-07 19:58:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1159,6 +1159,12 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  R4000:  */
 		cpu->coproc[0]->reg[COP0_STATUS] |= STATUS_EXL;
 	}
+
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		cpu->pc_bintrans_data_host_4kpage = NULL;
+	}
+#endif
 }
 
 
@@ -1477,24 +1483,26 @@ static int cpu_run_instr(struct cpu *cpu)
 			int res;
 			res = bintrans_runchunk(cpu, cpu->pc_bintrans_paddr);
 
-			if (res != -1) {
+			if (res >= 0) {
 				/*  debug("BINTRANS cache hit,"
 				    "  pc = %016llx\n", (long long)cached_pc);  */
 				if (instruction_trace_cached)
 					cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-				return res;
+				if (res > 0)
+					return res;
 			} else {
 				/*  Bintrans cache miss: try to translate
 				    the code chunk and run it:  */
 				res = bintrans_attempt_translate(cpu,
 				    cpu->pc_bintrans_paddr,
 				    1, MAX_TRANSLATE_DEPTH);
-				if (res != -1) {
+				if (res >= 0) {
 					/*  debug("BINTRANS translation + hit,"
 					    " pc = %016llx\n", (long long)cached_pc);  */
 					if (instruction_trace_cached)
 						cpu_disassemble_instr(cpu, instr, 1, 0, 1);
-					return res;
+					if (res > 0)
+						return res;
 				}
 			}
 		}

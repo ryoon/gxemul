@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.80 2004-11-04 22:57:36 debug Exp $
+ *  $Id: coproc.c,v 1.81 2004-11-07 19:58:52 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -303,6 +303,12 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
  */
 static void invalidate_translation_caches(struct cpu *cpu)
 {
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		cpu->pc_bintrans_data_host_4kpage = NULL;
+	}
+#endif
+
 #ifdef USE_TINY_CACHE
 	int i;
 

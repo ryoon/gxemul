@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.14 2004-11-07 13:23:46 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.15 2004-11-07 19:58:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -715,11 +715,197 @@ int bintrans_write_instruction__lui(unsigned char **addrp,
 	a = *addrp;
 
 	*a++ = (imm & 255); *a++ = (imm >> 8) & 255; *a++ = 0x3f; *a++ = 0x24;
-
 	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;
 
 	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
 	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+	*addrp = a;
+	return 1;
+}
+
+
+/*
+ *  bintrans_write_instruction__lw():
+ */
+int bintrans_write_instruction__lw(unsigned char **addrp,
+	int *pc_increment, int first_load, int first_store, int rt, int imm, int rs, int load_type)
+{
+	unsigned char *a;
+	int ofs;
+
+	/*  Flush the PC, but don't include this instruction.  */
+	(*pc_increment) -= 4;
+	bintrans_write_pcflush(addrp, pc_increment, 1, 1);
+	(*pc_increment) += 4;
+
+	a = *addrp;
+
+	/*
+	 *  if (cpu->pc_bintrans_data_host_4kpage == NULL)
+	 *	return;
+	 *
+	 *  98 08 90 a4     ldq     t3,2200(a0)
+	 *  01 00 80 f4     bne     t3,c <ok1>
+	 *  01 80 fa 6b     ret
+	 */
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_host_4kpage) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x90; *a++ = 0xa4;
+
+	if (first_load && first_store) {
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x80; *a++ = 0xf4;
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
+	}
+
+	if (first_store) {
+		switch (load_type) {
+		case LOAD_TYPE_SW:
+		case LOAD_TYPE_SH:
+		case LOAD_TYPE_SB:
+			/*
+			 *  if (!cpu->pc_bintrans_data_writeflag)
+			 *	return;
+			 *
+			 *  00 00 30 a0     ldl     t0,0(a0)
+			 *  01 00 20 f4     bne     t0,2c <ok>
+			 *  01 80 fa 6b     ret
+			 */
+			ofs = ((size_t)&dummy_cpu.pc_bintrans_data_writeflag) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
+			break;
+		default:
+		}
+	}
+
+	/*
+	 *  t2 = gpr[rs] + imm;
+	 *
+	 *  88 08 30 a4     ldq     t0,2184(a0)
+	 *  34 12 61 20     lda     t2,4660(t0)
+	 */
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x61; *a++ = 0x20;
+
+	switch (load_type) {
+	case LOAD_TYPE_LW:
+	case LOAD_TYPE_SW:
+		/*
+		 *  if (t2 & 3)		check for misalignment
+		 *	return;
+		 *
+		 *  02 70 60 44     and     t2,0x3,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0x70; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LHU:
+	case LOAD_TYPE_LH:
+	case LOAD_TYPE_SH:
+		/*
+		 *  if (t2 & 1)		check for misalignment
+		 *	return;
+		 *
+		 *  02 30 60 44     and     t2,0x1,t1
+		 *  01 00 40 e4     beq     t1,20 <ok2>
+		 *  01 80 fa 6b     ret
+		 */
+		*a++ = 0x02; *a++ = 0x30; *a++ = 0x60; *a++ = 0x44;	/*  and  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;	/*  beq  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+		break;
+	case LOAD_TYPE_LBU:
+	case LOAD_TYPE_LB:
+	case LOAD_TYPE_SB:
+		break;
+	default:
+	}
+
+	/*
+	 *  Same virtual page?
+	 *  if (cpu->pc_bintrans_data_virtual_4kpage != (t2 & ~0xfff))
+	 *	return;
+	 *
+	 *  90 08 30 a4     ldq     t0,2192(a0)
+	 *  00 f0 5f 20     lda     t1,-4096
+	 *  02 00 62 44     and     t2,t1,t1
+	 *  1f 04 ff 5f     fnop
+	 *  a1 05 41 40     cmpeq   t1,t0,t0
+	 *  01 00 20 f4     bne     t0,3c <ok3>
+	 *  01 80 fa 6b     ret
+	 */
+	ofs = ((size_t)&dummy_cpu.pc_bintrans_data_virtual_4kpage) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+	*a++ = 0x02; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;	/*  and  */
+	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+	*a++ = 0xa1; *a++ = 0x05; *a++ = 0x41; *a++ = 0x40;	/*  cmpeq  */
+	*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
+	*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+	/*
+	 *  t3 = hostpage + pageoffset;
+	 *  gpr[rt] = load word from t3
+	 *
+	 *  ff 0f 3f 20     lda     t0,4095
+	 *  03 00 61 44     and     t2,t0,t2
+	 *  04 04 83 40     addq    t3,t2,t3
+	 *  1f 04 ff 5f     fnop
+	 *
+	 *  00 00 24 a0     ldl     t0,0(t3)
+	 *  00 00 30 b4     stq     t0,rt(a0)
+	 */
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x3f; *a++ = 0x20;	/*  lda  */
+	*a++ = 0x03; *a++ = 0x00; *a++ = 0x61; *a++ = 0x44;	/*  and  */
+	*a++ = 0x04; *a++ = 0x04; *a++ = 0x83; *a++ = 0x40;	/*  addq  */
+	*a++ = 0x1f; *a++ = 0x04; *a++ = 0xff; *a++ = 0x5f;	/*  fnop  */
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+
+/*  TODO: big endian byte order?  */
+
+	switch (load_type) {
+	case LOAD_TYPE_LW:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;			/*  ldl from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LHU:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LH:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x30;			/*  ldwu from memory  */
+		*a++ = 0x21; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextw   t0,t0  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LBU:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_LB:
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;			/*  sextb   t0,t0  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;	/*  stq gpr[rt]  */
+		break;
+	case LOAD_TYPE_SW:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xb0;			/*  stl to memory  */
+		break;
+	case LOAD_TYPE_SH:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x34;			/*  stw to memory  */
+		break;
+	case LOAD_TYPE_SB:
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;	/*  ldl gpr[rt]  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x38;			/*  stb to memory  */
+		break;
+	default:
+	}
 
 	*addrp = a;
 	return 1;

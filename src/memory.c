@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.90 2004-11-07 13:23:47 debug Exp $
+ *  $Id: memory.c,v 1.91 2004-11-07 19:58:52 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1108,6 +1108,10 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			cpu->pc_bintrans_host_4kpage = NULL;
 			cpu->pc_bintrans_paddr_valid = 0;
 		}
+		if (cache == CACHE_DATA) {
+			cpu->pc_bintrans_data_host_4kpage = NULL;
+			cpu->pc_bintrans_data_virtual_4kpage = vaddr & ~0xfff;
+		}
 	}
 #endif
 
@@ -1430,7 +1434,6 @@ no_exception_access:
 		if (cache == CACHE_INSTRUCTION) {
 			cpu->pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
-
 #ifdef BINTRANS
 			if (cpu->emul->bintrans_enable) {
 				cpu->pc_bintrans_host_4kpage =
@@ -1439,6 +1442,13 @@ no_exception_access:
 #endif
 		}
 	}
+
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable && cache == CACHE_DATA) {
+		cpu->pc_bintrans_data_host_4kpage = memblock + (offset & ~0xfff);
+		cpu->pc_bintrans_data_writeflag = (writeflag == MEM_WRITE);
+	}
+#endif
 
 do_return_ok:
 	return MEMORY_ACCESS_OK;

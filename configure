@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.68 2004-11-03 00:36:46 debug Exp $
+#  $Id: configure,v 1.69 2004-11-07 19:58:48 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -694,7 +694,8 @@ echo "MIPS_LD=mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e main --oformat=
 echo "" >> _Makefile.header
 
 
-for a in ./ src/ devices/ tests/; do
+for a in . src devices tests; do
+	echo "creating $a/Makefile"
 	cat _Makefile.header > $a/Makefile
 	cat $a/Makefile.skel >> $a/Makefile
 done

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.107 2004-10-08 17:52:05 debug Exp $
+ *  $Id: main.c,v 1.108 2004-10-10 14:07:50 debug Exp $
  */
 
 #include <stdio.h>
@@ -161,9 +161,11 @@ void usage(char *progname)
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
+	printf("  -n nr     set nr of CPUs\n");
+	printf("  -O        fake netboot (tftp instead of rzX), even when a disk image is\n"
+	       "            present (for DECstation emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
 	printf("            Default arg is -a. The other useful arg would be -s.\n");
-	printf("  -n nr     set nr of CPUs\n");
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");
@@ -212,7 +214,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -287,6 +289,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'n':
 			emul->ncpus = atoi(optarg);
 			n_cpus_set = 1;
+			break;
+		case 'O':
+			emul->force_netboot = 1;
 			break;
 		case 'o':
 			emul->boot_string_argument = malloc(strlen(optarg) + 1);

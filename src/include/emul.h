@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.4 2004-09-05 04:56:01 debug Exp $
+ *  $Id: emul.h,v 1.5 2004-10-10 14:07:48 debug Exp $
  */
 
 #include "misc.h"
@@ -70,6 +70,7 @@ struct emul {
 	int	max_random_cycles_per_chunk;
 	int	speed_tricks;
 	int	userland_emul;
+	int	force_netboot;
 	char	*boot_kernel_filename;
 	char	*boot_string_argument;
 

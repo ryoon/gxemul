@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.43 2004-09-05 02:19:18 debug Exp $
+ *  $Id: diskimage.c,v 1.44 2004-10-10 14:07:49 debug Exp $
  *
  *  Disk image support.
  *
@@ -1098,10 +1098,11 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
 	size_t len_done;
 	int res;
 
-	if (disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL) {
-		fatal("trying to access a non-existant disk image (%i)\n",
+	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES ||
+	    diskimages[disk_id]==NULL) {
+		fatal("WARNING: trying to access a non-existant disk image (%i)\n",
 		    disk_id);
-		exit(1);
+		return 0;
 	}
 
 	if (buf == NULL) {
@@ -1318,6 +1319,9 @@ int diskimage_add(char *fname)
  *  diskimage_bootdev():
  *
  *  Returns the disk id (0..7) of the device which we're booting from.
+ *
+ *  If no disk was used as boot device, then -1 is returned. (In practice,
+ *  this is used to fake network (tftp) boot.)
  */
 int diskimage_bootdev(void)
 {
@@ -1339,12 +1343,8 @@ int diskimage_bootdev(void)
 		}
 	}
 
-	if (bootdev < 0) {
+	if (bootdev < 0)
 		bootdev = first_dev;
-
-		if (bootdev < 0)
-			bootdev = 0;	/*  Just accept that there's no boot device.  */
-	}
 
 	return bootdev;
 }

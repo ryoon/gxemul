@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.75 2004-10-04 11:38:44 debug Exp $
+ *  $Id: emul.c,v 1.76 2004-10-10 14:07:49 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -492,6 +492,9 @@ static void load_bootblock(struct emul *emul, struct cpu *cpu)
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
 	int n_blocks, res;
+
+	if (boot_disk_id < 0)
+		return;
 
 	switch (emul->emulation_type) {
 	case EMULTYPE_DEC:

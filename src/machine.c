@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.187 2004-10-07 22:55:37 debug Exp $
+ *  $Id: machine.c,v 1.188 2004-10-10 14:07:49 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -798,7 +798,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	/*  DECstation:  */
 	char *framebuffer_console_name, *serial_console_name;
 	int color_fb_flag;
-	int boot_boardnumber = 3;
+	int boot_scsi_boardnumber = 3, boot_net_boardnumber = 3;
 	char *turbochannel_default_gfx_card = "PMAG-BA";
 		/*  PMAG-AA, -BA, -CA/DA/EA/FA, -JA, -RO, PMAGB-BA  */
 
@@ -977,7 +977,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			framebuffer_console_name = "osconsole=0,7";
 								/*  fb,keyb  */
 			serial_console_name      = "osconsole=2";
-			boot_boardnumber = 5;
+			boot_scsi_boardnumber = 5;
+			boot_net_boardnumber = 6;	/*  TODO: 3?  */
 			break;
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
@@ -1360,17 +1361,24 @@ void machine_init(struct emul *emul, struct memory *mem)
 #endif
 				strcpy(bootpath, "5/rz1/");
 
-			bootpath[0] = '0' + boot_boardnumber;
-			if (diskimage_is_a_tape(bootdev_id))
-				bootpath[2] = 't';
-			bootpath[4] = '0' + bootdev_id;
+			if (bootdev_id < 0 || emul->force_netboot) {
+				/*  tftp boot:  */
+				strcpy(bootpath, "5/tftp/");
+				bootpath[0] = '0' + boot_net_boardnumber;
+			} else {
+				/*  disk boot:  */
+				bootpath[0] = '0' + boot_scsi_boardnumber;
+				if (diskimage_is_a_tape(bootdev_id))
+					bootpath[2] = 't';
+				bootpath[4] = '0' + bootdev_id;
+			}
 
 			init_bootpath = bootpath;
 		}
 
-		/*  TODO: this should be the name of the booting kernel  */
 		bootarg = malloc(strlen(init_bootpath) +
-		    strlen(emul->boot_kernel_filename) + 1);
+		    strlen(emul->boot_kernel_filename) + 1 +
+		    strlen(emul->boot_string_argument) + 1);
 		strcpy(bootarg, init_bootpath);
 		strcat(bootarg, emul->boot_kernel_filename);
 
@@ -1380,6 +1388,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
 		    emul->boot_string_argument);
+
+		strcat(bootarg, " ");
+		strcat(bootarg, emul->boot_string_argument);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;

@@ -26,7 +26,7 @@ o)  DECstation:
     Add  -d pmaxcd.iso  to the command line to use it.
 
     To use a (clean) SCSI disk image, first create an empty large file:
-    dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=1 oseek=680000000
+    dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=1 seek=680000000
     Then add  -d netbsd_pmax_rootdisk.img  to the command line.
 
     ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd

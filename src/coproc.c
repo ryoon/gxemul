@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.5 2003-11-08 14:52:19 debug Exp $
+ *  $Id: coproc.c,v 1.6 2003-12-28 21:33:38 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -352,7 +352,14 @@ void coproc_register_write(struct cpu *cpu,
 		tmp &= INDEX_MASK;
 		unimpl = 0;
 	}
-	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
+		unimpl = 0;
+	}
+	if (cp->coproc_nr==0 && reg_nr==COP0_COMPARE) {
+		/*  Clear the timer interrupt bit (bit 7):  */
+		cpu_interrupt_ack(cpu, 7);
+		unimpl = 0;
+	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI) {
 		unimpl = 0;
 		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {

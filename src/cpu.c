@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.235 2005-01-17 09:55:58 debug Exp $
+ *  $Id: cpu.c,v 1.236 2005-01-17 12:29:26 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -759,7 +759,6 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("%016llx", (long long)addr);
 		if (symbol != NULL)
 			debug("\t<%s>", symbol);
-		else
 		break;
 	case HI6_COP0:
 	case HI6_COP1:
@@ -2908,15 +2907,7 @@ int cpu_run_instr(struct cpu *cpu)
 					if (cpu->rmw == 0) {
 						/*  The store failed:  */
 						cpu->gpr[rt] = 0;
-
-						/*
-						 *  Operating systems that make
-						 *  use of ll/sc for synchro-
-						 *  nization should implement
-						 *  back-off protocols of their
-						 *  own, so there's no backoff
-						 *  here.
-						 */
+						debug(" [COLLISION] ");
 						break;
 					}
 				}
@@ -3150,6 +3141,8 @@ int cpu_run_instr(struct cpu *cpu)
 
 				if (rt != 0)
 					cpu->gpr[rt] = 1;
+
+				debug(" [no collision] ");
 				cpu->rmw = 0;
 			}
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.83 2004-07-11 03:17:24 debug Exp $
+ *  $Id: devices.h,v 1.84 2004-07-11 04:57:30 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -89,8 +89,9 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 /*  dev_bt459.c:  */
 #define	DEV_BT459_LENGTH		0x20
 #define	DEV_BT459_NREGS			0x1000
-#define	BT459_PX		1
-#define	BT459_BA		2
+#define	BT459_PX		1	/*  px[g]  */
+#define	BT459_BA		2	/*  cfb  */
+#define	BT459_BBA		3	/*  sfb  */
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data;
 void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,

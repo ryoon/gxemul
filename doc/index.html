@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.148 2004-12-01 09:41:50 debug Exp $
+$Id: index.html,v 1.149 2004-12-01 22:26:02 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -536,6 +536,9 @@ If you want to run without the X framebuffer, use this instead:<pre>
 	$ <b>./mips64emul -D2 -d netbsddisk.img</b>
 </pre>
 
+<p>
+NetBSD/pmax should work fine with dynamic binary translation (enabled by 
+adding <b>-b</b> to the command line).
 
 <!--
 <p>
@@ -748,8 +751,8 @@ Execute the following commands in the emulator:
 </ol>
 
 <p>
-The time required to do a full install (including X11) is about an hour
-and a half on a 2.8GHz Xeon PC.
+OpenBSD/pmax should work fine with dynamic binary translation (enabled by 
+adding <b>-b</b> to the command line).
 
 <p>
 NOTE: It is also possible to install via ftp instead of using a CDROM image. 
@@ -887,6 +890,14 @@ Ultrix from the harddisk image:<pre>
 </pre>
 
 <p>
+Ultrix mostly seems to work with dynamic binary translation (enabled by 
+adding <b>-b</b> to the command line options). If you have a very fast
+host machine, and use bintrans, you might experience a weird timer related
+bug, which makes it impossible to logon to the system. A temporary
+workaround is to add <b>-I33000000</b> to fix the emulated clock speed to 
+33 million instructions per emulated second.
+
+<p>
 You can experiment with adding <b>-Z2</b> (for emulating a 
 dual-headed workstation) or even <b>-Z3</b> (tripple-headed), and also the
 <b>-Y2</b> option for scaling down the framebuffer windows by a factor 2x2.
@@ -983,6 +994,10 @@ following sad statement can be found:
 <p>
 Once you are logged in as root, running <b>xinit</b> will start the X11 
 environment.
+
+<p>
+Sprite works fine with dynamic binary translation (enabled by
+adding <b>-b</b> to the command line options).
 
 
 
@@ -1133,6 +1148,10 @@ If you need to boot into single user mode, try the following:<pre>
 	$ <b>./mips64emul -D2 -o "console=ttyS03 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
 
 </pre>
+
+<p>
+Linux on DECstation in R3000 mode should work fine with dynamic binary 
+translation (enabled by adding <b>-b</b> to the command line).
 
 <p>
 NOTE: You can add -XN and remove console=ttyS03 from the command line, if you want

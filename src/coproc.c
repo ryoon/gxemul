@@ -23,11 +23,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.131 2004-12-23 03:47:37 debug Exp $
+ *  $Id: coproc.c,v 1.132 2004-12-29 13:51:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
- *
- *  TODO: separate out math coprocessor stuff (?)
  */
 
 #include <stdio.h>
@@ -862,9 +860,10 @@ void coproc_register_write(struct cpu *cpu,
 #define	FPU_OP_DIV	4
 #define	FPU_OP_SQRT	5
 #define	FPU_OP_MOV	6
-#define	FPU_OP_C	7
-#define	FPU_OP_ABS	8
-#define	FPU_OP_NEG	9
+#define	FPU_OP_CVT	7
+#define	FPU_OP_C	8
+#define	FPU_OP_ABS	9
+#define	FPU_OP_NEG	10
 /*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W,
  RSQRT  */
 
@@ -1098,10 +1097,14 @@ static void fpu_store_float_value(struct coproc *cp, int fd,
 	}
 
 store_nan:
-	if (fmt == FMT_S && nan)
-		r = 0x7fffffffULL;
-	if (fmt == FMT_D && nan)
-		r = 0x7fffffffffffffffULL;
+	if (nan) {
+		if (fmt == FMT_S)
+			r = 0x7fffffffULL;
+		else if (fmt == FMT_D)
+			r = 0x7fffffffffffffffULL;
+		else
+			r = 0;
+	}
 
 	/*
 	 *  TODO:  this is for 32-bit mode. It has to be updated later
@@ -1140,14 +1143,15 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	/*  Potentially two input registers, fs and ft  */
 	struct internal_float_value float_value[2];
 	int unordered, nan;
+	uint64_t fs_v = 0;
 	double nf;
 
 	if (fs >= 0) {
-		uint64_t v = cp->reg[fs];
+		fs_v = cp->reg[fs];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
 		if (fmt == FMT_D || fmt == FMT_L)
-			v = (v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
-		fpu_interpret_float_value(v, &float_value[0], fmt);
+			fs_v = (fs_v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
+		fpu_interpret_float_value(fs_v, &float_value[0], fmt);
 	}
 	if (ft >= 0) {
 		uint64_t v = cp->reg[ft];
@@ -1212,14 +1216,32 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan);
 		break;
-	case FPU_OP_MOV:
+	case FPU_OP_CVT:
 		nf = float_value[0].f;
 		/*  debug("  mov: %f => %f\n", float_value[0].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan);
 		break;
+	case FPU_OP_MOV:
+		/*  Non-arithmetic move:  */
+		/*
+		 *  TODO:  this is for 32-bit mode. It has to be updated later
+		 *		for 64-bit coprocessor stuff.
+		 */
+		if (output_fmt == FMT_D || output_fmt == FMT_L) {
+			cp->reg[fd] = fs_v & 0xffffffffULL;
+			cp->reg[(fd+1) & 31] = (fs_v >> 32) & 0xffffffffULL;
+			if (cp->reg[fd] & 0x80000000ULL)
+				cp->reg[fd] |= 0xffffffff00000000ULL;
+			if (cp->reg[fd+1] & 0x80000000ULL)
+				cp->reg[fd+1] |= 0xffffffff00000000ULL;
+		} else {
+			cp->reg[fd] = fs_v & 0xffffffffULL;
+			if (cp->reg[fd] & 0x80000000ULL)
+				cp->reg[fd] |= 0xffffffff00000000ULL;
+		}
+		break;
 	case FPU_OP_C:
-		/*  TODO: how to detect unordered-ness and such?  */
 		/*  debug("  c: cond=%i\n", cond);  */
 
 		unordered = 0;
@@ -1397,7 +1419,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		return 1;
 	}
 
-	/*  mov.fmt: Floating-point move  */
+	/*  mov.fmt: Floating-point (non-arithmetic) move  */
 	if ((function & 0x0000003f) == 0x00000006) {
 		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("mov.%i\tr%i,r%i\n", fmt, fd, fs);
@@ -1426,7 +1448,9 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_L);
+		/*  TODO: not CVT?  */
+
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_L);
 		return 1;
 	}
 
@@ -1437,7 +1461,9 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_W);
+		/*  TODO: not CVT?  */
+
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_W);
 		return 1;
 	}
 
@@ -1485,7 +1511,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_S);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_S);
 		return 1;
 	}
 
@@ -1496,7 +1522,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_D);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_D);
 		return 1;
 	}
 
@@ -1507,7 +1533,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_W);
+		fpu_op(cpu, cp, FPU_OP_CVT, fmt, -1, fs, fd, -1, FMT_W);
 		return 1;
 	}
 
@@ -1759,6 +1785,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 /*
  *  coproc_rfe():
+ *
+ *  Return from exception. (R3000 etc.)
  */
 void coproc_rfe(struct cpu *cpu)
 {
@@ -1781,6 +1809,8 @@ void coproc_rfe(struct cpu *cpu)
 
 /*
  *  coproc_eret():
+ *
+ *  Return from exception. (R4000 etc.)
  */
 void coproc_eret(struct cpu *cpu)
 {
@@ -1878,7 +1908,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 		return;
 	}
 
-	if (cpnr < 2 && (((function & 0x03e007ff) == (COPz_CFCz << 21))
+	if (cpnr == 1 && (((function & 0x03e007ff) == (COPz_CFCz << 21))
 	              || ((function & 0x03e007ff) == (COPz_CTCz << 21)))) {
 		switch (copz) {
 		case COPz_CFCz:		/*  Copy from FPU control register  */
@@ -1966,7 +1996,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 	}
 
 
-	/*  Ugly R59000 hacks:  */
+	/*  Ugly R5900 hacks:  */
 	if ((function & 0xfffff) == 0x38) {		/*  ei  */
 		if (unassemble_only) {
 			debug("ei\n");

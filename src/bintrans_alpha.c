@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.87 2004-12-21 06:20:32 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.88 2004-12-29 13:51:03 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1454,7 +1454,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		a = *addrp;
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
-
 
 	if (bintrans_32bit_only) {
 		/*  Special case for 32-bit addressing:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.37 2004-12-06 23:29:45 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.38 2004-12-06 23:45:03 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -357,18 +357,25 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
 
-	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+	if (bintrans_32bit_only)
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
+	else
+		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+
 	store_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
 
 	if (special == SPECIAL_JALR && rd != 0) {
 		/*  gpr[rd] = retaddr    (pc + 8)  */
 
-		load_into_eax_edx(&a, &dummy_cpu.pc);
-
-		/*  83 c0 08                add    $0x8,%eax  */
-		/*  83 d2 00                adc    $0x0,%edx  */
-		*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		if (!bintrans_32bit_only) {
+		if (bintrans_32bit_only) {
+			load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.pc);
+			/*  83 c0 08                add    $0x8,%eax  */
+			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
+		} else {
+			load_into_eax_edx(&a, &dummy_cpu.pc);
+			/*  83 c0 08                add    $0x8,%eax  */
+			/*  83 d2 00                adc    $0x0,%edx  */
+			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
 		}
 
@@ -607,22 +614,42 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 
 	a = *addrp;
 
-	if (link) {
-		/*  gpr[31] = pc + 8  */
+	if (bintrans_32bit_only)
+		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.pc);
+	else
 		load_into_eax_edx(&a, &dummy_cpu.pc);
 
-		/*  83 c0 08                add    $0x8,%eax  */
-		/*  83 d2 00                adc    $0x0,%edx  */
-		*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		if (!bintrans_32bit_only) {
+	if (link) {
+		/*  gpr[31] = pc + 8  */
+		if (bintrans_32bit_only) {
+			/*  50             push  %eax */
+			/*  83 c0 08       add   $0x8,%eax  */
+			*a++ = 0x50;
+			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
+		} else {
+			/*  50             push  %eax */
+			/*  52             push  %edx */
+			/*  83 c0 08                add    $0x8,%eax  */
+			/*  83 d2 00                adc    $0x0,%edx  */
+			*a++ = 0x50;
+			*a++ = 0x52;
+			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
 			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
 		}
 		store_eax_edx(&a, &dummy_cpu.gpr[31]);
+		if (bintrans_32bit_only) {
+			/*  58     pop %eax  */
+			*a++ = 0x58;
+		} else {
+			/*  5a     pop %edx  */
+			/*  58     pop %eax  */
+			*a++ = 0x5a;
+			*a++ = 0x58;
+		}
 	}
 
 	/*  delay_jmpaddr = top 36 bits of pc together with lowest 28 bits of imm*4:  */
 	imm *= 4;
-	load_into_eax_edx(&a, &dummy_cpu.pc);
 
 	/*  Add 4, because the jump is from the delay slot:  */
 	/*  83 c0 04                add    $0x4,%eax  */

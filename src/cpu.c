@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.30 2004-02-19 10:25:06 debug Exp $
+ *  $Id: cpu.c,v 1.31 2004-02-24 21:58:34 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1863,8 +1863,16 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 					/*  st == 1:  Store  */
 					/*  If rmw is 0, then the store failed. (Cache collision.)  */
 					if (cpu->rmw == 0) {
+						/*  The store failed:  */
 						cpu->gpr[rt] = 0;
-						cpu->instruction_delay = random() % (ncpus + 1);
+
+						/*
+						 *  Operating systems that make use of ll/sc for
+						 *  synchronization should implement back-off protocols
+						 *  of their own, so this code should NOT be used:
+						 *
+						 *	cpu->instruction_delay = random() % (ncpus + 1);
+						 */
 						break;
 					}
 				}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.14 2005-02-03 05:56:58 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.15 2005-02-09 14:53:20 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -563,12 +563,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	iword = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
 
-	if (cpu->machine->instruction_trace) {
-		/*  TODO: Yuck.  */
-		int tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-		tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+	if (cpu->machine->instruction_trace)
 		ppc_cpu_disassemble_instr(cpu, buf, 1, 0, 0);
-	}
 
 	cpu->cd.ppc.pc += sizeof(iword);
 	cached_pc += sizeof(iword);
@@ -624,6 +620,13 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #undef CPU_RUN
 
 
+#define MEMORY_RW	ppc_memory_rw
+#define MEM_PPC
+#include "memory_rw.c"
+#undef MEM_PPC
+#undef MEMORY_RW
+
+
 /*
  *  ppc_cpu_family_init():
  *
@@ -643,6 +646,7 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 	/*  fp->tlbdump = ppc_cpu_tlbdump;  */
 	/*  fp->interrupt = ppc_cpu_interrupt;  */
 	/*  fp->interrupt_ack = ppc_cpu_interrupt_ack;  */
+	fp->memory_rw = ppc_memory_rw;
 	return 1;
 }
 

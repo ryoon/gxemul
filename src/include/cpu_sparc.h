@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.h,v 1.4 2005-02-03 06:15:06 debug Exp $
+ *  $Id: cpu_sparc.h,v 1.5 2005-02-09 14:53:19 debug Exp $
  */
 
 #include "misc.h"
@@ -42,6 +42,8 @@ struct sparc_cpu {
 
 
 /*  cpu_sparc.c:  */
+int sparc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int sparc_cpu_family_init(struct cpu_family *);
 
 

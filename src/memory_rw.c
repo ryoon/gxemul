@@ -25,10 +25,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.1 2005-02-09 14:28:09 debug Exp $
+ *  $Id: memory_rw.c,v 1.2 2005-02-09 14:53:20 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
- *  Included from memory_mips.c, etc.
+ *
+ *  Example for inclusion from memory_mips.c:
+ *
+ *	MEMORY_RW should be mips_memory_rw
+ *	MEM_MIPS should be defined
  */
 
 
@@ -73,6 +77,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
+#ifdef MEM_MIPS
 #ifdef BINTRANS
 	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
@@ -103,6 +108,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		paddr = cpu->cd.mips.pc_last_physical_page | (vaddr & 0xfff);
 		goto have_paddr;
 	}
+#endif	/*  MEM_MIPS  */
 
 	if (cache_flags & PHYSICAL || cpu->translate_address == NULL) {
 		paddr = vaddr;
@@ -117,6 +123,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	}
 
 
+#ifdef MEM_MIPS
 	/*
 	 *  If correct cache emulation is enabled, and we need to simluate
 	 *  cache misses even from the instruction cache, we can't run directly
@@ -146,6 +153,7 @@ have_paddr:
 		}
 	}
 #endif
+#endif	/*  MEM_MIPS  */
 
 
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
@@ -220,9 +228,10 @@ into the devices  */
 					debug("%s device '%s' addr %08lx failed\n",
 					    writeflag? "writing to" : "reading from",
 					    mem->dev_name[i], (long)paddr);
-
+#ifdef MEM_MIPS
 					mips_cpu_exception(cpu, EXCEPTION_DBE, 0,
 					    vaddr, 0, 0, 0, 0);
+#endif
 					return MEMORY_ACCESS_FAILED;
 				}
 
@@ -236,6 +245,7 @@ into the devices  */
 	}
 
 
+#ifdef MEM_MIPS
 	/*
 	 *  Data and instruction cache emulation:
 	 */
@@ -283,6 +293,7 @@ into the devices  */
 		/*  TODO  */
 		;
 	}
+#endif	/*  MEM_MIPS  */
 
 
 	/*
@@ -347,6 +358,7 @@ into the devices  */
 				/*  Return all zeroes? (Or 0xff? TODO)  */
 				memset(data, 0, len);
 
+#ifdef MEM_MIPS
 				/*
 				 *  For real data/instruction accesses, cause
 				 *  an exceptions on an illegal read:
@@ -359,6 +371,7 @@ into the devices  */
 						    EXCEPTION_DBE, 0, vaddr, 0,
 						    0, 0, 0);
 				}
+#endif  /*  MEM_MIPS  */
 			}
 
 			/*  Hm? Shouldn't there be a DBE exception for

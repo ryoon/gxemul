@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.10 2005-02-03 05:56:57 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.11 2005-02-09 14:53:19 debug Exp $
  */
 
 #include "misc.h"
@@ -102,6 +102,8 @@ void ppc_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 int ppc_cpu_run(struct emul *emul, struct machine *machine);
 void ppc_cpu_dumpinfo(struct cpu *cpu);
 void ppc_cpu_list_available_types(void);
+int ppc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
+	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int ppc_cpu_family_init(struct cpu_family *);
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.2 2005-02-09 14:28:09 debug Exp $
+ *  $Id: memory_mips.c,v 1.3 2005-02-09 14:53:20 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */
@@ -420,6 +420,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 
 #define MEMORY_RW	mips_memory_rw
+#define MEM_MIPS
 #include "memory_rw.c"
+#undef MEM_MIPS
 #undef MEMORY_RW
 

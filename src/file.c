@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.4 2003-11-08 08:44:24 debug Exp $
+ *  $Id: file.c,v 1.5 2003-11-24 04:27:40 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -445,6 +445,58 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 
 
 /*
+ *  file_load_raw():
+ *
+ *  Loads a raw binary into emulated memory. The filename should be
+ *  of the following form:     address:filename
+ */
+void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
+{
+	FILE *f;
+	int len, chunk_size;
+	unsigned char buf[4096];
+	uint64_t entry, vaddr;
+	char *p;
+
+	p = strchr(filename, ':');
+	if (p == NULL) {
+		fprintf(stderr, "error opening %s\n", filename);
+		exit(1);
+	}
+
+	entry = strtoll(filename, NULL, 0);
+
+	f = fopen(p+1, "r");
+	if (f == NULL) {
+		perror(p+1);
+		exit(1);
+	}
+
+	vaddr = entry;
+
+	/*  Load file contents:  */
+	while (!feof(f)) {
+		len = fread(buf, 1, sizeof(buf), f);
+
+		if (len > 0)
+			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, 0);
+		else {
+			fprintf(stderr, "could not read from %s\n", filename);
+			exit(1);
+		}
+
+		vaddr += len;
+	}
+
+	debug("'%s': 0x%x bytes loaded at 0x%08llx\n", p+1, ftell(f), (long long)entry);
+
+	fclose(f);
+
+	cpu->pc = entry;
+}
+
+
+/*
  *  file_load_elf():
  *
  *  Loads an ELF image into the emulated memory.  The entry point (read from
@@ -844,6 +896,9 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
  *  Sense the file format of a file (ELF, a.out, ecoff), and call the
  *  right file_load_XXX() function.  If the file isn't of a recognized
  *  binary format, assume that it contains symbol definitions.
+ *
+ *  If the filename doesn't exist, try to treat the name as
+ *   "address:filename" and load the file as a raw binary.
  */
 void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 {
@@ -858,8 +913,8 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 
 	f = fopen(filename, "r");
 	if (f == NULL) {
-		perror(filename);
-		exit(1);
+		file_load_raw(mem, filename, cpu);
+		return;
 	}
 
 	memset(minibuf, 0, sizeof(minibuf));

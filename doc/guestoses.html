@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.20 2005-03-15 20:15:07 debug Exp $
+$Id: guestoses.html,v 1.21 2005-03-29 00:51:51 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -290,11 +290,12 @@ option and try again.
 <a name="netbsdhpcmipsinstall"></a>
 <h3>How to install NetBSD/hpcmips in GXemul:</h3>
 
-There is no automatic install program for NetBSD/hpcmips, but it is 
-possible to create a harddisk image manually, and then booting the GENERIC 
-hpcmips kernel using that disk.
-
+<p>
 <font color="#ff0000">NOTE: I haven't succeeded with this yet.</font>
+
+<p>
+These are preliminary instructions on how an installation of
+NetBSD/hpcmips on an emulated MobilePro 780 might be done.
 
 <p>
 <ol start="1">
@@ -307,39 +308,27 @@ hpcmips kernel using that disk.
 	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=990000</b>
 
 </pre>
-  <li>Now you need to place the hpcmips distribution on the harddisk image.
-	You can do this by mounting the disk image loopback (if your
-	host operating system supports that). An alternative is to install
-	NetBSD/pmax (according to the <a href="#netbsdinstall">instructions
-	above</a>), and then run the following commands to place the
-	distribution files onto the hpcmips disk:<pre>
-	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d nbsd_hpcmips.img</b>
-	(log in as root)
-	disklabel -i -I sd1
-	  (a, 4.2BSD, 1c, 800M, b, swap, a, 99M, P, W, y, Q)
-	newfs /dev/sd1a
-	mount /dev/sd1a /mnt
-	cd /mnt
+  <li>Download the installation kernel (and gunzip it) and an ISO
+	image of NetBSD 2.0 for hpcmips:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
 
-	(if you installed NetBSD/pmax from a CDROM, and did not configure
-	networking, then you need to do these as well)
-	ifconfig le0 10.0.0.1
-	route add default 10.0.0.254
-	echo nameserver 10.0.0.254 > /etc/resolv.conf
-
-	ftp ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/sets/etc.tgz 
-	ftp ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/sets/base.tgz
-	tar xvfpz etc.tgz; tar zxvfp base.tgz
-	cd /; umount /mnt; sync; halt
+</pre>(Or choose a mirror closer to you, if .se is slow.)
+  <p>
+  <li>Start the installation like this:<pre>
+	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
 
 </pre>
-  <li>Download a generic hpcmips kernel:<pre>
-	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
-
-</pre>
+	and proceed like you would do if you were installing on a real MobilePro 780.
 </ol>
 
 <p>
+If everything worked, NetBSD should now be installed on the disk image.
+GXemul does not (yet) support reading the kernel directly from the
+disk image, so you need to download a generic kernel separately:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">netbsd-GENERIC.gz</a>
+
+</pre>
 You can now use the generic NetBSD/hpcmips kernel to boot from the harddisk
 image, using the following command:
 <p>

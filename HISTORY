@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.654 2005-03-29 00:26:19 debug Exp $
+$Id: HISTORY,v 1.655 2005-03-29 00:51:50 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1768,3 +1768,5 @@ Changelog for GXemul:
 		NetBSD/hpcmips' ramdisk installer).
 		Also adding simple cursor key support to the VR41xx kiu.
 20050329	Some progress on the wdc.
+		Updating the documentation of how to (possibly) install
+		NetBSD/hpcmips, once it is working.

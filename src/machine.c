@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.190 2004-10-14 12:11:29 debug Exp $
+ *  $Id: machine.c,v 1.191 2004-10-14 12:22:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2110,6 +2110,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 */
 
 				strcat(emul->machine_name, " (Acer PICA-61)");
+
+				/*  NetBSD/arc:  */
+				dev_jazz_init(cpu, mem, 0x2000000000ULL);
 
 				/*  OpenBSD/arc and NetBSD/arc:  */
 				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL, 0x60000003b0ULL);  */

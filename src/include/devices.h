@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.94 2004-08-11 03:12:10 debug Exp $
+ *  $Id: devices.h,v 1.95 2004-10-14 12:22:18 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -236,6 +236,15 @@ struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 #define	DEV_KN01_CSR_LENGTH		0x0000000000000004
 int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
+
+/*  dev_jazz.c:  */
+#define	DEV_JAZZ_LENGTH			0x280
+struct jazz_data {
+	int		interval;
+	int		interval_start;
+};
+int dev_jazz_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_pckbc.c:  */
 #define	DEV_PCKBC_LENGTH		0x10

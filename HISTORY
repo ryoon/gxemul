@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.254 2004-10-14 12:11:26 debug Exp $
+$Id: HISTORY,v 1.255 2004-10-14 12:22:17 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1019,3 +1019,4 @@ HISTORY of mips64emul
 		aware of this).
 		Adding "gets()" to src/dec_prom.c.
 		Working a bit on ARC stuff. Importing pica.h from NetBSD.
+		Adding a dev_jazz.c (mostly for PICA-61).

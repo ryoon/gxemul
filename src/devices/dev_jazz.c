@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.1 2004-10-14 12:11:26 debug Exp $
+ *  $Id: dev_jazz.c,v 1.2 2004-10-14 12:22:18 debug Exp $
  *  
  *  Jazz stuff. (Acer PICA-61, etc.)
  */
@@ -37,32 +37,20 @@
 #include "misc.h"
 #include "devices.h"
 
-#include "bus_pci.h"
-#include "rd94.h"
-
-
-struct rd94_data {
-	struct pci_data *pci_data;
-	uint32_t	reg[DEV_RD94_LENGTH / 4];
-	int		pciirq;
-
-	int		intmask;
-	int		interval;
-	int		interval_start;
-};
+#include "pica.h"
 
 
 /*
- *  dev_rd94_tick():
+ *  dev_jazz_tick():
  */
-void dev_rd94_tick(struct cpu *cpu, void *extra)
+void dev_jazz_tick(struct cpu *cpu, void *extra)
 {
-	struct rd94_data *d = extra;
+	struct jazz_data *d = extra;
 
-	if (d->interval_start > 0 && d->interval > 0 && d->intmask!=0) {		/*  ??? !=0  */
+	if (d->interval_start > 0 && d->interval > 0) {
 		d->interval --;
 		if (d->interval <= 0) {
-			debug("[ rd94: interval timer interrupt ]\n");
+			debug("[ jazz: interval timer interrupt ]\n");
 			cpu_interrupt(cpu, 5);
 		}
 	}
@@ -70,13 +58,13 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 
 
 /*
- *  dev_rd94_access():
+ *  dev_jazz_access():
  */
-int dev_rd94_access(struct cpu *cpu, struct memory *mem,
+int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct rd94_data *d = (struct rd94_data *) extra;
+	struct jazz_data *d = (struct jazz_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int regnr;
 
@@ -84,79 +72,13 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
-	case RD94_SYS_INTSTAT1:		/*  LB (Local Bus ???)  */
-		if (writeflag == MEM_WRITE) {
-		} else {
-			/*  Return value is (irq level + 1) << 2  */
-			odata = (8+1) << 2;
-
-			/*  Ugly hack:  */
-			if ((cpu->coproc[0]->reg[COP0_CAUSE] & 0x800) == 0)
-				odata = 0;
-		}
-		debug("[ rd94: intstat1 ]\n");
-/*		cpu_interrupt_ack(cpu, 3); */
-		break;
-	case RD94_SYS_INTSTAT2:		/*  PCI/EISA  */
-		if (writeflag == MEM_WRITE) {
-		} else {
-			odata = 0;	/*  TODO  */
-		}
-		debug("[ rd94: intstat2 ]\n");
-/*		cpu_interrupt_ack(cpu, 4); */
-		break;
-	case RD94_SYS_INTSTAT3:		/*  IT (Interval Timer)  */
-		if (writeflag == MEM_WRITE) {
-		} else {
-			odata = 0;	/*  return value does not matter?  */
-		}
-		debug("[ rd94: intstat3 ]\n");
-		cpu_interrupt_ack(cpu, 5);
-		d->interval = d->interval_start;
-		break;
-	case RD94_SYS_INTSTAT4:		/*  IPI  */
-		if (writeflag == MEM_WRITE) {
-		} else {
-			odata = 0;	/*  return value does not matter?  */
-		}
-		debug("[ rd94: intstat4 ]\n");
-		cpu_interrupt_ack(cpu, 6);
-		break;
-	case RD94_SYS_CPUID:
-		if (writeflag == MEM_WRITE) {
-		} else {
-			odata = cpu->cpu_id;
-		}
-		break;
-	case RD94_SYS_EXT_IMASK:
-		if (writeflag == MEM_WRITE) {
-			d->intmask = idata;
-		} else {
-			odata = d->intmask;
-		}
-		break;
-	case RD94_SYS_IT_VALUE:
-		if (writeflag == MEM_WRITE) {
-			d->interval = d->interval_start = idata;
-			debug("[ rd94: setting Interval Timer value to %i ]\n", idata);
-		} else {
-			odata = d->interval_start;	/*  TODO: or d->interval ?  */;
-		}
-		break;
-	case RD94_SYS_PCI_CONFADDR:
-	case RD94_SYS_PCI_CONFDATA:
-		if (writeflag == MEM_WRITE) {
-			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &idata, writeflag, d->pci_data);
-		} else {
-			bus_pci_access(cpu, mem, relative_addr == RD94_SYS_PCI_CONFADDR? BUS_PCI_ADDR : BUS_PCI_DATA, &odata, writeflag, d->pci_data);
-			/*  odata = 0;  */
-		}
-		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ rd94: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			fatal("[ jazz: unimplemented write to address 0x%x"
+			    ", data=0x%02x ]\n", relative_addr, idata);
 		} else {
-			debug("[ rd94: unimplemented read from address 0x%x ]\n", relative_addr);
+			fatal("[ jazz: unimplemented read from address 0x%x"
+			    " ]\n", relative_addr);
 		}
 	}
 
@@ -168,24 +90,22 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_rd94_init():
+ *  dev_jazz_init():
  */
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, int pciirq)
+struct jazz_data *dev_jazz_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr)
 {
-	struct rd94_data *d = malloc(sizeof(struct rd94_data));
+	struct jazz_data *d = malloc(sizeof(struct jazz_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct rd94_data));
-	d->pciirq   = pciirq;
-	d->pci_data = bus_pci_init(mem, pciirq);
+	memset(d, 0, sizeof(struct jazz_data));
 
-	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
-	    dev_rd94_access, (void *)d);
-	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);
+	memory_device_register(mem, "jazz", baseaddr, DEV_JAZZ_LENGTH,
+	    dev_jazz_access, (void *)d);
+	cpu_add_tickfunction(cpu, dev_jazz_tick, d, 10);
 
-	return d->pci_data;
+	return d;
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.1 2003-11-08 09:03:07 debug Exp $
+ *  $Id: diskimage.c,v 1.2 2003-11-08 14:40:56 debug Exp $
  *
  *  Disk image support.
  */
@@ -54,6 +54,20 @@ static int n_diskimages = 0;
 
 
 /*
+ *  diskimage_exist():
+ *
+ *  Returns 1 if the specified disk_id exists, 0 otherwise.
+ */
+int diskimage_exist(int disk_id)
+{
+	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
+		return 0;
+
+	return 1;
+}
+
+
+/*
  *  diskimage_access():
  *
  *  Read from or write to a disk image.
@@ -71,9 +85,12 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 
 	fseek(diskimages[disk_id]->f, offset, SEEK_SET);
 
-	if (writeflag)
+	if (writeflag) {
+		if (!diskimages[disk_id]->writable)
+			return 0;
+
 		len_done = fwrite(buf, 1, len, diskimages[disk_id]->f);
-	else {
+	} else {
 		len_done = fread(buf, 1, len, diskimages[disk_id]->f);
 		if (len_done < len)
 			memset(buf + len_done, 0, len-len_done);

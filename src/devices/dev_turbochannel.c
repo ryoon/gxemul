@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.35 2004-11-25 10:53:30 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.36 2004-12-15 02:08:32 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -193,6 +193,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	 *  PMAGB-BA: sfb0 at tc0 slot 0 offset 0x0: 0x0x8
 	 *  PMAGB-VA: sfb0 at tc0 slot 2 offset 0x0: 0x0x8
 	 *  PMAZ-AA:  asc0 at tc0 slot 2 offset 0x0: NCR53C94, 25MHz, SCSI ID 7
+	 *
+	 *  PMAF-FA:  fta0 at tc0 slot 0  (fddi network, "DEC", "V1.0b")
 	 */
 
 	if (strcmp(device_name, "PMAD-AA")==0) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.48 2004-06-28 01:22:35 debug Exp $
+ *  $Id: coproc.c,v 1.49 2004-06-29 02:30:53 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -118,7 +118,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			      (   0 << 31)	/*  Master/Checker present bit  */
 			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
 			    | (0x00 << 24)	/*  EP  */
-			    | (0x00 << 22)	/*  SB  */
+			    | (0x01 << 22)	/*  SB  */
 			    | (0x00 << 21)	/*  SS  */
 			    | (0x00 << 20)	/*  SW  */
 			    | (0x00 << 18)	/*  EW: 0=64-bit  */

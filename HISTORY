@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.590 2005-02-18 06:01:15 debug Exp $
+$Id: HISTORY,v 1.591 2005-02-18 07:47:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1673,4 +1673,6 @@ HISTORY of mips64emul
 		working) NetBSD/powerpc userland mode, a (buggy)
 		show_trace_tree thing (simliar to the MIPS version).
 20050216	Continuing...
-20050218	Continuing the clean-up.
+20050218	Continuing the clean-up. (Merging the devices and devstate
+		debugger commands, more 80-column cleanup, some documentation
+		updates, ...).

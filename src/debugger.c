@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.88 2005-02-11 09:29:50 debug Exp $
+ *  $Id: debugger.c,v 1.89 2005-02-18 07:47:26 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -36,7 +36,8 @@
  *
  *	Add more functionality that already exists elsewhere in the emulator.
  *
- *	Toggle machines on/off (pause?)
+ *	More generic expression evaluator (for example +-*/ between multiple
+ *	terms).
  *
  *	Nicer looking output of register dumps, floating point registers,
  *	etc. Warn about weird/invalid register contents.
@@ -413,64 +414,12 @@ static void debugger_cmd_continue(struct machine *m, char *cmd_line)
  */
 static void debugger_cmd_devices(struct machine *m, char *cmd_line)
 {
-	int i;
-	struct memory *mem;
-	struct cpu *c;
-
-	if (*cmd_line) {
-		printf("syntax: devices\n");
-		return;
-	}
-
-	if (m->cpus == NULL) {
-		printf("No cpus (?)\n");
-		return;
-	}
-	c = m->cpus[m->bootstrap_cpu];
-	if (c == NULL) {
-		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
-		return;
-	}
-	mem = m->cpus[m->bootstrap_cpu]->mem;
-
-	if (mem->n_mmapped_devices == 0)
-		printf("No memory-mapped devices\n");
-
-	for (i=0; i<mem->n_mmapped_devices; i++) {
-		printf("%2i: %25s @ 0x%011llx, len = 0x%llx",
-		    i, mem->dev_name[i],
-		    (long long)mem->dev_baseaddr[i],
-		    (long long)mem->dev_length[i]);
-		if (mem->dev_flags[i]) {
-			printf(" (");
-			if (mem->dev_flags[i] & MEM_BINTRANS_OK)
-				printf("BINTRANS R");
-			if (mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK)
-				printf("+W");
-			printf(")");
-		}
-		printf("\n");
-	}
-}
-
-
-/*
- *  debugger_cmd_devstate():
- */
-static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
-{
 	int i, j;
 	struct memory *mem;
 	struct cpu *c;
 
-	if (cmd_line[0] == '\0') {
-		printf("syntax: devstate devnr\n");
-		printf("Use 'devices' to get a list of current device "
-		    "numbers.\n");
-		return;
-	}
-
-	i = atoi(cmd_line);
+	if (cmd_line[0] == '\0')
+		goto return_help;
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -483,36 +432,78 @@ static void debugger_cmd_devstate(struct machine *m, char *cmd_line)
 	}
 	mem = m->cpus[m->bootstrap_cpu]->mem;
 
-	if (i < 0 || i >= mem->n_mmapped_devices) {
-		printf("No devices with that id.\n");
+	if (m->cpus == NULL) {
+		printf("No cpus (?)\n");
 		return;
 	}
-
-	if (mem->dev_f_state[i] == NULL) {
-		printf("No state function has been implemented yet "
-		    "for that device type.\n");
+	c = m->cpus[m->bootstrap_cpu];
+	if (c == NULL) {
+		printf("m->cpus[m->bootstrap_cpu] = NULL\n");
 		return;
 	}
+	mem = m->cpus[m->bootstrap_cpu]->mem;
 
-	for (j=0; ; j++) {
-		int type;
-		char *name;
-		void *data;
-		size_t len;
-		int res = mem->dev_f_state[i](c, mem, mem->dev_extra[i], 0,
-		    j, &type, &name, &data, &len);
-		if (!res)
-			break;
-		printf("%2i:%30s = (", j, name);
-		switch (type) {
-		case DEVICE_STATE_TYPE_INT:
-			printf("int) %i", *((int *)data));
-			break;
-		default:
-			printf("unknown)");
+	if (strncmp(cmd_line, "state ", 6) == 0) {
+		i = atoi(cmd_line + 6);
+		if (i < 0 || i >= mem->n_mmapped_devices) {
+			printf("No devices with that id.\n");
+			return;
 		}
-		printf("\n");
-	}
+
+		if (mem->dev_f_state[i] == NULL) {
+			printf("No state function has been implemented yet "
+			    "for that device type.\n");
+			return;
+		}
+
+		for (j=0; ; j++) {
+			int type;
+			char *name;
+			void *data;
+			size_t len;
+			int res = mem->dev_f_state[i](c, mem,
+			    mem->dev_extra[i], 0, j, &type, &name, &data, &len);
+			if (!res)
+				break;
+			printf("%2i:%30s = (", j, name);
+			switch (type) {
+			case DEVICE_STATE_TYPE_INT:
+				printf("int) %i", *((int *)data));
+				break;
+			default:
+				printf("unknown)");
+			}
+			printf("\n");
+		}
+	} else if (strcmp(cmd_line, "list") == 0) {
+		if (mem->n_mmapped_devices == 0)
+			printf("No memory-mapped devices in this machine.\n");
+
+		for (i=0; i<mem->n_mmapped_devices; i++) {
+			printf("%2i: %25s @ 0x%011llx, len = 0x%llx",
+			    i, mem->dev_name[i],
+			    (long long)mem->dev_baseaddr[i],
+			    (long long)mem->dev_length[i]);
+			if (mem->dev_flags[i]) {
+				printf(" (");
+				if (mem->dev_flags[i] & MEM_BINTRANS_OK)
+					printf("BINTRANS R");
+				if (mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK)
+					printf("+W");
+				printf(")");
+			}
+			printf("\n");
+		}
+	} else
+		goto return_help;
+
+	return;
+
+return_help:
+	printf("syntax: devices cmd [...]\n");
+	printf("Available cmds are:\n");
+	printf("  list        list all memory-mapped devices\n");
+	printf("  state x     show state of device nr x\n");
 }
 
 
@@ -1393,11 +1384,8 @@ static struct cmd cmds[] = {
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
-	{ "devices", "", 0, debugger_cmd_devices,
-		"print a list of memory-mapped devices" },
-
-	{ "devstate", "devnr", 0, debugger_cmd_devstate,
-		"show current state of a device" },
+	{ "device", "...", 0, debugger_cmd_devices,
+		"show info about (or manipulate) devices" },
 
 	{ "dump", "[addr [endaddr]]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },

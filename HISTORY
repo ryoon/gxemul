@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.213 2004-08-31 23:29:05 debug Exp $
+$Id: HISTORY,v 1.214 2004-08-31 23:30:52 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -920,4 +920,6 @@ HISTORY of mips64emul
 20040829	mips64emul is 1 year old today :-)
 20040901	tests/README now lists "all" MIPS opcodes. This list should
 		be updated whenever a new opcode is implemented, or when a
-		regression test is added.
+		regression test is added. (A combination of instructions from
+		the TX79 manual, the GNU assembler, and the MIPS64 manual).
+		Hopefully I haven't missed too many.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.16 2004-11-07 20:51:21 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.17 2004-11-07 22:08:23 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1052,6 +1052,56 @@ int bintrans_write_instruction__jalr(unsigned char **addrp,
 
 	*addrp = a;
 	return 2;
+}
+
+
+/*
+ *  bintrans_write_instruction__mfmthilo():
+ */
+int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
+	int *pc_increment, int rd, int from_flag, int hi_flag)
+{
+	unsigned char *a;
+	int ofs;
+
+	a = *addrp;
+
+	/*
+	 *   gpr[rd] = retaddr
+	 *
+	 *   18 09 30 a4     ldq     t0,hi(a0)  (or lo)
+	 *   18 09 30 b4     stq     t0,rd(a0)
+	 *
+	 *   (or if from_flag is cleared then move the other way, it's
+	 *   actually not rd then, but rs...)
+	 */
+
+	if (from_flag) {
+		if (rd != 0) {
+			/*  mfhi or mflo  */
+			if (hi_flag)
+				ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+			else
+				ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+			ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+		}
+	} else {
+		/*  mthi or mtlo  */
+		ofs = ((size_t)&dummy_cpu.gpr[rd]) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+
+		if (hi_flag)
+			ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+		else
+			ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+	}
+
+	*addrp = a;
+	return 1;
 }
 
 

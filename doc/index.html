@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.68 2004-07-11 03:17:13 debug Exp $
+$Id: index.html,v 1.69 2004-07-11 07:45:29 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -680,8 +680,8 @@ Here are links to some of the kernels that I usually experiment with.
 	<b>tar xfzv data.tar.gz ./boot/vmlinux-2.4.26-r3k-kn02</b>
 	<b>mv boot/vmlinux-* .; rmdir boot</b>
 </pre>
-	<br>Try running the emulator with the following arguments:
-		<b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with serial console: <b>-D2 -o 'console=ttyS03' vmlinux-2.4.26-r3k-kn02</b>
 	<br>Here are some older kernels (these don't support framebuffer,
 		I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>

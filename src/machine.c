@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.234 2004-12-09 00:04:12 debug Exp $
+ *  $Id: machine.c,v 1.235 2004-12-09 16:42:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2312,13 +2312,19 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x3c00000000ULL,
 				    0x1000, DEV_RAM_MIRROR, 0xf0000000ULL);
 
-				dev_vga_init(cpu, mem,
-				    0x100000b8000ULL, 0x60000003c0ULL,
-				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
-
-				arcbios_console_init(cpu, 0x100000b8000ULL,
-				    0x60000003c0ULL, ARC_CONSOLE_MAX_X,
-				    ARC_CONSOLE_MAX_Y);
+				switch (emul->machine) {
+				case MACHINE_ARC_JAZZ_PICA:
+					dev_vga_init(cpu, mem,
+					    0x100000b8000ULL, 0x60000003c0ULL,
+					    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y, emul->machine_name);
+					arcbios_console_init(cpu, 0x100000b8000ULL,
+					    0x60000003c0ULL, ARC_CONSOLE_MAX_X,
+					    ARC_CONSOLE_MAX_Y);
+					break;
+				case MACHINE_ARC_JAZZ_MAGNUM:
+					/*  VXL: TODO (G364)  */
+					break;
+				}
 
 				/*  Windows NT uses physical addresses like
 				    0x400b8000 to access video  */

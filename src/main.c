@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.38 2004-06-22 22:52:46 debug Exp $
+ *  $Id: main.c,v 1.39 2004-06-24 05:21:55 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -157,7 +157,7 @@ void usage(char *progname)
 	printf("Read the documentation and/or source code for other copyright notices.\n");
 
 	printf("usage: %s [options] file [...]\n", progname);
-	printf("  -A        try to emulate a generic ARC machine (default CPU = R4000)\n");
+	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61)\n");
 	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
 #ifdef BINTRANS
 	printf("  -b        enable binary translation (experimental!)\n");
@@ -233,11 +233,11 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EFG:HhI:iJjM:m:Nn:P:p:QqRrSsTtUu:XY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
-			machine = 0;
+			machine = atoi(optarg);
 			break;
 		case 'B':
 			emulation_type = EMULTYPE_PS2;

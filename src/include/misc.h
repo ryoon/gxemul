@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.63 2004-06-23 00:38:30 debug Exp $
+ *  $Id: misc.h,v 1.64 2004-06-24 05:21:56 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -113,6 +113,8 @@ typedef uint64_t u_int64_t;
 
 /*  SGI and ARC:  */
 #include "sgi_arcbios.h"
+#define	ARC_MACHINE_NEC		1
+#define	ARC_MACHINE_PICA	2
 /*
  *  Problem: kernels seem to be loaded at low addresses in RAM, so
  *  storing environment strings and memory descriptors there is a bad

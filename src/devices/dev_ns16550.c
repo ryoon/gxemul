@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,12 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.9 2004-01-03 02:12:20 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.10 2004-01-04 21:43:09 debug Exp $
  *  
  *  NS16550 serial controller.
  *
- *  TODO: fifo. Without the fifo functionality, this device works like
- *  a 8250 or 16450.
+ *  TODO: fifo.
  */
 
 #include <stdio.h>

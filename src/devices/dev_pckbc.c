@@ -23,11 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.3 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.4 2004-01-06 23:19:52 debug Exp $
  *  
- *  Standard PC Keyboard Controller.
- *
- *  TODO!  (This is just a dummy skeleton right now.)
+ *  Standard 8042 PC keyboard controller.
  */
 
 #include <stdio.h>
@@ -40,10 +38,36 @@
 #include "devices.h"
 
 
+#define	MAX_8042_QUEUELEN	256
+
 struct pckbc_data {
 	int	reg[DEV_PCKBC_LENGTH];
 	int	irqnr;
+
+	unsigned	key_queue[MAX_8042_QUEUELEN];
+	int		head, tail;
 };
+
+
+void pckbc_add_key(struct pckbc_data *d, int code)
+{
+	/*  Add at the head, read at the tail  */
+	d->head = (d->head+1) % MAX_8042_QUEUELEN;
+	if (d->head == d->tail)
+		fatal("pckbc: queue overrun!\n");
+
+	d->key_queue[d->head] = code;
+}
+
+
+int pckbc_get_key(struct pckbc_data *d)
+{
+	if (d->head == d->tail)
+		fatal("pckbc: queue empty!\n");
+
+	d->tail = (d->tail+1) % MAX_8042_QUEUELEN;
+	return d->key_queue[d->tail];
+}
 
 
 /*
@@ -54,27 +78,59 @@ struct pckbc_data {
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int i;
+	int i, code;
 	struct pckbc_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  TODO:  this is 100% dummy  */
+	/*  TODO:  this is almost 100% dummy  */
 
 	switch (relative_addr) {
-	case 0x01:
-		/*  no debug warning  */
+	case 0:		/*  data  */
 		if (writeflag==MEM_READ) {
-			odata = d->reg[relative_addr];
-		} else
+			odata = 0;
+			if (d->head != d->tail)
+				odata = pckbc_get_key(d);
+			debug("[ pckbc: read from DATA: 0x%02x ]\n", odata);
+		} else {
+			debug("[ pckbc: write to DATA:");
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" ]\n");
 			d->reg[relative_addr] = idata;
+		}
+		break;
+	case 1:		/*  control  */
+		if (writeflag==MEM_READ) {
+			odata = 0;
+
+			/*  "Data in buffer" bit  */
+			if (d->head != d->tail)
+				odata |= 1;
+
+			debug("[ pckbc: read from CTL: 0x%02x ]\n", odata);
+		} else {
+			debug("[ pckbc: write to CTL:");
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" ]\n");
+			d->reg[relative_addr] = idata;
+
+			code = 0xfa; /*  KBR_ACK;  */
+
+			/*  Self-test:  */
+			if (idata == 0xaa)
+				code = 0x55;
+
+			pckbc_add_key(d, code);
+		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ pckbc read from reg %i ]\n", (int)relative_addr);
+			debug("[ pckbc: read from unimplemented reg %i ]\n", (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
-			debug("[ pckbc write to reg %i:", (int)relative_addr);
+			debug("[ pckbc: write to unimplemented reg %i:", (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
@@ -103,6 +159,8 @@ void dev_pckbc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	}
 	memset(d, 0, sizeof(struct pckbc_data));
 	d->irqnr = irq_nr;
+
+	pckbc_add_key(d, 0x00);
 
 	memory_device_register(mem, "pckbc", baseaddr, DEV_PCKBC_LENGTH, dev_pckbc_access, d);
 }

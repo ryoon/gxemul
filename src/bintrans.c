@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.77 2004-11-22 08:54:19 debug Exp $
+ *  $Id: bintrans.c,v 1.78 2004-11-23 12:30:39 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -761,11 +761,10 @@ run_it:
 
 			/*  TODO: how about code between devices?  */
 			if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
-				paddr = (uint64_t) -1;
-		} else
-			paddr = (uint64_t) -1;
+				ok = 0;
+		}
 
-		if ((int64_t)paddr != -1) {
+		if (ok) {
 			paddr_page = paddr & ~0xfff;
 			offset_within_page = (paddr & 0xfff) / 4;
 			entry_index = PADDR_TO_INDEX(paddr);

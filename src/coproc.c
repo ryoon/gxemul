@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.94 2004-11-21 22:09:07 debug Exp $
+ *  $Id: coproc.c,v 1.95 2004-11-23 12:30:39 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -333,10 +333,11 @@ static void invalidate_translation_caches(struct cpu *cpu,
 		    vaddr2 == (cpu->translation_cache_instr[i].vaddr_pfn & ~1))
 			cpu->translation_cache_instr[i].wf = 0;
 
-	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-		if (all ||
-		    vaddr2 == (cpu->translation_cache_data[i].vaddr_pfn & ~1))
-			cpu->translation_cache_data[i].wf = 0;
+	if (!cpu->emul->bintrans_enable)
+		for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
+			if (all ||
+			    vaddr2 == (cpu->translation_cache_data[i].vaddr_pfn & ~1))
+				cpu->translation_cache_data[i].wf = 0;
 }
 #endif
 }

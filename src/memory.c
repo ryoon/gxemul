@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.105 2004-11-23 08:45:41 debug Exp $
+ *  $Id: memory.c,v 1.106 2004-11-23 12:30:39 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -280,6 +280,9 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 		cpu->translation_cache_instr[0].vaddr_pfn = vaddr;
 		cpu->translation_cache_instr[0].paddr = paddr;
 	} else {
+		if (cpu->emul->bintrans_enable)
+			return;
+
 		/*  Data:  */
 		memmove(&cpu->translation_cache_data[1],
 		    &cpu->translation_cache_data[0],
@@ -688,7 +691,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 					return cpu->translation_cache_instr[i].wf;
 				}
 			}
-		} else {
+		} else if (!cpu->emul->bintrans_enable) {
 			/*  Data:  */
 			for (i=0; i<N_TRANSLATION_CACHE_DATA; i++) {
 				if (cpu->translation_cache_data[i].wf >= wf &&

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.38 2004-07-16 18:19:45 debug Exp $
+ *  $Id: diskimage.c,v 1.39 2004-07-21 03:03:23 debug Exp $
  *
  *  Disk image support.
  *
@@ -80,6 +80,43 @@ extern int emulation_type;
 
 static struct diskimage *diskimages[MAX_DISKIMAGES];
 static int n_diskimages = 0;
+
+
+/**************************************************************************/
+
+/*
+ *  my_fseek():
+ *
+ *  A helper function, like fseek() but takes off_t.  (I know there are
+ *  other library functions out there, like fseeko(), but I want this to
+ *  run on systems that don't have those.)
+ *
+ *  The correct position is reached by seeking 2 billion bytes at a time
+ *  (or less).  Note: This method is only used for SEEK_SET, for SEEK_CUR
+ *  and SEEK_END, normal fseek() is used!
+ */
+int my_fseek(FILE *f, off_t offset, int whence)
+{
+	if (whence == SEEK_SET) {
+		int res = 0;
+		off_t curoff = 0;
+		off_t cur_step;
+
+		fseek(f, 0, SEEK_SET);
+		while (curoff < offset) {
+			/*  How far to seek?  */
+			cur_step = offset - curoff;
+			if (cur_step > 2000000000)
+				cur_step = 2000000000;
+			res = fseek(f, cur_step, SEEK_CUR);
+			if (res)
+				return res;
+			curoff += cur_step;
+		}
+		return 0;
+	} else
+		return fseek(f, offset, whence);
+}
 
 
 /**************************************************************************/
@@ -937,7 +974,7 @@ size_t diskimage_access__cdrom(int disk_id, off_t offset,
 	int buf_ofs, i = 0;
 
 	aligned_offset = (offset / CDROM_SECTOR_SIZE) * CDROM_SECTOR_SIZE;
-	fseek(diskimages[disk_id]->f, aligned_offset, SEEK_SET);
+	my_fseek(diskimages[disk_id]->f, aligned_offset, SEEK_SET);
 
 	while (len != 0) {
 		bytes_read = fread(cdrom_buf, 1, CDROM_SECTOR_SIZE,
@@ -991,7 +1028,7 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
 	if (diskimages[disk_id]->f == NULL)
 		return 0;
 
-	res = fseek(diskimages[disk_id]->f, offset, SEEK_SET);
+	res = my_fseek(diskimages[disk_id]->f, offset, SEEK_SET);
 	if (res != 0) {
 		fatal("[ diskimage_access(): fseek() failed on disk id %i \n", disk_id);
 		return 0;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.20 2004-12-26 13:38:22 debug Exp $
+ *  $Id: debugger.c,v 1.21 2004-12-26 14:10:37 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -149,7 +149,7 @@ void debugger_activate(int x)
 #define	NAME_PARSE_REGISTER	2
 #define	NAME_PARSE_NUMBER	3
 #define	NAME_PARSE_SYMBOL	4
-int debugger_parse_name(struct emul *emul, char *name, int writeflag,
+static int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 	uint64_t *valuep)
 {
 	int match_register = 0, match_symbol = 0, match_numeric = 0;
@@ -265,28 +265,110 @@ int debugger_parse_name(struct emul *emul, char *name, int writeflag,
 }
 
 
+/*
+ *  show_breakpoint():
+ */
+static void show_breakpoint(struct emul *emul, int i)
+{
+	printf("%3i: 0x%016llx", i,
+	    (long long)emul->breakpoint_addr[i]);
+	if (emul->breakpoint_string[i] != NULL)
+		printf(" (%s)", emul->breakpoint_string[i]);
+	if (emul->breakpoint_flags[i])
+		printf(": flags=0x%x", emul->breakpoint_flags[i]);
+	printf("\n");
+}
+
+
 /****************************************************************************/
 
 
 /*
- *  debugger_cmd_breakpoints():
+ *  debugger_cmd_breakpoint():
+ *
+ *  TODO: automagic "expansion" for the subcommand names (s => show).
  */
-static void debugger_cmd_breakpoints(struct emul *emul, char *cmd_line)
+static void debugger_cmd_breakpoint(struct emul *emul, char *cmd_line)
 {
-	int i;
+	int i, res;
 
-	if (emul->n_breakpoints == 0)
-		printf("No breakpoints set.\n");
+	while (cmd_line[0] != '\0' && cmd_line[0] == ' ')
+		cmd_line ++;
 
-	for (i=0; i<emul->n_breakpoints; i++) {
-		printf("%3i: 0x%016llx", i,
-		    (long long)emul->breakpoint_addr[i]);
-		if (emul->breakpoint_string[i] != NULL)
-			printf(" (%s)", emul->breakpoint_string[i]);
-		if (emul->breakpoint_flags[i])
-			printf(": flags=0x%x", emul->breakpoint_flags[i]);
-		printf("\n");
+	if (cmd_line[0] == '\0') {
+		printf("usage: breakpoint subcmd [args...]\n");
+		printf("Available subcmds (and args) are:\n");
+		printf("  add addr      add a breakpoint for address addr\n");
+		printf("  delete x      delete breakpoint nr x\n");
+		printf("  show          show current breakpoints\n");
+		return;
 	}
+
+	if (strcmp(cmd_line, "show") == 0) {
+		if (emul->n_breakpoints == 0)
+			printf("No breakpoints set.\n");
+		for (i=0; i<emul->n_breakpoints; i++)
+			show_breakpoint(emul, i);
+		return;
+	}
+
+	if (strncmp(cmd_line, "delete ", 7) == 0) {
+		int x = atoi(cmd_line + 7);
+
+		if (emul->n_breakpoints == 0) {
+			printf("No breakpoints set.\n");
+			return;
+		}
+		if (x < 0 || x >= emul->n_breakpoints) {
+			printf("Invalid breakpoint nr %i. Use 'breakpoint "
+			    "show' to see the current breakpoints.\n", x);
+			return;
+		}
+
+		free(emul->breakpoint_string[x]);
+
+		for (i=x; i<emul->n_breakpoints-1; i++) {
+			emul->breakpoint_addr[i]   = emul->breakpoint_addr[i+1];
+			emul->breakpoint_string[i] = emul->breakpoint_string[i+1];
+			emul->breakpoint_flags[i]  = emul->breakpoint_flags[i+1];
+		}
+		emul->n_breakpoints --;
+		return;
+	}
+
+	if (strncmp(cmd_line, "add ", 4) == 0) {
+		uint64_t tmp;
+
+		if (emul->n_breakpoints >= MAX_BREAKPOINTS) {
+			printf("Too many breakpoints. (You need to recompile"
+			    " mips64emul to increase this. Max = %i.)\n",
+			    MAX_BREAKPOINTS);
+			return;
+		}
+
+		i = emul->n_breakpoints;
+
+		res = debugger_parse_name(emul, cmd_line + 4, 0, &tmp);
+		if (!res) {
+			printf("Couldn't parse '%s'\n", cmd_line + 4);
+			return;
+		}
+
+		emul->breakpoint_string[i] = malloc(strlen(cmd_line+4) + 1);
+		if (emul->breakpoint_string[i] == NULL) {
+			printf("out of memory in debugger_cmd_breakpoint()\n");
+			exit(1);
+		}
+		strcpy(emul->breakpoint_string[i], cmd_line+4);
+		emul->breakpoint_addr[i] = tmp;
+		emul->breakpoint_flags[i] = 0;
+
+		emul->n_breakpoints ++;
+		show_breakpoint(emul, i);
+		return;
+	}
+
+	printf("Unknown breakpoint subcommand.\n");
 }
 
 
@@ -296,8 +378,8 @@ static void debugger_cmd_breakpoints(struct emul *emul, char *cmd_line)
 static void debugger_cmd_bintrans(struct emul *emul, char *cmd_line)
 {
 	if (!emul->bintrans_enabled_from_start) {
-		printf("ERROR: You must have enabled bintrans from the start of the simulation.\n");
-		printf("It is not possible to turn on afterwards.\n");
+		printf("You must have enabled bintrans from the start of the simulation.\n"
+		    "It is not possible to turn on afterwards.\n");
 		return;
 	}
 
@@ -371,7 +453,7 @@ static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 		return;
 	}
 
-	i = strtoll(cmd_line + 1, NULL, 0);
+	i = strtoll(cmd_line, NULL, 0);
 
 	if (emul->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -426,9 +508,16 @@ static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
 	struct memory *m;
 	int x, r;
 
-	/*  Assuming hex will work both with and with the 0x prefix.  */
-	if (cmd_line[0] != '\0')
-		last_dump_addr = strtoull(cmd_line + 1, NULL, 16);
+	if (cmd_line[0] != '\0') {
+		uint64_t tmp;
+		r = debugger_parse_name(emul, cmd_line, 0, &tmp);
+		if (r)
+			last_dump_addr = tmp;
+		else {
+			printf("Unparsable address: %s\n", cmd_line);
+			return;
+		}
+	}
 
 	addr_start = last_dump_addr;
 	addr_end = addr_start + 256;
@@ -521,18 +610,17 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 
 	/*  Addresses never need to be given in decimal form anyway,
 	    so assuming hex here will be ok.  */
-	addr = strtoull(cmd_line + 1, NULL, 16);
+	addr = strtoull(cmd_line, NULL, 16);
 
 	if (addr == 0) {
 		uint64_t newaddr;
 		res = get_symbol_addr(&emul->symbol_context,
-		    cmd_line + 1, &newaddr);
+		    cmd_line, &newaddr);
 		if (!res) {
-			printf("lookup for '%s' failed\n", cmd_line + 1);
+			printf("lookup for '%s' failed\n", cmd_line);
 			return;
 		}
-		printf("%s = 0x%016llx\n", cmd_line + 1,
-		    (long long)newaddr);
+		printf("%s = 0x%016llx\n", cmd_line, (long long)newaddr);
 		return;
 	}
 
@@ -541,7 +629,7 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 	if (symbol != NULL)
 		printf("0x%016llx = %s\n", (long long)addr, symbol);
 	else
-		printf("lookup for '%s' failed\n", cmd_line + 1);
+		printf("lookup for '%s' failed\n", cmd_line);
 }
 
 
@@ -661,7 +749,7 @@ static void debugger_cmd_reg(struct emul *emul, char *cmd_line)
 		p++;
 
 	if (*p != '\0') {
-		cpuid = strtoull(cmd_line + 1, NULL, 0);
+		cpuid = strtoull(cmd_line, NULL, 0);
 		if (cpuid < 0 || cpuid >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", cpuid);
 			return;
@@ -682,7 +770,7 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
 	int n = 1;
 
 	if (cmd_line[0] != '\0') {
-		n = strtoull(cmd_line + 1, NULL, 0);
+		n = strtoull(cmd_line, NULL, 0);
 		if (n < 1) {
 			printf("invalid nr of steps\n");
 			return;
@@ -708,7 +796,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 	int i, j, x = -1;
 
 	if (cmd_line[0] != '\0') {
-		x = strtoull(cmd_line + 1, NULL, 0);
+		x = strtoull(cmd_line, NULL, 0);
 		if (x < 0 || x >= emul->ncpus) {
 			printf("cpu%i doesn't exist.\n", x);
 			return;
@@ -787,10 +875,16 @@ static void debugger_cmd_unassemble(struct emul *emul, char *cmd_line)
 	struct memory *m;
 	int r;
 
-	/*  Assume hex: (both with and without the 0x prefix will result 
-	    in hex input)  */
-	if (cmd_line[0] != '\0')
-		last_unasm_addr = strtoull(cmd_line + 1, NULL, 16);
+	if (cmd_line[0] != '\0') {
+		uint64_t tmp;
+		r = debugger_parse_name(emul, cmd_line, 0, &tmp);
+		if (r)
+			last_unasm_addr = tmp;
+		else {
+			printf("Unparsable address: %s\n", cmd_line);
+			return;
+		}
+	}
 
 	addr_start = last_unasm_addr;
 	addr_end = addr_start + 4 * 16;
@@ -856,8 +950,8 @@ struct cmd {
 };
 
 static struct cmd cmds[] = {
-	{ "breakpoints", "", 0, debugger_cmd_breakpoints,
-		"show breakpoints" },
+	{ "breakpoint", "...", 0, debugger_cmd_breakpoint,
+		"manipulate breakpoints" },
 
 	{ "bintrans", "", 0, debugger_cmd_bintrans,
 		"toggle bintrans on or off" },
@@ -1330,9 +1424,15 @@ void debugger(void)
 		}
 
 		/*  Exactly one match:  */
-		if (cmds[i_match].f != NULL)
-			cmds[i_match].f(debugger_emul, cmd + matchlen);
-		else
+		if (cmds[i_match].f != NULL) {
+			char *p = cmd + matchlen;
+			/*  Remove leading whitespace from the args...  */
+			while (*p != '\0' && *p == ' ')
+				p++;
+
+			/*  ... and run the command:  */
+			cmds[i_match].f(debugger_emul, p);
+		} else
 			printf("FATAL ERROR: internal error in debugger.c:"
 			    " no handler for this command?\n");
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.420 2004-12-26 18:17:27 debug Exp $
+$Id: HISTORY,v 1.421 2004-12-27 10:26:35 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1387,3 +1387,5 @@ HISTORY of mips64emul
 		The configure script now tries to detect the presence of a
 		MIPS cross compiler. (Used by "make regtest".)
 		Regression tests are now run both with and without bintrans.
+20041227	Some hacks to the VR41xx code to allow Linux for BE300 to
+		get far enough to show the penguin on the framebuffer.

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.20 2004-12-01 14:23:01 debug Exp $
+ *  $Id: memory.h,v 1.21 2004-12-15 01:59:57 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -67,6 +67,12 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 #define	MEMORY_ACCESS_OK	1
 
 void memory_device_bintrans_access(struct cpu *, struct memory *mem, void *extra, uint64_t *low, uint64_t *high);
+
+void memory_device_register_statefunction(
+	struct memory *mem, void *extra,
+	int (*dev_f_state)(struct cpu *,
+	    struct memory *, void *extra, int wf, int nr,
+	    int *type, char **namep, void **data, size_t *len));
 
 void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
 	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *, int flags, unsigned char *bintrans_data);

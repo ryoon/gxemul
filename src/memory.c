@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.129 2004-12-14 21:55:40 debug Exp $
+ *  $Id: memory.c,v 1.130 2004-12-15 01:59:59 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1078,6 +1078,31 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 #else
 	return;
 #endif
+}
+
+
+/*
+ *  memory_device_register_statefunction():
+ *
+ *  TODO: Hm. This is semi-ugly. Should probably be rewritten/redesigned
+ *  some day.
+ */
+void memory_device_register_statefunction(
+	struct memory *mem, void *extra,
+	int (*dev_f_state)(struct cpu *,
+	    struct memory *, void *extra, int wf, int nr,
+	    int *type, char **namep, void **data, size_t *len))
+{
+	int i;
+
+	for (i=0; i<mem->n_mmapped_devices; i++)
+		if (mem->dev_extra[i] == extra) {
+			mem->dev_f_state[i] = dev_f_state;
+			return;
+		}
+
+	printf("memory_device_register_statefunction(): couldn't find the device\n");
+	exit(1);
 }
 
 

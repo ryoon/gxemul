@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.182 2004-12-14 02:21:20 debug Exp $
+ *  $Id: misc.h,v 1.183 2004-12-15 01:59:57 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -199,9 +199,11 @@ struct cpu_type_def {
 /*  Debug stuff:  */
 #define	DEBUG_BUFSIZE		1024
 
-#define	DEFAULT_RAM_IN_MB	32
-#define	MAX_DEVICES		24
+#define	DEFAULT_RAM_IN_MB		32
+#define	MAX_DEVICES			24
 
+#define	DEVICE_STATE_TYPE_INT		1
+#define	DEVICE_STATE_TYPE_UINT64_T	2
 
 struct cpu;
 
@@ -220,9 +222,12 @@ struct memory {
 	uint64_t	dev_baseaddr[MAX_DEVICES];
 	uint64_t	dev_length[MAX_DEVICES];
 	int		dev_flags[MAX_DEVICES];
+	void		*dev_extra[MAX_DEVICES];
 	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
 			    uint64_t,unsigned char *,size_t,int,void *);
-	void		*dev_extra[MAX_DEVICES];
+	int		(*dev_f_state[MAX_DEVICES])(struct cpu *,
+			    struct memory *, void *extra, int wf, int nr,
+			    int *type, char **namep, void **data, size_t *len);
 	unsigned char	*dev_bintrans_data[MAX_DEVICES];
 #ifdef BINTRANS
 	uint64_t	dev_bintrans_write_low[MAX_DEVICES];

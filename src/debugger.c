@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.9 2004-12-14 21:57:46 debug Exp $
+ *  $Id: debugger.c,v 1.10 2004-12-15 01:59:59 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -205,6 +205,66 @@ static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_devstate():
+ */
+static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
+{
+	int i, j, ok;
+	struct memory *m;
+	struct cpu *c;
+
+	if (cmd_line[0] == '\0') {
+		printf("usage: devstate devnr\n");
+		printf("Use 'devices' to get a list of current device numbers.\n");
+		return;
+	}
+
+	i = strtoll(cmd_line + 1, NULL, 0);
+
+	if (emul->cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = emul->cpus[emul->bootstrap_cpu];
+	if (c == NULL) {
+		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		return;
+	}
+	m = emul->cpus[emul->bootstrap_cpu]->mem;
+
+	if (i < 0 || i >= m->n_mmapped_devices) {
+		printf("No devices with that id.\n");
+		return;
+	}
+
+	if (m->dev_f_state[i] == NULL) {
+		printf("No state function has been implemented yet for that device type.\n");
+		return;
+	}
+
+	for (j=0; ; j++) {
+		int type;
+		char *name;
+		void *data;
+		size_t len;
+		int res = m->dev_f_state[i](c, m, m->dev_extra[i], 0,
+		    j, &type, &name, &data, &len);
+		if (!res)
+			break;
+		printf("%2i:%30s = (", j, name);
+		switch (type) {
+		case DEVICE_STATE_TYPE_INT:
+			printf("int) %i", *((int *)data));
+			break;
+		default:
+			printf("unknown)");
+		}
+		printf("\n");
+	}
+}
+
+
+/*
  *  debugger_cmd_dump():
  */
 static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
@@ -374,8 +434,6 @@ static void debugger_cmd_registers(struct emul *emul, char *cmd_line)
 	for (i=0; i<emul->ncpus; i++)
 		if (x == -1 || i == x)
 			cpu_register_dump(emul->cpus[i]);
-
-	last_cmd_len = 0;
 }
 
 
@@ -445,8 +503,6 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
 	    }
-
-	last_cmd_len = 0;
 }
 
 
@@ -553,6 +609,9 @@ static struct cmd cmds[] = {
 
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
+
+	{ "devstate", "devnr", 0, debugger_cmd_devstate,
+		"show current state of a device" },
 
 	{ "devices", "", 0, debugger_cmd_devices,
 		"print a list of memory-mapped devices" },

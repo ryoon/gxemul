@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.128 2004-09-02 02:13:14 debug Exp $
+ *  $Id: cpu.c,v 1.129 2004-09-02 14:35:29 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1998,6 +1998,9 @@ static int cpu_run_instr(struct cpu *cpu)
 		case SPECIAL_SYNC:
 			imm = ((instr[1] & 7) << 2) + (instr[0] >> 6);
 			/*  TODO: actually sync  */
+
+			/*  Clear the LLbit (at least on R10000):  */
+			cpu->rmw = 0;
 			return 1;
 		case SPECIAL_SYSCALL:
 			imm = ((instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0]) >> 6;
@@ -2327,8 +2330,11 @@ static int cpu_run_instr(struct cpu *cpu)
 			 *  In the MIPS IV ISA, the 'lwc3' instruction is changed into 'pref'.
 			 *  The pref instruction is emulated by not doing anything. :-)  TODO
 			 */
-			if (hi6 == HI6_LWC3)
+			if (hi6 == HI6_LWC3 && cpu->cpu_type.isa_level >= 4) {
+				/*  Clear the LLbit (at least on R10000):  */
+				cpu->rmw = 0;
 				break;
+			}
 
 			addr = cpu->gpr[rs] + imm;
 
@@ -2860,6 +2866,9 @@ static int cpu_run_instr(struct cpu *cpu)
 				cpu->r10k_cache_disable_TODO = 1;
 			}
 /*		}  */
+
+		/*  Clear the LLbit (at least on R10000):  */
+		cpu->rmw = 0;
 
 		return 1;
 	case HI6_SPECIAL2:

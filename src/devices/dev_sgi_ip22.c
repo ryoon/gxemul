@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.5 2004-04-02 05:49:04 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.6 2004-04-06 09:11:33 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -59,7 +59,6 @@ void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
 int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
-	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
 

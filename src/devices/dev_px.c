@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.7 2004-03-15 06:07:31 debug Exp $
+ *  $Id: dev_px.c,v 1.8 2004-04-06 09:11:23 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -88,9 +88,9 @@
  */
 void dev_px_tick(struct cpu *cpu, void *extra)
 {
+#if 0
 	struct px_data *d = extra;
 
-#if 0
 	if (d->intr & STIC_INT_P_EN)		/*  or _WE ?  */
 		cpu_interrupt(cpu, d->irq_nr);
 #endif
@@ -217,7 +217,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		uint32_t nspans, lw;
 		int spannr, ofs;
 		uint32_t span_len, span_src, span_dst;
-		unsigned char pixels[PX_XSIZE * 3];
+		/*  unsigned char pixels[PX_XSIZE * 3];  */
 
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			nspans = dma_buf[4] + (dma_buf[5] << 8) + (dma_buf[6] << 16) + (dma_buf[7] << 24);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.34 2004-06-08 10:49:45 debug Exp $
+ *  $Id: coproc.c,v 1.35 2004-06-10 03:33:13 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1201,9 +1201,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)
-						debug("tlbwi");
+						debug("tlbwi\n");
 					else
-						debug("tlbwr");
+						debug("tlbwr\n");
 				}
 #if 0
 				debug(": index = %08llx", (long long) cp->reg[COP0_INDEX]);

@@ -69,6 +69,7 @@ o)  Playstation 2:
 
     A Linux kernel (2.2.21-pre1-xr7) is available from
     http://playstation2-linux.com/projects/xrhino-kernel/
+    Try running with  -XBqN      (-X is required, for the framebuffer).
 
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.

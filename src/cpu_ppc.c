@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.25 2005-02-14 11:58:42 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.26 2005-02-14 12:10:08 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1139,11 +1139,6 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		mb = (iword >> 6) & 31;
 		me = (iword >> 1) & 31;
 		rc = iword & 1;
-		if (rc) {
-			fatal("[ rlwinm: PPC rc not yet implemeted ]\n");
-			cpu->running = 0;
-			return 0;
-		}
 		tmp = cpu->cd.ppc.gpr[rs];
 		/*  TODO: Fix this, its performance is awful:  */
 		while (sh-- != 0) {
@@ -1157,6 +1152,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.ppc.gpr[ra] |= (tmp & mask);
 			mb ++;
 		}
+		if (rc)
+			update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 		break;
 
 	case PPC_HI6_ORI:
@@ -1405,6 +1402,22 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (update && ra != 0)
 				cpu->cd.ppc.gpr[ra] = addr;
+			break;
+
+		case PPC_31_NEG:
+		case PPC_31_NEGO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			if (oe_bit) {
+				fatal("[ neg: PPC oe not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] + 1;
+			if (rc)
+				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
 			break;
 
 		case PPC_31_ADDE:

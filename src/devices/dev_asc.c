@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.30 2004-06-22 22:23:37 debug Exp $
+ *  $Id: dev_asc.c,v 1.31 2004-06-28 00:55:23 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -54,7 +54,7 @@
 #include "ncr53c9xreg.h"
 
 
-/*  #define	ASC_DEBUG	*/
+/* #define ASC_DEBUG */
 
 #define	ASC_FIFO_LEN		16
 #define	STATE_DISCONNECTED	0

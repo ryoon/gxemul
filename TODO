@@ -29,6 +29,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    by a substring of the machine type), not one letter
 		    for each machine type as it is now.
 
+	Clock stuff:  The clock should adjust to _real_ time, not CPU 
+		user time.
+
 	CPU Emulation:
 		o)  Factor out the MIPS dependant parts of the cpu, so that
 		    (in theory) the emulator could support other architectures

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.5 2004-07-06 14:01:43 debug Exp $
+ *  $Id: net.c,v 1.6 2004-07-06 14:37:13 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -32,6 +32,11 @@
  *  network is a "gateway" or "firewall", which has an address of
  *  55:44:33:22:11:00.  This module (net.c) contains the emulation of that
  *  gateway.
+ *
+ *  The gateway uses IPv4 address 10.0.0.254.  With NetBSD (inside the
+ *  emulator), a suitable choice of IPv4 address would be 10.0.0.1.  (Actually,
+ *  any 10.x.x.x address works, as long as there isn't a collision with the
+ *  gateway's IPv4 addres).
  *
  *  NOTE: The 'extra' argument used in many functions in this file is a pointer
  *  to something unique for each controller, so that if multiple controllers

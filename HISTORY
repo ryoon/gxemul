@@ -228,3 +228,20 @@ HISTORY of mips64emul
 		framebuffer contains exactly what is already in it.
 		(This improves scrolling speed and initialization.)
 		Adding initial MIPS16 support.
+		Adding initial disk image support (-d command line
+		option), but this will not be used until I get some
+		kind of SCSI-controller emulation working.
+20031108	Adding the first MIPS16 instructions: "move y,X",
+		"ld y,D(x)", and "daddiu S,K" (but the last one
+		doesn't work yet).
+		Fixing the console environment variable for
+		Enough of the 'asc' controller is now implemented
+		to let NetBSD get past scsi disk detection when
+		no disk images are used.
+		DECstation machine type 2; both serial console and
+		graphical console work now.
+		Other X-windows bit-depths than 24 bits work now,
+		but colors are still not correct in non-24 bit modes.
+		Keypresses in X framebuffer windows are now
+		translated into console keypresses. (Normal keys, but
+		not cursor keys or other special keys.)

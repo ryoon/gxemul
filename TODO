@@ -1,9 +1,10 @@
 mips64emul TODO
 ---------------
 
-Most important stuff (but these are all _huge_ tasks):
+Most important stuff (but these are all non-trivial tasks):
 
   o)  DECstations:
+	x)  Make interrupt sharing more generic!
 	x)  write 'sii' or 'asc' SCSI interface stuff for pmax so that harddisk images can be used
 	x)  try to install NetBSD/pmax onto a fake SCSI-disk
 	x)  try to compile mips64emul _inside_ a running NetBSD/pmax system
@@ -17,43 +18,28 @@ Most important stuff (but these are all _huge_ tasks):
 
 -------------------------------------------------------------------------------------
 
-	Instructions:
-		o)  Add exception support to all instructions!
-		o)  Go through the ENTIRE MIPS64 ISA and VR5432 ISA and make sure that
-		    every instruction is:
-			*  included in the emulator,
-			*  tested using a kind of regression test (ie test code
-			   written in mips assembly language)
-		o)  Floating point instructions. (ISA I and II?)
-		o)  MIPS16:
-			x)  should the lowest bit of the PC be used instead of cpu->mips16 ?
-			x)  implement all instructions
-		o)  MIPS V (SIMD vector stuff?)
-		o)  MDMX?  (MIPS Digital Media Extension)
-		o)  Warn about mis-used bit fields (ie bits that should be
-			all zeroes, warn about if they are not)!
-			Both for coprocessor registers and for instruction opcodes.
-		o)  warn and/or cause exceptions for unimplemented instructions,
-			at specific ISA levels.
-		o)  Something radical:  instead of a large switch/case thing,
-			I could implement some kind of tree-structure of masks
-			and comparisions, and arrays of functions to call. Hm.
-			(Performance hack.)
-
-	Framebuffer stuff:
-		o)  "Sprites", or overlays  (useful for cursors...)
-		o)  2D and 3D acceleration
-		o)  Playstation 2 color encoding is not rgb
-		o)  Move the polygon drawing stuff to its own module.
-		o)  Antialiased polygons? :-)
-
-	Code cleanup:
-		o)  Namespace consistency
-		o)  Struct encapsulation:  no global variables, or at least
-			as few as possible
-		o)  No hardcoded values, use #defines
-
 	CPU Emulation:
+		o)  Instructions:
+			x)  Add exception support to all instructions!
+			x)  Go through the ENTIRE MIPS64 ISA and VR5432 ISA and make sure that
+			    every instruction is:
+				*  included in the emulator,
+				*  tested using a kind of regression test (ie test code
+				   written in mips assembly language)
+			x)  Floating point instructions. (ISA I and II?)
+			x)  MIPS16:
+				x)  implement all instructions
+			x)  MIPS V (SIMD vector stuff?)
+			x)  MDMX?  (MIPS Digital Media Extension)
+			x)  Warn about mis-used bit fields (ie bits that should be
+				all zeroes, warn about if they are not)!
+				Both for coprocessor registers and for instruction opcodes.
+			x)  warn and/or cause exceptions for unimplemented instructions,
+				at specific ISA levels.
+			x)  Something radical:  instead of a large switch/case thing,
+				I could implement some kind of tree-structure of masks
+				and comparisions, and arrays of functions to call. Hm.
+				(Performance hack.)
 		o)  coproc 0 selectors!
 		o)  Nr of instructions per second is NOT the number of cycles
 		    per second, this is CPU dependant.  Several subsystems (CPUs,
@@ -77,6 +63,7 @@ Most important stuff (but these are all _huge_ tasks):
 
 	Emulation of specific machines:
 		o)  Separate busses and ROM emulation from machines!
+			x)  Make interrupt sharing more generic!
 			x)  TURBOchannel  (many DEC systems)
 			x)  QBus (DECsystem 5400)
 			x)  ARCBIOS (SGI, arc?)
@@ -124,6 +111,19 @@ Most important stuff (but these are all _huge_ tasks):
 
 		o)  newsmips?
 
+	Framebuffer stuff:
+		o)  "Sprites", or overlays  (useful for cursors...)
+		o)  2D and 3D acceleration
+		o)  Playstation 2 color encoding is not rgb
+		o)  Move the polygon drawing stuff to its own module.
+		o)  Antialiased polygons? :-)
+
+	Code cleanup:
+		o)  Namespace consistency
+		o)  Struct encapsulation:  no global variables, or at least
+			as few as possible
+		o)  No hardcoded values, use #defines
+
 	Multi-cpu stuff:
 		either do it in a way which emulates a real MP MIPS machine,
 		or I'll just implement my own way, with some structures
@@ -147,7 +147,7 @@ Most important stuff (but these are all _huge_ tasks):
 			(for ROM images, etc)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly
-			x)  (read-only) disk images
+			x)  (read-only) disk images (?)
 		o)  'srec' binaries?
 		o)  ELF: separate LE/BE (MIPS instruction format) from LSB/MSB
 			(ELF structure format)
@@ -158,7 +158,7 @@ Most important stuff (but these are all _huge_ tasks):
 			for example turning those events into data sent into
 			the machine on a serial port...
 		o)  Non-resizable windows
-		o)  Not fixed to 24-bit XImages?
+		o)  Fix color support for non-24-bit modes
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 
@@ -172,7 +172,8 @@ Most important stuff (but these are all _huge_ tasks):
 			and make histograms of this data
 
 	Make sure that the emulator compiles and runs on as many Unices as
-	possible, with different compilers and compiler settings.
+	possible, with different compilers and compiler settings. (Maybe on
+	non-Unix-like systems too, if the X11 stuff is separated well enough.)
 
 	Write Documentation (TeX/HTML/manpages) for the whole emulator.
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.13 2004-07-16 18:19:45 debug Exp $
+ *  $Id: ps2_bios.c,v 1.14 2004-09-02 02:13:14 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -133,18 +133,18 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		{
 			uint32_t tmpaddr;
 
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x\n", tmpaddr);
 
 			/*  TODO: This is probably netbsd specific  */
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
 			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
-			store_32bit_word(tmpaddr, 1);		/*  "done" word for NetBSD  */
-			store_32bit_word(tmpaddr + 4, 1);		/*  "done" word A for Linux */
+			store_32bit_word(cpu, tmpaddr, 1);		/*  "done" word for NetBSD  */
+			store_32bit_word(cpu, tmpaddr + 4, 1);		/*  "done" word A for Linux */
 
-			store_32bit_word(cpu->gpr[GPR_A1] + 0, 0);		/*  "done" word B for Linux */
+			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0, 0);		/*  "done" word B for Linux */
 		}
 		cpu->gpr[GPR_V0] = 0;
 		break;
@@ -162,20 +162,20 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 			static uint32_t return_addr = 0x1000;  /*  0xbc000000;  */
 			uint32_t size;
 
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x (result should be placed here)\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x (*arg)\n", tmpaddr);
-			size = load_32bit_word(tmpaddr + 0);			fatal("      size = %08x\n", size);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x (*func (void *, int))\n", tmpaddr);
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x (*para)\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 0);	fatal("  +0: %08x (result should be placed here)\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 4);	fatal("  +4: %08x (*arg)\n", tmpaddr);
+			size = load_32bit_word(cpu, tmpaddr + 0);			fatal("      size = %08x\n", size);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 8);	fatal("  +8: %08x (*func (void *, int))\n", tmpaddr);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);	fatal(" +12: %08x (*para)\n", tmpaddr);
 
 			/*  TODO: This is probably netbsd specific  */
-			tmpaddr = load_32bit_word(cpu->gpr[GPR_A1] + 12);
+			tmpaddr = load_32bit_word(cpu, cpu->gpr[GPR_A1] + 12);
 			fatal("tmpaddr 1 = 0x%08x\n", tmpaddr);
-			store_32bit_word(tmpaddr, 1);		/*  "done" word for NetBSD  */
-			store_32bit_word(tmpaddr + 4, 1);		/*  "done" word A for Linux */
+			store_32bit_word(cpu, tmpaddr, 1);		/*  "done" word for NetBSD  */
+			store_32bit_word(cpu, tmpaddr + 4, 1);		/*  "done" word A for Linux */
 
 			/*  Result:  */
-			store_32bit_word(cpu->gpr[GPR_A1] + 0, return_addr);
+			store_32bit_word(cpu, cpu->gpr[GPR_A1] + 0, return_addr);
 
 			return_addr += size;
 			/*  Round up to next page:  */

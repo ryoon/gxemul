@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.168 2004-09-02 00:58:04 debug Exp $
+ *  $Id: machine.c,v 1.169 2004-09-02 02:13:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -70,7 +70,6 @@
 extern int emulation_type;
 extern char *machine_name;
 extern int instruction_trace;
-extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int emulation_type;
@@ -158,9 +157,9 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
  *
  *  Stores a byte in emulated ram. (Helper function.)
  */
-void store_byte(uint64_t addr, uint8_t data)
+void store_byte(struct cpu *cpu, uint64_t addr, uint8_t data)
 {
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	memory_rw(cpu, cpu->mem,
 	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -172,10 +171,10 @@ void store_byte(uint64_t addr, uint8_t data)
  *  character) is found. The zero byte is also copied.
  *  (strcpy()-like helper function, host-RAM-to-emulated-RAM.)
  */
-void store_string(uint64_t addr, char *s)
+void store_string(struct cpu *cpu, uint64_t addr, char *s)
 {
 	do {
-		store_byte(addr++, *s);
+		store_byte(cpu, addr++, *s);
 	} while (*s++);
 }
 
@@ -187,9 +186,9 @@ void store_string(uint64_t addr, char *s)
  *  obvious use is to place a number of strings (such as environment variable
  *  strings) after one-another in emulated memory.
  */
-void add_environment_string(char *s, uint64_t *addr)
+void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
 {
-	store_string(*addr, s);
+	store_string(cpu, *addr, s);
 	(*addr) += strlen(s) + 1;
 }
 
@@ -199,10 +198,10 @@ void add_environment_string(char *s, uint64_t *addr)
  *
  *  memcpy()-like helper function, from host RAM to emulated RAM.
  */
-void store_buf(uint64_t addr, char *s, size_t len)
+void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 {
 	while (len-- != 0)
-		store_byte(addr++, *s++);
+		store_byte(cpu, addr++, *s++);
 }
 
 
@@ -212,7 +211,7 @@ void store_buf(uint64_t addr, char *s, size_t len)
  *  Stores a 64-bit word in emulated RAM.  Byte order is taken into account.
  *  Helper function.
  */
-void store_64bit_word(uint64_t addr, uint64_t data64)
+void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 {
 	unsigned char data[8];
 	data[0] = (data64 >> 56) & 255;
@@ -223,13 +222,13 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
 	data[5] = (data64 >> 16) & 255;
 	data[6] = (data64 >> 8) & 255;
 	data[7] = (data64) & 255;
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[7]; data[7] = tmp;
 		tmp = data[1]; data[1] = data[6]; data[6] = tmp;
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -241,18 +240,18 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
  *  (This function takes a 64-bit word as argument, to suppress some
  *  warnings, but only the lowest 32 bits are used.)
  */
-void store_32bit_word(uint64_t addr, uint64_t data32)
+void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
 	data[2] = (data32 >> 8) & 255;
 	data[3] = (data32) & 255;
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+	memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -263,14 +262,14 @@ void store_32bit_word(uint64_t addr, uint64_t data32)
  *  Helper function.  Prints a warning and returns 0, if the read failed.
  *  Emulated byte order is taken into account.
  */
-uint32_t load_32bit_word(uint64_t addr)
+uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 {
 	unsigned char data[4];
 
-	memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, addr,
-	    data, sizeof(data), MEM_READ, CACHE_DATA);
+	memory_rw(cpu, cpu->mem,
+	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
@@ -286,7 +285,8 @@ uint32_t load_32bit_word(uint64_t addr)
  *  into account.  This is useful when building structs in the host's RAM
  *  which will later be copied into emulated RAM.
  */
-void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
+void store_64bit_word_in_host(struct cpu *cpu,
+	unsigned char *data, uint64_t data64)
 {
 	data[0] = (data64 >> 56) & 255;
 	data[1] = (data64 >> 48) & 255;
@@ -296,7 +296,7 @@ void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
 	data[5] = (data64 >> 16) & 255;
 	data[6] = (data64 >> 8) & 255;
 	data[7] = (data64) & 255;
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[7]; data[7] = tmp;
 		tmp = data[1]; data[1] = data[6]; data[6] = tmp;
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
@@ -313,13 +313,14 @@ void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
  *  (Note:  The data32 parameter is a uint64_t. This is done to suppress
  *  some warnings.)
  */
-void store_32bit_word_in_host(unsigned char *data, uint64_t data32)
+void store_32bit_word_in_host(struct cpu *cpu,
+	unsigned char *data, uint64_t data32)
 {
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
 	data[2] = (data32 >> 8) & 255;
 	data[3] = (data32) & 255;
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
@@ -331,11 +332,12 @@ void store_32bit_word_in_host(unsigned char *data, uint64_t data32)
  *
  *  See comment for store_64bit_word_in_host().
  */
-void store_16bit_word_in_host(unsigned char *data, uint16_t data16)
+void store_16bit_word_in_host(struct cpu *cpu,
+	unsigned char *data, uint16_t data16)
 {
 	data[0] = (data16 >> 8) & 255;
 	data[1] = (data16) & 255;
-	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
 	}
 }
@@ -826,6 +828,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 	/*  Framebuffer stuff:  */
 	struct vfb_data *fb;
 
+	/*  Abreviation:  :-)  */
+	struct cpu *cpu = cpus[emul->bootstrap_cpu];
+
 
 	machine_name = NULL;
 
@@ -842,13 +847,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
-		fb = dev_fb_init(cpus[bootstrap_cpu], mem, 0x12000000, VFB_GENERIC, 640,480, 640,480, 24, "generic");
+		fb = dev_fb_init(cpu, mem, 0x12000000, VFB_GENERIC,
+		    640,480, 640,480, 24, "generic");
 
 		break;
 
 	case EMULTYPE_DEC:
 		/*  An R2020 or R3220 memory thingy:  */
-		cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
+		cpu->coproc[3] = coproc_new(cpu, 3);
 
 		/*  There aren't really any good standard values...  */
 		framebuffer_console_name = "osconsole=0,3";
@@ -881,14 +887,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  mcclock0 at ibus0 addr 0x1d000000: mc146818 or compatible
 			 *  0x1e000000 = system status and control register
 			 */
-			fb = dev_fb_init(cpus[bootstrap_cpu], mem, KN01_PHYS_FBUF_START, color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
+			fb = dev_fb_init(cpu, mem, KN01_PHYS_FBUF_START,
+			    color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
 			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
-			dev_le_init(cpus[bootstrap_cpu], mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
-			dev_sii_init(cpus[bootstrap_cpu], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
+			dev_le_init(cpu, mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
+			dev_sii_init(cpu, mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
+			dev_dc7085_init(cpu, mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
+			dev_mc146818_init(cpu, mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -909,7 +916,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
-			cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
+			cpu->coproc[3] = coproc_new(cpu, 3);
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -924,41 +931,40 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 
 			/*  KN02 interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = kn02_interrupt;
+			cpu->md_interrupt = kn02_interrupt;
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for   */
 			/*  option cards.  Let's put in a graphics card:  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			dev_turbochannel_init(cpu, mem, 0,
 			    KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END,
 			    turbochannel_default_gfx_card, KN02_IP_SLOT0 +8);
 
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			dev_turbochannel_init(cpu, mem, 1,
 			    KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END,
 			    "", KN02_IP_SLOT1 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			dev_turbochannel_init(cpu, mem, 2,
 			    KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END,
 			    "", KN02_IP_SLOT2 +8);
 
 			/*  TURBOchannel slots 3 and 4 are reserved.  */
 
 			/*  TURBOchannel slot 5 is PMAZ-AA ("asc" SCSI).  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 5,
+			dev_turbochannel_init(cpu, mem, 5,
 			    KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END,
 			    "PMAZ-AA", KN02_IP_SCSI +8);
 
 			/*  TURBOchannel slot 6 is PMAD-AA ("le" ethernet).  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 6,
+			dev_turbochannel_init(cpu, mem, 6,
 			    KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END,
 			    "PMAD-AA", KN02_IP_LANCE +8);
 
 			/*  TURBOchannel slot 7 is system stuff.  */
-			dev_dc7085_init(cpus[bootstrap_cpu], mem,
+			dev_dc7085_init(cpu, mem,
 			    KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem,
+			dev_mc146818_init(cpu, mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1);
 
-			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu],
-			    mem, KN02_SYS_CSR);
+			kn02_csr = dev_kn02_init(cpu, mem, KN02_SYS_CSR);
 
 			framebuffer_console_name = "osconsole=0,7";
 								/*  fb,keyb  */
@@ -974,7 +980,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*  KMIN interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = kmin_interrupt;
+			cpu->md_interrupt = kmin_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
@@ -991,10 +997,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL);
+			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
+			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
+			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
+			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1003,17 +1009,17 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *
 			 *  TODO: irqs 
 			 */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			dev_turbochannel_init(cpu, mem, 0,
 			    0x10000000, 0x103fffff,
 			    turbochannel_default_gfx_card, KMIN_INT_TC0);
 
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			dev_turbochannel_init(cpu, mem, 1,
 			    0x14000000, 0x143fffff, "", KMIN_INT_TC1);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			dev_turbochannel_init(cpu, mem, 2,
 			    0x18000000, 0x183fffff, "", KMIN_INT_TC2);
 
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
-			/*  kmin_csr = dev_kmin_init(cpus[bootstrap_cpu], mem, KMIN_REG_INTR);  */
+			/*  kmin_csr = dev_kmin_init(cpu, mem, KMIN_REG_INTR);  */
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
 			serial_console_name      = "osconsole=3";	/*  ?  */
@@ -1031,7 +1037,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  KN03 interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = kn03_interrupt;
+			cpu->md_interrupt = kn03_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
@@ -1047,12 +1053,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
 
-			dev_le_init(cpus[bootstrap_cpu], mem, KN03_SYS_LANCE,
+			dev_le_init(cpu, mem, KN03_SYS_LANCE,
 			    0, 0, KN03_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
-			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL);
+			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
+			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
+			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
+			dev_asc_init(cpu, mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1061,15 +1067,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *
 			 *  TODO: irqs 
 			 */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			dev_turbochannel_init(cpu, mem, 0,
 			    KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END,
 			    turbochannel_default_gfx_card, KN03_INTR_TC_0 +8);
 
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			dev_turbochannel_init(cpu, mem, 1,
 			    KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "",
 			    KN03_INTR_TC_1 +8);
 
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			dev_turbochannel_init(cpu, mem, 2,
 			    KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "",
 			    KN03_INTR_TC_2 +8);
 
@@ -1101,11 +1107,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
-			dec5800_csr = dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
-			dev_deccca_init(cpus[bootstrap_cpu], mem, DEC_DECCCA_BASEADDR);
-			dev_decxmi_init(cpus[bootstrap_cpu], mem, 0x11800000);
-			dev_decbi_init(cpus[bootstrap_cpu], mem, 0x10000000);
+			dec5800_csr = dev_dec5800_init(cpu, mem, 0x10000000);
+			dev_ssc_init(cpu, mem, 0x10140000, 2, use_x11, &dec5800_csr->csr);
+			dev_deccca_init(cpu, mem, DEC_DECCCA_BASEADDR);
+			dev_decxmi_init(cpu, mem, 0x11800000);
+			dev_decbi_init(cpu, mem, 0x10000000);
 
 			break;
 
@@ -1138,8 +1144,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 */
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
-			dev_kn210_init(cpus[bootstrap_cpu], mem, 0x10080000);
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11, NULL);	/*  TODO:  not irq 0  */
+			dev_kn210_init(cpu, mem, 0x10080000);
+			dev_ssc_init(cpu, mem, 0x10140000, 0, use_x11, NULL);	/*  TODO:  not irq 0  */
 			break;
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -1153,7 +1159,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
 			/*  Maxine interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = maxine_interrupt;
+			cpu->md_interrupt = maxine_interrupt;
 
 			/*
 			 *  Something at address 0xca00000. (?)
@@ -1175,27 +1181,27 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 
 			/*  TURBOchannel slots (0 and 1):  */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0,
+			dev_turbochannel_init(cpu, mem, 0,
 			    0x10000000, 0x103fffff, "", XINE_INTR_TC_0 +8);
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1,
+			dev_turbochannel_init(cpu, mem, 1,
 			    0x14000000, 0x143fffff, "", XINE_INTR_TC_1 +8);
 
 			/*
 			 *  TURBOchannel slot 2 is hardwired to be used by
 			 *  the framebuffer: (NOTE: 0x8000000, not 0x18000000)
 			 */
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2,
+			dev_turbochannel_init(cpu, mem, 2,
 			    0x8000000, 0xbffffff, "PMAG-DV", 0);
 
 			/*
 			 *  TURBOchannel slot 3: fixed, ioasic
 			 *  (the system stuff), 0x1c000000
 			 */
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000,
+			dev_scc_init(cpu, mem, 0x1c100000,
 			    XINE_INTR_SCC_0 +8, use_x11, 0, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000,
+			dev_mc146818_init(cpu, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000,
+			dev_asc_init(cpu, mem, 0x1c300000,
 			    XINE_INTR_SCSI +8, NULL);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
@@ -1226,18 +1232,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  asc (scsi) at 0x17100000.
 			 */
 
-			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11, NULL);		/*  TODO:  not irq 0  */
+			dev_ssc_init(cpu, mem, 0x10140000, 0, use_x11, NULL);		/*  TODO:  not irq 0  */
 
 			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing" if this is not here  */
-			dev_dec5500_ioboard_init(cpus[bootstrap_cpu], mem, 0x17000000);
+			dev_dec5500_ioboard_init(cpu, mem, 0x17000000);
 
 			dev_sgec_init(mem, 0x10008000, 0);		/*  irq?  */
 
 			/*  The asc controller might be TURBOchannel-ish?  */
 #if 0
-			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
+			dev_turbochannel_init(cpu, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x17100000, 0, NULL);		/*  irq?  */
+			dev_asc_init(cpu, mem, 0x17100000, 0, NULL);		/*  irq?  */
 #endif
 
 			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -1255,7 +1261,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
 			/*  KN230 interrupts:  */
-			cpus[bootstrap_cpu]->md_interrupt = kn230_interrupt;
+			cpu->md_interrupt = kn230_interrupt;
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -1263,13 +1269,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
-			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
-			dev_le_init(cpus[bootstrap_cpu], mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
-			dev_sii_init(cpus[bootstrap_cpu], mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
-			kn230_csr = dev_kn230_init(cpus[bootstrap_cpu], mem, KN230_SYS_ICSR);
+			dev_mc146818_init(cpu, mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1);
+			dev_dc7085_init(cpu, mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpu, mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
+			dev_le_init(cpu, mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
+			dev_sii_init(cpu, mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
+			kn230_csr = dev_kn230_init(cpu, mem, KN230_SYS_ICSR);
 
 			serial_console_name = "osconsole=0";
 			break;
@@ -1280,12 +1286,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		/*  DECstation PROM stuff:  (TODO: endianness)  */
 		for (i=0; i<100; i++)
-			store_32bit_word(DEC_PROM_CALLBACK_STRUCT + i*4, DEC_PROM_EMULATION + i*8);
+			store_32bit_word(cpu, DEC_PROM_CALLBACK_STRUCT + i*4,
+			    DEC_PROM_EMULATION + i*8);
 
 		/*  Fill PROM with dummy return instructions:  (TODO: make this nicer)  */
 		for (i=0; i<100; i++) {
-			store_32bit_word(DEC_PROM_EMULATION + i*8,     0x03e00008);	/*  return  */
-			store_32bit_word(DEC_PROM_EMULATION + i*8 + 4, 0x00000000);	/*  nop  */
+			store_32bit_word(cpu, DEC_PROM_EMULATION + i*8,
+			    0x03e00008);	/*  return  */
+			store_32bit_word(cpu, DEC_PROM_EMULATION + i*8 + 4,
+			    0x00000000);	/*  nop  */
 		}
 
 		/*
@@ -1301,21 +1310,23 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  loaded.
 		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
-		cpus[bootstrap_cpu]->gpr[GPR_A2] = DEC_PROM_MAGIC;
-		cpus[bootstrap_cpu]->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
+		cpu->gpr[GPR_A0] = 3;
+		cpu->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
+		cpu->gpr[GPR_A2] = DEC_PROM_MAGIC;
+		cpu->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
 
-		store_32bit_word(INITIAL_STACK_POINTER + 0x10, BOOTINFO_MAGIC);
-		store_32bit_word(INITIAL_STACK_POINTER + 0x14, BOOTINFO_ADDR);
+		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x10,
+		    BOOTINFO_MAGIC);
+		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x14,
+		    BOOTINFO_ADDR);
 
-		store_32bit_word(DEC_PROM_INITIAL_ARGV,
+		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV,
 		    (DEC_PROM_INITIAL_ARGV + 0x10));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+4,
+		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+4,
 		    (DEC_PROM_INITIAL_ARGV + 0x70));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+8,
+		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+8,
 		    (DEC_PROM_INITIAL_ARGV + 0xe0));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
+		store_32bit_word(cpu, DEC_PROM_INITIAL_ARGV+12, 0);
 
 		/*
 		 *  NetBSD and Ultrix expect the boot args to be like this:
@@ -1357,9 +1368,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		bootstr = "boot";
 
-		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootarg);
-		store_string(DEC_PROM_INITIAL_ARGV+0xe0, boot_string_argument);
+		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x10, bootstr);
+		store_string(cpu, DEC_PROM_INITIAL_ARGV+0x70, bootarg);
+		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
+		    boot_string_argument);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;
@@ -1375,13 +1387,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 		xx.c.ssym = 0;
 		xx.c.esym = file_loaded_end_addr;
 
-		store_buf(BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
+		store_buf(cpu, BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
 		/*
 		 *  The system's memmap:  (memmap is a global variable, in
 		 *  dec_prom.h)
 		 */
-		store_32bit_word_in_host(
+		store_32bit_word_in_host(cpu,
 		    (unsigned char *)&memmap.pagesize, 4096);
 		{
 			unsigned int i;
@@ -1389,17 +1401,17 @@ void machine_init(struct emul *emul, struct memory *mem)
 				memmap.bitmap[i] = ((int)i * 4096*8 <
 				    1048576*physical_ram_in_mb)? 0xff : 0x00;
 		}
-		store_buf(DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
+		store_buf(cpu, DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
 
 		/*  Environment variables:  */
 		addr = DEC_PROM_STRINGS;
 
 		if (use_x11)
 			/*  (0,3)  Keyboard and Framebuffer  */
-			add_environment_string(framebuffer_console_name, &addr);
+			add_environment_string(cpu, framebuffer_console_name, &addr);
 		else
 			/*  Serial console  */
-			add_environment_string(serial_console_name, &addr);
+			add_environment_string(cpu, serial_console_name, &addr);
 
 		/*
 		 *  The KN5800 (SMP system) uses a CCA (console communications
@@ -1409,7 +1421,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			char tmps[300];
 			sprintf(tmps, "cca=%x",
 			    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
-			add_environment_string(tmps, &addr);
+			add_environment_string(cpu, tmps, &addr);
 		}
 
 		/*  These are needed for Sprite to boot:  */
@@ -1417,34 +1429,34 @@ void machine_init(struct emul *emul, struct memory *mem)
 			char tmps[300];
 
 			sprintf(tmps, "boot=%s", bootarg);
-			add_environment_string(tmps, &addr);
+			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmap=0x%x", (uint32_t)((
 			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
 			    & 0xffffffffULL));
-			add_environment_string(tmps, &addr);
+			add_environment_string(cpu, tmps, &addr);
 
 			sprintf(tmps, "bitmaplen=0x%x",
 			    physical_ram_in_mb * 1048576 / 4096 / 8);
-			add_environment_string(tmps, &addr);
+			add_environment_string(cpu, tmps, &addr);
 		}
 
-		add_environment_string("scsiid0=7", &addr);
-		add_environment_string("bootmode=a", &addr);
-		add_environment_string("testaction=q", &addr);
-		add_environment_string("haltaction=h", &addr);
-		add_environment_string("more=24", &addr);
+		add_environment_string(cpu, "scsiid0=7", &addr);
+		add_environment_string(cpu, "bootmode=a", &addr);
+		add_environment_string(cpu, "testaction=q", &addr);
+		add_environment_string(cpu, "haltaction=h", &addr);
+		add_environment_string(cpu, "more=24", &addr);
 
 		/*  Used in at least Ultrix on the 5100:  */
-		add_environment_string("scsiid=7", &addr);
-		add_environment_string("baud0=9600", &addr);
-		add_environment_string("baud1=9600", &addr);
-		add_environment_string("baud2=9600", &addr);
-		add_environment_string("baud3=9600", &addr);
-		add_environment_string("iooption=0x1", &addr);
+		add_environment_string(cpu, "scsiid=7", &addr);
+		add_environment_string(cpu, "baud0=9600", &addr);
+		add_environment_string(cpu, "baud1=9600", &addr);
+		add_environment_string(cpu, "baud2=9600", &addr);
+		add_environment_string(cpu, "baud3=9600", &addr);
+		add_environment_string(cpu, "iooption=0x1", &addr);
 
 		/*  The end:  */
-		add_environment_string("", &addr);
+		add_environment_string(cpu, "", &addr);
 
 		break;
 
@@ -1462,9 +1474,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *	6	VIA southbridge PIC
 		 *	7	PCI
 		 */
-/*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_hz);	*/
-		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4);  	/*  mcclock0  */
-		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);				/*  com0  */
+/*		dev_XXX_init(cpu, mem, 0x10000000, emulated_hz);	*/
+		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4);  	/*  mcclock0  */
+		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1);				/*  com0  */
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -1476,12 +1488,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
-		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
-		/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
-		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
-		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
-		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
-		/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
+		pci_data = dev_gt_init(cpu, mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
+		/*  bus_pci_add(cpu, pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
+		bus_pci_add(cpu, pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		bus_pci_add(cpu, pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
+		bus_pci_add(cpu, pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
+		/*  bus_pci_add(cpu, pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);  */
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what
@@ -1490,27 +1502,28 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  The bootstring should be stored starting 512 bytes before end
 		 *  of physical ram.
 		 */
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->gpr[GPR_A0] = physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
-		store_string(0xffffffff80000000ULL + physical_ram_in_mb * 1048576 - 512, bootstr);
+		store_string(cpu, 0xffffffff80000000ULL + physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
 	case EMULTYPE_HPCMIPS:
 		machine_name = "hpcmips";
-		dev_fb_init(cpus[bootstrap_cpu], mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS, HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
+		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
+		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips");
 
 		/*
 		 *  NetBSD/hpcmips expects the following:
 		 */
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 1;	/*  argc  */
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
-		cpus[bootstrap_cpu]->gpr[GPR_A2] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
+		cpu->gpr[GPR_A0] = 1;	/*  argc  */
+		cpu->gpr[GPR_A1] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 512;	/*  argv  */
+		cpu->gpr[GPR_A2] = physical_ram_in_mb * 1048576 + 0x80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 		bootstr = "netbsd";
-		store_32bit_word(0x80000000 + physical_ram_in_mb * 1048576 - 512, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8);
-		store_32bit_word(0x80000000 + physical_ram_in_mb * 1048576 - 512 + 4, 0);
-		store_string(0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
+		store_32bit_word(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8);
+		store_32bit_word(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 4, 0);
+		store_string(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 512 + 8, bootstr);
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		hpc_bootinfo.length = sizeof(hpc_bootinfo);
 		hpc_bootinfo.magic = HPC_BOOTINFO_MAGIC;
@@ -1533,7 +1546,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		printf("hpc_bootinfo.platid_cpu     = 0x%x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%x\n", hpc_bootinfo.platid_machine);
 		hpc_bootinfo.timezone = 0;
-		store_buf(0x80000000 + physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
+		store_buf(cpu, 0x80000000 + physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 		break;
 
 	case EMULTYPE_PS2:
@@ -1555,26 +1568,26 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		dev_ps2_gs_init(cpus[bootstrap_cpu], mem, 0x12000000);
-		ps2_data = dev_ps2_stuff_init(cpus[bootstrap_cpu], mem, 0x10000000, GLOBAL_gif_mem);
-		dev_ps2_ohci_init(cpus[bootstrap_cpu], mem, 0x1f801600);
+		dev_ps2_gs_init(cpu, mem, 0x12000000);
+		ps2_data = dev_ps2_stuff_init(cpu, mem, 0x10000000, GLOBAL_gif_mem);
+		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 
-		cpus[bootstrap_cpu]->md_interrupt = ps2_interrupt;
+		cpu->md_interrupt = ps2_interrupt;
 
 		add_symbol_name(PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
-		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
-		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
+		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
+		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
 #if 0
 		/*  Harddisk controller present flag:  */
-		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
-		dev_ps2_spd_init(cpus[bootstrap_cpu], mem, 0x14000000);
+		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+		dev_ps2_spd_init(cpu, mem, 0x14000000);
 #endif
 
-		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
+		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
-		store_string(PLAYSTATION2_OPTARGS, bootstr);
+		store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
 
 		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
 		{
@@ -1585,19 +1598,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
 			tmp = gmtime(&timet);
 			/*  TODO:  are these 0- or 1-based?  */
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
-			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
+			store_byte(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
 		}
 
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
+		store_32bit_word(cpu, 0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this neccessary?  */
-		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
+		cpu->gpr[GPR_SP] = 0x80007f00;
 
 		break;
 
@@ -1622,7 +1635,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		if (emulation_type == EMULTYPE_SGI) {
-			cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
+			cpu->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(short_machine_name, "SGI-IP%i", machine);
 			sprintf(machine_name, "SGI-IP%i", machine);
 
@@ -1644,7 +1657,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
 		} else {
-			cpus[bootstrap_cpu]->byte_order = EMUL_LITTLE_ENDIAN;
+			cpu->byte_order = EMUL_LITTLE_ENDIAN;
 			sprintf(short_machine_name, "ARC");
 			sprintf(machine_name, "ARC");
 		}
@@ -1654,16 +1667,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 			switch (machine) {
 			case 19:
 				strcat(machine_name, " (Everest IP19)");
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
-				dev_scc_init(cpus[bootstrap_cpu], mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				dev_scc_init(cpu, mem, 0x10086000, 0, use_x11, 0, 8);	/*  serial? irix?  */
 
-				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem, 0x18000000);
+				dev_sgi_ip19_init(cpu, mem, 0x18000000);
 
 				/*  Irix' get_mpconf() looks for this:  (TODO)  */
-				store_32bit_word(0xa0000000 + 0x3000, 0xbaddeed2);
+				store_32bit_word(cpu, 0xa0000000 + 0x3000,
+				    0xbaddeed2);
 
 				/*  Memory size, not 4096 byte pages, but 256 bytes?  (16 is size of kernel... approx)  */
-				store_32bit_word(0xa0000000 + 0x26d0, 30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
+				store_32bit_word(cpu, 0xa0000000 + 0x26d0,
+				    30000);  /* (physical_ram_in_mb - 16) * (1048576 / 256));  */
 
 				break;
 			case 20:
@@ -1687,18 +1702,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 */
 
 				/*  int0 at mainbus0 addr 0x1fb801c0  */
-				sgi_ip20_data = dev_sgi_ip20_init(cpus[bootstrap_cpu], mem, DEV_SGI_IP20_BASE);
+				sgi_ip20_data = dev_sgi_ip20_init(cpu, mem, DEV_SGI_IP20_BASE);
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);
 
 				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
+				dev_zs_init(cpu, mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
+				dev_zs_init(cpu, mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
 
 				/*  WDSC SCSI controller:  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fb8011f, 0, 0);
+				dev_wdsc_init(cpu, mem, 0x1fb8011f, 0, 0);
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
 				dev_unreadable_init(mem, 0x1fb00000, 0x10000);		/*  hpc1  */
@@ -1722,16 +1737,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 			case 24:
 				if (machine == 22) {
 					strcat(machine_name, " (Indy, Indigo2, Challenge S; Full-house)");
-					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9000, 0);
+					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9000, 0);
 				} else {
 					strcat(machine_name, " (Indy, Indigo2, Challenge S; Guiness)");
-					sgi_ip22_data = dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880, 1);
+					sgi_ip22_data = dev_sgi_ip22_init(cpu, mem, 0x1fbd9880, 1);
 				}
 
 				dev_ram_init(mem, 0x88000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 
-				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
+				cpu->md_interrupt = sgi_ip22_interrupt;
 
 				/*
 				 *  According to NetBSD 1.6.2:
@@ -1761,21 +1776,21 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 */
 
 				/*  zsc0 serial console.  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830,
+				dev_zs_init(cpu, mem, 0x1fbd9830,
 				    8 + 32 + 3 + 64*5, 1);
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
-				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1fbd9840, PCKBC_8242,
+				dev_pckbc_init(cpu, mem, 0x1fbd9840, PCKBC_8242,
 				    0, 0);  /*  TODO: irq numbers  */
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
 
 	 			/*  wdsc0: SCSI  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 0, 8 + 1);
+				dev_wdsc_init(cpu, mem, 0x1fbc4000, 0, 8 + 1);
 
 				/*  wdsc1: SCSI  TODO: irq nr  */
-				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbcc000, 1, 8 + 1);
+				dev_wdsc_init(cpu, mem, 0x1fbcc000, 1, 8 + 1);
 
 				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
@@ -1795,18 +1810,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strcat(machine_name, " (Everest IP25)");
 
 				 /*  serial? irix?  */
-				dev_scc_init(cpus[bootstrap_cpu], mem,
+				dev_scc_init(cpu, mem,
 				    0x400086000ULL, 0, use_x11, 0, 8);
 
 				/*  NOTE: ip19! (perhaps not really the same  */
-				dev_sgi_ip19_init(cpus[bootstrap_cpu], mem,
+				dev_sgi_ip19_init(cpu, mem,
 				    0x18000000);
 
 				/*
 				 *  Memory size, not 4096 byte pages, but 256
 				 *  bytes?  (16 is size of kernel... approx)
 				 */
-				store_32bit_word(0xa0000000ULL + 0x26d0,
+				store_32bit_word(cpu, 0xa0000000ULL + 0x26d0,
 				    30000);  /* (physical_ram_in_mb - 16)
 						 * (1048576 / 256));  */
 
@@ -1815,7 +1830,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
 				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");
@@ -1829,7 +1844,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  0x19600000 <get_nasid+0x4>
 				 *  0x190020d0 <get_cpuinfo+0x34>
 				 */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
 				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 				break;
@@ -1849,7 +1864,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strcat(machine_name, " (Octane)");
 
 				/*  This is something unknown:  */
-				dev_sgi_ip30_init(cpus[bootstrap_cpu], mem, 0x0ff00000);
+				dev_sgi_ip30_init(cpu, mem, 0x0ff00000);
 
 				dev_ram_init(mem,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
@@ -1870,11 +1885,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  program dumps something there, but it doesn't look like
 				 *  readable text.  (TODO)
 				 */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620170, 0, 1);		/*  TODO: irq?  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
+				dev_ns16550_init(cpu, mem, 0x1f620170, 0, 1);		/*  TODO: irq?  */
+				dev_ns16550_init(cpu, mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
 
 				/*  MardiGras graphics:  */
-				dev_sgi_mardigras_init(cpus[bootstrap_cpu], mem, 0x1c000000);
+				dev_sgi_mardigras_init(cpu, mem, 0x1c000000);
 
 				break;
 			case 32:
@@ -1906,9 +1921,9 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_ram_init(mem,    0x40000000ULL, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				*/
 
-				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, use_x11);	/*  crime0  */
+				crime_data = dev_crime_init(cpu, mem, 0x14000000, 2, use_x11);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
-				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
+				dev_sgi_gbe_init(cpu, mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
 
 				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
@@ -1934,7 +1949,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 * 	  1f3a0000	  mcclock0
 				 */
 				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				cpus[bootstrap_cpu]->md_interrupt = sgi_ip32_interrupt;
+				cpu->md_interrupt = sgi_ip32_interrupt;
 
 				/*
 				 *  IRQ mapping is really ugly.  TODO: fix
@@ -1950,16 +1965,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200 + MACE_PERIPH_MISC, 0x800 + MACE_PERIPH_MISC);
+				dev_pckbc_init(cpu, mem, 0x1f320000, PCKBC_8242, 0x200 + MACE_PERIPH_MISC, 0x800 + MACE_PERIPH_MISC);
 							/*  keyb+mouse (mace irq numbers)  */
 
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
+				dev_ns16550_init(cpu, mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
+				dev_ns16550_init(cpu, mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
 
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_mc146818_init(cpu, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -1970,16 +1985,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 */
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
-				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-/*				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
-				/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
+				/*  bus_pci_add(cpu, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
+/*				bus_pci_add(cpu, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);  */
+				/*  bus_pci_add(cpu, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */
 
 				break;
 			case 35:
 				strcat(machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 				break;
 			default:
 				fatal("unimplemented SGI machine type IP%i\n", machine);
@@ -2002,15 +2017,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				/*  TODO:  sync devices and component tree  */
 
-				pci_data = dev_rd94_init(cpus[bootstrap_cpu],
+				pci_data = dev_rd94_init(cpu,
 				    mem, 0x2000000000ULL, 0);
-				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 0, MC146818_ARC_NEC, 1);
-				dev_pckbc_init(cpus[bootstrap_cpu], mem,
+				dev_pckbc_init(cpu, mem,
 				    0x2000005000ULL, PCKBC_8042, 0, 0);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000006000ULL, 3, 1);	/*  com0  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000007000ULL, 0, 1);	/*  com1  */
 				/*  lpt at 0x2000008000  */
 
@@ -2020,10 +2035,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
 				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
 				if (use_x11)
-					arcbios_addchild_manual(4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
+					arcbios_addchild_manual(cpu, 4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
 
 				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
-				bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
+				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 				break;
 
 			case MACHINE_ARC_PICA:
@@ -2058,30 +2073,30 @@ void machine_init(struct emul *emul, struct memory *mem)
 				strcat(machine_name, " (Acer PICA-61)");
 
 				/*  TODO:  lots of stuff  */
-				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b8000ULL, 0x60000003d0ULL);
+				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x60000003d0ULL);
 
-				/*  dev_asc_init(cpus[bootstrap_cpu], mem,
+				/*  dev_asc_init(cpu, mem,
 				    0x2000002000ULL, 0, NULL);  */
 
 				/*  Linux:  0x800004000  */
 				/*  NetBSD: 0x2000004000  */
-				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				dev_mc146818_init(cpu, mem,
 				    0x800004000ULL, 2, MC146818_ARC_PICA, 1);
-				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
 				/*  TODO: irq numbers  */
-				dev_pckbc_init(cpus[bootstrap_cpu], mem,
+				dev_pckbc_init(cpu, mem,
 				    0x2000005060ULL, PCKBC_8042, 0, 0);
 
 				/*  TODO: irq numbers  */
 				/*  Linux:  0x800006000  */
 				/*  NetBSD: 0x2000006000  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x800006000ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000006000ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000007000ULL, 0, 1);
 
 				break;
@@ -2100,19 +2115,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(machine_name, " (Deskstation Tyne)");
 
-				dev_vga_init(cpus[bootstrap_cpu], mem, 0x100000b8000ULL, 0x900000003d0ULL);
+				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x900000003d0ULL);
 
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003f8ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002f8ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000003e8ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x900000002e8ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x900000003f8ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x900000002f8ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x900000003e8ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x900000002e8ULL, 0, 1);
 
-				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				dev_mc146818_init(cpu, mem,
 				    0x90000000070ULL, 2, MC146818_PC_CMOS, 1);
 
 #if 0
-				dev_wdc_init(cpus[bootstrap_cpu], mem, 0x900000001f0ULL, 0, 0);
-				dev_wdc_init(cpus[bootstrap_cpu], mem, 0x90000000170ULL, 0, 2);
+				dev_wdc_init(cpu, mem, 0x900000001f0ULL, 0, 0);
+				dev_wdc_init(cpu, mem, 0x90000000170ULL, 0, 2);
 #endif
 				/*  PC kbd  */
 				dev_zero_init(mem, 0x90000000064ULL, 1);
@@ -2144,12 +2159,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(machine_name, " (Microsoft Jazz, MIPS Magnum)");
 
-				dev_mc146818_init(cpus[bootstrap_cpu], mem,
+				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000006000ULL, 0, 1);
-				dev_ns16550_init(cpus[bootstrap_cpu], mem,
+				dev_ns16550_init(cpu, mem,
 				    0x2000007000ULL, 0, 1);
 
 				break;
@@ -2209,17 +2224,17 @@ void machine_init(struct emul *emul, struct memory *mem)
 				break;
 			}
 		}
-		store_buf(SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
+		store_buf(cpu, SGI_SYSID_ADDR, (char *)&arcbios_sysid, sizeof(arcbios_sysid));
 
 		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
 		/*  TODO:  get 80 and 24 from the current terminal settings?  */
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorXPosition, 1);
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorYPosition, 1);
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 80);
-		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 25);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorXPosition, 1);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorYPosition, 1);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 80);
+		store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 25);
 		arcbios_dsp_stat.ForegroundColor = 7;
 		arcbios_dsp_stat.HighIntensity = 15;
-		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
+		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*
 		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
@@ -2239,10 +2254,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (arc_wordlen == sizeof(uint64_t)) {
 			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
-			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
-			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
-			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
+			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 
 			mem_mb_left = physical_ram_in_mb - 512;
 			mem_base = 512 * (1048576 / 4096);
@@ -2252,11 +2267,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
 
-				store_buf(mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+				store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 				mem_bufaddr += sizeof(arcbios_mem64);
 
 				mem_mb_left -= 512;
@@ -2265,13 +2280,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*  End of memory descriptors:  (pagecount = zero)  */
 			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_buf(mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
+			store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 		} else {
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
-			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
+			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 			mem_mb_left = physical_ram_in_mb - 512;
 			mem_base = 512 * (1048576 / 4096);
@@ -2281,11 +2296,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
 
-				store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+				store_buf(cpu, mem_bufaddr,
+				    (char *)&arcbios_mem, sizeof(arcbios_mem));
 				mem_bufaddr += sizeof(arcbios_mem);
 
 				mem_mb_left -= 512;
@@ -2294,7 +2310,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			/*  End of memory descriptors:  (pagecount = zero)  */
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+			store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
 		}
 
 		/*
@@ -2321,30 +2337,30 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		switch (emulation_type) {
 		case EMULTYPE_SGI:
-			system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
 			break;
 		default:
 			/*  ARC:  */
 			switch (machine) {
 			case MACHINE_ARC_NEC_RD94:
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-RD94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_PICA:
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "PICA-61", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_NEC_R94:
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "NEC-R94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_DESKTECH_TYNE:
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "DESKTECH-TYNE", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_JAZZ:
-				system = arcbios_addchild_manual(COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
+				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 				    0, 1, 20, 0, 0x0, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			default:
@@ -2360,7 +2376,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		debug("system = 0x%x\n", system);
 
 		for (i=0; i<ncpus; i++) {
-			uint32_t cpu, fpu, cache;
+			uint32_t cpuaddr, fpu, cache;
 			unsigned int jj;
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
@@ -2375,12 +2391,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 			strcpy(arc_fpc_name, arc_cpu_name);
 			strcat(arc_fpc_name, "FPC");
 
-			cpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
+			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
 			    0, 1, 20, 0, 0x0, arc_cpu_name, system);
-			fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 20, 0, 0x0, arc_fpc_name, cpu);
+			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+			    0, 1, 20, 0, 0x0, arc_fpc_name, cpuaddr);
 
-			cache = arcbios_addchild_manual(COMPONENT_CLASS_CacheClass,
+			cache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
 			    COMPONENT_TYPE_SecondaryCache, 0, 1, 20,
 			    /*
 			     *  Key bits:  0xYYZZZZ
@@ -2391,7 +2407,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			    0x0, "Cache", system);
 
 			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x, cache%i = 0x%x\n",
-			    i, cpu, i, fpu, i, cache);
+			    i, cpuaddr, i, fpu, i, cache);
 		}
 
 
@@ -2400,49 +2416,50 @@ void machine_init(struct emul *emul, struct memory *mem)
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
 			for (i=0; i<100; i++)
-				store_64bit_word(ARC_FIRMWARE_VECTORS + i*8,
+				store_64bit_word(cpu, ARC_FIRMWARE_VECTORS + i*8,
 				    ARC_FIRMWARE_ENTRIES + i*8);
 			for (i=0; i<100; i++)
-				store_64bit_word(ARC_PRIVATE_VECTORS + i*8,
+				store_64bit_word(cpu, ARC_PRIVATE_VECTORS + i*8,
 				    ARC_PRIVATE_ENTRIES + i*8);
 			break;
 		default:
 			for (i=0; i<100; i++)
-				store_32bit_word(ARC_FIRMWARE_VECTORS + i*4,
+				store_32bit_word(cpu, ARC_FIRMWARE_VECTORS + i*4,
 				    ARC_FIRMWARE_ENTRIES + i*4);
 			for (i=0; i<100; i++)
-				store_32bit_word(ARC_PRIVATE_VECTORS + i*4,
+				store_32bit_word(cpu, ARC_PRIVATE_VECTORS + i*4,
 				    ARC_PRIVATE_ENTRIES + i*4);
 		}
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 10;
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;
+		cpu->gpr[GPR_A0] = 10;
+		cpu->gpr[GPR_A1] = ARC_ARGV_START;
 
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
 			/*  64-bit ARCBIOS SPB:  (TODO: This is just a guess)  */
 			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Version, 1);
-			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Version, 1);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			/*  FirmwareVectorLength is a pointer to something?  */
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 0xa0000000ULL);	/*  ?  */
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVector, ARC_PRIVATE_VECTORS);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
-			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 0xa0000000ULL);	/*  ?  */
+			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.PrivateVector, ARC_PRIVATE_VECTORS);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
+			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb_64,
+			    sizeof(arcbios_spb_64));
 
-			store_64bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
-			store_64bit_word(ARC_ARGV_START + 0x4 * 2, ARC_ARGV_START + 0x180);
-			store_64bit_word(ARC_ARGV_START + 0x8 * 2, ARC_ARGV_START + 0x200);
-			store_64bit_word(ARC_ARGV_START + 0xc * 2, ARC_ARGV_START + 0x220);
-			store_64bit_word(ARC_ARGV_START + 0x10 * 2, ARC_ARGV_START + 0x240);
-			store_64bit_word(ARC_ARGV_START + 0x14 * 2, ARC_ARGV_START + 0x260);
-			store_64bit_word(ARC_ARGV_START + 0x18 * 2, ARC_ARGV_START + 0x280);
-			store_64bit_word(ARC_ARGV_START + 0x1c * 2, ARC_ARGV_START + 0x2a0);
-			store_64bit_word(ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
-			store_64bit_word(ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
-			store_64bit_word(ARC_ARGV_START + 0x28 * 2, 0);
+			store_64bit_word(cpu, ARC_ARGV_START, ARC_ARGV_START + 0x100);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x4 * 2, ARC_ARGV_START + 0x180);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x8 * 2, ARC_ARGV_START + 0x200);
+			store_64bit_word(cpu, ARC_ARGV_START + 0xc * 2, ARC_ARGV_START + 0x220);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x10 * 2, ARC_ARGV_START + 0x240);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x14 * 2, ARC_ARGV_START + 0x260);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x18 * 2, ARC_ARGV_START + 0x280);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x1c * 2, ARC_ARGV_START + 0x2a0);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
+			store_64bit_word(cpu, ARC_ARGV_START + 0x28 * 2, 0);
 
 
 			/*
@@ -2460,81 +2477,81 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *
 			 *  This is ugly.
 			 */
-			store_64bit_word(SGI_SPB_ADDR + 0x40,
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x40,
 			    0xffffffff80001400ULL);
 
 			/*  0x50 is used by Linux/IP30:  */
-			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0x50, SGI_SPB_ADDR + 0x700);
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0x50, SGI_SPB_ADDR + 0x700);
 			/*  0x90 is used by Linux/IP30:  */
-			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0x90, SGI_SPB_ADDR + 0x740);
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0x90, SGI_SPB_ADDR + 0x740);
 			/*  0xd8 is used by Linux/IP30:  */
-			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xd8, SGI_SPB_ADDR + 0x780);
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0xd8, SGI_SPB_ADDR + 0x780);
 			/*  0xf0 is used by Irix:  */
-			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x800);
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x800);
 
 			/*  getchild  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x28);  /*  addiu, 0x28 = getchild  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x28);  /*  addiu, 0x28 = getchild  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
 
 			/*  getmemorydescriptor  */
-			store_32bit_word(SGI_SPB_ADDR + 0x740 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x740 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x740 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x48);  /*  addiu, 0x48 = getmemorydescriptor  */
-			store_32bit_word(SGI_SPB_ADDR + 0x740 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x740 + 16, 0);				/*  nop  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x48);  /*  addiu, 0x48 = getmemorydescriptor  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x740 + 16, 0);				/*  nop  */
 
 			/*  write  */
-			store_32bit_word(SGI_SPB_ADDR + 0x780 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x780 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x780 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x6c);  /*  addiu, 0x6c = write  */
-			store_32bit_word(SGI_SPB_ADDR + 0x780 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x780 + 16, 0);				/*  nop  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x6c);  /*  addiu, 0x6c = write  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x780 + 16, 0);				/*  nop  */
 
 			/*  getenv  */
-			store_32bit_word(SGI_SPB_ADDR + 0x800 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0x800 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0x800 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
-			store_32bit_word(SGI_SPB_ADDR + 0x800 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0x800 + 16, 0);				/*  nop  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0x800 + 16, 0);				/*  nop  */
 
 			/*  This is similar, but used by Irix' arcs_nvram_tab() instead of arcs_getenv():  */
-			store_64bit_word(SGI_SPB_ADDR + 0x50,
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x50,
 			    0xffffffff80001900ULL);
-			store_64bit_word(SGI_SPB_ADDR + 0x900 + 0x8, SGI_SPB_ADDR + 0xa00);
+			store_64bit_word(cpu, SGI_SPB_ADDR + 0x900 + 0x8, SGI_SPB_ADDR + 0xa00);
 
-			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
-			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
-			store_32bit_word(SGI_SPB_ADDR + 0xa00 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
-			store_32bit_word(SGI_SPB_ADDR + 0xa00 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
-			store_32bit_word(SGI_SPB_ADDR + 0xa00 + 16, 0);				/*  nop  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(cpu, SGI_SPB_ADDR + 0xa00 + 16, 0);				/*  nop  */
 
 			break;
 		default:	/*  32-bit  */
 			/*  ARCBIOS SPB:  */
 			memset(&arcbios_spb, 0, sizeof(arcbios_spb));
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
-			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
-			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Version, 1);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
+			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
-			store_32bit_word(ARC_ARGV_START, (ARC_ARGV_START + 0x100));
-			store_32bit_word(ARC_ARGV_START + 0x4, (ARC_ARGV_START + 0x180));
-			store_32bit_word(ARC_ARGV_START + 0x8, (ARC_ARGV_START + 0x200));
-			store_32bit_word(ARC_ARGV_START + 0xc, (ARC_ARGV_START + 0x220));
-			store_32bit_word(ARC_ARGV_START + 0x10, (ARC_ARGV_START + 0x240));
-			store_32bit_word(ARC_ARGV_START + 0x14, (ARC_ARGV_START + 0x260));
-			store_32bit_word(ARC_ARGV_START + 0x18, (ARC_ARGV_START + 0x280));
-			store_32bit_word(ARC_ARGV_START + 0x1c, (ARC_ARGV_START + 0x2a0));
-			store_32bit_word(ARC_ARGV_START + 0x20, (ARC_ARGV_START + 0x2c0));
-			store_32bit_word(ARC_ARGV_START + 0x24, (ARC_ARGV_START + 0x2e0));
-			store_32bit_word(ARC_ARGV_START + 0x28, 0);
+			store_32bit_word(cpu, ARC_ARGV_START, (ARC_ARGV_START + 0x100));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x4, (ARC_ARGV_START + 0x180));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x8, (ARC_ARGV_START + 0x200));
+			store_32bit_word(cpu, ARC_ARGV_START + 0xc, (ARC_ARGV_START + 0x220));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x10, (ARC_ARGV_START + 0x240));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x14, (ARC_ARGV_START + 0x260));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x18, (ARC_ARGV_START + 0x280));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x1c, (ARC_ARGV_START + 0x2a0));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x20, (ARC_ARGV_START + 0x2c0));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x24, (ARC_ARGV_START + 0x2e0));
+			store_32bit_word(cpu, ARC_ARGV_START + 0x28, 0);
 		}
 
 		/*  Boot string in ARC format:  */
@@ -2553,55 +2570,55 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  variables are passed on the command line.  (This is not true for ARC? TODO)
 		 */
 
-		store_string(ARC_ARGV_START + 0x100, bootstr);
+		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
 
 		if (use_x11) {
-			store_string(ARC_ARGV_START + 0x180, "console=g");
-			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
-			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=video()");
+			store_string(cpu, ARC_ARGV_START + 0x180, "console=g");
+			store_string(cpu, ARC_ARGV_START + 0x200, "ConsoleIn=keyboard()");
+			store_string(cpu, ARC_ARGV_START + 0x220, "ConsoleOut=video()");
 		} else {
 #if 0
-			store_string(ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
+			store_string(cpu, ARC_ARGV_START + 0x180, "console=ttyS0");	/*  Linux  */
 #else
-			store_string(ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
+			store_string(cpu, ARC_ARGV_START + 0x180, "console=d2");	/*  Irix  */
 #endif
-			store_string(ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
-			store_string(ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");
+			store_string(cpu, ARC_ARGV_START + 0x200, "ConsoleIn=serial(0)");
+			store_string(cpu, ARC_ARGV_START + 0x220, "ConsoleOut=serial(0)");
 		}
 
-		store_string(ARC_ARGV_START + 0x240, "cpufreq=3");
-		store_string(ARC_ARGV_START + 0x260, "dbaud=9600");
-		store_string(ARC_ARGV_START + 0x280, "verbose=istrue");
-		store_string(ARC_ARGV_START + 0x2a0, "showconfig=istrue");
-		store_string(ARC_ARGV_START + 0x2c0, "diagmode=istrue");
-		store_string(ARC_ARGV_START + 0x2e0, bootarg);
+		store_string(cpu, ARC_ARGV_START + 0x240, "cpufreq=3");
+		store_string(cpu, ARC_ARGV_START + 0x260, "dbaud=9600");
+		store_string(cpu, ARC_ARGV_START + 0x280, "verbose=istrue");
+		store_string(cpu, ARC_ARGV_START + 0x2a0, "showconfig=istrue");
+		store_string(cpu, ARC_ARGV_START + 0x2c0, "diagmode=istrue");
+		store_string(cpu, ARC_ARGV_START + 0x2e0, bootarg);
 
 		/*  TODO:  not needed?  */
-		cpus[bootstrap_cpu]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
 
 		if (use_x11) {
 			if (emulation_type == EMULTYPE_ARC) {
-				add_environment_string("ConsoleIn=multi()key()keyboard()console()", &addr);
-				add_environment_string("ConsoleOut=multi()video()monitor()console()", &addr);
+				add_environment_string(cpu, "ConsoleIn=multi()key()keyboard()console()", &addr);
+				add_environment_string(cpu, "ConsoleOut=multi()video()monitor()console()", &addr);
 			} else {
-				add_environment_string("ConsoleIn=keyboard()", &addr);
-				add_environment_string("ConsoleOut=video()", &addr);
+				add_environment_string(cpu, "ConsoleIn=keyboard()", &addr);
+				add_environment_string(cpu, "ConsoleOut=video()", &addr);
 			}
 
-			add_environment_string("console=g", &addr);
+			add_environment_string(cpu, "console=g", &addr);
 		} else {
-			add_environment_string("ConsoleIn=serial(0)", &addr);
-			add_environment_string("ConsoleOut=serial(0)", &addr);
-			add_environment_string("console=d2", &addr);		/*  d2 = serial?  */
+			add_environment_string(cpu, "ConsoleIn=serial(0)", &addr);
+			add_environment_string(cpu, "ConsoleOut=serial(0)", &addr);
+			add_environment_string(cpu, "console=d2", &addr);		/*  d2 = serial?  */
 		}
-		add_environment_string("cpufreq=3", &addr);
-		add_environment_string("dbaud=9600", &addr);
-		add_environment_string("eaddr=00:00:00:00:00:00", &addr);
-		add_environment_string("verbose=istrue", &addr);
-		add_environment_string("showconfig=istrue", &addr);
-		add_environment_string("", &addr);	/*  the end  */
+		add_environment_string(cpu, "cpufreq=3", &addr);
+		add_environment_string(cpu, "dbaud=9600", &addr);
+		add_environment_string(cpu, "eaddr=00:00:00:00:00:00", &addr);
+		add_environment_string(cpu, "verbose=istrue", &addr);
+		add_environment_string(cpu, "showconfig=istrue", &addr);
+		add_environment_string(cpu, "", &addr);	/*  the end  */
 
 		break;
 
@@ -2614,8 +2631,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-		cpus[bootstrap_cpu]->md_interrupt = au1x00_interrupt;
-		au1x00_ic_data = dev_au1x00_init(cpus[bootstrap_cpu], mem);
+		cpu->md_interrupt = au1x00_interrupt;
+		au1x00_ic_data = dev_au1x00_init(cpu, mem);
 
 		/*
 		 *  TODO:  Which non-Au1500 devices, and at what addresses?
@@ -2637,14 +2654,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *  haven't found any docs on how it is used though.
 		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 1;
-		cpus[bootstrap_cpu]->gpr[GPR_A1] = 0xa0001000ULL;
-		store_32bit_word(cpus[bootstrap_cpu]->gpr[GPR_A1],
+		cpu->gpr[GPR_A0] = 1;
+		cpu->gpr[GPR_A1] = 0xa0001000ULL;
+		store_32bit_word(cpu, cpu->gpr[GPR_A1],
 		    0xa0002000ULL);
-		store_string(0xa0002000ULL, "something=somethingelse");
+		store_string(cpu, 0xa0002000ULL, "something=somethingelse");
 
-		cpus[bootstrap_cpu]->gpr[GPR_A2] = 0xa0003000ULL;
-		store_string(0xa0002000ULL, "hello=world\n");
+		cpu->gpr[GPR_A2] = 0xa0003000ULL;
+		store_string(cpu, 0xa0002000ULL, "hello=world\n");
 
 		break;
 
@@ -2654,7 +2671,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		if (use_x11)
 			fprintf(stderr, "WARNING! NetGear with -X is meaningless. Continuing anyway.\n");
 
-		dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000800, 0, 4);
+		dev_8250_init(cpu, mem, 0x18000800, 0, 4);
 
 		break;
 

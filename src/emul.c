@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.52 2004-09-02 01:00:21 debug Exp $
+ *  $Id: emul.c,v 1.53 2004-09-02 02:13:14 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -62,7 +62,6 @@ extern int emulation_type;
 extern int machine;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
-extern int bootstrap_cpu;
 extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -184,7 +183,7 @@ static int last_cmd_len = 0;
  *
  *  Dump emulated memory in hex and ASCII.
  */
-static void debugger_dump(uint64_t addr, int lines)
+static void debugger_dump(struct emul *emul, uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
@@ -194,12 +193,12 @@ static void debugger_dump(uint64_t addr, int lines)
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = cpus[bootstrap_cpu];
+	c = cpus[emul->bootstrap_cpu];
 	if (c == NULL) {
-		printf("cpus[bootstrap_cpu] = NULL\n");
+		printf("cpus[emul->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = cpus[bootstrap_cpu]->mem;
+	m = cpus[emul->bootstrap_cpu]->mem;
 
 	while (lines -- > 0) {
 		unsigned char buf[16];
@@ -232,7 +231,7 @@ static void debugger_dump(uint64_t addr, int lines)
  *
  *  Dump emulated memory as MIPS instructions.
  */
-static void debugger_unasm(uint64_t addr, int lines)
+static void debugger_unasm(struct emul *emul, uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
@@ -242,12 +241,12 @@ static void debugger_unasm(uint64_t addr, int lines)
 		printf("No cpus (?)\n");
 		return;
 	}
-	c = cpus[bootstrap_cpu];
+	c = cpus[emul->bootstrap_cpu];
 	if (c == NULL) {
-		printf("cpus[bootstrap_cpu] = NULL\n");
+		printf("cpus[emul->bootstrap_cpu] = NULL\n");
 		return;
 	}
-	m = cpus[bootstrap_cpu]->mem;
+	m = cpus[emul->bootstrap_cpu]->mem;
 
 	while (lines -- > 0) {
 		unsigned char buf[4];
@@ -273,7 +272,7 @@ static void debugger_unasm(uint64_t addr, int lines)
  *
  *  Dump each CPU's TLB contents.
  */
-static void debugger_tlbdump(void)
+static void debugger_tlbdump(struct emul *emul)
 {
 	int i, j;
 
@@ -316,6 +315,9 @@ static void debugger_tlbdump(void)
 		}
 	}
 }
+
+
+struct emul *debugger_emul;
 
 
 /*
@@ -393,13 +395,13 @@ void debugger(void)
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "d") == 0 ||
 		    strcasecmp(cmd, "dump") == 0) {
-			debugger_dump(last_dump_addr, 8);
+			debugger_dump(debugger_emul, last_dump_addr, 8);
 			last_dump_addr += 8*16;
 		} else if (strncasecmp(cmd, "d ", 2) == 0 ||
 		    strncasecmp(cmd, "dump ", 5) == 0) {
 			last_dump_addr = strtoll(cmd[1]==' '?
 			    cmd + 2 : cmd + 5, NULL, 16);
-			debugger_dump(last_dump_addr, 8);
+			debugger_dump(debugger_emul, last_dump_addr, 8);
 			last_dump_addr += 8*16;
 			/*  Set last cmd to just 'd', so that just pressing
 			    enter will cause dump to continue from the last
@@ -443,7 +445,7 @@ void debugger(void)
 			return;
 		} else if (strcasecmp(cmd, "tl") == 0 ||
 		    strcasecmp(cmd, "tlbdump") == 0) {
-			debugger_tlbdump();
+			debugger_tlbdump(debugger_emul);
 		} else if (strcasecmp(cmd, "tr") == 0 ||
 		    strcasecmp(cmd, "trace") == 0) {
 			old_show_trace_tree = 1 - old_show_trace_tree;
@@ -453,13 +455,13 @@ void debugger(void)
 			old_quiet_mode = 0;
 		} else if (strcasecmp(cmd, "u") == 0 ||
 		    strcasecmp(cmd, "unassemble") == 0) {
-			debugger_unasm(last_unasm_addr, 16);
+			debugger_unasm(debugger_emul, last_unasm_addr, 16);
 			last_unasm_addr += 16 * 4;
 		} else if (strncasecmp(cmd, "u ", 2) == 0 ||
 		    strncasecmp(cmd, "unassemble ", 11) == 0) {
 			last_unasm_addr = strtoll(cmd[1]==' '?
 			    cmd + 2 : cmd + 11, NULL, 16);
-			debugger_unasm(last_unasm_addr, 16);
+			debugger_unasm(debugger_emul, last_unasm_addr, 16);
 			last_unasm_addr += 16 * 4;
 			/*  Set last cmd to just 'u', so that just pressing
 			    enter will continue from the last address:  */
@@ -497,7 +499,7 @@ void debugger(void)
  *  that, instead of requiring a separate kernel file.  It is then up to the
  *  bootblock to load a kernel.
  */
-static void load_bootblock(void)
+static void load_bootblock(struct cpu *cpu)
 {
 	int boot_disk_id = diskimage_bootdev();
 	unsigned char minibuf[0x20];
@@ -561,12 +563,12 @@ static void load_bootblock(void)
 		bootblock_loadaddr &= 0x0fffffff;
 		bootblock_loadaddr |= 0xa0000000;
 
-		store_buf(bootblock_loadaddr, (char *)bootblock_buf,
+		store_buf(cpu, bootblock_loadaddr, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
 
 		bootblock_pc &= 0x0fffffff;
 		bootblock_pc |= 0xa0000000;
-		cpus[bootstrap_cpu]->pc = bootblock_pc;
+		cpu->pc = bootblock_pc;
 
 		break;
 	default:
@@ -665,9 +667,9 @@ void emul_start(struct emul *emul)
 		cpus[i] = cpu_new(mem, i, emul->emul_cpu_name);
 
 	if (emul->use_random_bootstrap_cpu)
-		bootstrap_cpu = random() % ncpus;
+		emul->bootstrap_cpu = random() % ncpus;
 	else
-		bootstrap_cpu = 0;
+		emul->bootstrap_cpu = 0;
 
 	diskimage_dump_info();
 
@@ -692,7 +694,9 @@ void emul_start(struct emul *emul)
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0x80000000 + i;
-			memory_rw(cpus[0], mem, addr, data, sizeof(data), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpus[emul->bootstrap_cpu], mem, addr, data,
+			    sizeof(data), MEM_WRITE,
+			    CACHE_NONE | NO_EXCEPTIONS);
 		}
 	}
 
@@ -701,10 +705,10 @@ void emul_start(struct emul *emul)
 		debug("loading files into emulation memory:\n");
 
 	if (booting_from_diskimage)
-		load_bootblock();
+		load_bootblock(cpus[emul->bootstrap_cpu]);
 
 	while (extra_argc > 0) {
-		file_load(mem, extra_argv[0], cpus[bootstrap_cpu]);
+		file_load(mem, extra_argv[0], cpus[emul->bootstrap_cpu]);
 
 		/*
 		 *  For userland emulation, the remainding items
@@ -725,25 +729,27 @@ void emul_start(struct emul *emul)
 		exit(1);
 	}
 
-	if ((cpus[bootstrap_cpu]->pc >> 32) == 0 &&
-	    (cpus[bootstrap_cpu]->pc & 0x80000000ULL))
-		cpus[bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
+	if ((cpus[emul->bootstrap_cpu]->pc >> 32) == 0 &&
+	    (cpus[emul->bootstrap_cpu]->pc & 0x80000000ULL))
+		cpus[emul->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
 
-	if ((cpus[bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
-	    (cpus[bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
-		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
+	if ((cpus[emul->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
+	    (cpus[emul->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
+		cpus[emul->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<ncpus; i++)
-		if (i != bootstrap_cpu)
-			cpus[i]->byte_order = cpus[bootstrap_cpu]->byte_order;
+		if (i != emul->bootstrap_cpu)
+			cpus[i]->byte_order =
+			    cpus[emul->bootstrap_cpu]->byte_order;
 
 	if (userland_emul)
-		useremul_init(cpus[bootstrap_cpu], extra_argc, extra_argv);
+		useremul_init(cpus[emul->bootstrap_cpu],
+		    extra_argc, extra_argv);
 
 	/*  Startup the bootstrap CPU:  */
-	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;
-	cpus[bootstrap_cpu]->running            = 1;
+	cpus[emul->bootstrap_cpu]->bootstrap_cpu_flag = 1;
+	cpus[emul->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
 	add_pc_dump_points();
@@ -756,8 +762,8 @@ void emul_start(struct emul *emul)
 		    max_random_cycles_per_chunk);
 
 	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
-	    bootstrap_cpu,
-	    cpus[bootstrap_cpu]->pc, cpus[bootstrap_cpu]->gpr[GPR_GP]);
+	    emul->bootstrap_cpu, cpus[emul->bootstrap_cpu]->pc,
+	    cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
 
 	/*
 	 *  console_init() makes sure that the terminal is in a good state.
@@ -768,6 +774,8 @@ void emul_start(struct emul *emul)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
+	debugger_emul = emul;
+
 	console_init();
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
@@ -776,7 +784,7 @@ void emul_start(struct emul *emul)
 		quiet_mode = 1;
 
 
-	cpu_run(cpus, ncpus);
+	cpu_run(emul, cpus, ncpus);
 
 
 	if (use_x11) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.127 2004-09-02 01:00:21 debug Exp $
+ *  $Id: cpu.c,v 1.128 2004-09-02 02:13:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -65,7 +65,6 @@ extern int speed_tricks;
 extern int prom_emulation;
 extern int tlb_dump;
 extern int userland_emul;
-extern int bootstrap_cpu;
 extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
@@ -3032,7 +3031,8 @@ static int cpu_run_instr(struct cpu *cpu)
  *  line to stdout about how many instructions/cycles have been executed so
  *  far.
  */
-void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
+void cpu_show_cycles(struct emul *emul,
+	struct timeval *starttime, int64_t ncycles, int forced)
 {
 	uint64_t offset;
 	char *symbol;
@@ -3053,7 +3053,8 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
+	ninstrs = ncycles *
+	    cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 	if (automatic_clock_adjustment) {
 		static int first_adjustment = 1;
@@ -3061,7 +3062,7 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
+		    / cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
 		if (cur_cycles_per_second < 1500000)
 			cur_cycles_per_second = 1500000;
@@ -3102,7 +3103,7 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 
 	printf("total nr of cycles = %lli", (long long) ncycles);
 
-	if (cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
+	if (cpus[emul->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instructions)", (long long) ninstrs);
 
 	printf(", instr/sec: %lli cur, %lli avg",
@@ -3110,10 +3111,10 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 		/ (mseconds-mseconds_last)),
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
-	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
+	symbol = get_symbol_name(cpus[emul->bootstrap_cpu]->pc, &offset);
 
 	printf(", pc=%016llx <%s> ]\n",
-	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
+	    (long long)cpus[emul->bootstrap_cpu]->pc, symbol? symbol : "no symbol");
 
 do_return:
 	ninstrs_last = ninstrs;
@@ -3126,7 +3127,7 @@ do_return:
  *
  *  Run instructions from all CPUs, until all CPUs have halted.
  */
-int cpu_run(struct cpu **cpus, int ncpus)
+int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 {
 	int te;
 	int64_t max_instructions_cached = max_instructions;
@@ -3305,7 +3306,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		}
 
 		if (ncycles > ncycles_show + (1<<22)) {
-			cpu_show_cycles(&starttime, ncycles, 0);
+			cpu_show_cycles(emul, &starttime, ncycles, 0);
 			ncycles_show = ncycles;
 		}
 
@@ -3328,7 +3329,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	debug("All CPUs halted.\n");
 
 	if (show_nr_of_instructions || !quiet_mode)
-		cpu_show_cycles(&starttime, ncycles, 1);
+		cpu_show_cycles(emul, &starttime, ncycles, 1);
 
 	if (show_opcode_statistics)
 		cpu_show_full_statistics(cpus);

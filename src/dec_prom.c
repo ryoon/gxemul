@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.26 2004-08-16 06:18:45 debug Exp $
+ *  $Id: dec_prom.c,v 1.27 2004-09-02 02:13:14 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -121,12 +121,15 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 				break;
 			}
 
-			res = diskimage_access(disk_id, 0, current_file_offset, tmp_buf, cpu->gpr[GPR_A2]);
+			res = diskimage_access(disk_id, 0, current_file_offset,
+			    tmp_buf, cpu->gpr[GPR_A2]);
 
-			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			/*  If the transfer was successful, transfer the data
+			    to emulated memory:  */
 			if (res) {
 				uint64_t dst = cpu->gpr[GPR_A1];
-				store_buf(dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
+				store_buf(cpu, dst, (char *)tmp_buf,
+				    cpu->gpr[GPR_A2]);
 				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
 				current_file_offset += cpu->gpr[GPR_A2];
 			}
@@ -354,15 +357,18 @@ void decstation_prom_emul(struct cpu *cpu)
 				break;
 			}
 
-			res = diskimage_access(disk_id, 0, cpu->gpr[GPR_A0] * 512, tmp_buf, cpu->gpr[GPR_A2]);
+			res = diskimage_access(disk_id, 0, cpu->gpr[GPR_A0] *
+			    512, tmp_buf, cpu->gpr[GPR_A2]);
 
-			/*  If the transfer was successful, transfer the data to emulated memory:  */
+			/*  If the transfer was successful, transfer the data
+			    to emulated memory:  */
 			if (res) {
 				uint64_t dst = cpu->gpr[GPR_A1];
 				if (dst < 0x80000000ULL)
 					dst |= 0x80000000;
 
-				store_buf(dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
+				store_buf(cpu, dst, (char *)tmp_buf,
+				    cpu->gpr[GPR_A2]);
 				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
 			}
 
@@ -443,7 +449,8 @@ void decstation_prom_emul(struct cpu *cpu)
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",
 		    (int)cpu->gpr[GPR_A0]);
-		store_buf(cpu->gpr[GPR_A0], (char *)&memmap, sizeof(memmap));
+		store_buf(cpu, cpu->gpr[GPR_A0],
+		    (char *)&memmap, sizeof(memmap));
 		cpu->gpr[GPR_V0] = sizeof((memmap.bitmap));
 		break;
 	case 0x88:		/*  disableintr()  */
@@ -460,14 +467,14 @@ void decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0xa4:		/*  gettcinfo()  */
 		/*  These are just bogus values...  TODO  */
-		store_32bit_word(DEC_PROM_TCINFO +  0, 0);	/*  revision  */
-		store_32bit_word(DEC_PROM_TCINFO +  4, 50);	/*  clock period in nano seconds  */
-		store_32bit_word(DEC_PROM_TCINFO +  8, 4);	/*  slot size in megabytes  TODO: not same for all models!!  */
-		store_32bit_word(DEC_PROM_TCINFO + 12, 10);	/*  I/O timeout in cycles  */
-		store_32bit_word(DEC_PROM_TCINFO + 16, 1);	/*  DMA address range in megabytes  */
-		store_32bit_word(DEC_PROM_TCINFO + 20, 100);	/*  maximum DMA burst length  */
-		store_32bit_word(DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
-		store_32bit_word(DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  0, 0);	/*  revision  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  4, 50);	/*  clock period in nano seconds  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO +  8, 4);	/*  slot size in megabytes  TODO: not same for all models!!  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 12, 10);	/*  I/O timeout in cycles  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 16, 1);	/*  DMA address range in megabytes  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 20, 100);	/*  maximum DMA burst length  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
+		store_32bit_word(cpu, DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
 		cpu->gpr[GPR_V0] = DEC_PROM_TCINFO;
 		break;
 	case 0xac:		/*  rex()  */

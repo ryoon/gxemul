@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.104 2004-09-02 00:58:03 debug Exp $
+ *  $Id: misc.h,v 1.105 2004-09-02 02:13:13 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -907,7 +907,8 @@ void fatal(char *fmt, ...);
 
 
 /*  arcbios.c:  */
-uint64_t arcbios_addchild_manual(uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
+uint64_t arcbios_addchild_manual(struct cpu *cpu,
+	uint64_t class, uint64_t type, uint64_t flags, uint64_t version,
 	uint64_t revision, uint64_t key, uint64_t affinitymask, char *identifier, uint64_t parent);
 void arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
@@ -932,7 +933,7 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64);
-int cpu_run(struct cpu **cpus, int ncpus);
+int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus);
 
 
 /*  dec_prom.c:  */
@@ -947,11 +948,11 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu);
 /*  machine.c:  */
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
-void store_string(uint64_t addr, char *s);
-void store_64bit_word(uint64_t addr, uint64_t data64);
-void store_32bit_word(uint64_t addr, uint64_t data32);
-uint32_t load_32bit_word(uint64_t addr);
-void store_buf(uint64_t addr, char *s, size_t len);
+void store_string(struct cpu *cpu, uint64_t addr, char *s);
+void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
+void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
+uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
+void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct emul *emul, struct memory *mem);
 
 

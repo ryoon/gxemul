@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.16 2004-07-16 18:19:45 debug Exp $
+ *  $Id: useremul.c,v 1.17 2004-09-02 02:13:14 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -117,26 +117,26 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	/*
 	 *  Stack contents:  (TODO: emulation dependant?)
 	 */
-	store_32bit_word(stack_top - stack_margin, argc);
+	store_32bit_word(cpu, stack_top - stack_margin, argc);
 
 	cur_argv = stack_top - stack_margin + 128 + (argc + envc) * sizeof(uint32_t);
 	for (i=0; i<argc; i++) {
 		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
 
-		store_32bit_word(stack_top - stack_margin + 4 + i*sizeof(uint32_t), cur_argv);
-		store_string(cur_argv, host_argv[i]);
+		store_32bit_word(cpu, stack_top - stack_margin + 4 + i*sizeof(uint32_t), cur_argv);
+		store_string(cpu, cur_argv, host_argv[i]);
 		cur_argv += strlen(host_argv[i]) + 1;
 	}
 
 	/*  Store a NULL value between the args and the environment strings:  */
-	store_32bit_word(stack_top - stack_margin + 4 + i*sizeof(uint32_t), 0);  i++;
+	store_32bit_word(cpu, stack_top - stack_margin + 4 + i*sizeof(uint32_t), 0);  i++;
 
 	/*  TODO: get environment strings from somewhere  */
 
 	/*  Store all environment strings:  */
 	for (i2 = 0; i2 < envc; i2 ++) {
-		store_32bit_word(stack_top - stack_margin + 4 + (i+i2)*sizeof(uint32_t), cur_argv);
-		store_string(cur_argv, "DISPLAY=localhost:0.0");
+		store_32bit_word(cpu, stack_top - stack_margin + 4 + (i+i2)*sizeof(uint32_t), cur_argv);
+		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
 }
@@ -233,20 +233,20 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			arg0 = cpu->gpr[GPR_A2];
 			arg1 = cpu->gpr[GPR_A3];
 			/*  TODO:  stack arguments? Are these correct?  */
-			arg2 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
-			arg3 = load_32bit_word(cpu->gpr[GPR_SP] + 16);
-			stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 24);
-			stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 32);
-			stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 40);
+			arg2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
+			arg3 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 16);
+			stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 24);
+			stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 32);
+			stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 40);
 		} else {
 			arg0 = cpu->gpr[GPR_A0];
 			arg1 = cpu->gpr[GPR_A1];
 			arg2 = cpu->gpr[GPR_A2];
 			arg3 = cpu->gpr[GPR_A3];
 			/*  TODO:  stack arguments? Are these correct?  */
-			stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 4);
-			stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
-			stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 12);
+			stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
+			stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
+			stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 12);
 		}
 
 		switch (sysnr) {
@@ -373,25 +373,25 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				copy data from the host's getfsstat(). TODO  */
 #if 1
 			result_low = 1;
-			store_32bit_word(mipsbuf + 0, 0);	/*  f_spare2  */
-			store_32bit_word(mipsbuf + 4, 1024);	/*  f_bsize  */
-			store_32bit_word(mipsbuf + 8, 65536);	/*  f_iosize  */
-			store_32bit_word(mipsbuf + 12, 100);	/*  f_blocks  */
-			store_32bit_word(mipsbuf + 16, 50);	/*  f_bfree  */
-			store_32bit_word(mipsbuf + 20, 10);	/*  f_bavail  */
-			store_32bit_word(mipsbuf + 24, 50);	/*  f_files  */
-			store_32bit_word(mipsbuf + 28, 25);	/*  f_ffree  */
-			store_32bit_word(mipsbuf + 28, 0x1234);	/*  f_fsid  */
-			store_32bit_word(mipsbuf + 32, 0);	/*  f_owner  */
-			store_32bit_word(mipsbuf + 36, 0);	/*  f_type  */
-			store_32bit_word(mipsbuf + 40, 0);	/*  f_flags  */
-			store_32bit_word(mipsbuf + 44, 0);	/*  f_fspare[0]  */
-			store_32bit_word(mipsbuf + 48, 0);	/*  f_fspare[1]  */
-			store_string(mipsbuf + 52, "ffs");	/*  f_typename  */
+			store_32bit_word(cpu, mipsbuf + 0, 0);	/*  f_spare2  */
+			store_32bit_word(cpu, mipsbuf + 4, 1024);	/*  f_bsize  */
+			store_32bit_word(cpu, mipsbuf + 8, 65536);	/*  f_iosize  */
+			store_32bit_word(cpu, mipsbuf + 12, 100);	/*  f_blocks  */
+			store_32bit_word(cpu, mipsbuf + 16, 50);	/*  f_bfree  */
+			store_32bit_word(cpu, mipsbuf + 20, 10);	/*  f_bavail  */
+			store_32bit_word(cpu, mipsbuf + 24, 50);	/*  f_files  */
+			store_32bit_word(cpu, mipsbuf + 28, 25);	/*  f_ffree  */
+			store_32bit_word(cpu, mipsbuf + 28, 0x1234);	/*  f_fsid  */
+			store_32bit_word(cpu, mipsbuf + 32, 0);	/*  f_owner  */
+			store_32bit_word(cpu, mipsbuf + 36, 0);	/*  f_type  */
+			store_32bit_word(cpu, mipsbuf + 40, 0);	/*  f_flags  */
+			store_32bit_word(cpu, mipsbuf + 44, 0);	/*  f_fspare[0]  */
+			store_32bit_word(cpu, mipsbuf + 48, 0);	/*  f_fspare[1]  */
+			store_string(cpu, mipsbuf + 52, "ffs");	/*  f_typename  */
 #define MFSNAMELEN 16
 #define	MNAMELEN 90
-			store_string(mipsbuf + 52 + MFSNAMELEN, "/");	/*  f_mntonname  */
-			store_string(mipsbuf + 52 + MFSNAMELEN + MNAMELEN, "ffs");	/*  f_mntfromname  */
+			store_string(cpu, mipsbuf + 52 + MFSNAMELEN, "/");	/*  f_mntonname  */
+			store_string(cpu, mipsbuf + 52 + MFSNAMELEN + MNAMELEN, "ffs");	/*  f_mntfromname  */
 #endif
 			break;
 
@@ -413,7 +413,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 					error_flag = 1;
 					error_code = errno;
 				} else
-					store_string(arg1, (char *)buf2);
+					store_string(cpu, arg1, (char *)buf2);
 				free(buf2);
 			}
 			break;
@@ -433,13 +433,13 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			} else {
 				if (arg0 != 0) {
 					/*  Store tv.tv_sec and tv.tv_usec as 'long' (32-bit) values:  */
-					store_32bit_word(arg0 + 0, tv.tv_sec);
-					store_32bit_word(arg0 + 4, tv.tv_usec);
+					store_32bit_word(cpu, arg0 + 0, tv.tv_sec);
+					store_32bit_word(cpu, arg0 + 4, tv.tv_usec);
 				}
 				if (arg1 != 0) {
 					/*  Store tz.tz_minuteswest and tz.tz_dsttime as 'long' (32-bit) values:  */
-					store_32bit_word(arg1 + 0, tz.tz_minuteswest);
-					store_32bit_word(arg1 + 4, tz.tz_dsttime);
+					store_32bit_word(cpu, arg1 + 0, tz.tz_minuteswest);
+					store_32bit_word(cpu, arg1 + 4, tz.tz_dsttime);
 				}
 			}
 			break;
@@ -497,8 +497,8 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			    (long long)arg0, (long long)arg1);
 
 			if (arg0 != 0) {
-				uint32_t sec = load_32bit_word(arg0 + 0);
-				uint32_t nsec = load_32bit_word(arg0 + 4);
+				uint32_t sec = load_32bit_word(cpu, arg0 + 0);
+				uint32_t nsec = load_32bit_word(cpu, arg0 + 4);
 				struct timespec ts;
 				ts.tv_sec = sec;
 				ts.tv_nsec = nsec;
@@ -560,14 +560,14 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			sysctl_namelen = arg1;
 			sysctl_oldp    = arg2;
 			sysctl_oldlenp = arg3;
-			sysctl_newp    = load_32bit_word(cpu->gpr[GPR_SP]);		/*  TODO: +4 and +8 ??  */
-			sysctl_newlen  = load_32bit_word(cpu->gpr[GPR_SP] + 4);
+			sysctl_newp    = load_32bit_word(cpu, cpu->gpr[GPR_SP]);		/*  TODO: +4 and +8 ??  */
+			sysctl_newlen  = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
 			debug("useremul_syscall(): netbsd __sysctl(");
 
-			name0 = load_32bit_word(sysctl_name + 0);
-			name1 = load_32bit_word(sysctl_name + 4);
-			name2 = load_32bit_word(sysctl_name + 8);
-			name3 = load_32bit_word(sysctl_name + 12);
+			name0 = load_32bit_word(cpu, sysctl_name + 0);
+			name1 = load_32bit_word(cpu, sysctl_name + 4);
+			name2 = load_32bit_word(cpu, sysctl_name + 8);
+			name3 = load_32bit_word(cpu, sysctl_name + 12);
 			debug("name (@ 0x%08x) = %i, %i, %i, %i)\n", sysctl_name,
 			    name0, name1, name2, name3);
 
@@ -577,14 +577,14 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				gethostname(hname, sizeof(hname));
 				hname[sizeof(hname)-1] = '\0';
 				if (sysctl_oldp != 0)
-					store_string(sysctl_oldp, hname);
+					store_string(cpu, sysctl_oldp, hname);
 				if (sysctl_oldlenp != 0)
-					store_32bit_word(sysctl_oldlenp, strlen(hname));
+					store_32bit_word(cpu, sysctl_oldlenp, strlen(hname));
 			} else if (name0 == CTL_HW && name1 == HW_PAGESIZE) {
 				if (sysctl_oldp != 0)
-					store_32bit_word(sysctl_oldp, 4096);
+					store_32bit_word(cpu, sysctl_oldp, 4096);
 				if (sysctl_oldlenp != 0)
-					store_32bit_word(sysctl_oldlenp, sizeof(uint32_t));
+					store_32bit_word(cpu, sysctl_oldlenp, sizeof(uint32_t));
 			} else {
 				error_flag = 1;
 				error_code = 2;  /*  ENOENT  */
@@ -629,9 +629,9 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		arg2 = cpu->gpr[GPR_A2];
 		arg3 = cpu->gpr[GPR_A3];
 		/*  TODO:  stack arguments? Are these correct?  */
-		stack0 = load_32bit_word(cpu->gpr[GPR_SP] + 0);
-		stack1 = load_32bit_word(cpu->gpr[GPR_SP] + 4);
-		stack2 = load_32bit_word(cpu->gpr[GPR_SP] + 8);
+		stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 0);
+		stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
+		stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
 
 		switch (sysnr) {
 
@@ -890,8 +890,8 @@ printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 
 				for (i=0; i<arg2; i++) {
 					uint32_t iov_base, iov_len;
-					iov_base = load_32bit_word(arg1 + 8*i + 0);	/*  char *  */
-					iov_len  = load_32bit_word(arg1 + 8*i + 4);	/*  size_t  */
+					iov_base = load_32bit_word(cpu, arg1 + 8*i + 0);	/*  char *  */
+					iov_len  = load_32bit_word(cpu, arg1 + 8*i + 4);	/*  size_t  */
 
 					if (iov_len != 0) {
 						unsigned char *charbuf = malloc(iov_len);
@@ -927,13 +927,13 @@ printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			} else {
 				if (arg0 != 0) {
 					/*  Store tv.tv_sec and tv.tv_usec as 'long' (32-bit) values:  */
-					store_32bit_word(arg0 + 0, tv.tv_sec);
-					store_32bit_word(arg0 + 4, tv.tv_usec);
+					store_32bit_word(cpu, arg0 + 0, tv.tv_sec);
+					store_32bit_word(cpu, arg0 + 4, tv.tv_usec);
 				}
 				if (arg1 != 0) {
 					/*  Store tz.tz_minuteswest and tz.tz_dsttime as 'long' (32-bit) values:  */
-					store_32bit_word(arg1 + 0, tz.tz_minuteswest);
-					store_32bit_word(arg1 + 4, tz.tz_dsttime);
+					store_32bit_word(cpu, arg1 + 0, tz.tz_minuteswest);
+					store_32bit_word(cpu, arg1 + 4, tz.tz_dsttime);
 				}
 			}
 			break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.71 2004-09-02 01:00:21 debug Exp $
+ *  $Id: main.c,v 1.72 2004-09-02 02:13:14 debug Exp $
  */
 
 #include <stdio.h>
@@ -84,7 +84,6 @@ int userland_emul = 0;
 char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
 char *boot_string_argument = "-a";		/*  overridden with -o  */
 
-int bootstrap_cpu;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 

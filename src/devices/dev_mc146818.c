@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.37 2004-08-26 14:27:27 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.38 2004-09-02 02:13:12 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -45,7 +45,6 @@
 extern int register_dump;
 extern int instruction_trace;
 extern int emulated_hz;
-extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
 
@@ -115,7 +114,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		    mc_data->interrupt_every_x_cycles) {
 			debug("[ rtc interrupt (every %i cycles) ]\n",
 			    mc_data->interrupt_every_x_cycles);
-			cpu_interrupt(cpus[bootstrap_cpu], mc_data->irq_nr);
+			cpu_interrupt(cpu, mc_data->irq_nr);
 
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 
@@ -349,8 +348,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				    mc_data->interrupt_every_x_cycles;
 			mc_data->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
-				cpu_interrupt_ack(cpus[bootstrap_cpu],
-				    mc_data->irq_nr);
+				cpu_interrupt_ack(cpu, mc_data->irq_nr);
 				/*  mc_data->cycles_left_until_interrupt = mc_data->interrupt_every_x_cycles;  */
 			}
 			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
@@ -435,7 +433,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		data[0] = mc_data->reg[relative_addr];
 
 		if (relative_addr == MC_REGC*4) {
-			cpu_interrupt_ack(cpus[bootstrap_cpu], mc_data->irq_nr);
+			cpu_interrupt_ack(cpu, mc_data->irq_nr);
 			/*  mc_data->cycles_left_until_interrupt =
 			    mc_data->interrupt_every_x_cycles;  */
 			mc_data->reg[MC_REGC * 4] = 0x00;

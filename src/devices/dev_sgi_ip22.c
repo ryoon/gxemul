@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.10 2004-06-12 14:30:07 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.11 2004-06-12 17:17:40 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -204,6 +204,33 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			    (long long)idata);
 		} else {
 			debug("[ sgi_ip22: read from local1 IRQ MASK, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x10:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22: write to mappable IRQ STAT, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from mappable IRQ STAT, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x14:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22: write to mappable local0 IRQ MASK, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from mappable local0 IRQ MASK, data=0x%llx ]\n",
+			    (long long)odata);
+		}
+		break;
+	case 0x18:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22: write to mappable local1 IRQ MASK, data=0x%llx ]\n",
+			    (long long)idata);
+		} else {
+			debug("[ sgi_ip22: read from mappable local1 IRQ MASK, data=0x%llx ]\n",
 			    (long long)odata);
 		}
 		break;

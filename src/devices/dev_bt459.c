@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.11 2004-05-07 00:42:19 debug Exp $
+ *  $Id: dev_bt459.c,v 1.12 2004-05-08 02:06:04 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -48,6 +48,7 @@ struct bt459_data {
 
 	int		planes;
 	int		irq_nr;
+	int		type;
 
 	int		cursor_on;
 	int		cursor_x;
@@ -68,13 +69,21 @@ struct bt459_data {
 void dev_bt459_tick(struct cpu *cpu, void *extra)
 {
 	struct bt459_data *d = extra;
-	static int x;
 
-	if (d->irq_nr > 0)
-		cpu_interrupt(cpu, d->irq_nr);
+	if (d->type != BT459_PX) {
+		if (d->irq_nr > 0)
+			cpu_interrupt(cpu, d->irq_nr);
 
-if (random() & 1)
-	cpu_interrupt_ack(cpu, d->irq_nr);
+		/*
+		 *  TODO:  This is a really ugly hack.
+		 *  Ultrix, when running in graphics mode, reads the bt459
+		 *  registers on an interrupt, so we can ack it there, but
+		 *  during bootup it does not, so something else must
+		 *  ack.  This is extremely ugly.
+		 */
+		if (random() & 1)
+			cpu_interrupt_ack(cpu, d->irq_nr);
+	}
 }
 
 
@@ -220,9 +229,15 @@ if (btaddr < 0x100)
 		}
 	}
 
-	/*  NetBSD uses 370,37 as magic values.  */
+	/*  NetBSD uses 370,37 as magic values. (For the PX[G] cards.)  */
 	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) + ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
 	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
+
+	if (d->type == BT459_BA) {
+		/*  For PMAG-BA: (found by empirical testing with Ultrix)  */
+		new_cursor_x += 150;
+		new_cursor_y += 14;
+	}
 
 	/*  TODO: what do the bits in the CCR do?  */
 	on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
@@ -265,7 +280,7 @@ on = 1;
 /*
  *  dev_bt459_init():
  */
-void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes, int irq_nr)
+void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes, int irq_nr, int type)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -277,12 +292,13 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, stru
 	d->rgb_palette  = vfb_data->rgb_palette;
 	d->planes       = planes;
 	d->irq_nr	= irq_nr;
+	d->type		= type;
 	d->cursor_x     = -1;
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH, dev_bt459_access, (void *)d);
 
-	cpu_add_tickfunction(cpu, dev_bt459_tick, d, 14);
+	cpu_add_tickfunction(cpu, dev_bt459_tick, d, 22);
 }
 

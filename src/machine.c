@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.403 2005-04-06 17:08:29 debug Exp $
+ *  $Id: machine.c,v 1.404 2005-04-06 17:13:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -82,6 +82,7 @@
 
 /*  HPC:  */
 #include "hpc_bootinfo.h"
+#include "vripreg.h"
 
 
 struct machine_entry_subtype {
@@ -2223,11 +2224,12 @@ void machine_setup(struct machine *machine)
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4181);
 			machine->md_interrupt = vr41xx_interrupt;
 
-			/*  TODO: Hm... irq 17 according to linux, but 9 here?  */
+			/*  TODO: Hm... irq 17 according to linux, but
+			    VRIP_INTR_SIU (=9) here?  */
 			{
 				int x;
 				x = dev_ns16550_init(machine, mem, 0x0c000010,
-				    8 + 9, 1, 1, "serial 0");
+				    8 + VRIP_INTR_SIU, 1, 1, "serial 0");
 
 				if (!machine->use_x11)
 					machine->main_console_handle = x;

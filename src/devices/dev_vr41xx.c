@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.27 2005-04-06 17:08:27 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.28 2005-04-06 17:13:43 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -45,6 +45,7 @@
 #include "misc.h"
 
 #include "bcureg.h"
+#include "vripreg.h"
 #include "vrkiureg.h"
 
 
@@ -309,7 +310,7 @@ void dev_vr41xx_tick(struct cpu *cpu, void *extra)
 			if (d->cpumodel == 4121 || d->cpumodel == 4181)
 				cpu_interrupt(cpu, 3);
 			else
-				cpu_interrupt(cpu, 8 + 3);
+				cpu_interrupt(cpu, 8 + VRIP_INTR_ETIMER);
 		}
 	}
 
@@ -504,7 +505,7 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 	case 0x13e:	/*  on 4181?  */
 		/*  RTC interrupt register...  */
 		/*  Ack. timer interrupts?  */
-		cpu_interrupt_ack(cpu, 8 + 3);
+		cpu_interrupt_ack(cpu, 8 + VRIP_INTR_ETIMER);
 		break;
 
 	case 0x1de:	/*  on 4121?  */
@@ -555,7 +556,7 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	/*  TODO: VRC4173 has the KIU at offset 0x100?  */
 	d->kiu_offset = 0x180;
 	d->kiu_console_handle = console_start_slave_inputonly(machine, "kiu");
-	d->kiu_irq_nr = 7;	/*  TODO?  */
+	d->kiu_irq_nr = VRIP_INTR_KIU;
 
 	switch (cpumodel) {
 	case 4101:
@@ -583,8 +584,8 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 
 	/*  At least on VR4131:  */
 	if (cpumodel == 4131)
-		dev_ns16550_init(machine, mem, baseaddr + 0x800, 8 + 9, 1,
-		    1, "vr41xx siu");
+		dev_ns16550_init(machine, mem, baseaddr + 0x800,
+		    8 + VRIP_INTR_SIU, 1, 1, "vr41xx siu");
 
 	/*  Hm... maybe this should not be here.  TODO  */
 	device_add(machine, "pcic addr=0x140003e0");

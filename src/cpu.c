@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.86 2004-07-04 00:30:39 debug Exp $
+ *  $Id: cpu.c,v 1.87 2004-07-04 00:43:59 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -126,7 +126,10 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	/*  Data and Instruction caches:  */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
 		cpu->cache_size[i] = 16384;
+
+		/*  TODO: linesize depends on CPU type!  */
 		cpu->cache_linesize[i] = 16;
+
 		cpu->cache_mask[i] = cpu->cache_size[i] - 1;
 		cpu->cache_miss_penalty[i] = 10;	/*  TODO ?  */
 		cpu->cache[i] = malloc(cpu->cache_size[i]);
@@ -2183,19 +2186,28 @@ int cpu_run_instr(struct cpu *cpu)
 
 			if (linked && st==1) {
 				/*
-				 *  The store succeeded. Invalidate any other cpu's store
-				 *  near this address, and then return 1 in gpr rt:
+				 *  The store succeeded. Invalidate any other
+				 *  cpu's store to this cache line, and then
+				 *  return 1 in gpr rt:
 				 *
-				 *  (this is a semi-ugly hack using global 'cpus')
+				 *  (this is a semi-ugly hack using global
+				 * 'cpus')
 				 */
 				for (i=0; i<ncpus; i++) {
-					/*
-					 *  TODO:  check length too. I guess the invalidation
-					 *  should encompass an entire cache line.
-					 */
-					if (cpus[i]->rmw_addr == addr) {
-						cpus[i]->rmw = 0;
-						cpus[i]->rmw_addr = 0;
+					if (cpus[i]->rmw) {
+						uint64_t yaddr = addr;
+						uint64_t xaddr =
+						    cpus[i]->rmw_addr;
+						uint64_t mask;
+						mask = ~(cpus[i]->
+						    cache_linesize[CACHE_DATA]
+						    - 1);
+						xaddr &= mask;
+						yaddr &= mask;
+						if (xaddr == yaddr) {
+							cpus[i]->rmw = 0;
+							cpus[i]->rmw_addr = 0;
+						}
 					}
 				}
 

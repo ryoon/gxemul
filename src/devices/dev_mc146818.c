@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.66 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.67 2005-01-30 13:14:11 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -47,7 +47,6 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 
 #include "mc146818reg.h"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.22 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.23 2005-01-30 13:14:12 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -43,7 +43,6 @@
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 
 #include "wdsc_sbicreg.h"

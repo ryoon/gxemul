@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.20 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_rd94.c,v 1.21 2005-01-30 13:14:11 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -37,10 +37,10 @@
 #include "bus_pci.h"
 #include "cop0.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 
 #include "rd94.h"

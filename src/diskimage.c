@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.74 2005-01-30 12:54:52 debug Exp $
+ *  $Id: diskimage.c,v 1.75 2005-01-30 13:14:13 debug Exp $
  *
  *  Disk image support.
  *
@@ -1221,6 +1221,7 @@ printf(" XXX \n");
 
 		if (xferp->cmd_len < 12) {
 			fatal("WEIRD LEN?\n");
+			retlen = 8;
 		} else {
 			retlen = xferp->cmd[8] * 256 + xferp->cmd[9];
 		}

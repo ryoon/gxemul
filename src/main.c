@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.190 2005-01-30 12:54:53 debug Exp $
+ *  $Id: main.c,v 1.191 2005-01-30 13:14:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -310,7 +310,10 @@ void show_cpus_and_machine_types(void)
 	}
 	debug_indentation(-4);
 
-	/*  Other CPU families: TODO  */
+	debug("PPC:\n");
+	debug_indentation(4);
+	debug("TODO\n");
+	debug_indentation(-4);
 
 	debug_indentation(-iadd);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.146 2005-01-30 12:54:51 debug Exp $
+ *  $Id: bintrans.c,v 1.147 2005-01-30 13:14:12 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -857,7 +857,7 @@ run_it:
 				tep = tep->next;
 			}
 
-#if 0
+#if 1
 			/*  We have no translation.  */
 			if ((cpu->cd.mips.pc & 0xfff00000) == 0xbfc00000 &&
 			    cpu->machine->prom_emulation)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.67 2005-01-30 12:54:52 debug Exp $
+ *  $Id: debugger.c,v 1.68 2005-01-30 13:14:13 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -187,7 +187,6 @@ static int debugger_parse_name(struct machine *m, char *name, int writeflag,
 {
 	int match_register = 0, match_symbol = 0, match_numeric = 0;
 	int skip_register, skip_numeric, skip_symbol;
-	int cpunr = 0;
 
 	if (m == NULL || name == NULL) {
 		fprintf(stderr, "debugger_parse_name(): NULL ptr\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.13 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_jazz.c,v 1.14 2005-01-30 13:14:11 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -38,7 +38,6 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
 #include "misc.h"
 
 #include "jazz_r4030_dma.h"

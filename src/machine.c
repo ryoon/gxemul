@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.90 2004-06-12 14:29:46 debug Exp $
+ *  $Id: machine.c,v 1.91 2004-06-12 17:06:38 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -469,6 +469,8 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	 *
 	 *  irq_nr should be 8 + x, where x = 0..31 for local0,
 	 *  and 32..63 for local1 interrupts.
+	 *  Add 64*y for "mappable" interrupts, where 1<<y is
+	 *  the mappable interrupt bitmask. TODO: this misses 64*0 !
 	 */
 
 	uint32_t newmask;
@@ -476,6 +478,17 @@ void sgi_ip22_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	irq_nr -= 8;
 	newmask = 1 << (irq_nr & 31);
+
+	if (irq_nr >= 64) {
+		int m = irq_nr / 64;
+		uint32_t new = 1 << m;
+		if (assrt)
+			sgi_ip22_data->reg[4] |= new;
+		else
+			sgi_ip22_data->reg[4] &= ~new;
+		/*  TODO: is this enough?  */
+		irq_nr &= 63;
+	}
 
 	if (irq_nr < 32) {
 		if (assrt)
@@ -1538,17 +1551,20 @@ void machine_init(struct memory *mem)
 				 *  dsclock0 at hpc0 offset 0x60000
 				 *
 				 *  IRQ numbers are of the form 8 + x, where x = 0..31 for local0
-				 *  interrupts, and 32..63 for local1.
+				 *  interrupts, and 32..63 for local1.  + y*65 for "mappable".
 				 */
 
 				/*  zsc0 serial console. TODO: irq nr  */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830,
+				    8 + 32 + 3 + 64*5, 1);
+
+				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
+				/*  dev_sq_init...  */
 
 	 			/*  wdsc0, SCSI.  TODO: irq nr  */
 				dev_wdsc_init(cpus[bootstrap_cpu], mem, 0x1fbc4000, 8 + 1);
 
-				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
-				/*  dev_sq_init...  */
+				/*  dsclock0: TODO:  possibly irq 8 + 33  */
 
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
 				dev_unreadable_init(mem, 0x1fb00000, 0x10000);

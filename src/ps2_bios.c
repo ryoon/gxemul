@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.4 2003-11-07 10:32:53 debug Exp $
+ *  $Id: ps2_bios.c,v 1.5 2004-03-04 03:13:15 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -95,6 +95,18 @@ void playstation2_sifbios_emul(struct cpu *cpu)
 		break;
 	case 33:		/*  cmd_exit()  */
 		debug("[ SIFBIOS cmd_exit() ]\n");
+		break;
+	case 48:
+		debug("[ SIFBIOS rpc_init(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
+		break;
+	case 49:
+		debug("[ SIFBIOS rpc_exit(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
+		break;
+	case 64:
+		debug("[ SIFBIOS 64(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;			/*  TODO  */
 		break;
 	default:
 		cpu_register_dump(cpu);

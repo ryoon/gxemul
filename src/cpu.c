@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.33 2004-03-04 06:13:10 debug Exp $
+ *  $Id: cpu.c,v 1.34 2004-03-04 18:44:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -278,7 +278,7 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 			cpu->md_interrupt(cpu, irq_nr, 1);
 		else
 			fatal("cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
-		return;
+		return 1;
 	}
 
 	if (irq_nr < 2 || irq_nr >= 8)
@@ -302,7 +302,7 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 			cpu->md_interrupt(cpu, irq_nr, 0);
 		else
 			fatal("cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
-		return;
+		return 1;
 	}
 
 	if (irq_nr < 2 || irq_nr >= 8)

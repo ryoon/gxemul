@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.6 2004-12-14 05:23:44 debug Exp $
+ *  $Id: debugger.c,v 1.7 2004-12-14 21:03:46 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -145,6 +145,49 @@ static void debugger_cmd_continue(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_devices():
+ */
+static void debugger_cmd_devices(struct emul *emul, char *cmd_line)
+{
+	int i;
+	struct memory *m;
+	struct cpu *c;
+
+	if (emul->cpus == NULL) {
+		printf("No cpus (?)\n");
+		return;
+	}
+	c = emul->cpus[emul->bootstrap_cpu];
+	if (c == NULL) {
+		printf("emul->cpus[emul->bootstrap_cpu] = NULL\n");
+		return;
+	}
+	m = emul->cpus[emul->bootstrap_cpu]->mem;
+
+	if (m->n_mmapped_devices == 0)
+		printf("No memory-mapped devices\n");
+
+	for (i=0; i<m->n_mmapped_devices; i++) {
+		printf("%2i: %25s @ 0x%011llx, len = 0x%llx",
+		    i, m->dev_name[i],
+		    (long long)m->dev_baseaddr[i],
+		    (long long)m->dev_length[i]);
+		if (m->dev_flags[i]) {
+			printf(" (");
+			if (m->dev_flags[i] & MEM_BINTRANS_OK)
+				printf("BINTRANS R");
+			if (m->dev_flags[i] & MEM_BINTRANS_WRITE_OK)
+				printf("+W");
+			printf(")");
+		}
+		printf("\n");
+	}
+
+	last_cmd_len = 0;
+}
+
+
+/*
  *  debugger_cmd_dump():
  */
 static void debugger_cmd_dump(struct emul *emul, char *cmd_line)
@@ -262,10 +305,19 @@ static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_registers(struct emul *emul, char *cmd_line)
 {
-	int i;
+	int i, x = -1;
+
+	if (cmd_line[0] != '\0') {
+		x = strtoll(cmd_line + 1, NULL, 0);
+		if (x < 0 || x >= emul->ncpus) {
+			printf("cpu%i doesn't exist.\n", x);
+			last_cmd_len = 0;
+		}
+	}
 
 	for (i=0; i<emul->ncpus; i++)
-		cpu_register_dump(emul->cpus[i]);
+		if (x == -1 || i == x)
+			cpu_register_dump(emul->cpus[i]);
 
 	last_cmd_len = 0;
 }
@@ -288,9 +340,18 @@ static void debugger_cmd_step(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 {
-	int i, j;
+	int i, j, x = -1;
 
-	for (i=0; i<emul->ncpus; i++) {
+	if (cmd_line[0] != '\0') {
+		x = strtoll(cmd_line + 1, NULL, 0);
+		if (x < 0 || x >= emul->ncpus) {
+			printf("cpu%i doesn't exist.\n", x);
+			last_cmd_len = 0;
+		}
+	}
+
+	for (i=0; i<emul->ncpus; i++)
+	    if (x == -1 || i == x) {
 		printf("cpu%i: (", i);
 		if (emul->cpus[i]->cpu_type.isa_level < 3 ||
 		    emul->cpus[i]->cpu_type.isa_level == 32)
@@ -327,7 +388,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo0,
 				    (long long)emul->cpus[i]->coproc[0]->tlbs[j].lo1);
 		}
-	}
+	    }
 
 	last_cmd_len = 0;
 }
@@ -434,6 +495,9 @@ static struct cmd cmds[] = {
 	{ "continue", "", 0, debugger_cmd_continue,
 		"continue execution" },
 
+	{ "devices", "", 0, debugger_cmd_devices,
+		"print a list of memory-mapped devices" },
+
 	{ "dump", "[addr]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
@@ -449,14 +513,14 @@ static struct cmd cmds[] = {
 	{ "quiet", "", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off" },
 
-	{ "registers", "", 0, debugger_cmd_registers,
-		"dump each CPUs' register values" },
+	{ "registers", "[cpuid]", 0, debugger_cmd_registers,
+		"dump all CPUs' register values (or a specific one's)" },
 
 	{ "step", "", 0, debugger_cmd_step,
 		"single step one instruction" },
 
-	{ "tlbdump", "", 0, debugger_cmd_tlbdump,
-		"dump each CPU's TLB contents" },
+	{ "tlbdump", "[cpuid]", 0, debugger_cmd_tlbdump,
+		"dump all CPU's TLB contents (or a specific one's)" },
 
 	{ "trace", "", 0, debugger_cmd_trace,
 		"toggle show_trace_tree on or off" },
@@ -508,7 +572,7 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 			else
 				printf(" ");
 
-		printf("     %s\n", cmds[i].description);
+		printf("    %s\n", cmds[i].description);
 		i++;
 	}
 
@@ -524,7 +588,7 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
  *
  *  Read a line from the terminal.
  *
- *  TODO: Cursor keys for line editing?
+ *  TODO: Cursor keys for line editing? Tab-completion?
  */
 static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
 {

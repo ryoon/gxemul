@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.393 2004-12-14 16:24:09 debug Exp $
+$Id: HISTORY,v 1.394 2004-12-14 21:03:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1334,3 +1334,6 @@ HISTORY of mips64emul
 		emulation skips the setup of arcbios data structures in
 		memory, and no sign-extension _after_ writing a 32-bit
 		value to a 64-bit coproc 0 register).
+		Adding a 'devices' command to the debugger.
+		The 'registers' and 'tlbdump' commands now take an optional
+		argument (a cpu id).

@@ -32,6 +32,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    ev4, ev5.
 		o)  Use getopts?
 		o)  X11 libs and headers via command line option?
+		o)  If the system does not have correct strtoll and strtoull,
+		    then write my own version and include/use that? (HP-UX,
+		    and old OpenBSD systems)
 		o)  NetBSD X11 linking vs runtime issue?
 
 	Command line option parsing:

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.15 2004-07-13 10:57:46 debug Exp $
+$Id: RELEASE,v 1.16 2004-07-13 11:08:25 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -6,6 +6,30 @@ things I'd like to experiment with that might make the code unstable.
 
 I'll probably call the next release 0.2, since it will be different enough
 from the 0.1 and 0.1.1 releases to warrant a big version increase.
+
+
+Some of the things I'd like to do before a 0.2 release:
+
+	x)  The configure script:
+		o)  Only enable Alpha prefetch on pca56 or higher, not ev[45]
+		o)  X11 libs and headers via command line option
+		o)  If the system does not have correct strtoll and strtoull,
+		    then write my own version and include/use that? (This
+		    would allow HP-UX and old OpenBSD systems to compile the
+		    emulator out-of-the-box).
+
+	x)  TCP (in src/net.c) working satisfactory.
+
+	x)  Linux should be possible to install as a guest OS.
+
+	x)  SGI-IP[20,22,24] SCSI/dma stuff?
+
+	x)  _Perhaps_ some bintrans stuff, if I have time.
+
+	x)  Documentation update.
+
+	x)  Try to configure/make/run the compiler on as many host systems
+	    as possible, with as many guest OSes as possible.
 
 
 Preliminary 0.2 release notes:

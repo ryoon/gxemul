@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.113 2005-02-22 12:05:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.114 2005-03-22 09:12:04 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -176,6 +176,8 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
  *  lda sp,128(sp)
  *  ret
  */
+/*  note: offsetof (in stdarg.h) could possibly be used, but I'm not sure
+    if it will take care of the compiler problems...  */
 #define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 #define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
 #define ofs_n	(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))

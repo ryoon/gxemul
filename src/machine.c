@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.391 2005-03-18 23:20:54 debug Exp $
+ *  $Id: machine.c,v 1.392 2005-03-22 09:12:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1243,11 +1243,7 @@ void machine_setup(struct machine *machine)
 	switch (machine->machine_type) {
 
 	case MACHINE_NONE:
-		printf("\nNo emulation type specified.\n\n"
-		    "For example, if you want to emulate a DECstation, you "
-		    "need to add -Dx to the\ncommand line, where x is the "
-		    "DECstation specific model type. Run gxemul -h\n"
-		    "to get help on all command line options.\n");
+		printf("\nNo emulation type specified.\n");
 		exit(1);
 
 	case MACHINE_BAREMIPS:

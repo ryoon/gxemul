@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.74 2005-03-05 08:43:39 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.75 2005-03-22 09:12:04 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -54,6 +54,9 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 	/*  Do nothing.  */
 }
 
+
+/*  offsetof (in stdarg.h) could possibly be used, but I'm not sure
+    if it will take care of the compiler problems...  */
 
 #define ofs_i		(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 #define ofs_pc		(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.161 2005-02-26 16:53:34 debug Exp $
+ *  $Id: memory.c,v 1.162 2005-03-12 13:15:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -393,6 +393,12 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	    mem->n_mmapped_devices, (long long)baseaddr, device_name);
 
 #ifdef BINTRANS
+	if (flags & (MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK)
+	    && (baseaddr & 0xfff) != 0) {
+		fatal("\nWARNING: Device bintrans access, but unaligned"
+		    " baseaddr 0x%llx.\n", (long long)baseaddr);
+	}
+
 	if (flags & (MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK)) {
 		debug(" (bintrans %s)",
 		    (flags & MEM_BINTRANS_WRITE_OK)? "R/W" : "R");

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.78 2004-11-23 12:30:39 debug Exp $
+ *  $Id: bintrans.c,v 1.79 2004-11-23 16:11:11 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -732,6 +732,8 @@ run_it:
 
 	bintrans_runchunk(cpu, f);
 
+return cpu->bintrans_instructions_executed;
+
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
@@ -798,6 +800,11 @@ run_it:
  */
 void bintrans_init_cpu(struct cpu *cpu)
 {
+	int i;
+
+	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
+		cpu->bintrans_data_vaddr[i] = 0x1;
+
 	cpu->chunk_base_address = translation_code_chunk_space;
 
 	cpu->bintrans_fast_tlbwri = coproc_tlbwri;

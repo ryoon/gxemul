@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.53 2004-11-23 12:30:39 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.54 2004-11-23 16:11:11 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1261,8 +1261,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 *  01 80 fa 6b     ret
 		 */
 		*a++ = 0x02; *a++ = 0x10 + alignment * 0x20; *a++ = 0x20 + (alignment >> 3); *a++ = 0x46;
+		fail = a;
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x40; *a++ = 0xe4;
-		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;
+		bintrans_write_chunkreturn_fail(&a);
+		*fail = ((size_t)a - (size_t)fail - 4) /4;
 	}
 
 	/*
@@ -1354,7 +1356,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	/*  If the result was NULL, then return (abort):  */
 	fail = a;
 	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;	/*  bne v0,<continue>  */
-
 	bintrans_write_chunkreturn_fail(&a);
 	*fail = ((size_t)a - (size_t)fail - 4) /4;
 

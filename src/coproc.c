@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.97 2004-11-23 13:47:03 debug Exp $
+ *  $Id: coproc.c,v 1.98 2004-11-23 16:11:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -309,6 +309,8 @@ static void invalidate_translation_caches(struct cpu *cpu,
 {
 	vaddr2 &= ~0x1fff;
 
+all = 1;
+
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int i;
@@ -316,8 +318,10 @@ static void invalidate_translation_caches(struct cpu *cpu,
 			if (all ||
 			    (cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2 ||
 			    (kernelspace && cpu->bintrans_data_vaddr[i] > 0x7fffffff)) {
-				if ((cpu->bintrans_data_vaddr[i] & ~0x3fffffffULL) != 0xffffffff80000000ULL)
+				if ((cpu->bintrans_data_vaddr[i] & ~0x3fffffffULL) != 0xffffffff80000000ULL) {
 					cpu->bintrans_data_hostpage[i] = NULL;
+					cpu->bintrans_data_vaddr[i] = 0x1;
+				}
 			}
 	}
 #endif
@@ -1541,6 +1545,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			cp->tlbs[index].hi |= TLB_G;
 	}
 
+#if 0
 	if (cpu->cpu_type.mmu_model == MMU3K && (cp->reg[COP0_ENTRYLO0] & ENTRYLO_V)) {
 		paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
 
@@ -1561,6 +1566,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cp->reg[COP0_ENTRYLO0] & ENTRYLO_D? 1 : 0;
 		}
 	}
+#endif
 }
 
 

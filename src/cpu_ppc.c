@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.35 2005-02-16 06:06:53 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.36 2005-02-16 06:30:10 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1128,6 +1128,22 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	uint64_t tmp, tmp2, addr;
 	uint64_t cached_pc;
 
+	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
+
+	/*  Check PC against breakpoints:  */
+	if (!single_step)
+		for (i=0; i<cpu->machine->n_breakpoints; i++)
+			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
+				fatal("Breakpoint reached, pc=0x");
+				if (cpu->cd.ppc.bits == 32)
+					fatal("%08x", (int)cached_pc);
+				else
+					fatal("%016llx", (long long)cached_pc);
+				fatal("\n");
+				single_step = 1;
+				return 0;
+			}
+
 	/*  Update the Time Base and Decrementer:  */
 	if ((++ cpu->cd.ppc.tbl) == 0)
 		cpu->cd.ppc.tbu ++;
@@ -1136,8 +1152,6 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  TODO: dec interrupt!  */
 
 	/*  TODO: hdec for POWER4+  */
-
-	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
 
 	r = cpu->memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION | PHYSICAL);

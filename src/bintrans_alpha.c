@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.98 2005-01-05 04:30:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.99 2005-01-06 01:22:52 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -70,12 +70,9 @@
  *	s6		t2 (mips register 10)  (64-bit)
  */
 
-#define	MIPSREG_PC			-6
-#define	MIPSREG_N_INSTRS		-5
-#define	MIPSREG_DELAY_SLOT		-4
-#define	MIPSREG_DELAY_JMPADDR		-3
-#define	MIPSREG_VIRTUAL_PAGE		-2
-#define	MIPSREG_HOST_PAGE		-1
+#define	MIPSREG_PC			-3
+#define	MIPSREG_DELAY_SLOT		-2
+#define	MIPSREG_DELAY_JMPADDR		-1
 
 #define	ALPHA_T0		1
 #define	ALPHA_T1		2
@@ -471,10 +468,6 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 		/*  addq t5,0,alphareg  */
 		*a++ = 0x40c01400 | alphareg;
 		break;
-	case MIPSREG_N_INSTRS:
-		/*  addq t6,0,alphareg  */
-		*a++ = 0x40e01400 | alphareg;
-		break;
 	case MIPSREG_DELAY_SLOT:
 		/*  addq s0,0,alphareg  */
 		*a++ = 0x41201400 | alphareg;
@@ -545,10 +538,6 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 	case MIPSREG_PC:
 		/*  addq alphareg,0,t5  */
 		*a++ = 0x40001406 | (alphareg << 21);
-		break;
-	case MIPSREG_N_INSTRS:
-		/*  addq alphareg,0,t6  */
-		*a++ = 0x40001407 | (alphareg << 21);
 		break;
 	case MIPSREG_DELAY_SLOT:
 		/*  addq alphareg,0,s0  */

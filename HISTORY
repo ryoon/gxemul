@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.409 2004-12-19 06:57:10 debug Exp $
+$Id: HISTORY,v 1.410 2004-12-19 07:16:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1363,3 +1363,4 @@ HISTORY of mips64emul
 		more than 1 step at a time.
 		ARCBIOS components representing disk images are now created
 		to actually match the disk images in use.
+		Adding a 'lookup' command to the debugger, for symbol lookups.

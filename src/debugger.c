@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.11 2004-12-19 00:01:57 debug Exp $
+ *  $Id: debugger.c,v 1.12 2004-12-19 07:16:06 debug Exp $
  *
  *  Single-step debugger.
  */
@@ -354,6 +354,46 @@ static void debugger_cmd_itrace(struct emul *emul, char *cmd_line)
 
 
 /*
+ *  debugger_cmd_lookup():
+ */
+static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
+{
+	uint64_t addr;
+	int res;
+	char *symbol;
+	uint64_t offset;
+
+	if (cmd_line[0] == '\0') {
+		printf("usage: lookup name|addr\n");
+		return;
+
+	}
+
+	addr = strtoll(cmd_line + 1, NULL, 16);
+
+	if (addr == 0) {
+		uint64_t newaddr;
+		res = get_symbol_addr(&emul->symbol_context,
+		    cmd_line + 1, &newaddr);
+		if (!res) {
+			printf("lookup for '%s' failed\n", cmd_line + 1);
+			return;
+		}
+		printf("%s = 0x%016llx\n", cmd_line + 1,
+		    (long long)newaddr);
+		return;
+	}
+
+	symbol = get_symbol_name(&emul->symbol_context, addr, &offset);
+
+	if (symbol != NULL)
+		printf("0x%016llx = %s\n", (long long)addr, symbol);
+	else
+		printf("lookup for '%s' failed\n", cmd_line + 1);
+}
+
+
+/*
  *  debugger_cmd_machine():
  */
 static void debugger_cmd_machine(struct emul *emul, char *cmd_line)
@@ -637,6 +677,9 @@ static struct cmd cmds[] = {
 
 	{ "itrace", "", 0, debugger_cmd_itrace,
 		"toggle instruction_trace on or off" },
+
+	{ "lookup", "name|addr", 0, debugger_cmd_lookup,
+		"lookup a symbol by name or address" },
 
 	{ "machine", "", 0, debugger_cmd_machine,
 		"print a summary of the machine being emulated" },

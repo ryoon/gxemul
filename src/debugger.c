@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.92 2005-02-26 16:53:33 debug Exp $
+ *  $Id: debugger.c,v 1.93 2005-03-01 08:23:55 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1269,7 +1269,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	struct cpu *c;
 	struct memory *mem;
 	char *p = NULL;
-	int r;
+	int r, lines_left = -1;
 
 	if (cmd_line[0] != '\0') {
 		uint64_t tmp;
@@ -1306,7 +1306,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		}
 	}
 
-	addr_end = addr_start + 4 * 16;
+	addr_end = addr_start + 1000;
 
 	/*  endaddr:  */
 	if (p != NULL) {
@@ -1317,7 +1317,8 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 			printf("Unparsable address: %s\n", cmd_line);
 			return;
 		}
-	}
+	} else
+		lines_left = 20;
 
 	if (m->cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -1355,9 +1356,15 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 			break;
 
 		addr += len;
+
+		if (lines_left != -1) {
+			lines_left --;
+			if (lines_left == 0)
+				break;
+		}
 	}
 
-	last_unasm_addr = addr_end;
+	last_unasm_addr = addr;
 
 	strcpy(repeat_cmd, "unassemble");
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.372 2005-03-01 06:48:24 debug Exp $
+ *  $Id: machine.c,v 1.373 2005-03-01 08:23:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4211,6 +4211,10 @@ void machine_memsize_fix(struct machine *m)
 			break;
 		case MACHINE_BEBOX:
 			m->physical_ram_in_mb = 64;
+			break;
+		case MACHINE_BAREURISC:
+		case MACHINE_TESTURISC:
+			m->physical_ram_in_mb = 2;
 			break;
 		}
 	}

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_urisc.h,v 1.1 2005-03-01 06:48:23 debug Exp $
+ *  $Id: cpu_urisc.h,v 1.2 2005-03-01 08:23:53 debug Exp $
  */
 
 #include "misc.h"
@@ -44,6 +44,7 @@ struct urisc_cpu {
 
 
 /*  cpu_urisc.c:  */
+int urisc_cpu_run(struct emul *emul, struct machine *machine);
 int urisc_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags);
 int urisc_cpu_family_init(struct cpu_family *);

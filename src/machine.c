@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.283 2005-01-17 13:29:27 debug Exp $
+ *  $Id: machine.c,v 1.284 2005-01-17 15:33:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2871,10 +2871,14 @@ Why is this here? TODO
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
 			    0, 1, 2, i, 0xffffffff, arc_cpu_name, system, NULL, 0);
 
-			/*  TODO: This was in the ARC specs, but it isn't
-			    really used by ARC implementations?  */
-			/*  fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);  */
+			/*
+			 *  TODO: This was in the ARC specs, but it isn't
+			 *  really used by ARC implementations?
+			 *  At least SGI-IP32 uses it.
+			 */
+			if (emul->emulation_type == EMULTYPE_SGI)
+				fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
+				    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr, NULL, 0);
 
 			cache_size = DEFAULT_PCACHE_SIZE - 12;
 			if (emul->cache_picache)
@@ -2957,6 +2961,14 @@ Why is this here? TODO
 			if (emul->cache_secondary >= 12)
 				debug("    sdcache @ 0x%llx\n",
 				    (long long)sdcache);
+
+			if (emul->emulation_type == EMULTYPE_SGI) {
+				/*  TODO:  Memory amount (and base address?)!  */
+				uint64_t memory = arcbios_addchild_manual(cpu, COMPONENT_CLASS_MemoryClass,
+				    COMPONENT_TYPE_MemoryUnit,
+				    0, 1, 2, 0, 0xffffffff, "memory", cpuaddr, NULL, 0);
+				debug("    memory @ 0x%llx\n", (long long)memory);
+			}
 		}
 
 
@@ -3504,6 +3516,8 @@ config[77] = 0x30;
 			add_environment_string(cpu, "showconfig=istrue", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "diagmode=v", &addr);
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "kernname=unix", &addr);
 		} else {
 			char *tmp;
 			tmp = malloc(strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2);

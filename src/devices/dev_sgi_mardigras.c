@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.16 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.17 2005-02-26 11:56:42 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -39,13 +39,17 @@
 #include <string.h>
 
 #include "cpu.h"
+#include "device.h"
 #include "devices.h"
 #include "memory.h"
+#include "machine.h"
 #include "misc.h"
 
 
 #define debug fatal
 
+
+#define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
 
 #define	MARDIGRAS_FAKE_OFFSET	0x500000000ULL	/*  hopefully available  */
 #define	MARDIGRAS_DEFAULT_XSIZE	1280
@@ -291,10 +295,9 @@ int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_sgi_mardigras_init():
+ *  devinit_sgi_mardigras():
  */
-void dev_sgi_mardigras_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr)
+int devinit_sgi_mardigras(struct devinit *devinit)
 {
 	struct sgi_mardigras_data *d;
 
@@ -305,16 +308,19 @@ void dev_sgi_mardigras_init(struct machine *machine, struct memory *mem,
 	}
 	memset(d, 0, sizeof(struct sgi_mardigras_data));
 
-	d->fb = dev_fb_init(machine, mem, MARDIGRAS_FAKE_OFFSET,
-	    VFB_GENERIC, mardigras_xsize, mardigras_ysize,
+	d->fb = dev_fb_init(devinit->machine, devinit->machine->memory,
+	    MARDIGRAS_FAKE_OFFSET, VFB_GENERIC,
+	    mardigras_xsize, mardigras_ysize,
 	    mardigras_xsize, mardigras_ysize, 24, "SGI MardiGras", 1);
 	if (d->fb == NULL) {
 		fprintf(stderr, "dev_sgi_mardigras_init(): out of memory\n");
 		exit(1);
 	}
 
-	memory_device_register(mem, "sgi_mardigras", baseaddr,
-	    DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access, d,
-	    MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access,
+	    d, MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

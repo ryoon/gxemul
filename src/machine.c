@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.367 2005-02-26 11:40:29 debug Exp $
+ *  $Id: machine.c,v 1.368 2005-02-26 11:56:44 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2460,7 +2460,7 @@ Why is this here? TODO
 				    0, "serial 1");  /*  TODO: irq?  */
 
 				/*  MardiGras graphics:  */
-				dev_sgi_mardigras_init(machine, mem, 0x1c000000);
+				device_add(machine, "sgi_mardigras addr=0x1c000000");
 
 				break;
 			case 32:
@@ -3841,9 +3841,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  Lots of info about the IDT 79RC 32334
 		 *  http://www.idt.com/products/pages/Integrated_Processors-79RC32334.html
 		 */
-
-		dev_8250_init(machine, mem, 0x18000800, 0, 4);
-
+		device_add(machine, "8250 addr=0x18000800 addr_mult=0 irq=4");
 		break;
 
 	case MACHINE_WRT54G:

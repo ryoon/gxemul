@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.15 2005-02-21 07:18:09 debug Exp $
+ *  $Id: dev_8250.c,v 1.16 2005-02-26 11:56:42 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -38,7 +38,7 @@
 #include <string.h>
 
 #include "console.h"
-#include "devices.h"
+#include "device.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -59,6 +59,8 @@ struct dev_8250_data {
 	char		parity;
 	const char	*stopbits;
 };
+
+#define	DEV_8250_LENGTH		8
 
 
 /*
@@ -130,10 +132,9 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 
 /*
- *  dev_8250_init():
+ *  devinit_8250():
  */
-void dev_8250_init(struct machine *machine, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, int addrmult)
+int devinit_8250(struct devinit *devinit)
 {
 	struct dev_8250_data *d;
 
@@ -143,17 +144,20 @@ void dev_8250_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct dev_8250_data));
-	d->irqnr = irq_nr;
-	d->addrmult = addrmult;
-	d->console_handle = console_start_slave(machine, "8250");
+	d->irqnr = devinit->irq_nr;
+	d->addrmult = devinit->addr_mult;
+	d->console_handle = console_start_slave(devinit->machine, "console");
 	d->dlab = 0;
 	d->divisor  = 115200 / 9600;
 	d->databits = 8;
 	d->parity   = 'N';
 	d->stopbits = "1";
 
-	memory_device_register(mem, "8250", baseaddr,
-	    DEV_8250_LENGTH * addrmult, dev_8250_access, d, MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_8250_tick, d, 13);
+	memory_device_register(devinit->machine->memory, devinit->name,
+	    devinit->addr, DEV_8250_LENGTH * devinit->addr_mult,
+	    dev_8250_access, d, MEM_DEFAULT, NULL);
+	machine_add_tickfunction(devinit->machine, dev_8250_tick, d, 14);
+
+	return 1;
 }
 

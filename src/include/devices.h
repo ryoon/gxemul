@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.149 2005-02-26 10:51:03 debug Exp $
+ *  $Id: devices.h,v 1.150 2005-02-26 11:56:43 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -61,11 +61,6 @@ struct dec_ioasic_data {
 };
 int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int rackmount_flag);
-
-/*  dev_8250.c:  */
-#define	DEV_8250_LENGTH		8
-int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_8250_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 /*  dev_asc.c:  */
 #define	DEV_ASC_DEC_LENGTH		0x40000
@@ -536,11 +531,6 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_SGI_MTE_LENGTH		0x10000
 int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr);
-
-/*  dev_sgi_mardigras.c:  */
-#define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
-int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_mardigras_init(struct machine *machine, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sii.c:  */
 #define	DEV_SII_LENGTH			0x100

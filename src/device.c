@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: device.c,v 1.9 2005-02-26 11:40:29 debug Exp $
+ *  $Id: device.c,v 1.10 2005-02-26 11:56:44 debug Exp $
  *
  *  Device registry framework.
  */
@@ -114,7 +114,7 @@ int device_register(char *name, int (*initf)(struct devinit *))
  */
 struct device_entry *device_lookup(char *name)
 {
-	int i, step, r;
+	int i, step, r, do_return = 0;
 
 	if (name == NULL) {
 		fprintf(stderr, "device_lookup(): NULL ptr\n");
@@ -128,7 +128,7 @@ struct device_entry *device_lookup(char *name)
 		return NULL;
 
 	i = n_device_entries / 2;
-	step = (i+1)/2;
+	step = i/2 + 1;
 
 	for (;;) {
 		if (i < 0)
@@ -136,25 +136,32 @@ struct device_entry *device_lookup(char *name)
 		if (i >= n_device_entries)
 			i = n_device_entries - 1;
 
-		/*  printf("device_lookup(): i=%i step=%i\n", i, step);  */
-		/*  printf("  name='%s', '%s'\n", name,
-		    device_entries[i].name);  */
+		printf("device_lookup(): i=%i step=%i\n", i, step);
+		printf("  name='%s', '%s'\n", name,
+		    device_entries[i].name);
 
 		r = strcmp(name, device_entries[i].name);
 
 		if (r < 0) {
 			/*  Go left:  */
 			i -= step;
+			if (step == 0)
+				i --;
 		} else if (r > 0) {
 			/*  Go right:  */
 			i += step;
+			if (step == 0)
+				i ++;
 		} else {
 			/*  Found it!  */
 			return &device_entries[i];
 		}
 
-		if (step == 0)
+		if (do_return)
 			return NULL;
+
+		if (step == 0)
+			do_return = 1;
 
 		step /= 2;
 	}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.1 2004-01-06 08:54:48 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.2 2004-01-06 09:01:28 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -56,7 +56,7 @@ uint32_t pci_vt82c586_isa_rr(int reg)
 	case 0x04:
 		return 0xffffffff;	/*  ???  */
 	case 0x08:
-		return PCI_CLASS_CODE(PCI_CLASS_BRIDGE, PCI_SUBCLASS_BRIDGE_ISA, 0) + 37;		/*  Revision 37  */
+		return PCI_CLASS_CODE(PCI_CLASS_BRIDGE, PCI_SUBCLASS_BRIDGE_ISA, 0) + 39;	/*  Revision 37 or 39  */
 	case 0x0c:
 		return 0x00800000;	/*  Bit 7 of Header-type byte ==> multi-function device  */
 	default:
@@ -85,7 +85,7 @@ uint32_t pci_vt82c586_ide_rr(int reg)
 		return PCI_VENDOR_VIATECH + (PCI_PRODUCT_VIATECH_VT82C586_IDE << 16);
 	case 0x08:
 		/*  Probably not correct:  */
-		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_ATA, 0) + 0x10;		/*  Revision ???  */
+		return PCI_CLASS_CODE(PCI_CLASS_MASS_STORAGE, PCI_SUBCLASS_MASS_STORAGE_ATA, 0) + 0x01;		/*  Revision ???  */
 	default:
 		return 0;
 	}

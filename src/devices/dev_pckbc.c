@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.12 2004-06-13 10:31:32 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.13 2004-06-28 00:55:16 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -283,10 +283,12 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ pckbc: read from unimplemented reg %i ]\n", (int)relative_addr);
+			debug("[ pckbc: read from unimplemented reg %i ]\n",
+			    (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
-			debug("[ pckbc: write to unimplemented reg %i:", (int)relative_addr);
+			debug("[ pckbc: write to unimplemented reg %i:",
+			    (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
@@ -308,7 +310,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
  *
  *  Type should be PCKBC_8042 or PCKBC_8242.
  */
-void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr)
+void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int type, int keyboard_irqnr, int mouse_irqnr)
 {
 	struct pckbc_data *d;
 
@@ -322,7 +325,10 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int 
 	d->keyboard_irqnr = keyboard_irqnr;
 	d->mouse_irqnr    = mouse_irqnr;
 
-	memory_device_register(mem, "pckbc", baseaddr, DEV_PCKBC_LENGTH, dev_pckbc_access, d);
+	memory_device_register(mem, "pckbc", baseaddr,
+	    type == PCKBC_8242? DEV_PCKBC_8242_LENGTH
+		: DEV_PCKBC_LENGTH,
+	    dev_pckbc_access, d);
 	cpu_add_tickfunction(cpu, dev_pckbc_tick, d, 10);
 }
 

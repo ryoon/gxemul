@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.73 2004-09-05 03:03:44 debug Exp $
+ *  $Id: memory.c,v 1.74 2004-09-05 03:08:59 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -42,7 +42,6 @@
 extern int physical_ram_in_mb;
 extern int instruction_trace;
 extern int register_dump;
-extern int trace_on_bad_address;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
@@ -1343,7 +1342,7 @@ into the devices  */
 					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
 				}
 
-				if (trace_on_bad_address) {
+				if (cpu->emul->trace_on_bad_address) {
 					instruction_trace = register_dump = 1;
 					quiet_mode = 0;
 				}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.82 2004-09-05 03:07:49 debug Exp $
+ *  $Id: main.c,v 1.83 2004-09-05 03:08:59 debug Exp $
  */
 
 #include <stdio.h>
@@ -70,7 +70,6 @@ int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for inst
 
 int instruction_trace = 0;
 int single_step = 0;
-int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;
 int emulated_hz = 0;
@@ -362,7 +361,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			show_opcode_statistics = 1;
 			break;
 		case 'T':
-			trace_on_bad_address = 1;
+			emul->trace_on_bad_address = 1;
 			break;
 		case 't':
 			show_trace_tree = 1;

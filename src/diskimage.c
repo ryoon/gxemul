@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.54 2004-12-08 11:51:21 debug Exp $
+ *  $Id: diskimage.c,v 1.55 2004-12-08 12:17:07 debug Exp $
  *
  *  Disk image support.
  *
@@ -466,6 +466,11 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 				memcpy(xferp->data_in+8,  "DEC     ", 8);
 				memcpy(xferp->data_in+16, "RRD42   (C) DEC ", 16);
 				memcpy(xferp->data_in+32, "4.5d", 4);
+			} else {
+				/*  NEC, CD-ROM:  */
+				memcpy(xferp->data_in+8,  "NEC     ", 8);
+				memcpy(xferp->data_in+16, "CD-ROM CDR-210P ", 16);
+				memcpy(xferp->data_in+32, "1.0 ", 4);
 			}
 		}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.95 2005-03-05 12:16:14 debug Exp $
+ *  $Id: debugger.c,v 1.96 2005-03-06 08:21:12 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -37,7 +37,7 @@
  *	Add more functionality that already exists elsewhere in the emulator.
  *
  *	More generic expression evaluator (for example + - * / between multiple
- *	terms).
+ *	terms), including _TAB COMPLETION_ of symbols and register names!
  *
  *	Nicer looking output of register dumps, floating point registers,
  *	etc. Warn about weird/invalid register contents.

@@ -1,14 +1,14 @@
-$Id: TODO,v 1.124 2005-03-05 11:18:31 debug Exp $
+$Id: TODO,v 1.125 2005-03-06 08:21:10 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
 
 
-	Caches / memory hierarchies:
-		o)  src/coproc.c: bits in config registers should reflect
+	Caches / memory hierarchies: (this is mostly MIPS-specific)
+		o)  MIPS coproc.c: bits in config registers should reflect
 		    correct cache sizes for _all_ CPU types. (currently only
 		    implemented for R4000, R1x000, and a few others)
-		o)  src/memory.c: Implement correct cache emulation for
+		o)  src/memory*.c: Implement correct cache emulation for
 		    all CPU types. (currently only R2000/R3000 is implemented)
 		    (per CPU, multiple levels should be possible,
 		    associativity etc!)
@@ -158,7 +158,8 @@ Order is random. Don't trust it to be up-to-date.
 	Terminal based interactive debugger:
 		o)  see src/debugger.c
 
-	GDB interface?
+	GDB interface? (Maybe not necessary; the built-in debugger feels
+	more useful.)
 
 	GUI, interactive debugger?  GTK+?  (The GUI _must be optional_!)
 		o)  Breakpoints (complex expressions? combinations of register
@@ -180,7 +181,8 @@ Order is random. Don't trust it to be up-to-date.
 
 	Save state of the whole emulated machine, to be able to load it back
 		in later?  (Memory, all device's states, all registers and
-		so on.  Like taking a snapshot)
+		so on.  Like taking a snapshot. (SimOS seems to do this,
+		according to its website.))
 
 	Better X-windows functionality:
 		o)  CLEAN UP the ugly event code
@@ -202,10 +204,17 @@ Order is random. Don't trust it to be up-to-date.
 			specific code to src/x11.c!
 
 	Statistics:  (this could be interesting)
+		o)  Save to file and show graphics. It should be possible to
+		    run gxemul after a simulation to just show the graphics,
+		    or convert to a .ppm or .tga or similar.
 		o)  memory accesses (to measure cache efficiency and
 			page coloring efficiency)
-		o)  nr-of-instructions-in-a-row-that-don't-affect-eachother,
-			and make histograms of this data
-		o)  nr of simultaneous ASIDs in use in the TLB  (x = time)
-		o)  position of read/write on (SCSI) disks   (x = time)
+		o)  nr of simultaneous ASIDs in use in the TLB, for MIPS
+		o)  percentage of time spent in different "states", such as
+		    running userland code, kernel code, or idling (for CPUs
+		    that have such an instruction, or whenever the PC is
+		    inside a specific idle-function (address range)).
+		    Possible additional state (for example on R3000): caches
+		    disabled.
+		o)  position of read/write on (SCSI) disks
 

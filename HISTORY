@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.626 2005-03-06 07:41:58 debug Exp $
+$Id: HISTORY,v 1.627 2005-03-06 08:21:10 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1723,3 +1723,5 @@ Changelog for GXemul:
 		Splitting out the configuration file part of the documentation
 		into its own file (configfiles.html).
 20050306	Some really minor documentation updates.
+		Adding a -D command line option (for "fully deterministic"
+		behaviour).

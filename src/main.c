@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.216 2005-03-05 12:16:14 debug Exp $
+ *  $Id: main.c,v 1.217 2005-03-06 08:21:12 debug Exp $
  */
 
 #include <stdio.h>
@@ -54,6 +54,8 @@ extern char *optarg;
 int extra_argc;
 char **extra_argv;
 char *progname;
+
+int fully_deterministic = 0;
 
 
 /*****************************************************************************
@@ -285,6 +287,7 @@ static void usage(int longusage)
 #endif
 	printf("  -C x      try to emulate a specific CPU. (Use -H to get a "
 	    "list of types.)\n");
+	printf("  -D        guarantee fully deterministic behaviour\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\""
 	    " as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
@@ -384,7 +387,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
-	while ((ch = getopt(argc, argv, "bC:d:E:e:HhI:iJj:KM:m:"
+	while ((ch = getopt(argc, argv, "bC:Dd:E:e:HhI:iJj:KM:m:"
 	    "Nn:Oo:p:QqRrSsTtUu:VvW:XY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'b':
@@ -394,6 +397,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'C':
 			m->cpu_name = strdup(optarg);
 			msopts = 1;
+			break;
+		case 'D':
+			fully_deterministic = 1;
 			break;
 		case 'd':
 			diskimage_add(m, optarg);
@@ -722,8 +728,6 @@ int main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	srandom(time(NULL));
-
 	console_init();
 	cpu_init();
 	device_init();
@@ -745,6 +749,17 @@ int main(int argc, char *argv[])
 	}
 
 	get_cmd_args(argc, argv, emuls[0]);
+
+	if (!fully_deterministic) {
+		/*  TODO: More than just time(). Use gettimeofday().  */
+		srandom(time(NULL));
+	} else {
+		/*  Fully deterministic. -I must have been supplied.  */
+		if (emuls[0]->machines[0]->automatic_clock_adjustment) {
+			fatal("Cannot have -D without -I.\n");
+			exit(1);
+		}
+	}
 
 	/*  Print startup message:  */
 	debug("GXemul");

@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.1 2005-03-05 11:48:13 debug Exp $
+.\" $Id: gxemul.1,v 1.2 2005-03-06 08:21:11 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -219,6 +219,15 @@ emulation.
 .Pp
 General options:
 .Bl -tag -width Ds
+.It Fl D
+Guarantee fully deterministic behaviour. Normally, the emulator calls
+srandom() with a seed based on the current time at startup. When the
+.Fl D
+option is used, the srandom() call is skipped, which should cause two 
+subsequent invokations of the emulator to be identical, if all other 
+settings are identical. (If this option is used, then
+.Fl I
+must also be used.)
 .It Fl H
 Display a list of available CPU types, machine types, and userland
 emulation modes.

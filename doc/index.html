@@ -42,6 +42,8 @@ Uncompress the .tar.gz file, and run
 	$ <b>./configure</b>
 	$ <b>make</b>
 </pre>
+This should work on any Unix-like system. If not, please report that as
+a bug to me.
 
 
 <p><br>
@@ -51,9 +53,9 @@ Uncompress the .tar.gz file, and run
 The emulator contains code which tries to emulate the workings of MIPS-like CPUs
 and surrounding hardware found in real machines, but no actual ROM code or program
 code.  You will need some form of program to run in the emulator.  You can use
-pre-compiled kernels (for example NetBSD or Linux), ROM images, or programs that
-you have compiled from source. A couple of different file formats are supported
-(ELF, a.out, SREC, raw binaries).
+pre-compiled kernels (for example NetBSD or Linux), ROM images, or other programs
+that are in MIPS binary format. A couple of different file formats are supported
+(ELF, a.out, ECOFF, SREC, raw binaries).
 <p>
 As an example, let's say you want to emulate a Silicon Graphics O2 machine.
 This machine type is also known as IP32, in the SGI namespace. Let's also

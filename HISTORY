@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.67 2004-04-13 08:58:03 debug Exp $
+$Id: HISTORY,v 1.68 2004-04-15 09:13:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -453,3 +453,9 @@ HISTORY of mips64emul
 		crashes for various reasons, but an OSF/1 install gets
 		relatively far (similar to the NetBSD/pmax install).
 20040412	Trying to find the bug.
+20040415	Finally found and fixed the bug; SCSI reads and writes
+		(actually, any data in or data out) can be split up into
+		multiple DMA transfers. That stuff was only partially
+		implemented, and the part that was implemented was buggy.
+		It works now. NetBSD/pmax and Ultrix 4.3 seems to like
+		the SCSI stuff enough to install almost all the way.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.132 2004-11-28 12:26:36 debug Exp $
+ *  $Id: main.c,v 1.133 2004-11-29 14:14:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -639,6 +639,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->bintrans_enable) {
 		emul->speed_tricks = 0;
 		/*  TODO: Print a warning about this?  */
+	}
+
+	if (emul->ncpus > 1 && emul->bintrans_enable) {
+		fprintf(stderr, "FATAL: Cannot use bintrans with more than one cpu.\n");
+		exit(1);
 	}
 
 #ifndef BINTRANS

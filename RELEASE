@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.55 2004-11-22 06:14:52 debug Exp $
+$Id: RELEASE,v 1.56 2004-11-29 14:14:52 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -61,6 +61,7 @@ The following guest operating systems have been verified to work:
     OpenBSD 2.8-BETA/pmax        DECstation 5000/200
     Ultrix 4.2-4.5/RISC          DECstation 5000/200
     Sprite demo harddisk image   DECstation 5000/200
+    Redhat Linux 7.1 for mips    DECstation 5000/200
     NetBSD 1.6.2/arc             Acer PICA-61
     OpenBSD 2.3/arc              Acer PICA-61
 
@@ -102,6 +103,9 @@ Here is a short summary of the changes from version 0.2 to 0.2.2:
 
 	x)  An experimental dynamic binary translation subsystem has been
 	    added, which improves speed. (Use -b to enable bintrans.)
+
+	x)  Redhat Linux for mips has been verified to work on an emulated
+	    DECstation 5000/200.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

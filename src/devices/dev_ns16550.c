@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.24 2005-01-09 02:54:41 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.25 2005-01-15 07:32:56 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -138,12 +138,15 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 		/*  Read write of data:  */
 		if (writeflag == MEM_WRITE) {
-			/*  Ugly hack: don't show form feeds:  */
-			if (idata != 12)
-				console_putchar(idata);
-
-			if (d->reg[com_mcr] & MCR_LOOPBACK)
+			if (d->reg[com_mcr] & MCR_LOOPBACK) {
 				console_makeavail(idata);
+			} else {
+#if 0
+				/*  Ugly hack: don't show form feeds:  */
+				if (idata != 12)
+#endif
+				console_putchar(idata);
+			}
 
 			d->reg[com_iir] |= IIR_TXRDY;
 			dev_ns16550_tick(cpu, d);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.12 2004-06-22 22:23:37 debug Exp $
+ *  $Id: dev_scc.c,v 1.13 2004-06-24 01:15:09 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -335,6 +335,6 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH, dev_scc_access, d);
-	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);	/*  every 1024:th cycle  */
+	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);
 }
 

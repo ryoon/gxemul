@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.3 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_8250.c,v 1.4 2004-06-24 01:15:09 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -134,6 +134,6 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 	d->stopbits = "1";
 
 	memory_device_register(mem, "8250", baseaddr, DEV_8250_LENGTH * addrmult, dev_8250_access, d);
-	cpu_add_tickfunction(cpu, dev_8250_tick, d, 10);	/*  every 1024:th cycle  */
+	cpu_add_tickfunction(cpu, dev_8250_tick, d, 10);
 }
 

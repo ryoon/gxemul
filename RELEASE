@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.92 2005-02-19 10:45:30 debug Exp $
+$Id: RELEASE,v 1.93 2005-02-19 11:58:48 debug Exp $
 
 I'm now preparing for a 0.3 release.
 
@@ -51,7 +51,8 @@ Summary of changes from version 0.2.4.1 to 0.3:
 	    do not have to be entered on the command line anymore. (Useful for
 	    complex emulation setups.)
 
-	x)  Multiple machines can now be emulated simultaneously.
+	x)  Multiple machines can now be emulated simultaneously. (This is
+	    still experimental, though, and probably a bit buggy.)
 
 	x)  Some command line options have changed since 0.2.4.1, most notable
 	    the options to select the machine to be emulated. -E should now be

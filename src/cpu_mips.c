@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.26 2005-02-12 09:43:46 debug Exp $
+ *  $Id: cpu_mips.c,v 1.27 2005-02-19 11:57:44 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -752,7 +752,7 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 	debug("\t");
 
-	if (bintrans && !running) {
+	if (bintrans && running) {
 		debug("(bintrans)");
 		goto disasm_ret;
 	}
@@ -2118,6 +2118,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
 		/*  TODO: cpu->cd.mips.vaddr_to_hostaddr_table0_user;  */
         }
+
+	if (single_step && cpu->machine->bintrans_enable)
+		cpu->cd.mips.dont_run_next_bintrans = 1;
 #endif
 
 

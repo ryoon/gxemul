@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.592 2005-02-19 10:45:30 debug Exp $
+$Id: HISTORY,v 1.593 2005-02-19 12:01:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1678,3 +1678,5 @@ HISTORY of mips64emul
 		updates, ...).
 20050219	Removing the -D, -A, and -a command line options. Updating the
 		documentation, in preparation for the next release.
+		Adding interrupt stuff to dev_cons.
+		Single-stepping now looks/works better with bintrans enabled.

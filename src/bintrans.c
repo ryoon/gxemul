@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.31 2004-10-16 18:09:32 debug Exp $
+ *  $Id: bintrans.c,v 1.32 2004-10-16 18:15:12 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -297,7 +297,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int n_translated = 0;
 	int res, hi6, special6, rd;
 	uint64_t p;
-	size_t p_relative;
 	unsigned char instr[4];
 	unsigned char *host_mips_page;
 	unsigned char *chunk_addr, *chunk_addr2;
@@ -343,13 +342,12 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	 */
 	chunk_addr += bintrans_chunk_header_len();
 	p = paddr;
-	p_relative = paddr & 0xfff;
 	try_to_translate = 1;
 
 	while (try_to_translate) {
 		/*  Read an instruction word from host memory:  */
 		*((uint32_t *)&instr[0]) =
-		    *((uint32_t *)(host_mips_page + p_relative));
+		    *((uint32_t *)(host_mips_page + (p & 0xfff)));
 
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			int tmp;
@@ -386,7 +384,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			pc_increment -= sizeof(instr);
 
 		p += sizeof(instr);
-		p_relative += sizeof(instr);
 
 		/*  If we have reached a different (MIPS) page, then
 		    stop translating.  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.110 2004-10-11 17:59:11 debug Exp $
+ *  $Id: main.c,v 1.111 2004-10-16 18:15:13 debug Exp $
  */
 
 #include <stdio.h>
@@ -530,6 +530,13 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->ncpus < 1) {
 		printf("Too few cpus (-n).\n");
+		exit(1);
+	}
+
+	if (emul->show_opcode_statistics && emul->bintrans_enable) {
+		fprintf(stderr,
+		    "Cannot do both dynamic binary translation and exact opcode statistics.\n"
+		    "Aborting.\n");
 		exit(1);
 	}
 

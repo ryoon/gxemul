@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.253 2004-12-19 10:23:52 debug Exp $
+ *  $Id: machine.c,v 1.254 2004-12-19 10:42:45 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3185,20 +3185,19 @@ config[77] = 0x30;
 			store_buf(cpu, SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 		}
 
-		/*  Boot string in ARC format:  */
-		/*  TODO: use actual SCSI id number  */
-		if (emul->emulation_type == EMULTYPE_SGI)
-			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
+		/*
+		 *  Boot string in ARC format:
+		 *
+		 *  TODO: How about floppies? multi()disk()fdisk()
+		 */
+		init_bootpath = malloc(200);
+
+		if (diskimage_is_a_cdrom(bootdev_id))
+			snprintf(init_bootpath, 200,
+			    "scsi()cdrom(%i)fdisk()\\", bootdev_id);
 		else
-			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(1)";
-
-#if 0
-		/*  Floppy?  */
-		init_bootpath = "multi()disk()fdisk()";
-
-		/*  Windows NT experiments:  */
-		init_bootpath = "scsi()cdrom(6)fdisk()";
-#endif
+			snprintf(init_bootpath, 200,
+			    "scsi()disk(%i)rdisk(0)partition(1)\\", bootdev_id);
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.56 2004-12-19 06:57:12 debug Exp $
+ *  $Id: diskimage.c,v 1.57 2004-12-19 10:42:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -1384,6 +1384,20 @@ int diskimage_bootdev(void)
 
 
 /*
+ *  diskimage_is_a_cdrom():
+ *
+ *  Returns 1 if a disk image is a SCSI CDROM, 0 otherwise.
+ */
+int diskimage_is_a_cdrom(int i)
+{
+	if (i<0 || diskimages[i] == NULL)
+		return 0;
+
+	return diskimages[i]->is_a_cdrom;
+}
+
+
+/*
  *  diskimage_is_a_tape():
  *
  *  Returns 1 if a disk image is a SCSI tape, 0 otherwise.
@@ -1392,7 +1406,7 @@ int diskimage_bootdev(void)
  */
 int diskimage_is_a_tape(int i)
 {
-	if (diskimages[i] == NULL)
+	if (i<0 || diskimages[i] == NULL)
 		return 0;
 
 	return diskimages[i]->is_a_tape;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.206 2004-11-30 23:09:21 debug Exp $
+ *  $Id: cpu.c,v 1.207 2004-12-01 08:25:47 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3503,7 +3503,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 	/*  The main loop:  */
 	running = 1;
 	while (running) {
-		ncycles_chunk_end = ncycles + (1 << 16);
+		ncycles_chunk_end = ncycles + (1 << 17);
 
 		a_few_instrs = a_few_cycles *
 		    cpus[0]->cpu_type.instrs_per_cycle;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.1 2004-02-29 02:00:34 debug Exp $
+ *  $Id: lk201.c,v 1.2 2004-04-06 02:30:59 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -194,7 +194,6 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x, int mou
  */
 void lk201_tick(struct lk201_data *d)
 {
-	int avail;
 	int mouse_x, mouse_y, mouse_buttons;
 
 	if (console_charavail()) {

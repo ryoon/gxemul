@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.20 2004-06-06 10:37:08 debug Exp $
+ *  $Id: arcbios.c,v 1.21 2004-06-14 09:16:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -362,6 +362,12 @@ void arcbios_emul(struct cpu *cpu)
 
 			cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
 		}
+		break;
+	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
+		debug("[ ARCBIOS Open(0x%x,0x%x,0x%x) ]\n", (int)cpu->gpr[GPR_A0],
+		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
+		cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;
+		/*  TODO  */
 		break;
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
 		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {

@@ -1,4 +1,5 @@
-/*  mips64emul: ncr53c9xreg.h  */
+/*  mips64emul: $Id: ncr53c9xreg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef NCR53C9XREG_H
 #define NCR53C9XREG_H
 

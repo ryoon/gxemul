@@ -1,4 +1,4 @@
-/*  mips64emul: bt459.h  */
+/*  mips64emul: $Id: bt459.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 
 #ifndef BT459_H
 #define	BT459_H

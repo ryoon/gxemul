@@ -1,4 +1,4 @@
-/*  mips64emul: comreg.h  */
+/*  mips64emul: $Id: comreg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 #ifndef COMREG_H
 #define	COMREG_H
 

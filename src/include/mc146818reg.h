@@ -1,3 +1,5 @@
+/*  mips64emul: $Id: mc146818reg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef	MC146818_REG_H
 #define	MC146818_REG_H
 

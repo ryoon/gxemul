@@ -1,5 +1,4 @@
-/*  mips64emul: sgi_arcbios.h  */
-/*  Modified for use in mips64emul.  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.3 2003-12-04 23:29:06 debug Exp $  */
 
 #ifndef SGI_ARCBIOS_H
 #define	SGI_ARCBIOS_H

@@ -1,4 +1,5 @@
-/*  mips64emul: dec_kn01.h  */
+/*  mips64emul: $Id: dec_kn01.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef DEC_KN01_H
 #define DEC_KN01_H
 

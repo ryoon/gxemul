@@ -1,4 +1,5 @@
-/*  mips64emul: ns16550reg.h  */
+/*  mips64emul: $Id: ns16550reg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef	NS16550REG_H
 #define	NS16550REG_H
 

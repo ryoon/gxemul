@@ -1,4 +1,4 @@
-/*  mips64emul: exec_aout.h  */
+/*  mips64emul: $Id: exec_aout.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 
 #ifndef	__EXEC_AOUT_H
 #define	__EXEC_AOUT_H

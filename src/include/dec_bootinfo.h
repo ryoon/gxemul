@@ -1,5 +1,4 @@
-/*  mips64emul: dec_bootinfo.h  */
-
+/*  mips64emul: $Id: dec_bootinfo.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.5 2000/01/09 15:34:41 ad Exp $	*/
 
 /*

@@ -1,4 +1,4 @@
-/*  mips64emul: dec_5100.h  */
+/*  mips64emul: $Id: dec_5100.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 #ifndef	DEC_5100_H
 #define	DEC_5100_H
 

@@ -1,3 +1,4 @@
+/*  mips64emul: $Id: cpuregs.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 /*	$NetBSD: cpuregs.h,v 1.50 2002/03/13 13:18:58 simonb Exp $	*/
 
 /*

@@ -1,3 +1,5 @@
+/*  mips64emul: $Id: exec_elf.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef	__EXEC_ELF_H
 #define	__EXEC_ELF_H
 

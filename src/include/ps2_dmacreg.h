@@ -1,4 +1,5 @@
-/*  mips64emul: ps2_dmacreg.h  */
+/*  mips64emul: $Id: ps2_dmacreg.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+
 #ifndef PS2_DMACREG_H
 #define	PS2_DMACREG_H
 

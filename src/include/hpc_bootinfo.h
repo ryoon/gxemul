@@ -1,6 +1,4 @@
-/*  mips64emul: hpc_bootinfo.h  */
-/*  Modified for use in mips64emul.  */
-
+/*  mips64emul: $Id: hpc_bootinfo.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.2 2002/04/14 06:07:40 takemura Exp $	*/
 
 /*-

@@ -1,4 +1,4 @@
-/*  mips64emul: lk201.h  */
+/*  mips64emul: $Id: lk201.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 
 #ifndef LK201_H
 #define LK201_h

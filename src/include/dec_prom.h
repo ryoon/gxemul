@@ -1,4 +1,4 @@
-/*  Imported into mips64emul from NetBSD/pmax.  */
+/*  mips64emul: $Id: dec_prom.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 #ifndef __P
 #define	__P(x)		x
 #endif

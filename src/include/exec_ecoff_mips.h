@@ -1,6 +1,4 @@
-/*  mips64emul: exec_ecoff_mips.h  */
-/*  Modified for use in mips64emul  */
-
+/*  mips64emul: $Id: exec_ecoff_mips.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
 /*	$NetBSD: ecoff_machdep.h,v 1.18 2002/03/05 14:12:29 simonb Exp $	*/
 
 /*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.18 2004-01-16 17:34:07 debug Exp $
+ *  $Id: main.c,v 1.19 2004-01-23 22:49:32 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -75,6 +75,7 @@ int emulated_ips = 0;
 int show_opcode_statistics = 0;
 int speed_tricks = 1;
 int prom_emulation = 1;
+int userland_emul = 0;
 
 int bootstrap_cpu;
 int use_random_bootstrap_cpu = 0;
@@ -189,6 +190,7 @@ void usage(char *progname)
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
+	printf("  -u        userland emulation\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
@@ -210,7 +212,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:QqRrSsTtUuXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -303,6 +305,9 @@ int get_cmd_args(int argc, char *argv[])
 			break;
 		case 'U':
 			tlb_dump = 1;
+			break;
+		case 'u':
+			userland_emul = 1;
 			break;
 		case 'X':
 			use_x11 = 1;

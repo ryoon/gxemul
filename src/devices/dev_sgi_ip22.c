@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.12 2004-06-13 10:29:59 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.13 2004-06-14 22:49:13 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -52,11 +52,13 @@ void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
 
 
 /*
- *  dev_sgi_ip22_memctl_access():
+ *  dev_sgi_ip22_imc_access():
+ *
+ *  The memory controller (?).
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -64,38 +66,51 @@ int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case (IMC_CPUCTRL0 - 0x1fa00000):
+	case (IMC_CPUCTRL0 - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
 			d->imc_cpuctrl0 = idata;
-			/*  debug("[ sgi_ip22_memctl: write to IMC_CPUCTRL0, data=0x%08x ]\n", (int)idata);  */
+			/*  debug("[ sgi_ip22_imc: write to IMC_CPUCTRL0, data=0x%08x ]\n", (int)idata);  */
 		} else {
 			odata = d->imc_cpuctrl0;
-			/*  debug("[ sgi_ip22_memctl: read from IMC_CPUCTRL0, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_CPUCTRL0, data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
-	case (IMC_SYSID - 0x1fa00000):
+	case (IMC_SYSID - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_memctl: unimplemented write IMC_SYSID, data=0x%08x ]\n", (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write IMC_SYSID, data=0x%08x ]\n", (int)idata);
 		} else {
 			/*  Lowest 4 bits are the revision bits.  */
-			odata = 3 + IMC_SYSID_HAVEISA;
-			/*  debug("[ sgi_ip22_memctl: read from IMC_SYSID, data=0x%08x ]\n", (int)odata);  */
+			odata = 3;  /*  + IMC_SYSID_HAVEISA;  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_SYSID, data=0x%08x ]\n", (int)odata);  */
 		}
 		break;
-	case (IMC_WDOG - 0x1fa00000):
+	case (IMC_WDOG - IP22_IMC_BASE):
 		if (writeflag == MEM_WRITE) {
 			d->imc_wdog = idata;
-			/*  debug("[ sgi_ip22_memctl: write to IMC_WDOG, data=0x%08x ]\n", (int)idata);  */
+			/*  debug("[ sgi_ip22_imc: write to IMC_WDOG, data=0x%08x ]\n", (int)idata);  */
 		} else {
 			odata = d->imc_wdog;
-			/*  debug("[ sgi_ip22_memctl: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);  */
+			/*  debug("[ sgi_ip22_imc: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);  */
 		}
+		break;
+	case (IMC_EEPROM - IP22_IMC_BASE):
+		/*
+		 *  The IP22 prom tries to access this during bootup,
+		 *  but I have no idea how it works.
+		 */
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22_imc: write to IMC_EEPROM, data=0x%08x ]\n", (int)idata);
+		} else {
+			odata = random() & 0x1e;
+			debug("[ sgi_ip22_imc: read from IMC_WDOG, data=0x%08x ]\n", (int)odata);
+		}
+
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ sgi_ip22_memctl: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_imc: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
 		} else {
-			debug("[ sgi_ip22_memctl: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_imc: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
 		}
 	}
 
@@ -274,11 +289,10 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uin
 	d->guiness_flag = guiness_flag;
 
 	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH, dev_sgi_ip22_access, (void *)d);
-	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
-
 	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8, dev_sgi_ip22_sysid_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22_imc", IP22_IMC_BASE, DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d);
 
-	memory_device_register(mem, "sgi_ip22_memctl", 0x1fa00000, DEV_SGI_IP22_MEMCTL_LENGTH, dev_sgi_ip22_memctl_access, (void *)d);
+	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
 
 	return d;
 }

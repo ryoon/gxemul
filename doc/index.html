@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.97 2004-09-06 05:22:03 debug Exp $
+$Id: index.html,v 1.98 2004-09-08 00:57:01 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -683,7 +683,7 @@ containing ramdisks. For a 5000/200 R3000 KN02 (the -D2 model in mips64emul), tr
 <pre>
 	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
-	MD5 as of 2004-07-14: 9395428ac82fbf7c94f15a1312caaa9a</b>
+	MD5 as of 2004-09-07: 9b635b50e49fae3df7d853a8290a39d8</b>
 </pre>
 <p>
 It is a Linux 2.4.26 kernel which will attempt to install Debian Linux from
@@ -711,13 +711,20 @@ Linux gets support for the keyboard controller.
 	$ <b>./mips64emul -D2 -o 'console=ttyS03' boot.img</b>
 </pre>
 <p>
-<font color="#ff0000">NOTE: As of 2004-07-21, the installation dies with
+<font color="#ff0000">2004-07-21 NOTE: The installation dies with
 some kind of panic or exception while trying to download/run 
 "parted_devices".
 </font>
 (This might be a bug in Linux, according to
 <a href="http://www.debian.org/ports/mips/">http://www.debian.org/ports/mips/</a>:
 "R3000 Decstation does crash with current cvs kernel")
+<p>
+You could also try this kernel, with <b>-X -CR4400 -D4</b>:
+<pre>
+	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r4k-kn04/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r4k-kn04/boot.img">installer-mipsel/current/images/r4k-kn04/boot.img</a>
+	MD5 as of 2004-09-07: 0f6a11000694079b6d68a62b5108a6aa</b>
+</pre>
 
 
 

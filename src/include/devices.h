@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.10 2003-12-30 03:47:30 debug Exp $
+ *  $Id: devices.h,v 1.11 2004-01-02 22:19:29 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -64,7 +64,7 @@ int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t rela
 void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned char *color_plane_mask);
 
 /*  dev_crime.c:  */
-#define	DEV_CRIME_LENGTH		0x0000000000000100
+#define	DEV_CRIME_LENGTH		0x0000000000001000
 int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_crime_init(struct memory *mem, uint64_t baseaddr);
 
@@ -253,6 +253,11 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 #define	DEV_VDAC_OVERRA			    0x1c
 int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
+
+/*  dev_zs.c:  */
+#define	DEV_ZS_LENGTH			0x40
+int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
 
 
 #endif	/*  DEVICES_H  */

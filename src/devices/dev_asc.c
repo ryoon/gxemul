@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.33 2004-07-09 09:17:48 debug Exp $
+ *  $Id: dev_asc.c,v 1.34 2004-07-10 04:46:56 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -39,7 +39,7 @@
  *
  *  TODO:  This module needs a clean-up, and some testing to see that
  *         it works will all OSes that might use it (NetBSD, OpenBSD,
- *         Ultrix, Linux, Mach(?), OSF/1?, ...)
+ *         Ultrix, Linux, Mach(?), OSF/1?, Sprite, ...)
  */
 
 #include <stdio.h>
@@ -443,9 +443,14 @@ fatal("TODO.......asdgasin\n");
 			d->cur_phase = PHASE_STATUS;
 	}
 
-	/*  Cause an interrupt after the transfer:  */
+	/*
+	 *  Cause an interrupt after the transfer:
+	 *
+	 *  NOTE:  Earlier I had this in here as well:
+	 *	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+	 *  but Linux/DECstation and OpenBSD/pmax seems to choke on that.
+	 */
 	d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 	d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
 	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  4?  */
@@ -491,7 +496,8 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 			return 0;
 		}
 
-		if ((d->xferp->msg_out[0] & ~0x7) != 0xc0) {
+		if (((d->xferp->msg_out[0] & ~0x7) != 0xc0) &&
+		    ((d->xferp->msg_out[0] & ~0x7) != 0x80)) {
 			fatal(" (Unimplemented msg out: 0x%02x) }",
 			    d->xferp->msg_out[0]);
 			return 0;
@@ -713,6 +719,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 	if (regnr == NCR_CMD && writeflag == MEM_WRITE) {
 		debug(" ");
+
+		/*  TODO:  Perhaps turn off others here too?  */
+		d->reg_ro[NCR_INTR] &= ~NCRINTR_SBR;
 
 		if (idata & NCRCMD_DMA) {
 			debug("[DMA] ");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.149 2005-01-19 14:24:22 debug Exp $
+ *  $Id: coproc.c,v 1.150 2005-01-20 06:38:45 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -35,13 +35,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "misc.h"
-
 #include "bintrans.h"
 #include "cop0.h"
 #include "cpu_types.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "opcodes.h"
 
 
@@ -255,10 +254,12 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			break;
 		case MIPS_R5900:
 			/*
-			 *  R5900 is supposed to have the following (according to NetBSD/playstation2):
+			 *  R5900 is supposed to have the following (according
+			 *  to NetBSD/playstation2):
 			 *	cpu0: 16KB/64B 2-way set-associative L1 Instruction cache, 48 TLB entries
 			 *	cpu0: 8KB/64B 2-way set-associative write-back L1 Data cache
-			 *  The following settings are just guesses: (comments are incorrect)
+			 *  The following settings are just guesses:
+			 *  (comments are incorrect)
 			 */
 			c->reg[COP0_CONFIG] =
 			      (   0 << 31)	/*  Master/Checker present bit  */
@@ -407,6 +408,7 @@ void coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 		    (valid1? ENTRYLO_V : 0) |
 		    (global? ENTRYLO_G : 0) |
 		    ((cachealgo1 << ENTRYLO_C_SHIFT) & ENTRYLO_C_MASK);
+		/*  TODO: R4100, 1KB pages etc  */
 	}
 }
 
@@ -438,13 +440,14 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 
 		a = (vaddr_page >> 22) & 0x3ff;
 		b = (vaddr_page >> 12) & 0x3ff;
-		/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);  */
+		/*  printf("vaddr = %08x, a = %03x, b = %03x\n",
+		    (int)vaddr_page,a, b);  */
 		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
 		/*  printf("tbl1 = %p\n", tbl1);  */
 		if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
 			/*  Allocate a new table1:  */
-			/*  printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
-			    a << 22, (a << 22) + 0x3fffff);  */
+			/*  printf("ALLOCATING a new table1, 0x%08x - "
+			    "0x%08x\n", a << 22, (a << 22) + 0x3fffff);  */
 			if (cpu->next_free_vth_table == NULL) {
 				tbl1 = malloc(sizeof(struct vth32_table));
 				if (tbl1 == NULL) {
@@ -466,20 +469,23 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		p = tbl1->haddr_entry[b];
 		p_paddr = tbl1->paddr_entry[b];
 		/* printf("   p = %p\n", p); */
-		if (p == NULL && p_paddr == 0 && (host_page!=NULL || paddr_page!=0)) {
+		if (p == NULL && p_paddr == 0 &&
+		    (host_page!=NULL || paddr_page!=0)) {
 			tbl1->refcount ++;
-			/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
-			    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
+			/*  printf("ADDING %08x -> %p wf=%i (refcount is "
+			    "now %i)\n", (int)vaddr_page, host_page,
+			    writeflag, tbl1->refcount);  */
 		}
 		if (writeflag == -1) {
 			/*  Forced downgrade to read-only:  */
 			tbl1->haddr_entry[b] = (void *)
 			    ((size_t)tbl1->haddr_entry[b] & ~1);
-		} else if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
+		} else if (writeflag==0 && (size_t)p&1 && host_page != NULL) {
 			/*  Don't degrade a page from writable to readonly.  */
 		} else {
 			if (host_page != NULL)
-				tbl1->haddr_entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+				tbl1->haddr_entry[b] = (void *)
+				    ((size_t)host_page + (writeflag?1:0));
 			else
 				tbl1->haddr_entry[b] = NULL;
 			tbl1->paddr_entry[b] = paddr_page;
@@ -522,7 +528,8 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	tbl1->bintrans_chunks[b] = NULL;
 	/*  printf("   p = %p\n", p);  */
 	if (p != NULL || p_paddr != 0) {
-		/*  printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
+		/*  printf("Found a mapping, "
+		    "vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
 		tbl1->haddr_entry[b] = NULL;
 		tbl1->paddr_entry[b] = 0;
 		tbl1->refcount --;
@@ -1852,12 +1859,14 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 	if (randomflag) {
 		if (cpu->cpu_type.mmu_model == MMU3K)
-			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
+			index = (cp->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
+			    >> R2K3K_RANDOM_SHIFT;
 		else
 			index = cp->reg[COP0_RANDOM] & RANDOM_MASK;
 	} else {
 		if (cpu->cpu_type.mmu_model == MMU3K)
-			index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
+			index = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK)
+			    >> R2K3K_INDEX_SHIFT;
 		else
 			index = cp->reg[COP0_INDEX] & INDEX_MASK;
 	}
@@ -1905,7 +1914,12 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 			if (oldvaddr & 0x8000000000ULL)
 				oldvaddr |= 0xffffff0000000000ULL;
 		}
-		/*  Both pages:  */
+
+		/*
+		 *  Both pages:
+		 *
+		 *  TODO: non-4KB page sizes!
+		 */
 		invalidate_translation_caches(cpu, 0, oldvaddr & ~0x1fff, 0, 0);
 		invalidate_translation_caches(cpu, 0, (oldvaddr & ~0x1fff) | 0x1000, 0, 0);
 	}
@@ -1928,7 +1942,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		if (paddr < 0x10000000)
 			memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
 
-		if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
+		if (memblock != NULL &&
+		    cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
 			memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
 
 			/*
@@ -1940,11 +1955,13 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 /*			if (vaddr < 0x10000000)  */
 				wf = 0;
 
-			update_translation_table(cpu, vaddr, memblock, wf, paddr);
+			update_translation_table(cpu, vaddr, memblock,
+			    wf, paddr);
 		}
 	} else {
 		/*  R4000:  */
-		g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
+		g_bit = (cp->reg[COP0_ENTRYLO0] &
+		    cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;
 		cp->tlbs[index].mask = cp->reg[COP0_PAGEMASK];
 		cp->tlbs[index].hi   = cp->reg[COP0_ENTRYHI];
 		cp->tlbs[index].lo1  = cp->reg[COP0_ENTRYLO1];
@@ -1967,10 +1984,11 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	if (randomflag) {
 		if (cpu->cpu_type.exc_model == EXC3K) {
 			cp->reg[COP0_RANDOM] =
-			    ((random() % (cp->nr_of_tlbs - 8)) + 8) << R2K3K_RANDOM_SHIFT;
+			    ((random() % (cp->nr_of_tlbs - 8)) + 8)
+			    << R2K3K_RANDOM_SHIFT;
 		} else {
-			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] +
-			    (random() % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
+			cp->reg[COP0_RANDOM] = cp->reg[COP0_WIRED] + (random()
+			    % (cp->nr_of_tlbs - cp->reg[COP0_WIRED]));
 		}
 	}
 }
@@ -1991,8 +2009,7 @@ void coproc_rfe(struct cpu *cpu)
 	    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 	    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
 
-	/*  Changing from kernel to user mode?
-	    Then this is necessary:  */
+	/*  Changing from kernel to user mode? Then this is necessary:  */
 	if (!oldmode && 
 	    (cpu->coproc[0]->reg[COP0_STATUS] &
 	    MIPS1_SR_KU_CUR))
@@ -2309,12 +2326,13 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 	}
 
 	if (unassemble_only) {
-		debug("cop%i\t%08lx\n", cpnr, function);
+		debug("cop%i\t0x%08x (unimplemented)\n", cpnr, (int)function);
 		return;
 	}
 
-	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
-	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
+	fatal("cpu%i: warning: unimplemented coproc%i function %08lx "
+	    "(pc = %016llx)\n", cpu->cpu_id, cp->coproc_nr, function,
+	    (long long)cpu->pc_last);
 #if 1
 	exit(1);
 #else

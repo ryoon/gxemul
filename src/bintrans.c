@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.138 2005-01-19 15:39:10 debug Exp $
+ *  $Id: bintrans.c,v 1.139 2005-01-20 06:38:44 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -142,14 +142,14 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int rd, i
 static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc_nr, int flag64bit, int rt, int rd, int mtcflag);
 static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int itype);
 
-#define	TLB_TLBWI	0
-#define	TLB_TLBWR	1
-#define	TLB_TLBP	2
-#define	TLB_TLBR	3
-#define	TLB_RFE		4
-#define	TLB_ERET	5
-#define	TLB_BREAK	6
-#define	TLB_SYSCALL	7
+#define	CALL_TLBWI	0
+#define	CALL_TLBWR	1
+#define	CALL_TLBP	2
+#define	CALL_TLBR	3
+#define	CALL_RFE		4
+#define	CALL_ERET	5
+#define	CALL_BREAK	6
+#define	CALL_SYSCALL	7
 
 
 #define	BINTRANS_CACHE_N_INDEX_BITS	15
@@ -483,7 +483,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 					try_to_translate = 0;
 				} else {
 					translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
-					    special6 == SPECIAL_BREAK? TLB_BREAK : TLB_SYSCALL);
+					    special6 == SPECIAL_BREAK? CALL_BREAK : CALL_SYSCALL);
 					n_translated += translated;
 	 				try_to_translate = 0;
 				}
@@ -625,12 +625,12 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		case HI6_COP0:
 			if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
 				/*  rfe:  */
-				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_RFE);
+				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_RFE);
 				n_translated += translated;
  				try_to_translate = 0;
 			} else if (instr[3] == 0x42 && instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x18) {
 				/*  eret:  */
-				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_ERET);
+				translated = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_ERET);
 				n_translated += translated;
  				try_to_translate = 0;
 			} else if (instr[3] == 0x40 && (instr[2] & 0xe0)==0 && (instr[1]&7)==0 && instr[0]==0) {
@@ -659,19 +659,19 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 2) {
 				/*  tlbwi:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBWI);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWI);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 6) {
 				/*  tlbwr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBWR);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBWR);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 8) {
 				/*  tlbp:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBP);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBP);
 				n_translated += translated;
 			} else if (instr[3] == 0x42 && instr[2] == 0 && instr[1] == 0 && instr[0] == 1) {
 				/*  tlbr:  */
-				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, TLB_TLBR);
+				translated = try_to_translate = bintrans_write_instruction__tlb_rfe_etc(&ca, CALL_TLBR);
 				n_translated += translated;
 			} else
 				try_to_translate = 0;

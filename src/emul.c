@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.118 2005-01-19 14:59:22 debug Exp $
+ *  $Id: emul.c,v 1.119 2005-01-20 06:38:45 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -410,11 +410,8 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 
 	m = emul->machines[machine_nr];
 
-	if (emul->n_machines > 1) {
-		/*  TODO: multiple machines  */
-		debug("machine %i:\n", machine_nr);
-		debug_indentation(iadd);
-	}
+	debug("machine %i:\n", machine_nr);
+	debug_indentation(iadd);
 
 	/*  Create the system's memory:  */
 	debug("adding main memory: %i MB", m->physical_ram_in_mb);
@@ -556,8 +553,47 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
 	    m->emulation_type == EMULTYPE_SGI) && m->prom_emulation)
 		add_arc_components(m);
 
-	if (emul->n_machines > 1)
-		debug_indentation(-iadd);
+	debug("starting emulation: cpu%i ", m->bootstrap_cpu);
+	if (m->bootstrap_cpu >= 10)  i++;
+	if (m->bootstrap_cpu >= 100)  i++;
+	if (m->bootstrap_cpu >= 1000)  i++;
+	if (m->bootstrap_cpu >= 10000)  i++;
+	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
+	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32)
+		debug("pc=0x%08x gp=0x%08x",
+		    (int)m->cpus[m->bootstrap_cpu]->pc,
+		    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+	else {
+		debug("pc=0x%016llx gp=0x%016llx",
+		    (long long)m->cpus[m->bootstrap_cpu]->pc,
+		    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+	}
+	debug("\n");
+
+	debug_indentation(-iadd);
+}
+
+
+/*
+ *  emul_run():
+ *
+ *  Run an emulation.
+ */
+static void emul_run(struct emul *emul)
+{
+	struct machine *m;
+
+	/*  TODO:  */
+	if (emul->n_machines > 1) {
+		fprintf(stderr, "\nEmulating multiple machines"
+		    " simultaneously isn't supported yet.\n\n");
+		exit(1);
+	}
+
+	m = emul->machines[0];
+
+	/*  TODO: Run stuff from each machine here  */
+	cpu_run(emul, m);
 }
 
 
@@ -572,7 +608,7 @@ static void emul_machine_start(struct emul *emul, int machine_nr)
  */
 void emul_start(struct emul *emul)
 {
-	int i, iadd=4;
+	int i, n, iadd=4;
 	struct machine *m;
 
 	/*  Print startup message:  */
@@ -598,42 +634,12 @@ void emul_start(struct emul *emul)
 		emul_machine_start(emul, i);
 
 	debug_indentation(-iadd);
-
-
-	/*  TODO:  */
-	if (emul->n_machines > 1) {
-		fprintf(stderr, "\nEmulating multiple machines"
-		    " simultaneously isn't supported yet.\n\n");
-		exit(1);
-	}
-
-
-	m = emul->machines[0];
-
-	i = 0;
-	debug("Starting emulation: cpu%i ", m->bootstrap_cpu);
-	if (m->bootstrap_cpu >= 10)  i++;
-	if (m->bootstrap_cpu >= 100)  i++;
-	if (m->bootstrap_cpu >= 1000)  i++;
-	if (m->bootstrap_cpu >= 10000)  i++;
-	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
-	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32)
-		debug("pc=0x%08x gp=0x%08x",
-		    (int)m->cpus[m->bootstrap_cpu]->pc,
-		    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
-	else {
-		debug("pc=0x%016llx gp=0x%016llx",
-		    (long long)m->cpus[m->bootstrap_cpu]->pc,
-		    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
-		i += 16;
-	}
-	debug("\n");
-
-	i += strlen("starting emulation: cpuX pc=0x12345678 gp=0x12345678");
+	i = 79;
 	while (i-- > 0)
 		debug("-");
 	debug("\n\n");
 
+	/*  Initialize the interactive debugger:  */
 	debugger_init(emul);
 
 	/*
@@ -645,7 +651,6 @@ void emul_start(struct emul *emul)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-
 	console_init(emul);
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
@@ -654,10 +659,15 @@ void emul_start(struct emul *emul)
 		quiet_mode = 1;
 
 
-	cpu_run(emul, m);
+	emul_run(emul);
 
 
-	if (m->use_x11) {
+	/*  Any machine using X11? Then we should wait before exiting:  */
+	n = 0;
+	for (i=0; i<emul->n_machines; i++)
+		if (emul->machines[i]->use_x11)
+			n++;
+	if (n > 0) {
 		printf("Press enter to quit.\n");
 		while (!console_charavail()) {
 			x11_check_event();

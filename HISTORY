@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.504 2005-01-19 21:15:09 debug Exp $
+$Id: HISTORY,v 1.505 2005-01-20 06:38:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1519,3 +1519,4 @@ HISTORY of mips64emul
 		Userland emulation now works with bintrans.
 		Refreshing the LANCE controller (dev_le.c).
 		Fixing the LK201 keyboard id.
+20050120	Continuing on the remodelling/cleanup.

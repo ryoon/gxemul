@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.64 2005-01-14 03:36:19 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.65 2005-01-20 06:38:45 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -2704,14 +2704,14 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	int ofs = 0;	/*  avoid a compiler warning  */
 
 	switch (itype) {
-	case TLB_TLBP:
-	case TLB_TLBR:
-	case TLB_TLBWR:
-	case TLB_TLBWI:
-	case TLB_RFE:
-	case TLB_ERET:
-	case TLB_SYSCALL:
-	case TLB_BREAK:
+	case CALL_TLBP:
+	case CALL_TLBR:
+	case CALL_TLBWR:
+	case CALL_TLBWI:
+	case CALL_RFE:
+	case CALL_ERET:
+	case CALL_SYSCALL:
+	case CALL_BREAK:
 		break;
 	default:
 		return 0;
@@ -2728,28 +2728,28 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = (ofs_pc_last>>24)&255;	/*  mov    %edi,pc_last(%esi)  */
 
 	switch (itype) {
-	case TLB_TLBP:
-	case TLB_TLBR:
+	case CALL_TLBP:
+	case CALL_TLBR:
 		/*  push readflag  */
-		*a++ = 0x6a; *a++ = (itype == TLB_TLBR);
+		*a++ = 0x6a; *a++ = (itype == CALL_TLBR);
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
 		break;
-	case TLB_TLBWR:
-	case TLB_TLBWI:
+	case CALL_TLBWR:
+	case CALL_TLBWI:
 		/*  push randomflag  */
-		*a++ = 0x6a; *a++ = (itype == TLB_TLBWR);
+		*a++ = 0x6a; *a++ = (itype == CALL_TLBWR);
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
-	case TLB_SYSCALL:
-	case TLB_BREAK:
+	case CALL_SYSCALL:
+	case CALL_BREAK:
 		/*  push randomflag  */
-		*a++ = 0x6a; *a++ = (itype == TLB_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
+		*a++ = 0x6a; *a++ = (itype == CALL_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
 		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
 		break;
-	case TLB_RFE:
+	case CALL_RFE:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
 		break;
-	case TLB_ERET:
+	case CALL_ERET:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
 		break;
 	}
@@ -2765,8 +2765,8 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0xff; *a++ = 0xd0;
 
 	switch (itype) {
-	case TLB_RFE:
-	case TLB_ERET:
+	case CALL_RFE:
+	case CALL_ERET:
 		/*  83 c4 04                add    $4,%esp  */
 		*a++ = 0x83; *a++ = 0xc4; *a++ = 4;
 		break;
@@ -2784,9 +2784,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*addrp = a;
 
 	switch (itype) {
-	case TLB_ERET:
-	case TLB_SYSCALL:
-	case TLB_BREAK:
+	case CALL_ERET:
+	case CALL_SYSCALL:
+	case CALL_BREAK:
 		break;
 	default:
 		bintrans_write_pc_inc(addrp);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.105 2005-01-14 03:36:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.106 2005-01-20 06:38:44 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -2546,14 +2546,14 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	int ofs = 0;
 
 	switch (itype) {
-	case TLB_TLBWI:
-	case TLB_TLBWR:
-	case TLB_TLBP:
-	case TLB_TLBR:
-	case TLB_RFE:
-	case TLB_ERET:
-	case TLB_BREAK:
-	case TLB_SYSCALL:
+	case CALL_TLBWI:
+	case CALL_TLBWR:
+	case CALL_TLBP:
+	case CALL_TLBR:
+	case CALL_RFE:
+	case CALL_ERET:
+	case CALL_BREAK:
+	case CALL_SYSCALL:
 		break;
 	default:
 		return 0;
@@ -2564,19 +2564,19 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	/*  a0 = pointer to the cpu struct  */
 
 	switch (itype) {
-	case TLB_TLBWI:
-	case TLB_TLBWR:
+	case CALL_TLBWI:
+	case CALL_TLBWR:
 		/*  a1 = 0 for indexed, 1 for random  */
-		*a++ = 0x223f0000 | (itype == TLB_TLBWR);
+		*a++ = 0x223f0000 | (itype == CALL_TLBWR);
 		break;
-	case TLB_TLBP:
-	case TLB_TLBR:
+	case CALL_TLBP:
+	case CALL_TLBR:
 		/*  a1 = 0 for probe, 1 for read  */
-		*a++ = 0x223f0000 | (itype == TLB_TLBR);
+		*a++ = 0x223f0000 | (itype == CALL_TLBR);
 		break;
-	case TLB_BREAK:
-	case TLB_SYSCALL:
-		*a++ = 0x223f0000 | (itype == TLB_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
+	case CALL_BREAK:
+	case CALL_SYSCALL:
+		*a++ = 0x223f0000 | (itype == CALL_BREAK? EXCEPTION_BP : EXCEPTION_SYS);
 		break;
 	}
 
@@ -2597,22 +2597,22 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*a++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
 
 	switch (itype) {
-	case TLB_TLBP:
-	case TLB_TLBR:
+	case CALL_TLBP:
+	case CALL_TLBR:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
 		break;
-	case TLB_TLBWR:
-	case TLB_TLBWI:
+	case CALL_TLBWR:
+	case CALL_TLBWI:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
-	case TLB_RFE:
+	case CALL_RFE:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
 		break;
-	case TLB_ERET:
+	case CALL_ERET:
 		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
 		break;
-	case TLB_BREAK:
-	case TLB_SYSCALL:
+	case CALL_BREAK:
+	case CALL_SYSCALL:
 		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
 		break;
 	}
@@ -2640,9 +2640,9 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*addrp = (unsigned char *) a;
 
 	switch (itype) {
-	case TLB_ERET:
-	case TLB_BREAK:
-	case TLB_SYSCALL:
+	case CALL_ERET:
+	case CALL_BREAK:
+	case CALL_SYSCALL:
 		break;
 	default:
 		bintrans_write_pc_inc(addrp);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.28 2004-09-05 03:56:52 debug Exp $
+ *  $Id: dev_bt459.c,v 1.29 2004-09-17 20:49:29 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -94,29 +94,6 @@ struct bt459_data {
 	unsigned char	*rgb_palette;		/*  256 * 3 (r,g,b)  */
 	unsigned char	local_rgb_palette[256 * 3];
 };
-
-
-/*
- *  bt459_sync_xysize():
- */
-static void bt459_sync_xysize(struct bt459_data *d)
-{
-	int x,y, xmax=0, ymax=0;
-
-	for (y=0; y<64; y++)
-		for (x=0; x<64; x+=4) {
-			int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
-			unsigned char data = d->bt459_reg[reg];
-			if (data)		ymax = y;
-			if (data & 0xc0)	xmax = x;
-			if (data & 0x30)	xmax = x + 1;
-			if (data & 0x0c)	xmax = x + 2;
-			if (data & 0x03)	xmax = x + 3;
-		}
-
-	d->cursor_xsize = xmax + 1;
-	d->cursor_ysize = ymax + 1;
-}
 
 
 /*
@@ -197,7 +174,6 @@ void dev_bt459_tick(struct cpu *cpu, void *extra)
 	if (d->need_to_update_cursor_shape) {
 		d->need_to_update_cursor_shape = 0;
 		bt459_update_X_cursor(cpu, d);
-		    /*  or  bt459_sync_xysize(d);  */
 	}
 
 	/*

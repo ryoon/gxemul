@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.43 2004-11-20 08:57:15 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.44 2004-11-20 10:01:27 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -59,7 +59,7 @@
  *	t7		cached load/store virtual address (page)
  *	t8		cached load/store host address (page)
  *	t9		cached load/store writability (0=load, 1=load/store)
- *	t10		t3 (mips register 11)  (64-bit)
+ *	t10		t3 (mips register 11)  (64-bit)  (TODO: bug?)
  *	t11		t4 (mips register 12)  (64-bit)
  *	s0		delay_slot (32-bit int)
  *	s1		delay_jmpaddr (64-bit)

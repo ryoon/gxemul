@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.13 2004-04-06 02:17:58 debug Exp $
+#  $Id: configure,v 1.14 2004-04-06 02:30:51 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -127,8 +127,10 @@ if [ z"`uname -m`" = zalpha ]; then
 fi
 
 if [ z"`uname`" = zHP-UX ]; then
-	#  This is not an optimization, actually, just a flag:
-	COPTIM="-DHPUX $COPTIM"
+	#  This is not an optimization, actually, just flags:
+	#  TODO:  include correct strtoll and strtoull,
+	#  these are just fake!
+	COPTIM="-DHPUX -Dstrtoll=strtol -Dstrtoull=strtoul $COPTIM"
 fi
 
 if [ z"$CC" = zccc ]; then

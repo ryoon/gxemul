@@ -51,7 +51,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    as well.   (sparc64?)
 		o)  Binary translation:
 			+)  recursive translation?
-			+)  quick forward jumps
+			+)  basic blocks instead of one-instruction? :)
 			+)  on Alpha: don't assume pca56-like byte load/store?
 			+)  write backend for UltraSparc and MIPS?
 			+)  see src/bintrans.c for more info

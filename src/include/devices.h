@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.124 2005-01-05 23:43:57 debug Exp $
+ *  $Id: devices.h,v 1.125 2005-01-09 00:38:46 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -45,11 +45,6 @@ struct pci_data;
 #include <X11/Xlib.h>
 #endif */
 
-
-/*  dev_dec5500_ioboard.c:  */
-#define	DEV_DEC5500_IOBOARD_LENGTH		0x100000
-int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_dec_ioasic.c:  */
 #define	DEV_DEC_IOASIC_LENGTH		0x80100
@@ -301,6 +296,14 @@ struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 int dev_kn210_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_kn210_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
+/*  dev_kn220.c:  */
+#define	DEV_DEC5500_IOBOARD_LENGTH		0x100000
+int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+#define	DEV_SGEC_LENGTH		0x1000
+int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
+
 /*  dev_kn230.c:  */
 #define	DEV_KN230_LENGTH		0x1c00000
 struct kn230_csr {
@@ -459,11 +462,6 @@ void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 int dev_sfb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sfb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	struct vfb_data *vfb_data);
-
-/*  dev_sgec.c:  */
-#define	DEV_SGEC_LENGTH		0x1000
-int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_sgi_cpuinfo.c:  */
 #define	DEV_SGI_CPUINFO_BASE		0x9600000000000000ULL

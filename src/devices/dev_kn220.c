@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,11 +23,14 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5500_ioboard.c,v 1.8 2004-12-18 06:01:14 debug Exp $
+ *  $Id: dev_kn220.c,v 1.1 2005-01-09 00:38:45 debug Exp $
  *  
- *  DEC 5500 "ioboard" device.
+ *  DEC KN220 (DECsystem 5500) devices.
  *
- *  TODO:  Find out what kind of device this is :)
+ *	o)  I/O board
+ *	o)  SGEC (ethernet)  (Called "ne" in Ultrix.)
+ *
+ *  TODO:  Study docs.
  */
 
 #include <stdio.h>
@@ -42,6 +45,12 @@
 
 struct dec5500_ioboard_data {
 	int	dummy;
+};
+
+#define SGEC_DEBUG
+
+struct sgec_data {
+	int	irq_nr;
 };
 
 
@@ -86,6 +95,63 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
+}
+
+
+/*
+ *  dev_sgec_access():
+ */
+int dev_sgec_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	/*  struct sgec_data *d = (struct sgec_data *) extra;  */
+	uint64_t idata = 0, odata = 0;
+
+	idata = memory_readmax64(cpu, data, len);
+
+#ifdef SGEC_DEBUG
+	if (writeflag == MEM_WRITE)
+		debug("[ sgec: write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+	else
+		debug("[ sgec: read from address 0x%llx ]\n", (long long)relative_addr);
+#endif
+
+	switch (relative_addr) {
+	case 0x14:
+		if (writeflag == MEM_READ)
+			odata = 0x80000000;
+		break;
+
+	default:
+		if (writeflag == MEM_WRITE)
+			debug("[ sgec: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+		else
+			debug("[ sgec: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  dev_sgec_init():
+ */
+void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
+{
+	struct sgec_data *d = malloc(sizeof(struct sgec_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct sgec_data));
+	d->irq_nr = irq_nr;
+
+	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH,
+	    dev_sgec_access, (void *)d, MEM_DEFAULT, NULL);
 }
 
 

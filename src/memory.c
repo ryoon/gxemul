@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.84 2004-10-16 16:13:29 debug Exp $
+ *  $Id: memory.c,v 1.85 2004-10-17 15:06:54 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -369,9 +369,7 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 
 		if (shrcount == bits_per_memblock) {
 			memblock = (unsigned char *) table[entry];
-#ifdef HAVE_PREFETCH
 			PREFETCH(memblock + (paddr & (mem->memblock_size-1)));
-#endif
 		} else
 			table = (void **) table[entry];
 
@@ -556,7 +554,6 @@ static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (cache == CACHE_INSTRUCTION) {
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		if (memblock != NULL) {
-			cpu->pc_last_was_in_host_ram = 1;
 			cpu->pc_last_host_4k_page = memblock +
 			    (paddr & (mem->memblock_size - 1) & ~0xfff);
 		}
@@ -1115,12 +1112,12 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  For instruction fetch, are we on the same page as the last
 	 *  instruction we fetched?
 	 *
-	 *  NOTE: There's no need to check this stuff here if
-	 *  pc_last_was_in_host_ram is true, as it's done at instruction fetch
-	 *  time in cpu.c!  Only check if _in_host_ram == 0.
+	 *  NOTE: There's no need to check this stuff here if this address
+	 *  is known to be in host ram, as it's done at instruction fetch
+	 *  time in cpu.c!  Only check if _host_4k_page == NULL.
 	 */
 	if (cache == CACHE_INSTRUCTION &&
-	    !cpu->pc_last_was_in_host_ram &&
+	    cpu->pc_last_host_4k_page == NULL &&
 	    (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
 		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
 		goto have_paddr;
@@ -1165,9 +1162,9 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	if (cache == CACHE_INSTRUCTION) {
 		cpu->pc_last_virtual_page = vaddr & ~0xfff;
 		cpu->pc_last_physical_page = paddr & ~0xfff;
-		cpu->pc_last_was_in_host_ram = 0;
+		cpu->pc_last_host_4k_page = NULL;
 
-		/*  _last_was_in_host_ram will be set to 1 further down,
+		/*  _last_host_4k_page will be set to 1 further down,
 		    if the page is actually in host ram  */
 	}
 #endif
@@ -1420,7 +1417,6 @@ no_exception_access:
 			memcpy(data, memblock + offset, len);
 
 		if (cache == CACHE_INSTRUCTION) {
-			cpu->pc_last_was_in_host_ram = 1;
 			cpu->pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
 

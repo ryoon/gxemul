@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.166 2004-10-17 02:02:24 debug Exp $
+ *  $Id: cpu.c,v 1.167 2004-10-17 15:06:53 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1263,10 +1263,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	}
 #endif
 
-#ifdef HAVE_PREFETCH
-	PREFETCH(&cpu->pc_last_was_in_host_ram);
 	PREFETCH(cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
-#endif
 
 #ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */
@@ -1383,7 +1380,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		 *
 		 *  2)  Fallback to reading from memory the usual way.
 		 */
-		if (cpu->pc_last_was_in_host_ram &&
+		if (cpu->pc_last_host_4k_page != NULL &&
 		    (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
 			/*  NOTE: This only works on the host if offset is
 			    aligned correctly!  (TODO)  */

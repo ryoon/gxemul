@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.66 2004-10-17 01:48:09 debug Exp $
+#  $Id: configure,v 1.67 2004-10-17 15:06:50 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -406,16 +406,6 @@ else
 	if [ z"`uname -m`" = zalpha ]; then
 		printf "#define ALPHA\n" >> config.h
 		printf "#define BINTRANS\n" >> config.h
-
-		#  Try to detect prefetch-ability while we're at it:
-		rm -f _alpha_asm_test.c _alpha_asm_test
-		printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
-		$CC -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
-		if [ -x _alpha_asm_test ]; then
-			printf "#define HAVE_PREFETCH\n" >> config.h
-			printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
-		fi
-		rm -f _alpha_asm_test.c _alpha_asm_test
 		printf "alpha\n"
 		BINTRANS=YES
 	fi
@@ -481,6 +471,26 @@ fi
 
 if [ z"`uname`" = zOSF1 ]; then
 	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE $COPTIM"
+fi
+
+
+#  Prefetch support?
+printf "checking for prefetch support... "
+if [ z"`uname -m`" = zalpha ]; then
+	rm -f _alpha_asm_test.c _alpha_asm_test
+	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
+	$CC -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+	if [ -x _alpha_asm_test ]; then
+#		printf "#define HAVE_PREFETCH\n" >> config.h
+		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
+		echo "yes"
+		PREFSUP=YES
+	fi
+	rm -f _alpha_asm_test.c _alpha_asm_test
+fi
+if [ z$PREFSUP = z ]; then
+	printf "#define PREFETCH(x) { }\n" >> config.h
+	echo "no"
 fi
 
 

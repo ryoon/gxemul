@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.51 2004-04-24 22:38:31 debug Exp $
+ *  $Id: devices.h,v 1.52 2004-05-07 00:41:04 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -89,7 +89,7 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 #define	DEV_BT459_NREGS			0x1000
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data;
-void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag);
+void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag, int irq_nr);
 
 /*  dev_cons.c:  */
 #define	DEV_CONS_ADDRESS		0x0000000010000000
@@ -322,6 +322,11 @@ struct ps2_data {
 #define	DEV_PS2_STUFF_LENGTH		0x10000
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct memory *mem_gif);
+
+/*  dev_pmagja.c:  */
+#define	DEV_PMAGJA_LENGTH		0x3c0000
+int dev_pmagja_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
 /*  dev_px.c:  */
 struct px_data {

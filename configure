@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.19 2004-06-22 23:50:18 debug Exp $
+#  $Id: configure,v 1.20 2004-06-26 22:20:40 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -254,13 +254,26 @@ if [ z"$CC" = zccc ]; then
 	rm -f _testprog
 fi
 
+#  -fpeephole
 $CC _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
 if grep peephole _testprog.error; then
-	rm _testprog.error
+	rm -f _testprog.error
 else
 	if [ -x _testprog ]; then
 		COPTIM="-fpeephole $COPTIM"
+	fi
+fi
+rm -f _testprog _testprog.error _testprog.stdout
+
+#  -fomit-frame-pointer
+$CC _testprog.c -o _testprog -fomit-frame-pointer 1> _testprog.stdout 2> _testprog.error
+cat _testprog.stdout >> _testprog.error
+if grep frame _testprog.error; then
+	rm -f _testprog.error
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fomit-frame-pointer $COPTIM"
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout

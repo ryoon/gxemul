@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.39 2004-07-25 22:42:02 debug Exp $
+#  $Id: configure,v 1.40 2004-07-25 22:54:24 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -247,6 +247,21 @@ fi
 rm -f _testns.c _testns
 
 
+#  -lresolv for inet_aton?
+printf "extern void (*inet_aton)(void); int main(int argc, char *argv[]) { void *x; x = inet_aton; return 0; }\n" > _testr.c
+$CC _testr.c -o _testr 2> /dev/null
+if [ ! -x _testr ]; then
+	$CC -lresolv _testr.c -o _testr 2> /dev/null
+	if [ ! -x _testr ]; then
+		printf "WARNING! COULD NOT COMPILE WITH inet_aton AT ALL!\n"
+	else
+		#  -lresolv for inet_aton
+		OTHERLIBS="-lresolv $OTHERLIBS"
+	fi
+fi
+rm -f _testr.c _testr
+
+
 #  strtoll/strtoull missing?
 printf "#include <stdlib.h>
 #include <limits.h>
@@ -428,7 +443,9 @@ rm -f _testprog.c
 
 INCLUDE=-I../include/
 
-echo C compiler and flags: $CC $COPTIM $CWARNINGS $INCLUDE $OTHERLIBS
+echo C compiler: $CC
+echo C compiler flags: $COPTIM $CWARNINGS $INCLUDE
+echo Link flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$COPTIM" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.25 2004-07-25 22:42:03 debug Exp $
+ *  $Id: net.c,v 1.26 2004-07-25 22:54:26 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -66,7 +66,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <ctype.h>
 #include <signal.h>
 
 #include "misc.h"
@@ -1603,12 +1602,12 @@ void net_init(void)
 
 				/*  debug("found nameserver at offset %i\n", i);  */
 				i += 10;
-				while (i<len && isspace(buf[i]))
+				while (i<len && (buf[i]==' ' || buf[i]=='\t'))
 					i++;
 				if (i >= len)
 					break;
 				start = i;
-				while (i<len && !isspace(buf[i]))
+				while (i<len && !(buf[i]==' ' || buf[i]=='\t'))
 					i++;
 
 				/*  for (j=start; j<i; j++)

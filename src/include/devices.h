@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.138 2005-02-06 15:39:38 debug Exp $
+ *  $Id: devices.h,v 1.139 2005-02-07 05:51:54 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -321,8 +321,11 @@ void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
 /*  dev_ns16550.c:  */
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
-int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ns16550_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult, int in_use);
+int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+int dev_ns16550_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int addrmult, int in_use, char *name);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
@@ -595,8 +598,10 @@ void dev_wdsc_init(struct machine *machine, struct memory *mem, uint64_t baseadd
 
 /*  dev_zs.c:  */
 #define	DEV_ZS_LENGTH			0x10
-int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_zs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *);
+int dev_zs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int addrmult, char *name);
 
 /*  lk201.c:  */
 struct lk201_data {

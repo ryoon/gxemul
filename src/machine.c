@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.334 2005-02-06 16:11:49 debug Exp $
+ *  $Id: machine.c,v 1.335 2005-02-07 05:51:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1239,7 +1239,8 @@ void machine_setup(struct machine *machine)
 		dev_cons_init(machine, mem);	/*  TODO: include address here?  */
 
 		/*  This works with 'mmon' (MIPS):  */
-		dev_ns16550_init(machine, mem, 0x10800000, 2, 4, 1);
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0x10800000, 2, 4, 1, "serial 0");
 
 		dev_mp_init(mem, machine->cpus);
 
@@ -1945,7 +1946,8 @@ void machine_setup(struct machine *machine)
 		 */
 /*		dev_XXX_init(cpu, mem, 0x10000000, machine->emulated_hz);	*/
 		dev_mc146818_init(machine, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
-		dev_ns16550_init(machine, mem, 0x1c800000, 5, 1, 1);
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0x1c800000, 5, 1, 1, "serial console");
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -2007,8 +2009,9 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
-			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
-			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
+			machine->main_console_handle = dev_ns16550_init(
+			    machine, mem, 0xa008680, 0, 4,
+			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
 			machine->md_interrupt = vr41xx_interrupt;
 
@@ -2037,8 +2040,9 @@ void machine_setup(struct machine *machine)
 			hpcmips_fb_bits = 16;
 			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
-			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
-			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
+			machine->main_console_handle = dev_ns16550_init(
+			    machine, mem, 0xa008680, 0, 4,
+			    machine->use_x11? 0 : 1, "serial console");  /*  TODO: irq?  */
 			machine->vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
 			machine->md_interrupt = vr41xx_interrupt;
 
@@ -2225,7 +2229,8 @@ void machine_setup(struct machine *machine)
 				break;
 			case 19:
 				strcat(machine->machine_name, " (Everest IP19)");
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				machine->main_console_handle =
+				    dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "serial zs");	/*  serial? netbsd?  */
 				dev_scc_init(machine, mem, 0x10086000, 0, machine->use_x11, 0, 8);	/*  serial? irix?  */
 
 				dev_sgi_ip19_init(cpu, mem, 0x18000000);
@@ -2267,11 +2272,11 @@ void machine_setup(struct machine *machine)
 
 				/*  imc0 at mainbus0 addr 0x1fa00000: revision 0:  TODO (or in dev_sgi_ip20?)  */
 
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");
 
 				/*  This is the zsc0 reported by NetBSD:  TODO: irqs  */
-				dev_zs_init(machine, mem, 0x1fb80d10, 0, 1);	/*  zsc0  */
-				dev_zs_init(machine, mem, 0x1fb80d00, 0, 1);	/*  zsc1  */
+				machine->main_console_handle = dev_zs_init(machine, mem, 0x1fb80d10, 0, 1, "zsc0");	/*  zsc0  */
+				dev_zs_init(machine, mem, 0x1fb80d00, 0, 1, "zsc1");	/*  zsc1  */
 
 				/*  WDSC SCSI controller:  */
 				dev_wdsc_init(machine, mem, 0x1fb8011f, 0, 0);
@@ -2339,8 +2344,9 @@ Why is this here? TODO
 				 */
 
 				/*  zsc0 serial console.  */
-				dev_zs_init(machine, mem, 0x1fbd9830,
-				    8 + 32 + 3 + 64*5, 1);
+				machine->main_console_handle =
+				    dev_zs_init(machine, mem, 0x1fbd9830,
+				    8 + 32 + 3 + 64*5, 1, "zsc0");
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
@@ -2392,15 +2398,21 @@ Why is this here? TODO
 			case 26:
 				/*  NOTE:  Special case for arc_wordlen:  */
 				arc_wordlen = sizeof(uint64_t);
-				strcat(machine->machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);		/*  serial? netbsd?  */
+				strcat(machine->machine_name,
+				    " (uknown SGI-IP26 ?)");	/*  TODO  */
+				machine->main_console_handle =
+				    dev_zs_init(machine, mem, 0x1fbd9830,
+				    0, 1, "zs console");
 				break;
 			case 27:
-				strcat(machine->machine_name, " (Origin 200/2000, Onyx2)");
+				strcat(machine->machine_name,
+				    " (Origin 200/2000, Onyx2)");
 				arc_wordlen = sizeof(uint64_t);
 				/*  2 cpus per node  */
 
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
+				machine->main_console_handle =
+				    dev_zs_init(machine, mem, 0x1fbd9830,
+				    0, 1, "zs console");
 				break;
 			case 28:
 				/*  NOTE:  Special case for arc_wordlen:  */
@@ -2439,10 +2451,10 @@ Why is this here? TODO
 				 *  program dumps something there, but it doesn't look like
 				 *  readable text.  (TODO)
 				 */
-				dev_ns16550_init(machine, mem, 0x1f620170, 0, 1,
-				    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
+				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x1f620170, 0, 1,
+				    machine->use_x11? 0 : 1, "serial 0");  /*  TODO: irq?  */
 				dev_ns16550_init(machine, mem, 0x1f620178, 0, 1,
-				    0);  /*  TODO: irq?  */
+				    0, "serial 1");  /*  TODO: irq?  */
 
 				/*  MardiGras graphics:  */
 				dev_sgi_mardigras_init(machine, mem, 0x1c000000);
@@ -2523,15 +2535,15 @@ Why is this here? TODO
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-				dev_ns16550_init(machine, mem, 0x1f390000,
+				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x1f390000,
 				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
-				    machine->use_x11? 0 : 1);	/*  com0  */
+				    machine->use_x11? 0 : 1, "serial 0");	/*  com0  */
 				dev_ns16550_init(machine, mem, 0x1f398000,
 				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
-				    0);				/*  com1  */
+				    0, "serial 1");				/*  com1  */
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
+				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -2553,7 +2565,9 @@ Why is this here? TODO
 				strcat(machine->machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
 
-				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1);
+				machine->main_console_handle =
+				    dev_zs_init(machine, mem, 0x1fbd9830,
+				    0, 1, "zs console");
 				break;
 			case 53:
 				strcat(machine->machine_name, " (Origin 350)");
@@ -2600,8 +2614,10 @@ Why is this here? TODO
 				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
 				dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
-				dev_ns16550_init(machine, mem, 0x80006000ULL, 3, 1, machine->use_x11? 0 : 1);  /*  com0  */
-				dev_ns16550_init(machine, mem, 0x80007000ULL, 0, 1, 0);		  /*  com1  */
+				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x80006000ULL,
+				    3, 1, machine->use_x11? 0 : 1, "serial 0");  /*  com0  */
+				dev_ns16550_init(machine, mem, 0x80007000ULL,
+				    0, 1, 0, "serial 1"); /*  com1  */
 				/*  lpt at 0x80008000  */
 				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
@@ -2739,11 +2755,12 @@ Why is this here? TODO
 				dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 
-				dev_ns16550_init(machine, mem,
+				machine->main_console_handle =
+				    dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
-				    machine->use_x11? 0 : 1);
+				    machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem,
-				    0x80007000ULL, 8 + 9, 1, 0);
+				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
 
 				break;
 
@@ -2770,11 +2787,12 @@ Why is this here? TODO
 				dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 #endif
-				dev_ns16550_init(machine, mem,
+				machine->main_console_handle =
+				    dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
-				    machine->use_x11? 0 : 1);
+				    machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem,
-				    0x80007000ULL, 8 + 9, 1, 0);
+				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
 
 				dev_m700_fb_init(machine, mem,
 				    0x180080000ULL, 0x100000000ULL);
@@ -2798,10 +2816,10 @@ Why is this here? TODO
 				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
-				dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1);
-				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0);
-				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0);
-				dev_ns16550_init(machine, mem, 0x9000002e8ULL, 0, 1, 0);
+				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
+				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0, "serial 1");
+				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0, "serial 2");
+				dev_ns16550_init(machine, mem, 0x9000002e8ULL, 0, 1, 0, "serial 3");
 
 				dev_mc146818_init(machine, mem,
 				    0x900000070ULL, 2, MC146818_PC_CMOS, 1);
@@ -3870,7 +3888,8 @@ for (i=0; i<32; i++)
 				cpu->cd.mips.gpr[i] = 0x01230000 + (i << 8) + 0x55;
 		}
 
-		dev_zs_init(machine, mem, 0x1e950000, 0, 1);
+		machine->main_console_handle =
+		    dev_zs_init(machine, mem, 0x1e950000, 0, 1, "zs console");
 
 		break;
 
@@ -4214,6 +4233,12 @@ void machine_dumpinfo(struct machine *m)
 
 /*
  *  machine_entry_new():
+ *
+ *  This function creates a new machine_entry struct, and fills it with some
+ *  valid data; it is up to the caller to add additional data that weren't
+ *  passed as arguments to this function.
+ *
+ *  For internal use.
  */
 static struct machine_entry *machine_entry_new(const char *name,
 	int arch, int oldstyle_type, int n_aliases, int n_subtypes)
@@ -4255,6 +4280,12 @@ static struct machine_entry *machine_entry_new(const char *name,
 
 /*
  *  machine_entry_subtype_new():
+ *
+ *  This function creates a new machine_entry_subtype struct, and fills it with
+ *  some valid data; it is up to the caller to add additional data that weren't
+ *  passed as arguments to this function.
+ *
+ *  For internal use.
  */
 static struct machine_entry_subtype *machine_entry_subtype_new(
 	const char *name, int oldstyle_type, int n_aliases)
@@ -4350,8 +4381,10 @@ void machine_init(void)
 {
 	struct machine_entry *me;
 
-	/*  NOTE: This list is in reverse order, so that the
-	    entries will appear in normal order when listed. :-)  */
+	/*
+	 *  NOTE: This list is in reverse order, so that the
+	 *  entries will appear in normal order when listed.  :-)
+	 */
 
 	/*  Walnut: (NetBSD/evbppc)  */
 	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.3 2005-02-06 15:39:38 debug Exp $
+ *  $Id: console.c,v 1.4 2005-02-07 05:51:55 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -152,7 +152,7 @@ static void start_xterm(int handle)
 {
 	int filedes[2];
 	int filedesB[2];
-	int res, i;
+	int res;
 	char **a;
 	pid_t p;
 
@@ -272,7 +272,7 @@ void console_makeavail(int handle, char ch)
 
 	if (console_handles[handle].fifo_head ==
 	    console_handles[handle].fifo_tail)
-		fatal("WARNING: console fifo overrun, handle %i\n", handle);
+		fatal("[ WARNING: console fifo overrun, handle %i ]\n", handle);
 }
 
 
@@ -572,7 +572,7 @@ void console_slave(char *arg)
 			write(console_slave_outputd, buf, len);
 		}
 
-		usleep(10);
+		usleep(100);
 	}
 }
 

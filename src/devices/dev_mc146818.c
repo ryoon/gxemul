@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.67 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.68 2005-02-07 05:51:54 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -181,12 +181,14 @@ int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {
 		int i;
-		fatal("[ mc146818_jazz: write to addr=0x%04x: ", relative_addr);
+		fatal("[ mc146818_jazz: write to addr=0x%04x: ",
+		    (int)relative_addr);
 		for (i=0; i<len; i++)
 			fatal("%02x ", data[i]);
 		fatal("]\n");
 	} else
-		fatal("[ mc146818_jazz: read from addr=0x%04x ]\n", relative_addr);
+		fatal("[ mc146818_jazz: read from addr=0x%04x ]\n",
+		    (int)relative_addr);
 #endif
 
 	if (writeflag == MEM_WRITE) {
@@ -314,7 +316,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		} else if (relative_addr == 0x71 || relative_addr == 0x01)
 			relative_addr = d->last_addr * 4;
 		else {
-			fatal("[ mc146818: not accessed as an MC146818_PC_CMOS device! ]\n");
+			fatal("[ mc146818: not accessed as an "
+			    "MC146818_PC_CMOS device! ]\n");
 		}
 		break;
 	case MC146818_ARC_NEC:
@@ -329,7 +332,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		} else if (relative_addr == 0x00)
 			relative_addr = d->last_addr * 4;
 		else {
-			fatal("[ mc146818: not accessed as an MC146818_ARC_NEC device! ]\n");
+			fatal("[ mc146818: not accessed as an "
+			    "MC146818_ARC_NEC device! ]\n");
 		}
 		break;
 	case MC146818_ARC_JAZZ:
@@ -441,7 +445,9 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			case MC_RATE_4_Hz:	d->interrupt_hz = 4;	break;
 			case MC_RATE_2_Hz:	d->interrupt_hz = 2;	break;
 			default:
-				/*  debug("[ mc146818: unimplemented MC_REGA RS: %i ]\n", data[0] & MC_REGA_RSMASK);  */
+				/*  debug("[ mc146818: unimplemented "
+				    "MC_REGA RS: %i ]\n",
+				    data[0] & MC_REGA_RSMASK);  */
 				;
 			}
 
@@ -463,13 +469,16 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			d->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
 				cpu_interrupt_ack(cpu, d->irq_nr);
-				/*  d->cycles_left_until_interrupt = d->interrupt_every_x_cycles;  */
+				/*  d->cycles_left_until_interrupt =
+				    d->interrupt_every_x_cycles;  */
 			}
-			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
+			/*  debug("[ mc146818: write to MC_REGB, data[0] "
+			    "= 0x%02x ]\n", data[0]);  */
 			break;
 		case MC_REGC*4:
 			d->reg[MC_REGC * 4] = data[0];
-			debug("[ mc146818: write to MC_REGC, data[0] = 0x%02x ]\n", data[0]);
+			debug("[ mc146818: write to MC_REGC, data[0] = "
+			    "0x%02x ]\n", data[0]);
 			break;
 		case 0x128:
 			d->reg[relative_addr] = data[0];
@@ -478,7 +487,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 				fatal("[ md146818: power off ]\n");
 				for (i=0; i<cpu->machine->ncpus; i++)
 					cpu->machine->cpus[i]->running = 0;
-				cpu->machine->exit_without_entering_debugger = 1;
+				cpu->machine->
+				    exit_without_entering_debugger = 1;
 			}
 			break;
 		default:
@@ -524,7 +534,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			    register has been read.  */
 			break;
 		default:
-			debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);
+			debug("[ mc146818: read from relative_addr = "
+			    "%04x ]\n", (int)relative_addr);
 			;
 		}
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.29 2004-07-04 12:52:13 debug Exp $
+#  $Id: configure,v 1.30 2004-07-08 00:38:12 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -212,19 +212,33 @@ rm -f _testprog
 #  bintrans.  As of now, only gcc on Alpha does this.
 
 if [ z"`uname -m`" = zalpha ]; then
+	printf "#define ALPHA\n" >> config.h
+
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf "int main(int argc, char *argv[]) { asm(\"imb\"); return 0; }\n" > _alpha_asm_test.c
 	$CC _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
 	if [ -x _alpha_asm_test ]; then
-		COPTIM="-DBINTRANS -DALPHA $COPTIM"
+		printf "#define BINTRANS\n" >> config.h
+	fi
+	rm -f _alpha_asm_test.c _alpha_asm_test
+
+	#  Try to detect prefetch-ability while we're at it:
+	rm -f _alpha_asm_test.c _alpha_asm_test
+	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c
+	$CC -O2 _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+	if [ -x _alpha_asm_test ]; then
+		printf "#define HAVE_PREFETCH\n" >> config.h
+		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
 	fi
 	rm -f _alpha_asm_test.c _alpha_asm_test
 fi
 
-#  Uncomment this when bintrans is available for i386:
-#if [ z"`uname -m`" = zi386 ]; then
-#	COPTIM="-DBINTRANS -DI386 $COPTIM"
-#fi
+if [ z"`uname -m`" = zi386 ]; then
+	printf "#define I386\n" >> config.h
+
+	#  Uncomment this when bintrans is available for i386:
+	#printf "#define BINTRANS\n" >> config.h
+fi
 
 
 #############################################################################
@@ -305,7 +319,7 @@ if [ z"$CC" = zccc ]; then
 fi
 
 #  -fpeephole
-$CC _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
+$CC $CFLAGS _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
 if grep peephole _testprog.error; then
 	rm -f _testprog.error
@@ -317,7 +331,7 @@ fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 #  -fomit-frame-pointer
-$CC _testprog.c -o _testprog -fomit-frame-pointer 1> _testprog.stdout 2> _testprog.error
+$CC $CFLAGS _testprog.c -o _testprog -fomit-frame-pointer 1> _testprog.stdout 2> _testprog.error
 cat _testprog.stdout >> _testprog.error
 if grep frame _testprog.error; then
 	rm -f _testprog.error

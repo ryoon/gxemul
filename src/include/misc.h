@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.178 2004-12-10 02:11:31 debug Exp $
+ *  $Id: misc.h,v 1.179 2004-12-13 04:42:15 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -444,6 +444,7 @@ struct cpu {
 	uint64_t	bintrans_data_vaddr[N_BINTRANS_VADDR_TO_HOST];
 	unsigned char	*bintrans_data_hostpage[N_BINTRANS_VADDR_TO_HOST];
 
+	void		(*bintrans_jump_to_delayslot)(struct cpu *);
 	void		(*bintrans_simple_exception)(struct cpu *, int);
 	void		(*bintrans_fast_rfe)(struct cpu *);
 	void		(*bintrans_fast_eret)(struct cpu *);

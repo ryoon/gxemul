@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.84 2004-12-10 03:02:30 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.85 2004-12-13 04:42:16 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -193,7 +193,7 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_t4	(((size_t)&dummy_cpu.gpr[GPR_T4]) - ((size_t)&dummy_cpu))
 #define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
 #define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
-unsigned char bintrans_alpha_runchunk[200] = {
+static unsigned char bintrans_alpha_runchunk[200] = {
 	0x80, 0xff, 0xde, 0x23,		/*  lda     sp,-128(sp)  */
 	0x00, 0x00, 0x5e, 0xb7,		/*  stq     ra,0(sp)  */
 	0x08, 0x00, 0x3e, 0xb5,		/*  stq     s0,8(sp)  */
@@ -249,21 +249,103 @@ unsigned char bintrans_alpha_runchunk[200] = {
 	0x01, 0x80, 0xfa, 0x6b		/*  ret   */
 };
 
+static unsigned char bintrans_alpha_jump_to_delayslot[25 * 4] = {
+	/*  Don't execute too many instructions. (see comment below)  */
+	(N_SAFE_BINTRANS_LIMIT-1)&255, ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255,
+		0x5f, 0x20,		/*  lda t1,safe limit - 1 */
+	0xa1, 0x0d, 0xe2, 0x40,		/*  cmple t6,t1,t0  */
+	0x01, 0x00, 0x20, 0xf4,		/*  bne  */
+	0x01, 0x80, 0xfa, 0x6b,		/*  ret  */
 
-#if 0
-/*
- *  bintrans_runchunk():
- */
-static void bintrans_runchunk(struct cpu *cpu, unsigned char *code)
-{
-	void (*f)(struct cpu *, unsigned char *);
-	f = (void *)&bintrans_alpha_runchunk[0];
-	f(cpu, code);
-}
-#else
+	/*  bintrans_move_MIPS_reg_into_Alpha_reg(&a,
+	    MIPSREG_DELAY_JMPADDR, ALPHA_A1);  */
+	0x11, 0x14, 0x40, 0x41,		/*  addq s1,0,a1  */
+
+	/*
+	 *  Special case for 32-bit addressing:
+	 *
+	 *  t1 = 1023;
+	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
+	 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
+	 *  t1 = a1 & 4095;
+	 *
+	 *  f8 1f 5f 20     lda     t1,1023 * 8
+	 *  83 76 22 4a     srl     a1,19,t2
+	 *  84 36 21 4a     srl     a1, 9,t3
+	 *  03 00 62 44     and     t2,t1,t2
+	 */
+	0xf8, 0x1f, 0x5f, 0x20,
+	0x83, 0x76, 0x22, 0x4a,
+	0x84, 0x36, 0x21, 0x4a,
+	0x03, 0x00, 0x62, 0x44,
+
+	/*
+	 *  t10 is vaddr_to_hostaddr_table0
+	 *
+	 *  a3 = tbl0[t2]  (load entry from tbl0)
+	 *  12 04 03 43     addq    t10,t2,a2
+	 */
+	0x12, 0x04, 0x03, 0x43,
+
+	/*  04 00 82 44     and     t3,t1,t3  */
+	0x04, 0x00, 0x82, 0x44,
+
+	/*  00 00 72 a6     ldq     a3,0(a2)  */
+	0x00, 0x00, 0x72, 0xa6,
+
+	/*  fc 0f 5f 20     lda     t1,0xffc  */
+	0xfc, 0x0f, 0x5f, 0x20,
+
+	/*
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+	 *  13 04 64 42     addq    a3,t3,a3
+	 */
+	0x13, 0x04, 0x64, 0x42,
+
+	/*  02 00 22 46     and     a1,t1,t1  */
+	0x02, 0x00, 0x22, 0x46,
+
+	/*  00 00 73 a6     ldq     a3,chunks[0](a3)  */
+#define ofs_c0	((size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table)
+	ofs_c0 & 255, (ofs_c0 >> 8) & 255, 0x73, 0xa6,
+
+	/*
+	 *  NULL? Then just return.
+	 *  01 00 60 f6     bne     a3,f8 <okzz>
+	 */
+	0x01, 0x00, 0x60, 0xf6,
+	0x01, 0x80, 0xfa, 0x6b,		/*  ret  */
+
+	/*
+	 *  02 04 53 40     addq    t1,a3,t1
+	 *  00 00 22 a0     ldl     t0,0(t1)
+	 */
+	0x02, 0x04, 0x53, 0x40,
+	0x00, 0x00, 0x22, 0xa0,
+
+	/*  No translation? Then return.  */
+	0x03, 0x00, 0x20, 0xe4,		/*  beq t0,<skip>  */
+
+	/*  ldq t2,chunk_base_address(a0)  */
+#define ofs_cb (((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu)
+	(ofs_cb & 255), (ofs_cb >> 8) & 255, 0x70, 0xa4,
+
+	/*  addq t0,t2,t0  */
+	0x01, 0x04, 0x23, 0x40,
+
+	/*  00 00 e1 6b     jmp     (t0)  */
+	0x00, 0x00, 0xe1, 0x6b,		/*  jmp (t0)  */
+
+	/*  Return to the main translation loop.  */
+	0x01, 0x80, 0xfa, 0x6b		/*  ret  */
+};
+
+
 static const void (*bintrans_runchunk)
     (struct cpu *, unsigned char *) = (void *)bintrans_alpha_runchunk;
-#endif
+
+static void (*bintrans_jump_to_delayslot)
+    (struct cpu *) = (void *)bintrans_alpha_jump_to_delayslot;
 
 
 /*
@@ -1065,93 +1147,12 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 
 	if (potential_chunk_p == NULL) {
 		if (bintrans_32bit_only) {
-			/*  Don't execute too many instructions. (see comment below)  */
-			*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
-				*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
-			*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  34 12 70 a7     ldq     t12,4660(a0)  */
+			ofs = (size_t)&dummy_cpu.bintrans_jump_to_delayslot - (size_t)&dummy_cpu;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
-			bintrans_move_MIPS_reg_into_Alpha_reg(&a, MIPSREG_DELAY_JMPADDR, ALPHA_A1);
-			/*
-			 *  Special case for 32-bit addressing:
-			 *
-			 *  t1 = 1023;
-			 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
-			 *  t3 = ((a1 >> 12) & t1) * sizeof(void *);
-			 *  t1 = a1 & 4095;
-			 *
-			 *  f8 1f 5f 20     lda     t1,1023 * 8
-			 *  83 76 22 4a     srl     a1,19,t2
-			 *  84 36 21 4a     srl     a1, 9,t3
-			 *  03 00 62 44     and     t2,t1,t2
-			 */
-			*a++ = 0xf8; *a++ = 0x1f; *a++ = 0x5f; *a++ = 0x20;
-			*a++ = 0x83; *a++ = 0x76; *a++ = 0x22; *a++ = 0x4a;
-			*a++ = 0x84; *a++ = 0x36; *a++ = 0x21; *a++ = 0x4a;
-			*a++ = 0x03; *a++ = 0x00; *a++ = 0x62; *a++ = 0x44;
-
-			/*
-			 *  t10 is vaddr_to_hostaddr_table0
-			 *
-			 *  a3 = tbl0[t2]  (load entry from tbl0)
-			 *  12 04 03 43     addq    t10,t2,a2
-			 */
-			*a++ = 0x12; *a++ = 0x04; *a++ = 0x03; *a++ = 0x43;
-
-			/*  04 00 82 44     and     t3,t1,t3  */
-			*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
-
-			/*  00 00 72 a6     ldq     a3,0(a2)  */
-			*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
-
-			/*  fc 0f 5f 20     lda     t1,0xffc  */
-			*a++ = 0xfc; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
-
-			/*
-			 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
-			 *  13 04 64 42     addq    a3,t3,a3
-			 */
-			*a++ = 0x13; *a++ = 0x04; *a++ = 0x64; *a++ = 0x42;
-
-			/*  02 00 22 46     and     a1,t1,t1  */
-			*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
-
-			/*  00 00 73 a6     ldq     a3,chunks[0](a3)  */
-			ofs = (size_t)&dummy_vth32_table.bintrans_chunks[0] - (size_t)&dummy_vth32_table;
-			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x73; *a++ = 0xa6;
-
-			/*
-			 *  NULL? Then just return.
-			 *  01 00 60 f6     bne     a3,f8 <okzz>
-			 */
-			fail = a;
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
-			bintrans_write_chunkreturn(&a);
-			*fail = ((size_t)a - (size_t)fail - 4) / 4;
-
-			/*
-			 *  02 04 53 40     addq    t1,a3,t1
-			 *  00 00 22 a0     ldl     t0,0(t1)
-			 */
-			*a++ = 0x02; *a++ = 0x04; *a++ = 0x53; *a++ = 0x40;
-			*a++ = 0x00; *a++ = 0x00; *a++ = 0x22; *a++ = 0xa0;
-
-			/*  No translation? Then return.  */
-			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
-
-			/*  ldq t2,chunk_base_address(a0)  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
-			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
-
-			/*  addq t0,t2,t0  */
-			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
-
-			/*  00 00 e1 6b     jmp     (t0)  */
-			*a++ = 0x00; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x6b;	/*  jmp (t0)  */
-
-			/*  Return to the main translation loop.  */
-			*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+			/*  00 00 fb 6b     jmp     (t12)  */
+			*a++ = 0; *a++ = 0; *a++ = 0xfb; *a++ = 0x6b;
 		} else {
 			/*  Not much we can do here if this wasn't to the same
 			    physical page...  */

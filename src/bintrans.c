@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.115 2004-12-12 16:28:08 debug Exp $
+ *  $Id: bintrans.c,v 1.116 2004-12-13 04:42:16 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -922,13 +922,14 @@ void bintrans_init_cpu(struct cpu *cpu)
 {
 	int i, offset;
 
-	cpu->chunk_base_address   = translation_code_chunk_space;
-	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
-	cpu->bintrans_fast_tlbpr  = coproc_tlbpr;
-	cpu->bintrans_fast_rfe    = coproc_rfe;
-	cpu->bintrans_fast_eret   = coproc_eret;
-	cpu->bintrans_simple_exception = cpu_cause_simple_exception;
-	cpu->fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
+	cpu->chunk_base_address         = translation_code_chunk_space;
+	cpu->bintrans_jump_to_delayslot = bintrans_jump_to_delayslot;
+	cpu->bintrans_fast_tlbwri       = coproc_tlbwri;
+	cpu->bintrans_fast_tlbpr        = coproc_tlbpr;
+	cpu->bintrans_fast_rfe          = coproc_rfe;
+	cpu->bintrans_fast_eret         = coproc_eret;
+	cpu->bintrans_simple_exception  = cpu_cause_simple_exception;
+	cpu->fast_vaddr_to_hostaddr     = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */
 	switch (cpu->cpu_type.mmu_model) {

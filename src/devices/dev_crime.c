@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.11 2004-01-19 12:48:23 debug Exp $
+ *  $Id: dev_crime.c,v 1.12 2004-02-22 13:12:08 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -60,7 +60,7 @@ struct crime_data {
 void dev_crime_tick(struct cpu *cpu, void *extra)
 {
 	int j, carry, old, new;
-	int what_to_add = (1<<CRIME_TICKSHIFT) / CRIME_SPEED_FACTOR;
+	uint64_t what_to_add = (1<<CRIME_TICKSHIFT) / CRIME_SPEED_FACTOR;
 	struct crime_data *d = extra;
 
 	j = 0;
@@ -108,13 +108,18 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case 0x18:
 	case 0x1c:
 	case 0x34:
+#if 0
 	case CRIME_TIME:
 	case CRIME_TIME+4:
+#endif
 		/*  don't dump debug info for these  */
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ crime: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
+			debug("[ crime: read from 0x%x, len=%i:", (int)relative_addr, len);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
+			debug(" ]\n", len);
 		} else {
 			debug("[ crime: write to 0x%x:", (int)relative_addr);
 			for (i=0; i<len; i++)

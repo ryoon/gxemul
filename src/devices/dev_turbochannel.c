@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.15 2004-05-08 02:06:05 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.16 2004-05-11 16:23:32 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -211,9 +211,10 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		rom_offset = 0;		/*  NOTE: 0, not 0x3c0000  */
 	} else if (strcmp(device_name, "PMAG-RO")==0) {
 		/*  This works at least B/W in Ultrix, so far.  */
-		/*  TODO: bt463 at offset 0x040000, bt431 at offset 0x040010 (?)  */
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x200000, VFB_GENERIC, 1280,1024, 1280,1024, 8, "PMAG-RO");
-		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);		/*  cursor  */
+		/*  TODO: bt463 at offset 0x040000, not bt459  */
+		dev_bt459_init(cpu, mem, baseaddr + 0x40000, fb, 8, irq, 0);		/*  TODO: type  */
+		dev_bt431_init(mem, baseaddr + 0x40010, fb, 8);				/*  cursor  */
 		rom_offset = 0x3c0000;
 	} else if (device_name[0] == '\0') {
 		/*  If this slot is empty, then occupy the entire 4MB slot address range:  */

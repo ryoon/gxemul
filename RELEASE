@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.26 2004-07-30 11:22:08 debug Exp $
+$Id: RELEASE,v 1.27 2004-07-30 11:30:56 debug Exp $
 
 Preliminary 0.2 release notes:
 
@@ -42,6 +42,7 @@ mentioning. These are the major changes:
 
 	x)  Networking support (TCP/IP) is partly implemented, enough to
 	    perform an install of NetBSD/pmax or OpenBSD/pmax via ftp or nfs.
+	    (This should be considered experimental.)
 
 	x)  The DECstation mouse pointer is now "de-accelerated" to attempt
 	    to follow the host's mouse pointer.

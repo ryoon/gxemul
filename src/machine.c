@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.141 2004-07-17 12:00:14 debug Exp $
+ *  $Id: machine.c,v 1.142 2004-07-17 18:50:21 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1810,6 +1810,9 @@ void machine_init(struct memory *mem)
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620170, 0, 1);		/*  TODO: irq?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
 
+				/*  MardiGras graphics:  */
+				dev_sgi_mardigras_init(cpus[bootstrap_cpu], mem, 0x1c000000);
+
 				break;
 			case 32:
 				strcat(machine_name, " (O2)");
@@ -2118,7 +2121,7 @@ void machine_init(struct memory *mem)
 
 		if (arc_wordlen == sizeof(uint64_t)) {
 			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
 			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
 			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
 			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));

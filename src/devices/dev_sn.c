@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.1 2004-10-25 02:51:18 debug Exp $
+ *  $Id: dev_sn.c,v 1.2 2004-10-25 03:04:23 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -45,6 +45,8 @@
 
 struct sn_data {
 	int		irq_nr;
+
+	uint32_t	reg[SONIC_NREGS];
 };
 
 
@@ -55,18 +57,28 @@ int dev_sn_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct sn *d = (struct sn_data *) extra;
+	struct sn_data *d = (struct sn_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
+	regnr = relative_addr / sizeof(uint32_t);
 
-	switch (relative_addr) {
+	if (regnr < SONIC_NREGS) {
+		if (writeflag == MEM_WRITE)
+			d->reg[regnr] = idata;
+		else
+			odata = d->reg[regnr];
+	}
+
+	switch (regnr) {
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ sn: unimplemented write to address 0x%x, data=0x%02x ]\n",
-			    (int)relative_addr, (int)idata);
+			fatal("[ sn: unimplemented write to address 0x%x (regnr %i), data=0x%02x ]\n",
+			    (int)relative_addr, regnr, (int)idata);
 		} else {
-			fatal("[ sn: unimplemented read from address 0x%x ]\n", (int)relative_addr);
+			fatal("[ sn: unimplemented read from address 0x%x (regnr %i) ]\n",
+			    (int)relative_addr, regnr);
 		}
 	}
 

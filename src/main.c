@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.142 2004-12-22 16:12:58 debug Exp $
+ *  $Id: main.c,v 1.143 2004-12-22 17:50:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,7 +152,8 @@ static void usage(char *progname, int longusage)
 	printf("                0-7   force a specific SCSI ID number\n");
 	printf("  -E        try to emulate a Cobalt machine\n");
 	printf("  -e        try to emulate a MeshCube\n");
-	printf("  -F        try to emulate an hpcmips machine\n");
+	printf("  -F xx     try to emulate an hpcmips machine, where 'xx' may be:\n");
+	printf("                1=Casio BE-300\n");
 	printf("  -f        try to emulate a Sony NeWS MIPS machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -g        try to emulate a NetGear box (WG602)\n");
@@ -226,7 +227,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:M:m:Nn:Oo:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -265,7 +266,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'F':
 			emul->emulation_type = EMULTYPE_HPCMIPS;
-			emul->machine = 0;
+			emul->machine = atoi(optarg);
 			break;
 		case 'f':
 			emul->emulation_type = EMULTYPE_SONYNEWS;

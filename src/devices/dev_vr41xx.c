@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.1 2004-12-22 16:12:54 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.2 2004-12-22 17:49:57 debug Exp $
  *  
- *  VR41xx. Unknown function.
+ *  VR41xx misc functions.
  *
  *  TODO
  */
@@ -39,9 +39,18 @@
 #include "devices.h"
 
 
-struct vr41xx_data {
-	int	dummy;
-};
+#define	DEV_VR41XX_TICKSHIFT		14
+
+
+/*
+ *  dev_vr41xx_tick():
+ */
+void dev_vr41xx_tick(struct cpu *cpu, void *extra)
+{
+	struct vr41xx_data *d = extra;
+
+	/*  TODO: Timer interrupts.  */
+}
 
 
 /*
@@ -65,7 +74,20 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		 *  a divisor for PClock, bits 8 and up seem to be a
 		 *  divisor for VTClock (relative to PClock?)...
 		 */
-		odata = 0x20c;
+		odata = 0x0000020c;
+		break;
+	case 0x80:
+		if (writeflag == MEM_READ)
+			odata = d->sysint1;
+		else
+			/*  TODO: clear-on-write-one?  */
+			d->sysint1 = idata;
+		break;
+	case 0x8c:
+		if (writeflag == MEM_READ)
+			odata = d->msysint1;
+		else
+			d->msysint1 = idata;
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
@@ -86,7 +108,8 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_vr41xx_init():
  */
-void dev_vr41xx_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct vr41xx_data *dev_vr41xx_init(struct cpu *cpu,
+	struct memory *mem, uint64_t baseaddr)
 {
 	struct vr41xx_data *d = malloc(sizeof(struct vr41xx_data));
 	if (d == NULL) {
@@ -97,5 +120,9 @@ void dev_vr41xx_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 
 	memory_device_register(mem, "vr41xx", baseaddr,
 	    DEV_VR41XX_LENGTH, dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
+
+	cpu_add_tickfunction(cpu, dev_vr41xx_tick, d, DEV_VR41XX_TICKSHIFT);
+
+	return d;
 }
 

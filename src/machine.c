@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.258 2004-12-22 16:12:58 debug Exp $
+ *  $Id: machine.c,v 1.259 2004-12-22 17:50:00 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -92,6 +92,7 @@ struct dec_ioasic_data *dec_ioasic_data;
 struct ps2_data *ps2_data;
 struct dec5800_data *dec5800_csr;
 struct au1x00_ic_data *au1x00_ic_data;
+struct vr41xx_data *vr41xx_data = NULL;
 struct pica_data *pica_data;
 struct crime_data *crime_data;
 struct mace_data *mace_data;
@@ -589,6 +590,26 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 
 /*
+ *  VR41xx interrupt routine:
+ */
+void vr41xx_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	irq_nr -= 8;
+	debug("vr41xx_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+
+	if (assrt)
+		vr41xx_data->sysint1 |= irq_nr;
+	else
+		vr41xx_data->sysint1 &= ~irq_nr;
+
+	if (vr41xx_data->sysint1 & vr41xx_data->msysint1)
+		cpu_interrupt(cpu, 2);
+	else
+		cpu_interrupt_ack(cpu, 2);
+}
+
+
+/*
  *  Playstation 2 interrupt routine:
  */
 void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
@@ -890,6 +911,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 		struct btinfo_symtab c;
 	} xx;
 	struct hpc_bootinfo hpc_bootinfo;
+	uint64_t hpcmips_fb_addr = 0;
+	int hpcmips_fb_bits = 0, hpcmips_fb_encoding = 0;
+	int hpcmips_fb_xsize = 0;
+	int hpcmips_fb_ysize = 0;
+	int hpcmips_fb_xsize_mem = 0;
+	int hpcmips_fb_ysize_mem = 0;
 
 	/*  ARCBIOS stuff:  */
 	struct arcbios_spb arcbios_spb;
@@ -1673,23 +1700,26 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	case EMULTYPE_HPCMIPS:
-		emul->machine_name = "hpcmips";
+		switch (emul->machine) {
+		case HPCMIPS_CASIO_BE300:
+			emul->machine_name = "Casio BE-300";
+			hpcmips_fb_addr = 0x0a200000;
+			hpcmips_fb_xsize = 240;
+			hpcmips_fb_ysize = 320;
+			hpcmips_fb_xsize_mem = 256;
+			hpcmips_fb_ysize_mem = 320;
+			hpcmips_fb_bits = 16;
+			hpcmips_fb_encoding = BIFB_D16_FFFF;
 
-		/*
-		 *  NetBSD/hpcmips and possibly others expects the following:
-		 */
+			dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
+			    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+			vr41xx_data = dev_vr41xx_init(cpu, mem, 0xf000000);
+			cpu->md_interrupt = vr41xx_interrupt;
+			break;
+		default:
+		}
 
-		/*
-		 *  TODO:
-		 *
-		 *	Make this nicer!
-		 *
-		 *	Support multiple models!
-		 *
-		 *	Don't hardcode values!
-		 *
-		 *	Endianness! Don't just fill in the hpc_bootinfo stuff like this!
-		 */
+		/*  NetBSD/hpcmips and possibly others expects the following:  */
 
 		cpu->gpr[GPR_A0] = 1;	/*  argc  */
 		cpu->gpr[GPR_A1] = emul->physical_ram_in_mb * 1048576
@@ -1705,11 +1735,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		memset(&hpc_bootinfo, 0, sizeof(hpc_bootinfo));
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.length, sizeof(hpc_bootinfo));
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.magic, HPC_BOOTINFO_MAGIC);
-		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + HPCMIPS_FB_ADDR);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, 512);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, HPCMIPS_FB_XSIZE);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, HPCMIPS_FB_YSIZE);
-		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, BIFB_D16_FFFF); /*  BIFB_D2_M2L_3;  */
+		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_addr, 0x80000000 + hpcmips_fb_addr);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_line_bytes, hpcmips_fb_xsize_mem * hpcmips_fb_bits / 8);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_width, hpcmips_fb_xsize);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_height, hpcmips_fb_ysize);
+		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.fb_type, hpcmips_fb_encoding);
 		store_16bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.bi_cnuse, BI_CNUSE_BUILTIN);  /*  _BUILTIN or _SERIAL  */
 
 		/*  TODO:  set platid from netbsd/usr/src/sys/arch/hpc/include/platid*  */
@@ -1726,35 +1756,30 @@ void machine_init(struct emul *emul, struct memory *mem)
 		    + (2 <<  8)		/*   8: model   2=EXXX*/
 		    + (3)		/*   0: submodel 3=E500 */
 		    );
-/*
-#define PLATID_FLAGS_SHIFT              0
-#define PLATID_CPU_SUBMODEL_SHIFT       8
-#define PLATID_CPU_MODEL_SHIFT          14
-#define PLATID_CPU_SERIES_SHIFT         20
-#define PLATID_CPU_ARCH_SHIFT           26
 
-#define PLATID_SUBMODEL_SHIFT           0
-#define PLATID_MODEL_SHIFT              8
-#define PLATID_SERIES_SHIFT             16
-#define PLATID_VENDOR_SHIFT             22
-*/
+		/*
+		#define PLATID_FLAGS_SHIFT              0
+		#define PLATID_CPU_SUBMODEL_SHIFT       8
+		#define PLATID_CPU_MODEL_SHIFT          14
+		#define PLATID_CPU_SERIES_SHIFT         20
+		#define PLATID_CPU_ARCH_SHIFT           26
+
+		#define PLATID_SUBMODEL_SHIFT           0
+		#define PLATID_MODEL_SHIFT              8
+		#define PLATID_SERIES_SHIFT             16
+		#define PLATID_VENDOR_SHIFT             22
+		*/
+
 		printf("hpc_bootinfo.platid_cpu     = 0x%08x\n", hpc_bootinfo.platid_cpu);
 		printf("hpc_bootinfo.platid_machine = 0x%08x\n", hpc_bootinfo.platid_machine);
 		store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.timezone, 0);
 		store_buf(cpu, 0x80000000 + emul->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
-		dev_fb_init(cpu, mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS,
-		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
-		    256, HPCMIPS_FB_YSIZE, 16, "HPCmips", 0);
-
-		/*
-		 *  BE300 devices:
-		 */
-
-		dev_ns16550_init(cpu, mem, 0xa008680, 0, 4,
-		    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
-
-		dev_vr41xx_init(cpu, mem, 0xf000000);
+		if (hpcmips_fb_addr != 0)
+			dev_fb_init(cpu, mem, hpcmips_fb_addr, VFB_HPCMIPS,
+			    hpcmips_fb_xsize, hpcmips_fb_ysize,
+			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
+			    hpcmips_fb_bits, "HPCmips", 0);
 
 		break;
 

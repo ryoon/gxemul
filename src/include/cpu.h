@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.10 2005-02-02 22:04:34 debug Exp $
+ *  $Id: cpu.h,v 1.11 2005-02-03 05:56:57 debug Exp $
  *
  *  See cpu.c.
  */
@@ -66,7 +66,7 @@ struct cpu_family {
 	void			(*register_match)(struct machine *m,
 				    char *name, int writeflag,
 				    uint64_t *valuep, int *match_register);
-	void			(*disassemble_instr)(struct cpu *cpu,
+	int			(*disassemble_instr)(struct cpu *cpu,
 				    unsigned char *instr, int running,
 				    uint64_t dumpaddr, int bintrans);
 	void			(*register_dump)(struct cpu *cpu,
@@ -115,7 +115,7 @@ void cpu_register_match(struct machine *m, char *name,
 	int writeflag, uint64_t *valuep, int *match_register);
 void cpu_register_dump(struct machine *m, struct cpu *cpu,
 	int gprs, int coprocs);
-void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
+int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans);
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);

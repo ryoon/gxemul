@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.13 2005-02-02 22:32:48 debug Exp $
+ *  $Id: cpu_mips.c,v 1.14 2005-02-03 05:56:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -688,8 +688,7 @@ static const char *cpu_flags(struct cpu *cpu)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->cd.mips.pc_last should be the address of the
- *  instruction, cpu->cd.mips.pc should already point to the _next_
+ *  If running is 1, cpu->cd.mips.pc should be the address of the
  *  instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
@@ -698,7 +697,7 @@ static const char *cpu_flags(struct cpu *cpu)
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
-void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, special6, regimm5;
@@ -708,7 +707,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	char *symbol;
 
 	if (running)
-		dumpaddr = cpu->cd.mips.pc_last;
+		dumpaddr = cpu->cd.mips.pc;
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);
@@ -723,6 +722,17 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);
+
+	/*
+	 *  The rest of the code is written for little endian,
+	 *  so swap if necessary:
+	 */
+	if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+		int tmp = instr[0]; instr[0] = instr[3];
+		    instr[3] = tmp;
+		tmp = instr[1]; instr[1] = instr[2];
+		    instr[2] = tmp;
+	}
 
 	debug(": %02x%02x%02x%02x",
 	    instr[3], instr[2], instr[1], instr[0]);
@@ -1049,7 +1059,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		/*  NOTE: No break here (if we are running) as it is up
 		    to the caller to print 'data'.  */
-		return;
+		return sizeof(instrword);
 	case HI6_J:
 	case HI6_JAL:
 		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +
@@ -1078,7 +1088,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		/*  Call coproc_function(), but ONLY disassembly, no exec:  */
 		coproc_function(cpu, cpu->cd.mips.coproc[hi6 - HI6_COP0],
 		    hi6 - HI6_COP0, imm, 1, running);
-		return;
+		return sizeof(instrword);
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
 		copz = instr[2] & 31;
@@ -1204,6 +1214,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 disasm_ret:
 	debug("\n");
+	return sizeof(instrword);
 }
 
 
@@ -2240,6 +2251,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 #endif
 
+		if (instruction_trace_cached)
+			mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
+
 		/*  Advance the program counter:  */
 		cpu->cd.mips.pc += sizeof(instr);
 		cached_pc = cpu->cd.mips.pc;
@@ -2259,9 +2273,6 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			instrword = instr[1]; instr[1] = instr[2];
 			    instr[2] = instrword;
 		}
-
-		if (instruction_trace_cached)
-			mips_cpu_disassemble_instr(cpu, instr, 1, 0, 0);
 	}
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.280 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu.c,v 1.281 2005-02-03 05:56:58 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -139,13 +139,14 @@ void cpu_register_match(struct machine *m, char *name,
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  */
-void cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
+int cpu_disassemble_instr(struct machine *m, struct cpu *cpu,
 	unsigned char *instr, int running, uint64_t addr, int bintrans)
 {
-	if (m->cpu_family == NULL || m->cpu_family->disassemble_instr == NULL)
+	if (m->cpu_family == NULL || m->cpu_family->disassemble_instr == NULL) {
 		fatal("cpu_disassemble_instr(): NULL\n");
-	else
-		m->cpu_family->disassemble_instr(cpu, instr,
+		return 0;
+	} else
+		return m->cpu_family->disassemble_instr(cpu, instr,
 		    running, addr, bintrans);
 }
 

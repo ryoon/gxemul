@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.81 2005-02-02 20:12:45 debug Exp $
+ *  $Id: debugger.c,v 1.82 2005-02-03 05:56:58 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1275,24 +1275,23 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	ctrl_c = 0;
 
 	while (addr < addr_end) {
-		unsigned char buf[4];
+		int i, len;
+		unsigned char buf[25];	/*  TODO: How long can an
+					    instruction be, on weird archs?  */
 		memset(buf, 0, sizeof(buf));
-		r = memory_rw(c, mem, addr, &buf[0], sizeof(buf), MEM_READ,
-		    CACHE_NONE | NO_EXCEPTIONS);
 
-		/*  TODO: hm. the default for ppc is already bigendian...  */
-		if (c->byte_order == EMUL_BIG_ENDIAN) {
-			int tmp;
-			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
-		}
+		for (i=0; i<sizeof(buf); i++)
+			memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
+			    CACHE_NONE | NO_EXCEPTIONS);
 
-		cpu_disassemble_instr(m, c, &buf[0], 0, addr, 0);
+		len = cpu_disassemble_instr(m, c, buf, 0, addr, 0);
 
 		if (ctrl_c)
 			return;
+		if (len == 0)
+			break;
 
-		addr += sizeof(buf);
+		addr += len;
 	}
 
 	last_unasm_addr = addr_end;

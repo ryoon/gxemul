@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.13 2005-02-02 22:04:35 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.14 2005-02-03 05:56:58 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -372,7 +372,7 @@ void ppc_cpu_register_match(struct machine *m, char *name,
  *  register contents) will not be shown, and addr will be used instead of
  *  cpu->cd.ppc.pc for relative addresses.
  */
-void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc;
@@ -397,12 +397,9 @@ void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	else
 		debug("%016llx", (long long)dumpaddr);
 
-	/*
-	 *  NOTE/TODO: The code in debugger.c reverses byte order, because
-	 *  it was written for little-endian mips first. Hm. This is ugly.
-	 */
-	iword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8)
-	    + instr[0];
+	/*  NOTE: Fixed to big-endian.  */
+	iword = (instr[0] << 24) + (instr[1] << 16) + (instr[2] << 8)
+	    + instr[3];
 
 	debug(": %08x\t", iword);
 
@@ -537,6 +534,7 @@ void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 disasm_ret:
 	debug("\n");
+	return sizeof(iword);
 }
 
 

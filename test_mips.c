@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 1999 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,25 +23,69 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: test_mips.c,v 1.3 2003-11-07 05:10:22 debug Exp $
+ *  $Id: test_mips.c,v 1.4 2004-01-10 11:37:50 debug Exp $
  *
- *  mipstest.c  --  a test program to see that mips64emul emulates
- *                  everything correctly.
+ *  This is a test program, used to test the functionality of mips64emul
+ *  (or other emulators, or possibly even actual hardware).
+ *
+ *  Compile this as a stand alone program.  If your compiler and linker are
+ *  mips64unknown-elf-gcc and mips64-unknown-elf-ld, respectively, then the
+ *  following should give you two ELF64 binaries, one normal and one using
+ *  MIPS16 encoding:
+ *
+ *	mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips4 -mabi=64  -c test_mips.c -o test_mips.o
+ *	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips.o -o test_mips --oformat=elf64-bigmips
+ *
+ *	mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns -mips16 -mabi=64  -c test_mips.c -o test_mips16.o
+ *	mips64-unknown-elf-ld -Ttext 0xffffffff80030000 -e entry_func test_mips16.o -o test_mips16 --oformat=elf64-bigmips
+ *
+ *  Other choices of entry point, optimization settings, ABIs, and compiler
+ *  might work too.
  */
 
-#define	N_MINIBUFS		20
+#define	FRAMEBUFFER_ADDRESS		0xb2000000
+#define	FRAMEBUFFER_XSIZE		640
+#define	FRAMEBUFFER_YSIZE		480
+#define	FRAMEBUFFER_BYTES_PER_PIXEL	3
 
+#define	OK	1
+#define	FAIL	0
+
+/*  Change these if your compiler works differently than gcc on mips64  */
+typedef	unsigned long long	uint64_t;
+typedef	signed long long	int64_t;
+typedef	unsigned int		uint32_t;
+typedef	signed int		int32_t;
+typedef	unsigned short		uint16_t;
+typedef	signed short		int16_t;
+typedef	unsigned char		uint8_t;
+typedef	signed char		int8_t;
+
+/*  Mandelbrot settings:  */
+#define	MANDEL_WIDTH		72
+#define	MANDEL_HEIGHT		40
+#define	MANDEL_SCALE		4096
+#define	MANDEL_MAXCOLOR		12
+#define	MANDEL_COLORS		" ,.;:odxOQ@X#"
+
+
+/*
+ *  printchar():
+ *
+ *  This function should print a character to the (serial) console.
+ *  In the emulator, it is as simple as storing a byte at a specific
+ *  address.
+ */
 #define	PUTCHAR_ADDRESS		0xb0000000
-
-char *readonly_string = "Hello world.\n";
-
-
 void printchar(char ch)
 {
-	*((volatile int *) PUTCHAR_ADDRESS) = ch;
+	*((volatile unsigned char *) PUTCHAR_ADDRESS) = ch;
 }
 
 
+/*
+ *  printstr():
+ */
 void printstr(char *s)
 {
 	while (*s)
@@ -49,21 +93,54 @@ void printstr(char *s)
 }
 
 
-void printhex(long int n)
+/*
+ *  printstatus():
+ *
+ *  Like printstr(), but adds "OK   " or "FAIL " in front.
+ *  Every line of output from this program should be of this format,
+ *  to simplify parsing.
+ */
+void printstatus(int status, char *s)
+{
+	if (status == OK)
+		printstr("OK   ");
+	else
+		printstr("FAIL ");
+
+	printstr(s);
+}
+
+
+/*
+ *  printhex():
+ *
+ *  Print a number in hex. len is the number of characters to output.
+ *  (This should be sizeof(value).)
+ */
+void printhex(uint64_t n, int len)
 {
 	char *hex = "0123456789abcdef";
 	int i;
 
-	for (i=15; i>=0; i--)
+	printstr("0x");
+	for (i=len*2-1; i>=0; i--)
 		printchar(hex[(n >> (4*i)) & 15]);
 }
 
 
-void printdec(long int x)
+/*
+ *  printdec():
+ *
+ *  Print a number in decimal form.
+ */
+void printdec(int64_t x)
 {
-	if (x<=0)
+	if (x == 0)
 		printchar('0');
-	else {
+	else if (x < 0) {
+		printchar('-');
+		printdec(-x);
+	} else {
 		int y = x / 10;
 		if (y > 0)
 			printdec(y);
@@ -72,34 +149,88 @@ void printdec(long int x)
 }
 
 
-void primetest(long int x)
+/*
+ *  read_cop0_reg():
+ *
+ *  Read a coprocessor 0 register.  This is probably GCC specific, and
+ *  needs to be modified if it is to be used with other compilers.
+ */
+uint64_t read_cop0_reg(int reg)
 {
-	long int y = x-2;
+	uint64_t x = 0;
+
+	switch (reg) {
+	case  0:asm ("mfc0 %0, $0; nop" : "=r"(x)); break;
+	case  1:asm ("mfc0 %0, $1; nop" : "=r"(x)); break;
+	case  2:asm ("mfc0 %0, $2; nop" : "=r"(x)); break;
+	case  3:asm ("mfc0 %0, $3; nop" : "=r"(x)); break;
+	case  4:asm ("mfc0 %0, $4; nop" : "=r"(x)); break;
+	case  5:asm ("mfc0 %0, $5; nop" : "=r"(x)); break;
+	case  6:asm ("mfc0 %0, $6; nop" : "=r"(x)); break;
+	case  7:asm ("mfc0 %0, $7; nop" : "=r"(x)); break;
+	case  8:asm ("mfc0 %0, $8; nop" : "=r"(x)); break;
+	case  9:asm ("mfc0 %0, $9; nop" : "=r"(x)); break;
+	case 10:asm ("mfc0 %0,$10; nop" : "=r"(x)); break;
+	case 11:asm ("mfc0 %0,$11; nop" : "=r"(x)); break;
+	case 12:asm ("mfc0 %0,$12; nop" : "=r"(x)); break;
+	case 13:asm ("mfc0 %0,$13; nop" : "=r"(x)); break;
+	case 14:asm ("mfc0 %0,$14; nop" : "=r"(x)); break;
+	case 15:asm ("mfc0 %0,$15; nop" : "=r"(x)); break;
+	default:
+		printstr("\n");
+		printstatus(FAIL, "unimplemented register ");
+		printdec(reg);
+		printstr("\n");
+	}
+
+	return x;
+}
+
+
+/*
+ *  prime():
+ *
+ *  Tests a number for primality.  Returns 1 for a prime, 0 for a
+ *  composite number.
+ */
+int prime(int64_t x)
+{
+	int64_t y = x-2;
+
+	if ((x & 1) == 0)
+		return 0;
 
 	while (y > 1) {
 		if ((x % y) == 0)
-			return;
+			return 0;
 		y-=2;
 	}
 
-	printstr(", "); printdec(x);
+	return 1;
 }
 
 
-void my_memcpy(void *a, void *b, long len)
+/*
+ *  putpixel():
+ *
+ *  Write a rgb pixel to the framebuffer.
+ */
+void putpixel(int x, int y, int r, int g, int b)
 {
-	char *p1 = (char *) a;
-	char *p2 = (char *) b;
+	uint8_t *p = (uint8_t *) FRAMEBUFFER_ADDRESS;
+	int offset = (FRAMEBUFFER_XSIZE * y + x) * FRAMEBUFFER_BYTES_PER_PIXEL;
 
-	while (len-- > 0)
-		*p1++ = *p2++;
+	p[offset + 0] = r;
+	p[offset + 1] = g;
+	p[offset + 2] = b;
 }
 
 
-#define	MANDEL_SCALE		4096
-#define	MANDEL_MAXCOLOR		8
-#define	MANDEL_COLORS		" ,.;:oxOX"
-
+/*
+ *  mandel_color():
+ *
+ *  Calculate the color of a mandelbrot "pixel".
+ */
 int mandel_color(long x, long y, int maxn)
 {
 	long tx1 = 0, ty1 = 0, tx2, ty2;
@@ -116,160 +247,158 @@ int mandel_color(long x, long y, int maxn)
 	}
 }
 
+/****************************************************************************/
 
-void load_store_test(void)
+
+/*
+ *  test_cop0():
+ *
+ */
+void test_cop0(void)
 {
-	char buf[100];
-	char *cp;
-	short *sp;
-	int *ip;
-	long *lp;
-
-	cp = (void *) &buf[0];
-	sp = (void *) &buf[0];
-	ip = (void *) &buf[0];
-	lp = (void *) &buf[0];
-
-	printstr("\nload/store test:\n");
-	*cp = *sp;
-	*sp = *lp;
-	*lp = *ip;
-	*ip = *cp;
-}
-
-
-void unaligned_load_store_test(void)
-{
-	unsigned char buf[24];
-	int *p;
+	uint64_t r;
 	int i;
 
-return;
+	printstatus(OK, "Coprocessor 0 test:\n");
 
-	for (i=0; i<sizeof(buf); i++)
-		buf[i] = i;
-
-	printstr("\nunaligned load/store test:\n");
-
-	for (i=0; i<sizeof(buf); i++) {
-		printstr(" ");
-		printdec(buf[i]);
-	}
+	r = read_cop0_reg(15);
+	printstatus(OK, "reg 15 (PRid) = ");
+	printhex(r, sizeof(r));
 	printstr("\n");
 
-	p = (int *) &buf[1];
-	*p = 0x0a0b0c0d;
-
-	for (i=0; i<sizeof(buf); i++) {
-		printstr(" ");
-		printdec(buf[i]);
-	}
-	printstr("\n");
-
+	printstatus(OK, "\n");
 }
 
 
-void render_mandel(int xsize, int ysize)
+/*
+ *  test_primes():
+ *
+ *  List the first few primes.
+ */
+#define	N_PRIMES	9
+#define	HIGHEST_PRIME	29
+int correct[N_PRIMES]  = { 3, 5, 7, 11, 13, 17, 19, 23, 29 };
+void test_primes(void)
 {
+	int x = 1, k, n_correct = 0;
+
+	printstatus(OK, "Prime number test:\n");
+	x = 3;  k = 0;
+
+	while (x <= HIGHEST_PRIME) {
+		if (prime(x)) {
+			if (x == correct[k]) {
+				printstatus(OK, "");
+				printdec(x);
+				n_correct ++;
+			} else {
+				printstatus(FAIL, "");
+				printdec(x);
+				printstr("; should be ");
+				printdec(correct[k]);
+			}
+			printstr("\n");
+			k++;
+		}
+		x += 2;
+	}
+
+	if (k == N_PRIMES && n_correct == N_PRIMES) {
+		printstatus(OK, "All ");
+		printdec(N_PRIMES);
+		printstr(" primes found correctly.\n");
+	} else {
+		printstatus(FAIL, "");
+		printdec(n_correct);
+		printstr(" correct primes found, there should have been ");
+		printdec(N_PRIMES);
+		printstr(".\n");
+	}
+
+	printstatus(OK, "\n");
+}
+
+
+/*
+ *  test_mandel():
+ *
+ *  Draw a mandelbrot. (This doesn't test anything specific, it's just for
+ *  fun. The output is "OK" for every line.)
+ */
+void test_mandel(int use_framebuffer)
+{
+	int xsize = MANDEL_WIDTH, ysize = MANDEL_HEIGHT;
 	long x, y, line, column;
 	int color;
 	long x1 = -2*MANDEL_SCALE, x2 = 2*MANDEL_SCALE;
 	long y1 = -2*MANDEL_SCALE, y2 = 2*MANDEL_SCALE;
 
-	printstr("\nMandelbrot test: xsize="); printdec(xsize);
-		printstr(", ysize="); printdec(ysize); printstr("\n");
+	if (use_framebuffer) {
+		xsize = FRAMEBUFFER_XSIZE;
+		ysize = FRAMEBUFFER_YSIZE;
+	}
 
-	printstr("+");
-	for (column=0; column<xsize; column++)
-		printstr("-");
-	printstr("+\n");
+	printstatus(OK, "Mandelbrot test: xsize=");
+	printdec(xsize); printstr(", ysize="); printdec(ysize); printstr("\n");
+
+	if (!use_framebuffer) {
+		printstatus(OK, "+");
+		for (column=0; column<xsize; column++)
+			printstr("-");
+		printstr("+\n");
+	}
 
 	for (line=ysize-1; line>=0; line--) {
-		printstr("|");
+		if (!use_framebuffer)
+			printstatus(OK, "|");
 		for (column=0; column<xsize; column++) {
 			x = (x2-x1) * column/xsize + x1;
 			y = (y2-y1) * line/ysize + y1;
 			color = mandel_color(x, y, MANDEL_MAXCOLOR);
-			printchar(MANDEL_COLORS[color]);
+
+			if (use_framebuffer) {
+				if (color < MANDEL_MAXCOLOR / 2)
+					putpixel(column, line, 255 * color /
+					    (MANDEL_MAXCOLOR/2), 0, 0);
+				else
+					putpixel(column, line, 255,
+					    255 * (color-MANDEL_MAXCOLOR/2) /
+					    (MANDEL_MAXCOLOR/2), 0);
+			} else
+				printchar(MANDEL_COLORS[color]);
 		}
-		printstr("|\n");
+		if (!use_framebuffer)
+			printstr("|\n");
 	}
 
-	printstr("+");
-	for (column=0; column<xsize; column++)
-		printstr("-");
-	printstr("+\n");
+	if (!use_framebuffer) {
+		printstatus(OK, "+");
+		for (column=0; column<xsize; column++)
+			printstr("-");
+		printstr("+\n");
+	}
+
+	printstatus(OK, "\n");
 }
 
 
-void p_hex_add(long a, long b)  { printhex(a + b); }
-void p_hex_sub(long a, long b)  { printhex(a - b); }
-void p_hex_mul(long a, long b)  { printhex(a * b); }
-void p_hex_div(long a, long b)  { printhex(a / b); }
-void p_hex_and(long a, long b)  { printhex(a & b); }
-void p_hex_or(long a, long b)   { printhex(a | b); }
-void p_hex_xor(long a, long b)  { printhex(a ^ b); }
-void p_hex_mod(long a, long b)  { printhex(a % b); }
+/****************************************************************************/
 
 
-int entry_func(void)
+void entry_func(void)
 {
-	char *s = readonly_string;
-	long int a = 0x123456789;
-	long int b = 0xabcdef;
-	long int x;
-	char buf[N_MINIBUFS * 1024];
+	printstatus(OK, "test_mips start\n");
+	printstatus(OK, "\n");
 
-	printstr(readonly_string);
-	printstr("\n");
+	/*  Do all tests.  */
+	test_cop0();
+	test_primes();
+	test_mandel(0);
+	test_mandel(1);
 
-	printstr("sizeof(char)      = "); printdec(sizeof(char)     ); printstr("\n");
-	printstr("sizeof(short)     = "); printdec(sizeof(short)    ); printstr("\n");
-	printstr("sizeof(int)       = "); printdec(sizeof(int)      ); printstr("\n");
-	printstr("sizeof(long)      = "); printdec(sizeof(long)     ); printstr("\n");
-	printstr("sizeof(long long) = "); printdec(sizeof(long long)); printstr("\n");
-	printstr("sizeof(void *)    = "); printdec(sizeof(void *)   ); printstr("\n");
+	printstatus(OK, "All tests done. Halting.\n");
 
-	printhex(a); printstr(" + "); printhex(b); printstr(" = "); p_hex_add(a,b); printstr("\n");
-	printhex(a); printstr(" - "); printhex(b); printstr(" = "); p_hex_sub(a,b); printstr("\n");
-	printhex(a); printstr(" * "); printhex(b); printstr(" = "); p_hex_mul(a,b); printstr("\n");
-	printhex(a); printstr(" / "); printhex(b); printstr(" = "); p_hex_div(a,b); printstr("\n");
-	printhex(a); printstr(" & "); printhex(b); printstr(" = "); p_hex_and(a,b); printstr("\n");
-	printhex(a); printstr(" | "); printhex(b); printstr(" = "); p_hex_or(a,b); printstr("\n");
-	printhex(a); printstr(" ^ "); printhex(b); printstr(" = "); p_hex_xor(a,b); printstr("\n");
-	printhex(a); printstr(" % "); printhex(b); printstr(" = "); p_hex_mod(a,b); printstr("\n");
-
-	printhex(a); printstr(" >> 4 = "); printhex(a >> 4); printstr("\n");
-	printhex(a); printstr(" >> 10 = "); printhex(a >> 10); printstr("\n");
-
-	load_store_test();
-
-	unaligned_load_store_test();
-
-	printstr("\nmemcpy test:\n");
-	for (x=1; x<N_MINIBUFS; x++) {
-		printstr(" "); printdec(x);
-		my_memcpy(buf + 1024*(x-1), buf + 1024*x, 1024);
-	}
-	printstr("\n");
-
-
-	/*  Prime number test:  */
-	x = 1;
-	printstr("\nPrime number test:\n");
-	printstr("2");
-
-	while (x < 100) {
-		x += 2;
-		primetest(x);
-	}
-
-	printstr("\n");
-
-
-	render_mandel(77, 30);
-
-	printstr("\nDone.\n");
+	/*  Hang forever.  */
 	for (;;)
 		;
 }

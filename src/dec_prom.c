@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.17 2004-07-07 06:33:41 debug Exp $
+ *  $Id: dec_prom.c,v 1.18 2004-07-07 07:28:08 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -76,6 +76,7 @@ extern int use_x11;
 int dec_jumptable_func(struct cpu *cpu, int vector)
 {
 	int i;
+	static int file_opened = 0;
 	static int current_file_offset = 0;
 
 	switch (vector) {
@@ -84,7 +85,16 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x30:	/*  open()  */
-		/*  TODO  */
+		/*
+		 *  TODO: This is just a hack to allow Sprite/pmax' bootblock
+		 *  code to load /vmsprite. The filename argument (in A0)
+		 *  is ignored, and a file handle value of 1 is returned.
+		 */
+		if (file_opened) {
+			fatal("\ndec_jumptable_func(): opening more than one file isn't supported yet.\n");
+			cpu->running = 0;
+		}
+		file_opened = 1;
 		cpu->gpr[GPR_V0] = 1;
 		break;
 	case 0x38:	/*  read(handle, ptr, length)  */

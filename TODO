@@ -24,8 +24,8 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  TCP :-)
 		o)  Outgoing UDP packet fragment support.
 		o)  Make it work with Ultrix and Sprite too, not just
-		    with NetBSD and OpenBSD.
-		o)  DHCP?
+		    with NetBSD/OpenBSD/Linux.
+		o)  DHCP? (Just return the 10.x.x.x default values.)
 
 	Configure script:
 		o)  Only enable Alpha prefetch on pca56 or higher, not on

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.94 2004-06-13 13:07:22 debug Exp $
+ *  $Id: machine.c,v 1.95 2004-06-14 09:16:26 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1673,7 +1673,7 @@ void machine_init(struct memory *mem)
 				 *  0x19600000 <get_nasid+0x4>
 				 *  0x190020d0 <get_cpuinfo+0x34>
 				 */
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
 				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 				break;

@@ -1,10 +1,10 @@
 #
-#  $Id: Makefile.skel,v 1.37 2004-06-21 09:38:12 debug Exp $
+#  $Id: Makefile.skel,v 1.38 2004-07-03 15:37:11 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
 
-CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE) $(INCLUDE)
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 OBJS=console.o \
 	dev_ram.o dev_cons.o dev_mp.o dev_unreadable.o \
 	dev_gt.o \

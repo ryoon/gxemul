@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.24 2004-07-02 14:37:26 debug Exp $
+#  $Id: configure,v 1.25 2004-07-03 15:37:10 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
-#  makefiles in subdirs.
+#  makefiles in subdirs. A config.h is also created.
 #
 #  TODO:  This file is a mess.
 #
@@ -26,14 +26,65 @@ if [ z"$*" != z ]; then
 			if [ z$a = z--mips16 ]; then
 				MIPS16=YES
 			else
-				echo "usage: $0 [options]"
-				echo "  --nox11       configure without x11 support"
-				echo "  --mips16      enable MIPS16 instruction support"
-				exit
+				if [ z$a = z--delays ]; then
+					DELAYS=YES
+				else
+					echo "usage: $0 [options]"
+					echo "  --delays    enable instruction latency emulation"
+					echo "  --nox11     configure without x11 support"
+					echo "  --mips16    enable MIPS16 instruction support"
+					exit
+				fi
 			fi
 		fi
 	done
 fi
+
+
+#############################################################################
+#
+#  Configure options:
+#
+#  This creates a config.h file, which is the included from include/misc.h.
+#
+#############################################################################
+
+#  Head of config.h:
+printf "/*
+ *  THIS FILE IS AUTOMATICALLY CREATED BY configure!
+ *  DON'T EDIT THIS FILE MANUALLY, IT WILL BE OVERWRITTEN.
+ */
+\n#ifndef CONFIG_H\n#define CONFIG_H\n\n" > config.h
+
+
+#  Figure out if VERSION should be defined.
+X=`basename \`pwd\`|cut -d \- -f 2-`
+if [ z"$X" = zmips64emul ]; then
+	echo '#  No VERSION defined.' >> _Makefile.header
+else
+	printf "#define VERSION \"$X\"\n" >> config.h
+fi
+
+
+#  MIPS16 support:
+if [ z$MIPS16 = zYES ]; then
+	echo 'Enabling MIPS16 support.   NOTE: MIPS16 support is not really working yet.'
+	printf "#define ENABLE_MIPS16\n" >> config.h
+fi
+
+
+#  Instruction delay/latency emulation:
+if [ z$DELAYS = zYES ]; then
+	echo 'Enabling Instruction delay/latency emulation.'
+	printf "#define ENABLE_INSTRUCTION_DELAYS\n" >> config.h
+fi
+
+
+#############################################################################
+#
+#  Create the Makefile header:
+#
+#############################################################################
 
 rm -f _Makefile.header
 
@@ -116,7 +167,7 @@ if [ z$NOX11 = z ]; then
 		echo X11 libraries: $XLIB
 		echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
 		echo "XLIB=$XLIB" >> _Makefile.header
-		echo "XDEF=-DWITH_X11" >> _Makefile.header
+		printf "#define WITH_X11\n" >> config.h
 	fi
 
 	rm -f _test_x11.c
@@ -134,34 +185,6 @@ if [ -x _testprog ]; then
 	fi
 fi
 rm -f _testprog
-
-
-#############################################################################
-#
-#  COPTIM:
-#
-#############################################################################
-
-COPTIM=$CFLAGS
-
-
-#
-#  Figure out if VERSION should be defined.
-#
-X=`basename \`pwd\`|cut -d \- -f 2-`
-if [ z"$X" = zmips64emul ]; then
-	echo '#  No VERSION defined.' >> _Makefile.header
-else
-	COPTIM="-DVERSION=\\\"$X\\\" $COPTIM"
-fi
-
-
-#  MIPS16 support:
-
-if [ z$MIPS16 = zYES ]; then
-	echo 'Enabling MIPS16 support.   NOTE: MIPS16 support is not really working yet.'
-	COPTIM="-DENABLE_MIPS16 $COPTIM"
-fi
 
 
 #############################################################################
@@ -186,7 +209,15 @@ fi
 #	COPTIM="-DBINTRANS -DI386 $COPTIM"
 #fi
 
+
 #############################################################################
+#
+#  COPTIM:
+#
+#############################################################################
+
+COPTIM=$CFLAGS
+
 
 if [ z"`uname`" = zHP-UX ]; then
 	#  This is not an optimization, actually, just flags:
@@ -302,6 +333,10 @@ for a in ./ src/ devices/ tests/; do
 	cat $a/Makefile.skel >> $a/Makefile
 done
 
+#  Tail of config.h:
+printf "\n#endif  /*  CONFIG_H  */\n" >> config.h
+
+#  Remove temporary Makefile header:
 rm -f _Makefile.header
 
 echo Configured. You may now run make to build mips64emul.

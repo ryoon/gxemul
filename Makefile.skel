@@ -26,5 +26,5 @@ clean:
 clean_all: clean
 	#  Tests are not cleaned on a normal clean, only on a clean_all.
 	cd tests; $(MAKE) clean; cd ..
-	rm -f Makefile src/Makefile devices/Makefile tests/Makefile
+	rm -f config.h Makefile src/Makefile devices/Makefile tests/Makefile
 

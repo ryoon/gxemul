@@ -26,13 +26,34 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.74 2004-07-02 14:17:15 debug Exp $
+ *  $Id: misc.h,v 1.75 2004-07-03 15:37:14 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
  *  TODO:  separate into smaller, more orthogonal files.
  *         perhaps cpu.h, opcodes.h (all the opcodes)?
  */
+
+/*
+ *  ../config.h contains #defines set by the configure script. Some of these
+ *  might reduce speed of the emulator, so don't enable them unless you
+ *  need them.
+ */
+
+#include "../config.h"
+
+/*  
+ *  ENABLE_MIPS16 should be defined on the cc commandline using -D, if you 
+ *  want it. (This is done by ./configure --mips16)
+ *
+ *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using
+ *  -D if you want it. (This is done by ./configure --delays)
+ */
+/*  #define ALWAYS_SIGNEXTEND_32  */
+/*  #define HALT_IF_PC_ZERO  */
+/*  #define MFHILO_DELAY  */
+/*  #define LAST_USED_TLB_EXPERIMENT  */
+
 
 #include <sys/types.h>
 #include <inttypes.h>
@@ -57,17 +78,6 @@ typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
 #endif
 
-/*
- *  These can be defined, but they reduce speed of the emulator.
- *  Don't enable them unless you need them.
- */
-
-/*  ENABLE_MIPS16 should be defined on the commandline using -D, if you want it  */
-/*  #define ENABLE_INSTRUCTION_DELAYS  */
-/*  #define ALWAYS_SIGNEXTEND_32  */
-/*  #define HALT_IF_PC_ZERO  */
-/*  #define MFHILO_DELAY  */
-/*  #define LAST_USED_TLB_EXPERIMENT  */
 
 /*  Machine emulation types:  */
 #define	EMULTYPE_NONE		0

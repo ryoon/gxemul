@@ -23,10 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.67 2004-08-18 09:04:13 debug Exp $
- *
- *  TODO:  Move out stuff into structures, separating things from main()
- *         completely.
+ *  $Id: main.c,v 1.68 2004-08-26 14:06:47 debug Exp $
  */
 
 #include <stdio.h>
@@ -49,6 +46,9 @@ char **extra_argv;
 
 /*
  *  Global emulation variables:
+ *
+ *  TODO:  Move out stuff into structures, separating things from main()
+ *         completely.
  */
 
 char emul_cpu_name[50];
@@ -234,6 +234,14 @@ void usage(char *progname)
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);
 #endif /*  WITH_X11  */
 	printf("  -y x      set max_random_cycles_per_chunk to x (experimental)\n");
+
+	printf("You must specify one or more names of files that you wish to load into memory.\n");
+	printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
+	printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
+	printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
+	printf("or \"address:skiplen:\".\n");
+	printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");
+	printf("           0xbfc00000:0x100:rom.bin   for an image with 0x100 bytes header\n");
 }
 
 
@@ -390,6 +398,8 @@ int get_cmd_args(int argc, char *argv[])
 	extra_argv = argv;
 
 
+	/*  -i, -r, -t are pretty verbose:  */
+
 	if (instruction_trace) {
 		printf("implicitly turning of -q and turning on -v, because of -i\n");
 		verbose = 1;
@@ -451,6 +461,7 @@ int get_cmd_args(int argc, char *argv[])
 	if (!emul_cpu_name[0])
 		strcpy(emul_cpu_name, CPU_DEFAULT);
 
+
 	/*  Default memory size:  */
 
 	if (emulation_type == EMULTYPE_PS2 && physical_ram_in_mb == 0)
@@ -475,6 +486,7 @@ int get_cmd_args(int argc, char *argv[])
 	if (physical_ram_in_mb == 0)
 		physical_ram_in_mb = DEFAULT_RAM_IN_MB;
 
+
 	/*
 	 *  Usually, an executable filename must be supplied.
 	 *
@@ -488,20 +500,12 @@ int get_cmd_args(int argc, char *argv[])
 			booting_from_diskimage = 1;
 		} else {
 			usage(progname);
-			printf("You must specify one or more names of files that you wish to load into memory.\n");
-			printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
-			printf("where syms is the text produced by running 'nm' (or 'nm -S') on a binary.\n");
-			printf("To load a raw binary into memory, add \"address:\" in front of the filename,\n");
-			printf("or \"address:skiplen:\".\n");
-			printf("Examples:  0xbfc00000:rom.bin         for a raw ROM dump image\n");
-			printf("           0xbfc00000:0x100:rom.bin   for an image with 0x100 bytes header\n");
 			exit(1);
 		}
 	}
 
 	if (ncpus < 1) {
-		usage(progname);
-		printf("Too few cpus.\n");
+		printf("Too few cpus (-n).\n");
 		exit(1);
 	}
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.62 2004-10-02 06:47:26 debug Exp $
+#  $Id: configure,v 1.63 2004-10-04 11:38:43 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -81,6 +81,11 @@ if [ z"$X" = zmips64emul ]; then
 else
 	printf "#define VERSION \"$X\"\n" >> config.h
 fi
+
+
+ZZ=`echo compiled on \`date\``
+printf "#define COMPILE_DATE \"$ZZ\"\n" >> config.h
+
 
 
 #  MIPS16 support:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.74 2004-10-04 11:23:55 debug Exp $
+ *  $Id: emul.c,v 1.75 2004-10-04 11:38:44 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -454,13 +454,13 @@ void debugger(void)
 			strcpy(last_cmd, "u");
 		} else if (strcasecmp(cmd, "v") == 0 ||
 		    strcasecmp(cmd, "version") == 0) {
-			printf("%s\n",
+			printf("%s, %s\n",
 #ifdef VERSION
-			    VERSION
+			    VERSION,
 #else
-			    "(no version)"
+			    "(no version)",
 #endif
-			    );
+			    COMPILE_DATE);
 			last_cmd_len = 0;
 		} else if (cmd[0] != '\0') {
 			printf("Unknown command '%s'. Type 'help' for help.\n",

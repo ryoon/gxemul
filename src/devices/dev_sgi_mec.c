@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mec.c,v 1.3 2004-12-18 08:51:18 debug Exp $
+ *  $Id: dev_sgi_mec.c,v 1.4 2004-12-18 09:12:49 debug Exp $
  *  
  *  SGI "mec" ethernet. Used in SGI-IP32.
  *
@@ -99,18 +99,12 @@ static void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	unsigned char data[8];
 	int i, res;
 
-	if (d->cur_rx_packet == NULL && net_ethernet_rx_avail(d))
-		net_ethernet_rx(d, &d->cur_rx_packet, &d->cur_rx_packet_len);
-
-	if (d->cur_rx_packet == NULL)
-		return;
-
 	base = d->rx_addr[d->cur_rx_addr_index];
 	base &= 0xfffff000ULL;
 	if (base == 0)
-		goto skip;
+		goto skip_but_goto_next;
 
-	printf("rx base = 0x%016llx\n", (long long)base);
+	/*  printf("rx base = 0x%016llx\n", (long long)base);  */
 
 	/*  Read an rx descriptor from memory:  */
 	res = memory_rw(cpu, cpu->mem, base,
@@ -129,8 +123,16 @@ static void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 #endif
 
 	/*  Is this descriptor already in use?  */
-	if (data[0] & 0x80)
+	if (data[0] & 0x80) {
+printf("INTERRUPT for base = 0x%x\n", (int)base);
 		goto skip_but_interrupt;
+	}
+
+	if (d->cur_rx_packet == NULL && net_ethernet_rx_avail(d))
+		net_ethernet_rx(d, &d->cur_rx_packet, &d->cur_rx_packet_len);
+
+	if (d->cur_rx_packet == NULL)
+		goto skip;
 
 	/*  Copy the packet data:  */
 	/*  printf("RX: ");  */
@@ -140,6 +142,8 @@ static void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 		/*  printf(" %02x", d->cur_rx_packet[i]);  */
 	}
 	/*  printf("\n");  */
+
+	printf("RX: %i bytes, base = 0x%x\n", d->cur_rx_packet_len, (int)base);
 
 	/*  4 bytes of CRC at the end. Hm. TODO  */
 	d->cur_rx_packet_len += 4;
@@ -153,7 +157,6 @@ static void mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	res = memory_rw(cpu, cpu->mem, base,
 	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
 
-
 	/*  Free the packet from memory:  */
 	free(d->cur_rx_packet);
 	d->cur_rx_packet = NULL;
@@ -164,9 +167,11 @@ skip_but_interrupt:
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= ((d->cur_rx_addr_index + 1) & 0x1f) << 8;
 	cpu_interrupt(cpu, d->irq_nr);
 
-skip:
+skip_but_goto_next:
 	d->cur_rx_addr_index ++;
 	d->cur_rx_addr_index %= N_RX_ADDRESSES;
+
+skip:
 }
 
 
@@ -317,18 +322,17 @@ void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 {
 	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
 
+	/*  RX:  */
+	mec_try_rx(cpu, d);
+
+	/*  TX:  */
+	mec_try_tx(cpu, d);
 
 	/*  Interrupts:  */
 	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK)
 		cpu_interrupt(cpu, d->irq_nr);
 	else
 		cpu_interrupt_ack(cpu, d->irq_nr);
-
-	/*  RX:  */
-	mec_try_rx(cpu, d);
-
-	/*  TX:  */
-	mec_try_tx(cpu, d);
 }
 
 

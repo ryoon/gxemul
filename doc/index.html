@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.198 2005-01-16 04:06:17 debug Exp $
+$Id: index.html,v 1.199 2005-01-16 05:12:31 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -2029,7 +2029,7 @@ machines as well. Besides DECstation, I've also tried this on an SGI IP32
 <p>
 For the O2, a suitable command to dump the prom memory range is
 <pre>
-	&gt;&gt; <b>dump -b 0xBFC00000:0xBFC7FFFF</b>
+	&gt;&gt; <b>dump -b 0xBFC00000:0xBFC80000</b>
 </pre>
 Make sure you capture all the output (via serial console) into a file,
 and then run experiments/sgiprom_to_bin on the captured file.

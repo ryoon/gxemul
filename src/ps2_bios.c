@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.25 2005-01-30 12:54:53 debug Exp $
+ *  $Id: ps2_bios.c,v 1.26 2005-02-02 22:04:35 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -214,7 +214,7 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 		break;
 	default:
 		quiet_mode = 0;
-		mips_cpu_register_dump(cpu, 1, 0x1);
+		cpu_register_dump(cpu->machine, cpu, 1, 0x1);
 		printf("\n");
 		fatal("Playstation 2 SIFBIOS emulation: "
 		    "unimplemented call nr 0x%x\n", callnr);

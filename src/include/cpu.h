@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.9 2005-02-02 18:45:24 debug Exp $
+ *  $Id: cpu.h,v 1.10 2005-02-02 22:04:34 debug Exp $
  *
  *  See cpu.c.
  */
@@ -77,6 +77,9 @@ struct cpu_family {
 	void			(*show_full_statistics)(struct machine *m);
 	void			(*tlbdump)(struct machine *m, int x,
 				    int rawflag);
+	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
+	int			(*interrupt_ack)(struct cpu *cpu,
+				    uint64_t irq_nr);
 };
 
 

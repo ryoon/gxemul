@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.h,v 1.7 2005-02-02 18:45:24 debug Exp $
+ *  $Id: cpu_mips.h,v 1.8 2005-02-02 22:04:34 debug Exp $
  */
 
 #include "misc.h"
@@ -398,8 +398,8 @@ void mips_cpu_register_match(struct machine *m, char *name,
 void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs);
 void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t addr, int bintrans);
-int mips_cpu_interrupt(struct cpu *cpu, int irq_nr);
-int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
+int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr);
+int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr);
 void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
         /*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2,
         int vaddr_asid, int x_64);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.12 2005-02-02 19:10:03 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.13 2005-02-02 22:04:35 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -643,6 +643,8 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 	fp->dumpinfo = ppc_cpu_dumpinfo;
 	/*  fp->show_full_statistics = ppc_cpu_show_full_statistics;  */
 	/*  fp->tlbdump = ppc_cpu_tlbdump;  */
+	/*  fp->interrupt = ppc_cpu_interrupt;  */
+	/*  fp->interrupt_ack = ppc_cpu_interrupt_ack;  */
 	return 1;
 }
 

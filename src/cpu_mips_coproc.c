@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.165 2005-02-01 14:39:38 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.1 2005-02-02 22:04:35 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */

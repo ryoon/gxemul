@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.98 2005-02-02 18:45:22 debug Exp $
+#  $Id: configure,v 1.99 2005-02-02 22:04:33 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -54,6 +54,7 @@
 #
 ###############################################################################
 
+WITHMIPS=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -71,7 +72,7 @@ if [ z"$*" != z ]; then
 		else if [ z$a = z--gui ]; then
 			GUI=YES
 		else if [ z$a = z--withoutmips ]; then
-			WITHOUTMIPS=YES
+			WITHMIPS=NO
 		else if [ z$a = z--withppc ]; then
 			WITHPPC=YES
 		else if [ z$a = z--withsparc ]; then
@@ -135,6 +136,10 @@ if [ z$MIPS16 = zYES ]; then
 	printf 'Enabling MIPS16 support.  '
 	printf 'NOTE: MIPS16 support is not really working yet.\n'
 	printf "#define ENABLE_MIPS16\n" >> config.h
+fi
+if [ z$WITHMIPS = zYES ]; then
+	#echo 'Enabling MIPS support.'
+	printf "#define ENABLE_MIPS\n" >> config.h
 fi
 if [ z$WITHPPC = zYES ]; then
 	echo 'Enabling PPC support.  NOTE: This is pretty much bogus.'
@@ -388,9 +393,9 @@ fi
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
-printf "checking for weird 'mips' define... "
-printf "#include <stdio.h>\n
-int main(int argc, char *argv[]){
+if [ z$WITHPPC = zYES ]; then
+	printf "checking for weird 'mips' define... "
+	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef mips
 printf(\"1\");
 #undef mips
@@ -399,19 +404,20 @@ printf(\"2\");
 #endif
 #endif
 printf(\"\\\n\");return 0;}\n" > _testm.c
-$CC $CFLAGS _testm.c -o _testm 2> /dev/null
-if [ ! -x _testm ]; then
-	printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
-else
-	if [ z`./_testm` = z1 ]; then
-		printf "yes, workaround applied\n"
-		echo "#undef mips" >> config.h
+	$CC $CFLAGS _testm.c -o _testm 2> /dev/null
+	if [ ! -x _testm ]; then
+		printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
 	else
-		if [ z`./_testm` = z12 ]; then
-			printf "yes, but workaround not possible\n"
-			exit
+		if [ z`./_testm` = z1 ]; then
+			printf "yes, workaround applied\n"
+			echo "#undef mips" >> config.h
 		else
-			printf "no\n"
+			if [ z`./_testm` = z12 ]; then
+				printf "yes, but workaround not possible\n"
+				exit
+			else
+				printf "no\n"
+			fi
 		fi
 	fi
 fi
@@ -816,6 +822,10 @@ printf "checking for bintrans backend... "
 
 BINTRANS=NO
 
+if [ z$WITHMIPS = zNO ]; then
+	NOBINTRANS=YES
+fi
+
 if [ z$NOBINTRANS = zYES ]; then
 	printf "disabled\n"
 else
@@ -926,28 +936,29 @@ printf "Regression test setup: (not really needed to build mips64emul)\n"
 
 #  MIPS cross-compiler:
 
-printf "Checking for a GNU cross-compiler for 64-bit MIPS... "
-echo 'int f(int x) { return x; }' > _testprog.c
-
 MIPS=''
-for MIPS_TRY in mips64-unknown-elf mips-unknown-elf64; do
-	printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
-	chmod 755 _test.sh
-	rm -f _testprog.o
-	./_test.sh > /dev/null 2> /dev/null
-	if [ -f _testprog.o ]; then
-		MIPS=$MIPS_TRY
-		break
+if [ z$WITHMIPS = zYES ]; then
+	printf "Checking for a GNU cross-compiler for 64-bit MIPS... "
+	echo 'int f(int x) { return x; }' > _testprog.c
+
+	for MIPS_TRY in mips64-unknown-elf mips-unknown-elf64; do
+		printf '#!/bin/sh\n'$MIPS_TRY'-gcc _testprog.c -c\n' > _test.sh
+		chmod 755 _test.sh
+		rm -f _testprog.o
+		./_test.sh > /dev/null 2> /dev/null
+		if [ -f _testprog.o ]; then
+			MIPS=$MIPS_TRY
+			break
+		fi
+		rm -f _testprog.o
+	done
+
+	if [ z$MIPS = z ]; then
+		echo "none"
+	else
+		echo $MIPS"-gcc"
 	fi
-	rm -f _testprog.o
-done
-
-if [ z$MIPS = z ]; then
-	echo "none"
-else
-	echo $MIPS"-gcc"
 fi
-
 rm -f _testprog* _test.sh
 
 echo "MIPS_CC="$MIPS"-gcc -g -O2 -fno-builtin -fschedule-insns -mips64 -mabi=64" >> _Makefile.header

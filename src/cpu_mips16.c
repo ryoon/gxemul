@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.14 2005-01-30 14:22:15 debug Exp $
+ *  $Id: cpu_mips16.c,v 1.1 2005-02-02 22:04:35 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  *

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.279 2005-02-02 18:45:24 debug Exp $
+ *  $Id: cpu.c,v 1.280 2005-02-02 22:04:35 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -176,13 +176,12 @@ void cpu_register_dump(struct machine *m, struct cpu *cpu,
  */
 int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
-	switch (cpu->machine->arch) {
-	case ARCH_MIPS:
-		return mips_cpu_interrupt(cpu, irq_nr);
-	default:
-		fatal("cpu_interrupt(): ?\n");
+	if (cpu->machine->cpu_family == NULL ||
+	    cpu->machine->cpu_family->interrupt == NULL) {
+		fatal("cpu_interrupt(): NULL\n");
 		return 0;
-	}
+	} else
+		return cpu->machine->cpu_family->interrupt(cpu, irq_nr);
 }
 
 
@@ -194,15 +193,12 @@ int cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
  */
 int cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
-	/*  TODO: use m->cpu_family-> ...  */
-
-	switch (cpu->machine->arch) {
-	case ARCH_MIPS:
-		return mips_cpu_interrupt_ack(cpu, irq_nr);
-	default:
-		fatal("cpu_interrupt_ack(): ?\n");
+	if (cpu->machine->cpu_family == NULL ||
+	    cpu->machine->cpu_family->interrupt_ack == NULL) {
+		fatal("cpu_interrupt_ack(): NULL\n");
 		return 0;
-	}
+	} else
+		return cpu->machine->cpu_family->interrupt_ack(cpu, irq_nr);
 }
 
 

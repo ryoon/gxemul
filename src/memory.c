@@ -25,12 +25,11 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.154 2005-01-31 06:31:53 debug Exp $
+ *  $Id: memory.c,v 1.155 2005-02-02 22:04:35 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
 
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,12 +38,17 @@
 
 #include "bintrans.h"
 #include "cop0.h"
-#include "memory.h"
-#include "misc.h"
+#include "cpu.h"
+#include "cpuregs.h"
 #include "cpu_mips.h"
+#include "machine.h"
+#include "memory.h"
+#include "mips_cpu_types.h"
+#include "misc.h"
 
 
 extern int quiet_mode;
+extern volatile int single_step;
 
 
 /*
@@ -54,21 +58,11 @@ extern int quiet_mode;
  *  len, and the byte order by cpu->byte_order.
  *
  *  This function should not be called with cpu == NULL.
- *
- *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
- *  helper function.
  */
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
 {
 	int i;
 	uint64_t x = 0;
-
-#if 0
-	if (len > 8) {
-		fatal("memory_readmax64(): len = %i\n", len);
-		exit(1);
-	}
-#endif
 
 	/*  Switch byte order for incoming data, if necessary:  */
 	if (cpu->byte_order == EMUL_BIG_ENDIAN)
@@ -93,33 +87,22 @@ uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len)
  *  len, and the byte order by cpu->byte_order.
  *
  *  This function should not be called with cpu == NULL.
- *
- *  TODO:  Maybe this shouldn't be in memory.c.  It's a kind of 'misc'
- *  helper function.
  */
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 	uint64_t data)
 {
 	int i;
 
-#if 0
-	if (len > 8) {
-		fatal("memory_readmax64(): len = %i\n", len);
-		exit(1);
-	}
-#endif
-
-	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		for (i=0; i<len; i++) {
 			buf[i] = data & 255;
 			data >>= 8;
 		}
-	} else {
+	else
 		for (i=0; i<len; i++) {
 			buf[len - 1 - i] = data & 255;
 			data >>= 8;
 		}
-	}
 }
 
 

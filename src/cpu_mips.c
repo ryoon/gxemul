@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.11 2005-02-02 18:45:25 debug Exp $
+ *  $Id: cpu_mips.c,v 1.12 2005-02-02 22:04:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -37,6 +37,28 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <ctype.h>
+
+#include "../config.h"
+
+
+#ifndef ENABLE_MIPS
+
+
+#include "cpu_mips.h"
+
+/*
+ *  mips_cpu_family_init():
+ *
+ *  Bogus function.
+ */
+int mips_cpu_family_init(struct cpu_family *fp)
+{
+	return 0;
+}
+
+
+#else   /*  ENABLE_MIPS  */
+
 
 #include "arcbios.h"
 #include "bintrans.h"
@@ -71,7 +93,7 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 static char *cop0_names[] = COP0_NAMES;
 
 
-#include "mips16.c"
+#include "cpu_mips16.c"
 
 
 /*
@@ -1407,13 +1429,6 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 
 
 /*
- *  NOTE:  memory.c is included here, so as to lie close to the often
- *         used CPU routines in the [host's] cache.
- */
-#include "memory.c"
-
-
-/*
  *  mips_cpu_interrupt():
  *
  *  Cause an interrupt. If irq_nr is 2..7, then it is a MIPS hardware
@@ -1421,7 +1436,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
  *
  *  If irq_nr is >= 8, then this function calls md_interrupt().
  */
-int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
+int mips_cpu_interrupt(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->machine->md_interrupt != NULL)
@@ -1449,7 +1464,7 @@ int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
  *  If irq_nr is >= 8, then it is machine dependant, and md_interrupt() is
  *  called.
  */
-int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
+int mips_cpu_interrupt_ack(struct cpu *cpu, uint64_t irq_nr)
 {
 	if (irq_nr >= 8) {
 		if (cpu->machine->md_interrupt != NULL)
@@ -4060,6 +4075,10 @@ int mips_cpu_family_init(struct cpu_family *fp)
 	fp->dumpinfo = mips_cpu_dumpinfo;
 	fp->show_full_statistics = mips_cpu_show_full_statistics;
 	fp->tlbdump = mips_cpu_tlbdump;
+	fp->interrupt = mips_cpu_interrupt;
+	fp->interrupt_ack = mips_cpu_interrupt_ack;
 	return 1;
 }
 
+
+#endif	/*  ENABLE_MIPS  */

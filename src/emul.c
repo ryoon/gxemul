@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.5 2004-01-06 02:00:21 debug Exp $
+ *  $Id: emul.c,v 1.6 2004-01-06 10:33:29 debug Exp $
  *
  *  Emulation startup.
  */
@@ -106,6 +106,13 @@ void emul(void)
 	else
 		bootstrap_cpu = 0;
 
+	diskimage_dump_info();
+
+	if (use_x11)
+		x11_init();
+
+	machine_init(mem);
+
 	/*  Fill memory with random bytes:  */
 	if (random_mem_contents) {
 		for (i=0; i<physical_ram_in_mb*1048576; i+=256) {
@@ -137,13 +144,6 @@ void emul(void)
 	/*  Startup the bootstrap CPU:  */
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;
 	cpus[bootstrap_cpu]->running            = 1;
-
-	diskimage_dump_info();
-
-	if (use_x11)
-		x11_init();
-
-	machine_init(mem);
 
 	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
 	symbol_recalc_sizes();

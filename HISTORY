@@ -246,3 +246,7 @@ HISTORY of mips64emul
 		translated into console keypresses. (Normal keys, but
 		not cursor keys or other special keys.)
 20031111	Adding support for X11 using non-24-bit output.
+20031120	Adding X11 mouse event to emulated mouse event
+		translation, but it's not tested yet.
+		Trying to get more of the SCSI controller emulation
+		to work.

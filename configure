@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.23 2004-07-02 14:34:30 debug Exp $
+#  $Id: configure,v 1.24 2004-07-02 14:37:26 debug Exp $
 #
 #  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -166,7 +166,7 @@ fi
 
 #############################################################################
 #
-#  BINTRANS:
+#  Dynamic binary translation (BINTRANS):
 #
 #  Should only be defined for compilers and architectures that really support
 #  bintrans.  As of now, only gcc on Alpha does this.

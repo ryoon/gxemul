@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_nasid.c,v 1.1 2004-01-05 06:30:51 debug Exp $
+ *  $Id: dev_sgi_nasid.c,v 1.2 2004-01-05 06:40:44 debug Exp $
  *  
  *  SGI nasid CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -77,9 +77,9 @@ int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 		break;
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ sgi_nasid: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_nasid: unimplemented write to address 0x%llx, data=0x%02x ]\n", (long long)relative_addr, idata);
 		else
-			debug("[ sgi_nasid: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_nasid: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (odata_set) {

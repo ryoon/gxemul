@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.32 2005-02-15 09:47:21 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.33 2005-02-15 13:01:41 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1131,8 +1131,12 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		rt = (iword >> 21) & 31;
 		ra = (iword >> 16) & 31;
 		imm = (int16_t)(iword & 0xffff);
-		cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] + imm + 1;
-		/*  TODO: CA  */
+		tmp = ~cpu->cd.ppc.gpr[ra];
+		cpu->cd.ppc.gpr[rt] = tmp + (int64_t)imm + 1;
+		/*  TODO: is this CA correct?  */
+		cpu->cd.ppc.xer &= ~PPC_XER_CA;
+		if (((tmp >> 63) & 1) == ((cpu->cd.ppc.gpr[rt] >> 63) & 1))
+			cpu->cd.ppc.xer |= PPC_XER_CA;
 		break;
 
 	case PPC_HI6_CMPLI:
@@ -1496,7 +1500,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_DCBST:  mnem = "dcbst"; break;
 			case PPC_31_ICBI:   mnem = "icbi"; break;
 			}
-			debug("[ %s r%i,r%i: TODO ]\n", mnem, ra, rb);
+			/*  debug("[ %s r%i,r%i: TODO ]\n", mnem, ra, rb);  */
 			break;
 
 		case PPC_31_ANDC:
@@ -1812,7 +1816,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.ppc.gpr[rt] = (int64_t)(int32_t)tmp;
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
-			/*  TODO: oe_bit  */
+			if (oe_bit) {
+				fatal("[ divwu: PPC oe not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
 			break;
 
 		case PPC_31_MTSPR:

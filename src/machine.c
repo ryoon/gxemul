@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.299 2005-01-26 16:17:14 debug Exp $
+ *  $Id: machine.c,v 1.300 2005-01-26 19:08:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1165,7 +1165,7 @@ void machine_init(struct machine *machine)
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 
 		/*  This works with 'mmon':  */
-		dev_ns16550_init(machine, mem, 0x10800000, 0, 4, 1);
+		dev_ns16550_init(machine, mem, 0x10800000, 2, 4, 1);
 
 		dev_mp_init(mem, machine->cpus);
 

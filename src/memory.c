@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.86 2004-10-17 15:31:45 debug Exp $
+ *  $Id: memory.c,v 1.87 2004-10-20 03:22:27 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1370,7 +1370,8 @@ into the devices  */
 				 *  For real data/instruction accesses, cause
 				 *  an exceptions on an illegal read:
 				 */
-				if (cache != CACHE_NONE) {
+				if (cache != CACHE_NONE &&
+				    cpu->emul->dbe_on_nonexistant_memaccess) {
 					if (paddr >= mem->physical_max &&
 					    paddr < mem->physical_max+1048576)
 						cpu_exception(cpu,

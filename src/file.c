@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.36 2004-10-17 15:31:44 debug Exp $
+ *  $Id: file.c,v 1.37 2004-10-20 03:22:27 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -166,7 +166,7 @@ static void file_load_aout(struct emul *emul, struct memory *mem,
 		/*  printf("fread len=%i vaddr=%x buf[0..]=%02x %02x %02x\n", len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0)
-			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, 0);
+			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 		else {
 			if (osf1_hack)
 				break;
@@ -357,7 +357,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 			len = fread(buf, 1, chunk_size, f);
 
 			if (len > 0)
-				memory_rw(cpu, mem, where, &buf[0], len, MEM_WRITE, 0);
+				memory_rw(cpu, mem, where, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 			where += len;
 			total_len += len;
 		}
@@ -433,7 +433,7 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 					break;
 				}
 
-				memory_rw(cpu, mem, s_vaddr, &buf[0], len, MEM_WRITE, 0);
+				memory_rw(cpu, mem, s_vaddr, &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 				s_vaddr += len;
 				total_len += len;
 			}
@@ -645,7 +645,8 @@ static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 			case 3:	data_start = 4;
 				vaddr = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
 			}
-			memory_rw(cpu, mem, vaddr, &bytes[data_start], count - 1 - data_start, MEM_WRITE, 0);
+			memory_rw(cpu, mem, vaddr, &bytes[data_start],
+			    count - 1 - data_start, MEM_WRITE, NO_EXCEPTIONS);
 			total_bytes_loaded += count - 1 - data_start;
 			break;
 		case 7:
@@ -727,7 +728,8 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 		len = fread(buf, 1, sizeof(buf), f);
 
 		if (len > 0)
-			memory_rw(cpu, mem, vaddr, &buf[0], len, MEM_WRITE, 0);
+			memory_rw(cpu, mem, vaddr, &buf[0],
+			    len, MEM_WRITE, NO_EXCEPTIONS);
 
 		vaddr += len;
 	}
@@ -984,7 +986,8 @@ static void file_load_elf(struct emul *emul, struct memory *mem,
 				while (i < len) {
 					size_t len_to_copy;
 					len_to_copy = (i + align_len) <= len? align_len : len - i;
-					memory_rw(cpu, mem, p_vaddr + ofs, &ch[i], len_to_copy, MEM_WRITE, 0);
+					memory_rw(cpu, mem, p_vaddr + ofs, &ch[i],
+					    len_to_copy, MEM_WRITE, NO_EXCEPTIONS);
 					ofs += align_len;
 					i += align_len;
 				}

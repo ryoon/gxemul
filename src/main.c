@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.113 2004-10-19 03:40:34 debug Exp $
+ *  $Id: main.c,v 1.114 2004-10-20 03:22:27 debug Exp $
  */
 
 #include <stdio.h>
@@ -132,6 +132,9 @@ void usage(char *progname)
 			printf("\n");
 	}
 
+	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
+	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
+	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -d fname  add fname as a disk image. You can add \"xxx:\" as a prefix\n");
 	printf("            where xxx is one or more of the following:\n");
 	printf("                b     specifies that this is the boot device\n");
@@ -140,14 +143,12 @@ void usage(char *progname)
 	printf("                r     read-only (don't allow changes to the file)\n");
 	printf("                t     SCSI tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
-	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
-	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
-	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine\n");
 	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F        try to emulate an hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -g        try to emulate a NetGear box (WG602)\n");
+	printf("  -H        try to emulate a Linksys WRT54G\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
@@ -256,6 +257,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'g':
 			emul->emulation_type = EMULTYPE_NETGEAR;
+			emul->machine = 0;
+			break;
+		case 'H':
+			emul->emulation_type = EMULTYPE_WRT54G;
 			emul->machine = 0;
 			break;
 		case 'I':
@@ -423,6 +428,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RC32334");
 
+	if (emul->emulation_type == EMULTYPE_WRT54G && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "BCM4712");
+
 	if (emul->emulation_type == EMULTYPE_ARC &&
 	    emul->machine == MACHINE_ARC_PICA && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4000");
@@ -468,6 +476,12 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->emulation_type == EMULTYPE_NETGEAR && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 16;
+
+	if (emul->emulation_type == EMULTYPE_WRT54G) {
+		emul->dbe_on_nonexistant_memaccess = 0;
+		if (emul->physical_ram_in_mb == 0)
+			emul->physical_ram_in_mb = 32;
+	}
 
 	if (emul->emulation_type == EMULTYPE_ARC && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 48;

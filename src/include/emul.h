@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.7 2004-10-17 15:31:43 debug Exp $
+ *  $Id: emul.h,v 1.8 2004-10-20 03:22:26 debug Exp $
  */
 
 #include "misc.h"
@@ -68,6 +68,7 @@ struct emul {
 	int	cache_pdcache_linesize;
 	int	cache_secondary_linesize;
 
+	int	dbe_on_nonexistant_memaccess;
 	int	bintrans_enable;
 	int	instruction_trace;
 	int	single_step;

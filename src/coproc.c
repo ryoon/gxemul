@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.71 2004-10-19 03:40:33 debug Exp $
+ *  $Id: coproc.c,v 1.72 2004-10-20 03:22:27 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -342,6 +342,10 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_LO)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_TAGDATA_HI)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_ERROREPC)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_RESERVED_22) {
+		/*  Used by Linux on Linksys WRT54G  */
+		unimpl = 0;
+	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_DEBUG)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)	unimpl = 0;
 
@@ -540,6 +544,11 @@ void coproc_register_write(struct cpu *cpu,
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_DEPC)
 		unimpl = 0;
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_RESERVED_22) {
+		/*  Used by Linux on Linksys WRT54G  */
+		unimpl = 0;
+	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_DESAVE)
 		unimpl = 0;

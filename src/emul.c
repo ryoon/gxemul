@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.80 2004-10-19 03:40:34 debug Exp $
+ *  $Id: emul.c,v 1.81 2004-10-20 03:22:27 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -607,6 +607,7 @@ struct emul *emul_new(void)
 	e->ncpus = DEFAULT_NCPUS;
 	e->automatic_clock_adjustment = 1;
 	e->x11_scaledown = 1;
+	e->dbe_on_nonexistant_memaccess = 1;
 
 	return e;
 }

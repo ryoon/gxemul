@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.122 2004-10-18 04:53:59 debug Exp $
+$Id: index.html,v 1.123 2004-10-20 03:22:26 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -246,8 +246,12 @@ emulation works for these is generally not very high.
 	Acer Pica-61, Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
   <li>Cobalt
   <li>Sony Playstation 2
-  <li>Skeletons for generic "hpcmips", <a href="http://www.meshcube.org/">MeshCube</a>,
-	and <a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>
+  <li>Skeletons for generic
+	"<a href="http://www.netbsd.org/Ports/hpcmips/">hpcmips</a>",
+	<a href="http://www.meshcube.org/">MeshCube</a>,
+	<a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>,
+	and
+	Linksys WRT54G
 </ul>
 
 <p>
@@ -1132,6 +1136,26 @@ Here are links to some of the kernels that I usually experiment with.
 	<br>(Unzip wg602_v1715.zip to get WG602_V1715.img.)
 	<br>Try running with <b>-g 0xbfc80000:0x40:WG602_V1715.img</b>.
 	<br>(It takes some time to decompress the kernel, so be patient.)
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Linksys WRT54G
+    <ul>
+      <li>Linux:
+	<br><a href="http://openwrt.org/">OpenWRT</a> is a Linux
+		distribution for the WRT54G.
+	<br><a href="http://www.batbox.org/wrt54g-linux.html">BatBox</a>
+		is another distribution.
+	<br>Download <a href="http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin">http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin</a>
+		(or a similar .bin file).
+	<br>From offset 60 and forward in the bin file, there is a gzip file.
+	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
+	<br>$ <b>gunzip piggy.gz</b>
+	<br>$ <b>./mips64emul -H -t 0x80001000:piggy</b>
+	<br>There's also a .bin file available from linksys:
+		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
     </ul>
   </li>
 

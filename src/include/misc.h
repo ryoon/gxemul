@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.120 2004-10-19 03:58:13 debug Exp $
+ *  $Id: misc.h,v 1.121 2004-10-20 03:22:26 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -101,6 +101,7 @@ typedef uint64_t u_int64_t;
 #define	EMULTYPE_ARC		7
 #define	EMULTYPE_MESHCUBE	8
 #define	EMULTYPE_NETGEAR	9
+#define	EMULTYPE_WRT54G		10
 
 /*  Specific machines:  */
 #define	MACHINE_NONE		0
@@ -234,7 +235,7 @@ struct cpu_type_def {
 	{ "RC32334",	MIPS_RC32300,0x00,	0,	EXC32, MMU4K,  32,      16, 1, 0, 0, 0, 0, 0, 0 }, \
 	{ "5K",		0x100+MIPS_5K, 1,	0,	EXC4K, MMU4K,	5,	48, 4, 0, 0, 0, 0, 0, 0 }, /*  DCOUNT?  instrs/cycle?  */ \
 	{ "BCM4710",	0x000240,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
-	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
+	{ "BCM4712",	0x000290,   0x07,       0,	EXC32, MMU32,  32,      32, 2,13,12, 4, 4, 0, 0 }, /*  2ways I, 2ways D  */ \
 	{ "AU1000",	0x000301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "AU1500",	0x010301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \
 	{ "AU1100",	0x020301,   0x00,       0,	EXC32, MMU32,  32,      32, 2, 0, 0, 0, 0, 0, 0 }, /*  TODO: this is just bogus  */ \

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.194 2004-10-19 03:40:34 debug Exp $
+ *  $Id: machine.c,v 1.195 2004-10-20 03:22:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2921,6 +2921,46 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 */
 
 		dev_8250_init(cpu, mem, 0x18000800, 0, 4);
+
+		break;
+
+	case EMULTYPE_WRT54G:
+		emul->machine_name = "Linksys WRT54G";
+
+		if (emul->use_x11)
+			fprintf(stderr, "WARNING! Linksys WRT54G with -X is meaningless. Continuing anyway.\n");
+
+		/*  200 MHz default  */
+		if (emul->emulated_hz == 0)
+			emul->emulated_hz = 200000000;
+
+		/*
+		 *  Linux should be loaded at 0x80001000.
+		 *  RAM: 16 or 32 MB, Flash RAM: 4 or 8 MB.
+		 *  http://www.bumpclub.ee/~jaanus/wrt54g/vana/minicom.cap:
+		 *
+		 *  Starting program at 0x80001000
+		 *  CPU revision is: 00029007
+		 *  Primary instruction cache 8kb, linesize 16 bytes (2 ways)
+		 *  Primary data cache 4kb, linesize 16 bytes (2 ways)
+		 *   memory: 01000000 @ 00000000 (usable)
+		 *  Kernel command line: root=/dev/mtdblock2 rootfstype=squashfs init=/etc/preinit noinitrd console=ttyS0,115200
+		 *  CPU: BCM4712 rev 1 at 200 MHz
+		 *  Calibrating delay loop... 199.47 BogoMIPS
+		 *  ttyS00 at 0xb8000300 (irq = 3) is a 16550A
+		 *  ttyS01 at 0xb8000400 (irq = 0) is a 16550A
+		 *  Flash device: 0x400000 at 0x1c000000
+		 *  ..
+		 */
+
+		/*  TODO: What should the initial register contents be?  */
+#if 1
+{
+int i;
+for (i=0; i<32; i++)
+		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
+}
+#endif
 
 		break;
 

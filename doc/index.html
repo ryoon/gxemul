@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.52 2004-07-04 12:52:14 debug Exp $
+$Id: index.html,v 1.53 2004-07-04 15:52:02 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -189,12 +189,23 @@ Here's a list of available configure options:
 <pre>
     --caches    enable cache emulation
     --delays    enable instruction latency/delay emulation
-    --nox11     configure without x11 support
     --mips16    enable MIPS16 instruction support
+    --nox11     configure without x11 support
 </pre>
 <p>
-Enabling caches does <i>not</i> by itself mean correct cache miss 
-penalties and such. You need both --caches and --delays for that.
+--caches causes an overall slowdown for R3000, but hopefully not for
+the others yet. Enabling caches does <i>not</i> by itself mean correct
+cache miss penalties and such (you need both --caches and --delays for that)
+but it is needed to fool some operating system kernels (eg Mach/pmax)
+that the cache works like it should.
+<p>
+--delays simulates instruction latencies. Memory accesses can have penalties.
+When combined with --caches, cache misses cause penalties as well.
+<p>
+--mips16 enables the almost non-existant MIPS16 support.
+<p>
+--nox11 disables X11 support completely. (If the configure script cannot
+compile a small X11 test program, it will be disabled anyway.)
 <p>
 (The possible configure options might differ between different releaes and
 snapshots, so this list may be incomplete.)

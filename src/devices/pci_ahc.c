@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.15 2005-03-18 23:20:52 debug Exp $
+ *  $Id: pci_ahc.c,v 1.16 2005-03-30 22:57:32 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -47,6 +47,8 @@
 #include "devices.h"
 #include "memory.h"
 #include "misc.h"
+
+#include "aic7xxx_reg.h"
 
 
 #define PCI_VENDOR_ADP  0x9004          /* Adaptec */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.394 2005-03-29 09:46:09 debug Exp $
+ *  $Id: machine.c,v 1.395 2005-03-30 22:57:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2156,6 +2156,11 @@ void machine_setup(struct machine *machine)
 		store_buf(cpu, 0x80000000 + machine->physical_ram_in_mb * 1048576 - 256, (char *)&hpc_bootinfo, sizeof(hpc_bootinfo));
 
 		if (hpcmips_fb_addr != 0) {
+			if (!machine->use_x11)
+				fprintf(stderr, "\nWARNING! Emulating this "
+				    "machine type without X11 is pretty "
+				    "meaningless. Continuing anyway.\n");
+
 			dev_fb_init(machine, mem, hpcmips_fb_addr, VFB_HPCMIPS,
 			    hpcmips_fb_xsize, hpcmips_fb_ysize,
 			    hpcmips_fb_xsize_mem, hpcmips_fb_ysize_mem,
@@ -2632,7 +2637,7 @@ Why is this here? TODO
 
 				pci_data = dev_macepci_init(mem, 0x1f080000, MACE_PCI_BRIDGE);	/*  macepci0  */
 				/*  bus_pci_add(machine, pci_data, mem, 0, 0, 0, pci_ne2000_init, pci_ne2000_rr);  TODO  */
-#if 1
+#if 0
 				bus_pci_add(machine, pci_data, mem, 0, 1, 0, pci_ahc_init, pci_ahc_rr);
 #endif
 				/*  bus_pci_add(machine, pci_data, mem, 0, 2, 0, pci_ahc_init, pci_ahc_rr);  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.25 2005-03-29 09:46:07 debug Exp $
+ *  $Id: dev_wdc.c,v 1.26 2005-03-30 22:57:32 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -429,9 +429,12 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 			    d->drive + d->base_drive))
 				odata = 0xff;
 
-#if 0
+#if 1
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 #endif
+
+			cpu_interrupt_ack(cpu, d->irq_nr);
+			d->delayed_interrupt = 0;
 		} else {
 			debug("[ wdc: write to COMMAND: 0x%02x ]\n", idata);
 			d->cur_command = idata;

@@ -1,4 +1,5 @@
-/*  gxemul: $Id: aic7xxx_reg.h,v 1.1 2005-03-30 22:45:11 debug Exp $  */
+/*  gxemul: $Id: aic7xxx_reg.h,v 1.2 2005-03-30 22:57:34 debug Exp $  */
+/*  See NetBSD's aic7xxx_reg.h for more info.  */
 
 #ifndef AIC7XXX_REG_H
 #define AIC7XXX_REG_H

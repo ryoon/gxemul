@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.660 2005-03-30 06:45:20 debug Exp $
+$Id: HISTORY,v 1.661 2005-03-30 22:57:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1779,3 +1779,4 @@ Changelog for GXemul:
 		Fixing 16-bit vs 15-bit color in dev_fb.
 20050330	Print a nicer warning when the user attempts to load a
 		gzipped file.
+20050331	Importing aic7xxx_reg.h from NetBSD.

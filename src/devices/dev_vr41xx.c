@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.3 2004-12-27 10:26:16 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.4 2004-12-28 21:35:54 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -132,14 +132,12 @@ int dev_vr41xx_access(struct cpu *cpu, struct memory *mem,
 		break;
 
 	default:
-#if 0
 		if (writeflag == MEM_WRITE)
-			fatal("[ vr41xx: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
+			debug("[ vr41xx: unimplemented write to address 0x%llx, data=0x%016llx ]\n",
 			    (long long)relative_addr, (long long)idata);
 		else
-			fatal("[ vr41xx: unimplemented read from address 0x%llx ]\n",
+			debug("[ vr41xx: unimplemented read from address 0x%llx ]\n",
 			    (long long)relative_addr);
-#endif
 	}
 
 	/*  Recalculate interrupt assertions:  */

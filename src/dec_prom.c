@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.6 2004-01-06 02:00:21 debug Exp $
+ *  $Id: dec_prom.c,v 1.7 2004-02-22 13:13:17 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -64,8 +64,10 @@ extern int use_x11;
  *	0x58	bootread()
  *	0x64	getenv()
  *	0x6c	slot_address()
+ *	0x7c	clear_cache()
  *	0x80	getsysid()
  *	0x84	getbitmap()
+ *	0xa4	gettcinfo()
  *	0xac	rex()
  */
 void decstation_prom_emul(struct cpu *cpu)
@@ -150,14 +152,14 @@ void decstation_prom_emul(struct cpu *cpu)
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
-			for (j=0; j<strlen(buf); j++) {
+			for (j=0; j<strlen((char *)buf); j++) {
 				memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS + i + strlen(buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-			if (nmatches == strlen(buf) && ch2 == '=') {
-				cpu->gpr[GPR_V0] = DEC_PROM_STRINGS + i + strlen(buf) + 1;
+			memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			if (nmatches == strlen((char *)buf) && ch2 == '=') {
+				cpu->gpr[GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
 				return;
 			}
 		}
@@ -190,6 +192,11 @@ void decstation_prom_emul(struct cpu *cpu)
 		}
 		cpu->gpr[GPR_V0] = 0x80000000 + slot_base + slot_size * cpu->gpr[GPR_A0];
 		break;
+	case 0x7c:		/*  clear_cache(addr, len)  */
+		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n", (uint32_t)cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1]);
+		/*  TODO  */
+		cpu->gpr[GPR_V0] = 0;	/*  ?  */
+		break;
 	case 0x80:		/*  getsysid()  */
 		debug("[ DEC PROM getsysid() ]\n");
 		/*  TODO:  why did I add the 0x82 stuff???  */
@@ -203,6 +210,18 @@ void decstation_prom_emul(struct cpu *cpu)
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0], buf, sizeof(buf), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		}
 		cpu->gpr[GPR_V0] = sizeof((memmap.bitmap));
+		break;
+	case 0xa4:		/*  gettcinfo()  */
+		/*  These are just bogus values...  TODO  */
+		store_32bit_word(DEC_PROM_TCINFO +  0, 0);	/*  revision  */
+		store_32bit_word(DEC_PROM_TCINFO +  4, 50);	/*  clock period in nano seconds  */
+		store_32bit_word(DEC_PROM_TCINFO +  8, 4);	/*  slot size in megabytes  TODO: not same for all models!!  */
+		store_32bit_word(DEC_PROM_TCINFO + 12, 10);	/*  I/O timeout in cycles  */
+		store_32bit_word(DEC_PROM_TCINFO + 16, 1);	/*  DMA address range in megabytes  */
+		store_32bit_word(DEC_PROM_TCINFO + 20, 100);	/*  maximum DMA burst length  */
+		store_32bit_word(DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
+		store_32bit_word(DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
+		cpu->gpr[GPR_V0] = DEC_PROM_TCINFO;
 		break;
 	case 0xac:		/*  rex()  */
 		debug("[ DEC PROM rex('%c') ]\n", (int)cpu->gpr[GPR_A0]);
@@ -225,7 +244,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		cpu_register_dump(cpu);
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
-			char ch = '\0';
+			unsigned char ch = '\0';
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);

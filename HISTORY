@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.358 2004-12-06 13:15:04 debug Exp $
+$Id: HISTORY,v 1.359 2004-12-06 23:10:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1252,3 +1252,5 @@ HISTORY of mips64emul
 		Adding a hack for mmap() which supports anonymous mapping
 		using /dev/zero, but not using MAP_ANON{,YMOUS}.
 		Separating out opcodes.h, cop0.h, and cpu_types.h from misc.h.
+20041207	Minor bintrans update. (In some cases, it isn't neccessary
+		to return to the main loop, when translating from a new page.)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.101 2004-12-06 13:15:06 debug Exp $
+ *  $Id: bintrans.c,v 1.102 2004-12-06 23:10:14 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -307,24 +307,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	uint64_t delayed_branch_new_p;
 	int prev_p;
 
-#if 0
-/*  This doesn't work yet.  */
-quick_attempt_translate_again:
-#endif
-
-	/*
-	 *  If the chunk space is all used up, we need to start over from
-	 *  an empty chunk space.
-	 */
-	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
-		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
-		for (i=0; i<n; i++)
-			translation_page_entry_array[i] = NULL;
-		translation_code_chunk_space_head = 0;
-		n_quick_jumps = 0;
-		debug("bintrans: Starting over!\n");
-	}
-
 
 	/*  Abort if the current "environment" isn't safe enough:  */
 	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
@@ -351,6 +333,32 @@ quick_attempt_translate_again:
 		}
 		tep = tep->next;
 	}
+
+#if 1
+/*  printf("A paddr=%016llx\n", (long long)paddr);  */
+/*  This doesn't work yet.  */
+quick_attempt_translate_again:
+#endif
+/*printf("B: ");
+printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
+(long long)cpu->pc_last_virtual_page,
+(long long)cpu->pc_last_physical_page,
+cpu->pc_last_host_4k_page,(long long)paddr);
+*/
+	/*
+	 *  If the chunk space is all used up, we need to start over from
+	 *  an empty chunk space.
+	 */
+	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+		int i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
+		for (i=0; i<n; i++)
+			translation_page_entry_array[i] = NULL;
+		translation_code_chunk_space_head = 0;
+		n_quick_jumps = 0;
+		tep = NULL;
+		debug("bintrans: Starting over!\n");
+	}
+
 
 	host_mips_page = cpu->pc_bintrans_host_4kpage;
 	if (host_mips_page == NULL)
@@ -762,13 +770,15 @@ run_it:
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
+	if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
+	    cpu->emul->prom_emulation)
+		return cpu->bintrans_instructions_executed;
+
 	if (!cpu->delay_slot && !cpu->nullify_next &&
 	    cpu->bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
 	    && (cpu->pc & 3) == 0
 	    && cpu->bintrans_instructions_executed != old_n_executed) {
-		uint64_t paddr;
-		int ok = 0;
-		int a, b;
+		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
 		switch (cpu->cpu_type.mmu_model) {
@@ -814,6 +824,8 @@ run_it:
 			tep = translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
+					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+						return cpu->bintrans_instructions_executed;
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    translation_code_chunk_space;
@@ -824,9 +836,11 @@ run_it:
 				tep = tep->next;
 			}
 
-			/*  We have no translation. This special hack
-			    might make the time spent in the main cpu_run_instr()
-			    lower:  */
+#if 1
+			/*  We have no translation.  */
+
+			/*  This special hack might make the time spent
+			    in the main cpu_run_instr() lower:  */
 			switch (cpu->cpu_type.mmu_model) {
 			case MMU3K:
 				/*  32-bit special case:  */
@@ -840,12 +854,19 @@ run_it:
 					    (((size_t)tbl1->haddr_entry[b]) & ~1);
 					cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
 					cpu->pc_bintrans_paddr = paddr;
-#if 0
+
 					/*  Why doesn't this work? TODO  */
+/*
+printf("C: ");
+printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
+(long long)cpu->pc_last_virtual_page,
+(long long)cpu->pc_last_physical_page,
+cpu->pc_last_host_4k_page,(long long)paddr);
+*/
 					goto quick_attempt_translate_again;
-#endif
 				}
 			}
+#endif
 
 			/*  Return.  */
 		}

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: memory.c,v 1.3 2003-11-20 02:48:57 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -490,31 +490,10 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	int offset;
 	int cachemask[2];
 
-/*	assert(mem != NULL);
-	assert(data != NULL);
-
-	if (use_x11) {
-		static int tick = 0;
-		double dx = 0.5, dy = 0.5;
-		uint64_t ad;
-
-		tick ++;
-		if ((tick & 0xfff) == 0) {
-			dx = (tick % 10000000) / 10000000.0;
-			ad = vaddr & 0x3fffff;
-			/  Kernel mode? Upper half of window:  *
-			if (vaddr & 0x80000000)
-				dy = 0.5 - ((double)ad / (double)0x3fffff) / 2.0;
-			else
-				dy = 1.0 - ((double)ad / (double)0x3fffff) / 2.0;
-			x11_putpixel(dx, dy);
-		}
-	}
-*/
-
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & ~NO_EXCEPTIONS;
 
+#if 0
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
 		if ((vaddr & 0xfff00000) == 0xbfc00000 && writeflag==MEM_READ) {
 			if ((vaddr & 0xffff) != 0x8030 && (vaddr & 0xffff) != 0x8064 &&
@@ -524,6 +503,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 			    (vaddr & 0xffff) != 0x80ac)
 				debug("PROM read access: %016llx, len=%i\n", (long long) vaddr, len);
 		}
+#endif
 
 	ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
 

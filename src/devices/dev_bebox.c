@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bebox.c,v 1.2 2005-02-22 13:45:47 debug Exp $
+ *  $Id: dev_bebox.c,v 1.3 2005-02-23 22:08:19 debug Exp $
  *
  *  Emulation of BeBox motherboard registers. See the following URL for more
  *  information:
@@ -63,7 +63,6 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 {
 	struct bebox_data *d = extra;
 	uint64_t idata = 0, odata = 0;
-	int port_nr;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -77,16 +76,16 @@ int dev_bebox_access(struct cpu *cpu, struct memory *mem,
 			if (cpu->cpu_id == 1)
 				odata |= 0x02000000;
 		} else {
-			debug("[ bebox: unimplemented write to 0x3f0:"
+			fatal("[ bebox: unimplemented write to 0x3f0:"
 			    " 0x%08x ]\n", (int)idata);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ bebox: unimplemented read from 0x%08lx ]\n",
+			fatal("[ bebox: unimplemented read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			debug("[ bebox: unimplemented write to 0x%08lx: 0x"
+			fatal("[ bebox: unimplemented write to 0x%08lx: 0x"
 			    "%08x ]\n", (long)relative_addr, (int)idata);
 		}
 	}

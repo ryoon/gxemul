@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.358 2005-02-23 11:21:44 debug Exp $
+ *  $Id: machine.c,v 1.359 2005-02-23 22:08:20 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3946,14 +3946,7 @@ for (i=0; i<32; i++)
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
 		    0xff600300, 0, 1, 1, "serial 0");
 		dev_ns16550_init(machine, mem,
-		    0xff600300, 0, 1, 0, "serial 1");
-
-		{
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.ppc.gpr[i] =
-				    0x12340000 + (i << 8) + 0x55;
-		}
+		    0xff600400, 0, 1, 0, "serial 1");
 
 		break;
 
@@ -4115,6 +4108,9 @@ void machine_memsize_fix(struct machine *m)
 			default:
 				m->physical_ram_in_mb = 32;
 			}
+			break;
+		case MACHINE_BEBOX:
+			m->physical_ram_in_mb = 64;
 			break;
 		}
 	}

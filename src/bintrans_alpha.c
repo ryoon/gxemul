@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.101 2005-01-09 01:55:30 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.102 2005-01-10 01:22:25 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -337,7 +337,7 @@ static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	0x01, 0x80, 0xfa, 0x6b		/*  ret  */
 };
 
-static uint32_t bintrans_alpha_loadstore_32bit[15] = {
+static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	/*
 	 *  t1 = 1023;
 	 *  t2 = ((a1 >> 22) & t1) * sizeof(void *);
@@ -382,6 +382,16 @@ static uint32_t bintrans_alpha_loadstore_32bit[15] = {
 
 	/*  00 00 73 a6     ldq     a3,0(a3)  */
 	0xa6730000,
+
+	/*  NULL? Then return failure at once.  */
+	/*  bne a3, skip  */
+	0xf6600003,
+
+	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
+	0x44270407,					/*  or      t0,t6,t6  */
+	0x6bfa8001,					/*  ret  */
+
+	/*  skip:  */
 
 	/*  01 30 60 46     and     a3,0x1,t0  */
 	0x46603001,
@@ -1635,19 +1645,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 		/*
 		 *  Now:
-		 *	a3 = host page  (or NULL if not found)
+		 *	a3 = host page
 		 *	t0 = 0 for readonly pages, 1 for read/write pages
-		 *	t3 = (potential) address of host load/store
+		 *	t3 = address of host load/store
 		 */
-
-		/*
-		 *  NULL? Then return failure.
-		 *  01 00 60 f6     bne     a3,f8 <okzz>
-		 */
-		fail = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
-		bintrans_write_chunkreturn_fail(&a);
-		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
 		/*  If this is a store, then the lowest bit must be set:  */
 		if (!load) {
@@ -1663,6 +1664,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 *  or 0xffffffff, then the tables used for 32-bit load/stores
 		 *  can be used.
 		 *
+
+TODO: Check the highest _33_ bits, not 32.
+
 		 *  81 16 24 4a     srl     a1,0x20,t0
 		 *  03 00 20 e4     beq     t0,14 <ok1>
 		 *  01 30 20 40     addl    t0,0x1,t0
@@ -1689,15 +1693,6 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 *	t0 = 0 for readonly pages, 1 for read/write pages
 		 *	t3 = (potential) address of host load/store
 		 */
-
-		/*
-		 *  NULL? Then return failure.
-		 *  01 00 60 f6     bne     a3,f8 <okzz>
-		 */
-		fail = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
-		bintrans_write_chunkreturn_fail(&a);
-		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
 		/*  If this is a store, then the lowest bit must be set:  */
 		if (!load) {
@@ -1824,7 +1819,11 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		break;
 	case HI6_LW:
 	case HI6_LWU:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0xa0;			/*  ldl from memory  */
+		if (alpha_rt < 0 || bigendian || instruction_type == HI6_LWU)
+			alpha_rt = ALPHA_T0;
+		/*  ldl rt,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x04 | ((alpha_rt & 7) << 5);
+		    *a++ = 0xa0 | ((alpha_rt >> 3) & 3);
 		if (bigendian) {
 			*a++ = 0x62; *a++ = 0x71; *a++ = 0x20; *a++ = 0x48;		/*  insbl t0,3,t1  */
 			*a++ = 0xc3; *a++ = 0x30; *a++ = 0x20; *a++ = 0x48;		/*  extbl t0,1,t2  */
@@ -1841,7 +1840,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			/*  Use only lowest 32 bits:  */
 			*a++ = 0x21; *a++ = 0xf6; *a++ = 0x21; *a++ = 0x48;	/*  zapnot t0,0xf,t0  */
 		}
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
+		if (alpha_rt == ALPHA_T0)
+			bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 	case HI6_LHU:
 	case HI6_LH:
@@ -1858,11 +1858,17 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		break;
 	case HI6_LBU:
 	case HI6_LB:
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0x24; *a++ = 0x28;			/*  ldbu from memory  */
+		if (alpha_rt < 0)
+			alpha_rt = ALPHA_T0;
+		/*  ldbu rt,0(t3)  */
+		*a++ = 0x00; *a++ = 0x00; *a++ = 0x04 | ((alpha_rt & 7) << 5);
+		    *a++ = 0x28 | ((alpha_rt >> 3) & 3);
 		if (instruction_type == HI6_LB) {
-			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe1; *a++ = 0x73;		/*  sextb   t0,t0  */
+			/*  sextb rt,rt  */
+			*a++ = alpha_rt; *a++ = 0x00; *a++ = 0xe0 + alpha_rt; *a++ = 0x73;
 		}
-		bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
+		if (alpha_rt == ALPHA_T0)
+			bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rt);
 		break;
 
 	case HI6_LWL:

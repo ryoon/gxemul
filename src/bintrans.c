@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.130 2005-01-09 01:55:30 debug Exp $
+ *  $Id: bintrans.c,v 1.131 2005-01-10 01:22:25 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -157,11 +157,11 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp, int it
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 #ifndef BINTRANS_SIZE_IN_MB
-#define BINTRANS_SIZE_IN_MB		20
+#define BINTRANS_SIZE_IN_MB		16
 #endif
 
 #define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
-#define	CODE_CHUNK_SPACE_MARGIN		131072
+#define	CODE_CHUNK_SPACE_MARGIN		65536
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where

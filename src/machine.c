@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.51 2004-02-25 12:24:36 debug Exp $
+ *  $Id: machine.c,v 1.52 2004-02-26 15:13:32 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -45,6 +45,7 @@
 #include "dec_kn02.h"
 #include "dec_kn03.h"
 #include "dec_kmin.h"
+#include "dec_maxine.h"
 
 
 extern int emulation_type;
@@ -59,7 +60,7 @@ extern int emulated_ips;
 extern int machine;
 extern char *machine_name;
 extern int physical_ram_in_mb;
-
+extern int ultrixboot_emul;
 extern int use_x11;
 
 extern char *last_filename;
@@ -70,7 +71,7 @@ extern struct memory *GLOBAL_gif_mem;
 
 struct kn230_csr *kn230_csr;
 struct kn02_csr *kn02_csr;
-struct threemin_ioasic_data *kmin_ioasic_data;
+struct dec_ioasic_data *dec_ioasic_data;
 
 
 /********************** Helper functions **********************/
@@ -257,31 +258,58 @@ void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR into the INTR:  */
-		kmin_ioasic_data->intr |= irq_nr;
+		dec_ioasic_data->intr |= irq_nr;
 
-		/*  Assert MIPS interrupt 5:  */
-		cpu_interrupt(cpu, 5);
+		/*  Assert MIPS interrupt 5 (TC slot 3 = system slot):  */
+		cpu_interrupt(cpu, KMIN_INT_TC3);
 	} else {
 		/*  AND out of the INTR:  */
-		kmin_ioasic_data->intr &= ~irq_nr;
+		dec_ioasic_data->intr &= ~irq_nr;
 
-		if (kmin_ioasic_data->intr == 0)
-			cpu_interrupt_ack(cpu, 5);
+		if (dec_ioasic_data->intr == 0)
+			cpu_interrupt_ack(cpu, KMIN_INT_TC3);
 	}
 }
 
 
 void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
-	debug("kn03_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
-
-	/*  TODO: CSR  */
+	irq_nr -= 8;
+	debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
 	if (assrt) {
-		/*  Assert MIPS interrupt 3:  */
-		cpu_interrupt(cpu, 3);
+		/*  OR into the INTR:  */
+		dec_ioasic_data->intr |= irq_nr;
+
+		/*  Assert MIPS interrupt 2 (ioasic):  */
+		cpu_interrupt(cpu, KN03_INT_ASIC);
 	} else {
-		cpu_interrupt_ack(cpu, 3);
+		/*  AND out of the INTR:  */
+		dec_ioasic_data->intr &= ~irq_nr;
+
+		if (dec_ioasic_data->intr == 0)
+			cpu_interrupt_ack(cpu, KN03_INT_ASIC);
+	}
+}
+
+
+void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+{
+	irq_nr -= 8;
+	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+
+	if (assrt) {
+		/*  OR into the INTR:  */
+		dec_ioasic_data->intr |= irq_nr;
+
+		/*  Assert MIPS interrupt 5 (turbochannel/ioasic):  */
+		cpu_interrupt(cpu, XINE_INT_TC3);
+	} else {
+		/*  AND out of the INTR:  */
+		dec_ioasic_data->intr &= ~irq_nr;
+
+		if (dec_ioasic_data->intr == 0)
+			cpu_interrupt_ack(cpu, XINE_INT_TC3);
 	}
 }
 
@@ -535,7 +563,8 @@ void machine_init(struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			kmin_ioasic_data = dev_threemin_ioasic_init(mem, 0x1c000000);
+			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
@@ -574,7 +603,10 @@ void machine_init(struct memory *mem)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
+			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
+
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
@@ -600,9 +632,9 @@ void machine_init(struct memory *mem)
 			 *  Ultrix might support SMP on this machine type.
 			 *
 			 *  Something at 0x10000000.
-			 *  ssc serial console at 0x10140000, interrupt 2.
+			 *  ssc serial console at 0x10140000, interrupt 2 (shared with XMI?).
 			 *  xmi 0 at address 0x11800000   (node x at offset x*0x80000)
-			 *  Clock uses interrupt 3.
+			 *  Clock uses interrupt 3 (shared with XMI?).
 			 */
 
 			dev_dec5800_init(cpus[bootstrap_cpu], mem, 0x10000000);
@@ -654,6 +686,9 @@ void machine_init(struct memory *mem)
 			if (physical_ram_in_mb > 40)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
+			/*  Maxine interrupts:  */
+			cpus[bootstrap_cpu]->md_interrupt = maxine_interrupt;
+
 			/*
 			 *  Something at address 0xca00000. (?)
 			 *  Something at address 0xe000000. (?)
@@ -671,6 +706,7 @@ void machine_init(struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
 			 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
 			 */
+			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 
 			/*  TURBOchannel slots (0 and 1). TODO: irqs  */
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "", 0);
@@ -680,9 +716,9 @@ void machine_init(struct memory *mem)
 			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
-			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, 0, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, 3, MC146818_DEC, 1, emulated_ips);
-			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, 0);	/*  (?)  SCSI  */
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, XINE_INTR_SCC_0 +8, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, XINE_INTR_SCSI +8);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=2";
@@ -690,7 +726,11 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_5500:	/*  type 11, KN220  */
 			machine_name = "DECsystem 5500 (KN220)";
+
 			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  A wild guess. TODO:  not irq 0  */
+
+			/*  something at 0x17000000, ultrix says "cpu 0 panic: DS5500 I/O Board is missing"  */
+
 			break;
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
@@ -750,7 +790,7 @@ void machine_init(struct memory *mem)
 		 *  loaded.
 		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_A0] = 3;
+		cpus[bootstrap_cpu]->gpr[GPR_A0] = 2;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
 		cpus[bootstrap_cpu]->gpr[GPR_A2] = DEC_PROM_MAGIC;
 		cpus[bootstrap_cpu]->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
@@ -760,14 +800,13 @@ void machine_init(struct memory *mem)
 
 		store_32bit_word(DEC_PROM_INITIAL_ARGV, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x10));
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+4, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x70));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0xc0));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, 0);
 
 		/*
 		 *  NOTE:  NetBSD and Ultrix expect their bootargs in different ways.
 		 *
 		 *	NetBSD:  "bootdev" "-a"
-		 *	Ultrix:  "ultrixboot" "bootdev" [args]
+		 *	Ultrix:  "ultrixboot" [args?] "bootdev" [args?]
 		 *
 		 *  where bootdev is supposed to be "rz(0,0,0)netbsd" for 3100/2100
 		 *  (although that crashes Ultrix :-/), and "5/rz0a/netbsd" for alll
@@ -780,7 +819,7 @@ void machine_init(struct memory *mem)
 			init_bootpath = "rz(0,0,0)";
 		else
 #endif
-			init_bootpath = "0/rz0/";
+			init_bootpath = "3/rz0/";
 
 		tmp_ptr = rindex(last_filename, '/');
 		if (tmp_ptr == NULL)
@@ -788,18 +827,21 @@ void machine_init(struct memory *mem)
 		else
 			tmp_ptr ++;
 
-#if 0
-		/*  For ultrixboot, these might work:  */
-		bootstr = "boot"; bootarg = "0/tftp/vmunix";
-#endif
 		bootstr = malloc(strlen(init_bootpath) + strlen(tmp_ptr) + 1);
 		strcpy(bootstr, init_bootpath);
 		strcat(bootstr, tmp_ptr);
-		bootarg = "-a";
+
+		if (ultrixboot_emul) {
+			/*  For Ultrixboot emulation:  */
+			bootarg = bootstr;
+			bootstr = "ultrixboot";
+		} else {
+			/*  NetBSD's second stage bootloader:  */
+			bootarg = "-a";
+		}
 
 		store_string(DEC_PROM_INITIAL_ARGV+0x10, bootstr);
-		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootstr);	/*  TODO  */
-		store_string(DEC_PROM_INITIAL_ARGV+0xc0, bootarg);
+		store_string(DEC_PROM_INITIAL_ARGV+0x70, bootarg);
 
 		xx.a.common.next = (char *)&xx.b - (char *)&xx;
 		xx.a.common.type = BTINFO_MAGIC;
@@ -843,6 +885,9 @@ void machine_init(struct memory *mem)
 			/*  These are needed, or Ultrix complains:  */
 			store_byte(DEC_PROM_CCA + 6, 67);
 			store_byte(DEC_PROM_CCA + 7, 67);
+
+			store_byte(DEC_PROM_CCA + 8, ncpus);
+			store_32bit_word(DEC_PROM_CCA + 20, (1 << ncpus) - 1);	/*  one bit for each cpu  */
 		}
 
 		add_environment_string("scsiid0=7", &addr);

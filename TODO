@@ -1,4 +1,4 @@
-$Id: TODO,v 1.119 2005-02-04 12:07:01 debug Exp $
+$Id: TODO,v 1.120 2005-02-09 14:36:00 debug Exp $
 
 Here's a short list of what I have left to do on mips64emul. This file is
 a mess. Order is random. Don't trust it to be up-to-date.
@@ -27,7 +27,9 @@ a mess. Order is random. Don't trust it to be up-to-date.
 	Network layer:
 		o)  Multiple networks per emulation, and let different
 		    NICs in machines connect to different networks.
-		o)  Fixed MAC addresses for NICs (?)
+		o)  Network across multiple hosts.
+		o)  Fixed MAC addresses for NICs, fixed IPv4 addresses if
+		    DHCP or RARP is used.
 		o)  many other issues: see src/net.c
 
 	Configure script:
@@ -42,10 +44,7 @@ a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Make it possible to disable various CPU families? (for
 		    example PPC64)
 
-	Emulation in general:
-		o)  Use same clock for all emulations and machines (?)
-
-	CPU Emulation:
+	MIPS CPU emulation:
 		o)  Binary translation:
 			+)  use an Intermediate Representation!
 			+)  recursive translation?
@@ -96,6 +95,7 @@ a mess. Order is random. Don't trust it to be up-to-date.
 	Emulation of specific machines and devices:
 		o)  Clean up stuff to make it possible to emulate multiple
 		    (different) machines simultaneously.
+		o)  Use same clock for all emulations and machines.
 		o)  Various SCSI and IDE controllers
 		o)  PS/2-style keyboard controller (for several machines)
 		o)  Generic busses;

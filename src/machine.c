@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.338 2005-02-08 17:18:33 debug Exp $
+ *  $Id: machine.c,v 1.339 2005-02-09 14:28:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4364,6 +4364,9 @@ void machine_list_available_types_and_cpus(void)
 
 	debug_indentation(iadd);
 	me = first_machine_entry;
+
+	if (me == NULL)
+		fatal("No machines defined!\n");
 
 	while (me != NULL) {
 		int i, j, iadd = 4;

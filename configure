@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.101 2005-02-09 10:00:09 debug Exp $
+#  $Id: configure,v 1.102 2005-02-09 14:28:49 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -925,7 +925,7 @@ fi
 ###############################################################################
 
 #  Prefetch support?
-printf "checking for prefetch support... "
+printf "checking for asm prefetch support... "
 if [ z"`uname -m`" = zalpha ]; then
 	rm -f _alpha_asm_test.c _alpha_asm_test
 	printf 'int main(int argc, char *argv[]) { int x; int *y = &x; asm ("ldl $31,0(%%0)" : : "g" (y)); return 0; }\n' > _alpha_asm_test.c

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.245 2004-10-08 20:28:40 debug Exp $
+$Id: HISTORY,v 1.246 2004-10-09 11:03:45 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -990,3 +990,4 @@ HISTORY of mips64emul
 		and there is support for Alpha, i386 and UltraSparc backends,
 		but performance is about 50% worse than when running without
 		bintrans. (This is as expected, though.)
+20041009	Minor updates.

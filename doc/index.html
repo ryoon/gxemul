@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.114 2004-10-08 17:26:33 debug Exp $
+$Id: index.html,v 1.115 2004-10-09 11:03:46 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -117,17 +117,23 @@ in the emulator.
 
 <p>
 (MIPS is a registered trademark of MIPS Technologies. This project is
-not affiliated with MIPS Technologies in any way whatsoever.)
+not affiliated with MIPS Technologies in any way whatsoever. There are
+probably also many other words and names used in this documentation that
+are trademarked; they are owned by their respective owners.)
+
 
 
 <p><br>
 <a name="free"></a>
 <h3>Is mips64emul free software?</h3>
 
-Yes, mips64emul is distributed under a free license.
+Yes. Although developing mips64emul has been very time consuming, I don't 
+see any point in not letting others make use of the emulator, or reuse 
+the code. mips64emul is distributed under a free license.
 The code I have written is released under a 2-clause BSD-style license
 (or "revised BSD-style" if one wants to use
 <a href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>.)
+
 <p>
 Apart from the code I have written, some files are copied from other sources
 such as NetBSD, for example header files containing symbolic names of
@@ -135,6 +141,12 @@ bitfields in device registers. They are also covered by similar licenses,
 but with some additional clauses. If you plan to redistribute mips64emul
 (for example as a binary package), or reuse code from mips64emul,
 then you should check those files for their license terms.
+
+<p>
+(The licenses usually require that the original Copyright and license 
+terms are included when you make a copy or modification. The "easiest way 
+out" if you plan to redistribute code from mips64emul is to simply supply 
+the source code. You should however check individual files for details.)
 
 
 
@@ -144,31 +156,43 @@ then you should check those files for their license terms.
 <a name="build"></a>
 <h3>How to compile/build the emulator:</h3>
 
-Uncompress the .tar.gz file, and run
+Uncompress the .tar.gz distribution file, and run
 <pre>
 	$ <b>./configure</b>
 	$ <b>make</b>
 </pre>
+
+<p>
 This should work on any Unix-like system. If it doesn't, then please mail me a
 bug report.
+
 <p>
 (Note for Windows users: there is a small possibility that this will also
 work under Cygwin, but this is totally unsupported, as I have no such system
 to try it on.)
+
 <p>
 The emulator's performance is highly dependent on both runtime settings
 and on compiler settings, so you might want to experiment with different
-CC and CFLAGS environment variable values.
+CC and CFLAGS environment variable values. For example, on a modern PC, 
+you could try the following:
+<p>
+<pre>
+        $ <b>CFLAGS="-mcpu=pentium4 -O3" ./configure</b>
+        $ <b>make</b>
+</pre>
+
 <p>
 A number of different configure options are available:
 <pre>
-    <i>--caches</i>       enable cache emulation
-    <i>--delays</i>       enable instruction latency/delay emulation
-    <i>--mips16</i>       enable MIPS16 instruction support
-    <i>--nobintrans</i>   configure without bintrans support, even if the host supports it
-    <i>--nox11</i>        configure without x11 support
-    <i>--userland</i>     enable userland emulation
+        <i>--caches</i>       enable cache emulation
+        <i>--delays</i>       enable instruction latency/delay emulation
+        <i>--mips16</i>       enable MIPS16 instruction support
+        <i>--nobintrans</i>   configure without bintrans support, even if the host supports it
+        <i>--nox11</i>        configure without X11 support
+        <i>--userland</i>     enable userland emulation
 </pre>
+
 <p>
 <i>--caches</i> enables emulation of caches (R3000 only, so far). This causes an 
 overall slowdown, so don't enable it unless you need it. Enabling caches
@@ -217,35 +241,42 @@ Some other machine types are also emulated, but the degree to which the
 emulation works for these is generally not very high.
 <ul>
   <li>Silicon Graphics MIPS-based machines
-  <li>ARC (NEC RISCstation 2250 and 2200, Acer Pica-61, Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
+  <li>ARC (NEC RISCstation 2250 and 2200, RISCserver 4200,
+	Acer Pica-61, Deskstation Tyne, and Microsoft-Jazz MIPS Magnum)
   <li>Cobalt
   <li>Sony Playstation 2
   <li>Skeletons for generic "hpcmips", <a href="http://www.meshcube.org/">MeshCube</a>,
 	and <a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>
 </ul>
+
 <p>
 Unfortunately, even if most of these machine types have
 64-bit CPUs in them (or 128-bit, the Playstation 2),
 operating systems often run in 32-bit mode on them.
+
 <p>
 There are other machines that use/used MIPS processors, for example the
 Playstation (1) and the Nintendo 64 game systems, but no free OS is ported
 to those platforms as far as I know, so they might not be too interesting
 to emulate.
+
 <p>
 Playstation 2 is among the emulated machine types, but the emulation done
 by mips64emul is <i>not</i> suitable for playing games. Running Linux and
 NetBSD is a lot more fun :-)
+
 <p>
 In addition to specific machine types, a "bare" machine can be emulated.
 This mode is used when the emulator is started without specifying which
 machine type to emulate.
 A bare machine consists of one or more CPUs and a few experimental devices such
 as:
+<p>
 <ul>
-  <li>a console I/O device (think putchar() and getchar()...)
+  <li>a console I/O device (putchar() and getchar()...)
   <li>an inter-processor communication device, for SMP experiments
 </ul>
+<p>
 This mode is useful if you wish to experiment with software for MIPS-like
 systems, but do not with to target any specific real-world machine type, 
 for example for educational purposes or generic MIPS related experiments.
@@ -349,9 +380,9 @@ of harddisk image and be interacted with similar to a real machine:
 <p>
 It is non-trivial to get a specific operating system or OS kernel to
 run in the emulator, so don't expect the list above to grow too quickly.
-(The DECstation mode is the one that works best. After that comes
-some SGI emulation modes. However, there is no SCSI or ethernet support
-for any SGI mode yet.)
+The DECstation mode is the one that works best. After that comes
+some SGI emulation modes for running *BSD or Linux, however there is no
+SCSI or ethernet support for any SGI mode yet.
 <p>
 There is no guarantee that anything
 specific will run in the emulator, but NetBSD (or possibly Linux) is a

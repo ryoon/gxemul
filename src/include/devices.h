@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.37 2004-03-04 20:05:24 debug Exp $
+ *  $Id: devices.h,v 1.38 2004-03-06 17:10:51 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -255,11 +255,6 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 
-/*  dev_ps2_dmac.c:  */
-#define	DEV_PS2_DMAC_LENGTH		0x0000000000010000
-int dev_ps2_dmac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ps2_dmac_init(struct memory *mem, uint64_t baseaddr, struct memory *mem_gif);
-
 /*  dev_ps2_gs.c:  */
 #define	DEV_PS2_GIF_LENGTH		0x0000000000010000
 int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
@@ -269,6 +264,25 @@ void dev_ps2_gif_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_PS2_GS_LENGTH		0x0000000000002000
 int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_ps2_gs_init(struct memory *mem, uint64_t baseaddr);
+
+/*  dev_ps2_stuff.c:  */
+#include "ps2_dmacreg.h"
+#define N_PS2_DMA_CHANNELS              10 
+struct ps2_data {
+        uint32_t        timer0_count;
+        uint32_t        timer0_comp;
+        uint32_t        timer0_mode;
+        
+        uint64_t        dmac_reg[DMAC_REGSIZE / 0x10];
+ 
+        struct memory   *other_memory[N_PS2_DMA_CHANNELS];
+  
+        uint32_t        intr;
+	uint32_t	imask;
+};
+#define	DEV_PS2_STUFF_LENGTH		0x10000
+int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct memory *mem_gif);
 
 /*  dev_ram.c:  */
 #define	DEV_RAM_RAM		0

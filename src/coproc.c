@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.13 2004-01-10 05:42:57 debug Exp $
+ *  $Id: coproc.c,v 1.14 2004-01-11 23:54:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -530,13 +530,19 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
-/*				    debug("  index = %016llx", (long long) cp->reg[COP0_INDEX]);
-				    debug(" random = %016llx", (long long) cp->reg[COP0_RANDOM]);
-				    debug(" mask = %016llx", (long long) cp->reg[COP0_PAGEMASK]);
-				    debug(" hi = %016llx", (long long) cp->reg[COP0_ENTRYHI]);
-				    debug(" lo0 = %016llx", (long long) cp->reg[COP0_ENTRYLO0]);
-				    debug(" lo1 = %016llx\n", (long long) cp->reg[COP0_ENTRYLO1]);
-*/
+#if 0
+				if (op == COP0_TLBWI)
+					debug("TLBWI");
+				else
+					debug("TLBWR");
+				debug(": index = %08llx", (long long) cp->reg[COP0_INDEX]);
+				debug(" random = %08llx", (long long) cp->reg[COP0_RANDOM]);
+				debug(" mask = %016llx", (long long) cp->reg[COP0_PAGEMASK]);
+				debug(" hi = %016llx", (long long) cp->reg[COP0_ENTRYHI]);
+				debug(" lo0 = %016llx", (long long) cp->reg[COP0_ENTRYLO0]);
+				debug(" lo1 = %016llx\n", (long long) cp->reg[COP0_ENTRYLO1]);
+#endif
+
 				if (op == COP0_TLBWR) {
 #if 0
 					/*
@@ -571,6 +577,17 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 					/*  TODO:  cause an exception?  */
 					return;
 				}
+
+#if 0
+				/*  Debug dump of the previous entry at that index:  */
+				debug("                old entry at index = %04x", index);
+				debug(" mask = %016llx", (long long) cp->tlbs[index].mask);
+				debug(" hi = %016llx", (long long) cp->tlbs[index].hi);
+				debug(" lo0 = %016llx", (long long) cp->tlbs[index].lo0);
+				debug(" lo1 = %016llx\n", (long long) cp->tlbs[index].lo1);
+#endif
+
+				/*  Write the entry:  */
 
 				if (cpu->cpu_type.mmu_model == MMU3K) {
 					cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];	/*  & R2K3K_ENTRYHI_VPN_MASK;  */

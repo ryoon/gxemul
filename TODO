@@ -22,7 +22,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Network layer:  src/net.c
 		o)  TCP: fin/ack stuff, and connection time-outs and
-			connection refused (reset on connect?)
+			connection refused (reset on connect?), resend
+			data to the guest OS if no ack has arrived for
+			some time (? buffers?)
 		o)  Outgoing UDP packet fragment support.
 		o)  Make it work with Ultrix and Sprite too, not just
 		    with NetBSD/OpenBSD/Linux.

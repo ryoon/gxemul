@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.172 2004-07-21 02:50:24 debug Exp $
+$Id: HISTORY,v 1.173 2004-07-21 03:05:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -828,3 +828,6 @@ HISTORY of mips64emul
 20040721	Trying to fix the last-ack bug, by sending an RST after the
 		end of a connection. (Probably not a correct fix, but seems
 		to work?)
+		Adding a my_fseek() function, which works like fseek() but
+		with off_t instead of long, so that large disk images can
+		be used on systems where long is 32 bits.

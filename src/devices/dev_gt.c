@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.18 2005-01-30 00:37:05 debug Exp $
+ *  $Id: dev_gt.c,v 1.19 2005-02-21 07:01:08 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -81,7 +81,8 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	case 0xc18:
 		if (writeflag == MEM_WRITE) {
-			debug("[ gt write to  0xc18: data = 0x%08lx ]\n", (long)idata);
+			debug("[ gt write to  0xc18: data = 0x%08lx ]\n",
+			    (long)idata);
 			return 1;
 		} else {
 			odata = 0xffffffffULL;
@@ -91,20 +92,24 @@ odata = 0x00000100;	/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
 
 cpu_interrupt_ack(cpu, d->irqnr);
 
-			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n", (long)odata);
+			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n",
+			    (long)odata);
 		}
 		break;
 	case 0xcf8:	/*  PCI ADDR  */
 	case 0xcfc:	/*  PCI DATA  */
 		if (writeflag == MEM_WRITE) {
-			bus_pci_access(cpu, mem, relative_addr, &idata, writeflag, d->pci_data);
+			bus_pci_access(cpu, mem, relative_addr, &idata,
+			    writeflag, d->pci_data);
 		} else {
-			bus_pci_access(cpu, mem, relative_addr, &odata, writeflag, d->pci_data);
+			bus_pci_access(cpu, mem, relative_addr, &odata,
+			    writeflag, d->pci_data);
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ gt read from addr 0x%x ]\n", (int)relative_addr);
+			debug("[ gt read from addr 0x%x ]\n",
+			    (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
 			debug("[ gt write to addr 0x%x:", (int)relative_addr);
@@ -170,7 +175,8 @@ struct pci_data *dev_gt_init(struct machine *machine, struct memory *mem,
 
 	/*
 	 *  According to NetBSD/cobalt:
-	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011 System Controller, rev 1
+	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011
+	 *  System Controller, rev 1
 	 */
 	bus_pci_add(machine, d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
 

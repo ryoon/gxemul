@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.32 2005-02-19 11:51:33 debug Exp $
+$Id: experiments.html,v 1.33 2005-02-21 07:01:09 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -163,15 +163,15 @@ learn more about how MIPS programs run, then add -V to the command line:
 	a800000000030088: 642100b8      daddiu  at,at,184
 	a80000000003008c: 0004203c      dsll32  a0,a0,0
 	a800000000030090: 0081202d      daddu   a0,a0,at
-	a800000000030094: ffbf0000      sd      ra,0(sp)           [0xffffffffa0007ef0, data=0x0000000000000000]
+	a800000000030094: ffbf0000      sd      ra,0(sp)  [0xffffffffa0007ef0, data=0x0000000000000000]
 	a800000000030098: 0c00c00a      jal     0xa800000000030028 &lt;printstr&gt;
 	a80000000003009c: 00000000 (d)  nop
 	  &lt;printstr("Hello world\n",0,0,0,..)&gt;
 	&lt;printstr&gt;
 	a800000000030028: 67bdfff0      daddiu  sp,sp,-16
-	a80000000003002c: ffb00000      sd      s0,0(sp)           [0xffffffffa0007ee0, data=0x0000000000000000]
-	a800000000030030: ffbf0008      sd      ra,8(sp)           [0xffffffffa0007ee8, data=0xa8000000000300a0]
-	a800000000030034: 90820000      lbu     v0,0(a0)           [0xa8000000000300b8 = $LC0, data=0x48]
+	a80000000003002c: ffb00000      sd      s0,0(sp)  [0xffffffffa0007ee0, data=0x0000000000000000]
+	a800000000030030: ffbf0008      sd      ra,8(sp)  [0xffffffffa0007ee8, data=0xa8000000000300a0]
+	a800000000030034: 90820000      lbu     v0,0(a0)  [0xa8000000000300b8 = $LC0, data=0x48]
 	a800000000030038: 00021600      sll     v0,v0,24
 	mips64emul&gt; <b>print v0</b>
 	v0 = 0x0000000048000000

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.596 2005-02-20 14:47:05 debug Exp $
+$Id: HISTORY,v 1.597 2005-02-21 07:01:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1686,3 +1686,4 @@ HISTORY of mips64emul
                 
 ==============  RELEASE 0.3  ==============
 
+20050221	Minor updates.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn220.c,v 1.2 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_kn220.c,v 1.3 2005-02-21 07:01:08 debug Exp $
  *  
  *  DEC KN220 (DECsystem 5500) devices.
  *
@@ -39,9 +39,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 #define IOBOARD_DEBUG
 
@@ -71,9 +71,12 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef IOBOARD_DEBUG
 	if (writeflag == MEM_WRITE)
-		debug("[ dec5500_ioboard: write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+		debug("[ dec5500_ioboard: write to address 0x%llx, "
+		    "data=0x%016llx ]\n", (long long)relative_addr,
+		    (long long)idata);
 	else
-		debug("[ dec5500_ioboard: read from address 0x%llx ]\n", (long long)relative_addr);
+		debug("[ dec5500_ioboard: read from address 0x%llx ]\n",
+		    (long long)relative_addr);
 #endif
 
 	switch (relative_addr) {
@@ -88,9 +91,12 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ dec5500_ioboard: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			debug("[ dec5500_ioboard: unimplemented write to "
+			    "address 0x%llx, data=0x%016llx ]\n",
+			    (long long)relative_addr, (long long)idata);
 		else
-			debug("[ dec5500_ioboard: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			debug("[ dec5500_ioboard: unimplemented read from"
+			    " address 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)
@@ -114,9 +120,11 @@ int dev_sgec_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef SGEC_DEBUG
 	if (writeflag == MEM_WRITE)
-		debug("[ sgec: write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+		debug("[ sgec: write to address 0x%llx, data=0x%016llx ]\n",
+		    (long long)relative_addr, (long long)idata);
 	else
-		debug("[ sgec: read from address 0x%llx ]\n", (long long)relative_addr);
+		debug("[ sgec: read from address 0x%llx ]\n",
+		    (long long)relative_addr);
 #endif
 
 	switch (relative_addr) {
@@ -127,9 +135,12 @@ int dev_sgec_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ sgec: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			debug("[ sgec: unimplemented write to address 0x%llx,"
+			    " data=0x%016llx ]\n", (long long)relative_addr,
+			    (long long)idata);
 		else
-			debug("[ sgec: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			debug("[ sgec: unimplemented read from address "
+			    "0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)
@@ -172,7 +183,8 @@ struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu,
 	memset(d, 0, sizeof(struct dec5500_ioboard_data));
 
 	memory_device_register(mem, "dec5500_ioboard", baseaddr,
-	    DEV_DEC5500_IOBOARD_LENGTH, dev_dec5500_ioboard_access, (void *)d, MEM_DEFAULT, NULL);
+	    DEV_DEC5500_IOBOARD_LENGTH, dev_dec5500_ioboard_access,
+	    (void *)d, MEM_DEFAULT, NULL);
 
 	return d;
 }

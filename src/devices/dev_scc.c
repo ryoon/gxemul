@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.25 2005-02-18 07:29:56 debug Exp $
+ *  $Id: dev_scc.c,v 1.26 2005-02-21 07:01:08 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -170,39 +170,56 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 		if (d->scc_register_w[N_SCC_REGS + SCC_WR9] &
 		    SCC_WR9_MASTER_IE) {
 			/*  TX interrupts?  */
-			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
-				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_A ||
-				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_TX_IP_B)
+			if (d->scc_register_w[i * N_SCC_REGS + SCC_WR1] &
+			    SCC_WR1_TX_IE) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_TX_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_TX_IP_B)
 					cpu_interrupt(cpu, d->irq_nr);
 			}
 
 			/*  RX interrupts?  */
-			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] & (SCC_WR1_RXI_FIRST_CHAR
-			    | SCC_WR1_RXI_ALL_CHAR)) {
-				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0] & SCC_RR0_RX_AVAIL) {
+			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] &
+			    (SCC_WR1_RXI_FIRST_CHAR | SCC_WR1_RXI_ALL_CHAR)) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0]
+				    & SCC_RR0_RX_AVAIL) {
 					if (i == SCC_CHANNEL_A)
-						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_RX_IP_A;
+						d->scc_register_r[N_SCC_REGS +
+						    SCC_RR3] |= SCC_RR3_RX_IP_A;
 					else
-						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_RX_IP_B;
+						d->scc_register_r[N_SCC_REGS +
+						    SCC_RR3] |= SCC_RR3_RX_IP_B;
 				}
 
-				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_RX_IP_A ||
-				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_RX_IP_B)
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_RX_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_RX_IP_B)
 					cpu_interrupt(cpu, d->irq_nr);
 			}
 
-			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] & SCC_WR1_DMA_MODE) {
-				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0] & SCC_RR0_RX_AVAIL) {
+			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] &
+			    SCC_WR1_DMA_MODE) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0]
+				    & SCC_RR0_RX_AVAIL) {
 					if (i == SCC_CHANNEL_A)
-						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_EXT_IP_A;
+						d->scc_register_r[N_SCC_REGS +
+						    SCC_RR3] |=
+						    SCC_RR3_EXT_IP_A;
 					else
-						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_EXT_IP_B;
+						d->scc_register_r[N_SCC_REGS +
+						    SCC_RR3] |=
+						    SCC_RR3_EXT_IP_B;
 				}
 
-				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_EXT_IP_A ||
-				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_EXT_IP_B)
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_EXT_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3]
+				    & SCC_RR3_EXT_IP_B)
 {
 					cpu_interrupt(cpu, d->irq_nr);
+/*  TODO: huh?  */
 cpu_interrupt(cpu, 8 + 0x02000000);
 }
 			}
@@ -314,36 +331,50 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 1:		/*  command  */
 		if (writeflag==MEM_READ) {
-			odata = d->scc_register_r[port * N_SCC_REGS + d->register_selected[port]];
+			odata = d->scc_register_r[port * N_SCC_REGS +
+			    d->register_selected[port]];
 
 			if (d->register_selected[port] == SCC_RR3) {
 				if (port == SCC_CHANNEL_B)
-					fatal("WARNING! scc channel B has no RR3\n");
+					fatal("WARNING! scc channel B has "
+					    "no RR3\n");
 
-				d->scc_register_r[port * N_SCC_REGS + SCC_RR3] = 0;
+				d->scc_register_r[port * N_SCC_REGS +
+				    SCC_RR3] = 0;
 				cpu_interrupt_ack(cpu, d->irq_nr);
 			}
 
 #ifdef SCC_DEBUG
-			fatal("[ scc: port %i, register %i, read value 0x%02x ]\n", port, d->register_selected[port], odata);
+			fatal("[ scc: port %i, register %i, read value "
+			    "0x%02x ]\n", port, d->register_selected[port],
+			    (int)odata);
 #endif
 			d->register_select_in_progress[port] = 0;
 			d->register_selected[port] = 0;
-			/*  debug("[ scc: (port %i) read from 0x%08lx ]\n", port, (long)relative_addr);  */
+			/*  debug("[ scc: (port %i) read from 0x%08lx ]\n",
+			    port, (long)relative_addr);  */
 		} else {
-			/*  If no register is selected, then select one. Otherwise, write to the selected register.  */
+			/*  If no register is selected, then select one.
+			    Otherwise, write to the selected register.  */
 			if (d->register_select_in_progress[port] == 0) {
 				d->register_select_in_progress[port] = 1;
 				d->register_selected[port] = idata;
 				d->register_selected[port] &= (N_SCC_REGS-1);
 			} else {
-				d->scc_register_w[port * N_SCC_REGS + d->register_selected[port]] = idata;
+				d->scc_register_w[port * N_SCC_REGS +
+				    d->register_selected[port]] = idata;
 #ifdef SCC_DEBUG
-				fatal("[ scc: port %i, register %i, write value 0x%02x ]\n", port, d->register_selected[port], idata);
+				fatal("[ scc: port %i, register %i, write "
+				    "value 0x%02x ]\n", port,
+				    d->register_selected[port], idata);
 #endif
 
-				d->scc_register_r[port * N_SCC_REGS + SCC_RR12] = d->scc_register_w[port * N_SCC_REGS + SCC_WR12];
-				d->scc_register_r[port * N_SCC_REGS + SCC_RR13] = d->scc_register_w[port * N_SCC_REGS + SCC_WR13];
+				d->scc_register_r[port * N_SCC_REGS +
+				    SCC_RR12] = d->scc_register_w[port *
+				    N_SCC_REGS + SCC_WR12];
+				d->scc_register_r[port * N_SCC_REGS +
+				    SCC_RR13] = d->scc_register_w[port *
+				    N_SCC_REGS + SCC_WR13];
 
 				d->register_select_in_progress[port] = 0;
 				d->register_selected[port] = 0;
@@ -359,24 +390,33 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
 			d->scc_register_r[N_SCC_REGS + SCC_RR3] = 0;
 			cpu_interrupt_ack(cpu, d->irq_nr);
 
-			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n", port, (long)relative_addr, odata);
+			debug("[ scc: (port %i) read from 0x%08lx: 0x%02x ]\n",
+			    port, (long)relative_addr, (int)odata);
 		} else {
-			/*  debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);  */
+			/*  debug("[ scc: (port %i) write to  0x%08lx: "
+			    "0x%08x ]\n", port, (long)relative_addr,
+			    (int)idata);  */
 
 			/*  Send the character:  */
 			lk201_tx_data(&d->lk201, d->scc_nr * 2 + port, idata);
 
 			/*  Loopback:  */
-			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14] & SCC_WR14_LOCAL_LOOPB)
-				dev_scc_add_to_rx_queue(d, idata, d->scc_nr * 2 + port);
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14]
+			    & SCC_WR14_LOCAL_LOOPB)
+				dev_scc_add_to_rx_queue(d, idata, d->scc_nr
+				    * 2 + port);
 
 			/*  TX interrupt:  */
-			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR9] & SCC_WR9_MASTER_IE &&
-			    d->scc_register_w[port * N_SCC_REGS + SCC_WR1] & SCC_WR1_TX_IE) {
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR9] &
+			    SCC_WR9_MASTER_IE &&
+			    d->scc_register_w[port * N_SCC_REGS + SCC_WR1] &
+			    SCC_WR1_TX_IE) {
 				if (port == SCC_CHANNEL_A)
-					d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_TX_IP_A;
+					d->scc_register_r[N_SCC_REGS + SCC_RR3]
+					    |= SCC_RR3_TX_IP_A;
 				else
-					d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_TX_IP_B;
+					d->scc_register_r[N_SCC_REGS + SCC_RR3]
+					    |= SCC_RR3_TX_IP_B;
 			}
 
 			dev_scc_tick(cpu, extra);
@@ -384,9 +424,11 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ scc: (port %i) read from 0x%08lx ]\n", port, (long)relative_addr);
+			debug("[ scc: (port %i) read from 0x%08lx ]\n",
+			    port, (long)relative_addr);
 		} else {
-			debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n", port, (long)relative_addr, idata);
+			debug("[ scc: (port %i) write to  0x%08lx: 0x%08x ]\n",
+			    port, (long)relative_addr, (int)idata);
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.7 2005-02-18 06:51:55 debug Exp $
+ *  $Id: dev_sn.c,v 1.8 2005-02-21 07:01:08 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -79,11 +79,12 @@ int dev_sn_access(struct cpu *cpu, struct memory *mem,
 	switch (regnr) {
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ sn: unimplemented write to address 0x%x (regnr %i), data=0x%02x ]\n",
+			fatal("[ sn: unimplemented write to address 0x%x"
+			    " (regnr %i), data=0x%02x ]\n",
 			    (int)relative_addr, regnr, (int)idata);
 		} else {
-			fatal("[ sn: unimplemented read from address 0x%x (regnr %i) ]\n",
-			    (int)relative_addr, regnr);
+			fatal("[ sn: unimplemented read from address 0x%x "
+			    "(regnr %i) ]\n", (int)relative_addr, regnr);
 		}
 	}
 

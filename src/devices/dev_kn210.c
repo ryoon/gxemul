@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.9 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_kn210.c,v 1.10 2005-02-21 07:01:08 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -34,9 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 struct kn210_data {
@@ -58,9 +58,11 @@ int dev_kn210_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ kn210: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ kn210: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ kn210: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ kn210: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, idata);
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.31 2005-02-09 20:36:09 debug Exp $
+ *  $Id: useremul.c,v 1.32 2005-02-09 20:41:17 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -169,7 +169,6 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
-printf("B\n");
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.65 2004-08-12 05:13:54 debug Exp $
+ *  $Id: main.c,v 1.66 2004-08-13 06:47:15 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -166,7 +166,7 @@ void usage(char *progname)
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
 	printf("            4=Deskstation Tyne, 5=Microsoft-Jazz)\n");
-	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
+	printf("  -B        try to emulate a Playstation 2 machine\n");
 #ifdef BINTRANS
 	printf("  -b        enable dynamic binary translation (not yet!)\n");
 #endif
@@ -194,7 +194,7 @@ void usage(char *progname)
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
-	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
+	printf("  -E        try to emulate a Cobalt machine\n");
 	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F        try to emulate an hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
@@ -208,7 +208,7 @@ void usage(char *progname)
 	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j netbsd.pmax     for the NetBSD/pmax 1.6.2 install CD\n");
 	printf("                -j vmunix          for Ultrix  (REQUIRED to boot Ultrix)\n");
-	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);
+	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
 	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");

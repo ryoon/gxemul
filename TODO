@@ -4,17 +4,15 @@ mips64emul TODO
 This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 
-	Binary translation:
-		o)  see src/bintrans.c
-
 	Caches / memory hierarchies:
 		o)  src/coproc.c: bits in config registers should reflect
 		    correct cache sizes for _all_ CPU types. (currently only
-		    implemented for R4000 and a few others)
+		    implemented for R4000, R1x000, and a few others)
 		o)  src/memory.c: Implement correct cache emulation for
 		    all CPU types. (currently only R2000/R3000 is implemented)
 		    (per CPU, multiple levels should be possible,
 		    associativity etc!)
+		o)  R2000/R3000 isn't _100%_ correct, just almost correct :)
 		o)  Move the -S (fill mem with random) functionality into the
 		    memory.c subsystem, not machine.c or wherever it is now
 		o)  ECC stuff, simulation of memory errors?  (Machine dependant)
@@ -35,6 +33,11 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  inet_ntoa detection on HP-UX is probably broken
 		o)  Use getopts?
 		o)  X11 libs and headers via command line option?
+		o)  Verify that the configure script, building and running
+		    the emulator works on some platforms:
+			+)  Irix, AIX, QNX
+			+)  MacOS X  (I've not tried this personally yet)
+			+)  Ultrix using gcc? (Inside the emulator)
 
 	Command line option parsing:
 		o)  Use only one letter for selecting machine type (followed
@@ -46,6 +49,15 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Factor out the MIPS dependant parts of the cpu, so that
 		    (in theory) the emulator could support other architectures
 		    as well.   (sparc64?)
+		o)  Binary translation:
+			+)  load/store, connect better with the TLB
+			+)  better support for instructions in delayslots
+			+)  add the remaining "trivial" instructions (slti, ..)
+			+)  smaller chunk pointers on Alpha (offsets)
+			+)  flag for "don't run bintrans on the next attempt"
+			+)  recursive translation?
+			+)  write backends for non-Alpha machines
+			+)  see src/bintrans.c for more info
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info):
 				o)  Floating point exception handling, and
@@ -84,30 +96,37 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 			TLB/cache? 128-bit GPRs, new instructions),
 			4K (note: NOT R4000), 5K (note: NOT R5000),
 			R6000 (ISA II), R8000
+		o)  Multi-cpu stuff:
+			+)  SGI's NUMA architecture. Study
+				x)  Linux sources
+				x)  SGI's specs on NUMA address space
+			+)  Ultrix?  NetBSD doesn't do SMP on MIPS yet :-(
+			+)  Own experiments with ycx2.
 
 	Emulation of specific machines and devices:
 		o)  SCSI controllers!
 		o)  "wdc" IDE controller!
-		o)  PC-style keyboard controller
-		o)  Busses, interrupt systems, and ROM emulation:
+		o)  PS/2-style keyboard controller (for several machines)
+		o)  Generic busses;
 			x)  PCI:  i/o and interrupts
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
-			framebuffers:
-				better cursor support, overlays?,
-				2D/3D acceleration, PX[G]
-			status words / control words, make this more
+			x)  ioasic
+			x)  framebuffers:
+				+)  better cursor support, overlays?,
+				+)  2D/3D acceleration, PX[G]
+			x)  status words / control words, make this more
 				portable/cleaner
-			scsi controller(s): sii, DMA for asc
-			serial controllers: ssc, scc (and more work on dc?)
-			nvram on decstation 5000/125:  when using X11,
+			x)  scsi controller(s): sii, DMA for asc
+			x)  serial controllers: ssc, scc (and more work on dc?)
+			x)  nvram on decstation 5000/125:  when using X11,
 				set console=g or similar
-			DECstation 5840? "xbi-based SMP"
+			x)  DECstation 5840? "xbi-based SMP"
 		o)  SGI and ARC machines (sgimips, arc):
+			x)  Memory/interrupt controllers
 			x)  Finish the SGI O2 framebuffer and keyboard support
 			x)  IP30 (Linux with graphics support?)
 			x)  SMP / NUMA?
-			x)  Interrupts (PCI and others) (both ARC and SGI)
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)
 		o)  Playstation 2:
@@ -125,13 +144,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 				No FPU, but something as coproc 2.
 			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
 				(R4300, 4MB RAM, really weird memory map)
-
-	Multi-cpu stuff:
-		o)  SGI's NUMA architecture. Study
-			x)  Linux sources
-			x)  SGI's specs on NUMA address space
-		o)  Ultrix?  (NetBSD is not SMP yet on any MIPS platform.)
-		o)  Own experiments with ycx2.
 
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)
@@ -168,11 +180,6 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 
 	Regression tests:
 		o)  see tests/
-
-	Verify that building and running the emulator works on some platforms:
-		o)  Irix, AIX, QNX
-		o)  MacOS X  (I've not tried this personally, but others have)
-		o)  Ultrix using gcc? (Inside the emulator)
 
 	Save state of the whole emulated machine, to be able to load it back
 		in later?  (Memory, all device's states, all registers and

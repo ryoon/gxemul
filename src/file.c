@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.73 2005-02-03 17:27:34 debug Exp $
+ *  $Id: file.c,v 1.74 2005-02-10 05:24:46 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -297,6 +297,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 	FILE *f;
 	int len, secn, total_len, chunk_size;
 	int encoding = ELFDATA2LSB;	/*  Assume little-endian. See below  */
+	int program_byte_order = -1;
 	unsigned char buf[8192];
 
 	f = fopen(filename, "r");
@@ -323,6 +324,12 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 	case ((ECOFF_MAGIC_MIPSEB & 0xff) << 8) + ((ECOFF_MAGIC_MIPSEB >> 8) & 0xff):
 		format_name = "MIPS1 BE";
 		encoding = ELFDATA2MSB;
+		break;
+	case ECOFF_MAGIC_MIPSEB:
+		/*  NOTE: Big-endian header, little-endian code!  */
+		format_name = "MIPS1 BE-LE";
+		encoding = ELFDATA2MSB;
+		program_byte_order = ELFDATA2LSB;
 		break;
 	case ECOFF_MAGIC_MIPSEL:
 		format_name = "MIPS1 LE";
@@ -652,6 +659,9 @@ skip_normal_coff_symbols:
 	*entrypointp = a_entry;
 	*gpp = a_gp;
 	m->file_loaded_end_addr = end_addr;
+
+	if (program_byte_order != -1)
+		encoding = program_byte_order;
 
 	if (encoding == ELFDATA2LSB)
 		*byte_orderp = EMUL_LITTLE_ENDIAN;

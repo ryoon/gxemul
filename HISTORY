@@ -399,3 +399,4 @@ HISTORY of mips64emul
 20040315	Pixelstamp solid fill now supports colors other than just
 		zero-fill.
 		Adding a (new) regression test skeleton.
+20040321	Some really minor updates.

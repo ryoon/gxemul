@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.4 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_ram.c,v 1.5 2004-03-23 02:30:55 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -64,6 +64,7 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	if (writeflag==MEM_READ) {
 		debug("[ ram: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
 	} else {
+		int i;
 		debug("[ ram: write to 0x%x:", (int)relative_addr);
 		for (i=0; i<len; i++)
 			debug(" %02x", data[i]);
@@ -74,7 +75,7 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	switch (d->mode) {
 	case DEV_RAM_MIRROR:
 		/*  TODO:  how about caches?  */
-		return memory_rw(cpu, mem, d->otheraddress + relative_addr, data, len, writeflag, CACHE_DATA);
+		return memory_rw(cpu, mem, d->otheraddress + relative_addr, data, len, writeflag, PHYSICAL | NO_EXCEPTIONS);
 	case DEV_RAM_RAM:
 		if (writeflag == MEM_WRITE)
 			memcpy(&d->data[relative_addr], data, len);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.16 2004-02-24 21:58:11 debug Exp $
+ *  $Id: arcbios.c,v 1.17 2004-03-23 02:30:56 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -109,21 +109,21 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 
 		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
 
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 4, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 4, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 8, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 8, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -144,7 +144,7 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x28, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x28, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -221,6 +221,33 @@ uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags, 
 
 
 /*
+ *  arcbios_private_emul():
+ *
+ *  TODO:  This is probably SGI specific. (?)
+ *
+ *	0x04	get nvram table
+ */
+void arcbios_private_emul(struct cpu *cpu)
+{
+	int vector = cpu->pc & 0xfff;
+
+	switch (vector) {
+	case 0x04:
+		debug("[ ARCBIOS PRIVATE get nvram table(): TODO ]\n");
+		cpu->gpr[GPR_V0] = 0;
+		break;
+	default:
+		cpu_register_dump(cpu);
+		debug("a0 points to: ");
+		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		debug("\n");
+		fatal("ARCBIOS: unimplemented PRIVATE vector 0x%x\n", vector);
+		exit(1);
+	}
+}
+
+
+/*
  *  arcbios_emul():  ARCBIOS emulation
  *
  *	0x0c	Halt()
@@ -246,6 +273,11 @@ void arcbios_emul(struct cpu *cpu)
 	unsigned char ch2;
 	unsigned char buf[40];
 
+	if (cpu->pc >= ARC_PRIVATE_ENTRIES && cpu->pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
+		arcbios_private_emul(cpu);
+		return;
+	}
+
 	switch (vector) {
 	case 0x0c:		/*  Halt()  */
 	case 0x10:		/*  PowerDown()  */
@@ -260,7 +292,7 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x24:		/*  GetPeer(node)  */
 		{
 			uint32_t peer;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0xc, &buf[0], sizeof(peer), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0xc, &buf[0], sizeof(peer), MEM_READ, CACHE_NONE);
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -275,7 +307,7 @@ void arcbios_emul(struct cpu *cpu)
 			cpu->gpr[GPR_V0] = FIRST_ARC_COMPONENT + 0xc;
 		else {
 			uint32_t child;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x8, &buf[0], sizeof(child), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x8, &buf[0], sizeof(child), MEM_READ, CACHE_NONE);
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -288,7 +320,7 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x2c:		/*  GetParent(node)  */
 		{
 			uint32_t parent;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x4, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x4, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE);
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -338,7 +370,7 @@ void arcbios_emul(struct cpu *cpu)
 			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
 		for (i=0; i<cpu->gpr[GPR_A2]; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 			console_putchar(ch);
 		}
 		/*  TODO: store len in returnlen  */
@@ -346,18 +378,18 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ ARCBIOS GetEnvironmentVariable(\"%s\") ]\n", buf);
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<strlen((char *)buf); j++) {
-				memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+				memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(cpu, cpu->mem, (uint64_t)(SGI_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
 				cpu->gpr[GPR_V0] = SGI_ENV_STRINGS + i + strlen((char *)buf) + 1;
 				return;

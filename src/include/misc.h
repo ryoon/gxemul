@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.39 2004-03-22 00:54:56 debug Exp $
+ *  $Id: misc.h,v 1.40 2004-03-23 02:30:56 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -118,6 +118,8 @@ typedef uint64_t u_int64_t;
 #define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00
 #define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80
 #define	FIRST_ARC_COMPONENT	0xffffffffbfca8000
+#define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000
+#define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000
 
 /*  Nintendo 64:  */
 /*  nothing yet  */

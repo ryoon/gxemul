@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.68 2004-03-22 00:55:37 debug Exp $
+ *  $Id: machine.c,v 1.69 2004-03-23 02:30:56 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1163,6 +1163,8 @@ void machine_init(struct memory *mem)
 		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
@@ -1208,15 +1210,15 @@ void machine_init(struct memory *mem)
 		mem_count = physical_ram_in_mb <= 256? physical_ram_in_mb : 256;
 		mem_count = (mem_count - 16) * 1048576 / 4096;
 
-		/*  SUPER-special case:   SGI-IP22, ignore the lowest 128MB of RAM:  */
+#if 0
+		/*  SUPER-special case:   SGI-IP22, ignore the lowest 128MB of address space:  */
 		if (emulation_type == EMULTYPE_SGI && machine == 22) {
-			if (physical_ram_in_mb <= 128) {
-				fatal("weird physical_ram_in_mb setting for SGI-IP22\n");
-				exit(1);
-			}
+			/*  physical_ram_in_mb += 128;  */
+
 			mem_base  += (128 * 1048576) / 4096;
 			mem_count -= (128 * 1048576) / 4096;
 		}
+#endif
 
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
@@ -1274,9 +1276,11 @@ void machine_init(struct memory *mem)
 			case 20:
 				strcat(machine_name, " (Indigo2)");
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 				break;
 			case 22:
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
+				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
 				/*
 				 *  This would be one possible implementation of the 128MB mirroring
@@ -1353,13 +1357,13 @@ dev_ram_init(mem,    0x20000000, 32 * 1048576, DEV_RAM_RAM, 0);
 dev_ram_init(mem,    0x40000000, 32 * 1048576, DEV_RAM_RAM, 0);
 
 /*
-dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
 
-dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
+dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 */
 				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
@@ -1481,6 +1485,9 @@ case arc_CacheClass:
 
 		for (i=0; i<100; i++)
 			store_32bit_word(ARC_FIRMWARE_VECTORS + i*4, ARC_FIRMWARE_ENTRIES + i*4);
+
+		for (i=0; i<100; i++)
+			store_32bit_word(ARC_PRIVATE_VECTORS + i*4, ARC_PRIVATE_ENTRIES + i*4);
 
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = 9;
 		cpus[bootstrap_cpu]->gpr[GPR_A1] = ARC_ARGV_START;

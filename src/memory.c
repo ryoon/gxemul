@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.20 2004-03-09 00:04:40 debug Exp $
+ *  $Id: memory.c,v 1.21 2004-03-23 02:30:56 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -653,8 +653,9 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 	 *  This code simply bypasses the device check, when reading
 	 *  instructions.
 	 */
-	if (cache == CACHE_INSTRUCTION)
+/*	if (cache == CACHE_INSTRUCTION)
 		goto no_exception_access;
+*/
 
 	/*
 	 *  Memory mapped device?

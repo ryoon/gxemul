@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.47 2005-01-21 20:21:03 debug Exp $
+ *  $Id: net.c,v 1.48 2005-01-22 07:19:02 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1667,17 +1667,26 @@ static void get_host_nameserver(struct net *net)
 /*
  *  net_gateway_init():
  *
- *  This function creates a "gateway" machine at IPv4 address 10.0.0.254,
- *  which acts as a gateway/router/nameserver etc.
+ *  This function creates a "gateway" machine (for example at IPv4 address
+ *  10.0.0.254, if the net is 10.0.0.0/8), which acts as a gateway/router/
+ *  nameserver etc.
  */
 static void net_gateway_init(struct net *net)
 {
-	int iadd = 4;
+	unsigned char *p = &net->netmask_ipv4;
+	uint32_t x;
+	int xl, iadd = 4;
 
-	net->gateway_ipv4_addr[0] =  10;
-	net->gateway_ipv4_addr[1] =   0;
-	net->gateway_ipv4_addr[2] =   0;
-	net->gateway_ipv4_addr[3] = 254;
+	x = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3];
+	xl = 32 - net->netmask_ipv4_len;
+	if (xl > 8)
+		xl = 8;
+	x |= ((1 << xl) - 1) & ~1;
+
+	net->gateway_ipv4_addr[0] = x >> 24;
+	net->gateway_ipv4_addr[1] = x >> 16;
+	net->gateway_ipv4_addr[2] = x >> 8;
+	net->gateway_ipv4_addr[3] = x;
 
 	net->gateway_ethernet_addr[0] = 0x60;
 	net->gateway_ethernet_addr[1] = 0x50;
@@ -1708,12 +1717,15 @@ static void net_gateway_init(struct net *net)
  *  net_init():
  *
  *  This function creates a network, and returns a pointer to it.
+ *  Example: ipv4addr should be something like "10.0.0.0", netipv4len = 8.
+ *
  *  (On failure, exit() is called.)
  */
-struct net *net_init(struct emul *emul, int init_flags)
+struct net *net_init(struct emul *emul, int init_flags,
+	char *ipv4addr, int netipv4len)
 {
 	struct net *net;
-	int iadd = 4;
+	int res, iadd = 4;
 
 	net = malloc(sizeof(struct net));
 	if (net == NULL) {
@@ -1730,13 +1742,27 @@ struct net *net_init(struct emul *emul, int init_flags)
 	net->timestamp = 0;
 	net->first_ethernet_packet = net->last_ethernet_packet = NULL;
 
+	res = inet_pton(AF_INET, ipv4addr, &net->netmask_ipv4);
+	if (res < 1) {
+		fprintf(stderr, "net_init(): could not parse IPv4 address"
+		    " '%s'\n", ipv4addr);
+		exit(1);
+	}
+
+	if (netipv4len < 1 || netipv4len > 30) {
+		fprintf(stderr, "net_init(): extremely weird ipv4 "
+		    "network length\n", ipv4addr);
+		exit(1);
+	}
+	net->netmask_ipv4_len = netipv4len;
+
 	net->nameserver_known = 0;
 	get_host_nameserver(net);
 
 	debug("net: ");
 
-	/*  TODO: Don't hardcode this  */
-	debug("10.0.0.0/24");
+	net_debugaddr(&net->netmask_ipv4, ADDR_IPV4);
+	debug("/%i", net->netmask_ipv4_len);
 
 	debug(" (max outgoing: TCP=%i, UDP=%i)\n",
 	    MAX_TCP_CONNECTIONS, MAX_UDP_CONNECTIONS);

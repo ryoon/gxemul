@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.125 2005-01-21 20:21:03 debug Exp $
+ *  $Id: emul.c,v 1.126 2005-01-22 07:19:02 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -595,7 +595,7 @@ void emul_simple_init(struct emul *emul)
 	debug_indentation(iadd);
 
 	/*  Create a network:  */
-	emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY);
+	emul->net = net_init(emul, NET_INIT_FLAG_GATEWAY, "10.0.0.0", 8);
 
 	/*  Create the machine:  */
 	for (i=0; i<emul->n_machines; i++)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.h,v 1.6 2005-01-21 15:22:19 debug Exp $
+ *  $Id: net.h,v 1.7 2005-01-22 07:19:02 debug Exp $
  *
  *  Emulated network support.  (See net.c for more info.)
  */
@@ -101,6 +101,10 @@ struct net {
 	/*  The emul struct which this net belong to:  */
 	struct emul	*emul;
 
+	/*  The network's addresses:  */
+	struct in_addr	netmask_ipv4;
+	int		netmask_ipv4_len;
+
 	/*  The "special machine":  */
 	unsigned char	gateway_ipv4_addr[4];
 	unsigned char	gateway_ethernet_addr[6];
@@ -123,7 +127,8 @@ int net_ethernet_rx(struct net *net, void *extra,
 	unsigned char **packetp, int *lenp);
 void net_ethernet_tx(struct net *net, void *extra,
 	unsigned char *packet, int len);
-struct net *net_init(struct emul *emul, int init_flags);
+struct net *net_init(struct emul *emul, int init_flags,
+	char *ipv4addr, int netipv4len);
 
 /*  Flag used to signify that this net should have a gateway:  */
 #define	NET_INIT_FLAG_GATEWAY		1

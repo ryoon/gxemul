@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.9 2005-01-19 14:24:20 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.10 2005-01-21 15:22:18 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -44,6 +44,7 @@
 #include "bus_pci.h"
 #include "console.h"
 #include "devices.h"
+#include "emul.h"
 #include "machine.h"
 #include "memory.h"
 #include "misc.h"
@@ -481,8 +482,10 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 		goto skip_but_interrupt;
 	}
 
-	if (d->cur_rx_packet == NULL && net_ethernet_rx_avail(d))
-		net_ethernet_rx(d, &d->cur_rx_packet, &d->cur_rx_packet_len);
+	if (d->cur_rx_packet == NULL &&
+	    net_ethernet_rx_avail(cpu->machine->emul->net, d))
+		net_ethernet_rx(cpu->machine->emul->net, d,
+		    &d->cur_rx_packet, &d->cur_rx_packet_len);
 
 	if (d->cur_rx_packet == NULL)
 		goto skip;
@@ -640,7 +643,8 @@ void mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	if (j < len)
 		fatal("[ mec_try_tx: not enough data? ]\n");
 
-	net_ethernet_tx(d, d->cur_tx_packet, d->cur_tx_packet_len);
+	net_ethernet_tx(cpu->machine->emul->net, d,
+	    d->cur_tx_packet, d->cur_tx_packet_len);
 
 	/*  see openbsd's if_mec.c for details  */
 	data[0] = 0x80;

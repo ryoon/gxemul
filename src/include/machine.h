@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.4 2005-01-21 13:13:13 debug Exp $
+ *  $Id: machine.h,v 1.5 2005-01-21 15:22:19 debug Exp $
  */
 
 #include "misc.h"
@@ -200,7 +200,7 @@ struct machine {
 
 
 /*  machine.c:  */
-struct machine *machine_new(char *name);
+struct machine *machine_new(char *name, struct emul *emul);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
@@ -212,6 +212,7 @@ void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t dat
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct machine *machine);
+void machine_dumpinfo(struct machine *);
 
 
 #endif	/*  MACHINE_H  */

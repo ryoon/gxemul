@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.30 2005-01-19 21:05:35 debug Exp $
+ *  $Id: dev_le.c,v 1.31 2005-01-21 15:22:18 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -54,6 +54,8 @@
 #include <string.h>
 
 #include "devices.h"
+#include "emul.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
 #include "net.h"
@@ -122,7 +124,7 @@ struct le_data {
  *
  *  Read a 16-bit word from the SRAM.
  */
-uint64_t le_read_16bit(struct le_data *d, int addr)
+static uint64_t le_read_16bit(struct le_data *d, int addr)
 {
 	/*  TODO: This is for little endian only  */
 	int x = d->sram[addr & (SRAM_SIZE-1)] +
@@ -136,7 +138,7 @@ uint64_t le_read_16bit(struct le_data *d, int addr)
  *
  *  Write a 16-bit word to the SRAM.
  */
-void le_write_16bit(struct le_data *d, int addr, uint16_t x)
+static void le_write_16bit(struct le_data *d, int addr, uint16_t x)
 {
 	/*  TODO: This is for little endian only  */
 	d->sram[addr & (SRAM_SIZE-1)] = x & 0xff;
@@ -150,7 +152,7 @@ void le_write_16bit(struct le_data *d, int addr, uint16_t x)
  *  Initialize data structures by reading an 'initialization block' from the
  *  SRAM.
  */
-void le_chip_init(struct le_data *d)
+static void le_chip_init(struct le_data *d)
 {
 	d->init_block_addr = (d->reg[1] & 0xffff) + ((d->reg[2] & 0xff) << 16);
 	if (d->init_block_addr & 1)
@@ -223,7 +225,7 @@ void le_chip_init(struct le_data *d)
  *
  *  This routine should only be called if TXON is enabled.
  */
-void le_tx(struct le_data *d)
+static void le_tx(struct net *net, struct le_data *d)
 {
 	int start_txp = d->txp;
 	uint16_t tx_descr[4];
@@ -311,7 +313,7 @@ void le_tx(struct le_data *d)
 		 *  the packet.
 		 */
 		if (enp) {
-			net_ethernet_tx(d, d->tx_packet, d->tx_packet_len);
+			net_ethernet_tx(net, d, d->tx_packet, d->tx_packet_len);
 
 			free(d->tx_packet);
 			d->tx_packet = NULL;
@@ -344,7 +346,7 @@ void le_tx(struct le_data *d)
  *
  *  This routine should only be called if RXON is enabled.
  */
-void le_rx(struct le_data *d)
+static void le_rx(struct net *net, struct le_data *d)
 {
 	int i, start_rxp = d->rxp;
 	uint16_t rx_descr[4];
@@ -450,7 +452,7 @@ void le_rx(struct le_data *d)
 /*
  *  le_register_fix():
  */
-void le_register_fix(struct le_data *d)
+static void le_register_fix(struct net *net, struct le_data *d)
 {
 	/*  Init with new Initialization block, if needed.  */
 	if (d->reg[0] & LE_INIT)
@@ -475,22 +477,23 @@ void le_register_fix(struct le_data *d)
 		do {
 			if (d->rx_packet != NULL)
 				/*  Try to receive the packet:  */
-				le_rx(d);
+				le_rx(net, d);
 
 			if (d->rx_packet != NULL)
 				/*  If the packet wasn't fully received, 
 				    then abort for now.  */
 				break;
 
-			if (d->rx_packet == NULL && net_ethernet_rx_avail(d))
-				net_ethernet_rx(d, &d->rx_packet,
-				    &d->rx_packet_len);
+			if (d->rx_packet == NULL &&
+			    net_ethernet_rx_avail(net, d))
+				net_ethernet_rx(net, d,
+				    &d->rx_packet, &d->rx_packet_len);
 		} while (d->rx_packet != NULL);
 	}
 
 	/*  If the transmitter is on, check for outgoing buffers:  */
 	if (d->reg[0] & LE_TXON)
-		le_tx(d);
+		le_tx(net, d);
 
 	/*  SERR should be the OR of BABL, CERR, MISS, and MERR:  */
 	d->reg[0] &= ~LE_SERR;
@@ -529,7 +532,7 @@ void dev_le_tick(struct cpu *cpu, void *extra)
 {
 	struct le_data *d = (struct le_data *) extra;
 
-	le_register_fix(d);
+	le_register_fix(cpu->machine->emul->net, d);
 
 	if (d->reg[0] & LE_INTR && d->reg[0] & LE_INEA)
 		cpu_interrupt(cpu, d->irq_nr);

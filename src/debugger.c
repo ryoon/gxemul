@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.44 2005-01-20 14:36:47 debug Exp $
+ *  $Id: debugger.c,v 1.45 2005-01-21 15:22:20 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -711,44 +711,7 @@ static void debugger_cmd_machine(struct machine *m, char *cmd_line)
 			debug_indentation(iadd);
 		}
 
-		debug("ram: %i MB", m->physical_ram_in_mb);
-		if (m->memory_offset_in_mb != 0)
-			debug(" (offset by %i MB)", m->memory_offset_in_mb);
-		debug("\n");
-
-		for (i=0; i<m->ncpus; i++) {
-			struct cpu_type_def *ct = &m->cpus[i]->cpu_type;
-
-			debug("cpu%i: %s, %s", i, ct->name,
-			    m->cpus[i]->running? "running" : "stopped");
-
-			debug(" (%i-bit ", (ct->isa_level < 3 ||
-			    ct->isa_level == 32)? 32 : 64);
-
-			debug("%s, ", m->cpus[i]->byte_order
-			    == EMUL_BIG_ENDIAN? "BE" : "LE");
-
-			debug("%i TLB entries", ct->nr_of_tlb_entries);
-
-			if (ct->default_picache || ct->default_pdcache)
-				debug(", I+D = %i+%i KB",
-				    (1 << ct->default_picache) / 1024,
-				    (1 << ct->default_pdcache) / 1024);
-
-			if (ct->default_scache) {
-				int kb = (1 << ct->default_scache) / 1024;
-				debug(", L2 = %i %cB",
-				    kb >= 1024? kb / 1024 : kb,
-				    kb >= 1024? 'M' : 'K');
-			}
-
-			debug(")\n");
-		}
-
-		if (m->ncpus > 1)
-			debug("Bootstrap cpu is nr %i\n", m->bootstrap_cpu);
-
-		diskimage_dump_info(m);
+		machine_dumpinfo(debugger_emul->machines[j]);
 
 		if (nm > 1)
 			debug_indentation(-iadd);

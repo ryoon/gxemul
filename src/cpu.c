@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.71 2004-06-27 01:07:15 debug Exp $
+ *  $Id: cpu.c,v 1.72 2004-06-28 03:18:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -540,7 +540,6 @@ int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	struct coproc *cp0 = cpu->coproc[0];
-	int instr_fetched;
 	int i;
 	unsigned char instr[4];
 	uint32_t instrword;
@@ -548,8 +547,6 @@ int cpu_run_instr(struct cpu *cpu)
 	int hi6, special6, regimm5, rd, rs, rt, sa, imm;
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem = NULL;			/*  for instruction trace  */
-
-	int enabled, mask;			/*  interrupt delivery  */
 
 	int cond=0, likely, and_link;
 
@@ -581,6 +578,7 @@ int cpu_run_instr(struct cpu *cpu)
 		}
 	}
 
+	/*  Cache the program counter in a local variable:  */
 	cached_pc = cpu->pc;
 
 	if (cpu->last_was_jumptoself > 0)
@@ -764,6 +762,8 @@ int cpu_run_instr(struct cpu *cpu)
 	} else
 #endif
 	    {
+		int instr_fetched;
+
 		/*
 		 *  Fetch a 32-bit instruction word from memory:
 		 *
@@ -876,26 +876,34 @@ int cpu_run_instr(struct cpu *cpu)
 	 *  in the status register are set, then cause an interrupt exception
 	 *  instead of executing the current instruction.
 	 */
-
 	if (cpu->cpu_type.exc_model == EXC3K) {
+		/*  R3000:  */
+		int enabled, mask;
+
 		if (cpu->last_was_rfe) {
 			enabled = 0;
 			cpu->last_was_rfe = 0;
 		} else {
 			enabled = cp0->reg[COP0_STATUS] & MIPS_SR_INT_IE;
+			mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			if (enabled && mask) {
+				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				return 0;
+			}
 		}
 	} else {
-		/*  R4000:  */
+		/*  R4000 and others:  */
+		int enabled, mask;
+
 		enabled = (cp0->reg[COP0_STATUS] & STATUS_IE)
 		    && !(cp0->reg[COP0_STATUS] & STATUS_EXL)
 		    && !(cp0->reg[COP0_STATUS] & STATUS_ERL);
-	}
 
-	mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE];
-
-	if (enabled && (mask & STATUS_IM_MASK) != 0) {
-		cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
-		return 0;
+		mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+		if (enabled && mask) {
+			cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+			return 0;
+		}
 	}
 
 
@@ -906,12 +914,15 @@ int cpu_run_instr(struct cpu *cpu)
 	/*  Get the top 6 bits of the instruction:  */
 	hi6 = (instr[3] >> 2) & 0x3f;
 
-	cpu->stats_opcode[hi6] ++;
+	if (show_opcode_statistics)
+		cpu->stats_opcode[hi6] ++;
 
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
-		cpu->stats__special[special6] ++;
+
+		if (show_opcode_statistics)
+			cpu->stats__special[special6] ++;
 
 		switch (special6) {
 		case SPECIAL_SYNC:
@@ -1892,44 +1903,48 @@ int cpu_run_instr(struct cpu *cpu)
 		case HI6_SWC2:
 		case HI6_SWC3:
 		case HI6_SDC1:
+			/*  These are the default "assumptions".  */
 			linked = 0;
+			st = 1;
+			signd = 1;
+			wlen = 4;
 
 			switch (hi6) {
 			/*  The most common ones:  */
-			case HI6_LW:	{ wlen = 4; st = 0; signd = 1; }  break;
-			case HI6_SW:	{ wlen = 4; st = 1; signd = 0; }  break;
+			case HI6_LW:	{           st = 0;            }  break;
+			case HI6_SW:	{                   signd = 0; }  break;
 
-			case HI6_LB:	{ wlen = 1; st = 0; signd = 1; }  break;
+			case HI6_LB:	{ wlen = 1; st = 0;            }  break;
 			case HI6_LBU:	{ wlen = 1; st = 0; signd = 0; }  break;
-			case HI6_SB:	{ wlen = 1; st = 1; signd = 0; }  break;
+			case HI6_SB:	{ wlen = 1;         signd = 0; }  break;
 
 			case HI6_LD:	{ wlen = 8; st = 0; signd = 0; }  break;
-			case HI6_SD:	{ wlen = 8; st = 1; signd = 0; }  break;
+			case HI6_SD:	{ wlen = 8;         signd = 0; }  break;
 
 			case HI6_LQ_MDMX:	{ wlen = 16; st = 0; signd = 0; }  break;	/*  R5900, otherwise MDMX (TODO)  */
-			case HI6_SQ:		{ wlen = 16; st = 1; signd = 0; }  break;	/*  R5900 ?  */
+			case HI6_SQ:		{ wlen = 16;         signd = 0; }  break;	/*  R5900 ?  */
 
 			/*  The rest:  */
-			case HI6_LH:	{ wlen = 2; st = 0; signd = 1; }  break;
+			case HI6_LH:	{ wlen = 2; st = 0;            }  break;
 			case HI6_LHU:	{ wlen = 2; st = 0; signd = 0; }  break;
-			case HI6_LWU:	{ wlen = 4; st = 0; signd = 0; }  break;
-			case HI6_LWC1:	{ wlen = 4; st = 0; signd = 1; }  break;
-			case HI6_LWC2:	{ wlen = 4; st = 0; signd = 1; }  break;
-			case HI6_LWC3:	{ wlen = 4; st = 0; signd = 1; }  break;
+			case HI6_LWU:	{           st = 0; signd = 0; }  break;
+			case HI6_LWC1:	{           st = 0;            }  break;
+			case HI6_LWC2:	{           st = 0;            }  break;
+			case HI6_LWC3:	{           st = 0;            }  break;
 			case HI6_LDC1:	{ wlen = 8; st = 0; signd = 0; }  break;
 			case HI6_LDC2:	{ wlen = 8; st = 0; signd = 0; }  break;
 
-			case HI6_SH:	{ wlen = 2; st = 1; signd = 0; }  break;
-			case HI6_SWC1:	{ wlen = 4; st = 1; signd = 0; }  break;
-			case HI6_SWC2:	{ wlen = 4; st = 1; signd = 0; }  break;
-			case HI6_SWC3:	{ wlen = 4; st = 1; signd = 0; }  break;
-			case HI6_SDC1:	{ wlen = 8; st = 1; signd = 0; }  break;
+			case HI6_SH:	{ wlen = 2;         signd = 0; }  break;
+			case HI6_SWC1:	{                   signd = 0; }  break;
+			case HI6_SWC2:	{                   signd = 0; }  break;
+			case HI6_SWC3:	{                   signd = 0; }  break;
+			case HI6_SDC1:	{ wlen = 8;         signd = 0; }  break;
 
-			case HI6_LL:	{ wlen = 4; st = 0; signd = 0; linked = 1; }  break;
+			case HI6_LL:	{           st = 0; signd = 0; linked = 1; }  break;
 			case HI6_LLD:	{ wlen = 8; st = 0; signd = 0; linked = 1; }  break;
 
-			case HI6_SC:	{ wlen = 4; st = 1; signd = 0; linked = 1; }  break;
-			case HI6_SCD:	{ wlen = 8; st = 1; signd = 0; linked = 1; }  break;
+			case HI6_SC:	{                   signd = 0; linked = 1; }  break;
+			case HI6_SCD:	{ wlen = 8;         signd = 0; linked = 1; }  break;
 
 			default:
 				fatal("cannot be here\n");
@@ -2022,7 +2037,16 @@ int cpu_run_instr(struct cpu *cpu)
 				if (cpnr < 0)
 					break;
 
-				if (wlen == 16) {
+				if (wlen == 4) {
+					/*  Special case for 32-bit stores... (perhaps not worth it)  */
+					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+						d[0] = value & 0xff;         d[1] = (value >> 8) & 0xff;
+						d[2] = (value >> 16) & 0xff; d[3] = (value >> 24) & 0xff;
+					} else {
+						d[3] = value & 0xff;         d[2] = (value >> 8) & 0xff;
+						d[1] = (value >> 16) & 0xff; d[0] = (value >> 24) & 0xff;
+					}
+				} else if (wlen == 16) {
 					value_hi = cpu->gpr_quadhi[rt];
 					/*  Special case for R5900 128-bit stores:  */
 					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
@@ -2035,19 +2059,9 @@ int cpu_run_instr(struct cpu *cpu)
 							d[i] = (value >> ((wlen-1-i)*8)) & 255;
 							d[i + 8] = (value_hi >> ((wlen-1-i)*8)) & 255;
 						}
-				} else if (wlen == 4) {
-					/*  Special case for 32-bit stores... (perhaps not worth it)  */
-					d[0] = value & 0xff;         d[1] = (value >> 8) & 0xff;
-					d[2] = (value >> 16) & 0xff; d[3] = (value >> 24) & 0xff;
-					if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-						int tmp1, tmp2;
-						tmp1 = d[0]; tmp2 = d[1];
-						d[0] = d[3]; d[1] = d[2];
-						d[3] = tmp1; d[2] = tmp2;
-					}
-				} else if (wlen == 1)
+				} else if (wlen == 1) {
 					d[0] = value & 0xff;
-				else {
+				} else {
 					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 						for (i=0; i<wlen; i++)
 							d[i] = (value >> (i*8)) & 255;
@@ -2077,8 +2091,28 @@ int cpu_run_instr(struct cpu *cpu)
 
 				if (wlen == 1)
 					value = d[0] | (signd && (d[0]&128)? (-1 << 8) : 0);
-				else if (wlen == 16) {
+				else if (wlen != 16) {
+					/*  General case (except for 128-bit):  */
+					int i;
+					value = 0;
+					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+						if (signd && (d[wlen-1] & 128)!=0)	/*  sign extend  */
+							value = -1;
+						for (i=wlen-1; i>=0; i--) {
+							value <<= 8;
+							value += d[i];
+						}
+					} else {
+						if (signd && (d[0] & 128)!=0)		/*  sign extend  */
+							value = -1;
+						for (i=0; i<wlen; i++) {
+							value <<= 8;
+							value += d[i];
+						}
+					}
+				} else {
 					/*  R5900 128-bit quadword:  */
+					int i;
 					value_hi = 0;
 					value = 0;
 					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
@@ -2097,24 +2131,6 @@ int cpu_run_instr(struct cpu *cpu)
 						}
 					}
 					cpu->gpr_quadhi[rt] = value_hi;
-				} else {
-					/*  General case:  */
-					value = 0;
-					if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
-						if (signd && (d[wlen-1] & 128)!=0)	/*  sign extend  */
-							value = -1;
-						for (i=wlen-1; i>=0; i--) {
-							value <<= 8;
-							value += d[i];
-						}
-					} else {
-						if (signd && (d[0] & 128)!=0)		/*  sign extend  */
-							value = -1;
-						for (i=0; i<wlen; i++) {
-							value <<= 8;
-							value += d[i];
-						}
-					}
 				}
 
 				switch (hi6) {
@@ -2292,7 +2308,9 @@ int cpu_run_instr(struct cpu *cpu)
 		break;
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
-		cpu->stats__regimm[regimm5] ++;
+
+		if (show_opcode_statistics)
+			cpu->stats__regimm[regimm5] ++;
 
 		switch (regimm5) {
 		case REGIMM_BLTZ:
@@ -2496,7 +2514,9 @@ int cpu_run_instr(struct cpu *cpu)
 		break;
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
-		cpu->stats__special2[special6] ++;
+
+		if (show_opcode_statistics)
+			cpu->stats__special2[special6] ++;
 
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
 
@@ -2670,7 +2690,7 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
  */
 int cpu_run(struct cpu **cpus, int ncpus)
 {
-	int i, j, s1, s2, te;
+	int te;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
 	int running, cpu0instrs;
@@ -2702,6 +2722,8 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 		/*  Do a chunk of cycles:  */
 		do {
+			int i, j, te;
+
 			running = 0;
 			cpu0instrs = 0;
 
@@ -2776,9 +2798,9 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	 *  halting.
 	 *  (TODO: do this per cpu?)
 	 */
-        for (i=0; i<cpus[0]->n_tick_entries; i++) {
-		cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
-		cpus[0]->tick_func[i](cpus[0], cpus[0]->tick_extra[i]);
+        for (te=0; te<cpus[0]->n_tick_entries; te++) {
+		cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
+		cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 	}
 
 	debug("All CPUs halted.\n");
@@ -2787,6 +2809,8 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		cpu_show_cycles(&starttime, ncycles);
 
 	if (show_opcode_statistics) {
+		int i, s1, s2;
+
 		for (i=0; i<ncpus; i++) {
 			printf("cpu%i opcode statistics:\n", i);
 			for (s1=0; s1<N_HI6; s1++) {

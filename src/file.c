@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.29 2004-07-01 12:01:20 debug Exp $
+ *  $Id: file.c,v 1.30 2004-07-02 13:35:26 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -75,13 +75,13 @@ extern uint64_t file_loaded_end_addr;
 				Wb = Wp[Wlen-1 - Wi];			\
 			else						\
 				Wb = Wp[Wi];				\
+			if (Wi == 0 && (Wb & 0x80)) {			\
+				var --;	/*  set var to -1 :-)  */	\
+				var <<= 8;				\
+			}						\
 			var |= Wb;					\
 			if (Wi < Wlen-1)				\
 				var <<= 8;				\
-		}							\
-		if (sizeof(var) == 8 && Wlen == 4) {			\
-			if ((uint32_t)var >= 0x80000000LU)		\
-				var |= 0xFFFFFFFFLLU << 32;		\
 		}							\
 	}
 

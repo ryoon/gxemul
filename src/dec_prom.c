@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.10 2004-07-01 11:46:03 debug Exp $
+ *  $Id: dec_prom.c,v 1.11 2004-07-02 13:35:26 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -205,7 +205,8 @@ void decstation_prom_emul(struct cpu *cpu)
 
 			/*  If the transfer was successful, transfer the data to emulated memory:  */
 			if (res) {
-				store_buf(cpu->gpr[GPR_A1], tmp_buf, cpu->gpr[GPR_A2]);
+				store_buf(cpu->gpr[GPR_A1],
+				    (char *)tmp_buf, cpu->gpr[GPR_A2]);
 				cpu->gpr[GPR_V0] = cpu->gpr[GPR_A2];
 			}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.118 2004-07-01 11:46:03 debug Exp $
+ *  $Id: machine.c,v 1.119 2004-07-02 13:35:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -236,9 +236,10 @@ void store_64bit_word(uint64_t addr, uint64_t data64)
  *  store_32bit_word():
  *
  *  Stores a 32-bit word in emulated RAM.  Byte order is taken into account.
- *  Helper function.
+ *  (This function takes a 64-bit word as argument, to suppress some
+ *  warnings, but only the lowest 32 bits are used.)
  */
-void store_32bit_word(uint64_t addr, uint32_t data32)
+void store_32bit_word(uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
 	data[0] = (data32 >> 24) & 255;
@@ -306,8 +307,11 @@ void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
  *  store_32bit_word_in_host():
  *
  *  See comment for store_64bit_word_in_host().
+ *
+ *  (Note:  The data32 parameter is a uint64_t. This is done to suppress
+ *  some warnings.)
  */
-void store_32bit_word_in_host(unsigned char *data, uint32_t data32)
+void store_32bit_word_in_host(unsigned char *data, uint64_t data32)
 {
 	data[0] = (data32 >> 24) & 255;
 	data[1] = (data32 >> 16) & 255;
@@ -1250,9 +1254,12 @@ void machine_init(struct memory *mem)
 		store_32bit_word(INITIAL_STACK_POINTER + 0x10, BOOTINFO_MAGIC);
 		store_32bit_word(INITIAL_STACK_POINTER + 0x14, BOOTINFO_ADDR);
 
-		store_32bit_word(DEC_PROM_INITIAL_ARGV, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x10));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+4, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0x70));
-		store_32bit_word(DEC_PROM_INITIAL_ARGV+8, (uint32_t)(DEC_PROM_INITIAL_ARGV + 0xe0));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV,
+		    (DEC_PROM_INITIAL_ARGV + 0x10));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+4,
+		    (DEC_PROM_INITIAL_ARGV + 0x70));
+		store_32bit_word(DEC_PROM_INITIAL_ARGV+8,
+		    (DEC_PROM_INITIAL_ARGV + 0xe0));
 		store_32bit_word(DEC_PROM_INITIAL_ARGV+12, 0);
 
 		/*
@@ -1315,12 +1322,17 @@ void machine_init(struct memory *mem)
 
 		store_buf(BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
-		/*  The system's memmap:  (memmap is a global variable, in dec_prom.h)  */
-		store_32bit_word_in_host((unsigned char *)&memmap.pagesize, 4096);
+		/*
+		 *  The system's memmap:  (memmap is a global variable, in
+		 *  dec_prom.h)
+		 */
+		store_32bit_word_in_host(
+		    (unsigned char *)&memmap.pagesize, 4096);
 		{
 			unsigned int i;
 			for (i=0; i<sizeof(memmap.bitmap); i++)
-				memmap.bitmap[i] = ((int)i * 4096*8 < 1048576*physical_ram_in_mb)? 0xff : 0x00;
+				memmap.bitmap[i] = ((int)i * 4096*8 <
+				    1048576*physical_ram_in_mb)? 0xff : 0x00;
 		}
 		store_buf(DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
 
@@ -1328,17 +1340,20 @@ void machine_init(struct memory *mem)
 		addr = DEC_PROM_STRINGS;
 
 		if (use_x11)
-			add_environment_string(framebuffer_console_name, &addr);	/*  (0,3)  Keyboard and Framebuffer  */
+			/*  (0,3)  Keyboard and Framebuffer  */
+			add_environment_string(framebuffer_console_name, &addr);
 		else
-			add_environment_string(serial_console_name, &addr);	/*  Serial console  */
+			/*  Serial console  */
+			add_environment_string(serial_console_name, &addr);
 
 		/*
-		 *  The KN5800 (SMP system) uses a CCA (console communications area):
-		 *  (See VAX 6000 documentation for details.)
+		 *  The KN5800 (SMP system) uses a CCA (console communications
+		 *  area):  (See VAX 6000 documentation for details.)
 		 */
 		{
 			char tmps[300];
-			sprintf(tmps, "cca=%x", (int)DEC_DECCCA_BASEADDR + 0xa0000000);
+			sprintf(tmps, "cca=%x",
+			    (int)(DEC_DECCCA_BASEADDR + 0xa0000000ULL));
 			add_environment_string(tmps, &addr);
 		}
 
@@ -2174,9 +2189,9 @@ void machine_init(struct memory *mem)
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Version, 1);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 100 * 4);	/*  ?  */
-			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVector, ARC_PRIVATE_VECTORS);
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
 
@@ -2205,7 +2220,8 @@ void machine_init(struct memory *mem)
 			 *
 			 *  This is ugly.
 			 */
-			store_64bit_word(SGI_SPB_ADDR + 0x40, 0xffffffff80001400);
+			store_64bit_word(SGI_SPB_ADDR + 0x40,
+			    0xffffffff80001400ULL);
 			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x500);
 
 			store_32bit_word(SGI_SPB_ADDR + 0x500 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
@@ -2215,7 +2231,8 @@ void machine_init(struct memory *mem)
 			store_32bit_word(SGI_SPB_ADDR + 0x500 + 16, 0);				/*  nop  */
 
 			/*  This is similar, but used by Irix' arcs_nvram_tab() instead of arcs_getenv():  */
-			store_64bit_word(SGI_SPB_ADDR + 0x50, 0xffffffff80001600);
+			store_64bit_word(SGI_SPB_ADDR + 0x50,
+			    0xffffffff80001600ULL);
 			store_64bit_word(SGI_SPB_ADDR + 0x600 + 0x8, SGI_SPB_ADDR + 0x700);
 
 			store_32bit_word(SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
@@ -2231,22 +2248,22 @@ void machine_init(struct memory *mem)
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
 			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
-			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
 			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
 			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
-			store_32bit_word(ARC_ARGV_START, (uint32_t)(ARC_ARGV_START + 0x100));
-			store_32bit_word(ARC_ARGV_START + 0x4, (uint32_t)(ARC_ARGV_START + 0x180));
-			store_32bit_word(ARC_ARGV_START + 0x8, (uint32_t)(ARC_ARGV_START + 0x200));
-			store_32bit_word(ARC_ARGV_START + 0xc, (uint32_t)(ARC_ARGV_START + 0x220));
-			store_32bit_word(ARC_ARGV_START + 0x10, (uint32_t)(ARC_ARGV_START + 0x240));
-			store_32bit_word(ARC_ARGV_START + 0x14, (uint32_t)(ARC_ARGV_START + 0x260));
-			store_32bit_word(ARC_ARGV_START + 0x18, (uint32_t)(ARC_ARGV_START + 0x280));
-			store_32bit_word(ARC_ARGV_START + 0x1c, (uint32_t)(ARC_ARGV_START + 0x2a0));
-			store_32bit_word(ARC_ARGV_START + 0x20, (uint32_t)(ARC_ARGV_START + 0x2c0));
-			store_32bit_word(ARC_ARGV_START + 0x24, (uint32_t)(ARC_ARGV_START + 0x2e0));
+			store_32bit_word(ARC_ARGV_START, (ARC_ARGV_START + 0x100));
+			store_32bit_word(ARC_ARGV_START + 0x4, (ARC_ARGV_START + 0x180));
+			store_32bit_word(ARC_ARGV_START + 0x8, (ARC_ARGV_START + 0x200));
+			store_32bit_word(ARC_ARGV_START + 0xc, (ARC_ARGV_START + 0x220));
+			store_32bit_word(ARC_ARGV_START + 0x10, (ARC_ARGV_START + 0x240));
+			store_32bit_word(ARC_ARGV_START + 0x14, (ARC_ARGV_START + 0x260));
+			store_32bit_word(ARC_ARGV_START + 0x18, (ARC_ARGV_START + 0x280));
+			store_32bit_word(ARC_ARGV_START + 0x1c, (ARC_ARGV_START + 0x2a0));
+			store_32bit_word(ARC_ARGV_START + 0x20, (ARC_ARGV_START + 0x2c0));
+			store_32bit_word(ARC_ARGV_START + 0x24, (ARC_ARGV_START + 0x2e0));
 			store_32bit_word(ARC_ARGV_START + 0x28, 0);
 		}
 

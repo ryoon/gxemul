@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.19 2004-07-01 23:07:03 debug Exp $
+ *  $Id: emul.c,v 1.20 2004-07-02 13:35:26 debug Exp $
  *
  *  Emulation startup.
  */
@@ -104,7 +104,7 @@ void add_pc_dump_points(void)
 		 */
 
 		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
-			dp |= 0xffffffff00000000;
+			dp |= 0xffffffff00000000ULL;
 		dumppoint_pc[i] = dp;
 
 		debug("pc dumppoint %i: %016llx", i, (long long)dp);
@@ -166,8 +166,10 @@ void load_bootblock(void)
 		    bootblock_buf, sizeof(bootblock_buf));
 
 		/*  Ultrix boots at 0x80600000, NetBSD at 0x80700000:  */
-		store_buf(0x80600000, bootblock_buf, sizeof(bootblock_buf));
-		store_buf(0x80700000, bootblock_buf, sizeof(bootblock_buf));
+		store_buf(0x80600000, (char *)bootblock_buf,
+		    sizeof(bootblock_buf));
+		store_buf(0x80700000, (char *)bootblock_buf,
+		    sizeof(bootblock_buf));
 
 		cpus[bootstrap_cpu]->pc = 0x80700000;
 		break;
@@ -281,12 +283,12 @@ void emul(void)
 	}
 
 	if ((cpus[bootstrap_cpu]->pc >> 32) == 0 &&
-	    (cpus[bootstrap_cpu]->pc & 0x80000000))
-		cpus[bootstrap_cpu]->pc |= 0xffffffff00000000;
+	    (cpus[bootstrap_cpu]->pc & 0x80000000ULL))
+		cpus[bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
 
 	if ((cpus[bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
-	    (cpus[bootstrap_cpu]->gpr[GPR_GP] & 0x80000000))
-		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000;
+	    (cpus[bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
+		cpus[bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<ncpus; i++)

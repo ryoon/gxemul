@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.14 2004-07-01 11:46:03 debug Exp $
+ *  $Id: useremul.c,v 1.15 2004-07-02 13:35:26 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -259,7 +259,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd read(%i,0x%llx,%lli)\n",
 			    (int)arg0, (long long)arg1, (long long)arg2);
 
-			if (arg2 > 0) {
+			if (arg2 != 0) {
 				charbuf = malloc(arg2);
 				if (charbuf == NULL) {
 					fprintf(stderr, "out of memory in useremul_syscall()\n");
@@ -286,7 +286,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd write(%i,0x%llx,%lli)\n",
 			    (int)descr, (long long)mipsbuf, (long long)length);
 
-			if (length > 0) {
+			if (length != 0) {
 				charbuf = malloc(length);
 				if (charbuf == NULL) {
 					fprintf(stderr, "out of memory in useremul_syscall()\n");
@@ -311,7 +311,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd open(\"%s\", 0x%llx, 0x%llx)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
 
-			result_low = open(charbuf, arg1, arg2);
+			result_low = open((char *)charbuf, arg1, arg2);
 			if ((int64_t)result_low < 0) {
 				error_flag = 1;
 				error_code = errno;
@@ -332,7 +332,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd access(\"%s\", 0x%llx)\n",
 			    charbuf, (long long) arg1);
 
-			result_low = access(charbuf, arg1);
+			result_low = access((char *)charbuf, arg1);
 			if (result_low != 0) {
 				error_flag = 1;
 				error_code = errno;
@@ -403,15 +403,16 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			charbuf = get_userland_string(cpu, arg0);
 			debug("useremul_syscall(): netbsd readlink(\"%s\",0x%lli,%lli)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
-			if (arg2 > 0 && arg2 < 50000) {
+			if (arg2 != 0 && arg2 < 50000) {
 				unsigned char buf2[arg2];
 				buf2[arg2-1] = '\0';
-				result_low = readlink(charbuf, buf2, sizeof(buf2)-1);
+				result_low = readlink((char *)charbuf,
+				    (char *)buf2, sizeof(buf2)-1);
 				if ((int64_t)result_low < 0) {
 					error_flag = 1;
 					error_code = errno;
 				} else
-					store_string(arg1, buf2);
+					store_string(arg1, (char *)buf2);
 			}
 			break;
 
@@ -520,7 +521,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		case NETBSD_SYS___getcwd:
 			debug("useremul_syscall(): netbsd __getcwd(0x%llx,%lli): TODO\n",
 			    (long long)arg0, (long long)arg1);
-			if (arg1 > 0 && arg1 < 500000) {
+			if (arg1 != 0 && arg1 < 500000) {
 				char buf[arg1];
 				unsigned int i;
 
@@ -530,10 +531,14 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				buf[sizeof(buf)-1] = 0;
 
 				for (i = 0; i<sizeof(buf) && i < arg1; i++)
-					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
+					memory_rw(cpu, cpu->mem, arg0 + i,
+					    (unsigned char *)&buf[i], 1,
+					    MEM_WRITE, CACHE_NONE);
 
 				/*  zero-terminate in emulated space:  */
-				memory_rw(cpu, cpu->mem, arg0 + arg1-1, &buf[sizeof(buf)-1], 1, MEM_WRITE, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, arg0 + arg1-1,
+				    (unsigned char *)&buf[sizeof(buf)-1],
+				    1, MEM_WRITE, CACHE_NONE);
 			}
 			result_low = arg0;
 			break;
@@ -635,7 +640,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): ultrix read(%i,0x%llx,%lli)\n",
 			    (int)arg0, (long long)arg1, (long long)arg2);
 
-			if (arg2 > 0) {
+			if (arg2 != 0) {
 				charbuf = malloc(arg2);
 				if (charbuf == NULL) {
 					fprintf(stderr, "out of memory in useremul_syscall()\n");
@@ -662,7 +667,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): ultrix write(%i,0x%llx,%lli)\n",
 			    (int)descr, (long long)mipsbuf, (long long)length);
 
-			if (length > 0) {
+			if (length != 0) {
 				charbuf = malloc(length);
 				if (charbuf == NULL) {
 					fprintf(stderr, "out of memory in useremul_syscall()\n");
@@ -687,7 +692,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): ultrix open(\"%s\", 0x%llx, 0x%llx)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
 
-			result_low = open(charbuf, arg1, arg2);
+			result_low = open((char *)charbuf, arg1, arg2);
 			if ((int64_t)result_low < 0) {
 				error_flag = 1;
 				error_code = errno;

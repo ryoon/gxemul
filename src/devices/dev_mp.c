@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.6 2004-06-09 08:43:02 debug Exp $
+ *  $Id: dev_mp.c,v 1.7 2004-07-02 13:35:25 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -81,8 +81,8 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	}
 
 	if (writeflag == MEM_WRITE && relative_addr == DEV_MP_STARTUPADDR) {
-		if ((addr >> 32) == 0 && (addr & 0x80000000))
-			addr |= 0xffffffff00000000;
+		if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
+			addr |= 0xffffffff00000000ULL;
 		startup_addr = addr;
 		return 1;
 	}

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: hpc_bootinfo.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: hpc_bootinfo.h,v 1.3 2004-07-02 13:35:25 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.2 2002/04/14 06:07:40 takemura Exp $	*/
 
 /*-
@@ -59,7 +59,7 @@ struct hpc_bootinfo {
 #define BI_CNUSE_SERIAL		(1<<1)
 
 /*  extern struct bootinfo *bootinfo;  */
-#define	HPC_BOOTINFO_MAGIC	0x13536135
+#define	HPC_BOOTINFO_MAGIC	0x13536135ULL
 
 #define BIFB_D2_M2L_3		0
 #define BIFBN_D2_M2L_3		"D2_M2L_3"

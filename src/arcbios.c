@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.21 2004-06-14 09:16:17 debug Exp $
+ *  $Id: arcbios.c,v 1.22 2004-07-02 13:35:26 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -62,7 +62,8 @@ struct emul_arc_child {
 	struct arcbios_component component;
 };
 
-uint32_t arcbios_next_component_address = (uint32_t)FIRST_ARC_COMPONENT;
+uint32_t arcbios_next_component_address =
+    (uint32_t)(FIRST_ARC_COMPONENT & 0xffffffff);
 int n_arc_components = 0;
 
 
@@ -78,7 +79,8 @@ int n_arc_components = 0;
  *         stores the new child after the last stored child.
  *  TODO:  This stuff is really ugly.
  */
-uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *identifier, uint32_t parent)
+uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component,
+	char *identifier, uint32_t parent)
 {
 	uint64_t a = arcbios_next_component_address;
 	uint32_t peer=0;
@@ -87,18 +89,20 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 	uint64_t peeraddr = FIRST_ARC_COMPONENT;
 
 	/*
-	 *  This component has no children yet, but it may have peers (that is, other components
-	 *  that share this component's parent) so we have to set the peer value correctly.
+	 *  This component has no children yet, but it may have peers (that is,
+	 *  other components that share this component's parent) so we have to
+	 *  set the peer value correctly.
 	 *
-	 *  Also, if this is the first child of some parent, the parent's child pointer should
-	 *  be set to point to this component.  (But only if it is the first.)
+	 *  Also, if this is the first child of some parent, the parent's child
+	 *  pointer should be set to point to this component.  (But only if it
+	 *  is the first.)
 	 *
-	 *  This is really ugly:  scan through all components, starting from FIRST_ARC_COMPONENT,
-	 *  to find a component with the same parent as this component will have.  If such a
-	 *  component is found, and its 'peer' value is NULL, then set it to this component's
-	 *  address (a).
+	 *  This is really ugly:  scan through all components, starting from
+	 *  FIRST_ARC_COMPONENT, to find a component with the same parent as
+	 *  this component will have.  If such a component is found, and its
+	 *  'peer' value is NULL, then set it to this component's address (a).
 	 *
-	 *  TODO:  make nicer
+	 *  TODO:  make this nicer
 	 */
 
 	n_left = n_arc_components;
@@ -109,9 +113,12 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 
 		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
 
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem,
+		    peeraddr + 0, &buf[0], sizeof(eparent),
+		    MEM_READ, CACHE_NONE);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			unsigned char tmp;
+			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
@@ -172,7 +179,7 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 
 	arcbios_next_component_address += 0x30;
 
-	if (host_tmp_component->IdentifierLength > 0) {
+	if (host_tmp_component->IdentifierLength != 0) {
 		store_32bit_word(a + 0x2c, a + 0x30);
 		store_string(a + 0x30, identifier);
 		arcbios_next_component_address += strlen(identifier) + 1;
@@ -195,8 +202,9 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
  *
  *  Return value is the virtual (emulated) address of the added component.
  */
-uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags, uint16_t version,
-	uint16_t revision, uint32_t key, uint32_t affinitymask, char *identifier, uint32_t parent)
+uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags,
+	uint16_t version, uint16_t revision, uint32_t key,
+	uint32_t affinitymask, char *identifier, uint32_t parent)
 {
 	/*  This component is only for temporary use:  */
 	struct arcbios_component component;
@@ -273,7 +281,8 @@ void arcbios_emul(struct cpu *cpu)
 	unsigned char ch2;
 	unsigned char buf[40];
 
-	if (cpu->pc >= ARC_PRIVATE_ENTRIES && cpu->pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
+	if (cpu->pc >= ARC_PRIVATE_ENTRIES &&
+	    cpu->pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
 		arcbios_private_emul(cpu);
 		return;
 	}

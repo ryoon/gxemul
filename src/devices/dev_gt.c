@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.10 2004-01-19 12:51:13 debug Exp $
+ *  $Id: dev_gt.c,v 1.11 2004-07-02 13:35:24 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -81,9 +81,13 @@ int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 			debug("[ gt write to  0xc18: data = 0x%08lx ]\n", (long)idata);
 			return 1;
 		} else {
-			odata = 0xffffffff;	/*  ???  interrupt something...  */
+			odata = 0xffffffffULL;
+			/*  ???  interrupt something...  */
+
 odata = 0x00000100;	/*  netbsd/cobalt cobalt/machdep.c:cpu_intr()  */
+
 cpu_interrupt_ack(cpu, d->irqnr);
+
 			debug("[ gt read from 0xc18 (data = 0x%08lx) ]\n", (long)odata);
 		}
 		break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.50 2004-06-29 03:24:35 debug Exp $
+ *  $Id: coproc.c,v 1.51 2004-07-02 13:35:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -692,7 +692,7 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 		r |= r2;
 
 		if (fmt == FMT_W)
-			r &= 0xffffffff;
+			r &= 0xffffffffULL;
 		break;
 	case FMT_S:
 	case FMT_D:
@@ -755,8 +755,8 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 
 	/*  TODO:  this is for 32-bit mode:  */
 	if (fmt == FMT_D || fmt == FMT_L) {
-		cp->reg[fd] = r & 0xffffffff;
-		cp->reg[(fd+1) & 31] = (r >> 32) & 0xffffffff;
+		cp->reg[fd] = r & 0xffffffffULL;
+		cp->reg[(fd+1) & 31] = (r >> 32) & 0xffffffffULL;
 	} else {
 		cp->reg[fd] = r;
 	}
@@ -783,13 +783,13 @@ int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	if (fs >= 0) {
 		uint64_t v = cp->reg[fs];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
-		v = (v & 0xffffffff) + (cp->reg[(fs + 1) & 31] << 32);
+		v = (v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
 		fpu_interpret_float_value(v, &float_value[0], fmt);
 	}
 	if (ft >= 0) {
 		uint64_t v = cp->reg[ft];
 		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
-		v = (v & 0xffffffff) + (cp->reg[(ft + 1) & 31] << 32);
+		v = (v & 0xffffffffULL) + (cp->reg[(ft + 1) & 31] << 32);
 		fpu_interpret_float_value(v, &float_value[1], fmt);
 	}
 
@@ -1104,9 +1104,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		cpu->gpr[rt] = tmpvalue;
 		if (copz == COPz_MFCz) {
 			/*  Sign-extend:  */
-			cpu->gpr[rt] &= 0xffffffff;
-			if (cpu->gpr[rt] & 0x80000000)
-				cpu->gpr[rt] |= 0xffffffff00000000;
+			cpu->gpr[rt] &= 0xffffffffULL;
+			if (cpu->gpr[rt] & 0x80000000ULL)
+				cpu->gpr[rt] |= 0xffffffff00000000ULL;
 		}
 		return;
 	}
@@ -1119,9 +1119,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		tmpvalue = cpu->gpr[rt];
 		if (copz == COPz_MTCz) {
 			/*  Sign-extend:  */
-			tmpvalue &= 0xffffffff;
-			if (tmpvalue & 0x80000000)
-				tmpvalue |= 0xffffffff00000000;
+			tmpvalue &= 0xffffffffULL;
+			if (tmpvalue & 0x80000000ULL)
+				tmpvalue |= 0xffffffff00000000ULL;
 		}
 		coproc_register_write(cpu, cpu->coproc[cpnr], rd, &tmpvalue);
 		return;
@@ -1245,8 +1245,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				 *  update actually affects the vaddr in
 				 *  question.)
 				 */
-				if (cpu->pc < (uint64_t)0xffffffff80000000 ||
-				    cpu->pc >= (uint64_t)0xffffffffc0000000)
+				if (cpu->pc < (uint64_t)0xffffffff80000000ULL ||
+				    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
 					cpu->pc_last_virtual_page =
 					    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
@@ -1374,8 +1374,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				}
 
 				/*  Sign extend the index register:  */
-				if ((cp->reg[COP0_INDEX] >> 32) == 0 && cp->reg[COP0_INDEX] & 0x80000000)
-					cp->reg[COP0_INDEX] |= 0xffffffff00000000;
+				if ((cp->reg[COP0_INDEX] >> 32) == 0 &&
+				    cp->reg[COP0_INDEX] & 0x80000000)
+					cp->reg[COP0_INDEX] |=
+					    0xffffffff00000000ULL;
 
 				return;
 			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
@@ -1422,14 +1424,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
-{
- static int count=0;
- count ++;
-/* if (count > 10)
-	exit(1);
-*/
-return;
-}
+
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: bus_pci.c,v 1.4 2004-01-14 06:11:09 debug Exp $
+ *  $Id: bus_pci.c,v 1.5 2004-07-02 13:35:24 debug Exp $
  *  
  *  This is a generic PCI bus device, used by even lower level devices.
  *  For example, the "gt" device used in Cobalt machines contains a PCI
@@ -51,7 +51,8 @@
  *
  *  Returns 1 if ok, 0 on error.
  */
-int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, uint64_t *data, int writeflag, struct pci_data *pci_data)
+int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	uint64_t *data, int writeflag, struct pci_data *pci_data)
 {
 	struct pci_device *dev, *found;
 	int bus, device, function, registernr;
@@ -72,7 +73,7 @@ int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	case BUS_PCI_DATA:
 		if (writeflag == MEM_WRITE) {
 			debug("[ bus_pci: write to PCI DATA: data = 0x%016llx ]\n", (long long)*data);
-			if (*data == 0xffffffff)
+			if (*data == 0xffffffffULL)
 				pci_data->last_was_write_ffffffff = 1;
 		} else {
 			/*  Get the bus, device, and function numbers from the address:  */

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.72 2004-07-01 11:03:18 debug Exp $
+ *  $Id: misc.h,v 1.73 2004-07-02 13:35:25 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -95,12 +95,12 @@ typedef uint64_t u_int64_t;
 
 #include "dec_prom.h"
 #include "dec_bootinfo.h"
-#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc08000
-#define	DEC_PROM_EMULATION		0xffffffffbfc10000
+#define	DEC_PROM_CALLBACK_STRUCT	0xffffffffbfc08000ULL
+#define	DEC_PROM_EMULATION		0xffffffffbfc10000ULL
 #define	DEC_PROM_INITIAL_ARGV		(INITIAL_STACK_POINTER + 0x80)
-#define	DEC_PROM_STRINGS		0xffffffffbfc20000
-#define	DEC_PROM_TCINFO			0xffffffffbfc2c000
-#define	DEC_MEMMAP_ADDR			0xffffffffbfc30000
+#define	DEC_PROM_STRINGS		0xffffffffbfc20000ULL
+#define	DEC_PROM_TCINFO			0xffffffffbfc2c000ULL
+#define	DEC_MEMMAP_ADDR			0xffffffffbfc30000ULL
 
 
 /*  HPCmips:  */
@@ -110,9 +110,9 @@ typedef uint64_t u_int64_t;
 #define	HPCMIPS_FB_YSIZE	480
 
 /*  Playstation 2:  */
-#define	PLAYSTATION2_BDA	0xa0001000
-#define	PLAYSTATION2_OPTARGS	0x81fff100
-#define	PLAYSTATION2_SIFBIOS	0xbfc10000
+#define	PLAYSTATION2_BDA	0xa0001000ULL
+#define	PLAYSTATION2_OPTARGS	0x81fff100ULL
+#define	PLAYSTATION2_SIFBIOS	0xbfc10000ULL
 
 /*  SGI and ARC:  */
 #include "sgi_arcbios.h"
@@ -127,18 +127,18 @@ typedef uint64_t u_int64_t;
  *  idea. They are stored at 0xbfc..... instead.  The ARC SPB must
  *  be at physical address 0x1000 though.
  */
-#define	SGI_SPB_ADDR		0xffffffff80001000
+#define	SGI_SPB_ADDR		0xffffffff80001000ULL
 /*  0xbfc10000 is firmware callback vector stuff  */
-#define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000
-#define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000
-#define	ARC_ARGV_START		0xffffffffbfc90000
-#define	SGI_ENV_STRINGS		0xffffffffbfc98000
-#define	SGI_SYSID_ADDR		0xffffffffbfca1800
-#define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00
-#define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80
-#define	FIRST_ARC_COMPONENT	0xffffffffbfca8000
-#define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000
-#define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000
+#define	ARC_FIRMWARE_VECTORS	0xffffffffbfc80000ULL
+#define	ARC_FIRMWARE_ENTRIES	0xffffffffbfc88000ULL
+#define	ARC_ARGV_START		0xffffffffbfc90000ULL
+#define	SGI_ENV_STRINGS		0xffffffffbfc98000ULL
+#define	SGI_SYSID_ADDR		0xffffffffbfca1800ULL
+#define	ARC_DSPSTAT_ADDR	0xffffffffbfca1c00ULL
+#define	ARC_MEMDESC_ADDR	0xffffffffbfca1c80ULL
+#define	FIRST_ARC_COMPONENT	0xffffffffbfca8000ULL
+#define	ARC_PRIVATE_VECTORS	0xffffffffbfcb0000ULL
+#define	ARC_PRIVATE_ENTRIES	0xffffffffbfcb8000ULL
 
 
 /*  CPU types:  */
@@ -883,7 +883,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(uint64_t addr, char *s);
-void store_32bit_word(uint64_t addr, uint32_t data32);
+void store_32bit_word(uint64_t addr, uint64_t data32);
 uint32_t load_32bit_word(uint64_t addr);
 void store_buf(uint64_t addr, char *s, size_t len);
 void machine_init(struct memory *mem);

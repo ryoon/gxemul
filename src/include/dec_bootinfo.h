@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_bootinfo.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: dec_bootinfo.h,v 1.3 2004-07-02 13:35:25 debug Exp $  */
 /*	$NetBSD: bootinfo.h,v 1.5 2000/01/09 15:34:41 ad Exp $	*/
 
 /*
@@ -36,7 +36,7 @@
 #ifndef _PMAX_BOOTINFO_H_
 #define _PMAX_BOOTINFO_H_
 
-#define BOOTINFO_MAGIC	0xb007babe
+#define BOOTINFO_MAGIC	0xb007babeULL
 #define BOOTINFO_SIZE	1024
 
 /*
@@ -45,9 +45,10 @@
  */
 #define BOOTINFO_ADDR	0x8001fc00
 
+/*  mips64emul:  these 'uint32_t' were 'int' in NetBSD:  */
 struct btinfo_common {
-	int next;		/* offset of next item, or zero */
-	int type;
+	uint32_t next;		/* offset of next item, or zero */
+	uint32_t type;
 };
 
 #define BTINFO_MAGIC	1
@@ -56,7 +57,7 @@ struct btinfo_common {
 
 struct btinfo_magic {
 	struct btinfo_common common;
-	int magic;
+	uint32_t magic;		/*  mips64emul, was 'int' in NetBSD  */
 };
 
 #define BTINFO_BOOTPATH_LEN	80

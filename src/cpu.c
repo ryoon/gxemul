@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.231 2005-01-15 08:37:06 debug Exp $
+ *  $Id: cpu.c,v 1.232 2005-01-16 03:46:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -663,6 +663,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		    cpu->gpr[rs] + imm, &offset);
 
 		/*  LWC3 is PREF in the newer ISA levels:  */
+		/*  TODO: Which ISAs? cpu->cpu_type.isa_level >= 4?  */
 		if (hi6 == HI6_LWC3) {
 			debug("pref\t0x%x,%i(r%i)\t\t[0x%016llx = %s]",
 			    rt, imm, rs, (long long)(cpu->gpr[rs] + imm),

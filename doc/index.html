@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.196 2005-01-15 06:09:52 debug Exp $
+$Id: index.html,v 1.197 2005-01-16 03:46:43 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -79,7 +79,7 @@ SUCH DAMAGE.
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
-  <li><a href="#decrom">Using a PROM image from a DECstation</a>
+  <li><a href="#promdump">Using a PROM dump from a real machine</a>
   <p>
   <li><a href="#feedback">Feedback</a>
 </ul>
@@ -1902,12 +1902,12 @@ such cross-platform userland emulation is possible.
 IRIX userland emulation might theoretically also be possible to add.
 
 
-<p><br>
-<a name="decrom"></a>
-<h3>Using a PROM image from a DECstation:</h3>
 
-<i>(The general ideas in this section applies to using ROM images from other machines as well.)</i>
-<p>
+
+<p><br>
+<a name="promdump"></a>
+<h3>Using a PROM dump from a real machine:</h3>
+
 Raw PROM images from real machines can, in a few cases, be used. One
 case which I've tried is to use a DECstation 5000/125 PROM image.
 ROM images from other machines might work as well, but ROM code is
@@ -1943,7 +1943,7 @@ These are approximately the commands that I used:
         >><b>e -x 0xbfc00000:0xbfffffff</b>       <i>Dump the PROM data</i>
 </pre>
 <p>
-Remember that DECstation are little endian, so if the dump data
+Remember that DECstations are little endian, so if the dump data
 looks like this:
 <pre>
         bfc00000:  0x0bf0007e
@@ -2018,6 +2018,24 @@ emulate memory detection well enough for the PROM to accept, so it will
 always believe there is 128MB ram anyway), and -q to supress debug messages.
 The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
 binary file which should be loaded at a specific virtual address.
+
+<p><br>
+The general ideas in this section applies to using ROM images from other
+machines as well. Besides DECstation, I've also tried this on an SGI IP32
+("O2").
+<p>
+For the O2, a suitable command to dump the prom memory range is
+<pre>
+	&gt;&gt; <b>dump -b 0xBFC00000:0xBFC7FFFF</b>
+</pre>
+Make sure you capture all the output (via serial console) into a file,
+and then run experiments/sgiprom_to_bin on the captured file.
+<p>
+(2005-01-16: The emulator doesn't really emulate the IP32 well enough to
+actually run the PROM image without using special hacks, but it might do
+so some time in the future.)
+
+
 
 
 <p><br>

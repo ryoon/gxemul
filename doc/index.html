@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.127 2004-10-24 07:55:24 debug Exp $
+$Id: index.html,v 1.128 2004-10-24 10:37:38 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -538,6 +538,11 @@ follow these instructions:
 	$ <b>mount /dev/sd0a /mnt</b>
 	$ <b>cd /mnt</b>
 	$ <b>for a in /mnt2/arc/binary/sets/*.tgz; do tar xvzpf $a; done</b>
+	$ <b>cd dev; sh MAKEDEV all</b>
+	$ <b>cd ../etc; echo "rc_configured=YES" &gt;&gt; rc.conf</b>
+	$ <b>cat > /mnt/etc/fstab</b>
+	    /dev/sd0a / ffs rw 1 1
+	    (ctrl-d)
 	$ <b>cd /; umount /mnt; umount /mnt2</b>
 	$ <b>halt</b>
 
@@ -557,6 +562,11 @@ image, using the following command:
 	$ <b>./mips64emul -A2 -d nbsd_arc.img netbsd-GENERIC</b>
 
 </pre>
+
+<p>
+It seems that single-user mode is default, even if -o "-a" is added to the 
+command line, so you have to type exit (or press ctrl-d) at the first 
+shell prompt.
 
 
 
@@ -761,6 +771,11 @@ boot from the harddisk image:
 	$ <b>./mips64emul -X -A2 -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
 
 </pre>
+
+<p>
+It seems that single-user mode is default, even if -o "-a" is added to the 
+command line, so you have to type exit (or press ctrl-d) at the first 
+shell prompt.
 
 
 

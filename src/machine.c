@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.205 2004-10-24 06:29:58 debug Exp $
+ *  $Id: machine.c,v 1.206 2004-10-24 10:37:39 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2770,10 +2770,16 @@ void machine_init(struct emul *emul, struct memory *mem)
 		}
 
 		/*  Boot string in ARC format:  */
+		/*  TODO: use actual SCSI id number  */
 		if (emul->emulation_type == EMULTYPE_SGI)
 			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(0)\\";
 		else
+			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(1)";
+
+#if 0
+			/*  Floppy?  */
 			init_bootpath = "multi()disk()fdisk()";
+#endif
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);
@@ -2862,7 +2868,21 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
+		} else {
+			/*  ARC:  */
+			char *tmp;
+			tmp = malloc(strlen(bootarg) +
+			    strlen("OSLOADOPTIONS=") + 2);
+			sprintf(tmp, "OSLOADOPTIONS=%s", bootarg);
+			store_pointer_and_advance(cpu, &addr2, addr,
+			    arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, tmp, &addr);
+
+			/*  TODO:  */
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, "OSLOADPARTITION=scsi(0)disk(0)rdisk(0)partition(1)", &addr);
 		}
+
 
 		/*  End the environment strings with an empty zero-terminated
 		    string, and the envp array with a NULL pointer.  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.19 2004-10-24 04:42:34 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.20 2004-10-24 10:37:38 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -78,6 +78,7 @@ struct pckbc_data {
 	int		keyscanning_enabled;
 	int		state;
 	int		cmdbyte;
+	int		last_scancode;
 
 	unsigned	key_queue[2][MAX_8042_QUEUELEN];
 	int		head[2], tail[2];
@@ -132,7 +133,8 @@ static void ascii_to_pc_scancodes(int a, struct pckbc_data *d)
 	int shift = 0, ctrl = 0;
 
 	if (a >= 'A' && a <= 'Z') { a += 32; shift = 1; }
-	if (a >= 1 && a <= 26) { a += 96; ctrl = 1; }
+	if ((a >= 1 && a <= 26) && (a!='\n' && a!='\t' && a!='\b' && a!='\r'))
+		{ a += 96; ctrl = 1; }
 
 	if (shift)
 		pckbc_add_code(d, 0x2a, p);
@@ -397,9 +399,13 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 				odata = d->cmdbyte;
 				d->state = STATE_NORMAL;
 			} else {
-				odata = 0;
-				if (d->head[0] != d->tail[0])
+				if (d->head[0] != d->tail[0]) {
 					odata = pckbc_get_code(d, 0);
+					d->last_scancode = odata;
+				} else {
+					odata = d->last_scancode;
+					d->last_scancode |= 0x80;
+				}
 			}
 			debug("[ pckbc: read from DATA: 0x%02x ]\n", odata);
 		} else {
@@ -421,13 +427,15 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 1:		/*  control  */
 		if (writeflag==MEM_READ) {
+			dev_pckbc_tick(cpu, d);
+
 			odata = 0;
 
 			/*  "Data in buffer" bit  */
 			if (d->head[0] != d->tail[0] ||
 			    d->state == STATE_RDCMDBYTE)
 				odata |= KBS_DIB;
-			/*  TODO: why not odata |= KBS_OCMD ?  */
+			/*  odata |= KBS_OCMD;  */
 			/*  debug("[ pckbc: read from CTL status port: 0x%02x ]\n", odata);  */
 		} else {
 			debug("[ pckbc: write to CTL:");

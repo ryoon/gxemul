@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.14 2005-02-03 05:56:58 debug Exp $
+ *  $Id: cpu_mips.c,v 1.15 2005-02-03 07:47:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -697,13 +697,14 @@ static const char *cpu_flags(struct cpu *cpu)
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
-int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
+int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
 	int hi6, special6, regimm5;
 	int rt, rd, rs, sa, imm, copz, cache_op, which_cache, showtag;
 	uint64_t addr, offset;
 	uint32_t instrword;
+	unsigned char instr[4];
 	char *symbol;
 
 	if (running)
@@ -722,6 +723,8 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);
+
+	*((uint32_t *)&instr[0]) = *((uint32_t *)&originstr[0]);
 
 	/*
 	 *  The rest of the code is written for little endian,

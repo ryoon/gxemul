@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.22 2005-02-13 11:51:06 debug Exp $
+ *  $Id: dev_cons.c,v 1.23 2005-02-18 06:51:54 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -102,6 +102,8 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, char *name)
 {
 	struct cons_data *d;
+	char *name2;
+
 	d = malloc(sizeof(struct cons_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -111,8 +113,18 @@ int dev_cons_init(struct machine *machine, struct memory *mem,
 
 	d->console_handle = console_start_slave(machine, name);
 
-	memory_device_register(mem, "cons", baseaddr,
-	    DEV_CONS_LENGTH, dev_cons_access, d, MEM_DEFAULT, NULL);
+	name2 = malloc(strlen(name) + 20);
+	if (name2 == NULL) {
+		fprintf(stderr, "out of memory in dev_cons_init()\n");
+		exit(1);
+	}
+	if (name != NULL && name[0])
+		sprintf(name2, "cons [%s]", name);
+	else
+		sprintf(name2, "cons");
+
+	memory_device_register(mem, name2, baseaddr, DEV_CONS_LENGTH,
+	    dev_cons_access, d, MEM_DEFAULT, NULL);
 
 	return d->console_handle;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.22 2005-02-11 19:45:39 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.23 2005-02-18 06:51:55 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -422,6 +422,7 @@ struct sgi_mec_data {
 	uint64_t	reg[DEV_SGI_MEC_LENGTH / sizeof(uint64_t)];
 
 	int		irq_nr;
+	unsigned char	macaddr[6];
 
 	unsigned char	cur_tx_packet[MAX_TX_PACKET_LEN];
 	int		cur_tx_packet_len;
@@ -910,17 +911,29 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 void dev_sgi_mec_init(struct machine *machine, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, unsigned char *macaddr)
 {
+	char *name2;
 	struct sgi_mec_data *d = malloc(sizeof(struct sgi_mec_data));
+
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct sgi_mec_data));
 	d->irq_nr = irq_nr;
+	memcpy(d->macaddr, macaddr, 6);
 
 	mec_reset(d);
 
-	memory_device_register(mem, "sgi_mec", baseaddr,
+	name2 = malloc(50);
+	if (name2 == NULL) {
+		fprintf(stderr, "out of memory in dev_sgi_mec_init()\n");
+		exit(1);
+	}
+	sprintf(name2, "mec [%02x:%02x:%02x:%02x:%02x:%02x]",
+	    d->macaddr[0], d->macaddr[1], d->macaddr[2],
+	    d->macaddr[3], d->macaddr[4], d->macaddr[5]);
+
+	memory_device_register(mem, name2, baseaddr,
 	    DEV_SGI_MEC_LENGTH, dev_sgi_mec_access, (void *)d,
 	    MEM_DEFAULT, NULL);
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.28 2005-02-18 06:32:39 debug Exp $
+$Id: experiments.html,v 1.29 2005-02-18 06:51:56 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -122,14 +122,14 @@ the hello world program:
 	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -qa hello_mips</b>
+	$ <b>./mips64emul -q -a hello_mips</b>
 	Hello world
 
 	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello_mips.o -o hello_mips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -qa hello_mips</b>
+	$ <b>./mips64emul -q -a hello_mips</b>
 	Hello world
 </pre>
 
@@ -141,7 +141,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 
 <p>
 <pre>
-	$ <b>./mips64emul -Va hello_mips</b>
+	$ <b>./mips64emul -V -a hello_mips</b>
 	..
 	mips64emul&gt; <b>r</b>
 	cpu0:    pc = a800000000030078    <f>

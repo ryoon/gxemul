@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.37 2005-02-03 23:36:20 debug Exp $
+ *  $Id: dev_le.c,v 1.38 2005-02-18 06:51:54 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -767,7 +767,9 @@ do_return:
 void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	uint64_t buf_start, uint64_t buf_end, int irq_nr, int len)
 {
+	char *name2;
 	struct le_data *d = malloc(sizeof(struct le_data));
+
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -816,7 +818,15 @@ void dev_le_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 	    SRAM_SIZE, dev_le_sram_access, (void *)d,
 	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->sram);
 
-	memory_device_register(mem, "le", baseaddr + 0x100000,
+	name2 = malloc(50);
+	if (name2 == NULL) {
+		fprintf(stderr, "out of memory in dev_le_init()\n");
+		exit(1);
+	}
+	sprintf(name2, "le [%02x:%02x:%02x:%02x:%02x:%02x]",
+	    d->rom[0], d->rom[1], d->rom[2], d->rom[3], d->rom[4], d->rom[5]);
+
+	memory_device_register(mem, name2, baseaddr + 0x100000,
 	    len - 0x100000, dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
 	machine_add_tickfunction(machine, dev_le_tick, d, LE_TICK_SHIFT);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.67 2005-02-13 12:04:42 debug Exp $
+ *  $Id: net.c,v 1.68 2005-02-18 06:51:57 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2118,8 +2118,6 @@ static void parse_resolvconf(struct net *net)
  */
 void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
 {
-	int iadd = 4;
-
 	if (net == NULL)
 		return;
 
@@ -2137,13 +2135,6 @@ void net_add_nic(struct net *net, void *extra, unsigned char *macaddr)
 	}
 
 	net->nic_extra[net->n_nics - 1] = extra;
-
-	/*  TODO: save away the MAC address somewhere (?)  */
-	debug_indentation(iadd);
-	debug("nic: ");
-	net_debugaddr(macaddr, ADDR_ETHERNET);
-	debug("\n");
-	debug_indentation(-iadd);
 }
 
 

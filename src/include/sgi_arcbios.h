@@ -135,7 +135,7 @@ struct arcbios_component {
 	uint32_t	AffinityMask;
 	uint32_t	ConfigurationDataSize;
 	uint32_t	IdentifierLength;
-	char		*Identifier;
+	uint32_t	Identifier;			/*  was:  char *  */
 };
 
 /* 

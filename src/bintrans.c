@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.117 2004-12-13 05:35:52 debug Exp $
+ *  $Id: bintrans.c,v 1.118 2004-12-14 01:33:51 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -795,6 +795,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 
 	/*  RUN the code chunk:  */
 	f = ca2;
+
 run_it:
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
@@ -842,8 +843,9 @@ run_it:
 			ok = cpu->translate_address(cpu, cpu->pc, &paddr, FLAG_INSTR);
 
 			if (!ok && old_pc != cpu->pc) {
-				ok = cpu->translate_address(cpu, cpu->pc, &paddr,
-				    FLAG_INSTR + FLAG_NOEXCEPTIONS);
+				/*  pc is something like ...0080 or ...0000 or so.  */
+				paddr = cpu->pc & 0xfff;
+				ok = 1;
 
 				cpu->pc_last_host_4k_page = NULL;
 				cpu->pc_bintrans_host_4kpage = NULL;

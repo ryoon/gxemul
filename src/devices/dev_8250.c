@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.7 2004-08-05 22:22:22 debug Exp $
+ *  $Id: dev_8250.c,v 1.8 2004-08-12 07:24:39 debug Exp $
  *  
  *  8250 serial controller.
  *
  *  TODO:  Actually implement this device.  So far it's just a fake device
- *         to allow Linux/sgimips to print stuff to the console.
+ *         to allow Linux to print stuff to the console.
  */
 
 #include <stdio.h>
@@ -94,22 +94,28 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
  */
 int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-/*	int i;
-	uint64_t idata = 0, odata = 0;  */
+	uint64_t idata = 0, odata = 0;
 	struct dev_8250_data *d = extra;
 
+	idata = memory_readmax64(cpu, data, len);
 	relative_addr /= d->addrmult;
 
-	/*  TODO  */
+	if (writeflag == MEM_WRITE && relative_addr == 0)
+		console_putchar(idata);
+	else
+	if (writeflag == MEM_READ && relative_addr == 5)
+		odata = 64 + 32;
+	else {
+#if 0
+		if (writeflag == MEM_WRITE)
+			fatal("[ 8250: write addr=0x%02x idata = 0x%02x ]\n", relative_addr, idata);
+		else
+			fatal("[ 8250: read addr=0x%02x ]\n", relative_addr);
+#endif
+	}
 
-	if (writeflag == MEM_WRITE && relative_addr == 1)
-		console_putchar(data[0]);
-	if (writeflag == MEM_READ && relative_addr == 4)
-		data[0] = random();
-
-	/*  For Linux/MeshCube:  */
-	if (writeflag == MEM_READ && relative_addr == 7)
-		data[0] = 64 + 32;
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
 
 	return 1;
 }

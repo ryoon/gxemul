@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.161 2004-08-12 05:13:54 debug Exp $
+ *  $Id: machine.c,v 1.162 2004-08-12 07:24:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1899,7 +1899,6 @@ void machine_init(struct memory *mem)
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
-				dev_8250_init(cpus[bootstrap_cpu], mem, 0x18000300, 0, 0x1);	/*  serial??  */
 
 				/*  mec0 ethernet at 0x1f280000  */			/*  mec0  */
 				/*

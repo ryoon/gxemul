@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.8 2005-01-30 11:38:14 debug Exp $
+ *  $Id: mips_cpu.h,v 1.9 2005-01-30 11:40:36 debug Exp $
  */
 
 #include "misc.h"
@@ -83,7 +83,7 @@ struct mips_tlb {
 /*
  *  Coproc 1:
  */
-#define	N_FCRS			32
+#define	N_MIPS_FCRS		32
 
 struct mips_coproc {
 	int		coproc_nr;
@@ -95,7 +95,7 @@ struct mips_coproc {
 
 	/*  Only for COP1:  floating point control registers  */
 	/*  (Maybe also for COP0?)  */
-	uint64_t	fcr[N_FCRS];
+	uint64_t	fcr[N_MIPS_FCRS];
 };
 
 #define	N_MIPS_COPROCS		4
@@ -132,8 +132,17 @@ struct mips_coproc {
 #define	MIPS_GPR_T2		10		/*  t2  */
 #define	MIPS_GPR_T3		11		/*  t3  */
 #define	MIPS_GPR_T4		12		/*  t4  */
+#define	MIPS_GPR_T5		13		/*  t5  */
+#define	MIPS_GPR_T6		14		/*  t6  */
+#define	MIPS_GPR_T7		15		/*  t7  */
 #define	MIPS_GPR_S0		16		/*  s0  */
 #define	MIPS_GPR_S1		17		/*  s1  */
+#define	MIPS_GPR_S2		18		/*  s2  */
+#define	MIPS_GPR_S3		19		/*  s3  */
+#define	MIPS_GPR_S4		20		/*  s4  */
+#define	MIPS_GPR_S5		21		/*  s5  */
+#define	MIPS_GPR_S6		22		/*  s6  */
+#define	MIPS_GPR_S7		23		/*  s7  */
 #define	MIPS_GPR_T8		24		/*  t8  */
 #define	MIPS_GPR_T9		25		/*  t9  */
 #define	MIPS_GPR_K0		26		/*  k0  */

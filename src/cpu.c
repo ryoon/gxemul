@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.20 2004-01-09 16:24:02 debug Exp $
+ *  $Id: cpu.c,v 1.21 2004-01-10 05:41:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -468,7 +468,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 			/*  cpu->coproc[0]->reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
 
-			if (cpu->cpu_type.exc_model == MMU10K)
+			if (cpu->cpu_type.mmu_model == MMU10K)
 				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
 			else
 				cpu->coproc[0]->reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
@@ -2276,6 +2276,8 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		which_cache = copz & 3;
 
 		if (instruction_trace) {
+			int showtag = 0;
+
 			debug("cache\t0x%02x,0x%04x(r%i)", copz, imm, rt);
 			if (which_cache==0)	debug("  [ primary I-cache");
 			if (which_cache==1)	debug("  [ primary D-cache");
@@ -2284,17 +2286,41 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			debug(", ");
 			if (cache_op==0)	debug("index invalidate");
 			if (cache_op==1)	debug("index load tag");
-			if (cache_op==2)	debug("index store tag");
+			if (cache_op==2)	debug("index store tag"), showtag=1;
 			if (cache_op==3)	debug("create dirty exclusive");
 			if (cache_op==4)	debug("hit invalidate");
 			if (cache_op==5)	debug("fill OR hit writeback invalidate");
 			if (cache_op==6)	debug("hit writeback");
 			if (cache_op==7)	debug("hit set virtual");
 			debug(", r%i=0x%016llx", rt, (long long)cpu->gpr[rt]);
+
+			if (showtag)
+				debug(", taghi=%08lx lo=%08lx",
+				    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
+				    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+
 			debug(" ]\n");
 		}
 
-		/*  TODO  */
+		/*
+		 *  TODO:  The cache instruction is implementation dependant.
+		 *  This is really ugly.
+		 */
+
+		if (cpu->cpu_type.mmu_model == MMU10K) {
+/*			printf("taghi=%08lx taglo=%08lx\n",
+			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
+			    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+*/
+			if (cpu->coproc[0]->reg[COP0_TAGDATA_HI] == 0 &&
+			    cpu->coproc[0]->reg[COP0_TAGDATA_LO] == 0) {
+				/*  Normal cache operation:  */
+				cpu->r10k_cache_disable_TODO = 0;
+			} else {
+				/*  Dislocate the cache:  */
+				cpu->r10k_cache_disable_TODO = 1;
+			}
+		}
 
 		break;
 	case HI6_SPECIAL2:

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.22 2004-01-09 16:24:34 debug Exp $
+ *  $Id: misc.h,v 1.23 2004-01-10 05:41:37 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -464,7 +464,8 @@ struct cpu {
 	long		time_since_intr_enabling;
 	uint64_t	old_status;
 
-	/*  int		last_was_rfe;  */
+	int		r10k_cache_disable_TODO;	/*  TODO: remove this once cache functions correctly  */
+
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.11 2004-01-07 00:53:06 debug Exp $
+ *  $Id: memory.c,v 1.12 2004-01-10 05:41:35 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -443,7 +443,14 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 					exit(1);
 				}
 
-				entry_vpn2 = (cp0->tlbs[i].hi & ENTRYHI_VPN2_MASK) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
+				if (cpu->cpu_type.mmu_model == MMU10K) {
+					entry_vpn2 = (cp0->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
+					vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK_R10K) >> (pageshift + 1);
+				} else {
+					entry_vpn2 = (cp0->tlbs[i].hi & ENTRYHI_VPN2_MASK) >> (pageshift + 1);		/*  >> ENTRYHI_VPN2_SHIFT;  */
+					vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK) >> (pageshift + 1);
+				}
+
 				entry_asid = cp0->tlbs[i].hi & ENTRYHI_ASID;
 				g_bit = cp0->tlbs[i].hi & TLB_G;
 
@@ -457,8 +464,6 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 					v_bit = cp0->tlbs[i].lo0 & ENTRYLO_V;
 					d_bit = cp0->tlbs[i].lo0 & ENTRYLO_D;
 				}
-
-				vaddr_vpn2 = (vaddr & ENTRYHI_VPN2_MASK) >> (pageshift + 1);
 			}
 
 			/*  Is there a VPN and ASID match?  */
@@ -585,7 +590,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	int cachemask[2];
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
-	cache = cache_flags & ~NO_EXCEPTIONS;
+	cache = cache_flags & CACHE_FLAGS_MASK;
 
 #if 0
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
@@ -599,13 +604,11 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 		}
 #endif
 
-#if 0
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;
 		ok = 1;
 	} else
-#endif
-	ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
+		ok = translate_address(cpu, vaddr, &paddr, writeflag, no_exceptions);
 
 	/*  If the translation caused an exception, or was invalid in some way,
 		we simply return without doing the memory access:  */
@@ -710,6 +713,24 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 			}
 		} else {
 			/*  other cpus:  */
+
+			/*
+			 *  SUPER-UGLY HACK for SGI-IP32 PROM, R10000:
+			 *  K0 bits == 0x3 means uncached...
+			 *
+			 *  It seems that during bootup, the SGI-IP32 prom stores
+			 *  a return pointers a 0x80000f10, then tests memory by
+			 *  writing bit patterns to 0xa0000xxx, and then when it's
+			 *  done, reads back the return pointer from 0x80000f10.
+			 *
+			 *  I need to find the correct way to disconnect the cache
+			 *  from the main memory for R10000.  (TODO !!!)
+			 */
+/* 			if ((cpu->coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
+			if (cpu->r10k_cache_disable_TODO) {
+				paddr &= ((512*1024)-1);
+				paddr += 512*1024;
+			}
 		}
 	}
 

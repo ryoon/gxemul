@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.167 2005-02-15 09:10:15 debug Exp $
+ *  $Id: emul.c,v 1.168 2005-02-22 06:43:11 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -485,7 +485,9 @@ void emul_machine_setup(struct machine *m, int n_load,
 		machine_default_cputype(m);
 	if (m->ncpus == 0) {
 		/*  TODO: This should be moved elsewhere...  */
-		if (m->machine_type == MACHINE_ARC &&
+		if (m->machine_type == MACHINE_BEBOX)
+			m->ncpus = 2;
+		else if (m->machine_type == MACHINE_ARC &&
 		    m->machine_subtype == MACHINE_ARC_NEC_R96)
 			m->ncpus = 2;
 		else if (m->machine_type == MACHINE_ARC &&

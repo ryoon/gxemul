@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.351 2005-02-19 11:51:35 debug Exp $
+ *  $Id: machine.c,v 1.352 2005-02-22 06:43:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3953,6 +3953,14 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_BEBOX:
+		/*
+		 *  NetBSD/bebox (http://www.netbsd.org/Ports/bebox/)
+		 */
+		machine->machine_name = "BeBox";
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4190,6 +4198,10 @@ void machine_default_cputype(struct machine *m)
 		 *  "Altimus" module has an MPC7400 (G4) or an MPC107.
 		 */
 		m->cpu_name = strdup("MPC7400");
+		break;
+	case MACHINE_BEBOX:
+		/*  For NetBSD/bebox. Dual 603 CPUs.  */
+		m->cpu_name = strdup("PPC603");
 		break;
 
 	/*  SPARC:  */
@@ -4627,6 +4639,13 @@ void machine_init(void)
 	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  BeBox: (NetBSD/bebox)  */
+	me = machine_entry_new("BeBox", ARCH_PPC, MACHINE_BEBOX, 1, 0);
+	me->aliases[0] = "bebox";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

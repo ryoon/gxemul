@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.599 2005-02-22 05:52:55 debug Exp $
+$Id: HISTORY,v 1.600 2005-02-22 06:43:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1690,3 +1690,4 @@ HISTORY of mips64emul
 		Beginning on the new device registry stuff.
 20050222	Continuing on the device stuff, and doing various other kinds
 		of clean-up.
+		Adding a dummy BeBox mode.

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.573 2005-02-09 20:36:05 debug Exp $
+$Id: HISTORY,v 1.574 2005-02-10 05:54:59 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1650,3 +1650,4 @@ HISTORY of mips64emul
 		on FreeBSD. (It now works with a Windows NT 4.0 cdrom in my
 		drive.)
 		Began a clean-up of the userland subsystem.
+20050210	Continuing the userland cleanup.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.32 2005-02-09 20:41:17 debug Exp $
+ *  $Id: useremul.c,v 1.33 2005-02-10 05:55:01 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -100,6 +100,7 @@ struct syscall_emul {
 	int		arch;
 	char		*cpu_name;
 	void		(*f)(struct cpu *, uint32_t);
+	void		(*setup)(struct cpu *, int, char **);
 
 	struct syscall_emul *next;
 };
@@ -113,11 +114,50 @@ static struct syscall_emul *first_syscall_emul;
 /*
  *  useremul_setup():
  *
- *  Set up an emulated environment suitable for running
- *  userland code.  The program should already have been
- *  loaded into memory when this function is called.
+ *  Set up an emulated environment suitable for running userland code. The
+ *  program should already have been loaded into memory when this function
+ *  is called.
  */
 void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
+{
+	struct syscall_emul *sep;
+
+	sep = first_syscall_emul;
+
+	while (sep != NULL) {
+		if (strcasecmp(cpu->machine->userland_emul, sep->name) == 0) {
+			sep->setup(cpu, argc, host_argv);
+			return;
+		}
+		sep = sep->next;
+	}
+
+	fatal("useremul_setup(): internal error, unimplemented emulation?\n");
+	exit(1);
+}
+
+
+/*
+ *  useremul__linux_setup():
+ *
+ *  Set up an emulated userland environment suitable for running Linux
+ *  binaries.
+ */
+void useremul__linux_setup(struct cpu *cpu, int argc, char **host_argv)
+{
+	fatal("useremul__linux_setup(): TODO\n");
+
+	/*  TODO  */
+}
+
+
+/*
+ *  useremul__netbsd_setup():
+ *
+ *  Set up an emulated userland environment suitable for running NetBSD
+ *  binaries.
+ */
+void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 {
 	uint64_t stack_top = 0x7fff0000;
 	uint64_t stacksize = 8 * 1048576;
@@ -126,46 +166,93 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 	int i, i2;
 	int envc = 1;
 
-	if (strcasecmp(cpu->machine->userland_emul, "netbsd/pmax") == 0) {
-		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
-	} else if (strcasecmp(cpu->machine->userland_emul, "ultrix") == 0) {
-		/*  TODO:  is this correct?  */
-		cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
-		cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
-	} else {
-		fprintf(stderr, "unknown userland emulation mode\n");
-		exit(1);
-	}
+	/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
+	cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
+	cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
 
 	/*  The userland stack:  */
 	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
 	add_symbol_name(&cpu->machine->symbol_context,
 	    stack_top - stacksize, stacksize, "userstack", 0);
 
-	/*
-	 *  Stack contents:  (TODO: emulation dependant?)
-	 */
+	/*  Stack contents:  (TODO: is this correct?)  */
 	store_32bit_word(cpu, stack_top - stack_margin, argc);
 
-	cur_argv = stack_top - stack_margin + 128 + (argc + envc) * sizeof(uint32_t);
+	cur_argv = stack_top - stack_margin + 128 + (argc + envc)
+	    * sizeof(uint32_t);
 	for (i=0; i<argc; i++) {
 		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
 
-		store_32bit_word(cpu, stack_top - stack_margin + 4 + i*sizeof(uint32_t), cur_argv);
+		store_32bit_word(cpu, stack_top - stack_margin +
+		    4 + i*sizeof(uint32_t), cur_argv);
 		store_string(cpu, cur_argv, host_argv[i]);
 		cur_argv += strlen(host_argv[i]) + 1;
 	}
 
 	/*  Store a NULL value between the args and the environment strings:  */
-	store_32bit_word(cpu, stack_top - stack_margin + 4 + i*sizeof(uint32_t), 0);  i++;
+	store_32bit_word(cpu, stack_top - stack_margin +
+	    4 + i*sizeof(uint32_t), 0);  i++;
 
 	/*  TODO: get environment strings from somewhere  */
 
 	/*  Store all environment strings:  */
 	for (i2 = 0; i2 < envc; i2 ++) {
-		store_32bit_word(cpu, stack_top - stack_margin + 4 + (i+i2)*sizeof(uint32_t), cur_argv);
+		store_32bit_word(cpu, stack_top - stack_margin + 4
+		    + (i+i2)*sizeof(uint32_t), cur_argv);
+		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
+		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
+	}
+}
+
+
+/*
+ *  useremul__ultrix_setup():
+ *
+ *  Set up an emulated userland environment suitable for running Ultrix
+ *  binaries.
+ */
+void useremul__ultrix_setup(struct cpu *cpu, int argc, char **host_argv)
+{
+	uint64_t stack_top = 0x7fff0000;
+	uint64_t stacksize = 8 * 1048576;
+	uint64_t stack_margin = 16384;
+	uint64_t cur_argv;
+	int i, i2;
+	int envc = 1;
+
+	/*  TODO:  is this correct?  */
+	cpu->cd.mips.gpr[MIPS_GPR_A0] = stack_top - stack_margin;
+	cpu->cd.mips.gpr[25] = cpu->cd.mips.pc;		/*  reg. t9  */
+
+	/*  The userland stack:  */
+	cpu->cd.mips.gpr[MIPS_GPR_SP] = stack_top - stack_margin;
+	add_symbol_name(&cpu->machine->symbol_context,
+	    stack_top - stacksize, stacksize, "userstack", 0);
+
+	/*  Stack contents:  (TODO: is this correct?)  */
+	store_32bit_word(cpu, stack_top - stack_margin, argc);
+
+	cur_argv = stack_top - stack_margin + 128 +
+	    (argc + envc) * sizeof(uint32_t);
+	for (i=0; i<argc; i++) {
+		debug("adding argv[%i]: '%s'\n", i, host_argv[i]);
+
+		store_32bit_word(cpu, stack_top - stack_margin +
+		    4 + i*sizeof(uint32_t), cur_argv);
+		store_string(cpu, cur_argv, host_argv[i]);
+		cur_argv += strlen(host_argv[i]) + 1;
+	}
+
+	/*  Store a NULL value between the args and the environment strings:  */
+	store_32bit_word(cpu, stack_top - stack_margin
+	    + 4 + i*sizeof(uint32_t), 0);  i++;
+
+	/*  TODO: get environment strings from somewhere  */
+
+	/*  Store all environment strings:  */
+	for (i2 = 0; i2 < envc; i2 ++) {
+		store_32bit_word(cpu, stack_top - stack_margin + 4 +
+		    (i+i2)*sizeof(uint32_t), cur_argv);
 		store_string(cpu, cur_argv, "DISPLAY=localhost:0.0");
 		cur_argv += strlen("DISPLAY=localhost:0.0") + 1;
 	}
@@ -1102,7 +1189,8 @@ void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
  *  For internal use. Adds an emulation mode.
  */
 static void add_useremul(char *name, int arch, char *cpu_name,
-	void (*f)(struct cpu *, uint32_t))
+	void (*f)(struct cpu *, uint32_t),
+	void (*setup)(struct cpu *, int, char **))
 {
 	struct syscall_emul *sep;
 
@@ -1117,6 +1205,7 @@ static void add_useremul(char *name, int arch, char *cpu_name,
 	sep->arch     = arch;
 	sep->cpu_name = cpu_name;
 	sep->f        = f;
+	sep->setup    = setup;
 
 	sep->next = first_syscall_emul;
 	first_syscall_emul = sep;
@@ -1165,9 +1254,14 @@ void useremul_list_emuls(void)
  */
 void useremul_init(void)
 {
-	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970", useremul__linux);
-	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000", useremul__netbsd);
-	add_useremul("Ultrix", ARCH_MIPS, "R3000", useremul__ultrix);
+	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
+	    useremul__linux, useremul__linux_setup);
+
+	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
+	    useremul__netbsd, useremul__netbsd_setup);
+
+	add_useremul("Ultrix", ARCH_MIPS, "R3000",
+	    useremul__ultrix, useremul__ultrix_setup);
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.86 2005-02-08 17:18:33 debug Exp $
+ *  $Id: debugger.c,v 1.87 2005-02-10 05:55:01 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -106,8 +106,10 @@ static int last_cmd_index;
 
 static char repeat_cmd[MAX_CMD_LEN + 1];
 
-static uint64_t last_dump_addr = 0xffffffff80000000ULL;
-static uint64_t last_unasm_addr = 0xffffffff80000000ULL;
+#define	MAGIC_UNTOUCHED		0x98ca76c2ffcc0011ULL
+
+static uint64_t last_dump_addr = MAGIC_UNTOUCHED;
+static uint64_t last_unasm_addr = MAGIC_UNTOUCHED;
 
 
 /*
@@ -552,6 +554,19 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 	}
 
 	addr_start = last_dump_addr;
+
+	if (addr_start == MAGIC_UNTOUCHED) {
+		uint64_t tmp;
+		int match_register = 0;
+		cpu_register_match(m, "pc", 0, &tmp, &match_register);
+		if (match_register) {
+			addr_start = tmp;
+		} else {
+			printf("No starting address.\n");
+			return;
+		}
+	}
+
 	addr_end = addr_start + 16 * 16;
 
 	/*  endaddr:  */
@@ -1270,6 +1285,19 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	}
 
 	addr_start = last_unasm_addr;
+
+	if (addr_start == MAGIC_UNTOUCHED) {
+		uint64_t tmp;
+		int match_register = 0;
+		cpu_register_match(m, "pc", 0, &tmp, &match_register);
+		if (match_register) {
+			addr_start = tmp;
+		} else {
+			printf("No starting address.\n");
+			return;
+		}
+	}
+
 	addr_end = addr_start + 4 * 16;
 
 	/*  endaddr:  */

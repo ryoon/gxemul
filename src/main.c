@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.195 2005-01-30 22:42:02 debug Exp $
+ *  $Id: main.c,v 1.196 2005-01-31 06:38:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -718,6 +718,12 @@ int main(int argc, char *argv[])
 	/*  Initialize emulations from config files:  */
 	for (i=1; i<argc; i++) {
 		if (argv[i][0] == '@') {
+			char *s = argv[i] + 1;
+			if (strlen(s) == 0 && i+1 < argc &&
+			    argv[i+1][0] != '@') {
+				i++;
+				s = argv[i];
+			}
 			n_emuls ++;
 			emuls = realloc(emuls, sizeof(struct emul *) * n_emuls);
 			if (emuls == NULL) {
@@ -725,7 +731,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			emuls[n_emuls - 1] =
-			    emul_create_from_configfile(argv[i] + 1);
+			    emul_create_from_configfile(s);
 		}
 	}
 

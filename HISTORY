@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.86 2004-06-12 17:17:48 debug Exp $
+$Id: HISTORY,v 1.87 2004-06-13 10:32:02 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -526,3 +526,9 @@ HISTORY of mips64emul
 		The zs (zilog serial) device now works well enough to let
 		NetBSD/sgimips be interacted with on IP22. :-)  (Though
 		it is very ugly and hardcoded.)
+20040613	IP32 didn't work last night, because there were too many
+		tick functions registered. That has been increased now.
+		Trying out NetBSD/sgimips 2.0 beta kernels. There are some
+		differences compared to 1.6.2, which I'm trying to solve.
+		Interrupt fixes for IP32: _serial and _misc are different.
+		Separation of IP22 (Full-house) and IP24 (Guiness).

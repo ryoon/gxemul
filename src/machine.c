@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.112 2004-06-28 01:22:17 debug Exp $
+ *  $Id: machine.c,v 1.113 2004-06-28 01:53:38 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1881,6 +1881,8 @@ void machine_init(struct memory *mem)
 
 				/*  perhaps _PC_CMOS, not _ARC_NEC?  how about addr div?  */
 				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 0, MC146818_ARC_NEC, 1, emulated_ips);  /*  mcclock0  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x90000000070, 0,
+				    MC146818_PC_CMOS, 1, emulated_ips);  /*  mcclock0  */
 
 				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005060, PCKBC_8042, 0, 0);  /*  TODO: irq numbers  */
 

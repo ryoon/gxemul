@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21143.c,v 1.7 2005-02-21 07:18:09 debug Exp $
+ *  $Id: pci_dec21143.c,v 1.8 2005-02-26 18:00:38 debug Exp $
  *
  *  DEC 21143 PCI ethernet.
  *
@@ -41,6 +41,10 @@
 #include "misc.h"
 
 #include "bus_pci.h"
+
+
+#define PCI_VENDOR_DEC          0x1011 /* Digital Equipment */
+#define PCI_PRODUCT_DEC_21142   0x0019 /* DECchip 21142/21143 10/100 Ethernet */
 
 
 /*

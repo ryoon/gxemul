@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.14 2005-02-21 07:18:09 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.15 2005-02-26 18:00:38 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -74,6 +74,8 @@ int dec21030_default_ysize = 768;
 #define	FRAMEBUFFER_PADDR	0x4000000000ULL
 #define	FRAMEBUFFER_BASE	0x201000
 
+#define PCI_VENDOR_DEC         0x1011          /*  Digital Equipment  */
+#define PCI_PRODUCT_DEC_21030  0x0004          /*  DECchip 21030 ("TGA")  */
 
 struct dec21030_data {
 	int		graphics_mode;

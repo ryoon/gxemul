@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.19 2005-02-21 07:01:08 debug Exp $
+ *  $Id: dev_gt.c,v 1.20 2005-02-26 18:00:37 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -45,6 +45,9 @@
 
 
 #define	TICK_STEPS_SHIFT	16
+
+#define PCI_VENDOR_GALILEO           0x11ab    /* Galileo Technology */
+#define PCI_PRODUCT_GALILEO_GT64011  0x4146    /* GT-64011 System Controller */
 
 struct gt_data {
 	int	reg[8];

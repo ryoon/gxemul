@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_vt82c586.c,v 1.11 2005-02-13 11:40:58 debug Exp $
+ *  $Id: pci_vt82c586.c,v 1.12 2005-02-26 18:00:38 debug Exp $
  *
  *  VIATECH VT82C586 devices:
  *
@@ -43,6 +43,13 @@
 #include "misc.h"
 #include "devices.h"
 #include "bus_pci.h"
+
+
+#define PCI_VENDOR_VIATECH                0x1106  /* VIA Technologies */
+#define PCI_PRODUCT_VIATECH_VT82C586_IDE  0x1571  /* VT82C586 (Apollo VP)
+					             IDE Controller */
+#define PCI_PRODUCT_VIATECH_VT82C586_ISA  0x0586  /* VT82C586 (Apollo VP)
+						     PCI-ISA Bridge */
 
 
 /*

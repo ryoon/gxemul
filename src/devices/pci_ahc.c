@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.13 2005-02-13 11:40:58 debug Exp $
+ *  $Id: pci_ahc.c,v 1.14 2005-02-26 18:00:38 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -46,6 +46,12 @@
 #include "misc.h"
 #include "devices.h"
 #include "bus_pci.h"
+
+
+#define PCI_VENDOR_ADP  0x9004          /* Adaptec */
+#define PCI_VENDOR_ADP2 0x9005          /* Adaptec (2nd PCI Vendor ID) */
+#define PCI_PRODUCT_ADP_2940U   0x8178          /* AHA-2940 Ultra */
+#define PCI_PRODUCT_ADP_2940UP  0x8778          /* AHA-2940 Ultra Pro */
 
 
 struct ahc_data {

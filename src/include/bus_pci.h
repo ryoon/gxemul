@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bus_pci.h,v 1.10 2005-01-25 08:38:27 debug Exp $
+ *  $Id: bus_pci.h,v 1.11 2005-02-26 18:00:39 debug Exp $
  */
 
 #include "misc.h"
@@ -57,7 +57,6 @@ struct pci_data {
 #define	BUS_PCI_DATA	0xcfc
 
 
-#include "pcidevs.h"
 #include "pcireg.h"
 
 

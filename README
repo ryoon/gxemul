@@ -27,8 +27,9 @@ Here are examples of kernels that can be experimented with:
   NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
 
-  Linux/SGI kernels:
+  Linux/SGI kernels:  (-G32 -q)
   http://www.linux-mips.org/~glaurung/
+  You need to add  -CR10000  to the command line for the R10000 kernel.
 
   NetBSD/arc:  (gunzip, and try running with  -Aq  or  -XAq)
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz

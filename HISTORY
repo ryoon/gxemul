@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.196 2004-08-11 19:55:53 debug Exp $
+$Id: HISTORY,v 1.197 2004-08-12 03:18:21 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -898,3 +898,4 @@ HISTORY of mips64emul
 		and MIPS64) instructions.
 		More Au1500 updates.
 20040812	Using fseeko(), when it is available.
+		Other minor updates.

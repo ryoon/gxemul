@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.42 2004-06-25 03:50:16 debug Exp $
+ *  $Id: main.c,v 1.43 2004-06-25 04:01:50 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -354,6 +354,23 @@ int get_cmd_args(int argc, char *argv[])
 
 	extra_argc = argc;
 	extra_argv = argv;
+
+
+	if (instruction_trace) {
+		printf("implicitly turning of -q and turning on -v, because of -i\n");
+		verbose = 1;
+	}
+
+	if (register_dump) {
+		printf("implicitly turning of -q and turning on -v, because of -r\n");
+		verbose = 1;
+	}
+
+	if (show_trace_tree) {
+		printf("implicitly turning of -q and turning on -v, because of -t\n");
+		verbose = 1;
+	}
+
 
 	/*  Default CPU type:  */
 

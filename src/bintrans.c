@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.22 2004-10-08 17:26:35 debug Exp $
+ *  $Id: bintrans.c,v 1.23 2004-10-08 17:47:43 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -158,10 +158,25 @@ void bintrans_host_cacheinvalidate(void);
 #endif	/*  ALPHA  */
 
 
-#define	BINTRANS_CACHE_N_INDEX_BITS	12
+#define	BINTRANS_CACHE_N_INDEX_BITS	13
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
+#define	CODE_CHUNK_SPACE_SIZE		(2 * 1048576)
+
+/*
+ *  translation_code_chunk_space is a large chunk of (linear) memory where
+ *  translated code chunks are stored. When this is filled, we restart from
+ *  scratch (by resetting translation_code_chunk_space_head to 0, and
+ *  removing all translation entries).
+ *
+ *  (This is somewhat inspired by the QEMU web pages,
+ *  http://fabrice.bellard.free.fr/qemu/qemu-tech.html#SEC13)
+ */
+unsigned char *translation_code_chunk_space;
+size_t translation_code_chunk_space_head;
+
+/*  TODO: Something better than a linked list would be nice.  */
 struct translation_entry {
 	uint64_t			paddr;
 	int				len;
@@ -190,8 +205,6 @@ int bintrans_paddr_is_in_cache(struct cpu *cpu, uint64_t paddr)
 
 	tep = translation_entry_array[entry_index];
 
-	/*  TODO: Something better than a linked list would be nice.  */
-
 	while (tep != NULL) {
 		if (tep->paddr == paddr)
 			return 1;
@@ -211,27 +224,32 @@ int bintrans_paddr_is_in_cache(struct cpu *cpu, uint64_t paddr)
 void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
-	struct translation_entry *tep;
+	struct translation_entry *tep, *prev;
 
 	tep = translation_entry_array[entry_index];
-
-	/*  TODO: Something better than a linked list would be nice.  */
+	prev = NULL;
 
 	while (tep != NULL) {
 		if (paddr >= tep->paddr && paddr < tep->paddr + tep->len) {
+			printf("bintrans_invalidate(): invalidating"
+			    " %016llx\n", (long long)paddr);
 
-			/*  TODO  */
-			fprintf(stderr, "bintrans_invalidate(): invalidating"
-			    " %016llx: TODO\n", (long long)paddr);
-			exit(1);
-			/*  TODO: remove the translation from the list,
-			    and free whatever memory it was using  */
+			/*  Remove the translation entry from the list,
+			    and free whatever memory it was using:  */
+			if (prev == NULL)
+				translation_entry_array[entry_index] =
+				    tep->next;
+			else
+				prev->next = tep->next;
+			free(tep);
 
 			/*  Restart the search from the beginning:  */
 			tep = translation_entry_array[entry_index];
+			prev = NULL;
 			continue;
 		}
 
+		prev = tep;
 		tep = tep->next;
 	}
 }
@@ -268,11 +286,27 @@ void bintrans_init(void)
 	s *= sizeof(struct translation_entry *);
 	translation_entry_array = malloc(s);
 	if (translation_entry_array == NULL) {
-		fprintf(stderr, "out of memory\n");
+		fprintf(stderr, "bintrans_init(): out of memory (1)\n");
 		exit(1);
 	}
 
+	/*  The entry array must be NULLed, as these are pointers to
+	    translation entries.  */
 	memset(translation_entry_array, 0, s);
+
+	translation_code_chunk_space = malloc(CODE_CHUNK_SPACE_SIZE);
+	if (translation_code_chunk_space == NULL) {
+		fprintf(stderr, "bintrans_init(): out of memory (2)\n");
+		exit(1);
+	}
+
+	/*
+	 *  The translation_code_chunk_space does not need to be zeroed,
+	 *  but the pointers to where in the chunk space we are about to
+	 *  add new chunks must be initialized to the beginning of the
+	 *  chunk space.
+	 */
+	translation_code_chunk_space_head = 0;
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.105 2004-10-08 16:38:19 debug Exp $
+ *  $Id: main.c,v 1.106 2004-10-08 17:49:54 debug Exp $
  */
 
 #include <stdio.h>
@@ -152,7 +152,7 @@ void usage(char *progname)
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
-	printf("  -J        disable speed tricks\n");
+	printf("  -J        disable some speed tricks\n");
 	printf("  -j name   set the name of the kernel, for example:\n");
 	printf("                -j netbsd          for NetBSD/pmax\n");
 	printf("                -j bsd             for OpenBSD/pmax\n");

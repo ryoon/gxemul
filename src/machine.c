@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.57 2004-03-04 06:12:40 debug Exp $
+ *  $Id: machine.c,v 1.58 2004-03-04 20:04:48 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -75,6 +75,12 @@ struct dec_ioasic_data *dec_ioasic_data;
 
 
 /********************** Helper functions **********************/
+
+
+int int_to_bcd(int i)
+{
+	return (i/10) * 16 + (i % 10);
+}
 
 
 /*
@@ -1040,6 +1046,22 @@ void machine_init(struct memory *mem)
 		add_symbol_name(PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
+
+		/*  RTC data given by the BIOS:  */
+		{
+			time_t timet;
+			struct tm *tmp;
+
+			timet = time(NULL) + 9*3600;	/*  PS2 uses Japanese time  */
+			tmp = gmtime(&timet);
+			/*  TODO:  are these 0- or 1-based?  */
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 1, int_to_bcd(tmp->tm_sec));
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 2, int_to_bcd(tmp->tm_min));
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 3, int_to_bcd(tmp->tm_hour));
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 5, int_to_bcd(tmp->tm_mday));
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 6, int_to_bcd(tmp->tm_mon + 1));
+			store_byte(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x10 + 7, int_to_bcd(tmp->tm_year - 100));
+		}
 
 		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
 

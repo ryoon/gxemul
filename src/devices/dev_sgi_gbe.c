@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.7 2004-06-11 12:43:27 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.8 2004-06-14 07:21:18 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -49,6 +49,8 @@ struct sgi_gbe_data {
 
 	uint32_t	control;		/* 0x00000  */
 	uint32_t	dotclock;		/* 0x00004  */
+	uint32_t	i2c;			/* 0x00008  */
+	uint32_t	i2cfp;			/* 0x00010  */
 	uint32_t	plane0ctrl;		/* 0x30000  */
 	uint32_t	frm_control;		/* 0x3000c  */
 	int		freeze;
@@ -193,6 +195,32 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			odata = d->dotclock;
 		break;
 
+	case 0x8:	/*  i2c?  */
+		/*
+		 *  "CRT I2C control".
+		 *
+		 *  I'm not sure what this does. It isn't really commented
+		 *  in the linux sources.  The IP32 prom writes the values
+		 *  0x03, 0x01, and then 0x00 to this address, and then
+		 *  reads back a value.
+		 */
+		if (writeflag == MEM_WRITE) {
+			d->i2c = idata;
+		} else {
+			odata = d->i2c;
+			odata |= 1;	/*  ?  The IP32 prom wants this?  */
+		}
+		break;
+
+	case 0x10:	/*  i2cfp, flat panel control  */
+		if (writeflag == MEM_WRITE) {
+			d->i2cfp = idata;
+		} else {
+			odata = d->i2cfp;
+			odata |= 1;	/*  ?  The IP32 prom wants this?  */
+		}
+		break;
+
 	case 0x10000:		/*  vt_xy, according to Linux  */
 		if (writeflag == MEM_WRITE)
 			d->freeze = idata & (1<<31)? 1 : 0;
@@ -200,6 +228,7 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			/*  bit 31 = freeze, 23..12 = cury, 11.0 = curx  */
 			odata = ((random() % (d->yres + 10)) << 12)
 			       + (random() % (d->xres + 10)) + (d->freeze? (1 << 31) : 0);
+odata = random();	/*  testhack for the ip32 prom  */
 		}
 		break;
 
@@ -215,6 +244,10 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		odata = (0 << 12) + d->yres-1;	/*  ... 12 bits on, 12 bits off.  */
 		break;
 
+	case 0x20004:
+		odata = random();	/*  IP32 prom test hack. TODO  */
+		break;
+
 	case 0x30000:	/*  normal plane ctrl 0  */
 		/*  bit 15 = fifo reset, 14..13 = depth, 12..5 = tile width, 4..0 = rhs  */
 		if (writeflag == MEM_WRITE) {
@@ -228,6 +261,9 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		break;
 
 	case 0x30008:	/*  normal plane ctrl 2  */
+		odata = random();	/*  IP32 prom test hack. TODO  */
+		break;
+
 	case 0x3000c:	/*  normal plane ctrl 3  */
 		/*  Writes to 3000c should be readable back at 30008? At least bit 0 (dma)  */
 		/*  ctrl 3: Bits 31..9 = tile table pointer bits, Bit 1 = linear, Bit 0 = dma  */
@@ -236,6 +272,10 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			debug("[ sgi_gbe: frm_control = 0x%08x ]\n", d->frm_control);
 		} else
 			odata = d->frm_control;
+		break;
+
+	case 0x40000:
+		odata = random();	/*  IP32 prom test hack. TODO  */
 		break;
 
 	/*

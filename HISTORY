@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.207 2004-08-24 10:45:19 debug Exp $
+$Id: HISTORY,v 1.208 2004-08-24 14:53:14 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -910,5 +910,5 @@ HISTORY of mips64emul
 		fixes.
 20040819	Minor updates. Adding an 'unassemble' debugger command.
 20040822	Minor updates to the regression testing framework.
-20040824	Minor updates as suggested by Alec Voropay (documentation,
-		and configure script updates for Cygwin).
+20040824	Minor updates based on feedback from Alec Voropay
+		(configure script updates for Cygwin and documentation).

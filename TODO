@@ -110,7 +110,7 @@ mips64emul TODO
 			R5900 "weird" instructions
 			Hardware (graphics, sound, dma, ...)
 			Has an R3000A as a subsystem (!)
-			ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/
+			NetBSD and Linux
 		o)  Playstation 1? R3000A. Weird hardware? No FPU, but something as coproc 2.
 		o)  hpcmips:  framebuffer(s) and harddisk controller, among other things
 		o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp  (R4300, 4MB RAM, really weird memory map)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.25 2004-01-20 22:15:54 debug Exp $
+ *  $Id: cpu.c,v 1.26 2004-01-24 21:11:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -57,7 +57,7 @@ extern int use_x11;
 extern int speed_tricks;
 extern int prom_emulation;
 extern int tlb_dump;
-
+extern int userland_emul;
 extern int bootstrap_cpu;
 extern int max_instructions;
 extern struct cpu **cpus;
@@ -932,7 +932,11 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			imm &= 0xfffff;
 			if (instruction_trace)
 				debug("syscall\t0x%05x\n", imm);
-			cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0, 0);
+
+			if (userland_emul) {
+				useremul_syscall(cpu, imm);
+			} else
+				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_BREAK:
 			if (instruction_trace)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: of.c,v 1.2 2005-03-09 08:35:49 debug Exp $
+ *  $Id: of.c,v 1.3 2005-03-09 09:12:47 debug Exp $
  *
  *  OpenFirmware emulation.
  */
@@ -50,7 +50,12 @@ extern int quiet_mode;
 
 /*  TODO: IMPORTANT! Change this into something else, to allow multiple
 	opens of the same device:  */
-#define	HANDLE_MEMORY	3
+#define	HANDLE_STDIN	0
+#define	HANDLE_STDOUT	1
+#define	HANDLE_STDERR	2
+#define	HANDLE_MMU	3
+#define	HANDLE_MEMORY	4
+#define	HANDLE_CHOSEN	5
 
 
 /*
@@ -123,8 +128,13 @@ int of_emul(struct cpu *cpu)
 		readstr(cpu, ptr, arg[i], ARG_MAX_LEN);
 		if (arg[i][0])
 			debug("\"%s\"", arg[i]);
-		else
-			debug("0x%x", (uint32_t)ptr);
+		else {
+			int x = ptr;
+			if (x > -256 && x < 256)
+				debug("%i", x);
+			else
+				debug("0x%x", x);
+		}
 		ofs += sizeof(uint32_t);
 	}
 	debug(") ]\n");
@@ -143,6 +153,8 @@ int of_emul(struct cpu *cpu)
 			    arg[0]);
 		} else if (strcmp(arg[0], "/memory") == 0) {	
 			store_32bit_word(cpu, base + ofs, HANDLE_MEMORY);
+		} else if (strcmp(arg[0], "/chosen") == 0) {	
+			store_32bit_word(cpu, base + ofs, HANDLE_CHOSEN);
 		} else {
 			/*  Device not found.  */
 			fatal("[ of: finddevice(\"%s\"): not yet"
@@ -165,6 +177,28 @@ int of_emul(struct cpu *cpu)
 			} else if (strcmp(tmpstr, "reg") == 0) {
 				/*  TODO  */
 				store_32bit_word(cpu, base + ofs, 33*4);
+			} else {
+				fatal("[ of: getprop(%i,\"%s\"): not yet"
+				    " implemented ]\n", (int)handle, arg[1]);
+				cpu->cd.ppc.gpr[3] = -1;
+			}
+			break;
+		case HANDLE_CHOSEN:
+			if (strcmp(tmpstr, "stdin") == 0) {
+				if (buflen >= 4)
+					store_32bit_word(cpu, buf,
+					    HANDLE_STDIN);
+				store_32bit_word(cpu, base + ofs, 4);
+			} else if (strcmp(tmpstr, "stdout") == 0) {
+				if (buflen >= 4)
+					store_32bit_word(cpu, buf,
+					    HANDLE_STDOUT);
+				store_32bit_word(cpu, base + ofs, 4);
+			} else if (strcmp(tmpstr, "mmu") == 0) {
+				if (buflen >= 4)
+					store_32bit_word(cpu, buf,
+					    HANDLE_MMU);
+				store_32bit_word(cpu, base + ofs, 4);
 			} else {
 				fatal("[ of: getprop(%i,\"%s\"): not yet"
 				    " implemented ]\n", (int)handle, arg[1]);

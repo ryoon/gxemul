@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.380 2005-03-09 07:27:00 debug Exp $
+ *  $Id: machine.c,v 1.381 2005-03-09 09:12:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4080,13 +4080,6 @@ for (i=0; i<32; i++)
 		 *  OpenBSD/macppc (http://www.openbsd.org/macppc.html)
 		 */
 		machine->machine_name = "Macintosh (PPC)";
-
-		{
-			int i;
-			for (i=0; i<32; i++)
-				cpu->cd.ppc.gpr[i] =
-				    0x12000000 + (i << 16);
-		}
 
 		/*  r5 = OpenFirmware entry point  */
 		cpu->cd.ppc.gpr[5] = cpu->cd.ppc.of_emul_addr;

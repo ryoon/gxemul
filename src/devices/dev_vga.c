@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.28 2005-01-24 16:02:28 debug Exp $
+ *  $Id: dev_vga.c,v 1.29 2005-01-26 08:57:27 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -289,10 +289,10 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	switch (relative_addr) {
 	default:
 		if (writeflag==MEM_READ) {
-			fatal("[ vga: read from 0x%08lx ]\n",
+			debug("[ vga: read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			fatal("[ vga: write to  0x%08lx: 0x%08x ]\n",
+			debug("[ vga: write to  0x%08lx: 0x%08x ]\n",
 			    (long)relative_addr, idata);
 		}
 	}
@@ -475,7 +475,8 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 
 	memory_device_register(mem, "vga_mem", videomem_base, allocsize,
 	    dev_vga_access, d, MEM_BINTRANS_OK
-/* | MEM_BINTRANS_WRITE_OK */
+/* | MEM_BINTRANS_WRITE_OK    <-- This works with OpenBSD/arc, but not 
+with Windows NT yet. Why? */
 ,
 	    d->videomem);
 	memory_device_register(mem, "vga_ctrl", control_base,

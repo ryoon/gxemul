@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.296 2005-01-26 08:22:58 debug Exp $
+ *  $Id: machine.c,v 1.297 2005-01-26 08:57:28 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3468,10 +3468,10 @@ config[77] = 0x30;
 		} else {
 			if (diskimage_is_a_cdrom(machine, bootdev_id))
 				snprintf(init_bootpath, 200,
-				    "scsi()cdrom(%i)fdisk()\\", bootdev_id);
+				    "scsi(0)cdrom(%i)fdisk(0)\\", bootdev_id);
 			else
 				snprintf(init_bootpath, 200,
-				    "scsi()disk(%i)rdisk(0)partition(1)\\", bootdev_id);
+				    "scsi(0)disk(%i)rdisk(0)partition(1)\\", bootdev_id);
 		}
 
 		bootstr = malloc(strlen(init_bootpath) +

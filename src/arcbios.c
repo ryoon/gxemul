@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.77 2005-01-26 08:22:58 debug Exp $
+ *  $Id: arcbios.c,v 1.78 2005-01-26 08:57:28 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1138,6 +1138,10 @@ void arcbios_emul(struct cpu *cpu)
 
 	if (arc_64bit)
 		vector /= 2;
+
+	/*  Special case for reboot by jumping to 0xbfc00000:  */
+	if (vector == 0 && (cpu->pc & 0xffffffffULL) == 0xbfc00000ULL)
+		vector = 0x18;
 
 	switch (vector) {
 	case 0x0c:		/*  Halt()  */

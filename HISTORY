@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.89 2004-06-15 21:27:32 debug Exp $
+$Id: HISTORY,v 1.90 2004-06-17 23:52:11 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -546,3 +546,4 @@ HISTORY of mips64emul
 20040615 (late)	Adding enough SGI IP20 (Indigo) support to let NetBSD 2.0
 		enter userland :-)  No interrupt specifics are implemented
 		yet, so it hangs while doing terminal output.
+20040618	Experimenting with the WDSC SCSI controller for IP20,22,24.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.166 2004-08-24 10:45:14 debug Exp $
+ *  $Id: machine.c,v 1.167 2004-08-28 14:04:40 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -837,11 +837,9 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_TEST:
 		/*
-		 *  A 1 mips "bare" test machine.
+		 *  A "bare" test machine.
 		 */
 		machine_name = "\"Bare\" test machine";
-		if (emulated_hz == 0)
-			emulated_hz = 1000000;
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);

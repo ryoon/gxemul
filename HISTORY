@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.211 2004-08-26 14:28:10 debug Exp $
+$Id: HISTORY,v 1.212 2004-08-28 14:04:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -916,3 +916,5 @@ HISTORY of mips64emul
 		Adding a cursor to the VGA text console device.
 		Changing all old 11:22:..55:66 ethernet macs to 10:20..60,
 		still hardcoded though.
+20040828	Minor updates.
+20040829	mips64emul is 1 year old today :-)

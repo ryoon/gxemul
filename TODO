@@ -51,12 +51,15 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		    (in theory) the emulator could support other architectures
 		    as well.   (sparc64?)
 		o)  Instructions:
-			o)  Regression tests (see tests/README for more info)
-			o)  Floating point exception handling, and
-				add more instructions.
-			o)  Finish the MIPS16 translator, and test it!
-			o)  MIPS V (SIMD vector stuff?)
-			o)  MDMX?  (MIPS Digital Media Extension)
+			o)  Regression tests (see tests/README for more info):
+				o)  Floating point exception handling, and
+					add more instructions.
+				o)  Finish the MIPS16 translator, and test it!
+				o)  MIPS ISA I, II, III, IV
+				o)  MIPS V (SIMD vector stuff?)
+				o)  MDMX  (MIPS Digital Media Extension)
+				o)  MIPS 3D
+				o)  MIPS MT (Multi-thread stuff) (What's this?)
 			o)  Warn about mis-used bit fields (ie bits that
 			    should be all zeroes, warn about if they are not)!
 			    Both for coprocessor registers and for instruction

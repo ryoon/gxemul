@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.15 2004-04-02 05:50:25 debug Exp $
+ *  $Id: dev_asc.c,v 1.16 2004-04-05 01:08:51 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -53,6 +53,14 @@
 #define	STATE_INITIATOR		1
 #define	STATE_TARGET		2
 
+#define	PHASE_DATA_OUT		0
+#define	PHASE_DATA_IN		1
+#define	PHASE_COMMAND		2
+#define	PHASE_STATUS		3
+#define	PHASE_MSG_OUT		6
+#define	PHASE_MSG_IN		7
+
+
 /*  The controller's SCSI id:  */
 #define	ASC_SCSI_ID		7
 
@@ -60,6 +68,7 @@ struct asc_data {
 	int		irq_nr;
 
 	int		cur_state;
+	int		cur_phase;
 
 	/*  FIFO:  */
 	unsigned char	fifo[ASC_FIFO_LEN];
@@ -494,11 +503,23 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, n_messagebytes);
 				d->reg_ro[NCR_STEP] &= ~7;
-#if 0
 				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
-#else
-				d->reg_ro[NCR_STEP] |= 2;	/*  ?  */
-#endif
+
+				d->cur_phase = 4;
+{
+	static int x= 0;
+	x++;
+	if (x==2) {
+				d->reg_ro[NCR_STEP] &= ~7;
+				d->reg_ro[NCR_STEP] |= 4;	/*  done (?)  */
+				d->reg_ro[NCR_STAT] &= ~7;
+				d->reg_ro[NCR_STAT] |= 1;	/*  data in  */
+				d->cur_phase = PHASE_DATA_IN;
+				dev_asc_fifo_flush(d);
+				d->reg_ro[NCR_TCL] = 0x2c;
+				d->reg_wo[NCR_TCL] = 0x2c;
+	}
+}
 				d->cur_state = STATE_INITIATOR;
 			} else {
 				/*
@@ -533,8 +554,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			d->reg_ro[NCR_TCM] = 0;
 
 			d->reg_ro[NCR_STEP] &= ~7;
+#if 0
 			d->reg_ro[NCR_STEP] |= 0;
 			dev_asc_fifo_flush(d);
+#else
+			d->reg_ro[NCR_STEP] |= 4;
+#endif
 			break;
 		case NCRCMD_TRANS:
 			debug("TRANS");
@@ -546,7 +571,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 			/*  TODO  */
 
-			if (d->cur_state == STATE_TARGET) {
+			if (d->cur_phase == PHASE_DATA_IN) {
 				int ok;
 
 				ok = dev_asc_transfer(d, d->reg_wo[NCR_SELID] & 7, d->reg_ro[NCR_CFG1] & 0x7,
@@ -559,9 +584,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 					dev_asc_fifo_write(d, 0x00);  	/*  0 = command complete  */
 					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
 				}
-				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ?  */
+				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 3;	/*  7?  */
 				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
-/*				d->cur_state = STATE_INITIATOR;  */	/*  ?  */
+				d->cur_phase = PHASE_MSG_IN;
 			} else {
 				int ok;
 				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,

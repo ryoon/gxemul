@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.26 2004-01-12 00:17:41 debug Exp $
+ *  $Id: devices.h,v 1.27 2004-01-24 21:09:40 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -40,6 +40,11 @@ struct pci_data;
 #include <X11/Xlib.h>
 #endif */
 
+
+/*  dev_threemin_ioasic.c:  */
+#define	DEV_THREEMIN_IOASIC_LENGTH		0xc0000
+int dev_threemin_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_threemin_ioasic_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_8250.c:  */
 #define	DEV_8250_LENGTH		0x0000000000000008

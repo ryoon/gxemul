@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.23 2004-11-11 00:45:16 debug Exp $
+#  $Id: Makefile.skel,v 1.24 2004-11-13 15:27:55 debug Exp $
 #
 #  Makefile for mips64emul src
 #
@@ -7,7 +7,7 @@
 CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
 
 OBJS=main.o emul.o file.o diskimage.o net.o \
-	bintrans.o useremul.o \
+	useremul.o bintrans.o coproc.o \
 	cpu.o machine.o mips16.o symbol.o \
 	x11.o dec_prom.o ps2_bios.o arcbios.o
 
@@ -19,7 +19,7 @@ $(OBJS): Makefile
 bintrans.o: bintrans.c bintrans_alpha.c bintrans_i386.c \
 		bintrans_mips.c bintrans_sparcv9.c
 
-cpu.o: cpu.c coproc.c memory.c
+cpu.o: cpu.c memory.c
 
 clean:
 	rm -f $(OBJS) *core

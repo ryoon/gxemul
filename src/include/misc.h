@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.140 2004-11-12 21:33:52 debug Exp $
+ *  $Id: misc.h,v 1.141 2004-11-13 15:27:53 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -948,11 +948,11 @@ void arcbios_set_64bit_mode(int enable);
 
 /*  coproc.c:  */
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
-static void coproc_register_read(struct cpu *cpu,
+void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
-static void coproc_register_write(struct cpu *cpu,
+void coproc_register_write(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr, int flag64);
-static void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
+void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 	int unassemble_only, int running);
 
 

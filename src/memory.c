@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.96 2004-11-12 23:49:25 debug Exp $
+ *  $Id: memory.c,v 1.97 2004-11-13 15:27:55 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1099,6 +1099,7 @@ int kernel_address = 0;
 	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
 	    cpu, (long long)vaddr, writeflag, alignmask);  */
 
+#if 0
 	/*  Caches are not very coozy to handle in bintrans:  */
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
@@ -1107,6 +1108,7 @@ int kernel_address = 0;
 		break;
 	/*  TODO: other cache types  */
 	}
+#endif
 
 	vaddr_page = vaddr & ~0xfff;
 if ((vaddr & 0xc0000000ULL) != 0x80000000ULL) {
@@ -1201,9 +1203,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	uint64_t paddr;
 	int cache, no_exceptions, ok, offset;
 	unsigned char *memblock;
-#ifdef BINTRANS
-	uint64_t orig_vaddr = vaddr;
-#endif
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;

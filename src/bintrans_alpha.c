@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.28 2004-11-12 23:49:25 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.29 2004-11-13 15:27:55 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -364,7 +364,6 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	unsigned char *a, *b, *b2;
 	int n;
 	int ofs;
-	uint64_t alpha_addr, subaddr;
 
 	a = *addrp;
 
@@ -528,7 +527,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 {
 	unsigned char *a;
 	int ofs;
-	uint64_t subimm, alpha_addr, subaddr;
+	uint64_t subimm;
 
 	a = *addrp;
 
@@ -618,8 +617,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	uint32_t *potential_chunk_p, uint32_t *chunks)
 {
-	unsigned char *a, *b, *b2, *skip;
-	int n;
+	unsigned char *a, *skip;
 	int ofs;
 	uint64_t alpha_addr, subaddr;
 

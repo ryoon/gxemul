@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.183 2004-11-12 23:49:25 debug Exp $
+ *  $Id: cpu.c,v 1.184 2004-11-13 15:27:55 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -916,13 +916,6 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 
 
 /*
- *  NOTE:  coproc.c is included here, so as to lie close to the often
- *         used CPU routines in the [host's] cache.
- */
-#include "coproc.c"
-
-
-/*
  *  NOTE:  memory.c is included here, so as to lie close to the often
  *         used CPU routines in the [host's] cache.
  */
@@ -1410,6 +1403,23 @@ static int cpu_run_instr(struct cpu *cpu)
 		return 0;
 	}
 #endif
+
+
+
+#ifdef BINTRANS
+
+        /*  Caches are not very coozy to handle in bintrans:  */
+        switch (cpu->cpu_type.mmu_model) {
+        case MMU3K:
+                if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+			cpu->dont_run_next_bintrans = 1;
+                break;
+        /*  TODO: other cache types  */
+        }
+
+
+#endif
+
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */

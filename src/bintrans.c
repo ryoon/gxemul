@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.57 2004-11-12 23:49:25 debug Exp $
+ *  $Id: bintrans.c,v 1.58 2004-11-13 15:27:55 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -223,10 +223,7 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_page_entry *tep;
-	unsigned char *p;
 	uint64_t paddr_page = paddr & ~0xfff;
-	int offset_within_page = (paddr & 0xfff) / 4;
-	int chunklen, i,j;
 
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
@@ -315,19 +312,18 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	unsigned char *ca, *ca_justdid, *ca2;
 	int res, hi6, special6, regimm5;
 	unsigned char instr[4];
-	uint64_t new_pc;
 	size_t p;
 	int try_to_translate;
-	int n_translated, i, translated;
+	int n_translated, translated;
 	int (*f)(struct cpu *);
 	struct translation_page_entry *tep;
 	size_t chunk_len;
-	int rs,rt,rd,sa,imm;
+	int rs,rt=0,rd,sa,imm;
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
 	int delayed_branch;
-	uint64_t delayed_branch_new_p;
-	uint32_t prev_chunk_offset; int prev_p;
+	uint64_t delayed_branch_new_p=0;
+	int prev_p;
 
 
 	/*

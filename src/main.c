@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.3 2003-11-07 00:25:32 debug Exp $
+ *  $Id: main.c,v 1.4 2003-11-07 01:40:23 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -160,7 +160,7 @@ void usage(char *progname)
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
-	printf("  -E        try to emulate a Cobalt machine (default CPU = R4000)\n");
+	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -F        try to emulate a hpcmips machine\n");
 	printf("  -G        try to emulate an SGI machine (Indy)\n");
 	printf("  -H        initialize emulated RAM to random bytes, instead of zeroes\n");
@@ -319,7 +319,7 @@ int get_cmd_args(int argc, char *argv[])
 		strcpy(emul_cpu_name, "R2000");
 
 	if (emulation_type == EMULTYPE_COBALT && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4000");
+		strcpy(emul_cpu_name, "RM5200");
 
 	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R4000");
@@ -344,7 +344,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (extra_argc == 0) {
 		usage(progname);
-		printf("You must specify one or more binary images that you wish to load into memory.\n");
+		printf("You must specify one or more names of files that you wish to load into memory.\n");
 		printf("Supported formats:  ELF a.out ecoff syms\n");
 		printf("where syms is the text produced my running 'nm' (or 'nm -S') on a binary.\n");
 		exit(1);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.145 2005-01-30 00:37:08 debug Exp $
+ *  $Id: bintrans.c,v 1.146 2005-01-30 12:54:51 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -98,9 +98,10 @@
 
 #include "bintrans.h"
 #include "cop0.h"
+#include "cpu.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "mips_cpu_types.h"
 #include "misc.h"
 #include "opcodes.h"
@@ -245,11 +246,11 @@ static void enter_chunks_into_tables(struct cpu *cpu, uint64_t vaddr, uint32_t *
 	int a, b;
 	struct vth32_table *tbl1;
 
-	switch (cpu->cpu_type.mmu_model) {
+	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
 		a = (vaddr >> 22) & 0x3ff;
 		b = (vaddr >> 12) & 0x3ff;
-		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+		tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 		if (tbl1->haddr_entry[b] != NULL)
 			tbl1->bintrans_chunks[b] = chunk0;
 		break;
@@ -292,11 +293,11 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 
 
 	/*  Abort if the current "environment" isn't safe enough:  */
-	if (cpu->delay_slot || cpu->nullify_next || (paddr & 3) != 0)
-		return cpu->bintrans_instructions_executed;
+	if (cpu->cd.mips.delay_slot || cpu->cd.mips.nullify_next || (paddr & 3) != 0)
+		return cpu->cd.mips.bintrans_instructions_executed;
 
-	cpu->mem->bintrans_32bit_only = (cpu->cpu_type.isa_level <= 2 ||
-	    cpu->cpu_type.isa_level == 32);
+	cpu->mem->bintrans_32bit_only = (cpu->cd.mips.cpu_type.isa_level <= 2 ||
+	    cpu->cd.mips.cpu_type.isa_level == 32);
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 
 	/*  Is this a part of something that is already translated?  */
@@ -312,7 +313,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 				goto run_it;	/*  see further down  */
 			}
 			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-				return cpu->bintrans_instructions_executed;
+				return cpu->cd.mips.bintrans_instructions_executed;
 			break;
 		}
 		tep = tep->next;
@@ -325,9 +326,9 @@ quick_attempt_translate_again:
 #endif
 /*printf("B: ");
 printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
-(long long)cpu->pc_last_virtual_page,
-(long long)cpu->pc_last_physical_page,
-cpu->pc_last_host_4k_page,(long long)paddr);
+(long long)cpu->cd.mips.pc_last_virtual_page,
+(long long)cpu->cd.mips.pc_last_physical_page,
+cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 */
 	/*
 	 *  If the chunk space is all used up, we need to start over from
@@ -345,9 +346,9 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	}
 
 
-	host_mips_page = cpu->pc_bintrans_host_4kpage;
+	host_mips_page = cpu->cd.mips.pc_bintrans_host_4kpage;
 	if (host_mips_page == NULL)
-		return cpu->bintrans_instructions_executed;
+		return cpu->cd.mips.bintrans_instructions_executed;
 
 
 	if (tep == NULL) {
@@ -753,7 +754,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 	/*  Not enough translated? Then abort.  */
 	if (n_translated < 1) {
 		tep->flags[offset_within_page] |= UNTRANSLATABLE;
-		return cpu->bintrans_instructions_executed;
+		return cpu->cd.mips.bintrans_instructions_executed;
 	}
 
 	/*  ca2 = ptr to the head of the new code chunk  */
@@ -781,30 +782,30 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 
 run_it:
 	/*  printf("BEFORE: pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->gpr[31]); */
+	    (long long)cpu->cd.mips.pc, (long long)cpu->gpr[31]); */
 
-	enter_chunks_into_tables(cpu, cpu->pc, &tep->chunk[0]);
+	enter_chunks_into_tables(cpu, cpu->cd.mips.pc, &tep->chunk[0]);
 
-	old_n_executed = cpu->bintrans_instructions_executed;
+	old_n_executed = cpu->cd.mips.bintrans_instructions_executed;
 
 	bintrans_runchunk(cpu, f);
 
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
-	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
+	    (long long)cpu->cd.mips.pc, (long long)cpu->gpr[31]);  */
 
-	if (!cpu->delay_slot && !cpu->nullify_next &&
-	    cpu->bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
-	    && (cpu->pc & 3) == 0
-	    && cpu->bintrans_instructions_executed != old_n_executed) {
+	if (!cpu->cd.mips.delay_slot && !cpu->cd.mips.nullify_next &&
+	    cpu->cd.mips.bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
+	    && (cpu->cd.mips.pc & 3) == 0
+	    && cpu->cd.mips.bintrans_instructions_executed != old_n_executed) {
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
 		if (cpu->mem->bintrans_32bit_only ||
-		    (cpu->pc & 0xffffffff80000000ULL) == 0 ||
-		    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
+		    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0 ||
+		    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {
 			/*  32-bit special case:  */
-			a = (cpu->pc >> 22) & 0x3ff;
-			b = (cpu->pc >> 12) & 0x3ff;
+			a = (cpu->cd.mips.pc >> 22) & 0x3ff;
+			b = (cpu->cd.mips.pc >> 12) & 0x3ff;
 
 			/*  TODO: There is a bug here; if caches are disabled, and
 			    for some reason the code jumps to a different page, then
@@ -812,11 +813,11 @@ run_it:
 			    to check for cache isolation, and if so, use the
 			    kernel table. Otherwise use table0.  */
 
-			/*  tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];  */
+			/*  tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];  */
 
-			tbl1 = cpu->vaddr_to_hostaddr_table0[a];
+			tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0[a];
 			if (tbl1->haddr_entry[b] != NULL) {
-				paddr = tbl1->paddr_entry[b] | (cpu->pc & 0xfff);
+				paddr = tbl1->paddr_entry[b] | (cpu->cd.mips.pc & 0xfff);
 				ok = 1;
 			}
 		}
@@ -824,16 +825,16 @@ run_it:
 		/*  General case, or if the special case above failed:  */
 		/*  (This may cause exceptions.)  */
 		if (!ok) {
-			uint64_t old_pc = cpu->pc_last = cpu->pc;
-			ok = cpu->translate_address(cpu, cpu->pc, &paddr, FLAG_INSTR);
+			uint64_t old_pc = cpu->cd.mips.pc_last = cpu->cd.mips.pc;
+			ok = cpu->translate_address(cpu, cpu->cd.mips.pc, &paddr, FLAG_INSTR);
 
-			if (!ok && old_pc != cpu->pc) {
+			if (!ok && old_pc != cpu->cd.mips.pc) {
 				/*  pc is something like ...0080 or ...0000 or so.  */
-				paddr = cpu->pc & 0xfff;
+				paddr = cpu->cd.mips.pc & 0xfff;
 				ok = 1;
 
-				cpu->pc_last_host_4k_page = NULL;
-				cpu->pc_bintrans_host_4kpage = NULL;
+				cpu->cd.mips.pc_last_host_4k_page = NULL;
+				cpu->cd.mips.pc_bintrans_host_4kpage = NULL;
 			}
 		}
 
@@ -850,7 +851,7 @@ run_it:
 						goto run_it;
 					}
 					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
-						return cpu->bintrans_instructions_executed;
+						return cpu->cd.mips.bintrans_instructions_executed;
 					break;
 				}
 				tep = tep->next;
@@ -858,38 +859,38 @@ run_it:
 
 #if 0
 			/*  We have no translation.  */
-			if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
+			if ((cpu->cd.mips.pc & 0xfff00000) == 0xbfc00000 &&
 			    cpu->machine->prom_emulation)
-				return cpu->bintrans_instructions_executed;
+				return cpu->cd.mips.bintrans_instructions_executed;
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */
 			/*  TODO: This doesn't seem to work with R4000 etc?  */
 			if (cpu->mem->bintrans_32bit_only) {
-			    /* || (cpu->pc & 0xffffffff80000000ULL) == 0 ||
-			    (cpu->pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
+			    /* || (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0 ||
+			    (cpu->cd.mips.pc & 0xffffffff80000000ULL) == 0xffffffff80000000ULL) {  */
 				int ok = 1;
 				/*  32-bit special case:  */
-				a = (cpu->pc >> 22) & 0x3ff;
-				b = (cpu->pc >> 12) & 0x3ff;
-				if (cpu->vaddr_to_hostaddr_table0 !=
-				    cpu->vaddr_to_hostaddr_table0_kernel)
+				a = (cpu->cd.mips.pc >> 22) & 0x3ff;
+				b = (cpu->cd.mips.pc >> 12) & 0x3ff;
+				if (cpu->cd.mips.vaddr_to_hostaddr_table0 !=
+				    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel)
 					ok = 0;
-				tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+				tbl1 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a];
 				if (ok && tbl1->haddr_entry[b] != NULL) {
-					cpu->pc_last_virtual_page = cpu->pc & ~0xfff;
-					cpu->pc_last_physical_page = paddr & ~0xfff;
-					cpu->pc_last_host_4k_page = (unsigned char *)
+					cpu->cd.mips.pc_last_virtual_page = cpu->cd.mips.pc & ~0xfff;
+					cpu->cd.mips.pc_last_physical_page = paddr & ~0xfff;
+					cpu->cd.mips.pc_last_host_4k_page = (unsigned char *)
 					    (((size_t)tbl1->haddr_entry[b]) & ~1);
-					cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
-					cpu->pc_bintrans_paddr = paddr;
+					cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
+					cpu->cd.mips.pc_bintrans_paddr = paddr;
 
 /*
 printf("C: ");
 printf("v=%016llx p=%016llx h=%p paddr=%016llx\n",
-(long long)cpu->pc_last_virtual_page,
-(long long)cpu->pc_last_physical_page,
-cpu->pc_last_host_4k_page,(long long)paddr);
+(long long)cpu->cd.mips.pc_last_virtual_page,
+(long long)cpu->cd.mips.pc_last_physical_page,
+cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 */
 					goto quick_attempt_translate_again;
 				}
@@ -900,7 +901,7 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 		}
 	}
 
-	return cpu->bintrans_instructions_executed;
+	return cpu->cd.mips.bintrans_instructions_executed;
 }
 
 
@@ -915,59 +916,59 @@ void bintrans_init_cpu(struct cpu *cpu)
 {
 	int i, offset;
 
-	cpu->chunk_base_address        = cpu->mem->translation_code_chunk_space;
-	cpu->bintrans_loadstore_32bit  = bintrans_loadstore_32bit;
-	cpu->bintrans_jump_to_32bit_pc = bintrans_jump_to_32bit_pc;
-	cpu->bintrans_fast_tlbwri      = coproc_tlbwri;
-	cpu->bintrans_fast_tlbpr       = coproc_tlbpr;
-	cpu->bintrans_fast_rfe         = coproc_rfe;
-	cpu->bintrans_fast_eret        = coproc_eret;
-	cpu->bintrans_simple_exception = mips_cpu_cause_simple_exception;
-	cpu->fast_vaddr_to_hostaddr    = fast_vaddr_to_hostaddr;
+	cpu->cd.mips.chunk_base_address        = cpu->mem->translation_code_chunk_space;
+	cpu->cd.mips.bintrans_loadstore_32bit  = bintrans_loadstore_32bit;
+	cpu->cd.mips.bintrans_jump_to_32bit_pc = bintrans_jump_to_32bit_pc;
+	cpu->cd.mips.bintrans_fast_tlbwri      = coproc_tlbwri;
+	cpu->cd.mips.bintrans_fast_tlbpr       = coproc_tlbpr;
+	cpu->cd.mips.bintrans_fast_rfe         = coproc_rfe;
+	cpu->cd.mips.bintrans_fast_eret        = coproc_eret;
+	cpu->cd.mips.bintrans_simple_exception = mips_cpu_cause_simple_exception;
+	cpu->cd.mips.fast_vaddr_to_hostaddr    = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */
-	cpu->vaddr_to_hostaddr_nulltable =
+	cpu->cd.mips.vaddr_to_hostaddr_nulltable =
 	    zeroed_alloc(sizeof(struct vth32_table));
 
 	/*  Data cache:  */
 	offset = 0;
-	cpu->vaddr_to_hostaddr_r2k3k_dcachetable =
+	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable =
 	    zeroed_alloc(sizeof(struct vth32_table));
 	for (i=0; i<1024; i++) {
-		cpu->vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
-		    (void *)(((size_t)cpu->cache[0]+offset) | 1);
-		offset = (offset + 4096) % cpu->cache_size[0];
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
+		    (void *)(((size_t)cpu->cd.mips.cache[0]+offset) | 1);
+		offset = (offset + 4096) % cpu->cd.mips.cache_size[0];
 	}
-	cpu->vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
+	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
 
 	/*  Instruction cache:  */
 	offset = 0;
-	cpu->vaddr_to_hostaddr_r2k3k_icachetable =
+	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable =
 	    zeroed_alloc(sizeof(struct vth32_table));
 	for (i=0; i<1024; i++) {
-		cpu->vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
-		    (void *)(((size_t)cpu->cache[1]+offset) | 1);
-		offset = (offset + 4096) % cpu->cache_size[1];
+		cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
+		    (void *)(((size_t)cpu->cd.mips.cache[1]+offset) | 1);
+		offset = (offset + 4096) % cpu->cd.mips.cache_size[1];
 	}
-	cpu->vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;
+	cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;
 
-	cpu->vaddr_to_hostaddr_table0_kernel =
+	cpu->cd.mips.vaddr_to_hostaddr_table0_kernel =
 	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-	cpu->vaddr_to_hostaddr_table0_user =
+	cpu->cd.mips.vaddr_to_hostaddr_table0_user =
 	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-	cpu->vaddr_to_hostaddr_table0_cacheisol_i =
+	cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_i =
 	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-	cpu->vaddr_to_hostaddr_table0_cacheisol_d =
+	cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_d =
 	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
 
 	for (i=0; i<1024; i++) {
-		cpu->vaddr_to_hostaddr_table0_kernel[i] = cpu->vaddr_to_hostaddr_nulltable;
-		cpu->vaddr_to_hostaddr_table0_user[i] = cpu->vaddr_to_hostaddr_nulltable;
-		cpu->vaddr_to_hostaddr_table0_cacheisol_i[i] = cpu->vaddr_to_hostaddr_r2k3k_icachetable;
-		cpu->vaddr_to_hostaddr_table0_cacheisol_d[i] = cpu->vaddr_to_hostaddr_r2k3k_dcachetable;
+		cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[i] = cpu->cd.mips.vaddr_to_hostaddr_nulltable;
+		cpu->cd.mips.vaddr_to_hostaddr_table0_user[i] = cpu->cd.mips.vaddr_to_hostaddr_nulltable;
+		cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_i[i] = cpu->cd.mips.vaddr_to_hostaddr_r2k3k_icachetable;
+		cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_d[i] = cpu->cd.mips.vaddr_to_hostaddr_r2k3k_dcachetable;
 	}
 
-	cpu->vaddr_to_hostaddr_table0 = cpu->vaddr_to_hostaddr_table0_kernel;
+	cpu->cd.mips.vaddr_to_hostaddr_table0 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
 }
 
 

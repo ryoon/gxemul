@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01.c,v 1.4 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_kn01.c,v 1.5 2005-01-30 12:54:43 debug Exp $
  *  
  *  KN01 stuff ("PMAX", DECstation type 1); CSR (System Control Register)
  *  and VDAC.
@@ -41,9 +41,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "memory.h"
-#include "mips_cpu.h"
 #include "misc.h"
 
 #include "dec_kn01.h"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.270 2005-01-30 11:38:15 debug Exp $
+ *  $Id: cpu.c,v 1.271 2005-01-30 12:54:52 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -42,12 +42,13 @@
 #include "bintrans.h"
 #include "console.h"
 #include "cop0.h"
+#include "cpu.h"
 #include "debugger.h"
 #include "devices.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "mips_cpu_types.h"
 #include "opcodes.h"
 #include "symbol.h"
@@ -125,13 +126,13 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
-	cpu->gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
+	cpu->cd.mips.gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
 
 	/*  Scan the cpu_type_defs list for this cpu type:  */
 	i = 0;
 	while (i >= 0 && cpu_type_defs[i].name != NULL) {
 		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
-			cpu->cpu_type = cpu_type_defs[i];
+			cpu->cd.mips.cpu_type = cpu_type_defs[i];
 			i = -1;
 			break;
 		}
@@ -145,7 +146,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 	}
 
 	if (cpu_id == 0)
-		debug("%s", cpu->cpu_type.name);
+		debug("%s", cpu->cd.mips.cpu_type.name);
 
 	/*
 	 *  CACHES:
@@ -160,35 +161,35 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 	 */
 
 	x = DEFAULT_PCACHE_SIZE;
-	if (cpu->cpu_type.default_pdcache)
-		x = cpu->cpu_type.default_pdcache;
+	if (cpu->cd.mips.cpu_type.default_pdcache)
+		x = cpu->cd.mips.cpu_type.default_pdcache;
 	if (machine->cache_pdcache == 0)
 		machine->cache_pdcache = x;
 
 	x = DEFAULT_PCACHE_SIZE;
-	if (cpu->cpu_type.default_picache)
-		x = cpu->cpu_type.default_picache;
+	if (cpu->cd.mips.cpu_type.default_picache)
+		x = cpu->cd.mips.cpu_type.default_picache;
 	if (machine->cache_picache == 0)
 		machine->cache_picache = x;
 
 	if (machine->cache_secondary == 0)
-		machine->cache_secondary = cpu->cpu_type.default_scache;
+		machine->cache_secondary = cpu->cd.mips.cpu_type.default_scache;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
-	if (cpu->cpu_type.default_pdlinesize)
-		linesize = cpu->cpu_type.default_pdlinesize;
+	if (cpu->cd.mips.cpu_type.default_pdlinesize)
+		linesize = cpu->cd.mips.cpu_type.default_pdlinesize;
 	if (machine->cache_pdcache_linesize == 0)
 		machine->cache_pdcache_linesize = linesize;
 
 	linesize = DEFAULT_PCACHE_LINESIZE;
-	if (cpu->cpu_type.default_pilinesize)
-		linesize = cpu->cpu_type.default_pilinesize;
+	if (cpu->cd.mips.cpu_type.default_pilinesize)
+		linesize = cpu->cd.mips.cpu_type.default_pilinesize;
 	if (machine->cache_picache_linesize == 0)
 		machine->cache_picache_linesize = linesize;
 
 	linesize = 0;
-	if (cpu->cpu_type.default_slinesize)
-		linesize = cpu->cpu_type.default_slinesize;
+	if (cpu->cd.mips.cpu_type.default_slinesize)
+		linesize = cpu->cd.mips.cpu_type.default_slinesize;
 	if (machine->cache_secondary_linesize == 0)
 		machine->cache_secondary_linesize = linesize;
 
@@ -209,10 +210,10 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 		}
 
 		/*  Primary cache size and linesize:  */
-		cpu->cache_size[i] = x;
-		cpu->cache_linesize[i] = linesize;
+		cpu->cd.mips.cache_size[i] = x;
+		cpu->cd.mips.cache_linesize[i] = linesize;
 
-		switch (cpu->cpu_type.rev) {
+		switch (cpu->cd.mips.cpu_type.rev) {
 		case MIPS_R2000:
 		case MIPS_R3000:
 			size_per_cache_line = sizeof(struct r3000_cache_line);
@@ -221,30 +222,30 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 			size_per_cache_line = sizeof(struct r4000_cache_line);
 		}
 
-		cpu->cache_mask[i] = cpu->cache_size[i] - 1;
-		cpu->cache_miss_penalty[i] = 10;	/*  TODO ?  */
+		cpu->cd.mips.cache_mask[i] = cpu->cd.mips.cache_size[i] - 1;
+		cpu->cd.mips.cache_miss_penalty[i] = 10;	/*  TODO ?  */
 
-		cpu->cache[i] = malloc(cpu->cache_size[i]);
-		if (cpu->cache[i] == NULL) {
+		cpu->cd.mips.cache[i] = malloc(cpu->cd.mips.cache_size[i]);
+		if (cpu->cd.mips.cache[i] == NULL) {
 			fprintf(stderr, "out of memory\n");
 		}
 
-		n_cache_lines = cpu->cache_size[i] / cpu->cache_linesize[i];
+		n_cache_lines = cpu->cd.mips.cache_size[i] / cpu->cd.mips.cache_linesize[i];
 		tags_size = n_cache_lines * size_per_cache_line;
 
-		cpu->cache_tags[i] = malloc(tags_size);
-		if (cpu->cache_tags[i] == NULL) {
+		cpu->cd.mips.cache_tags[i] = malloc(tags_size);
+		if (cpu->cd.mips.cache_tags[i] == NULL) {
 			fprintf(stderr, "out of memory\n");
 		}
 
 		/*  Initialize the cache tags:  */
-		switch (cpu->cpu_type.rev) {
+		switch (cpu->cd.mips.cpu_type.rev) {
 		case MIPS_R2000:
 		case MIPS_R3000:
 			for (j=0; j<n_cache_lines; j++) {
 				struct r3000_cache_line *rp;
 				rp = (struct r3000_cache_line *)
-				    cpu->cache_tags[i];
+				    cpu->cd.mips.cache_tags[i];
 				rp[j].tag_paddr = 0;
 				rp[j].tag_valid = 0;
 			}
@@ -254,7 +255,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 		}
 
 		/*  Set cache_last_paddr to something "impossible":  */
-		cpu->cache_last_paddr[i] = IMPOSSIBLE_PADDR;
+		cpu->cd.mips.cache_last_paddr[i] = IMPOSSIBLE_PADDR;
 	}
 
 	/*
@@ -267,8 +268,8 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 
 	if (cpu_id == 0) {
 		debug(" (I+D = %i+%i KB",
-		    (int)(cpu->cache_size[CACHE_INSTRUCTION] / 1024),
-		    (int)(cpu->cache_size[CACHE_DATA] / 1024));
+		    (int)(cpu->cd.mips.cache_size[CACHE_INSTRUCTION] / 1024),
+		    (int)(cpu->cd.mips.cache_size[CACHE_DATA] / 1024));
 
 		if (secondary_cache_size != 0) {
 			debug(", L2 = ");
@@ -283,19 +284,19 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 		debug(")");
 	}
 
-	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
-	cpu->coproc[1] = coproc_new(cpu, 1);	/*  FPU  */
+	cpu->cd.mips.coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
+	cpu->cd.mips.coproc[1] = coproc_new(cpu, 1);	/*  FPU  */
 
 	/*
-	 *  Initialize the cpu->pc_last_* cache (a 1-entry cache of the
+	 *  Initialize the cpu->cd.mips.pc_last_* cache (a 1-entry cache of the
 	 *  last program counter value).  For pc_last_virtual_page, any
 	 *  "impossible" value will do.  The pc should never ever get this
 	 *  value.  (The other pc_last* variables do not need initialization,
 	 *  as they are not used before pc_last_virtual_page.)
 	 */
-	cpu->pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
+	cpu->cd.mips.pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
-	switch (cpu->cpu_type.mmu_model) {
+	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
 		cpu->translate_address = translate_address_mmu3k;
 		break;
@@ -306,7 +307,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 		cpu->translate_address = translate_address_mmu10k;
 		break;
 	default:
-		if (cpu->cpu_type.rev == MIPS_R4100)
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
 			cpu->translate_address = translate_address_mmu4100;
 		else
 			cpu->translate_address = translate_address_generic;
@@ -335,27 +336,27 @@ void mips_cpu_show_full_statistics(struct machine *m)
 		debug_indentation(iadd);
 
 		for (s1=0; s1<N_HI6; s1++) {
-			if (m->cpus[i]->stats_opcode[s1] > 0)
+			if (m->cpus[i]->cd.mips.stats_opcode[s1] > 0)
 				fatal("opcode %02x (%7s): %li\n", s1,
 				    hi6_names[s1],
-				    m->cpus[i]->stats_opcode[s1]);
+				    m->cpus[i]->cd.mips.stats_opcode[s1]);
 
 			debug_indentation(iadd);
 			if (s1 == HI6_SPECIAL)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->stats__special[s2] > 0)
+					if (m->cpus[i]->cd.mips.stats__special[s2] > 0)
 						fatal("special %02x (%7s): %li\n",
-						    s2, special_names[s2], m->cpus[i]->stats__special[s2]);
+						    s2, special_names[s2], m->cpus[i]->cd.mips.stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
-					if (m->cpus[i]->stats__regimm[s2] > 0)
+					if (m->cpus[i]->cd.mips.stats__regimm[s2] > 0)
 						fatal("regimm %02x (%7s): %li\n",
-						    s2, regimm_names[s2], m->cpus[i]->stats__regimm[s2]);
+						    s2, regimm_names[s2], m->cpus[i]->cd.mips.stats__regimm[s2]);
 			if (s1 == HI6_SPECIAL2)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->stats__special2[s2] > 0)
+					if (m->cpus[i]->cd.mips.stats__special2[s2] > 0)
 						fatal("special2 %02x (%7s): %li\n",
-						    s2, special2_names[s2], m->cpus[i]->stats__special2[s2]);
+						    s2, special2_names[s2], m->cpus[i]->cd.mips.stats__special2[s2]);
 			debug_indentation(-iadd);
 		}
 
@@ -385,44 +386,44 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 			if (x >= 0 && i != x)
 				continue;
 
-			if (m->cpus[i]->cpu_type.rev == MIPS_R4100)
+			if (m->cpus[i]->cd.mips.cpu_type.rev == MIPS_R4100)
 				pageshift = 10;
 
 			/*  Print index, random, and wired:  */
 			printf("cpu%i: (", i);
-			switch (m->cpus[i]->cpu_type.isa_level) {
+			switch (m->cpus[i]->cd.mips.cpu_type.isa_level) {
 			case 1:
 			case 2:
 				printf("index=0x%x random=0x%x",
-				    (int) ((m->cpus[i]->coproc[0]->
+				    (int) ((m->cpus[i]->cd.mips.coproc[0]->
 				    reg[COP0_INDEX] & R2K3K_INDEX_MASK)
 				    >> R2K3K_INDEX_SHIFT),
-				    (int) ((m->cpus[i]->coproc[0]->
+				    (int) ((m->cpus[i]->cd.mips.coproc[0]->
 				    reg[COP0_RANDOM] & R2K3K_RANDOM_MASK)
 				    >> R2K3K_RANDOM_SHIFT));
 				break;
 			default:
 				printf("index=0x%x random=0x%x",
-				    (int) (m->cpus[i]->coproc[0]->
+				    (int) (m->cpus[i]->cd.mips.coproc[0]->
 				    reg[COP0_INDEX] & INDEX_MASK),
-				    (int) (m->cpus[i]->coproc[0]->
+				    (int) (m->cpus[i]->cd.mips.coproc[0]->
 				    reg[COP0_RANDOM] & RANDOM_MASK));
 				printf(" wired=0x%llx", (long long)
-				    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+				    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
 			}
 
 			printf(")\n");
 
-			for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries;
+			for (j=0; j<m->cpus[i]->cd.mips.cpu_type.nr_of_tlb_entries;
 			    j++) {
 				uint64_t hi,lo0,lo1,mask;
-				hi = m->cpus[i]->coproc[0]->tlbs[j].hi;
-				lo0 = m->cpus[i]->coproc[0]->tlbs[j].lo0;
-				lo1 = m->cpus[i]->coproc[0]->tlbs[j].lo1;
-				mask = m->cpus[i]->coproc[0]->tlbs[j].mask;
+				hi = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi;
+				lo0 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0;
+				lo1 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1;
+				mask = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask;
 
 				printf("%3i: ", j);
-				switch (m->cpus[i]->cpu_type.mmu_model) {
+				switch (m->cpus[i]->cd.mips.cpu_type.mmu_model) {
 				case MMU3K:
 					if (!(lo0 & R2K3K_ENTRYLO_V)) {
 						printf("(invalid)\n");
@@ -446,7 +447,7 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 					break;
 				default:
 					/*  TODO: MIPS32 doesn't need 0x16llx  */
-					if (m->cpus[i]->cpu_type.mmu_model == MMU10K)
+					if (m->cpus[i]->cd.mips.cpu_type.mmu_model == MMU10K)
 						printf("vaddr=0x%1x..%011llx ",
 						    (int) (hi >> 60),
 						    (long long) (hi&ENTRYHI_VPN2_MASK_R10K));
@@ -505,44 +506,44 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 		/*  Print index, random, and wired:  */
 		printf("cpu%i: (", i);
 
-		if (m->cpus[i]->cpu_type.isa_level < 3 ||
-		    m->cpus[i]->cpu_type.isa_level == 32)
+		if (m->cpus[i]->cd.mips.cpu_type.isa_level < 3 ||
+		    m->cpus[i]->cd.mips.cpu_type.isa_level == 32)
 			printf("index=0x%08x random=0x%08x",
-			    (int)m->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (int)m->cpus[i]->coproc[0]->reg[COP0_RANDOM]);
+			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
+			    (int)m->cpus[i]->cd.mips.coproc[0]->reg[COP0_RANDOM]);
 		else
 			printf("index=0x%016llx random=0x%016llx", (long long)
-			    m->cpus[i]->coproc[0]->reg[COP0_INDEX],
-			    (long long)m->cpus[i]->coproc[0]->reg
+			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_INDEX],
+			    (long long)m->cpus[i]->cd.mips.coproc[0]->reg
 			    [COP0_RANDOM]);
 
-		if (m->cpus[i]->cpu_type.isa_level >= 3)
+		if (m->cpus[i]->cd.mips.cpu_type.isa_level >= 3)
 			printf(" wired=0x%llx", (long long)
-			    m->cpus[i]->coproc[0]->reg[COP0_WIRED]);
+			    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
 
 		printf(")\n");
 
-		for (j=0; j<m->cpus[i]->cpu_type.nr_of_tlb_entries; j++) {
-			if (m->cpus[i]->cpu_type.mmu_model == MMU3K)
+		for (j=0; j<m->cpus[i]->cd.mips.cpu_type.nr_of_tlb_entries; j++) {
+			if (m->cpus[i]->cd.mips.cpu_type.mmu_model == MMU3K)
 				printf("%3i: hi=0x%08x lo=0x%08x\n",
 				    j,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0);
-			else if (m->cpus[i]->cpu_type.isa_level < 3 ||
-			    m->cpus[i]->cpu_type.isa_level == 32)
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0);
+			else if (m->cpus[i]->cd.mips.cpu_type.isa_level < 3 ||
+			    m->cpus[i]->cd.mips.cpu_type.isa_level == 32)
 				printf("%3i: hi=0x%08x mask=0x%08x "
 				    "lo0=0x%08x lo1=0x%08x\n", j,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (int)m->cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
+				    (int)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
 			else
 				printf("%3i: hi=0x%016llx mask=0x%016llx "
 				    "lo0=0x%016llx lo1=0x%016llx\n", j,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].hi,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].mask,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo0,
-				    (long long)m->cpus[i]->coproc[0]->tlbs[j].lo1);
+				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi,
+				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].mask,
+				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0,
+				    (long long)m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo1);
 		}
 	}
 }
@@ -563,42 +564,42 @@ void mips_cpu_register_match(struct machine *m, char *name,
 	/*  Register name:  */
 	if (strcasecmp(name, "pc") == 0) {
 		if (writeflag) {
-			m->cpus[cpunr]->pc = *valuep;
-			if (m->cpus[cpunr]->delay_slot) {
+			m->cpus[cpunr]->cd.mips.pc = *valuep;
+			if (m->cpus[cpunr]->cd.mips.delay_slot) {
 				printf("NOTE: Clearing the delay slot"
 				    " flag! (It was set before.)\n");
-				m->cpus[cpunr]->delay_slot = 0;
+				m->cpus[cpunr]->cd.mips.delay_slot = 0;
 			}
-			if (m->cpus[cpunr]->nullify_next) {
+			if (m->cpus[cpunr]->cd.mips.nullify_next) {
 				printf("NOTE: Clearing the nullify-ne"
 				    "xt flag! (It was set before.)\n");
-				m->cpus[cpunr]->nullify_next = 0;
+				m->cpus[cpunr]->cd.mips.nullify_next = 0;
 			}
 		} else
-			*valuep = m->cpus[cpunr]->pc;
+			*valuep = m->cpus[cpunr]->cd.mips.pc;
 		*match_register = 1;
 	} else if (strcasecmp(name, "hi") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->hi = *valuep;
+			m->cpus[cpunr]->cd.mips.hi = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->hi;
+			*valuep = m->cpus[cpunr]->cd.mips.hi;
 		*match_register = 1;
 	} else if (strcasecmp(name, "lo") == 0) {
 		if (writeflag)
-			m->cpus[cpunr]->lo = *valuep;
+			m->cpus[cpunr]->cd.mips.lo = *valuep;
 		else
-			*valuep = m->cpus[cpunr]->lo;
+			*valuep = m->cpus[cpunr]->cd.mips.lo;
 		*match_register = 1;
 	} else if (name[0] == 'r' && isdigit((int)name[1])) {
 		int nr = atoi(name + 1);
 		if (nr >= 0 && nr < 32) {
 			if (writeflag) {
 				if (nr != 0)
-					m->cpus[cpunr]->gpr[nr] = *valuep;
+					m->cpus[cpunr]->cd.mips.gpr[nr] = *valuep;
 				else
 					printf("WARNING: Attempt to modify r0.\n");
 			} else
-				*valuep = m->cpus[cpunr]->gpr[nr];
+				*valuep = m->cpus[cpunr]->cd.mips.gpr[nr];
 			*match_register = 1;
 		}
 	} else {
@@ -608,11 +609,11 @@ void mips_cpu_register_match(struct machine *m, char *name,
 			if (strcmp(name, regnames[nr]) == 0) {
 				if (writeflag) {
 					if (nr != 0)
-						m->cpus[cpunr]->gpr[nr] = *valuep;
+						m->cpus[cpunr]->cd.mips.gpr[nr] = *valuep;
 					else
 						printf("WARNING: Attempt to modify r0.\n");
 				} else
-					*valuep = m->cpus[cpunr]->gpr[nr];
+					*valuep = m->cpus[cpunr]->cd.mips.gpr[nr];
 				*match_register = 1;
 			}
 	}
@@ -624,11 +625,11 @@ void mips_cpu_register_match(struct machine *m, char *name,
 			if (strcmp(name, cop0_names[nr]) == 0) {
 				if (writeflag) {
 					coproc_register_write(m->cpus[cpunr],
-					    m->cpus[cpunr]->coproc[0], nr,
+					    m->cpus[cpunr]->cd.mips.coproc[0], nr,
 					    valuep, 1);
 				} else {
 					/*  TODO: Use coproc_register_read instead?  */
-					*valuep = m->cpus[cpunr]->coproc[0]->reg[nr];
+					*valuep = m->cpus[cpunr]->cd.mips.coproc[0]->reg[nr];
 				}
 				*match_register = 1;
 			}
@@ -647,13 +648,13 @@ void mips_cpu_register_match(struct machine *m, char *name,
  */
 static const char *cpu_flags(struct cpu *cpu)
 {
-	if (cpu->delay_slot) {
-		if (cpu->last_was_jumptoself)
+	if (cpu->cd.mips.delay_slot) {
+		if (cpu->cd.mips.last_was_jumptoself)
 			return " (dj)";
 		else
 			return " (d)";
 	} else {
-		if (cpu->last_was_jumptoself)
+		if (cpu->cd.mips.last_was_jumptoself)
 			return " (j)";
 		else
 			return "";
@@ -667,12 +668,12 @@ static const char *cpu_flags(struct cpu *cpu)
  *  Convert an instruction word into human readable format, for instruction
  *  tracing.
  *
- *  If running is 1, cpu->pc_last should be the address of the instruction,
- *  cpu->pc should already point to the _next_ instruction.
+ *  If running is 1, cpu->cd.mips.pc_last should be the address of the instruction,
+ *  cpu->cd.mips.pc should already point to the _next_ instruction.
  *
  *  If running is 0, things that depend on the runtime environment (eg.
  *  register contents) will not be shown, and addr will be used instead of
- *  cpu->pc for relative addresses.
+ *  cpu->cd.mips.pc for relative addresses.
  *
  *  NOTE 2:  coprocessor instructions are not decoded nicely yet  (TODO)
  */
@@ -686,7 +687,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	char *symbol;
 
 	if (running)
-		dumpaddr = cpu->pc_last;
+		dumpaddr = cpu->cd.mips.pc_last;
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context, dumpaddr, &offset);
 	if (symbol != NULL && offset==0)
@@ -695,8 +696,8 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	if (cpu->machine->ncpus > 1 && running)
 		debug("cpu%i: ", cpu->cpu_id);
 
-	if (cpu->cpu_type.isa_level < 3 ||
-	    cpu->cpu_type.isa_level == 32)
+	if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+	    cpu->cd.mips.cpu_type.isa_level == 32)
 		debug("%08x", (int)dumpaddr);
 	else
 		debug("%016llx", (long long)dumpaddr);
@@ -718,7 +719,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	 *  Decode the instruction:
 	 */
 
-	if (cpu->nullify_next && running) {
+	if (cpu->cd.mips.nullify_next && running) {
 		debug("(nullified)");
 		goto disasm_ret;
 	}
@@ -773,7 +774,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case SPECIAL_JR:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
-			    cpu->gpr[rs], &offset);
+			    cpu->cd.mips.gpr[rs], &offset);
 			debug("jr\t%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
 				debug("\t\t<%s>", symbol);
@@ -782,7 +783,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
 			symbol = get_symbol_name(&cpu->machine->symbol_context,
-			    cpu->gpr[rs], &offset);
+			    cpu->cd.mips.gpr[rs], &offset);
 			debug("jalr\t%s", regname(cpu->machine, rd));
 			debug(",%s", regname(cpu->machine, rs));
 			if (running && symbol != NULL)
@@ -900,8 +901,8 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 		debug("%s,", regname(cpu->machine, rs));
 
-		if (cpu->cpu_type.isa_level < 3 ||
-		    cpu->cpu_type.isa_level == 32)
+		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+		    cpu->cd.mips.cpu_type.isa_level == 32)
 			debug("0x%08x", (int)addr);
 		else
 			debug("0x%016llx", (long long)addr);
@@ -978,17 +979,17 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (imm >= 32768)
 			imm -= 65536;
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->gpr[rs] + imm, &offset);
+		    cpu->cd.mips.gpr[rs] + imm, &offset);
 
 		/*  LWC3 is PREF in the newer ISA levels:  */
-		/*  TODO: Which ISAs? cpu->cpu_type.isa_level >= 4?  */
+		/*  TODO: Which ISAs? cpu->cd.mips.cpu_type.isa_level >= 4?  */
 		if (hi6 == HI6_LWC3) {
 			debug("pref\t0x%x,%i(%s)",
 			    rt, imm, regname(cpu->machine, rs));
 
 			if (running) {
 				debug("\t\t[0x%016llx = %s]",
-				    (long long)(cpu->gpr[rs] + imm));
+				    (long long)(cpu->cd.mips.gpr[rs] + imm));
 				if (symbol != NULL)
 					debug(" = %s", symbol);
 				debug("]");
@@ -1011,12 +1012,12 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (running) {
 			debug("\t\t[");
 
-			if (cpu->cpu_type.isa_level < 3 ||
-			    cpu->cpu_type.isa_level == 32)
-				debug("0x%08x", (int)(cpu->gpr[rs] + imm));
+			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+			    cpu->cd.mips.cpu_type.isa_level == 32)
+				debug("0x%08x", (int)(cpu->cd.mips.gpr[rs] + imm));
 			else
 				debug("0x%016llx",
-				    (long long)(cpu->gpr[rs] + imm));
+				    (long long)(cpu->cd.mips.gpr[rs] + imm));
 
 			if (symbol != NULL)
 				debug(" = %s", symbol);
@@ -1036,8 +1037,8 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    addr, &offset);
 		debug("%s\t0x", hi6_names[hi6]);
-		if (cpu->cpu_type.isa_level < 3 ||
-		    cpu->cpu_type.isa_level == 32)
+		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+		    cpu->cd.mips.cpu_type.isa_level == 32)
 			debug("%08x", (int)addr);
 		else
 			debug("%016llx", (long long)addr);
@@ -1053,7 +1054,7 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		imm &= ((1 << 26) - 1);
 
 		/*  Call coproc_function(), but ONLY disassembly, no exec:  */
-		coproc_function(cpu, cpu->coproc[hi6 - HI6_COP0],
+		coproc_function(cpu, cpu->cd.mips.coproc[hi6 - HI6_COP0],
 		    hi6 - HI6_COP0, imm, 1, running);
 		return;
 	case HI6_CACHE:
@@ -1080,11 +1081,11 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		if (cache_op==7)	debug("hit set virtual");
 		if (running)
 			debug(", addr 0x%016llx",
-			    (long long)(cpu->gpr[rt] + imm));
+			    (long long)(cpu->cd.mips.gpr[rt] + imm));
 		if (showtag)
 		debug(", taghi=%08lx lo=%08lx",
-		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_HI],
-		    (long)cpu->coproc[0]->reg[COP0_TAGDATA_LO]);
+		    (long)cpu->cd.mips.coproc[0]->reg[COP0_TAGDATA_HI],
+		    (long)cpu->cd.mips.coproc[0]->reg[COP0_TAGDATA_LO]);
 		debug(" ]");
 		break;
 	case HI6_SPECIAL2:
@@ -1165,8 +1166,8 @@ void mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 			addr = (dumpaddr + 4) + (imm << 2);
 
-			if (cpu->cpu_type.isa_level < 3 ||
-			    cpu->cpu_type.isa_level == 32)
+			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+			    cpu->cd.mips.cpu_type.isa_level == 32)
 				debug("0x%08x", (int)addr);
 			else
 				debug("0x%016llx", (long long)addr);
@@ -1198,41 +1199,41 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	uint64_t offset;
 	char *symbol;
 
-	bits32 = (cpu->cpu_type.isa_level < 3 ||
-	    cpu->cpu_type.isa_level == 32)? 1 : 0;
+	bits32 = (cpu->cd.mips.cpu_type.isa_level < 3 ||
+	    cpu->cd.mips.cpu_type.isa_level == 32)? 1 : 0;
 
 	if (gprs) {
 		/*  Special registers (pc, hi/lo) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
-		    cpu->pc, &offset);
+		    cpu->cd.mips.pc, &offset);
 
 		if (bits32)
-			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->pc);
+			debug("cpu%i:  pc = %08x", cpu->cpu_id, (int)cpu->cd.mips.pc);
 		else
 			debug("cpu%i:    pc = %016llx",
-			    cpu->cpu_id, (long long)cpu->pc);
+			    cpu->cpu_id, (long long)cpu->cd.mips.pc);
 
 		debug("    <%s>\n", symbol != NULL? symbol :
 		    " no symbol ");
 
 		if (bits32)
 			debug("cpu%i:  hi = %08x  lo = %08x\n",
-			    cpu->cpu_id, (int)cpu->hi, (int)cpu->lo);
+			    cpu->cpu_id, (int)cpu->cd.mips.hi, (int)cpu->cd.mips.lo);
 		else
 			debug("cpu%i:    hi = %016llx    lo = %016llx\n",
-			    cpu->cpu_id, (long long)cpu->hi,
-			    (long long)cpu->lo);
+			    cpu->cpu_id, (long long)cpu->cd.mips.hi,
+			    (long long)cpu->cd.mips.lo);
 
 		/*  General registers:  */
-		if (cpu->cpu_type.rev == MIPS_R5900) {
+		if (cpu->cd.mips.cpu_type.rev == MIPS_R5900) {
 			/*  128-bit:  */
 			for (i=0; i<32; i++) {
 				if ((i & 1) == 0)
 					debug("cpu%i:", cpu->cpu_id);
 				debug(" %3s=%016llx%016llx",
 				    regname(cpu->machine, i),
-				    (long long)cpu->gpr_quadhi[i],
-				    (long long)cpu->gpr[i]);
+				    (long long)cpu->cd.mips.gpr_quadhi[i],
+				    (long long)cpu->cd.mips.gpr[i]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1242,7 +1243,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				if ((i & 3) == 0)
 					debug("cpu%i:", cpu->cpu_id);
 				debug(" %3s = %08x", regname(cpu->machine, i),
-				    (int)cpu->gpr[i]);
+				    (int)cpu->cd.mips.gpr[i]);
 				if ((i & 3) == 3)
 					debug("\n");
 			}
@@ -1253,7 +1254,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 					debug("cpu%i:", cpu->cpu_id);
 				debug("   %3s = %016llx",
 				    regname(cpu->machine, i),
-				    (long long)cpu->gpr[i]);
+				    (long long)cpu->cd.mips.gpr[i]);
 				if ((i & 1) == 1)
 					debug("\n");
 			}
@@ -1268,7 +1269,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 
 		if (!(coprocs & (1<<coprocnr)))
 			continue;
-		if (cpu->coproc[coprocnr] == NULL) {
+		if (cpu->cd.mips.coproc[coprocnr] == NULL) {
 			debug("cpu%i: no coprocessor %i\n",
 			    cpu->cpu_id, coprocnr);
 			continue;
@@ -1288,16 +1289,16 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 				debug(" c%i,%02i", coprocnr, i);
 
 			if (bits32)
-				debug("=%08x", (int)cpu->coproc[coprocnr]->reg[i]);
+				debug("=%08x", (int)cpu->cd.mips.coproc[coprocnr]->reg[i]);
 			else
 				debug(" = 0x%016llx", (long long)
-				    cpu->coproc[coprocnr]->reg[i]);
+				    cpu->cd.mips.coproc[coprocnr]->reg[i]);
 
 			if ((i & nm1) == nm1)
 				debug("\n");
 
 			/*  Skip the last 16 cop0 registers on R3000 etc.  */
-			if (coprocnr == 0 && cpu->cpu_type.isa_level < 3
+			if (coprocnr == 0 && cpu->cd.mips.cpu_type.isa_level < 3
 			    && i == 15)
 				i = 31;
 		}
@@ -1307,13 +1308,13 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 			for (i=0; i<32; i++)
 				switch (i) {
 				case 0:	printf("cpu%i: fcr0  (fcir) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
 					break;
 				case 25:printf("cpu%i: fcr25 (fccr) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
 					break;
 				case 31:printf("cpu%i: fcr31 (fcsr) = 0x%08x\n",
-					    cpu->cpu_id, (int)cpu->coproc[coprocnr]->fcr[i]);
+					    cpu->cpu_id, (int)cpu->cd.mips.coproc[coprocnr]->fcr[i]);
 					break;
 				}
 		}
@@ -1325,7 +1326,7 @@ void mips_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
  *  show_trace():
  *
  *  Show trace tree.   This function should be called every time
- *  a function is called.  cpu->trace_tree_depth is increased here
+ *  a function is called.  cpu->cd.mips.trace_tree_depth is increased here
  *  and should not be increased by the caller.
  *
  *  Note:  This function should not be called if show_trace_tree == 0.
@@ -1337,14 +1338,14 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 	char strbuf[50];
 	char *symbol;
 
-	cpu->trace_tree_depth ++;
+	cpu->cd.mips.trace_tree_depth ++;
 
 	if (cpu->machine->ncpus > 1)
 		debug("cpu%i:", cpu->cpu_id);
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context, addr, &offset);
 
-	for (x=0; x<cpu->trace_tree_depth; x++)
+	for (x=0; x<cpu->cd.mips.trace_tree_depth; x++)
 		debug("  ");
 
 	/*  debug("<%s>\n", symbol!=NULL? symbol : "no symbol");  */
@@ -1353,8 +1354,8 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 		debug("<%s(", symbol);
 	else {
 		debug("<0x");
-		if (cpu->cpu_type.isa_level < 3 ||
-		    cpu->cpu_type.isa_level == 32)
+		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+		    cpu->cd.mips.cpu_type.isa_level == 32)
 			debug("%08x", (int)addr);
 		else
 			debug("%016llx", (long long)addr);
@@ -1375,7 +1376,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 	n_args_to_print = 5;
 
 	for (x=0; x<n_args_to_print; x++) {
-		int64_t d = cpu->gpr[x + MIPS_GPR_A0];
+		int64_t d = cpu->cd.mips.gpr[x + MIPS_GPR_A0];
 
 		if (d > -256 && d < 256)
 			debug("%i", (int)d);
@@ -1383,8 +1384,8 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 			debug("\"%s\"", memory_conv_to_string(cpu,
 			    cpu->mem, d, strbuf, sizeof(strbuf)));
 		else {
-			if (cpu->cpu_type.isa_level < 3 ||
-			    cpu->cpu_type.isa_level == 32)
+			if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+			    cpu->cd.mips.cpu_type.isa_level == 32)
 				debug("0x%x", (int)d);
 			else
 				debug("0x%llx", (long long)d);
@@ -1423,8 +1424,8 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->md_interrupt != NULL)
-			cpu->md_interrupt(cpu, irq_nr, 1);
+		if (cpu->cd.mips.md_interrupt != NULL)
+			cpu->cd.mips.md_interrupt(cpu, irq_nr, 1);
 		else
 			fatal("mips_cpu_interrupt(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
@@ -1433,8 +1434,8 @@ int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 	if (irq_nr < 2)
 		return 0;
 
-	cpu->coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
-	cpu->cached_interrupt_is_possible = 1;
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
+	cpu->cd.mips.cached_interrupt_is_possible = 1;
 	return 1;
 }
 
@@ -1451,8 +1452,8 @@ int mips_cpu_interrupt(struct cpu *cpu, int irq_nr)
 int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 {
 	if (irq_nr >= 8) {
-		if (cpu->md_interrupt != NULL)
-			cpu->md_interrupt(cpu, irq_nr, 0);
+		if (cpu->cd.mips.md_interrupt != NULL)
+			cpu->cd.mips.md_interrupt(cpu, irq_nr, 0);
 		else
 			fatal("mips_cpu_interrupt_ack(): irq_nr = %i, but md_interrupt = NULL ?\n", irq_nr);
 		return 1;
@@ -1461,9 +1462,9 @@ int mips_cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 	if (irq_nr < 2)
 		return 0;
 
-	cpu->coproc[0]->reg[COP0_CAUSE] &= ~((1 << irq_nr) << STATUS_IM_SHIFT);
-	if (!(cpu->coproc[0]->reg[COP0_CAUSE] & STATUS_IM_MASK))
-		cpu->cached_interrupt_is_possible = 0;
+	cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] &= ~((1 << irq_nr) << STATUS_IM_SHIFT);
+	if (!(cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & STATUS_IM_MASK))
+		cpu->cd.mips.cached_interrupt_is_possible = 0;
 
 	return 1;
 }
@@ -1488,14 +1489,14 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
 	uint64_t base;
-	uint64_t *reg = &cpu->coproc[0]->reg[0];
-	int exc_model = cpu->cpu_type.exc_model;
+	uint64_t *reg = &cpu->cd.mips.coproc[0]->reg[0];
+	int exc_model = cpu->cd.mips.cpu_type.exc_model;
 
 	if (!quiet_mode) {
 		uint64_t offset;
 		int x;
 		char *symbol = get_symbol_name(
-		    &cpu->machine->symbol_context, cpu->pc_last, &offset);
+		    &cpu->machine->symbol_context, cpu->cd.mips.pc_last, &offset);
 
 		debug("[ ");
 		if (cpu->machine->ncpus > 1)
@@ -1509,9 +1510,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			debug(" cause_im=0x%02x", (int)((reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
 			break;
 		case EXCEPTION_SYS:
-			debug(" v0=%i", (int)cpu->gpr[MIPS_GPR_V0]);
+			debug(" v0=%i", (int)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 			for (x=0; x<4; x++) {
-				int64_t d = cpu->gpr[MIPS_GPR_A0 + x];
+				int64_t d = cpu->cd.mips.gpr[MIPS_GPR_A0 + x];
 				char strbuf[30];
 
 				if (d > -256 && d < 256)
@@ -1526,16 +1527,16 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			debug(" vaddr=0x%016llx", (long long)vaddr);
 		}
 
-		debug(" pc->last=%08llx <%s> ]\n",
-		    (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
+		debug(" pc->cd.mips.last=%08llx <%s> ]\n",
+		    (long long)cpu->cd.mips.pc_last, symbol? symbol : "(no symbol)");
 	}
 
 	if (tlb && vaddr < 0x1000) {
 		uint64_t offset;
 		char *symbol = get_symbol_name(
-		    &cpu->machine->symbol_context, cpu->pc_last, &offset);
-		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
-		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
+		    &cpu->machine->symbol_context, cpu->cd.mips.pc_last, &offset);
+		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->cd.mips.last=%08llx <%s>\n",
+		    (int)vaddr, exception_names[exccode], (long long)cpu->cd.mips.pc_last, symbol? symbol : "(no symbol)");
 	}
 
 	/*  Clear the exception code bits of the cause register...  */
@@ -1590,7 +1591,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			reg[COP0_CONTEXT] = (int64_t)(int32_t)reg[COP0_CONTEXT];
 			reg[COP0_ENTRYHI] = (int64_t)(int32_t)reg[COP0_ENTRYHI];
 		} else {
-			if (cpu->cpu_type.rev == MIPS_R4100) {
+			if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
 				reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK_R4100;
 				reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK_R4100);
 
@@ -1600,7 +1601,7 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 				reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
 				reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
 
-				/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+				/*  reg[COP0_PAGEMASK] = cpu->cd.mips.coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
 
 				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800)) | vaddr_asid;
 			} else {
@@ -1612,9 +1613,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 				reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
 				reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
 
-				/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+				/*  reg[COP0_PAGEMASK] = cpu->cd.mips.coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
 
-				if (cpu->cpu_type.mmu_model == MMU10K)
+				if (cpu->cd.mips.cpu_type.mmu_model == MMU10K)
 					reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
 				else
 					reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
@@ -1631,20 +1632,20 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		 */
 		/*  debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);  */
 	} else {
-		if (cpu->delay_slot || cpu->nullify_next) {
-			reg[COP0_EPC] = cpu->pc_last - 4;
+		if (cpu->cd.mips.delay_slot || cpu->cd.mips.nullify_next) {
+			reg[COP0_EPC] = cpu->cd.mips.pc_last - 4;
 			reg[COP0_CAUSE] |= CAUSE_BD;
 
 			/*  TODO: Should the BD flag actually be set
 			    on nullified slots?  */
 		} else {
-			reg[COP0_EPC] = cpu->pc_last;
+			reg[COP0_EPC] = cpu->cd.mips.pc_last;
 			reg[COP0_CAUSE] &= ~CAUSE_BD;
 		}
 	}
 
-	cpu->delay_slot = NOT_DELAYED;
-	cpu->nullify_next = 0;
+	cpu->cd.mips.delay_slot = NOT_DELAYED;
+	cpu->cd.mips.nullify_next = 0;
 
 	/*  TODO: This is true for MIPS64, but how about others?  */
 	if (reg[COP0_STATUS] & STATUS_BEV)
@@ -1657,9 +1658,9 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  Userspace tlb, vs others:  */
 		if (tlb && !(vaddr & 0x80000000ULL) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
-			cpu->pc = base + 0x000;
+			cpu->cd.mips.pc = base + 0x000;
 		else
-			cpu->pc = base + 0x080;
+			cpu->cd.mips.pc = base + 0x080;
 		break;
 	default:
 		/*
@@ -1676,15 +1677,15 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		    exccode == EXCEPTION_TLBS) &&
 		    !(reg[COP0_STATUS] & STATUS_EXL)) {
 			if (x_64)
-				cpu->pc = base + 0x080;
+				cpu->cd.mips.pc = base + 0x080;
 			else
-				cpu->pc = base + 0x000;
+				cpu->cd.mips.pc = base + 0x000;
 		} else {
 			if (exccode == EXCEPTION_INT &&
 			    (reg[COP0_CAUSE] & CAUSE_IV))
-				cpu->pc = base + 0x200;
+				cpu->cd.mips.pc = base + 0x200;
 			else
-				cpu->pc = base + 0x180;
+				cpu->cd.mips.pc = base + 0x180;
 		}
 	}
 
@@ -1723,8 +1724,8 @@ void mips_cpu_cause_simple_exception(struct cpu *cpu, int exc_code)
  *
  *  Execute one instruction on a cpu.
  *
- *  If we are in a delay slot, set cpu->pc to cpu->delay_jmpaddr after the
- *  instruction is executed.
+ *  If we are in a delay slot, set cpu->cd.mips.pc to
+ *  cpu->cd.mips.delay_jmpaddr after the instruction is executed.
  *
  *  Return value is the number of instructions executed during this call
  *  to cpu_run_instr() (0 if no instruction was executed).
@@ -1733,7 +1734,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = cpu->machine->instruction_trace;
-	struct mips_coproc *cp0 = cpu->coproc[0];
+	struct mips_coproc *cp0 = cpu->cd.mips.coproc[0];
 	int i, tmp, ninstrs_executed;
 	unsigned char instr[4];
 	uint32_t instrword;
@@ -1763,7 +1764,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  The RANDOM register should decrease for every instruction.
 	 */
 
-	if (cpu->cpu_type.exc_model == EXC3K) {
+	if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
 		int r = (cp0->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
 		r --;
 		if (r >= cp0->nr_of_tlbs || r < 8)
@@ -1783,10 +1784,10 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 */
 		cp0->reg[COP0_COUNT] = (int64_t)(int32_t)(cp0->reg[COP0_COUNT] + 1);
 
-		if (cpu->compare_register_set &&
+		if (cpu->cd.mips.compare_register_set &&
 		    cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE]) {
 			mips_cpu_interrupt(cpu, 7);
-			cpu->compare_register_set = 0;
+			cpu->cd.mips.compare_register_set = 0;
 		}
 	}
 
@@ -1799,31 +1800,31 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #endif
 
 	/*  Cache the program counter in a local variable:  */
-	cached_pc = cpu->pc;
+	cached_pc = cpu->cd.mips.pc;
 
 	/*  Hardwire the zero register to 0:  */
-	cpu->gpr[MIPS_GPR_ZERO] = 0;
+	cpu->cd.mips.gpr[MIPS_GPR_ZERO] = 0;
 
-	if (cpu->delay_slot) {
-		if (cpu->delay_slot == DELAYED) {
-			cached_pc = cpu->pc = cpu->delay_jmpaddr;
-			cpu->delay_slot = NOT_DELAYED;
-		} else /* if (cpu->delay_slot == TO_BE_DELAYED) */ {
+	if (cpu->cd.mips.delay_slot) {
+		if (cpu->cd.mips.delay_slot == DELAYED) {
+			cached_pc = cpu->cd.mips.pc = cpu->cd.mips.delay_jmpaddr;
+			cpu->cd.mips.delay_slot = NOT_DELAYED;
+		} else /* if (cpu->cd.mips.delay_slot == TO_BE_DELAYED) */ {
 			/*  next instruction will be delayed  */
-			cpu->delay_slot = DELAYED;
+			cpu->cd.mips.delay_slot = DELAYED;
 		}
 	}
 
-	if (cpu->last_was_jumptoself > 0)
-		cpu->last_was_jumptoself --;
+	if (cpu->cd.mips.last_was_jumptoself > 0)
+		cpu->cd.mips.last_was_jumptoself --;
 
 	/*  Check PC against breakpoints:  */
 	if (!single_step)
 		for (i=0; i<cpu->machine->n_breakpoints; i++)
 			if (cached_pc == cpu->machine->breakpoint_addr[i]) {
 				fatal("Breakpoint reached, pc=0x");
-				if (cpu->cpu_type.isa_level < 3 ||
-				    cpu->cpu_type.isa_level == 32)
+				if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+				    cpu->cd.mips.cpu_type.isa_level == 32)
 					fatal("%08x", (int)cached_pc);
 				else
 					fatal("%016llx", (long long)cached_pc);
@@ -1834,7 +1835,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 
 	/*  Remember where we are, in case of interrupt or exception:  */
-	cpu->pc_last = cached_pc;
+	cpu->cd.mips.pc_last = cached_pc;
 
 	/*
 	 *  Any pending interrupts?
@@ -1850,8 +1851,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  cleared (in mips_cpu_interrupt_ack()), so we don't need to do a
 	 *  full check each time.
 	 */
-	if (cpu->cached_interrupt_is_possible && !cpu->nullify_next) {
-		if (cpu->cpu_type.exc_model == EXC3K) {
+	if (cpu->cd.mips.cached_interrupt_is_possible && !cpu->cd.mips.nullify_next) {
+		if (cpu->cd.mips.cpu_type.exc_model == EXC3K) {
 			/*  R3000:  */
 			int enabled, mask;
 			int status = cp0->reg[COP0_STATUS];
@@ -1921,13 +1922,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (!res)
 				return 100;
 
-			cpu->pc = cpu->gpr[MIPS_GPR_RA];
+			cpu->cd.mips.pc = cpu->cd.mips.gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
-			cpu->delay_slot = NOT_DELAYED;
+			cpu->cd.mips.delay_slot = NOT_DELAYED;
 
 			if (!quiet_mode_cached &&
 			    cpu->machine->show_trace_tree)
-				cpu->trace_tree_depth --;
+				cpu->cd.mips.trace_tree_depth --;
 
 			/*  TODO: how many instrs should this count as?  */
 			return 100;
@@ -1940,89 +1941,89 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  registers are sign-extended:   (Slow, but might be useful
 	 *  to detect bugs that have to do with sign-extension.)
 	 */
-	if (cpu->cpu_type.isa_level < 3 || cpu->cpu_type.isa_level == 32) {
+	if (cpu->cd.mips.cpu_type.isa_level < 3 || cpu->cd.mips.cpu_type.isa_level == 32) {
 		int warning = 0;
 		uint64_t x;
 
-		if (cpu->gpr[0] != 0) {
+		if (cpu->cd.mips.gpr[0] != 0) {
 			fatal("\nWARNING: r0 was not zero! (%016llx)\n\n",
-			    (long long)cpu->gpr[0]);
-			cpu->gpr[0] = 0;
+			    (long long)cpu->cd.mips.gpr[0]);
+			cpu->cd.mips.gpr[0] = 0;
 			warning = 1;
 		}
 
-		if (cpu->pc != (int64_t)(int32_t)cpu->pc) {
+		if (cpu->cd.mips.pc != (int64_t)(int32_t)cpu->cd.mips.pc) {
 			fatal("\nWARNING: pc was not sign-extended correctly"
-			    " (%016llx)\n\n", (long long)cpu->pc);
-			cpu->pc = (int64_t)(int32_t)cpu->pc;
+			    " (%016llx)\n\n", (long long)cpu->cd.mips.pc);
+			cpu->cd.mips.pc = (int64_t)(int32_t)cpu->cd.mips.pc;
 			warning = 1;
 		}
 
-		if (cpu->pc_last != (int64_t)(int32_t)cpu->pc_last) {
+		if (cpu->cd.mips.pc_last != (int64_t)(int32_t)cpu->cd.mips.pc_last) {
 			fatal("\nWARNING: pc_last was not sign-extended correc"
-			    "tly (%016llx)\n\n", (long long)cpu->pc_last);
-			cpu->pc_last = (int64_t)(int32_t)cpu->pc_last;
+			    "tly (%016llx)\n\n", (long long)cpu->cd.mips.pc_last);
+			cpu->cd.mips.pc_last = (int64_t)(int32_t)cpu->cd.mips.pc_last;
 			warning = 1;
 		}
 
 		/*  Sign-extend ALL registers, including coprocessor registers and tlbs:  */
 		for (i=1; i<32; i++) {
-			x = cpu->gpr[i];
-			cpu->gpr[i] &= 0xffffffff;
-			if (cpu->gpr[i] & 0x80000000ULL)
-				cpu->gpr[i] |= 0xffffffff00000000ULL;
-			if (x != cpu->gpr[i]) {
+			x = cpu->cd.mips.gpr[i];
+			cpu->cd.mips.gpr[i] &= 0xffffffff;
+			if (cpu->cd.mips.gpr[i] & 0x80000000ULL)
+				cpu->cd.mips.gpr[i] |= 0xffffffff00000000ULL;
+			if (x != cpu->cd.mips.gpr[i]) {
 				fatal("\nWARNING: r%i (%s) was not sign-"
 				    "extended correctly (%016llx != "
 				    "%016llx)\n\n", i, regname(cpu->machine, i),
-				    (long long)x, (long long)cpu->gpr[i]);
+				    (long long)x, (long long)cpu->cd.mips.gpr[i]);
 				warning = 1;
 			}
 		}
 		for (i=0; i<32; i++) {
-			x = cpu->coproc[0]->reg[i];
-			cpu->coproc[0]->reg[i] &= 0xffffffffULL;
-			if (cpu->coproc[0]->reg[i] & 0x80000000ULL)
-				cpu->coproc[0]->reg[i] |=
+			x = cpu->cd.mips.coproc[0]->reg[i];
+			cpu->cd.mips.coproc[0]->reg[i] &= 0xffffffffULL;
+			if (cpu->cd.mips.coproc[0]->reg[i] & 0x80000000ULL)
+				cpu->cd.mips.coproc[0]->reg[i] |=
 				    0xffffffff00000000ULL;
-			if (x != cpu->coproc[0]->reg[i]) {
+			if (x != cpu->cd.mips.coproc[0]->reg[i]) {
 				fatal("\nWARNING: cop0,r%i was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->coproc[0]->reg[i]);
+				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->reg[i]);
 				warning = 1;
 			}
 		}
-		for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
-			x = cpu->coproc[0]->tlbs[i].hi;
-			cpu->coproc[0]->tlbs[i].hi &= 0xffffffffULL;
-			if (cpu->coproc[0]->tlbs[i].hi & 0x80000000ULL)
-				cpu->coproc[0]->tlbs[i].hi |=
+		for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
+			x = cpu->cd.mips.coproc[0]->tlbs[i].hi;
+			cpu->cd.mips.coproc[0]->tlbs[i].hi &= 0xffffffffULL;
+			if (cpu->cd.mips.coproc[0]->tlbs[i].hi & 0x80000000ULL)
+				cpu->cd.mips.coproc[0]->tlbs[i].hi |=
 				    0xffffffff00000000ULL;
-			if (x != cpu->coproc[0]->tlbs[i].hi) {
+			if (x != cpu->cd.mips.coproc[0]->tlbs[i].hi) {
 				fatal("\nWARNING: tlb[%i].hi was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].hi);
+				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->tlbs[i].hi);
 				warning = 1;
 			}
 
-			x = cpu->coproc[0]->tlbs[i].lo0;
-			cpu->coproc[0]->tlbs[i].lo0 &= 0xffffffffULL;
-			if (cpu->coproc[0]->tlbs[i].lo0 & 0x80000000ULL)
-				cpu->coproc[0]->tlbs[i].lo0 |=
+			x = cpu->cd.mips.coproc[0]->tlbs[i].lo0;
+			cpu->cd.mips.coproc[0]->tlbs[i].lo0 &= 0xffffffffULL;
+			if (cpu->cd.mips.coproc[0]->tlbs[i].lo0 & 0x80000000ULL)
+				cpu->cd.mips.coproc[0]->tlbs[i].lo0 |=
 				    0xffffffff00000000ULL;
-			if (x != cpu->coproc[0]->tlbs[i].lo0) {
+			if (x != cpu->cd.mips.coproc[0]->tlbs[i].lo0) {
 				fatal("\nWARNING: tlb[%i].lo0 was not sign-extended correctly (%016llx != %016llx)\n\n",
-				    i, (long long)x, (long long)cpu->coproc[0]->tlbs[i].lo0);
+				    i, (long long)x, (long long)cpu->cd.mips.coproc[0]->tlbs[i].lo0);
 				warning = 1;
 			}
 		}
 
 		if (warning) {
-			fatal("Halting. pc = %016llx\n", (long long)cpu->pc);
+			fatal("Halting. pc = %016llx\n", (long long)cpu->cd.mips.pc);
 			cpu->running = 0;
 		}
 	}
 #endif
 
-	PREFETCH(cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
+	PREFETCH(cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xfff));
 
 #ifdef HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */
@@ -2037,25 +2038,25 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 #ifdef BINTRANS
         /*  Caches are not very coozy to handle in bintrans:  */
-        switch (cpu->cpu_type.mmu_model) {
+        switch (cpu->cd.mips.cpu_type.mmu_model) {
         case MMU3K:
-                if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
-			/*  cpu->dont_run_next_bintrans = 1;  */
-			cpu->vaddr_to_hostaddr_table0 =
-			    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES?
-			       cpu->vaddr_to_hostaddr_table0_cacheisol_i
-			     : cpu->vaddr_to_hostaddr_table0_cacheisol_d;
+                if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
+			/*  cpu->cd.mips.dont_run_next_bintrans = 1;  */
+			cpu->cd.mips.vaddr_to_hostaddr_table0 =
+			    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES?
+			       cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_i
+			     : cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_d;
 		} else {
-			cpu->vaddr_to_hostaddr_table0 =
-			    cpu->vaddr_to_hostaddr_table0_kernel;
+			cpu->cd.mips.vaddr_to_hostaddr_table0 =
+			    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
 
-			/*  TODO: cpu->vaddr_to_hostaddr_table0_user;  */
+			/*  TODO: cpu->cd.mips.vaddr_to_hostaddr_table0_user;  */
 		}
                 break;
 	default:
-		cpu->vaddr_to_hostaddr_table0 =
-		    cpu->vaddr_to_hostaddr_table0_kernel;
-		/*  TODO: cpu->vaddr_to_hostaddr_table0_user;  */
+		cpu->cd.mips.vaddr_to_hostaddr_table0 =
+		    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
+		/*  TODO: cpu->cd.mips.vaddr_to_hostaddr_table0_user;  */
         }
 #endif
 
@@ -2068,10 +2069,10 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		/*  Trace tree:  */
-		if (cpu->machine->show_trace_tree && cpu->show_trace_delay > 0) {
-			cpu->show_trace_delay --;
-			if (cpu->show_trace_delay == 0)
-				show_trace(cpu, cpu->show_trace_addr);
+		if (cpu->machine->show_trace_tree && cpu->cd.mips.show_trace_delay > 0) {
+			cpu->cd.mips.show_trace_delay --;
+			if (cpu->cd.mips.show_trace_delay == 0)
+				show_trace(cpu, cpu->cd.mips.show_trace_addr);
 		}
 	}
 
@@ -2116,7 +2117,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		while (mips16_to_32(cpu, instr16, instr) == 0) {
 			if (instruction_trace_cached)
 				debug("cpu%i @ %016llx: %02x%02x\t\t\textend\n",
-				    cpu->cpu_id, (cpu->pc_last ^ 1) + mips16_offset,
+				    cpu->cpu_id, (cpu->cd.mips.pc_last ^ 1) + mips16_offset,
 				    instr16[1], instr16[0]);
 
 			/*  instruction with extend:  */
@@ -2133,19 +2134,19 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  TODO: bintrans like in 32-bit mode?  */
 
 		/*  Advance the program counter:  */
-		cpu->pc += sizeof(instr16) + mips16_offset;
-		cached_pc = cpu->pc;
+		cpu->cd.mips.pc += sizeof(instr16) + mips16_offset;
+		cached_pc = cpu->cd.mips.pc;
 
 		if (instruction_trace_cached) {
 			uint64_t offset;
 			char *symbol = get_symbol_name(
-			    &cpu->machine->symbol_context, cpu->pc_last ^ 1,
+			    &cpu->machine->symbol_context, cpu->cd.mips.pc_last ^ 1,
 			    &offset);
 			if (symbol != NULL && offset==0)
 				debug("<%s>\n", symbol);
 
 			debug("cpu%i @ %016llx: %02x%02x => %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, (cpu->pc_last ^ 1) + mips16_offset,
+			    cpu->cpu_id, (cpu->cd.mips.pc_last ^ 1) + mips16_offset,
 			    instr16[1], instr16[0],
 			    instr[3], instr[2], instr[1], instr[0],
 			    cpu_flags(cpu));
@@ -2162,17 +2163,17 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 *
 		 *  2)  Fallback to reading from memory the usual way.
 		 */
-		if (cpu->pc_last_host_4k_page != NULL &&
-		    (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
+		if (cpu->cd.mips.pc_last_host_4k_page != NULL &&
+		    (cached_pc & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
 			/*  NOTE: This only works on the host if offset is
 			    aligned correctly!  (TODO)  */
 			*(uint32_t *)instr = *(uint32_t *)
-			    (cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
+			    (cpu->cd.mips.pc_last_host_4k_page + (cached_pc & 0xfff));
 #ifdef BINTRANS
-			cpu->pc_bintrans_paddr_valid = 1;
-			cpu->pc_bintrans_paddr =
-			    cpu->pc_last_physical_page | (cached_pc & 0xfff);
-			cpu->pc_bintrans_host_4kpage = cpu->pc_last_host_4k_page;
+			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
+			cpu->cd.mips.pc_bintrans_paddr =
+			    cpu->cd.mips.pc_last_physical_page | (cached_pc & 0xfff);
+			cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
 #endif
                 } else {
 			if (!memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
@@ -2181,33 +2182,33 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 #ifdef BINTRANS
-		if (cpu->dont_run_next_bintrans) {
-			cpu->dont_run_next_bintrans = 0;
+		if (cpu->cd.mips.dont_run_next_bintrans) {
+			cpu->cd.mips.dont_run_next_bintrans = 0;
 		} else if (cpu->machine->bintrans_enable &&
-		    cpu->pc_bintrans_paddr_valid) {
+		    cpu->cd.mips.pc_bintrans_paddr_valid) {
 			int res;
-			cpu->bintrans_instructions_executed = 0;
+			cpu->cd.mips.bintrans_instructions_executed = 0;
 			res = bintrans_attempt_translate(cpu,
-			    cpu->pc_bintrans_paddr);
+			    cpu->cd.mips.pc_bintrans_paddr);
 
 			if (res >= 0) {
 				/*  debug("BINTRANS translation + hit,"
 				    " pc = %016llx\n", (long long)cached_pc);  */
-				if (res > 0 || cpu->pc != cached_pc) {
+				if (res > 0 || cpu->cd.mips.pc != cached_pc) {
 					if (instruction_trace_cached)
 						mips_cpu_disassemble_instr(cpu, instr, 1, 0, 1);
 					if (res & BINTRANS_DONT_RUN_NEXT)
-						cpu->dont_run_next_bintrans = 1;
+						cpu->cd.mips.dont_run_next_bintrans = 1;
 					res &= BINTRANS_N_MASK;
 
-					if (cpu->cpu_type.exc_model != EXC3K) {
+					if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
 						/*  TODO: 32-bit or 64-bit?  */
 						int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
 						int diff = x - y;
 						if (diff < 0 && diff + (res-1) >= 0
-						    && cpu->compare_register_set) {
+						    && cpu->cd.mips.compare_register_set) {
 							mips_cpu_interrupt(cpu, 7);
-							cpu->compare_register_set = 0;
+							cpu->cd.mips.compare_register_set = 0;
 						}
 
 						cp0->reg[COP0_COUNT] = (int64_t)
@@ -2221,8 +2222,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #endif
 
 		/*  Advance the program counter:  */
-		cpu->pc += sizeof(instr);
-		cached_pc = cpu->pc;
+		cpu->cd.mips.pc += sizeof(instr);
+		cached_pc = cpu->cd.mips.pc;
 
 		/*
 		 *  TODO:  If Reverse-endian is set in the status cop0 register
@@ -2252,8 +2253,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 *  Note: The return value is 1, even if no instruction was actually
 	 *  executed.
 	 */
-	if (cpu->nullify_next) {
-		cpu->nullify_next = 0;
+	if (cpu->cd.mips.nullify_next) {
+		cpu->cd.mips.nullify_next = 0;
 		return 1;
 	}
 
@@ -2266,14 +2267,14 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
 	if (show_opcode_statistics)
-		cpu->stats_opcode[hi6] ++;
+		cpu->cd.mips.stats_opcode[hi6] ++;
 
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
 
 		if (show_opcode_statistics)
-			cpu->stats__special[special6] ++;
+			cpu->cd.mips.stats__special[special6] ++;
 
 		switch (special6) {
 		case SPECIAL_SLL:
@@ -2308,7 +2309,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					/*  ssnop  */
 #ifdef ENABLE_INSTRUCTION_DELAYS
 					cpu->instruction_delay +=
-					    cpu->cpu_type.
+					    cpu->cd.mips.cpu_type.
 					    instrs_per_cycle - 1;
 #endif
 				}
@@ -2317,21 +2318,21 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			if (special6 == SPECIAL_SLL) {
 				switch (sa) {
-				case 8:	cpu->gpr[rd] = cpu->gpr[rt] << 8; break;
-				case 16:cpu->gpr[rd] = cpu->gpr[rt] << 16; break;
-				default:cpu->gpr[rd] = cpu->gpr[rt] << sa;
+				case 8:	cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] << 8; break;
+				case 16:cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] << 16; break;
+				default:cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] << sa;
 				}
 				/*  Sign-extend rd:  */
-				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
+				cpu->cd.mips.gpr[rd] = (int64_t) (int32_t) cpu->cd.mips.gpr[rd];
 			}
 			if (special6 == SPECIAL_DSLL) {
-				cpu->gpr[rd] = cpu->gpr[rt] << sa;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] << sa;
 			}
 			if (special6 == SPECIAL_DSRL) {
-				cpu->gpr[rd] = cpu->gpr[rt] >> sa;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> sa;
 			}
 			if (special6 == SPECIAL_DSLL32) {
-				cpu->gpr[rd] = cpu->gpr[rt] << (sa + 32);
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] << (sa + 32);
 			}
 			if (special6 == SPECIAL_SRL) {
 				/*
@@ -2341,34 +2342,34 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				 *	high bit of rt one:   plain shift right (of lowest 32 bits)
 				 */
 				if (sa == 0)
-					cpu->gpr[rd] = cpu->gpr[rt];
-				else if (!(cpu->gpr[rt] & 0x80000000ULL)) {
-					cpu->gpr[rd] = cpu->gpr[rt] >> sa;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
+				else if (!(cpu->cd.mips.gpr[rt] & 0x80000000ULL)) {
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> sa;
 				} else
-					cpu->gpr[rd] = (cpu->gpr[rt] & 0xffffffffULL) >> sa;
+					cpu->cd.mips.gpr[rd] = (cpu->cd.mips.gpr[rt] & 0xffffffffULL) >> sa;
 			}
 			if (special6 == SPECIAL_SRA) {
-				int topbit = cpu->gpr[rt] & 0x80000000ULL;
+				int topbit = cpu->cd.mips.gpr[rt] & 0x80000000ULL;
 				switch (sa) {
-				case 8:	cpu->gpr[rd] = cpu->gpr[rt] >> 8; break;
-				case 16:cpu->gpr[rd] = cpu->gpr[rt] >> 16; break;
-				default:cpu->gpr[rd] = cpu->gpr[rt] >> sa;
+				case 8:	cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> 8; break;
+				case 16:cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> 16; break;
+				default:cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> sa;
 				}
 				if (topbit)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 			}
 			if (special6 == SPECIAL_DSRL32) {
-				cpu->gpr[rd] = cpu->gpr[rt] >> (sa + 32);
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> (sa + 32);
 			}
 			if (special6 == SPECIAL_DSRA32 || special6 == SPECIAL_DSRA) {
 				if (special6 == SPECIAL_DSRA32)
 					sa += 32;
-				cpu->gpr[rd] = cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
 				while (sa > 0) {
-					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] >> 1;
 					sa--;
-					if (cpu->gpr[rd] & ((uint64_t)1 << 62))		/*  old signbit  */
-						cpu->gpr[rd] |= ((uint64_t)1 << 63);
+					if (cpu->cd.mips.gpr[rd] & ((uint64_t)1 << 62))		/*  old signbit  */
+						cpu->cd.mips.gpr[rd] |= ((uint64_t)1 << 63);
 				}
 			}
 			return 1;
@@ -2383,59 +2384,59 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			rd = (instr[1] >> 3) & 31;
 
 			if (special6 == SPECIAL_DSRLV) {
-				sa = cpu->gpr[rs] & 63;
-				cpu->gpr[rd] = cpu->gpr[rt] >> sa;
+				sa = cpu->cd.mips.gpr[rs] & 63;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt] >> sa;
 			}
 			if (special6 == SPECIAL_DSRAV) {
-				sa = cpu->gpr[rs] & 63;
-				cpu->gpr[rd] = cpu->gpr[rt];
+				sa = cpu->cd.mips.gpr[rs] & 63;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
 				while (sa > 0) {
-					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] >> 1;
 					sa--;
-					if (cpu->gpr[rd] & ((uint64_t)1 << 62))		/*  old sign-bit  */
-						cpu->gpr[rd] |= ((uint64_t)1 << 63);
+					if (cpu->cd.mips.gpr[rd] & ((uint64_t)1 << 62))		/*  old sign-bit  */
+						cpu->cd.mips.gpr[rd] |= ((uint64_t)1 << 63);
 				}
 			}
 			if (special6 == SPECIAL_DSLLV) {
-				sa = cpu->gpr[rs] & 63;
-				cpu->gpr[rd] = cpu->gpr[rt];
-				cpu->gpr[rd] = cpu->gpr[rd] << sa;
+				sa = cpu->cd.mips.gpr[rs] & 63;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] << sa;
 			}
 			if (special6 == SPECIAL_SLLV) {
-				sa = cpu->gpr[rs] & 31;
-				cpu->gpr[rd] = cpu->gpr[rt];
-				cpu->gpr[rd] = cpu->gpr[rd] << sa;
+				sa = cpu->cd.mips.gpr[rs] & 31;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] << sa;
 				/*  Sign-extend rd:  */
-				cpu->gpr[rd] &= 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 			}
 			if (special6 == SPECIAL_SRAV) {
-				sa = cpu->gpr[rs] & 31;
-				cpu->gpr[rd] = cpu->gpr[rt];
+				sa = cpu->cd.mips.gpr[rs] & 31;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
 				/*  Sign-extend rd:  */
-				cpu->gpr[rd] &= 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 				while (sa > 0) {
-					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] >> 1;
 					sa--;
 				}
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 			}
 			if (special6 == SPECIAL_SRLV) {
-				sa = cpu->gpr[rs] & 31;
-				cpu->gpr[rd] = cpu->gpr[rt];
-				cpu->gpr[rd] &= 0xffffffffULL;
-				cpu->gpr[rd] = cpu->gpr[rd] >> sa;
+				sa = cpu->cd.mips.gpr[rs] & 31;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rt];
+				cpu->cd.mips.gpr[rd] &= 0xffffffffULL;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rd] >> sa;
 				/*  And finally sign-extend rd:  */
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 			}
 			return 1;
 		case SPECIAL_JR:
-			if (cpu->delay_slot) {
+			if (cpu->cd.mips.delay_slot) {
 				fatal("jr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -2443,17 +2444,17 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 
-			cpu->delay_slot = TO_BE_DELAYED;
-			cpu->delay_jmpaddr = cpu->gpr[rs];
+			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.gpr[rs];
 
 			if (!quiet_mode_cached && cpu->machine->show_trace_tree
 			    && rs == 31) {
-				cpu->trace_tree_depth --;
+				cpu->cd.mips.trace_tree_depth --;
 			}
 
 			return 1;
 		case SPECIAL_JALR:
-			if (cpu->delay_slot) {
+			if (cpu->cd.mips.delay_slot) {
 				fatal("jalr: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -2462,31 +2463,31 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rd = (instr[1] >> 3) & 31;
 
-			tmpvalue = cpu->gpr[rs];
-			cpu->gpr[rd] = cached_pc + 4;
+			tmpvalue = cpu->cd.mips.gpr[rs];
+			cpu->cd.mips.gpr[rd] = cached_pc + 4;
 			    /*  already increased by 4 earlier  */
 
 			if (!quiet_mode_cached && cpu->machine->show_trace_tree
 			    && rd == 31) {
-				cpu->show_trace_delay = 2;
-				cpu->show_trace_addr = tmpvalue;
+				cpu->cd.mips.show_trace_delay = 2;
+				cpu->cd.mips.show_trace_addr = tmpvalue;
 			}
 
-			cpu->delay_slot = TO_BE_DELAYED;
-			cpu->delay_jmpaddr = tmpvalue;
+			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+			cpu->cd.mips.delay_jmpaddr = tmpvalue;
 			return 1;
 		case SPECIAL_MFHI:
 		case SPECIAL_MFLO:
 			rd = (instr[1] >> 3) & 31;
 
 			if (special6 == SPECIAL_MFHI) {
-				cpu->gpr[rd] = cpu->hi;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.hi;
 #ifdef MFHILO_DELAY
 				cpu->mfhi_delay = 3;
 #endif
 			}
 			if (special6 == SPECIAL_MFLO) {
-				cpu->gpr[rd] = cpu->lo;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.lo;
 #ifdef MFHILO_DELAY
 				cpu->mflo_delay = 3;
 #endif
@@ -2549,17 +2550,17 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #endif
 
 			if (special6 == SPECIAL_ADDU) {
-				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
-				cpu->gpr[rd] &= 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] + cpu->cd.mips.gpr[rt];
+				cpu->cd.mips.gpr[rd] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 				break;
 			}
 			if (special6 == SPECIAL_ADD) {
 				/*  According to the MIPS64 manual:  */
 				uint64_t temp, temp1, temp2;
-				temp1 = cpu->gpr[rs] + ((cpu->gpr[rs] & 0x80000000ULL) << 1);
-				temp2 = cpu->gpr[rt] + ((cpu->gpr[rt] & 0x80000000ULL) << 1);
+				temp1 = cpu->cd.mips.gpr[rs] + ((cpu->cd.mips.gpr[rs] & 0x80000000ULL) << 1);
+				temp2 = cpu->cd.mips.gpr[rt] + ((cpu->cd.mips.gpr[rt] & 0x80000000ULL) << 1);
 				temp = temp1 + temp2;
 #if 0
 	/*  TODO: apparently this doesn't work (an example of
@@ -2572,23 +2573,23 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				}
 #endif
-				cpu->gpr[rd] = temp & 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] = temp & 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 				break;
 			}
 			if (special6 == SPECIAL_SUBU) {
-				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
-				cpu->gpr[rd] &= 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] - cpu->cd.mips.gpr[rt];
+				cpu->cd.mips.gpr[rd] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 				break;
 			}
 			if (special6 == SPECIAL_SUB) {
 				/*  According to the MIPS64 manual:  */
 				uint64_t temp, temp1, temp2;
-				temp1 = cpu->gpr[rs] + ((cpu->gpr[rs] & 0x80000000ULL) << 1);
-				temp2 = cpu->gpr[rt] + ((cpu->gpr[rt] & 0x80000000ULL) << 1);
+				temp1 = cpu->cd.mips.gpr[rs] + ((cpu->cd.mips.gpr[rs] & 0x80000000ULL) << 1);
+				temp2 = cpu->cd.mips.gpr[rt] + ((cpu->cd.mips.gpr[rt] & 0x80000000ULL) << 1);
 				temp = temp1 - temp2;
 #if 0
 				/*  If bits 32 and 31 of temp differ, then it's an overflow  */
@@ -2599,64 +2600,64 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					break;
 				}
 #endif
-				cpu->gpr[rd] = temp & 0xffffffffULL;
-				if (cpu->gpr[rd] & 0x80000000ULL)
-					cpu->gpr[rd] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rd] = temp & 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rd] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rd] |= 0xffffffff00000000ULL;
 				break;
 			}
 
 			if (special6 == SPECIAL_AND) {
-				cpu->gpr[rd] = cpu->gpr[rs] & cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] & cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_OR) {
-				cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] | cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_XOR) {
-				cpu->gpr[rd] = cpu->gpr[rs] ^ cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] ^ cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_NOR) {
-				cpu->gpr[rd] = ~(cpu->gpr[rs] | cpu->gpr[rt]);
+				cpu->cd.mips.gpr[rd] = ~(cpu->cd.mips.gpr[rs] | cpu->cd.mips.gpr[rt]);
 				break;
 			}
 			if (special6 == SPECIAL_SLT) {
-				cpu->gpr[rd] = (int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = (int64_t)cpu->cd.mips.gpr[rs] < (int64_t)cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_SLTU) {
-				cpu->gpr[rd] = cpu->gpr[rs] < cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] < cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_MTLO) {
-				cpu->lo = cpu->gpr[rs];
+				cpu->cd.mips.lo = cpu->cd.mips.gpr[rs];
 				break;
 			}
 			if (special6 == SPECIAL_MTHI) {
-				cpu->hi = cpu->gpr[rs];
+				cpu->cd.mips.hi = cpu->cd.mips.gpr[rs];
 				break;
 			}
 			if (special6 == SPECIAL_MULT) {
 				int64_t f1, f2, sum;
-				f1 = cpu->gpr[rs] & 0xffffffffULL;
+				f1 = cpu->cd.mips.gpr[rs] & 0xffffffffULL;
 				/*  sign extend f1  */
 				if (f1 & 0x80000000ULL)
 					f1 |= 0xffffffff00000000ULL;
-				f2 = cpu->gpr[rt] & 0xffffffffULL;
+				f2 = cpu->cd.mips.gpr[rt] & 0xffffffffULL;
 				/*  sign extend f2  */
 				if (f2 & 0x80000000ULL)
 					f2 |= 0xffffffff00000000ULL;
 				sum = f1 * f2;
 
-				cpu->lo = sum & 0xffffffffULL;
-				cpu->hi = ((uint64_t)sum >> 32) & 0xffffffffULL;
+				cpu->cd.mips.lo = sum & 0xffffffffULL;
+				cpu->cd.mips.hi = ((uint64_t)sum >> 32) & 0xffffffffULL;
 
 				/*  sign-extend:  */
-				if (cpu->lo & 0x80000000ULL)
-					cpu->lo |= 0xffffffff00000000ULL;
-				if (cpu->hi & 0x80000000ULL)
-					cpu->hi |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.lo & 0x80000000ULL)
+					cpu->cd.mips.lo |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.hi & 0x80000000ULL)
+					cpu->cd.mips.hi |= 0xffffffff00000000ULL;
 
 				/*
 				 *  NOTE:  The stuff about rd!=0 is just a
@@ -2666,26 +2667,26 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				 */
 
 				if (rd != 0) {
-					if (cpu->cpu_type.rev != MIPS_R5900)
+					if (cpu->cd.mips.cpu_type.rev != MIPS_R5900)
 						debug("WARNING! mult_xx is an undocumented instruction!");
-					cpu->gpr[rd] = cpu->lo;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.lo;
 				}
 				break;
 			}
 			if (special6 == SPECIAL_MULTU) {
 				uint64_t f1, f2, sum;
 				/*  zero extend f1 and f2  */
-				f1 = cpu->gpr[rs] & 0xffffffffULL;
-				f2 = cpu->gpr[rt] & 0xffffffffULL;
+				f1 = cpu->cd.mips.gpr[rs] & 0xffffffffULL;
+				f2 = cpu->cd.mips.gpr[rt] & 0xffffffffULL;
 				sum = f1 * f2;
-				cpu->lo = sum & 0xffffffffULL;
-				cpu->hi = (sum >> 32) & 0xffffffffULL;
+				cpu->cd.mips.lo = sum & 0xffffffffULL;
+				cpu->cd.mips.hi = (sum >> 32) & 0xffffffffULL;
 
 				/*  sign-extend:  */
-				if (cpu->lo & 0x80000000ULL)
-					cpu->lo |= 0xffffffff00000000ULL;
-				if (cpu->hi & 0x80000000ULL)
-					cpu->hi |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.lo & 0x80000000ULL)
+					cpu->cd.mips.lo |= 0xffffffff00000000ULL;
+				if (cpu->cd.mips.hi & 0x80000000ULL)
+					cpu->cd.mips.hi |= 0xffffffff00000000ULL;
 				break;
 			}
 			/*
@@ -2697,19 +2698,19 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  64x64 = 128 bit multiplication:  SLOW!!!  TODO  */
 				uint64_t i, low_add, high_add;
 
-				cpu->lo = cpu->hi = 0;
+				cpu->cd.mips.lo = cpu->cd.mips.hi = 0;
 				for (i=0; i<64; i++) {
-					uint64_t bit = cpu->gpr[rt] & ((uint64_t)1 << i);
+					uint64_t bit = cpu->cd.mips.gpr[rt] & ((uint64_t)1 << i);
 					if (bit) {
-						/*  Add cpu->gpr[rs] to hi and lo:  */
-						low_add = (cpu->gpr[rs] << i);
-						high_add = (cpu->gpr[rs] >> (64-i));
+						/*  Add cpu->cd.mips.gpr[rs] to hi and lo:  */
+						low_add = (cpu->cd.mips.gpr[rs] << i);
+						high_add = (cpu->cd.mips.gpr[rs] >> (64-i));
 						if (i==0)			/*  WEIRD BUG in the compiler? Or maybe I'm just stupid  */
 							high_add = 0;		/*  these lines are necessary, a >> 64 doesn't seem to do anything  */
-						if (cpu->lo + low_add < cpu->lo)
-							cpu->hi ++;
-						cpu->lo += low_add;
-						cpu->hi += high_add;
+						if (cpu->cd.mips.lo + low_add < cpu->cd.mips.lo)
+							cpu->cd.mips.hi ++;
+						cpu->cd.mips.lo += low_add;
+						cpu->cd.mips.hi += high_add;
 					}
 				}
 				break;
@@ -2717,124 +2718,124 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (special6 == SPECIAL_DIV) {
 				int64_t a, b;
 				/*  Signextend rs and rt:  */
-				a = cpu->gpr[rs] & 0xffffffffULL;
+				a = cpu->cd.mips.gpr[rs] & 0xffffffffULL;
 				if (a & 0x80000000ULL)
 					a |= 0xffffffff00000000ULL;
-				b = cpu->gpr[rt] & 0xffffffffULL;
+				b = cpu->cd.mips.gpr[rt] & 0xffffffffULL;
 				if (b & 0x80000000ULL)
 					b |= 0xffffffff00000000ULL;
 
 				if (b == 0) {
 					/*  undefined  */
-					cpu->lo = cpu->hi = 0;
+					cpu->cd.mips.lo = cpu->cd.mips.hi = 0;
 				} else {
-					cpu->lo = a / b;
-					cpu->hi = a % b;
+					cpu->cd.mips.lo = a / b;
+					cpu->cd.mips.hi = a % b;
 				}
 				/*  Sign-extend lo and hi:  */
-				cpu->lo &= 0xffffffffULL;
-				if (cpu->lo & 0x80000000ULL)
-					cpu->lo |= 0xffffffff00000000ULL;
-				cpu->hi &= 0xffffffffULL;
-				if (cpu->hi & 0x80000000ULL)
-					cpu->hi |= 0xffffffff00000000ULL;
+				cpu->cd.mips.lo &= 0xffffffffULL;
+				if (cpu->cd.mips.lo & 0x80000000ULL)
+					cpu->cd.mips.lo |= 0xffffffff00000000ULL;
+				cpu->cd.mips.hi &= 0xffffffffULL;
+				if (cpu->cd.mips.hi & 0x80000000ULL)
+					cpu->cd.mips.hi |= 0xffffffff00000000ULL;
 				break;
 			}
 			if (special6 == SPECIAL_DIVU) {
 				int64_t a, b;
 				/*  Zero-extend rs and rt:  */
-				a = cpu->gpr[rs] & 0xffffffffULL;
-				b = cpu->gpr[rt] & 0xffffffffULL;
+				a = cpu->cd.mips.gpr[rs] & 0xffffffffULL;
+				b = cpu->cd.mips.gpr[rt] & 0xffffffffULL;
 				if (b == 0) {
 					/*  undefined  */
-					cpu->lo = cpu->hi = 0;
+					cpu->cd.mips.lo = cpu->cd.mips.hi = 0;
 				} else {
-					cpu->lo = a / b;
-					cpu->hi = a % b;
+					cpu->cd.mips.lo = a / b;
+					cpu->cd.mips.hi = a % b;
 				}
 				/*  Sign-extend lo and hi:  */
-				cpu->lo &= 0xffffffffULL;
-				if (cpu->lo & 0x80000000ULL)
-					cpu->lo |= 0xffffffff00000000ULL;
-				cpu->hi &= 0xffffffffULL;
-				if (cpu->hi & 0x80000000ULL)
-					cpu->hi |= 0xffffffff00000000ULL;
+				cpu->cd.mips.lo &= 0xffffffffULL;
+				if (cpu->cd.mips.lo & 0x80000000ULL)
+					cpu->cd.mips.lo |= 0xffffffff00000000ULL;
+				cpu->cd.mips.hi &= 0xffffffffULL;
+				if (cpu->cd.mips.hi & 0x80000000ULL)
+					cpu->cd.mips.hi |= 0xffffffff00000000ULL;
 				break;
 			}
 			if (special6 == SPECIAL_DDIV) {
-				if (cpu->gpr[rt] == 0) {
-					cpu->lo = cpu->hi = 0;		/*  undefined  */
+				if (cpu->cd.mips.gpr[rt] == 0) {
+					cpu->cd.mips.lo = cpu->cd.mips.hi = 0;		/*  undefined  */
 				} else {
-					cpu->lo = (int64_t)cpu->gpr[rs] / (int64_t)cpu->gpr[rt];
-					cpu->hi = (int64_t)cpu->gpr[rs] % (int64_t)cpu->gpr[rt];
+					cpu->cd.mips.lo = (int64_t)cpu->cd.mips.gpr[rs] / (int64_t)cpu->cd.mips.gpr[rt];
+					cpu->cd.mips.hi = (int64_t)cpu->cd.mips.gpr[rs] % (int64_t)cpu->cd.mips.gpr[rt];
 				}
 				break;
 			}
 			if (special6 == SPECIAL_DDIVU) {
-				if (cpu->gpr[rt] == 0) {
-					cpu->lo = cpu->hi = 0;		/*  undefined  */
+				if (cpu->cd.mips.gpr[rt] == 0) {
+					cpu->cd.mips.lo = cpu->cd.mips.hi = 0;		/*  undefined  */
 				} else {
-					cpu->lo = cpu->gpr[rs] / cpu->gpr[rt];
-					cpu->hi = cpu->gpr[rs] % cpu->gpr[rt];
+					cpu->cd.mips.lo = cpu->cd.mips.gpr[rs] / cpu->cd.mips.gpr[rt];
+					cpu->cd.mips.hi = cpu->cd.mips.gpr[rs] % cpu->cd.mips.gpr[rt];
 				}
 				break;
 			}
 			if (special6 == SPECIAL_TGE) {
-				if ((int64_t)cpu->gpr[rs] >= (int64_t)cpu->gpr[rt])
+				if ((int64_t)cpu->cd.mips.gpr[rs] >= (int64_t)cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TGEU) {
-				if (cpu->gpr[rs] >= cpu->gpr[rt])
+				if (cpu->cd.mips.gpr[rs] >= cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TLT) {
-				if ((int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt])
+				if ((int64_t)cpu->cd.mips.gpr[rs] < (int64_t)cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TLTU) {
-				if (cpu->gpr[rs] < cpu->gpr[rt])
+				if (cpu->cd.mips.gpr[rs] < cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TEQ) {
-				if (cpu->gpr[rs] == cpu->gpr[rt])
+				if (cpu->cd.mips.gpr[rs] == cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_TNE) {
-				if (cpu->gpr[rs] != cpu->gpr[rt])
+				if (cpu->cd.mips.gpr[rs] != cpu->cd.mips.gpr[rt])
 					mips_cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 			if (special6 == SPECIAL_DADD) {
-				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] + cpu->cd.mips.gpr[rt];
 				/*  TODO:  exception on overflow  */
 				break;
 			}
 			if (special6 == SPECIAL_DADDU) {
-				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] + cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_DSUB) {
-				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] - cpu->cd.mips.gpr[rt];
 				/*  TODO:  exception on overflow  */
 				break;
 			}
 			if (special6 == SPECIAL_DSUBU) {
-				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] - cpu->cd.mips.gpr[rt];
 				break;
 			}
 			if (special6 == SPECIAL_MOVZ) {
-				if (cpu->gpr[rt] == 0)
-					cpu->gpr[rd] = cpu->gpr[rs];
+				if (cpu->cd.mips.gpr[rt] == 0)
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs];
 				break;
 			}
 			if (special6 == SPECIAL_MOVN) {
-				if (cpu->gpr[rt] != 0)
-					cpu->gpr[rd] = cpu->gpr[rs];
+				if (cpu->cd.mips.gpr[rt] != 0)
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs];
 				return 1;
 			}
 			return 1;
@@ -2843,7 +2844,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  TODO: actually sync  */
 
 			/*  Clear the LLbit (at least on R10000):  */
-			cpu->rmw = 0;
+			cpu->cd.mips.rmw = 0;
 			return 1;
 		case SPECIAL_SYSCALL:
 			imm = ((instr[3] << 24) + (instr[2] << 16) +
@@ -2872,7 +2873,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->pc_last,
+				    cpu->cpu_id, cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special6 = 0x%02x\n", special6);
@@ -2946,8 +2947,8 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case HI6_ADDIU:
 		case HI6_DADDI:
 		case HI6_DADDIU:
-			tmpvalue = cpu->gpr[rs];
-			result_value = cpu->gpr[rs] + imm;
+			tmpvalue = cpu->cd.mips.gpr[rs];
+			result_value = cpu->cd.mips.gpr[rs] + imm;
 
 			if (hi6 == HI6_ADDI || hi6 == HI6_DADDI) {
 				/*
@@ -2984,7 +2985,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				}
 			}
 
-			cpu->gpr[rt] = result_value;
+			cpu->cd.mips.gpr[rt] = result_value;
 
 			/*
 			 *  Super-ugly speed-hack:  (only if speed_tricks != 0)
@@ -3003,47 +3004,47 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  executed 1 instruction.
 			 */
 			ninstrs_executed = 1;
-			if (cpu->machine->speed_tricks && cpu->delay_slot &&
-			    cpu->last_was_jumptoself &&
-			    cpu->jump_to_self_reg == rt &&
-			    cpu->jump_to_self_reg == rs) {
-				if ((int64_t)cpu->gpr[rt] > 1 && (int64_t)cpu->gpr[rt] < 0x70000000
+			if (cpu->machine->speed_tricks && cpu->cd.mips.delay_slot &&
+			    cpu->cd.mips.last_was_jumptoself &&
+			    cpu->cd.mips.jump_to_self_reg == rt &&
+			    cpu->cd.mips.jump_to_self_reg == rs) {
+				if ((int64_t)cpu->cd.mips.gpr[rt] > 1 && (int64_t)cpu->cd.mips.gpr[rt] < 0x70000000
 				    && (imm >= -30000 && imm <= -1)) {
 					if (instruction_trace_cached)
-						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
+						debug("changing r%i from %016llx to", rt, (long long)cpu->cd.mips.gpr[rt]);
 
-					while ((int64_t)cpu->gpr[rt] > 0 && ninstrs_executed < 1000
-					    && ((int64_t)cpu->gpr[rt] + (int64_t)imm) > 0) {
-						cpu->gpr[rt] += (int64_t)imm;
+					while ((int64_t)cpu->cd.mips.gpr[rt] > 0 && ninstrs_executed < 1000
+					    && ((int64_t)cpu->cd.mips.gpr[rt] + (int64_t)imm) > 0) {
+						cpu->cd.mips.gpr[rt] += (int64_t)imm;
 						ninstrs_executed += 2;
 					}
 
 					if (instruction_trace_cached)
-						debug(" %016llx\n", (long long)cpu->gpr[rt]);
+						debug(" %016llx\n", (long long)cpu->cd.mips.gpr[rt]);
 
-					/*  TODO: return value, cpu->gpr[rt] * 2;  */
+					/*  TODO: return value, cpu->cd.mips.gpr[rt] * 2;  */
 				}
-				if ((int64_t)cpu->gpr[rt] > -0x70000000 && (int64_t)cpu->gpr[rt] < -1
+				if ((int64_t)cpu->cd.mips.gpr[rt] > -0x70000000 && (int64_t)cpu->cd.mips.gpr[rt] < -1
 				     && (imm >= 1 && imm <= 30000)) {
 					if (instruction_trace_cached)
-						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
+						debug("changing r%i from %016llx to", rt, (long long)cpu->cd.mips.gpr[rt]);
 
-					while ((int64_t)cpu->gpr[rt] < 0 && ninstrs_executed < 1000
-					    && ((int64_t)cpu->gpr[rt] + (int64_t)imm) < 0) {
-						cpu->gpr[rt] += (int64_t)imm;
+					while ((int64_t)cpu->cd.mips.gpr[rt] < 0 && ninstrs_executed < 1000
+					    && ((int64_t)cpu->cd.mips.gpr[rt] + (int64_t)imm) < 0) {
+						cpu->cd.mips.gpr[rt] += (int64_t)imm;
 						ninstrs_executed += 2;
 					}
 
 					if (instruction_trace_cached)
-						debug(" %016llx\n", (long long)cpu->gpr[rt]);
+						debug(" %016llx\n", (long long)cpu->cd.mips.gpr[rt]);
 				}
 			}
 
 			if (hi6 == HI6_ADDI || hi6 == HI6_ADDIU) {
 				/*  Sign-extend:  */
-				cpu->gpr[rt] &= 0xffffffffULL;
-				if (cpu->gpr[rt] & 0x80000000ULL)
-					cpu->gpr[rt] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rt] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rt] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rt] |= 0xffffffff00000000ULL;
 			}
 			return ninstrs_executed;
 		case HI6_BEQ:
@@ -3054,7 +3055,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case HI6_BLEZL:
 		case HI6_BEQL:
 		case HI6_BNEL:
-			if (cpu->delay_slot) {
+			if (cpu->cd.mips.delay_slot) {
 				fatal("b*: jump inside a jump's delay slot, or similar. TODO\n");
 				cpu->running = 0;
 				return 1;
@@ -3062,25 +3063,25 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			likely = cond = 0;
 			switch (hi6) {
 			case HI6_BNEL:	likely = 1;
-			case HI6_BNE:	cond = (cpu->gpr[rt] != cpu->gpr[rs]);
+			case HI6_BNE:	cond = (cpu->cd.mips.gpr[rt] != cpu->cd.mips.gpr[rs]);
 					break;
 			case HI6_BEQL:	likely = 1;
-			case HI6_BEQ:	cond = (cpu->gpr[rt] == cpu->gpr[rs]);
+			case HI6_BEQ:	cond = (cpu->cd.mips.gpr[rt] == cpu->cd.mips.gpr[rs]);
 					break;
 			case HI6_BLEZL:	likely = 1;
-			case HI6_BLEZ:	cond = ((int64_t)cpu->gpr[rs] <= 0);
+			case HI6_BLEZ:	cond = ((int64_t)cpu->cd.mips.gpr[rs] <= 0);
 					break;
 			case HI6_BGTZL:	likely = 1;
-			case HI6_BGTZ:	cond = ((int64_t)cpu->gpr[rs] > 0);
+			case HI6_BGTZ:	cond = ((int64_t)cpu->cd.mips.gpr[rs] > 0);
 					break;
 			}
 
 			if (cond) {
-				cpu->delay_slot = TO_BE_DELAYED;
-				cpu->delay_jmpaddr = cached_pc + (imm << 2);
+				cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+				cpu->cd.mips.delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
-					cpu->nullify_next = 1;		/*  nullify delay slot  */
+					cpu->cd.mips.nullify_next = 1;		/*  nullify delay slot  */
 			}
 
 			if (imm==-1 && (hi6 == HI6_BGTZ || hi6 == HI6_BLEZ ||
@@ -3088,32 +3089,32 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    (hi6 == HI6_BLEZL && cond) ||
 			    (hi6 == HI6_BNE && (rt==0 || rs==0)) ||
 			    (hi6 == HI6_BEQ && (rt==0 || rs==0)))) {
-				cpu->last_was_jumptoself = 2;
+				cpu->cd.mips.last_was_jumptoself = 2;
 				if (rs == 0)
-					cpu->jump_to_self_reg = rt;
+					cpu->cd.mips.jump_to_self_reg = rt;
 				else
-					cpu->jump_to_self_reg = rs;
+					cpu->cd.mips.jump_to_self_reg = rs;
 			}
 			return 1;
 		case HI6_LUI:
-			cpu->gpr[rt] = (imm << 16);
+			cpu->cd.mips.gpr[rt] = (imm << 16);
 			/*  No sign-extending necessary, as imm already
 			    was sign-extended if it was negative.  */
 			break;
 		case HI6_SLTI:
-			cpu->gpr[rt] = (int64_t)cpu->gpr[rs] < (int64_t)tmpvalue;
+			cpu->cd.mips.gpr[rt] = (int64_t)cpu->cd.mips.gpr[rs] < (int64_t)tmpvalue;
 			break;
 		case HI6_SLTIU:
-			cpu->gpr[rt] = cpu->gpr[rs] < (uint64_t)imm;
+			cpu->cd.mips.gpr[rt] = cpu->cd.mips.gpr[rs] < (uint64_t)imm;
 			break;
 		case HI6_ANDI:
-			cpu->gpr[rt] = cpu->gpr[rs] & (tmpvalue & 0xffff);
+			cpu->cd.mips.gpr[rt] = cpu->cd.mips.gpr[rs] & (tmpvalue & 0xffff);
 			break;
 		case HI6_ORI:
-			cpu->gpr[rt] = cpu->gpr[rs] | (tmpvalue & 0xffff);
+			cpu->cd.mips.gpr[rt] = cpu->cd.mips.gpr[rs] | (tmpvalue & 0xffff);
 			break;
 		case HI6_XORI:
-			cpu->gpr[rt] = cpu->gpr[rs] ^ (tmpvalue & 0xffff);
+			cpu->cd.mips.gpr[rt] = cpu->cd.mips.gpr[rs] ^ (tmpvalue & 0xffff);
 			break;
 		case HI6_LB:
 		case HI6_LBU:
@@ -3195,13 +3196,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  In the MIPS IV ISA, the 'lwc3' instruction is changed into 'pref'.
 			 *  The pref instruction is emulated by not doing anything. :-)  TODO
 			 */
-			if (hi6 == HI6_LWC3 && cpu->cpu_type.isa_level >= 4) {
+			if (hi6 == HI6_LWC3 && cpu->cd.mips.cpu_type.isa_level >= 4) {
 				/*  Clear the LLbit (at least on R10000):  */
-				cpu->rmw = 0;
+				cpu->cd.mips.rmw = 0;
 				break;
 			}
 
-			addr = cpu->gpr[rs] + imm;
+			addr = cpu->cd.mips.gpr[rs] + imm;
 
 			/*  Check for natural alignment:  */
 			if ((addr & (wlen - 1)) != 0) {
@@ -3211,9 +3212,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 
 #if 0
-			if (cpu->cpu_type.isa_level == 4 && (imm & (wlen - 1)) != 0)
+			if (cpu->cd.mips.cpu_type.isa_level == 4 && (imm & (wlen - 1)) != 0)
 				debug("WARNING: low bits of imm value not zero! (MIPS IV) "
-				    "pc=%016llx", (long long)cpu->pc_last);
+				    "pc=%016llx", (long long)cpu->cd.mips.pc_last);
 #endif
 
 			/*
@@ -3223,16 +3224,16 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (linked) {
 				if (st==0) {
 					/*  st == 0:  Load  */
-					cpu->rmw      = 1;
-					cpu->rmw_addr = addr;
-					cpu->rmw_len  = wlen;
+					cpu->cd.mips.rmw      = 1;
+					cpu->cd.mips.rmw_addr = addr;
+					cpu->cd.mips.rmw_len  = wlen;
 
 					/*
 					 *  COP0_LLADDR is updated for
 					 *  diagnostic purposes, except for
 					 *  CPUs in the R10000 family.
 					 */
-					if (cpu->cpu_type.exc_model != MMU10K)
+					if (cpu->cd.mips.cpu_type.exc_model != MMU10K)
 						cp0->reg[COP0_LLADDR] =
 						    (addr >> 4) & 0xffffffffULL;
 				} else {
@@ -3242,9 +3243,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					 *  (This cache-line was written to by
 					 *  someone else.)
 					 */
-					if (cpu->rmw == 0) {
+					if (cpu->cd.mips.rmw == 0) {
 						/*  The store failed:  */
-						cpu->gpr[rt] = 0;
+						cpu->cd.mips.gpr[rt] = 0;
 						if (instruction_trace_cached)
 							debug(" [COLLISION] ");
 						break;
@@ -3256,7 +3257,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				 *  an ll and an sc, then the ll-sc sequence
 				 *  should fail.  (This is local to each cpu.)
 				 */
-				cpu->rmw = 0;
+				cpu->cd.mips.rmw = 0;
 			}
 
 			value_hi = 0;
@@ -3272,7 +3273,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					case HI6_SWC3:	cpnr++;		/*  fallthrough  */
 					case HI6_SWC2:	cpnr++;
 					case HI6_SDC1:
-					case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
+					case HI6_SWC1:	if (cpu->cd.mips.coproc[cpnr] == NULL ||
 							    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
 								mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 								cpnr = -1;
@@ -3282,19 +3283,19 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 								    on 32-bit CPUs, and on newer CPUs
 								    in 32-bit compatiblity mode:  */
 								if ((hi6==HI6_SDC1 || hi6==HI6_SDC2) &&
-								    (cpu->cpu_type.isa_level <= 2 ||
+								    (cpu->cd.mips.cpu_type.isa_level <= 2 ||
 								    !(cp0->reg[COP0_STATUS] & STATUS_FR))) {
 									uint64_t a, b;
 									coproc_register_read(cpu,
-									    cpu->coproc[cpnr], rt, &a);
+									    cpu->cd.mips.coproc[cpnr], rt, &a);
 									coproc_register_read(cpu,
-									    cpu->coproc[cpnr], rt^1, &b);
+									    cpu->cd.mips.coproc[cpnr], rt^1, &b);
 									if (rt & 1)
 										fatal("WARNING: SDCx in 32-bit mode from odd register!\n");
 									value = (a & 0xffffffffULL)
 									    | (b << 32);
 								} else
-									coproc_register_read(cpu, cpu->coproc[cpnr], rt, &value);
+									coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr], rt, &value);
 							}
 							break;
 					default:
@@ -3303,7 +3304,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					if (cpnr < 0)
 						break;
 				} else
-					value = cpu->gpr[rt];
+					value = cpu->cd.mips.gpr[rt];
 
 				if (wlen == 4) {
 					/*  Special case for 32-bit stores... (perhaps not worth it)  */
@@ -3315,7 +3316,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						d[1] = (value >> 16) & 0xff; d[0] = (value >> 24) & 0xff;
 					}
 				} else if (wlen == 16) {
-					value_hi = cpu->gpr_quadhi[rt];
+					value_hi = cpu->cd.mips.gpr_quadhi[rt];
 					/*  Special case for R5900 128-bit stores:  */
 					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 						for (i=0; i<8; i++) {
@@ -3406,7 +3407,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 							value += d[i];
 						}
 					}
-					cpu->gpr_quadhi[rt] = value_hi;
+					cpu->cd.mips.gpr_quadhi[rt] = value_hi;
 				}
 
 				switch (hi6) {
@@ -3414,7 +3415,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				case HI6_LDC2:
 				case HI6_LWC2:	cpnr++;
 				case HI6_LDC1:
-				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
+				case HI6_LWC1:	if (cpu->cd.mips.coproc[cpnr] == NULL ||
 						    (!(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ) {
 							mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 						} else {
@@ -3422,28 +3423,28 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 							    on 32-bit CPUs, and on newer CPUs
 							    in 32-bit compatiblity mode:  */
 							if ((hi6==HI6_LDC1 || hi6==HI6_LDC2) &&
-							    (cpu->cpu_type.isa_level <= 2 ||
+							    (cpu->cd.mips.cpu_type.isa_level <= 2 ||
 							    !(cp0->reg[COP0_STATUS] & STATUS_FR))) {
 								uint64_t a, b;
 								a = (int64_t)(int32_t) (value & 0xffffffffULL);
 								b = (int64_t)(int32_t) (value >> 32);
 								coproc_register_write(cpu,
-								    cpu->coproc[cpnr], rt, &a,
+								    cpu->cd.mips.coproc[cpnr], rt, &a,
 								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
 								coproc_register_write(cpu,
-								    cpu->coproc[cpnr], rt ^ 1, &b,
+								    cpu->cd.mips.coproc[cpnr], rt ^ 1, &b,
 								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
 								if (rt & 1)
 									fatal("WARNING: LDCx in 32-bit mode to odd register!\n");
 							} else {
 								coproc_register_write(cpu,
-								    cpu->coproc[cpnr], rt, &value,
+								    cpu->cd.mips.coproc[cpnr], rt, &value,
 								    hi6==HI6_LDC1 || hi6==HI6_LDC2);
 							}
 						}
 						break;
 				default:	if (rt != 0)
-							cpu->gpr[rt] = value;
+							cpu->cd.mips.gpr[rt] = value;
 				}
 			}
 
@@ -3461,29 +3462,29 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				 *  was _NOT_ a linked store?
 				 */
 				for (i=0; i<cpu->machine->ncpus; i++) {
-					if (cpu->machine->cpus[i]->rmw) {
+					if (cpu->machine->cpus[i]->cd.mips.rmw) {
 						uint64_t yaddr = addr;
 						uint64_t xaddr =
-						    cpu->machine->cpus[i]->rmw_addr;
+						    cpu->machine->cpus[i]->cd.mips.rmw_addr;
 						uint64_t mask;
 						mask = ~(cpu->machine->cpus[i]->
-						    cache_linesize[CACHE_DATA]
+						    cd.mips.cache_linesize[CACHE_DATA]
 						    - 1);
 						xaddr &= mask;
 						yaddr &= mask;
 						if (xaddr == yaddr) {
-							cpu->machine->cpus[i]->rmw = 0;
-							cpu->machine->cpus[i]->rmw_addr = 0;
+							cpu->machine->cpus[i]->cd.mips.rmw = 0;
+							cpu->machine->cpus[i]->cd.mips.rmw_addr = 0;
 						}
 					}
 				}
 
 				if (rt != 0)
-					cpu->gpr[rt] = 1;
+					cpu->cd.mips.gpr[rt] = 1;
 
 				if (instruction_trace_cached)
 					debug(" [no collision] ");
-				cpu->rmw = 0;
+				cpu->cd.mips.rmw = 0;
 			}
 
 			if (instruction_trace_cached) {
@@ -3510,7 +3511,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case HI6_SDR:
 			/*  For L (Left):   address is the most significant byte  */
 			/*  For R (Right):  address is the least significant byte  */
-			addr = cpu->gpr[rs] + imm;
+			addr = cpu->cd.mips.gpr[rs] + imm;
 
 			is_left = 0;
 			if (hi6 == HI6_SWL || hi6 == HI6_LWL ||
@@ -3538,13 +3539,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 				dir = -dir;
 
-			result_value = cpu->gpr[rt];
+			result_value = cpu->cd.mips.gpr[rt];
 
 			if (st) {
 				/*  Store:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8];
-				uint64_t oldpc = cpu->pc;
+				uint64_t oldpc = cpu->cd.mips.pc;
 				/*
 				 *  NOTE (this is ugly): The memory_rw()
 				 *  generates a TLBL exception, if there
@@ -3555,7 +3556,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				int ok = memory_rw(cpu, cpu->mem, aligned_addr,
 				    &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
 				if (!ok) {
-					if (cpu->pc != oldpc) {
+					if (cpu->cd.mips.pc != oldpc) {
 						cp0->reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
 						cp0->reg[COP0_CAUSE] |= (EXCEPTION_TLBS << CAUSE_EXCCODE_SHIFT);
 					}
@@ -3606,14 +3607,14 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				}
 
 				if (rt != 0)
-					cpu->gpr[rt] = result_value;
+					cpu->cd.mips.gpr[rt] = result_value;
 			}
 
 			/*  Sign extend for 32-bit load lefts:  */
 			if (!st && signd && wlen == 4) {
-				cpu->gpr[rt] &= 0xffffffffULL;
-				if (cpu->gpr[rt] & 0x80000000ULL)
-					cpu->gpr[rt] |= 0xffffffff00000000ULL;
+				cpu->cd.mips.gpr[rt] &= 0xffffffffULL;
+				if (cpu->cd.mips.gpr[rt] & 0x80000000ULL)
+					cpu->cd.mips.gpr[rt] |= 0xffffffff00000000ULL;
 			}
 
 			if (instruction_trace_cached) {
@@ -3624,7 +3625,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				case 8:		t = "0x%016llx"; break;
 				default:	t = "0x%02llx";
 				}
-				debug(t, (long long)cpu->gpr[rt]);
+				debug(t, (long long)cpu->cd.mips.gpr[rt]);
 				debug("]\n");
 			}
 
@@ -3635,7 +3636,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		regimm5 = instr[2] & 0x1f;
 
 		if (show_opcode_statistics)
-			cpu->stats__regimm[regimm5] ++;
+			cpu->cd.mips.stats__regimm[regimm5] ++;
 
 		switch (regimm5) {
 		case REGIMM_BLTZ:
@@ -3655,38 +3656,38 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			switch (regimm5) {
 			case REGIMM_BLTZL:	likely = 1;
-			case REGIMM_BLTZ:	cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) != 0;
+			case REGIMM_BLTZ:	cond = (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << 63)) != 0;
 						break;
 			case REGIMM_BGEZL:	likely = 1;
-			case REGIMM_BGEZ:	cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) == 0;
+			case REGIMM_BGEZ:	cond = (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << 63)) == 0;
 						break;
 
 			case REGIMM_BLTZALL:	likely = 1;
 			case REGIMM_BLTZAL:	and_link = 1;
-						cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) != 0;
+						cond = (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << 63)) != 0;
 						break;
 			case REGIMM_BGEZALL:	likely = 1;
 			case REGIMM_BGEZAL:	and_link = 1;
-						cond = (cpu->gpr[rs] & ((uint64_t)1 << 63)) == 0;
+						cond = (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << 63)) == 0;
 						break;
 			}
 
 			if (and_link)
-				cpu->gpr[31] = cached_pc + 4;
+				cpu->cd.mips.gpr[31] = cached_pc + 4;
 
 			if (cond) {
-				cpu->delay_slot = TO_BE_DELAYED;
-				cpu->delay_jmpaddr = cached_pc + (imm << 2);
+				cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+				cpu->cd.mips.delay_jmpaddr = cached_pc + (imm << 2);
 			} else {
 				if (likely)
-					cpu->nullify_next = 1;		/*  nullify delay slot  */
+					cpu->cd.mips.nullify_next = 1;		/*  nullify delay slot  */
 			}
 
 			return 1;
 		default:
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->pc_last,
+				    cpu->cpu_id, cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented regimm5 = 0x%02x\n", regimm5);
@@ -3696,7 +3697,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  NOT REACHED  */
 	case HI6_J:
 	case HI6_JAL:
-		if (cpu->delay_slot) {
+		if (cpu->cd.mips.delay_slot) {
 			fatal("j/jal: jump inside a jump's delay slot, or similar. TODO\n");
 			cpu->running = 0;
 			return 1;
@@ -3705,18 +3706,18 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		imm <<= 2;
 
 		if (hi6 == HI6_JAL)
-			cpu->gpr[31] = cached_pc + 4;		/*  pc already increased by 4 earlier  */
+			cpu->cd.mips.gpr[31] = cached_pc + 4;		/*  pc already increased by 4 earlier  */
 
 		addr = cached_pc & ~((1 << 28) - 1);
 		addr |= imm;
 
-		cpu->delay_slot = TO_BE_DELAYED;
-		cpu->delay_jmpaddr = addr;
+		cpu->cd.mips.delay_slot = TO_BE_DELAYED;
+		cpu->cd.mips.delay_jmpaddr = addr;
 
 		if (!quiet_mode_cached && cpu->machine->show_trace_tree &&
 		    hi6 == HI6_JAL) {
-			cpu->show_trace_delay = 2;
-			cpu->show_trace_addr = addr;
+			cpu->cd.mips.show_trace_delay = 2;
+			cpu->cd.mips.show_trace_addr = addr;
 		}
 
 		return 1;
@@ -3743,7 +3744,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		 */
 		/*  Set tmp = 1 if we're in user mode.  */
 		tmp = 0;
-		switch (cpu->cpu_type.exc_model) {
+		switch (cpu->cd.mips.cpu_type.exc_model) {
 		case EXC3K:
 			/*
 			 *  NOTE: If the KU bit is checked, Linux crashes.
@@ -3763,7 +3764,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				tmp = 0;
 			break;
 		}
-		if (cpu->coproc[cpnr] == NULL ||
+		if (cpu->cd.mips.coproc[cpnr] == NULL ||
 		    (tmp && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT))) ||
 		    (!tmp && cpnr >= 1 && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 		    ) {
@@ -3777,7 +3778,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			 *  coproc_function code outputs instruction
 			 *  trace, if necessary.
 			 */
-			coproc_function(cpu, cpu->coproc[cpnr],
+			coproc_function(cpu, cpu->cd.mips.coproc[cpnr],
 			    cpnr, imm, 0, 1);
 		}
 		return 1;
@@ -3797,7 +3798,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 #if 0
 Remove this...
 
-/*		if (cpu->cpu_type.mmu_model == MMU10K) {  */
+/*		if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {  */
 /*			printf("taghi=%08lx taglo=%08lx\n",
 			    (long)cp0->reg[COP0_TAGDATA_HI],
 			    (long)cp0->reg[COP0_TAGDATA_LO]);
@@ -3817,14 +3818,14 @@ Remove this...
 		 *  Clear the LLbit (at least on R10000):
 		 *  TODO: How about R4000?
 		 */
-		cpu->rmw = 0;
+		cpu->cd.mips.rmw = 0;
 
 		return 1;
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
 		if (show_opcode_statistics)
-			cpu->stats__special2[special6] ++;
+			cpu->cd.mips.stats__special2[special6] ++;
 
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
 
@@ -3843,13 +3844,13 @@ Remove this...
 			{
 				int32_t a, b;
 				int64_t c;
-				a = (int32_t)cpu->gpr[rs];
-				b = (int32_t)cpu->gpr[rt];
+				a = (int32_t)cpu->cd.mips.gpr[rs];
+				b = (int32_t)cpu->cd.mips.gpr[rt];
 				c = a * b;
-				c += (cpu->lo & 0xffffffffULL)
-				    + (cpu->hi << 32);
-				cpu->lo = (int64_t)((int32_t)c);
-				cpu->hi = (int64_t)((int32_t)(c >> 32));
+				c += (cpu->cd.mips.lo & 0xffffffffULL)
+				    + (cpu->cd.mips.hi << 32);
+				cpu->cd.mips.lo = (int64_t)((int32_t)c);
+				cpu->cd.mips.hi = (int64_t)((int32_t)(c >> 32));
 
 				/*
 				 *  The R5000 manual says that rd should be all zeros,
@@ -3858,7 +3859,7 @@ Remove this...
 				 *  TODO
 				 */
 				if (rd != 0)
-					cpu->gpr[rd] = cpu->lo;
+					cpu->cd.mips.gpr[rd] = cpu->cd.mips.lo;
 			}
 		} else if ((instrword & 0xffff07ffULL) == 0x70000209
 		    || (instrword & 0xffff07ffULL) == 0x70000249) {
@@ -3874,9 +3875,9 @@ Remove this...
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x49) {
-				cpu->gpr[rd] = cpu->lo;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.lo;
 			} else {
-				cpu->gpr[rd] = cpu->hi;
+				cpu->cd.mips.gpr[rd] = cpu->cd.mips.hi;
 			}
 		} else if ((instrword & 0xfc1fffff) == 0x70000269 || (instrword & 0xfc1fffff) == 0x70000229) {
 			/*
@@ -3888,9 +3889,9 @@ Remove this...
 			 *  For now, this is implemented as 64-bit only.  (TODO)
 			 */
 			if (instr[0] == 0x69) {
-				cpu->lo = cpu->gpr[rs];
+				cpu->cd.mips.lo = cpu->cd.mips.gpr[rs];
 			} else {
-				cpu->hi = cpu->gpr[rs];
+				cpu->cd.mips.hi = cpu->cd.mips.gpr[rs];
 			}
 		} else if ((instrword & 0xfc0007ff) == 0x700004a9) {
 			/*
@@ -3901,63 +3902,63 @@ Remove this...
 			 *  A wild guess is that this is a 128-bit "or" between two registers.
 			 *  For now, let's just or using 64-bits.  (TODO)
 			 */
-			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
+			cpu->cd.mips.gpr[rd] = cpu->cd.mips.gpr[rs] | cpu->cd.mips.gpr[rt];
 		} else if ((instrword & 0xfc0007ff) == 0x70000488) {
 			/*
 			 *  R5900 "undocumented" pextlw. TODO: find out if this is correct.
 			 *  It seems that this instruction is used to combine two 32-bit
 			 *  words into a 64-bit dword, typically before a sd (store dword).
 			 */
-			cpu->gpr[rd] =
-			    ((cpu->gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
-			    | (cpu->gpr[rt] & 0xffffffffULL);
+			cpu->cd.mips.gpr[rd] =
+			    ((cpu->cd.mips.gpr[rs] & 0xffffffffULL) << 32)		/*  TODO: switch rt and rs?  */
+			    | (cpu->cd.mips.gpr[rt] & 0xffffffffULL);
 		} else if (special6 == SPECIAL2_MUL) {
-			cpu->gpr[rd] = (int64_t)cpu->gpr[rt] *
-			    (int64_t)cpu->gpr[rs];
+			cpu->cd.mips.gpr[rd] = (int64_t)cpu->cd.mips.gpr[rt] *
+			    (int64_t)cpu->cd.mips.gpr[rs];
 		} else if (special6 == SPECIAL2_CLZ) {
 			/*  clz: count leading zeroes  */
 			int i, n=0;
 			for (i=31; i>=0; i--) {
-				if (cpu->gpr[rs] & ((uint32_t)1 << i))
+				if (cpu->cd.mips.gpr[rs] & ((uint32_t)1 << i))
 					break;
 				else
 					n++;
 			}
-			cpu->gpr[rd] = n;
+			cpu->cd.mips.gpr[rd] = n;
 		} else if (special6 == SPECIAL2_CLO) {
 			/*  clo: count leading ones  */
 			int i, n=0;
 			for (i=31; i>=0; i--) {
-				if (cpu->gpr[rs] & ((uint32_t)1 << i))
+				if (cpu->cd.mips.gpr[rs] & ((uint32_t)1 << i))
 					n++;
 				else
 					break;
 			}
-			cpu->gpr[rd] = n;
+			cpu->cd.mips.gpr[rd] = n;
 		} else if (special6 == SPECIAL2_DCLZ) {
 			/*  dclz: count leading zeroes  */
 			int i, n=0;
 			for (i=63; i>=0; i--) {
-				if (cpu->gpr[rs] & ((uint64_t)1 << i))
+				if (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << i))
 					break;
 				else
 					n++;
 			}
-			cpu->gpr[rd] = n;
+			cpu->cd.mips.gpr[rd] = n;
 		} else if (special6 == SPECIAL2_DCLO) {
 			/*  dclo: count leading ones  */
 			int i, n=0;
 			for (i=63; i>=0; i--) {
-				if (cpu->gpr[rs] & ((uint64_t)1 << i))
+				if (cpu->cd.mips.gpr[rs] & ((uint64_t)1 << i))
 					n++;
 				else
 					break;
 			}
-			cpu->gpr[rd] = n;
+			cpu->cd.mips.gpr[rd] = n;
 		} else {
 			if (!instruction_trace_cached) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-				    cpu->cpu_id, cpu->pc_last,
+				    cpu->cpu_id, cpu->cd.mips.pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
 			fatal("unimplemented special_2 = 0x%02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
@@ -3969,7 +3970,7 @@ Remove this...
 	default:
 		if (!instruction_trace_cached) {
 			fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
-			    cpu->cpu_id, cpu->pc_last,
+			    cpu->cpu_id, cpu->cd.mips.pc_last,
 			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 		}
 		fatal("unimplemented hi6 = 0x%02x\n", hi6);
@@ -4011,7 +4012,7 @@ void mips_cpu_show_cycles(struct machine *machine,
 	if (mseconds - mseconds_last == 0)
 		mseconds ++;
 
-	ninstrs = ncycles * machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+	ninstrs = ncycles * machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
 
 	if (machine->automatic_clock_adjustment) {
 		static int first_adjustment = 1;
@@ -4019,7 +4020,7 @@ void mips_cpu_show_cycles(struct machine *machine,
 		/*  Current nr of cycles per second:  */
 		int64_t cur_cycles_per_second = 1000 *
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
-		    / machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle;
+		    / machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle;
 
 		if (cur_cycles_per_second < 1500000)
 			cur_cycles_per_second = 1500000;
@@ -4061,7 +4062,7 @@ void mips_cpu_show_cycles(struct machine *machine,
 
 	printf("cycles=%lli", (long long) ncycles);
 
-	if (machine->cpus[machine->bootstrap_cpu]->cpu_type.instrs_per_cycle > 1)
+	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.instrs_per_cycle > 1)
 		printf(" (%lli instrs)", (long long) ninstrs);
 
 	/*  Instructions per second, and average so far:  */
@@ -4071,15 +4072,15 @@ void mips_cpu_show_cycles(struct machine *machine,
 	    (long long) ((long long)1000 * ninstrs / mseconds));
 
 	symbol = get_symbol_name(&machine->symbol_context,
-	    machine->cpus[machine->bootstrap_cpu]->pc, &offset);
+	    machine->cpus[machine->bootstrap_cpu]->cd.mips.pc, &offset);
 
-	if (machine->cpus[machine->bootstrap_cpu]->cpu_type.isa_level < 3 ||
-	    machine->cpus[machine->bootstrap_cpu]->cpu_type.isa_level == 32)
+	if (machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level < 3 ||
+	    machine->cpus[machine->bootstrap_cpu]->cd.mips.cpu_type.isa_level == 32)
 		printf("; pc=%08x",
-		    (int)machine->cpus[machine->bootstrap_cpu]->pc);
+		    (int)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
 	else
 		printf("; pc=%016llx",
-		    (long long)machine->cpus[machine->bootstrap_cpu]->pc);
+		    (long long)machine->cpus[machine->bootstrap_cpu]->cd.mips.pc);
 
 	printf(" <%s> ]\n", symbol? symbol : "no symbol");
 
@@ -4156,7 +4157,7 @@ int mips_cpu_run(struct emul *emul, struct machine *machine)
 		ncycles_chunk_end = machine->ncycles + (1 << 16);
 
 		machine->a_few_instrs = machine->a_few_cycles *
-		    cpus[0]->cpu_type.instrs_per_cycle;
+		    cpus[0]->cd.mips.cpu_type.instrs_per_cycle;
 
 		/*  Do a chunk of cycles:  */
 		do {
@@ -4185,7 +4186,7 @@ int mips_cpu_run(struct emul *emul, struct machine *machine)
 					single_step = 2;
 				}
 
-				for (j=0; j<cpus[0]->cpu_type.instrs_per_cycle; j++) {
+				for (j=0; j<cpus[0]->cd.mips.cpu_type.instrs_per_cycle; j++) {
 					if (single_step)
 						debugger();
 					for (i=0; i<ncpus; i++)
@@ -4202,7 +4203,7 @@ int mips_cpu_run(struct emul *emul, struct machine *machine)
 						if (a_few_instrs2 >= max_random_cycles_per_chunk_cached)
 							a_few_instrs2 = max_random_cycles_per_chunk_cached;
 						j = (random() % a_few_instrs2) + 1;
-						j *= cpus[i]->cpu_type.instrs_per_cycle;
+						j *= cpus[i]->cd.mips.cpu_type.instrs_per_cycle;
 						while (j-- >= 1 && cpus[i]->running) {
 							int instrs_run = mips_cpu_run_instr(emul, cpus[i]);
 							if (i == 0)
@@ -4233,7 +4234,7 @@ int mips_cpu_run(struct emul *emul, struct machine *machine)
 				/*  CPU 1 and up:  */
 				for (i=1; i<ncpus; i++) {
 					a_few_instrs2 = machine->a_few_cycles *
-					    cpus[i]->cpu_type.instrs_per_cycle;
+					    cpus[i]->cd.mips.cpu_type.instrs_per_cycle;
 					for (j=0; j<a_few_instrs2; )
 						if (cpus[i]->running) {
 							int instrs_run = 0;
@@ -4270,7 +4271,7 @@ int mips_cpu_run(struct emul *emul, struct machine *machine)
 			 *  cause hardware ticks a fraction of a cycle too
 			 *  often.
 			 */
-			i = cpus[0]->cpu_type.instrs_per_cycle;
+			i = cpus[0]->cd.mips.cpu_type.instrs_per_cycle;
 			switch (i) {
 			case 1:	break;
 			case 2:	cpu0instrs >>= 1; break;
@@ -4366,7 +4367,7 @@ void mips_cpu_run_deinit(struct emul *emul, struct machine *machine)
  */
 void mips_cpu_dumpinfo(struct cpu *cpu)
 {
-	struct mips_cpu_type_def *ct = &cpu->cpu_type;
+	struct mips_cpu_type_def *ct = &cpu->cd.mips.cpu_type;
 
 	debug("cpu%i: %s, %s", cpu->cpu_id, ct->name,
 	    cpu->running? "running" : "stopped");

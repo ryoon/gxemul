@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.2 2005-01-30 01:03:59 debug Exp $
+ *  $Id: cpu.h,v 1.3 2005-01-30 12:54:50 debug Exp $
  *
  *  See cpu_common.c.
  */
@@ -37,15 +37,36 @@
 #include <sys/types.h>
 #include <inttypes.h>
 
+#include "cpu_mips.h"
+
 struct cpu;
 struct emul;
 struct machine;
 struct memory;
 
-
 #define	NO_BYTE_ORDER_OVERRIDE		-1
 #define	EMUL_LITTLE_ENDIAN		0
 #define	EMUL_BIG_ENDIAN			1
+
+
+struct cpu {
+	/*  Pointer back to the machine this CPU is in:  */
+	struct machine	*machine;
+
+	int		byte_order;
+	int		running;
+	int		bootstrap_cpu_flag;
+	int		cpu_id;
+
+	struct memory	*mem;
+	int		(*translate_address)(struct cpu *, uint64_t vaddr,
+			    uint64_t *return_addr, int flags);
+
+	/*  CPU-family dependant:  */
+	union {
+		struct mips_cpu mips;
+	} cd;
+};
 
 
 /*  cpu_common.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.110 2005-01-30 11:38:15 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.111 2005-01-30 12:54:51 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -176,21 +176,21 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
  *  lda sp,128(sp)
  *  ret
  */
-#define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
-#define ofs_pc_last	(((size_t)&dummy_cpu.pc_last) - ((size_t)&dummy_cpu))
-#define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
-#define ofs_ds	(((size_t)&dummy_cpu.delay_slot) - ((size_t)&dummy_cpu))
-#define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
-#define ofs_sp	(((size_t)&dummy_cpu.gpr[MIPS_GPR_SP]) - ((size_t)&dummy_cpu))
-#define ofs_ra	(((size_t)&dummy_cpu.gpr[MIPS_GPR_RA]) - ((size_t)&dummy_cpu))
-#define ofs_a0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_A0]) - ((size_t)&dummy_cpu))
-#define ofs_a1	(((size_t)&dummy_cpu.gpr[MIPS_GPR_A1]) - ((size_t)&dummy_cpu))
-#define ofs_t0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T0]) - ((size_t)&dummy_cpu))
-#define ofs_t1	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T1]) - ((size_t)&dummy_cpu))
-#define ofs_t2	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T2]) - ((size_t)&dummy_cpu))
-#define ofs_v0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_V0]) - ((size_t)&dummy_cpu))
-#define ofs_s0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_S0]) - ((size_t)&dummy_cpu))
-#define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
+#define ofs_pc	(((size_t)&dummy_cpu.cd.mips.pc) - ((size_t)&dummy_cpu))
+#define ofs_pc_last	(((size_t)&dummy_cpu.cd.mips.pc_last) - ((size_t)&dummy_cpu))
+#define ofs_n	(((size_t)&dummy_cpu.cd.mips.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+#define ofs_ds	(((size_t)&dummy_cpu.cd.mips.delay_slot) - ((size_t)&dummy_cpu))
+#define ofs_ja	(((size_t)&dummy_cpu.cd.mips.delay_jmpaddr) - ((size_t)&dummy_cpu))
+#define ofs_sp	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_SP]) - ((size_t)&dummy_cpu))
+#define ofs_ra	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_RA]) - ((size_t)&dummy_cpu))
+#define ofs_a0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_A0]) - ((size_t)&dummy_cpu))
+#define ofs_a1	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_A1]) - ((size_t)&dummy_cpu))
+#define ofs_t0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_T0]) - ((size_t)&dummy_cpu))
+#define ofs_t1	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_T1]) - ((size_t)&dummy_cpu))
+#define ofs_t2	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_T2]) - ((size_t)&dummy_cpu))
+#define ofs_v0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_V0]) - ((size_t)&dummy_cpu))
+#define ofs_s0	(((size_t)&dummy_cpu.cd.mips.gpr[MIPS_GPR_S0]) - ((size_t)&dummy_cpu))
+#define ofs_tbl0 (((size_t)&dummy_cpu.cd.mips.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 
 static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	/*  Don't execute too many instructions. (see comment below)  */
@@ -268,7 +268,7 @@ static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {
 	0x03, 0x00, 0x20, 0xe4,		/*  beq t0,<skip>  */
 
 	/*  ldq t2,chunk_base_address(a0)  */
-#define ofs_cb (((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu)
+#define ofs_cb (((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu)
 	(ofs_cb & 255), (ofs_cb >> 8) & 255, 0x70, 0xa4,
 
 	/*  addq t0,t2,t0  */
@@ -434,7 +434,7 @@ static void bintrans_move_MIPS_reg_into_Alpha_reg(unsigned char **addrp, int mip
 	default:
 		alpha_mips_reg = map_MIPS_to_Alpha[mipsreg];
 		if (alpha_mips_reg < 0) {
-			ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.gpr[mipsreg]) - (size_t)&dummy_cpu;
 			/*  ldq alphareg,gpr[mipsreg](a0)  */
 			*a++ = 0xa4100000 | (alphareg << 21) | ofs;
 		} else {
@@ -473,7 +473,7 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 		alpha_mips_reg = map_MIPS_to_Alpha[mipsreg];
 		if (alpha_mips_reg < 0) {
 			/*  stq alphareg,gpr[mipsreg](a0)  */
-			ofs = ((size_t)&dummy_cpu.gpr[mipsreg]) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.gpr[mipsreg]) - (size_t)&dummy_cpu;
 			*a++ = 0xb4100000 | (alphareg << 21) | ofs;
 		} else {
 			/*  addq alphareg,0,alpha_mips_reg  */
@@ -837,13 +837,13 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		/*  01 10 60 40     addl    t2,0,t0  */
 		*a++ = 0x01; *a++ = 0x10; *a++ = 0x60; *a++ = 0x40;
 
-		ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.lo) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 
 		/*  81 17 64 48     sra     t2,0x20,t0  */
 		*a++ = 0x81; *a++ = 0x17; *a++ = 0x64; *a++ = 0x48;
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x3f; *a++ = 0x40;	/*  addl t0,0,t0  */
-		ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.hi) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 		break;
 	case SPECIAL_MOVZ:
@@ -995,10 +995,10 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		if (b != NULL)
 			*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
 
-		/*  cpu->nullify_next = 1;  */
+		/*  cpu->cd.mips.nullify_next = 1;  */
 		/*  01 00 3f 20     lda     t0,1  */
 		*a++ = 0x203f0001;
-		ofs = (size_t)&dummy_cpu.nullify_next - (size_t)&dummy_cpu;
+		ofs = (size_t)&dummy_cpu.cd.mips.nullify_next - (size_t)&dummy_cpu;
 		*a++ = 0xb0300000 | (ofs & 0xffff);
 
 		/*  fail, so that the next instruction is handled manually:  */
@@ -1142,7 +1142,7 @@ static int bintrans_write_instruction__delayedbranch(
 	if (potential_chunk_p == NULL) {
 		if (mem->bintrans_32bit_only) {
 			/*  34 12 70 a7     ldq     t12,4660(a0)  */
-			ofs = (size_t)&dummy_cpu.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
+			ofs = (size_t)&dummy_cpu.cd.mips.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
 			/*  00 00 fb 6b     jmp     (t12)  */
@@ -1167,7 +1167,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
 
 			/*  34 12 70 a7     ldq     t12,4660(a0)  */
-			ofs = (size_t)&dummy_cpu.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
+			ofs = (size_t)&dummy_cpu.cd.mips.bintrans_jump_to_32bit_pc - (size_t)&dummy_cpu;
 			*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
 			/*  00 00 fb 6b     jmp     (t12)  */
@@ -1265,7 +1265,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
 			/*  ldq t2,chunk_base_address(a0)  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 			/*  addq t0,t2,t0  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
@@ -1369,7 +1369,7 @@ static int bintrans_write_instruction__delayedbranch(
 			*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;	/*  beq t0,<skip>  */
 
 			/*  ldq t2,chunk_base_address(a0)  */
-			ofs = ((size_t)&dummy_cpu.chunk_base_address) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.chunk_base_address) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa4;
 			/*  addq t0,t2,t0  */
 			*a++ = 0x01; *a++ = 0x04; *a++ = 0x23; *a++ = 0x40;
@@ -1523,7 +1523,7 @@ static int bintrans_write_instruction__loadstore(
 	if (mem->bintrans_32bit_only) {
 		/*  Special case for 32-bit addressing:  */
 
-		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
 		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
@@ -1565,7 +1565,7 @@ static int bintrans_write_instruction__loadstore(
 		generic64bitA = a;
 		*a++ = 0x04; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br <generic>  */
 
-		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
 		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
 
@@ -1617,7 +1617,7 @@ static int bintrans_write_instruction__loadstore(
 		*b++ = 0xb6de0038;		/*  stq t8,56(sp)  */
 		*b++ = 0xb6fe0040;		/*  stq t9,64(sp)  */
 
-		ofs = ((size_t)&dummy_cpu.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
 
 		*b++ = 0xa7700000 | ofs;	/*  ldq t12,0(a0)  */
 
@@ -2338,9 +2338,9 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 		if (rd != 0) {
 			/*  mfhi or mflo  */
 			if (hi_flag)
-				ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+				ofs = ((size_t)&dummy_cpu.cd.mips.hi) - (size_t)&dummy_cpu;
 			else
-				ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+				ofs = ((size_t)&dummy_cpu.cd.mips.lo) - (size_t)&dummy_cpu;
 			*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
 
 			bintrans_move_Alpha_reg_into_MIPS_reg(&a, ALPHA_T0, rd);
@@ -2350,9 +2350,9 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rd, ALPHA_T0);
 
 		if (hi_flag)
-			ofs = ((size_t)&dummy_cpu.hi) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.hi) - (size_t)&dummy_cpu;
 		else
-			ofs = ((size_t)&dummy_cpu.lo) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.lo) - (size_t)&dummy_cpu;
 		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
 	}
 
@@ -2393,7 +2393,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 
 	a = (uint32_t *) *addrp;
 
-	ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 	*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
 
 	ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
@@ -2484,7 +2484,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 
 			/*  If enabling interrupt bits would cause an
 			    exception, then don't do it:  */
-			ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+			ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 			*a++ = 0xa4900000 | (ofs & 0xffff);		/*  ldq t3,coproc[0](a0)  */
 			ofs = ((size_t)&dummy_coproc.reg[COP0_CAUSE]) - (size_t)&dummy_coproc;
 			*a++ = 0xa4a40000 | (ofs & 0xffff);		/*  ldq t4,reg_rd(t3)  */
@@ -2518,7 +2518,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 
 		*a++ = 0x40201402;	/*  addq    t0,0,t1  */
 
-		ofs = ((size_t)&dummy_cpu.coproc[0]) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.coproc[0]) - (size_t)&dummy_cpu;
 		*a++ = 0xa4300000 | (ofs & 0xffff);		/*  ldq t0,coproc[0](a0)  */
 		ofs = ((size_t)&dummy_coproc.reg[rd]) - (size_t)&dummy_coproc;
 		*a++ = 0xb4410000 | (ofs & 0xffff);		/*  stq t1,reg_rd(t0)  */
@@ -2603,21 +2603,21 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	switch (itype) {
 	case CALL_TLBP:
 	case CALL_TLBR:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_tlbpr) - (size_t)&dummy_cpu;
 		break;
 	case CALL_TLBWR:
 	case CALL_TLBWI:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_tlbwri) - (size_t)&dummy_cpu;
 		break;
 	case CALL_RFE:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_rfe) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_rfe) - (size_t)&dummy_cpu;
 		break;
 	case CALL_ERET:
-		ofs = ((size_t)&dummy_cpu.bintrans_fast_eret) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_fast_eret) - (size_t)&dummy_cpu;
 		break;
 	case CALL_BREAK:
 	case CALL_SYSCALL:
-		ofs = ((size_t)&dummy_cpu.bintrans_simple_exception) - (size_t)&dummy_cpu;
+		ofs = ((size_t)&dummy_cpu.cd.mips.bintrans_simple_exception) - (size_t)&dummy_cpu;
 		break;
 	}
 

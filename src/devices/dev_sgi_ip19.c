@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.10 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.11 2005-01-30 12:54:43 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -34,10 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
 #include "misc.h"
 
 

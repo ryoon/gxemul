@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.9 2005-01-30 11:40:36 debug Exp $
+ *  $Id: cpu_mips.h,v 1.1 2005-01-30 12:54:50 debug Exp $
  */
 
 #include "misc.h"
@@ -209,22 +209,15 @@ struct vth32_table {
 	int			refcount;
 };
 
-struct cpu {
-	/*  Pointer back to the machine this CPU is in:  */
-	struct machine	*machine;
-
-	int		byte_order;
-	int		running;
-	int		bootstrap_cpu_flag;
-	int		cpu_id;
-
+struct mips_cpu {
 	struct mips_cpu_type_def cpu_type;
 
 	struct mips_coproc *coproc[N_MIPS_COPROCS];
 
-	void		(*md_interrupt)(struct cpu *, int irq_nr, int);
-
 	int		compare_register_set;
+
+/*  TODO: Move to machine.h  */
+void(*md_interrupt)(struct cpu *, int irq_nr, int);
 
 	/*  Special purpose registers:  */
 	uint64_t	pc;
@@ -234,10 +227,6 @@ struct cpu {
 
 	/*  General purpose registers:  */
 	uint64_t	gpr[N_MIPS_GPRS];
-
-	struct memory	*mem;
-	int		(*translate_address)(struct cpu *, uint64_t vaddr,
-			    uint64_t *return_addr, int flags);
 
 	/*
 	 *  The translation_cached stuff is used to speed up the

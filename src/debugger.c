@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.66 2005-01-30 01:04:00 debug Exp $
+ *  $Id: debugger.c,v 1.67 2005-01-30 12:54:52 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -61,7 +61,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "net.h"
 #include "x11.h"
 

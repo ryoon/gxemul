@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.47 2005-01-30 00:37:09 debug Exp $
+ *  $Id: dec_prom.c,v 1.48 2005-01-30 12:54:52 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -40,10 +40,11 @@
 #include "misc.h"
 
 #include "console.h"
+#include "cpu.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 
 #include "dec_prom.h"
 #include "dec_5100.h"
@@ -96,7 +97,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	case 0x18:	/*  reinit()  */
 		/*  TODO  */
 		cpu->machine->exit_without_entering_debugger = 1;
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x30:	/*  open()  */
 		/*
@@ -109,32 +110,32 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 			cpu->running = 0;
 		}
 		file_opened = 1;
-		cpu->gpr[MIPS_GPR_V0] = 1;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
 		break;
 	case 0x38:	/*  read(handle, ptr, length)  */
-		cpu->gpr[MIPS_GPR_V0] = -1;
-		if ((int32_t)cpu->gpr[MIPS_GPR_A2] > 0) {
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = -1;
+		if ((int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2] > 0) {
 			int disk_id = diskimage_bootdev(cpu->machine);
 			int res;
 			unsigned char *tmp_buf;
 
-			tmp_buf = malloc(cpu->gpr[MIPS_GPR_A2]);
+			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
-			    current_file_offset, tmp_buf, cpu->gpr[MIPS_GPR_A2]);
+			    current_file_offset, tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data
 			    to emulated memory:  */
 			if (res) {
-				uint64_t dst = cpu->gpr[MIPS_GPR_A1];
+				uint64_t dst = cpu->cd.mips.gpr[MIPS_GPR_A1];
 				store_buf(cpu, dst, (char *)tmp_buf,
-				    cpu->gpr[MIPS_GPR_A2]);
-				cpu->gpr[MIPS_GPR_V0] = cpu->gpr[MIPS_GPR_A2];
-				current_file_offset += cpu->gpr[MIPS_GPR_A2];
+				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A2];
+				current_file_offset += cpu->cd.mips.gpr[MIPS_GPR_A2];
 			}
 
 			free(tmp_buf);
@@ -142,14 +143,14 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		break;
 	case 0x58:	/*  lseek(handle, offset[, whence])  */
 		/*  TODO  */
-		if (cpu->gpr[MIPS_GPR_A2] == 0)
-			current_file_offset = cpu->gpr[MIPS_GPR_A1];
+		if (cpu->cd.mips.gpr[MIPS_GPR_A2] == 0)
+			current_file_offset = cpu->cd.mips.gpr[MIPS_GPR_A1];
 		else
 			fatal("WARNING! Unimplemented whence in dec_jumptable_func()\n");
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x68:	/*  putchar()  */
-		console_putchar(cpu->gpr[MIPS_GPR_A0]);
+		console_putchar(cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		break;
 	case 0x88:	/*  printf()  */
 		return 0x30;
@@ -160,7 +161,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &ch,
+			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);
@@ -208,8 +209,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 int decstation_prom_emul(struct cpu *cpu)
 {
 	int i, j, ch, argreg, argdata;
-	int vector = cpu->pc & 0xfff;
-	int callback = (cpu->pc & 0xf000)? 1 : 0;
+	int vector = cpu->cd.mips.pc & 0xfff;
+	int callback = (cpu->cd.mips.pc & 0xf000)? 1 : 0;
 	unsigned char buf[100];
 	unsigned char ch1, ch2, ch3;
 	uint64_t tmpaddr, slot_base = 0x10000000, slot_size = 0;
@@ -233,26 +234,26 @@ int decstation_prom_emul(struct cpu *cpu)
 
 		/*  If ch1=='\0', then strings are equal.  */
 		if (ch1 == '\0')
-			cpu->gpr[MIPS_GPR_V0] = 0;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		if ((signed char)ch1 > (signed char)ch2)
-			cpu->gpr[MIPS_GPR_V0] = 1;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;
 		if ((signed char)ch1 < (signed char)ch2)
-			cpu->gpr[MIPS_GPR_V0] = -1;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = -1;
 		break;
 	case 0x14:		/*  strlen():  */
 		i = 0;
 		do {
 			ch2 = read_char_from_memory(cpu, MIPS_GPR_A0, i++);
 		} while (ch2 != 0);
-		cpu->gpr[MIPS_GPR_V0] = i - 1;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = i - 1;
 		break;
 	case 0x24:		/*  getchar()  */
 		/*  debug("[ DEC PROM getchar() ]\n");  */
-		cpu->gpr[MIPS_GPR_V0] = console_readchar();
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = console_readchar();
 		break;
 	case 0x28:		/*  gets()  */
 		/*  debug("[ DEC PROM gets() ]\n");  */
-		tmpaddr = cpu->gpr[MIPS_GPR_A0];
+		tmpaddr = cpu->cd.mips.gpr[MIPS_GPR_A0];
 		i = 0;
 
 		/*  TODO: Make this not hang (block) the entire emulator  */
@@ -279,7 +280,7 @@ int decstation_prom_emul(struct cpu *cpu)
 				/*  It seems that trailing newlines
 				    are not included in the buffer.  */
 			} else if (ch != '\b') {
-				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i,
+				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
 				    &ch2, sizeof(ch2), MEM_WRITE,
 				    CACHE_DATA | NO_EXCEPTIONS);
 				i++;
@@ -291,23 +292,23 @@ int decstation_prom_emul(struct cpu *cpu)
 
 		/*  Trailing nul-byte:  */
 		ch2 = '\0';
-		memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &ch2,
+		memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch2,
 		    sizeof(ch2), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
 
 		/*  Return the input argument:  */
-		cpu->gpr[MIPS_GPR_V0] = cpu->gpr[MIPS_GPR_A0];
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A0];
 		break;
 	case 0x2c:		/*  puts()  */
 		i = 0;
 		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
 			console_putchar(ch);
 		console_putchar('\n');
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x30:		/*  printf()  */
 		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
 			debug("PROM printf(0x%08lx): \n",
-			    (long)cpu->gpr[MIPS_GPR_A0]);
+			    (long)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 
 		i = 0; ch = -1; argreg = MIPS_GPR_A1;
 		while (ch != '\0') {
@@ -339,7 +340,7 @@ int decstation_prom_emul(struct cpu *cpu)
 								which is utterly incorrect. (TODO)  */
 #endif
 					}
-					ch2 = argdata = cpu->gpr[argreg];
+					ch2 = argdata = cpu->cd.mips.gpr[argreg];
 
 					switch (ch) {
 					case 'c':
@@ -380,11 +381,11 @@ int decstation_prom_emul(struct cpu *cpu)
 		if (cpu->machine->register_dump || cpu->machine->instruction_trace)
 			debug("\n");
 		fflush(stdout);
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x54:		/*  bootinit()  */
-		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->gpr[MIPS_GPR_A0]);  */
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		/*  debug("[ DEC PROM bootinit(0x%08x): TODO ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);  */
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x58:		/*  bootread(int b, void *buffer, int n)  */
 		/*
@@ -396,34 +397,34 @@ int decstation_prom_emul(struct cpu *cpu)
 		 *  TODO: Return value? NetBSD thinks that 0 is ok.
 		 */
 		debug("[ DEC PROM bootread(0x%x, 0x%08x, 0x%x) ]\n",
-		    (int)cpu->gpr[MIPS_GPR_A0], (int)cpu->gpr[MIPS_GPR_A1], (int)cpu->gpr[MIPS_GPR_A2]);
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0], (int)cpu->cd.mips.gpr[MIPS_GPR_A1], (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 
-		if ((int32_t)cpu->gpr[MIPS_GPR_A2] > 0) {
+		if ((int32_t)cpu->cd.mips.gpr[MIPS_GPR_A2] > 0) {
 			int disk_id = diskimage_bootdev(cpu->machine);
 			int res;
 			unsigned char *tmp_buf;
 
-			tmp_buf = malloc(cpu->gpr[MIPS_GPR_A2]);
+			tmp_buf = malloc(cpu->cd.mips.gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->gpr[MIPS_GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in dec_prom.c, allocating %i bytes ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
-			    cpu->gpr[MIPS_GPR_A0] * 512, tmp_buf, cpu->gpr[MIPS_GPR_A2]);
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] * 512, tmp_buf, cpu->cd.mips.gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data
 			    to emulated memory:  */
 			if (res) {
-				uint64_t dst = cpu->gpr[MIPS_GPR_A1];
+				uint64_t dst = cpu->cd.mips.gpr[MIPS_GPR_A1];
 				if (dst < 0x80000000ULL)
 					dst |= 0x80000000;
 
 				store_buf(cpu, dst, (char *)tmp_buf,
-				    cpu->gpr[MIPS_GPR_A2]);
-				cpu->gpr[MIPS_GPR_V0] = cpu->gpr[MIPS_GPR_A2];
+				    cpu->cd.mips.gpr[MIPS_GPR_A2]);
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A2];
 			}
 
 			free(tmp_buf);
@@ -432,7 +433,7 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &buf[i],
+			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i],
 			    sizeof(char), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ DEC PROM getenv(\"%s\") ]\n", buf);
@@ -451,16 +452,16 @@ int decstation_prom_emul(struct cpu *cpu)
 			    + i + strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
-				cpu->gpr[MIPS_GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
 				return 1;
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
 		fatal("[ DEC PROM getenv(\"%s\"): WARNING: Not in environment! ]\n", buf);
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x6c:		/*  ulong slot_address(int sn)  */
-		debug("[ DEC PROM slot_address(%i) ]\n", (int)cpu->gpr[MIPS_GPR_A0]);
+		debug("[ DEC PROM slot_address(%i) ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		/*  TODO:  This is too hardcoded.  */
 		/*  TODO 2:  Should these be physical or virtual addresses?  */
 		switch (cpu->machine->machine_subtype) {
@@ -483,39 +484,39 @@ int decstation_prom_emul(struct cpu *cpu)
 		default:
 			fatal("warning: DEC PROM slot_address() unimplemented for this machine type\n");
 		}
-		cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t)
-		    (0x80000000 + slot_base + slot_size * cpu->gpr[MIPS_GPR_A0]);
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t)
+		    (0x80000000 + slot_base + slot_size * cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		break;
 	case 0x70:		/*  wbflush()  */
 		debug("[ DEC PROM wbflush(): TODO ]\n");
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x7c:		/*  clear_cache(addr, len)  */
-		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n", (uint32_t)cpu->gpr[MIPS_GPR_A0], (int)cpu->gpr[MIPS_GPR_A1]);
+		debug("[ DEC PROM clear_cache(0x%x,%i) ]\n", (uint32_t)cpu->cd.mips.gpr[MIPS_GPR_A0], (int)cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		/*  TODO  */
-		cpu->gpr[MIPS_GPR_V0] = 0;	/*  ?  */
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;	/*  ?  */
 		break;
 	case 0x80:		/*  getsysid()  */
 		/*  debug("[ DEC PROM getsysid() ]\n");  */
 		/*  TODO:  why did I add the 0x82 stuff???  */
-		cpu->gpr[MIPS_GPR_V0] = ((uint32_t)0x82 << 24)
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = ((uint32_t)0x82 << 24)
 		    + (cpu->machine->machine_subtype << 16) + (0x3 << 8);
-		cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t)cpu->gpr[MIPS_GPR_V0];
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		break;
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",
-		    (int)cpu->gpr[MIPS_GPR_A0]);
-		store_buf(cpu, cpu->gpr[MIPS_GPR_A0],
+		    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		store_buf(cpu, cpu->cd.mips.gpr[MIPS_GPR_A0],
 		    (char *)&memmap, sizeof(memmap));
-		cpu->gpr[MIPS_GPR_V0] = sizeof((memmap.bitmap));
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = sizeof((memmap.bitmap));
 		break;
 	case 0x88:		/*  disableintr()  */
 		debug("[ DEC PROM disableintr(): TODO ]\n");
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x8c:		/*  enableintr()  */
 		debug("[ DEC PROM enableintr(): TODO ]\n");
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x9c:		/*  halt()  */
 		debug("[ DEC PROM halt() ]\n");
@@ -532,18 +533,18 @@ int decstation_prom_emul(struct cpu *cpu)
 		store_32bit_word(cpu, DEC_PROM_TCINFO + 20, 100);	/*  maximum DMA burst length  */
 		store_32bit_word(cpu, DEC_PROM_TCINFO + 24, 0);	/*  turbochannel parity (yes = 1)  */
 		store_32bit_word(cpu, DEC_PROM_TCINFO + 28, 0);	/*  reserved  */
-		cpu->gpr[MIPS_GPR_V0] = DEC_PROM_TCINFO;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = DEC_PROM_TCINFO;
 		break;
 	case 0xa8:		/*  int execute_cmd(char *)  */
 		i = 0;
 		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
 			console_putchar(ch);
 		console_putchar('\n');
-		cpu->gpr[MIPS_GPR_V0] = 0;
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0xac:		/*  rex()  */
-		debug("[ DEC PROM rex('%c') ]\n", (int)cpu->gpr[MIPS_GPR_A0]);
-		switch (cpu->gpr[MIPS_GPR_A0]) {
+		debug("[ DEC PROM rex('%c') ]\n", (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		switch (cpu->cd.mips.gpr[MIPS_GPR_A0]) {
 		case 'h':
 			debug("DEC PROM: rex('h') ==> halt\n");
 			cpu->machine->exit_without_entering_debugger = 1;
@@ -556,7 +557,7 @@ int decstation_prom_emul(struct cpu *cpu)
 			break;
 		default:
 			fatal("DEC prom emulation: unknown rex() a0=0x%llx ('%c')\n",
-			    (long long)cpu->gpr[MIPS_GPR_A0], (char)cpu->gpr[MIPS_GPR_A0]);
+			    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (char)cpu->cd.mips.gpr[MIPS_GPR_A0]);
 			exit(1);
 		}
 		break;
@@ -565,7 +566,7 @@ int decstation_prom_emul(struct cpu *cpu)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &ch,
+			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.150 2005-01-30 00:37:09 debug Exp $
+ *  $Id: memory.c,v 1.151 2005-01-30 12:54:53 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -41,7 +41,7 @@
 #include "cop0.h"
 #include "memory.h"
 #include "misc.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 
 
 extern int quiet_mode;
@@ -291,24 +291,24 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 
 	if (instr) {
 		/*  Code:  */
-		memmove(&cpu->translation_cache_instr[1],
-		    &cpu->translation_cache_instr[0],
+		memmove(&cpu->cd.mips.translation_cache_instr[1],
+		    &cpu->cd.mips.translation_cache_instr[0],
 		    sizeof(struct translation_cache_entry) *
 		    (N_TRANSLATION_CACHE_INSTR - 1));
 
-		cpu->translation_cache_instr[0].wf = wf;
-		cpu->translation_cache_instr[0].vaddr_pfn = vaddr;
-		cpu->translation_cache_instr[0].paddr = paddr;
+		cpu->cd.mips.translation_cache_instr[0].wf = wf;
+		cpu->cd.mips.translation_cache_instr[0].vaddr_pfn = vaddr;
+		cpu->cd.mips.translation_cache_instr[0].paddr = paddr;
 	} else {
 		/*  Data:  */
-		memmove(&cpu->translation_cache_data[1],
-		    &cpu->translation_cache_data[0],
+		memmove(&cpu->cd.mips.translation_cache_data[1],
+		    &cpu->cd.mips.translation_cache_data[0],
 		    sizeof(struct translation_cache_entry) *
 		    (N_TRANSLATION_CACHE_DATA - 1));
 
-		cpu->translation_cache_data[0].wf = wf;
-		cpu->translation_cache_data[0].vaddr_pfn = vaddr;
-		cpu->translation_cache_data[0].paddr = paddr;
+		cpu->cd.mips.translation_cache_data[0].wf = wf;
+		cpu->cd.mips.translation_cache_data[0].vaddr_pfn = vaddr;
+		cpu->cd.mips.translation_cache_data[0].paddr = paddr;
 	}
 #endif
 }
@@ -399,13 +399,13 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 
 #ifdef ENABLE_CACHE_EMULATION
-	if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
+	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES)
 		which_cache ^= 1;
 
-	tag_mask = 0xffffffff & ~cpu->cache_mask[which_cache];
-	cache_line = (paddr & cpu->cache_mask[which_cache])
-	    / cpu->cache_linesize[which_cache];
-	rp = (struct r3000_cache_line *) cpu->cache_tags[which_cache];
+	tag_mask = 0xffffffff & ~cpu->cd.mips.cache_mask[which_cache];
+	cache_line = (paddr & cpu->cd.mips.cache_mask[which_cache])
+	    / cpu->cd.mips.cache_linesize[which_cache];
+	rp = (struct r3000_cache_line *) cpu->cd.mips.cache_tags[which_cache];
 
 	/*  Is this a cache hit or miss?  */
 	hit = (rp[cache_line].tag_valid & R3000_TAG_VALID) &&
@@ -413,8 +413,8 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->instruction_delay += cpu->cpu_type.instrs_per_cycle
-		    * cpu->cache_miss_penalty[which_cache];
+		cpu->instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
 	/*
@@ -424,19 +424,19 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	 *  (TODO: is this correct? I don't remember where I got this from.)
 	 */
 	if (cache == CACHE_DATA && writeflag==MEM_READ) {
-		cpu->coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
 		if (!hit)
-			cpu->coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
 	}
 
 	/*
 	 *  Is the Data cache isolated?  Then don't access main memory:
 	 */
 	if (cache == CACHE_DATA &&
-	    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+	    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
 		cache_isolated = 1;
 
-	addr = paddr & cpu->cache_mask[which_cache];
+	addr = paddr & cpu->cd.mips.cache_mask[which_cache];
 
 	/*
 	 *  If there was a miss and the cache is not isolated, then flush
@@ -455,7 +455,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (!hit && !cache_isolated) {
 		unsigned char *dst, *src;
 		uint64_t old_cached_paddr = rp[cache_line].tag_paddr
-		    + cache_line * cpu->cache_linesize[which_cache];
+		    + cache_line * cpu->cd.mips.cache_linesize[which_cache];
 
 		/*  Flush the old cacheline to main memory:  */
 		if ((rp[cache_line].tag_valid & R3000_TAG_VALID) &&
@@ -469,22 +469,22 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			    mem, old_cached_paddr, MEM_WRITE);
 			offset = old_cached_paddr
 			    & ((1 << BITS_PER_MEMBLOCK) - 1)
-			    & ~cpu->cache_mask[which_cache];
+			    & ~cpu->cd.mips.cache_mask[which_cache];
 
-			src = cpu->cache[which_cache];
+			src = cpu->cd.mips.cache[which_cache];
 			dst = memblock + (offset &
-			    ~cpu->cache_mask[which_cache]);
+			    ~cpu->cd.mips.cache_mask[which_cache]);
 
 			src += cache_line *
-			    cpu->cache_linesize[which_cache];
+			    cpu->cd.mips.cache_linesize[which_cache];
 			dst += cache_line *
-			    cpu->cache_linesize[which_cache];
+			    cpu->cd.mips.cache_linesize[which_cache];
 
 			if (memblock == NULL) {
 				fatal("BUG in memory.c! Hm.\n");
 			} else {
 				memcpy(dst, src,
-				    cpu->cache_linesize[which_cache]);
+				    cpu->cd.mips.cache_linesize[which_cache]);
 			}
 			/*  offset is the offset within
 			 *  the memblock:
@@ -495,27 +495,27 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		/*  Copy from main memory into the cache:  */
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1)
-		    & ~cpu->cache_mask[which_cache];
+		    & ~cpu->cd.mips.cache_mask[which_cache];
 		/*  offset is offset within the memblock:
 		 *  printf("write: offset = 0x%x\n", offset);
 		 */
 
 /*		fatal("  FETCHING new paddr=0%08x\n", paddr);
 */
-		dst = cpu->cache[which_cache];
+		dst = cpu->cd.mips.cache[which_cache];
 
 		if (memblock == NULL) {
 			if (writeflag == MEM_READ)
-			memset(dst, 0, cpu->cache_linesize[which_cache]);
+			memset(dst, 0, cpu->cd.mips.cache_linesize[which_cache]);
 		} else {
 			src = memblock + (offset &
-			    ~cpu->cache_mask[which_cache]);
+			    ~cpu->cd.mips.cache_mask[which_cache]);
 
 			src += cache_line *
-			    cpu->cache_linesize[which_cache];
+			    cpu->cd.mips.cache_linesize[which_cache];
 			dst += cache_line *
-			    cpu->cache_linesize[which_cache];
-			memcpy(dst, src, cpu->cache_linesize[which_cache]);
+			    cpu->cd.mips.cache_linesize[which_cache];
+			memcpy(dst, src, cpu->cd.mips.cache_linesize[which_cache]);
 		}
 
 		rp[cache_line].tag_paddr = paddr & tag_mask;
@@ -528,16 +528,16 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	if (writeflag==MEM_READ) {
 		for (i=0; i<len; i++)
-			data[i] = cpu->cache[which_cache][(addr+i) &
-			    cpu->cache_mask[which_cache]];
+			data[i] = cpu->cd.mips.cache[which_cache][(addr+i) &
+			    cpu->cd.mips.cache_mask[which_cache]];
 	} else {
 		for (i=0; i<len; i++) {
-			if (cpu->cache[which_cache][(addr+i) &
-			    cpu->cache_mask[which_cache]] != data[i]) {
+			if (cpu->cd.mips.cache[which_cache][(addr+i) &
+			    cpu->cd.mips.cache_mask[which_cache]] != data[i]) {
 				rp[cache_line].tag_valid |= R3000_TAG_DIRTY;
 			}
-			cpu->cache[which_cache][(addr+i) &
-			    cpu->cache_mask[which_cache]] = data[i];
+			cpu->cd.mips.cache[which_cache][(addr+i) &
+			    cpu->cd.mips.cache_mask[which_cache]] = data[i];
 		}
 	}
 
@@ -545,7 +545,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	if (cache == CACHE_INSTRUCTION) {
 		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		if (memblock != NULL) {
-			cpu->pc_last_host_4k_page = memblock +
+			cpu->cd.mips.pc_last_host_4k_page = memblock +
 			    (paddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);
 		}
 	}
@@ -568,14 +568,14 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		return 0;
 
 	/*  Is this a cache hit or miss?  */
-	hit = (cpu->cache_last_paddr[which_cache]
-		& ~cpu->cache_mask[which_cache])
-	    == (paddr & ~(cpu->cache_mask[which_cache]));
+	hit = (cpu->cd.mips.cache_last_paddr[which_cache]
+		& ~cpu->cd.mips.cache_mask[which_cache])
+	    == (paddr & ~(cpu->cd.mips.cache_mask[which_cache]));
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (!hit)
-		cpu->instruction_delay += cpu->cpu_type.instrs_per_cycle
-		    * cpu->cache_miss_penalty[which_cache];
+		cpu->instruction_delay += cpu->cd.mips.cpu_type.instrs_per_cycle
+		    * cpu->cd.mips.cache_miss_penalty[which_cache];
 #endif
 
 	/*
@@ -585,19 +585,19 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	 *  (TODO: is this correct? I don't remember where I got this from.)
 	 */
 	if (cache == CACHE_DATA && writeflag==MEM_READ) {
-		cpu->coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
+		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~MIPS1_CACHE_MISS;
 		if (!hit)
-			cpu->coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
+			cpu->cd.mips.coproc[0]->reg[COP0_STATUS] |= MIPS1_CACHE_MISS;
 	}
 
 	/*
 	 *  Is the Data cache isolated?  Then don't access main memory:
 	 */
 	if (cache == CACHE_DATA &&
-	    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+	    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
 		cache_isolated = 1;
 
-	addr = paddr & cpu->cache_mask[which_cache];
+	addr = paddr & cpu->cd.mips.cache_mask[which_cache];
 
 	/*  Data cache isolated?  Then don't access main memory:  */
 	if (cache_isolated) {
@@ -606,19 +606,19 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 		if (writeflag==MEM_READ) {
 			for (i=0; i<len; i++)
-				data[i] = cpu->cache[cache][(addr+i) &
-				    cpu->cache_mask[cache]];
+				data[i] = cpu->cd.mips.cache[cache][(addr+i) &
+				    cpu->cd.mips.cache_mask[cache]];
 		} else {
 			for (i=0; i<len; i++)
-				cpu->cache[cache][(addr+i) &
-				    cpu->cache_mask[cache]] = data[i];
+				cpu->cd.mips.cache[cache][(addr+i) &
+				    cpu->cd.mips.cache_mask[cache]] = data[i];
 		}
 		return 1;
 	} else {
 		/*  Reload caches if necessary:  */
 
 		/*  No!  Not when not emulating caches fully. (TODO?)  */
-		cpu->cache_last_paddr[cache] = paddr;
+		cpu->cd.mips.cache_last_paddr[cache] = paddr;
 	}
 #endif
 
@@ -700,8 +700,8 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #ifdef BINTRANS
 	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
-			cpu->pc_bintrans_host_4kpage = NULL;
-			cpu->pc_bintrans_paddr_valid = 0;
+			cpu->cd.mips.pc_bintrans_host_4kpage = NULL;
+			cpu->cd.mips.pc_bintrans_paddr_valid = 0;
 		}
 	}
 #endif
@@ -722,9 +722,9 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  time in cpu.c!  Only check if _host_4k_page == NULL.
 	 */
 	if (cache == CACHE_INSTRUCTION &&
-	    cpu->pc_last_host_4k_page == NULL &&
-	    (vaddr & ~0xfff) == cpu->pc_last_virtual_page) {
-		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
+	    cpu->cd.mips.pc_last_host_4k_page == NULL &&
+	    (vaddr & ~0xfff) == cpu->cd.mips.pc_last_virtual_page) {
+		paddr = cpu->cd.mips.pc_last_physical_page | (vaddr & 0xfff);
 		goto have_paddr;
 	}
 
@@ -749,9 +749,9 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #if defined(ENABLE_CACHE_EMULATION) && defined(ENABLE_INSTRUCTION_DELAYS)
 #else
 	if (cache == CACHE_INSTRUCTION) {
-		cpu->pc_last_virtual_page = vaddr & ~0xfff;
-		cpu->pc_last_physical_page = paddr & ~0xfff;
-		cpu->pc_last_host_4k_page = NULL;
+		cpu->cd.mips.pc_last_virtual_page = vaddr & ~0xfff;
+		cpu->cd.mips.pc_last_physical_page = paddr & ~0xfff;
+		cpu->cd.mips.pc_last_host_4k_page = NULL;
 
 		/*  _last_host_4k_page will be set to 1 further down,
 		    if the page is actually in host ram  */
@@ -765,8 +765,8 @@ have_paddr:
 #ifdef BINTRANS
 	if (bintrans_cached) {
 		if (cache == CACHE_INSTRUCTION) {
-			cpu->pc_bintrans_paddr_valid = 1;
-			cpu->pc_bintrans_paddr = paddr;
+			cpu->cd.mips.pc_bintrans_paddr_valid = 1;
+			cpu->cd.mips.pc_bintrans_paddr = paddr;
 		}
 	}
 #endif
@@ -834,7 +834,7 @@ into the devices  */
 
 				cpu->instruction_delay +=
 				    ( (abs(res) - 1) *
-				     cpu->cpu_type.instrs_per_cycle );
+				     cpu->cd.mips.cpu_type.instrs_per_cycle );
 #endif
 				/*
 				 *  If accessing the memory mapped device
@@ -864,7 +864,7 @@ into the devices  */
 	 *  Data and instruction cache emulation:
 	 */
 
-	switch (cpu->cpu_type.mmu_model) {
+	switch (cpu->cd.mips.cpu_type.mmu_model) {
 	case MMU3K:
 		/*  if not uncached addess  (TODO: generalize this)  */
 		if (!(cache_flags & PHYSICAL) && cache != CACHE_NONE &&
@@ -892,7 +892,7 @@ into the devices  */
 		 *  I need to find the correct way to disconnect the
 		 *  cache from the main memory for R10000.  (TODO !!!)
 		 */
-/*		if ((cpu->coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
+/*		if ((cpu->cd.mips.coproc[0]->reg[COP0_CONFIG] & 7) == 3) {  */
 /*
 		if (cache == CACHE_DATA &&
 		    cpu->r10k_cache_disable_TODO) {
@@ -953,16 +953,16 @@ into the devices  */
 					}
 					symbol = get_symbol_name(
 					    &cpu->machine->symbol_context,
-					    cpu->pc_last, &offset);
+					    cpu->cd.mips.pc_last, &offset);
 					fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
-					    (long long)paddr, (long long)cpu->pc_last, symbol? symbol : "no symbol");
+					    (long long)paddr, (long long)cpu->cd.mips.pc_last, symbol? symbol : "no symbol");
 				}
 
 				if (cpu->machine->single_step_on_bad_addr) {
 					fatal("[ unimplemented access to "
 					    "0x%016llx, pc = 0x%016llx ]\n",
 					    (long long)paddr,
-					    (long long)cpu->pc);
+					    (long long)cpu->cd.mips.pc);
 					single_step = 1;
 				}
 			}
@@ -1037,12 +1037,12 @@ no_exception_access:
 			memcpy(data, memblock + offset, len);
 
 		if (cache == CACHE_INSTRUCTION) {
-			cpu->pc_last_host_4k_page = memblock
+			cpu->cd.mips.pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
 #ifdef BINTRANS
 			if (bintrans_cached) {
-				cpu->pc_bintrans_host_4kpage =
-				    cpu->pc_last_host_4k_page;
+				cpu->cd.mips.pc_bintrans_host_4kpage =
+				    cpu->cd.mips.pc_last_host_4k_page;
 			}
 #endif
 		}
@@ -1110,12 +1110,12 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem,
 			    cache entries that contain pointers to this
 			    device:  (NOTE: Device i, cache entry j)  */
 			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
-				if (cpu->bintrans_data_hostpage[j] >=
+				if (cpu->cd.mips.bintrans_data_hostpage[j] >=
 				    mem->dev_bintrans_data[i] &&
-				    cpu->bintrans_data_hostpage[j] <
+				    cpu->cd.mips.bintrans_data_hostpage[j] <
 				    mem->dev_bintrans_data[i] +
 				    mem->dev_length[i])
-					cpu->bintrans_data_hostpage[j] = NULL;
+					cpu->cd.mips.bintrans_data_hostpage[j] = NULL;
 			}
 
 			return;

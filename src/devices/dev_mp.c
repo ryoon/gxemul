@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.20 2005-01-23 11:19:36 debug Exp $
+ *  $Id: dev_mp.c,v 1.21 2005-01-30 12:54:43 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -36,10 +36,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 #include "mp.h"
 
@@ -82,8 +83,8 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 
 	case DEV_MP_STARTUPCPU:
 		which_cpu = idata;
-		d->cpus[which_cpu]->pc = d->startup_addr;
-		d->cpus[which_cpu]->gpr[MIPS_GPR_SP] = d->stack_addr;
+		d->cpus[which_cpu]->cd.mips.pc = d->startup_addr;
+		d->cpus[which_cpu]->cd.mips.gpr[MIPS_GPR_SP] = d->stack_addr;
 		d->cpus[which_cpu]->running = 1;
 		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", 
 		    which_cpu, (long long)d->startup_addr);  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.8 2005-01-24 16:02:30 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.9 2005-01-30 12:54:53 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -34,8 +34,9 @@
 #include <stdlib.h>
 
 #include "bintrans.h"
+#include "cpu.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 
@@ -81,37 +82,37 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 
 
 	vaddr_page = vaddr & ~0xfff;
-	i = start_and_stop = cpu->bintrans_next_index;
+	i = start_and_stop = cpu->cd.mips.bintrans_next_index;
 	n = 0;
 	for (;;) {
-		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
-		    cpu->bintrans_data_hostpage[i] != NULL &&
-		    cpu->bintrans_data_writable[i] >= writeflag) {
+		if (cpu->cd.mips.bintrans_data_vaddr[i] == vaddr_page &&
+		    cpu->cd.mips.bintrans_data_hostpage[i] != NULL &&
+		    cpu->cd.mips.bintrans_data_writable[i] >= writeflag) {
 			uint64_t tmpaddr;
 			unsigned char *tmpptr;
 			int tmpwf;
 
 			if (n < 3)
-				return cpu->bintrans_data_hostpage[i]
+				return cpu->cd.mips.bintrans_data_hostpage[i]
 				    + (vaddr & 0xfff);
 
-			cpu->bintrans_next_index = start_and_stop - 1;
-			if (cpu->bintrans_next_index < 0)
-				cpu->bintrans_next_index = MAX - 1;
+			cpu->cd.mips.bintrans_next_index = start_and_stop - 1;
+			if (cpu->cd.mips.bintrans_next_index < 0)
+				cpu->cd.mips.bintrans_next_index = MAX - 1;
 
-			tmpptr  = cpu->bintrans_data_hostpage[cpu->bintrans_next_index];
-			tmpaddr = cpu->bintrans_data_vaddr[cpu->bintrans_next_index];
-			tmpwf   = cpu->bintrans_data_writable[cpu->bintrans_next_index];
+			tmpptr  = cpu->cd.mips.bintrans_data_hostpage[cpu->cd.mips.bintrans_next_index];
+			tmpaddr = cpu->cd.mips.bintrans_data_vaddr[cpu->cd.mips.bintrans_next_index];
+			tmpwf   = cpu->cd.mips.bintrans_data_writable[cpu->cd.mips.bintrans_next_index];
 
-			cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->bintrans_data_hostpage[i];
-			cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = cpu->bintrans_data_vaddr[i];
-			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cpu->bintrans_data_writable[i];
+			cpu->cd.mips.bintrans_data_hostpage[cpu->cd.mips.bintrans_next_index] = cpu->cd.mips.bintrans_data_hostpage[i];
+			cpu->cd.mips.bintrans_data_vaddr[cpu->cd.mips.bintrans_next_index] = cpu->cd.mips.bintrans_data_vaddr[i];
+			cpu->cd.mips.bintrans_data_writable[cpu->cd.mips.bintrans_next_index] = cpu->cd.mips.bintrans_data_writable[i];
 
-			cpu->bintrans_data_hostpage[i] = tmpptr;
-			cpu->bintrans_data_vaddr[i] = tmpaddr;
-			cpu->bintrans_data_writable[i] = tmpwf;
+			cpu->cd.mips.bintrans_data_hostpage[i] = tmpptr;
+			cpu->cd.mips.bintrans_data_vaddr[i] = tmpaddr;
+			cpu->cd.mips.bintrans_data_writable[i] = tmpwf;
 
-			return cpu->bintrans_data_hostpage[cpu->bintrans_next_index] + (vaddr & 0xfff);
+			return cpu->cd.mips.bintrans_data_hostpage[cpu->cd.mips.bintrans_next_index] + (vaddr & 0xfff);
 		}
 
 		n ++;
@@ -146,12 +147,12 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 					    cpu->mem->dev_bintrans_write_high[i] = high_paddr;
 				}
 
-				cpu->bintrans_next_index --;
-				if (cpu->bintrans_next_index < 0)
-					cpu->bintrans_next_index = MAX - 1;
-				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
-				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
-				cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;
+				cpu->cd.mips.bintrans_next_index --;
+				if (cpu->cd.mips.bintrans_next_index < 0)
+					cpu->cd.mips.bintrans_next_index = MAX - 1;
+				cpu->cd.mips.bintrans_data_hostpage[cpu->cd.mips.bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
+				cpu->cd.mips.bintrans_data_vaddr[cpu->cd.mips.bintrans_next_index] = vaddr_page;
+				cpu->cd.mips.bintrans_data_writable[cpu->cd.mips.bintrans_next_index] = writeflag;
 				return cpu->mem->dev_bintrans_data[i] + paddr;
 			} else
 				return NULL;
@@ -167,12 +168,12 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);
 
-	cpu->bintrans_next_index --;
-	if (cpu->bintrans_next_index < 0)
-		cpu->bintrans_next_index = MAX - 1;
-	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
-	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
-	cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;  /*  ok - 1;  */
+	cpu->cd.mips.bintrans_next_index --;
+	if (cpu->cd.mips.bintrans_next_index < 0)
+		cpu->cd.mips.bintrans_next_index = MAX - 1;
+	cpu->cd.mips.bintrans_data_hostpage[cpu->cd.mips.bintrans_next_index] = memblock + (offset & ~0xfff);
+	cpu->cd.mips.bintrans_data_vaddr[cpu->cd.mips.bintrans_next_index] = vaddr_page;
+	cpu->cd.mips.bintrans_data_writable[cpu->cd.mips.bintrans_next_index] = writeflag;  /*  ok - 1;  */
 	return memblock + offset;
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.12 2005-01-30 00:37:05 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.13 2005-01-30 12:54:43 debug Exp $
  *  
  *  Emulation of devices found in a DECsystem 58x0, where x is the number
  *  of CPUs in the system. (The CPU board is called KN5800 by Ultrix.)
@@ -48,7 +48,7 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 

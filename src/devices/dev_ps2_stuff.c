@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.13 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.14 2005-01-30 12:54:43 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -42,7 +42,7 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 #include "ee_timerreg.h"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.43 2005-01-30 00:37:05 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.44 2005-01-30 12:54:43 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -39,7 +39,7 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 #include "dc7085.h"

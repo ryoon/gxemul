@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_common.c,v 1.4 2005-01-30 01:04:00 debug Exp $
+ *  $Id: cpu_common.c,v 1.5 2005-01-30 12:54:52 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 

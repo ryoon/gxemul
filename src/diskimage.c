@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.73 2005-01-29 18:23:41 debug Exp $
+ *  $Id: diskimage.c,v 1.74 2005-01-30 12:54:52 debug Exp $
  *
  *  Disk image support.
  *
@@ -49,9 +49,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "cpu.h"
 #include "diskimage.h"
 #include "machine.h"
-#include "mips_cpu.h"
 #include "misc.h"
 
 

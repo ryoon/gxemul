@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.23 2005-01-30 11:38:15 debug Exp $
+ *  $Id: memory_v2p.c,v 1.24 2005-01-30 12:54:53 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -103,19 +103,19 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 		if (instr) {
 			/*  Code:  */
 			for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++) {
-				if (cpu->translation_cache_instr[i].wf >= wf &&
-				    vaddr_shift_12 == (cpu->translation_cache_instr[i].vaddr_pfn)) {
-					*return_addr = cpu->translation_cache_instr[i].paddr | (vaddr & 0xfff);
-					return cpu->translation_cache_instr[i].wf;
+				if (cpu->cd.mips.translation_cache_instr[i].wf >= wf &&
+				    vaddr_shift_12 == (cpu->cd.mips.translation_cache_instr[i].vaddr_pfn)) {
+					*return_addr = cpu->cd.mips.translation_cache_instr[i].paddr | (vaddr & 0xfff);
+					return cpu->cd.mips.translation_cache_instr[i].wf;
 				}
 			}
 		} else {
 			/*  Data:  */
 			for (i=0; i<N_TRANSLATION_CACHE_DATA; i++) {
-				if (cpu->translation_cache_data[i].wf >= wf &&
-				    vaddr_shift_12 == (cpu->translation_cache_data[i].vaddr_pfn)) {
-					*return_addr = cpu->translation_cache_data[i].paddr | (vaddr & 0xfff);
-					return cpu->translation_cache_data[i].wf;
+				if (cpu->cd.mips.translation_cache_data[i].wf >= wf &&
+				    vaddr_shift_12 == (cpu->cd.mips.translation_cache_data[i].vaddr_pfn)) {
+					*return_addr = cpu->cd.mips.translation_cache_data[i].paddr | (vaddr & 0xfff);
+					return cpu->cd.mips.translation_cache_data[i].wf;
 				}
 			}
 		}
@@ -126,7 +126,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	tlb_refill = 1;
 
 	/*  Cached values:  */
-	cp0 = cpu->coproc[0];
+	cp0 = cpu->cd.mips.coproc[0];
 	status = cp0->reg[COP0_STATUS];
 
 	/*
@@ -187,7 +187,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *  kx,sx,ux = 0 for 32-bit addressing,
 	 *  1 for 64-bit addressing. 
 	 */
-	n_tlbs = cpu->cpu_type.nr_of_tlb_entries;
+	n_tlbs = cpu->cd.mips.cpu_type.nr_of_tlb_entries;
 
 	ksu = (status & STATUS_KSU_MASK) >> STATUS_KSU_SHIFT;
 	if (status & (STATUS_EXL | STATUS_ERL))

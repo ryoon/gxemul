@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.55 2005-01-29 13:45:42 debug Exp $
+ *  $Id: file.c,v 1.56 2005-01-30 12:54:52 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -45,14 +45,14 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "misc.h"
-
+#include "cpu.h"
 #include "exec_aout.h"
 #include "exec_ecoff.h"
 #include "exec_elf.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
+#include "misc.h"
 #include "symbol.h"
 
 
@@ -265,7 +265,7 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 
 	fclose(f);
 
-	cpu->pc = entry;
+	cpu->cd.mips.pc = entry;
 
 	if (encoding == ELFDATA2LSB)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -571,9 +571,9 @@ unknown_coff_symbols:
 
 	fclose(f);
 
-	cpu->pc               = a_entry;
-	cpu->gpr[MIPS_GPR_GP] = a_gp;
-	file_loaded_end_addr  = end_addr;
+	cpu->cd.mips.pc               = a_entry;
+	cpu->cd.mips.gpr[MIPS_GPR_GP] = a_gp;
+	file_loaded_end_addr          = end_addr;
 
 	if (encoding == ELFDATA2LSB)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
@@ -725,7 +725,7 @@ static void file_load_srec(struct memory *mem, char *filename, struct cpu *cpu)
 	if (!entry_set)
 		debug("WARNING! no entrypoint found!\n");
 	else
-		cpu->pc = entry;
+		cpu->cd.mips.pc = entry;
 
 	n_executables_loaded ++;
 }
@@ -791,7 +791,7 @@ static void file_load_raw(struct memory *mem, char *filename, struct cpu *cpu)
 
 	fclose(f);
 
-	cpu->pc = entry;
+	cpu->cd.mips.pc = entry;
 
 	n_executables_loaded ++;
 }
@@ -1230,12 +1230,12 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					debug("%016llx\n", (long long)addr);
 				else
 					debug("%08x\n", (int)addr);
-				cpu->gpr[MIPS_GPR_GP] = addr;
+				cpu->cd.mips.gpr[MIPS_GPR_GP] = addr;
 			}
 		}
 	}
 
-	cpu->pc = eentry;
+	cpu->cd.mips.pc = eentry;
 
 	if (encoding == ELFDATA2LSB)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.19 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_rd94.c,v 1.20 2005-01-30 12:54:43 debug Exp $
  *  
  *  Used by NEC-RD94, -R94, and -R96.
  */
@@ -40,7 +40,7 @@
 #include "devices.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 #include "rd94.h"
@@ -98,7 +98,7 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem,
 			odata = (8+1) << 2;
 
 			/*  Ugly hack:  */
-			if ((cpu->coproc[0]->reg[COP0_CAUSE] & 0x800) == 0)
+			if ((cpu->cd.mips.coproc[0]->reg[COP0_CAUSE] & 0x800) == 0)
 				odata = 0;
 		}
 		debug("[ rd94: intstat1 ]\n");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.14 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_wdc.c,v 1.15 2005-01-30 12:54:43 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -42,7 +42,7 @@
 #include "devices.h"
 #include "diskimage.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 
 #include "wdcreg.h"

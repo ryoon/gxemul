@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.316 2005-01-30 00:37:09 debug Exp $
+ *  $Id: machine.c,v 1.317 2005-01-30 12:54:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -58,7 +58,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "misc.h"
 #include "symbol.h"
 
@@ -277,8 +277,8 @@ int int_to_bcd(int i)
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
 {
 	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch),
-	    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
+	memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
+	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 	return ch;
 }
 
@@ -1258,7 +1258,7 @@ void machine_setup(struct machine *machine)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;
 
 		/*  An R2020 or R3220 memory thingy:  */
-		cpu->coproc[3] = coproc_new(cpu, 3);
+		cpu->cd.mips.coproc[3] = coproc_new(cpu, 3);
 
 		/*  There aren't really any good standard values...  */
 		framebuffer_console_name = "osconsole=0,3";
@@ -1320,7 +1320,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
-			cpu->coproc[3] = coproc_new(cpu, 3);
+			cpu->cd.mips.coproc[3] = coproc_new(cpu, 3);
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -1335,7 +1335,7 @@ void machine_setup(struct machine *machine)
 			 */
 
 			/*  KN02 interrupts:  */
-			cpu->md_interrupt = kn02_interrupt;
+			cpu->cd.mips.md_interrupt = kn02_interrupt;
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1399,7 +1399,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
 			/*  KMIN interrupts:  */
-			cpu->md_interrupt = kmin_interrupt;
+			cpu->cd.mips.md_interrupt = kmin_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 12.5 MHz clock				(0x10000000, slotsize = 64MB)
@@ -1467,7 +1467,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  KN03 interrupts:  */
-			cpu->md_interrupt = kn03_interrupt;
+			cpu->cd.mips.md_interrupt = kn03_interrupt;
 
 			/*
 			 *  tc0 at mainbus0: 25 MHz clock (slot 0)			(0x1e000000)
@@ -1599,7 +1599,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real KN02CA machines cannot have more than 40MB RAM. Continuing anyway.\n");
 
 			/*  Maxine interrupts:  */
-			cpu->md_interrupt = maxine_interrupt;
+			cpu->cd.mips.md_interrupt = maxine_interrupt;
 
 			/*
 			 *  Something at address 0xca00000. (?)
@@ -1708,7 +1708,7 @@ void machine_setup(struct machine *machine)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have a graphical framebuffer. Continuing anyway.\n");
 
 			/*  KN230 interrupts:  */
-			cpu->md_interrupt = kn230_interrupt;
+			cpu->cd.mips.md_interrupt = kn230_interrupt;
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -1764,10 +1764,10 @@ void machine_setup(struct machine *machine)
 		 *  loaded.
 		 */
 
-		cpu->gpr[MIPS_GPR_A0] = 3;
-		cpu->gpr[MIPS_GPR_A1] = DEC_PROM_INITIAL_ARGV;
-		cpu->gpr[MIPS_GPR_A2] = DEC_PROM_MAGIC;
-		cpu->gpr[MIPS_GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = 3;
+		cpu->cd.mips.gpr[MIPS_GPR_A1] = DEC_PROM_INITIAL_ARGV;
+		cpu->cd.mips.gpr[MIPS_GPR_A2] = DEC_PROM_MAGIC;
+		cpu->cd.mips.gpr[MIPS_GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
 
 		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x10,
 		    BOOTINFO_MAGIC);
@@ -1837,7 +1837,7 @@ void machine_setup(struct machine *machine)
 		/*  Decrease the nr of args, if there are no args :-)  */
 		if (machine->boot_string_argument == NULL ||
 		    machine->boot_string_argument[0] == '\0')
-			cpu->gpr[MIPS_GPR_A0] --;
+			cpu->cd.mips.gpr[MIPS_GPR_A0] --;
 
 		if (machine->boot_string_argument[0] != '\0') {
 			strcat(bootarg, " ");
@@ -1975,7 +1975,7 @@ void machine_setup(struct machine *machine)
 		 *  The bootstring should be stored starting 512 bytes before end
 		 *  of physical ram.
 		 */
-		cpu->gpr[MIPS_GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
 		store_string(cpu, 0xffffffff80000000ULL +
@@ -2014,7 +2014,7 @@ void machine_setup(struct machine *machine)
 			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
 			vr41xx_data = dev_vr41xx_init(machine, mem, 4131);
-			cpu->md_interrupt = vr41xx_interrupt;
+			cpu->cd.mips.md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2044,7 +2044,7 @@ void machine_setup(struct machine *machine)
 			dev_ns16550_init(machine, mem, 0xa008680, 0, 4,
 			    machine->use_x11? 0 : 1);  /*  TODO: irq?  */
 			vr41xx_data = dev_vr41xx_init(machine, mem, 4121);
-			cpu->md_interrupt = vr41xx_interrupt;
+			cpu->cd.mips.md_interrupt = vr41xx_interrupt;
 
 			store_32bit_word_in_host(cpu, (unsigned char *)&hpc_bootinfo.platid_cpu,
 			      (1 << 26)		/*  1 = MIPS  */
@@ -2066,10 +2066,10 @@ void machine_setup(struct machine *machine)
 
 		/*  NetBSD/hpcmips and possibly others expects the following:  */
 
-		cpu->gpr[MIPS_GPR_A0] = 1;	/*  argc  */
-		cpu->gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;	/*  argc  */
+		cpu->cd.mips.gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 512;	/*  argv  */
-		cpu->gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
+		cpu->cd.mips.gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
 		bootstr = machine->boot_kernel_filename;
@@ -2124,7 +2124,7 @@ void machine_setup(struct machine *machine)
 		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
 
-		cpu->md_interrupt = ps2_interrupt;
+		cpu->cd.mips.md_interrupt = ps2_interrupt;
 
 		add_symbol_name(&machine->symbol_context,
 		    PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
@@ -2162,7 +2162,7 @@ void machine_setup(struct machine *machine)
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this necessary?  */
-		cpu->gpr[MIPS_GPR_SP] = 0x80007f00;
+		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0x80007f00;
 
 		break;
 
@@ -2313,7 +2313,7 @@ Why is this here? TODO
 				dev_ram_init(mem, 0x88000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x08000000);
 */
-				cpu->md_interrupt = sgi_ip22_interrupt;
+				cpu->cd.mips.md_interrupt = sgi_ip22_interrupt;
 
 				/*
 				 *  According to NetBSD 1.6.2:
@@ -2422,7 +2422,7 @@ Why is this here? TODO
 				strcat(machine->machine_name, " (Octane)");
 
 				sgi_ip30_data = dev_sgi_ip30_init(machine, mem, 0x0ff00000);
-				cpu->md_interrupt = sgi_ip30_interrupt;
+				cpu->cd.mips.md_interrupt = sgi_ip30_interrupt;
 
 				dev_ram_init(mem,    0xa0000000ULL,
 				    128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
@@ -2491,7 +2491,7 @@ Why is this here? TODO
 				 * 	  1f3a0000	  mcclock0
 				 */
 				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				cpu->md_interrupt = sgi_ip32_interrupt;
+				cpu->cd.mips.md_interrupt = sgi_ip32_interrupt;
 
 				/*
 				 *  IRQ mapping is really ugly.  TODO: fix
@@ -2694,7 +2694,7 @@ Why is this here? TODO
 
 				jazz_data = dev_jazz_init(
 				    machine, mem, 0x80000000ULL);
-				cpu->md_interrupt = jazz_interrupt;
+				cpu->cd.mips.md_interrupt = jazz_interrupt;
 
 				switch (machine->machine_subtype) {
 				case MACHINE_ARC_JAZZ_PICA:
@@ -2754,7 +2754,7 @@ Why is this here? TODO
 
 				jazz_data = dev_jazz_init(
 				    machine, mem, 0x80000000ULL);
-				cpu->md_interrupt = jazz_interrupt;
+				cpu->cd.mips.md_interrupt = jazz_interrupt;
 
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
@@ -3570,29 +3570,29 @@ config[77] = 0x30;
 		bootarg = machine->boot_string_argument;
 
 		/*  argc, argv, envp in a0, a1, a2:  */
-		cpu->gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
 
 		/*  TODO:  not needed?  */
-		cpu->gpr[MIPS_GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->cd.mips.gpr[MIPS_GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		/*  Set up argc/argv:  */
 		addr = ARC_ENV_STRINGS;
 		addr2 = ARC_ARGV_START;
-		cpu->gpr[MIPS_GPR_A1] = addr2;
+		cpu->cd.mips.gpr[MIPS_GPR_A1] = addr2;
 
 		/*  bootstr:  */
 		store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 		add_environment_string(cpu, bootstr, &addr);
-		cpu->gpr[MIPS_GPR_A0] ++;
+		cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 
 		/*  bootarg:  */
 		if (bootarg[0] != '\0') {
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, bootarg, &addr);
-			cpu->gpr[MIPS_GPR_A0] ++;
+			cpu->cd.mips.gpr[MIPS_GPR_A0] ++;
 		}
 
-		cpu->gpr[MIPS_GPR_A2] = addr2;
+		cpu->cd.mips.gpr[MIPS_GPR_A2] = addr2;
 
 		/*
 		 *  Add environment variables.  For each variable, add it
@@ -3712,7 +3712,7 @@ config[77] = 0x30;
 no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  Return address:  (0x20 = ReturnFromMain())  */
-		cpu->gpr[MIPS_GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
+		cpu->cd.mips.gpr[MIPS_GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
 
 		break;
 
@@ -3725,7 +3725,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 			fprintf(stderr, "WARNING! MeshCube with -X is meaningless. Continuing anyway.\n");
 
 		/*  First of all, the MeshCube has an Au1500 in it:  */
-		cpu->md_interrupt = au1x00_interrupt;
+		cpu->cd.mips.md_interrupt = au1x00_interrupt;
 		au1x00_ic_data = dev_au1x00_init(machine, mem);
 
 		/*
@@ -3748,13 +3748,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  haven't found any docs on how it is used though.
 		 */
 
-		cpu->gpr[MIPS_GPR_A0] = 1;
-		cpu->gpr[MIPS_GPR_A1] = 0xa0001000ULL;
-		store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A1],
+		cpu->cd.mips.gpr[MIPS_GPR_A0] = 1;
+		cpu->cd.mips.gpr[MIPS_GPR_A1] = 0xa0001000ULL;
+		store_32bit_word(cpu, cpu->cd.mips.gpr[MIPS_GPR_A1],
 		    0xa0002000ULL);
 		store_string(cpu, 0xa0002000ULL, "something=somethingelse");
 
-		cpu->gpr[MIPS_GPR_A2] = 0xa0003000ULL;
+		cpu->cd.mips.gpr[MIPS_GPR_A2] = 0xa0003000ULL;
 		store_string(cpu, 0xa0002000ULL, "hello=world\n");
 
 		break;
@@ -3810,7 +3810,7 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 {
 int i;
 for (i=0; i<32; i++)
-		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
+		cpu->cd.mips.gpr[i] = 0x01230000 + (i << 8) + 0x55;
 }
 #endif
 
@@ -3844,7 +3844,7 @@ for (i=0; i<32; i++)
 		{
 			int i;
 			for (i=0; i<32; i++)
-				cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
+				cpu->cd.mips.gpr[i] = 0x01230000 + (i << 8) + 0x55;
 		}
 
 		dev_zs_init(machine, mem, 0x1e950000, 0, 1);

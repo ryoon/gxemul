@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.189 2005-01-30 01:10:37 debug Exp $
+ *  $Id: main.c,v 1.190 2005-01-30 12:54:53 debug Exp $
  */
 
 #include <stdio.h>
@@ -39,7 +39,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
-#include "mips_cpu.h"
+#include "cpu_mips.h"
 #include "mips_cpu_types.h"
 #include "misc.h"
 

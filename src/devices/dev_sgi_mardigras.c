@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.14 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.15 2005-01-30 12:54:43 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -38,9 +38,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "devices.h"
 #include "memory.h"
-#include "mips_cpu.h"
 #include "misc.h"
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.31 2004-02-24 21:58:34 debug Exp $
+ *  $Id: cpu.c,v 1.32 2004-03-04 05:04:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -505,7 +505,7 @@ const char *cpu_flags(struct cpu *cpu)
  *  Execute one instruction on a cpu.  If we are in a delay slot, set cpu->pc
  *  to cpu->delay_jmpaddr after the instruction is executed.
  */
-int cpu_run_instr(struct cpu *cpu, int instrcount)
+int cpu_run_instr(struct cpu *cpu, long *instrcount)
 {
 	struct coproc *cp0 = cpu->coproc[0];
 	int instr_fetched;
@@ -535,7 +535,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	 */
 	dcount = cpu->cpu_type.flags & DCOUNT? 1 : 0;
 	for (i=0; i<cpu->n_tick_entries; i++)
-		if ((instrcount & ((1 << (cpu->tick_shift[i] + dcount))-1)) == 0)
+		if (((*instrcount) & ((1 << (cpu->tick_shift[i] + dcount))-1)) == 0)
 			cpu->tick_func[i](cpu, cpu->tick_extra[i]);
 
 
@@ -823,7 +823,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		cp0->reg[COP0_COUNT] ++;
 	} else {
 		/*  TODO: &1 ==> double count blah blah  */
-		if (instrcount & 1)
+		if ((*instrcount) & 1)
 			cp0->reg[COP0_COUNT] ++;
 
 		cp0->reg[COP0_RANDOM] --;
@@ -1671,6 +1671,9 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				if ((int64_t)cpu->gpr[rt] > 5 && imm == -1) {
 					if (instruction_trace)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
+
+					(*instrcount) += cpu->gpr[rt] * 2;
+
 					cpu->gpr[rt] = 0;
 					if (instruction_trace)
 						debug(" %016llx\n", (long long)cpu->gpr[rt]);
@@ -2426,7 +2429,7 @@ void cpu_show_cycles(struct timeval *starttime, long ncycles)
 int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int i, s1, s2;
-	long ncycles = 0;
+	long ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
 	int running;
 	struct rusage rusage;
 	struct timeval starttime;
@@ -2436,16 +2439,18 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 	running = 1;
 	while (running) {
-		/*  Run one instruction from each CPU:  */
+		ncycles_chunk_end = ncycles + (1 << 14);
+
+		/*  Run instructions from each CPU:  */
 		do {
 			running = 0;
 			for (i=0; i<ncpus; i++)
 				if (cpus[i]->running) {
-					cpu_run_instr(cpus[i], ncycles);
+					cpu_run_instr(cpus[i], &ncycles);
 					running = 1;
 				}
 			ncycles++;
-		} while (running && (ncycles & 0x3fff)!=0);
+		} while (running && (ncycles < ncycles_chunk_end));
 
 		/*  Check for X11 events:  */
 		if (use_x11) {
@@ -2457,8 +2462,10 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		if ((ncycles & ((1<<17)-1)) == 0)
 			console_flush();
 
-		if (show_nr_of_instructions && (ncycles & ((1<<20)-1)) == 0)
+		if (show_nr_of_instructions && (ncycles > ncycles_show + (1<<21))) {
 			cpu_show_cycles(&starttime, ncycles);
+			ncycles_show = ncycles;
+		}
 
 		if (max_instructions!=0 && ncycles >= max_instructions)
 			running = 0;

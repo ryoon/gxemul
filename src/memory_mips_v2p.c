@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips_v2p.c,v 1.3 2005-02-18 07:04:10 debug Exp $
+ *  $Id: memory_mips_v2p.c,v 1.4 2005-02-18 07:11:56 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -168,13 +168,20 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *   00   x    x    0  kseg3   0xe0000000 - 0xffffffff (0.5GB)
 	 *					  (via TLB)
 	 *   00   x    x    1  xksuseg 0 - 0xffffffffff (1TB) (via TLB) (*)
-	 *   00   x    x    1  xksseg  0x4000000000000000 - 0x400000ffffffffff  (1TB)  (via TLB)
-	 *   00   x    x    1  xkphys  0x8000000000000000 - 0xbfffffffffffffff  todo
-	 *   00   x    x    1  xkseg   0xc000000000000000 - 0xc00000ff7fffffff  todo
-	 *   00   x    x    1  ckseg0  0xffffffff80000000 - 0xffffffff9fffffff  like kseg0
-	 *   00   x    x    1  ckseg1  0xffffffffa0000000 - 0xffffffffbfffffff  like kseg1
-	 *   00   x    x    1  cksseg  0xffffffffc0000000 - 0xffffffffdfffffff  like ksseg
-	 *   00   x    x    1  ckseg3  0xffffffffe0000000 - 0xffffffffffffffff  like kseg2
+	 *   00   x    x    1  xksseg  0x4000000000000000 - 0x400000ffffffffff
+	 *					  (1TB)  (via TLB)
+	 *   00   x    x    1  xkphys  0x8000000000000000 - 0xbfffffffffffffff
+	 *					  todo
+	 *   00   x    x    1  xkseg   0xc000000000000000 - 0xc00000ff7fffffff
+	 *					  todo
+	 *   00   x    x    1  ckseg0  0xffffffff80000000 - 0xffffffff9fffffff
+	 *					  like kseg0
+	 *   00   x    x    1  ckseg1  0xffffffffa0000000 - 0xffffffffbfffffff
+	 *					  like kseg1
+	 *   00   x    x    1  cksseg  0xffffffffc0000000 - 0xffffffffdfffffff
+	 *					  like ksseg
+	 *   00   x    x    1  ckseg3  0xffffffffe0000000 - 0xffffffffffffffff
+	 *					  like kseg2
 	 *
 	 *  (*) = if ERL=1 then kuseg is not via TLB, but unmapped,
 	 *  uncached physical memory.
@@ -300,8 +307,10 @@ bugs are triggered.  */
 			/*  Optimized for minimum page size:  */
 			if (pmask == 0) {
 				pageshift = pagemask_shift - 1;
-				entry_vpn2 = (cached_hi & vpn2_mask) >> pagemask_shift;
-				vaddr_vpn2 = (vaddr & vpn2_mask) >> pagemask_shift;
+				entry_vpn2 = (cached_hi & vpn2_mask)
+				    >> pagemask_shift;
+				vaddr_vpn2 = (vaddr & vpn2_mask)
+				    >> pagemask_shift;
 				pmask = (1 << (pagemask_shift-1)) - 1;
 				odd = (vaddr >> (pagemask_shift-1)) & 1;
 			} else {
@@ -343,7 +352,8 @@ bugs are triggered.  */
 			 *  It feels like things like the valid bit (ala R4000)
 			 *  and dirty bit are not implemented the same on R8000.
 			 *
-			 *  http://sgistuff.tastensuppe.de/documents/R8000_chipset.html
+			 *  http://sgistuff.tastensuppe.de/documents/
+			 *		R8000_chipset.html
 			 *  also has some info, but no details.
 			 */
 			v_bit = 1;	/*  Big TODO  */
@@ -369,21 +379,35 @@ bugs are triggered.  */
 			/*  Is there a VPN and ASID match?  */
 			if (entry_vpn2 == vaddr_vpn2 &&
 			    (entry_asid == vaddr_asid || g_bit)) {
-				/*  debug("OK MAP 1, i=%i { vaddr=%016llx ==> paddr %016llx v=%i d=%i asid=0x%02x }\n",
-				    i, (long long)vaddr, (long long) *return_addr, v_bit?1:0, d_bit?1:0, vaddr_asid);  */
+				/*  debug("OK MAP 1, i=%i { vaddr=%016llx "
+				    "==> paddr %016llx v=%i d=%i "
+				    "asid=0x%02x }\n", i, (long long)vaddr,
+				    (long long) *return_addr, v_bit?1:0,
+				    d_bit?1:0, vaddr_asid);  */
 				if (v_bit) {
-					if (d_bit || (!d_bit && writeflag==MEM_READ)) {
+					if (d_bit || (!d_bit &&
+					    writeflag == MEM_READ)) {
 						uint64_t paddr;
-						/*  debug("OK MAP 2!!! { w=%i vaddr=%016llx ==> d=%i v=%i paddr %016llx ",
-						    writeflag, (long long)vaddr, d_bit?1:0, v_bit?1:0, (long long) *return_addr);
-						    debug(", tlb entry %2i: mask=%016llx hi=%016llx lo0=%016llx lo1=%016llx\n",
-							i, cp0->tlbs[i].mask, cp0->tlbs[i].hi, cp0->tlbs[i].lo0, cp0->tlbs[i].lo1);
+						/*  debug("OK MAP 2!!! { w=%i "
+						    "vaddr=%016llx ==> d=%i v="
+						    "%i paddr %016llx ",
+						    writeflag, (long long)vaddr,
+						    d_bit?1:0, v_bit?1:0,
+						    (long long) *return_addr);
+						    debug(", tlb entry %2i: ma"
+						    "sk=%016llx hi=%016llx lo0"
+						    "=%016llx lo1=%016llx\n",
+						    i, cp0->tlbs[i].mask, cp0->
+						    tlbs[i].hi, cp0->tlbs[i].
+						    lo0, cp0->tlbs[i].lo1);
 						*/
 #ifdef V2P_MMU3K
-						pfn = cached_lo0 & R2K3K_ENTRYLO_PFN_MASK;
+						pfn = cached_lo0 &
+						    R2K3K_ENTRYLO_PFN_MASK;
 						paddr = pfn | (vaddr & pmask);
 #else
-						pfn = ((odd? cached_lo1 : cached_lo0)
+						pfn = ((odd? cached_lo1 :
+						    cached_lo0)
 						    & ENTRYLO_PFN_MASK)
 						    >> ENTRYLO_PFN_SHIFT;
 						paddr = (pfn << pfn_shift) |
@@ -396,14 +420,16 @@ bugs are triggered.  */
 						 *  and return:
 						 */
 						if (!bintrans_cached)
-							insert_into_tiny_cache(cpu,
-							    instr, d_bit? MEM_WRITE : MEM_READ,
+							insert_into_tiny_cache(
+							    cpu, instr, d_bit?
+							    MEM_WRITE :
+							    MEM_READ,
 							    vaddr, paddr);
 
 						*return_addr = paddr;
 						return d_bit? 2 : 1;
 					} else {
-						/*  TLB modification exception  */
+						/*  TLB modif. exception  */
 						tlb_refill = 0;
 						exccode = EXCEPTION_MOD;
 						goto exception;

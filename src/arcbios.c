@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.47 2004-12-08 17:05:14 debug Exp $
+ *  $Id: arcbios.c,v 1.48 2004-12-08 17:23:21 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -341,11 +341,6 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 		console_putchar(ch);
 		return;
 	}
-
-if (ch >= 32 && ch < 127)
-	console_putchar(ch);
-else
-	console_putchar('*');
 
 	if (arcbios_in_escape_sequence) {
 		int len = strlen(arcbios_escape_sequence);

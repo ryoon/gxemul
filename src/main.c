@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.134 2004-12-06 13:15:07 debug Exp $
+ *  $Id: main.c,v 1.135 2004-12-08 17:18:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -188,6 +188,7 @@ static void usage(char *progname, int longusage)
 #ifdef ENABLE_USERLAND
 	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
 #endif
+	printf("  -V        start up in the single-step debugger, paused\n");
 	printf("  -v        verbose debug messages\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
@@ -226,7 +227,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:Z:z:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:VvXY:y:Z:z:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -374,6 +375,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'u':
 			emul->userland_emul = atoi(optarg);
+			break;
+		case 'V':
+			emul->single_step = 1;
 			break;
 		case 'v':
 			emul->verbose ++;

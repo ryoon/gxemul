@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.89 2004-12-06 13:15:06 debug Exp $
+ *  $Id: emul.c,v 1.90 2004-12-08 17:18:39 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -428,6 +428,8 @@ void debugger(void)
 		} else if (strcasecmp(cmd, "quit") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
 				debugger_emul->cpus[i]->running = 0;
+			debugger_emul->exit_without_entering_debugger = 1;
+			debugger_emul->single_step = 0;
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "r") == 0 ||
 		    strcasecmp(cmd, "registers") == 0) {

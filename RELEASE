@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.48 2004-10-25 01:54:03 debug Exp $
+$Id: RELEASE,v 1.49 2004-10-29 07:45:19 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -17,6 +17,10 @@ The release "road map" at the moment looks something like this:
 		o)  dynamic bintrans (if/when it is working)
 		o)  ability to install Linux (Debian) onto a disk image
 		o)  better support for non-DECstation modes
+		o)  --long-command-line-options
+			(this is more involved than it might seem to be;
+			the documentation, for example, must be carefully
+			updated)
 
 A 0.3 release would need to be tested a lot, to make sure that everything 
 mentioned in the documentation works as stated. As many possible 

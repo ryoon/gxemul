@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.133 2004-10-29 06:41:06 debug Exp $
+$Id: index.html,v 1.134 2004-10-29 07:45:22 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -757,6 +757,12 @@ instructions:
 	$ <b>wget -np -l 0 -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
 
 </pre>
+
+<!-- TODO: maybe change the mkisofs ... .../pub/OpenBSD/2.3/arc
+                       into mkisofs ... .../pub/OpenBSD
+only. The default behaviour of the openbsd installer is to look for
+files in "/2.3/arc" on the cdrom, not "/".  Verify that this works
+before making the change!  -->
 
   <li>You now need to make an ISO image of the entire directory you downloaded.
 	I recommend using <b>mkisofs</b> for that purpose. If you don't already

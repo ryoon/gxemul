@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.69 2005-03-05 12:17:53 debug Exp $
+ *  $Id: net.c,v 1.70 2005-03-09 06:37:19 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -2080,8 +2080,12 @@ static void parse_resolvconf(struct net *net)
 				p++;
 			*p = '\0';
 
+#ifdef HAVE_INET_PTON
 			res = inet_pton(AF_INET, buf + start,
 			    &net->nameserver_ipv4);
+#else
+			res = inet_aton(buf + start, &net->nameserver_ipv4);
+#endif
 			if (res < 1)
 				break;
 
@@ -2242,7 +2246,11 @@ struct net *net_init(struct emul *emul, int init_flags,
 	net->timestamp = 0;
 	net->first_ethernet_packet = net->last_ethernet_packet = NULL;
 
+#ifdef HAVE_INET_PTON
 	res = inet_pton(AF_INET, ipv4addr, &net->netmask_ipv4);
+#else
+	res = inet_aton(ipv4addr, &net->netmask_ipv4);
+#endif
 	if (res < 1) {
 		fprintf(stderr, "net_init(): could not parse IPv4 address"
 		    " '%s'\n", ipv4addr);

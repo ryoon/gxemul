@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.628 2005-03-08 22:58:56 debug Exp $
+$Id: HISTORY,v 1.629 2005-03-09 06:37:18 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1726,3 +1726,6 @@ Changelog for GXemul:
 		Adding a -D command line option (for "fully deterministic"
 		behaviour).
 20050308	Minor PPC updates. Adding a dummy OpenFirmware emulation layer.
+20050309	Adding a hack for systems without inet_pton (such as Cygwin in
+		Windows) as suggested by Soohyun Cho. (And updating the
+		configure script too.)

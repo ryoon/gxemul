@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.114 2005-03-08 23:10:08 debug Exp $
+#  $Id: configure,v 1.115 2005-03-09 06:37:19 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -668,20 +668,22 @@ if [ ! -x _testr ]; then
 	if [ ! -x _testr ]; then
 		$CC $CFLAGS _testr.c -lresolv -lnsl -o _testr 2> /dev/null
 		if [ ! -x _testr ]; then
-			printf "WARNING! COULD NOT COMPILE WITH inet_pton "
-			printf "AT ALL!\n"
+			printf "no, using inet_aton\n"
 		else
 			#  -lresolv -lnsl for inet_pton
 			OTHERLIBS="-lresolv -lnsl $OTHERLIBS"
 			printf "yes (and -lnsl)\n"
+			printf "#define HAVE_INET_PTON\n" >> config.h
 		fi
 	else
 		#  -lresolv for inet_pton
 		OTHERLIBS="-lresolv $OTHERLIBS"
 		printf "yes\n"
+		printf "#define HAVE_INET_PTON\n" >> config.h
 	fi
 else
 	printf "no\n"
+	printf "#define HAVE_INET_PTON\n" >> config.h
 fi
 rm -f _testr.[co] _testr
 

@@ -25,11 +25,9 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.20 2005-02-13 20:52:57 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.21 2005-02-13 23:50:48 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
- *
- *  TODO: This is just a dummy so far.
  */
 
 #include <stdio.h>
@@ -118,7 +116,6 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	cpu->byte_order         = EMUL_BIG_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
-	cpu->cd.ppc.bits        = 64;	/*  TODO: how about 32-bit CPUs?  */
 	cpu->cd.ppc.mode        = MODE_PPC;	/*  TODO  */
 
 	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
@@ -178,7 +175,7 @@ void ppc_cpu_dumpinfo(struct cpu *cpu)
 {
 	struct ppc_cpu_type_def *ct = &cpu->cd.ppc.cpu_type;
 
-	debug(" (%i-bit ", cpu->cd.ppc.bits);
+	debug(" (%i-bit ", cpu->cd.ppc.cpu_type.bits);
 
 	switch (cpu->cd.ppc.mode) {
 	case MODE_PPC:
@@ -243,7 +240,7 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	char *symbol;
 	uint64_t offset, tmp;
 	int i, x = cpu->cpu_id;
-	int bits32 = cpu->cd.ppc.bits == 32;
+	int bits32 = cpu->cd.ppc.cpu_type.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
@@ -404,8 +401,9 @@ void ppc_cpu_register_match(struct machine *m, char *name,
 int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int running, uint64_t dumpaddr, int bintrans)
 {
-	int hi6, xo, lev, rt, rs, ra, imm, sh, me, rc, l_bit;
-	uint64_t offset;
+	int hi6, xo, lev, rt, rs, ra, rb, imm, sh, me, rc, l_bit, oe_bit;
+	int spr, aa_bit, lk_bit, bf, bh, bi, bo;
+	uint64_t offset, addr;
 	uint32_t iword;
 	char *symbol, *mnem = "ERROR";
 	int power = cpu->cd.ppc.mode == MODE_POWER;
@@ -459,6 +457,16 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		debug("%s\tr%i,r%i,%i", mnem, rt, ra, imm);
 		break;
+	case PPC_HI6_CMPLI:
+		bf = (iword >> 23) & 7;
+		l_bit = (iword >> 21) & 1;
+		ra = (iword >> 16) & 31;
+		imm = iword & 0xffff;
+		debug("cmpl%si\t", l_bit? "d" : "w");
+		if (bf != 0)
+			debug("cr%i,", bf);
+		debug("r%i,%i", ra, imm);
+		break;
 	case PPC_HI6_ADDIC:
 	case PPC_HI6_ADDIC_DOT:
 		rt = (iword >> 21) & 31;
@@ -506,9 +514,43 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				debug(" (WARNING! reserved value)");
 		}
 		break;
+	case PPC_HI6_B:
+		aa_bit = (iword & 2) >> 1;
+		lk_bit = iword & 1;
+		/*  Sign-extend addr:  */
+		addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
+		addr = (int64_t)addr >> 6;
+		debug("b");
+		if (lk_bit)
+			debug("l");
+		if (aa_bit)
+			debug("a");
+		else
+			addr += dumpaddr;
+		if (cpu->cd.ppc.cpu_type.bits == 32)
+			addr &= 0xffffffff;
+		if (cpu->cd.ppc.cpu_type.bits == 32)
+			debug("\t0x%x", (int)addr);
+		else
+			debug("\t0x%llx", (long long)addr);
+		symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    addr, &offset);
+		if (symbol != NULL)
+			debug("\t<%s>", symbol);
+		break;
 	case PPC_HI6_19:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_19_BCLR:
+			bo = (iword >> 21) & 31;
+			bi = (iword >> 16) & 31;
+			bh = (iword >> 11) & 3;
+			lk_bit = iword & 1;
+			mnem = power? "bcr" : "bclr";
+			debug("%s%s%s\t%i,%i,%i", mnem, lk_bit? "l" : "",
+			    bh? (bh==3? "+" : (bh==2? "-" : "?")) : "",
+			    bo, bi, bh);
+			break;
 		case PPC_19_ISYNC:
 			debug("%s", power? "ics" : "isync");
 			break;
@@ -569,10 +611,83 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_31_SUBF:
+		case PPC_31_SUBFO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_31_SUBF:   mnem = "subf"; break;
+			case PPC_31_SUBFO:  mnem = "subfo"; break;
+			}
+			debug("%s%s\tr%i,r%i,r%i", mnem, rc? "." : "",
+			    rt, ra, rb);
+			break;
+		case PPC_31_ANDC:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			debug("andc%s\tr%i,r%i,r%i", rc?".":"", ra, rs, rb);
+			break;
+		case PPC_31_MFMSR:
+			rt = (iword >> 21) & 31;
+			debug("mfmsr\tr%i", rt);
+			break;
 		case PPC_31_MTMSR:
 			rs = (iword >> 21) & 31;
 			l_bit = (iword >> 16) & 1;
-			debug("mtmsr\tr%i,%i", rs, l_bit);
+			debug("mtmsr\tr%i", rs);
+			if (l_bit)
+				debug(",%i", l_bit);
+			break;
+		case PPC_31_ADD:
+		case PPC_31_ADDO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_31_ADD:
+				mnem = power? "cax" : "add";
+				break;
+			case PPC_31_ADDO:
+				mnem = power? "caxo" : "addo";
+				break;
+			}
+			debug("%s%s\tr%i,r%i,r%i", mnem, rc? "." : "",
+			    rt, ra, rb);
+			break;
+		case PPC_31_XOR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			debug("xor%s\tr%i,r%i,r%i", rc? "." : "", ra, rs, rb);
+			break;
+		case PPC_31_MFSPR:
+			rt = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			debug("mfspr\tr%i,spr%i", rt, spr);
+			break;
+		case PPC_31_OR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			if (rs == rb)
+				debug("mr%s\tr%i,r%i", rc? "." : "", ra, rs);
+			else
+				debug("or%s\tr%i,r%i,r%i",
+				    rc? "." : "", ra, rs, rb);
+			break;
+		case PPC_31_MTSPR:
+			rs = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			debug("mtspr\tspr%i,r%i", spr, rs);
 			break;
 		case PPC_31_SYNC:
 			debug("%s", power? "dcs" : "sync");
@@ -581,6 +696,23 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			debug("unimplemented hi6_31, xo = 0x%x", xo);
 		}
 		break;
+	case PPC_HI6_STW:
+	case PPC_HI6_STWU:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+		switch (hi6) {
+		case PPC_HI6_STW:
+			mnem = power? "st" : "stw";
+			break;
+		case PPC_HI6_STWU:
+			mnem = power? "stu" : "stwu";
+			break;
+		}
+		debug("%s\tr%i,%i(r%i)", mnem, rs, imm, ra);
+		if (running)
+			goto disasm_ret_nonewline;
+		break;
 	default:
 		/*  TODO  */
 		debug("unimplemented hi6 = 0x%02x", hi6);
@@ -588,6 +720,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 disasm_ret:
 	debug("\n");
+disasm_ret_nonewline:
 	return sizeof(iword);
 }
 
@@ -595,7 +728,7 @@ disasm_ret:
 /*
  *  ppc_cpu_run_instr():
  *  
- *  Execute one instruction on a cpu.
+ *  Execute one instruction on a specific CPU.
  *
  *  Return value is the number of instructions executed during this call,
  *  0 if no instruction was executed.
@@ -604,8 +737,11 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	uint32_t iword;
 	unsigned char buf[4];
-	int r, hi6, rt, rs, ra, xo, lev, sh, me, rc, imm, l_bit;
-	uint64_t tmp;
+	unsigned char tmp_data[8];
+	size_t tmp_data_len;
+	int r, hi6, rt, rs, ra, rb, xo, lev, sh, me, rc, imm, l_bit, oe_bit;
+	int c, m, i, spr, aa_bit, bo, bi, bh, lk_bit, bf, ctr_ok, cond_ok;
+	uint64_t tmp, addr;
 	uint64_t cached_pc;
 
 	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
@@ -626,6 +762,25 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	hi6 = iword >> 26;
 
 	switch (hi6) {
+
+	case PPC_HI6_CMPLI:
+		bf = (iword >> 23) & 7;
+		l_bit = (iword >> 21) & 1;
+		ra = (iword >> 16) & 31;
+		imm = iword & 0xffff;
+		tmp = cpu->cd.ppc.gpr[ra];
+		if (!l_bit)
+			tmp &= 0xffffffff;
+		if ((uint64_t)tmp < (uint64_t)imm)
+			c = 8;
+		else if ((uint64_t)tmp > (uint64_t)imm)
+			c = 4;
+		else
+			c = 2;
+		/*  TODO: SO bit  */
+		cpu->cd.ppc.cr &= ~(0xf << (31 - 4*bf));
+		cpu->cd.ppc.cr |= (c << (31 - 4*bf));
+		break;
 
 	case PPC_HI6_ADDI:
 	case PPC_HI6_ADDIS:
@@ -654,9 +809,51 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case PPC_HI6_B:
+		aa_bit = (iword & 2) >> 1;
+		lk_bit = iword & 1;
+		/*  Sign-extend addr:  */
+		addr = (int64_t)(int32_t)((iword & 0x03fffffc) << 6);
+		addr = (int64_t)addr >> 6;
+
+		if (!aa_bit)
+			addr += cpu->cd.ppc.pc_last;
+
+		if (cpu->cd.ppc.cpu_type.bits == 32)
+			addr &= 0xffffffff;
+
+		if (lk_bit)
+			cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+		cpu->cd.ppc.pc = addr;
+		break;
+
 	case PPC_HI6_19:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_19_BCLR:
+			bo = (iword >> 21) & 31;
+			bi = (iword >> 16) & 31;
+			bh = (iword >> 11) & 3;
+			lk_bit = iword & 1;
+			if (!(bo & 4))
+				cpu->cd.ppc.ctr --;
+			addr = cpu->cd.ppc.lr;
+			ctr_ok = (bo >> 2) & 1;
+			tmp = cpu->cd.ppc.ctr;
+			if (cpu->cd.ppc.cpu_type.bits == 32)
+				tmp &= 0xffffffff;
+			ctr_ok |= ( (tmp == 0) ^ ((bo >> 1) & 1) );
+			cond_ok = (bo >> 4) & 1;
+			cond_ok |= ( ((bo >> 3) & 1) ==
+			    (cpu->cd.ppc.cr & (1 << (31-bi))) );
+			if (lk_bit)
+				cpu->cd.ppc.lr = cpu->cd.ppc.pc;
+			if (ctr_ok && cond_ok) {
+				cpu->cd.ppc.pc = addr & ~3;
+				if (cpu->cd.ppc.cpu_type.bits == 32)
+					cpu->cd.ppc.pc &= 0xffffffff;
+			}
+			break;
 		case PPC_19_ISYNC:
 			/*  TODO: actually sync  */
 			break;
@@ -685,7 +882,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		xo = (iword >> 2) & 7;
 		switch (xo) {
 		case PPC_30_RLDICR:
-			if (cpu->cd.ppc.bits == 32) {
+			if (cpu->cd.ppc.cpu_type.bits == 32) {
 				/*  TODO: Illegal instruction.  */
 				break;
 			}
@@ -721,11 +918,183 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case PPC_HI6_31:
 		xo = (iword >> 1) & 1023;
 		switch (xo) {
+		case PPC_31_SUBF:
+		case PPC_31_SUBFO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ subf: PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			if (oe_bit) {
+				fatal("[ subf: PPC oe not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] +
+			    cpu->cd.ppc.gpr[rb] + 1;
+			break;
+		case PPC_31_ANDC:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ andc: PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs]
+			    & ~cpu->cd.ppc.gpr[rb];
+			break;
+		case PPC_31_MFMSR:
+			rt = (iword >> 21) & 31;
+			/*  TODO: check pr  */
+			reg_access_msr(cpu, &cpu->cd.ppc.gpr[rt], 0);
+			break;
 		case PPC_31_MTMSR:
 			rs = (iword >> 21) & 31;
 			l_bit = (iword >> 16) & 1;
 			/*  TODO: the l_bit  */
 			reg_access_msr(cpu, &cpu->cd.ppc.gpr[rs], 1);
+			break;
+		case PPC_31_ADD:
+		case PPC_31_ADDO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ add: PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			if (oe_bit) {
+				fatal("[ add: PPC oe not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] +
+			    cpu->cd.ppc.gpr[rb];
+			break;
+		case PPC_31_XOR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ xor: PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] ^
+			    cpu->cd.ppc.gpr[rb];
+			break;
+		case PPC_31_MFSPR:
+			rt = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			switch (spr) {
+			case 1:	cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.xer;
+				break;
+			case 8:	cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.lr;
+				break;
+			case 9:	cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.ctr;
+				break;
+			case 259:	/*  NOTE: no pr check  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.sprg3;
+				break;
+			case 272:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.sprg0;
+				break;
+			case 273:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.sprg1;
+				break;
+			case 274:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.sprg2;
+				break;
+			case 275:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.sprg3;
+				break;
+			case 287:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.pvr;
+				break;
+			case 1023:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.pir;
+				break;
+			default:
+				fatal("[ unimplemented PPC spr 0x%04x, "
+				    "pc = 0x%016llx ]\n",
+				    spr, (long long) (cpu->cd.ppc.pc_last));
+				cpu->running = 0;
+				return 0;
+			}
+			if (cpu->cd.ppc.cpu_type.bits == 32)
+				cpu->cd.ppc.gpr[rt] &= 0xffffffffULL;
+			break;
+		case PPC_31_OR:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rb = (iword >> 11) & 31;
+			rc = iword & 1;
+			if (rc) {
+				fatal("[ or: PPC rc not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.gpr[ra] = cpu->cd.ppc.gpr[rs] |
+			    cpu->cd.ppc.gpr[rb];
+			break;
+		case PPC_31_MTSPR:
+			rs = (iword >> 21) & 31;
+			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
+			switch (spr) {
+			case 1:	cpu->cd.ppc.xer = cpu->cd.ppc.gpr[rs];
+				break;
+			case 8:	cpu->cd.ppc.lr = cpu->cd.ppc.gpr[rs];
+				break;
+			case 9:	cpu->cd.ppc.ctr = cpu->cd.ppc.gpr[rs];
+				break;
+			case 272:
+				/*  TODO: check hypv  */
+				cpu->cd.ppc.sprg0 = cpu->cd.ppc.gpr[rs];
+				break;
+			case 273:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.sprg1 = cpu->cd.ppc.gpr[rs];
+				break;
+			case 274:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.sprg2 = cpu->cd.ppc.gpr[rs];
+				break;
+			case 275:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.sprg3 = cpu->cd.ppc.gpr[rs];
+				break;
+			case 287:
+				fatal("[ PPC: attempt to write to PVR ]\n");
+				break;
+			case 1023:
+				/*  TODO: check pr  */
+				cpu->cd.ppc.pir = cpu->cd.ppc.gpr[rs];
+				break;
+			default:
+				fatal("[ unimplemented PPC spr 0x%04x, "
+				    "pc = 0x%016llx ]\n",
+				    spr, (long long) (cpu->cd.ppc.pc_last));
+				cpu->running = 0;
+				return 0;
+			}
 			break;
 		case PPC_31_SYNC:
 			/*  TODO: actually sync  */
@@ -737,6 +1106,58 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->running = 0;
 			return 0;
 		}
+		break;
+
+	case PPC_HI6_STW:
+	case PPC_HI6_STWU:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		imm = (int16_t)(iword & 0xffff);
+
+		if (ra == 0) {
+			if (hi6 == PPC_HI6_STWU)
+				fatal("[ PPC WARNING: invalid STWU form ]\n");
+			addr = 0;
+		} else
+			addr = cpu->cd.ppc.gpr[ra];
+
+		tmp = cpu->cd.ppc.gpr[rs];
+
+		if (cpu->machine->instruction_trace) {
+			if (cpu->cd.ppc.cpu_type.bits == 32)
+				debug("\t\t[0x%08llx", (long long)addr);
+			else
+				debug("\t\t[0x%016llx", (long long)addr);
+		}
+
+		tmp_data_len = 4;
+
+		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			for (i=0; i<tmp_data_len; i++)
+				tmp_data[tmp_data_len-1-i] = (tmp >> 8) & 255;
+		} else {
+			for (i=0; i<tmp_data_len; i++)
+				tmp_data[i] = (tmp >> 8) & 255;
+		}
+
+		/*  TODO  */
+		r = cpu->memory_rw(cpu, cpu->mem, addr, tmp_data,
+		    tmp_data_len, MEM_WRITE, CACHE_DATA);
+
+		if (cpu->machine->instruction_trace) {
+			if (r == MEMORY_ACCESS_OK)
+				debug(", data = 0x%08x]\n", (int)tmp);
+			else
+				debug(", FAILED]\n");
+		}
+
+		if (r != MEMORY_ACCESS_OK) {
+			/*  TODO: exception?  */
+			return 0;
+		}
+
+		if (hi6 == PPC_HI6_STWU)
+			cpu->cd.ppc.gpr[ra] = addr;
 		break;
 
 	default:

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.12 2005-02-13 20:27:10 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.13 2005-02-13 23:50:48 debug Exp $
  */
 
 #include "misc.h"
@@ -42,6 +42,7 @@ struct cpu_family;
 /*  PPC CPU types:  */
 struct ppc_cpu_type_def { 
 	char		*name;
+	int		bits;
 	int		icache_shift;
 	int		iway;
 	int		dcache_shift;
@@ -55,11 +56,11 @@ struct ppc_cpu_type_def {
 /*  TODO: Most of these just bogus  */
 
 #define PPC_CPU_TYPE_DEFS	{				\
-	{ "G4e", 15, 8, 15, 8, 18, 8 },				\
-	{ "PPC405GP", 15, 2, 15, 2, 20, 1, },		 	\
-	{ "PPC750", 15, 2, 15, 2, 20, 1 },			\
-	{ "PPC970", 16, 1, 15, 2, 19, 1 },			\
-	{ NULL, 0,0, 0,0, 0,0 }					\
+	{ "G4e", 32, 15, 8, 15, 8, 18, 8 },			\
+	{ "PPC405GP", 32, 15, 2, 15, 2, 20, 1, },	 	\
+	{ "PPC750", 32, 15, 2, 15, 2, 20, 1 },			\
+	{ "PPC970", 64, 16, 1, 15, 2, 19, 1 },			\
+	{ NULL, 0, 0,0, 0,0, 0,0 }				\
 	};
 
 #define	PPC_NGPRS		32
@@ -87,6 +88,12 @@ struct ppc_cpu {
 	uint64_t	ssr1;		/*  Machine status save/restore
 					    register 1  */
 	uint64_t	msr;		/*  Machine state register  */
+	uint64_t	sprg0;		/*  Special Purpose Register G0  */
+	uint64_t	sprg1;		/*  Special Purpose Register G1  */
+	uint64_t	sprg2;		/*  Special Purpose Register G2  */
+	uint64_t	sprg3;		/*  Special Purpose Register G3  */
+	uint32_t	pvr;		/*  Processor Version Register  */
+	uint32_t	pir;		/*  Processor ID  */
 };
 
 

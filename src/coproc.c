@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.75 2004-10-29 15:22:55 debug Exp $
+ *  $Id: coproc.c,v 1.76 2004-10-30 06:17:51 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -569,16 +569,8 @@ void coproc_register_write(struct cpu *cpu,
 		unimpl = 0;
 	}
 
-	if (cp->coproc_nr==1) {
-		switch (reg_nr) {
-		case 31:	/*  FCSR:  */
-
-			break;
-		default:
-			;
-		}
+	if (cp->coproc_nr==1)
 		unimpl = 0;
-	}
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "
@@ -620,11 +612,12 @@ void coproc_register_write(struct cpu *cpu,
 #define	FPU_OP_ABS	8
 #define	FPU_OP_NEG	9
 /*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W,
- RSQRT, TRUNC.L, TRUNC.W  */
+ RSQRT  */
 
 
 struct internal_float_value {
-	double f;
+	double	f;
+	int	nan;
 };
 
 
@@ -638,8 +631,7 @@ static void fpu_interpret_float_value(uint64_t reg,
 	struct internal_float_value *fvp, int fmt)
 {
 	int n_frac = 0, n_exp = 0;
-	int i;
-	int sign = 0, exponent;
+	int i, nan, sign = 0, exponent;
 	double fraction;
 
 	memset(fvp, 0, sizeof(struct internal_float_value));
@@ -658,15 +650,31 @@ static void fpu_interpret_float_value(uint64_t reg,
 	exponent = 0;
 	switch (fmt) {
 	case FMT_W:
+		reg &= 0xffffffffULL;
 	case FMT_L:
 		break;
 	case FMT_S:
+		reg &= 0xffffffffULL;
 	case FMT_D:
 		exponent = (reg >> n_frac) & ((1 << n_exp) - 1);
 		exponent -= (1 << (n_exp-1)) - 1;
 		break;
 	default:
 		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+	}
+
+	/*  nan:  */
+	nan = 0;
+	switch (fmt) {
+	case FMT_S:
+		if (reg == 0x7fffffffULL || reg == 0x7fbfffffULL)
+			nan = 1;
+		break;
+	case FMT_D:
+		if (reg == 0x7fffffffffffffffULL ||
+		    reg == 0x7ff7ffffffffffffULL)
+			nan = 1;
+		break;
 	}
 
 	/*  fraction:  */
@@ -688,7 +696,7 @@ static void fpu_interpret_float_value(uint64_t reg,
 	case FMT_D:
 		/*  sign:  */
 		sign = (reg >> 31) & 1;
-		if (fmt == FMT_D || fmt == FMT_L)
+		if (fmt == FMT_D)
 			sign = (reg >> 63) & 1;
 
 		fraction = 0.0;
@@ -722,6 +730,8 @@ static void fpu_interpret_float_value(uint64_t reg,
 	if (sign)
 		fvp->f = -fvp->f;
 
+	fvp->nan = nan;
+
 	/*  fatal("f = %f\n", fvp->f);  */
 }
 
@@ -732,7 +742,7 @@ static void fpu_interpret_float_value(uint64_t reg,
  *  Stores a float value (actually a double) in fmt format.
  */
 static void fpu_store_float_value(struct coproc *cp, int fd,
-	double nf, int fmt)
+	double nf, int fmt, int nan)
 {
 	int n_frac = 0, n_exp = 0, signofs=0;
 	int i, exponent;
@@ -824,12 +834,28 @@ static void fpu_store_float_value(struct coproc *cp, int fd,
 		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
 	}
 
-	/*  TODO:  this is for 32-bit mode:  */
+	if (fmt == FMT_S && nan)
+		r = 0x7fffffffULL;
+	if (fmt == FMT_D && nan)
+		r = 0x7fffffffffffffffULL;
+
+	/*
+	 *  TODO:  this is for 32-bit mode. It has to be updated later
+	 *		for 64-bit coprocessor stuff.
+	 */
 	if (fmt == FMT_D || fmt == FMT_L) {
 		cp->reg[fd] = r & 0xffffffffULL;
 		cp->reg[(fd+1) & 31] = (r >> 32) & 0xffffffffULL;
+
+		if (cp->reg[fd] & 0x80000000ULL)
+			cp->reg[fd] |= 0xffffffff00000000ULL;
+		if (cp->reg[fd+1] & 0x80000000ULL)
+			cp->reg[fd+1] |= 0xffffffff00000000ULL;
 	} else {
-		cp->reg[fd] = r;
+		cp->reg[fd] = r & 0xffffffffULL;
+
+		if (cp->reg[fd] & 0x80000000ULL)
+			cp->reg[fd] |= 0xffffffff00000000ULL;
 	}
 }
 
@@ -845,10 +871,11 @@ static void fpu_store_float_value(struct coproc *cp, int fd,
  *  true, 0 for false.
  */
 static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
-	int ft, int fs, int cc, int fd, int cond, int output_fmt)
+	int ft, int fs, int fd, int cond, int output_fmt)
 {
 	/*  Potentially two input registers, fs and ft  */
 	struct internal_float_value float_value[2];
+	int unordered, nan;
 	double nf;
 
 	if (fs >= 0) {
@@ -868,62 +895,89 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 	case FPU_OP_ADD:
 		nf = float_value[0].f + float_value[1].f;
 		debug("  add: %f + %f = %f\n", float_value[0].f, float_value[1].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_SUB:
 		nf = float_value[0].f - float_value[1].f;
 		debug("  sub: %f - %f = %f\n", float_value[0].f, float_value[1].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_MUL:
 		nf = float_value[0].f * float_value[1].f;
 		debug("  mul: %f * %f = %f\n", float_value[0].f, float_value[1].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_DIV:
+		nan = float_value[0].nan || float_value[1].nan;
 		if (fabs(float_value[1].f) > 0.00000000001)
 			nf = float_value[0].f / float_value[1].f;
 		else {
 			debug("DIV by zero !!!!\n");
 			nf = 0.0;	/*  TODO  */
+			nan = 1;
 		}
 		debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt, nan);
 		break;
 	case FPU_OP_SQRT:
+		nan = float_value[0].nan;
 		if (float_value[0].f >= 0.0)
 			nf = sqrt(float_value[0].f);
 		else {
 			debug("SQRT by less than zero, %f !!!!\n", float_value[0].f);
 			nf = 0.0;	/*  TODO  */
+			nan = 1;
 		}
 		debug("  sqrt: %f => %f\n", float_value[0].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt, nan);
 		break;
 	case FPU_OP_ABS:
 		nf = fabs(float_value[0].f);
 		debug("  abs: %f => %f\n", float_value[0].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan);
 		break;
 	case FPU_OP_NEG:
 		nf = - float_value[0].f;
 		debug("  neg: %f => %f\n", float_value[0].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan);
 		break;
 	case FPU_OP_MOV:
 		nf = float_value[0].f;
 		debug("  mov: %f => %f\n", float_value[0].f, nf);
-		fpu_store_float_value(cp, fd, nf, output_fmt);
+		fpu_store_float_value(cp, fd, nf, output_fmt,
+		    float_value[0].nan);
 		break;
 	case FPU_OP_C:
 		/*  TODO: how to detect unordered-ness and such?  */
-		debug("  c: %f, %f cond=%i\n", float_value[0].f, float_value[1].f, cond);
+		fatal("  c: %f(nan=%i), %f(nan=%i) cond=%i\n",
+		    (float)float_value[0].f, float_value[0].nan,
+		    (float)float_value[1].f, float_value[1].nan,
+		    cond);
+
+		unordered = 0;
+		if (float_value[0].nan || float_value[1].nan)
+			unordered = 1;
+
 		switch (cond) {
+		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
+#if 1
+		case 4:		return 1;
+#else
+case 4:
+return (float_value[0].f < float_value[1].f) || !unordered;  /*  Ordered or Less than  TODO (?)  */
+#endif
+		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
+		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
+
+#if 0
 		case 0:		return 0;					/*  False  */
 		case 1:		return 0;					/*  Unordered  */
-		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
 		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
-		case 4:		return 1; /* (float_value[0].f < float_value[1].f);  */	/*  Ordered or Less than  TODO (?)  */
 		case 5:		return (float_value[0].f < float_value[1].f);	/*  Unordered or Less than  */
 		case 6:		return 1; /* (float_value[0].f <= float_value[1].f);  */  /*  Ordered or Less than or Equal  TODO (?)  */
 		case 7:		return (float_value[0].f <= float_value[1].f);	/*  Unordered or Less than or Equal  */
@@ -931,12 +985,12 @@ static int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
 		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */
 		case 10:	return (float_value[0].f == float_value[1].f);	/*  Signaling Equal  */
 		case 11:	return (float_value[0].f == float_value[1].f);	/*  Not Greater than or Less than  */
-		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
 		case 13:	return !(float_value[0].f >= float_value[1].f);	/*  Not greater than or equal */
-		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
 		case 15:	return !(float_value[0].f > float_value[1].f);	/*  Not greater than  */
+#endif
+
 		default:
-			fatal("fpu_op(): unknown condition code %i\n", cond);
+			fatal("fpu_op(): unimplemented condition code %i\n", cond);
 		}
 		break;
 	default:
@@ -968,7 +1022,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 
 	/*  bc1f, bc1t, bc1fl, bc1tl:  */
 	if ((function & 0x03e00000) == 0x01000000) {
-		int nd, tf, imm, cond;
+		int nd, tf, imm, cond_true;
 		char *instr_mnem;
 
 		/*  cc are bits 20..18:  */
@@ -997,12 +1051,15 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		}
 
 		/*  Both the FCCR and FCSR contain condition code bits...  */
-		cond = (cp->fcr[FPU_FCCR] >> cc) & 1;
+		if (cc == 0)
+			cond_true = (cp->fcr[FPU_FCSR] >> FCSR_FCC0_SHIFT) & 1;
+		else
+			cond_true = (cp->fcr[FPU_FCSR] >> (FCSR_FCC1_SHIFT + cc-1)) & 1;
 
 		if (!tf)
-			cond = !cond;
+			cond_true = !cond_true;
 
-		if (cond) {
+		if (cond_true) {
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->pc + (imm << 2);
 		} else {
@@ -1021,7 +1078,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_ADD, fmt, ft, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_ADD, fmt, ft, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1032,7 +1089,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_SUB, fmt, ft, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_SUB, fmt, ft, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1043,7 +1100,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MUL, fmt, ft, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_MUL, fmt, ft, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1054,7 +1111,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_DIV, fmt, ft, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_DIV, fmt, ft, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1065,7 +1122,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_SQRT, fmt, -1, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_SQRT, fmt, -1, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1076,7 +1133,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_ABS, fmt, -1, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_ABS, fmt, -1, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1087,7 +1144,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, fmt);
 		return 1;
 	}
 
@@ -1098,7 +1155,29 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_NEG, fmt, -1, fs, -1, fd, -1, fmt);
+		fpu_op(cpu, cp, FPU_OP_NEG, fmt, -1, fs, fd, -1, fmt);
+		return 1;
+	}
+
+	/*  trunc.l.fmt: Truncate  */
+	if ((function & 0x001f003f) == 0x00000009) {
+		if (cpu->emul->instruction_trace || unassemble_only)
+			debug("trunc.l.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
+
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_L);
+		return 1;
+	}
+
+	/*  trunc.w.fmt: Truncate  */
+	if ((function & 0x001f003f) == 0x0000000d) {
+		if (cpu->emul->instruction_trace || unassemble_only)
+			debug("trunc.w.%i\tr%i,r%i\n", fmt, fd, fs);
+		if (unassemble_only)
+			return 1;
+
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_W);
 		return 1;
 	}
 
@@ -1112,7 +1191,8 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		cond_true = fpu_op(cpu, cp, FPU_OP_C, fmt, ft, fs, -1, -1, cond, fmt);
+		cond_true = fpu_op(cpu, cp, FPU_OP_C, fmt,
+		    ft, fs, -1, cond, fmt);
 
 		/*
 		 *  Both the FCCR and FCSR contain condition code bits:
@@ -1145,7 +1225,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_S);
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_S);
 		return 1;
 	}
 
@@ -1156,7 +1236,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_D);
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_D);
 		return 1;
 	}
 
@@ -1167,7 +1247,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 		if (unassemble_only)
 			return 1;
 
-		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_W);
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, fd, -1, FMT_W);
 		return 1;
 	}
 
@@ -1254,11 +1334,33 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 			}
 			if (fs == 0)
 				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
-			else
-				cp->fcr[fs] = cpu->gpr[rt];
+			else {
+				uint64_t tmp = cpu->gpr[rt];
+				cp->fcr[fs] = tmp;
+
+				/*  TODO: writing to control register 31
+				    should cause exceptions, depending on
+				    status bits!  */
+
+				switch (fs) {
+				case FPU_FCCR:
+					cp->fcr[FPU_FCSR] =
+					    (cp->fcr[FPU_FCSR] & 0x017fffffULL)
+					    | ((tmp & 1) << FCSR_FCC0_SHIFT)
+					    | (((tmp & 0xfe) >> 1) << FCSR_FCC1_SHIFT);
+					break;
+				case FPU_FCSR:
+					cp->fcr[FPU_FCCR] =
+					    (cp->fcr[FPU_FCCR] & 0xffffff00ULL)
+					    | ((tmp >> FCSR_FCC0_SHIFT) & 1)
+					    | (((tmp >> FCSR_FCC1_SHIFT) & 0x7f) << 1);
+					break;
+				default:
+					;
+				}
+			}
+
 			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
-			/*  TODO: writing to control register 31 should cause
-				exceptions, depending on status bits!  */
 			return;
 		default:
 			;
@@ -1579,6 +1681,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 
 	fatal("cpu%i: warning: unimplemented coproc%i function %08lx (pc = %016llx)\n",
 	    cpu->cpu_id, cp->coproc_nr, function, (long long)cpu->pc_last);
+exit(1);
 
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 }

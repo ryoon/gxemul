@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.284 2004-10-29 15:22:53 debug Exp $
+$Id: HISTORY,v 1.285 2004-10-30 06:17:50 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1080,7 +1080,10 @@ HISTORY of mips64emul
 		now "-aN" which works fine with OpenBSD/arc and NetBSD/arc.
 20041027	Minor updates.
 20041029	Adding a Sony NeWS "newsmips" emulation mode skeleton (-f).
-		Foudn and fixed a bug which prevented Linux/IP32 from running
+		Found and fixed a bug which prevented Linux/IP32 from running
 		(the speed-hack-jump-optimization fix I made a few weeks ago
 		was buggy).
-		Some other fixes.
+		Adding the trunc.w.fmt and trunc.l.fmt instructions, although
+		the are probably not really tested yet.
+		Changes to how floating point values are handled in
+		src/coproc.c, but right now it is probably very unstable.

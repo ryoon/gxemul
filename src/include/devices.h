@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.21 2004-01-06 10:49:57 debug Exp $
+ *  $Id: devices.h,v 1.22 2004-01-09 04:20:54 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -73,7 +73,7 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned cha
 /*  dev_crime.c:  */
 #define	DEV_CRIME_LENGTH		0x0000000000001000
 int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_crime_init(struct memory *mem, uint64_t baseaddr);
+void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080

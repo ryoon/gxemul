@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.25 2005-01-19 14:59:22 debug Exp $
+ *  $Id: useremul.c,v 1.26 2005-01-19 15:39:10 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -273,6 +273,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		case NETBSD_SYS_exit:
 			debug("useremul_syscall(): netbsd exit()\n");
 			cpu->running = 0;
+			cpu->machine->exit_without_entering_debugger = 1;
 			break;
 
 		case NETBSD_SYS_read:
@@ -657,6 +658,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		case ULTRIX_SYS_exit:
 			debug("useremul_syscall(): ultrix exit()\n");
 			cpu->running = 0;
+			cpu->machine->exit_without_entering_debugger = 1;
 			break;
 
 		case ULTRIX_SYS_read:

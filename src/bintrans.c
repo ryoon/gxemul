@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.137 2005-01-19 14:24:22 debug Exp $
+ *  $Id: bintrans.c,v 1.138 2005-01-19 15:39:10 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -477,10 +477,16 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 				break;
 			case SPECIAL_SYSCALL:
 			case SPECIAL_BREAK:
-				translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
-				    special6 == SPECIAL_BREAK? TLB_BREAK : TLB_SYSCALL);
-				n_translated += translated;
- 				try_to_translate = 0;
+				if (cpu->machine->userland_emul) {
+					bintrans_write_chunkreturn_fail(&ca);
+					tep->flags[prev_p] |= UNTRANSLATABLE;
+					try_to_translate = 0;
+				} else {
+					translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
+					    special6 == SPECIAL_BREAK? TLB_BREAK : TLB_SYSCALL);
+					n_translated += translated;
+	 				try_to_translate = 0;
+				}
 				break;
 			case SPECIAL_ADDU:
 			case SPECIAL_DADDU:

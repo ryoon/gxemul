@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.501 2005-01-19 14:24:19 debug Exp $
+$Id: HISTORY,v 1.502 2005-01-19 15:39:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1516,3 +1516,4 @@ HISTORY of mips64emul
 		Finally began a redesign/remodelling/cleanup that I have had
 		in mind for quite some time... moving many things that were
 		in struct emul into a new struct machine.
+		Userland emulation now works with bintrans.

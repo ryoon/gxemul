@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.45 2004-03-25 21:00:51 debug Exp $
+ *  $Id: devices.h,v 1.46 2004-03-27 05:43:27 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -291,17 +291,19 @@ void dev_ps2_gs_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_stuff.c:  */
 #include "ps2_dmacreg.h"
-#define N_PS2_DMA_CHANNELS              10 
+#define N_PS2_DMA_CHANNELS              10
+#define	N_PS2_TIMERS			4
 struct ps2_data {
-        uint32_t        timer0_count;
-        uint32_t        timer0_comp;
-        uint32_t        timer0_mode;
-        
-        uint64_t        dmac_reg[DMAC_REGSIZE / 0x10];
- 
-        struct memory   *other_memory[N_PS2_DMA_CHANNELS];
-  
-        uint32_t        intr;
+	uint32_t	timer_count[N_PS2_TIMERS];
+	uint32_t	timer_comp[N_PS2_TIMERS];
+	uint32_t	timer_mode[N_PS2_TIMERS];
+	uint32_t	timer_hold[N_PS2_TIMERS];	/*  NOTE: only 0 and 1 are valid  */
+
+        uint64_t	dmac_reg[DMAC_REGSIZE / 0x10];
+
+	struct memory	*other_memory[N_PS2_DMA_CHANNELS];
+
+	uint32_t	intr;
 	uint32_t	imask;
 };
 #define	DEV_PS2_STUFF_LENGTH		0x10000

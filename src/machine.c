@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.328 2005-02-02 18:45:25 debug Exp $
+ *  $Id: machine.c,v 1.329 2005-02-02 19:33:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3886,6 +3886,15 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_ULTRA1:
+		/*
+		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
+		 *  OpenBSD/sparc64 (http://www.openbsd.org/sparc64.html)
+		 */
+		machine->machine_name = "Sun Ultra1";
+
+		break;
+
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -4105,6 +4114,11 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_PMPPC:
 		/*  For NetBSD/pmppc.  */
 		m->cpu_name = strdup("PPC750");
+		break;
+
+	/*  SPARC:  */
+	case MACHINE_ULTRA1:
+		m->cpu_name = strdup("SPARCV9");
 		break;
 	}
 

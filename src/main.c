@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.201 2005-02-02 18:45:25 debug Exp $
+ *  $Id: main.c,v 1.202 2005-02-02 19:33:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -230,9 +230,9 @@ static void usage(char *progname, int longusage)
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 
-	printf("\nusage: %s [machine and general options] [file [file ..]]\n",
+	printf("\nusage: %s [machine and general options] [file [...]]\n",
 	    progname);
-	printf("   or  %s [general options] @configfile [@configfile ..]\n",
+	printf("   or  %s [general options] @configfile [...]\n",
 	    progname);
 
 	if (!longusage) {
@@ -291,7 +291,7 @@ static void usage(char *progname, int longusage)
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at"
 	    " regular intervals\n");
-	printf("  -n nr     set nr of CPUs\n");
+	printf("  -n nr     set nr of CPUs (for SMP experiments)\n");
 	printf("  -O        force netboot (tftp instead of disk), even when"
 	    " a disk image is\n"
 	    "            present (for DECstation, SGI, and ARC emulation)\n");

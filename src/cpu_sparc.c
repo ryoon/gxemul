@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.1 2005-02-02 18:45:25 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.2 2005-02-02 19:33:51 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -83,7 +83,43 @@ extern int quiet_mode;
 struct cpu *sparc_cpu_new(struct memory *mem, struct machine *machine,
 	int cpu_id, char *cpu_type_name)
 {
-	return NULL;
+	struct cpu *cpu;
+
+	if (cpu_type_name == NULL || strcmp(cpu_type_name, "SPARCV9") != 0)
+		return NULL;
+
+	cpu = malloc(sizeof(struct cpu));
+	if (cpu == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	memset(cpu, 0, sizeof(struct cpu));
+	cpu->name               = cpu_type_name;
+	cpu->mem                = mem;
+	cpu->machine            = machine;
+	cpu->cpu_id             = cpu_id;
+	cpu->byte_order         = EMUL_BIG_ENDIAN;
+	cpu->bootstrap_cpu_flag = 0;
+	cpu->running            = 0;
+
+	/*  Only show name and caches etc for CPU nr 0 (in SMP machines):  */
+	if (cpu_id == 0) {
+		debug("%s", cpu->name);
+	}
+
+	return cpu;
+}
+
+
+/*
+ *  sparc_cpu_dumpinfo():
+ */
+void sparc_cpu_dumpinfo(struct cpu *cpu)
+{
+	debug("\n");
+
+	/*  TODO  */
 }
 
 
@@ -94,7 +130,9 @@ struct cpu *sparc_cpu_new(struct memory *mem, struct machine *machine,
  */
 void sparc_cpu_list_available_types(void)
 {
-	debug("TODO\n");
+	/*  TODO  */
+
+	debug("SPARCV9\n");
 }
 
 
@@ -106,13 +144,13 @@ void sparc_cpu_list_available_types(void)
 int sparc_cpu_family_init(struct cpu_family *fp)
 {
 	fp->name = "SPARC";
-	/*  fp->cpu_new = sparc_cpu_new;  */
+	fp->cpu_new = sparc_cpu_new;
 	fp->list_available_types = sparc_cpu_list_available_types;
 	/*  fp->register_match = sparc_cpu_register_match;  */
 	/*  fp->disassemble_instr = sparc_cpu_disassemble_instr;  */
 	/*  fp->register_dump = sparc_cpu_register_dump;  */
 	/*  fp->run = sparc_cpu_run;  */
-	/*  fp->dumpinfo = sparc_cpu_dumpinfo;  */
+	fp->dumpinfo = sparc_cpu_dumpinfo;
 	/*  fp->show_full_statistics = sparc_cpu_show_full_statistics;  */
 	/*  fp->tlbdump = sparc_cpu_tlbdump;  */
 	return 1;

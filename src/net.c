@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.27 2004-08-01 01:13:44 debug Exp $
+ *  $Id: net.c,v 1.28 2004-08-01 01:32:10 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -96,8 +96,8 @@ static struct in_addr nameserver_ipv4;
 
 static int64_t net_timestamp = 0;
 
-#define	MAX_TCP_CONNECTIONS	25
-#define	MAX_UDP_CONNECTIONS	8
+#define	MAX_TCP_CONNECTIONS	36
+#define	MAX_UDP_CONNECTIONS	12
 
 struct udp_connection {
 	int		in_use;
@@ -109,6 +109,7 @@ struct udp_connection {
 	int		inside_udp_port;
 
 	/*  TODO: Fragment support for outgoing packets!  */
+	int		fake_ns;
 
 	/*  Outside:  */
 	int		udp_id;
@@ -975,6 +976,7 @@ static void net_ip_udp(void *extra, unsigned char *packet, int len)
 	    &gateway_ipv4[0], 4) == 0) {
 		memcpy((unsigned char *)&remote_ip.sin_addr,
 		    &nameserver_ipv4, 4);
+		udp_connections[con_id].fake_ns = 1;
 	}
 
 	remote_ip.sin_port = htons(udp_connections[con_id].outside_udp_port);
@@ -1185,6 +1187,15 @@ int net_ethernet_rx_avail(void *extra)
 		udp_connections[con_id].last_used_timestamp = net_timestamp;
 
 		udp_connections[con_id].udp_id ++;
+
+		/*
+		 *  Special case for the nameserver:  If a UDP packet is
+		 *  received from the nameserver (if the nameserver's IP is
+		 *  known), fake it so that it comes from the gateway instead.
+		 */
+		if (udp_connections[con_id].fake_ns)
+			memcpy(((unsigned char *)(&from))+4,
+			    &gateway_ipv4[0], 4);
 
 		/*
 		 *  We now have a UDP packet of size 'res' which we need

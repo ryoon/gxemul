@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.81 2004-10-20 03:22:27 debug Exp $
+ *  $Id: emul.c,v 1.82 2004-10-22 08:08:35 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -603,7 +603,7 @@ struct emul *emul_new(void)
 	e->prom_emulation = 1;
 	e->speed_tricks = 1;
 	e->boot_kernel_filename = "";
-	e->boot_string_argument = "-a";
+	e->boot_string_argument = "";
 	e->ncpus = DEFAULT_NCPUS;
 	e->automatic_clock_adjustment = 1;
 	e->x11_scaledown = 1;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.198 2004-10-22 06:23:24 debug Exp $
+ *  $Id: machine.c,v 1.199 2004-10-22 08:08:35 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1429,6 +1429,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 		store_string(cpu, DEC_PROM_INITIAL_ARGV+0xe0,
 		    emul->boot_string_argument);
 
+		/*  Decrease the nr of args, if there are no args :-)  */
+		if (emul->boot_string_argument == NULL ||
+		    emul->boot_string_argument[0] == '\0')
+			cpu->gpr[GPR_A0] --;
+
 		strcat(bootarg, " ");
 		strcat(bootarg, emul->boot_string_argument);
 
@@ -2581,11 +2586,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0xffffffff, NULL, cpuaddr);
 			}
 
-			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x,"
-			    " picache = 0x%x pdcache = 0x%x",
+			debug("adding ARC components: cpu%i = 0x%x, "
+			    "fpu%i = 0x%x, picache = 0x%x, pdcache = 0x%x",
 			    i, cpuaddr, i, fpu, picache, pdcache);
 			if (emul->cache_secondary >= 12)
-				debug(" sdcache = 0x%x", sdcache);
+				debug(", sdcache = 0x%x", sdcache);
 			debug("\n");
 		}
 
@@ -2862,11 +2867,13 @@ void machine_init(struct emul *emul, struct memory *mem)
 		    ARC_ARGV_START + 0x100, arc_wordlen==sizeof(uint64_t));
 
 		/*  bootarg:  */
-		store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
-		cpu->gpr[GPR_A0] ++;
-		store_pointer_and_advance(cpu, &addr,
-		    ARC_ARGV_START + 0x200,
-		    arc_wordlen==sizeof(uint64_t));
+		if (bootarg[0] != '\0') {
+			store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
+			cpu->gpr[GPR_A0] ++;
+			store_pointer_and_advance(cpu, &addr,
+			    ARC_ARGV_START + 0x200,
+			    arc_wordlen==sizeof(uint64_t));
+		}
 
 		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*

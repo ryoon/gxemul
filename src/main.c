@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.114 2004-10-20 03:22:27 debug Exp $
+ *  $Id: main.c,v 1.115 2004-10-22 08:08:35 debug Exp $
  */
 
 #include <stdio.h>
@@ -165,7 +165,7 @@ void usage(char *progname)
 	printf("  -O        fake netboot (tftp instead of rzX), even when a disk image is\n"
 	       "            present (for DECstation emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
-	printf("            Default arg is -a. The other useful arg would be -s.\n");
+	printf("            Default arg for DEC is -a. The other useful arg would be -s.\n");
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");
@@ -205,7 +205,7 @@ void usage(char *progname)
  */
 int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
-	int ch, using_switch_d = 0;
+	int ch, using_switch_d = 0, using_switch_o = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
 
@@ -304,6 +304,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				exit(1);
 			}
 			strcpy(emul->boot_string_argument, optarg);
+			using_switch_o = 1;
 			break;
 		case 'P':
 		case 'p':
@@ -492,6 +493,14 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
+
+
+	/*  Default Boot string arguments:  */
+
+	if (emul->emulation_type == EMULTYPE_DEC &&
+	    !using_switch_o) {
+		emul->boot_string_argument = "-a";
+	}
 
 
 	/*

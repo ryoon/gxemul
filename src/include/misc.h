@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.80 2004-07-04 03:29:09 debug Exp $
+ *  $Id: misc.h,v 1.81 2004-07-04 05:31:02 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -291,8 +291,8 @@ struct coproc {
 	struct tlb	tlbs[MAX_NR_OF_TLBS];
 	int		nr_of_tlbs;
 
-	/*  Only for COP1:  */
-	uint64_t	fcr[N_FCRS];		/*  floating point control registers  */
+	/*  Only for COP1:  floating point control registers  */
+	uint64_t	fcr[N_FCRS];
 };
 
 #define	N_COPROCS		4
@@ -506,6 +506,14 @@ struct translation_cache_entry {
 /*  An "impossible" paddr:  */
 #define	IMPOSSIBLE_PADDR		0x1212343456566767ULL
 
+struct r3000_cache_line {
+	uint32_t	physaddr_tag;
+};
+
+struct r4000_cache_line {
+	int		dummy;
+};
+
 
 struct cpu {
 	int		cpu_id;
@@ -592,8 +600,8 @@ struct cpu {
 	int		jump_to_self_reg;
 
 #ifdef MFHILO_DELAY
-	int		mfhi_delay;	/*  instructions left since last mfhi  */
-	int		mflo_delay;	/*  instructions left since last mflo  */
+	int		mfhi_delay;	/*  instructions since last mfhi  */
+	int		mflo_delay;	/*  instructions since last mflo  */
 #endif
 
 	int		rmw;		/*  Read-Modify-Write  */
@@ -601,12 +609,11 @@ struct cpu {
 	int		rmw_len;	/*  Length of rmw modification  */
 
 	/*
-	 *  TODO:  The R5900 has 128-bit registers. I'm not really
-	 *  sure whether they are used a lot or not, at least with
-	 *  code produced with gcc they are not.  An important case
-	 *  however is lq and sq (load and store of 128-bit values).
-	 *  These "upper halves" of R5900 quadwords can be used in
-	 *  those cases.
+	 *  TODO:  The R5900 has 128-bit registers. I'm not really sure
+	 *  whether they are used a lot or not, at least with code produced
+	 *  with gcc they are not. An important case however is lq and sq
+	 *  (load and store of 128-bit values). These "upper halves" of R5900
+	 *  quadwords can be used in those cases.
 	 *
 	 *  TODO:  Generalize this.
 	 */
@@ -623,18 +630,18 @@ struct cpu {
 
 	/*  Data and Instruction caches:  */
 	unsigned char	*cache[2];
+	void		*cache_tags[2];
+	uint64_t	cache_last_paddr[2];
 	int		cache_size[2];
 	int		cache_linesize[2];
 	int		cache_mask[2];
-	int		cache_valid[2];
 	int		cache_miss_penalty[2];
-	uint64_t	cache_last_paddr[2];
 
 	/*  TODO: remove this once cache functions correctly  */
 	int		r10k_cache_disable_TODO;
 
 	/*
-	 *  Hardware devices, run every x clock ticks/instructions.
+	 *  Hardware devices, run every x clock cycles.
 	 */
 	int		n_tick_entries;
 	int		ticks_till_next[MAX_TICK_FUNCTIONS];

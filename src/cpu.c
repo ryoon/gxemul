@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.263 2005-01-29 09:22:17 debug Exp $
+ *  $Id: cpu.c,v 1.264 2005-01-29 09:54:57 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -54,7 +54,7 @@
 
 
 extern volatile int single_step;
-
+extern int show_opcode_statistics;
 extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
@@ -323,36 +323,43 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
  */
 void cpu_show_full_statistics(struct machine *m)
 {
-	int i, s1, s2;
+	int i, s1, s2, iadd = 4;
 
 	if (m->bintrans_enable)
-		printf("\nNOTE: Dynamic binary translation is used; this list"
+		fatal("NOTE: Dynamic binary translation is used; this list"
 		    " of opcode usage\n      only includes instructions that"
 		    " were interpreted manually!\n");
 
 	for (i=0; i<m->ncpus; i++) {
-		printf("cpu%i opcode statistics:\n", i);
+		fatal("cpu%i opcode statistics:\n", i);
+		debug_indentation(iadd);
+
 		for (s1=0; s1<N_HI6; s1++) {
 			if (m->cpus[i]->stats_opcode[s1] > 0)
-				printf("  opcode %02x (%7s): %li\n", s1,
+				fatal("opcode %02x (%7s): %li\n", s1,
 				    hi6_names[s1],
 				    m->cpus[i]->stats_opcode[s1]);
+
+			debug_indentation(iadd);
 			if (s1 == HI6_SPECIAL)
 				for (s2=0; s2<N_SPECIAL; s2++)
 					if (m->cpus[i]->stats__special[s2] > 0)
-						printf("      special %02x (%7s): %li\n",
+						fatal("special %02x (%7s): %li\n",
 						    s2, special_names[s2], m->cpus[i]->stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
 					if (m->cpus[i]->stats__regimm[s2] > 0)
-						printf("      regimm %02x (%7s): %li\n",
+						fatal("regimm %02x (%7s): %li\n",
 						    s2, regimm_names[s2], m->cpus[i]->stats__regimm[s2]);
 			if (s1 == HI6_SPECIAL2)
 				for (s2=0; s2<N_SPECIAL; s2++)
 					if (m->cpus[i]->stats__special2[s2] > 0)
-						printf("      special2 %02x (%7s): %li\n",
+						fatal("special2 %02x (%7s): %li\n",
 						    s2, special2_names[s2], m->cpus[i]->stats__special2[s2]);
+			debug_indentation(-iadd);
 		}
+
+		debug_indentation(-iadd);
 	}
 }
 
@@ -1971,14 +1978,14 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	/*  Get the top 6 bits of the instruction:  */
 	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
-	if (cpu->machine->show_opcode_statistics)
+	if (show_opcode_statistics)
 		cpu->stats_opcode[hi6] ++;
 
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
 
-		if (cpu->machine->show_opcode_statistics)
+		if (show_opcode_statistics)
 			cpu->stats__special[special6] ++;
 
 		switch (special6) {
@@ -3340,7 +3347,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 
-		if (cpu->machine->show_opcode_statistics)
+		if (show_opcode_statistics)
 			cpu->stats__regimm[regimm5] ++;
 
 		switch (regimm5) {
@@ -3529,7 +3536,7 @@ Remove this...
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
-		if (cpu->machine->show_opcode_statistics)
+		if (show_opcode_statistics)
 			cpu->stats__special2[special6] ++;
 
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
@@ -4069,7 +4076,7 @@ void cpu_run_deinit(struct emul *emul, struct machine *machine)
 		cpu_show_cycles(machine, &machine->starttime,
 		    machine->ncycles, 1);
 
-	if (machine->show_opcode_statistics)
+	if (show_opcode_statistics)
 		cpu_show_full_statistics(machine);
 
 	fflush(stdout);

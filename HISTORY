@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.530 2005-01-29 09:22:15 debug Exp $
+$Id: HISTORY,v 1.531 2005-01-29 09:54:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1578,3 +1578,4 @@ HISTORY of mips64emul
 		address".
 		More updates to the configuration file parser (nested tuborg
 		comments, more options, ...).
+		Making -s a global setting, not just affecting one machine.

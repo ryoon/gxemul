@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.15 2005-01-29 09:22:09 debug Exp $
+ *  $Id: machine.h,v 1.16 2005-01-29 09:54:56 debug Exp $
  */
 
 #include <sys/types.h>
@@ -101,7 +101,6 @@ struct machine {
 	int	physical_ram_in_mb;
 	int	memory_offset_in_mb;
 
-	int	show_opcode_statistics;
 	int	prom_emulation;
 	int	register_dump;
 

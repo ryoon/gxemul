@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.55 2004-06-06 11:06:10 debug Exp $
+ *  $Id: cpu.c,v 1.56 2004-06-07 07:07:43 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1211,6 +1211,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 		case SPECIAL_TNE:
 		case SPECIAL_DADD:
 		case SPECIAL_DADDU:
+		case SPECIAL_DSUB:
 		case SPECIAL_DSUBU:
 		case SPECIAL_MOVZ:
 		case SPECIAL_MOVN:
@@ -1281,6 +1282,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				if (special6 == SPECIAL_SLTU)	instr_mnem = "sltu";
 				if (special6 == SPECIAL_DADD)	instr_mnem = "dadd";
 				if (special6 == SPECIAL_DADDU)	instr_mnem = "daddu";
+				if (special6 == SPECIAL_DSUB)	instr_mnem = "dsub";
 				if (special6 == SPECIAL_DSUBU)	instr_mnem = "dsubu";
 				if (special6 == SPECIAL_MOVZ)	instr_mnem = "movz";
 				if (special6 == SPECIAL_MOVN)	instr_mnem = "movn";
@@ -1514,6 +1516,11 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			}
 			if (special6 == SPECIAL_DADDU) {
 				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
+				break;
+			}
+			if (special6 == SPECIAL_DSUB) {
+				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
+				/*  TODO:  exception on overflow  */
 				break;
 			}
 			if (special6 == SPECIAL_DSUBU) {

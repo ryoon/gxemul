@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.52 2004-06-06 11:06:09 debug Exp $
+ *  $Id: misc.h,v 1.53 2004-06-07 07:07:44 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -675,9 +675,9 @@ struct cpu {
 #define	    SPECIAL_SLT			    0x2a    /*  101010  */	/*  MIPS I  */
 #define	    SPECIAL_SLTU		    0x2b    /*  101011  */	/*  MIPS I  */
 #define	    SPECIAL_DADD		    0x2c    /*  101100  */	/*  MIPS III  */
-#define	    SPECIAL_DADDU		    0x2d    /*  101101  */	/*  MIPS III  */
-/*					    0x2e	101110  */
-#define	    SPECIAL_DSUBU		    0x2f    /*  101111  */	/*  MIPS III  */
+#define	    SPECIAL_DADDU		    0x2d    /*	101101  */	/*  MIPS III  */
+#define	    SPECIAL_DSUB		    0x2e    /*	101110  */
+#define	    SPECIAL_DSUBU		    0x2f    /*	101111  */	/*  MIPS III  */
 #define	    SPECIAL_TGE			    0x30    /*	110000  */
 #define	    SPECIAL_TGEU		    0x31    /*	110001  */
 #define	    SPECIAL_TLT			    0x32    /*	110010  */

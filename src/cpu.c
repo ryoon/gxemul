@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.228 2005-01-05 01:31:27 debug Exp $
+ *  $Id: cpu.c,v 1.229 2005-01-06 00:32:53 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2490,10 +2490,11 @@ int cpu_run_instr(struct cpu *cpu)
 				/*
 				 *  addi and daddi should trap on overflow:
 				 *
-				 *  TODO:  This is incorrect? The R4000 manual says
-				 *  that overflow occurs if the carry bits out of bit
-				 *  62 and 63 differ.   The destination register should
-				 *  not be modified on overflow.
+				 *  TODO:  This is incorrect? The R4000 manual
+				 *  says that overflow occurs if the carry bits
+				 *  out of bit 62 and 63 differ. The
+				 *  destination register should not be modified
+				 *  on overflow.
 				 */
 				if (imm >= 0) {
 					/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.18 2004-12-05 15:47:02 debug Exp $
+ *  $Id: dev_vga.c,v 1.19 2004-12-09 00:04:10 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -323,7 +323,7 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
  *  like 80 and 25, respectively.
  */
 void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
-	uint64_t control_base, int max_x, int max_y)
+	uint64_t control_base, int max_x, int max_y, char *name)
 {
 	struct vga_data *d;
 	int r,g,b,i, x,y;
@@ -345,18 +345,32 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 		exit(1);
 	}
 
-	for (y=0; y<VGA_MEM_MAXY; y++)
+	for (y=0; y<VGA_MEM_MAXY; y++) {
+		char s[81];
+		strcpy(s, " mips64emul"
+#ifdef VERSION
+		    "-" VERSION
+#endif
+		    );
+		memset(s+strlen(s), ' ', 80 - strlen(s));
+		memcpy(s+79-strlen(name), name, strlen(name));
+		s[80] = 0;
+
 		for (x=0; x<max_x; x++) {
+			char ch = ' ';
+			if (y == 0)
+				ch = s[x];
 			i = (x + max_x * y) * 2;
-			d->videomem[i] = ' ';
-			d->videomem[i+1] = 0x07;	/*  Default color  */
+			d->videomem[i] = ch;
+			d->videomem[i+1] = y==0? 0x70 : 0x07;	/*  Default color  */
 		}
+	}
 
 	d->font_size = 16;
 	d->font = font8x16;
 
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
-	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 2);
+	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
 	i = 0;
 	for (r=0; r<2; r++)
@@ -382,6 +396,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	memory_device_register(mem, "vga_ctrl", control_base,
 	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
-/*	vga_update(cpu, d, 0, max_x * max_y * 2 -1);  */
+	/*  Make sure that the first line is in synch.  */
+	vga_update(cpu, d, 0, max_x * 2 -1);
 }
 

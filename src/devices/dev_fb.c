@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.70 2004-12-07 09:42:30 debug Exp $
+ *  $Id: dev_fb.c,v 1.71 2004-12-09 00:04:10 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -853,8 +853,6 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 	/*  A nice bootup logo:  */
 	if (logo) {
 		int logo_bottom_margin = LOGO_BOTTOM_MARGIN;
-		if (logo == 2) 	/*  Ugly, hardcoded for dev_vga :-)  */
-			logo_bottom_margin = 200;
 
 		d->update_x1 = 0;
 		d->update_x2 = LOGO_XSIZE-1;

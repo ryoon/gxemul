@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.16 2005-02-15 06:25:35 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.17 2005-02-15 08:28:41 debug Exp $
  */
 
 #include "misc.h"
@@ -80,7 +80,6 @@ struct ppc_cpu {
 	int		mode;		/*  MODE_PPC or MODE_POWER  */
 	int		bits;		/*  32 or 64  */
 
-	int		ca;		/*  Carry bit  */
 	uint32_t	cr;		/*  Condition Register  */
 	uint32_t	fpscr;		/*  FP Status and Control Register  */
 	uint64_t	lr;		/*  Link Register  */
@@ -126,6 +125,11 @@ struct ppc_cpu {
 #define	PPC_MSR_PMM	(1 << 2)	/*  Performance Monitor Mark  */
 #define	PPC_MSR_RI	(1 << 1)	/*  Recoverable Interrupt  */
 #define	PPC_MSR_LE	(1)		/*  Little-Endian Mode  */
+
+/*  XER bits:  */
+#define	PPC_XER_SO	(1 << 31)	/*  Summary Overflow  */
+#define	PPC_XER_OV	(1 << 30)	/*  Overflow  */
+#define	PPC_XER_CA	(1 << 29)	/*  Carry  */
 
 
 /*  cpu_ppc.c:  */

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.10 2005-02-10 16:03:17 debug Exp $
+$Id: guestoses.html,v 1.11 2005-02-15 08:28:39 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -299,6 +299,17 @@ for more information.
 
 <p>
 TODO...
+
+<pre>
+cd /x; ftp -i ftp.se.netbsd.org
+..
+cd pub/NetBSD/NetBSD-2.0/sgimips/binary/sets
+mget *.tgz
+exit
+sh
+for a in etc.tgz base.tgz comp.tgz; do tar zxvfp $a; done
+
+</pre>
 
 
 

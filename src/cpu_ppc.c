@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.29 2005-02-15 06:25:36 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.30 2005-02-15 08:28:42 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1167,7 +1167,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		break;
 
 	case PPC_HI6_BC:
-		aa_bit = (iword & 2) >> 1;
+		aa_bit = (iword >> 1) & 1;
 		lk_bit = iword & 1;
 		bo = (iword >> 21) & 31;
 		bi = (iword >> 16) & 31;
@@ -1186,7 +1186,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		tmp = cpu->cd.ppc.ctr;
 		if (cpu->cd.ppc.bits == 32)
 			tmp &= 0xffffffff;
-		ctr_ok |= ( (tmp == 0) ^ ((bo >> 1) & 1) );
+		ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 
 		cond_ok = (bo >> 4) & 1;
 		cond_ok |= ( ((bo >> 3) & 1) ==
@@ -1197,11 +1197,8 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (cpu->machine->show_trace_tree)
 				show_trace(cpu);
 		}
-		if (ctr_ok && cond_ok) {
+		if (ctr_ok && cond_ok)
 			cpu->cd.ppc.pc = addr & ~3;
-			if (cpu->cd.ppc.bits == 32)
-				cpu->cd.ppc.pc &= 0xffffffff;
-		}
 		break;
 
 	case PPC_HI6_SC:
@@ -1255,7 +1252,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				tmp = cpu->cd.ppc.ctr;
 				if (cpu->cd.ppc.bits == 32)
 					tmp &= 0xffffffff;
-				ctr_ok |= ( (tmp == 0) ^ ((bo >> 1) & 1) );
+				ctr_ok |= ( (tmp != 0) ^ ((bo >> 1) & 1) );
 				if (!quiet_mode && !lk_bit &&
 				    cpu->machine->show_trace_tree) {
 					cpu->cd.ppc.trace_tree_depth --;
@@ -1431,7 +1428,6 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					tmp &= 0xffffffff;
 					tmp2 &= 0xffffffff;
 				}
-
 				if ((uint64_t)tmp < (uint64_t)tmp2)
 					c = 8;
 				else if ((uint64_t)tmp > (uint64_t)tmp2)
@@ -1637,7 +1633,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_ADDE:
 			case PPC_31_ADDEO:
 				cpu->cd.ppc.gpr[rt] = cpu->cd.ppc.gpr[ra] +
-				    cpu->cd.ppc.gpr[rb] + cpu->cd.ppc.ca;
+				    cpu->cd.ppc.gpr[rb];
+				if (cpu->cd.ppc.xer & PPC_XER_CA)
+					cpu->cd.ppc.gpr[rt] ++;
 				break;
 			case PPC_31_MULLW:
 			case PPC_31_MULLWO:
@@ -1653,7 +1651,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			case PPC_31_SUBFE:
 			case PPC_31_SUBFEO:
 				cpu->cd.ppc.gpr[rt] = ~cpu->cd.ppc.gpr[ra] +
-				    cpu->cd.ppc.gpr[rb] + cpu->cd.ppc.ca;
+				    cpu->cd.ppc.gpr[rb];
+				if (cpu->cd.ppc.xer & PPC_XER_CA)
+					cpu->cd.ppc.gpr[rt] ++;
 				break;
 			}
 			if (rc)
@@ -1718,8 +1718,6 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;  */
 				break;
 			}
-			if (cpu->cd.ppc.bits == 32)
-				cpu->cd.ppc.gpr[rt] &= 0xffffffffULL;
 			break;
 
 		case PPC_31_SLW:
@@ -1890,13 +1888,23 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			sh = (iword >> 11) & 31;
 			rc = iword & 1;
 			tmp = cpu->cd.ppc.gpr[rs] & 0xffffffff;
+			cpu->cd.ppc.xer &= ~PPC_XER_CA;
+			i = 0;
+			if (tmp & 0x80000000)
+				i = 1;
 			while (sh-- > 0) {
+				if (tmp & 1)
+					i++;
 				tmp >>= 1;
 				if (tmp & 0x40000000)
 					tmp |= 0x80000000;
 			}
 			cpu->cd.ppc.gpr[ra] = (int64_t)(int32_t)tmp;
-			/*  TODO: CA bit  */
+			/*  Set the CA bit if rs contained a negative
+			    number to begin with, and any 1-bits were
+			    shifted out:  */
+			if (i > 1)
+				cpu->cd.ppc.xer |= PPC_XER_CA;
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 			break;

@@ -34,14 +34,14 @@ o)  DECstation:
 
 o)  SGI:
 
-    NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
+    NetBSD/sgimips:  (gunzip, and try running with  -G32 -CR5000 -q)
     ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz
     ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz
 
     Linux/SGI kernels:  (-G32 -q)
     http://www.linux-mips.org/~glaurung/
-    You need to add  -CR10000  to the command line for the R10000 kernel, and -X
-    to use graphical framebuffer.
+    You need to add  -CR5000  or  -CR10000  to select a specific CPU type,
+    and  -X  to use a graphical framebuffer.
 
 
 o)  ARC:

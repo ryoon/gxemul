@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.16 2004-04-05 01:08:51 debug Exp $
+ *  $Id: dev_asc.c,v 1.17 2004-04-06 02:17:48 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -67,8 +67,10 @@
 struct asc_data {
 	int		irq_nr;
 
+	/*  Current state and transfer:  */
 	int		cur_state;
 	int		cur_phase;
+	struct scsi_transfer *xferp;
 
 	/*  FIFO:  */
 	unsigned char	fifo[ASC_FIFO_LEN];
@@ -141,6 +143,10 @@ void dev_asc_reset(struct asc_data *d)
 	d->cur_state = STATE_DISCONNECTED;
 	d->atn = 0;
 
+	if (d->xferp != NULL)
+		scsi_transfer_free(d->xferp);
+	d->xferp = NULL;
+
 	dev_asc_fifo_flush(d);
 
 	/*  According to table 4.1 in the LSI53CF92A manual:  */
@@ -188,11 +194,32 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
 
 
 /*
+ *  dev_asc_newxfer():
+ *
+ *  Allocate memory for a new transfer.
+ */
+void dev_asc_newxfer(struct asc_data *d)
+{
+	if (d->xferp != NULL) {
+		printf("WARNING! dev_asc_newxfer(): freeing previous"
+		    " transfer\n");
+		scsi_transfer_free(d->xferp);
+		d->xferp = NULL;
+	}
+
+	d->xferp = scsi_transfer_alloc();
+}
+
+
+/*
  *  dev_asc_transfer():
  *
- *  Transfer data from one scsi device to another.
+ *  Transfer data from a SCSI device to the controller (or vice versa),
+ *  depending on the current phase.
+ *
+ *  Returns 1 if ok, 0 on error.
  */
-int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes)
+int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag)
 {
 	int res = 1;
 	int ok, len, i, retlen, ch;
@@ -200,77 +227,15 @@ int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, in
 
 	debug(" { TRANSFER from id %i to id %i: ", from_id, to_id);
 
-	if (from_id == ASC_SCSI_ID) {
-		/*  Data going out from the controller to an external device:  */
-		debug("msg:");
-		if (n_messagebytes > 0) {
-			while (n_messagebytes-- > 0) {
-				int ch = dev_asc_fifo_read(d);
-				debug("%02x", ch);
-			}
-		} else {
-			debug(" nothing");
-		}
-
-		debug(", cmd: ");
-		if (!dmaflag) {
-			debug("[non-DMA] ");
-			len = d->n_bytes_in_fifo;
-			buf = malloc(len);
-			if (buf == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-			i = 0;
-			while (d->fifo_in != d->fifo_out) {
-				ch = dev_asc_fifo_read(d);
-				buf[i++] = ch;
-				debug("%02x ", ch);
-			}
-		} else {
-			debug("[DMA] ");
-			len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
-			if (len == 0)
-				len = 65536;
-
-			buf = malloc(len);
-			if (buf == NULL) {
-				fprintf(stderr, "out of memory\n");
-				exit(1);
-			}
-
-			for (i=0; i<len; i++) {
-				ch = d->dma[i];
-				buf[i] = ch;
-				debug("%02x ", ch);
-			}
-
-			d->reg_ro[NCR_TCL] = len & 255;
-			d->reg_ro[NCR_TCM] = (len >> 8) & 255;
-		}
-
-		ok = diskimage_scsicommand(to_id, buf, len, &retbuf, &retlen);
-		free(buf);
-
-		if (d->incoming_data != NULL) {
-			free(d->incoming_data);
-			d->incoming_data = NULL;
-		}
-
-		if (ok && retbuf!=NULL) {
-			/*  Give the resulting buffer data to the controller.  */
-			d->incoming_data = retbuf;
-			d->incoming_len = retlen;
-			d->incoming_data_addr = 0;
-			/*  retbuf should be freed once it is used  */
-		}
-	} else {
+	if (d->cur_phase == PHASE_DATA_IN) {
 		/*  Data coming into the controller from external device:  */
 		if (!dmaflag) {
-			if (d->incoming_data == NULL) {
+			if (d->xferp->data_in == NULL) {
 				fatal("no incoming data?\n");
 				res = 0;
 			} else {
+/*  TODO  */
+fatal("TODO..............\n");
 				len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
 
 				len--;
@@ -289,33 +254,141 @@ int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, in
 				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
 			}
 		} else {
-			/*  Copy from the incoming buf into dma memory:  */
-			if (d->incoming_data == NULL) {
+			/*  Copy from the incoming data into dma memory:  */
+			if (d->xferp->data_in == NULL) {
 				fatal("no incoming DMA data?\n");
 				res = 0;
 			} else {
-				int len = d->incoming_len;
-				if (len > sizeof(d->dma))
-					len = sizeof(d->dma);
+				int len = d->xferp->data_in_len;
+				if (len + d->dma_address_reg > sizeof(d->dma))
+					len = sizeof(d->dma) - d->dma_address_reg;
 
 				for (i=0; i<len; i++)
-					debug(" %02x", d->incoming_data[i]);
+					debug(" %02x", d->xferp->data_in[i]);
 
-				memcpy(d->dma, d->incoming_data, len);
-				free(d->incoming_data);
+				memcpy(d->dma + d->dma_address_reg, d->xferp->data_in, len);
+
+/*				free(d->incoming_data);
 				d->incoming_data = NULL;
-/*
-				d->reg_ro[NCR_TCL] = len & 255;
-				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
 */
+				len = 0;
+
+				d->reg_wo[NCR_TCL] = len & 255;
+				d->reg_wo[NCR_TCM] = (len >> 8) & 255;
+
 				/*  Successful DMA transfer:  */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
 			}
 		}
+	} else {
+		fatal("!!! TODO: unknown/unimplemented phase in transfer\n");
 	}
+
+	d->cur_phase = PHASE_STATUS;
+
+	/*  Cause an interrupt after the transfer:  */
+	d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+	d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;
+	d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 
 	debug("}");
 	return res;
+}
+
+
+/*
+ *  dev_asc_select():
+ *
+ *  Select a SCSI device, send msg bytes (if any), and send command bytes.
+ *  (Call diskimage_scsicommand() to handle the command.)
+ *
+ *  Return value: 1 if ok, 0 on error.
+ */
+int dev_asc_select(struct asc_data *d, int from_id, int to_id,
+		int dmaflag, int n_messagebytes)
+{
+	int ok, len, i, ch;
+	unsigned char *buf, *retbuf;
+
+	debug(" { SELECT id %i: ", to_id);
+
+	/*
+	 *  Message bytes, if any:
+	 */
+	debug("msg:");
+	if (n_messagebytes > 0) {
+		scsi_transfer_allocbuf(&d->xferp->msg_out_len,
+		    &d->xferp->msg_out, n_messagebytes);
+
+		i = 0;
+		while (n_messagebytes-- > 0) {
+			int ch = dev_asc_fifo_read(d);
+			debug(" %02x", ch);
+			d->xferp->msg_out[i++] = ch;
+		}
+	} else {
+		debug(" none");
+	}
+
+	/*
+	 *  Command bytes:
+	 */
+	debug(", cmd: ");
+	if (!dmaflag) {
+		debug("[non-DMA] ");
+
+		scsi_transfer_allocbuf(&d->xferp->cmd_len,
+		    &d->xferp->cmd, d->n_bytes_in_fifo);
+
+		i = 0;
+		while (d->fifo_in != d->fifo_out) {
+			ch = dev_asc_fifo_read(d);
+			d->xferp->cmd[i++] = ch;
+			debug("%02x ", ch);
+		}
+	} else {
+		debug("[DMA] ");
+		len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+		if (len == 0)
+			len = 65536;
+
+		scsi_transfer_allocbuf(&d->xferp->cmd_len,
+		    &d->xferp->cmd, len);
+
+		for (i=0; i<len; i++) {
+			ch = d->dma[d->dma_address_reg + i];
+			d->xferp->cmd[i] = ch;
+			debug("%02x ", ch);
+		}
+
+		d->reg_ro[NCR_TCL] = len & 255;
+		d->reg_ro[NCR_TCM] = (len >> 8) & 255;
+	}
+
+	/*
+	 *  Call the SCSI device to perform the command:
+	 */
+	ok = diskimage_scsicommand(to_id, d->xferp);
+
+
+	/*  Cause an interrupt:  */
+	d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+	d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+	d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+
+	d->cur_phase = PHASE_STATUS;
+	if (d->xferp->data_in != NULL)
+		d->cur_phase = PHASE_DATA_IN;
+
+	d->reg_ro[NCR_STAT] &= ~7;
+	d->reg_ro[NCR_STAT] |= d->cur_phase;
+
+	d->reg_ro[NCR_STEP] &= ~7;
+	d->reg_ro[NCR_STEP] |= 4;	/*  DONE (?)  */
+
+	debug("}");
+	return ok;
 }
 
 
@@ -324,13 +397,16 @@ int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, in
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_asc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
-	int regnr;
+	int regnr, i;
 	struct asc_data *d = extra;
 	int target_exists;
 	int n_messagebytes = 0;
 	uint64_t idata = 0, odata = 0;
+
 
 	dev_asc_tick(cpu, extra);
 	idata = memory_readmax64(cpu, data, len);
@@ -339,7 +415,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	/*  Controller's ID is fixed:  */
 	d->reg_ro[NCR_CFG1] = (d->reg_ro[NCR_CFG1] & ~7) | ASC_SCSI_ID;
 
-	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5) + d->n_bytes_in_fifo;
+	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5)
+	    + d->n_bytes_in_fifo;
 
 	if (regnr < 0x10) {
 		if (regnr == NCR_FIFO) {
@@ -355,35 +432,50 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		}
 
 		if (writeflag==MEM_READ) {
-			debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], (int)odata);
+			debug("[ asc: read from %s: 0x%02x",
+			    asc_reg_names[regnr], (int)odata);
 		} else {
-			debug("[ asc: write to  %s: 0x%02x", asc_reg_names[regnr], (int)idata);
+			debug("[ asc: write to  %s: 0x%02x",
+			    asc_reg_names[regnr], (int)idata);
 		}
 	} else if (relative_addr == 0x40000) {
 		if (writeflag==MEM_READ) {
 			odata = d->dma_address_reg;
-			debug("[ asc: read from DMA address reg: 0x%08x", (int)odata);
+			debug("[ asc: read from DMA address reg: 0x%08x",
+			    (int)odata);
 		} else {
 			d->dma_address_reg = idata;
-			debug("[ asc: write to  DMA address reg: 0x%08x", (int)idata);
+			debug("[ asc: write to  DMA address reg: 0x%08x",
+			    (int)idata);
 		}
 	} else if (relative_addr >= 0x80000 && relative_addr+len-1 <= 0x9ffff) {
 		if (writeflag==MEM_READ) {
 			memcpy(data, d->dma + (relative_addr - 0x80000), len);
-			debug("[ asc: read from DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, (int)odata);
+			debug("[ asc: read from DMA addr 0x%05x:",
+			    relative_addr - 0x80000);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
 		} else {
 			memcpy(d->dma + (relative_addr - 0x80000), data, len);
-			debug("[ asc: write to  DMA addr 0x%05x: 0x%02x", relative_addr - 0x80000, (int)idata);
+			debug("[ asc: write to  DMA addr 0x%05x:",
+			    relative_addr - 0x80000);
+			for (i=0; i<len; i++)
+				debug(" %02x", data[i]);
 		}
 	} else {
 		if (writeflag==MEM_READ) {
-			debug("[ asc: read from 0x%04x: 0x%02x", relative_addr, (int)odata);
+			debug("[ asc: read from 0x%04x: 0x%02x",
+			    relative_addr, (int)odata);
 		} else {
-			debug("[ asc: write to  0x%04x: 0x%02x", relative_addr, (int)idata);
+			debug("[ asc: write to  0x%04x: 0x%02x",
+			    relative_addr, (int)idata);
 		}
 	}
 
-	/*  Some registers are read/write. Copy contents of reg_wo to reg_ro:  */
+	/*
+	 *  Some registers are read/write. Copy contents of
+	 *  reg_wo to reg_ro:
+	 */
 	d->reg_ro[ 0] = d->reg_wo[0];	/*  Transfer count lo and  */
 	d->reg_ro[ 1] = d->reg_wo[1];	/*  middle  */
 	d->reg_ro[ 2] = d->reg_wo[2];
@@ -400,19 +492,23 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			debug("[DMA] ");
 
 		switch (idata & ~NCRCMD_DMA) {
+
 		case NCRCMD_NOP:
 			debug("NOP");
 			break;
+
 		case NCRCMD_FLUSH:
 			debug("FLUSH");
 			/*  Flush the FIFO:  */
 			dev_asc_fifo_flush(d);
 			break;
+
 		case NCRCMD_RSTCHIP:
 			debug("RSTCHIP");
 			/*  Hardware reset.  */
 			dev_asc_reset(d);
 			break;
+
 		case NCRCMD_RSTSCSI:
 			debug("RSTSCSI");
 			/*  No interrupt if interrupts are disabled.  */
@@ -422,10 +518,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 			d->cur_state = STATE_DISCONNECTED;
 			break;
+
 		case NCRCMD_ENSEL:
 			debug("ENSEL");
 			/*  TODO  */
 			break;
+
 		case NCRCMD_ICCS:
 			debug("ICCS");
 			/*  Reveice a status byte + a message byte.  */
@@ -434,11 +532,11 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			dev_asc_fifo_write(d, 0);
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-			d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+/*			d->reg_ro[NCR_INTR] |= NCRINTR_BS; */
 			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ? probably 7  */
 			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
-			d->cur_state = STATE_TARGET;
 			break;
+
 		case NCRCMD_MSGOK:
 			debug("MSGOK");
 			/*  Message is being Rejected if ATN is set, otherwise Accepted.  */
@@ -447,23 +545,28 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			else
 				debug("; Accepting message");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+/*			d->reg_ro[NCR_INTR] |= NCRINTR_FC; */
 			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 
-			if (d->cur_state == STATE_INITIATOR)
-				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ? probably 0  */
-			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 5;	/*  ?  */
+			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 6;	/*  ? probably 0  */
+			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 
-			d->cur_state = STATE_DISCONNECTED;	/*  ?  */
+			d->cur_state = STATE_DISCONNECTED;
+
+			scsi_transfer_free(d->xferp);
+			d->xferp = NULL;
 			break;
+
 		case NCRCMD_SETATN:
 			debug("SETATN");
 			d->atn = 1;
 			break;
+
 		case NCRCMD_RSTATN:
 			debug("RSTATN");
 			d->atn = 0;
 			break;
+
 		case NCRCMD_SELNATN:
 		case NCRCMD_SELATN:
 		case NCRCMD_SELATNS:
@@ -491,43 +594,27 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 			if (target_exists) {
 				/*
-				 *  Selecting a scsi device:
+				 *  Select a SCSI device, send message bytes
+				 *  (if any) and command bytes to the target.
 				 */
 				int ok;
-				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-				d->reg_ro[NCR_STAT] &= ~7;
-				d->reg_ro[NCR_STAT] |= 3;	/*  ?  */
-				d->cur_state = STATE_TARGET;		/*  ?  */
-				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
-				    idata & NCRCMD_DMA? 1 : 0, n_messagebytes);
-				d->reg_ro[NCR_STEP] &= ~7;
-				d->reg_ro[NCR_STEP] |= 4;	/*  ?  */
 
-				d->cur_phase = 4;
-{
-	static int x= 0;
-	x++;
-	if (x==2) {
-				d->reg_ro[NCR_STEP] &= ~7;
-				d->reg_ro[NCR_STEP] |= 4;	/*  done (?)  */
-				d->reg_ro[NCR_STAT] &= ~7;
-				d->reg_ro[NCR_STAT] |= 1;	/*  data in  */
-				d->cur_phase = PHASE_DATA_IN;
-				dev_asc_fifo_flush(d);
-				d->reg_ro[NCR_TCL] = 0x2c;
-				d->reg_wo[NCR_TCL] = 0x2c;
-	}
-}
+				dev_asc_newxfer(d);
+
 				d->cur_state = STATE_INITIATOR;
+
+				ok = dev_asc_select(d,
+				    d->reg_ro[NCR_CFG1] & 7,
+				    d->reg_wo[NCR_SELID] & 7,
+				    idata & NCRCMD_DMA? 1 : 0,
+				    n_messagebytes);
 			} else {
 				/*
 				 *  Selection failed, non-existant scsi ID:
 				 *
-				 *  This is good enough to fool Ultrix, NetBSD
-				 *  and OpenBSD to continue detection of other IDs,
-				 *  without giving any warnings.
+				 *  This is good enough to fool Ultrix, NetBSD,
+				 *  OpenBSD and Linux to continue detection of
+				 *  other IDs, without giving any warnings.
 				 */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 				d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
@@ -537,6 +624,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				d->cur_state = STATE_DISCONNECTED;
 			}
 			break;
+
 		case NCRCMD_TRPAD:
 			debug("TRPAD");
 
@@ -561,6 +649,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			d->reg_ro[NCR_STEP] |= 4;
 #endif
 			break;
+
 		case NCRCMD_TRANS:
 			debug("TRANS");
 
@@ -569,58 +658,35 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				break;
 			}
 
-			/*  TODO  */
-
-			if (d->cur_phase == PHASE_DATA_IN) {
-				int ok;
-
-				ok = dev_asc_transfer(d, d->reg_wo[NCR_SELID] & 7, d->reg_ro[NCR_CFG1] & 0x7,
-				    idata & NCRCMD_DMA? 1 : 0, 0);
-				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-				if (ok) {
-					d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
-					dev_asc_fifo_write(d, 0x00);  	/*  0 = command complete  */
-					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
-				}
-				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 3;	/*  7?  */
-				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
-				d->cur_phase = PHASE_MSG_IN;
-			} else {
-				int ok;
-				ok = dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
-				    idata & NCRCMD_DMA? 1 : 0, 0);
-				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
-				if (ok) {
-					d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-					dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
-					dev_asc_fifo_write(d, 0x00);
-					d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
-				}
-				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
-			}
+			dev_asc_transfer(d,
+			    d->reg_wo[NCR_SELID] & 7,
+			    d->reg_ro[NCR_CFG1] & 7,
+			    idata & NCRCMD_DMA? 1 : 0);
 			break;
+
 		default:
 			fatal("(unimplemented asc cmd 0x%02x)", (int)idata);
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_ILL;
-			exit(1);	/*  TODO:  exit or continue with Illegal command interrupt?  */
+			/*
+			 *  TODO:  exit or continue with Illegal command
+			 *  interrupt?
+			 */
+			exit(1);
 		}
 	}
 
-	if (regnr == NCR_INTR && writeflag==MEM_READ) {
-		/*  Reading the interrupt register de-asserts the interrupt pin:  */
+	if (regnr == NCR_INTR && writeflag == MEM_READ) {
+		/*
+		 *  Reading the interrupt register de-asserts the
+		 *  interrupt pin.  Also, INTR, STEP, and STAT are all
+		 *  cleared, according to page 64 of the LSI53CF92A manual.
+		 */
 		cpu_interrupt_ack(cpu, d->irq_nr);
 
-/*		if (d->reg_ro[NCR_STAT] & NCRSTAT_INT) {  */
-			/*  INTR, STEP, and STAT are all cleared, according
-				to page 64 of the LSI53CF92A manual.  */
-			d->reg_ro[NCR_INTR] = 0;
-			d->reg_ro[NCR_STEP] = 0;
-			d->reg_ro[NCR_STAT] = 0;
-/*		}  */
+		d->reg_ro[NCR_INTR] = 0;
+		d->reg_ro[NCR_STEP] = 0;
+		d->reg_ro[NCR_STAT] = 0;
 	}
 
 	if (regnr == NCR_CFG1) {
@@ -640,8 +706,11 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 /*
  *  dev_asc_init():
+ *
+ *  Register an 'asc' device.
  */
-void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_asc_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int irq_nr)
 {
 	struct asc_data *d;
 
@@ -653,7 +722,10 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	memset(d, 0, sizeof(struct asc_data));
 	d->irq_nr = irq_nr;
 
-	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH, dev_asc_access, d);
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 12);  /*  every 4096:th cycle  */
+	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH,
+	    dev_asc_access, d);
+
+	/*  Tick every 2048th cycle:  */
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 11);
 }
 

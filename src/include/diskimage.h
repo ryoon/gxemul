@@ -26,25 +26,51 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.7 2004-03-25 21:00:51 debug Exp $
+ *  $Id: diskimage.h,v 1.8 2004-04-06 02:17:46 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
 
 #include <sys/types.h>
 
+/*  Transfer command, sent from a SCSI controller device to a disk:  */
+struct scsi_transfer {
+	/*  These should be set by the SCSI controller device before the call:  */
+	unsigned char		*msg_out;
+	size_t			msg_out_len;
+	unsigned char		*cmd;
+	size_t			cmd_len;
+	unsigned char		*data_out;
+	size_t			data_out_len;
+
+	/*  These should be set by the SCSI (disk) device before returning:  */
+	unsigned char		*data_in;
+	size_t			data_in_len;
+	unsigned char		*msg_in;
+	size_t			msg_in_len;
+	unsigned char		*status;
+	size_t			status_len;
+};
+
+struct scsi_transfer *scsi_transfer_alloc(void);
+void scsi_transfer_free(struct scsi_transfer *);
+void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len);
+
+
 int diskimage_add(char *fname);
 int64_t diskimage_getsize(int disk_id);
-int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned char **return_buf_ptr, int *return_len);
+int diskimage_scsicommand(int disk_id, struct scsi_transfer *);
 int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *buf, size_t len);
 int diskimage_exist(int disk_id);
 void diskimage_dump_info(void);
 
 /*  SCSI commands:  */
-#define	SCSICMD_TEST_UNIT_READY	0x00
-#define	SCSICMD_INQUIRY		0x12
+#define	SCSICMD_TEST_UNIT_READY		0x00	/*  Mandatory  */
+#define	SCSICMD_REQUEST_SENSE		0x03	/*  Mandatory  */
+#define	SCSICMD_INQUIRY			0x12	/*  Mandatory  */
 
-#define	SCSICMD_READ		0x08
+/*  ?  */
+#define	SCSICMD_READ			0x08
 
 /*  SCSI block device commands:  */
 #define	SCSIBLOCKCMD_READ_CAPACITY	0x25

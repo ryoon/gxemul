@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.2 2004-06-07 07:21:10 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.3 2004-06-07 09:17:55 debug Exp $
  *  
  *  SGI IP30 stuff.
  */
@@ -161,6 +161,13 @@ int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
+	case 0xb4:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip30_3: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+		} else {
+			odata = 2;	/*  should be 2, or Irix loops  */
+		}
+		break;
 	case 0x00104:
 		if (writeflag == MEM_WRITE) {
 			debug("[ sgi_ip30_3: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);

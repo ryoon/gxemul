@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.83 2004-06-07 07:21:12 debug Exp $
+ *  $Id: machine.c,v 1.84 2004-06-07 09:17:53 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1552,6 +1552,8 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 			case 35:
 				strcat(machine_name, " (Origin 3000)");
 				/*  4 cpus per node  */
+
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 				break;
 			default:
 				fatal("unimplemented SGI machine type IP%i\n", machine);
@@ -1639,6 +1641,39 @@ case arc_CacheClass:
 			store_64bit_word(ARC_ARGV_START + 0x20 * 2, ARC_ARGV_START + 0x2c0);
 			store_64bit_word(ARC_ARGV_START + 0x24 * 2, ARC_ARGV_START + 0x2e0);
 			store_64bit_word(ARC_ARGV_START + 0x28 * 2, 0);
+
+			/*
+			 *  Super-ugly test hack, to fool arcs_getenv() in 64-bit Irix:
+			 *
+			 *  The SPB is a bit less than 0x40 bytes long, but Irix seems
+			 *  to use offsets after the standard SPB data.  (TODO)
+			 *
+			 *  Then, at offset 0xf0 in this new structure, there is a pointer
+			 *  to a function which Irix calls.  It seems that this is a
+			 *  getenv-like function, so let's call (32-bit) arcbios, and
+			 *  then return.
+			 *
+			 *  This is ugly.
+			 */
+			store_64bit_word(SGI_SPB_ADDR + 0x40, 0xffffffff80001400);
+			store_64bit_word(SGI_SPB_ADDR + 0x400 + 0xf0, SGI_SPB_ADDR + 0x500);
+
+			store_32bit_word(SGI_SPB_ADDR + 0x500 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_FIRMWARE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x500 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_FIRMWARE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x500 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x78);  /*  addiu, 0x78 = getenv  */
+			store_32bit_word(SGI_SPB_ADDR + 0x500 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x500 + 16, 0);				/*  nop  */
+
+			/*  This is similar, but used by Irix' arcs_nvram_tab() instead of arcs_getenv():  */
+			store_64bit_word(SGI_SPB_ADDR + 0x50, 0xffffffff80001600);
+			store_64bit_word(SGI_SPB_ADDR + 0x600 + 0x8, SGI_SPB_ADDR + 0x700);
+
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  0, (HI6_LUI << 26) + (2 << 16) + ((ARC_PRIVATE_ENTRIES >> 16) & 0xffff));	/*  lui  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  4, (HI6_ORI << 26) + (2 << 21) + (2 << 16) + (ARC_PRIVATE_ENTRIES & 0xffff));  /*  ori  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 +  8, (HI6_ADDIU << 26) + (2 << 21) + (2 << 16) + 0x04);  /*  addiu, 0x04 = get nvram  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 + 12, SPECIAL_JR + (2 << 21));	/*  jr  */
+			store_32bit_word(SGI_SPB_ADDR + 0x700 + 16, 0);				/*  nop  */
+
 			break;
 		default:	/*  32-bit  */
 			store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);

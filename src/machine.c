@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.225 2004-12-03 22:44:25 debug Exp $
+ *  $Id: machine.c,v 1.226 2004-12-04 12:35:57 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2227,6 +2227,12 @@ Why is this here? TODO
 
 				strcat(emul->machine_name, " (NEC-R98; NEC RISCserver 4200)");
 
+				/*
+				 *  Windows NT access stuff at these addresses:
+				 *
+				 *  19980308, 18000210, 18c0a008,
+				 *  19022018, 19026010, andso on.
+				 */
 				break;
 
 			case MACHINE_ARC_JAZZ_PICA:
@@ -2295,19 +2301,19 @@ Why is this here? TODO
 				cpu->md_interrupt = pica_interrupt;
 
 				dev_vga_init(cpu, mem,
-				    0x100000b8000ULL, 0x60000003d0ULL,
+				    0x100000b8000ULL, 0x60000003c0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				arcbios_console_init(cpu, 0x100000b8000ULL,
-				    0x60000003d0ULL, ARC_CONSOLE_MAX_X,
+				    0x60000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
 				/*  Windows NT uses physical addresses like
 				    0x400b8000 to access video  */
 				dev_ram_init(mem, 0x400b8000ULL,
 				    0x10000, DEV_RAM_MIRROR, 0x100000b8000ULL);
-				dev_ram_init(mem, 0x0600003d0ULL,
-				    0x10, DEV_RAM_MIRROR, 0x60000003d0ULL);
+				dev_ram_init(mem, 0x0600003c0ULL,
+				    0x20, DEV_RAM_MIRROR, 0x60000003c0ULL);
 
 				dev_ram_init(mem, 0x80004000,
 				    0x1000, DEV_RAM_MIRROR, 0x2000004000ULL);
@@ -2392,11 +2398,11 @@ Why is this here? TODO
 				strcat(emul->machine_name, " (Deskstation Tyne)");
 
 				dev_vga_init(cpu, mem, 0x100000b8000ULL,
-				    0x900000003d0ULL,
+				    0x900000003c0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				arcbios_console_init(cpu, 0x100000b8000ULL,
-				    0x900000003d0ULL, ARC_CONSOLE_MAX_X,
+				    0x900000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
 				dev_ns16550_init(cpu, mem, 0x900000003f8ULL,

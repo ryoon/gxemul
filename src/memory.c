@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.123 2004-12-03 22:44:26 debug Exp $
+ *  $Id: memory.c,v 1.124 2004-12-04 12:35:57 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -922,7 +922,7 @@ into the devices  */
 				char *symbol;
 				uint64_t offset;
 
-				if (1) /* !quiet_mode) */ {
+				if (!quiet_mode) {
 					fatal("[ memory_rw(): writeflag=%i ", writeflag);
 					if (writeflag) {
 						unsigned int i;

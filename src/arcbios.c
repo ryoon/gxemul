@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.41 2004-12-03 20:03:47 debug Exp $
+ *  $Id: arcbios.c,v 1.42 2004-12-04 12:35:57 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -365,16 +365,16 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	    arcbios_console_maxx-1 : arcbios_console_curx) +
 	    arcbios_console_cury * arcbios_console_maxx;
 	byte = 0x0e;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 4,
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = (addr >> 8) & 255;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 5,
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = 0x0f;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 4,
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = addr & 255;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 5,
+	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
 

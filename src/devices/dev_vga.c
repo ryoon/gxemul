@@ -23,9 +23,19 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.14 2004-12-03 22:44:23 debug Exp $
+ *  $Id: dev_vga.c,v 1.15 2004-12-04 12:35:56 debug Exp $
  *  
  *  VGA text console device.
+ *
+ *  A few ugly hacks are used. The default resolution is 640x480, which
+ *  means that the following font sizes and text resolutions can be used:
+ *
+ *	8x16						80 x 30
+ *	8x10 (with the last line repeated twice)	80 x 43
+ *	8x8						80 x 60
+ *
+ *  There is only a mode switch when actual non-space text is written outside
+ *  the current window.
  */
 
 #include <stdio.h>
@@ -37,6 +47,7 @@
 #include "devices.h"
 
 #include "fonts/font8x8.c"
+#include "fonts/font8x10.c"
 #include "fonts/font8x16.c"
 
 
@@ -52,7 +63,8 @@ struct vga_data {
 
 	struct vfb_data *fb;
 
-	int		use_8x8_font;
+	int		font_size;
+	unsigned char	*font;
 
 	int		max_x;
 	int		max_y;
@@ -77,7 +89,6 @@ struct vga_data {
 void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 {
 	int fg, bg, i, x,y, subx, line;
-	int font_height = d->use_8x8_font? 8 : 16;
 
 	start &= ~1;
 	end |= 1;
@@ -93,13 +104,19 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 		}
 
 		x = (i/2) % d->max_x; x *= 8;
-		y = (i/2) / d->max_x; y *= font_height;
+		y = (i/2) / d->max_x; y *= d->font_size;
 
-		for (line = 0; line < font_height; line++) {
+		for (line = 0; line < d->font_size; line++) {
 			for (subx = 0; subx < 8; subx++) {
 				unsigned char pixel[3];
-				unsigned char *font =
-				    d->use_8x8_font? font8x8 : font8x16;
+				int line2readfrom = line;
+				int actualfontheight = d->font_size;
+
+				if (d->font_size == 11) {
+					actualfontheight = 10;
+					if (line == 10)
+						line2readfrom = 9;
+				}
 
 				int addr = (d->max_x*8 * (line+y) + x + subx)
 				    * 3;
@@ -108,8 +125,8 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
 				pixel[2] = d->fb->rgb_palette[bg * 3 + 2];
 
-				if (font[ch * font_height + line] &
-				    (128 >> subx)) {
+				if (d->font[ch * actualfontheight +
+				    line2readfrom] & (128 >> subx)) {
 					pixel[0] = d->fb->rgb_palette
 					    [fg * 3 + 0];
 					pixel[1] = d->fb->rgb_palette
@@ -118,11 +135,25 @@ void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
 					    [fg * 3 + 2];
 				}
 
-				dev_fb_access(cpu, cpu->mem, addr, &pixel[0],
-				    sizeof(pixel), MEM_WRITE, d->fb);
+				/*  TODO: don't hardcode  */
+				if (addr < 480*640*3)
+					dev_fb_access(cpu, cpu->mem, addr, &pixel[0],
+					    sizeof(pixel), MEM_WRITE, d->fb);
 			}
 		}
 	}
+}
+
+
+/*
+ *  vga_update_cursor():
+ */
+static void vga_update_cursor(struct vga_data *d)
+{
+	/*  TODO: Don't hardcode the cursor size.  */
+	dev_fb_setcursor(d->fb,
+	    d->cursor_x * 8, d->cursor_y * d->font_size +
+	    d->font_size - 4, 1, 8, 3);
 }
 
 
@@ -142,14 +173,30 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	idata = memory_readmax64(cpu, data, len);
 
 	y = relative_addr / (d->max_x * 2);
-	if (y >= d->max_y && !d->use_8x8_font) {
-		/*  Switch to 8x8 font:  */
-		fatal("SWITCHING to 8x8 font\n");
 
-		d->use_8x8_font = 1;
-
-		d->max_y = VGA_MEM_MAXY;
-		vga_update(cpu, d, 0, d->max_x * d->max_y * 2 -1);
+	/*
+	 *  Switch fonts?   This is an ugly hack which only switches when
+	 *  parts of the video ram is accessed that are outside the current
+	 *  screen. (Specially "crafted" :-) to work with Windows NT.)
+	 */
+	if (writeflag && (idata & 255) != 0x20 && (relative_addr & 1) == 0) {
+		if (y >= 43 && d->font_size > 8) {
+			/*  Switch to 8x8 font:  */
+			debug("SWITCHING to 8x8 font\n");
+			d->font_size = 8;
+			d->font = font8x8;
+			d->max_y = VGA_MEM_MAXY;
+			vga_update(cpu, d, 0, d->max_x * d->max_y * 2 -1);
+			vga_update_cursor(d);
+		} else if (y >= 30 && d->font_size > 11) {
+			/*  Switch to 8x10 font:  */
+			debug("SWITCHING to 8x10 font\n");
+			d->font_size = 11;	/*  NOTE! 11  */
+			d->font = font8x10;
+			vga_update(cpu, d, 0, d->max_x * 44 * 2 -1);
+			d->max_y = 43;
+			vga_update_cursor(d);
+		}
 	}
 
 	if (relative_addr < d->videomem_size) {
@@ -194,7 +241,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
  *
  *  Writes to VGA control registers.
  */
-void vga_reg_write(struct vga_data *d, int regnr, int idata)
+static void vga_reg_write(struct vga_data *d, int regnr, int idata)
 {
 	debug("[ vga_reg_write: regnr=0x%02x idata=0x%02x ]\n", regnr, idata);
 
@@ -203,14 +250,7 @@ void vga_reg_write(struct vga_data *d, int regnr, int idata)
 		d->cursor_x = ofs % d->max_x;
 		d->cursor_y = ofs / d->max_x;
 
-		/*  TODO: Don't hardcode the cursor size.  */
-
-		/*  Block:  */
-		/*  dev_fb_setcursor(d->fb,
-		    d->cursor_x * 8, d->cursor_y * 16, 1, 8, 16);  */
-		/*  Line:  */
-		dev_fb_setcursor(d->fb,
-		    d->cursor_x * 8, d->cursor_y * 16 + 12, 1, 8, 3);
+		vga_update_cursor(d);
 	}
 }
 
@@ -230,25 +270,35 @@ int dev_vga_ctrl_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case 4:	/*  register select  */
+	case 0x01:	/*  "Other video attributes"  */
+		odata = 0xff;	/*  ?  */
+		break;
+	case 0x0c:	/*  VGA graphics 1 position  */
+		odata = 1;	/*  ?  */
+		break;
+	case 0x14:	/*  register select  */
 		if (writeflag == MEM_READ)
 			odata = d->selected_register;
 		else
 			d->selected_register = idata;
 		break;
-	case 5:	if (writeflag == MEM_READ)
+	case 0x15:	if (writeflag == MEM_READ)
 			odata = d->reg[d->selected_register];
 		else {
 			d->reg[d->selected_register] = idata;
 			vga_reg_write(d, d->selected_register, idata);
 		}
 		break;
+	case 0x1a:	/*  Status register  */
+		odata = 1;	/*  Display enabled  */
+		/*  odata |= 16;  */  /*  Vertical retrace  */
+		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ vga_ctrl: read from 0x%08lx ]\n",
+			fatal("[ vga_ctrl: read from 0x%08lx ]\n",
 			    (long)relative_addr);
 		} else {
-			debug("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n",
+			fatal("[ vga_ctrl: write to  0x%08lx: 0x%08x ]\n",
 			    (long)relative_addr, idata);
 		}
 	}
@@ -296,7 +346,9 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 			d->videomem[i+1] = 0x07;	/*  Default color  */
 		}
 
-	d->use_8x8_font = 0;
+	d->font_size = 16;
+	d->font = font8x16;
+
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC,
 	    8*max_x, 16*max_y, 8*max_x, 16*max_y, 24, "VGA", 0);
 
@@ -322,7 +374,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	    VGA_MEM_ALLOCY * max_x * 2,
 	    dev_vga_access, d, MEM_DEFAULT, NULL);	/*  TODO: BINTRANS  */
 	memory_device_register(mem, "vga_ctrl", control_base,
-	    16, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
+	    32, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
 	vga_update(cpu, d, 0, max_x * max_y * 2 -1);
 }

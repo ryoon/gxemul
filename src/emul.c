@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.70 2004-09-05 04:56:02 debug Exp $
+ *  $Id: emul.c,v 1.71 2004-09-17 20:49:38 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -316,8 +316,8 @@ void debugger(void)
 	int ch, i;
 	char cmd[MAX_CMD_LEN];
 	int cmd_len;
-	static uint64_t last_dump_addr = 0xffffffff80000000;
-	static uint64_t last_unasm_addr = 0xffffffff80000000;
+	static uint64_t last_dump_addr = 0xffffffff80000000ULL;
+	static uint64_t last_unasm_addr = 0xffffffff80000000ULL;
 
 	cmd[0] = '\0'; cmd_len = 0;
 

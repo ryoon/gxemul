@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.657 2005-03-29 07:08:46 debug Exp $
+$Id: HISTORY,v 1.658 2005-03-29 07:29:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1775,3 +1775,4 @@ Changelog for GXemul:
 		Mirroring physical addresses 0x8....... to 0x00000000 on
 		hpcmips; this makes it possible to run X11 inside
 		NetBSD/hpcmips :-)
+		Updating the documentation regarding NetBSD/hpcmips.

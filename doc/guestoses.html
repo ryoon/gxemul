@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.22 2005-03-29 06:45:49 debug Exp $
+$Id: guestoses.html,v 1.23 2005-03-29 07:29:01 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -103,10 +103,6 @@ instructions:
 
 <p>
 <ol start="1">
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=1900000000</b>
@@ -120,7 +116,7 @@ program copy files from the CD-ROM image to the harddisk image), or you
 can install via ftp. For an installation from a CD-ROM image, follow these 
 steps:
 <p>
-<ol start="3">
+<ol start="2">
 
   <li>Download a NetBSD CD-ROM iso image:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
@@ -135,7 +131,7 @@ steps:
 <p>
 For an ftp install, substitute steps 3 and 4 above with these:
 <p>
-<ol start="3">
+<ol start="2">
 
   <li>Download a NetBSD pmax INSTALL kernel, and gunzip it:<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
@@ -217,10 +213,6 @@ follow these instructions:
 
 <p>
 <ol start="1">
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
@@ -295,10 +287,6 @@ an emulated MobilePro 780, by following these instructions:
 
 <p>
 <ol start="1">
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that you will install NetBSD/hpcmips onto:<pre>
 	$ <b>dd if=/dev/zero of=nbsd_hpcmips.img bs=1024 count=1 seek=1990000</b>
@@ -315,9 +303,10 @@ an emulated MobilePro 780, by following these instructions:
 	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
 
 </pre>
-	and proceed like you would do if you were installing on a real MobilePro 780.
-	(Choose "Use entire disk" when doing the MBR partitioning, and
-	choose wd1d (not cd0c) as the CDROM device to install from.)
+	and proceed like you would do if you were installing on a real
+	MobilePro 780. (Install onto wd0, choose "Use entire disk" when
+	doing the MBR partitioning, and choose wd1d (not cd0c) as the
+	CDROM device to install from.)
 </ol>
 
 <p>
@@ -335,6 +324,10 @@ image, using the following command:
 
 </pre>
 
+<p>
+When you have logged in as root, you can use <b>startx</b> to start X
+Windows. (Note: There is no mouse support yet; you can only use 
+keyboard input.)
 
 
 
@@ -393,10 +386,7 @@ this should be no problem for you.
 <p>
 OpenBSD/pmax died at release 2.8 of OpenBSD, so you should be
 aware of the fact that this will not give you an up-to-date OpenBSD
-system. The files are available at this URL:
-<pre>
-	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</a>
-</pre>
+system.
 
 <p>
 Following these instructions <i>might</i> work. If not, then use
@@ -404,17 +394,13 @@ common sense and imagination to modify them as you see fit.
 
 <p>
 <ol>
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that OpenBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=openbsddisk.img bs=1 count=512 seek=900000000</b>
 
 </pre>
   <li>Download the entire pmax directory from the ftp server: (approx. 99 MB)<pre>
-	$ <b>wget -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</b>
+	$ <b>wget -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</a></b>
 
 </pre>
 
@@ -545,17 +531,13 @@ instructions:
 
 <p>
 <ol>
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that OpenBSD installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=obsd_arc.img bs=1024 count=1 seek=700000</b>
 
 </pre>
   <li>Download the entire arc directory from the ftp server: (approx. 75 MB)<pre>
-	$ <b>wget -np -l 0 -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
+	$ <b>wget -np -l 0 -r <a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</a></b>
 
 </pre>
 
@@ -714,10 +696,6 @@ The following instructions should guide you through an install of Ultrix
 onto a disk image:
 
 <ol>
-  <li>Compile gxemul:<pre>
-        $ <b>./configure; make</b>
-   
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
         that Ultrix installs itself onto:<pre>
         $ <b>dd if=/dev/zero of=rootdisk.img bs=1024 count=1 seek=800000</b>
@@ -730,7 +708,7 @@ onto a disk image:
         $ <b>gxemul -X -b -M64 -E dec -e 3max -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
 
 </pre>
-        Once the first stage of the installation is done (restoring the root
+  <li>Once the first stage of the installation is done (restoring the root
 	filesystem), you need to restart the emulator, booting from the 
 	new rootdisk, to continue the installation process.
 	This is done by removing the bootflag ('b') from the second
@@ -810,10 +788,6 @@ The following instructions should let you run Sprite in the emulator:
 
 <p>
 <ol>
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Download the Sprite harddisk image using ftp or http:<pre>
 	<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/">http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite</a>/<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/other_os/Sprite/ds5000.bt">ds5000.bt</a>
 	or <a href="ftp://ftp.es.embnet.org/misc/TUHS/other_os/Sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/other_os/Sprite/ds5000.bt</a>
@@ -883,10 +857,6 @@ onto a harddisk image:
 
 <p>
 <ol>
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
 	$ <b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=2000000</b>
@@ -936,11 +906,14 @@ network settings. The following should work:
 </pre>
 
 <p>
-Once the first phase of the install has finished, the following command 
-should let you boot into Debian, and perform post-install configuration:<pre>
+<ol start="4">
+  <li>Once the first phase of the install has finished, the following command
+	should let you boot into Debian, and perform post-install
+	configuration:<pre>
 	$ <b>gxemul -E dec -e 3max -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
 
 </pre>
+</ol>
 
 <p>
 It seems that there's a problem with getting a login prompt on serial 
@@ -1012,10 +985,6 @@ The following steps should let you run Redhat Linux for DECstation in GXemul:
 
 <p>
 <ol>
-  <li>Compile gxemul:<pre>
-	$ <b>./configure; make</b>
-
-</pre>
   <li>Download a kernel. This is a Debian kernel, but it works fine:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
 	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
@@ -1106,7 +1075,7 @@ for DECstation in the emulator:
 
 <p>
 <ol>
-  <li>Compile gxemul: (<b>NOTE: --enable-caches</b>)<pre>
+  <li>Compile gxemul with cache emulation: (<b>NOTE: --enable-caches</b>)<pre>
 	$ <b>./configure --enable-caches; make</b>
 
 </pre>

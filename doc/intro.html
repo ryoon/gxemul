@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.21 2005-03-19 09:36:16 debug Exp $
+$Id: intro.html,v 1.22 2005-03-29 07:29:01 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -258,6 +258,10 @@ The machine types that are emulated best at the moment are:
 	<br>Serial controller, "VGA" text console, and SCSI are emulated
 		well enough to let NetBSD/arc and OpenBSD/arc be installed
 		and run.
+  <p>
+  <li><b>MobilePro 780</b> (an HPCmips machine)
+	<br>Framebuffer, keyboard, and an PCMCIA IDE controller;
+	enough to install and run NetBSD/hpcmips.
 </ul>
 
 <p>
@@ -310,11 +314,11 @@ interacted with similar to a real machine:
 	  <table border="0">
 	    <tr>
 	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
-	      <td width="20">&nbsp;</td>
+	      <td width="15">&nbsp;</td>
 	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
-	      <td width="40">&nbsp;</td>
+	      <td width="35">&nbsp;</td>
 	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
-	      <td width="20">&nbsp;</td>
+	      <td width="15">&nbsp;</td>
 	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
 	    </tr>
 
@@ -361,6 +365,12 @@ interacted with similar to a real machine:
 	      <td></td>
 	      <td valign="top">DECstation</td>
 	    </tr>
+
+	    <tr>
+	      <td valign="top"><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a></td>
+	      <td></td>
+	      <td valign="top">MobilePro 780</td>
+	    </tr>
 	  </table>
 	</td></tr>
 
@@ -370,31 +380,40 @@ interacted with similar to a real machine:
 	  <center>
 	    <table border="0">
 	      <tr>
-		<td width=140 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
-		<td width=140 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
-		<td width=140 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
-		<td width=140 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
+		<td width=160 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+		<td width=160 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
+		<td width=160 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>NetBSD/pmax&nbsp;1.6.2</td>
 		<td align=center>OpenBSD/pmax&nbsp;2.8</td>
 		<td align=center>Ultrix&nbsp;4.5</td>
-		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
 	      </tr>
 	      <tr>
 		<td height=10>&nbsp;</td>
 	      </tr>
 	      <tr>
-		<td width=140 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
-		<td width=140 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
-		<td width=140 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
-		<td width=140 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
+		<td width=160 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
+		<td width=160 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
+		<td width=160 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
 	      </tr>
 	      <tr>
 		<td align=center>NetBSD/arc&nbsp;1.6.2</td>
 		<td align=center>OpenBSD/arc&nbsp;2.3</td>
 		<td align=center>Sprite</td>
+	      </tr>
+	      <tr>
+		<td height=10>&nbsp;</td>
+	      </tr>
+	      <tr>
+		<td width=160 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
+		<td width=160 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
+		<td width=160 align=center><a href="20050329-netbsd-hpcmips-4.png"><img src="20050329-netbsd-hpcmips-4_small.png"></a></td>
+	      </tr>
+	      <tr>
+		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
 		<td align=center>Debian&nbsp;GNU/Linux<super>*</super></td>
+		<td align=center>NetBSD/hpcmips</td>
 	      </tr>
 	    </table>
 	  </center>

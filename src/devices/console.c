@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.11 2004-07-12 10:23:30 debug Exp $
+ *  $Id: console.c,v 1.12 2004-08-18 09:04:11 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -31,6 +31,7 @@
  *  to attach stdin/stdout of the host system to a specific device.
  */
 
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
@@ -45,7 +46,6 @@
 extern int register_dump;
 extern int instruction_trace;
 extern int show_trace_tree;
-extern int ncpus;
 
 
 struct termios console_oldtermios;
@@ -80,7 +80,8 @@ void console_init(void)
 		return;
 
 	tcgetattr(STDIN_FILENO, &console_oldtermios);
-	memcpy(&console_curtermios, &console_oldtermios, sizeof (struct termios));
+	memcpy(&console_curtermios, &console_oldtermios,
+	    sizeof (struct termios));
 
 	console_curtermios.c_lflag &= ~ICANON;
 	console_curtermios.c_cc[VTIME] = 0;
@@ -124,6 +125,26 @@ void console_deinit(void)
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_oldtermios);
 
 	console_initialized = 0;
+}
+
+
+/*
+ *  console_sigcont():
+ *
+ *  If the user presses CTRL-Z (to stop the emulator process) and then
+ *  continues, we have to make sure that the right termios settings are
+ *  active.  (This should be set as the SIGCONT signal handler in src/emul.c.)
+ */
+void console_sigcont(int x)
+{
+	if (!console_initialized)
+		return;
+
+	/*  Make sure our 'current' termios setting is active:  */
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
+
+	/*  Reset the signal handler:  */
+	signal(SIGCONT, console_sigcont);
 }
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.199 2004-08-12 07:24:34 debug Exp $
+$Id: HISTORY,v 1.200 2004-08-18 09:04:10 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -902,3 +902,7 @@ HISTORY of mips64emul
 		Adding a NetGear WG602 emulation mode skeleton (-g); after
 		a lot of trial and error, a Linux kernel (WG602_V1715.img)
 		gets all the way to userland, but hangs there.
+20040818	Adding signal handlers to better cope with CTRL-Z and CTRL-C.
+		Adding a simple interactive single-step debugger which is
+		activated by CTRL-C. (Commands so far: continue, help, quit,
+		registers, step, verison)

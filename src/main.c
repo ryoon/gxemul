@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.66 2004-08-13 06:47:15 debug Exp $
+ *  $Id: main.c,v 1.67 2004-08-18 09:04:13 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -75,6 +75,7 @@ int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for inst
 
 int bintrans_enable = 0;
 int instruction_trace = 0;
+int single_step = 0;
 int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
 int64_t max_instructions = 0;

@@ -23,11 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.37 2004-08-13 04:16:13 debug Exp $
+ *  $Id: emul.c,v 1.38 2004-08-18 09:04:13 debug Exp $
  *
- *  Emulation startup.
+ *  Emulation startup and misc. routines.
  */
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -64,6 +65,11 @@ extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int bootstrap_cpu;
 extern int use_random_bootstrap_cpu;
+extern int instruction_trace;
+int old_instruction_trace = 0;
+int old_quiet_mode = 0;
+int old_show_trace_tree = 0;
+extern int single_step;
 extern int max_random_cycles_per_chunk;
 extern int ncpus;
 extern struct cpu **cpus;
@@ -76,6 +82,9 @@ extern int n_dumppoints;
 extern char *dumppoint_string[];
 extern uint64_t dumppoint_pc[];
 extern int dumppoint_flag_r[];
+
+
+#define	MAX_CMD_LEN	60
 
 
 /*
@@ -134,6 +143,142 @@ void add_pc_dump_points(void)
 void fix_console(void)
 {
 	console_deinit();
+}
+
+
+/*
+ *  debugger_activate():
+ *
+ *  This is a signal handler for CTRL-C.
+ */
+void debugger_activate(int x)
+{
+	if (single_step) {
+		/*  Already in the debugger. Do nothing.  */
+		int i;
+		for (i=0; i<MAX_CMD_LEN+1; i++)
+			console_makeavail('\b');
+		console_makeavail('\n');
+		printf("^C");
+		fflush(stdout);
+	} else {
+		/*  Enter the single step debugger.  */
+		single_step = 1;
+	}
+
+	/*  Reactivate the signal handler:  */
+	signal(SIGINT, debugger_activate);
+}
+
+
+static char last_cmd[MAX_CMD_LEN];
+static int last_cmd_len = 0;
+
+
+/*
+ *  debugger():
+ *
+ *  An interractive debugger; reads a command from the terminal, and
+ *  executes it.
+ *
+ *  TODO: This uses up 100% CPU, maybe that isn't very good.
+ */
+void debugger(void)
+{
+	int exit_debugger = 0;
+	int ch, i;
+	char cmd[MAX_CMD_LEN];
+	int cmd_len;
+
+	cmd[0] = '\0'; cmd_len = 0;
+
+	while (!exit_debugger) {
+		/*  Read a line of input:  */
+		cmd_len = 0; cmd[0] = '\0';
+		printf("mips64emul> ");
+		fflush(stdout);
+
+		ch = '\0';
+		while (ch != '\n') {
+			ch = console_readchar();
+			if (ch == '\b' && cmd_len > 0) {
+				cmd_len --;
+				cmd[cmd_len] = '\0';
+				printf("\b \b");
+				fflush(stdout);
+			} else if (ch >= ' ' && cmd_len < MAX_CMD_LEN-1) {
+				cmd[cmd_len ++] = ch;
+				cmd[cmd_len] = '\0';
+				printf("%c", ch);
+				fflush(stdout);
+			} else if (ch == '\r' || ch == '\n') {
+				ch = '\n';
+				printf("\n");
+			}
+		}
+
+		/*  Just pressing Enter will repeat the last cmd:  */
+		if (cmd_len == 0) {
+			cmd_len = last_cmd_len;
+			memcpy(cmd, last_cmd, cmd_len);
+		}
+
+		/*  Remove spaces:  */
+		while (cmd_len > 0 && cmd[0]==' ')
+			memmove(cmd, cmd+1, cmd_len --);
+		while (cmd_len > 0 && cmd[cmd_len-1] == ' ')
+			cmd[(cmd_len--)-1] = '\0';
+
+		/*  printf("cmd = '%s'\n", cmd);  */
+
+		/*  Remember this cmd:  */
+		if (cmd_len > 0) {
+			memcpy(last_cmd, cmd, cmd_len);
+			last_cmd_len = cmd_len;
+		}
+
+		if (strcasecmp(cmd, "h") == 0 || strcasecmp(cmd, "?") == 0 ||
+		    strcasecmp(cmd, "help") == 0) {
+			printf("  continue    continue emulation\n");
+			printf("  help        prints this help message\n");
+			printf("  quit        quits mips64emul\n");
+			printf("  registers   dump all CPUs' register values\n");
+			printf("  step        single step\n");
+			printf("  version     print mips64emul version\n");
+		} else if (strcasecmp(cmd, "quit") == 0) {
+			for (i=0; i<ncpus; i++)
+				cpus[i]->running = 0;
+			exit_debugger = 1;
+		} else if (strcasecmp(cmd, "c") == 0 ||
+		    strcasecmp(cmd, "continue") == 0) {
+			exit_debugger = 1;
+		} else if (strcasecmp(cmd, "s") == 0 ||
+		    strcasecmp(cmd, "step") == 0) {
+			return;
+		} else if (strcasecmp(cmd, "r") == 0 ||
+		    strcasecmp(cmd, "registers") == 0) {
+			for (i=0; i<ncpus; i++)
+				cpu_register_dump(cpus[i]);
+		} else if (strcasecmp(cmd, "v") == 0 ||
+		    strcasecmp(cmd, "version") == 0) {
+			printf("%s\n",
+#ifdef VERSION
+			    VERSION
+#else
+			    "(no version)"
+#endif
+			    );
+		} else if (cmd[0] != '\0') {
+			printf("Unknown command '%s'. Type 'help' for help.\n",
+			    cmd);
+			cmd[0] = '\0';
+		}
+	}
+
+	single_step = 0;
+	instruction_trace = old_instruction_trace;
+	show_trace_tree = old_show_trace_tree;
+	quiet_mode = old_quiet_mode;
 }
 
 
@@ -376,7 +521,18 @@ void emul(void)
 	    bootstrap_cpu,
 	    cpus[bootstrap_cpu]->pc, cpus[bootstrap_cpu]->gpr[GPR_GP]);
 
+	/*
+	 *  console_init() makes sure that the terminal is in a good state.
+	 *
+	 *  The SIGINT handler is for CTRL-C  (enter the interactive debugger).
+	 *
+	 *  The SIGCONT handler is invoked whenever the user presses CTRL-Z
+	 *  (or sends SIGSTOP) and then continues. It makes sure that the
+	 *  terminal is in an expected state.
+	 */
 	console_init();
+	signal(SIGINT, debugger_activate);
+	signal(SIGCONT, console_sigcont);
 
 	if (!verbose)
 		quiet_mode = 1;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.118 2004-08-11 02:58:17 debug Exp $
+ *  $Id: cpu.c,v 1.119 2004-08-18 09:04:13 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -50,10 +50,14 @@ extern int emulation_type;
 extern int machine;
 
 extern int show_trace_tree;
+extern int old_show_trace_tree;
 extern int emulated_hz;
 extern int bintrans_enable;
 extern int register_dump;
 extern int instruction_trace;
+extern int old_instruction_trace;
+extern int old_quiet_mode;
+extern int single_step;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
@@ -3131,7 +3135,32 @@ int cpu_run(struct cpu **cpus, int ncpus)
 				if (cpus[i]->running)
 					running = 1;
 
-			if (max_random_cycles_per_chunk_cached > 0) {
+			if (single_step) {
+				if (single_step == 1) {
+					old_instruction_trace =
+					    instruction_trace;
+					old_quiet_mode =
+					    quiet_mode;
+					old_show_trace_tree =
+					    show_trace_tree;
+					instruction_trace = 1;
+					show_trace_tree = 1;
+					quiet_mode = 0;
+					single_step = 2;
+				}
+
+				for (i=0; i<ncpus_cached; i++) {
+					for (j=0;
+					  j<cpus[i]->cpu_type.instrs_per_cycle;
+					    j++) {
+						int instrs_run = cpu_run_instr(cpus[i]);
+						if (i == 0)
+							cpu0instrs += instrs_run;
+						if (single_step)
+							debugger();
+					}
+				}
+			} else if (max_random_cycles_per_chunk_cached > 0) {
 				for (i=0; i<ncpus_cached; i++)
 					if (cpus[i]->running) {
 						a_few_instrs2 = a_few_cycles;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.1 2004-01-06 23:19:32 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.2 2004-01-07 00:52:12 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -35,7 +35,12 @@
  *	tga0 at pci0 dev 12 function 0: TGA2 pass 2, board type T8-02
  *	tga0: 1280 x 1024, 8bpp, Bt485 RAMDAC
  *
+ *  See netbsd/src/sys/dev/pci/tga.c for more info.
+ *	tga_rop_vtov() for video-to-video copy (scrolling and fast
+ *			erasing)
+ *
  *  TODO: This device is far from complete.
+ *        The RAMDAC is non-existant.
  */
 
 #include <stdio.h>
@@ -52,8 +57,15 @@ int dec21030_default_xsize = 640;
 int dec21030_default_ysize = 480;
 
 
+/*  TODO:  Ugly hack:  this causes the framebuffer to be in memory  */
+#define	FRAMEBUFFER_PADDR	0x4000000000
+#define	FRAMEBUFFER_BASE	0x201000
+
+
 struct dec21030_data {
+	int		graphics_mode;
 	uint32_t	pixel_mask;
+	struct vfb_data *vfb_data;
 };
 
 
@@ -80,7 +92,7 @@ uint32_t pci_dec21030_rr(int reg)
 	case 0x30:
 		return 0x08000001;
 	case 0x3c:
-		return 0x00000100;	/*  interrupt pin A (?)  */
+		return 0x00000100;	/*  interrupt pin ?  */
 	default:
 		return 0;
 	}
@@ -96,15 +108,63 @@ int dev_dec21030_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 {
 	struct dec21030_data *d = extra;
 	uint64_t idata, odata = 0;
+	int r, i, white = 255, black = 0;
+
+	/*  Read/write to the framebuffer:  */
+	if (relative_addr >= FRAMEBUFFER_BASE) {
+		/*  TODO:  Perhaps this isn't graphics mode (GMOR), but GOPR (operation) specific:  */
+
+		switch (d->graphics_mode) {
+		case 1:
+			{
+				unsigned char buf2[8*8];
+				int newlen;
+
+				/*  Copy from data into buf2:  */
+				for (i=0; i<len; i++) {
+					buf2[i*8 + 0] = data[i]&1? white : black;
+					buf2[i*8 + 1] = data[i]&2? white : black;
+					buf2[i*8 + 2] = data[i]&4? white : black;
+					buf2[i*8 + 3] = data[i]&8? white : black;
+					buf2[i*8 + 4] = data[i]&16? white : black;
+					buf2[i*8 + 5] = data[i]&32? white : black;
+					buf2[i*8 + 6] = data[i]&64? white : black;
+					buf2[i*8 + 7] = data[i]&128? white : black;
+				}
+
+				newlen = 0;
+				for (i=0; i<32; i++)
+					if (d->pixel_mask & (1 << i))
+						newlen ++;
+
+				if (newlen > len * 8)
+					newlen = len * 8;
+
+				r = dev_fb_access(cpu, mem, relative_addr - FRAMEBUFFER_BASE, buf2, newlen, writeflag, d->vfb_data);
+			}
+			break;
+		default:
+			r = dev_fb_access(cpu, mem, relative_addr - FRAMEBUFFER_BASE, data, len, writeflag, d->vfb_data);
+		}
+		return r;
+	}
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  Read from/write to the dec21030:  */
+	/*  Read from/write to the dec21030's registers:  */
         switch (relative_addr) {
 
 	/*  Board revision  */
 	case TGA_MEM_CREGS + sizeof(uint32_t) * TGA_REG_GREV:
 		odata = 0x04;		/*  01,02,03,04 (rev0) and 20,21,22 (rev1) are allowed  */
+		break;
+
+	/*  Graphics Mode:  */
+	case TGA_MEM_CREGS + sizeof(uint32_t) * TGA_REG_GMOR:
+		if (writeflag == MEM_WRITE)
+			d->graphics_mode = idata;
+		else
+			odata = d->graphics_mode;
 		break;
 
 	/*  Pixel mask:  */
@@ -155,10 +215,10 @@ void pci_dec21030_init(struct cpu *cpu, struct memory *mem)
 	memset(d, 0, sizeof(struct dec21030_data));
 
 	/*  TODO:  this address is based on what NetBSD/arc uses...  fix this  */
-	memory_device_register(mem, "dec21030", 0x100000000000, 0x200000, dev_dec21030_access, d);
+	memory_device_register(mem, "dec21030", 0x100000000000, 128*1048576, dev_dec21030_access, d);
 
 	/*  TODO:  I have no idea about how/where this framebuffer should be in relation to the pci device  */
-	dev_fb_init(cpu, mem, 0x100000201000, VFB_GENERIC,
+	d->vfb_data = dev_fb_init(cpu, mem, FRAMEBUFFER_PADDR, VFB_GENERIC,
 	    dec21030_default_xsize, dec21030_default_ysize,
 	    dec21030_default_xsize, dec21030_default_ysize, 8, "TGA");
 }

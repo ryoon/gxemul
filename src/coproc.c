@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.16 2004-02-22 13:19:29 debug Exp $
+ *  $Id: coproc.c,v 1.17 2004-03-04 03:13:50 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -491,6 +491,17 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	int co_bit, op, rt, fs, g_bit, index, found, i;
 	uint64_t vpn2, xmask;
 
+/*  Ugly R59000 hacks:  */
+if ((function & 0xfffff) == 0x38) {		/*  ei  */
+	cpu->coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
+	return;
+}
+if ((function & 0xfffff) == 0x39) {		/*  di  */
+	cpu->coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
+	return;
+}
+
+
 	co_bit = (function >> 25) & 1;
 
 	if (cp->coproc_nr == 0) {
@@ -699,16 +710,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 			;
 		}
 	}
-
-/*  Ugly R59000 hacks:  */
-if ((function & 0xfffff) == 0x38) {		/*  ei  */
-	cpu->coproc[0]->reg[COP0_STATUS] |= R5900_STATUS_EIE;
-	return;
-}
-if ((function & 0xfffff) == 0x39) {		/*  di  */
-	cpu->coproc[0]->reg[COP0_STATUS] &= ~R5900_STATUS_EIE;
-	return;
-}
 
 	/*  TODO: coprocessor R2020 on DECstation?  */
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x0100ffff)

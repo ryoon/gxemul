@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.172 2004-12-21 06:20:31 debug Exp $
+$Id: index.html,v 1.173 2004-12-21 06:57:59 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1029,8 +1029,8 @@ unstable. During my tests, even pressing the wrong key during the install
 I <i>think</i> this has to do with interrupts from the serial controller.
 Hopefully using the -U command line option will reduce the risk for such 
 crashes. (I haven't had time to come up with a clean solution to this yet;
-it feels like a buffer overflow in the Linux kernel, but it also likely
-that it is a bug in mips64emul.)
+it feels like a buffer overflow in Linux' serial driver for the 5000/200,
+but it is also likely that it is a bug in mips64emul.)
 </font>
 
 <p>

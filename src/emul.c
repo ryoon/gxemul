@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.107 2005-01-12 07:42:39 debug Exp $
+ *  $Id: emul.c,v 1.108 2005-01-16 09:09:31 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -279,9 +279,13 @@ static void add_arc_components(struct emul *emul)
 	int i;
 	uint64_t scsicontroller, scsidevice, scsidisk;
 
+	len += 1048576 * emul->memory_offset_in_mb;
+
 	/*  NOTE/TODO: magic 8MB end of load program area  */
 	arcbios_add_memory_descriptor(cpu,
-	    0x60000, start-0x60000, ARCBIOS_MEM_FreeMemory);
+	    0x60000 + emul->memory_offset_in_mb * 1048576,
+	    start-0x60000 - emul->memory_offset_in_mb * 1048576,
+	    ARCBIOS_MEM_FreeMemory);
 	arcbios_add_memory_descriptor(cpu,
 	    start, len, ARCBIOS_MEM_LoadedProgram);
 
@@ -373,23 +377,17 @@ void emul_start(struct emul *emul)
 
 	/*
 	 *  Create the system's memory:
-	 *
-	 *  A special hack is used for some SGI models,
-	 *  where memory is offset by 128MB to leave room for
-	 *  EISA space and other things.
 	 */
 	debug("adding memory: %i MB", emul->physical_ram_in_mb);
 	memory_amount = (uint64_t)emul->physical_ram_in_mb * 1048576;
-	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 20 ||
-	    emul->machine == 22 || emul->machine == 24 ||
-	    emul->machine == 26)) {
-		debug(" (offset by 128MB, SGI hack)");
-		memory_amount += 128 * 1048576;
-	}
-	if (emul->emulation_type == EMULTYPE_SGI && (emul->machine == 28 ||
-	    emul->machine == 30)) {
-		debug(" (offset by 512MB, SGI hack)");
-		memory_amount += 0x20000000;
+	if (emul->memory_offset_in_mb > 0) {
+		/*
+		 *  A special hack is used for some SGI models,
+		 *  where memory is offset by 128MB to leave room for
+		 *  EISA space and other things.
+		 */
+		debug(" (offset by %iMB)", emul->memory_offset_in_mb);
+		memory_amount += 1048576 * emul->memory_offset_in_mb;
 	}
 	mem = memory_new(memory_amount);
 	debug("\n");

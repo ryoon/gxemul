@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.277 2005-01-16 07:30:37 debug Exp $
+ *  $Id: machine.c,v 1.278 2005-01-16 09:09:31 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1941,17 +1941,18 @@ void machine_init(struct emul *emul, struct memory *mem)
 			if (emul->machine == 24)
 				sprintf(short_machine_name, "SGI-IP22");
 
+			sgi_ram_offset = 1048576 * emul->memory_offset_in_mb;
+
 			/*  Special cases for IP20,22,24,26 memory offset:  */
 			if (emul->machine == 20 || emul->machine == 22 ||
 			    emul->machine == 24 || emul->machine == 26) {
-				sgi_ram_offset = 128*1048576;
 				dev_ram_init(mem, 0x00000000, 0x10000, DEV_RAM_MIRROR, sgi_ram_offset);
 				dev_ram_init(mem, 0x00050000, sgi_ram_offset-0x50000, DEV_RAM_MIRROR, sgi_ram_offset + 0x50000);
 			}
 
 			/*  Special cases for IP28,30 memory offset:  */
 			if (emul->machine == 28 || emul->machine == 30) {
-				sgi_ram_offset = 0x20000000;	/*  TODO: length below should maybe not be 128MB?  */
+				/*  TODO: length below should maybe not be 128MB?  */
 				dev_ram_init(mem, 0x00000000, 128*1048576, DEV_RAM_MIRROR, sgi_ram_offset);
 			}
 		} else {
@@ -2668,8 +2669,8 @@ Why is this here? TODO
 
 		arc_n_memdescriptors = 0;
 
-		arcbios_add_memory_descriptor(cpu, 0, 0x2000, ARCBIOS_MEM_FirmwarePermanent);
-		arcbios_add_memory_descriptor(cpu, 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
+		arcbios_add_memory_descriptor(cpu, sgi_ram_offset +      0,         0x2000, ARCBIOS_MEM_FirmwarePermanent);
+		arcbios_add_memory_descriptor(cpu, sgi_ram_offset + 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
 
 		mem_base = 8;
 		mem_base += sgi_ram_offset / 1048576;

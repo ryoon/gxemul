@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.150 2005-01-15 05:54:00 debug Exp $
+ *  $Id: main.c,v 1.151 2005-01-16 09:09:31 debug Exp $
  */
 
 #include <stdio.h>
@@ -548,8 +548,24 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	if (emul->emulation_type == EMULTYPE_PS2 && emul->physical_ram_in_mb == 0)
 		emul->physical_ram_in_mb = 32;
 
-	if (emul->emulation_type == EMULTYPE_SGI && emul->physical_ram_in_mb == 0)
-		emul->physical_ram_in_mb = 64;
+	if (emul->emulation_type == EMULTYPE_SGI) {
+		if (emul->physical_ram_in_mb == 0)
+			emul->physical_ram_in_mb = 64;
+
+		/*  Special SGI memory offsets:  */
+		switch (emul->machine) {
+		case 20:
+		case 22:
+		case 24:
+		case 26:
+			emul->memory_offset_in_mb = 128;
+			break;
+		case 28:
+		case 30:
+			emul->memory_offset_in_mb = 512;
+			break;
+		}
+	}
 
 	if (emul->emulation_type == EMULTYPE_HPCMIPS &&
 	    emul->physical_ram_in_mb == 0) {

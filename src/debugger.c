@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.39 2005-01-17 11:26:07 debug Exp $
+ *  $Id: debugger.c,v 1.40 2005-01-17 13:29:27 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -355,7 +355,7 @@ static void debugger_cmd_breakpoint(struct emul *emul, char *cmd_line)
 		cmd_line ++;
 
 	if (cmd_line[0] == '\0') {
-		printf("usage: breakpoint subcmd [args...]\n");
+		printf("syntax: breakpoint subcmd [args...]\n");
 		printf("Available subcmds (and args) are:\n");
 		printf("  add addr      add a breakpoint for address addr\n");
 		printf("  delete x      delete breakpoint nr x\n");
@@ -507,7 +507,7 @@ static void debugger_cmd_devstate(struct emul *emul, char *cmd_line)
 	struct cpu *c;
 
 	if (cmd_line[0] == '\0') {
-		printf("usage: devstate devnr\n");
+		printf("syntax: devstate devnr\n");
 		printf("Use 'devices' to get a list of current device numbers.\n");
 		return;
 	}
@@ -662,7 +662,7 @@ static void debugger_cmd_lookup(struct emul *emul, char *cmd_line)
 	uint64_t offset;
 
 	if (cmd_line[0] == '\0') {
-		printf("usage: lookup name|addr\n");
+		printf("syntax: lookup name|addr\n");
 		return;
 
 	}
@@ -763,7 +763,7 @@ static void debugger_cmd_print(struct emul *emul, char *cmd_line)
 		cmd_line ++;
 
 	if (cmd_line[0] == '\0') {
-		printf("usage: print expr\n");
+		printf("syntax: print expr\n");
 		return;
 	}
 
@@ -782,6 +782,162 @@ static void debugger_cmd_print(struct emul *emul, char *cmd_line)
 	case NAME_PARSE_NUMBER:
 		printf("0x%016llx\n", (long long)tmp);
 		break;
+	}
+}
+
+
+/*
+ *  debugger_cmd_put():
+ */
+static void debugger_cmd_put(struct emul *emul, char *cmd_line)
+{
+	static char put_type = ' ';  /*  Remembered across multiple calls.  */
+	char copy[200];
+	int res, syntax_ok = 0;
+	char *p, *p2, *q = NULL;
+	uint64_t addr, data;
+	unsigned char a_byte;
+
+	strncpy(copy, cmd_line, sizeof(copy));
+	copy[sizeof(copy)-1] = '\0';
+
+	/*  syntax: put [b|h|w|d|q] addr, data  */
+
+	p = strchr(copy, ',');
+	if (p != NULL) {
+		*p++ = '\0';
+		while (*p == ' ' && *p)
+			p++;
+		while (strlen(copy) >= 1 &&
+		    copy[strlen(copy) - 1] == ' ')
+			copy[strlen(copy) - 1] = '\0';
+
+		/*  printf("L = '%s', R = '%s'\n", copy, p);  */
+
+		q = copy;
+		p2 = strchr(q, ' ');
+
+		if (p2 != NULL) {
+			char *p3 = q;
+			*p2 = '\0';
+			if (strlen(q) != 1) {
+				printf("Invalid type '%s'\n", q);
+				return;
+			}
+			put_type = *q;
+			q = p2 + 1;
+		}
+
+		/*  printf("type '%c', L '%s', R '%s'\n", put_type, q, p);  */
+		syntax_ok = 1;
+	}
+
+	if (!syntax_ok) {
+		printf("syntax: put [b|h|w|d|q] addr, data\n");
+		printf("   b    byte        (8 bits)\n");
+		printf("   h    half-word   (16 bits)\n");
+		printf("   w    word        (32 bits)\n");
+		printf("   d    doubleword  (64 bits)\n");
+		printf("   q    quad-word   (128 bits)\n");
+		return;
+	}
+
+	if (put_type == ' ') {
+		printf("No type specified.\n");
+		return;
+	}
+
+	/*  here: q is the address, p is the data.  */
+
+	res = debugger_parse_name(emul, q, 0, &addr);
+	switch (res) {
+	case NAME_PARSE_NOMATCH:
+		printf("Couldn't parse the address.\n");
+		return;
+	case NAME_PARSE_MULTIPLE:
+		printf("Multiple matches for the address."
+		    " Try prefixing with %%, $, or @.\n");
+		return;
+	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SYMBOL:
+	case NAME_PARSE_NUMBER:
+		break;
+	default:
+		printf("INTERNAL ERROR in debugger.c.\n");
+		return;
+	}
+
+	res = debugger_parse_name(emul, p, 0, &data);
+	switch (res) {
+	case NAME_PARSE_NOMATCH:
+		printf("Couldn't parse the data.\n");
+		return;
+	case NAME_PARSE_MULTIPLE:
+		printf("Multiple matches for the data value."
+		    " Try prefixing with %%, $, or @.\n");
+		return;
+	case NAME_PARSE_REGISTER:
+	case NAME_PARSE_SYMBOL:
+	case NAME_PARSE_NUMBER:
+		break;
+	default:
+		printf("INTERNAL ERROR in debugger.c.\n");
+		return;
+	}
+
+	/*  TODO: haha, maybe this should be refactored  */
+
+	switch (put_type) {
+	case 'b':
+		a_byte = data;
+		printf("0x%016llx: %02x", (long long)addr, a_byte);
+		if (data > 255)
+			printf(" (NOTE: truncating %0llx)", (long long)data);
+		res = memory_rw(emul->cpus[0], emul->cpus[0]->mem, addr,
+		    &a_byte, 1, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
+		if (!res)
+			printf("  FAILED!\n");
+		printf("\n");
+		return;
+	case 'h':
+		if ((data & 1) != 0)
+			printf("WARNING: address isn't aligned\n");
+		printf("0x%016llx: %04x", (long long)addr, (int)data);
+		if (data > 0xffff)
+			printf(" (NOTE: truncating %0llx)", (long long)data);
+		res = store_16bit_word(emul->cpus[0], addr, data);
+		if (!res)
+			printf("  FAILED!\n");
+		printf("\n");
+		return;
+	case 'w':
+		if ((data & 3) != 0)
+			printf("WARNING: address isn't aligned\n");
+		printf("0x%016llx: %08x", (long long)addr, (int)data);
+		if (data > 0xffffffff && (data >> 32) != 0
+		    && (data >> 32) != 0xffffffff)
+			printf(" (NOTE: truncating %0llx)", (long long)data);
+		res = store_32bit_word(emul->cpus[0], addr, data);
+		if (!res)
+			printf("  FAILED!\n");
+		printf("\n");
+		return;
+	case 'd':
+		if ((data & 7) != 0)
+			printf("WARNING: address isn't aligned\n");
+		printf("0x%016llx: %016llx", (long long)addr, (long long)data);
+		res = store_64bit_word(emul->cpus[0], addr, data);
+		if (!res)
+			printf("  FAILED!\n");
+		printf("\n");
+		return;
+	case 'q':
+		printf("quad-words: TODO\n");
+		/*  TODO  */
+		return;
+	default:
+		printf("Unimplemented type '%c'\n", put_type);
+		return;
 	}
 }
 
@@ -938,7 +1094,7 @@ static void debugger_cmd_tlbdump(struct emul *emul, char *cmd_line)
 				break;
 			default:
 				printf("Unknown tlbdump flag.\n");
-				printf("usage: tlbdump [cpuid][,r]\n");
+				printf("syntax: tlbdump [cpuid][,r]\n");
 				return;
 			}
 		}
@@ -1231,7 +1387,7 @@ static struct cmd cmds[] = {
 	{ "devices", "", 0, debugger_cmd_devices,
 		"print a list of memory-mapped devices" },
 
-	{ "dump", "[vaddr]", 0, debugger_cmd_dump,
+	{ "dump", "[addr]", 0, debugger_cmd_dump,
 		"dump memory contents in hex and ASCII" },
 
 	{ "help", "", 0, debugger_cmd_help,
@@ -1251,6 +1407,9 @@ static struct cmd cmds[] = {
 
 	{ "print", "expr", 0, debugger_cmd_print,
 		"evaluate an expression without side-effects" },
+
+	{ "put", "[b|h|w|d|q] addr, data", 0, debugger_cmd_put,
+		"modify emulated memory contents" },
 
 	{ "quiet", "[on|off]", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off" },
@@ -1322,7 +1481,7 @@ static void debugger_cmd_help(struct emul *emul, char *cmd_line)
 			else
 				printf(" ");
 
-		printf("    %s\n", cmds[i].description);
+		printf("   %s\n", cmds[i].description);
 		i++;
 	}
 

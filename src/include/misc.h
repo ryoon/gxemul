@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.198 2005-01-17 07:58:55 debug Exp $
+ *  $Id: misc.h,v 1.199 2005-01-17 13:29:27 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -556,8 +556,9 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu);
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset);
 void dump_mem_string(struct cpu *cpu, uint64_t addr);
 void store_string(struct cpu *cpu, uint64_t addr, char *s);
-void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
-void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
+int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64);
+int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
+int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16);
 void store_64bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
 void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data, uint64_t data32);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);

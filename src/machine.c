@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.282 2005-01-17 08:40:54 debug Exp $
+ *  $Id: machine.c,v 1.283 2005-01-17 13:29:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -204,7 +204,7 @@ void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
  *  Stores a 64-bit word in emulated RAM.  Byte order is taken into account.
  *  Helper function.
  */
-void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
+int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 {
 	unsigned char data[8];
 	if ((addr >> 32) == 0)
@@ -223,7 +223,7 @@ void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
-	memory_rw(cpu, cpu->mem,
+	return memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -235,7 +235,7 @@ void store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
  *  (This function takes a 64-bit word as argument, to suppress some
  *  warnings, but only the lowest 32 bits are used.)
  */
-void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
+int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 {
 	unsigned char data[4];
 	if ((addr >> 32) == 0)
@@ -248,7 +248,29 @@ void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
-	memory_rw(cpu, cpu->mem,
+	return memory_rw(cpu, cpu->mem,
+	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  store_16bit_word():
+ *
+ *  Stores a 16-bit word in emulated RAM.  Byte order is taken into account.
+ *  (This function takes a 64-bit word as argument, to suppress some
+ *  warnings, but only the lowest 16 bits are used.)
+ */
+int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
+{
+	unsigned char data[2];
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
+	data[0] = (data16 >> 8) & 255;
+	data[1] = (data16) & 255;
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
+	}
+	return memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 

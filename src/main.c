@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.63 2004-08-05 22:22:21 debug Exp $
+ *  $Id: main.c,v 1.64 2004-08-10 02:34:31 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -196,7 +196,7 @@ void usage(char *progname)
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");
 	printf("  -E        try to emulate a Cobalt machine (default CPU = RM5200)\n");
 	printf("  -e        try to emulate a MeshCube\n");
-	printf("  -F        try to emulate a hpcmips machine\n");
+	printf("  -F        try to emulate an hpcmips machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");

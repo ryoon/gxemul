@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.543 2005-01-31 05:45:50 debug Exp $
+$Id: HISTORY,v 1.544 2005-01-31 18:26:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1593,3 +1593,6 @@ HISTORY of mips64emul
 20050131	Continuing a little bit more on src/file.c. PPC ELFs can now
 		be loaded, it seems.
 		Continuing on src/cpu_ppc.c.
+		'mips' is undefined by the configure script, if it is defined
+		by default. (Fixes build on OpenBSD/arc.)
+		A couple of other minor fixes.

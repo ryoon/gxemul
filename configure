@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.93 2005-01-31 08:15:51 debug Exp $
+#  $Id: configure,v 1.94 2005-01-31 18:26:43 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -356,7 +356,7 @@ if [ z$NOX11 = z ]; then
 fi
 
 
-COPTIM=$CFLAGS
+COPTIM=''
 
 
 if [ z$HPUX = zYES ]; then
@@ -386,11 +386,11 @@ $CC $COPTIM _testm.c -o _testm 2> /dev/null
 if [ ! -x _testm ]; then
 	printf "\nWARNING! COULD NOT COMPILE mips define TEST PROGRAM AT ALL!\n"
 else
-	if [ z`./_testm` = z12 ]; then
+	if [ z`./_testm` = z1 ]; then
 		printf "yes, workaround applied\n"
 		echo "#undef mips" >> config.h
 	else
-		if [ z`./_testm` = z1 ]; then
+		if [ z`./_testm` = z12 ]; then
 			printf "yes, but workaround not possible\n"
 			exit
 		else
@@ -875,6 +875,8 @@ fi
 ###############################################################################
 
 INCLUDE=-I../include/
+
+COPTIM="$COPTIM $CFLAGS"
 
 echo C compiler: $CC
 echo C compiler flags: $COPTIM $CWARNINGS $INCLUDE

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.6 2005-01-31 05:45:51 debug Exp $
+ *  $Id: cpu.h,v 1.7 2005-01-31 18:26:43 debug Exp $
  *
  *  See cpu.c.
  */
@@ -36,6 +36,9 @@
 
 #include <sys/types.h>
 #include <inttypes.h>
+
+/*  This is needed for undefining 'mips' or 'ppc', on weird systems:  */
+#include "../config.h"
 
 #include "cpu_mips.h"
 #include "cpu_ppc.h"

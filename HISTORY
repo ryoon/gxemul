@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.444 2005-01-05 04:30:18 debug Exp $
+$Id: HISTORY,v 1.445 2005-01-05 05:45:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1417,7 +1417,7 @@ HISTORY of mips64emul
 		Playing around with bintranslated lwl and lwr for Alpha.
 20040104	Changing many occurances of pica to jazz.
 		Various other updates.
-20050105	Fixing some more bintrans bugs.
+20050105	Fixing some more bintrans bugs (both Alpha and i386).
 		Unaligned stores that cause tlb refill exceptions should now
 		cause TLBS exceptions, not TLBL.
 		Adding experimental swl and swr to the Alpha backend.

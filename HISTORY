@@ -416,7 +416,10 @@ HISTORY of mips64emul
 20040328	Linux on Playstation 2 boots a bit. The Playstation 2
 		graphics controller has been extended to work better with
 		NetBSD, and to include some Linux support as well.
-		Some interrupt handling enhancements on Playstation 2.
+		Some interrupt handling enhancements on Playstation 2,
+		needed for Linux' dma.
 		128-bit loads and stores (lq and sq) are allowed, although
 		the top half of quadwords are not modified by other
 		instructions. (Linux uses lq and sq.)
+		Big-endian X Windows servers now display correct rgb color,
+		not bgr as before.

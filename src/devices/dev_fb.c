@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.19 2004-03-04 20:05:26 debug Exp $
+ *  $Id: dev_fb.c,v 1.20 2004-03-06 17:11:35 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -68,6 +68,7 @@ extern int x11_using_truecolor;
 
 
 /*  #define	FB_DEBUG  */
+#define EXPERIMENTAL_PUTPIXEL
 
 
 /*
@@ -103,6 +104,38 @@ void set_blackwhite_palette(struct vfb_data *d, int ncolors)
 		d->rgb_palette[i*3 + 0] = gray;
 		d->rgb_palette[i*3 + 1] = gray;
 		d->rgb_palette[i*3 + 2] = gray;
+	}
+}
+
+
+/*
+ *  experimental_PutPixel():
+ *
+ *  Manipulate the XImage's data directly, instead of calling
+ *  XPutPixel (which is awfully slow).
+ *
+ *  TODO:  This thing probably doesn't do color stuff correctly.
+ */
+void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
+{
+	int ofs, ofs2, bit, bits, t;
+
+	ofs = (fbw->x11_fb_winxsize * y + x) >> 3;
+	ofs2 = (fbw->x11_fb_winxsize * fbw->x11_fb_winysize) >> 3;
+
+	if (fbw->fb_ximage->byte_order)
+		t = 1 << (7-(x & 7));
+	else
+		t = 1 << (x & 7);
+
+	/*  TODO: other bitdepths?  */
+	bits = x11_using_truecolor? 24 : 8;
+
+	for (bit = 0; bit < bits; bit++) {
+		if (color & (1 << ((bit&(~7)) + 7-(bit&7)) ))
+			fbw->ximage_data[ofs + bit*ofs2] |= t;
+		else
+			fbw->ximage_data[ofs + bit*ofs2] &= ~t;
 	}
 }
 
@@ -243,7 +276,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel;
 
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
+#ifdef EXPERIMENTAL_PUTPIXEL
+				experimental_PutPixel(d->fb_window, x, y, color);
+#else
 				XPutPixel(d->fb_window->fb_ximage, x, y, color);
+#endif
 #endif
 			x++;
 		}
@@ -332,7 +369,11 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 		}
 
 		if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
+#ifdef EXPERIMENTAL_PUTPIXEL
+			experimental_PutPixel(d->fb_window, x, y, color);
+#else
 			XPutPixel(d->fb_window->fb_ximage, x, y, color);
+#endif
 #endif
 
 		x++;

@@ -23,15 +23,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.1 2004-03-06 17:10:52 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.2 2004-03-27 05:44:28 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
  *	offset 0x0000	timer control
  *	offset 0x8000	DMA controller
  *	offset 0xf000	Interrupt register
- *
- *  TODO:  use netbsd's playstation2/ee/timerreg.h
  */
 
 #include <stdio.h>
@@ -43,6 +41,7 @@
 #include "devices.h"
 
 #include "ps2_dmacreg.h"
+#include "ee_timerreg.h"
 
 #define	TICK_STEPS_SHIFT	17
 
@@ -54,8 +53,19 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 {
 	struct ps2_data *d = extra;
 
-	if (d->timer0_mode & 0x200)		/*  TODO: timer enable bits  */
+	/*  Count-up Enable:   TODO: by how much?  */
+	if (d->timer_mode[0] & T_MODE_CUE)
+		d->timer_count[0] ++;
+
+	/*  TODO:  right now this interrupts every now and then, this should
+		be 100 Hz in NetBSD, but isn't  */
+	if (d->timer_mode[0] & (T_MODE_CMPE | T_MODE_OVFE)) {
+		/*  Zero return:  */
+		if (d->timer_mode[0] & T_MODE_ZRET)
+			d->timer_count[0] = 0;
+
 		cpu_interrupt(cpu, 0x200 +8);		/*  0x200 is timer0  */
+	}
 }
 
 
@@ -69,6 +79,7 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 	uint64_t idata = 0, odata = 0;
 	int i, regnr = 0;
 	struct ps2_data *d = extra;
+	int timer_nr;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -80,33 +91,56 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 			d->dmac_reg[regnr] = idata;
 	}
 
+	/*
+	 *  Timer control:
+	 *  The four timers are at offsets 0, 0x800, 0x1000, and 0x1800.
+	 */
+	if (relative_addr < TIMER_REGSIZE) {
+		timer_nr = (relative_addr & 0x1800) >> 11;	/*  0, 1, 2, or 3  */
+		relative_addr &= (TIMER_OFS-1);
+	}
+
 	switch (relative_addr) {
-	case 0x0000:	/*  timer 0 count  */
+	case 0x0000:	/*  timer count  */
 		if (writeflag == MEM_READ) {
-			odata = d->timer0_count;
-			d->timer0_count ++;	/*  :-)  TODO  */
-			debug("[ ps2_stuff: read timer 0 count: 0x%llx ]\n", (long long)odata);
+			odata = d->timer_count[timer_nr];
+			if (timer_nr == 0)
+				d->timer_count[timer_nr] ++;	/*  :-)  TODO: remove this?  */
+			debug("[ ps2_stuff: read timer %i count: 0x%llx ]\n", timer_nr, (long long)odata);
 		} else {
-			d->timer0_count = idata;
-			debug("[ ps2_stuff: write timer 0 count: 0x%llx ]\n", (long long)idata);
+			d->timer_count[timer_nr] = idata;
+			debug("[ ps2_stuff: write timer %i count: 0x%llx ]\n", timer_nr, (long long)idata);
 		}
 		break;
-	case 0x0010:	/*  timer 0 mode  */
+	case 0x0010:	/*  timer mode  */
 		if (writeflag == MEM_READ) {
-			odata = d->timer0_mode;
-			debug("[ ps2_stuff: read timer 0 mode: 0x%llx ]\n", (long long)odata);
+			odata = d->timer_mode[timer_nr];
+			debug("[ ps2_stuff: read timer %i mode: 0x%llx ]\n", timer_nr, (long long)odata);
 		} else {
-			d->timer0_mode = idata;
-			debug("[ ps2_stuff: write timer 0 mode: 0x%llx ]\n", (long long)idata);
+			d->timer_mode[timer_nr] = idata;
+			debug("[ ps2_stuff: write timer %i mode: 0x%llx ]\n", timer_nr, (long long)idata);
 		}
 		break;
-	case 0x0020:	/*  timer 0 comp  */
+	case 0x0020:	/*  timer comp  */
 		if (writeflag == MEM_READ) {
-			odata = d->timer0_comp;
-			debug("[ ps2_stuff: read timer 0 comp: 0x%llx ]\n", (long long)odata);
+			odata = d->timer_comp[timer_nr];
+			debug("[ ps2_stuff: read timer %i comp: 0x%llx ]\n", timer_nr, (long long)odata);
 		} else {
-			d->timer0_comp = idata;
-			debug("[ ps2_stuff: write timer 0 comp: 0x%llx ]\n", (long long)idata);
+			d->timer_comp[timer_nr] = idata;
+			debug("[ ps2_stuff: write timer %i comp: 0x%llx ]\n", timer_nr, (long long)idata);
+		}
+		break;
+	case 0x0030:	/*  timer hold  */
+		if (writeflag == MEM_READ) {
+			odata = d->timer_hold[timer_nr];
+			debug("[ ps2_stuff: read timer %i hold: 0x%llx ]\n", timer_nr, (long long)odata);
+			if (timer_nr >= 2)
+				fatal("[ WARNING: ps2_stuff: read from non-existant timer %i hold register ]\n");
+		} else {
+			d->timer_hold[timer_nr] = idata;
+			debug("[ ps2_stuff: write timer %i hold: 0x%llx ]\n", timer_nr, (long long)idata);
+			if (timer_nr >= 2)
+				fatal("[ WARNING: ps2_stuff: write to non-existant timer %i hold register ]\n");
 		}
 		break;
 
@@ -126,6 +160,10 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
 				    (long long)d->dmac_reg[D2_MADR_REG/0x10], (long)length);
 
 				copy_buf = malloc(length);
+				if (copy_buf == NULL) {
+					fprintf(stderr, "out of memory in dev_ps2_stuff_access()\n");
+					exit(1);
+				}
 				memory_rw(cpu, cpu->mem, from_addr, copy_buf, length, MEM_READ, CACHE_NONE);
 				memory_rw(cpu, d->other_memory[2], to_addr, copy_buf, length, MEM_WRITE, CACHE_NONE);
 				free(copy_buf);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.5 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.6 2004-03-04 18:44:16 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  */
@@ -184,7 +184,7 @@ void test_triangle(struct gif_data *d,
  */
 int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
-/*	int i;  */
+	int i;
 	struct gif_data *d = extra;
 
 	if (relative_addr + len > DEV_PS2_GIF_LENGTH)
@@ -232,8 +232,19 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 					if (!d->transparent_text || pixels[0])
 						memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 				}
+		} else if (data[0] == 0x04 && data[1] == 0x80 && len == 0x50) {			/*  Possibly "copy 640x16":  */
+			int y_source, y_dest;
+			unsigned char pixels[640 * 16 * 3];
+
+			y_source = data[8*4 + 2] + ((data[8*4 + 3] & 0x7) << 8);
+			y_dest   = data[9*4 + 2] + ((data[9*4 + 3] & 0x7) << 8);
+			debug("[ gif: copy 640x16: y_source=%i y_dest=%i ]\n", y_source, y_dest);
+
+			/*  TODO: faster direct scroll  */
+			memory_rw(NULL, d->fb_mem, y_source * 640*3, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			memory_rw(NULL, d->fb_mem, y_dest   * 640*3, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		} else if (data[0] == 0x07 && data[1] == 0x80 && len == 128) {			/*  Possibly "output cursor":  */
-			int xbase, ybase, xend, yend;  /*, x, y;  */
+			int xbase, ybase, xend, yend, x, y;
 
 			xbase = (data[20*4 + 0] + (data[20*4 + 1] << 8)) / 16;
 			ybase = (data[20*4 + 2] + (data[20*4 + 3] << 8)) / 16;
@@ -243,23 +254,24 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			/*  debug("[ gif: cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);  */
 
 			/*  Output the cursor to framebuffer memory:  */
-/*
+
 			for (y=ybase; y<=yend; y++)
 				for (x=xbase; x<=xend; x++) {
 					int fb_addr = (x + y * d->xsize) * d->bytes_per_pixel;
 					unsigned char pixels[3];
-					pixels[0] = 0xff;
-					pixels[1] = 0xff;
-					pixels[2] = 0xff;
 
+					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+					pixels[0] = 0xff - pixels[0];
+					pixels[1] = 0xff - pixels[1];
+					pixels[2] = 0xff - pixels[2];
 					memory_rw(NULL, d->fb_mem, fb_addr, pixels, sizeof(pixels), MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 				}
-*/
+
 		} else {		/*  Unknown command:  */
-			debug("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
-/*			for (i=0; i<len; i++)
-				debug(" %02x", data[i]);
-*/			debug(" ]\n");
+			fatal("[ gif write to addr 0x%x (len=%i):", (int)relative_addr, len);
+			for (i=0; i<len; i++)
+				fatal(" %02x", data[i]);
+			fatal(" ]\n");
 		}
 	}
 
@@ -283,7 +295,7 @@ void dev_ps2_gif_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct gif_data));
 
-	d->transparent_text = 1;
+	d->transparent_text = 0;
 
 	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH, dev_ps2_gif_access, d);
 }

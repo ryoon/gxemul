@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.92 2004-07-17 20:10:11 debug Exp $
+ *  $Id: misc.h,v 1.93 2004-08-01 10:02:00 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -695,7 +695,7 @@ struct cpu {
 #define	REGIMM_NAMES	{	\
 	"bltz", "bgez", "bltzl", "bgezl", "regimm_04", "regimm_05", "regimm_06", "regimm_07",			/*  0x00 - 0x07  */	\
 	"regimm_08", "regimm_09", "regimm_0a", "regimm_0b", "regimm_0c", "regimm_0d", "regimm_0e", "regimm_0f",	/*  0x08 - 0x0f  */	\
-	"regimm_10", "regimm_11", "regimm_12", "regimm_13", "regimm_14", "regimm_15", "regimm_16", "regimm_17",	/*  0x10 - 0x17  */	\
+	"bltzal", "bgezal", "bltzall", "bgezall", "regimm_14", "regimm_15", "regimm_16", "regimm_17",		/*  0x10 - 0x17  */	\
 	"regimm_18", "regimm_19", "regimm_1a", "regimm_1b", "regimm_1c", "regimm_1d", "regimm_1e", "regimm_1f" 	/*  0x18 - 0x1f  */ }
 
 #define	SPECIAL_NAMES	{	\

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.112 2004-07-25 03:36:31 debug Exp $
+ *  $Id: cpu.c,v 1.113 2004-08-01 10:02:01 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -553,7 +553,8 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 			debug("%s\tr%i,%i(r%i)\t\t[0x%016llx, data=",
 			    hi6_names[hi6], rt, imm, rs, (long long)
 			    (cpu->gpr[rs] + imm));
-		break;
+		/*  NOTE: No break, it is up to the caller to print 'data'.  */
+		return;
 	case HI6_J:
 	case HI6_JAL:
 		imm = (((instr[3] & 3) << 24) + (instr[2] << 16) +

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.7 2005-01-15 08:37:05 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.8 2005-01-18 06:22:57 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -765,6 +765,12 @@ int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem,
 	case MEC_PHY_READ_INITIATE:	/*  0x70  */
 		if (writeflag)
 			debug("[ sgi_mec: write to MEC_PHY_READ_INITIATE: 0x%016llx ]\n", (long long)idata);
+		break;
+	case 0x74:
+		if (writeflag)
+			debug("[ sgi_mec: write to 0x74: 0x%016llx ]\n", (long long)idata);
+		else
+			debug("[ sgi_mec: read from 0x74 ]\n");
 		break;
 	case MEC_STATION:	/*  0xa0  */
 		if (writeflag)

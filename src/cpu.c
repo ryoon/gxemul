@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.240 2005-01-17 17:52:52 debug Exp $
+ *  $Id: cpu.c,v 1.241 2005-01-18 06:23:00 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -295,7 +295,10 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
 		cpu->translate_address = translate_address_mmu10k;
 		break;
 	default:
-		cpu->translate_address = translate_address_generic;
+		if (cpu->cpu_type.rev == MIPS_R4100)
+			cpu->translate_address = translate_address_mmu4100;
+		else
+			cpu->translate_address = translate_address_generic;
 	}
 
 	return cpu;
@@ -1306,22 +1309,35 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			reg[COP0_CONTEXT] = (int64_t)(int32_t)reg[COP0_CONTEXT];
 			reg[COP0_ENTRYHI] = (int64_t)(int32_t)reg[COP0_ENTRYHI];
 		} else {
-			reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
-			reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
+			if (cpu->cpu_type.rev == MIPS_R4100) {
+				reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK_R4100;
+				reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK_R4100);
 
-			/*  TODO: Sign-extend CONTEXT? No, at least not on 5K.  */
+				/*  TODO:  fix these  */
+				reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
+				reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
+				reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
+				reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
 
-			reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
-			reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
-			reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
-			reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
+				/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
 
-			/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800)) | vaddr_asid;
+			} else {
+				reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
+				reg[COP0_CONTEXT] |= ((vaddr_vpn2 << CONTEXT_BADVPN2_SHIFT) & CONTEXT_BADVPN2_MASK);
 
-			if (cpu->cpu_type.mmu_model == MMU10K)
-				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
-			else
-				reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
+				reg[COP0_XCONTEXT] &= ~XCONTEXT_R_MASK;
+				reg[COP0_XCONTEXT] &= ~XCONTEXT_BADVPN2_MASK;
+				reg[COP0_XCONTEXT] |= (vaddr_vpn2 << XCONTEXT_BADVPN2_SHIFT) & XCONTEXT_BADVPN2_MASK;
+				reg[COP0_XCONTEXT] |= ((vaddr >> 62) & 0x3) << XCONTEXT_R_SHIFT;
+
+				/*  reg[COP0_PAGEMASK] = cpu->coproc[0]->tlbs[0].mask & PAGEMASK_MASK;  */
+
+				if (cpu->cpu_type.mmu_model == MMU10K)
+					reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K)) | vaddr_asid;
+				else
+					reg[COP0_ENTRYHI] = (vaddr & (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK)) | vaddr_asid;
+			}
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.144 2005-01-17 16:12:42 debug Exp $
+ *  $Id: coproc.c,v 1.145 2005-01-18 06:22:59 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -797,6 +797,9 @@ void coproc_register_write(struct cpu *cpu,
 			if (cpu->cpu_type.mmu_model == MMU3K) {
 				cp->reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
 				cp->reg[COP0_CONTEXT] |= (old & R2K3K_CONTEXT_BADVPN_MASK);
+			} else if (cpu->cpu_type.rev == MIPS_R4100) {
+				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK_R4100;
+				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK_R4100);
 			} else {
 				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
 				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
@@ -870,6 +873,8 @@ void coproc_register_write(struct cpu *cpu,
 				tmp &= (R2K3K_ENTRYHI_VPN_MASK | R2K3K_ENTRYHI_ASID_MASK);
 			else if (cpu->cpu_type.mmu_model == MMU10K)
 				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
+			else if (cpu->cpu_type.rev == MIPS_R4100)
+				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800 | ENTRYHI_ASID);
 			else
 				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
 			break;
@@ -1734,6 +1739,8 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 		/*  R4000 and R10000:  */
 		if (cpu->cpu_type.mmu_model == MMU10K)
 			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K;
+		else if (cpu->cpu_type.rev == MIPS_R4100)
+			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800;
 		else
 			xmask = ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK;
 		vpn2 = cp->reg[COP0_ENTRYHI] & xmask;

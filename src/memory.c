@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.140 2005-01-15 08:37:07 debug Exp $
+ *  $Id: memory.c,v 1.141 2005-01-18 06:23:00 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -643,6 +643,13 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 #include "memory_v2p.c"
 #undef TRANSLATE_ADDRESS
 #undef V2P_MMU10K
+
+/*  Almost generic  :-)  */
+#define TRANSLATE_ADDRESS	translate_address_mmu4100
+#define	V2P_MMU4100
+#include "memory_v2p.c"
+#undef TRANSLATE_ADDRESS
+#undef V2P_MMU4100
 
 #define TRANSLATE_ADDRESS	translate_address_generic
 #include "memory_v2p.c"

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.17 2005-01-09 04:25:38 debug Exp $
+ *  $Id: memory_v2p.c,v 1.18 2005-01-18 06:23:00 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -63,12 +63,24 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 #ifdef V2P_MMU10K
 	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK_R10K;
 #else
+#ifdef V2P_MMU4100
+/* This is ugly  */
+	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK | 0x1800;
+#else
 	const uint64_t vpn2_mask = ENTRYHI_VPN2_MASK;
+#endif
 #endif
 	int x_64;	/*  non-zero for 64-bit address space accesses  */
 	int pageshift, n_tlbs;
 	int pmask;
+#ifdef V2P_MMU4100
+	const int pagemask_mask = PAGEMASK_MASK_R4100;
+	const int pagemask_shift = PAGEMASK_SHIFT_R4100;
+#else
+	const int pagemask_mask = PAGEMASK_MASK;
+	const int pagemask_shift = PAGEMASK_SHIFT;
 #endif
+#endif	/*  !V2P_MMU3K  */
 
 
 #ifdef USE_TINY_CACHE
@@ -263,28 +275,30 @@ bugs are triggered.  */
 			d_bit = cached_lo0 & R2K3K_ENTRYLO_D;
 #else
 			/*  R4000 or similar:  */
-			pmask = cp0->tlbs[i].mask & PAGEMASK_MASK;
+			pmask = cp0->tlbs[i].mask & pagemask_mask;
 			cached_hi = cp0->tlbs[i].hi;
 			cached_lo0 = cp0->tlbs[i].lo0;
 			cached_lo1 = cp0->tlbs[i].lo1;
 
-			/*  Optimized for 4KB page size:  */
+			/*  Optimized for minimum page size:  */
 			if (pmask == 0) {
-				pageshift = 12;
-				entry_vpn2 = (cached_hi & vpn2_mask) >> 13;
-				vaddr_vpn2 = (vaddr & vpn2_mask) >> 13;
-				pmask = 0xfff;
-				odd = vaddr & 0x1000;
+				pageshift = pagemask_shift - 1;
+				entry_vpn2 = (cached_hi & vpn2_mask) >> pagemask_shift;
+				vaddr_vpn2 = (vaddr & vpn2_mask) >> pagemask_shift;
+				pmask = (1 << (pagemask_shift-1)) - 1;
+				odd = vaddr & (1 << (pagemask_shift-1));
 			} else {
 				/*  Non-standard page mask:  */
-				switch (pmask) {
-				case 0x0006000:	pageshift = 14; break;
-				case 0x001e000:	pageshift = 16; break;
-				case 0x007e000:	pageshift = 18; break;
-				case 0x01fe000:	pageshift = 20; break;
-				case 0x07fe000:	pageshift = 22; break;
-				case 0x1ffe000:	pageshift = 24; break;
-				case 0x7ffe000:	pageshift = 26; break;
+				switch (pmask | ((1 << pagemask_shift) - 1)) {
+				case 0x00007ff:	pageshift = 10; break;
+				case 0x0001fff:	pageshift = 12; break;
+				case 0x0007fff:	pageshift = 14; break;
+				case 0x001ffff:	pageshift = 16; break;
+				case 0x007ffff:	pageshift = 18; break;
+				case 0x01fffff:	pageshift = 20; break;
+				case 0x07fffff:	pageshift = 22; break;
+				case 0x1ffffff:	pageshift = 24; break;
+				case 0x7ffffff:	pageshift = 26; break;
 				default:
 					fatal("pmask=%08x\n", i, pmask);
 					exit(1);

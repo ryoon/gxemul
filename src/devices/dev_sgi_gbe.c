@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.5 2004-03-01 15:55:38 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.6 2004-03-25 12:39:58 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -241,9 +241,9 @@ int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 		break;
 
 	/*
-	 *  Linux/sgimips seems to write palette data to offset 0x50000 - 0x503xx,
-	 *  and 0x60000 - 0x603ff.  32-bit values at addresses divisible by 4
-	 *  (formated as 0xrrggbb00).
+	 *  Linux/sgimips seems to write color palette data to offset 0x50000 - 0x503xx,
+	 *  and gamma correction data to 0x60000 - 0x603ff, as 32-bit values at addresses
+	 *  divisible by 4 (formated as 0xrrggbb00).
 	 *
 	 *  sgio2fb: initializing
 	 *  sgio2fb: I/O at 0xffffffffb6000000

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.11 2004-06-11 15:23:18 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.12 2004-06-13 10:31:32 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -76,7 +76,7 @@ void pckbc_add_code(struct pckbc_data *d, int code, int port)
 	/*  Add at the head, read at the tail:  */
 	d->head[port] = (d->head[port]+1) % MAX_8042_QUEUELEN;
 	if (d->head[port] == d->tail[port])
-		fatal("pckbc: queue overrun, port %i!\n", port);
+		fatal("[ pckbc: queue overrun, port %i! ]\n", port);
 
 	d->key_queue[port][d->head[port]] = code;
 }
@@ -90,7 +90,7 @@ void pckbc_add_code(struct pckbc_data *d, int code, int port)
 int pckbc_get_code(struct pckbc_data *d, int port)
 {
 	if (d->head[port] == d->tail[port])
-		fatal("pckbc: queue empty, port %i!\n", port);
+		fatal("[ pckbc: queue empty, port %i! ]\n", port);
 
 	d->tail[port] = (d->tail[port]+1) % MAX_8042_QUEUELEN;
 	return d->key_queue[port][d->tail[port]];
@@ -192,10 +192,11 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	 */
 
 	case PS2 + PS2_TXBUF:
-		if (writeflag==MEM_READ)
-			fatal("[ pckbc: read from port %i, PS2_TXBUF ]\n", port_nr);
-		else {
-			fatal("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+		if (writeflag==MEM_READ) {
+			odata = random() & 0xff;
+			debug("[ pckbc: read from port %i, PS2_TXBUF: 0x%x ]\n", port_nr, (int)odata);
+		} else {
+			debug("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
 
 			/*  Handle keyboard commands:  */
 			switch (idata) {
@@ -207,6 +208,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			case 0x28:	/*  second byte of 0xf3, SGI-IP32's prom  */
 			case 0x76:	/*  third byte of 0xfc, SGI-IP32's prom  */
 			case 0x03:	/*  second byte of ATKBD_CMD_GSCANSET (?)  */
+			case 0x04:
 				pckbc_add_code(d, 0x03, port_nr);	/*  ?  */
 				break;
 
@@ -239,7 +241,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				pckbc_add_code(d, 0xaa, port_nr);	/*  battery ok (?)  */
 				break;
 			default:
-				fatal("[ pckbc: UNIMPLEMENTED keyboard command 0x%02x (port %i) ]\n", (int)idata, port_nr);
+				debug("[ pckbc: UNIMPLEMENTED keyboard command 0x%02x (port %i) ]\n", (int)idata, port_nr);
 			}
 		}
 		break;
@@ -249,17 +251,17 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			odata = random() & 0xff;	/*  what to return if no data is available? TODO  */
 			if (d->head[port_nr] != d->tail[port_nr])
 				odata = pckbc_get_code(d, port_nr);
-			fatal("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);
+			debug("[ pckbc: read from port %i, PS2_RXBUF: 0x%02x ]\n", port_nr, (int)odata);
 		} else {
-			fatal("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_RXBUF: 0x%llx ]\n", port_nr, (long long)idata);
 		}
 		break;
 
 	case PS2 + PS2_CONTROL:
 		if (writeflag==MEM_READ) {
-			fatal("[ pckbc: read from port %i, PS2_CONTROL ]\n", port_nr);
+			debug("[ pckbc: read from port %i, PS2_CONTROL ]\n", port_nr);
 		} else {
-			fatal("[ pckbc: write to port %i, PS2_CONTROL: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_CONTROL: 0x%llx ]\n", port_nr, (long long)idata);
 			d->clocksignal = (idata & 0x10) ? 1 : 0;
 			d->rx_int_enable = (idata & 0x08) ? 1 : 0;
 			d->tx_int_enable = (idata & 0x04) ? 1 : 0;
@@ -275,7 +277,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
 		} else {
-			fatal("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
+			debug("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
 		}
 		break;
 

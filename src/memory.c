@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.93 2004-11-11 00:45:16 debug Exp $
+ *  $Id: memory.c,v 1.94 2004-11-11 20:46:04 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -655,7 +655,8 @@ static int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
  *
  *  Return values:
  *	0  Failure
- *	1  Success
+ *	1  Success, the page is readable only
+ *	2  Success, the page is read/write
  */
 static int translate_address(struct cpu *cpu, uint64_t vaddr,
 	uint64_t *return_addr, int flags)
@@ -689,7 +690,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 				if (cpu->translation_cache_instr[i].wf >= wf &&
 				    vaddr_shift_12 == (cpu->translation_cache_instr[i].vaddr_pfn)) {
 					*return_addr = cpu->translation_cache_instr[i].paddr | (vaddr & 0xfff);
-					return 1;
+					return cpu->translation_cache_instr[i].wf;
 				}
 			}
 		} else {
@@ -698,7 +699,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 				if (cpu->translation_cache_data[i].wf >= wf &&
 				    vaddr_shift_12 == (cpu->translation_cache_data[i].vaddr_pfn)) {
 					*return_addr = cpu->translation_cache_data[i].paddr | (vaddr & 0xfff);
-					return 1;
+					return cpu->translation_cache_data[i].wf;
 				}
 			}
 		}
@@ -816,7 +817,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 			 *  but also things like 0x90000000a0000000.  (TODO)
 			 */
 			*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
-			return 1;
+			return 2;
 		default:
 			;
 		}
@@ -838,7 +839,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 			if (vaddr >= (uint64_t)0xffffffff80000000ULL &&
 			    vaddr <= (uint64_t)0xffffffffbfffffffULL) {
 				*return_addr = vaddr & 0x1fffffff;
-				return 1;
+				return 2;
 			}
 
 			/*  TODO: supervisor stuff  */
@@ -999,7 +1000,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 						    vaddr, paddr);
 
 						*return_addr = paddr;
-						return 1;
+						return d_bit? 2 : 1;
 					} else {
 						/*  TLB modification exception  */
 						tlb_refill = 0;
@@ -1065,6 +1066,93 @@ exception:
 	/*  Return failure:  */
 	return 0;
 }
+
+
+#ifdef BINTRANS
+/*
+ *  fast_vaddr_to_hostaddr():
+ *
+ *  Used by dynamically translated code.
+ *  alignmask should be 0 for bytes, 1 for 16-bit words, 3 for 32-bit
+ *  words, and 7 for 64-bit words.
+ *
+ *  Return value is a pointer to a host page + offset, if the virtual
+ *  address was aligned, if the page was writable (or writeflag was zero),
+ *  it the virtual address was translatable to a paddr, and if the paddr was
+ *  translatable to a host address.
+ *
+ *  On error, NULL is returned. The caller (usually the dynamically
+ *  generated machine code) must check for this.
+ */
+unsigned char *fast_vaddr_to_hostaddr(struct cpu *cpu,
+	uint64_t vaddr, int writeflag, int alignmask)
+{
+	int ok, i;
+	uint64_t paddr, vaddr_page;
+	unsigned char *memblock;
+	size_t offset;
+
+	if ((vaddr & alignmask) != 0)
+		return NULL;
+
+	/*  printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
+	    cpu, (long long)vaddr, writeflag, alignmask);  */
+
+	/*  Caches are not very coozy to handle in bintrans:  */
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
+			return NULL;
+		break;
+	/*  TODO: other cache types  */
+	}
+
+	vaddr_page = vaddr & ~0xfff;
+	i = cpu->bintrans_next_index;
+	for (;;) {
+		if (cpu->bintrans_data_vaddr[i] == vaddr_page &&
+		    cpu->bintrans_data_hostpage[i] != NULL &&
+		    cpu->bintrans_data_writable[i] >= writeflag)
+			return cpu->bintrans_data_hostpage[i] + (vaddr & 0xfff);
+		i++;
+		if (i == N_BINTRANS_VADDR_TO_HOST)
+			i = 0;
+		if (i == cpu->bintrans_next_index)
+			break;
+	}
+
+	ok = translate_address(cpu, vaddr, &paddr,
+	    (writeflag? FLAG_WRITEFLAG : 0) + FLAG_NOEXCEPTIONS);
+	/*  printf("ok=%i\n", ok);  */
+	if (!ok)
+		return NULL;
+	if (paddr >= cpu->mem->mmap_dev_minaddr && paddr < cpu->mem->mmap_dev_maxaddr)
+		return NULL;
+
+	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr,
+	    writeflag? MEM_WRITE : MEM_READ);
+	if (memblock == NULL)
+		return NULL;
+
+	offset = paddr & (cpu->mem->memblock_size - 1);
+
+	if (writeflag)
+		bintrans_invalidate(cpu, paddr);
+
+	cpu->bintrans_next_index --;
+	if (cpu->bintrans_next_index < 0)
+		cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+	cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
+	cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+	cpu->bintrans_data_writable[cpu->bintrans_next_index] = ok - 1;
+
+/*
+printf("fast_vaddr_to_hostaddr(): cpu=%p, vaddr=%016llx, wf=%i, align=%i\n",
+    cpu, (long long)vaddr, writeflag, alignmask);
+*/
+	return memblock + offset;
+}
+#endif
 
 
 /*
@@ -1448,28 +1536,6 @@ no_exception_access:
 		}
 	}
 
-#ifdef BINTRANS
-	if (cpu->emul->bintrans_enable && cache == CACHE_DATA) {
-		unsigned char *new_4kpage = memblock + (offset & ~0xfff);
-		uint64_t new_virtual_4kpage = orig_vaddr & ~0xfff;
-		int index = cpu->pc_bintrans_data_index;
-
-		/*  Switch index?  */
-		if (cpu->pc_bintrans_data_host_4kpage[index] != new_4kpage
-		    || cpu->pc_bintrans_data_virtual_4kpage[index] != new_virtual_4kpage) {
-			index = (index + 1) % N_BINTRANS_DATA;
-			cpu->pc_bintrans_data_index = index;
-
-			cpu->pc_bintrans_data_virtual_4kpage[index] = new_virtual_4kpage;
-			cpu->pc_bintrans_data_host_4kpage[index] = new_4kpage;
-			cpu->pc_bintrans_data_writeflag[index] = (writeflag == MEM_WRITE);
-		} else {
-			/*  Same index, possibly update the writeflag:  */
-			if (writeflag == MEM_WRITE)
-				cpu->pc_bintrans_data_writeflag[index] = 1;
-		}
-	}
-#endif
 
 do_return_ok:
 	return MEMORY_ACCESS_OK;

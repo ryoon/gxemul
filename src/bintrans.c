@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.54 2004-11-11 13:57:31 debug Exp $
+ *  $Id: bintrans.c,v 1.55 2004-11-11 20:46:04 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -954,6 +954,7 @@ tep->chunk[prev_p] = prev_chunk_offset;
 void bintrans_init_cpu(struct cpu *cpu)
 {
 	cpu->chunk_base_address = translation_code_chunk_space;
+	cpu->bintrans_fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
 }
 
 

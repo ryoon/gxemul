@@ -331,3 +331,7 @@ HISTORY of mips64emul
 		so that Ultrix and DECstation PROMs don't complain about
 		broken TURBOchannel ROMs.
 		Working some more on the machine-dependant interrupt stuff.
+20040219	Trying out some Linux/DECstation kernels (semi-successfully).
+20040222	YES! I finally found the bug that caused Linux/R10000 to only
+		work on Alpha, not on 32-bit machines.  It was a shift left,
+		probably done using 6 bits on alpha, 5 bits on 32-bit machines.

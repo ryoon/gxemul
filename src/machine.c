@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.252 2004-12-19 08:52:00 debug Exp $
+ *  $Id: machine.c,v 1.253 2004-12-19 10:23:52 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2675,6 +2675,13 @@ Why is this here? TODO
 
 			snprintf(arc_cpu_name, sizeof(arc_cpu_name),
 			    "MIPS-%s", emul->emul_cpu_name);
+
+			if (emul->emulation_type == EMULTYPE_ARC &&
+			    emul->machine == MACHINE_ARC_NEC_R96)
+				snprintf(arc_cpu_name, sizeof(arc_cpu_name),
+				    "MIPS-%s - Pr 4/5.0, Fp 5/0",
+				    emul->emul_cpu_name);
+
 			arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
 			for (jj=0; jj<strlen(arc_cpu_name); jj++)
 				if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')
@@ -2786,7 +2793,7 @@ Why is this here? TODO
 		    ( emul->machine == MACHINE_ARC_NEC_RD94 ||
 		    emul->machine == MACHINE_ARC_NEC_R94 ||
 		    emul->machine == MACHINE_ARC_NEC_R96 )) {
-			uint64_t jazzbus;
+			uint64_t jazzbus, eisa, other;
 
 			jazzbus = arcbios_addchild_manual(cpu,
 			    COMPONENT_CLASS_AdapterClass,
@@ -2822,6 +2829,20 @@ Why is this here? TODO
 					    1, 2, 0, 0xffffffff, "640x480",
 					    x, NULL, 0);
 				}
+
+				/*  TODO: R[D]94 too?  */
+				eisa = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_AdapterClass,
+				    COMPONENT_TYPE_EISAAdapter,
+				    0, 1, 2, 0, 0xffffffff, "EISA",
+				    system, NULL, 0);
+
+				other = arcbios_addchild_manual(cpu,
+				    COMPONENT_CLASS_ControllerClass,
+				    COMPONENT_TYPE_OtherController,
+				    0, 1, 2, 0, 0xffffffff, "NEC1C01",
+				    eisa, NULL, 0);
+
 				break;
 			}
 		}
@@ -3172,12 +3193,12 @@ config[77] = 0x30;
 			init_bootpath = "scsi(0)disk(0)rdisk(0)partition(1)";
 
 #if 0
-			/*  Floppy?  */
-			init_bootpath = "multi()disk()fdisk()";
+		/*  Floppy?  */
+		init_bootpath = "multi()disk()fdisk()";
+
+		/*  Windows NT experiments:  */
+		init_bootpath = "scsi()cdrom(6)fdisk()";
 #endif
-
-/*  Windows NT experiments:  init_bootpath = "scsi()cdrom(6)fdisk()";  */
-
 
 		bootstr = malloc(strlen(init_bootpath) +
 		    strlen(emul->boot_kernel_filename) + 1);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.28 2004-04-24 22:38:12 debug Exp $
+ *  $Id: coproc.c,v 1.29 2004-05-02 14:41:00 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "misc.h"
 
@@ -508,6 +509,329 @@ fatal("xcontext 0x%016llx\n", tmp);
 
 
 /*
+ *  MIPS floating-point stuff:
+ *
+ *  TODO:  Move this to some other file?
+ */
+#define	FMT_S		16
+#define	FMT_D		17
+#define	FMT_W		20
+#define	FMT_L		21
+#define	FMT_PS		22
+
+#define	FPU_OP_ADD	1
+#define	FPU_OP_SUB	2
+#define	FPU_OP_MUL	3
+#define	FPU_OP_DIV	4
+#define	FPU_OP_SQRT	5
+#define	FPU_OP_MOV	6
+#define	FPU_OP_C	7
+#define	FPU_OP_ABS	8
+#define	FPU_OP_NEG	9
+/*  TODO: CEIL.L, CEIL.W, FLOOR.L, FLOOR.W, RECIP, ROUND.L, ROUND.W, RSQRT, TRUNC.L, TRUNC.W  */
+
+
+/*  FPU control registers:  */
+#define	FPU_FCCR	25
+#define	FPU_FCSR	31
+#define	  FCSR_FCC0_SHIFT	  23
+#define	  FCSR_FCC1_SHIFT	  25
+
+struct internal_float_value {
+	double f;
+};
+
+
+/*
+ *  fpu_interpret_float_value():
+ *
+ *  Interprets a float value from binary IEEE format into
+ *  a internal_float_value struct.
+ */
+void fpu_interpret_float_value(uint64_t reg, struct internal_float_value *fvp, int fmt)
+{
+	int n_frac = 0, n_exp = 0;
+	int i;
+	int sign, exponent;
+	double fraction;
+
+	/*  fatal("reg=%016llx fmt = %i\n", (long long)reg, fmt);  */
+	memset(fvp, 0, sizeof(struct internal_float_value));
+
+	/*  sign:  */
+	sign = (reg >> 31) & 1;
+	if (fmt == FMT_D || fmt == FMT_L)
+		sign = (reg >> 63) & 1;
+
+	/*  n_frac and n_exp:  */
+	switch (fmt) {
+	case FMT_S:	n_frac = 23; n_exp = 8; break;
+	case FMT_W:	n_frac = 31; n_exp = 0; break;
+	case FMT_D:	n_frac = 52; n_exp = 11; break;
+	case FMT_L:	n_frac = 63; n_exp = 0; break;
+	default:
+		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+	}
+
+	/*  exponent:  */
+	exponent = 0;
+	switch (fmt) {
+	case FMT_W:
+	case FMT_L:
+		break;
+	case FMT_S:
+	case FMT_D:
+		exponent = (reg >> n_frac) & ((1 << n_exp) - 1);
+		exponent -= (1 << (n_exp-1)) - 1;
+		break;
+	default:
+		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+	}
+
+	/*  fraction:  */
+	fraction = 0.0;
+	switch (fmt) {
+	case FMT_W:
+	case FMT_L:
+		for (i=n_frac-1; i>=0; i--) {
+			fraction *= 2.0;
+			if ((reg >> i) & 1)
+				fraction += 1.0;
+		}
+		break;
+	case FMT_S:
+	case FMT_D:
+		fraction = 0.0;
+		for (i=0; i<n_frac; i++) {
+			int bit = (reg >> i) & 1;
+			fraction /= 2.0;
+			if (bit)
+				fraction += 1.0;
+		}
+		/*  Add implicit bit 0:  */
+		fraction = (fraction / 2.0) + 1.0;
+		break;
+	default:
+		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+	}
+
+	/*  form the value:  */
+	fvp->f = fraction;
+
+	/*  fatal("load  reg=%016llx sign=%i exponent=%i fraction=%f ", (long long)reg, sign, exponent, fraction);  */
+
+	/*  TODO: this is awful for exponents of large magnitude.  */
+	if (exponent > 0) {
+		while (exponent-- > 0)
+			fvp->f *= 2.0;
+	} else if (exponent < 0) {
+		while (exponent++ < 0)
+			fvp->f /= 2.0;
+	}
+
+	if (sign)
+		fvp->f = -fvp->f;
+
+	/*  fatal("f = %f\n", fvp->f);  */
+}
+
+
+/*
+ *  fpu_store_float_value():
+ *
+ *  Stores a float value (actually a double) in fmt format.
+ */
+void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
+{
+	int n_frac = 0, n_exp = 0, signofs=0;
+	int i, exponent;
+	uint64_t r = 0, r2;
+
+	/*  n_frac and n_exp:  */
+	switch (fmt) {
+	case FMT_S:	n_frac = 23; n_exp = 8; signofs = 31; break;
+	case FMT_W:	n_frac = 31; n_exp = 0; signofs = 31; break;
+	case FMT_D:	n_frac = 52; n_exp = 11; signofs = 63; break;
+	case FMT_L:	n_frac = 63; n_exp = 0; signofs = 63; break;
+	default:
+		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
+	}
+
+	/*  sign bit:  */
+	if (nf < 0.0) {
+		r |= ((uint64_t)1 << signofs);
+		nf = -nf;
+	}
+
+	/*  fraction:  */
+	switch (fmt) {
+	case FMT_W:
+	case FMT_L:
+		r2 = nf;	/*  implicit conversion of double to integer  */
+		r |= r2;
+		break;
+	case FMT_S:
+	case FMT_D:
+		/*  fatal("store f=%f ", nf);  */
+		/*
+		 *  How to convert back from double to exponent + fraction:
+		 *  We want fraction to be 1.xxx, that is   1.0 <= fraction < 2.0
+		 *
+		 *  This method is very slow but should work:
+		 */
+		exponent = 0;
+		while (nf < 1.0) {
+			nf *= 2.0;
+			exponent --;
+		}
+		while (nf >= 2.0) {
+			nf /= 2.0;
+			exponent ++;
+		}
+
+		/*  Here:   1.0 <= nf < 2.0  */
+		/*  fatal(" nf=%f", nf);  */
+		nf -= 1.0;	/*  remove implicit first bit  */
+		for (i=n_frac-1; i>=0; i--) {
+			nf *= 2.0;
+			if (nf >= 1.0) {
+				r |= ((uint64_t)1 << i);
+				nf -= 1.0;
+			}
+			/*  printf("\n i=%2i r=%016llx\n", i, (long long)r);  */
+		}
+
+		/*  Insert the exponent into the resulting word:  */
+		/*  (First bias, then make sure it's within range)  */
+		exponent += (((uint64_t)1 << (n_exp-1)) - 1);
+		if (exponent < 0)
+			exponent = 0;
+		if (exponent >= ((uint64_t)1 << n_exp))
+			exponent = ((uint64_t)1 << n_exp) - 1;
+		r |= (uint64_t)exponent << n_frac;
+
+		/*  fatal(" exp=%i, r = %016llx\n", exponent, (long long)r);  */
+
+		break;
+	default:
+		/*  TODO  */
+		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
+	}
+
+
+	/*  TODO:  this is for 32-bit mode:  */
+	if (fmt == FMT_D || fmt == FMT_L) {
+		cp->reg[fd] = r & 0xffffffff;
+		cp->reg[(fd+1) & 31] = (r >> 32) & 0xffffffff;
+	} else {
+		cp->reg[fd] = r;
+	}
+}
+
+
+/*
+ *  fpu_op():
+ *
+ *  Perform a floating-point operation.  For those of fs and ft
+ *  that are >= 0, those numbers are interpreted into local
+ *  variables.
+ *
+ *  Only FPU_OP_C (compare) returns anything of interest, 1 for
+ *  true, 0 for false.
+ */
+int fpu_op(struct cpu *cpu, struct coproc *cp, int op, int fmt,
+	int ft, int fs, int cc, int fd, int cond, int output_fmt)
+{
+	/*  Potentially two input registers, fs and ft  */
+	struct internal_float_value float_value[2];
+	double nf;
+
+/*  printf("op = %i\n", op);  */
+
+	if (fs >= 0) {
+		uint64_t v = cp->reg[fs];
+		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
+		v = (v & 0xffffffff) + (cp->reg[(fs + 1) & 31] << 32);
+		fpu_interpret_float_value(v, &float_value[0], fmt);
+	}
+	if (ft >= 0) {
+		uint64_t v = cp->reg[ft];
+		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
+		v = (v & 0xffffffff) + (cp->reg[(ft + 1) & 31] << 32);
+		fpu_interpret_float_value(v, &float_value[1], fmt);
+	}
+
+	switch (op) {
+	case FPU_OP_ADD:
+		nf = float_value[0].f + float_value[1].f;
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_SUB:
+		nf = float_value[0].f - float_value[1].f;
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_MUL:
+		nf = float_value[0].f * float_value[1].f;
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_DIV:
+		if (fabs(float_value[1].f) > 0.00000001)
+			nf = float_value[0].f / float_value[1].f;
+		else
+			nf = 0.0;	/*  TODO  */
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_SQRT:
+		if (float_value[0].f > 0.0)
+			nf = sqrt(float_value[0].f);
+		else
+			nf = 0.0;	/*  TODO  */
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_ABS:
+		nf = fabs(float_value[0].f);
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_NEG:
+		nf = - float_value[0].f;
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_MOV:
+		nf = float_value[0].f;
+		fpu_store_float_value(cp, fd, nf, output_fmt);
+		break;
+	case FPU_OP_C:
+		/*  TODO: how to detect unordered-ness and such?  */
+		switch (cond) {
+		case 0:		return 0;					/*  False  */
+		case 1:		return 0;					/*  Unordered  */
+		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
+		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
+		case 4:		return (float_value[0].f < float_value[1].f);	/*  Ordered or Less than  */
+		case 5:		return (float_value[0].f < float_value[1].f);	/*  Unordered or Less than  */
+		case 6:		return (float_value[0].f <= float_value[1].f);	/*  Ordered or Less than or Equal  */
+		case 7:		return (float_value[0].f <= float_value[1].f);	/*  Unordered or Less than or Equal  */
+		case 8:		return 0;					/*  Signaling false  */
+		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */
+		case 10:	return (float_value[0].f == float_value[1].f);	/*  Signaling Equal  */
+		case 11:	return (float_value[0].f == float_value[1].f);	/*  Not Greater than or Less than  */
+		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
+		case 13:	return !(float_value[0].f >= float_value[1].f);	/*  Not greater than or equal */
+		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
+		case 15:	return !(float_value[0].f > float_value[1].f);	/*  Not greater than  */
+		default:
+			fatal("fpu_op(): unknown condition code %i\n", cond);
+		}
+		break;
+	default:
+		fatal("fpu_op(): unimplemented op %i\n", op);
+	}
+
+	return 0;
+}
+
+
+/*
  *  fpu_function():
  *
  *  Returns 1 if function was implemented, 0 otherwise.
@@ -524,15 +848,76 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	fd = (function >> 6) & 31;
 	cond = (function >> 0) & 15;
 
+	/*  bc1f, bc1t, bc1fl, bc1tl:  */
+	if ((function & 0x03e00000) == 0x01000000) {
+		int nd, tf, imm, cond;
+		char *instr_mnem;
+
+		/*  cc are bits 20..18:  */
+		cc = (function >> 18) & 7;
+		nd = (function >> 17) & 1;
+		tf = (function >> 16) & 1;
+		imm = function & 65535;
+		if (imm >= 32768)
+			imm -= 65536;
+
+		instr_mnem = NULL;
+		if (nd == 0 && tf == 0)  instr_mnem = "bc1f";
+		if (nd == 0 && tf == 1)  instr_mnem = "bc1t";
+		if (nd == 1 && tf == 0)  instr_mnem = "bc1fl";
+		if (nd == 1 && tf == 1)  instr_mnem = "bc1tl";
+
+		if (instruction_trace)
+			debug("%s\t%i,0x%016llx\n", instr_mnem, cc, (long long) (cpu->pc + (imm << 2)));
+
+		if (cpu->delay_slot) {
+			fatal("%s: jump inside a jump's delay slot, or similar. TODO\n", instr_mnem);
+			cpu->running = 0;
+			return 1;
+		}
+
+		/*  Both the FCCR and FCSR contain condition code bits...  */
+		cond = (cp->fcr[FPU_FCCR] >> cc) & 1;
+
+		if (!tf)
+			cond = !cond;
+
+		if (cond) {
+			cpu->delay_slot = TO_BE_DELAYED;
+			cpu->delay_jmpaddr = cpu->pc + (imm << 2);
+		} else {
+			/*  "likely":  */
+			if (nd)
+				cpu->nullify_next = 1;	/*  nullify delay slot  */
+		}
+
+		return 1;
+	}
+
+	/*  add.fmt: Floating-point add  */
+	if ((function & 0x0000003f) == 0x00000000) {
+		if (instruction_trace)
+			debug("add.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+
+		fpu_op(cpu, cp, FPU_OP_ADD, fmt, ft, fs, -1, fd, -1, fmt);
+		return 1;
+	}
+
+	/*  sub.fmt: Floating-point subtract  */
+	if ((function & 0x0000003f) == 0x00000001) {
+		if (instruction_trace)
+			debug("sub.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
+
+		fpu_op(cpu, cp, FPU_OP_SUB, fmt, ft, fs, -1, fd, -1, fmt);
+		return 1;
+	}
+
 	/*  mul.fmt: Floating-point multiply  */
 	if ((function & 0x0000003f) == 0x00000002) {
 		if (instruction_trace)
 			debug("mul.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 
-		/*  TODO: mul  */
-
-		cp->reg[fd] = cp->reg[fs] * cp->reg[ft];	/*  TODO...  */
-
+		fpu_op(cpu, cp, FPU_OP_MUL, fmt, ft, fs, -1, fd, -1, fmt);
 		return 1;
 	}
 
@@ -541,19 +926,73 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		if (instruction_trace)
 			debug("div.%i\tr%i,r%i,r%i\n", fmt, fd, fs, ft);
 
-		/*  TODO: div  */
+		fpu_op(cpu, cp, FPU_OP_DIV, fmt, ft, fs, -1, fd, -1, fmt);
+		return 1;
+	}
 
-		cp->reg[fd] = 0; /* cp->reg[fs] / cp->reg[ft];	TODO...  */
+	/*  sqrt.fmt: Floating-point square-root  */
+	if ((function & 0x001f003f) == 0x00000004) {
+		if (instruction_trace)
+			debug("sqrt.%i\tr%i,r%i\n", fmt, fd, fs);
 
+		fpu_op(cpu, cp, FPU_OP_SQRT, fmt, -1, fs, -1, fd, -1, fmt);
+		return 1;
+	}
+
+	/*  abs.fmt: Floating-point absolute value  */
+	if ((function & 0x001f003f) == 0x00000005) {
+		if (instruction_trace)
+			debug("abs.%i\tr%i,r%i\n", fmt, fd, fs);
+
+		fpu_op(cpu, cp, FPU_OP_ABS, fmt, -1, fs, -1, fd, -1, fmt);
+		return 1;
+	}
+
+	/*  mov.fmt: Floating-point move  */
+	if ((function & 0x0000003f) == 0x00000006) {
+		if (instruction_trace)
+			debug("mov.%i\tr%i,r%i\n", fmt, fd, fs);
+
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, fmt);
+		return 1;
+	}
+
+	/*  neg.fmt: Floating-point negate  */
+	if ((function & 0x001f003f) == 0x00000007) {
+		if (instruction_trace)
+			debug("neg.%i\tr%i,r%i\n", fmt, fd, fs);
+
+		fpu_op(cpu, cp, FPU_OP_NEG, fmt, -1, fs, -1, fd, -1, fmt);
 		return 1;
 	}
 
 	/*  c.cond.fmt: Floating-point compare  */
 	if ((function & 0x000000f0) == 0x00000030) {
+		int cond_true;
+
 		if (instruction_trace)
 			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
 
-		/*  TODO: compare  */
+		cond_true = fpu_op(cpu, cp, FPU_OP_C, fmt, ft, fs, -1, -1, cond, fmt);
+
+		/*
+		 *  Both the FCCR and FCSR contain condition code bits:
+		 *	FCCR:  bits 7..0
+		 *	FCSR:  bits 31..25 and 23
+		 */
+		cp->fcr[FPU_FCCR] &= ~(1 << cc);
+		if (cond)
+			cp->fcr[FPU_FCCR] |= (1 << cc);
+
+		if (cc == 0) {
+			cp->fcr[FPU_FCSR] &= ~(1 << FCSR_FCC0_SHIFT);
+			if (cond)
+				cp->fcr[FPU_FCSR] |= (1 << FCSR_FCC0_SHIFT);
+		} else {
+			cp->fcr[FPU_FCSR] &= ~((cc-1) << FCSR_FCC1_SHIFT);
+			if (cond)
+				cp->fcr[FPU_FCSR] |= ((cc-1) << FCSR_FCC1_SHIFT);
+		}
 
 		return 1;
 	}
@@ -563,10 +1002,7 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		if (instruction_trace)
 			debug("cvt.s.%i\tr%i,r%i\n", fmt, fd, fs);
 
-		/*  TODO: convert from fs (format fmt) to fd  */
-
-		cp->reg[fd] = cp->reg[fs];	/*  TODO...  */
-
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_S);
 		return 1;
 	}
 
@@ -575,10 +1011,16 @@ int fpu_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 		if (instruction_trace)
 			debug("cvt.d.%i\tr%i,r%i\n", fmt, fd, fs);
 
-		/*  TODO: convert from fs (format fmt) to fd  */
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_D);
+		return 1;
+	}
 
-		cp->reg[fd] = cp->reg[fs];	/*  TODO...  */
+	/*  cvt.w.fmt: Convert to word fixed-point  */
+	if ((function & 0x001f003f) == 0x00000024) {
+		if (instruction_trace)
+			debug("cvt.w.%i\tr%i,r%i\n", fmt, fd, fs);
 
+		fpu_op(cpu, cp, FPU_OP_MOV, fmt, -1, fs, -1, fd, -1, FMT_W);
 		return 1;
 	}
 
@@ -600,7 +1042,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	int co_bit, op, rt, rd, fs, g_bit, index, found, i;
 	int copz;
 	uint64_t vpn2, xmask, tmpvalue;
-	char *instr_mnem = NULL;
 	int cpnr = cp->coproc_nr;
 
 	/*  For quick reference:  */
@@ -888,7 +1329,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 	if ((cp->coproc_nr==0 || cp->coproc_nr==3) && function == 0x02000020)
 		return;
 
-#if 0
+#if 1
 	if (fpu_function(cpu, cp, function))
 		return;
 #endif
@@ -901,10 +1342,10 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 {
  static int count=0;
  count ++;
-/* if (count > 20)
+/* if (count > 10)
 	exit(1);
 */
- return;
+return;
 }
 	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.43 2004-02-06 06:12:41 debug Exp $
+ *  $Id: machine.c,v 1.44 2004-02-18 09:29:13 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -96,7 +96,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 {
 	int i;
 	for (i=0; i<40; i++) {
-		char ch = '\0';
+		unsigned char ch = '\0';
 		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 		if (ch == '\0')
 			return;
@@ -149,7 +149,7 @@ void add_environment_string(char *s, uint64_t *addr)
  */
 void store_buf(uint64_t addr, char *s, size_t len)
 {
-	while (len-- > 0)
+	while (len-- != 0)
 		store_byte(addr++, *s++);
 }
 

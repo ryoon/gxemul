@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.22 2004-03-08 03:23:18 debug Exp $
+ *  $Id: dev_fb.c,v 1.23 2004-03-10 01:08:28 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -413,6 +413,7 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 void dev_fb_tick(struct cpu *cpu, void *extra)
 {
 	struct vfb_data *d = extra;
+	int need_to_flush_x11 = 0;
 
 	if (!use_x11)
 		return;
@@ -458,22 +459,46 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		    d->update_x1/d->vfb_scaledown, d->update_y1/d->vfb_scaledown,
 		    (d->update_x2 - d->update_x1)/d->vfb_scaledown + 1,
 		    (d->update_y2 - d->update_y1)/d->vfb_scaledown + 1);
-
-		/*
-		 *  TODO:  This cursor stuff needs more work.
-		 */
-		if (d->cursor_on)
-			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
-			    d->fb_window->x11_fb_gc, d->fb_window->cursor_ximage,
-			    0,0, d->cursor_x/d->vfb_scaledown, d->cursor_y/d->vfb_scaledown,
-			    d->cursor_xsize/d->vfb_scaledown, d->cursor_ysize/d->vfb_scaledown);
-
-		XFlush(d->fb_window->x11_display);
 #endif
+		need_to_flush_x11 = 1;
+
 		d->update_x1 = d->update_y1 = 99999;
 		d->update_x2 = d->update_y2 = -1;
 	} else
 		d->updated_last_tick = 0;
+
+	if (d->cursor_on != d->OLD_cursor_on ||
+	    d->cursor_x != d->OLD_cursor_x || d->cursor_y != d->OLD_cursor_y ||
+	    d->cursor_xsize != d->OLD_cursor_xsize || d->cursor_ysize != d->OLD_cursor_ysize) {
+		/*  Remove old cursor, if any:  */
+		if (d->OLD_cursor_on) {
+			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
+			    d->fb_window->x11_fb_gc, d->fb_window->fb_ximage,
+			    d->OLD_cursor_x/d->vfb_scaledown, d->OLD_cursor_y/d->vfb_scaledown,
+			    d->OLD_cursor_x/d->vfb_scaledown, d->OLD_cursor_y/d->vfb_scaledown,
+			    d->OLD_cursor_xsize/d->vfb_scaledown, d->OLD_cursor_ysize/d->vfb_scaledown);
+		}
+
+		/*  Paint new cursor:  */
+		if (d->cursor_on) {
+			XPutImage(d->fb_window->x11_display, d->fb_window->x11_fb_window,
+			    d->fb_window->x11_fb_gc, d->fb_window->cursor_ximage,
+			    0,0, d->cursor_x/d->vfb_scaledown, d->cursor_y/d->vfb_scaledown,
+			    d->cursor_xsize/d->vfb_scaledown, d->cursor_ysize/d->vfb_scaledown);
+			d->OLD_cursor_on = d->cursor_on;
+			d->OLD_cursor_x = d->cursor_x;
+			d->OLD_cursor_y = d->cursor_y;
+			d->OLD_cursor_xsize = d->cursor_xsize;
+			d->OLD_cursor_ysize = d->cursor_ysize;
+		}
+
+		need_to_flush_x11 = 1;
+	}
+
+#ifdef WITH_X11
+	if (need_to_flush_x11)
+		XFlush(d->fb_window->x11_display);
+#endif
 }
 
 

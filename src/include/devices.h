@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.41 2004-03-09 00:05:54 debug Exp $
+ *  $Id: devices.h,v 1.42 2004-03-10 01:08:31 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -155,6 +155,11 @@ struct vfb_data {
 	int		cursor_xsize;
 	int		cursor_ysize;
 	int		cursor_on;
+	int		OLD_cursor_x;
+	int		OLD_cursor_y;
+	int		OLD_cursor_xsize;
+	int		OLD_cursor_ysize;
+	int		OLD_cursor_on;
 
 	/*  These should always be in sync:  */
 	unsigned char	*framebuffer;

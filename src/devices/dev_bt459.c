@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.6 2004-03-08 03:22:29 debug Exp $
+ *  $Id: dev_bt459.c,v 1.7 2004-03-10 01:08:29 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -47,12 +47,38 @@ struct bt459_data {
 	unsigned char	cur_addr_lo;
 
 	int		planes;
+	int		cursor_on;
 	int		cursor_x;
 	int		cursor_y;
+	int		cursor_xsize;
+	int		cursor_ysize;
 
 	struct vfb_data *vfb_data;
 	unsigned char	*rgb_palette;		/*  ptr to 256 * 3 (r,g,b)  */
 };
+
+
+/*
+ *  bt459_sync_xysize():
+ */
+void bt459_sync_xysize(struct bt459_data *d)
+{
+	int x,y, xmax=0, ymax=0;
+
+	for (y=0; y<64; y++)
+		for (x=0; x<64; x+=4) {
+			int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
+			unsigned char data = d->bt459_reg[reg];
+			if (data)		ymax = y;
+			if (data & 0xc0)	xmax = x;
+			if (data & 0x30)	xmax = x + 1;
+			if (data & 0x0c)	xmax = x + 2;
+			if (data & 0x03)	xmax = x + 3;
+		}
+
+	d->cursor_xsize = xmax + 1;
+	d->cursor_ysize = ymax + 1;
+}
 
 
 /*
@@ -65,6 +91,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
 	int btaddr, new_cursor_x, new_cursor_y;
+	int on;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -105,6 +132,10 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		if (writeflag == MEM_WRITE) {
 			debug("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
 			d->bt459_reg[btaddr] = idata;
+
+			/*  Write to cursor bitmap:  */
+			if (btaddr >= 0x400)
+				bt459_sync_xysize(d);
 		} else {
 			odata = d->bt459_reg[btaddr];
 			debug("[ bt459: read from BT459 register 0x%04x, value 0x%02x ]\n", btaddr, odata);
@@ -123,18 +154,25 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		}
 	}
 
-	/*  The magic 370,37 values are from a NetBSD source code comment.  :-)  */
+	/*  NetBSD uses 370,37 as magic values.  */
 	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) + ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
-	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
+	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 38;
 
-	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y) {
-		/*  TODO: what do the bits in the CCR do?  */
-		int on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
+	/*  TODO: what do the bits in the CCR do?  */
+	on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
+
+on = 1;
+
+	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y || on != d->cursor_on) {
 		d->cursor_x = new_cursor_x;
 		d->cursor_y = new_cursor_y;
-on = 0;
+		d->cursor_on = on;
+
+		if (!(d->bt459_reg[BT459_REG_CCR] & 1))
+			d->cursor_y += 5 - d->cursor_ysize;
+
 		debug("[ bt459: cursor = %03i,%03i ]\n", d->cursor_x, d->cursor_y);
-		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, 10, 22);
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, d->cursor_xsize, d->cursor_ysize);
 	}
 
 	if (writeflag == MEM_READ)
@@ -160,6 +198,7 @@ void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 	d->planes       = planes;
 	d->cursor_x     = -1;
 	d->cursor_y     = -1;
+	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH, dev_bt459_access, (void *)d);
 }

@@ -23,9 +23,13 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.6 2004-06-14 22:48:15 debug Exp $
+ *  $Id: symbol.c,v 1.7 2004-06-17 08:30:32 debug Exp $
  *
  *  Address to symbol translation routines.
+ *
+ *  This module is (probably) independant from the rest of the emulator.
+ *  symbol_init() must be called before any other function in this
+ *  file is used.
  */
 
 #include <stdio.h>
@@ -52,9 +56,10 @@ int n_symbols = 0;
 /*
  *  get_symbol_addr():
  *
- *  Returns 1 if a symbol is found, 0 otherwise.
- *  If the symbol is found, and addr is non-NULL, *addr is set
- *  to its address.
+ *  Find a symbol by name. If addr is non-NULL, *addr is set to the symbol's
+ *  address. Return value is 1 if the symbol is found, 0 otherwise.
+ *
+ *  NOTE:  This is O(n).
  */
 int get_symbol_addr(char *symbol, uint64_t *addr)
 {
@@ -78,12 +83,23 @@ int get_symbol_addr(char *symbol, uint64_t *addr)
 /*
  *  get_symbol_name():
  *
- *  Return a nicely formated string, if the address was found.
+ *  Translate an address into a symbol name.  The return value is a pointer
+ *  to a static char array, containing the symbol name.  (In other words,
+ *  this function is not reentrant. This removes the need for memory allocation
+ *  at the caller's side.)
  *
- *  NOTE:  This algorithm has linear time complexity, O(n).
- *  It should _NOT_ be used during fast execution.  It is ok
- *  however to use this routine when debugging, ie when there
- *  is a (fatal) error, or when quiet_mode == 0.
+ *  If offset is not a NULL pointer, *offset is set to the offset within
+ *  the symbol. For example, if there is a symbol at address 0x1000 with
+ *  length 0x100, and a caller wants to know the symbol name of address
+ *  0x1008, the symbol's name will be found in the static char array, and
+ *  *offset will be set to 0x8.
+ *
+ *  If no symbol was found, NULL is returned instead.
+ *
+ *  NOTE:  This algorithm has linear time complexity, O(n).  It should _NOT_
+ *         be used during fast execution.  It is ok however to use this
+ *         routine while debugging, ie when quiet_mode == 0 or when there
+ *         is some kind of fatal or uncommon error.
  */
 static char symbol_buf[SYMBOLBUF_MAX+1];
 char *get_symbol_name(uint64_t addr, int *offset)
@@ -106,7 +122,8 @@ char *get_symbol_name(uint64_t addr, int *offset)
 				    "%s", s->name);
 			else
 				snprintf(symbol_buf, SYMBOLBUF_MAX,
-				    "%s+0x%lx", s->name, (long) (addr - s->addr));
+				    "%s+0x%lx", s->name, (long)
+				    (addr - s->addr));
 			if (offset != NULL)
 				*offset = addr - s->addr;
 			return symbol_buf;
@@ -282,7 +299,8 @@ void symbol_recalc_sizes(void)
 		/*  Recalculate size, if 0:  */
 		if (tmp_ptr->len == 0) {
 			if (i != n_symbols-1)
-				tmp_ptr->len = tmp_array[i+1].addr - tmp_array[i].addr;
+				tmp_ptr->len = tmp_array[i+1].addr
+				    - tmp_array[i].addr;
 			else
 				tmp_ptr->len = 1;
 		}

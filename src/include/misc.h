@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.45 2004-03-28 14:55:32 debug Exp $
+ *  $Id: misc.h,v 1.46 2004-04-02 05:49:29 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -146,6 +146,7 @@ struct cpu_type_def {
 #define	EXC4K		4
 #define	MMU3K		3
 #define	MMU4K		4
+#define	MMU8K		8
 #define	MMU10K		10
 
 /*  Bit-field values for the flags field:  */
@@ -166,6 +167,7 @@ struct cpu_type_def {
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48 }, /*  No DCOUNT?  */ \
+	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192 }, /*  192 tlb entries?  */ \
 	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU10K,	4,	64 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
@@ -242,7 +244,8 @@ struct memory {
 #define	N_COPROC_REGS		32
 #define	N_FCRS			32
 
-#define	MAX_NR_OF_TLBS		64
+/*  TODO:  48 or 64 is max for most processors, but 192 for R8000?  */
+#define	MAX_NR_OF_TLBS		192
 
 struct tlb {
 	uint64_t	mask;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.428 2004-12-29 22:03:22 debug Exp $
+$Id: HISTORY,v 1.429 2004-12-29 22:34:35 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1396,6 +1396,5 @@ HISTORY of mips64emul
 		an arithmetic instruction), and in src/cpu.c (ldcX/sdcX in
 		32-bit mode uses register pairs).
 		'-O' now also affects the bootstring for SGI and ARC emulation.
-		Bintrans updates (slightly faster 32-bit load/store on
-		alpha).
+		Bintrans updates (slightly faster 32-bit load/store on alpha).
 		Updates to the i386 backend too, but no real speed improvement.

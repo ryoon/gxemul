@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.224 2004-12-29 22:25:17 debug Exp $
+ *  $Id: cpu.c,v 1.225 2004-12-29 22:34:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3082,6 +3082,8 @@ int cpu_run_instr(struct cpu *cpu)
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8];
 				int ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
+				/*  TODO: Hm. This generates a TLB _LOAD_
+				    exception, not store!  */
 				if (!ok)
 					return 1;
 

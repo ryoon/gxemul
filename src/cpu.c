@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.227 2005-01-03 01:26:54 debug Exp $
+ *  $Id: cpu.c,v 1.228 2005-01-05 01:31:27 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3084,11 +3084,23 @@ int cpu_run_instr(struct cpu *cpu)
 				/*  Store:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8];
-				int ok = memory_rw(cpu, cpu->mem, aligned_addr, &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
-				/*  TODO: Hm. This generates a TLB _LOAD_
-				    exception, not store!  */
-				if (!ok)
+				uint64_t oldpc = cpu->pc;
+				/*
+				 *  NOTE (this is ugly): The memory_rw()
+				 *  generates a TLBL exception, if there
+				 *  is a tlb refill exception. However, since
+				 *  this is a Store, the exception is converted
+				 *  to a TLBS:
+				 */
+				int ok = memory_rw(cpu, cpu->mem, aligned_addr,
+				    &aligned_word[0], wlen, MEM_READ, CACHE_DATA);
+				if (!ok) {
+					if (cpu->pc != oldpc) {
+						cp0->reg[COP0_CAUSE] &= ~CAUSE_EXCCODE_MASK;
+						cp0->reg[COP0_CAUSE] |= (EXCEPTION_TLBS << CAUSE_EXCCODE_SHIFT);
+					}
 					return 1;
+				}
 
 				for (i=0; i<wlen; i++) {
 					tmpaddr = addr + i*dir;

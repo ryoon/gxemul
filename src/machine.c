@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.230 2004-12-08 12:29:45 debug Exp $
+ *  $Id: machine.c,v 1.231 2004-12-08 17:05:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2429,6 +2429,8 @@ Why is this here? TODO
 			}
 		}
 
+		arcbios_set_default_exception_handler(cpu);
+
 		/*
 		 *  This is important:  :-)
 		 *
@@ -2506,7 +2508,7 @@ Why is this here? TODO
 		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*
-		 *  The first 16 MBs of RAM are simply reserved... this simplifies things a lot.
+		 *  The first 8 MBs of RAM are simply reserved... this simplifies things a lot.
 		 *  If there's more than 512MB of RAM, it has to be split in two, according to
 		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
 		 *
@@ -2517,10 +2519,20 @@ Why is this here? TODO
 		arc_n_memdescriptors = 0;
 
 		arcbios_add_memory_descriptor(cpu, 0, 0x2000, ARCBIOS_MEM_FirmwarePermanent);
-		arcbios_add_memory_descriptor(cpu, 0x2000, 0x30000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
-		arcbios_add_memory_descriptor(cpu, 0x30000, 0x1000000-0x30000, ARCBIOS_MEM_LoadedProgram);
+		arcbios_add_memory_descriptor(cpu, 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
 
-		mem_base = 16;
+#if 1
+		arcbios_add_memory_descriptor(cpu, 0x60000, 0x800000-0x60000, ARCBIOS_MEM_LoadedProgram);
+#else
+		/*  For Windows NT on ARC, needs to be generalized...  TODO  */
+		arcbios_add_memory_descriptor(cpu, 0x60000, 0x100000-0x60000, ARCBIOS_MEM_FreeMemory);
+		arcbios_add_memory_descriptor(cpu, 0x100000, 0x600000-0x100000, ARCBIOS_MEM_FreeMemory);
+		arcbios_add_memory_descriptor(cpu, 0x600000, 0x7f0000-0x600000, ARCBIOS_MEM_LoadedProgram);
+		arcbios_add_memory_descriptor(cpu, 0x7f0000, 0xf000, ARCBIOS_MEM_FirmwareTemporary);
+		arcbios_add_memory_descriptor(cpu, 0x7ff000, 0x1000, ARCBIOS_MEM_FirmwareTemporary);
+#endif
+
+		mem_base = 8;
 		mem_base += sgi_ram_offset / 1048576;
 
 		while (mem_base < emul->physical_ram_in_mb + sgi_ram_offset/1048576) {
@@ -2546,6 +2558,7 @@ Why is this here? TODO
 			if (mem_base == 256)
 				mem_base = 512;
 		}
+
 
 		/*
 		 *  Components:   (this is an example of what a system could look like)

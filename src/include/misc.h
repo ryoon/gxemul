@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.174 2004-12-08 13:27:30 debug Exp $
+ *  $Id: misc.h,v 1.175 2004-12-08 17:05:13 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -557,6 +557,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	char *identifier, uint64_t parent, void *config_data, size_t config_len);
 void arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
+void arcbios_set_default_exception_handler(struct cpu *cpu);
 
 
 /*  coproc.c:  */

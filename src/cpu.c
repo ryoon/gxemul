@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.210 2004-12-07 12:56:47 debug Exp $
+ *  $Id: cpu.c,v 1.211 2004-12-08 17:05:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3516,7 +3516,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 
 	/*  The main loop:  */
 	running = 1;
-	while (running) {
+	while (running || emul->single_step) {
 		ncycles_chunk_end = ncycles + (1 << 17);
 
 		a_few_instrs = a_few_cycles *
@@ -3643,6 +3643,12 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 						    cpus[0]->ticks_reset_value[te];
 					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 				}
+			}
+
+			/*  All CPUs have died?  */
+			if (!running) {
+				if (emul->exit_without_entering_debugger == 0)
+					emul->single_step = 1;
 			}
 
 			ncycles += cpu0instrs;

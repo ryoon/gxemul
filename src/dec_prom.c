@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.36 2004-12-06 13:15:06 debug Exp $
+ *  $Id: dec_prom.c,v 1.37 2004-12-08 17:05:14 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -81,14 +81,17 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 	switch (vector) {
 	case 0x0:	/*  reset()  */
 		/*  TODO  */
+		cpu->emul->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0x10:	/*  restart()  */
 		/*  TODO  */
+		cpu->emul->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0x18:	/*  reinit()  */
 		/*  TODO  */
+		cpu->emul->exit_without_entering_debugger = 1;
 		cpu->gpr[GPR_V0] = 0;
 		break;
 	case 0x30:	/*  open()  */
@@ -509,6 +512,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x9c:		/*  halt()  */
 		debug("[ DEC PROM halt() ]\n");
+		cpu->emul->exit_without_entering_debugger = 1;
 		cpu->running = 0;
 		break;
 	case 0xa4:		/*  gettcinfo()  */
@@ -535,10 +539,12 @@ void decstation_prom_emul(struct cpu *cpu)
 		switch (cpu->gpr[GPR_A0]) {
 		case 'h':
 			debug("DEC PROM: rex('h') ==> halt\n");
+			cpu->emul->exit_without_entering_debugger = 1;
 			cpu->running = 0;
 			break;
 		case 'b':
 			debug("DEC PROM: rex('b') ==> reboot: TODO (halting CPU instead)\n");
+			cpu->emul->exit_without_entering_debugger = 1;
 			cpu->running = 0;
 			break;
 		default:

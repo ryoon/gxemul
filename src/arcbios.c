@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.46 2004-12-08 11:51:21 debug Exp $
+ *  $Id: arcbios.c,v 1.47 2004-12-08 17:05:14 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -95,7 +95,8 @@ static char arcbios_escape_sequence[MAX_ESC+1];
 static int arcbios_in_escape_sequence;
 static int arcbios_console_maxx, arcbios_console_maxy;
 int arcbios_console_curx = 0, arcbios_console_cury = 0;
-int arcbios_console_curcolor = 0x1f;
+static int arcbios_console_reverse = 0;
+int arcbios_console_curcolor = 0x0f;
 
 
 /*
@@ -106,6 +107,8 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
 	unsigned char buf[2];
 	buf[0] = ch;
 	buf[1] = arcbios_console_curcolor;
+	if (arcbios_console_reverse)
+		buf[1] = ((buf[1] & 0x70) >> 4) | ((buf[1] & 7) << 4) | (buf[1] & 0x88);
 	memory_rw(cpu, cpu->mem, arcbios_console_vram +
 	    2*(x + arcbios_console_maxx * y),
 	    &buf[0], sizeof(buf), MEM_WRITE,
@@ -152,7 +155,7 @@ void arcbios_console_init(struct cpu *cpu,
 
 	arcbios_console_curx = 0;
 	arcbios_console_cury = 18;
-	arcbios_console_curcolor = 0x07;
+	arcbios_console_curcolor = 0x0f;
 }
 
 
@@ -178,9 +181,12 @@ static void handle_esc_seq(struct cpu *cpu)
 		color = atoi(arcbios_escape_sequence + 1);
 		switch (color) {
 		case 0:	/*  Default.  */
-			arcbios_console_curcolor = 0x07; break;
+			arcbios_console_curcolor = 0x07;
+			arcbios_console_reverse = 0; break;
 		case 1:	/*  "Bold".  */
-			arcbios_console_curcolor |= 0x80; break;
+			arcbios_console_curcolor |= 0x08; break;
+		case 7:	/*  "Reverse".  */
+			arcbios_console_reverse = 1; break;
 		case 30: /*  Black foreground.  */
 			arcbios_console_curcolor &= 0xf0;
 			arcbios_console_curcolor |= 0x00; break;
@@ -238,8 +244,21 @@ static void handle_esc_seq(struct cpu *cpu)
 			return;		/*  TODO  */
 		row = atoi(arcbios_escape_sequence + 1);
 		col = atoi(p + 1);
+		if (col < 1)
+			col = 1;
+		if (row < 1)
+			row = 1;
 		arcbios_console_curx = col - 1;
 		arcbios_console_cury = row - 1;
+		return;
+	case 'J':
+		/*  J = clear screen below cursor, 2J = clear whole screen.  */
+		i = atoi(arcbios_escape_sequence + 1);
+		if (i != 0 && i != 2)
+			fatal("{ handle_esc_seq(): %iJ }\n", i);
+		for (col=0; col<arcbios_console_maxx; col++)
+			for (row=i?0:arcbios_console_cury+1; row<arcbios_console_maxy; row++)
+				arcbios_putcell(cpu, ' ', col, row);
 		return;
 	case 'K':
 		col = atoi(arcbios_escape_sequence + 1);
@@ -322,6 +341,11 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 		console_putchar(ch);
 		return;
 	}
+
+if (ch >= 32 && ch < 127)
+	console_putchar(ch);
+else
+	console_putchar('*');
 
 	if (arcbios_in_escape_sequence) {
 		int len = strlen(arcbios_escape_sequence);
@@ -1204,7 +1228,15 @@ void arcbios_emul(struct cpu *cpu)
 		/*  TODO:  handle different values of 'handle'?  */
 		cpu->gpr[GPR_V0] = ARC_DSPSTAT_ADDR;
 		break;
+	case 0x888:
+		/*  Magical crash if there is no exception handling code.  */
+		fatal("EXCEPTION, but no exception handler installed yet.\n");
+		quiet_mode = 0;
+		cpu_register_dump(cpu);
+		cpu->running = 0;
+		break;
 	default:
+		quiet_mode = 0;
 		cpu_register_dump(cpu);
 		debug("a0 points to: ");
 		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
@@ -1224,5 +1256,36 @@ void arcbios_set_64bit_mode(int enable)
 {
 	arc_64bit = enable;
 	arc_wordlen = arc_64bit? sizeof(uint64_t) : sizeof(uint32_t);
+}
+
+
+/*
+ *  arcbios_set_default_exception_handler():
+ */
+void arcbios_set_default_exception_handler(struct cpu *cpu)
+{
+	/*
+	 *  The default exception handlers simply jump to 0xbfc88888,
+	 *  which is then taken care of in arcbios_emul() above.
+	 *
+	 *  3c1abfc8        lui     k0,0xbfc8
+	 *  375a8888        ori     k0,k0,0x8888
+	 *  03400008        jr      k0
+	 *  00000000        nop
+	 */
+	store_32bit_word(cpu, 0x80000000, 0x3c1abfc8);
+	store_32bit_word(cpu, 0x80000004, 0x375a8888);
+	store_32bit_word(cpu, 0x80000008, 0x03400008);
+	store_32bit_word(cpu, 0x8000000c, 0x00000000);
+
+	store_32bit_word(cpu, 0x80000080, 0x3c1abfc8);
+	store_32bit_word(cpu, 0x80000084, 0x375a8888);
+	store_32bit_word(cpu, 0x80000088, 0x03400008);
+	store_32bit_word(cpu, 0x8000008c, 0x00000000);
+
+	store_32bit_word(cpu, 0x80000180, 0x3c1abfc8);
+	store_32bit_word(cpu, 0x80000184, 0x375a8888);
+	store_32bit_word(cpu, 0x80000188, 0x03400008);
+	store_32bit_word(cpu, 0x8000018c, 0x00000000);
 }
 

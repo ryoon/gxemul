@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.364 2004-12-08 13:27:27 debug Exp $
+$Id: HISTORY,v 1.365 2004-12-08 17:05:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1265,3 +1265,10 @@ HISTORY of mips64emul
 		If the framebuffer cursor contains more than 1 color, then
 		the host's X11 cursor disappears. (Nice for DECstation
 		emulation with emulated X.)
+		For ARC and SGI emulation, if an exception occurs before an
+		exception handler is installed, the emulator now exits
+		nicely (as suggested by Alec Voropay).
+		A couple of minor updates to the ARCBIOS emulation subsystem.
+		The single step debugger is now automatically entered when
+		all CPUs have stopped running, unless there was a clean
+		shutdown of some kind (PROM halt() call, or similar).

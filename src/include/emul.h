@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.10 2004-11-05 00:31:00 debug Exp $
+ *  $Id: emul.h,v 1.11 2004-12-08 17:05:13 debug Exp $
  */
 
 #include "misc.h"
@@ -89,6 +89,8 @@ struct emul {
 	struct cpu **cpus;
 
 	int	automatic_clock_adjustment;
+
+	int	exit_without_entering_debugger;
 
 	int	show_trace_tree;
 	int	tlb_dump;

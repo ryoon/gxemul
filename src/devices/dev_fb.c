@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.77 2004-12-22 16:12:54 debug Exp $
+ *  $Id: dev_fb.c,v 1.78 2004-12-27 10:26:29 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -363,32 +363,21 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				/*  TODO: 15 and 16.  */
 				/*  Also copy to the scaledown code below  */
 				case 16:
-					r = d->framebuffer[fb_addr] >> 3;
-					g = (d->framebuffer[fb_addr] << 5) +
-					    (d->framebuffer[fb_addr + 1] >> 5);
-					b = d->framebuffer[fb_addr + 1] & 0x1f;
+					if (d->vfb_type == VFB_HPCMIPS) {
+						b = d->framebuffer[fb_addr] +
+						    (d->framebuffer[fb_addr+1] << 8);
+						r = b >> 11;
+						g = b >> 5;
+						r = r & 31;
+						g = (g & 31) * 2;
+						b = b & 31;
+					} else {
+						r = d->framebuffer[fb_addr] >> 3;
+						g = (d->framebuffer[fb_addr] << 5) +
+						    (d->framebuffer[fb_addr + 1] >> 5);
+						b = d->framebuffer[fb_addr + 1] & 0x1f;
+					}
 
-if (d->vfb_type == VFB_HPCMIPS) {
-	/*  Bits are in reverse?  TODO: Make this nicer  */
-	r = ((r & 1) << 4) |
-	    ((r & 2) << 2) |
-	    ((r & 4)) |
-	    ((r & 8) >> 2) |
-	    ((r & 16) >> 4);
-
-	g = ((g & 1) << 5) |
-	    ((g & 2) << 3) |
-	    ((g & 4) << 1) |
-	    ((g & 8) >> 1) |
-	    ((g & 16) >> 3) |
-	    ((g & 32) >> 5);
-
-	b = ((b & 1) << 4) |
-	    ((b & 2) << 2) |
-	    ((b & 4)) |
-	    ((b & 8) >> 2) |
-	    ((b & 16) >> 4);
-}
 					r *= 8;
 					g *= 4;
 					b *= 8;

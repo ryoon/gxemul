@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.41 2004-11-07 22:50:29 debug Exp $
+ *  $Id: dev_bt459.c,v 1.42 2004-11-08 20:20:32 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -399,6 +399,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				default:
 					fatal("[ bt459: unimplemented CCR value 0x%08x ]\n", idata);
 				}
+				d->need_to_update_cursor_shape = 1;
 				break;
 			default:
 				if (btaddr < 0x100)

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.32 2004-12-01 08:02:50 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.33 2004-12-01 08:48:36 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -220,7 +220,7 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
  *
  *  Usage:    load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);   etc.
  */
-void load_into_eax_edx(unsigned char **addrp, void *p)
+static void load_into_eax_edx(unsigned char **addrp, void *p)
 {
 	unsigned char *a;
 	int ofs = (size_t)p - (size_t)&dummy_cpu;
@@ -249,7 +249,7 @@ void load_into_eax_edx(unsigned char **addrp, void *p)
  *
  *  Usage:    load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);   etc.
  */
-void load_into_eax_and_sign_extend_into_edx(unsigned char **addrp, void *p)
+static void load_into_eax_and_sign_extend_into_edx(unsigned char **addrp, void *p)
 {
 	unsigned char *a;
 	int ofs = (size_t)p - (size_t)&dummy_cpu;
@@ -267,11 +267,30 @@ void load_into_eax_and_sign_extend_into_edx(unsigned char **addrp, void *p)
 
 
 /*
+ *  load_into_eax_dont_care_about_edx():
+ *
+ *  Usage:    load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);   etc.
+ */
+static void load_into_eax_dont_care_about_edx(unsigned char **addrp, void *p)
+{
+	unsigned char *a;
+	int ofs = (size_t)p - (size_t)&dummy_cpu;
+	a = *addrp;
+
+	/*  8b 86 38 30 00 00       mov    0x3038(%esi),%eax  */
+	*a++ = 0x8b; *a++ = 0x86;
+	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+
+	*addrp = a;
+}
+
+
+/*
  *  store_eax_edx():
  *
  *  Usage:    store_eax_edx(&a, &dummy_cpu.gpr[rs]);   etc.
  */
-void store_eax_edx(unsigned char **addrp, void *p)
+static void store_eax_edx(unsigned char **addrp, void *p)
 {
 	unsigned char *a;
 	int ofs = (size_t)p - (size_t)&dummy_cpu;
@@ -419,7 +438,10 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		goto rt0;
 	}
 
-	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+	if (bintrans_32bit_only)
+		load_into_eax_dont_care_about_edx(&a, &dummy_cpu.gpr[rs]);
+	else
+		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 
 	switch (instruction_type) {
 	case HI6_ADDIU:
@@ -453,10 +475,18 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	case HI6_ORI:
 		/*  0d 34 12 00 00          or     $0x1234,%eax  */
 		*a++ = 0xd; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
+		if (bintrans_32bit_only) {
+			/*  99                      cltd   */
+			*a++ = 0x99;
+		}
 		break;
 	case HI6_XORI:
 		/*  35 34 12 00 00          xor    $0x1234,%eax  */
 		*a++ = 0x35; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
+		if (bintrans_32bit_only) {
+			/*  99                      cltd   */
+			*a++ = 0x99;
+		}
 		break;
 	case HI6_SLTIU:
 		/*  set if less than, unsigned. (compare edx:eax to ecx:ebx)  */
@@ -465,6 +495,10 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
 		/*  or  */
 		/*  29 c9                   sub    %ecx,%ecx  */
+		if (bintrans_32bit_only) {
+			/*  99                      cltd   */
+			*a++ = 0x99;
+		}
 		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
 		if (uimm & 0x8000) {
 			*a++ = 0xff; *a++ = 0xff;
@@ -504,6 +538,10 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		/*  b9 ff ff ff ff          mov    $0xffffffff,%ecx  */
 		/*  or  */
 		/*  29 c9                   sub    %ecx,%ecx  */
+		if (bintrans_32bit_only) {
+			/*  99                      cltd   */
+			*a++ = 0x99;
+		}
 		*a++ = 0xbb; *a++ = uimm; *a++ = uimm >> 8;
 		if (uimm & 0x8000) {
 			*a++ = 0xff; *a++ = 0xff;

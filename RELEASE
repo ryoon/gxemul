@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.36 2004-08-22 20:53:41 debug Exp $
+$Id: RELEASE,v 1.37 2004-09-14 10:44:43 debug Exp $
 
-I'm working on POST-0.2 now.
+This will be the RELEASE file for 0.2.1.
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.X
-================================
+Release notes for mips64emul 0.2.1
+==================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
@@ -21,7 +21,8 @@ This is a spare time hobby project, and many things are not implemented yet.
 affiliated with MIPS Technologies in any way whatsoever.) 
 
 
-TODO:  Major feature changes, 0.2 -> 0.X goes here.
+This release (0.2.1) is more or less a clean-up of release 0.2, and does not
+contain any major feature additions.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

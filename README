@@ -1,11 +1,11 @@
-$Id: README,v 1.36 2004-08-11 20:15:31 debug Exp $
+$Id: README,v 1.37 2004-09-14 10:44:43 debug Exp $
 
-I'm working on POST-0.2 now.
+This will be the README for 0.2.1.
 
 ------------------------------------------------------------------------------
 
-mips64emul 0.X
-==============
+mips64emul 0.2.1
+================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
@@ -37,5 +37,5 @@ information on how to use the emulator.
 Feedback
 --------
 
-Send feedback to:  md1gavan at mdstud.chalmers.se.
+Send comments to md1gavan@mdstud.chalmers.se.
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.38 2004-06-12 11:47:46 debug Exp $
+ *  $Id: coproc.c,v 1.39 2004-06-14 22:49:32 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -342,7 +342,7 @@ void coproc_register_write(struct cpu *cpu,
 			/*  char *symbol;
 			    int offset;
 			    symbol = get_symbol_name(cpu->pc_last, &offset);
-			    debug("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp); */
+			    fatal("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp); */
 			tmp &= (R2K3K_ENTRYLO_PFN_MASK |
 			    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
 			    R2K3K_ENTRYLO_V | R2K3K_ENTRYLO_G);
@@ -410,7 +410,7 @@ void coproc_register_write(struct cpu *cpu,
 			/* char *symbol;
 			   int offset;
 			   symbol = get_symbol_name(cpu->pc_last, &offset);
-			   debug("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
+			   fatal("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
 			tmp &= ~0x3f;
 		}
 

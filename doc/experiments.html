@@ -1,0 +1,423 @@
+<html>
+<head><title>mips64emul documentation: Experimenting with mips64emul</title>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<p>
+<table width="100%">
+  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
+  <b>mips64emul documentation: Experimenting with mips64emul</b></font></td></tr>
+</table>
+<p>
+<!-- The first 10 lines are cut away by the homepage updating script.  -->
+
+
+<!--
+
+$Id: experiments.html,v 1.1 2005-01-26 11:30:08 debug Exp $
+
+Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<a href="./">Back to the index</a>
+
+<hr>
+<p><br>
+<h2>Experimenting with mips64emul</h2>
+
+<p>
+<ul>
+  <li><a href="#hello">Hello world</a>
+  <li><a href="#experiments">Experiments with other kernels and guest OSes</a>
+</ul>
+
+
+
+
+
+
+<p><br>
+<a name="hello"></a>
+<h3>Hello world:</h3>
+
+You might want to use the emulator to develop programs on your own,
+not just run precompiled kernels such as NetBSD. To get started, I'd recommend
+you do two things:
+<ul>
+  <li>Build and install a cross-compiler for MIPS.
+  <li>Compile this hello world program, and run it in the emulator.
+</ul>
+
+<p>
+The emulator can be run in a mode where it doesn't emulate a real
+machine. In this "bare" machine mode, only a few simple devices
+are emulated, such as putchar device, and a simple framebuffer
+(for outputing pixels in a simple manner).
+
+<p>
+<pre>
+	/*  Hello world for mips64emul  */
+
+	#define	PUTCHAR_ADDRESS		0xb0000000
+
+	void printchar(char ch)
+	{
+		*((volatile unsigned char *) PUTCHAR_ADDRESS) = ch;
+	}
+
+	void printstr(char *s)
+	{
+		while (*s)
+			printchar(*s++);
+	}
+
+	void f(void)
+	{
+		printstr("Hello world\n");
+		for (;;)
+			;
+	}
+</pre>
+This hello world program is available here as well: <a href="hello.c">hello.c</a>
+<p>
+I'd recommend you build a GCC cross compiler for the <b>mips64-unknown-elf</b>
+target, and install it. Other compilers could work too, but GCC is good because
+of its portability. Then try to compile the hello world program:
+<pre>
+	$ <b>mips64-unknown-elf-gcc hello.c -mips4 -mabi=64 -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello --oformat=elf64-bigmips</b>
+	$ <b>file hello</b>
+	hello: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -qa hello</b>
+	Hello world
+
+	$ <b>mips64-unknown-elf-gcc hello.c -c</b>
+	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello.o -o hello</b>
+	$ <b>file hello</b>
+	hello: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
+	$ <b>./mips64emul -qa hello</b>
+	Hello world
+</pre>
+
+<p>
+As you can see above, a GCC configured for mips64-unknown-elf can produce
+both 64-bit and 32-bit code. If you don't want to run the entire
+Hello World program, but want to single-step through the execution to
+learn more about how MIPS programs run, then add -V to the command line:
+<pre>
+	$ <b>./mips64emul -Va hello</b>
+</pre>
+
+<p>
+The syntax of the single-step debugger shouldn't be too hard to grasp.
+Type 's' to single-step one instruction. Just pressing enter after that
+will repeat the 's' command. Type 'quit' to quit.
+
+<p>
+Hopefully this is enough to get you inspired. :-)
+
+
+
+
+
+<p><br>
+<a name="experiments"></a>
+<h3>Experiments with other kernels and guest OSes:</h3>
+
+<p>
+Operating system kernels and other test programs can be downloaded from 
+various places. Here are links to some of the kernels that I usually 
+experiment with.
+
+<p>
+The degree to which these work in the emulator varies a lot, and the
+example arguments listed here do not necessarily work with every release
+or snapshot of the emulator.
+
+<p>
+<ul>
+  <li>DECstation:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
+	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
+	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
+	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
+      <p>
+      <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
+	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
+	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
+	<br>Read <a href="#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
+	It's a bit more complicated than installing NetBSD/pmax, but might work.
+      <p>
+      <li>Linux for DECstation:
+	<br>Here is a Debian package containing a Linux 2.4.26 kernel for
+		DECstation which supports framebuffer!
+	<br><a href="http://ftp.debian.org/debian/pool/main/k/kernel-patch-2.4.26-mips/kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb">http://ftp.debian.org/debian/pool/main/k/kernel-patch-2.4.26-mips/
+	<br>kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb</a>
+	<br>Run the following commands to extract the kernel:<pre>
+	<b>ar x kernel-image-2.4.26-r3k-kn02_2.4.26-0.040505.1_mipsel.deb data.tar.gz</b>
+	<b>tar xfzv data.tar.gz ./boot/vmlinux-2.4.26-r3k-kn02</b>
+	<b>mv boot/vmlinux-* .; rmdir boot</b>
+</pre>
+	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with serial console: <b>-D2 -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
+	<br>Read <a href="#declinux">this section</a> about how to run a Debian Linux install kernel.
+	<br>Here are some older kernels (these don't support framebuffer, I think):
+		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
+	<br>Note: Make sure you add <b>-CR4400</b> to the command line for
+		R4000 kernels, as Linux doesn't autodetect CPU type at runtime.
+      <p>
+      <li>Sprite:
+	<br>The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
+		has a copy of a harddisk image for a DECstation 5000/200:
+		<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
+			(MD5 (ds5000.bt) = ec84eeeb20fe77b758370d5e312e4a5e)
+	<br>Read <a href="#sprite">this section</a> for more information
+		about running this harddisk image in the emulator.
+      <p>
+      <li><a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">Mach</a>:
+	<br>Important! Run <b>./configure --caches; make</b>
+	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
+	<br>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY
+	<br>./mips64emul -D2 -X pmax_mach/special/mach.boot.MK83.STD+ANY
+    </ul>
+  </li>
+
+  <p>
+
+  <li>SGI:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz</a>
+	<br>gunzip, and try running with <b>-G32</b>.
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz</a>
+	<br>gunzip, and try running with <b>-G22</b> or <b>-G24</b> or <b>-G20</b>.
+      <p>
+      <li>Linux/SGI:
+	<br>Some kernels are available here: <a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
+	<br>Try running with <b>-G32 -X</b> for a graphical framebuffer, or
+		<b>-G32 -o 'console=ttyS0'</b> for serial console.
+	<br>Adding -b (bintrans) might work sometimes.
+	<br>(You need to add <b>-CR5000</b> if you're trying to run
+		a kernel compiled for R5000, because Linux
+		doesn't autodetect CPU at runtime.)
+      <p>
+      <li><a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>:
+	<br>Snapshots can be found at <a href="ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/">ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/</a>.
+	<br>Try <b>./mips64emul -b -G32 bsd.rd</b>
+      <p>
+      <li><a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS</a>:
+		I don't think public binary snapshots are available yet.
+      <p>
+      <li>arcdiag:
+	<br>The NetBSD people have also made available an "arcdiag" for SGI-IP22:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22">ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22</a>
+	<br>Try running <b>./mips64emul -G22 arcdiag.ip22</b>.
+    </ul>
+  </li>
+
+  <p>
+
+  <li>ARC:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz</a>
+	<br>gunzip, and try with <b>-A1 -X -N</b> or <b>-A1</b>.
+	<br>(You may also try other -A<i>x</i> models.)
+	<br>Read <a href="#netbsdarcinstall">this section</a> about how
+		to install NetBSD/arc onto a harddisk image.
+      <p>
+      <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
+	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
+	<br>Try running with <b>-X -A2</b> or <b>-X -A4</b>.
+	<br>Read <a href="#openbsdarcinstall">this section</a> about how
+		to install OpenBSD/arc onto a harddisk image.
+      <p>
+      <li>Linux:
+	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
+	<br>gunzip, and run with <b>-v -J -X -N -A7</b> (Olivetti M700)
+      <p>
+      <li>Pandora:
+	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/">ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo</a>/<a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/milo-0.27.1.tar.gz">milo-0.27.1.tar.gz</a>
+	<br>A generic test/diagnostics program for ARC-based machines.
+	<br>Run with <b>-A4 milo-0.27.1/pandora</b>
+      <p>
+      <li>arcdiag:
+	<br>Precompiled binary:<a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/arc/arcdiag">ftp://ftp.netbsd.org/pub/NetBSD/arch/arc/arcdiag</a>
+	<br>(alternative: <a href="http://www.sensi.org/~alec/mips/arcdiag">http://www.sensi.org/~alec/mips/arcdiag</a>)
+	<br>A generic test/diagnostics program for ARC-based machines.
+	<br>Run with <b>-A1 arcdiag</b> (or <b>-A2</b> etc).
+	<br>Example arcdiag output (from real machines):
+	<br><a href="http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html">http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html</a> (Olivetti M700-10)
+	<br><a href="http://www.sensi.org/~alec/mips/arcdiag.txt">http://www.sensi.org/~alec/mips/arcdiag.txt</a> (PICA-61)
+	<br><a href="http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html">http://mail-index.netbsd.org/port-arc/2000/10/14/0000.html</a> (Deskstation Tyne)
+	<br><a href="http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html">http://mail-index.netbsd.org/port-arc/2004/02/01/0001.html</a> (NEC RISCserver 4200)
+	<br><a href="http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out">http://mirror.aarnet.edu.au/pub/NetBSD/misc/chs/arcdiag.out</a> (NEC-R96)
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Cobalt:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>gunzip, and run with <b>-E</b>
+      <p>
+      <li>Linux:
+	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
+	<br>gunzip, and run with <b>-E</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Playstation 2:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/playstation2/">NetBSD/playstation2</a>:
+	<br>NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
+	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
+	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
+
+      <p>
+      <li>Linux:
+	<br>A Linux kernel (2.2.21-pre1-xr7) is available from
+	<a href="http://playstation2-linux.com/projects/xrhino-kernel/">http://playstation2-linux.com/projects/xrhino-kernel/</a>
+	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Sony NeWS:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/newsmips/">NetBSD/newsmips</a>:
+	<br>A NetBSD/newsmips kernel and corresponding symbols are
+		available here:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
+	<br>Try running with <b>-f</b>.
+	<br>There's also a boot floppy available, but the emulator currently
+		doesn't support booting from it:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs</a>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>HPCmips:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>.
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>Try <b>./mips64emul -X -F2 netbsd-GENERIC</b>
+      <p>
+      <li>Linux for BE300: <a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
+	<br>Try <b>./mips64emul -X -F1 vmlinux</b> (and perhaps adding -b might work too)
+    </ul>
+  </li>
+
+  <p>
+
+  <li><a href="http://www.meshcube.org/">MeshCube</a>:
+    <ul>
+      <li>Linux:
+	<br>A Linux kernel is available from
+	<a href="http://www.meshcube.org/feed/stable/">http://www.meshcube.org/feed/stable</a>/<a href="http://www.meshcube.org/feed/stable/kernel-image-mtx_2.4.24-3_mipsel.ipk">kernel-image-mtx_2.4.24-3_mipsel.ipk</a>
+	<br>(This is a Debian package, you can use <b>ar</b> and <b>tar</b>
+		to extract kernel.img from it.)
+	<br>Try running with <b>-e 0x80800000:kernel.img</b>.
+    </ul>
+  </li>
+
+  <p>
+
+  <li><a href="http://www.seattlewireless.net/index.cgi/NetgearWG602">NetGear WG602</a>:
+    <ul>
+      <li>Linux:
+	<br>A Linux kernel is available from
+	<a href="ftp://downloads.netgear.com/files/wg602_v1715.zip">ftp://downloads.netgear.com/files/wg602_v1715.zip</a>
+	<br>(Unzip wg602_v1715.zip to get WG602_V1715.img.)
+	<br>Try running with <b>-g 0xbfc80000:0x40:WG602_V1715.img</b>.
+	<br>(It takes some time to decompress the kernel, so be patient.)
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Linksys WRT54G
+    <ul>
+      <li>Linux:
+	<br><a href="http://openwrt.org/">OpenWRT</a> is a Linux
+		distribution for the WRT54G.
+	<br><a href="http://www.batbox.org/wrt54g-linux.html">BatBox</a>
+		is another distribution.
+	<br>Download <a href="http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin">http://pjf.dotgeek.org/downloads/openwrt/openwrt-g-code.bin</a>
+		(or a similar .bin file).
+	<br>From offset 60 and forward in the bin file, there is a gzip file.
+	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
+	<br>$ <b>gunzip piggy.gz</b>
+	<br>$ <b>./mips64emul -H -t 0x80001000:piggy</b>
+	<br>There's also a .bin file available from linksys:
+		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Generic "bare" emulation:
+    <ul>
+      <li>mmon:
+	<br>This is a small, but interesting ROM monitor for R4300.
+	<br><a href="http://www.brouhaha.com/~eric/software/mmon/">
+		http://www.brouhaha.com/~eric/software/mmon/</a>
+	<br>Untar mmon-0.5.tar.gz, and edit the line in main.S which says
+		"glcr: j $s0" into just "glcr: j s0". (Remove the $ sign.)
+	<br>Then, assuming you have a mips64-unknown-elf GCC:
+	<br>$ <b>mips64-unknown-elf-gcc main.S -c</b>
+	<br>$ <b>mips64-unknown-elf-ld main.o -n -o mmon -Ttext 0xbfc00000 -Tdata a0000010</b>
+	<br>(I'm not sure if those are good linker options, but they
+		seem to work.)
+	<br>$ <b>mips64emul -a -CR4300 mmon</b>
+    </ul>
+  </li>
+
+</ul>
+
+
+
+
+
+
+</p>
+
+</body>
+</html>

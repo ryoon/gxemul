@@ -1,0 +1,456 @@
+<html>
+<head><title>mips64emul documentation: Introduction</title>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<p>
+<table width="100%">
+  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
+  <b>mips64emul documentation: Introduction</b></font></td></tr>
+</table>
+<p>
+<!-- The first 10 lines are cut away by the homepage updating script.  -->
+
+
+<!--
+
+$Id: intro.html,v 1.1 2005-01-26 11:30:09 debug Exp $
+
+Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<a href="./">Back to the index</a>
+
+<hr>
+<p><br>
+<h2>Introduction</h2>
+
+<p>
+<ul>
+  <li><a href="#overview">Overview</a>
+  <li><a href="#free">Is mips64emul free software?</a>
+  <li><a href="#build">How to compile/build the emulator</a>
+  <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
+  <li><a href="#cpus">Which CPU types does mips64emul emulate?</a>
+  <li><a href="#guestos">Which guest OSes are possible to run?</a>
+</ul>
+
+
+
+
+
+<p><br>
+<a name="overview"></a>
+<h3>Overview:</h3>
+
+mips64emul is a free MIPS machine emulator. The goals are to emulate
+MIPS-like CPUs and enough surrounding hardware to let unmodified operating
+systems run as if they were running on a real machine, and to assist in
+experiments involving MIPS-like code in general.   
+
+<p>
+It is important to keep in mind that devices and CPUs are not really emulated
+correctly, they are only "faked" well enough to make eg. NetBSD run.
+That said, the emulator could still be of interest for academic research
+and experiments, such as learning how to write an OS for a MIPS-like
+machine, or profiling SMP, memory usage, or system call patterns.
+
+<p>
+The emulator is written in C, depends on no external libraries (except X11,
+which is optional), and should compile and run on any Unix-like system. If
+it doesn't, that is to be considered a bug.
+
+<p>
+The emulator contains code which tries to emulate the workings of MIPS-like
+CPUs and surrounding hardware found in real machines, but it does not 
+contain any actual MIPS ROM code or other form of MIPS program code.  You 
+will need some form of program (in binary form) to run in the emulator.
+For many emulation modes, PROM calls are handled by the emulator itself, 
+so you do not need to use any PROM image at all.
+
+<p>
+You can use pre-compiled kernels (for example NetBSD kernels, or
+Linux), or other programs that are in MIPS binary format, and in some
+cases even actual ROM images. A couple of different file formats are
+supported (ELF, a.out, ECOFF, SREC, raw binaries).
+
+<p>
+You do not need any MIPS compiler toolchain to build or use mips64emul.
+If you need to compile MIPS binaries from sources, then of course you need 
+such a toolchain, but that is completely separate from mips64emul. (There
+is also a <a href="technical.html#regtest">regression testing</a> framework,
+which requires that a GNU CC for mips64-unknown-elf or similar is available,
+but it is not required to build the emulator.)
+
+<p>
+(MIPS is a registered trademark of MIPS Technologies. mips64emul is 
+developed as a spare-time hobby, and there is no affiliation with MIPS 
+Technologies in any way whatsoever.)
+
+
+
+<p><br>
+<a name="free"></a>
+<h3>Is mips64emul free software?</h3>
+
+Yes. mips64emul is distributed under a free license.
+(For a definitions of the four freedoms associated with free software,
+please read <a href="http://www.gnu.org/philosophy/free-sw.html">
+http://www.gnu.org/philosophy/free-sw.html</a>.)
+
+<p>
+The code I have written is released under a 3-clause BSD-style license
+(or "revised BSD-style" if one wants to use
+<a href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>.)
+Apart from the code I have written, some files are copied from other sources
+such as NetBSD, for example header files containing symbolic names of
+bitfields in device registers. They are also covered by similar licenses,
+but with some additional clauses. If you plan to redistribute mips64emul
+(for example as a binary package), or reuse code from mips64emul,
+then you should check those files for their license terms.
+
+<p>
+(The licenses usually require that the original Copyright and license 
+terms are included when you make a copy or modification. The "easiest way 
+out" if you plan to redistribute code from mips64emul is to simply supply 
+the source code. You should however check individual files for details.)
+
+
+
+
+
+<p><br>
+<a name="build"></a>
+<h3>How to compile/build the emulator:</h3>
+
+Uncompress the .tar.gz distribution file, and run
+<pre>
+	$ <b>./configure</b>
+	$ <b>make</b>
+</pre>
+
+<p>
+This should work on any Unix-like system. If it doesn't, then please mail me a
+bug report.
+
+<p>
+(Note for Windows users: there is a small possibility that this will also
+work under Cygwin, but this is totally unsupported.)
+
+<p>
+The emulator's performance is highly dependent on both runtime settings
+and on compiler settings, so you might want to experiment with different
+CC and CFLAGS environment variable values. For example, on a modern PC, 
+you could try the following:
+<p>
+<pre>
+        $ <b>CFLAGS="-mcpu=pentium4 -O3" ./configure</b>
+        $ <b>make</b>
+</pre>
+
+<p>
+A number of different configure options are available:
+<pre>
+        <i>--always32</i>     enable special checks to hunt down 32-bit vs 64-bit bugs
+        <i>--caches</i>       enable cache emulation
+        <i>--delays</i>       enable instruction latency/delay emulation
+        <i>--mips16</i>       enable MIPS16 instruction support
+        <i>--nobintrans</i>   configure without bintrans support, even if the host supports it
+        <i>--nox11</i>        configure without X11 support
+        <i>--userland</i>     enable userland emulation
+</pre>
+
+<p>
+<i>--always32</i> enables some special code which checks that the emulated
+CPU registers are always sign-extended correctly (ie that the top 33 bits
+are either all zeroes, or all ones). This causes an overall slowdown, so
+don't enable it unless you are debugging mips64emul, and suspect that there
+are sign-extension bugs.
+<p>
+<i>--caches</i> enables emulation of caches (R3000 only, so far). This causes an 
+overall slowdown, so don't enable it unless you need it. Enabling caches
+does <i>not</i> by itself mean correct cache miss penalties and such (you
+need both <i>--caches</i> and <i>--delays</i> for that) but it is needed to fool some
+operating system kernels (eg Mach/pmax) that the cache works like it should.
+<p>
+<i>--delays</i> simulates instruction latencies. Memory accesses can have penalties.
+When combined with <i>--caches</i>, cache misses cause penalties as well. This 
+causes an overall slowdown, so don't enable it unless you need it.
+<p>
+<i>--mips16</i> enables MIPS16 instruction support. This doesn't really work yet, 
+as only very few MIPS16 instructions are translated. This causes an overall
+slowdown, so don't enable it unless you need it.
+<p>
+<i>--nobintrans</i> disables dynamic binary translation completely.
+<p>
+<i>--nox11</i> disables X11 support completely. (If the configure script cannot
+compile a small X11 test program, it will be disabled anyway.)  This might 
+improve performance slightly, but makes it impossible to run certain 
+things in the emulator.
+<p>
+<i>--userland</i> enables userland emulation support. This is experimental, only a 
+few syscalls are implemented, mostly as a proof-of-concept. This might 
+cause a tiny slowdown, so don't enable it unless you need it.
+
+<p>
+The possible configure options might differ between different releases and
+snapshots, so this list may be incomplete.
+
+<p>
+Once you have built mips64emul, running it should be rather 
+straight-forward. To exit the emulator, type CTRL-C to enter the 
+single-step debugger, and then type <b>quit</b>. By typing CTRL-B instead,
+a CTRL-C is sent to the emulated program.
+
+
+
+
+
+
+<p><br>
+<a name="emulmodes"></a>
+<h3>Which machines does mips64emul emulate?</h3>
+
+A few different machine types are emulated.
+The machine types that are emulated best at the moment are:
+<ul>
+  <li><b>DECstation/DECsystem machines</b>
+	<br>Model 5000/200: Serial controller (including keyboard and
+		mouse), ethernet, SCSI, and graphical framebuffers are
+		emulated.
+	<br>Other models: these differ slightly from the 5000/200 model,
+		and mips64emul doesn't emulate them well enough to run
+		a complete OS yet.
+  <p>
+  <li><b>Acer Pica-61</b> (an ARC machine)
+	<br>Serial controller, "VGA" text console, and SCSI are emulated
+		well enough to let NetBSD/arc and OpenBSD/arc be installed
+		and run.
+</ul>
+
+<p>
+There is code in mips64emul for emulation of many other machine types;
+the degree to which these work range from "almost" being able to run
+a complete OS, to almost completely unsupported (perhaps just enough
+support to output a few boot messages via serial console).
+
+<p>
+In addition to specific machine types, a "bare" machine can be emulated.
+A bare machine consists of one or more CPUs and a few experimental 
+devices such as:
+<p>
+<ul>
+  <li>a console I/O device (putchar() and getchar()...)
+  <li>an inter-processor communication device, for SMP experiments
+  <li>a very simple linear framebuffer device (for simple graphics output)
+</ul>
+<p>
+This mode is useful if you wish to experiment with software for MIPS-like
+systems, but do not with to target any specific real-world machine type, 
+for example for educational purposes or generic MIPS related experiments.
+
+
+
+
+
+<p><br>
+<a name="cpus"></a>
+<h3>Which CPU types does mips64emul emulate?</h3>
+
+While other emulators aim to emulate only one specific CPU type, eg R3000,
+mips64emul does not. The ideal goal would be to emulate "all" MIPS-like CPUs.
+Both 64-bit and 32-bit MIPS-like CPUs can be emulated.
+
+<p>
+mips64emul is basically an instruction-level simulator; things that would
+happen in several steps within a physical CPU are not necessarily simulated
+correctly or at all (eg. pipe-line stages).
+
+<p>
+Emulation of R4000, which is a 64-bit CPU, was my initial goal. Right
+now, R2000/R3000-like CPUs are also emulated (32-bit), and emulation of
+R1x000 (at least the parts that are similar to R4000) is beginning to work
+as expected. Code targeted for MIPS32 and MIPS64 also often work.
+
+<p>
+I have written an experimental dynamic binary translation subsystem.
+This gives higher total performance than interpreting one instruction at a
+time and executing it. (If you wish to enable bintrans, add <b>-b</b> to
+the command line, but keep in mind that it is still experimental.)
+
+
+
+
+
+<p><br>
+<a name="guestos"></a>
+<h3>Which guest OSes are possible to run?</h3>
+
+This table sums up the guest OSes that run well enough to be considered
+working in the emulator. They can boot from a harddisk image and be
+interacted with similar to a real machine:
+
+<p><br>
+ <center>
+  <table border="0">
+    <tr><td>
+      <table border="0">
+	<tr><td align="center">
+	  <table border="0">
+	    <tr>
+	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
+	      <td width="20">&nbsp;</td>
+	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
+	      <td width="40">&nbsp;</td>
+	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
+	      <td width="20">&nbsp;</td>
+	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
+	    </tr>
+
+	    <tr>
+	      <td height="1"></td>
+	    </tr>
+
+	    <tr>
+	      <td valign="top"><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	      <td></td>
+	      <td valign="top"><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a></td>
+	      <td></td>
+	      <td valign="top">ARC&nbsp;(Acer&nbsp;Pica)</td>
+	    </tr>
+
+	    <tr>
+	      <td valign="top"><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	      <td></td>
+	      <td valign="top"><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a></td>
+	      <td></td>
+	      <td valign="top">ARC (Acer Pica)</td>
+	    </tr>
+
+	    <tr>
+	      <td valign="top">Ultrix/RISC</td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	      <td></td>
+	      <td valign="top"><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	    </tr>
+
+	    <tr>
+	      <td valign="top">Redhat&nbsp;Linux<super>*</super></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	      <td></td>
+	      <td valign="top"><a href="http://www.debian.org/">Debian&nbsp;GNU/Linux</a><super>*</super></td>
+	      <td></td>
+	      <td valign="top">DECstation</td>
+	    </tr>
+	  </table>
+	</td></tr>
+
+	<tr><td height="15">&nbsp;</td></tr>
+
+	<tr><td>
+	  <center>
+	    <table border="0">
+	      <tr>
+		<td width=140 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+		<td width=140 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
+		<td width=140 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+		<td width=140 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
+	      </tr>
+	      <tr>
+		<td align=center>NetBSD/pmax&nbsp;1.6.2</td>
+		<td align=center>OpenBSD/pmax&nbsp;2.8</td>
+		<td align=center>Ultrix&nbsp;4.5</td>
+		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
+	      </tr>
+	      <tr>
+		<td height=10>&nbsp;</td>
+	      </tr>
+	      <tr>
+		<td width=140 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
+		<td width=140 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
+		<td width=140 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
+		<td width=140 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
+	      </tr>
+	      <tr>
+		<td align=center>NetBSD/arc&nbsp;1.6.2</td>
+		<td align=center>OpenBSD/arc&nbsp;2.3</td>
+		<td align=center>Sprite</td>
+		<td align=center>Debian&nbsp;GNU/Linux<super>*</super></td>
+	      </tr>
+	    </table>
+	  </center>
+	</td></tr>
+      </table>
+    </td></tr>
+  </table>
+ </center>
+
+<p><br>
+
+<super>*</super> Although Linux runs under DECstation emulation, at the
+time of writing this, Linux has no support for keyboards on the 5000/200
+(the specific DECstation model being emulated), so when the login prompt
+is reached you cannot interact with the system. Some people are
+<a href="http://meeting.ffis.de/Oldenburg2004/work.html">working on</a>
+improving the situation. Running in text-mode (emulated serial console) 
+works fine, though, but then you don't get to see the penguin in the corner.
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
+Kaj-Michael Lang noticed that the current CVS-version of
+<a href="http://www.linux-mips.org/">linux-mips</a> has
+support for keyboards now, on DECstation 5000/200, so it is
+possible to run Linux in mips64emul with framebuffer/keyboard.
+He has made a kernel available here:
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+&nbsp;]
+
+
+<p>
+It is non-trivial to get a specific operating system or OS kernel to
+run in the emulator, so don't expect the list above to grow too quickly.
+
+<p>
+There is no guarantee that anything specific will run in the emulator, but
+NetBSD is a good starting point for someone who wants to experiment.
+
+
+
+
+
+</p>
+
+</body>
+</html>

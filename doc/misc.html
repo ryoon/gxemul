@@ -1,0 +1,497 @@
+<html>
+<head><title>mips64emul documentation: Misc.</title>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<p>
+<table width="100%">
+  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
+  <b>mips64emul documentation: Misc.</b></font></td></tr>
+</table>
+<p>
+<!-- The first 10 lines are cut away by the homepage updating script.  -->
+
+
+<!--
+
+$Id: misc.html,v 1.1 2005-01-26 11:30:09 debug Exp $
+
+Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<a href="./">Back to the index</a>
+
+<hr>
+<p><br>
+<h2>Misc.</h2>
+
+<p>
+<ul>
+  <li><a href="#fbres">Changing the framebuffer resolution</a>
+  <li><a href="#networking">Networking</a>
+  <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
+  <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#largeimages">How to extract large gzipped disk images</a>
+  <li><a href="#userland">Running userland binaries</a>
+  <li><a href="#promdump">Using a PROM dump from a real machine</a>
+</ul>
+
+
+
+
+<p><br>
+<a name="fbres"></a>
+<h3>Changing the framebuffer resolution:</h3>
+
+Running the emulator with the <b>-X</b> option turns on the X11 framebuffer.
+If the framebuffer device for the specific machine mode you are running is
+implemented well enough, then the framebuffer window will look exactly like
+the real machine's screen, pixel by pixel.
+<p>
+For many emulated graphics cards in the emulator (or emulation modes), the
+resolution is fixed. It is possible in some emulation modes, however, to change
+cards completely. The TURBOchannel cards on some of the emulated DECstation
+models support this. (The -D2 model is luckily one of these models.)
+This is not implemented as a command-line option yet, so you have to modify
+the source code to do this.
+<p>
+The <i>turbochannel_default_gfx_card</i> string defines
+the name of the graphics card. Look in src/machine.c for this line:
+<p>
+<pre>
+	<b>char *turbochannel_default_gfx_card = "PMAG-BA";</b>
+</pre>
+<p>
+Different cards have different resolution.
+<p>
+<center><table border="0">
+  <tr>
+    <td><u><b>Card&nbsp;name:</b></u>&nbsp;&nbsp;</td>
+    <td><u><b>Resolution:</b></u>&nbsp;&nbsp;</td>
+    <td><u><b>Color&nbsp;depth:</b></u>&nbsp;&nbsp;</td>
+    <td><u><b>Comments:</b></u>&nbsp;&nbsp;</td>
+  </tr>
+  <tr>
+    <td>PMAG-AA</td>
+    <td>1280 x 1024</td>
+    <td>B/W</td>
+    <td>(perhaps problems with the cursor?)</td>
+  </tr>
+  <tr>
+    <td>PMAG-BA</td>
+    <td>1024 x 864</td>
+    <td>8-bit color</td>
+    <td>Works fine in OpenBSD, NetBSD, Ultrix, Linux, Sprite</td>
+  </tr>
+  <tr>
+    <td>PMAGB-BA</td>
+    <td>1280 x 1024</td>
+    <td>8-bit color</td>
+    <td>Works fine in OpenBSD, NetBSD, Linux, Sprite</td>
+  </tr>
+  <tr>
+    <td valign="top">PMAG-FA</td>
+    <td valign="top">1280 x 1024</td>
+    <td valign="top">8/24-bit</td>
+    <td>Works fine in text-mode only with NetBSD and Ultrix,
+	<br>(3D acceleration is not emulated)</td>
+  </tr>
+</table></center>
+<p>
+If the framebuffer window is too large, is is possible to scale it down
+by adding <b>-Y2</b> to the command line.
+
+
+
+
+
+<p><br>
+<a name="networking"></a>
+<h3>Networking:</h3>
+
+It is possible to let the guest OS running inside the emulator get access to
+the Internet. If you are interested in the technical details, and the 
+reasons why networking is implemented in the emulator the way it currently 
+is implemented, you might want to read the <a href="technical.html#net">
+networking section in the technical documentation</a>.
+<p>
+The guest OS running inside the emulator uses a private IPv4 address, such
+as 10.0.0.1, and the emulator acts as a NAT-like gateway/firewall at IPv4
+address 10.0.0.254. To the outside world it will seem like it is the host's
+OS that connects to other machines on the internet, not the guest OS.
+<p>
+<font color="#ff0000">NOTE: This is still experimental!
+As of 2004-07-21, ARP + ICMP + UDP + TCP are emulated well enough to let 
+NetBSD and OpenBSD install via ftp, and use the network for many normal 
+activities, but not everything works yet.</font>
+
+
+
+
+
+
+<p><br>
+<a name="portmips"></a>
+<h3>Porting operating systems to MIPS using mips64emul:</h3>
+
+Is this a good idea?  The answer is yes and no, depending on what you are
+trying to port to. If you are developing an operating system or operating
+system kernel of your own, and wish to target MIPS-like systems in general,
+then the answer might be yes, for experimental purposes.
+<p>
+However, if you think that you can port an operating system
+to, say, the Silicon Graphics machine mode of mips64emul and hope that your
+operating system will run on a real SGI machine, then you will most
+likely fail. mips64emul simply does not emulate things well enough for that to work.
+Another example would be specific CPU details; if your code depends on,
+say, R10000 specifics, chances are that mips64emul will not be sufficient.
+<p>
+In many cases, hardware devices in mips64emul are only implemented well
+enough to fool for example NetBSD that they are working correctly, while in fact
+they don't work very much at all.  Please keep this in mind, if you plan
+to use mips64emul when porting your code to MIPS.
+
+
+<p><br>
+<a name="disk"></a>
+<h3>How to start the emulator with a disk image:</h3>
+
+Add <i>-d [prefixes:]diskimagefilename</i> to the command line, where prefixes
+are one or more single-character options. Run mips64emul with no command line
+arguments to get a list of possible options.
+<p>
+Here are some examples. If you want to run a NetBSD/pmax kernel on an
+emulated DECstation machine, you would use a command line such as this:
+<pre>
+	$ <b>./mips64emul -D2 -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
+</pre>
+<p>
+NOTE: For some emulation modes, such as the DECstation mode, you do 
+<i>not</i> have to specify the name of the kernel, if the disk image is 
+bootable!
+<p>
+It is possible to have more than one disk. For each -d argument, a disk
+image is added; the first will be SCSI target 0, the second will be target 1, and so on,
+unless you specify explicitly which ID number the devices should have.
+<pre>
+	$ <b>./mips64emul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
+</pre>
+Note: In the example above, disk2.raw will get scsi id 5.
+<p>
+If a filename has a 'c' prefix, or ends with ".iso", then it is assumed to be
+a CDROM device (this can be overridden with a 'd' prefix, to force a read/write disk).
+For example, the following command would start the emulator with two
+CDROM images, and one harddisk image:
+<pre>
+	$ <b>./mips64emul -D2 -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
+</pre>
+Usually, the device with the lowest id becomes the boot device. To override
+this, add a 'b' prefix to one of the devices:
+<pre>
+	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
+</pre>
+If you have a physical CD-ROM drive on the host machine, say /dev/cd0c, you can
+use it as a CD-ROM directly accessible from within the emulator:
+<pre>
+	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
+</pre>
+It is probably possible to use harddisks as well this way, but I would not
+recommend it.
+<p>
+Using emulated tape drives is a bit more complicated than disks, because a
+tape can be made up of several "files" with space in between. The solution
+I have choosen is to have one file in the host's file system space for each
+tape file. The prefix for using tapes is 't', and the filename given is
+for the <i>first</i> file on that tape (number zero, implicitly). For
+files following file nr 0, a dot and the filenumber is appended to the
+filename.
+<p>
+As an example, starting the emulator with
+<pre>
+	<b>-d t4:mytape.img</b>
+</pre>
+will cause SCSI id 4 to be a tape device, using the following file number
+to name translation scheme:
+<p>
+<center>
+ <table border="0">
+  <tr>
+    <td><b>File number:</b></td>
+    <td><b>File name in the host's filesystem:</b></td>
+  </tr>
+  <tr>
+    <td align="center">0</td>
+    <td align="left">mytape.img</td>
+  </tr>
+  <tr>
+    <td align="center">1</td>
+    <td align="left">mytape.img.1</td>
+  </tr>
+  <tr>
+    <td align="center">2</td>
+    <td align="left">mytape.img.2</td>
+  </tr>
+  <tr>
+    <td align="center">..</td>
+    <td align="left">..</td>
+  </tr>
+ </table>
+</center>
+<p>
+If you already have a number of tape files, which should be placed on the
+same emulated tape, then you might not want to rename all those files.
+Use symbolic links instead (ln -s).
+<p>
+There is another advantage to using symbolic links for tape filenames:
+every time a tape is rewound, it is reopened using the filename given
+on the command line. By changing what the symbolic name points to,
+you can "switch tapes" without quiting and restarting the emulator.
+
+
+
+<p><br>
+<a name="largeimages"></a>
+<h3>How to extract large gzipped disk images:</h3>
+
+Unix filesystems usually support large files with "holes". Holes are 
+zero-filled blocks that don't actually exist on disk. This is very 
+practical for emulated disk images, as it is possible to create a very 
+large disk image without using up much space at all.
+
+<p>
+Using gzip and gunzip on disk images can be <i>very</i> slow, as these 
+files can be multiple gigabytes large, but this is usually necessary for
+transfering disk images over the internet. If you receive a gzipped disk 
+image, say disk.img.gz, and run a naive
+<p>
+<pre>
+	$ <b>gunzip disk.img.gz</b>
+</pre>
+<p>
+on it, you will not end up with an optimized file unless 
+gunzip supports that. (In my experiments, it doesn't.)  In plain English, 
+if you type <b>ls -l</b> and the filesize is 9 GB, it will actually occupy 
+9 GB of disk space! This is often unacceptable.
+<p>
+Using a simple tool which only writes blocks that are non-zero, a lot of 
+space can be saved. Compile the program cp_removeblocks in the 
+experiments/ directory, and type:
+<p>
+<pre>
+	$ <b>gunzip -c disk.img.gz | ./cp_removeblocks /dev/stdin disk.img</b>
+</pre>
+
+<p>
+This will give you a disk.img which looks like it is 9 GB, and works like
+the real file, but the holes are not written out to the disk. (You can see
+this by running for example <b>du disk.img</b> to see the physical block
+count.)
+
+
+
+<p><br>
+<a name="userland"></a>
+<h3>Running userland binaries:</h3>
+
+You can run (some) userland programs as well. This will not emulate any
+particular machine, but instead try to translate syscalls from for example
+NetBSD/pmax into the host's OS' syscalls. For this to work, you have
+to add <b>--userland</b> to the command line when running ./configure.
+
+<p>
+For example, running /bin/hostname
+or /bin/date and similarly trivial programs from the NetBSD/pmax distribution
+works:
+<pre>
+	$ <b>./mips64emul -qu1 pmax_bin_hostname</b>
+	tab.csbnet.se
+	$ <b>./mips64emul -qu1 pmax_bin_date</b>
+	Sun Jan 25 02:26:14 GMT 2004
+	$ <b>./mips64emul -qu1 pmax_bin_sleep</b>
+	usage: pmax_bin_sleep seconds
+	$ <b>./mips64emul -qu1 pmax_bin_sleep 5</b>
+	$ <b>./mips64emul -qu1 pmax_bin_sync</b>
+</pre>
+There's also an Ultrix4 emulation mode:
+<pre>
+	$ <b>./mips64emul -qu2 ultrix4_bin_date</b>
+	UNIMPLEMENTED ultrix syscall 54
+	UNIMPLEMENTED ultrix syscall 62
+	Mon Feb  9 12:50:59 WET 2004
+	$ <b>./mips64emul -qu2 ultrix4_bin_hostname</b>
+	tab.csbnet.se
+</pre>
+NOTE: Userland syscall emulation is still in its beginning stages, so almost
+nothing works. It's mostly a proof-of-concept implementation, to show that 
+such cross-platform userland emulation is possible.
+<p>
+IRIX userland emulation might theoretically also be possible to add.
+
+
+
+
+<p><br>
+<a name="promdump"></a>
+<h3>Using a PROM dump from a real machine:</h3>
+
+Raw PROM images from real machines can, in a few cases, be used in
+the emulator. ROM code is usually much more sensitive to correctness
+of the emulator than operating system kernels or userland programs
+are, so don't expect any PROM image to just magically work.
+
+
+<p>
+<h4>Dumping the PROM on a DECstation 5000/125:</h4>
+The image first needs to be extracted from the machine. There are
+several ways to do this.
+<ul>
+  <li>Use hardware to read the PROM chip(s) directly. Not easy if you
+	don't have such a hardware reader.
+  <li>Copy the PROM memory range into a file, from a running
+	operating system. You need a running OS, and it must
+	have access to the PROM memory range. NetBSD, for example,
+	doesn't allow that from userland.
+  <li>Hook up a serial console and dump using the PROM's own dump
+	command.
+</ul>
+<p>
+The easiest way is to hook up a serial console. The terminal must be
+able to capture output to a file.
+<p>
+These are approximately the commands that I used:
+<pre>
+        >><b>cnfg</b>                             <i>Show machine configuration</i>
+
+        >><b>printenv</b>                         <i>Show environment variables</i>
+
+        >><b>setenv more 0</b>                    <i>This turns off the More messages</i>
+
+        >><b>e -x 0xbfc00000:0xbfffffff</b>       <i>Dump the PROM data</i>
+</pre>
+<p>
+Remember that DECstations are little endian, so if the dump data
+looks like this:
+<pre>
+        bfc00000:  0x0bf0007e
+</pre>
+then the bytes in memory are actually 0x7e, 0x00, 0xf0, and 0x0b.
+<p>
+At 9600 bps, about 10KB can be dumped per minute, so it takes a while.
+Once enough of the PROM has been dumped, you can press CTRL-C to break out.
+Then, restore the more environment variable:
+<pre>
+        >><b>setenv more 24</b>
+</pre>
+<p>
+Now, convert the data you just saved (little-endian words -> bytes),
+and store in a file. Let's call this file DECstation5000_125_promdump.bin.
+<pre>
+        $ <b>./decprom_dump_txt_to_bin DECstation5000_125_promdump.txt DECstation5000_125_promdump.bin</b>
+</pre>
+This binary image can now be used in the emulator:
+<pre>
+	$ <b>./mips64emul -D3 -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
+
+	KN02-BA V5.7e   
+	?TFL:  3/scc/access (1:Ln1 reg-12: actual=0x00 xpctd=0x01) [KN02-BA]
+	?TFL:  3/scc/io (1:Ln0 tx bfr not empty. status=0X 0) [KN02-BA]
+	...
+	--More--?TFL: 3/scsi/cntl (CUX, cause= 1000002C)
+	>><b>?</b>
+	 ? [cmd]
+	 boot [[-z #] [-n] #/path [ARG...]]
+	 cat SCRPT
+	 cnfg [#]
+	 d [-bhw] [-S #] RNG VAL
+	 e [-bhwcdoux] [-S #] RNG
+	 erl [-c]
+	 go [ADR]
+	 init [#] [-m] [ARG...]
+	 ls [#]
+	 passwd [-c] [-s]
+	 printenv [EVN]
+	 restart
+	 script SCRPT
+	 setenv EVN STR
+	 sh [-belvS] [SCRPT] [ARG..]
+	 t [-l] #/STR [ARG..]
+	 unsetenv EVN
+	>><b>cnfg</b>
+	 3: KN02-BA  DEC      V5.7e    TCF0  (128 MB)
+	                                     (enet: 00-00-00-00-00-00)
+	                                     (SCSI = 7)
+	 0: PMAG-BA  DEC      V5.3a    TCF0
+	>><b>printenv</b>
+	 boot=
+	 testaction=q
+	 haltaction=h
+	 more=24
+	 #=3
+	 console=*
+	 osconsole=3
+	>>
+</pre>
+<i>(Note: at the moment, this doesn't work. I must have broken something when
+fixing something else, but this is what it looked like at the time.)</i>
+<p>
+During bootup, the PROM complains <i>a lot</i> about hardware failures.
+That's because the emulator doesn't emulate the hardware well enough yet.
+<p>
+The command line options used are:
+-D3 for DECstation model 3 (5000/1xx), -Q to supress the emulator's own PROM
+call emulation, -M128 for 128MB RAM (because mips64emul doesn't correctly
+emulate memory detection well enough for the PROM to accept, so it will
+always believe there is 128MB ram anyway), and -q to supress debug messages.
+The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
+binary file which should be loaded at a specific virtual address.
+
+
+<p><br>
+<h4>Dumping the PROM on a SGI O2:</h4>
+
+The general ideas in this section applies to using ROM images from other
+machines as well. Besides DECstation, I've also tried this on an SGI IP32
+("O2").
+<p>
+For the O2, a suitable command to dump the prom memory range is
+<pre>
+	&gt;&gt; <b>dump -b 0xBFC00000:0xBFC80000</b>
+</pre>
+Make sure you capture all the output (via serial console) into a file,
+and then run experiments/sgiprom_to_bin on the captured file.
+<p>
+(2005-01-16: The emulator doesn't really emulate the IP32 well enough to
+actually run the PROM image without using special hacks, but it might do
+so some time in the future.)
+
+
+
+
+
+</p>
+
+</body>
+</html>

@@ -1,0 +1,924 @@
+<html>
+<head><title>mips64emul documentation: Installing "guest OSes"</title>
+</head>
+<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<p>
+<table width="100%">
+  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
+  <b>mips64emul documentation: Installing "guest OSes"</b></font></td></tr>
+</table>
+<p>
+<!-- The first 10 lines are cut away by the homepage updating script.  -->
+
+
+<!--
+
+$Id: guestoses.html,v 1.1 2005-01-26 11:30:08 debug Exp $
+
+Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+-->
+
+<a href="./">Back to the index</a>
+
+<hr>
+<p><br>
+<h2>Installing "guest OSes"</h2>
+
+<p>
+<ul>
+  <li><a href="#netbsdinstall">How to install NetBSD/pmax in the emulator</a>
+  <li><a href="#netbsdarcinstall">How to install NetBSD/arc in the emulator</a>
+  <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
+  <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in the emulator</a>
+  <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
+  <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
+  <li><a href="#declinux">How to install Debian GNU/Linux for DECstation in the emulator</a>
+  <li><a href="#declinuxredhat">How to run Redhat Linux for DECstation in the emulator</a>
+  <li><a href="#mach">How to run Mach/PMAX in the emulator</a>
+</ul>
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdinstall"></a>
+<h3>How to install NetBSD/pmax in the emulator:</h3>
+
+To run NetBSD/pmax in the emulator (on an emulated DECstation machine), 
+you first need to install NetBSD onto a disk image. To NetBSD, the disk 
+image looks and acts like a real SCSI disk, but it is just a normal 
+file in the host's filesystem.
+
+<p>
+You need to do the following:
+<ol start="1">
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=1900000000</b>
+
+</pre>
+</ol>
+<p>
+From this point, there are two separate ways to continue the installation.
+You can either download a CD-ROM iso image (and let the installation 
+program copy files from the CD-ROM image to the harddisk image), or you 
+can install via ftp. For an installation from a CD-ROM image, follow these 
+steps:
+<p>
+<ol start="3">
+
+  <li>Download a NetBSD CD-ROM iso image:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
+	or
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/2.0/pmaxcd.iso</a>
+
+</pre>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -X -b -D2 -d netbsddisk.img -d bc:pmaxcd.iso</b>
+</pre>
+</ol>
+<p>
+For an ftp install, substitute steps 3 and 4 above with these:
+<p>
+<ol start="3">
+
+  <li>Download a NetBSD pmax INSTALL kernel, and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	or
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+
+	$ <b>gunzip netbsd-INSTALL.gz</b>
+
+</pre>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -X -b -D2 -d netbsddisk.img -O netbsd-INSTALL</b>
+</pre>
+</ol>
+
+<p>
+(If you don't want to use a graphical framebuffer during the install,
+you can remove <b>-X</b> from the command line, but then make sure you
+choose 'vt100' when prompted with which terminal type to use, and not
+'rcons'.)
+
+<p>
+Then proceed like you would do if you were installing NetBSD on a real
+DECstation.  Even if the emulator is running on a very fast host system,
+you should expect the installation to take quite some time.
+If you are installing from the network, then suitable networking 
+parameters are as follows:<pre>
+	Which device shall I use? [le0]: <b>le0</b>
+	..
+	Your DNS domain: <b>mydomain.com</b>
+	Your host name: <b>foo</b>
+	Your IPv4 number: <b>10.0.0.1</b>
+	IPv4 Netmask [0xff000000]: <b>0xff000000</b>
+	IPv4 gateway: <b>10.0.0.254</b>
+	IPv4 name server: <b>10.0.0.254</b>
+</pre>
+
+<p>
+(If using 10.0.0.254 as the nameserver fails, then try entering the
+IP number of a real-world nameserver instead.)
+
+<p>
+When the installation is completed, the following command should start
+NetBSD from the harddisk image:<pre>
+	$ <b>./mips64emul -X -b -M64 -D2 -d netbsddisk.img</b>
+</pre>
+
+<p>
+Use <b>startx</b> to start X windows.
+
+<p>
+<font color="#ff0000">NOTE:</font> For some reason, NetBSD 2.0 doesn't
+work with X out-of-the-box on pmax. It seems that this has to do with a 
+switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
+
+<p>
+If you want to run without the X framebuffer, use this instead:<pre>
+	$ <b>./mips64emul -D2 -b -d netbsddisk.img</b>
+</pre>
+
+<p>
+NetBSD/pmax seems to work fine with dynamic binary translation (enabled 
+by the <b>-b</b> command line option) in R3000 mode. NetBSD also
+supports R4000-like CPUs on pmax, but the bintrans support for R4000 in
+the emulator is less stable than for R3000.
+
+
+
+
+
+
+<p><br>
+<a name="netbsdarcinstall"></a>
+<h3>How to install NetBSD/arc in the emulator:</h3>
+
+It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the
+emulator.
+
+<p>
+To install NetBSD/arc from a CDROM image onto an emulated harddisk image,
+follow these instructions:
+
+<p>
+<ol start="1">
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that NetBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=nbsd_arc.img bs=1024 count=1 seek=900000</b>
+
+</pre>
+  <li>Download a NetBSD/arc CDROM image from ftp:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/arccd.iso</a>
+
+</pre>
+  <li>Download a NetBSD/arc installation (ramdisk) kernel,
+	and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	$ <b>./mips64emul -A2 -b -d nbsd_arc.img -d arccd.iso netbsd.RAMDISK</b>
+
+</pre>
+  <li>From now on, you have to use your imagination, as there is no
+	automatic installation program for NetBSD/arc. Here are some tips
+	and hints on how you can proceed with the install:<pre>
+	$ <b>mount /dev/cd0a /mnt2</b>
+	$ <b>disklabel -i -I sd0</b>    (for example 'a', '4.2BSD', '1c',
+	    '700M', 'b', 'swap', '701M', '$', 'P', 'W', 'y', and 'Q')
+	$ <b>newfs /dev/sd0a</b>
+	$ <b>mount /dev/sd0a /mnt</b>
+	$ <b>cd /mnt</b>
+	$ <b>for a in /mnt2/arc/binary/sets/*.tgz; do tar xvzpf $a; done</b>
+	$ <b>cd dev; sh MAKEDEV all</b>
+	$ <b>cd ../etc; echo "rc_configured=YES" &gt;&gt; rc.conf</b>
+	$ <b>cat > /mnt/etc/fstab</b>
+	    /dev/sd0a / ffs rw 1 1
+	    /dev/sd0b none swap sw 0 0
+	    (ctrl-d)
+	$ <b>cd /; umount /mnt; umount /mnt2</b>
+	$ <b>halt</b>
+
+</pre>
+  <li>Download a generic NetBSD/arc kernel,
+	and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd-GENERIC.gz</a>
+
+</pre>
+</ol>
+
+<p>
+You can now use the generic NetBSD/arc kernel to boot from the harddisk 
+image, using the following command:
+<p>
+<pre>
+	$ <b>./mips64emul -A2 -b -d nbsd_arc.img netbsd-GENERIC</b>
+
+</pre>
+
+<p>
+Using <b>-b</b> (enabling dynamic binary translation), as in the instructions
+above, is not 100% stable. If you experiment weird crashes, try removing that
+option and try again.
+
+
+
+
+
+<p><br>
+<a name="openbsdinstall"></a>
+<h3>How to install OpenBSD/pmax in the emulator:</h3>
+
+Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
+You should first read the section above on how to install NetBSD,
+before continuing here. If you have never installed OpenBSD on any
+architecture, then you need a great deal of patience to do this.
+If, on the other hand you are used to installing OpenBSD, then
+this should be no problem for you.
+
+<p>
+OpenBSD/pmax died at release 2.8 of OpenBSD, so you should be
+aware of the fact that this will not give you an up-to-date OpenBSD
+system. The files are available at this URL:
+<pre>
+	<a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</a>
+</pre>
+
+<p>
+Following these instructions <i>might</i> work. If not, then use
+common sense and imagination to modify them as you see fit.
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=openbsddisk.img bs=1 count=512 seek=900000000</b>
+
+</pre>
+  <li>Download the entire pmax directory from the ftp server: (approx. 99 MB)<pre>
+	$ <b>wget -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/</b>
+
+</pre>
+
+  <li>Execute the following commands:<pre>
+	$ <b>mv ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/simpleroot28.fs.gz .</b>
+	$ <b>gunzip simpleroot28.fs.gz</b>
+	$ <b>chmod +w simpleroot28.fs</b>		&lt;--- make sure
+
+</pre>
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	I recommend using <b>mkisofs</b> for that purpose. If you don't already
+	have mkisofs installed on your system, you need to install that in
+	order to do this.<pre>
+	$ <b>mkisofs -o openbsd_pmax_2.8.iso ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax</b>
+
+</pre>
+  <li>Start the emulator with all three (!) disk images:<pre>
+	$ <b>./mips64emul -D2 -b -d openbsddisk.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+
+</pre>
+	(If you add -X, you will run with the graphical framebuffer. This is <i>REALLY</i> slow
+	because the console has to scroll a lot during the install. I don't recommend it.)
+  <p>
+  <li>Go on with the installation as you would do if you were installing on a real machine.
+	If you are not used to the OpenBSD installer, then this will most likely
+	be a very uncomfortable experience. Some important things to keep in mind are:
+	<ul>
+	  <li>rz0 is the rootdisk you wish to install onto.
+	  <li>rz1 is the simpleroot image.
+	  <li>rz2 is the CDROM containing the "install sets".
+	  <li>When asked for the "<b>root device?</b>", enter <b>rz1</b>.
+	  <li>At "<b>Enter pathname of shell or RETURN for sh:</b>", press enter.
+	  <li>At the # prompt, do the following:<pre>
+	$ <b>fsck /dev/rz1a</b>        (and mark the filesystem as clean)
+	$ <b>mount /dev/rz1a /</b>
+	$ <b>mount -t kernfs kern kern</b>
+	$ <b>./install</b>
+
+</pre>
+		and proceed with the install. Good luck. :-)
+	  <li>Answer "<b>y</b>" when asked if you wish to configure the network.
+		(See the section about installing NetBSD/pmax for suitable
+		network settings.)
+	  <li>Install from "<b>c</b>" (cdrom), choose "<b>rz2</b>" as the cdrom device, and "<b>/</b>" as
+		the directory containing the install sets.
+	</ul>
+  <p>
+  <li>
+For some unknown reason, the install script does not set the root
+password! The first time you boot up OpenBSD after the install, you
+need to go into single user mode and run <b>passwd root</b> to set
+the root password, or you will not be able to log in at all!
+<pre>
+	$ <b>./mips64emul -D2 -b -d openbsddisk.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+</pre>
+While you are at it, you might want to extract the X11 install sets
+as well, as the installer seems to ignore them too. (Perhaps due to a bug
+in the installer, perhaps because of the way I used mkisofs.)
+<p>
+Execute the following commands in the emulator:
+<pre>
+	# <b>fsck /dev/rz0a</b>
+	# <b>mount /</b>
+	# <b>passwd root</b>
+
+	# <b>cd /</b>
+	# <b>mount -t cd9660 /dev/rz2c /mnt</b>
+	# <b>sh</b>
+	# <b>for a in /mnt/[xX]*; do tar zxvf $a; done</b>
+	# <b>ln -s /usr/X11R6/bin/Xcfbpmax /usr/X11R6/bin/X</b>
+	# <b>ln -s /dev/fb0 /dev/mouse</b>
+	# <b>echo /usr/X11R6/lib >> /etc/ld.so.conf</b>
+	# <b>ldconfig</b>
+
+	# <b>sync</b>
+	# <b>halt</b>
+</pre>
+</ol>
+
+<p>
+NOTE: It is also possible to install via ftp instead of using a CDROM image. 
+This is not much less awkward, you still need the simpleroot filesystem 
+image, and you still have to manually add the X11 install sets and set the 
+root password, and so on.
+
+<p>
+Once you have completed the installation procedure, the following command
+will let you boot from the new rootdisk image:
+<pre>
+	$ <b>./mips64emul -D2 -b -X -M64 -o '-aN' -d openbsddisk.img -j bsd</b>
+</pre>
+
+<p>
+OpenBSD/pmax seems to work fine with dynamic binary translation (enabled 
+by the <b>-b</b> command line option).
+
+<p>
+(Normally, you would be asked about which root device to use (rz0), but 
+using -o '-aN' supresses that.)
+<p>
+When asked for which terminal type to use, when logging in as root,
+enter <b>rcons</b> if you are using the graphical framebuffer,
+<b>vt100</b> for text-mode.
+<br>Use <b>startx</b> to start X windows.
+
+
+
+
+
+
+<p><br>
+<a name="openbsdarcinstall"></a>
+<h3>How to install OpenBSD/arc in the emulator:</h3>
+
+It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
+emulator.
+
+<p>
+(You should be aware of the fact that OpenBSD for the ARC platform died at 
+release 2.3, so this will not give you an up-to-date OpenBSD system.
+See
+<a href="http://www.openbsd.org/arc.html">http://www.openbsd.org/arc.html</a>
+for more information.)
+
+<p>
+To install OpenBSD/arc onto an emulated harddisk image, follow these
+instructions:
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that OpenBSD installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=obsd_arc.img bs=1024 count=1 seek=700000</b>
+
+</pre>
+  <li>Download the entire arc directory from the ftp server: (approx. 75 MB)<pre>
+	$ <b>wget -np -l 0 -r ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/</b>
+
+</pre>
+
+  <li>You now need to make an ISO image of the entire directory you downloaded.
+	I recommend using <b>mkisofs</b> for that purpose. If you don't already
+	have mkisofs installed on your system, you need to install that in
+	order to do this.<pre>
+	$ <b>mkisofs -o openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/</b>
+
+</pre>
+  <li>Start the emulator using this command line:<pre>
+	$ <b>./mips64emul -X -b -A2 -d obsd_arc.img -d openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</b>
+
+</pre>
+	and proceed like you would do if you were installing OpenBSD
+	on a real Acer PICA-61. (Answer 'no' when asked if you want to
+	configure networking, and then install from CD-ROM.)
+</ol>
+
+<p>
+Once the install has finished, the following command should let you 
+boot from the harddisk image:
+<p>
+<pre>
+	$ <b>./mips64emul -X -b -A2 -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
+
+</pre>
+
+<p>
+(The <b>-b</b> command line option enables dynamic binary translation,
+which isn't always 100% stable, so if things seem buggy you might want
+to try to remove that from the command line.)
+
+
+
+
+
+
+<p><br>
+<a name="ultrixinstall"></a>
+<h3>How to install Ultrix/RISC in the emulator:</h3>
+
+The following instructions should guide you through an install of Ultrix
+onto a disk image:
+
+<ol>
+  <li>Compile mips64emul:<pre>
+        $ <b>./configure; make</b>
+   
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+        that Ultrix installs itself onto:<pre>
+        $ <b>dd if=/dev/zero of=rootdisk.img bs=1024 count=1 seek=800000</b>
+
+</pre>
+  <li>Place your Ultrix installation media in your CDROM drive. (I'm assuming
+        it is called /dev/cd0c here, replace that with the name of your
+        CDROM drive, or the name of a .iso image file.)
+        Then, start the emulator like this:<pre>
+        $ <b>./mips64emul -X -b -M64 -D2 -d rootdisk.img -d bc:/dev/cd0c -j vmunix</b>
+
+</pre>
+        Once the first stage of the installation is done (restoring the root
+	filesystem), you need to restart the emulator, booting from the 
+	new rootdisk, to continue the installation process.
+	This is done by removing the bootflag ('b') from the second
+	diskimage argument:<pre>
+        $ <b>./mips64emul -X -b -M64 -D2 -d rootdisk.img -d c:/dev/cd0c -j vmunix</b>
+
+</pre>
+</ol>
+
+<p>
+When the installation is completed, the following command should start  
+Ultrix from the harddisk image:<pre>
+        $ <b>./mips64emul -X -b -M64 -D2 -j vmunix -d rootdisk.img</b>
+</pre>
+
+<p>
+Ultrix mostly seems to work with dynamic binary translation (enabled by 
+the <b>-b</b> command line option). If you have a very fast
+host machine, and use bintrans, you might experience a weird timer related
+bug, which makes it impossible to logon to the system. It is triggered
+when the emulation goes faster than any real DECstation machine was 
+capable of running. A temporary workaround is to add <b>-I33000000</b>
+to fix the emulated clock speed to 33 million instructions per emulated
+second. (When using -CR4400, -I16000000 should be used instead.)
+
+<p>
+You can experiment with adding <b>-Z2</b> (for emulating a 
+dual-headed workstation) or even <b>-Z3</b> (tripple-headed), and also the
+<b>-Y2</b> option for scaling down the framebuffer windows by a factor 2x2.
+There is also a <b>-z</b> option for supplying names of X11 displays to 
+use. The following example starts Ultrix on an emulated tripple-headed 
+workstation, on three different displays (remote1:0.0, localhost:0.0, and 
+remote2:0.0), using no scaledown:<pre>
+        $ <b>./mips64emul -M64 -bND2 -jgenvmunix -d rootdisk.img -XZ3 \
+            -z remote1:0.0 -z localhost -z remote2:0.0</b>
+</pre>
+
+<p>
+The X11 displays may differ in bit depth and endianness. Unfortunately, 
+there is no way yet to set the scaledown factor on a per-window basis, so 
+the scaledown factor affects all windows.
+
+<p>
+(If you didn't use -Z<i>n</i> during the installation, and 
+compiled your own /vmunix, then it will not contain support for multiple 
+graphics cards. To overcome this problem, use the generic kernel, <b>-j 
+genvmunix</b>, whenever you are running the emulator with a different 
+setup than the one you used when Ultrix was installed.)
+
+<p>  
+A note for the historically interested out there:
+OSF/1 for MIPS is quite similar to Ultrix, so that is possible to run
+as well.  If you are unsuccessful in installing Ultrix
+or OSF/1 directly in the emulator, you can always install it on your real
+machine onto a real SCSI disk, and then copy the contents of that SCSI
+disk into a file (using <b>dd(1)</b>), and use that file as a disk image
+file in the emulator.
+
+
+
+
+
+
+<p><br>
+<a name="sprite"></a>
+<h3>How to run Sprite for DECstation in the emulator:</h3>
+
+Sprite was a research operating system at the University of Berkeley.
+The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
+has made available a copy of a Sprite harddisk image for a DECstation 5000/200.
+If you want to find out more about Sprite in general, read
+<a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">
+http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>.
+
+<p>
+The following instructions should let you run Sprite in the emulator:
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Download the Sprite harddisk image using ftp or http:<pre>
+	<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt">http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt</a>
+	or <a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
+	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
+
+</pre>
+  <li>Start the emulator with the following command line:<pre>
+	$ <b>./mips64emul -X -b -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
+
+</pre>
+</ol>
+
+<p>
+The first time you boot up with the disk image, you will be asked a number 
+of questions regarding network settings. If you feel like entering correct 
+values, then you should use the following:
+<p>
+
+<pre>
+    Your machine's Ethernet address:    10:20:30:40:50:60
+    Your machine's IP:                  10.0.0.1
+    Subnet mask:                        0xff000000
+    Gateway's Ethernet address:         60:50:40:30:20:10
+    Gateway's IP:                       10.0.0.254
+</pre>
+
+<p>
+Unfortunately, at the end of <a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/boot.txt">
+http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/boot.txt</a>, the 
+following sad statement can be found:
+<pre>
+    The bootable Sprite image is meant to be a demonstration of Sprite, not
+    a robust Sprite system.  There are several missing things, such as 
+    floating point and network support.
+</pre>
+
+<p>
+Once you are logged in as root, running <b>xinit</b> will start the X11 
+environment.
+
+<p>
+Sprite works fine with dynamic binary translation (enabled by
+adding <b>-b</b> to the command line options).
+
+
+
+
+
+<p><br>
+<a name="declinux"></a>
+<h3>How to install Debian GNU/Linux for DECstation in the emulator:</h3>
+
+<p>
+<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+unstable. During my tests, even pressing the wrong key during the install
+(for example the wrong cursor key) can cause a kernel Oops.
+I <i>think</i> this has to do with interrupts from the serial controller.
+Hopefully using the -U command line option will reduce the risk for such 
+crashes. (I haven't had time to come up with a clean solution to this yet;
+it feels like a buffer overflow in Linux' serial driver for the 5000/200,
+but it is also likely that it is a bug in mips64emul.)
+</font>
+
+<p>
+The following steps should let you install Debian GNU/Linux for DECstation
+onto a harddisk image:
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that Debian installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=2000000</b>
+
+</pre>
+  <li>Download an install kernel:<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
+	    <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
+	or
+	<a href="http://http.us.debian.org/debian/dists/unstable/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/unstable/main/</a>
+	    <a href="http://http.us.debian.org/debian/dists/unstable/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
+
+</pre>
+	depending on whether you want to install Debian "Testing" or
+	"Unstable".
+  <p>
+  <li>For a text-mode installation, start the emulator like this:<pre>
+	$ <b>./mips64emul -D2 -b -U -M64 -o 'console=ttyS3' -d debian.img -O boot.img</b>
+
+</pre>
+</ol>
+
+<p>
+Debian GNU/Linux on DECstation works reasonably fine with dynamic
+binary translation, enabled by the <b>-b</b> command line option. (Without
+this option, the emulator might be less buggy, but also too slow to be 
+useful when running Linux as a guest OS.)
+
+<p>
+(If you want to, you can try <b>-X</b> instead of <b>-o 'console=ttyS3'</b> on
+the command line. This will cause Linux to use the graphical framebuffer.
+Unfortunately, Linux does not seem to have a driver for the DZ11 keyboard
+controller yet, so you cannot interact with the system. You will see the
+penguin in the upper lefthand corner while booting, and nicely rendered Unicode
+characters, but that's about it.)
+
+<p>
+You need to enter some values during the installation procedure, for example
+network settings. The following should work:
+<p>
+<pre>
+    DHCP:                       No, choose "Configure network manually"
+    IP address:                 10.0.0.1
+    Netmask:                    255.0.0.0
+    Gateway:                    10.0.0.254
+    Name server addresses:      10.0.0.254
+</pre>
+
+<p>
+Once the first phase of the install has finished, the following command 
+should let you boot into Debian, and perform post-install configuration:<pre>
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
+
+</pre>
+
+<p>
+It seems that there's a problem with getting a login prompt on serial 
+console (at least when I've done test installs), so when the installation 
+is finished and you're supposed to get a login prompt, you need to press 
+CTRL-C and type <b>quit</b>, and then:
+
+<p>
+<ol start="5">
+  <li>Download a normal kernel (not a RAMDISK one).<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
+	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
+
+</pre>
+  <li>Boot Debian using the following command line:<pre>
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3 root=/dev/sda1 rw
+		init=/bin/sh' -d debian.img vmlinux-2.4.27-r3k-kn02</b>
+
+</pre>
+	You'll enter single-user mode. You need to add a line to
+	/etc/inittab, to enable logins via serial console.<pre>
+	sh-2.05b# <b>echo 'T3:23:respawn:/sbin/getty -L ttyS3 9600 vt100' >> /etc/inittab</b>
+	sh-2.05b# <b>echo 'ttyS3' >> /etc/securetty</b>
+	sh-2.05b# <b>sync; umount /</b>
+</pre>
+</ol>
+
+<p>
+The system should now be ready for everyday use.
+
+<p>
+Use this command to boot from the completely installed disk image:<pre>
+	$ <b>./mips64emul -D2 -U -b -M64 -o 'console=ttyS3' -d debian.img</b>
+
+</pre>
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
+Kaj-Michael Lang noticed that the current CVS-version of
+<a href="http://www.linux-mips.org/">linux-mips</a> has
+support for keyboards now, on DECstation 5000/200, so it is
+possible to run Debian GNU/Linux with framebuffer/keyboard.
+He has made a kernel available here:
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+It has other problems (ethernet doesn't seem to work, for
+example), but at least it doesn't Oops that often.&nbsp;]
+
+
+
+
+
+
+<p><br>
+<a name="declinuxredhat"></a>
+<h3>How to run Redhat Linux for DECstation in the emulator</h3>
+
+<p>
+<font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
+unstable. Read the note about '-U' in the section on how to install 
+Debian.
+</font>
+
+
+<p>
+The following steps should let you run Redhat Linux for DECstation
+in mips64emul:
+
+<p>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Download a kernel. This is a Debian kernel, but it works fine:<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
+	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
+
+</pre>
+  <li>Download a root filesystem tree:<pre>
+	<a href="ftp://ftp.uni-wuppertal.de/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">ftp://ftp.uni-wuppertal.de/pub/linux/mips/</a>
+	 <a href="ftp://ftp.uni-wuppertal.de/pub/linux/mips/mipsel-linux/root/mipsel-root-20011216.tgz">mipsel-linux/root/mipsel-root-20011216.tgz</a>
+	19486676 bytes, md5 = 5bcb725c90209479cd7ead8ad0c4a414
+
+</pre>
+  <li>This is the tricky part: Create an ext2 filesystem image called redhat.img using
+	the filesystem tree you just downloaded. The disk image should have a MS-DOS
+	partition table (!), and then one or more ext2 partitions.
+	(Use loopback mount, or similar. This is probably easiest to do on a Linux host.)
+	However, in order to actually boot the system you need to modify /etc/fstab.
+	Change<pre>
+	/dev/root               /               nfs     defaults        1 1
+	#/dev/sdc1              /               ext2    defaults        1 1
+	none                    /proc           proc    defaults        0 0
+	none                    /dev/pts        devpts  mode=0622       0 0
+
+</pre>to<pre>
+	#/dev/root              /               nfs     defaults        1 1
+	/dev/sda1               /               ext2    defaults        1 1
+	none                    /proc           proc    defaults        0 0
+	none                    /dev/pts        devpts  mode=0622       0 0
+
+</pre>(Note sda1 instead of sdc1.)
+  <p>
+  <li>To boot Linux, start the emulator like this:<pre>
+	$ <b>./mips64emul -D2 -U -b -M128 -o "console=ttyS3 root=/dev/sda1 ro" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+
+</pre>
+</ol>
+
+<p>
+If you need to boot into single user mode, try the following:<pre>
+	$ <b>./mips64emul -D2 -U -b -o "console=ttyS3 root=/dev/sda1 rw init=/bin/sh" -d redhat.img vmlinux-2.4.27-r3k-kn02</b>
+
+</pre>
+
+<p>
+Redhat Linux on DECstation in R3000 mode should work fine with dynamic binary 
+translation (enabled by the <b>-b</b> command line option).
+
+<p>
+NOTE: You can add <b>-X</b> and remove <b>console=ttyS3</b> from the command
+line, if you want to use a graphical framebuffer. Unfortunately, Linux 
+doesn't have support for keyboards on DECstation 5000/200 yet, so you cannot
+actually interact with the sytem. :-(
+
+<p>
+[&nbsp;<font color="#ff0000">UPDATE 2005-01-22:</font>&nbsp;
+Read the 2005-01-19 update in the Debian section above, and then, if
+you do not need ethernet support, try Kaj-Michael Lang's kernel compiled
+from <a href="http://www.linux-mips.org/">linux-mips</a>' CVS.
+<a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
+http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+It should work with framebuffer/keyboard.&nbsp;]
+
+
+
+
+
+
+<p><br>
+<a name="mach"></a>
+<h3>How to run Mach/PMAX in the emulator:</h3>
+
+<p>
+Read the following link if you want to know more about Mach in general:
+<a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
+http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html</a>
+
+<p>
+<font color="#ff0000">NOTE: Mach for DECstation requires some files
+(called 'startup' and 'emulator') which I haven't been able to find
+on the web. Without these, Mach will not get very far. These
+installation instructions are preliminary.
+</font>
+
+<p>
+The following steps should let you experiment with running Mach
+for DECstation in the emulator:
+
+<p>
+<ol>
+  <li>Compile mips64emul: (<b>NOTE: --caches</b>)<pre>
+	$ <b>./configure --caches; make</b>
+
+</pre>
+  <li>Download the pmax binary distribution for Mach 3.0:<pre>
+        <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
+	7263343 bytes, md5 = f9d76c240a6e169921a1df99ad560cc0
+
+</pre>
+  <li>Extract the Mach kernel:<pre>
+        $ <b>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY</b>
+
+</pre>
+  <li>Create an empty disk image:<pre>
+	$ <b>dd if=/dev/zero of=disk.img bs=1 count=512 seek=400000000</b>
+
+</pre>
+  <li>Load the contents of pmax.tar.Z onto the disk image. This is
+	complicated, and should be described in more detail some time.
+	For now, use your imagination. (For example using OpenBSD/pmax:
+	<i>disklabel -E rz1; newfs -O /dev/rz1a;
+	mount /dev/rz1a /mnt; cd /mnt; download pmax.tar.Z using ftp;
+	tar xzvf pmax.tar.Z; mv pmax_mach/* .; rmdir pmax_mach;
+	mkdir mach_servers;
+	cd mach_servers;
+	cp ../etc/mach_init .;
+	cp ../tests/test_service startup;
+	dd if=/dev/zero of=paging_file bs=65536 count=400;
+	cd /; sync; umount /mnt</i>)
+	<p>
+  <li>Start the emulator with the following command:<pre>
+	$ <b>./mips64emul -D2 -X -d disk.img pmax_mach/special/mach.boot.MK83.STD+ANY</b>
+
+</pre>
+</ol>
+
+
+
+
+
+
+
+
+</p>
+
+</body>
+</html>

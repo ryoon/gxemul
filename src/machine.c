@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.30 2004-01-06 02:00:21 debug Exp $
+ *  $Id: machine.c,v 1.31 2004-01-06 09:01:56 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
+#include "bus_pci.h"
 
 #include "dec_5100.h"
 #include "dec_kn01.h"
@@ -241,6 +242,9 @@ void machine_init(struct memory *mem)
 	char *bootstr = NULL;
 	char *bootarg = NULL;
 	char *tmp_ptr, *init_bootpath;
+
+	/*  PCI stuff:  */
+	struct pci_data *pci_data;
 
 	/*  Framebuffer stuff:  */
 	struct vfb_data *fb;
@@ -662,8 +666,24 @@ void machine_init(struct memory *mem)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_ips);	*/
-		dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);
 		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);
+
+		/*
+		 *  According to NetBSD/cobalt:
+		 *
+		 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64111 System Controller, rev 1   (NOTE: added by dev_gt_init())
+		 *  tlp0 at pci0 dev 7 function 0: DECchip 21143 Ethernet, pass 4.1
+		 *  Symbios Logic 53c860 (SCSI mass storage, revision 0x02) at pci0 dev 8
+		 *  pcib0 at pci0 dev 9 function 0, VIA Technologies VT82C586 (Apollo VP) PCI-ISA Bridge, rev 37
+		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
+		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
+		 */
+		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2);
+		bus_pci_add(pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);
+		bus_pci_add(pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
+		bus_pci_add(pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
+		bus_pci_add(pci_data, mem, 0,  9, 1, pci_vt82c586_ide_init, pci_vt82c586_ide_rr);
+		bus_pci_add(pci_data, mem, 0, 12, 0, pci_dec21143_init, pci_dec21143_rr);
 
 		/*
 		 *  NetBSD/cobalt expects memsize in a0, but it seems that what

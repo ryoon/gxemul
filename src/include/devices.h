@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.50 2004-04-09 05:11:19 debug Exp $
+ *  $Id: devices.h,v 1.51 2004-04-24 22:38:31 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -71,9 +71,22 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr);
 
+/*  dev_bt431.c:  */
+#define	DEV_BT431_LENGTH		0x20
+#define	DEV_BT431_NREGS			0x800	/*  ?  */
+int dev_bt431_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct vfb_data;
+void dev_bt431_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag);
+
+/*  dev_bt455.c:  */
+#define	DEV_BT455_LENGTH		0x20
+int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct vfb_data;
+void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data);
+
 /*  dev_bt459.c:  */
 #define	DEV_BT459_LENGTH		0x20
-#define	DEV_BT459_NREGS			0x800
+#define	DEV_BT459_NREGS			0x1000
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data;
 void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag);
@@ -160,7 +173,8 @@ struct vfb_data {
 	unsigned char	*framebuffer;
 	struct fb_window *fb_window;
 };
-#define	VFB_MFB_BT459			0x180000
+#define	VFB_MFB_BT455			0x100000
+#define	VFB_MFB_BT431			0x180000
 #define	VFB_MFB_VRAM			0x200000
 #define	VFB_CFB_BT459			0x200000
 void set_grayscale_palette(struct vfb_data *d, int ncolors);

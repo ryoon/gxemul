@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.30 2004-04-02 05:49:44 debug Exp $
+#  $Id: Makefile.skel,v 1.31 2004-04-24 22:39:33 debug Exp $
 #
 #  Makefile for mips64emul devices
 #
@@ -16,7 +16,7 @@ OBJS=console.o \
 	dev_n64_bios.o \
 	dev_dec5500_ioboard.o \
 	dev_fb.o dev_colorplanemask.o \
-	dev_vdac.o dev_bt459.o dev_px.o \
+	dev_vdac.o dev_bt459.o dev_bt455.o dev_bt431.o dev_px.o \
 	dev_turbochannel.o \
 	dev_rd94.o dev_fdc.o \
 	dev_crime.o dev_mace.o dev_macepci.o dev_sgi_gbe.o \

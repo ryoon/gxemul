@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mace.c,v 1.3 2004-01-11 23:52:17 debug Exp $
+ *  $Id: dev_mace.c,v 1.4 2004-06-10 08:25:39 debug Exp $
  *  
  *  SGI "mace".
  */
@@ -36,12 +36,6 @@
 #include "misc.h"
 #include "console.h"
 #include "devices.h"
-
-
-struct mace_data {
-	unsigned char	reg[DEV_MACE_LENGTH];
-	int		irqnr;
-};
 
 
 /*
@@ -60,10 +54,13 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		memcpy(data, &d->reg[relative_addr], len);
 
 	switch (relative_addr) {
-	case 0x18:
-	case 0x1c:
+#if 0
+	case 0x14:	/*  Current interrupt assertions  */
+	case 0x18:	/*  ???  */
+	case 0x1c:	/*  Interrupt mask  */
 		/*  don't dump debug info for these  */
 		break;
+#endif
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ mace: read from 0x%x, len=%i ]\n", (int)relative_addr, len);
@@ -82,7 +79,7 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_mace_init():
  */
-void dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr)
+struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr)
 {
 	struct mace_data *d;
 
@@ -95,5 +92,7 @@ void dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr)
 	d->irqnr = irqnr;
 
 	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH, dev_mace_access, d);
+
+	return d;
 }
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.56 2004-06-09 08:43:03 debug Exp $
+ *  $Id: devices.h,v 1.57 2004-06-10 08:25:40 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -108,8 +108,11 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned cha
 
 /*  dev_crime.c:  */
 #define	DEV_CRIME_LENGTH		0x0000000000001000
+struct crime_data {
+	unsigned char	reg[DEV_CRIME_LENGTH];
+};
 int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_dc7085.c:  */
 #define	DEV_DC7085_LENGTH		0x0000000000000080
@@ -250,10 +253,12 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 
 /*  dev_mace.c:  */
 #define	DEV_MACE_LENGTH			0x100
-int dev_mace_interrupt(int mace_irq);
-int dev_mace_interrupt_ack(int mace_irq);
+struct mace_data {
+	unsigned char	reg[DEV_MACE_LENGTH];
+	int		irqnr;
+};
 int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
+struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr);
 
 /*  dev_macepci.c:  */
 #define	DEV_MACEPCI_LENGTH		0x1000

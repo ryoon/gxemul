@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.86 2004-06-10 04:23:06 debug Exp $
+ *  $Id: machine.c,v 1.87 2004-06-10 08:25:41 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -44,6 +44,10 @@
 #include "devices.h"
 #include "bus_pci.h"
 
+/*  For SGI emulation:  */
+#include "crimereg.h"
+
+/*  For DECstation emulation:  */
 #include "dec_5100.h"
 #include "dec_kn01.h"
 #include "dec_kn02.h"
@@ -78,6 +82,9 @@ struct kn02_csr *kn02_csr;
 struct dec_ioasic_data *dec_ioasic_data;
 struct ps2_data *ps2_data;
 struct dec5800_data *dec5800_csr;
+
+struct crime_data *crime_data;
+struct mace_data *mace_data;
 
 
 /********************** Helper functions **********************/
@@ -454,21 +461,81 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 }
 
 
-void sgi_mace_interrupt(struct cpu *cpu, int irq_nr, int assrt)
+void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
-	/*  TODO:  how should all this be done nicely?  */
-	static uint32_t mace_interrupts = 0;
+	/*
+	 *  The 64-bit word at crime offset 0x10 is CRIME_INTSTAT,
+	 *  which I assume contains the current interrupt bits.
+	 *
+	 *  crime hardcoded at 0x14000000, for SGI-IP32.
+	 *  If any of these bits are asserted, then physical MIPS
+	 *  interrupt 2 should be asserted.
+	 *
+	 *  TODO:  how should all this be done nicely?
+	 */
 
-	if (assrt) {
-		mace_interrupts |= irq_nr;
-		cpu_interrupt(cpu, 2);
-	} else {
-		mace_interrupts &= ~irq_nr;
+	uint64_t addr = CRIME_INTSTAT;
+	uint64_t mace_addr = 0x14;
+	uint64_t crime_interrupts, mace_interrupts;
+	int i;
+	unsigned char x[8];
+
+	/*
+	 *  This mapping of both MACE and CRIME interrupts into the same
+	 *  'int' is really ugly.  TODO: fix.
+	 */
+	if (irq_nr & MACE_PERIPH_MISC) {
+		/*  Read current MACE interrupt bits:  */
+		memcpy(x, mace_data->reg + mace_addr, sizeof(uint32_t));
+		mace_interrupts = 0;
+		for (i=0; i<sizeof(uint32_t); i++) {
+			/*  SGI is big-endian...  */
+			mace_interrupts <<= 8;
+			mace_interrupts |= x[i];
+		}
+
+		if (assrt)
+			mace_interrupts |= (irq_nr & ~MACE_PERIPH_MISC);
+		else
+			mace_interrupts &= ~(irq_nr & ~MACE_PERIPH_MISC);
+
+		/*  Write back MACE interrupt bits:  */
+		for (i=0; i<4; i++)
+			x[3-i] = mace_interrupts >> (i*8);
+		memcpy(mace_data->reg + mace_addr, x, sizeof(uint32_t));
+
+		irq_nr = MACE_PERIPH_MISC;
 		if (mace_interrupts == 0)
-			cpu_interrupt_ack(cpu, 2);
+			assrt = 0;
+		else
+			assrt = 1;
 	}
 
-	/*  printf("sgi_mace_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irq_nr, mace_interrupts);  */
+	/*  Read CRIME_INTSTAT:  */
+	memcpy(x, crime_data->reg + addr, sizeof(uint64_t));
+	crime_interrupts = 0;
+	for (i=0; i<8; i++) {
+		/*  SGI is big-endian...  */
+		crime_interrupts <<= 8;
+		crime_interrupts |= x[i];
+	}
+
+	if (assrt)
+		crime_interrupts |= irq_nr;
+	else
+		crime_interrupts &= ~irq_nr;
+
+	/*  Write back CRIME_INTSTAT:  */
+	for (i=0; i<8; i++)
+		x[7-i] = crime_interrupts >> (i*8);
+	memcpy(crime_data->reg + addr, x, sizeof(uint64_t));
+
+	if (crime_interrupts == 0)
+		cpu_interrupt_ack(cpu, 2);
+	else
+		cpu_interrupt(cpu, 2);
+
+	/*  printf("sgi_crime_machine_irq(%i,%i): new interrupts = 0x%08x\n", assrt, irq_nr, crime_interrupts);  */
 }
 
 
@@ -1506,21 +1573,26 @@ void machine_init(struct memory *mem)
 			case 32:
 				strcat(machine_name, " (O2)");
 
-dev_ram_init(mem, 0x40000000000, 32 * 1048576, DEV_RAM_RAM, 0);
-dev_ram_init(mem, 0x41000000000, 32 * 1048576, DEV_RAM_RAM, 0);
-dev_ram_init(mem,    0x20000000, 32 * 1048576, DEV_RAM_RAM, 0);
-dev_ram_init(mem,    0x40000000, 32 * 1048576, DEV_RAM_RAM, 0);
+				/*  TODO:  Find out where the physical ram is actually located.  */
+				dev_ram_init(mem,    0x40000000, 32 * 1048576, DEV_RAM_RAM, 0);
 
-/*
-dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+#if 0
+				dev_ram_init(mem,    0x20000000, 32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem, 0x40000000000, 32 * 1048576, DEV_RAM_RAM, 0);
+				dev_ram_init(mem, 0x41000000000, 32 * 1048576, DEV_RAM_RAM, 0);
+#else
+				dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+#endif
+				/*
+				dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
+				dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
+				*/
 
-dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0x00000000);
-dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
-*/
-				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
+				crime_data = dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
 				dev_sgi_gbe_init(cpus[bootstrap_cpu], mem, 0x16000000);	/*  gbe?  framebuffer?  */
 				/*  0x17000000: something called 'VICE' in linux  */
@@ -1548,9 +1620,13 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0x10000000);
 				 * 	  1f398000	  com1 (serial)
 				 * 	  1f3a0000	  mcclock0
 				 */
-				dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
-				cpus[bootstrap_cpu]->md_interrupt = sgi_mace_interrupt;
-				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200, 0x800);	/*  keyb+mouse (mace irq numbers)  */
+				mace_data = dev_mace_init(mem, 0x1f310000, 2);					/*  mace0  */
+				cpus[bootstrap_cpu]->md_interrupt = sgi_crime_interrupt;
+
+				/*  IRQ mapping is really ugly.  TODO: fix  */
+				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1f320000, PCKBC_8242, 0x200 + MACE_PERIPH_MISC, 0x800 + MACE_PERIPH_MISC);
+							/*  keyb+mouse (mace irq numbers)  */
+
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 0, 0x100);	/*  com1  */

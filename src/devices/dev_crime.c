@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.12 2004-02-22 13:12:08 debug Exp $
+ *  $Id: dev_crime.c,v 1.13 2004-06-10 08:25:39 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -42,10 +42,6 @@
 #include "devices.h"
 
 #include "crimereg.h"
-
-struct crime_data {
-	unsigned char	reg[DEV_CRIME_LENGTH];
-};
 
 
 #define	CRIME_TICKSHIFT		9
@@ -105,10 +101,14 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		memcpy(data, &d->reg[relative_addr], len);
 
 	switch (relative_addr) {
+#if 0
+	case 0x10:
+	case 0x14:
+#endif
 	case 0x18:
 	case 0x1c:
 	case 0x34:
-#if 0
+#if 1
 	case CRIME_TIME:
 	case CRIME_TIME+4:
 #endif
@@ -135,7 +135,7 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_crime_init():
  */
-void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 {
 	struct crime_data *d;
 
@@ -148,5 +148,8 @@ void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);
+
+	return d;
 }
+
 

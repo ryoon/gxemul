@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.7 2004-01-19 12:53:19 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.8 2004-06-10 08:25:39 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -94,7 +94,8 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	struct pckbc_data *d = extra;
 
 	/*  Cause receive interrupt, if there's something in the receive buffer:  */
-	if (d->head != d->tail && d->rx_int_enable) {
+/*	if (d->head != d->tail && d->rx_int_enable) {  */
+	if (d->head != d->tail) {
 		cpu_interrupt(cpu, d->keyboard_irqnr);
 	} else
 		cpu_interrupt_ack(cpu, d->keyboard_irqnr);
@@ -182,8 +183,7 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		else {
 			fatal("[ pckbc: write to port %i, PS2_TXBUF: 0x%llx ]\n", port_nr, (long long)idata);
 			if (idata == 0xff) {
-				/*  Keyboard reset. The keyboard should generate 2 status bytes,
-					possibly causing interrupt.  */
+				/*  Keyboard reset. The keyboard should generate 2 status bytes.  */
 				pckbc_add_code(d, 0xfa);		/*  ack  (?) */
 				pckbc_add_code(d, 0xaa);		/*  batery ok (?)  */
 			}
@@ -212,7 +212,10 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		if (writeflag==MEM_READ) {
 			odata = d->clocksignal + 0x08;	/* 0x08 = transmit buffer empty  */
 			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
-odata = random();
+/* odata = random(); */
+
+			/*  Ack. interrupts? (TODO?)  */
+			cpu_interrupt_ack(cpu, port_nr==0? d->keyboard_irqnr : d->mouse_irqnr);
 		} else
 			fatal("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
 		break;

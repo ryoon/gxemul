@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.56 2005-04-06 22:15:54 debug Exp $
+$Id: experiments.html,v 1.57 2005-04-06 23:29:11 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -585,6 +585,12 @@ probably doesn't work in GXemul.
       <p>
       <li>Linux for MobilePro etc.:
 	<br><a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Kernels/</a>
+	<br>Uncompress the archive to get a kernel, vmlinux-800 for example.
+	<br>Try <b>./gxemul -b -X -o 'root=/dev/hda1' -d r:disk.img -d r:disk.img -Ehpc -e mobilepro800 vmlinux-800</b>
+	<br>where disk.img is an ext2fs filesystem with contents from
+	<a href="http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2">http://pc1.peanuts.gr.jp/~kei/Hard-Float/Miniroots/miniroot-20010330.tar.bz2</a>
+	<br>(Note the double disk arguments.)
+	<br>Note 2: This doesn't work yet.
       <p>
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>

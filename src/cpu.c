@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.66 2004-06-24 00:36:30 debug Exp $
+ *  $Id: cpu.c,v 1.67 2004-06-24 01:14:50 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2692,15 +2692,25 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			running = 0;
 			cpu0instrs = 0;
 
-			/*  Run instructions from each CPU:  */
+			/*
+			 *  Run instructions from each CPU:
+			 */
+
+			/*  Is any cpu alive?  */
 			for (i=0; i<ncpus; i++)
+				if (cpus[i]->running)
+					running = 1;
+
+			/*  CPU 0 is special, cpu0instr must be updated.  */
+			for (j=0; j<a_few_cycles; j++)
+				if (cpus[0]->running)
+					cpu0instrs += cpu_run_instr(cpus[0], &ncycles);
+
+			/*  CPU 1 and up:  */
+			for (i=1; i<ncpus; i++)
 				for (j=0; j<a_few_cycles; j++)
-					if (cpus[i]->running) {
-						int x = cpu_run_instr(cpus[i], &ncycles);
-						if (i==0)
-							cpu0instrs += x;
-						running = 1;
-					}
+					if (cpus[i]->running)
+						cpu_run_instr(cpus[i], &ncycles);
 
 			/*
 			 *  Hardware 'ticks':  (clocks, interrupt sources...)
@@ -2712,7 +2722,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			for (te=0; te<cpus[0]->n_tick_entries; te++) {
 				cpus[0]->ticks_till_next[te] -= cpu0instrs;
 				if (cpus[0]->ticks_till_next[te] <= 0) {
-					cpus[0]->ticks_till_next[te] = cpus[0]->ticks_reset_value[te];
+					cpus[0]->ticks_till_next[te] += cpus[0]->ticks_reset_value[te];
 					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 				}
 			}
@@ -2729,7 +2739,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 		}
 
 		/*  If we've done buffered console output, the flush it every now and then:  */
-		if (ncycles > ncycles_flush + (1<<17)) {
+		if (ncycles > ncycles_flush + (1<<16)) {
 			console_flush();
 			ncycles_flush = ncycles;
 		}

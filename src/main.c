@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.203 2005-02-04 11:36:47 debug Exp $
+ *  $Id: main.c,v 1.204 2005-02-06 15:15:06 debug Exp $
  */
 
 #include <stdio.h>
@@ -755,6 +755,7 @@ int main(int argc, char *argv[])
 	progname = argv[0];
 
 	srandom(time(NULL));
+	console_init();
 	cpu_init();
 	machine_init();
 
@@ -820,6 +821,10 @@ int main(int argc, char *argv[])
 			}
 			emuls[n_emuls - 1] =
 			    emul_create_from_configfile(s);
+
+			/*  Allow slave xterms when using multiple
+			    emulations:  */
+			console_allow_slaves(1);
 		}
 	}
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.19 2005-01-30 13:14:12 debug Exp $
+ *  $Id: dev_ssc.c,v 1.20 2005-02-06 15:15:04 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -60,6 +60,7 @@
 
 struct ssc_data {
 	int		irq_nr;
+	int		console_handle;
 	int		use_fb;
 
 	int		rx_ctl;
@@ -79,7 +80,7 @@ void dev_ssc_tick(struct cpu *cpu, void *extra)
 	d->tx_ctl |= TX_READY;	/*  transmitter always ready  */
 
 	d->rx_ctl &= ~RX_AVAIL;
-	if (console_charavail())
+	if (console_charavail(d->console_handle))
 		d->rx_ctl |= RX_AVAIL;
 
 	/*  rx interrupts enabled, and char avail?  */
@@ -148,8 +149,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 #ifdef SSC_DEBUG_TXRX
 			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
 #endif
-			if (console_charavail())
-				odata = console_readchar();
+			if (console_charavail(d->console_handle))
+				odata = console_readchar(d->console_handle);
 		} else {
 #ifdef SSC_DEBUG_TXRX
 			debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);
@@ -182,7 +183,7 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem,
 			debug("[ ssc: read from 0x%08lx ]\n", (long)relative_addr);
 		} else {
 			/*  debug("[ ssc: write to 0x%08lx: 0x%02x ]\n", (long)relative_addr, idata);  */
-			console_putchar(idata);
+			console_putchar(d->console_handle, idata);
 		}
 
 		break;
@@ -243,6 +244,7 @@ void dev_ssc_init(struct machine *machine, struct memory *mem,
 	d->irq_nr = irq_nr;
 	d->use_fb = use_fb;
 	d->csrp   = csrp;
+	d->console_handle = console_start_slave(machine, "SSC");
 
 	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
 	    dev_ssc_access, d, MEM_DEFAULT, NULL);

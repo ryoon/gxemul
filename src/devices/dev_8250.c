@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_8250.c,v 1.13 2005-01-23 13:43:01 debug Exp $
+ *  $Id: dev_8250.c,v 1.14 2005-02-06 15:15:03 debug Exp $
  *  
  *  8250 serial controller.
  *
@@ -46,8 +46,11 @@
 
 struct dev_8250_data {
 	int		reg[8];
+
+	int		console_handle;
 	int		irq_enable;
 	int		irqnr;
+
 	int		addrmult;
 
 	int		dlab;		/*  Divisor Latch Access bit  */
@@ -72,7 +75,7 @@ void dev_8250_tick(struct cpu *cpu, void *extra)
 	d->reg[REG_IID] |= IIR_NOPEND;
 	cpu_interrupt_ack(cpu, d->irqnr);
 
-	if (console_charavail())
+	if (console_charavail(d->console_handle))
 		d->reg[REG_IID] |= IIR_RXRDY;
 	else
 		d->reg[REG_IID] &= ~IIR_RXRDY;
@@ -104,7 +107,7 @@ int dev_8250_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	relative_addr /= d->addrmult;
 
 	if (writeflag == MEM_WRITE && relative_addr == 0)
-		console_putchar(idata);
+		console_putchar(d->console_handle, idata);
 	else
 	if (writeflag == MEM_READ && relative_addr == 5)
 		odata = 64 + 32;
@@ -140,7 +143,7 @@ void dev_8250_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct dev_8250_data));
 	d->irqnr = irq_nr;
 	d->addrmult = addrmult;
-
+	d->console_handle = console_start_slave(machine, "8250");
 	d->dlab = 0;
 	d->divisor  = 115200 / 9600;
 	d->databits = 8;

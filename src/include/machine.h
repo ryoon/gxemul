@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.24 2005-02-02 23:55:19 debug Exp $
+ *  $Id: machine.h,v 1.25 2005-02-06 15:15:05 debug Exp $
  */
 
 #include <sys/types.h>
@@ -87,6 +87,8 @@ struct machine {
 	 */
 
 	struct memory *memory;
+
+	int	main_console_handle;
 
 	/*  Hardware devices, run every x clock cycles.  */
 	int	n_tick_entries;

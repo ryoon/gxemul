@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.87 2005-02-02 22:04:34 debug Exp $
+ *  $Id: arcbios.c,v 1.88 2005-02-06 15:15:05 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -377,10 +377,10 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 
 		/*  Hack for Windows NT, which uses 0x9b instead of ESC + [  */
 		if (ch == 0x9b) {
-			console_putchar(27);
+			console_putchar(cpu->machine->main_console_handle, 27);
 			ch = '[';
 		}
-		console_putchar(ch);
+		console_putchar(cpu->machine->main_console_handle, ch);
 		return;
 	}
 
@@ -1435,7 +1435,7 @@ int arcbios_emul(struct cpu *cpu)
 				/*  Read from STDIN is blocking (at least
 				    that seems to be how NetBSD's arcdiag
 				    wants it)  */
-				x = console_readchar();
+				x = console_readchar(cpu->machine->main_console_handle);
 				if (x < 0)
 					return 0;
 
@@ -1446,7 +1446,7 @@ int arcbios_emul(struct cpu *cpu)
 				 *  pressing ESC a bit harder to define.
 				 */
 				if (x == 27) {
-					x = console_readchar();
+					x = console_readchar(cpu->machine->main_console_handle);
 					if (x == '[' || x == 'O')
 						x = 0x9b;
 				}
@@ -1505,7 +1505,8 @@ int arcbios_emul(struct cpu *cpu)
 		 *  TODO: Error codes are things like ARCBIOS_EAGAIN.
 		 */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_charavail()? 0 : 1;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_charavail(
+			    cpu->machine->main_console_handle)? 0 : 1;
 		} else {
 			fatal("[ ARCBIOS GetReadStatus(%i) from something other than STDIN: TODO ]\n",
 			    (int)cpu->cd.mips.gpr[MIPS_GPR_A0]);

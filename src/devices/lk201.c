@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.22 2005-01-20 14:49:17 debug Exp $
+ *  $Id: lk201.c,v 1.23 2005-02-06 15:15:04 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -35,11 +35,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc.h"
 #include "console.h"
 #include "devices.h"
-#include "lk201.h"
+#include "misc.h"
+
 #include "dc7085.h"	/*  for port names  */
+#include "lk201.h"
 
 
 /*
@@ -174,7 +175,8 @@ void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
 	    d->mouse_buttons == mouse_buttons)
 		return;
 
-	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y, &framebuffer_nr);
+	console_get_framebuffer_mouse(&d->mouse_x, &d->mouse_y,
+	    &framebuffer_nr);
 
 	xdelta = mouse_x - d->mouse_x;
 	ydelta = mouse_y - d->mouse_y;
@@ -251,8 +253,8 @@ void lk201_tick(struct lk201_data *d)
 {
 	int mouse_x, mouse_y, mouse_buttons, mouse_fb_nr;
 
-	if (console_charavail()) {
-		unsigned char ch = console_readchar();
+	if (console_charavail(d->console_handle)) {
+		unsigned char ch = console_readchar(d->console_handle);
 		if (d->use_fb)
 			lk201_convert_ascii_to_keybcode(d, ch);
 		else {
@@ -279,7 +281,8 @@ void lk201_tick(struct lk201_data *d)
 		 *  Note:  mouse_{x,y} are where the mouse is
 		 *  on the host's display.
 		 */
-		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons, &mouse_fb_nr);
+		console_getmouse(&mouse_x, &mouse_y, &mouse_buttons,
+		    &mouse_fb_nr);
 
 		if (mouse_x != d->mouse_x || mouse_y != d->mouse_y ||
 		    mouse_buttons != d->mouse_buttons)
@@ -295,7 +298,7 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 	case DCKBD_PORT:		/*  port 0  */
 		if (!d->use_fb) {
 			/*  Simply print the character to stdout:  */
-			console_putchar(idata);
+			console_putchar(d->console_handle, idata);
 		} else {
 			switch (idata) {
 			case LK_LED_DISABLE:	/*  0x11  */
@@ -378,7 +381,7 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
 	case DCCOMM_PORT:		/*  port 2  */
 	case DCPRINTER_PORT:		/*  port 3  */
 		/*  Simply print the character to stdout:  */
-		console_putchar(idata);
+		console_putchar(d->console_handle, idata);
 	}
 }
 
@@ -389,7 +392,8 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
  *  Initialize lk201 keyboard/mouse settings.
  */
 void lk201_init(struct lk201_data *d, int use_fb,
-	void (*add_to_rx_queue)(void *,int,int), void *add_data)
+	void (*add_to_rx_queue)(void *,int,int),
+	int console_handle, void *add_data)
 {
 	memset(d, 0, sizeof(struct lk201_data));
 
@@ -399,6 +403,7 @@ void lk201_init(struct lk201_data *d, int use_fb,
 	d->use_fb = use_fb;
 	d->mouse_mode = 0;
 	d->mouse_revision = 0;	/*  0..15  */
+	d->console_handle = console_handle;
 
 	d->mouse_check_interval_reset = 1 << 3;
 }

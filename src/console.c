@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.1 2005-02-06 12:36:37 debug Exp $
+ *  $Id: console.c,v 1.2 2005-02-06 15:15:05 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -60,15 +60,12 @@ static struct termios console_curtermios;
 
 /*  For 'slave' mode:  */
 static struct termios console_slave_tios;
+static int console_slave_outputd;
 
 static int console_initialized = 0;
 static int console_stdout_pending;
 
-#define	CONSOLE_FIFO_LEN	2048
-
-static unsigned char console_fifo[CONSOLE_FIFO_LEN];
-static int console_fifo_head;
-static int console_fifo_tail;
+#define	CONSOLE_FIFO_LEN	4096
 
 /*  Mouse coordinates:  */
 static int console_framebuffer_mouse_x;		/*  absolute x, 0-based  */
@@ -82,70 +79,30 @@ static int console_mouse_fb_nr;		/*  framebuffer number of
 					    host movement, 0-based  */
 static int console_mouse_buttons;	/*  left=4, middle=2, right=1  */
 
+static int allow_slaves = 0;
 
 struct console_handle {
 	int		in_use;
 	int		using_xterm;
+	int		inputonly;
+
 	char		*name;
 
 	int		w_descriptor;
 	int		r_descriptor;
+
+	unsigned char	fifo[CONSOLE_FIFO_LEN];
+	int		fifo_head;
+	int		fifo_tail;
 };
+
+#define	NOT_USING_XTERM				0
+#define	USING_XTERM_BUT_NOT_YET_OPEN		1
+#define	USING_XTERM				2
 
 /*  A simple array of console_handles  */
 static struct console_handle *console_handles = NULL;
 static int n_console_handles = 0;
-
-
-/*
- *  console_init():
- *
- *  Put host's console into single-character (non-canonical) mode.
- */
-void console_init(struct emul *emul)
-{
-	int i, tra;
-
-	if (console_initialized)
-		return;
-
-	tcgetattr(STDIN_FILENO, &console_oldtermios);
-	memcpy(&console_curtermios, &console_oldtermios,
-	    sizeof (struct termios));
-
-	console_curtermios.c_lflag &= ~ICANON;
-	console_curtermios.c_cc[VTIME] = 0;
-	console_curtermios.c_cc[VMIN] = 1;
-
-	console_curtermios.c_lflag &= ~ECHO;
-
-	/*
-	 *  Most guest OSes seem to work ok without ~ICRNL, but Linux on
-	 *  DECstation requires it to be usable.  Unfortunately, clearing
-	 *  out ICRNL makes tracing with '-t ... |more' akward, as you
-	 *  might need to use CTRL-J instead of the enter key.  Hence,
-	 *  this bit is only cleared if we're not tracing:
-	 */
-	tra = 0;
-	for (i=0; i<emul->n_machines; i++)
-		if (emul->machines[i]->show_trace_tree ||
-		    emul->machines[i]->instruction_trace ||
-		    emul->machines[i]->register_dump)
-			tra = 1;
-	if (!tra)
-		console_curtermios.c_iflag &= ~ICRNL;
-
-	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
-
-	console_stdout_pending = 1;
-	console_fifo_head = console_fifo_tail = 0;
-
-	console_mouse_x = 0;
-	console_mouse_y = 0;
-	console_mouse_buttons = 0;
-
-	console_initialized = 1;
-}
 
 
 /*
@@ -185,6 +142,98 @@ void console_sigcont(int x)
 
 
 /*
+ *  start_xterm():
+ *
+ *  When using X11, this routine tries to start up an xterm, with another
+ *  copy of mips64emul inside. The other mips64emul copy is given arguments
+ *  that will cause it to run console_slave().
+ */
+static void start_xterm(int handle)
+{
+	int filedes[2];
+	int filedesB[2];
+	int res, i;
+	char **a;
+	pid_t p;
+
+#if 0
+Hm...
+	if (!machine->use_x11) {
+		return handle;
+	}
+#endif
+
+	res = pipe(filedes);
+	if (res) {
+		printf("[ start_xterm(): pipe(): %i ]\n", errno);
+		exit(1);
+	}
+
+	res = pipe(filedesB);
+	if (res) {
+		printf("[ start_xterm(): pipe(): %i ]\n", errno);
+		exit(1);
+	}
+
+	/*  printf("filedes = %i,%i\n", filedes[0], filedes[1]);  */
+	/*  printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);  */
+
+	/*  TODO: other names for xterm? For example a config file setting,
+	    or read from the environment?  */
+
+	a = malloc(sizeof(char *) * 15);
+	if (a == NULL) {
+		fprintf(stderr, "console_start_slave(): out of memory\n");
+		exit(1);
+	}
+
+	a[0] = "xterm";
+	a[1] = "-title";
+	a[2] = console_handles[handle].name;
+	a[3] = "-e";
+	a[4] = progname;
+	a[5] = malloc(50);
+	sprintf(a[5], "-WW@S%i,%i", filedes[0], filedesB[1]);
+	a[6] = NULL;
+
+	p = fork();
+	if (p == -1) {
+		printf("[ console_start_slave(): ERROR while trying to "
+		    "fork(): %i ]\n", errno);
+		exit(1);
+	} else if (p == 0) {
+		close(filedes[1]);
+		close(filedesB[0]);
+		res = execvp(a[0], a);
+		printf("[ console_start_slave(): ERROR while trying to "
+		    "execvp(\"");
+		while (a[0] != NULL) {
+			printf("%s", a[0]);
+			if (a[1] != NULL)
+				printf(" ");
+			a++;
+		}
+		printf("\"): %i ]\n", errno);
+		exit(1);
+	}
+
+	/*  TODO: free a and a[*]  */
+
+	close(filedes[0]);
+	close(filedesB[1]);
+
+	console_handles[handle].using_xterm = USING_XTERM;
+
+	/*
+	 *  write to filedes[1], read from filedesB[0]
+	 */
+
+	console_handles[handle].w_descriptor = filedes[1];
+	console_handles[handle].r_descriptor = filedesB[0];
+}
+
+
+/*
  *  d_avail():
  *
  *  Returns 1 if anything is available on a descriptor.
@@ -208,24 +257,35 @@ static int d_avail(int d)
  *  Put a character in the queue, so that it will be avaiable,
  *  by inserting it into the char fifo.
  */
-void console_makeavail(char ch)
+void console_makeavail(int handle, char ch)
 {
-	console_fifo[console_fifo_head] = ch;
-	console_fifo_head = (console_fifo_head + 1) % CONSOLE_FIFO_LEN;
+	console_handles[handle].fifo[
+	    console_handles[handle].fifo_head] = ch;
+	console_handles[handle].fifo_head = (
+	    console_handles[handle].fifo_head + 1) % CONSOLE_FIFO_LEN;
 
-	if (console_fifo_head == console_fifo_tail)
-		fatal("WARNING: console fifo overrun\n");
+	if (console_handles[handle].fifo_head ==
+	    console_handles[handle].fifo_tail)
+		fatal("WARNING: console fifo overrun, handle %i\n", handle);
 }
 
 
 /*
  *  console_stdin_avail():
  *
- *  Returns 1 if a char is available from stdin, 0 otherwise.
+ *  Returns 1 if a char is available from a handle's read descriptor,
+ *  0 otherwise.
  */
-int console_stdin_avail(void)
+static int console_stdin_avail(int handle)
 {
-	return d_avail(STDIN_FILENO);
+	if (!allow_slaves)
+		return d_avail(STDIN_FILENO);
+
+	if (console_handles[handle].using_xterm ==
+	    USING_XTERM_BUT_NOT_YET_OPEN)
+		return 0;
+
+	return d_avail(console_handles[handle].r_descriptor);
 }
 
 
@@ -234,24 +294,36 @@ int console_stdin_avail(void)
  *
  *  Returns 1 if a char is available in the fifo, 0 otherwise.
  */
-int console_charavail(void)
+int console_charavail(int handle)
 {
-	while (console_stdin_avail()) {
-		unsigned char ch[1000]; /* = getchar(); */
-		int i;
-		ssize_t len = read(STDIN_FILENO, ch, sizeof(ch));
+	while (console_stdin_avail(handle)) {
+		unsigned char ch[100];		/* = getchar(); */
+		ssize_t len;
+		int i, d;
+
+		if (!allow_slaves)
+			d = STDIN_FILENO;
+		else
+			d = console_handles[handle].r_descriptor;
+
+		len = read(d, ch, sizeof(ch));
 
 		for (i=0; i<len; i++) {
 			/*  printf("[ %i: %i ]\n", i, ch[i]);  */
-			/*  Ugly hack: convert ctrl-b into ctrl-c.
-			    (TODO: fix)  */
-			if (ch[i] == 2)
-				ch[i] = 3;
-			console_makeavail(ch[i]);
+
+			if (!allow_slaves) {
+				/*  Ugly hack: convert ctrl-b into ctrl-c.
+				    (TODO: fix)  */
+				if (ch[i] == 2)
+					ch[i] = 3;
+			}
+
+			console_makeavail(handle, ch[i]);
 		}
 	}
 
-	if (console_fifo_head == console_fifo_tail)
+	if (console_handles[handle].fifo_head ==
+	    console_handles[handle].fifo_tail)
 		return 0;
 
 	return 1;
@@ -263,15 +335,16 @@ int console_charavail(void)
  *
  *  Returns 0..255 if a char was available, -1 otherwise.
  */
-int console_readchar(void)
+int console_readchar(int handle)
 {
 	int ch;
 
-	if (!console_charavail())
+	if (!console_charavail(handle))
 		return -1;
 
-	ch = console_fifo[console_fifo_tail];
-	console_fifo_tail = (console_fifo_tail + 1) % CONSOLE_FIFO_LEN;
+	ch = console_handles[handle].fifo[console_handles[handle].fifo_tail];
+	console_handles[handle].fifo_tail ++;
+	console_handles[handle].fifo_tail %= CONSOLE_FIFO_LEN;
 
 	return ch;
 }
@@ -282,15 +355,35 @@ int console_readchar(void)
  *
  *  Prints a char to stdout, and sets the console_stdout_pending flag.
  */
-void console_putchar(int ch)
+void console_putchar(int handle, int ch)
 {
-	putchar(ch);
+	char buf[1];
 
-	/*  Assume flushes by OS or libc on newlines:  */
-	if (ch == '\n')
-		console_stdout_pending = 0;
-	else
-		console_stdout_pending = 1;
+	if (!allow_slaves) {
+		/*  stdout:  */
+		putchar(ch);
+
+		/*  Assume flushes by OS or libc on newlines:  */
+		if (ch == '\n')
+			console_stdout_pending = 0;
+		else
+			console_stdout_pending = 1;
+
+		return;
+	}
+
+	if (!console_handles[handle].in_use) {
+		printf("[ console_putchar(): handle %i not in"
+		    " use! ]\n", handle);
+		return;
+		}
+
+	if (console_handles[handle].using_xterm ==
+	    USING_XTERM_BUT_NOT_YET_OPEN)
+		start_xterm(handle);
+
+	buf[0] = ch;
+	write(console_handles[handle].w_descriptor, buf, 1);
 }
 
 
@@ -386,6 +479,22 @@ void console_getmouse(int *x, int *y, int *buttons, int *fb_nr)
 
 
 /*
+ *  console_slave_sigint():
+ */
+static void console_slave_sigint(int x)
+{
+	char buf[1];
+
+	/*  Send a ctrl-c:  */
+	buf[0] = 3;
+	write(console_slave_outputd, buf, sizeof(buf));
+
+	/*  Reset the signal handler:  */
+	signal(SIGINT, console_slave_sigint);
+}
+
+
+/*
  *  console_slave_sigcont():
  *
  *  See comment for console_sigcont. This is for used by console_slave().
@@ -408,7 +517,7 @@ static void console_slave_sigcont(int x)
  */
 void console_slave(char *arg)
 {
-	int inputd, outputd;
+	int inputd;
 	int len;
 	char *p;
 	char buf[400];
@@ -423,7 +532,7 @@ void console_slave(char *arg)
 		sleep(5);
 		exit(1);
 	}
-	outputd = atoi(p+1);
+	console_slave_outputd = atoi(p+1);
 
 	/*  Set the terminal to raw mode:  */
 	tcgetattr(STDIN_FILENO, &console_slave_tios);
@@ -435,7 +544,7 @@ void console_slave(char *arg)
 	console_slave_tios.c_iflag &= ~ICRNL;
 	tcsetattr(STDIN_FILENO, TCSANOW, &console_slave_tios);
 
-	signal(SIGINT, SIG_IGN);
+	signal(SIGINT, console_slave_sigint);
 	signal(SIGCONT, console_slave_sigcont);
 
 	for (;;) {
@@ -454,7 +563,7 @@ void console_slave(char *arg)
 			len = read(STDIN_FILENO, buf, sizeof(buf));
 			if (len < 1)
 				exit(0);
-			write(outputd, buf, len);
+			write(console_slave_outputd, buf, len);
 		}
 
 		usleep(10);
@@ -531,11 +640,7 @@ static struct console_handle *console_new_handle(char *name, int *handlep)
  */
 int console_start_slave(struct machine *machine, char *consolename)
 {
-	int filedes[2];
-	int filedesB[2];
-	int res, i, handle;
-	char **a;
-	pid_t p;
+	int handle;
 	struct console_handle *chp;
 
 	if (machine == NULL || consolename == NULL) {
@@ -545,81 +650,140 @@ int console_start_slave(struct machine *machine, char *consolename)
 
 	chp = console_new_handle(consolename, &handle);
 
+	chp->name = malloc(strlen(machine->name) + strlen(consolename) + 100);
+	if (chp->name == NULL) {
+		printf("out of memory\n");
+		exit(1);
+	}
+	sprintf(chp->name, "mips64emul: '%s' %s", machine->name, consolename);
+
+#if 0
 	if (!machine->use_x11) {
 		return handle;
 	}
-
-	chp->using_xterm = 1;
-
-	res = pipe(filedes);
-	if (res) {
-		printf("[ console_start_slave(): pipe(): %i ]\n", errno);
-		return -1;
-	}
-
-	res = pipe(filedesB);
-	if (res) {
-		printf("[ console_start_slave(): pipe(): %i ]\n", errno);
-		return -1;
-	}
-
-	/*  printf("filedes = %i,%i\n", filedes[0], filedes[1]);  */
-	/*  printf("filedesB = %i,%i\n", filedesB[0], filedesB[1]);  */
-
-	/*  TODO: other names for xterm? For example a config file setting,
-	    or read from the environment?  */
-
-	a = malloc(sizeof(char *) * 15);
-	if (a == NULL) {
-		fprintf(stderr, "console_start_slave(): out of memory\n");
-		exit(1);
-	}
-
-	a[0] = "xterm";
-	a[1] = "-title";
-	a[2] = malloc(strlen(machine->name) + strlen(consolename) + 100);
-	if (a[2] == NULL) {
-		fprintf(stderr, "console_start_slave(): out of memory\n");
-		exit(1);
-	}
-	sprintf(a[2], "mips64emul: '%s' %s", machine->name, consolename);
-	a[3] = "-e";
-	a[4] = progname;
-	a[5] = malloc(50);
-	sprintf(a[5], "-WW@S%i,%i", filedes[0], filedesB[1]);
-	a[6] = NULL;
-
-	p = fork();
-	if (p == -1) {
-		printf("[ console_start_slave(): ERROR while trying to "
-		    "fork(): %i ]\n", errno);
-		return -1;
-	} else if (p == 0) {
-		close(filedes[1]);
-		close(filedesB[0]);
-		res = execvp(a[0], a);
-		printf("[ console_start_slave(): ERROR while trying to "
-		    "execvp(\"");
-		while (a[0] != NULL) {
-			printf("%s", a[0]);
-			if (a[1] != NULL)
-				printf(" ");
-			a++;
-		}
-		printf("\"): %i ]\n", errno);
-		exit(1);
-	}
-
-close(filedes[0]);
-close(filedesB[1]);
-
-	/*
-	 *  write to filedes[1], read from filedesB[0]
-	 */
-
-	chp->w_descriptor = filedes[1];
-	chp->r_descriptor = filedesB[0];
+#endif
+	chp->using_xterm = USING_XTERM_BUT_NOT_YET_OPEN;
 
 	return handle;
+}
+
+
+/*
+ *  console_start_slave_inputonly():
+ *
+ *  Similar to console_start_slave(), but doesn't open an xterm. This is
+ *  useful for devices such as keyboard controllers, that need to have an
+ *  input queue, but no xterm window associated with it.
+ *
+ *  On success, an integer >= 0 is returned. This can then be used as a
+ *  'handle' when writing to or reading from an emulated console.
+ *
+ *  On failure, -1 is returned.
+ */
+int console_start_slave_inputonly(struct machine *machine, char *consolename)
+{
+	struct console_handle *chp;
+	int handle;
+
+	if (machine == NULL || consolename == NULL) {
+		printf("console_start_slave(): NULL ptr\n");
+		exit(1);
+	}
+
+	chp = console_new_handle(consolename, &handle);
+	chp->inputonly = 1;
+
+	chp->name = malloc(strlen(machine->name) + strlen(consolename) + 100);
+	if (chp->name == NULL) {
+		printf("out of memory\n");
+		exit(1);
+	}
+	sprintf(chp->name, "mips64emul: '%s' %s", machine->name, consolename);
+
+	return handle;
+}
+
+
+/*
+ *  console_init_main():
+ *
+ *  Put host's console into single-character (non-canonical) mode.
+ */
+void console_init_main(struct emul *emul)
+{
+	int i, tra;
+
+	if (console_initialized)
+		return;
+
+	tcgetattr(STDIN_FILENO, &console_oldtermios);
+	memcpy(&console_curtermios, &console_oldtermios,
+	    sizeof (struct termios));
+
+	console_curtermios.c_lflag &= ~ICANON;
+	console_curtermios.c_cc[VTIME] = 0;
+	console_curtermios.c_cc[VMIN] = 1;
+
+	console_curtermios.c_lflag &= ~ECHO;
+
+	/*
+	 *  Most guest OSes seem to work ok without ~ICRNL, but Linux on
+	 *  DECstation requires it to be usable.  Unfortunately, clearing
+	 *  out ICRNL makes tracing with '-t ... |more' akward, as you
+	 *  might need to use CTRL-J instead of the enter key.  Hence,
+	 *  this bit is only cleared if we're not tracing:
+	 */
+	tra = 0;
+	for (i=0; i<emul->n_machines; i++)
+		if (emul->machines[i]->show_trace_tree ||
+		    emul->machines[i]->instruction_trace ||
+		    emul->machines[i]->register_dump)
+			tra = 1;
+	if (!tra)
+		console_curtermios.c_iflag &= ~ICRNL;
+
+	tcsetattr(STDIN_FILENO, TCSANOW, &console_curtermios);
+
+	console_stdout_pending = 1;
+	console_handles[MAIN_CONSOLE].fifo_head = 0;
+	console_handles[MAIN_CONSOLE].fifo_tail = 0;
+
+	console_mouse_x = 0;
+	console_mouse_y = 0;
+	console_mouse_buttons = 0;
+
+	console_initialized = 1;
+}
+
+
+/*
+ *  console_allow_slaves():
+ *
+ *  This function tells the console subsystem whether or not to open up
+ *  slave xterms for each emulated serial controller.
+ */
+void console_allow_slaves(int allow)
+{
+	allow_slaves = allow;
+}
+
+
+/*
+ *  console_init():
+ *
+ *  This function should be called before any other console_*() function
+ *  is used.
+ */
+void console_init(void)
+{
+	int handle;
+	struct console_handle *chp;
+
+	chp = console_new_handle("MAIN", &handle);
+	if (handle != MAIN_CONSOLE) {
+		printf("console_init(): fatal error: could not create"
+		    " console 0: handle = %i\n", handle);
+		exit(1);
+	}
 }
 

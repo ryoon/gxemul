@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.27 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.28 2005-02-06 15:15:03 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -55,8 +55,11 @@
 
 struct ns_data {
 	int		reg[8];
-	int		irq_enable;
+
 	int		irqnr;
+	int		console_handle;
+
+	int		irq_enable;
 	int		addrmult;
 	int		in_use;
 	int		dlab;		/*  Divisor Latch Access bit  */
@@ -80,7 +83,7 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 
 	d->reg[com_iir] &= ~IIR_RXRDY;
 	if (d->in_use) {
-		if (console_charavail())
+		if (console_charavail(d->console_handle))
 			d->reg[com_iir] |= IIR_RXRDY;
 	}
 
@@ -117,7 +120,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 #endif
 
 	if (d->in_use) {
-		if (console_charavail()) {
+		if (console_charavail(d->console_handle)) {
 			d->reg[com_lsr] |= LSR_RXRDY;
 		}
 	}
@@ -141,13 +144,13 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		/*  Read write of data:  */
 		if (writeflag == MEM_WRITE) {
 			if (d->reg[com_mcr] & MCR_LOOPBACK) {
-				console_makeavail(idata);
+				console_makeavail(d->console_handle, idata);
 			} else {
 #if 0
 				/*  Ugly hack: don't show form feeds:  */
 				if (idata != 12)
 #endif
-				console_putchar(idata);
+				console_putchar(d->console_handle, idata);
 			}
 
 			d->reg[com_iir] |= IIR_TXRDY;
@@ -155,7 +158,7 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			return 1;
 		} else {
 			if (d->in_use)
-				odata = console_readchar();
+				odata = console_readchar(d->console_handle);
 			else
 				odata = 0;
 			dev_ns16550_tick(cpu, d);
@@ -168,7 +171,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 				/*  Set the high byte of the divisor:  */
 				d->divisor &= ~0xff00;
 				d->divisor |= ((idata & 0xff) << 8);
-				debug("[ ns16550 speed set to %i bps ]\n", 115200 / d->divisor);
+				debug("[ ns16550 speed set to %i bps ]\n",
+				    115200 / d->divisor);
 			} else {
 				odata = (d->divisor & 0xff00) >> 8;
 			}
@@ -177,8 +181,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 		/*  IER:  */
 		if (writeflag == MEM_WRITE) {
-			if (idata != 0)		/*  <-- to supress Linux' behaviour  */
-				debug("[ ns16550 write to ier: 0x%02x ]\n", idata);
+			/*  This is to supress Linux' behaviour  */
+			if (idata != 0)
+				debug("[ ns16550 write to ier: 0x%02x ]\n",
+				    idata);
 
 			/*  Needed for NetBSD 2.0, but not 1.6.2?  */
 			if (!(d->irq_enable & IER_ETXRDY)
@@ -243,7 +249,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 
 			d->dlab = idata & 0x80? 1 : 0;
 
-			debug("[ ns16550 write to lctl: 0x%02x (%s%ssetting mode %i%c%s) ]\n",
+			debug("[ ns16550 write to lctl: 0x%02x (%s%s"
+			    "setting mode %i%c%s) ]\n",
 			    (int)idata,
 			    d->dlab? "Divisor Latch access, " : "",
 			    idata&0x40? "sending BREAK, " : "",
@@ -264,10 +271,12 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ ns16550 read from reg %i ]\n", (int)relative_addr);
+			debug("[ ns16550 read from reg %i ]\n",
+			    (int)relative_addr);
 			odata = d->reg[relative_addr];
 		} else {
-			debug("[ ns16550 write to reg %i:", (int)relative_addr);
+			debug("[ ns16550 write to reg %i:",
+			    (int)relative_addr);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
 			debug(" ]\n");
@@ -299,7 +308,7 @@ void dev_ns16550_init(struct machine *machine, struct memory *mem,
 	d->irqnr    = irq_nr;
 	d->addrmult = addrmult;
 	d->in_use   = in_use;
-
+	d->console_handle = console_start_slave(machine, "NS16550");
 	d->dlab = 0;
 	d->divisor  = 115200 / 9600;
 	d->databits = 8;
@@ -309,6 +318,7 @@ void dev_ns16550_init(struct machine *machine, struct memory *mem,
 	memory_device_register(mem, "ns16550", baseaddr,
 	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d,
 	    MEM_DEFAULT, NULL);
-	machine_add_tickfunction(machine, dev_ns16550_tick, d, NS16550_TICK_SHIFT);
+	machine_add_tickfunction(machine, dev_ns16550_tick,
+	    d, NS16550_TICK_SHIFT);
 }
 

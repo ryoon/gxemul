@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.9 2005-01-30 00:37:05 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.10 2005-02-06 15:15:03 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -49,6 +49,7 @@
 
 
 struct au1x00_uart_data {
+	int		console_handle;
 	int		uart_nr;
 	int		irq_nr;
 	uint32_t	int_enable;
@@ -199,10 +200,10 @@ int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 	case UART_RXDATA:		/*  0x00  */
-		odata = console_readchar();
+		odata = console_readchar(d->console_handle);
 		break;
 	case UART_TXDATA:		/*  0x04  */
-		console_putchar(idata);
+		console_putchar(d->console_handle, idata);
 		break;
 	case UART_INTERRUPT_ENABLE:	/*  0x08  */
 		if (writeflag == MEM_READ)
@@ -218,7 +219,7 @@ int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case UART_LINE_STATUS:		/*  0x1c  */
 		odata = ULS_TE + ULS_TFE;
-		if (console_charavail())
+		if (console_charavail(d->console_handle))
 			odata |= ULS_DR;
 		break;
 	case UART_CLOCK_DIVIDER:	/*  0x28  */
@@ -335,6 +336,11 @@ struct au1x00_ic_data *dev_au1x00_init(struct machine *machine,
 	d1->uart_nr = 1; d1->irq_nr = 1;
 	d2->uart_nr = 2; d2->irq_nr = 2;
 	d3->uart_nr = 3; d3->irq_nr = 3;
+
+	d0->console_handle = console_start_slave(machine, "AU1x00 port 0");
+	d1->console_handle = console_start_slave(machine, "AU1x00 port 1");
+	d2->console_handle = console_start_slave(machine, "AU1x00 port 2");
+	d3->console_handle = console_start_slave(machine, "AU1x00 port 3");
 
 	d_pc->irq_nr = 14;
 

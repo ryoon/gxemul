@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.22 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_scc.c,v 1.23 2005-02-06 15:15:04 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -65,6 +65,8 @@
 struct scc_data {
 	int		irq_nr;
 	int		use_fb;
+	int		console_handle;
+
 	int		scc_nr;
 	int		addrmul;
 
@@ -139,8 +141,9 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 
 	/*  Add keystrokes to the rx queue:  */
 	if (d->use_fb == 0 && d->scc_nr == 1) {
-		if (console_charavail())
-			dev_scc_add_to_rx_queue(extra, console_readchar(), 2);
+		if (console_charavail(d->console_handle))
+			dev_scc_add_to_rx_queue(extra, console_readchar(
+			    d->console_handle), 2);
 	}
 	if (d->use_fb == 1 && d->scc_nr == 1)
 		lk201_tick(&d->lk201);
@@ -403,8 +406,10 @@ void *dev_scc_init(struct machine *machine, struct memory *mem,
 	d->scc_nr  = scc_nr;
 	d->use_fb  = use_fb;
 	d->addrmul = addrmul;
+	d->console_handle = console_start_slave(machine, "SCC");
 
-	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
+	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue,
+	    d->console_handle, d);
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH,
 	    dev_scc_access, d, MEM_DEFAULT, NULL);

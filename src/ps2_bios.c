@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.26 2005-02-02 22:04:35 debug Exp $
+ *  $Id: ps2_bios.c,v 1.27 2005-02-06 15:15:06 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -39,9 +39,9 @@
 
 #include "console.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "machine.h"
 #include "misc.h"
-#include "cpu_mips.h"
 
 
 extern int quiet_mode;
@@ -84,14 +84,16 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 	case 3:			/*  putchar(int ch)  */
 		/*  debug("[ SIFBIOS putchar(0x%x) ]\n",
 		    (char)cpu->cd.mips.gpr[MIPS_GPR_A1]);  */
-		console_putchar(cpu->cd.mips.gpr[MIPS_GPR_A1]);
+		console_putchar(cpu->machine->main_console_handle,
+		    cpu->cd.mips.gpr[MIPS_GPR_A1]);
 		break;
 	case 4:			/*  getchar()  */
 		/*  This is untested. TODO  */
 		/*  debug("[ SIFBIOS getchar() ]\n";  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
-		if (console_charavail())
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_readchar();
+		if (console_charavail(cpu->machine->main_console_handle))
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = console_readchar(
+			    cpu->machine->main_console_handle);
 		break;
 	case 16:		/*  dma_init()  */
 		debug("[ SIFBIOS dma_init() ]\n");

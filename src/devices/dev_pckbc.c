@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.34 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.35 2005-02-06 15:15:03 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -67,6 +67,7 @@
 #define	PCKBC_TICKSHIFT		14
 
 struct pckbc_data {
+	int		console_handle;
 	int		in_use;
 	int		any_command_used;
 
@@ -273,8 +274,9 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 	int port_nr;
 	int ch;
 
-	if (d->in_use && d->any_command_used && console_charavail()) {
-		ch = console_readchar();
+	if (d->in_use && d->any_command_used &&
+	    console_charavail(d->console_handle)) {
+		ch = console_readchar(d->console_handle);
 		if (ch >= 0)
 			ascii_to_pc_scancodes(ch, d);
 	}
@@ -620,6 +622,7 @@ void dev_pckbc_init(struct machine *machine, struct memory *mem,
 	d->keyboard_irqnr = keyboard_irqnr;
 	d->mouse_irqnr    = mouse_irqnr;
 	d->in_use         = in_use;
+	d->console_handle = console_start_slave_inputonly(machine, "pckbc");
 
 	memory_device_register(mem, "pckbc", baseaddr,
 	    len, dev_pckbc_access, d, MEM_DEFAULT, NULL);

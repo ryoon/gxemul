@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.136 2005-02-03 23:36:21 debug Exp $
+ *  $Id: devices.h,v 1.137 2005-02-06 15:15:04 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -126,7 +126,7 @@ void dev_bt459_init(struct machine *machine, struct memory *mem, uint64_t basead
 #define	    DEV_CONS_PUTGETCHAR		    0x0000
 #define	    DEV_CONS_HALT		    0x0010
 int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_cons_init(struct memory *mem);
+void dev_cons_init(struct machine *machine, struct memory *mem);
 
 /*  dev_colorplanemask.c:  */
 #define	DEV_COLORPLANEMASK_LENGTH	0x0000000000000010
@@ -601,6 +601,7 @@ void dev_zs_init(struct machine *machine, struct memory *mem, uint64_t baseaddr,
 /*  lk201.c:  */
 struct lk201_data {
         int                     use_fb;
+	int			console_handle;
 
         void                    (*add_to_rx_queue)(void *,int,int);
 	void			*add_data;
@@ -620,7 +621,8 @@ struct lk201_data {
 };
 void lk201_tick(struct lk201_data *); 
 void lk201_tx_data(struct lk201_data *, int port, int idata);
-void lk201_init(struct lk201_data *d, int use_fb, void (*add_to_rx_queue)(void *,int,int), void *);
+void lk201_init(struct lk201_data *d, int use_fb,
+	void (*add_to_rx_queue)(void *,int,int), int console_handle, void *);
 
 
 #endif	/*  DEVICES_H  */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.18 2005-01-30 00:37:06 debug Exp $
+ *  $Id: dev_zs.c,v 1.19 2005-02-06 15:15:04 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -51,6 +51,7 @@
 
 struct zs_data {
 	int		irq_nr;
+	int		console_handle;
 	int		addrmult;
 
 	int		reg_select;
@@ -71,7 +72,7 @@ void dev_zs_tick(struct cpu *cpu, void *extra)
 {
 	struct zs_data *d = (struct zs_data *) extra;
 
-	if (console_charavail() || d->tx_done)
+	if (console_charavail(d->console_handle) || d->tx_done)
 		cpu_interrupt(cpu, d->irq_nr);
 	else
 		cpu_interrupt_ack(cpu, d->irq_nr);
@@ -100,35 +101,42 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case 3:
 		if (writeflag==MEM_READ) {
 			odata = ZSRR0_TX_READY;
-			if (console_charavail())
+			if (console_charavail(d->console_handle))
 				odata |= ZSRR0_RX_READY;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)odata);  */
 		} else {
 			/*  Hm...  TODO  */
 			if (d->reg_select == 0) {
 				d->reg_select = idata;
 			} else {
 				switch (d->reg_select) {
-				case 8:	console_putchar(idata & 255);
+				case 8:	console_putchar(d->console_handle,
+					    idata & 255);
 					break;
 				default:
-					debug("[ zs: write to (unimplemented) register 0x%02x: 0x%08x ]\n", d->reg_select, idata);
+					debug("[ zs: write to (unimplemented)"
+					    " register 0x%02x: 0x%08x ]\n",
+					    d->reg_select, (int)idata);
 				}
 				d->reg_select = 0;
 			}
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
+			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);  */
 		}
 		break;
 	case 7:
 		if (writeflag==MEM_READ) {
-			if (console_charavail())
-				odata = console_readchar();
+			if (console_charavail(d->console_handle))
+				odata = console_readchar(d->console_handle);
 			else
 				odata = 0;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)odata);  */
 		} else {
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
-			console_putchar(idata & 255);
+			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);  */
+			console_putchar(d->console_handle, idata & 255);
 			d->tx_done = 1;
 		}
 		break;
@@ -144,34 +152,40 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 #endif
 			if (d->tx_done)
 				odata |= 2;
-			if (console_charavail())
+			if (console_charavail(d->console_handle))
 				odata |= 4;
 			d->tx_done = 0;
-			debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);
+			debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)odata);
 		} else {
-			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 		break;
 
 	/*  0xf is used by Linux:  */
 	case 0xf:
 		if (writeflag==MEM_READ) {
-			if (console_charavail())
-				odata = console_readchar();
+			if (console_charavail(d->console_handle))
+				odata = console_readchar(d->console_handle);
 			else
 				odata = 0;
-			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n", (long)relative_addr, odata);  */
+			/*  debug("[ zs: read from 0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)odata);  */
 		} else {
-			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
-			console_putchar(idata & 255);
+			/*  debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);  */
+			console_putchar(d->console_handle, idata & 255);
 			d->tx_done = 1;
 		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {
-			debug("[ zs: read from 0x%08lx ]\n", (long)relative_addr);
+			debug("[ zs: read from 0x%08lx ]\n",
+			    (long)relative_addr);
 		} else {
-			debug("[ zs: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);
+			debug("[ zs: write to  0x%08lx: 0x%08x ]\n",
+			    (long)relative_addr, (int)idata);
 		}
 	}
 
@@ -200,6 +214,7 @@ void dev_zs_init(struct machine *machine, struct memory *mem,
 	memset(d, 0, sizeof(struct zs_data));
 	d->irq_nr   = irq_nr;
 	d->addrmult = addrmult;
+	d->console_handle = console_start_slave(machine, "zs");
 
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
 	    dev_zs_access, d, MEM_DEFAULT, NULL);

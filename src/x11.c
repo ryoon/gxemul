@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.51 2005-01-31 21:10:35 debug Exp $
+ *  $Id: x11.c,v 1.52 2005-02-06 15:15:06 debug Exp $
  *
  *  X11-related functions.
  */
@@ -578,7 +578,7 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 
 				if (XLookupString(&event.xkey, text,
 				    sizeof(text), &key, 0) == 1) {
-					console_makeavail(text[0]);
+					console_makeavail(MAIN_CONSOLE, text[0]);
 				} else {
 					int x = ke->keycode;
 					/*
@@ -595,7 +595,7 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					 */
 					switch (x) {
 					case 9:	/*  Escape  */
-						console_makeavail(27);
+						console_makeavail(MAIN_CONSOLE, 27);
 						break;
 #if 0
 					/*  TODO  */
@@ -611,41 +611,41 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 68:	/*  F2  */
 					case 69:	/*  F3  */
 					case 70:	/*  F4  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('O');
-						console_makeavail('P' +
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, 'O');
+						console_makeavail(MAIN_CONSOLE, 'P' +
 						    x - 67);
 						break;
 					case 71:	/*  F5  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('1');
-						console_makeavail('5');
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '1');
+						console_makeavail(MAIN_CONSOLE, '5');
 						break;
 					case 72:	/*  F6  */
 					case 73:	/*  F7  */
 					case 74:	/*  F8  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('1');
-						console_makeavail('7' +
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '1');
+						console_makeavail(MAIN_CONSOLE, '7' +
 						    x - 72);
 						break;
 					case 75:	/*  F9  */
 					case 76:	/*  F10  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('2');
-						console_makeavail('1' +
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '2');
+						console_makeavail(MAIN_CONSOLE, '1' +
 						    x - 68);
 						break;
 					case 95:	/*  F11  */
 					case 96:	/*  F12  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('2');
-						console_makeavail('3' +
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '2');
+						console_makeavail(MAIN_CONSOLE, '3' +
 						    x - 95);
 						break;
 					/*  Cursor keys:  */
@@ -653,9 +653,9 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 104:	/*  Down  */
 					case 100:	/*  Left  */
 					case 102:	/*  Right  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail(
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, 
 						    x == 98? 'A' : (
 						    x == 104? 'B' : (
 						    x == 102? 'C' : (
@@ -666,9 +666,9 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 					case 88:	/*  Down  */
 					case 83:	/*  Left  */
 					case 85:	/*  Right  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail(
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, 
 						    x == 80? 'A' : (
 						    x == 88? 'B' : (
 						    x == 85? 'C' : (
@@ -676,29 +676,29 @@ static void x11_check_events_machine(struct emul **emuls, int n_emuls,
 						break;
 					case 97:	/*  Cursor  Home  */
 					case 79:	/*  Numeric Home  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('H');
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, 'H');
 						break;
 					case 103:	/*  Cursor  End  */
 					case 87:	/*  Numeric End  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('F');
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, 'F');
 						break;
 					case 99:	/*  Cursor  PgUp  */
 					case 81:	/*  Numeric PgUp  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('5');
-						console_makeavail('~');
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '5');
+						console_makeavail(MAIN_CONSOLE, '~');
 						break;
 					case 105:	/*  Cursor  PgUp  */
 					case 89:	/*  Numeric PgDn  */
-						console_makeavail(27);
-						console_makeavail('[');
-						console_makeavail('6');
-						console_makeavail('~');
+						console_makeavail(MAIN_CONSOLE, 27);
+						console_makeavail(MAIN_CONSOLE, '[');
+						console_makeavail(MAIN_CONSOLE, '6');
+						console_makeavail(MAIN_CONSOLE, '~');
 						break;
 					default:
 						debug("[ unimplemented X11 keycode %i ]\n", x);

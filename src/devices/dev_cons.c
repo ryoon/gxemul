@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.19 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_cons.c,v 1.20 2005-02-06 15:15:03 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -35,6 +35,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "console.h"
 #include "cpu.h"
@@ -44,11 +46,19 @@
 #include "misc.h"
 
 
+struct cons_data {
+	int		console_handle;
+};
+
+
 /*
  *  dev_cons_access():
  */
-int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_cons_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
+	struct cons_data *d = extra;
 	int i;
 
 	/*  Exit the emulator:  */
@@ -65,7 +75,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 				    cpu->machine->instruction_trace)
 					debug("putchar '");
 
-				console_putchar(data[i]);
+				console_putchar(d->console_handle, data[i]);
 
 				if (cpu->machine->register_dump ||
 				    cpu->machine->instruction_trace)
@@ -74,7 +84,7 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			}
 		}
         } else {
-		int ch = console_readchar();
+		int ch = console_readchar(d->console_handle);
 		if (ch < 0)
 			ch = 0;
 		for (i=0; i<len; i++)
@@ -88,22 +98,19 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_cons_init():
  */
-void dev_cons_init(struct memory *mem)
+void dev_cons_init(struct machine *machine, struct memory *mem)
 {
-	/*
-	 *  TODO:  stdin should be set to nonblocking mode...
+	struct cons_data *d;
+	d = malloc(sizeof(struct cons_data));
+	if (d == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(d, 0, sizeof(struct cons_data));
 
-	    int tmp;
-	    tmp = fcntl (socket, F_GETFL);
-	    if (blocking)
-	        fcntl (socket, F_SETFL, tmp & (~O_NONBLOCK) );
-	    else
-	        fcntl (socket, F_SETFL, tmp | (O_NONBLOCK) );
-
-	 *  or something similar
-	 */
+	d->console_handle = console_start_slave(machine, "cons");
 
 	memory_device_register(mem, "cons", DEV_CONS_ADDRESS,
-	    DEV_CONS_LENGTH, dev_cons_access, NULL, MEM_DEFAULT, NULL);
+	    DEV_CONS_LENGTH, dev_cons_access, d, MEM_DEFAULT, NULL);
 }
 

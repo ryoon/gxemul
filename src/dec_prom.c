@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.49 2005-02-02 22:04:35 debug Exp $
+ *  $Id: dec_prom.c,v 1.50 2005-02-06 15:15:06 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -150,7 +150,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x68:	/*  putchar()  */
-		console_putchar(cpu->cd.mips.gpr[MIPS_GPR_A0]);
+		console_putchar(cpu->machine->main_console_handle,
+		    cpu->cd.mips.gpr[MIPS_GPR_A0]);
 		break;
 	case 0x88:	/*  printf()  */
 		return 0x30;
@@ -249,7 +250,8 @@ int decstation_prom_emul(struct cpu *cpu)
 		break;
 	case 0x24:		/*  getchar()  */
 		/*  debug("[ DEC PROM getchar() ]\n");  */
-		cpu->cd.mips.gpr[MIPS_GPR_V0] = console_readchar();
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = console_readchar(
+		    cpu->machine->main_console_handle);
 		break;
 	case 0x28:		/*  gets()  */
 		/*  debug("[ DEC PROM gets() ]\n");  */
@@ -259,7 +261,8 @@ int decstation_prom_emul(struct cpu *cpu)
 		/*  TODO: Make this not hang (block) the entire emulator  */
 
 		do {
-			while ((ch = console_readchar()) < 1)
+			while ((ch = console_readchar(
+			    cpu->machine->main_console_handle)) < 1)
 				;
 			if (ch == '\r')
 				ch = '\n';
@@ -267,12 +270,16 @@ int decstation_prom_emul(struct cpu *cpu)
 
 			if (ch == '\b') {
 				if (i > 0) {
-					console_putchar(ch2);
-					console_putchar(' ');
-					console_putchar(ch2);
+					console_putchar(cpu->machine->
+					    main_console_handle, ch2);
+					console_putchar(cpu->machine->
+					    main_console_handle, ' ');
+					console_putchar(cpu->machine->
+					    main_console_handle, ch2);
 				}
 			} else
-				console_putchar(ch2);
+				console_putchar(cpu->machine->
+				    main_console_handle, ch2);
 
 			fflush(stdout);
 
@@ -301,8 +308,8 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x2c:		/*  puts()  */
 		i = 0;
 		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
-			console_putchar(ch);
-		console_putchar('\n');
+			console_putchar(cpu->machine->main_console_handle, ch);
+		console_putchar(cpu->machine->main_console_handle, '\n');
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x30:		/*  printf()  */
@@ -538,8 +545,8 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0xa8:		/*  int execute_cmd(char *)  */
 		i = 0;
 		while ((ch = read_char_from_memory(cpu, MIPS_GPR_A0, i++)) != '\0')
-			console_putchar(ch);
-		console_putchar('\n');
+			console_putchar(cpu->machine->main_console_handle, ch);
+		console_putchar(cpu->machine->main_console_handle, '\n');
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0xac:		/*  rex()  */

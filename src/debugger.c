@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.82 2005-02-03 05:56:58 debug Exp $
+ *  $Id: debugger.c,v 1.83 2005-02-06 15:15:06 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -125,9 +125,9 @@ void debugger_activate(int x)
 		/*  Already in the debugger. Do nothing.  */
 		int i;
 		for (i=0; i<MAX_CMD_LEN+1; i++)
-			console_makeavail('\b');
-		console_makeavail(' ');
-		console_makeavail('\n');
+			console_makeavail(MAIN_CONSOLE, '\b');
+		console_makeavail(MAIN_CONSOLE, ' ');
+		console_makeavail(MAIN_CONSOLE, '\n');
 		printf("^C");
 		fflush(stdout);
 	} else {
@@ -135,8 +135,8 @@ void debugger_activate(int x)
 		single_step = 1;
 
 		/*  Discard any chars in the input queue:  */
-		while (console_charavail())
-			console_readchar();
+		while (console_charavail(MAIN_CONSOLE))
+			console_readchar(MAIN_CONSOLE);
 	}
 
 	/*  Clear the repeat-command buffer:  */
@@ -1551,7 +1551,7 @@ static char *debugger_readline(void)
 		 *  The usleep() call might make it a tiny bit nicer on other
 		 *  running processes, but it is still very ugly.
 		 */
-		while ((ch = console_readchar()) < 0) {
+		while ((ch = console_readchar(MAIN_CONSOLE)) < 0) {
 			x11_check_event(debugger_emuls, debugger_n_emuls);
 			usleep(2);
 		}
@@ -1608,7 +1608,7 @@ static char *debugger_readline(void)
 		} else if (ch == 11) {
 			/*  CTRL-K: Kill to end of line.  */
 			for (i=0; i<MAX_CMD_LEN; i++)
-				console_makeavail(4);	/*  :-)  */
+				console_makeavail(MAIN_CONSOLE, 4); /*  :-)  */
 		} else if (ch == 14 || ch == 16) {
 			/*  CTRL-P: Previous line in the command history,
 			    CTRL-N: next line  */
@@ -1693,7 +1693,7 @@ static char *debugger_readline(void)
 			case 1:	/*  Add the rest of the command:  */
 				reallen = strlen(cmds[i_match].name);
 				for (i=cmd_len; i<reallen; i++)
-					console_makeavail(
+					console_makeavail(MAIN_CONSOLE,
 					    cmds[i_match].name[i]);
 				break;
 			default:
@@ -1728,49 +1728,52 @@ static char *debugger_readline(void)
 			}
 		} else if (ch == 27) {
 			/*  Escape codes: (cursor keys etc)  */
-			while ((ch = console_readchar()) < 0)
+			while ((ch = console_readchar(MAIN_CONSOLE)) < 0)
 				usleep(1);
 			if (ch == '[' || ch == 'O') {
-				while ((ch = console_readchar()) < 0)
+				while ((ch = console_readchar(MAIN_CONSOLE))
+				    < 0)
 					usleep(1);
 				switch (ch) {
 				case '2':	/*  2~ = ins  */
 				case '5':	/*  5~ = pgup  */
 				case '6':	/*  6~ = pgdn  */
 					/*  TODO: Ugly hack, but might work.  */
-					while ((ch = console_readchar()) < 0)
+					while ((ch = console_readchar(
+					    MAIN_CONSOLE)) < 0)
 						usleep(1);
 					/*  Do nothing for these keys.  */
 					break;
 				case '3':	/*  3~ = delete  */
 					/*  TODO: Ugly hack, but might work.  */
-					while ((ch = console_readchar()) < 0)
+					while ((ch = console_readchar(
+					    MAIN_CONSOLE)) < 0)
 						usleep(1);
-					console_makeavail('\b');
+					console_makeavail(MAIN_CONSOLE, '\b');
 					break;
 				case 'A':	/*  Up.  */
 					/*  Up cursor ==> CTRL-P  */
-					console_makeavail(16);
+					console_makeavail(MAIN_CONSOLE, 16);
 					break;
 				case 'B':	/*  Down.  */
 					/*  Down cursor ==> CTRL-N  */
-					console_makeavail(14);
+					console_makeavail(MAIN_CONSOLE, 14);
 					break;
 				case 'C':
 					/*  Right cursor ==> CTRL-F  */
-					console_makeavail(6);
+					console_makeavail(MAIN_CONSOLE, 6);
 					break;
 				case 'D':	/*  Left  */
 					/*  Left cursor ==> CTRL-B  */
-					console_makeavail(2);
+					console_makeavail(MAIN_CONSOLE, 2);
 					break;
 				case 'F':
 					/*  End ==> CTRL-E  */
-					console_makeavail(5);
+					console_makeavail(MAIN_CONSOLE, 5);
 					break;
 				case 'H':
 					/*  Home ==> CTRL-A  */
-					console_makeavail(1);
+					console_makeavail(MAIN_CONSOLE, 1);
 					break;
 				}
 			}

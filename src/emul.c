@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.160 2005-02-03 06:15:08 debug Exp $
+ *  $Id: emul.c,v 1.161 2005-02-06 15:15:06 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -799,7 +799,8 @@ void emul_run(struct emul **emuls, int n_emuls)
 	debugger_init(emuls, n_emuls);
 
 	/*
-	 *  console_init() makes sure that the terminal is in a good state.
+	 *  console_init_main() makes sure that the terminal is in a
+	 *  reasonable state.
 	 *
 	 *  The SIGINT handler is for CTRL-C  (enter the interactive debugger).
 	 *
@@ -807,7 +808,7 @@ void emul_run(struct emul **emuls, int n_emuls)
 	 *  (or sends SIGSTOP) and then continues. It makes sure that the
 	 *  terminal is in an expected state.
 	 */
-	console_init(emuls[0]);		/*  TODO: what is a good argument?  */
+	console_init_main(emuls[0]);		/*  TODO: what is a good argument?  */
 	signal(SIGINT, debugger_activate);
 	signal(SIGCONT, console_sigcont);
 
@@ -874,11 +875,11 @@ void emul_run(struct emul **emuls, int n_emuls)
 				n++;
 	if (n > 0) {
 		printf("Press enter to quit.\n");
-		while (!console_charavail()) {
+		while (!console_charavail(MAIN_CONSOLE)) {
 			x11_check_event(emuls, n_emuls);
 			usleep(1);
 		}
-		console_readchar();
+		console_readchar(MAIN_CONSOLE);
 	}
 
 	console_deinit();

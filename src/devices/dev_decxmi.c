@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_decxmi.c,v 1.2 2004-03-09 00:06:27 debug Exp $
+ *  $Id: dev_decxmi.c,v 1.3 2004-03-22 00:55:54 debug Exp $
  *  
  *  DEC 5800 XMI (this has to do with SMP...)
  *
@@ -43,7 +43,7 @@
 extern int ncpus;
 
 struct decxmi_data {
-	int		dummy;
+	uint32_t		reg_0xc[NNODEXMI];
 };
 
 
@@ -56,13 +56,14 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 {
 	uint64_t idata = 0, odata = 0;
 	int node_nr;
+	struct decxmi_data *d = extra;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	node_nr = relative_addr / XMI_NODESIZE;
 	relative_addr &= (XMI_NODESIZE - 1);
 
-	if (node_nr >= ncpus)
+	if (node_nr >= ncpus || node_nr > NNODEXMI)
 		return 0;
 
 	switch (relative_addr) {
@@ -86,6 +87,15 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
 			debug("[ decxmi: (node %i) read from XMI_FAIL: 0x%08x ]\n", node_nr, odata);
 		} else
 			debug("[ decxmi: (node %i) write to XMI_FAIL: 0x%08x ]\n", node_nr, idata);
+		break;
+	case 0xc:
+		if (writeflag == MEM_READ) {
+			odata = d->reg_0xc[node_nr];
+			debug("[ decxmi: (node %i) read from REG 0xC: 0x%08x ]\n", node_nr, (int)odata);
+		} else {
+			d->reg_0xc[node_nr] = idata;
+			debug("[ decxmi: (node %i) write to REG 0xC: 0x%08x ]\n", node_nr, (int)idata);
+		}
 		break;
 	default:
 		if (writeflag==MEM_READ) {

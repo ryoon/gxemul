@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.34 2004-10-17 15:31:44 debug Exp $
+ *  $Id: dec_prom.c,v 1.35 2004-11-30 08:23:34 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -472,7 +472,8 @@ void decstation_prom_emul(struct cpu *cpu)
 		default:
 			fatal("warning: DEC PROM slot_address() unimplemented for this machine type\n");
 		}
-		cpu->gpr[GPR_V0] = 0x80000000 + slot_base + slot_size * cpu->gpr[GPR_A0];
+		cpu->gpr[GPR_V0] = (int64_t)(int32_t)
+		    (0x80000000 + slot_base + slot_size * cpu->gpr[GPR_A0]);
 		break;
 	case 0x70:		/*  wbflush()  */
 		debug("[ DEC PROM wbflush(): TODO ]\n");
@@ -488,6 +489,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		/*  TODO:  why did I add the 0x82 stuff???  */
 		cpu->gpr[GPR_V0] = ((uint32_t)0x82 << 24)
 		    + (cpu->emul->machine << 16) + (0x3 << 8);
+		cpu->gpr[GPR_V0] = (int64_t)(int32_t)cpu->gpr[GPR_V0];
 		break;
 	case 0x84:		/*  getbitmap()  */
 		debug("[ DEC PROM getbitmap(0x%08x) ]\n",

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.209 2005-02-15 12:41:54 debug Exp $
+ *  $Id: main.c,v 1.210 2005-02-19 10:45:33 debug Exp $
  */
 
 #include <stdio.h>
@@ -273,18 +273,6 @@ static void usage(int longusage)
 	}
 
 	printf("\nMachine selection options:\n");
-	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, "
-	    "2=PICA-61, 3=NEC-R94,\n");
-	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, "
-	    "7=Olivetti M700,\n");
-	printf("            8=NEC-R96)\n");
-	printf("  -a        emulate a generic test machine\n");
-	printf("  -D x      try to emulate a DECstation machine type 'x', "
-	    "where x may be:\n");
-	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), "
-	    "4=3MAX+(5000,5900),\n");
-	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, "
-	    "12=5100(MIPSMATE)\n");
 	printf("  -E t      try to emulate machine type t. (Use -H to get "
 	    "a list of types.)\n");
 	printf("  -e st     try to emulate machine subtype st. (Use this "

@@ -1,6 +1,6 @@
-$Id: RELEASE,v 1.91 2005-02-18 08:45:45 debug Exp $
+$Id: RELEASE,v 1.92 2005-02-19 10:45:30 debug Exp $
 
-I'm now working on post-0.2.4.1.
+I'm now preparing for a 0.3 release.
 
 ------------------------------------------------------------------------------
 
@@ -47,15 +47,16 @@ Summary of changes from version 0.2.4.1 to 0.3:
 
 	x)  I've performed a major code clean-up.
 
-	x)  Support for using "configuration files" has been added, so
-	    settings do not have to be entered on the command line anymore.
-	    (Useful for complex emulation setups.)
+	x)  Support for using "configuration files" has been added, so settings
+	    do not have to be entered on the command line anymore. (Useful for
+	    complex emulation setups.)
 
 	x)  Multiple machines can now be emulated simultaneously.
 
-	x)  Some seldomly used command line options have been changed or
-	    removed, but 0.3 should be mostly backward compatible with
-	    0.2.4.1.
+	x)  Some command line options have changed since 0.2.4.1, most notable
+	    the options to select the machine to be emulated. -E should now be
+	    used to select the machine type, and if necessary, -e can be used
+	    to select a subtype.
 
 	x)  Many bugfixes, too many to mention here.
 

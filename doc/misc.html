@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.29 2005-02-18 08:07:58 debug Exp $
+$Id: misc.html,v 1.30 2005-02-19 10:45:31 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -254,7 +254,8 @@ might be a suitable choice.
 	language code, which the assembler (eg gas, the GNU assembler) can 
 	then compile into object format, and then you need to link this
 	into an executable image. This is much closer to how things work
-	in real life than running assembly language listings in a simulator.
+	in real life than running assembly language listings in a simulator
+	(eg SPIM).
   <p>
   <li><b>(-)</b>&nbsp;&nbsp;mips64emul does not simulate out-of-order
 	execution, penalties related to instruction scheduling, or
@@ -298,7 +299,7 @@ a CDROM device (this can be overridden with a 'd' prefix, to force a read/write 
 For example, the following command would start the emulator with two
 CDROM images, and one harddisk image:
 <pre>
-	$ <b>./mips64emul -D2 -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
+	$ <b>./mips64emul -D2 -d image.iso -d disk0.img -d c:second_cdrom.img netbsd-pmax-INSTALL</b>
 </pre>
 Usually, the device with the lowest id becomes the boot device. To override
 this, add a 'b' prefix to one of the devices:

@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.25 2005-02-15 16:54:22 debug Exp $
+.\" $Id: mips64emul.1,v 1.26 2005-02-19 10:45:32 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -85,17 +85,6 @@ doesn't need the kernel as a separate file.)
 .Pp
 Machine selection options:
 .Bl -tag -width Ds
-.It Fl A Ar x
-Try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,
-4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700,
-8=NEC-R96).
-.It Fl a
-Emulate a generic MIPS machine (useful for experimenting with MIPS-like
-code, when no specific real machine emulation is required).
-.It Fl D Ar x
-Try to emulate a DECstation or DECsystem machine (1=PMAX(3100), 2=3MAX(5000),
-3=3MIN(5000), 4=3MAX+(5000,5900), 5=5800, 6=5400, 7=MAXINE(5000), 11=5500,
-12=5100(MIPSMATE)).
 .It Fl E Ar t
 Try to emulate machine type
 .Ar "t".
@@ -107,6 +96,7 @@ Try to emulate machine subtype
 .Ar "st".
 Use this together with
 .Fl E .
+(This option is not always needed, if a machine type has no subtypes.)
 .El
 .Pp
 Other options:
@@ -116,6 +106,7 @@ Enable dynamic binary translation.
 .It Fl C Ar x
 Try to emulate a specific CPU type,
 .Ar "x".
+This overrides the default CPU type for the machine being emulated.
 (Use
 .Fl H
 to get a list of available CPU types.)
@@ -148,6 +139,7 @@ Emulate clock interrupts at
 .Ar x
 Hz. (This affects emulated clock devices only, not actual runtime speed.
 This disables automatic clock adjustments, which is otherwise turned on.)
+(This option is probably only valid for DECstation emulation.)
 .It Fl i
 Display each instruction as it is being executed.
 .It Fl J
@@ -159,7 +151,8 @@ for example "bsd" for OpenBSD/pmax, or "vmunix" for Ultrix.
 .It Fl M Ar m
 Emulate
 .Ar m
-MBs of physical RAM.
+MBs of physical RAM. This overrides the default amount of RAM for the 
+selected machine type.
 .It Fl m Ar nr
 Run at most
 .Ar nr
@@ -256,9 +249,9 @@ subdirectory of the
 distribution.
 .Sh EXAMPLES
 The following command will start NetBSD/pmax on an emulated DECstation 
-5000/200, with dynamic binary translation enabled:
+5000/200 (3MAX), with dynamic binary translation enabled:
 .Pp
-.Dl "mips64emul -D2 -b -d netbsddisk.img"
+.Dl "mips64emul -E dec -e 3max -b -d netbsddisk.img"
 .Pp
 netbsddisk.img should be a raw disk image containing a NetBSD/pmax
 filesystem.
@@ -273,7 +266,7 @@ If you have compiled the small Hello world program mentioned in the
 mips64emul documentation, the following command will start up an
 emulated test machine in "paused" mode:
 .Pp
-.Dl "mips64emul -a -V hello"
+.Dl "mips64emul -E testmips -V hello"
 .Pp
 (Paused mode means that you enter the interactive single-step debugger
 directly at startup, instead of launching the Hello world program.)

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.30 2005-02-18 08:07:57 debug Exp $
+$Id: experiments.html,v 1.31 2005-02-19 10:45:31 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -125,14 +125,14 @@ the hello world program:
 	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q -a hello_mips</b>
+	$ <b>./mips64emul -q -E testmips hello_mips</b>
 	Hello world
 
 	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello_mips.o -o hello_mips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q -a hello_mips</b>
+	$ <b>./mips64emul -q -E testmips hello_mips</b>
 	Hello world
 </pre>
 
@@ -144,7 +144,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 
 <p>
 <pre>
-	$ <b>./mips64emul -V -a hello_mips</b>
+	$ <b>./mips64emul -V -E testmips hello_mips</b>
 	..
 	mips64emul&gt; <b>r</b>
 	cpu0:    pc = a800000000030078    <f>
@@ -420,13 +420,13 @@ probably doesn't work in mips64emul.
       <li><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
+	<br>gunzip the files, and run the emulator with <b>-E dec -e 3max -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
 	Read <a href="guestoses.html#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
-	<br>This is an old OpenBSD kernel in a.out format. Try <b>-D2</b>.
+	<br>This is an old OpenBSD kernel in a.out format. Try <b>-E dec -e 3max</b>.
 	<br>Read <a href="guestoses.html#openbsdinstall">this section</a> about how to install OpenBSD/pmax onto a harddisk image.
 	It's a bit more complicated than installing NetBSD/pmax, but might work.
       <p>
@@ -440,8 +440,8 @@ probably doesn't work in mips64emul.
 	<b>tar xfzv data.tar.gz ./boot/vmlinux-2.4.26-r3k-kn02</b>
 	<b>mv boot/vmlinux-* .; rmdir boot</b>
 </pre>
-	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
-	<br>To try with serial console: <b>-D2 -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with the framebuffer: <b>-E dec -e 3max -X vmlinux-2.4.26-r3k-kn02</b>
+	<br>To try with serial console: <b>-E dec -e 3max -o 'console=ttyS3' vmlinux-2.4.26-r3k-kn02</b>
 	<br>Read <a href="guestoses.html#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
@@ -460,7 +460,7 @@ probably doesn't work in mips64emul.
 	<br>Important! Run <b>./configure --caches; make</b>
 	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
 	<br>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY
-	<br>./mips64emul -D2 -X pmax_mach/special/mach.boot.MK83.STD+ANY
+	<br><b>./mips64emul -E dec -e 3max -X pmax_mach/special/mach.boot.MK83.STD+ANY</b>
     </ul>
   </li>
 
@@ -514,31 +514,31 @@ probably doesn't work in mips64emul.
       <li><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz</a>
-	<br>gunzip, and try with <b>-A1 -X -N</b> or <b>-A1</b>.
-	<br>(You may also try other -A<i>x</i> models.)
+	<br>gunzip, and try with <b>-E arc -e rd94</b>.
+	<br>(You may also try other ARC models.)
 	<br>Read <a href="guestoses.html#netbsdarcinstall">this section</a> about how
 		to install NetBSD/arc onto a harddisk image.
       <p>
       <li><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>:
 	<br><a href="ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf">ftp://ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</a>
-	<br>Try running with <b>-X -A2</b> or <b>-X -A4</b>.
+	<br>Try running with <b>-X -E arc -e pica</b> or <b>-X -E arc -e tyne</b>.
 	<br>Read <a href="guestoses.html#openbsdarcinstall">this section</a> about how
 		to install OpenBSD/arc onto a harddisk image.
       <p>
       <li>Linux:
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
-	<br>gunzip, and run with <b>-v -J -X -N -A7</b> (Olivetti M700)
+	<br>gunzip, and run with <b>-v -J -X -N -E arc -e m700</b> (Olivetti M700)
       <p>
       <li>Pandora:
 	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/">ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo</a>/<a href="ftp://ftp.linux-mips.org/pub/linux/mips/ancient/milo/milo-0.27.1.tar.gz">milo-0.27.1.tar.gz</a>
 	<br>A generic test/diagnostics program for ARC-based machines.
-	<br>Run with <b>-A4 milo-0.27.1/pandora</b>
+	<br>Run with <b>-E arc -e r94 milo-0.27.1/pandora</b>
       <p>
       <li>arcdiag:
 	<br>Precompiled binary:<a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/arc/arcdiag">ftp://ftp.netbsd.org/pub/NetBSD/arch/arc/arcdiag</a>
 	<br>(alternative: <a href="http://www.sensi.org/~alec/mips/arcdiag">http://www.sensi.org/~alec/mips/arcdiag</a>)
 	<br>A generic test/diagnostics program for ARC-based machines.
-	<br>Run with <b>-A1 arcdiag</b> (or <b>-A2</b> etc).
+	<br>Run with <b>-E arc -e pica arcdiag</b> (or some other ARC mode).
 	<br>Example arcdiag output (from real machines):
 	<br><a href="http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html">http://mail-index.netbsd.org/port-arc/2000/10/18/0001.html</a> (Olivetti M700-10)
 	<br><a href="http://www.sensi.org/~alec/mips/arcdiag.txt">http://www.sensi.org/~alec/mips/arcdiag.txt</a> (PICA-61)
@@ -674,7 +674,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E walnut -vt netbsd-INSTALL_WALNUT</b>
+	<br>$ <b>./mips64emul -E walnut -v -t netbsd-INSTALL_WALNUT</b>
     </ul>
   </li>
 
@@ -685,7 +685,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc -vt netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E pmppc -v -t netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -696,7 +696,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/sandpoint/">NetBSD/sandpoint</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E sandpoint -vt netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E sandpoint -v -t netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -707,12 +707,12 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/sparc64/">NetBSD/sparc64</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E ultra1 -vi netbsd-INSTALL</b>
+	<br>$ <b>./mips64emul -E ultra1 -v -i netbsd-INSTALL</b>
       <p>
       <li><a href="http://www.openbsd.org/sparc64.html">OpenBSD/sparc64</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd</a>
 	<br>rename to bsd.rd.gz, gunzip, and try the following:
-	<br>$ <b>./mips64emul -E ultra1 -vi bsd.rd</b>
+	<br>$ <b>./mips64emul -E ultra1 -v -i bsd.rd</b>
     </ul>
   </li>
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.380 2004-12-12 13:18:34 debug Exp $
+$Id: HISTORY,v 1.381 2004-12-12 16:28:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1307,3 +1307,4 @@ HISTORY of mips64emul
 		If SLOWSERIALINTERRUPTS is defined at compile time, interrupts
 		from the dc7085 device will not come as often as they normally
 		do. This makes Debian seem more stable.
+		Decreasing the bintrans cache to 20 MB again.

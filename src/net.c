@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.35 2004-12-12 13:18:36 debug Exp $
+ *  $Id: net.c,v 1.36 2004-12-12 16:28:08 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -108,8 +108,8 @@ static struct in_addr nameserver_ipv4;
 
 static int64_t net_timestamp = 0;
 
-#define	MAX_TCP_CONNECTIONS	4000
-#define	MAX_UDP_CONNECTIONS	4000
+#define	MAX_TCP_CONNECTIONS	60
+#define	MAX_UDP_CONNECTIONS	60
 
 struct udp_connection {
 	int		in_use;
@@ -141,7 +141,7 @@ struct tcp_connection {
 	uint32_t	inside_timestamp;
 
 	/*  TODO:  tx and rx buffers?  */
-	unsigned char	incoming_buf[2000];
+	unsigned char	*incoming_buf;
 	int		incoming_buf_rounds;
 	int		incoming_buf_len;
 	uint32_t	incoming_buf_seqnr;
@@ -159,6 +159,8 @@ struct tcp_connection {
 	int		outside_tcp_port;
 	uint32_t	outside_timestamp;
 };
+
+#define	TCP_INCOMING_BUF_LEN	2000
 
 #define	TCP_OUTSIDE_TRYINGTOCONNECT	1
 #define	TCP_OUTSIDE_CONNECTED		2
@@ -1329,6 +1331,14 @@ int net_ethernet_rx_avail(void *extra)
 		if (tcp_connections[con_id].socket < 0) {
 			fatal("INTERNAL ERROR in net.c, tcp socket < 0 but in use?\n");
 			continue;
+		}
+
+		if (tcp_connections[con_id].incoming_buf == NULL) {
+			tcp_connections[con_id].incoming_buf = malloc(TCP_INCOMING_BUF_LEN);
+			if (tcp_connections[con_id].incoming_buf == NULL) {
+				printf("out of memory allocating incoming_buf for con_id %i\n", con_id);
+				exit(1);
+			}
 		}
 
 		if (tcp_connections[con_id].state >=

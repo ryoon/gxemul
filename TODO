@@ -30,6 +30,7 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Outgoing UDP packet fragment support.
 		o)  Make it work with Ultrix and Sprite too, not just
 		    with NetBSD/OpenBSD/Linux.
+		o)  make 10.0.0.254 act as a nameserver
 		o)  DHCP? (Just return the 10.x.x.x default values.)
 
 	Configure script:

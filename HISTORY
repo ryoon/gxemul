@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.175 2004-07-25 01:38:55 debug Exp $
+$Id: HISTORY,v 1.176 2004-07-25 07:44:49 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -836,3 +836,4 @@ HISTORY of mips64emul
 		a call to a hardcoded array of bytes that do the same thing
 		(an instruction cache invalidation). This allows the same
 		invalidation code to be used regardless of compiler.
+		Some other minor changes.

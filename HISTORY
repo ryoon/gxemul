@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.143 2004-07-09 04:44:30 debug Exp $
+$Id: HISTORY,v 1.144 2004-07-09 05:56:41 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -710,3 +710,4 @@ HISTORY of mips64emul
 		Adding a section on Networking to the Technical documentation,
 		and a preliminary NetBSD/pmax install instruction for network
 		installs to the User documentation.
+		Some updates to the man page.

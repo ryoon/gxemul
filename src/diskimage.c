@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.10 2004-04-06 09:11:07 debug Exp $
+ *  $Id: diskimage.c,v 1.11 2004-04-06 10:46:03 debug Exp $
  *
  *  Disk image support.
  *
@@ -44,7 +44,9 @@
 struct diskimage {
 	char		*fname;
 	off_t		total_size;
+
 	int		writable;
+	int		is_a_cdrom;
 
 	FILE		*f;
 };
@@ -247,17 +249,25 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
-		xferp->data_in[0] = 0x00;	/*  Direct-access disk  */
-		xferp->data_in[1] = 0x00;	/*  non-removable  */
+		xferp->data_in[0] = 0x00;	/*  0x00 = Direct-access disk  */
+		xferp->data_in[1] = 0x00;	/*  0x00 = non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
 		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
 		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
 
 		/*  These must be padded with spaces:  */
-		memcpy(xferp->data_in+8, "FAKE    ", 8);
-		memcpy(xferp->data_in+16, "MIPS64EMUL DISK ", 16);
+		memcpy(xferp->data_in+8,  "FAKE    ", 8);
+		memcpy(xferp->data_in+16, "DISK            ", 16);
 		memcpy(xferp->data_in+32, "V0.0", 4);
+
+		/*  Some data is different for CD-ROM drives:  */
+		if (diskimages[disk_id]->is_a_cdrom) {
+			xferp->data_in[0] = 0x05;	/*  0x05 = CD-ROM  */
+			xferp->data_in[1] = 0x80;	/*  0x80 = removable  */
+			memcpy(xferp->data_in+16, "CDROM           ", 16);
+		}
+
 
 		/*  Return msg and status:  */
 		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
@@ -362,10 +372,12 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 
 		break;
 
-	case 0x03:
+	case SCSICMD_REQUEST_SENSE:
 	case 0x15:
 	case 0x1b:
 	case 0x1e:
+	case SCSICDROM_READ_SUBCHANNEL:
+	case SCSICDROM_READ_TOC:
 		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 		break;
 
@@ -422,7 +434,9 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 /*
  *  diskimage_add():
  *
- *  Add a disk image.
+ *  Add a disk image.  fname is the filename of the disk image.
+ *  If the filename begins with "C:", it is treated as a CDROM
+ *  instead of a normal disk (and the "C:" part is skipped).
  *
  *  Returns an integer >= 0 identifying the disk image.
  */
@@ -444,11 +458,21 @@ int diskimage_add(char *fname)
 		exit(1);
 	}
 	memset(diskimages[id], 0, sizeof(struct diskimage));
+
+	diskimages[id]->is_a_cdrom = 0;
+
 	diskimages[id]->fname = malloc(strlen(fname) + 1);
 	if (diskimages[id]->fname == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
+
+	/*  If the filename begins with "C:" then it is a CD-ROM image:  */
+	if (strlen(fname) > 2 && strncasecmp(fname, "C:", 2) == 0) {
+		diskimages[id]->is_a_cdrom = 1;
+		fname += 2;
+	}
+
 	strcpy(diskimages[id]->fname, fname);
 
 	/*  Measure total_size:  */
@@ -462,6 +486,17 @@ int diskimage_add(char *fname)
 	fclose(f);
 
 	diskimages[id]->writable = access(fname, W_OK) == 0? 1 : 0;
+
+	/*
+	 *  Make an intelligent guess that filenames ending with .iso
+	 *  mean CD-ROM images.
+	 */
+	if (strlen(diskimages[id]->fname) > 4 &&
+	    strcasecmp(diskimages[id]->fname + strlen(diskimages[id]->fname) - 4, ".iso") == 0)
+		diskimages[id]->is_a_cdrom = 1;
+
+	if (diskimages[id]->is_a_cdrom)
+		diskimages[id]->writable = 0;
 
 	diskimages[id]->f = fopen(fname, diskimages[id]->writable? "r+" : "r");
 	if (diskimages[id]->f == NULL) {
@@ -488,10 +523,11 @@ void diskimage_dump_info(void)
 	int i;
 
 	for (i=0; i<n_diskimages; i++) {
-		debug("adding diskimage %i: '%s', %s, %li bytes (%li sectors)\n",
+		debug("adding diskimage %i: '%s', %s, %li bytes (%s%li sectors)\n",
 		    i, diskimages[i]->fname,
 		    diskimages[i]->writable? "read/write" : "read-only",
 		    (long int) diskimages[i]->total_size,
+		    diskimages[i]->is_a_cdrom? "CD-ROM, " : "",
 		    (long int) (diskimages[i]->total_size / 512));
 	}
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.28 2004-04-02 05:46:42 debug Exp $
+ *  $Id: main.c,v 1.29 2004-04-06 10:46:03 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -164,7 +164,8 @@ void usage(char *progname)
 			printf("\n");
 	}
 
-	printf("  -d fname  add fname as a disk image\n");
+	printf("  -d fname  add fname as a disk image. (For a CD-ROM, use a \"C:\" prefix\n");
+	printf("            on the filename)\n");
 	printf("  -D id     try to emulate a DECstation machine type 'id', where id may be:\n");
 	printf("                1=PMAX(3100), 2=3MAX(5000), 3=3MIN(5000), 4=3MAX+(5000,5900),\n");
 	printf("                5=5800, 6=5400, 7=MAXINE(5000), 11=5500, 12=5100(MIPSMATE)\n");

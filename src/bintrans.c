@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.159 2005-04-02 11:23:07 debug Exp $
+ *  $Id: bintrans.c,v 1.160 2005-04-06 21:16:45 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -348,12 +348,14 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	tep = cpu->mem->translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
+			int mask = 1 << (offset_within_page & 7);
+
 			if (tep->chunk[offset_within_page] != 0) {
 				f = (size_t)tep->chunk[offset_within_page] +
 				    cpu->mem->translation_code_chunk_space;
 				goto run_it;	/*  see further down  */
 			}
-			if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+			if (tep->flags[offset_within_page >> 3] & mask)
 				return cpu->cd.mips.
 				    bintrans_instructions_executed;
 			break;
@@ -482,8 +484,9 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			case SPECIAL_SYSCALL:
 			case SPECIAL_BREAK:
 				if (cpu->machine->userland_emul != NULL) {
+					int mask = 1 << (prev_p & 7);
 					bintrans_write_chunkreturn_fail(&ca);
-					tep->flags[prev_p] |= UNTRANSLATABLE;
+					tep->flags[prev_p >> 3] |= mask;
 					try_to_translate = 0;
 				} else {
 					translated = bintrans_write_instruction__tlb_rfe_etc(&ca,
@@ -543,7 +546,10 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				/*  Untranslatable:  */
 				/*  TODO: this code should only be in one place  */
 				bintrans_write_chunkreturn_fail(&ca);
-				tep->flags[prev_p] |= UNTRANSLATABLE;
+				{
+					int mask = 1 << (prev_p & 7);
+					tep->flags[prev_p >> 3] |= mask;
+				}
 				try_to_translate = 0;
 			}
 			break;
@@ -567,7 +573,10 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				/*  Untranslatable:  */
 				/*  TODO: this code should only be in one place  */
 				bintrans_write_chunkreturn_fail(&ca);
-				tep->flags[prev_p] |= UNTRANSLATABLE;
+				{
+					int mask = 1 << (prev_p & 7);
+					tep->flags[prev_p >> 3] |= mask;
+				}
 				try_to_translate = 0;
 			}
 			break;
@@ -734,7 +743,10 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			/*  Untranslatable:  */
 			/*  TODO: this code should only be in one place  */
 			bintrans_write_chunkreturn_fail(&ca);
-			tep->flags[prev_p] |= UNTRANSLATABLE;
+			{
+				int mask = 1 << (prev_p & 7);
+				tep->flags[prev_p >> 3] |= mask;
+			}
 			try_to_translate = 0;
 		}
 
@@ -800,10 +812,15 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			try_to_translate = 0;
 		}
 
-		if (translated && try_to_translate && tep->flags[prev_p+1] & UNTRANSLATABLE
+{
+	int mask = 1 << ((prev_p+1) & 7);
+
+		if (translated && try_to_translate &&
+		    tep->flags[(prev_p+1) >> 3] & mask
 		    && prev_p < 1023 && !delayed_branch) {
 			bintrans_write_chunkreturn_fail(&ca);
 		}
+}
 
 		p += sizeof(instr);
 
@@ -816,7 +833,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 	/*  Not enough translated? Then abort.  */
 	if (n_translated < 1) {
-		tep->flags[offset_within_page] |= UNTRANSLATABLE;
+		int mask = 1 << (offset_within_page & 7);
+		tep->flags[offset_within_page >> 3] |= mask;
 		return cpu->cd.mips.bintrans_instructions_executed;
 	}
 
@@ -908,12 +926,13 @@ run_it:
 			tep = cpu->mem->translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
+					int mask = 1 << (offset_within_page & 7);
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    cpu->mem->translation_code_chunk_space;
 						goto run_it;
 					}
-					if (tep->flags[offset_within_page] & UNTRANSLATABLE)
+					if (tep->flags[offset_within_page >> 3] & mask)
 						return cpu->cd.mips.bintrans_instructions_executed;
 					break;
 				}

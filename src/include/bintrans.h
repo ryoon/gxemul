@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.h,v 1.19 2005-03-14 12:13:50 debug Exp $
+ *  $Id: bintrans.h,v 1.20 2005-04-06 21:16:45 debug Exp $
  *
  *  Binary translation functions.  (See bintrans.c for more info.)
  */
@@ -38,13 +38,13 @@
 #include "misc.h"
 
 struct translation_page_entry {
+	uint32_t			chunk[1024];
+	unsigned char			flags[1024 / 8];
+
 	struct translation_page_entry	*next;
 	uint64_t			paddr;
 
 	int				page_is_potentially_in_use;
-
-	uint32_t			chunk[1024];
-	char				flags[1024];
 };
 
 #define	UNTRANSLATABLE		0x01

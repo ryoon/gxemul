@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.673 2005-04-06 17:08:26 debug Exp $
+$Id: HISTORY,v 1.674 2005-04-06 21:16:44 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1807,3 +1807,5 @@ Changelog for GXemul:
 		Adding a MobilePro 880 mode, and a dummy IBM WorkPad Z50 mode.
 20050406	Connecting the VR3 serial controller to irq 9 (Linux calls this
 		irq 17), and some other interrupt-related cleanups.
+		Reducing the memory overhead per bintranslated page. (Hopefully
+		this makes things faster, or at least not slower...)

@@ -7,7 +7,7 @@ BIN=mips64emul
 LIBS=-lm $(XLIB) $(OTHERLIBS)
 
 all: do_src do_devices
-	$(CC) src/*.o devices/*.o $(LIBS) -o $(BIN)
+	$(CC) $(COPTIM) src/*.o devices/*.o $(LIBS) -o $(BIN)
 
 do_src:
 	cd src; $(MAKE); cd ..
@@ -23,7 +23,7 @@ install:
 	@echo "the mips64emul binary manually to where you want it to reside."
 
 clean:
-	rm -f $(BIN) *core core.*
+	rm -f $(BIN) *core core.* *.gmon
 	cd src; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 

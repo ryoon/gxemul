@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_sparcv9.c,v 1.2 2004-10-08 20:28:05 debug Exp $
+ *  $Id: bintrans_sparcv9.c,v 1.3 2004-10-09 19:03:29 debug Exp $
  *
  *  UltraSparc specific code for dynamic binary translation.
  *
@@ -104,13 +104,15 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	    *a++ = (ofs & 255);		/*  stx %o5, [ %o0 + ofs ]  */
 
 	/*  Increment the instruction count:  */
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+            - ((size_t)&dummy_cpu);
 	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = 0xda; *a++ = 0x02; *a++ = 0x60;
-	    *a++ = 0x00;		/*  ld [ %o1 ], %o5  */
-	*a++ = 0x9a; *a++ = 3; *a++ = 0x60 + (inc >> 8);
-	    *a++ = (inc & 255);		/*  add  %o5, inc, %o5  */
-	*a++ = 0xda; *a++ = 0x22; *a++ = 0x60;
-	    *a++ = 0x00;		/*  st %o5, [ %o1 ]  */
+	*a++ = 0xc4; *a++ = 0x02; *a++ = 0x20 + (ofs >> 8);
+	    *a++ = (ofs & 255);		/*  ld [ %o0 + ofs ], %g2  */
+	*a++ = 0x84; *a++ = 0x00; *a++ = 0xa0 + (inc >> 8);
+	    *a++ = (inc & 255);		/*  add  %g2, inc, %g2  */
+	*a++ = 0xc4; *a++ = 0x22; *a++ = 0x20 + (ofs >> 8);
+	    *a++ = (ofs & 255);		/*  st %g2, [ %o0 + ofs ]  */
 
 	*pc_increment = 0;
 	*addrp = a;

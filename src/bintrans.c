@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.25 2004-10-08 19:42:26 debug Exp $
+ *  $Id: bintrans.c,v 1.26 2004-10-09 19:03:29 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -113,6 +113,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/mman.h>
 
 #include "misc.h"
 
@@ -250,8 +252,7 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_entry *tep;
-	int (*f)(struct cpu *, int *);
-	int instructions_executed = 0;
+	int (*f)(struct cpu *);
 
 	tep = translation_entry_array[entry_index];
 
@@ -259,12 +260,13 @@ int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
 		if (tep->paddr == paddr) {
 			/*  printf("bintrans_runchunk(): chunk = %p\n",
 			    tep->chunk);  */
+			cpu->bintrans_instructions_executed = 0;
 
 			f = (void *)tep->chunk;
-			f(cpu, &instructions_executed);
+			f(cpu);
 
 			/*  printf("after the chunk has run.\n");  */
-			return instructions_executed;
+			return cpu->bintrans_instructions_executed;
 		}
 
 		tep = tep->next;
@@ -425,6 +427,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 void bintrans_init(void)
 {
 	size_t s;
+	int res;
 
 	debug("starting bintrans: EXPERIMENTAL!\n");
 
@@ -454,6 +457,24 @@ void bintrans_init(void)
 	 *  chunk space.
 	 */
 	translation_code_chunk_space_head = 0;
+
+	/*
+	 *  Some operating systems (for example OpenBSD using the default
+	 *  stack protection settings in GCC) don't allow code to be 
+	 *  dynamically created in memory and executed. This will attempt
+	 *  to enable execution of the code chunk space.
+	 *
+	 *  NOTE/TODO: A Linux man page for mprotect from 1997 says that
+	 *  "POSIX.1b says that mprotect can be used only on regions
+	 *  of memory obtained from mmap(2).".  If malloc() isn't implemented
+	 *  using mmap(), then this could be a problem.
+	 */
+	res = mprotect(translation_code_chunk_space,
+	    CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN,
+	    PROT_READ | PROT_WRITE | PROT_EXEC);
+	if (res)
+		debug("warning: mprotect() failed with errno %i."
+		    " this usually doesn't really matter...\n", res);
 }
 
 

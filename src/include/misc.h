@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.113 2004-10-08 17:26:34 debug Exp $
+ *  $Id: misc.h,v 1.114 2004-10-09 19:03:28 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -604,6 +604,9 @@ struct cpu {
 	unsigned char	*pc_last_host_4k_page;
 	int		pc_last_was_in_host_ram;
 #ifdef BINTRANS
+	int		bintrans_instructions_executed;  /*  set to the
+				number of bintranslated instructions executed
+				when running a bintrans codechunk  */
 	int		pc_bintrans_paddr_valid;
 	uint64_t	pc_bintrans_paddr;
 #endif

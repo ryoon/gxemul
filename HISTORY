@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.246 2004-10-09 11:03:45 debug Exp $
+$Id: HISTORY,v 1.247 2004-10-09 19:03:27 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -990,4 +990,9 @@ HISTORY of mips64emul
 		and there is support for Alpha, i386 and UltraSparc backends,
 		but performance is about 50% worse than when running without
 		bintrans. (This is as expected, though.)
-20041009	Minor updates.
+20041009	Minor updates to the documentation.
+		Using mprotect() to make sure that the code created dynamically
+		by the bintrans subsystem is allowed to be executed. (This
+		affects newer OpenBSD systems, and possibly others.)
+		The translated code chunks now only get one argument passed to
+		them, the (struct cpu *) of the current cpu.

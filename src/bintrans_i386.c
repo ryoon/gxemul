@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.3 2004-10-08 20:28:05 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.4 2004-10-09 19:03:29 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -107,10 +107,14 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 	    *a++ = 0; *a++ = 0; *a++ = 0;  /*  adcl $0,ofs+4(%eax)  */
 
 	/*  ... and add inc (nr of instructions) to the counter:  */
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+            - ((size_t)&dummy_cpu);
 	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = 0x8b; *a++ = 0x45; *a++ = 0x0c;	/*  mov 0xc(%ebp),%eax  */
-	*a++ = 0x81; *a++ = 0x00; *a++ = (inc & 255); *a++ = (inc >> 8);
-	    *a++ = 0; *a++ = 0;		/*  addl $inc,(%eax)  */
+	*a++ = 0x8b; *a++ = 0x45; *a++ = 0x08;	/*  mov 0x8(%ebp),%eax  */
+	*a++ = 0x81; *a++ = 0x80; *a++ = (ofs & 255); *a++ = (ofs >> 8);
+	    *a++ = (ofs >> 16); *a++ = (ofs >> 24);
+	    *a++ = (inc & 255); *a++ = (inc >> 8);
+	    *a++ = (inc >> 16); *a++ = (inc >> 24);  /*  addl $inc,ofs(%eax)  */
 
 	*pc_increment = 0;
 	*addrp = a;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.7 2004-10-08 19:24:15 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.8 2004-10-09 19:03:29 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -137,16 +137,18 @@ void bintrans_write_pcflush(unsigned char **addrp, int *pc_increment)
 
 	/*
 	 *  Also increment the "number of executed instructions", which
-	 *  is an int pointed to by a1.
+	 *  is an int.
 	 *
-	 *   0:   00 00 31 a0     ldl     t0,0(a1)
-	 *   4:   ff 7f 21 20     lda     t0,32767(t0)
-	 *   8:   00 00 31 b0     stl     t0,0(a1)
+	 *   0:   44 44 30 a0     ldl     t0,17476(a0)
+	 *   4:   89 07 21 20     lda     t0,1929(t0)
+	 *   8:   44 44 30 b0     stl     t0,17476(a0)
 	 */
+	ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+	    - ((size_t)&dummy_cpu);
 	inc /= 4;	/*  nr of instructions instead of bytes  */
-	*a++ = 0x00;        *a++ = 0x00;       *a++ = 0x31; *a++ = 0xa0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
 	*a++ = (inc & 255); *a++ = (inc >> 8); *a++ = 0x21; *a++ = 0x20;
-	*a++ = 0x00;        *a++ = 0x00;       *a++ = 0x31; *a++ = 0xb0;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb0;
 
 	*pc_increment = 0;
 	*addrp = a;

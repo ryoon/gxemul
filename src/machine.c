@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.245 2004-12-16 02:11:26 debug Exp $
+ *  $Id: machine.c,v 1.246 2004-12-16 04:08:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2186,7 +2186,9 @@ Why is this here? TODO
 				    0x800 + MACE_PERIPH_MISC, emul->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
-				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
+				dev_sgi_mec_init(mem, 0x1f280000);
+
+				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
 				dev_ns16550_init(cpu, mem, 0x1f390000,
 				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,

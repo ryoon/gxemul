@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.113 2004-12-16 02:11:25 debug Exp $
+ *  $Id: devices.h,v 1.114 2004-12-16 04:08:08 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -503,6 +503,11 @@ void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 #define	DEV_SGI_MARDIGRAS_LENGTH	0x800000
 int dev_sgi_mardigras_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
+/*  dev_sgi_mec.c:  */
+#define	DEV_SGI_MEC_LENGTH		0x100
+int dev_sgi_mec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_sgi_mec_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_mte.c:  */
 #define	DEV_SGI_MTE_LENGTH		0x10000

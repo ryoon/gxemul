@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.400 2004-12-16 02:11:23 debug Exp $
+$Id: HISTORY,v 1.401 2004-12-16 04:08:07 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1352,3 +1352,4 @@ HISTORY of mips64emul
 		addresses on MMU4K etc. (Thanks to Alec Voropay for noticing
 		this.)
 20041216	The KN02's CSR can now be read from bintranslated code.
+		Adding a dummy dev_mec.

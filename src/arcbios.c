@@ -23,12 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.6 2003-12-15 06:00:31 debug Exp $
+ *  $Id: arcbios.c,v 1.7 2003-12-20 21:19:44 debug Exp $
  *
  *  ARCBIOS emulation.
  *
- *  TODO:  ARCBIOS emulation should be made more generic, so that it can
- *         be used with both SGI machines and other types of machines.
+ *  This whole file is a mess.
+ *  TODO:  Fix.
  */
 
 #include <stdio.h>
@@ -48,36 +48,166 @@ extern int instruction_trace;
 extern int show_nr_of_instructions;
 extern int quiet_mode;
 extern int use_x11;
+extern int bootstrap_cpu;
+extern int ncpus;
+extern struct cpu **cpus;
+
+
+struct emul_arc_child {
+	uint32_t	ptr_peer;
+	uint32_t	ptr_child;
+	uint32_t	ptr_parent;
+	struct arcbios_component component;
+};
+
+#define	FIRST_ARC_COMPONENT	0x80004000		/*  TODO: ugly  */
+uint32_t arcbios_next_component_address = FIRST_ARC_COMPONENT;
+int n_arc_components = 0;
 
 
 /*
- *  read_char_from_memory():
+ *  arcbios_addchild():
+ *
+ *  host_tmp_component is a temporary component, with data formated for
+ *  the host system.  It needs to be translated/copied into emulated RAM.
+ *
+ *  Return value is the virtual (emulated) address of the added component.
+ *
+ *  TODO:  This function doesn't care about memory management, but simply
+ *         stores the new child after the last stored child.
+ *  TODO:  This stuff is really ugly.
  */
-static unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
+uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *identifier, uint32_t parent)
 {
-	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->gpr[regbase] + offset, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-	return ch;
+	uint64_t a = arcbios_next_component_address;
+	uint32_t peer=0;
+	uint32_t child=0;
+	int n_left;
+	uint64_t peeraddr = FIRST_ARC_COMPONENT;
+
+	/*
+	 *  This component has no children yet, but it may have peers (that is, other components
+	 *  that share this component's parent) so we have to set the peer value correctly.
+	 *
+	 *  Also, if this is the first child of some parent, the parent's child pointer should
+	 *  be set to point to this component.  (But only if it is the first.)
+	 *
+	 *  This is really ugly:  scan through all components, starting from FIRST_ARC_COMPONENT,
+	 *  to find a component with the same parent as this component will have.  If such a
+	 *  component is found, and its 'peer' value is NULL, then set it to this component's
+	 *  address (a).
+	 *
+	 *  TODO:  make nicer
+	 */
+
+	n_left = n_arc_components;
+	while (n_left > 0) {
+		/*  Load parent, child, and peer values:  */
+		uint32_t eparent, echild, epeer, tmp;
+		unsigned char buf[4];
+
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+
+		if (eparent == parent && epeer == 0) {
+			epeer = a;
+			store_32bit_word(peeraddr + 0x00, echild);
+		}
+		if (peeraddr == parent && echild == 0) {
+			echild = a;
+			store_32bit_word(peeraddr + 0x04, echild);
+		}
+
+		/*  Go to the next component:  */
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x28, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+		peeraddr += 0x30;
+		peeraddr += tmp;
+		peeraddr = ((peeraddr - 1) | 3) + 1;
+
+		n_left --;
+	}
+
+	store_32bit_word(a + 0x00, peer);
+	store_32bit_word(a + 0x04, child);
+	store_32bit_word(a + 0x08, parent);
+	store_32bit_word(a+  0x0c, host_tmp_component->Class);
+	store_32bit_word(a+  0x10, host_tmp_component->Type);
+	store_32bit_word(a+  0x14, host_tmp_component->Flags);
+	store_32bit_word(a+  0x18, host_tmp_component->Version + 65536*host_tmp_component->Revision);
+	store_32bit_word(a+  0x1c, host_tmp_component->Key);
+	store_32bit_word(a+  0x20, host_tmp_component->AffinityMask);
+	store_32bit_word(a+  0x24, host_tmp_component->ConfigurationDataSize);
+	store_32bit_word(a+  0x28, host_tmp_component->IdentifierLength);
+	store_32bit_word(a+  0x2c, host_tmp_component->Identifier);
+
+	arcbios_next_component_address += 0x30;
+
+	if (host_tmp_component->IdentifierLength > 0) {
+		store_32bit_word(a + 0x2c, a + 0x30);
+		store_string(a + 0x30, identifier);
+		arcbios_next_component_address += strlen(identifier) + 1;
+	}
+
+	/*  Round up to next 0x4 bytes:  */
+	arcbios_next_component_address = ((arcbios_next_component_address - 1) | 3) + 1;
+
+	n_arc_components ++;
+
+	return a;
 }
 
 
 /*
- *  dump_mem_string():
+ *  arcbios_addchild_manual():
+ *
+ *  Used internally to set up component structures.
+ *  Parent may only be NULL for the first (system) component.
+ *
+ *  Return value is the virtual (emulated) address of the added component.
  */
-void dump_mem_string(struct cpu *cpu, uint64_t addr)
+uint32_t arcbios_addchild_manual(uint32_t class, uint32_t type, uint32_t flags, uint16_t version,
+	uint16_t revision, uint32_t key, uint32_t affinitymask, char *identifier, uint32_t parent)
 {
-	int i;
+	/*  This component is only for temporary use:  */
+	struct arcbios_component component;
 
-	for (i=0; i<40; i++) {
-		char ch = '\0';
-		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-		if (ch == '\0')
-			return;
-		if (ch >= ' ' && ch < 126)
-			debug("%c", ch);
-		else
-			debug("[%02x]", ch);
+	component.Class                 = class;
+	component.Type                  = type;
+	component.Flags                 = flags;
+	component.Version               = version;
+	component.Revision              = revision;
+	component.Key                   = key;
+	component.AffinityMask          = affinitymask;
+	component.ConfigurationDataSize = 0;
+	component.IdentifierLength      = 0;
+	component.Identifier            = 0;
+
+	if (identifier != NULL) {
+		component.IdentifierLength = strlen(identifier);
 	}
+
+	return arcbios_addchild(&component, identifier, parent);
 }
 
 
@@ -86,6 +216,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
  *
  *	0x24	GetPeer(node)
  *	0x28	GetChild(node)
+ *	0x2c	GetParent(node)
  *	0x44	GetSystemId()
  *	0x48	GetMemoryDescriptor(void *)
  *	0x6c	Write(handle, buf, len, &returnlen)
@@ -103,11 +234,47 @@ void arcbios_emul(struct cpu *cpu)
 	switch (vector) {
 	case 0x24:		/*  GetPeer(node)  */
 		debug("[ ARCBIOS GetPeer(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
-		cpu->gpr[GPR_V0] = 0;
+		{
+			uint32_t peer;
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0xc, &buf[0], sizeof(peer), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+			}
+			peer = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
+			cpu->gpr[GPR_V0] = peer;
+		}
 		break;
 	case 0x28:		/*  GetChild(node)  */
 		debug("[ ARCBIOS GetChild(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
-		cpu->gpr[GPR_V0] = 0;
+		if (cpu->gpr[GPR_A0] == 0)
+			cpu->gpr[GPR_V0] = FIRST_ARC_COMPONENT + 0xc;
+		else {
+			uint32_t child;
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x8, &buf[0], sizeof(child), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+			}
+			child = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
+			cpu->gpr[GPR_V0] = child;
+		}
+		break;
+	case 0x2c:		/*  GetParent(node)  */
+		debug("[ ARCBIOS GetParent(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
+		{
+			uint32_t parent;
+			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x4, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+				unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+			}
+			parent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
+			cpu->gpr[GPR_V0] = parent;
+		}
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");

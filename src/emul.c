@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.108 2005-01-16 09:09:31 debug Exp $
+ *  $Id: emul.c,v 1.109 2005-01-16 09:20:09 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -275,13 +275,13 @@ static void add_arc_components(struct emul *emul)
 {
 	struct cpu *cpu = emul->cpus[emul->bootstrap_cpu];
 	uint64_t start = cpu->pc & 0x1fffffff;
-	uint64_t len = 0x800000 - start;
+	uint64_t len = 0xc00000 - start;
 	int i;
 	uint64_t scsicontroller, scsidevice, scsidisk;
 
 	len += 1048576 * emul->memory_offset_in_mb;
 
-	/*  NOTE/TODO: magic 8MB end of load program area  */
+	/*  NOTE/TODO: magic 12MB end of load program area  */
 	arcbios_add_memory_descriptor(cpu,
 	    0x60000 + emul->memory_offset_in_mb * 1048576,
 	    start-0x60000 - emul->memory_offset_in_mb * 1048576,

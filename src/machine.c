@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.278 2005-01-16 09:09:31 debug Exp $
+ *  $Id: machine.c,v 1.279 2005-01-16 09:20:09 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2659,7 +2659,7 @@ Why is this here? TODO
 		store_buf(cpu, ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		/*
-		 *  The first 8 MBs of RAM are simply reserved... this simplifies things a lot.
+		 *  The first 12 MBs of RAM are simply reserved... this simplifies things a lot.
 		 *  If there's more than 512MB of RAM, it has to be split in two, according to
 		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
 		 *
@@ -2672,7 +2672,7 @@ Why is this here? TODO
 		arcbios_add_memory_descriptor(cpu, sgi_ram_offset +      0,         0x2000, ARCBIOS_MEM_FirmwarePermanent);
 		arcbios_add_memory_descriptor(cpu, sgi_ram_offset + 0x2000, 0x60000-0x2000, ARCBIOS_MEM_FirmwareTemporary);
 
-		mem_base = 8;
+		mem_base = 12;
 		mem_base += sgi_ram_offset / 1048576;
 
 		while (mem_base < emul->physical_ram_in_mb + sgi_ram_offset/1048576) {

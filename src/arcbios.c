@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.29 2004-09-05 02:46:03 debug Exp $
+ *  $Id: arcbios.c,v 1.30 2004-09-05 04:03:03 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -47,13 +47,7 @@
 #include "console.h"
 
 
-extern int machine;
-extern int register_dump;
-extern int instruction_trace;
-extern int show_nr_of_instructions;
 extern int quiet_mode;
-extern int use_x11;
-extern int ncpus;
 extern struct cpu **cpus;
 
 
@@ -475,7 +469,7 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x1c:		/*  EnterInteractiveMode()  */
 		debug("[ ARCBIOS Halt() or similar ]\n");
 		/*  Halt all CPUs.  */
-		for (i=0; i<ncpus; i++)
+		for (i=0; i<cpu->emul->ncpus; i++)
 			cpus[i]->running = 0;
 		break;
 	case 0x24:		/*  GetPeer(node)  */

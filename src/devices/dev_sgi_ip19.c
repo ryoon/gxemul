@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.2 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.3 2004-09-05 04:03:03 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -37,8 +37,6 @@
 #include "misc.h"
 #include "devices.h"
 
-
-extern int ncpus;
 
 struct sgi_ip19_data {
 	uint64_t	cycle_counter;
@@ -72,7 +70,7 @@ int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem,
 			debug("[ sgi_ip19: unimplemented write to address 0x%x (cpu available mask), data=0x%08x ]\n", relative_addr, (int)idata);
 		} else {
 			/*  Max 16 cpus?  */
-			odata = ((1 << ncpus) - 1)<< 16;
+			odata = ((1 << cpu->emul->ncpus) - 1)<< 16;
 		}
 		break;
 	case 0x20000:	/*  cycle counter or clock  */

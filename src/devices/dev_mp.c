@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.10 2004-08-05 00:39:02 debug Exp $
+ *  $Id: dev_mp.c,v 1.11 2004-09-05 04:03:03 debug Exp $
  *  
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -39,10 +39,6 @@
 #include "devices.h"
 
 #include "mp.h"
-
-extern int register_dump;
-extern int instruction_trace;
-extern int ncpus;
 
 
 struct mp_data {
@@ -78,7 +74,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		break;
 
 	case DEV_MP_NCPUS:
-		odata = ncpus;
+		odata = cpu->emul->ncpus;
 		break;
 
 	case DEV_MP_STARTUPCPU:
@@ -104,7 +100,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 		/*  Pause all cpus except our selves:  */
 		which_cpu = idata;
 
-		for (i=0; i<ncpus; i++)
+		for (i=0; i<cpu->emul->ncpus; i++)
 			if (i!=which_cpu)
 				d->cpus[i]->running = 0;
 		break;
@@ -112,7 +108,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case DEV_MP_UNPAUSE_CPU:
 		/*  Unpause all cpus except our selves:  */
 		which_cpu = idata;
-		for (i=0; i<ncpus; i++)
+		for (i=0; i<cpu->emul->ncpus; i++)
 			if (i!=which_cpu)
 				d->cpus[i]->running = 1;
 		break;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_deccca.c,v 1.3 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_deccca.c,v 1.4 2004-09-05 04:03:03 debug Exp $
  *  
  *  "Console Communication Area" for a DEC 5800 SMP system.
  *
@@ -40,8 +40,6 @@
 #include "console.h"
 #include "devices.h"
 
-
-extern int ncpus;
 
 struct deccca_data {
 	int		dummy;
@@ -69,15 +67,17 @@ int dev_deccca_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case 8:
 		if (writeflag == MEM_READ)
-			odata = ncpus;
+			odata = cpu->emul->ncpus;
 		break;
 	case 20:
 		if (writeflag == MEM_READ)
-			odata = (1 << ncpus) - 1;	/*  one bit for each cpu  */
+			odata = (1 << cpu->emul->ncpus) - 1;
+			    /*  one bit for each cpu  */
 		break;
 	case 28:
 		if (writeflag == MEM_READ)
-			odata = (1 << ncpus) - 1;	/*  one bit for each enabled(?) cpu  */
+			odata = (1 << cpu->emul->ncpus) - 1;
+			    /*  one bit for each enabled(?) cpu  */
 		break;
 	default:
 		if (writeflag==MEM_READ) {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.66 2004-09-05 03:56:54 debug Exp $
+ *  $Id: emul.c,v 1.67 2004-09-05 04:03:04 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -59,7 +59,6 @@ char **extra_argv;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
-extern int ncpus;
 extern struct cpu **cpus;
 extern int x11_scaledown;
 extern int quiet_mode;
@@ -270,7 +269,7 @@ static void debugger_tlbdump(struct emul *emul)
 {
 	int i, j;
 
-	for (i=0; i<ncpus; i++) {
+	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i: (", i);
 		if (cpus[i]->cpu_type.isa_level < 3 ||
 		    cpus[i]->cpu_type.isa_level == 32)
@@ -424,12 +423,12 @@ void debugger(void)
 			old_quiet_mode = 0;
 		} else if (strcasecmp(cmd, "quit") == 0 ||
 		    strcasecmp(cmd, "q") == 0) {
-			for (i=0; i<ncpus; i++)
+			for (i=0; i<debugger_emul->ncpus; i++)
 				cpus[i]->running = 0;
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "r") == 0 ||
 		    strcasecmp(cmd, "registers") == 0) {
-			for (i=0; i<ncpus; i++)
+			for (i=0; i<debugger_emul->ncpus; i++)
 				cpu_register_dump(cpus[i]);
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
@@ -645,22 +644,22 @@ void emul_start(struct emul *emul)
 	debug("\n");
 
 	/*  Create CPUs:  */
-	cpus = malloc(sizeof(struct cpu *) * ncpus);
+	cpus = malloc(sizeof(struct cpu *) * emul->ncpus);
 	if (cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(cpus, 0, sizeof(struct cpu *) * ncpus);
+	memset(cpus, 0, sizeof(struct cpu *) * emul->ncpus);
 
 	debug("adding cpu0");
-	if (ncpus > 1)
-		debug(" .. cpu%i", ncpus-1);
+	if (emul->ncpus > 1)
+		debug(" .. cpu%i", emul->ncpus-1);
 	debug(": %s\n", emul->emul_cpu_name);
-	for (i=0; i<ncpus; i++)
+	for (i=0; i<emul->ncpus; i++)
 		cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
 
 	if (emul->use_random_bootstrap_cpu)
-		emul->bootstrap_cpu = random() % ncpus;
+		emul->bootstrap_cpu = random() % emul->ncpus;
 	else
 		emul->bootstrap_cpu = 0;
 
@@ -731,7 +730,7 @@ void emul_start(struct emul *emul)
 		cpus[emul->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
-	for (i=0; i<ncpus; i++)
+	for (i=0; i<emul->ncpus; i++)
 		if (i != emul->bootstrap_cpu)
 			cpus[i]->byte_order =
 			    cpus[emul->bootstrap_cpu]->byte_order;
@@ -777,7 +776,7 @@ void emul_start(struct emul *emul)
 		quiet_mode = 1;
 
 
-	cpu_run(emul, cpus, ncpus);
+	cpu_run(emul, cpus, emul->ncpus);
 
 
 	if (emul->use_x11) {

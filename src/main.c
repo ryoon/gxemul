@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.97 2004-09-05 03:56:54 debug Exp $
+ *  $Id: main.c,v 1.98 2004-09-05 04:03:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -64,7 +64,6 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
 
@@ -303,7 +302,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			emul->show_nr_of_instructions = 1;
 			break;
 		case 'n':
-			ncpus = atoi(optarg);
+			emul->ncpus = atoi(optarg);
 			break;
 		case 'o':
 			emul->boot_string_argument = malloc(strlen(optarg) + 1);
@@ -491,7 +490,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		}
 	}
 
-	if (ncpus < 1) {
+	if (emul->ncpus < 1) {
 		printf("Too few cpus (-n).\n");
 		exit(1);
 	}

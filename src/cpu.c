@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.145 2004-09-05 03:56:53 debug Exp $
+ *  $Id: cpu.c,v 1.146 2004-09-05 04:03:03 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -53,7 +53,6 @@ extern int old_quiet_mode;
 extern int quiet_mode;
 extern int tlb_dump;
 extern struct cpu **cpus;
-extern int ncpus;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
@@ -187,11 +186,11 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu
  *
  *  Show detailed statistics on opcode usage on each cpu.
  */
-void cpu_show_full_statistics(struct cpu **cpus)
+static void cpu_show_full_statistics(struct emul *emul, struct cpu **cpus)
 {
 	int i, s1, s2;
 
-	for (i=0; i<ncpus; i++) {
+	for (i=0; i<emul->ncpus; i++) {
 		printf("cpu%i opcode statistics:\n", i);
 		for (s1=0; s1<N_HI6; s1++) {
 			if (cpus[i]->stats_opcode[s1] > 0)
@@ -758,7 +757,7 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 
 	cpu->trace_tree_depth ++;
 
-	if (ncpus > 1)
+	if (cpu->emul->ncpus > 1)
 		debug("cpu%i:", cpu->cpu_id);
 
 	symbol = get_symbol_name(addr, &offset);
@@ -2554,8 +2553,12 @@ static int cpu_run_instr(struct cpu *cpu)
 				 *
 				 *  (this is a semi-ugly hack using global
 				 * 'cpus')
+				 *
+				 *  TODO: How about invalidating other CPUs
+				 *  stores to this cache line, even if this
+				 *  was _NOT_ a linked store?
 				 */
-				for (i=0; i<ncpus; i++) {
+				for (i=0; i<cpu->emul->ncpus; i++) {
 					if (cpus[i]->rmw) {
 						uint64_t yaddr = addr;
 						uint64_t xaddr =
@@ -3336,7 +3339,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 		cpu_show_cycles(emul, &starttime, ncycles, 1);
 
 	if (emul->show_opcode_statistics)
-		cpu_show_full_statistics(cpus);
+		cpu_show_full_statistics(emul, cpus);
 
 	fflush(stdout);
 

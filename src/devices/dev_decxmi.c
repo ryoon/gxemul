@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_decxmi.c,v 1.5 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_decxmi.c,v 1.6 2004-09-05 04:03:03 debug Exp $
  *  
  *  DEC 5800 XMI (this has to do with SMP...)
  *
@@ -40,7 +40,6 @@
 #include "xmireg.h"
 #include "devices.h"
 
-extern int ncpus;
 
 struct decxmi_data {
 	uint32_t		reg_0xc[NNODEXMI];
@@ -63,7 +62,7 @@ int dev_decxmi_access(struct cpu *cpu, struct memory *mem,
 	node_nr = relative_addr / XMI_NODESIZE;
 	relative_addr &= (XMI_NODESIZE - 1);
 
-	if (node_nr >= ncpus+1 || node_nr >= NNODEXMI)
+	if (node_nr >= cpu->emul->ncpus+1 || node_nr >= NNODEXMI)
 		return 0;
 
 	switch (relative_addr) {

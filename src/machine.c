@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.176 2004-09-05 03:56:54 debug Exp $
+ *  $Id: machine.c,v 1.177 2004-09-05 04:03:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -67,8 +67,6 @@
 #include "dec_maxine.h"
 
 
-extern int instruction_trace;
-extern int ncpus;
 extern struct cpu **cpus;
 
 uint64_t file_loaded_end_addr = 0;
@@ -2376,7 +2374,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 */
 		debug("system = 0x%x\n", system);
 
-		for (i=0; i<ncpus; i++) {
+		for (i=0; i<emul->ncpus; i++) {
 			uint32_t cpuaddr, fpu, cache;
 			unsigned int jj;
 			char arc_cpu_name[100];

@@ -267,78 +267,9 @@ you should expect the installation to take quite some time. On a
 2.8 GHz Xeon-based PC, a full install takes around 4 hours.
 
 <p>
-Here are some screenshots taken during installation:
-<p>
-  <table border="0">
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_install_01.gif">
-		<img src="netbsdpmax_install_01_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_install_01.gif">Screenshot 1</a>:
-		boot messages.
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_install_02.gif">
-		<img src="netbsdpmax_install_02_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_install_02.gif">Screenshot 2</a>:
-		sysinst. Cursor keys may work, but don't always do,
-		so use alphabetic letters to be safe.
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_install_03.gif">
-		<img src="netbsdpmax_install_03_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_install_03.gif">Screenshot 3</a>:
-		Disk partitioning.
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_install_04.gif">
-		<img src="netbsdpmax_install_04_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_install_04.gif">Screenshot 4</a>:
-		newfs running...
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_install_05.gif">
-		<img src="netbsdpmax_install_05_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_install_05.gif">Screenshot 5</a>:
-		Choose CD-ROM as distribution source.
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-		...
-	</td>
-	<td align="left" valign="center">
-		Screenshot 6: ... (install finished)
-	</td>
-    </tr>
-  </table>
-<p>
 <font color="#ff0000">
 IMPORTANT:</font>
-Once the installation is completed, you should take a backup
+Once the installation is completed, you might want to take a backup
 copy of the rootdisk image. The reason for this is that if you make
 some mistake later on, you probably don't want to go through serveral
 hours of re-installing again.
@@ -353,30 +284,6 @@ Then, following these steps should boot the OS from the root disk image:
 </pre>
 </ol>
 <p>
-  <table border=0>
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_installed_01.gif">
-		<img src="netbsdpmax_installed_01_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_installed_01.gif">Screenshot 1</a>:
-		First bootup using the GENERIC kernel :-)
-	</td>
-    </tr>
-
-    <tr>
-	<td width=135 align="center">
-	  <a href="netbsdpmax_installed_02.gif">
-		<img src="netbsdpmax_installed_02_small.gif"></a>
-	</td>
-	<td align="left" valign="center">
-		<a href="netbsdpmax_installed_02.gif">Screenshot 2</a>:
-		Compiling mips64emul <i>inside</i> NetBSD inside mips64emul. :-)
-	</td>
-    </tr>
-  </table>
-<p>
 <font color="#ff0000">
 TODO:  As there are boot programs and kernels on both the CDROM image and 
 on the harddisk image (after installation), it should not be neccessary to 
@@ -385,9 +292,10 @@ possible to boot right of the disk image.  As of right now, that
 functionality has not been implemented.
 </font>
 <p>
-Installing other OSes on other emulated machine types, when that becomes 
-possible, might be done similar to the NetBSD/pmax installation described 
-above.
+Other OSes, such as Ultrix, may be installed in a way similar to NetBSD.
+(For Ultrix, add <b>-j</b> to the command line to fake ultrixboot behaviour.
+The install kernel and generic kernels must be extracted from the installation
+CD-ROM media, by mounting that media as an ufs file system.)
 
 
 <p><br>
@@ -703,7 +611,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.22 2004-04-15 15:05:32 debug Exp $</pre>
+<pre>$Id: index.html,v 1.23 2004-05-04 15:57:55 debug Exp $</pre>
 
 </body>
 </html>

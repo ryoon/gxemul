@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.61 2005-01-21 21:42:21 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.62 2005-01-22 13:31:10 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -258,6 +258,12 @@ static void mc146818_update_time(struct mc_data *d)
 		 *  Year field, or Ultrix screems.  (Weird.)
 		 */
 		d->reg[4 * MC_YEAR] = 72;
+
+		/*
+		 *  Linux on DECstation stores the year in register 63,
+		 *  but no other DECstation OS does? (Hm.)
+		 */
+		d->reg[4 * 63]  = tmp->tm_year - 100;
 		break;
 	}
 
@@ -269,6 +275,11 @@ static void mc146818_update_time(struct mc_data *d)
 		d->reg[4 * MC_DOM]   = to_bcd(d->reg[4 * MC_DOM]);
 		d->reg[4 * MC_MONTH] = to_bcd(d->reg[4 * MC_MONTH]);
 		d->reg[4 * MC_YEAR]  = to_bcd(d->reg[4 * MC_YEAR]);
+
+		/*  Used by Linux on DECstation: (Hm)  */
+		d->reg[4 * 63]       = to_bcd(d->reg[4 * 63]);
+
+		/*  Used on SGI:  */
 		d->reg[4 * 72]       = to_bcd(d->reg[4 * 72]);
 	}
 }
@@ -497,7 +508,8 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 		case 4 * MC_DOM:
 		case 4 * MC_MONTH:
 		case 4 * MC_YEAR:
-		case 4 * 72:	/*  Century, on SGI (DS1687)  */
+		case 4 * 63:	/*  63 is used by Linux on DECstation  */
+		case 4 * 72:	/*  72 is Century, on SGI (DS1687)  */
 			/*
 			 *  If the SET bit is set, then we don't automatically
 			 *  update the values.  Otherwise, we update them by

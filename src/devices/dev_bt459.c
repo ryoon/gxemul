@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.19 2004-06-30 08:23:53 debug Exp $
+ *  $Id: dev_bt459.c,v 1.20 2004-07-02 09:09:52 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -75,8 +75,20 @@ struct bt459_data {
 
 	int		palette_sub_offset;	/*  0, 1, or 2  */
 
+	int		video_on;
+
 	struct vfb_data *vfb_data;
-	unsigned char	*rgb_palette;		/*  ptr to 256 * 3 (r,g,b)  */
+
+	/*
+	 *  There is one pointer to the framebuffer's RGB palette,
+	 *  and then a local copy of the palette.  256 * 3 bytes (r,g,b).
+	 *  The reason for this is that when we need to blank the screen,
+	 *  we can set the framebuffer's palette to all zeroes, but keep
+	 *  our own copy intact, to be reused later again when the
+	 *  screen is unblanked.
+	 */
+	unsigned char	*rgb_palette;		/*  256 * 3 (r,g,b)  */
+	unsigned char	local_rgb_palette[256 * 3];
 };
 
 
@@ -132,9 +144,8 @@ void bt459_sync_xysize(struct bt459_data *d)
 /*
  *  bt459_update_X_cursor():
  *
- *  This routine takes the color values in the cursor
- *  RAM area, and put them in the framebuffer window's
- *  cursor_ximage.
+ *  This routine takes the color values in the cursor RAM area, and put them
+ *  in the framebuffer window's cursor_ximage.
  *
  *  d->cursor_xsize and ysize are also updated.
  */
@@ -159,7 +170,8 @@ void bt459_update_X_cursor(struct bt459_data *d)
 					xmax = x + i;
 
 #ifdef WITH_X11
-				XPutPixel(win->cursor_ximage, x + i, y, x11_graycolor[color * 5].pixel);
+				XPutPixel(win->cursor_ximage, x + i, y,
+				    x11_graycolor[color * 5].pixel);
 #endif
 			}
 		}
@@ -170,11 +182,25 @@ void bt459_update_X_cursor(struct bt459_data *d)
 
 
 /*
+ *  schedule_redraw_of_whole_screen():
+ */
+void schedule_redraw_of_whole_screen(struct bt459_data *d)
+{
+	d->vfb_data->update_x1 = 0;
+	d->vfb_data->update_x2 = d->vfb_data->xsize - 1;
+	d->vfb_data->update_y1 = 0;
+	d->vfb_data->update_y2 = d->vfb_data->ysize - 1;
+}
+
+
+/*
  *  dev_bt459_irq_access():
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -265,6 +291,25 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			d->bt459_reg[btaddr] = idata;
 
 			switch (btaddr) {
+			case BT459_REG_PRM:
+				/*
+				 *  NetBSD writes 0x00 to this register to
+				 *  blank the screen (video off), and 0xff
+				 *  to turn the screen on.
+				 */
+				switch (idata & 0xff) {
+				case 0:	d->video_on = 0;
+					memset(d->rgb_palette, 0, 256*3);
+					schedule_redraw_of_whole_screen(d);
+					debug("[ bt459: video OFF ]\n");
+					break;
+				default:d->video_on = 1;
+					memcpy(d->rgb_palette,
+					    d->local_rgb_palette, 256*3);
+					schedule_redraw_of_whole_screen(d);
+					debug("[ bt459: video ON ]\n");
+				}
+				break;
 			case BT459_REG_CCR:
 				/*  Cursor control register:  */
 				switch (idata & 0xff) {
@@ -304,20 +349,27 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			debug("[ bt459: write to BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, idata);
 
 			if (btaddr < 0x100) {
-				if (d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset] != idata) {
-					d->vfb_data->update_x1 = 0;
-					d->vfb_data->update_x2 = d->vfb_data->xsize - 1;
-					d->vfb_data->update_y1 = 0;
-					d->vfb_data->update_y2 = d->vfb_data->ysize - 1;
-	                        }
+				if (d->video_on &&
+				    d->local_rgb_palette[(btaddr & 0xff) * 3
+				    + d->palette_sub_offset] != idata)
+					schedule_redraw_of_whole_screen(d);
 
-				/*  Actually, the palette should only be updated after the third write,
-				    but this should probably work fine too:  */
-				d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset] = idata;
+				/*
+				 *  Actually, the palette should only be
+				 *  updated after the third write,
+				 *  but this should probably work fine too:
+				 */
+				d->local_rgb_palette[(btaddr & 0xff) * 3
+				    + d->palette_sub_offset] = idata;
+
+				if (d->video_on)
+					d->rgb_palette[(btaddr & 0xff) * 3
+					    + d->palette_sub_offset] = idata;
 			}
 		} else {
 			if (btaddr < 0x100)
-				odata = d->rgb_palette[(btaddr & 0xff) * 3 + d->palette_sub_offset];
+				odata = d->local_rgb_palette[(btaddr & 0xff)
+				    * 3 + d->palette_sub_offset];
 			debug("[ bt459: read from BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, odata);
 		}
 
@@ -340,8 +392,10 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	}
 
 	/*  NetBSD uses 370,37 as magic values. (For the PX[G] cards.)  */
-	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) + ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
-	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
+	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) +
+	    ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
+	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) +
+	    ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
 
 	if (d->type == BT459_BA) {
 		/*  For PMAG-BA: (found by empirical testing with Ultrix)  */
@@ -349,7 +403,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		new_cursor_y += 14;
 	}
 
-	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y || d->cursor_on != old_cursor_on) {
+	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y ||
+	    d->cursor_on != old_cursor_on) {
 		int ysize_mul = 1;
 
 		d->cursor_x = new_cursor_x;
@@ -357,21 +412,28 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 
 		/*
 		 *  Ugly hack for Ultrix:
-		 *  Ultrix and NetBSD assume that the cursor works differently. Ultrix uses
-		 *  the 370,38 coordinates, but draws the cursor upwards. NetBSD draws it
-		 *  downwards.  Ultrix also makes the cursor smaller (?).
-		 *  TODO:  This actually depends on which ultrix kernel you use.
-		 *  Clearly, the BT459 emulation is not implemented well enough yet.
 		 *
-		 *  TODO:  Find out why? Is it because of special BT459 commands?
+		 *  Ultrix and NetBSD assume that the cursor works differently.
+		 *  Ultrix uses the 370,38 coordinates, but draws the cursor
+		 *  upwards. NetBSD draws it downwards.  Ultrix also makes the
+		 *  cursor smaller (?).
+		 *
+		 *  TODO: This actually depends on which ultrix kernel you use.
+		 *  Clearly, the BT459 emulation is not implemented well
+		 *  enough yet.
+		 *
+		 *  TODO:  Find out why? Is it because of special BT459
+		 *  commands?
 		 */
 		if (!(d->bt459_reg[BT459_REG_CCR] & 1)) {
 /*			ysize_mul = 4; */
 			d->cursor_y += 5 - (d->cursor_ysize * ysize_mul);
 		}
 
-		debug("[ bt459: cursor = %03i,%03i ]\n", d->cursor_x, d->cursor_y);
-		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, d->cursor_on, d->cursor_xsize, d->cursor_ysize * ysize_mul);
+		debug("[ bt459: cursor = %03i,%03i ]\n",
+		    d->cursor_x, d->cursor_y);
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y,
+		    d->cursor_on, d->cursor_xsize, d->cursor_ysize*ysize_mul);
 	}
 
 	if (writeflag == MEM_READ)
@@ -391,7 +453,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
  *  dev_bt459_init():
  */
 void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int planes, int irq_nr, int type)
+	uint64_t baseaddr_irq, struct vfb_data *vfb_data, int planes,
+	int irq_nr, int type)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -407,6 +470,7 @@ void dev_bt459_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->cursor_x     = -1;
 	d->cursor_y     = -1;
 	d->cursor_xsize = d->cursor_ysize = 8;	/*  anything  */
+	d->video_on     = 1;
 
 	d->interrupt_time_reset_value = 10000;
 

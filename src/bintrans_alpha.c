@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.83 2004-12-10 02:11:32 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.84 2004-12-10 03:02:30 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1932,10 +1932,17 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			/*  Only allow updates to the status register if
 			    the interrupt enable bits were changed, but no
 			    other bits!  */
-			/*  fe 00 bf 20     lda     t4,0x00fe  */
-			/*  ff ff a5 24     ldah    t4,-1(t4)  */
-			*a++ = 0x20bf00fe;
-			*a++ = 0x24a5ffff;
+			if (bintrans_32bit_only) {
+				/*  R3000 etc.  */
+				/*  t4 = 0x0fe70000;  */
+				*a++ = 0x20bf0000;
+				*a++ = 0x24a50fe7;
+			} else {
+				/*  fe 00 bf 20     lda     t4,0x00fe  */
+				/*  ff ff a5 24     ldah    t4,-1(t4)  */
+				*a++ = 0x20bf0000;
+				*a++ = 0x24a5ffff;
+			}
 
 			/*  03 00 25 44     and     t0,t4,t2  */
 			/*  04 00 45 44     and     t1,t4,t3  */

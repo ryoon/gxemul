@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.45 2004-12-10 02:25:10 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.46 2004-12-10 03:02:30 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -1123,16 +1123,24 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 			    other bits!  */
 			/*  89 c1                   mov    %eax,%ecx  */
 			/*  89 da                   mov    %ebx,%edx  */
-			/*  81 e1 fe 00 ff ff       and    $0xffff00fe,%ecx  */
-			/*  81 e2 fe 00 ff ff       and    $0xffff00fe,%edx  */
+			/*  81 e1 00 00 e7 0f       and    $0x0fe70000,%ecx  */
+			/*  81 e2 00 00 e7 0f       and    $0x0fe70000,%edx  */
 			/*  39 ca                   cmp    %ecx,%edx  */
 			/*  74 01                   je     <ok>  */
 			*a++ = 0x89; *a++ = 0xc1;
 			*a++ = 0x89; *a++ = 0xda;
-			*a++ = 0x81; *a++ = 0xe1; *a++ = 0xfe;
-			    *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
-			*a++ = 0x81; *a++ = 0xe2; *a++ = 0xfe;
-			    *a++ = 0x00; *a++ = 0xff; *a++ = 0xff;
+			*a++ = 0x81; *a++ = 0xe1; *a++ = 0x00; *a++ = 0x00;
+			if (bintrans_32bit_only) {
+				*a++ = 0xe7; *a++ = 0x0f;
+			} else {
+				*a++ = 0xff; *a++ = 0xff;
+			}
+			*a++ = 0x81; *a++ = 0xe2; *a++ = 0x00; *a++ = 0x00;
+			if (bintrans_32bit_only) {
+				*a++ = 0xe7; *a++ = 0x0f;
+			} else {
+				*a++ = 0xff; *a++ = 0xff;
+			}
 			*a++ = 0x39; *a++ = 0xca;
 			*a++ = 0x74; failskip = a; *a++ = 0x00;
 			bintrans_write_chunkreturn_fail(&a);

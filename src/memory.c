@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.41 2004-06-27 01:06:30 debug Exp $
+ *  $Id: memory.c,v 1.42 2004-06-27 20:19:12 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -758,8 +758,15 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	 *
 	 *  (TODO:  Is this SGI specific?)
 	 *  (TODO 2:  Is 48 bits ok?)
+	 *
+	 *  It seems that some Ultrix code (or OSF/1) seems to use addresses
+	 *  such as 0xbe000000 as if they were physical addresses. (It should
+	 *  be 0x1e000000, so I just take the lowest bits here.)
 	 */
-	paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
+	if (emulation_type == EMULTYPE_DEC)
+		paddr &= 0x1fffffff;
+	else
+		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);
 
 
 	if (cache == CACHE_INSTRUCTION) {

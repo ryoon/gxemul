@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.22 2003-12-30 03:47:42 debug Exp $
+ *  $Id: machine.c,v 1.23 2003-12-30 05:47:58 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -233,6 +233,8 @@ void machine_init(struct memory *mem)
 	struct arcbios_sysid arcbios_sysid;
 	struct arcbios_dsp_stat arcbios_dsp_stat;
 	struct arcbios_mem arcbios_mem;
+	uint64_t mem_base, mem_count, mem_bufaddr;
+	int mem_mb_left;
 
 	/*  Generic bootstring stuff:  */
 	char *bootstr = NULL;
@@ -770,11 +772,36 @@ void machine_init(struct memory *mem)
 		arcbios_dsp_stat.HighIntensity = 15;
 		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
+		/*
+		 *  The first 8 MBs of RAM are simply reserved... this simplifies things a lot.
+		 *  If there's more than 512MB of RAM, it has to be split in two, according to
+		 *  the ARC spec.  This code creates a number of chunks of at most 512MB each.
+		 */
+		mem_base = 8 * 1048576 / 4096;
+		mem_count = physical_ram_in_mb <= 512? physical_ram_in_mb : 512;
+		mem_count = (mem_count - 8) * 1048576 / 4096;
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
 		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 8 * 1048576 / 4096);
-		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+		mem_mb_left = physical_ram_in_mb - 512;
+		mem_base = 512 * 1048576 / 4096;
+		mem_bufaddr = ARC_MEMDESC_ADDR + sizeof(arcbios_mem);
+		while (mem_mb_left > 0) {
+			mem_count = mem_mb_left * 1048576 / 4096;
+
+			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
+			store_buf(mem_bufaddr, (char *)&arcbios_mem, sizeof(arcbios_mem));
+
+			mem_mb_left -= 512;
+			mem_base += (512 * 1048576 / 4096);
+			mem_bufaddr += sizeof(arcbios_mem);
+		}
 
 		/*
 		 *  Components:   (this is an example of what a system could look like)
@@ -819,7 +846,7 @@ void machine_init(struct memory *mem)
 				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
-				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc0  */
+				dev_fdc_init(mem, 0x200000c000, 0);					/*  fdc  */
 			}
 
 			/*  Common stuff for both SGI and ARC:  */

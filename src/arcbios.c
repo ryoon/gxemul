@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.9 2003-12-22 19:43:48 debug Exp $
+ *  $Id: arcbios.c,v 1.10 2003-12-30 05:48:08 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -51,6 +51,7 @@ extern int use_x11;
 extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
+extern int physical_ram_in_mb;
 
 
 struct emul_arc_child {
@@ -241,6 +242,7 @@ void arcbios_emul(struct cpu *cpu)
 {
 	int vector = cpu->pc & 0xffff;
 	int i, j;
+	int mb_left;
 	unsigned char ch2;
 	unsigned char buf[40];
 
@@ -302,10 +304,30 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x48:		/*  void *GetMemoryDescriptor(void *ptr)  */
 		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->gpr[GPR_A0]);
-		if ((uint32_t)cpu->gpr[GPR_A0] < (uint32_t)ARC_MEMDESC_ADDR)
-			cpu->gpr[GPR_V0] = ARC_MEMDESC_ADDR;
-		else
-			cpu->gpr[GPR_V0] = 0;
+		/*
+		 *  RAM regions are split into 512MB chunks:
+		 */
+		cpu->gpr[GPR_V0] = ARC_MEMDESC_ADDR;
+
+		/*  If a0=NULL, then return a pointer to the first descriptor:  */
+		if ((uint32_t)cpu->gpr[GPR_A0] == 0)
+			break;
+
+		mb_left = physical_ram_in_mb;
+		while (mb_left > 0) {
+			mb_left -= 512;
+			/*  If the caller pointed to chunk x, then return a pointer
+				to chunk x+1, if it exists. Otherwise return 0.  */
+			if ((uint32_t)cpu->gpr[GPR_A0] == (uint32_t)cpu->gpr[GPR_V0]) {
+				if (mb_left <= 0)
+					cpu->gpr[GPR_V0] = 0;
+				else
+					cpu->gpr[GPR_V0] = (uint32_t)cpu->gpr[GPR_A0] + sizeof(struct arcbios_mem);
+				break;
+			}
+
+			cpu->gpr[GPR_V0] += sizeof(struct arcbios_mem);
+		}
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
 		if (cpu->gpr[GPR_A0] != 1)	/*  1 = stdout?  */

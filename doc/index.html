@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.138 2004-11-01 08:19:18 debug Exp $
+$Id: index.html,v 1.139 2004-11-01 09:25:57 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1228,9 +1228,8 @@ Here are links to some of the kernels that I usually experiment with.
       <li><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
-	<br>gunzip, and try with <b>-A1</b> (NEC RISCstation 2250, add <b>-X -N</b> for a graphical framebuffer),
-		<b>-A3</b> (NEC RISCstation 2200),
-	<br><b>-A2</b> (Acer PICA-61), <b>-X -A4</b> (Deskstation Tyne), or <b>-A5</b> (Microsoft Jazz, MIPS Magnum)
+	<br>gunzip, and try with <b>-A1 -X -N</b> or <b>-A1</b>.
+	<br>(You may also try other -A<i>x</i> models.)
 	<br>Read <a href="#netbsdarcinstall">this section</a> about how
 		to install NetBSD/arc onto a harddisk image.
       <p>
@@ -1281,7 +1280,7 @@ Here are links to some of the kernels that I usually experiment with.
   <li>Playstation 2:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/playstation2/">NetBSD/playstation2</a>:
-	<br>A NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
+	<br>NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
 	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
 	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
@@ -1299,10 +1298,14 @@ Here are links to some of the kernels that I usually experiment with.
   <li>Sony NeWS:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/newsmips/">NetBSD/newsmips</a>:
+	<br>A NetBSD/newsmips kernel and corresponding symbols are
+		available here:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.gz</a>
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.symbols.gz</a>
-	<br>(<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs</a>)
 	<br>Try running with <b>-f</b>.
+	<br>There's also a boot floppy available, but the emulator currently
+		doesn't support booting from it:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/installation/floppy/boot.fs</a>
     </ul>
   </li>
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.50 2005-02-22 14:04:25 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.51 2005-02-22 14:29:40 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -815,10 +815,27 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			}
 			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
 			break;
+		case PPC_31_ADDZE:
+		case PPC_31_ADDZEO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_31_ADDZE:
+				mnem = power? "aze" : "addze";
+				break;
+			case PPC_31_ADDZEO:
+				mnem = power? "azeo" : "addzeo";
+				break;
+			}
+			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", rt, ra);
+			break;
 		case PPC_31_ADDE:
 		case PPC_31_ADDEO:
 		case PPC_31_ADD:
 		case PPC_31_ADDO:
+		case PPC_31_MULHW:
 		case PPC_31_MULLW:
 		case PPC_31_MULLWO:
 		case PPC_31_SUBF:
@@ -842,6 +859,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 				break;
 			case PPC_31_ADDO:
 				mnem = power? "caxo" : "addo";
+				break;
+			case PPC_31_MULHW:
+				mnem = "mulhw";
 				break;
 			case PPC_31_MULLW:
 				mnem = power? "muls" : "mullw";
@@ -908,6 +928,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rb = (iword >> 11) & 31;
 			debug("iccci\tr%i,r%i", ra, rb);
 			break;
+		case PPC_31_DIVW:
+		case PPC_31_DIVWO:
 		case PPC_31_DIVWU:
 		case PPC_31_DIVWUO:
 			rt = (iword >> 21) & 31;
@@ -918,6 +940,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			switch (xo) {
 			case PPC_31_DIVWU:  mnem = "divwu"; break;
 			case PPC_31_DIVWUO: mnem = "divwuo"; break;
+			case PPC_31_DIVW:   mnem = "divw"; break;
+			case PPC_31_DIVWO:  mnem = "divwo"; break;
 			}
 			debug("%s%s\tr%i,r%i,r%i", mnem, rc? "." : "",
 			    rt, ra, rb);
@@ -1830,10 +1854,45 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
 			break;
 
+		case PPC_31_ADDZE:
+		case PPC_31_ADDZEO:
+			rt = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			oe_bit = (iword >> 10) & 1;
+			rc = iword & 1;
+			if (oe_bit) {
+				fatal("[ addz: PPC oe not yet implemeted ]\n");
+				cpu->running = 0;
+				return 0;
+			}
+			cpu->cd.ppc.xer &= PPC_XER_CA;
+			if (cpu->cd.ppc.bits == 32) {
+				tmp = (uint32_t)cpu->cd.ppc.gpr[ra];
+				tmp2 = tmp;
+				/*  printf("adde: tmp2 = %016llx\n",
+				    (long long)tmp2);  */
+				if (cpu->cd.ppc.xer & PPC_XER_CA)
+					tmp ++;
+				/*  printf("adde: tmp  = %016llx\n\n",
+				    (long long)tmp);  */
+				/*  TODO: is this CA correct?  */
+				if ((tmp >> 32) != (tmp2 >> 32))
+					cpu->cd.ppc.xer |= PPC_XER_CA;
+				/*  High 32 bits are probably undefined
+				    in 32-bit mode (I hope)  */
+				cpu->cd.ppc.gpr[rt] = tmp;
+			} else {
+				fatal("ADDE 64-bit, TODO\n");
+			}
+			if (rc)
+				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
+			break;
+
 		case PPC_31_ADDE:
 		case PPC_31_ADDEO:
 		case PPC_31_ADD:
 		case PPC_31_ADDO:
+		case PPC_31_MULHW:
 		case PPC_31_MULLW:
 		case PPC_31_MULLWO:
 		case PPC_31_SUBFE:
@@ -1878,6 +1937,12 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				} else {
 					fatal("ADDE 64-bit, TODO\n");
 				}
+				break;
+			case PPC_31_MULHW:
+				cpu->cd.ppc.gpr[rt] = (int64_t) (
+				    (int32_t)cpu->cd.ppc.gpr[ra] *
+				    (int32_t)cpu->cd.ppc.gpr[rb] );
+				cpu->cd.ppc.gpr[rt] >>= 32;
 				break;
 			case PPC_31_MULLW:
 			case PPC_31_MULLWO:
@@ -2036,20 +2101,39 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		case PPC_31_DIVWU:
 		case PPC_31_DIVWUO:
+		case PPC_31_DIVW:
+		case PPC_31_DIVWO:
 			rt = (iword >> 21) & 31;
 			ra = (iword >> 16) & 31;
 			rb = (iword >> 11) & 31;
 			oe_bit = (iword >> 10) & 1;
 			rc = iword & 1;
-			tmp = cpu->cd.ppc.gpr[ra] & 0xffffffff;
-			tmp2 = cpu->cd.ppc.gpr[rb] & 0xffffffff;
-			if (tmp2 == 0) {
-				/*  Undefined:  */
-				tmp = 0;
-			} else {
-				tmp = tmp / tmp2;
+			switch (xo) {
+			case PPC_31_DIVWU:
+			case PPC_31_DIVWUO:
+				tmp = cpu->cd.ppc.gpr[ra] & 0xffffffff;
+				tmp2 = cpu->cd.ppc.gpr[rb] & 0xffffffff;
+				if (tmp2 == 0) {
+					/*  Undefined:  */
+					tmp = 0;
+				} else {
+					tmp = tmp / tmp2;
+				}
+				cpu->cd.ppc.gpr[rt] = (int64_t)(int32_t)tmp;
+				break;
+			case PPC_31_DIVW:
+			case PPC_31_DIVWO:
+				tmp = (int64_t)(int32_t)cpu->cd.ppc.gpr[ra];
+				tmp2 = (int64_t)(int32_t)cpu->cd.ppc.gpr[rb];
+				if (tmp2 == 0) {
+					/*  Undefined:  */
+					tmp = 0;
+				} else {
+					tmp = (int64_t)tmp / (int64_t)tmp2;
+				}
+				cpu->cd.ppc.gpr[rt] = (int64_t)(int32_t)tmp;
+				break;
 			}
-			cpu->cd.ppc.gpr[rt] = (int64_t)(int32_t)tmp;
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[rt]);
 			if (oe_bit) {

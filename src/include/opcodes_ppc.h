@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: opcodes_ppc.h,v 1.15 2005-02-22 14:04:25 debug Exp $
+ *  $Id: opcodes_ppc.h,v 1.16 2005-02-22 14:29:39 debug Exp $
  *
  *
  *  PPC and POWER opcodes.
@@ -83,6 +83,7 @@
 #define	  PPC_31_DCBST		  54
 #define	  PPC_31_LWZUX		  55
 #define	  PPC_31_ANDC		  60
+#define	  PPC_31_MULHW		  75
 #define	  PPC_31_MFMSR		  83
 #define	  PPC_31_NEG		  104
 #define	  PPC_31_NOR		  124
@@ -92,6 +93,7 @@
 #define	  PPC_31_MTMSR		  146
 #define	  PPC_31_STWX		  151
 #define	  PPC_31_STWUX		  183
+#define	  PPC_31_ADDZE		  202
 #define	  PPC_31_STBX		  215
 #define	  PPC_31_MULLW		  235
 #define	  PPC_31_STBUX		  247
@@ -103,11 +105,13 @@
 #define	  PPC_31_DCCCI		  454
 #define	  PPC_31_DIVWU		  459
 #define	  PPC_31_MTSPR		  467
+#define	  PPC_31_DIVW		  491
 #define	  PPC_31_SUBFO		  552
 #define	  PPC_31_SYNC		  598
 #define	  PPC_31_NEGO		  616
 #define	  PPC_31_SUBFEO		  648
 #define	  PPC_31_ADDEO		  650
+#define	  PPC_31_ADDZEO		  714
 #define	  PPC_31_STSWI		  725
 #define	  PPC_31_MULLWO		  747
 #define	  PPC_31_ADDO		  778
@@ -116,6 +120,7 @@
 #define	  PPC_31_ICCCI		  966
 #define	  PPC_31_DIVWUO		  971
 #define	  PPC_31_ICBI		  982
+#define	  PPC_31_DIVWO		  1003
 #define	PPC_HI6_LWZ		0x20
 #define	PPC_HI6_LWZU		0x21
 #define	PPC_HI6_LBZ		0x22

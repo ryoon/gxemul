@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.26 2005-03-31 15:46:29 debug Exp $
+$Id: intro.html,v 1.27 2005-04-01 16:44:35 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -216,10 +216,9 @@ performance.)
 
 <h4>Other CPU types:</h4>
 
-There is some code for POWER/PowerPC emulation too, but it doesn't really
-work yet for anything larger than Hello World and similar small programs. 
-(There are also Alpha, SPARC, and HPPA modes, but they are working even
-less.)
+There is some code for POWER/PowerPC emulation too, but it only works 
+correctly for "Hello World" and similar small programs.
+(There are some more CPU modes, but they are working even less.)
 
 
 
@@ -243,24 +242,20 @@ emulator.
 <a name="emulmodes"></a>
 <h3>Which machines does GXemul emulate?</h3>
 
-A few different machine types are emulated.
-The machine types that are emulated best at the moment are:
+A few different machine types are emulated. The machine types that are
+emulated best at the moment are:
+
+<p>
 <ul>
-  <li><b>DECstation/DECsystem machines</b>
-	<br>Model 5000/200: Serial controller (including keyboard and
-		mouse), ethernet, SCSI, and graphical framebuffers are
-		emulated.
-	<br>Other models: these differ slightly from the 5000/200 model,
-		and GXemul doesn't emulate them well enough to run
-		a complete OS yet.
+  <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("pmax")
+	<br>(Serial controller (including keyboard and mouse), ethernet,
+	SCSI, and graphical framebuffers.)
   <p>
-  <li><b>Acer Pica-61</b> (an ARC machine)
-	<br>Serial controller, "VGA" text console, and SCSI are
-	emulated; enough to install and run NetBSD/arc and OpenBSD/arc.
+  <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
+	<br>(Serial controller, "VGA" text console, and SCSI.)
   <p>
-  <li><b>NEC MobilePro 770, 780, and 800</b> (HPCmips machines)
-	<br>Framebuffer, keyboard, and a PCMCIA IDE controller;
-	enough to install and run NetBSD/hpcmips.
+  <li><b>NEC MobilePro 770, 780, and 800</b>&nbsp;&nbsp;(HPCmips machines)
+	<br>(Framebuffer, keyboard, and a PCMCIA IDE controller.)
 </ul>
 
 <p>

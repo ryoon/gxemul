@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.60 2005-03-08 22:58:59 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.61 2005-04-01 16:44:36 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -2231,6 +2231,10 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;  */
 				break;
 			}
+
+			/*  TODO: is this correct?  */
+			if (cpu->cd.ppc.bits == 32)
+				cpu->cd.ppc.gpr[rt] &= 0xffffffff;
 			break;
 
 		case PPC_31_CNTLZW:

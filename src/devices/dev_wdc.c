@@ -25,11 +25,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.27 2005-03-31 05:45:59 debug Exp $
+ *  $Id: dev_wdc.c,v 1.28 2005-04-01 16:44:34 debug Exp $
  *  
  *  Standard IDE controller.
- *
- *  TODO:  Most read/write related stuff and interrupts.
  */
 
 #include <stdio.h>
@@ -56,7 +54,7 @@ extern int single_step;
 /*  INT_DELAY=2 to be safe, 1 is faster but maybe buggy.  */
 #define	INT_DELAY		1
 
-#define	debug fatal
+/*  #define	debug fatal  */
 /*  #define  DATA_DEBUG  */
 
 struct wdc_data {
@@ -464,8 +462,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 /*  LBA:  */
 if (d->lba)
 	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
-#endif
 printf("WDC read from offset %lli\n", (long long)offset);
+#endif
 /*  single_step = 1;  */
 					diskimage_access(cpu->machine,
 					    d->drive + d->base_drive, 0,
@@ -493,8 +491,8 @@ printf("WDC read from offset %lli\n", (long long)offset);
 /*  LBA:  */
 if (d->lba)
 	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
-#endif
 printf("WDC write to offset %lli\n", (long long)offset);
+#endif
 
 					d->write_in_progress = 1;
 					d->write_count = count;

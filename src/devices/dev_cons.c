@@ -23,12 +23,13 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.6 2004-01-29 19:36:58 debug Exp $
+ *  $Id: dev_cons.c,v 1.7 2004-03-15 16:09:40 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
  *  This device provides memory mapped I/O for a simple console supporting
- *  putchar (writing to memory) and getchar (reading from memory).
+ *  putchar (writing to memory) and getchar (reading from memory), and
+ *  support for halting the emulator.  (This is useful for regression tests.)
  */
 
 #include <stdio.h>
@@ -52,7 +53,11 @@ int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 {
 	int i;
 
-	/*  TODO: care about the relative address, instead of just the write flag  */
+	/*  Exit the emulator:  */
+	if (relative_addr == 0x10) {
+		cpu->running = 0;
+		return 1;
+	}
 
 	if (writeflag == MEM_WRITE) {
 		for (i=0; i<len; i++) {

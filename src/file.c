@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.46 2005-01-19 14:24:23 debug Exp $
+ *  $Id: file.c,v 1.47 2005-01-19 14:42:11 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -382,13 +382,13 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		}
 
 		/*  Show the section name:  */
-		debug("section \"");
+		debug("section ");
 		for (i=0; i<sizeof(scnhdr.s_name); i++)
 			if (scnhdr.s_name[i] >= 32 && scnhdr.s_name[i] < 127)
 				debug("%c", scnhdr.s_name[i]);
 			else
 				break;
-		debug("\", ");
+		debug(" (");
 
 		unencode(s_paddr,   &scnhdr.s_paddr,   uint32_t);
 		unencode(s_vaddr,   &scnhdr.s_vaddr,   uint32_t);
@@ -400,7 +400,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		unencode(s_nlnno,   &scnhdr.s_nlnno,   uint16_t);
 		unencode(s_flags,   &scnhdr.s_flags,   uint32_t);
 
-		debug("0x%x bytes @ 0x%08x (file offset 0x%lx, flags 0x%x)\n",
+		debug("0x%x bytes @ 0x%08x, file offset 0x%lx, flags 0x%x)\n",
 		    (int)s_size, (int)s_vaddr, (long)s_scnptr, (int)s_flags);
 
 		end_addr = s_vaddr + s_size;
@@ -473,7 +473,15 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		unencode(cbExtOffset,   &symhdr.cbExtOffset,   uint32_t);
 
 		if (sym_magic != MIPS_MAGIC_SYM) {
-			debug("UNKNOWN symbol magic = 0x%x\n", sym_magic);
+			debug("symbol magic = 0x%x: ", sym_magic);
+			switch (sym_magic) {
+			case 0x722e:
+				debug("possibly Windows NT (?)");
+				break;
+			default:
+				debug("UNKNOWN");
+			}
+			debug("\n");
 			goto unknown_coff_symbols;
 		}
 

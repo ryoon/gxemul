@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.116 2005-01-19 14:24:22 debug Exp $
+ *  $Id: emul.c,v 1.117 2005-01-19 14:42:11 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -69,6 +69,8 @@ extern struct diskimage *diskimages[];
  *
  *  Take the strings breakpoint_string[] and convert to addresses
  *  (and store them in breakpoint_addr[]).
+ *
+ *  TODO: This function should be moved elsewhere.
  */
 static void add_dump_points(struct machine *m)
 {
@@ -564,7 +566,7 @@ void emul_start(struct emul *emul)
 	debug("-" VERSION);
 #endif
 	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the documentation and/or source code for other Copyright notices.\n");
+	debug("Read the source code and/or documentation for other Copyright notices.\n");
 
 	debug("Setting up...\n");
 	debug_indentation(iadd);

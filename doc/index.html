@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.46 2004-07-01 11:46:02 debug Exp $
+$Id: index.html,v 1.47 2004-07-01 12:01:48 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -499,16 +499,12 @@ After install, this should be enough to boot from the disk image:
 <pre>
 	$ <b>./mips64emul -D2 -I4000000 -d diskimage</b>
 </pre>
-The same is true for Ultrix, but then <b>-j vmunix</b> must be used as well.
+The same is true for Ultrix, but then <b>-j vmunix</b> must be used, both
+during install and during normal boot.
 <b>-j <i>name</i></b> makes the bootstring contain <i>/name</i> as the
-filename to boot, instead of <i>/netbsd</i>, which is the default name.
-<p>Note: This is was not implemented in the 0.1 release.
+filename to boot, instead of /netbsd, which is the default name.
+<p>NOTE: This is was not implemented in the 0.1 release.
 </font>
-<p>
-Other OSes, such as Ultrix, may be installed in a way similar to NetBSD.
-(For Ultrix, add <b>-j</b> to the command line to fake ultrixboot behaviour.
-The install kernel and generic kernels must be extracted from the installation
-CD-ROM media, by mounting that media as an ufs file system.)
 
 
 <p><br>

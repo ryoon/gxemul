@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.42 2005-01-09 01:55:31 debug Exp $
+ *  $Id: net.c,v 1.43 2005-01-18 12:43:50 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -81,6 +81,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include "misc.h"
 
@@ -1680,6 +1681,8 @@ void net_init(void)
 
 		for (i=0; i<len; i++)
 			if (strncmp(buf+i, "nameserver", 10) == 0) {
+				char *p;
+
 				/*
 				 *  "nameserver" (1 or more whitespace)
 				 *  "x.y.z.w" (non-digit)
@@ -1692,14 +1695,15 @@ void net_init(void)
 				if (i >= len)
 					break;
 				start = i;
-				while (i<len && !(buf[i]==' ' || buf[i]=='\t'))
-					i++;
 
-				/*  for (j=start; j<i; j++)
-					printf("%c", buf[j]);
-				    printf("\n");  */
+				p = strchr(buf + start, '\n');
+				if (p != NULL)
+					*p = '\0';
+				p = strchr(buf + start, '\r');
+				if (p != NULL)
+					*p = '\0';
 
-				res = inet_aton(buf + start,
+				res = inet_pton(AF_INET, buf + start,
 				    &nameserver_ipv4);
 				if (res < 1)
 					break;

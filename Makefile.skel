@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.22 2004-12-26 17:47:42 debug Exp $
+#  $Id: Makefile.skel,v 1.23 2005-01-18 12:43:47 debug Exp $
 #
 #  Makefile for mips64emul
 #
@@ -39,6 +39,7 @@ clean:
 #  Tests are not cleaned on a normal clean, only on a clean_all.
 
 clean_all: clean
-	cd tests; $(MAKE) clean; cd ..
+	cd tests; $(MAKE) clean_all; cd ..
+	cd devices; $(MAKE) clean_all; cd ..
 	rm -f config.h Makefile src/Makefile devices/Makefile tests/Makefile
 

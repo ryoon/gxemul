@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.495 2005-01-18 08:26:13 debug Exp $
+$Id: HISTORY,v 1.496 2005-01-18 12:43:47 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1500,9 +1500,13 @@ HISTORY of mips64emul
 20050118	Trying to add some support for less-than-4KB virtual pages,
 		used by at least VR4131. Thanks to Alexander Yurchenko for
 		noticing this. (I'm assuming for now that all R41xx work
-		this way, which is not necessarily true.)
+		this way, which is not necessarily true.) It doesn't really
+		work yet though.
 		Renicing the "loading files" messages and other things
 		displayed during startup.
 		Changing the disassembly output of ori, xori, and andi to
 		unsigned hex immediate, instead of decimal (as suggested
 		by Alec Voropay).
+		configure-script update for HP-UX, and switching from using
+		inet_aton() to inet_pton() (as suggested by Nils Weller).
+		Also adding -lnsl on Solaris, if required by inet_pton().

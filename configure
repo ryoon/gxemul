@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.79 2005-01-09 06:06:58 debug Exp $
+#  $Id: configure,v 1.80 2005-01-18 12:43:47 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -195,6 +195,14 @@ if [ z"`uname|cut -c 1-6`" = zCYGWIN ]; then
 	fi
 fi
 
+if [ z"`uname`" = zHP-UX ]; then
+	HPUX=YES
+
+	if [ -f /usr/local/pa64/bin/gcc ]; then
+		CC=/usr/local/pa64/bin/gcc
+	fi
+fi
+
 if [ z"$CC" = z ]; then
 	CC=cc
 
@@ -358,16 +366,23 @@ fi
 rm -f _testns.c _testns
 
 
-#  -lresolv for inet_aton?
-printf "checking whether -lresolv is required for inet_aton... "
-printf "extern void (*inet_aton)(void); int main(int argc, char *argv[]) { void *x; x = inet_aton; return 0; }\n" > _testr.c
+#  -lresolv for inet_pton?
+printf "checking whether -lresolv is required for inet_pton... "
+printf "extern void (*inet_pton)(void); int main(int argc, char *argv[]) { void *x; x = inet_pton; return 0; }\n" > _testr.c
 $CC $CFLAGS _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
 	$CC $CFLAGS -lresolv _testr.c -o _testr 2> /dev/null
 	if [ ! -x _testr ]; then
-		printf "WARNING! COULD NOT COMPILE WITH inet_aton AT ALL!\n"
+		$CC $CFLAGS -lresolv -lnsl _testr.c -o _testr 2> /dev/null
+		if [ ! -x _testr ]; then
+			printf "WARNING! COULD NOT COMPILE WITH inet_pton AT ALL!\n"
+		else
+			#  -lresolv -lnsl for inet_pton
+			OTHERLIBS="-lresolv -lnsl $OTHERLIBS"
+			printf "yes (and -lnsl)\n"
+		fi
 	else
-		#  -lresolv for inet_aton
+		#  -lresolv for inet_pton
 		OTHERLIBS="-lresolv $OTHERLIBS"
 		printf "yes\n"
 	fi
@@ -547,7 +562,7 @@ fi
 COPTIM=$CFLAGS
 
 
-if [ z"`uname`" = zHP-UX ]; then
+if [ z$HPUX = zYES ]; then
 	COPTIM="-D_XOPEN_SOURCE_EXTENDED $COPTIM"
 	printf "#define HPUX\n" >> config.h
 fi
@@ -796,7 +811,7 @@ echo "MIPS_LD="$MIPS_CC"-ld -Ttext 0xa800000000030000 -e main --oformat=elf64-bi
 echo "" >> _Makefile.header
 
 
-for a in . src devices tests; do
+for a in . src devices devices/fonts tests; do
 	echo "creating $a/Makefile"
 	cat _Makefile.header > $a/Makefile
 	cat $a/Makefile.skel >> $a/Makefile

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.126 2004-09-02 00:47:23 debug Exp $
+ *  $Id: cpu.c,v 1.127 2004-09-02 01:00:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -53,7 +53,6 @@ extern int machine;
 extern int show_trace_tree;
 extern int old_show_trace_tree;
 extern int emulated_hz;
-extern int bintrans_enable;
 extern int register_dump;
 extern int instruction_trace;
 extern int old_instruction_trace;

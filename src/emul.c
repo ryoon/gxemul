@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.51 2004-09-02 00:58:04 debug Exp $
+ *  $Id: emul.c,v 1.52 2004-09-02 01:00:21 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -58,13 +58,11 @@ char **extra_argv;
 
 extern int booting_from_diskimage;
 
-extern int bintrans_enable;
 extern int emulation_type;
 extern int machine;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
 extern int bootstrap_cpu;
-extern int use_random_bootstrap_cpu;
 extern int instruction_trace;
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
@@ -626,7 +624,7 @@ void emul_start(struct emul *emul)
 	atexit(fix_console);
 
 	/*  Initialize dynamic binary translation, if available:  */
-	if (bintrans_enable)
+	if (emul->bintrans_enable)
 		bintrans_init();
 
 	/*
@@ -666,7 +664,7 @@ void emul_start(struct emul *emul)
 	for (i=0; i<ncpus; i++)
 		cpus[i] = cpu_new(mem, i, emul->emul_cpu_name);
 
-	if (use_random_bootstrap_cpu)
+	if (emul->use_random_bootstrap_cpu)
 		bootstrap_cpu = random() % ncpus;
 	else
 		bootstrap_cpu = 0;

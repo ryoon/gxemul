@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.70 2004-09-02 00:58:04 debug Exp $
+ *  $Id: main.c,v 1.71 2004-09-02 01:00:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -72,7 +72,6 @@ char *dumppoint_string[MAX_PC_DUMPPOINTS];
 uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
-int bintrans_enable = 0;
 int instruction_trace = 0;
 int single_step = 0;
 int trace_on_bad_address = 0;
@@ -86,7 +85,6 @@ char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
 char *boot_string_argument = "-a";		/*  overridden with -o  */
 
 int bootstrap_cpu;
-int use_random_bootstrap_cpu = 0;
 int ncpus = DEFAULT_NCPUS;
 struct cpu **cpus = NULL;
 
@@ -270,7 +268,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			machine = 0;
 			break;
 		case 'b':
-			bintrans_enable = 1;
+			emul->bintrans_enable = 1;
 			break;
 		case 'C':
 			strncpy(emul->emul_cpu_name, optarg,
@@ -349,7 +347,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			quiet_mode = 1;
 			break;
 		case 'R':
-			use_random_bootstrap_cpu = 1;
+			emul->use_random_bootstrap_cpu = 1;
 			break;
 		case 'r':
 			register_dump = 1;
@@ -515,9 +513,9 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	}
 
 #ifndef BINTRANS
-	if (bintrans_enable) {
+	if (emul->bintrans_enable) {
 		fprintf(stderr, "WARNING: %s was compiled without bintrans support. Ignoring -b.\n", progname);
-		bintrans_enable = 0;
+		emul->bintrans_enable = 0;
 	}
 #endif
 

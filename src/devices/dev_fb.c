@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.24 2004-03-14 22:25:19 debug Exp $
+ *  $Id: dev_fb.c,v 1.25 2004-03-22 00:55:09 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -128,6 +128,7 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 {
 	int ofs, ofs2, bit, bits, t;
 
+#ifdef WITH_X11
 	ofs = (fbw->x11_fb_winxsize * y + x) >> 3;
 	ofs2 = (fbw->x11_fb_winxsize * fbw->x11_fb_winysize) >> 3;
 
@@ -145,6 +146,7 @@ void experimental_PutPixel(struct fb_window *fbw, int x, int y, long color)
 		else
 			fbw->ximage_data[ofs + bit*ofs2] &= ~t;
 	}
+#endif
 }
 
 

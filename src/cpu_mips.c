@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.23 2005-02-09 20:36:08 debug Exp $
+ *  $Id: cpu_mips.c,v 1.24 2005-02-11 09:29:50 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -63,9 +63,6 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 	int writeflag, size_t len, unsigned char *data)  {  return 0;  }
-
-unsigned char *mips_memory_paddr_to_hostaddr(struct memory *mem,
-	uint64_t paddr, int writeflag)  {  return NULL;  }
 
 
 #else   /*  ENABLE_MIPS  */
@@ -166,6 +163,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	memset(cpu, 0, sizeof(struct cpu));
+	cpu->memory_rw          = mips_memory_rw;
 	cpu->cd.mips.cpu_type   = cpu_type_defs[found];
 	cpu->name               = cpu->cd.mips.cpu_type.name;
 	cpu->mem                = mem;
@@ -2140,7 +2138,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		unsigned char instr16[2];
 		int mips16_offset = 0;
 
-		if (!mips_memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0],
+		if (!cpu->memory_rw(cpu, cpu->mem, cached_pc ^ 1, &instr16[0],
 		    sizeof(instr16), MEM_READ, CACHE_INSTRUCTION))
 			return 0;
 
@@ -2172,7 +2170,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 			/*  instruction with extend:  */
 			mips16_offset += 2;
-			if (!mips_memory_rw(cpu, cpu->mem, (cached_pc ^ 1) +
+			if (!cpu->memory_rw(cpu, cpu->mem, (cached_pc ^ 1) +
 			    mips16_offset, &instr16[0], sizeof(instr16),
 			    MEM_READ, CACHE_INSTRUCTION))
 				return 0;
@@ -2228,7 +2226,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			cpu->cd.mips.pc_bintrans_host_4kpage = cpu->cd.mips.pc_last_host_4k_page;
 #endif
                 } else {
-			if (!mips_memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
+			if (!cpu->memory_rw(cpu, cpu->mem, cached_pc, &instr[0],
 			    sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 				return 0;
 		}
@@ -3398,7 +3396,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 						}
 				}
 
-				success = mips_memory_rw(cpu, cpu->mem, addr,
+				success = cpu->memory_rw(cpu, cpu->mem, addr,
 				    d, wlen, MEM_WRITE, CACHE_DATA);
 				if (!success) {
 					/*  The store failed, and might have caused an exception.  */
@@ -3411,7 +3409,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				int cpnr = 1;
 				int success;
 
-				success = mips_memory_rw(cpu, cpu->mem, addr,
+				success = cpu->memory_rw(cpu, cpu->mem, addr,
 				    d, wlen, MEM_READ, CACHE_DATA);
 				if (!success) {
 					/*  The load failed, and might have caused an exception.  */
@@ -3601,13 +3599,13 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				unsigned char aligned_word[8];
 				uint64_t oldpc = cpu->cd.mips.pc;
 				/*
-				 *  NOTE (this is ugly): The mips_memory_rw()
+				 *  NOTE (this is ugly): The memory_rw()
 				 *  call generates a TLBL exception, if there
 				 *  is a tlb refill exception. However, since
 				 *  this is a Store, the exception is converted
 				 *  to a TLBS:
 				 */
-				int ok = mips_memory_rw(cpu, cpu->mem,
+				int ok = cpu->memory_rw(cpu, cpu->mem,
 				    aligned_addr, &aligned_word[0], wlen,
 				    MEM_READ, CACHE_DATA);
 				if (!ok) {
@@ -3633,7 +3631,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					reg_ofs += reg_dir;
 				}
 
-				ok = mips_memory_rw(cpu, cpu->mem,
+				ok = cpu->memory_rw(cpu, cpu->mem,
 				    aligned_addr, &aligned_word[0], wlen,
 				    MEM_WRITE, CACHE_DATA);
 				if (!ok)
@@ -3642,7 +3640,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				/*  Load:  */
 				uint64_t aligned_addr = addr & ~(wlen-1);
 				unsigned char aligned_word[8], databyte;
-				int ok = mips_memory_rw(cpu, cpu->mem,
+				int ok = cpu->memory_rw(cpu, cpu->mem,
 				    aligned_addr, &aligned_word[0], wlen,
 				    MEM_READ, CACHE_DATA);
 				if (!ok)
@@ -4123,7 +4121,6 @@ int mips_cpu_family_init(struct cpu_family *fp)
 	fp->tlbdump = mips_cpu_tlbdump;
 	fp->interrupt = mips_cpu_interrupt;
 	fp->interrupt_ack = mips_cpu_interrupt_ack;
-	fp->memory_rw = mips_memory_rw;
 	return 1;
 }
 

@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.102 2005-02-09 14:28:49 debug Exp $
+#  $Id: configure,v 1.103 2005-02-11 09:29:47 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -67,8 +67,6 @@ if [ z"$*" != z ]; then
 			NOBINTRANS=YES
 		else if [ z$a = z--mips16 ]; then
 			MIPS16=YES
-		else if [ z$a = z--userland ]; then
-			USERLAND=YES
 		else if [ z$a = z--gui ]; then
 			GUI=YES
 		else if [ z$a = z--withoutmips ]; then
@@ -91,12 +89,11 @@ if [ z"$*" != z ]; then
 			echo "  --mips16       enable MIPS16 instruction support (experimental)"
 			echo "  --nobintrans   configure without bintrans, even if the host supports it"
 			echo "  --nox11        configure without X11 support"
-			echo "  --userland     enable userland emulation (experimental)"
 #			echo "  --withoutmips  disable MIPS CPU emulation (NOT YET)"
 #			echo "  --withppc      enable PPC CPU emulation (NOT YET)"
 #			echo "  --withsparc    enable SPARC CPU emulation (NOT YET)"
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -148,13 +145,6 @@ fi
 if [ z$WITHSPARC = zYES ]; then
 	echo 'Enabling SPARC support.  NOTE: This is pretty much bogus.'
 	printf "#define ENABLE_SPARC\n" >> config.h
-fi
-
-
-#  Userland emulation support:
-if [ z$USERLAND = zYES ]; then
-	echo 'Enabling userland emulation support. (EXPERIMENTAL)'
-	printf "#define ENABLE_USERLAND\n" >> config.h
 fi
 
 
@@ -393,7 +383,7 @@ fi
 
 
 #  Some OSes on MIPS seems to define 'mips' to 1. (eg OpenBSD/arc)
-if [ z$WITHPPC = zYES ]; then
+if [ z$WITHMIPS = zYES ]; then
 	printf "checking for weird 'mips' define... "
 	printf "#include <stdio.h>\nint main(int argc, char *argv[]){
 #ifdef mips

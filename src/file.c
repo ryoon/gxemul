@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.74 2005-02-10 05:24:46 debug Exp $
+ *  $Id: file.c,v 1.75 2005-02-11 09:29:50 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -193,8 +193,8 @@ static void file_load_aout(struct machine *m, struct memory *mem,
 		    len, (int)vaddr, buf[0], buf[1], buf[2]);  */
 
 		if (len > 0)
-			memory_rw(m->cpus[0], mem, vaddr, &buf[0], len,
-			    MEM_WRITE, NO_EXCEPTIONS);
+			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
+			    &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 		else {
 			if (osf1_hack)
 				break;
@@ -398,8 +398,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 			len = fread(buf, 1, chunk_size, f);
 
 			if (len > 0)
-				memory_rw(m->cpus[0], mem, where, &buf[0], len,
-				    MEM_WRITE, NO_EXCEPTIONS);
+				m->cpus[0]->memory_rw(m->cpus[0], mem, where,
+				    &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 			where += len;
 			total_len += len;
 		}
@@ -482,8 +482,8 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 					break;
 				}
 
-				memory_rw(m->cpus[0], mem, s_vaddr, &buf[0],
-				    len, MEM_WRITE, NO_EXCEPTIONS);
+				m->cpus[0]->memory_rw(m->cpus[0], mem, s_vaddr,
+				    &buf[0], len, MEM_WRITE, NO_EXCEPTIONS);
 				s_vaddr += len;
 				total_len += len;
 			}
@@ -783,8 +783,9 @@ static void file_load_srec(struct machine *m, struct memory *mem,
 			case 3:	data_start = 4;
 				vaddr = (bytes[0] << 24) + (bytes[1] << 16) + (bytes[2] << 8) + bytes[3];
 			}
-			memory_rw(m->cpus[0], mem, vaddr, &bytes[data_start],
-			    count - 1 - data_start, MEM_WRITE, NO_EXCEPTIONS);
+			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr,
+			    &bytes[data_start], count - 1 - data_start,
+			    MEM_WRITE, NO_EXCEPTIONS);
 			total_bytes_loaded += count - 1 - data_start;
 			break;
 		case 7:
@@ -867,7 +868,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 		len = fread(buf, 1, sizeof(buf), f);
 
 		if (len > 0)
-			memory_rw(m->cpus[0], mem, vaddr, &buf[0],
+			m->cpus[0]->memory_rw(m->cpus[0], mem, vaddr, &buf[0],
 			    len, MEM_WRITE, NO_EXCEPTIONS);
 
 		vaddr += len;
@@ -1065,22 +1066,25 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	 *  MIPS16 encoding?
 	 *
 	 *  TODO:  Find out what e_flag actually contains.
+	 *  TODO 2: This only sets mips16 for cpu 0. Yuck. Fix this!
 	 */
 
 	if (((eflags >> 24) & 0xff) == 0x24) {
 		debug("MIPS16 encoding (e_flags = 0x%08x)\n", eflags);
 #ifdef ENABLE_MIPS16
-		cpu->cd.mips.mips16 = 1;
+		m->cpus[0]->cd.mips.mips16 = 1;
 #else
-		fatal("ENABLE_MIPS16 must be defined in misc.h.\n");
+		fatal("ENABLE_MIPS16 must be defined in misc.h.\n"
+		    "(or use the --mips16 configure option)\n");
 		exit(1);
 #endif
 	} else if (eentry & 0x3) {
 		debug("MIPS16 encoding (eentry not 32-bit aligned)\n");
 #ifdef ENABLE_MIPS16
-		cpu->cd.mips.mips16 = 1;
+		m->cpus[0]->cd.mips.mips16 = 1;
 #else
-		fatal("ENABLE_MIPS16 must be defined in misc.h.\n");
+		fatal("ENABLE_MIPS16 must be defined in misc.h.\n"
+		    "(or use the --mips16 configure option)\n");
 		exit(1);
 #endif
 	}
@@ -1176,9 +1180,11 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 				while (i < len) {
 					size_t len_to_copy;
-					len_to_copy = (i + align_len) <= len? align_len : len - i;
-					memory_rw(m->cpus[0], mem, p_vaddr + ofs, &ch[i],
-					    len_to_copy, MEM_WRITE, NO_EXCEPTIONS);
+					len_to_copy = (i + align_len) <= len?
+					    align_len : len - i;
+					m->cpus[0]->memory_rw(m->cpus[0], mem,
+					    p_vaddr + ofs, &ch[i], len_to_copy,
+					    MEM_WRITE, NO_EXCEPTIONS);
 					ofs += align_len;
 					i += align_len;
 				}
@@ -1387,8 +1393,8 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 		debug("PPC64: ");
 
-		res = memory_rw(m->cpus[0], mem, eentry, b, sizeof(b),
-		    MEM_READ, NO_EXCEPTIONS);
+		res = m->cpus[0]->memory_rw(m->cpus[0], mem, eentry, b,
+		    sizeof(b), MEM_READ, NO_EXCEPTIONS);
 		if (!res)
 			debug(" [WARNING: could not read memory?] ");
 
@@ -1399,10 +1405,10 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 		    ((uint64_t)b[5] << 16) + ((uint64_t)b[6] << 8) +
 		    (uint64_t)b[7];
 
-		res = memory_rw(m->cpus[0], mem, eentry + 8, b, sizeof(b),
-		    MEM_READ, NO_EXCEPTIONS);
+		res = m->cpus[0]->memory_rw(m->cpus[0], mem, eentry + 8,
+		    b, sizeof(b), MEM_READ, NO_EXCEPTIONS);
 		if (!res)
-			debug(" [WARNING: could not read memory?] ");
+			fatal(" [WARNING: could not read memory?] ");
 
 		toc_base = ((uint64_t)b[0] << 56) +
 		    ((uint64_t)b[1] << 48) + ((uint64_t)b[2] << 40) +

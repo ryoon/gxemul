@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.20 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.21 2005-02-11 09:29:48 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -100,14 +100,17 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 
 	while (on_screen) {
 		/*  Get pointer to a tile:  */
-		memory_rw(cpu, cpu->mem, tiletable + sizeof(tileptr_buf) * tile_nr,
-		    tileptr_buf, sizeof(tileptr_buf), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
-		tileptr = 256 * tileptr_buf[0] + tileptr_buf[1];	/*  TODO: endianness  */
+		cpu->memory_rw(cpu, cpu->mem, tiletable +
+		    sizeof(tileptr_buf) * tile_nr,
+		    tileptr_buf, sizeof(tileptr_buf), MEM_READ,
+		    NO_EXCEPTIONS | PHYSICAL);
+		tileptr = 256 * tileptr_buf[0] + tileptr_buf[1];
+		/*  TODO: endianness  */
 		tileptr <<= 16;
 
 		/*  tileptr is now a physical address of a tile.  */
-		debug("[ sgi_gbe:   tile_nr = %2i, tileptr = 0x%08lx, xbase = %4i, ybase = %4i ]\n",
-		    tile_nr, tileptr, xbase, ybase);
+		debug("[ sgi_gbe:   tile_nr = %2i, tileptr = 0x%08lx, xbase"
+		    " = %4i, ybase = %4i ]\n", tile_nr, tileptr, xbase, ybase);
 
 		if (tweaked) {
 			/*  Tweaked (linear) mode:  */
@@ -125,10 +128,14 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 					on_screen = 0;
 				}
 
-				/*  debug("old_fb_offset = %08x copylen=%i\n", old_fb_offset, copy_len);  */
+				/*  debug("old_fb_offset = %08x copylen"
+				    "=%i\n", old_fb_offset, copy_len);  */
 
-				memory_rw(cpu, cpu->mem, tileptr + copy_offset, buf, copy_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
-				dev_fb_access(cpu, cpu->mem, old_fb_offset, buf, copy_len, MEM_WRITE, d->fb_data);
+				cpu->memory_rw(cpu, cpu->mem, tileptr +
+				    copy_offset, buf, copy_len, MEM_READ,
+				    NO_EXCEPTIONS | PHYSICAL);
+				dev_fb_access(cpu, cpu->mem, old_fb_offset,
+				    buf, copy_len, MEM_WRITE, d->fb_data);
 				copy_offset += sizeof(buf);
 				old_fb_offset += sizeof(buf);
 			}
@@ -145,11 +152,14 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 				pixels_per_line = d->xres - xbase;
 
 			for (y=0; y<lines_to_copy; y++) {
-				memory_rw(cpu, cpu->mem, tileptr + 512 * y,
-				    buf, pixels_per_line * d->bitdepth / 8, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+				cpu->memory_rw(cpu, cpu->mem, tileptr + 512 * y,
+				    buf, pixels_per_line * d->bitdepth / 8,
+				    MEM_READ, NO_EXCEPTIONS | PHYSICAL);
 
-				dev_fb_access(cpu, cpu->mem, ((ybase + y) * d->xres + xbase) * d->bitdepth / 8,
-				    buf, pixels_per_line * d->bitdepth / 8, MEM_WRITE, d->fb_data);
+				dev_fb_access(cpu, cpu->mem, ((ybase + y) *
+				    d->xres + xbase) * d->bitdepth / 8,
+				    buf, pixels_per_line * d->bitdepth / 8,
+				    MEM_WRITE, d->fb_data);
 			}
 
 			/*  Go to next tile:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_mips.c,v 1.3 2005-02-09 14:53:20 debug Exp $
+ *  $Id: memory_mips.c,v 1.4 2005-02-11 09:29:51 debug Exp $
  *
  *  MIPS-specific memory routines. Included from cpu_mips.c.
  */
@@ -75,63 +75,6 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 		cpu->cd.mips.translation_cache_data[0].paddr = paddr;
 	}
 #endif
-}
-
-
-/*
- *  mips_memory_paddr_to_hostaddr():
- *
- *  Translate a physical MIPS address into a host address.
- *  Return value is a pointer to a host memblock, or NULL on failure.
- *  On reads, a NULL return value should be interpreted as reading all zeroes.
- */
-unsigned char *mips_memory_paddr_to_hostaddr(struct memory *mem,
-	uint64_t paddr, int writeflag)
-{
-	void **table;
-	int entry;
-	const int mask = (1 << BITS_PER_PAGETABLE) - 1;
-	const int shrcount = MAX_BITS - BITS_PER_PAGETABLE;
-
-	table = mem->pagetable;
-	entry = (paddr >> shrcount) & mask;
-
-	/*  printf("   entry = %x\n", entry);  */
-
-	if (table[entry] == NULL) {
-		size_t alloclen;
-
-		/*
-		 *  Special case:  reading from a nonexistant memblock
-		 *  returns all zeroes, and doesn't allocate anything.
-		 *  (If any intermediate pagetable is nonexistant, then
-		 *  the same thing happens):
-		 */
-		if (writeflag == MEM_READ)
-			return NULL;
-
-		/*  Allocate a memblock:  */
-		alloclen = 1 << BITS_PER_MEMBLOCK;
-
-		/*  printf("  allocating for entry %i, len=%i\n",
-		    entry, alloclen);  */
-
-		/*  Anonymous mmap() should return zero-filled memory,
-		    try malloc + memset if mmap failed.  */
-		table[entry] = (void *) mmap(NULL, alloclen,
-		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
-		    -1, 0);
-		if (table[entry] == NULL) {
-			table[entry] = malloc(alloclen);
-			if (table[entry] == NULL) {
-				fatal("out of memory\n");
-				exit(1);
-			}
-			memset(table[entry], 0, alloclen);
-		}
-	}
-
-	return (unsigned char *) table[entry];
 }
 
 
@@ -229,7 +172,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 			    rp[cache_line].tag_paddr,
 			    old_cached_paddr);
 */
-			memblock = mips_memory_paddr_to_hostaddr(
+			memblock = memory_paddr_to_hostaddr(
 			    mem, old_cached_paddr, MEM_WRITE);
 			offset = old_cached_paddr
 			    & ((1 << BITS_PER_MEMBLOCK) - 1)
@@ -257,7 +200,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 		}
 
 		/*  Copy from main memory into the cache:  */
-		memblock = mips_memory_paddr_to_hostaddr(mem, paddr, writeflag);
+		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1)
 		    & ~cpu->cd.mips.cache_mask[which_cache];
 		/*  offset is offset within the memblock:
@@ -307,7 +250,7 @@ int memory_cache_R3000(struct cpu *cpu, int cache, uint64_t paddr,
 
 	/*  Run instructions from the right host page:  */
 	if (cache == CACHE_INSTRUCTION) {
-		memblock = mips_memory_paddr_to_hostaddr(mem, paddr, writeflag);
+		memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 		if (memblock != NULL) {
 			cpu->cd.mips.pc_last_host_4k_page = memblock +
 			    (paddr & ((1 << BITS_PER_MEMBLOCK) - 1) & ~0xfff);

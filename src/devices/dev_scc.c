@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.23 2005-02-06 15:15:04 debug Exp $
+ *  $Id: dev_scc.c,v 1.24 2005-02-11 09:29:48 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -206,9 +206,11 @@ cpu_interrupt(cpu, 8 + 0x02000000);
 /*
  *  dev_scc_dma_func():
  */
-int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len, int tx)
+int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr,
+	size_t dma_len, int tx)
 {
-	/*  printf("dev_scc_dma_func(): addr = %08x, len = %i\n", (int)addr, (int)dma_len);  */
+	/*  printf("dev_scc_dma_func(): addr = %08x, len = %i\n",
+	    (int)addr, (int)dma_len);  */
 	unsigned char word[4];
 	struct scc_data *d = (struct scc_data *) extra;
 	int n;
@@ -217,12 +219,15 @@ int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len
 
 	if (tx) {
 		do {
-			memory_rw(cpu, cpu->mem, addr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+			cpu->memory_rw(cpu, cpu->mem, addr, &word[0],
+			    sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
 
 			lk201_tx_data(&d->lk201, d->scc_nr * 2 + port, word[1]);
 			/*  Loopback:  */
-			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14] & SCC_WR14_LOCAL_LOOPB)
-				dev_scc_add_to_rx_queue(d, word[1], d->scc_nr * 2 + port);
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14]
+			    & SCC_WR14_LOCAL_LOOPB)
+				dev_scc_add_to_rx_queue(d, word[1],
+				    d->scc_nr * 2 + port);
 
 			addr += sizeof(word);
 		} while ((addr & 0xffc) != 0);
@@ -230,7 +235,8 @@ int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len
 		dev_scc_tick(cpu, extra);
 		return 1;
 	} else {
-		printf("dev_scc_dma_func(): addr = %08x, len = %i\n", (int)addr, (int)dma_len);
+		printf("dev_scc_dma_func(): addr = %08x, len = %i\n",
+		    (int)addr, (int)dma_len);
 
 
 /*  TODO: all this is just nonsense  */
@@ -238,9 +244,11 @@ int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len
 		n = 0;
 		while (rx_avail(d, port)) {
 			word[0] = word[1] = word[2] = word[3] = 0;
-			word[0] = word[1] = word[2] = word[3] = rx_nextchar(d, port);
+			word[0] = word[1] = word[2] = word[3] =
+			    rx_nextchar(d, port);
 			n++;
-			memory_rw(cpu, cpu->mem, addr, &word[0], sizeof(word), MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+			cpu->memory_rw(cpu, cpu->mem, addr, &word[0],
+			    sizeof(word), MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
 
 			addr += sizeof(word);
 			/*  Half-page?  */
@@ -267,7 +275,8 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
 
 	idata = memory_readmax64(cpu, data, len);
 
-	/*  relative_addr /= d->addrmul;  */  /*  See SGI comment below instead.  */
+	/*  relative_addr /= d->addrmul;  */
+		/*  See SGI comment below instead.  */
 	/*
 	 *  SGI writes command to 0x0f, and data to 0x1f.
 	 *  (TODO: This works for port nr 0, how about port nr 1?)

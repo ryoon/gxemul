@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.205 2005-02-09 20:36:09 debug Exp $
+ *  $Id: main.c,v 1.206 2005-02-11 09:29:51 debug Exp $
  */
 
 #include <stdio.h>
@@ -40,7 +40,6 @@
 #include "diskimage.h"
 #include "emul.h"
 #include "machine.h"
-#include "memory.h"
 #include "misc.h"
 
 
@@ -341,10 +340,8 @@ static void usage(int longusage)
 	    "unimplemented memory accesses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        enable slow_serial_interrupts_hack_for_linux\n");
-#ifdef ENABLE_USERLAND
 	printf("  -u emul   userland-only (syscall) emulation (use -H to"
 	    " get a list of\n            available emulation modes)\n");
-#endif
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
@@ -713,14 +710,6 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		fprintf(stderr, "WARNING: %s was compiled without "
 		    "bintrans support. Ignoring -b.\n", progname);
 		m->bintrans_enable = 0;
-	}
-#endif
-
-#ifndef ENABLE_USERLAND
-	if (m->userland_emul != NULL) {
-		fprintf(stderr, "FATAL: Userland emulation must be "
-		    "enabled at configure time (--userland).\n");
-		exit(1);
 	}
 #endif
 

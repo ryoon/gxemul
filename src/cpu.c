@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.283 2005-02-09 14:28:28 debug Exp $
+ *  $Id: cpu.c,v 1.284 2005-02-11 09:29:50 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -72,8 +72,15 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine,
 	while (fp != NULL) {
 		if (fp->cpu_new != NULL) {
 			c = fp->cpu_new(mem, machine, cpu_id, cpu_type_name);
-			if (c != NULL)
+			if (c != NULL) {
+				/*  Some sanity-checks:  */
+				if (c->memory_rw == NULL) {
+					fatal("No memory_rw?\n");
+					exit(1);
+				}
+
 				return c;
+			}
 		}
 
 		fp = fp->next;

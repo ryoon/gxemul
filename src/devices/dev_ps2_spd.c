@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_spd.c,v 1.6 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_ps2_spd.c,v 1.7 2005-02-11 09:29:48 debug Exp $
  *  
  *  Playstation 2 "SPD" harddisk controller.
  *
@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
 #include "memory.h"
 #include "misc.h"
 #include "devices.h"
@@ -76,11 +77,13 @@ int dev_ps2_spd_access(struct cpu *cpu, struct memory *mem,
 	case 0x4c:
 	case 0x4e:
 		debug("[ ps2_spd: wdc access ]\n");
-		memory_rw(cpu, mem, (relative_addr - 0x40) / 2 + d->wdcaddr, data, len, writeflag, PHYSICAL);
+		cpu->memory_rw(cpu, mem, (relative_addr - 0x40) / 2 +
+		    d->wdcaddr, data, len, writeflag, PHYSICAL);
 		return 1;
 	case 0x5c:	/*  aux control  */
 		debug("[ ps2_spd: wdc access (2) ]\n");
-		memory_rw(cpu, mem, d->wdcaddr + 0x206, data, len, writeflag, PHYSICAL);
+		cpu->memory_rw(cpu, mem, d->wdcaddr + 0x206, data, len,
+		    writeflag, PHYSICAL);
 		return 1;
 	default:
 		if (writeflag==MEM_READ) {

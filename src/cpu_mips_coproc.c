@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.2 2005-02-08 17:18:33 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.3 2005-02-11 09:29:50 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -2046,7 +2046,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 		/*  TODO: This is ugly.  */
 		if (paddr < 0x10000000)
-			memblock = mips_memory_paddr_to_hostaddr(
+			memblock = memory_paddr_to_hostaddr(
 			    cpu->mem, paddr, 1);
 
 		if (memblock != NULL &&

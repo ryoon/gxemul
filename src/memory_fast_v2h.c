@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.10 2005-02-08 17:18:34 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.11 2005-02-11 09:29:51 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -158,7 +158,7 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 				return NULL;
 		}
 
-	memblock = mips_memory_paddr_to_hostaddr(cpu->mem, paddr,
+	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr,
 	    writeflag? MEM_WRITE : MEM_READ);
 	if (memblock == NULL)
 		return NULL;

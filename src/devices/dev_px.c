@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.23 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_px.c,v 1.24 2005-02-11 09:29:48 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -142,7 +142,8 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 	dma_len = 56 * 4;	/*  TODO: this is just enough for NetBSD's putchar  */
 
 	if (d->type == DEV_PX_TYPE_PX)
-		memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+		cpu->memory_rw(cpu, cpu->mem, sys_addr, dma_buf,
+		    dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
 	else
 		memmove(dma_buf, &d->sram[sys_addr & 0x1ffff], dma_len);	/*  TODO:  past end of sram?  */
 
@@ -251,7 +252,9 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		if (dma_len < 4*(5 + nspans*3)) {
 			dma_len = 4 * (5+nspans*3);
 			if (d->type == DEV_PX_TYPE_PX)
-				memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+				cpu->memory_rw(cpu, cpu->mem, sys_addr,
+				    dma_buf, dma_len, MEM_READ,
+				    NO_EXCEPTIONS | PHYSICAL);
 			else
 				memmove(dma_buf, &d->sram[sys_addr & 0x1ffff], dma_len);	/*  TODO:  past end of sram?  */
 		}

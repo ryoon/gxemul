@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.3 2005-02-09 20:36:09 debug Exp $
+ *  $Id: memory_rw.c,v 1.4 2005-02-11 09:29:51 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -68,8 +68,11 @@
 int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
 {
+#ifndef MEM_USERLAND
+	int ok = 1;
+#endif
 	uint64_t paddr;
-	int cache, no_exceptions, ok = 1, offset;
+	int cache, no_exceptions, offset;
 	unsigned char *memblock;
 #ifdef BINTRANS
 	int bintrans_cached = cpu->machine->bintrans_enable;
@@ -86,14 +89,15 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		}
 	}
 #endif
+#endif	/*  MEM_MIPS  */
 
-#ifdef ENABLE_USERLAND
-	if (cpu->machine->userland_emul != NULL) {
-		paddr = vaddr & 0x7fffffff;
-		goto have_paddr;
-	}
+#ifdef MEM_USERLAND
+	paddr = vaddr & 0x7fffffff;
+	goto have_paddr;
 #endif
 
+#ifndef MEM_USERLAND
+#ifdef MEM_MIPS
 	/*
 	 *  For instruction fetch, are we on the same page as the last
 	 *  instruction we fetched?
@@ -140,10 +144,14 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    if the page is actually in host ram  */
 	}
 #endif
+#endif	/*  MEM_MIPS  */
+#endif	/*  ifndef MEM_USERLAND  */
 
 
 have_paddr:
 
+
+#ifdef MEM_MIPS
 	/*  TODO: How about bintrans vs cache emulation?  */
 #ifdef BINTRANS
 	if (bintrans_cached) {
@@ -164,6 +172,7 @@ have_paddr:
 into the devices  */
 
 
+#ifndef MEM_USERLAND
 	/*
 	 *  Memory mapped device?
 	 *
@@ -296,16 +305,8 @@ into the devices  */
 #endif	/*  MEM_MIPS  */
 
 
-	/*
-	 *  Outside of physical RAM?  (For userland emulation we're using
-	 *  the host's virtual memory and don't care about memory sizes,
-	 *  so this doesn't apply.)
-	 */
-	if (paddr >= mem->physical_max
-#ifdef ENABLE_USERLAND
-	    && cpu->machine->userland_emul == NULL
-#endif
-	    ) {
+	/*  Outside of physical RAM?  */
+	if (paddr >= mem->physical_max) {
 		if ((paddr & 0xffff000000ULL) == 0x1f000000) {
 			/*  Ok, this is PROM stuff  */
 		} else if ((paddr & 0xfffff00000ULL) == 0x1ff00000) {
@@ -338,18 +339,25 @@ into the devices  */
 								debug("%s%02x", i?",":"", data[i]);
 						debug("}");
 					}
+#ifdef MEM_MIPS
 					symbol = get_symbol_name(
 					    &cpu->machine->symbol_context,
 					    cpu->cd.mips.pc_last, &offset);
+#else
+					symbol = "(unimpl for non-MIPS)";
+#endif
 					fatal(" paddr=%llx >= physical_max pc=0x%08llx <%s> ]\n",
 					    (long long)paddr, (long long)cpu->cd.mips.pc_last, symbol? symbol : "no symbol");
 				}
 
 				if (cpu->machine->single_step_on_bad_addr) {
+					uint64_t pc = 0;
+#ifdef MEM_MIPS
+					pc = cpu->cd.mips.pc;
+#endif
 					fatal("[ unimplemented access to "
 					    "0x%016llx, pc = 0x%016llx ]\n",
-					    (long long)paddr,
-					    (long long)cpu->cd.mips.pc);
+					    (long long)paddr, (long long)pc);
 					single_step = 1;
 				}
 			}
@@ -381,13 +389,15 @@ into the devices  */
 		}
 	}
 
+#endif	/*  ifndef MEM_USERLAND  */
+
 
 no_exception_access:
 
 	/*
 	 *  Uncached access:
 	 */
-	memblock = mips_memory_paddr_to_hostaddr(mem, paddr, writeflag);
+	memblock = memory_paddr_to_hostaddr(mem, paddr, writeflag);
 	if (memblock == NULL) {
 		if (writeflag == MEM_READ)
 			memset(data, 0, len);

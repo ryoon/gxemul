@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.11 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_ram.c,v 1.12 2005-02-11 09:29:48 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -37,10 +37,11 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 
+#include "console.h"
+#include "cpu.h"
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
 
 /*  #define RAM_DEBUG  */
@@ -79,7 +80,9 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem,
 	switch (d->mode) {
 	case DEV_RAM_MIRROR:
 		/*  TODO:  how about caches?  */
-		return memory_rw(cpu, mem, d->otheraddress + relative_addr, data, len, writeflag, PHYSICAL);
+		return cpu->memory_rw(cpu, mem,
+		    d->otheraddress + relative_addr, data, len,
+		    writeflag, PHYSICAL);
 	case DEV_RAM_RAM:
 		if (writeflag == MEM_WRITE)
 			memcpy(&d->data[relative_addr], data, len);

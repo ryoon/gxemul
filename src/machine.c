@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.341 2005-02-10 16:03:17 debug Exp $
+ *  $Id: machine.c,v 1.342 2005-02-11 09:29:50 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -264,7 +264,7 @@ int int_to_bcd(int i)
 unsigned char read_char_from_memory(struct cpu *cpu, int regbase, int offset)
 {
 	unsigned char ch;
-	memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
+	cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[regbase] + offset,
 	    &ch, sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 	return ch;
 }
@@ -285,7 +285,7 @@ void dump_mem_string(struct cpu *cpu, uint64_t addr)
 	for (i=0; i<DUMP_MEM_STRING_MAX; i++) {
 		unsigned char ch = '\0';
 
-		memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch),
+		cpu->memory_rw(cpu, cpu->mem, addr + i, &ch, sizeof(ch),
 		    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		if (ch == '\0')
 			return;
@@ -306,7 +306,7 @@ void store_byte(struct cpu *cpu, uint64_t addr, uint8_t data)
 {
 	if ((addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
-	memory_rw(cpu, cpu->mem,
+	cpu->memory_rw(cpu, cpu->mem,
 	    addr, &data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -365,7 +365,7 @@ int store_64bit_word(struct cpu *cpu, uint64_t addr, uint64_t data64)
 		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
 		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
 	}
-	return memory_rw(cpu, cpu->mem,
+	return cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -390,7 +390,7 @@ int store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 		int tmp = data[0]; data[0] = data[3]; data[3] = tmp;
 		tmp = data[1]; data[1] = data[2]; data[2] = tmp;
 	}
-	return memory_rw(cpu, cpu->mem,
+	return cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -412,7 +412,7 @@ int store_16bit_word(struct cpu *cpu, uint64_t addr, uint64_t data16)
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
 		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
 	}
-	return memory_rw(cpu, cpu->mem,
+	return cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
 }
 
@@ -428,7 +428,8 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 		addr = (int64_t)(int32_t)addr;
 	if ((addr & 7) == 0 && (((size_t)s) & 7) == 0) {
 		while (len >= 8) {
-			memory_rw(cpu, cpu->mem, addr, (unsigned char *)s, 8, MEM_WRITE, CACHE_DATA);
+			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
+			    8, MEM_WRITE, CACHE_DATA);
 			addr += 8;
 			s += 8;
 			len -= 8;
@@ -437,7 +438,8 @@ void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
 
 	if ((addr & 3) == 0 && (((size_t)s) & 3) == 0) {
 		while (len >= 4) {
-			memory_rw(cpu, cpu->mem, addr, (unsigned char *)s, 4, MEM_WRITE, CACHE_DATA);
+			cpu->memory_rw(cpu, cpu->mem, addr, (unsigned char *)s,
+			    4, MEM_WRITE, CACHE_DATA);
 			addr += 4;
 			s += 4;
 			len -= 4;
@@ -482,7 +484,7 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 
 	if ((addr >> 32) == 0)
 		addr = (int64_t)(int32_t)addr;
-	memory_rw(cpu, cpu->mem,
+	cpu->memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.164 2005-02-10 07:15:45 debug Exp $
+ *  $Id: emul.c,v 1.165 2005-02-11 09:29:50 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -429,6 +429,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 	char **load_names)
 {
 	struct emul *emul;
+	struct cpu *cpu;
 	int i, iadd=4;
 	uint64_t addr, memory_amount, entrypoint = 0, gp = 0;
 	int byte_order;
@@ -520,10 +521,14 @@ void emul_machine_setup(struct machine *m, int n_load,
 	else
 		m->bootstrap_cpu = 0;
 
-	/*  Set cpu->useremul_syscall:  */
-	if (m->userland_emul != NULL)
-		useremul_name_to_useremul(m->cpus[m->bootstrap_cpu],
+	cpu = m->cpus[m->bootstrap_cpu];
+
+	/*  Set cpu->useremul_syscall, and use userland_memory_rw:  */
+	if (m->userland_emul != NULL) {
+		useremul_name_to_useremul(cpu,
 		    m->userland_emul, NULL, NULL, NULL);
+		cpu->memory_rw = userland_memory_rw;
+	}
 
 	if (m->use_x11)
 		x11_init(m);
@@ -537,8 +542,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0xffffffff80000000ULL + i;
-			memory_rw(m->cpus[m->bootstrap_cpu],
-			    m->memory, addr, data, sizeof(data),
+			cpu->memory_rw(cpu, m->memory, addr, data, sizeof(data),
 			    MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		}
 	}
@@ -561,7 +565,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 	/*  Load files (ROM code, boot code, ...) into memory:  */
 	if (n_load == 0) {
 		if (m->first_diskimage != NULL)
-			load_bootblock(m, m->cpus[m->bootstrap_cpu]);
+			load_bootblock(m, cpu);
 		else {
 			fprintf(stderr, "No executable file(s) loaded, and "
 			    "we are not booting directly from a disk image."
@@ -577,36 +581,28 @@ void emul_machine_setup(struct machine *m, int n_load,
 		    m->arch, &gp, &byte_order);
 
 		if (byte_order != NO_BYTE_ORDER_OVERRIDE)
-			m->cpus[m->bootstrap_cpu]->byte_order = byte_order;
+			cpu->byte_order = byte_order;
 
 		switch (m->arch) {
 		case ARCH_MIPS:
-			m->cpus[m->bootstrap_cpu]->cd.mips.pc = entrypoint;
+			cpu->cd.mips.pc = entrypoint;
 
-			if ((m->cpus[m->bootstrap_cpu]->cd.mips.pc >> 32) == 0
-			    && (m->cpus[m->bootstrap_cpu]->
-			    cd.mips.pc & 0x80000000ULL))
-				m->cpus[m->bootstrap_cpu]->
-				    cd.mips.pc |= 0xffffffff00000000ULL;
+			if ((cpu->cd.mips.pc >> 32) == 0
+			    && (cpu->cd.mips.pc & 0x80000000ULL))
+				cpu->cd.mips.pc |= 0xffffffff00000000ULL;
 
-			m->cpus[m->bootstrap_cpu]->
-			    cd.mips.gpr[MIPS_GPR_GP] = gp;
+			cpu->cd.mips.gpr[MIPS_GPR_GP] = gp;
 
-			if ((m->cpus[m->bootstrap_cpu]->
-			    cd.mips.gpr[MIPS_GPR_GP] >> 32) == 0 &&
-			    (m->cpus[m->bootstrap_cpu]->
-			    cd.mips.gpr[MIPS_GPR_GP] & 0x80000000ULL))
-				m->cpus[m->bootstrap_cpu]->
-				    cd.mips.gpr[MIPS_GPR_GP] |=
+			if ((cpu->cd.mips.gpr[MIPS_GPR_GP] >> 32) == 0 &&
+			    (cpu->cd.mips.gpr[MIPS_GPR_GP] & 0x80000000ULL))
+				cpu->cd.mips.gpr[MIPS_GPR_GP] |=
 				    0xffffffff00000000ULL;
 			break;
 		case ARCH_PPC:
-			m->cpus[m->bootstrap_cpu]->
-			    cd.ppc.pc = entrypoint;
+			cpu->cd.ppc.pc = entrypoint;
 			break;
 		case ARCH_SPARC:
-			m->cpus[m->bootstrap_cpu]->
-			    cd.sparc.pc = entrypoint;
+			cpu->cd.sparc.pc = entrypoint;
 			break;
 		default:
 			fatal("emul_machine_setup(): Internal error: "
@@ -630,21 +626,19 @@ void emul_machine_setup(struct machine *m, int n_load,
 	}
 
 	if (m->byte_order_override != NO_BYTE_ORDER_OVERRIDE)
-		m->cpus[m->bootstrap_cpu]->byte_order =
-		    m->byte_order_override;
+		cpu->byte_order = m->byte_order_override;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<m->ncpus; i++)
 		if (i != m->bootstrap_cpu)
-			m->cpus[i]->byte_order =
-			    m->cpus[m->bootstrap_cpu]->byte_order;
+			m->cpus[i]->byte_order = cpu->byte_order;
 
 	if (m->userland_emul != NULL)
-		useremul_setup(m->cpus[m->bootstrap_cpu], n_load, load_names);
+		useremul_setup(cpu, n_load, load_names);
 
 	/*  Startup the bootstrap CPU:  */
-	m->cpus[m->bootstrap_cpu]->bootstrap_cpu_flag = 1;
-	m->cpus[m->bootstrap_cpu]->running            = 1;
+	cpu->bootstrap_cpu_flag = 1;
+	cpu->running            = 1;
 
 	/*  ... or pause all CPUs, if start_paused is set:  */
 	if (m->start_paused) {
@@ -657,7 +651,7 @@ void emul_machine_setup(struct machine *m, int n_load,
 
 	/*  TODO: This is MIPS-specific!  */
 	if (m->machine_type == MACHINE_DEC &&
-	    m->cpus[m->bootstrap_cpu]->cd.mips.cpu_type.mmu_model == MMU3K)
+	    cpu->cd.mips.cpu_type.mmu_model == MMU3K)
 		add_symbol_name(&m->symbol_context,
 		    0x9fff0000, 0x10000, "r2k3k_cache", 0);
 
@@ -675,25 +669,20 @@ void emul_machine_setup(struct machine *m, int n_load,
 	debug("starting cpu%i at ", m->bootstrap_cpu);
 	switch (m->arch) {
 	case ARCH_MIPS:
-		if (m->cpus[m->bootstrap_cpu]->
-		    cd.mips.cpu_type.isa_level < 3 ||
-		    m->cpus[m->bootstrap_cpu]->
-		    cd.mips.cpu_type.isa_level == 32) {
+		if (cpu->cd.mips.cpu_type.isa_level < 3 ||
+		    cpu->cd.mips.cpu_type.isa_level == 32) {
 			debug("0x%08x", (int)m->cpus[
 			    m->bootstrap_cpu]->cd.mips.pc);
-			if (m->cpus[m->bootstrap_cpu]->
-			    cd.mips.gpr[MIPS_GPR_GP] != 0)
+			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
 				debug(" (gp=0x%08x)", (int)m->cpus[
 				    m->bootstrap_cpu]->cd.mips.gpr[
 				    MIPS_GPR_GP]);
 		} else {
 			debug("0x%016llx", (long long)m->cpus[
 			    m->bootstrap_cpu]->cd.mips.pc);
-			if (m->cpus[m->bootstrap_cpu]->cd.mips.gpr[MIPS_GPR_GP]
-			    != 0)
-				debug(" (gp=0x%016llx)", (long long)m->
-				    cpus[m->bootstrap_cpu]->cd.mips.gpr[
-				    MIPS_GPR_GP]);
+			if (cpu->cd.mips.gpr[MIPS_GPR_GP] != 0)
+				debug(" (gp=0x%016llx)", (long long)
+				    cpu->cd.mips.gpr[MIPS_GPR_GP]);
 		}
 		break;
 	default:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.20 2005-02-06 15:15:04 debug Exp $
+ *  $Id: dev_ssc.c,v 1.21 2005-02-11 09:29:48 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -90,7 +90,8 @@ void dev_ssc_tick(struct cpu *cpu, void *extra)
 		if (d->csrp != NULL) {
 			unsigned char txvector = 0xf8;
 			(*d->csrp) |= 0x10000000;
-			memory_rw(cpu, cpu->mem, 0x40000050, &txvector, 1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+			cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
+			    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
 			cpu_interrupt(cpu, 2);
 		}
 	}
@@ -102,7 +103,8 @@ void dev_ssc_tick(struct cpu *cpu, void *extra)
 		if (d->csrp != NULL) {
 			unsigned char txvector = 0xfc;
 			(*d->csrp) |= 0x10000000;
-			memory_rw(cpu, cpu->mem, 0x40000050, &txvector, 1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+			cpu->memory_rw(cpu, cpu->mem, 0x40000050, &txvector,
+			    1, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
 			cpu_interrupt(cpu, 2);
 		}
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.35 2005-02-10 07:15:45 debug Exp $
+ *  $Id: useremul.c,v 1.36 2005-02-11 09:29:51 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -70,27 +70,11 @@
 #include <time.h>
 
 #include "cpu.h"
-#include "misc.h"
-
-
-#ifndef ENABLE_USERLAND
-
-
-void useremul_setup(struct cpu *cpu, int argc, char **host_argv)  {  }
-void useremul_syscall(struct cpu *cpu, uint32_t code)  {  }
-void useremul_name_to_useremul(struct cpu *cpu, char *name, int *arch,
-	char **machine_name, char **cpu_name) { }
-void useremul_list_emuls(void)  {  }
-void useremul_init(void)  {  }
-
-
-#else	/*  ENABLE_USERLAND  */
-
-
 #include "cpu_mips.h"
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "syscall_linux_ppc.h"
 #include "syscall_netbsd.h"
 #include "syscall_ultrix.h"
@@ -285,7 +269,7 @@ static unsigned char *get_userland_string(struct cpu *cpu, uint64_t baseaddr)
 	/*  TODO: address validity check  */
 
 	for (i=0; i<len; i++) {
-		memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i,
+		cpu->memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i,
 		    1, MEM_READ, CACHE_DATA);
 		if (charbuf[i] == '\0')
 			break;
@@ -322,7 +306,7 @@ static unsigned char *get_userland_buf(struct cpu *cpu,
 
 	/*  TODO: address validity check  */
 	for (i=0; i<len; i++) {
-		memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i, 1,
+		cpu->memory_rw(cpu, cpu->mem, baseaddr+i, charbuf+i, 1,
 		    MEM_READ, CACHE_DATA);
 		/*  debug(" %02x", charbuf[i]);  */
 	}
@@ -474,7 +458,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 			}
 
 			/*  TODO: address validity check  */
-			memory_rw(cpu, cpu->mem, arg1, charbuf,
+			cpu->memory_rw(cpu, cpu->mem, arg1, charbuf,
 			    arg2, MEM_WRITE, CACHE_DATA);
 			free(charbuf);
 		}
@@ -494,7 +478,7 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 				exit(1);
 			}
 			/*  TODO: address validity check  */
-			memory_rw(cpu, cpu->mem, mipsbuf, charbuf,
+			cpu->memory_rw(cpu, cpu->mem, mipsbuf, charbuf,
 			    length, MEM_READ, CACHE_DATA);
 			result_low = write(descr, charbuf, length);
 			if ((int64_t)result_low < 0) {
@@ -744,12 +728,12 @@ static void useremul__netbsd(struct cpu *cpu, uint32_t code)
 			buf[arg1 - 1] = 0;
 
 			for (i = 0; i<arg1 && i < arg1; i++)
-				memory_rw(cpu, cpu->mem, arg0 + i,
+				cpu->memory_rw(cpu, cpu->mem, arg0 + i,
 				    (unsigned char *)&buf[i], 1,
 				    MEM_WRITE, CACHE_NONE);
 
 			/*  zero-terminate in emulated space:  */
-			memory_rw(cpu, cpu->mem, arg0 + arg1-1,
+			cpu->memory_rw(cpu, cpu->mem, arg0 + arg1-1,
 			    (unsigned char *)&buf[arg1 - 1],
 			    1, MEM_WRITE, CACHE_NONE);
 
@@ -895,7 +879,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 			}
 
 			/*  TODO: address validity check  */
-			memory_rw(cpu, cpu->mem, arg1, charbuf,
+			cpu->memory_rw(cpu, cpu->mem, arg1, charbuf,
 			    arg2, MEM_WRITE, CACHE_DATA);
 
 			free(charbuf);
@@ -918,7 +902,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 			}
 
 			/*  TODO: address validity check  */
-			memory_rw(cpu, cpu->mem, mipsbuf, charbuf,
+			cpu->memory_rw(cpu, cpu->mem, mipsbuf, charbuf,
 			    length, MEM_READ, CACHE_DATA);
 
 			result_low = write(descr, charbuf, length);
@@ -1118,7 +1102,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 
 			result_low = gethostname((char *)buf, arg1);
 			for (i = 0; i<arg1 && i < arg1; i++)
-				memory_rw(cpu, cpu->mem, arg0 + i,
+				cpu->memory_rw(cpu, cpu->mem, arg0 + i,
 				    &buf[i], 1, MEM_WRITE, CACHE_NONE);
 
 			free(buf);
@@ -1153,7 +1137,7 @@ static void useremul__ultrix(struct cpu *cpu, uint32_t code)
 					}
 
 					/*  TODO: address validity check  */
-					memory_rw(cpu, cpu->mem, (uint64_t)
+					cpu->memory_rw(cpu, cpu->mem, (uint64_t)
 					    iov_base, charbuf, iov_len,
 					    MEM_READ, CACHE_DATA);
 					total += write(descr, charbuf, iov_len);
@@ -1360,5 +1344,3 @@ void useremul_init(void)
 	    useremul__ultrix, useremul__ultrix_setup);
 }
 
-
-#endif	/*  ENABLE_USERLAND  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.14 2005-02-09 20:36:06 debug Exp $
+ *  $Id: cpu.h,v 1.15 2005-02-11 09:29:49 debug Exp $
  *
  *  See cpu.c.
  */
@@ -80,11 +80,6 @@ struct cpu_family {
 	int			(*interrupt)(struct cpu *cpu, uint64_t irq_nr);
 	int			(*interrupt_ack)(struct cpu *cpu,
 				    uint64_t irq_nr);
-
-	int			(*memory_rw)(struct cpu *cpu,
-				    struct memory *mem, uint64_t vaddr,
-				    unsigned char *data, size_t len,
-				    int writeflag, int cache_flags);
 };
 
 
@@ -100,6 +95,10 @@ struct cpu {
 	char		*name;
 
 	struct memory	*mem;
+	int		(*memory_rw)(struct cpu *cpu,
+			    struct memory *mem, uint64_t vaddr,
+			    unsigned char *data, size_t len,
+			    int writeflag, int cache_flags);
 	int		(*translate_address)(struct cpu *, uint64_t vaddr,
 			    uint64_t *return_addr, int flags);
 	void		(*useremul_syscall)(struct cpu *cpu,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.16 2005-02-10 06:48:06 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.17 2005-02-11 09:29:50 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -109,6 +109,7 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	memset(cpu, 0, sizeof(struct cpu));
+	cpu->memory_rw          = ppc_memory_rw;
 	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
 	cpu->name               = cpu->cd.ppc.cpu_type.name;
 	cpu->mem                = mem;
@@ -556,7 +557,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	cached_pc = cpu->cd.ppc.pc_last = cpu->cd.ppc.pc & ~3;
 
-	r = memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
+	r = cpu->memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
 	    MEM_READ, CACHE_INSTRUCTION | PHYSICAL);
 	if (!r)
 		return 0;
@@ -691,7 +692,6 @@ int ppc_cpu_family_init(struct cpu_family *fp)
 	/*  fp->tlbdump = ppc_cpu_tlbdump;  */
 	/*  fp->interrupt = ppc_cpu_interrupt;  */
 	/*  fp->interrupt_ack = ppc_cpu_interrupt_ack;  */
-	fp->memory_rw = ppc_memory_rw;
 	return 1;
 }
 

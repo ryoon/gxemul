@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.15 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.16 2005-02-11 09:29:48 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -165,20 +165,28 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 
 				copy_buf = malloc(length);
 				if (copy_buf == NULL) {
-					fprintf(stderr, "out of memory in dev_ps2_stuff_access()\n");
+					fprintf(stderr, "out of memory in "
+					    "dev_ps2_stuff_access()\n");
 					exit(1);
 				}
-				memory_rw(cpu, cpu->mem, from_addr, copy_buf, length, MEM_READ, CACHE_NONE | PHYSICAL);
-				memory_rw(cpu, cpu->mem, d->other_memory_base[DMA_CH_GIF] + to_addr, copy_buf, length, MEM_WRITE, CACHE_NONE | PHYSICAL);
+				cpu->memory_rw(cpu, cpu->mem, from_addr,
+				    copy_buf, length, MEM_READ,
+				    CACHE_NONE | PHYSICAL);
+				cpu->memory_rw(cpu, cpu->mem,
+				    d->other_memory_base[DMA_CH_GIF] + to_addr,
+				    copy_buf, length, MEM_WRITE,
+				    CACHE_NONE | PHYSICAL);
 				free(copy_buf);
 
 				/*  Done with the transfer:  */
 				d->dmac_reg[D2_QWC_REG/0x10] = 0;
 				idata &= ~D_CHCR_STR;
 
-				cpu_interrupt(cpu, (1 << 18) +8);		/*  1<<18 is dma2  */
+				cpu_interrupt(cpu, (1 << 18) +8);
+				    /*  1<<18 is dma2  */
 			} else
-				debug("[ ps2_stuff: dmac [ch2] stopping transfer ]\n");
+				debug("[ ps2_stuff: dmac [ch2] stopping "
+				    "transfer ]\n");
 			d->dmac_reg[regnr] = idata;
 			return 1;
 		}

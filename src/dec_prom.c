@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.52 2005-02-07 06:35:39 debug Exp $
+ *  $Id: dec_prom.c,v 1.53 2005-02-11 09:29:50 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -37,14 +37,13 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "misc.h"
-
 #include "console.h"
 #include "cpu.h"
+#include "cpu_mips.h"
 #include "diskimage.h"
 #include "machine.h"
 #include "memory.h"
-#include "cpu_mips.h"
+#include "misc.h"
 
 #include "dec_prom.h"
 #include "dec_5100.h"
@@ -149,7 +148,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		if (cpu->cd.mips.gpr[MIPS_GPR_A2] == 0)
 			current_file_offset = cpu->cd.mips.gpr[MIPS_GPR_A1];
 		else
-			fatal("WARNING! Unimplemented whence in dec_jumptable_func()\n");
+			fatal("WARNING! Unimplemented whence in "
+			    "dec_jumptable_func()\n");
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x68:	/*  putchar()  */
@@ -165,7 +165,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);
@@ -173,8 +174,8 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
 				printf("[%02x]", ch);
 		}
 		printf("\n");
-		fatal("PROM emulation: unimplemented JUMP TABLE vector 0x%x (decimal function %i)\n",
-		    vector, vector/8);
+		fatal("PROM emulation: unimplemented JUMP TABLE vector "
+		    "0x%x (decimal function %i)\n", vector, vector/8);
 		cpu->running = 0;
 		cpu->dead = 1;
 	}
@@ -291,7 +292,8 @@ int decstation_prom_emul(struct cpu *cpu)
 				/*  It seems that trailing newlines
 				    are not included in the buffer.  */
 			} else if (ch != '\b') {
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
+				cpu->memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
 				    &ch2, sizeof(ch2), MEM_WRITE,
 				    CACHE_DATA | NO_EXCEPTIONS);
 				i++;
@@ -303,8 +305,9 @@ int decstation_prom_emul(struct cpu *cpu)
 
 		/*  Trailing nul-byte:  */
 		ch2 = '\0';
-		memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch2,
-		    sizeof(ch2), MEM_WRITE, CACHE_DATA | NO_EXCEPTIONS);
+		cpu->memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] +
+		    i, &ch2, sizeof(ch2), MEM_WRITE,
+		    CACHE_DATA | NO_EXCEPTIONS);
 
 		/*  Return the input argument:  */
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = cpu->cd.mips.gpr[MIPS_GPR_A0];
@@ -455,7 +458,8 @@ int decstation_prom_emul(struct cpu *cpu)
 	case 0x64:		/*  getenv()  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i],
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i],
 			    sizeof(char), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ DEC PROM getenv(\"%s\") ]\n", buf);
@@ -463,14 +467,15 @@ int decstation_prom_emul(struct cpu *cpu)
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<strlen((char *)buf); j++) {
-				memory_rw(cpu, cpu->mem, (uint64_t)
+				cpu->memory_rw(cpu, cpu->mem, (uint64_t)
 				    (DEC_PROM_STRINGS + i + j), &ch2,
 				    sizeof(char), MEM_READ, CACHE_DATA |
 				    NO_EXCEPTIONS);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(DEC_PROM_STRINGS
+			cpu->memory_rw(cpu, cpu->mem,
+			    (uint64_t)(DEC_PROM_STRINGS
 			    + i + strlen((char *)buf)), &ch2, sizeof(char),
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
@@ -592,7 +597,8 @@ int decstation_prom_emul(struct cpu *cpu)
 		printf("a0 points to: ");
 		for (i=0; i<40; i++) {
 			unsigned char ch = '\0';
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &ch,
 			    sizeof(ch), MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (ch >= ' ' && ch < 126)
 				printf("%c", ch);

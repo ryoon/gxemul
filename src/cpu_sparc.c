@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_sparc.c,v 1.5 2005-02-09 14:53:20 debug Exp $
+ *  $Id: cpu_sparc.c,v 1.6 2005-02-11 09:29:50 debug Exp $
  *
  *  SPARC CPU emulation.
  *
@@ -95,6 +95,7 @@ struct cpu *sparc_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	memset(cpu, 0, sizeof(struct cpu));
+	cpu->memory_rw          = sparc_memory_rw;
 	cpu->name               = cpu_type_name;
 	cpu->mem                = mem;
 	cpu->machine            = machine;
@@ -187,7 +188,6 @@ int sparc_cpu_family_init(struct cpu_family *fp)
 	/*  fp->tlbdump = sparc_cpu_tlbdump;  */
 	/*  fp->interrupt = sparc_cpu_interrupt;  */
 	/*  fp->interrupt_ack = sparc_cpu_interrupt_ack;  */
-	fp->memory_rw = sparc_memory_rw;
 	return 1;
 }
 

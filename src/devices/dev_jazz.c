@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.14 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_jazz.c,v 1.15 2005-02-11 09:29:48 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -92,8 +92,8 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 	i = 0;
 	while (dma_addr < d->dma0_addr + d->dma0_count && i < len) {
 
-		res = memory_rw(cpu, cpu->mem, d->dma_translation_table_base +
-		    (dma_addr >> 12) * 8,
+		res = cpu->memory_rw(cpu, cpu->mem,
+		    d->dma_translation_table_base + (dma_addr >> 12) * 8,
 		    tr, sizeof(tr), 0, PHYSICAL | NO_EXCEPTIONS);
 
 		if (cpu->byte_order==EMUL_BIG_ENDIAN)
@@ -115,7 +115,7 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 		if ((phys_addr & 255) == 0 && i + 255 <= len)
 			ncpy = 255;
 
-		res = memory_rw(cpu, cpu->mem, phys_addr,
+		res = cpu->memory_rw(cpu, cpu->mem, phys_addr,
 		    &data[i], ncpy, writeflag, PHYSICAL | NO_EXCEPTIONS);
 
 		dma_addr += ncpy;

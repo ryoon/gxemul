@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.90 2005-02-07 06:35:39 debug Exp $
+ *  $Id: arcbios.c,v 1.91 2005-02-11 09:29:50 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -160,7 +160,7 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
 	buf[1] = arcbios_console_curcolor;
 	if (arcbios_console_reverse)
 		buf[1] = ((buf[1] & 0x70) >> 4) | ((buf[1] & 7) << 4) | (buf[1] & 0x88);
-	memory_rw(cpu, cpu->mem, arcbios_console_vram +
+	cpu->memory_rw(cpu, cpu->mem, arcbios_console_vram +
 	    2*(x + arcbios_console_maxx * y),
 	    &buf[0], sizeof(buf), MEM_WRITE,
 	    CACHE_NONE | PHYSICAL);
@@ -343,11 +343,13 @@ static void scroll_if_necessary(struct cpu *cpu)
 		int x, y;
 		for (y=0; y<arcbios_console_maxy-1; y++)
 			for (x=0; x<arcbios_console_maxx; x++) {
-				memory_rw(cpu, cpu->mem, arcbios_console_vram +
+				cpu->memory_rw(cpu, cpu->mem,
+				    arcbios_console_vram +
 				    2*(x + arcbios_console_maxx * (y+1)),
 				    &buf[0], sizeof(buf), MEM_READ,
 				    CACHE_NONE | PHYSICAL);
-				memory_rw(cpu, cpu->mem, arcbios_console_vram +
+				cpu->memory_rw(cpu, cpu->mem,
+				    arcbios_console_vram +
 				    2*(x + arcbios_console_maxx * y),
 				    &buf[0], sizeof(buf), MEM_WRITE,
 				    CACHE_NONE | PHYSICAL);
@@ -435,16 +437,16 @@ static void arcbios_putchar(struct cpu *cpu, int ch)
 	    arcbios_console_maxx-1 : arcbios_console_curx) +
 	    arcbios_console_cury * arcbios_console_maxx;
 	byte = 0x0e;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
+	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = (addr >> 8) & 255;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
+	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = 0x0f;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
+	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x14,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 	byte = addr & 255;
-	memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
+	cpu->memory_rw(cpu, cpu->mem, arcbios_console_ctrlregs + 0x15,
 	    &byte, sizeof(byte), MEM_WRITE, CACHE_NONE | PHYSICAL);
 }
 
@@ -582,7 +584,7 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 
 		/*  debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);  */
 
-		memory_rw(cpu, cpu->mem,
+		cpu->memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
 		    MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -592,14 +594,17 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		}
 		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		memory_rw(cpu, cpu->mem, peeraddr + 1 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 * arc_wordlen,
+		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			unsigned char tmp; tmp = buf[0];
+			buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen,
+		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -620,7 +625,8 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpu, cpu->mem, peeraddr + 0x28, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 0x28, &buf[0],
+		    sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
@@ -713,7 +719,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 
 		/*  debug("[ addchild: peeraddr = 0x%016llx ]\n", (long long)peeraddr);  */
 
-		memory_rw(cpu, cpu->mem,
+		cpu->memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
 		    MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -727,7 +733,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		memory_rw(cpu, cpu->mem, peeraddr +
+		cpu->memory_rw(cpu, cpu->mem, peeraddr +
 		    1 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -740,7 +746,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		memory_rw(cpu, cpu->mem, peeraddr +
+		cpu->memory_rw(cpu, cpu->mem, peeraddr +
 		    2 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -767,7 +773,7 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpu, cpu->mem, peeraddr + 0x34,
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 0x34,
 				&buf[0], sizeof(uint32_t), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
@@ -849,7 +855,9 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 
 		for (i=0; i<config_len; i++) {
 			unsigned char ch = p[i];
-			memory_rw(cpu, cpu->mem, configuration_data_next_addr + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    configuration_data_next_addr + i,
+			    &ch, 1, MEM_WRITE, CACHE_NONE);
 		}
 
 		configuration_data_len[n_configuration_data] = config_len;
@@ -1173,7 +1181,9 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x24:		/*  GetPeer(node)  */
 		{
 			uint64_t peer;
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 3 * arc_wordlen,
+			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1204,7 +1214,9 @@ int arcbios_emul(struct cpu *cpu)
 			cpu->cd.mips.gpr[MIPS_GPR_V0] = FIRST_ARC_COMPONENT + arc_wordlen * 3;
 		else {
 			uint64_t child = 0;
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] - 2 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 2 * arc_wordlen,
+			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1233,7 +1245,9 @@ int arcbios_emul(struct cpu *cpu)
 		{
 			uint64_t parent;
 
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] - 1 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] - 1 * arc_wordlen,
+			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -1269,8 +1283,12 @@ int arcbios_emul(struct cpu *cpu)
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
 				for (j=0; j<configuration_data_len[i]; j++) {
 					unsigned char ch;
-					memory_rw(cpu, cpu->mem, configuration_data_configdata[i] + j, &ch, 1, MEM_READ, CACHE_NONE);
-					memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + j, &ch, 1, MEM_WRITE, CACHE_NONE);
+					cpu->memory_rw(cpu, cpu->mem,
+					    configuration_data_configdata[i] +
+					    j, &ch, 1, MEM_READ, CACHE_NONE);
+					cpu->memory_rw(cpu, cpu->mem,
+					    cpu->cd.mips.gpr[MIPS_GPR_A0] + j,
+					    &ch, 1, MEM_WRITE, CACHE_NONE);
 				}
 				break;
 			}
@@ -1290,7 +1308,9 @@ int arcbios_emul(struct cpu *cpu)
 
 			memset(buf, 0, sizeof(buf));
 			for (i=0; i<sizeof(buf); i++) {
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				cpu->memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
+				    &buf[i], 1, MEM_READ, CACHE_NONE);
 				if (buf[i] == '\0')
 					i = sizeof(buf);
 			}
@@ -1385,7 +1405,9 @@ int arcbios_emul(struct cpu *cpu)
 			}
 			memset(buf, 0, MAX_OPEN_STRINGLEN);
 			for (i=0; i<MAX_OPEN_STRINGLEN; i++) {
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				cpu->memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
+				    &buf[i], 1, MEM_READ, CACHE_NONE);
 				if (buf[i] == '\0')
 					i = MAX_OPEN_STRINGLEN;
 			}
@@ -1458,7 +1480,7 @@ int arcbios_emul(struct cpu *cpu)
 
 				ch = x;
 				nread ++;
-				memory_rw(cpu, cpu->mem,
+				cpu->memory_rw(cpu, cpu->mem,
 				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
 				    &ch, 1, MEM_WRITE, CACHE_NONE);
 
@@ -1547,7 +1569,8 @@ int arcbios_emul(struct cpu *cpu)
 			}
 
 			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++)
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
+				cpu->memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
 				    &tmp_buf[i], sizeof(char), MEM_READ,
 				    CACHE_NONE);
 
@@ -1565,7 +1588,9 @@ int arcbios_emul(struct cpu *cpu)
 		} else {
 			for (i=0; i<cpu->cd.mips.gpr[MIPS_GPR_A2]; i++) {
 				unsigned char ch = '\0';
-				memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
+				cpu->memory_rw(cpu, cpu->mem,
+				    cpu->cd.mips.gpr[MIPS_GPR_A1] + i,
+				    &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 
 				arcbios_putchar(cpu, ch);
 			}
@@ -1587,7 +1612,9 @@ int arcbios_emul(struct cpu *cpu)
 		{
 			unsigned char buf[8];
 			uint64_t ofs;
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A1], &buf[0], sizeof(buf), MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A1], &buf[0],
+			    sizeof(buf), MEM_READ, CACHE_NONE);
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				unsigned char tmp;
 				tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1608,18 +1635,25 @@ int arcbios_emul(struct cpu *cpu)
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->cd.mips.gpr[MIPS_GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    cpu->cd.mips.gpr[MIPS_GPR_A0] + i,
+			    &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ ARCBIOS GetEnvironmentVariable(\"%s\") ]\n", buf);
 		for (i=0; i<0x1000; i++) {
 			/*  Matching string at offset i?  */
 			int nmatches = 0;
 			for (j=0; j<strlen((char *)buf); j++) {
-				memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + j), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
+				cpu->memory_rw(cpu, cpu->mem,
+				    (uint64_t)(ARC_ENV_STRINGS + i + j),
+				    &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 				if (ch2 == buf[j])
 					nmatches++;
 			}
-			memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
+			cpu->memory_rw(cpu, cpu->mem,
+			    (uint64_t)(ARC_ENV_STRINGS + i +
+			    strlen((char *)buf)), &ch2, sizeof(char),
+			    MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
 				cpu->cd.mips.gpr[MIPS_GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
 				return 1;

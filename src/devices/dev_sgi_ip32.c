@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.20 2005-02-03 23:36:20 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.21 2005-02-11 09:29:48 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -480,7 +480,7 @@ static int mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 	/*  printf("rx base = 0x%016llx\n", (long long)base);  */
 
 	/*  Read an rx descriptor from memory:  */
-	res = memory_rw(cpu, cpu->mem, base,
+	res = cpu->memory_rw(cpu, cpu->mem, base,
 	    &data[0], sizeof(data), MEM_READ, PHYSICAL);
 	if (!res)
 		return 0;
@@ -512,7 +512,7 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 	/*  Copy the packet data:  */
 	/*  printf("RX: ");  */
 	for (i=0; i<d->cur_rx_packet_len; i++) {
-		res = memory_rw(cpu, cpu->mem, base + 32 + i + 2,
+		res = cpu->memory_rw(cpu, cpu->mem, base + 32 + i + 2,
 		    d->cur_rx_packet + i, 1, MEM_WRITE, PHYSICAL);
 		/*  printf(" %02x", d->cur_rx_packet[i]);  */
 	}
@@ -532,7 +532,7 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 	/*  TODO: lots of bits :-)  */
 	data[4] = 0x04;		/*  match MAC  */
 	data[0] = 0x80;		/*  0x80 = received.  */
-	res = memory_rw(cpu, cpu->mem, base,
+	res = cpu->memory_rw(cpu, cpu->mem, base,
 	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
 
 	/*  Free the packet from memory:  */
@@ -578,7 +578,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 
 	/*  Each tx descriptor (+ buffer) is 128 bytes:  */
 	addr = base + tx_ring_ptr*128;
-	res = memory_rw(cpu, cpu->mem, addr,
+	res = cpu->memory_rw(cpu, cpu->mem, addr,
 	    &data[0], sizeof(data), MEM_READ, PHYSICAL);
 	if (!res)
 		return 0;
@@ -620,7 +620,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 		if ((i & 0x7f) == 0x00)
 			break;
 
-		res = memory_rw(cpu, cpu->mem, addr + i,
+		res = cpu->memory_rw(cpu, cpu->mem, addr + i,
 		    &ch, sizeof(ch), MEM_READ, PHYSICAL);
 		/*  printf(" %02x", ch);  */
 
@@ -653,7 +653,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 
 			while (dma_len > 0) {
 				unsigned char ch;
-				res = memory_rw(cpu, cpu->mem, dma_base,
+				res = cpu->memory_rw(cpu, cpu->mem, dma_base,
 				    &ch, sizeof(ch), MEM_READ, PHYSICAL);
 				/*  printf(" %02x", ch);  */
 
@@ -684,7 +684,7 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	data[5] = 0x80;
 	data[4] = 0x00;
 
-	res = memory_rw(cpu, cpu->mem, addr,
+	res = cpu->memory_rw(cpu, cpu->mem, addr,
 	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
 
 	/*  Advance the ring Read ptr.  */
@@ -1088,7 +1088,9 @@ int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
 						fill_len = sizeof(zerobuf);
 					else
 						fill_len = zerobuflen;
-					memory_rw(cpu, mem, fill_addr, zerobuf, fill_len, MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+					cpu->memory_rw(cpu, mem, fill_addr,
+					    zerobuf, fill_len, MEM_WRITE,
+					    NO_EXCEPTIONS | PHYSICAL);
 					fill_addr += fill_len;
 					zerobuflen -= sizeof(zerobuf);
 				}

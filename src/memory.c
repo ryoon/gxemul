@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.157 2005-02-09 14:28:09 debug Exp $
+ *  $Id: memory.c,v 1.158 2005-02-11 09:29:51 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -190,8 +190,8 @@ int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 	for (;;) {
 		c = '\0';
-		memory_rw(cpu, mem, addr+cur_length, &c, sizeof(c), MEM_READ,
-		    CACHE_NONE | NO_EXCEPTIONS);
+		cpu->memory_rw(cpu, mem, addr+cur_length,
+		    &c, sizeof(c), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 		if (c=='\n' || c=='\t' || c=='\r' || (c>=' ' && c<127)) {
 			cur_length ++;
 			if (cur_length >= min_string_length)
@@ -221,7 +221,7 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 	while (output_index < bufsize-1) {
 		c = '\0';
-		memory_rw(cpu, mem, addr+len, &c, sizeof(c), MEM_READ,
+		cpu->memory_rw(cpu, mem, addr+len, &c, sizeof(c), MEM_READ,
 		    CACHE_NONE | NO_EXCEPTIONS);
 		buf[output_index] = c;
 		if (c>=' ' && c<127) {
@@ -248,48 +248,6 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
 
 	buf[bufsize-1] = '\0';
 	return buf;
-}
-
-
-/*
- *  memory_rw():
- *
- *  Read or write data from/to memory.
- *
- *	cpu		the cpu doing the read/write
- *	mem		the memory object to use
- *	vaddr		the virtual address
- *	data		a pointer to the data to be written to memory, or
- *			a placeholder for data when reading from memory
- *	len		the length of the 'data' buffer
- *	writeflag	set to MEM_READ or MEM_WRITE
- *	cache_flags	CACHE_{NONE,DATA,INSTRUCTION} | other flags
- *
- *  If the address indicates access to a memory mapped device, that device'
- *  read/write access function is called.
- *
- *  If instruction latency/delay support is enabled, then
- *  cpu->instruction_delay is increased by the number of instruction to
- *  delay execution.
- *
- *  This function should not be called with cpu == NULL.
- *
- *  Returns one of the following:
- *	MEMORY_ACCESS_FAILED
- *	MEMORY_ACCESS_OK
- *
- *  (MEMORY_ACCESS_FAILED is 0.)
- */
-int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
-	unsigned char *data, size_t len, int writeflag, int cache_flags)
-{
-	if (cpu->machine->cpu_family->memory_rw == NULL) {
-		fatal("memory_rw(): no memory_rw?\n");
-		return MEMORY_ACCESS_FAILED;
-	}
-
-	return cpu->machine->cpu_family->memory_rw(cpu, mem, vaddr, data,
-	    len, writeflag, cache_flags);
 }
 
 
@@ -443,5 +401,70 @@ void memory_device_register(struct memory *mem, const char *device_name,
 		mem->mmap_dev_minaddr = baseaddr;
 	if (baseaddr + len > mem->mmap_dev_maxaddr)
 		mem->mmap_dev_maxaddr = baseaddr + len;
+}
+
+
+#define MEMORY_RW	userland_memory_rw
+#define MEM_USERLAND
+#include "memory_rw.c"
+#undef MEM_USERLAND
+#undef MEMORY_RW
+
+
+/*
+ *  memory_paddr_to_hostaddr():
+ *
+ *  Translate a physical address into a host address.
+ *
+ *  Return value is a pointer to a host memblock, or NULL on failure.
+ *  On reads, a NULL return value should be interpreted as reading all zeroes.
+ */
+unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+	uint64_t paddr, int writeflag)
+{
+	void **table;
+	int entry;
+	const int mask = (1 << BITS_PER_PAGETABLE) - 1;
+	const int shrcount = MAX_BITS - BITS_PER_PAGETABLE;
+
+	table = mem->pagetable;
+	entry = (paddr >> shrcount) & mask;
+
+	/*  printf("   entry = %x\n", entry);  */
+
+	if (table[entry] == NULL) {
+		size_t alloclen;
+
+		/*
+		 *  Special case:  reading from a nonexistant memblock
+		 *  returns all zeroes, and doesn't allocate anything.
+		 *  (If any intermediate pagetable is nonexistant, then
+		 *  the same thing happens):
+		 */
+		if (writeflag == MEM_READ)
+			return NULL;
+
+		/*  Allocate a memblock:  */
+		alloclen = 1 << BITS_PER_MEMBLOCK;
+
+		/*  printf("  allocating for entry %i, len=%i\n",
+		    entry, alloclen);  */
+
+		/*  Anonymous mmap() should return zero-filled memory,
+		    try malloc + memset if mmap failed.  */
+		table[entry] = (void *) mmap(NULL, alloclen,
+		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
+		    -1, 0);
+		if (table[entry] == NULL) {
+			table[entry] = malloc(alloclen);
+			if (table[entry] == NULL) {
+				fatal("out of memory\n");
+				exit(1);
+			}
+			memset(table[entry], 0, alloclen);
+		}
+	}
+
+	return (unsigned char *) table[entry];
 }
 

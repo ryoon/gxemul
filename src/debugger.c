@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.87 2005-02-10 05:55:01 debug Exp $
+ *  $Id: debugger.c,v 1.88 2005-02-11 09:29:50 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -54,7 +54,6 @@
 #include <unistd.h>
 
 #include "console.h"
-#include "cop0.h"
 #include "cpu.h"
 #include "debugger.h"
 #include "diskimage.h"
@@ -598,8 +597,8 @@ static void debugger_cmd_dump(struct machine *m, char *cmd_line)
 	while (addr < addr_end) {
 		unsigned char buf[16];
 		memset(buf, 0, sizeof(buf));
-		r = memory_rw(c, mem, addr, &buf[0], sizeof(buf), MEM_READ,
-		    CACHE_NONE | NO_EXCEPTIONS);
+		r = c->memory_rw(c, mem, addr, &buf[0], sizeof(buf),
+		    MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 
 		printf("0x%016llx  ", (long long)addr);
 
@@ -996,7 +995,7 @@ static void debugger_cmd_put(struct machine *m, char *cmd_line)
 		printf("0x%016llx: %02x", (long long)addr, a_byte);
 		if (data > 255)
 			printf(" (NOTE: truncating %0llx)", (long long)data);
-		res = memory_rw(m->cpus[0], m->cpus[0]->mem, addr,
+		res = m->cpus[0]->memory_rw(m->cpus[0], m->cpus[0]->mem, addr,
 		    &a_byte, 1, MEM_WRITE, CACHE_NONE | NO_EXCEPTIONS);
 		if (!res)
 			printf("  FAILED!\n");
@@ -1336,7 +1335,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 		memset(buf, 0, sizeof(buf));
 
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
+			c->memory_rw(c, mem, addr+i, buf+i, 1, MEM_READ,
 			    CACHE_NONE | NO_EXCEPTIONS);
 
 		len = cpu_disassemble_instr(m, c, buf, 0, addr, 0);

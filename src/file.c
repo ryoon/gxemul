@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.84 2005-04-06 18:10:16 debug Exp $
+ *  $Id: file.c,v 1.85 2005-04-06 21:28:36 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -845,7 +845,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	FILE *f;
 	int len;
 	unsigned char buf[4096];
-	uint64_t entry, vaddr, skip = 0;
+	uint64_t entry, loadaddr, vaddr, skip = 0;
 	char *p, *p2;
 
 	p = strchr(filename, ':');
@@ -855,8 +855,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 		exit(1);
 	}
 
-	entry = strtoull(filename, NULL, 0);
-	vaddr = entry;
+	loadaddr = vaddr = entry = strtoull(filename, NULL, 0);
 	p2 = p+1;
 
 	/*  A second value? That's the optional skip value  */
@@ -892,7 +891,7 @@ static void file_load_raw(struct machine *m, struct memory *mem,
 	}
 
 	debug("RAW: 0x%llx bytes @ 0x%08llx",
-	    (long long) (ftell(f) - skip), (long long)entry);
+	    (long long) (ftell(f) - skip), (long long)loadaddr);
 	if (skip != 0)
 		debug(" (0x%llx bytes of header skipped)", (long long)skip);
 	debug("\n");

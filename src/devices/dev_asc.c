@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.13 2004-03-11 05:31:00 debug Exp $
+ *  $Id: dev_asc.c,v 1.14 2004-03-26 21:51:02 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -455,10 +455,15 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			break;
 		case NCRCMD_SELNATN:
 		case NCRCMD_SELATN:
+		case NCRCMD_SELATNS:
 		case NCRCMD_SELATN3:
 			switch (idata & ~NCRCMD_DMA) {
 			case NCRCMD_SELATN:
-				debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+			case NCRCMD_SELATNS:
+				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATNS)
+					debug("SELATNS: select with atn and stop (TODO: stop), id %i", d->reg_wo[NCR_SELID] & 7);
+				else
+					debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
 				n_messagebytes = 1;
 				break;
 			case NCRCMD_SELATN3:

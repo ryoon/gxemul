@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.24 2005-01-12 08:45:49 debug Exp $
+ *  $Id: useremul.c,v 1.25 2005-01-19 14:59:22 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -67,7 +67,7 @@
 #include <time.h>
 #include <errno.h>
 
-#include "emul.h"
+#include "machine.h"
 #include "misc.h"
 
 
@@ -111,7 +111,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	int i, i2;
 	int envc = 1;
 
-	switch (cpu->emul->userland_emul) {
+	switch (cpu->machine->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
 		cpu->gpr[GPR_A0] = stack_top - stack_margin;
@@ -129,7 +129,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 
 	/*  The userland stack:  */
 	cpu->gpr[GPR_SP] = stack_top - stack_margin;
-	add_symbol_name(&cpu->emul->symbol_context,
+	add_symbol_name(&cpu->machine->symbol_context,
 	    stack_top - stacksize, stacksize, "userstack", 0);
 
 	/*
@@ -243,7 +243,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 	uint32_t sysctl_name, sysctl_namelen, sysctl_oldp, sysctl_oldlenp, sysctl_newp, sysctl_newlen;
 	uint32_t name0, name1, name2, name3;
 
-	switch (cpu->emul->userland_emul) {
+	switch (cpu->machine->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		sysnr = cpu->gpr[GPR_V0];
 
@@ -982,7 +982,7 @@ TODO
 
 	default:
 		fprintf(stderr, "useremul_syscall(): unimplemented syscall"
-		   " emulation %i\n", cpu->emul->userland_emul);
+		   " emulation %i\n", cpu->machine->userland_emul);
 		exit(1);
 	}
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.117 2005-01-19 14:42:11 debug Exp $
+ *  $Id: emul.c,v 1.118 2005-01-19 14:59:22 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -206,24 +206,26 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 				break;
 
 			if (n_blocks * 512 > 65536)
-				fatal("\nWARNING! Unusually large bootblock (%i bytes)\n\n",
-				    n_blocks * 512);
+				fatal("\nWARNING! Unusually large bootblock "
+				    "(%i bytes)\n\n", n_blocks * 512);
 
 			bootblock_buf = malloc(n_blocks * 512);
 			if (bootblock_buf == NULL) {
-				fprintf(stderr, "out of memory in load_bootblock()\n");
+				fprintf(stderr, "out of memory in "
+				    "load_bootblock()\n");
 				exit(1);
 			}
 
-			res = diskimage_access(boot_disk_id, 0, bootblock_offset,
-			    bootblock_buf, n_blocks * 512);
+			res = diskimage_access(boot_disk_id, 0,
+			    bootblock_offset, bootblock_buf, n_blocks * 512);
 			if (!res) {
-				fatal("WARNING: could not load bootblocks from disk offset 0x%llx\n",
+				fatal("WARNING: could not load bootblocks from"
+				    " disk offset 0x%llx\n",
 				    (long long)bootblock_offset);
 			}
 
-			store_buf(cpu, bootblock_loadaddr, (char *)bootblock_buf,
-			    n_blocks * 512);
+			store_buf(cpu, bootblock_loadaddr,
+			    (char *)bootblock_buf, n_blocks * 512);
 
 			bootblock_loadaddr += 512*n_blocks;
 			free(bootblock_buf);
@@ -232,7 +234,8 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 
 		break;
 	default:
-		fatal("Booting from disk without a separate kernel doesn't work in this emulation mode.\n");
+		fatal("Booting from disk without a separate kernel "
+		    "doesn't work in this emulation mode.\n");
 		exit(1);
 	}
 }
@@ -360,17 +363,29 @@ static void add_arc_components(struct machine *m)
 			 */
 
 			if (diskimages[i]->is_a_cdrom) {
-				snprintf(component_string, sizeof(component_string), "scsi(0)cdrom(%i)", i);
-				arcbios_add_string_to_component(component_string, scsidevice);
+				snprintf(component_string,
+				    sizeof(component_string),
+				    "scsi(0)cdrom(%i)", i);
+				arcbios_add_string_to_component(
+				    component_string, scsidevice);
 
-				snprintf(component_string, sizeof(component_string), "scsi(0)cdrom(%i)fdisk(0)", i);
-				arcbios_add_string_to_component(component_string, scsidisk);
+				snprintf(component_string,
+				    sizeof(component_string),
+				    "scsi(0)cdrom(%i)fdisk(0)", i);
+				arcbios_add_string_to_component(
+				    component_string, scsidisk);
 			} else {
-				snprintf(component_string, sizeof(component_string), "scsi(0)disk(%i)", i);
-				arcbios_add_string_to_component(component_string, scsidevice);
+				snprintf(component_string,
+				    sizeof(component_string),
+				    "scsi(0)disk(%i)", i);
+				arcbios_add_string_to_component(
+				    component_string, scsidevice);
 
-				snprintf(component_string, sizeof(component_string), "scsi(0)disk(%i)rdisk(0)", i);
-				arcbios_add_string_to_component(component_string, scsidisk);
+				snprintf(component_string,
+				    sizeof(component_string),
+				    "scsi(0)disk(%i)rdisk(0)", i);
+				arcbios_add_string_to_component(
+				    component_string, scsidisk);
 			}
 		}
 }
@@ -566,7 +581,8 @@ void emul_start(struct emul *emul)
 	debug("-" VERSION);
 #endif
 	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
-	debug("Read the source code and/or documentation for other Copyright notices.\n");
+	debug("Read the source code and/or documentation for "
+	    "other Copyright messages.\n");
 
 	debug("Setting up...\n");
 	debug_indentation(iadd);

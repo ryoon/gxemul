@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.81 2005-01-19 14:46:09 debug Exp $
+#  $Id: configure,v 1.82 2005-01-19 14:59:20 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -126,7 +126,7 @@ fi
 
 #  Userland emulation support:
 if [ z$USERLAND = zYES ]; then
-	echo 'Enabling userland emulation support. (Experimental.)'
+	echo 'Enabling userland emulation support. (EXPERIMENTAL)'
 	printf "#define ENABLE_USERLAND\n" >> config.h
 fi
 

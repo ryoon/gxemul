@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.37 2004-07-19 15:03:47 debug Exp $
+#  $Id: configure,v 1.38 2004-07-25 01:38:55 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -272,13 +272,13 @@ rm -f _tests.c _tests
 if [ z"`uname -m`" = zalpha ]; then
 	printf "#define ALPHA\n" >> config.h
 
-	rm -f _alpha_asm_test.c _alpha_asm_test
-	printf "int main(int argc, char *argv[]) { asm(\"imb\"); return 0; }\n" > _alpha_asm_test.c
-	$CC _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
-	if [ -x _alpha_asm_test ]; then
+#	rm -f _alpha_asm_test.c _alpha_asm_test
+#	printf "int main(int argc, char *argv[]) { asm(\"imb\"); return 0; }\n" > _alpha_asm_test.c
+#	$CC _alpha_asm_test.c -o _alpha_asm_test > /dev/null 2> /dev/null
+#	if [ -x _alpha_asm_test ]; then
 		printf "#define BINTRANS\n" >> config.h
-	fi
-	rm -f _alpha_asm_test.c _alpha_asm_test
+#	fi
+#	rm -f _alpha_asm_test.c _alpha_asm_test
 
 	#  Try to detect prefetch-ability while we're at it:
 	rm -f _alpha_asm_test.c _alpha_asm_test

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.5 2004-07-02 14:34:31 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.6 2004-07-25 01:38:56 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -31,14 +31,34 @@
  */
 
 
+unsigned char bintrans_alpha_imb[32] = {
+	0x86, 0x00, 0x00, 0x00,		/*  imb   */
+	0x01, 0x80, 0xfa, 0x6b,		/*  ret   */
+	0x1f, 0x04, 0xff, 0x47,		/*  nop   */
+	0x00, 0x00, 0xfe, 0x2e,		/*  unop  */
+	0x1f, 0x04, 0xff, 0x47,		/*  nop   */
+	0x00, 0x00, 0xfe, 0x2e,		/*  unop  */
+	0x1f, 0x04, 0xff, 0x47,		/*  nop   */
+	0x00, 0x00, 0xfe, 0x2e		/*  unop  */
+};
+
+
 /*
  *  bintrans_host_cacheinvalidate()
  *
  *  Invalidate the host's instruction cache. On Alpha, we do this by
  *  executing an imb instruction.
+ *
+ *  NOTE:  A simple  asm("imb");  would be enough here, but not all
+ *  compilers have such simple constructs, so an entire function has to
+ *  be written as bintrans_alpha_imb[] above.
  */
-void bintrans_host_cacheinvalidate()
+void bintrans_host_cacheinvalidate(void)
 {
-	asm("imb");
+	/*  Long form of ``asm("imb");''  */
+
+	void (*f)(void);
+	f = (void *)&bintrans_alpha_imb[0];
+	f();
 }
 

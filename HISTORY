@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.174 2004-07-23 14:16:01 debug Exp $
+$Id: HISTORY,v 1.175 2004-07-25 01:38:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -832,3 +832,7 @@ HISTORY of mips64emul
 		with off_t instead of long, so that large disk images can
 		be used on systems where long is 32 bits.
 20040722	Trying to fix some more TCP related bugs.
+20040725	Changing the inlined asm statement in bintrans_alpha.c into
+		a call to a hardcoded array of bytes that do the same thing
+		(an instruction cache invalidation). This allows the same
+		invalidation code to be used regardless of compiler.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.25 2004-06-22 01:12:10 debug Exp $
+ *  $Id: diskimage.c,v 1.26 2004-06-22 01:20:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -450,7 +450,7 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		pagecode = xferp->cmd[2] & 0x3f;
 
-fatal("[ MODE SENSE id %i, pagecode=%i ]\n", disk_id, pagecode);
+		debug("[ MODE SENSE id %i, pagecode=%i ]\n", disk_id, pagecode);
 
 		/*  4 bytes of header for 6-byte command, 8 bytes of header for 10-byte command.  */
 		xferp->data_in[0] = retlen;		/*  mode data length  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.91 2004-06-12 17:06:38 debug Exp $
+ *  $Id: machine.c,v 1.92 2004-06-12 21:59:13 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -1519,9 +1519,18 @@ void machine_init(struct memory *mem)
 
 				break;
 			case 20:
-				strcat(machine_name, " (Indigo2)");
-				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				strcat(machine_name, " (Indigo)");
+
+				/*
+				 *  Guesses based on NetBSD 2.0 beta, 20040606.
+				 */
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);
+
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fb80d10, 0, 1);
+
+				/*  int0 at mainbus0 addr 0x1fb801c0  */
+
 				break;
 			case 21:
 				strcat(machine_name, " (uknown SGI-IP21 ?)");	/*  TODO  */
@@ -1529,6 +1538,7 @@ void machine_init(struct memory *mem)
 				arc_wordlen = sizeof(uint64_t);
 				break;
 			case 22:
+			case 24:
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
 
@@ -1537,7 +1547,7 @@ void machine_init(struct memory *mem)
 				cpus[bootstrap_cpu]->md_interrupt = sgi_ip22_interrupt;
 
 				/*
-				 *  According to NetBSD:
+				 *  According to NetBSD 1.6.2:
 				 *
 				 *  imc0 at mainbus0 addr 0x1fa00000, Revision 0
 				 *  gio0 at imc0
@@ -1546,9 +1556,14 @@ void machine_init(struct memory *mem)
 				 *  zstty0 at zsc0 channel 1 (console i/o)
 				 *  zstty1 at zsc0 channel 0
 				 *  sq0 at hpc0 offset 0x54000: SGI Seeq 80c03	(Ethernet)
-				 *  wdsc0 at hpc0 offset 0x44000: UNKNOWN SCSI, rev=12, target 7
+				 *  wdsc0 at hpc0 offset 0x44000: WD33C93 SCSI, rev=0, target 7
 				 *  scsibus2 at wdsc0: 8 targets, 8 luns per target
 				 *  dsclock0 at hpc0 offset 0x60000
+				 *
+				 *  and according to NetBSD 2.0_BETA (20040606):
+				 *
+				 *  haltwo0 at hpc0 offset 0x58000: HAL2 revision 0.0.0
+				 *  audio0 at haltwo0: half duplex
 				 *
 				 *  IRQ numbers are of the form 8 + x, where x = 0..31 for local0
 				 *  interrupts, and 32..63 for local1.  + y*65 for "mappable".
@@ -1557,6 +1572,10 @@ void machine_init(struct memory *mem)
 				/*  zsc0 serial console. TODO: irq nr  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830,
 				    8 + 32 + 3 + 64*5, 1);
+
+				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
+				dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x1fbd9840, PCKBC_8242,
+				    0, 0);  /*  TODO: irq numbers  */
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
@@ -1569,6 +1588,11 @@ void machine_init(struct memory *mem)
 				/*  Return memory read errors so that hpc1 and hpc2 are not detected:  */
 				dev_unreadable_init(mem, 0x1fb00000, 0x10000);
 				dev_unreadable_init(mem, 0x1f980000, 0x10000);
+
+				/*  Similarly for gio slots 0, 1, and 2:  */
+				dev_unreadable_init(mem, 0x1f400000, 0x1000);	/*  gio0 slot 0  */
+				dev_unreadable_init(mem, 0x1f600000, 0x1000);	/*  gio0 slot 1  */
+				dev_unreadable_init(mem, 0x1f000000, 0x1000);	/*  gio0 slot 2  */
 
 				break;
 			case 25:
@@ -1701,7 +1725,7 @@ void machine_init(struct memory *mem)
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 0, 0x100);	/*  com1  */
 #endif
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*

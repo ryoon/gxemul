@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.404 2005-04-06 17:13:45 debug Exp $
+ *  $Id: machine.c,v 1.405 2005-04-06 22:15:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -816,10 +816,9 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 
 	/*  TODO: Which hardware interrupt pin?  */
 
-	debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
+	/*  debug("    sysint1=%04x mask=%04x, sysint2=%04x mask=%04x\n",
 	    m->vr41xx_data->sysint1, m->vr41xx_data->msysint1,
-	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);
-
+	    m->vr41xx_data->sysint2, m->vr41xx_data->msysint2);  */
 
 	if ((m->vr41xx_data->sysint1 & m->vr41xx_data->msysint1) |
 	    (m->vr41xx_data->sysint2 & m->vr41xx_data->msysint2))

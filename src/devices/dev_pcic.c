@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pcic.c,v 1.8 2005-04-05 20:43:06 debug Exp $
+ *  $Id: dev_pcic.c,v 1.9 2005-04-06 22:15:53 debug Exp $
  *
  *  Intel 82365SL PC Card Interface Controller (called "pcic" by NetBSD).
  *
@@ -238,6 +238,8 @@ int devinit_pcic(struct devinit *devinit)
 	/*  TODO: find out a good way to specify the address, and the IRQ!  */
 	dev_wdc_init(devinit->machine, devinit->machine->memory,
 	    0x14000180, 8 + 32 + 9, 0);
+
+	/*  TODO: Linux/MobilePro looks at 0x14000170 for this...  */
 
 	return 1;
 }

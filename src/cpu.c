@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.28 2004-01-30 03:10:33 debug Exp $
+ *  $Id: cpu.c,v 1.29 2004-02-06 06:12:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -814,6 +814,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			 */
 			int result = 0;
 			uint64_t paddr = cpu->mem->bintrans_last_paddr;
+			int chunk_nr = cpu->mem->bintrans_last_chunk_nr;
 
 			if (instr_fetched != INSTR_BINTRANS) {
 				/*  Cache miss:  */
@@ -821,32 +822,37 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 				/*  debug("BINTRANS cache miss (pc = 0x%08llx, paddr = 0x%08llx)\n",
 				    (long long)cpu->pc, (long long)paddr);  */
 
-				result = bintrans_try_to_add(cpu, cpu->mem, paddr);
+				result = bintrans_try_to_add(cpu, cpu->mem, paddr, &chunk_nr);
 			}
 
 			if (instr_fetched == INSTR_BINTRANS || result) {
 				/*  Cache hit:  */
 
-				/*  debug("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx)\n",
-				    (long long)cpu->pc, (long long)paddr);  */
+				/*  debug("BINTRANS cache hit (pc = 0x%08llx, paddr = 0x%08llx, hit chunk_nr = %i)\n",
+				    (long long)cpu->pc, (long long)paddr, chunk_nr);  */
 
-				result = bintrans_try_to_run(cpu, cpu->mem, paddr);
+				if (instruction_trace) {
+					int offset;
+					char *symbol = get_symbol_name(cpu->pc_last, &offset);
+					if (symbol != NULL && offset==0)
+						debug("<%s>\n", symbol);
+
+					debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\tbintrans",
+					    cpu->cpu_id, cpu->pc_last,
+					    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
+				}
+
+				result = bintrans_try_to_run(cpu, cpu->mem, paddr, chunk_nr);
 
 				if (result) {
-					if (instruction_trace) {
-						int offset;
-						char *symbol = get_symbol_name(cpu->pc_last, &offset);
-						if (symbol != NULL && offset==0)
-							debug("<%s>\n", symbol);
-
-						debug("cpu%i @ %016llx: %02x%02x%02x%02x%s\tbintrans...\n",
-						    cpu->cpu_id, cpu->pc_last,
-						    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
-					}
-
+					if (instruction_trace)
+						printf("\n");
 					/*  TODO: misc stuff?  */
 
 					return 0;
+				} else {
+					if (instruction_trace)
+						printf(" (failed)\n");
 				}
 			}
 		}
@@ -1065,7 +1071,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 						cpu->gpr[rd] |= ((uint64_t)1 << 63);
 				}
 				/*  Sign-extend of rd should not be neccessary.  */
-				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
+				/*  cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];  */
 			}
 			if (special6 == SPECIAL_DSRL32) {
 				cpu->gpr[rd] = cpu->gpr[rt] >> (sa + 32);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.3 2003-11-20 03:42:17 debug Exp $
+ *  $Id: diskimage.c,v 1.4 2003-11-24 04:28:06 debug Exp $
  *
  *  Disk image support.
  *
@@ -87,6 +87,22 @@ int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned cha
 
 	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ", disk_id, buf[0]);
 	switch (buf[0]) {
+	case SCSICMD_TEST_UNIT_READY:
+		debug("TEST_UNIT_READY");
+		if (len != 6)
+			debug(" (weird len=%i)", len);
+
+		/*  TODO: bits 765 of buf[1] contains the LUN  */
+
+		/*  Return status:  */
+		retlen = 1;
+		retbuf = malloc(retlen);
+		if (retbuf == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		memset(retbuf, 0, sizeof(retbuf));
+		break;
 	case SCSICMD_INQUIRY:
 		debug("INQUIRY");
 		if (len != 6)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.58 2005-02-23 06:54:49 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.59 2005-03-01 06:48:23 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -239,7 +239,7 @@ static void reg_access_msr(struct cpu *cpu, uint64_t *valuep, int writeflag)
  *
  *  Dump cpu registers in a relatively readable format.
  *
- *  gprs: set to non-zero to dump GPRs and hi/lo/pc
+ *  gprs: set to non-zero to dump GPRs and some special-purpose registers.
  *  coprocs: set bit 0..3 to dump registers in coproc 0..3.
  */
 void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.371 2005-02-26 17:37:25 debug Exp $
+ *  $Id: machine.c,v 1.372 2005-03-01 06:48:24 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -200,7 +200,7 @@ int machine_name_to_type(char *stype, char *ssubtype,
 		me = me->next;
 	}
 
-	fatal("unknown emulation type '%s' (", stype);
+	fatal("machine_name_to_type(): unknown emulation type '%s' (", stype);
 	if (ssubtype == NULL)
 		fatal("no subtype)\n");
 	else
@@ -4110,6 +4110,19 @@ for (i=0; i<32; i++)
 		machine->machine_name = "Sun Ultra1";
 		break;
 
+	case MACHINE_BAREURISC:
+		machine->machine_name = "\"Bare\" URISC machine";
+		break;
+
+	case MACHINE_TESTURISC:
+		machine->machine_name = "URISC test machine";
+
+		/*  TODO  */
+		/*  A special "device" for accessing normal devices
+		    using urisc accesses?  */
+
+		break;
+
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -4366,6 +4379,12 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_ULTRA1:
 		m->cpu_name = strdup("SPARCV9");
 		break;
+
+	/*  URISC:  */
+	case MACHINE_BAREURISC:
+	case MACHINE_TESTURISC:
+		m->cpu_name = strdup("URISC");
+		break;
 	}
 
 	if (m->cpu_name == NULL) {
@@ -4618,6 +4637,14 @@ void machine_init(void)
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 
+	/*  Test-machine for URISC:  */
+	me = machine_entry_new("Test-machine for URISC", ARCH_URISC,
+	    MACHINE_TESTURISC, 1, 0);
+	me->aliases[0] = "testurisc";
+	if (cpu_family_ptr_by_number(ARCH_URISC) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Test-machine for PPC:  */
 	me = machine_entry_new("Test-machine for PPC", ARCH_PPC,
 	    MACHINE_TESTPPC, 1, 0);
@@ -4753,6 +4780,14 @@ void machine_init(void)
 	me->subtype[1]->aliases[0] = "e-105";
 	me->subtype[1]->aliases[1] = "e105";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" URISC machine:  */
+	me = machine_entry_new("Generic \"bare\" URISC machine", ARCH_URISC,
+	    MACHINE_BAREURISC, 1, 0);
+	me->aliases[0] = "bareurisc";
+	if (cpu_family_ptr_by_number(ARCH_URISC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

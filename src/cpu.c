@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.287 2005-02-22 15:20:17 debug Exp $
+ *  $Id: cpu.c,v 1.288 2005-03-01 06:48:23 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -57,13 +57,20 @@ static struct cpu_family *first_cpu_family = NULL;
  *  CPU family recognizes the cpu_type_name.
  */
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
-        int cpu_id, char *cpu_type_name)
+        int cpu_id, char *name)
 {
 	struct cpu *c;
 	struct cpu_family *fp;
+	char *cpu_type_name;
 
-	if (cpu_type_name == NULL) {
+	if (name == NULL) {
 		fprintf(stderr, "cpu_new(): cpu name = NULL?\n");
+		exit(1);
+	}
+
+	cpu_type_name = strdup(name);
+	if (cpu_type_name == NULL) {
+		fprintf(stderr, "cpu_new(): out of memory\n");
 		exit(1);
 	}
 
@@ -535,6 +542,8 @@ struct cpu_family *cpu_family_ptr_by_number(int arch)
 			return fp;
 		if (arch == ARCH_SPARC && strcmp("SPARC", fp->name) == 0)
 			return fp;
+		if (arch == ARCH_URISC && strcmp("URISC", fp->name) == 0)
+			return fp;
 		fp = fp->next;
 	}
 
@@ -552,5 +561,6 @@ void cpu_init(void)
 	add_cpu_family(mips_cpu_family_init);
 	add_cpu_family(ppc_cpu_family_init);
 	add_cpu_family(sparc_cpu_family_init);
+	add_cpu_family(urisc_cpu_family_init);
 }
 

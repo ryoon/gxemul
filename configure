@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.109 2005-02-19 13:18:31 debug Exp $
+#  $Id: configure,v 1.110 2005-03-01 06:48:23 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -73,6 +73,8 @@ if [ z"$*" != z ]; then
 			ENABLEPPC=YES
 		else if [ z$a = z--enable-sparc ]; then
 			ENABLESPARC=YES
+		else if [ z$a = z--enable-urisc ]; then
+			ENABLEURISC=YES
 		else if [ z$a = z--enable-delays ]; then
 			DELAYS=YES
 		else if [ z$a = z--enable-caches ]; then
@@ -97,6 +99,8 @@ if [ z"$*" != z ]; then
 			    "(experimental)"
 			echo "  --enable-sparc      enable SPARC CPU" \
 			    "emulation (experimental)"
+			echo "  --enable-urisc      enable URISC CPU" \
+			    "emulation (experimental)"
 			printf "\nMIPS-specific options:\n"
 			echo "  --enable-mips16     enable MIPS16 instruction" \
 			    "support (experimental)"
@@ -107,7 +111,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -159,6 +163,10 @@ fi
 if [ z$ENABLESPARC = zYES ]; then
 	echo 'Enabling SPARC support.  NOTE: This is pretty much bogus.'
 	printf "#define ENABLE_SPARC\n" >> config.h
+fi
+if [ z$ENABLEURISC = zYES ]; then
+	echo 'Enabling URISC support.'
+	printf "#define ENABLE_URISC\n" >> config.h
 fi
 
 

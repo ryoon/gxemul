@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.615 2005-02-28 22:13:03 debug Exp $
+$Id: HISTORY,v 1.616 2005-03-01 06:48:23 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1707,3 +1707,4 @@ HISTORY of mips64emul
 		Adding "device add" and "device remove" to the debugger.
 		Removing pcidevs.h, because it was almost unused.
 20050228	Correcting the Sprite disk image url in the documentation.
+20050301	Adding a skeleton URISC cpu family (single-opcode machine).

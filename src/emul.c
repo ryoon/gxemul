@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.36 2004-08-05 00:39:06 debug Exp $
+ *  $Id: emul.c,v 1.37 2004-08-13 04:16:13 debug Exp $
  *
  *  Emulation startup.
  */
@@ -94,12 +94,17 @@ void add_pc_dump_points(void)
 		string_flag = 0;
 		dp = strtoull(dumppoint_string[i], NULL, 0);
 
-		/*  If conversion resulted in 0, then perhaps it is a symbol:  */
+		/*
+		 *  If conversion resulted in 0, then perhaps it is a
+		 *  symbol:
+		 */
 		if (dp == 0) {
 			uint64_t addr;
 			int res = get_symbol_addr(dumppoint_string[i], &addr);
 			if (!res)
-				fprintf(stderr, "WARNING! PC dumppoint '%s' could not be parsed\n", dumppoint_string[i]);
+				fprintf(stderr,
+				    "WARNING! PC dumppoint '%s' could not be parsed\n",
+				    dumppoint_string[i]);
 			else {
 				dp = addr;
 				string_flag = 1;

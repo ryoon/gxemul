@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.45 2004-11-14 04:17:34 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.46 2004-11-17 20:37:39 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -520,15 +520,15 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	if (access_style == MC146818_ARC_PICA)
 		memory_device_register(mem, "mc146818_pica", 0x90000000070ULL,
-		    1, dev_mc146818_pica_access, (void *)mc_data);
+		    1, dev_mc146818_pica_access, (void *)mc_data, MEM_DEFAULT, NULL);
 
 	if (access_style == MC146818_PC_CMOS)
 		memory_device_register(mem, "mc146818", baseaddr,
-		    2 * addrdiv, dev_mc146818_access, (void *)mc_data);
+		    2 * addrdiv, dev_mc146818_access, (void *)mc_data, MEM_DEFAULT, NULL);
 	else
 		memory_device_register(mem, "mc146818", baseaddr,
 		    DEV_MC146818_LENGTH * addrdiv, dev_mc146818_access,
-		    (void *)mc_data);
+		    (void *)mc_data, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
 }
 

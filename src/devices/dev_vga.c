@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.11 2004-10-29 06:40:42 debug Exp $
+ *  $Id: dev_vga.c,v 1.12 2004-11-17 20:37:40 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -294,9 +294,9 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 			}
 
 	memory_device_register(mem, "vga_mem", videomem_base,
-	    d->videomem_size, dev_vga_access, d);
+	    d->videomem_size, dev_vga_access, d, MEM_DEFAULT, NULL);	/*  TODO: BINTRANS  */
 	memory_device_register(mem, "vga_ctrl", control_base,
-	    16, dev_vga_ctrl_access, d);
+	    16, dev_vga_ctrl_access, d, MEM_DEFAULT, NULL);
 
 	vga_update(cpu, d, 0, d->videomem_size-1);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.7 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.8 2004-11-17 20:37:39 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -211,6 +211,6 @@ void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);			/*  cursor  */
 
 	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,
-	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d);
+	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d, MEM_DEFAULT, NULL);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_colorplanemask.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_colorplanemask.c,v 1.7 2004-11-17 20:37:39 debug Exp $
  *  
  *  Color plane mask used by DECstation 3100.
  *
@@ -91,6 +91,6 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
 	d->color_plane_mask = color_plane_mask;
 
 	memory_device_register(mem, "colorplanemask", baseaddr,
-	    DEV_COLORPLANEMASK_LENGTH, dev_colorplanemask_access, (void *)d);
+	    DEV_COLORPLANEMASK_LENGTH, dev_colorplanemask_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

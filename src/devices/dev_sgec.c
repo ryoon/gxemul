@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgec.c,v 1.4 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_sgec.c,v 1.5 2004-11-17 20:37:39 debug Exp $
  *  
  *  SGEC (ethernet) used in DECstations.  (Called "ne" in Ultrix.)
  */
@@ -97,6 +97,6 @@ void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH,
-	    dev_sgec_access, (void *)d);
+	    dev_sgec_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

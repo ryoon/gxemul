@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.13 2004-10-19 03:40:32 debug Exp $
+ *  $Id: dev_mp.c,v 1.14 2004-11-17 20:37:39 debug Exp $
  *  
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -155,6 +155,6 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[])
 	d->stack_addr = INITIAL_STACK_POINTER;
 
 	memory_device_register(mem, "mp", DEV_MP_ADDRESS, DEV_MP_LENGTH,
-	    dev_mp_access, d);
+	    dev_mp_access, d, MEM_DEFAULT, NULL);
 }
 

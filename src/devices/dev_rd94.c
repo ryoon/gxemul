@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.10 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_rd94.c,v 1.11 2004-11-17 20:37:39 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -183,7 +183,7 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
 	d->pci_data = bus_pci_init(mem, pciirq);
 
 	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
-	    dev_rd94_access, (void *)d);
+	    dev_rd94_access, (void *)d, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);
 
 	return d->pci_data;

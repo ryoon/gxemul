@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.7 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.8 2004-11-17 20:37:40 debug Exp $
  *  
  *  SGI IP30 stuff.
  *
@@ -298,14 +298,14 @@ void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct sgi_ip30_data));
 
 	memory_device_register(mem, "sgi_ip30_1", baseaddr,
-	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d);
+	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_2", 0x10000000,
-	    0x10000, dev_sgi_ip30_2_access, (void *)d);
+	    0x10000, dev_sgi_ip30_2_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_3", 0x1f000000,
-	    0x10000, dev_sgi_ip30_3_access, (void *)d);
+	    0x10000, dev_sgi_ip30_3_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_4", 0x1f600000,
-	    0x10000, dev_sgi_ip30_4_access, (void *)d);
+	    0x10000, dev_sgi_ip30_4_access, (void *)d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
-	    0x10000, dev_sgi_ip30_5_access, (void *)d);
+	    0x10000, dev_sgi_ip30_5_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mace.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_mace.c,v 1.7 2004-11-17 20:37:39 debug Exp $
  *  
  *  SGI "mace".
  */
@@ -93,7 +93,7 @@ struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr,
 	d->irqnr = irqnr;
 
 	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH,
-	    dev_mace_access, d);
+	    dev_mace_access, d, MEM_DEFAULT, NULL);
 
 	return d;
 }

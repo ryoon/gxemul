@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.144 2004-11-16 20:50:35 debug Exp $
+ *  $Id: misc.h,v 1.145 2004-11-17 20:37:41 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -280,9 +280,15 @@ struct memory {
 	const char	*dev_name[MAX_DEVICES];
 	uint64_t	dev_baseaddr[MAX_DEVICES];
 	uint64_t	dev_length[MAX_DEVICES];
+	int		dev_flags[MAX_DEVICES];
 	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,
 			    uint64_t,unsigned char *,size_t,int,void *);
 	void		*dev_extra[MAX_DEVICES];
+	unsigned char	*dev_bintrans_data[MAX_DEVICES];
+#ifdef BINTRANS
+	uint64_t	dev_bintrans_write_low[MAX_DEVICES];
+	uint64_t	dev_bintrans_write_high[MAX_DEVICES];
+#endif
 };
 
 /* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */

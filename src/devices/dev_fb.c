@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.58 2004-11-13 16:41:15 debug Exp $
+ *  $Id: dev_fb.c,v 1.59 2004-11-17 20:37:39 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -514,6 +514,57 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	if (!cpu->emul->use_x11)
 		return;
 
+#ifdef BINTRANS
+	do {
+		uint64_t low, high;
+		int x, y;
+
+		memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
+		if ((int64_t)low == -1)
+			break;
+
+		printf("low = %016llx high=%016llx\n",
+			(long long)low, (long long)high);
+
+		x = (low % d->bytes_per_line) * 8 / d->bit_depth;
+		y = low / d->bytes_per_line;
+		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+
+		x = ((low+7) % d->bytes_per_line) * 8 / d->bit_depth;
+		y = (low+7) / d->bytes_per_line;
+		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+
+		x = (high % d->bytes_per_line) * 8 / d->bit_depth;
+		y = high / d->bytes_per_line;
+		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+
+		x = ((high+7) % d->bytes_per_line) * 8 / d->bit_depth;
+		y = (high+7) / d->bytes_per_line;
+		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+
+		/*
+		 *  An update covering more than one line will automatically
+		 *  force an update of all the affected lines:
+		 */
+		if (d->update_y1 != d->update_y2) {
+			d->update_x1 = 0;
+			d->update_x2 = d->xsize-1;
+		}
+	} while (0);
+#endif
+
 #ifdef WITH_X11
 	/*  Do we need to redraw the cursor?  */
 	if (d->fb_window->cursor_on != d->fb_window->OLD_cursor_on ||
@@ -853,7 +904,8 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
 #endif
 		d->fb_window = NULL;
 
-	memory_device_register(mem, name, baseaddr, size, dev_fb_access, d);
+	memory_device_register(mem, name, baseaddr, size, dev_fb_access,
+	    d, MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK, d->framebuffer);
 
 	cpu_add_tickfunction(cpu, dev_fb_tick, d, FB_TICK_SHIFT);
 	return d;

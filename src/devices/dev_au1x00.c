@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.5 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.6 2004-11-17 20:37:39 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -335,21 +335,21 @@ struct au1x00_ic_data *dev_au1x00_init(struct cpu *cpu, struct memory *mem)
 	d_pc->irq_nr = 14;
 
 	memory_device_register(mem, "au1x00_ic0",
-	    IC0_BASE, 0x100, dev_au1x00_ic_access, d_ic0);
+	    IC0_BASE, 0x100, dev_au1x00_ic_access, d_ic0, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "au1x00_ic1",
-	    IC1_BASE, 0x100, dev_au1x00_ic_access, d_ic1);
+	    IC1_BASE, 0x100, dev_au1x00_ic_access, d_ic1, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "au1x00_uart0",
-	    UART0_BASE, UART_SIZE, dev_au1x00_uart_access, d0);
+	    UART0_BASE, UART_SIZE, dev_au1x00_uart_access, d0, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "au1x00_uart1",
-	    UART1_BASE, UART_SIZE, dev_au1x00_uart_access, d1);
+	    UART1_BASE, UART_SIZE, dev_au1x00_uart_access, d1, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "au1x00_uart2",
-	    UART2_BASE, UART_SIZE, dev_au1x00_uart_access, d2);
+	    UART2_BASE, UART_SIZE, dev_au1x00_uart_access, d2, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "au1x00_uart3",
-	    UART3_BASE, UART_SIZE, dev_au1x00_uart_access, d3);
+	    UART3_BASE, UART_SIZE, dev_au1x00_uart_access, d3, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "au1x00_pc",
-	    PC_BASE, PC_SIZE + 0x8, dev_au1x00_pc_access, d_pc);
+	    PC_BASE, PC_SIZE + 0x8, dev_au1x00_pc_access, d_pc, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_au1x00_pc_tick, d_pc, 15);
 
 	return d_ic0;

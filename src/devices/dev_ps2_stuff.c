@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.7 2004-11-17 20:37:39 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -265,7 +265,7 @@ struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
 	d->other_memory[DMA_CH_GIF] = mem_gif;
 
 	memory_device_register(mem, "ps2_stuff", baseaddr,
-	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d);
+	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_ps2_stuff_tick, d, TICK_STEPS_SHIFT);
 
 	return d;

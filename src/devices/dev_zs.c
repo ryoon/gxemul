@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.13 2004-10-17 15:31:40 debug Exp $
+ *  $Id: dev_zs.c,v 1.14 2004-11-17 20:37:40 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -196,7 +196,7 @@ void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->addrmult = addrmult;
 
 	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
-	    dev_zs_access, d);
+	    dev_zs_access, d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_zs_tick, d, 10);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_m700_fb.c,v 1.5 2004-10-29 07:25:01 debug Exp $
+ *  $Id: dev_m700_fb.c,v 1.6 2004-11-17 20:37:39 debug Exp $
  *  
  *  Olivetti M700 framebuffer.
  *
@@ -142,6 +142,6 @@ void dev_m700_fb_init(struct cpu *cpu, struct memory *mem,
 	}
 
 	memory_device_register(mem, "m700_fb", baseaddr, DEV_M700_FB_LENGTH,
-	    dev_m700_fb_access, (void *)d);
+	    dev_m700_fb_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

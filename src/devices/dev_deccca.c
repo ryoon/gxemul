@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_deccca.c,v 1.5 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_deccca.c,v 1.6 2004-11-17 20:37:39 debug Exp $
  *  
  *  "Console Communication Area" for a DEC 5800 SMP system.
  *
@@ -109,6 +109,6 @@ void dev_deccca_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct deccca_data));
 
 	memory_device_register(mem, "deccca", baseaddr, DEV_DECCCA_LENGTH,
-	    dev_deccca_access, d);
+	    dev_deccca_access, d, MEM_DEFAULT, NULL);
 }
 

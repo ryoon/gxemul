@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sn.c,v 1.2 2004-10-25 03:04:23 debug Exp $
+ *  $Id: dev_sn.c,v 1.3 2004-11-17 20:37:40 debug Exp $
  *  
  *  National Semiconductor SONIC ("sn") DP83932 ethernet.
  *
@@ -104,6 +104,6 @@ void dev_sn_init(struct cpu *cpu, struct memory *mem,
 	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "sn", baseaddr, DEV_SN_LENGTH,
-	    dev_sn_access, (void *)d);
+	    dev_sn_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

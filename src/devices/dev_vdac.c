@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vdac.c,v 1.6 2004-10-17 15:31:40 debug Exp $
+ *  $Id: dev_vdac.c,v 1.7 2004-11-17 20:37:40 debug Exp $
  *  
  *  Color map used by DECstation 3100.
  */
@@ -193,6 +193,6 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
 	d->color_fb_flag = color_fb_flag;
 
 	memory_device_register(mem, "vdac", baseaddr, DEV_VDAC_LENGTH,
-	    dev_vdac_access, (void *)d);
+	    dev_vdac_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

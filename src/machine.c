@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.217 2004-11-06 15:31:52 debug Exp $
+ *  $Id: machine.c,v 1.218 2004-11-17 20:37:42 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -393,25 +393,24 @@ void kn02_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  DECstation KMIN interrupts:
+ *
+ *  TC slot 3 = system slot.
  */
 void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	/*  debug("kmin_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);  */
 
-	if (assrt) {
-		/*  OR into the INTR:  */
-		dec_ioasic_data->intr |= irq_nr;
+	if (assrt)
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+	else
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-		/*  Assert MIPS interrupt 5 (TC slot 3 = system slot):  */
+	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KMIN_INT_TC3);
-	} else {
-		/*  AND out of the INTR:  */
-		dec_ioasic_data->intr &= ~irq_nr;
-
-		if (dec_ioasic_data->intr == 0)
-			cpu_interrupt_ack(cpu, KMIN_INT_TC3);
-	}
+	else
+		cpu_interrupt_ack(cpu, KMIN_INT_TC3);
 }
 
 
@@ -421,22 +420,18 @@ void kmin_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 void kn03_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
-
 	/*  debug("kn03_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);  */
 
-	if (assrt) {
-		/*  OR into the INTR:  */
-		dec_ioasic_data->intr |= irq_nr;
+	if (assrt)
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+	else
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-		/*  Assert MIPS interrupt 2 (ioasic):  */
+	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, KN03_INT_ASIC);
-	} else {
-		/*  AND out of the INTR:  */
-		dec_ioasic_data->intr &= ~irq_nr;
-
-		if (dec_ioasic_data->intr == 0)
-			cpu_interrupt_ack(cpu, KN03_INT_ASIC);
-	}
+	else
+		cpu_interrupt_ack(cpu, KN03_INT_ASIC);
 }
 
 
@@ -448,19 +443,16 @@ void maxine_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	irq_nr -= 8;
 	debug("maxine_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
 
-	if (assrt) {
-		/*  OR into the INTR:  */
-		dec_ioasic_data->intr |= irq_nr;
+	if (assrt)
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= irq_nr;
+	else
+		dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~irq_nr;
 
-		/*  Assert MIPS interrupt 5 (turbochannel/ioasic):  */
+	if (dec_ioasic_data->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10]
+	    & dec_ioasic_data->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10])
 		cpu_interrupt(cpu, XINE_INT_TC3);
-	} else {
-		/*  AND out of the INTR:  */
-		dec_ioasic_data->intr &= ~irq_nr;
-
-		if (dec_ioasic_data->intr == 0)
-			cpu_interrupt_ack(cpu, XINE_INT_TC3);
-	}
+	else
+		cpu_interrupt_ack(cpu, XINE_INT_TC3);
 }
 
 
@@ -1083,7 +1075,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1c300000) slot 12
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
+			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, KMIN_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
@@ -1148,12 +1141,15 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  mcclock0 at ioasic0 offset 0x200000: mc146818 or compatible	(0x1fa00000)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1f800000);
 
-			dev_le_init(cpu, mem, KN03_SYS_LANCE,
-			    0, 0, KN03_INTR_LANCE +8, 4*65536);
-			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
-			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
+			dev_le_init(cpu, mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
+
+			dec_ioasic_data->dma_func[3] = dev_scc_dma_func;
+			dec_ioasic_data->dma_func_extra[2] = dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
+			dec_ioasic_data->dma_func[2] = dev_scc_dma_func;
+			dec_ioasic_data->dma_func_extra[3] = dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
+
 			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, KN03_SYS_SCSI,
 			    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
@@ -1282,7 +1278,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7		(0x1c300000)
 			 *  xcfb0 at tc0 slot 2 offset 0x0: 1024x768x8 built-in framebuffer	(0xa000000)
 			 */
-			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
+			dec_ioasic_data = dev_dec_ioasic_init(cpu, mem, 0x1c000000);
 
 			/*  TURBOchannel slots (0 and 1):  */
 			dev_turbochannel_init(cpu, mem, 0,
@@ -1307,6 +1303,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			 *  TURBOchannel slot 3: fixed, ioasic
 			 *  (the system stuff), 0x1c000000
 			 */
+			dev_le_init(cpu, mem, 0x1c0c0000, 0, 0, XINE_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpu, mem, 0x1c100000,
 			    XINE_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000,

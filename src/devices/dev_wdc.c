@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.7 2004-10-17 15:31:40 debug Exp $
+ *  $Id: dev_wdc.c,v 1.8 2004-11-17 20:37:40 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -429,9 +429,9 @@ void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->base_drive = base_drive;
 
 	memory_device_register(mem, "wdc_altstatus", baseaddr + 0x206, 1,
-	    dev_wdc_altstatus_access, d);
+	    dev_wdc_altstatus_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
-	    dev_wdc_access, d);
+	    dev_wdc_access, d, MEM_DEFAULT, NULL);
 
 /*	cpu_add_tickfunction(cpu, dev_wdc_tick, d, 10);  */
 }

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.310 2004-11-16 20:50:34 debug Exp $
+$Id: HISTORY,v 1.311 2004-11-17 20:37:38 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1138,3 +1138,6 @@ HISTORY of mips64emul
 20041114	More bintrans updates. Ultrix now boots in exactly 3 minutes.
 20041115	More bintrans updates.
 20041116	Bintrans updates.
+20041117	Working on dev_dec_ioasic and related issues.
+		Adding support for letting translated code access devices in
+		some cases (such as framebuffers).

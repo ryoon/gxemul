@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.16 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.17 2004-11-17 20:37:39 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -391,6 +391,6 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 #endif
 
 	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH,
-	    dev_ps2_gif_access, d);
+	    dev_ps2_gif_access, d, MEM_DEFAULT, NULL);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.10 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_macepci.c,v 1.11 2004-11-17 20:37:39 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -118,7 +118,7 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
 	d->pci_data = bus_pci_init(mem, pciirq);
 
 	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH,
-	    dev_macepci_access, (void *)d);
+	    dev_macepci_access, (void *)d, MEM_DEFAULT, NULL);
 
 	return d->pci_data;
 }

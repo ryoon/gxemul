@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.22 2004-11-14 04:17:34 debug Exp $
+ *  $Id: dev_crime.c,v 1.23 2004-11-17 20:37:39 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -186,7 +186,7 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem,
 	d->use_fb = use_fb;
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH,
-	    dev_crime_access, d);
+	    dev_crime_access, d, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);
 
 	return d;

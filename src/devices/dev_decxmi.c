@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_decxmi.c,v 1.7 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_decxmi.c,v 1.8 2004-11-17 20:37:39 debug Exp $
  *  
  *  DEC 5800 XMI (this has to do with SMP...)
  *
@@ -133,6 +133,6 @@ void dev_decxmi_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct decxmi_data));
 
 	memory_device_register(mem, "decxmi", baseaddr, DEV_DECXMI_LENGTH,
-	    dev_decxmi_access, d);
+	    dev_decxmi_access, d, MEM_DEFAULT, NULL);
 }
 

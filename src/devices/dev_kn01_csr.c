@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01_csr.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_kn01_csr.c,v 1.7 2004-11-17 20:37:39 debug Exp $
  *  
  *  PMAX (KN01) System Control Register.
  *
@@ -103,6 +103,6 @@ void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb)
 	k->csr |= (color_fb? 0 : KN01_CSR_MONO);
 
 	memory_device_register(mem, "kn01_csr", baseaddr,
-	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k);
+	    DEV_KN01_CSR_LENGTH, dev_kn01_csr_access, k, MEM_DEFAULT, NULL);
 }
 

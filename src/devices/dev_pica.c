@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.13 2004-11-14 04:17:34 debug Exp $
+ *  $Id: dev_pica.c,v 1.14 2004-11-17 20:37:39 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -454,19 +454,19 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 	d->isa_int_enable_mask = 0xffff;
 
 	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
-	    dev_pica_access, (void *)d);
+	    dev_pica_access, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_timer", 0xf00000000ULL, 4,
-	    dev_pica_access_timer, (void *)d);
+	    dev_pica_access_timer, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_20", 0x90000000020ULL, 2,
-	    dev_pica_access_20, (void *)d);
+	    dev_pica_access_20, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_a0", 0x900000000a0ULL, 2,
-	    dev_pica_access_a0, (void *)d);
+	    dev_pica_access_a0, (void *)d, MEM_DEFAULT, NULL);
 
 	memory_device_register(mem, "pica_jazzio", 0x3c00000000ULL, 1,
-	    dev_pica_access_jazzio, (void *)d);
+	    dev_pica_access_jazzio, (void *)d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);
 

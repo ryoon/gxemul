@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.5 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_fdc.c,v 1.6 2004-11-17 20:37:39 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -105,6 +105,6 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	d->irqnr = irq_nr;
 
 	memory_device_register(mem, "fdc", baseaddr, DEV_FDC_LENGTH,
-	    dev_fdc_access, d);
+	    dev_fdc_access, d, MEM_DEFAULT, NULL);
 }
 

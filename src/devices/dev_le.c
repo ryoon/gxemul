@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.24 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_le.c,v 1.25 2004-11-17 20:37:39 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -766,7 +766,7 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	d->rom[27] = d->rom[31] = 0xaa;
 
 	memory_device_register(mem, "le", baseaddr, len,
-	    dev_le_access, (void *)d);
+	    dev_le_access, (void *)d, MEM_DEFAULT, NULL);
 
 	cpu_add_tickfunction(cpu, dev_le_tick, d, 11);
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip19.c,v 1.4 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_sgi_ip19.c,v 1.5 2004-11-17 20:37:39 debug Exp $
  *  
  *  SGI IP19 (and IP25) stuff.  The stuff in here is mostly guesswork.
  */
@@ -110,6 +110,6 @@ void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct sgi_ip19_data));
 
 	memory_device_register(mem, "sgi_ip19", baseaddr, DEV_SGI_IP19_LENGTH,
-	    dev_sgi_ip19_access, (void *)d);
+	    dev_sgi_ip19_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

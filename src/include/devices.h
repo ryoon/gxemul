@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.105 2004-10-25 02:51:20 debug Exp $
+ *  $Id: devices.h,v 1.106 2004-11-17 20:37:41 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -49,19 +49,16 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_dec_ioasic.c:  */
-#define	DEV_DEC_IOASIC_LENGTH		0xc0000
+#define	DEV_DEC_IOASIC_LENGTH		0x80100
+#define	N_DEC_IOASIC_REGS	(0x1f0 / 0x10)
+#define	MAX_IOASIC_DMA_FUNCTIONS	8
 struct dec_ioasic_data {
-	uint32_t	csr;
-	uint32_t	intr;
-	uint32_t	imsk;
-
-	uint32_t	t1_dmaptr;
-	uint32_t	t1_cur_ptr;
-	uint32_t	t2_dmaptr;
-	uint32_t	t2_cur_ptr;
+	uint32_t	reg[N_DEC_IOASIC_REGS];
+	int		(*(dma_func[MAX_IOASIC_DMA_FUNCTIONS]))(struct cpu *, void *, uint64_t addr, size_t dma_len, int tx);
+	void		*dma_func_extra[MAX_IOASIC_DMA_FUNCTIONS];
 };
 int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem, uint64_t baseaddr);
+struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_8250.c:  */
 #define	DEV_8250_LENGTH		8
@@ -439,7 +436,8 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 /*  dev_scc.c:  */
 #define	DEV_SCC_LENGTH			0x1000
 int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
+int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len, int tx);
+void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul);
 
 /*  dev_sfb.c:  */
 #define	DEV_SFB_LENGTH		0x400000

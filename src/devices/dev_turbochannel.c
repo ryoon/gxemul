@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.33 2004-10-24 06:29:56 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.34 2004-11-17 20:37:40 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -277,6 +277,6 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 	d->rom_skip = rom_skip;
 
 	memory_device_register(mem, "turbochannel", baseaddr + rom_offset + rom_skip,
-	    rom_length - rom_skip, dev_turbochannel_access, d);
+	    rom_length - rom_skip, dev_turbochannel_access, d, MEM_DEFAULT, NULL);
 }
 

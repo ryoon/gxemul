@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.186 2004-11-14 04:17:36 debug Exp $
+ *  $Id: cpu.c,v 1.187 2004-11-17 20:37:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1117,8 +1117,13 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (cpu->cpu_type.exc_model == EXC4K && cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL) {
-		/*  Don't set EPC if STATUS_EXL is set, for R4000  */
-		fatal("warning: cpu%i exception while EXL is set, not setting EPC!\n", cpu->cpu_id);
+		/*
+		 *  Don't set EPC if STATUS_EXL is set, for R4000 and up.
+		 *  This actually happens when running IRIX and Ultrix, when
+		 *  they handle interrupts and/or tlb updates, I think, so
+		 *  printing this with debug() looks better than with fatal().
+		 */
+		debug("[ warning: cpu%i exception while EXL is set, not setting EPC ]\n", cpu->cpu_id);
 	} else {
 		if (cpu->delay_slot) {
 			cpu->coproc[0]->reg[COP0_EPC] = cpu->pc_last - 4;

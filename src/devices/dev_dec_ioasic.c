@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.5 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.6 2004-11-17 20:37:39 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -41,7 +41,7 @@
 #include "tc_ioasicreg.h"
 
 #define IOASIC_DEBUG
-
+/* #define debug fatal */
 
 /*
  *  dev_dec_ioasic_access():
@@ -52,8 +52,23 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 {
 	struct dec_ioasic_data *d = (struct dec_ioasic_data *) extra;
 	uint64_t idata = 0, odata = 0;
+	uint64_t curptr;
+	int dma_len, dma_res;
+	uint32_t csr;
+	int regnr;
 
 	idata = memory_readmax64(cpu, data, len);
+
+	regnr = (relative_addr - IOASIC_SLOT_1_START) / 0x10;
+	if (relative_addr < 0x80000 && (relative_addr & 0xf) != 0)
+		fatal("[ dec_ioasic: unaligned access? relative_addr = 0x%x ]\n", (int)relative_addr);
+
+	if (regnr >= 0 && regnr < N_DEC_IOASIC_REGS) {
+		if (writeflag == MEM_WRITE)
+			d->reg[regnr] = idata;
+		else
+			odata = d->reg[regnr];
+	}
 
 #ifdef IOASIC_DEBUG
 	if (writeflag == MEM_WRITE)
@@ -64,86 +79,94 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	switch (relative_addr) {
 
+	/*  Don't print warnings for these:  */
+	case IOASIC_SCSI_DMAPTR:
 	case IOASIC_SCC_T1_DMAPTR:
-		if (writeflag == MEM_WRITE) {
-			/*  TODO: some left-over bits, see tc_ioasicreg.h  */
-			d->t1_dmaptr = idata >> 3;
-			d->t1_cur_ptr = d->t1_dmaptr;
-		}
-		break;
-
 	case IOASIC_SCC_T2_DMAPTR:
-		if (writeflag == MEM_WRITE) {
-			/*  TODO: some left-over bits, see tc_ioasicreg.h  */
-			d->t2_dmaptr = idata >> 3;
-			d->t2_cur_ptr = d->t2_dmaptr;
-		}
+	case IOASIC_SCC_R1_DMAPTR:
+	case IOASIC_SCC_R2_DMAPTR:
 		break;
 
 	case IOASIC_CSR:
 		if (writeflag == MEM_WRITE) {
-			d->csr = idata;
+			csr = d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10];
 
-			if (d->csr & IOASIC_CSR_DMAEN_T1) {
-				/*
-				 *  Transmit all data here:
-				 */
+			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_INTR_T2_PAGE_END;
 
-				while ((d->t1_cur_ptr & 0xffc) != 0) {
-					unsigned char word[4];
-					memory_rw(cpu, mem, d->t1_cur_ptr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+			if (csr & IOASIC_CSR_DMAEN_T2) {
+				/*  Transmit data:  */
+				curptr = (d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] >> 3)
+				    | ((d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
+				dma_len = 0x1000 - (curptr & 0xffc);
 
-					/*  TODO:  this is hardcoded for scc  */
-					printf("%c", word[1]);
+				if ((curptr & 0xfff) == 0)
+					break;
 
-					d->t1_cur_ptr += 4;
-				}
-
-				/*  and signal the end of page:  */
-				d->intr |= IOASIC_INTR_T1_PAGE_END;
-			} else
-				d->intr &= ~IOASIC_INTR_T1_PAGE_END;
-
-			if (d->csr & IOASIC_CSR_DMAEN_T2) {
-				/*
-				 *  Transmit all data here:
-				 */
-
-				while ((d->t2_cur_ptr & 0xffc) != 0) {
-					unsigned char word[4];
-					memory_rw(cpu, mem, d->t2_cur_ptr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
-
-					/*  TODO:  this is hardcoded for scc  */
-					printf("%c", word[1]);
-
-					d->t2_cur_ptr += 4;
-				}
+				if (d->dma_func[3] != NULL) {
+					d->dma_func[3](cpu, d->dma_func_extra[3], curptr, dma_len, 1);
+				} else
+					fatal("[ dec_ioasic: DMA tx: data @ %08x, len %i bytes, but no handler? ]\n", (int)curptr, dma_len);
 
 				/*  and signal the end of page:  */
-				d->intr |= IOASIC_INTR_T2_PAGE_END;
-			} else
-				d->intr &= ~IOASIC_INTR_T2_PAGE_END;
-		} else
-			odata = d->csr;
-		break;
-	case IOASIC_INTR:
-		if (writeflag == MEM_READ)
-			odata = d->intr;
-		else {
-			/*  Clear bits on write.  */
-			d->intr &= ~idata;
+				d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= IOASIC_INTR_T2_PAGE_END;
+
+				d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_CSR_DMAEN_T2;
+				curptr |= 0xfff;
+				curptr ++;
+
+				d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] =
+				    ((curptr << 3) & ~0x1f) | ((curptr >> 29) & 0x1f);
+			}
+
+			if (csr & IOASIC_CSR_DMAEN_R2) {
+				/*  Receive data:  */
+				curptr = (d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] >> 3)
+				    | ((d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
+				dma_len = 0x1000 - (curptr & 0xffc);
+
+				dma_res = 0;
+				if (d->dma_func[3] != NULL) {
+					dma_res = d->dma_func[3](cpu, d->dma_func_extra[3], curptr, dma_len, 0);
+				} else
+					fatal("[ dec_ioasic: DMA tx: data @ %08x, len %i bytes, but no handler? ]\n", (int)curptr, dma_len);
+
+				/*  and signal the end of page:  */
+				if (dma_res > 0) {
+					if ((curptr & 0x800) != ((curptr + dma_res) & 0x800))
+						d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= IOASIC_INTR_R2_HALF_PAGE;
+					curptr += dma_res;
+/*					d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_CSR_DMAEN_R2;  */
+					d->reg[(IOASIC_SCC_R2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] =
+					    ((curptr << 3) & ~0x1f) | ((curptr >> 29) & 0x1f);
+				}
+			}
 		}
 		break;
+
+	case IOASIC_INTR:
+		if (writeflag == MEM_READ)
+			odata = d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10];
+		else {
+			/*  Clear bits on write.  */
+			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~idata;
+
+			/*  Make sure that the CPU interrupt is deasserted as well:  */
+			if (idata != 0)
+				cpu_interrupt_ack(cpu, 8 + idata);
+		}
+		break;
+
 	case IOASIC_IMSK:
-		if (writeflag == MEM_WRITE)
-			d->imsk = idata;
-		else
-			odata = d->imsk;
+		if (writeflag == MEM_WRITE) {
+			d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10] = idata;
+			cpu_interrupt_ack(cpu, 8 + 0);
+		} else
+			odata = d->reg[(IOASIC_IMSK - IOASIC_SLOT_1_START) / 0x10];
 		break;
 
 	case IOASIC_CTR:
 		if (writeflag == MEM_READ)
-			odata = d->intr;
+			odata = 0;
 		break;
 
 	case 0x80000:
@@ -154,6 +177,7 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 	case 0x80014:
 		/*  Station's ethernet address:  */
 		if (writeflag == MEM_WRITE) {
+			fatal("[ dec_ioasic: attempt to write to the station's ethernet address? ]\n");
 		} else {
 			odata = ((relative_addr - 0x80000) / 4 + 1) * 0x10;
 		}
@@ -161,9 +185,9 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	default:
 		if (writeflag == MEM_WRITE)
-			debug("[ dec_ioasic: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+			fatal("[ dec_ioasic: unimplemented write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
 		else
-			debug("[ dec_ioasic: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
+			fatal("[ dec_ioasic: unimplemented read from address 0x%llx ]\n", (long long)relative_addr);
 	}
 
 	if (writeflag == MEM_READ)
@@ -176,8 +200,8 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_dec_ioasic_init():
  */
-struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem,
-	uint64_t baseaddr)
+struct dec_ioasic_data *dev_dec_ioasic_init(struct cpu *cpu,
+	struct memory *mem, uint64_t baseaddr)
 {
 	struct dec_ioasic_data *d = malloc(sizeof(struct dec_ioasic_data));
 	if (d == NULL) {
@@ -187,8 +211,7 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem,
 	memset(d, 0, sizeof(struct dec_ioasic_data));
 
 	memory_device_register(mem, "dec_ioasic", baseaddr,
-	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d);
-
+	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d, MEM_DEFAULT, NULL);
 	return d;
 }
 

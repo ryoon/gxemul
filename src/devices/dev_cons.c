@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.12 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_cons.c,v 1.13 2004-11-17 20:37:39 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -99,6 +99,6 @@ void dev_cons_init(struct memory *mem)
 	 */
 
 	memory_device_register(mem, "cons", DEV_CONS_ADDRESS,
-	    DEV_CONS_LENGTH, dev_cons_access, NULL);
+	    DEV_CONS_LENGTH, dev_cons_access, NULL, MEM_DEFAULT, NULL);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mardigras.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_sgi_mardigras.c,v 1.7 2004-11-17 20:37:40 debug Exp $
  *  
  *  "MardiGras" graphics controller on SGI IP30 (Octane).
  *
@@ -299,6 +299,6 @@ void dev_sgi_mardigras_init(struct cpu *cpu, struct memory *mem, uint64_t basead
 	}
 
 	memory_device_register(mem, "sgi_mardigras", baseaddr,
-	    DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access, d);
+	    DEV_SGI_MARDIGRAS_LENGTH, dev_sgi_mardigras_access, d, MEM_DEFAULT, NULL);
 }
 

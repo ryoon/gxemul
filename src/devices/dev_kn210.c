@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn210.c,v 1.7 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_kn210.c,v 1.8 2004-11-17 20:37:39 debug Exp $
  *  
  *  DECsystem 5400 (KN210) stuff
  */
@@ -84,6 +84,6 @@ void dev_kn210_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct kn210_data));
 
 	memory_device_register(mem, "kn210", baseaddr, DEV_KN210_LENGTH,
-	    dev_kn210_access, d);
+	    dev_kn210_access, d, MEM_DEFAULT, NULL);
 }
 

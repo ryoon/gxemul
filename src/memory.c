@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.100 2004-11-16 20:50:36 debug Exp $
+ *  $Id: memory.c,v 1.101 2004-11-17 20:37:42 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1150,8 +1150,33 @@ if (cpu->bintrans_next_index != i) {
 
 	for (i=0; i<cpu->mem->n_mmapped_devices; i++)
 		if (paddr >= cpu->mem->dev_baseaddr[i] &&
-		    paddr < cpu->mem->dev_baseaddr[i] + cpu->mem->dev_length[i])
-			return NULL;
+		    paddr < cpu->mem->dev_baseaddr[i] + cpu->mem->dev_length[i]) {
+			if (cpu->mem->dev_flags[i] & MEM_BINTRANS_OK) {
+				paddr -= cpu->mem->dev_baseaddr[i];
+
+				if (writeflag) {
+					uint64_t low_paddr = paddr & ~0xfff;
+					uint64_t high_paddr = paddr | 0xfff;
+					if (!(cpu->mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK))
+						return NULL;
+
+					if (low_paddr < cpu->mem->dev_bintrans_write_low[i])
+					    cpu->mem->dev_bintrans_write_low[i] = low_paddr;
+					if (high_paddr > cpu->mem->dev_bintrans_write_high[i])
+					    cpu->mem->dev_bintrans_write_high[i] = high_paddr;
+				}
+
+				cpu->bintrans_next_index --;
+				if (cpu->bintrans_next_index < 0)
+					cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST-1;
+				cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff);
+				cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr_page;
+				cpu->bintrans_data_writable[cpu->bintrans_next_index] = writeflag;
+
+				return cpu->mem->dev_bintrans_data[i] + paddr;
+			} else
+				return NULL;
+		}
 
 	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr,
 	    writeflag? MEM_WRITE : MEM_READ);
@@ -1336,6 +1361,17 @@ into the devices  */
 				paddr -= mem->dev_baseaddr[i];
 				if (paddr + len > mem->dev_length[i])
 					len = mem->dev_length[i] - paddr;
+
+#ifdef BINTRANS
+				if (mem->dev_flags[i] & MEM_BINTRANS_OK) {
+					if (cpu->emul->bintrans_enable && writeflag) {
+						if (paddr < cpu->mem->dev_bintrans_write_low[i])
+						    cpu->mem->dev_bintrans_write_low[i] = paddr;
+						if (paddr > cpu->mem->dev_bintrans_write_high[i])
+						    cpu->mem->dev_bintrans_write_high[i] = paddr;
+					}
+				}
+#endif
 
 				res = mem->dev_f[i](cpu, mem, paddr, data, len,
 				    writeflag, mem->dev_extra[i]);
@@ -1560,6 +1596,50 @@ do_return_ok:
 
 
 /*
+ *  memory_device_bintrans_access():
+ *
+ *  Get the lowest and highest bintrans access since last time.
+ */
+void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *extra,
+	uint64_t *low, uint64_t *high)
+{
+#ifdef BINTRANS
+	int i, j;
+
+	/*  TODO: This is O(n), so it might be good to rewrite it some day.
+	    For now, it will be enough, as long as this function is not
+	    called too often.  */
+
+	for (i=0; i<mem->n_mmapped_devices; i++) {
+		if (mem->dev_extra[i] == extra) {
+			if (low != NULL)
+				*low = mem->dev_bintrans_write_low[i];
+			mem->dev_bintrans_write_low[i] = (uint64_t) -1;
+
+			if (high != NULL)
+				*high = mem->dev_bintrans_write_high[i];
+			mem->dev_bintrans_write_high[i] = 0;
+
+			/*  Invalidate any pages of this device that might
+			    be in the bintrans load/store cache:  */
+			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
+				size_t r;
+				r = (size_t)mem->dev_bintrans_data[i];
+				r = (size_t)cpu->bintrans_data_hostpage[j] - r;
+				if (r < mem->dev_length[i])
+					cpu->bintrans_data_hostpage[j] = NULL;
+			}
+
+			return;
+		}
+	}
+#else
+	return;
+#endif
+}
+
+
+/*
  *  memory_device_register():
  *
  *  Register a (memory mapped) device by adding it to the dev_* fields of a
@@ -1569,7 +1649,7 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	uint64_t baseaddr, uint64_t len,
 	int (*f)(struct cpu *,struct memory *,uint64_t,unsigned char *,
 		size_t,int,void *),
-	void *extra)
+	void *extra, int flags, unsigned char *bintrans_data)
 {
 	if (mem->n_mmapped_devices >= MAX_DEVICES) {
 		fprintf(stderr, "memory_device_register(): too many devices registered, cannot register '%s'\n", device_name);
@@ -1582,6 +1662,12 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	mem->dev_name[mem->n_mmapped_devices] = device_name;
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;
 	mem->dev_length[mem->n_mmapped_devices] = len;
+	mem->dev_flags[mem->n_mmapped_devices] = flags;
+	mem->dev_bintrans_data[mem->n_mmapped_devices] = bintrans_data;
+#ifdef BINTRANS
+	mem->dev_bintrans_write_low[mem->n_mmapped_devices] = (uint64_t)-1;
+	mem->dev_bintrans_write_high[mem->n_mmapped_devices] = 0;
+#endif
 	mem->dev_f[mem->n_mmapped_devices] = f;
 	mem->dev_extra[mem->n_mmapped_devices] = extra;
 	mem->n_mmapped_devices++;
@@ -1591,5 +1677,6 @@ void memory_device_register(struct memory *mem, const char *device_name,
 	if (baseaddr + len > mem->mmap_dev_maxaddr)
 		mem->mmap_dev_maxaddr = baseaddr + len;
 }
+
 
 

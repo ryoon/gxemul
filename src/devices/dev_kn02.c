@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.10 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_kn02.c,v 1.11 2004-11-17 20:37:39 debug Exp $
  *  
  *  DEC (KN02) stuff.  See include/dec_kn02.h for more info.
  */
@@ -102,7 +102,7 @@ struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 	memset(d, 0, sizeof(struct kn02_csr));
 
 	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH,
-	    dev_kn02_access, d);
+	    dev_kn02_access, d, MEM_DEFAULT, NULL);
 
 	return d;
 }

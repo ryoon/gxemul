@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.15 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_scc.c,v 1.16 2004-11-17 20:37:39 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -50,6 +50,7 @@
 #include "devices.h"
 
 #include "sccreg.h"
+
 
 #define	N_SCC_PORTS	2
 #define	N_SCC_REGS	16
@@ -174,7 +175,73 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_RX_IP_B)
 					cpu_interrupt(cpu, d->irq_nr);
 			}
+
+			if (d->scc_register_w[N_SCC_REGS + SCC_WR1] & SCC_WR1_DMA_MODE) {
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR0] & SCC_RR0_RX_AVAIL) {
+					if (i == SCC_CHANNEL_A)
+						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_EXT_IP_A;
+					else
+						d->scc_register_r[N_SCC_REGS + SCC_RR3] |= SCC_RR3_EXT_IP_B;
+				}
+
+				if (d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_EXT_IP_A ||
+				    d->scc_register_r[i * N_SCC_REGS + SCC_RR3] & SCC_RR3_EXT_IP_B)
+{
+					cpu_interrupt(cpu, d->irq_nr);
+cpu_interrupt(cpu, 8 + 0x02000000);
+}
+			}
 		}
+	}
+}
+
+
+/*
+ *  dev_scc_dma_func():
+ */
+int dev_scc_dma_func(struct cpu *cpu, void *extra, uint64_t addr, size_t dma_len, int tx)
+{
+	/*  printf("dev_scc_dma_func(): addr = %08x, len = %i\n", (int)addr, (int)dma_len);  */
+	unsigned char word[4];
+	struct scc_data *d = (struct scc_data *) extra;
+	int n;
+
+	int port = SCC_CHANNEL_A;	/*  TODO  */
+
+	if (tx) {
+		do {
+			memory_rw(cpu, cpu->mem, addr, &word[0], sizeof(word), MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+
+			lk201_tx_data(&d->lk201, d->scc_nr * 2 + port, word[1]);
+			/*  Loopback:  */
+			if (d->scc_register_w[port * N_SCC_REGS + SCC_WR14] & SCC_WR14_LOCAL_LOOPB)
+				dev_scc_add_to_rx_queue(d, word[1], d->scc_nr * 2 + port);
+
+			addr += sizeof(word);
+		} while ((addr & 0xffc) != 0);
+
+		dev_scc_tick(cpu, extra);
+		return 1;
+	} else {
+		printf("dev_scc_dma_func(): addr = %08x, len = %i\n", (int)addr, (int)dma_len);
+
+
+/*  TODO: all this is just nonsense  */
+
+		n = 0;
+		while (rx_avail(d, port)) {
+			word[0] = word[1] = word[2] = word[3] = 0;
+			word[0] = word[1] = word[2] = word[3] = rx_nextchar(d, port);
+			n++;
+			memory_rw(cpu, cpu->mem, addr, &word[0], sizeof(word), MEM_WRITE, NO_EXCEPTIONS | PHYSICAL);
+
+			addr += sizeof(word);
+			/*  Half-page?  */
+			if ((addr & 0x7fc) == 0)
+				break;
+		}
+		dev_scc_tick(cpu, extra);
+		return n*4;
 	}
 }
 
@@ -317,7 +384,7 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem,
  *	scc_nr = 0 or 1
  *	addmul = 1 in most cases, 8 on SGI?
  */
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+void *dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	int irq_nr, int use_fb, int scc_nr, int addrmul)
 {
 	struct scc_data *d;
@@ -336,7 +403,9 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
 
 	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH,
-	    dev_scc_access, d);
+	    dev_scc_access, d, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);
+
+	return (void *) d;
 }
 

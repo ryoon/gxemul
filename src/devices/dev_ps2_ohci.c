@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ohci.c,v 1.6 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_ps2_ohci.c,v 1.7 2004-11-17 20:37:39 debug Exp $
  *  
  *  Playstation 2 OHCI USB host controller.
  *
@@ -97,6 +97,6 @@ void dev_ps2_ohci_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	memset(d, 0, sizeof(struct ps2_ohci_data));
 
 	memory_device_register(mem, "ps2_ohci", baseaddr,
-	    DEV_PS2_OHCI_LENGTH, dev_ps2_ohci_access, d);
+	    DEV_PS2_OHCI_LENGTH, dev_ps2_ohci_access, d, MEM_DEFAULT, NULL);
 }
 

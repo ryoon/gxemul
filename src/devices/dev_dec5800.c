@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.4 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.5 2004-11-17 20:37:39 debug Exp $
  *  
  *  DEC 5800 (SMP capable system).
  *
@@ -151,9 +151,9 @@ struct dec5800_data *dev_dec5800_init(struct cpu *cpu,
 	memset(d, 0, sizeof(struct dec5800_data));
 
 	memory_device_register(mem, "dec5800", baseaddr,
-	    DEV_DEC5800_LENGTH, dev_dec5800_access, d);
+	    DEV_DEC5800_LENGTH, dev_dec5800_access, d, MEM_DEFAULT, NULL);
 	memory_device_register(mem, "dec5800_vectors",
-	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d);
+	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d, MEM_DEFAULT, NULL);
 	cpu_add_tickfunction(cpu, dev_dec5800_tick, d, 13);
 
 	return d;

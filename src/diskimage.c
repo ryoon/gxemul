@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.21 2004-04-15 09:13:36 debug Exp $
+ *  $Id: diskimage.c,v 1.22 2004-04-15 14:54:59 debug Exp $
  *
  *  Disk image support.
  *
@@ -36,6 +36,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include "misc.h"
 #include "diskimage.h"
@@ -167,6 +168,41 @@ int diskimage_exist(int disk_id)
 		return 0;
 
 	return 1;
+}
+
+
+/*
+ *  diskimage_recalc_size():
+ */
+void diskimage_recalc_size(int id)
+{
+	struct stat st;
+	int res;
+	off_t size = 0;
+
+	if (diskimages[id] == NULL || diskimages[id]->fname == NULL) {
+		fprintf(stderr, "ERROR: diskimage_recalc_size(): id %i is not in use (?)\n", id);
+		return;
+	}
+
+	res = stat(diskimages[id]->fname, &st);
+	if (res)
+		fprintf(stderr, "diskimage_recalc_size(): could not stat '%s'\n",
+		    diskimages[id]->fname);
+	else
+		size = st.st_size;
+
+	/*
+	 *  TODO:  CD-ROM devices, such as /dev/cd0c, how can one
+	 *  check how much data is on that cd-rom without reading it?
+	 *  For now, assume some large number, hopefully it will be
+	 *  enough to hold any cd-rom image.
+	 */
+	if (diskimages[id]->is_a_cdrom && size == 0)
+		size = 762048000;
+
+	diskimages[id]->total_size = size;
+	diskimages[id]->ncyls = diskimages[id]->total_size / 1048576;
 }
 
 
@@ -327,6 +363,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  Return data:  */
 		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, 8);
+
+		diskimage_recalc_size(disk_id);
 
 		size = diskimages[disk_id]->total_size / logical_block_size;
 		if (diskimages[disk_id]->total_size & (logical_block_size-1))
@@ -838,10 +876,10 @@ int diskimage_add(char *fname)
 		exit(1);
 	}
 	fseek(f, 0, SEEK_END);
-	diskimages[id]->total_size = ftell(f);
 	fclose(f);
 
-	diskimages[id]->ncyls = diskimages[id]->total_size / 1048576;
+	diskimage_recalc_size(id);
+
 	diskimages[id]->rpms = 3600;
 
 	if (prefix_b)

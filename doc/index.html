@@ -254,12 +254,12 @@ You need to do the following:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=1 seek=680000000</b>
+	$ <b>dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=512 count=1 seek=980000000</b>
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d pmaxcd.iso  \
-		-d netbsd_pmax_rootdisk.img  netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -qN -XY2 -I1500000 -d netbsd_pmax_rootdisk.img  \
+		-d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 </ol>
 
@@ -338,7 +338,7 @@ above.
 
 The answer is probably <i>no</i>, unless &lt;os-name&gt; is one of a few
 things that I have tried myself. Under DECstation emulation, NetBSD,
-Linux, and some Ultrix kernels work. Under SGI emulation, NetBSD and Linux
+Linux, and some Ultrix kernels might work. Under SGI emulation, NetBSD and Linux
 work a bit, but I've never gotten anything out of Irix except for a panic
 message or two.
 <p>
@@ -445,23 +445,35 @@ to use mips64emul when porting your code to MIPS.
 <a name="disk"></a>
 <h4>How to start the emulator with a disk image:</h4>
 
-Add <i>-d diskimagefilename</i> to the command line. For example, if you
-want to run a NetBSD/pmax kernel on an emulated DECstation machine, you
-would use a command line such as this:
+Add <i>-d [prefixes:]diskimagefilename</i> to the command line, where prefixes
+are one or more single-character options. Run mips64emul with no command line
+arguments to get a list of possible options.
+<p>
+Here are some examples. If you want to run a NetBSD/pmax kernel on an
+emulated DECstation machine, you would use a command line such as this:
 <pre>
 	$ <b>./mips64emul -D2 -q -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
 <p>
 It is possible to have more than one disk. For each -d argument, a disk
-image is added; the first will be SCSI target 0, the second will be target 1, and so on.
+image is added; the first will be SCSI target 0, the second will be target 1, and so on,
+unless you specify explicitly which ID number the devices should have.
 <pre>
-	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d disk2.raw netbsd-pmax-INSTALL</b>
+	$ <b>./mips64emul -D2 -q -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
-If a filename has a "C:" prefix, or ends with ".iso", then it is treated 
-as a CDROM device instead of a normal disk device. For example, the following
-command would start the emulator with two CDROM images, and one harddisk image:
+Note: In the example above, disk2.raw will get scsi id 5.
+</p>
+If a filename has a 'c' prefix, or ends with ".iso", then it is assumed to be
+a CDROM device (this can be overridden with a 'd' prefix, to force a read/write disk).
+For example, the following command would start the emulator with two
+CDROM images, and one harddisk image:
 <pre>
 	$ <b>./mips64emul -D2 -q -d image.iso -d disk0.img -d C:second_cdrom.img netbsd-pmax-INSTALL</b>
+</pre>
+Usually, the device with the lowest id becomes the boot device. To override
+this, add a 'b' prefix to one of the devices:
+<pre>
+	$ <b>./mips64emul -qD2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
 </pre>
 
 
@@ -626,7 +638,7 @@ md1gavan @mdstud.chalmers.se.
 
 
 <hr>
-<pre>$Id: index.html,v 1.18 2004-04-09 05:13:35 debug Exp $</pre>
+<pre>$Id: index.html,v 1.19 2004-04-11 15:52:54 debug Exp $</pre>
 
 </body>
 </html>

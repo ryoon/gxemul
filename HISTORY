@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.65 2004-04-09 05:10:48 debug Exp $
+$Id: HISTORY,v 1.66 2004-04-11 15:53:00 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -443,3 +443,12 @@ HISTORY of mips64emul
 		delays that existed before), and cursors are redrawn on
 		window exposure. (The cursor functionality has been moved
 		from dev_fb.c to x11.c.)
+20040411	Fixing the DC7085 device so that Ultrix doesn't behave weird
+		if both tx and rx interrupts occur at the same time.
+		More advancements on the asc SCSI controller.
+		More disk image filename prefixes are now recognized; c (for
+		CD-ROM, as before), d for disk, b for boot device, r for
+		read-only, and 0-7 for scsi id.
+		Mounting disks works in Ultrix. Installing to disk usually
+		crashes for various reasons, but an OSF/1 install gets
+		relatively far (similar to the NetBSD/pmax install).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.36 2004-10-17 14:32:56 debug Exp $
+ *  $Id: bintrans.c,v 1.37 2004-10-17 15:19:01 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -567,7 +567,7 @@ void bintrans_init(void)
 
 	/*  Allocate the large code chunk space:  */
 	s = CODE_CHUNK_SPACE_SIZE + CODE_CHUNK_SPACE_MARGIN;
-	translation_code_chunk_space = mmap(NULL, s,
+	translation_code_chunk_space = (unsigned char *) mmap(NULL, s,
 	    PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 
 	/*  If mmap() failed, try malloc():  */
@@ -601,7 +601,7 @@ void bintrans_init(void)
 	 *  of memory obtained from mmap(2).".  If malloc() isn't implemented
 	 *  using mmap(), then this could be a problem.
 	 */
-	res = mprotect(translation_code_chunk_space,
+	res = mprotect((void *)translation_code_chunk_space,
 	    s, PROT_READ | PROT_WRITE | PROT_EXEC);
 	if (res)
 		debug("warning: mprotect() failed with errno %i."

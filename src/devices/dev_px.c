@@ -23,25 +23,47 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.3 2004-03-07 15:02:14 debug Exp $
+ *  $Id: dev_px.c,v 1.4 2004-03-08 03:22:57 debug Exp $
  *  
- *  TURBOchannel Pixelstamp ("PX", "PXG") graphics device.
+ *  TURBOchannel Pixelstamp graphics device.
+ *
+ *	PMAG-CA = PX
+ *	PMAG-DA = PXG
+ *	PMAG-EA = PXG+
+ *	PMAG-FA = PXG+ TURBO
  *
  *  See include/pxreg.h (and NetBSD's arch/pmax/dev/px.c) for more information.
  *
- *  Recognizes under different names depending on operating system:
- *  (this is on a -D2 "3MAX")
+ *  The emulation of this device is far from complete. Different pixelstamp
+ *  boards are recognizes under different names depending on operating system:
  *
- *	NetBSD/pmax:		px0 at tc0 slot 0 offset 0x0: 2D, 4x1 stamp, 8 plane
- *	Ultrix 4.2A rev 47:	px0 at ibus0, pa0 (5x1 8+8+0+0)
- *	Ultrix 4.2 rev 85:	ga0 at ibus0
+ *	NetBSD/pmax:  (works fine both with and without console on framebuffer)
+ *		PMAG-CA:	px0 at tc0 slot 0 offset 0x0: 2D, 4x1 stamp, 8 plane
+ *		PMAG-DA:	px0 at tc0 slot 0 offset 0x0: 3D, 4x1 stamp, 8 plane, 128KB SRAM
+ *		PMAG-EA:	(not supported)
+ *		PMAG-FA:	px0 at tc0 slot 0 offset 0x0: 3D, 5x2 stamp, 24 plane, 128KB SRAM
+ *
+ *	Ultrix 4.2A rev 47:  (usually crashes if the device is installed, but serial console is used)
+ *		PMAG-CA:	px0 at ibus0, pa0 (5x1 8+8+0+0)
+ *		PMAG-DA:	px0 at ibus0, pq0 (5x1 16+16+16+0 128KB)    or (5x1 0+0+16+0 128KB)
+ *		PMAG-EA:	(not supported)
+ *		PMAG-FA:	px0 at ibus0, pq0 (5x2 24+24+16+16 128KB)
+ *
+ *	Ultrix 4.2 rev 85:  (usually crashes if the device is installed, but serial console is used)
+ *		PMAG-CA:	ga0 at ibus0, ga0 ( 8 planes 4x1 stamp )
+ *		PMAG-DA:	gq0 at ibus0, gq0 ( 8+8+16Z+0X plane 4x1 stamp )
+ *		PMAG-EA:	(not supported)
+ *		PMAG-FA:	gq0 at ibus0, gq0 ( 24+24+24Z+24X plane 5x2 stamp )  (crashes in serial console mode)
  *
  *  TODO:  A lot of stuff:
- *	Cursor.
- *	Color.
- *	24-bit vs 8-bit.
- *	3D?
+ *	Cursor.  (BT459)
+ *	Color support: foreground, background, 8-bit palette?
+ *	2D and 3D stuff: polygons? shading?
  *	Don't use so many hardcoded values.
+ *	Actually interpret the values in each command, don't just
+ *		assume NetBSD/Ultrix usage.
+ *	Factor out the DMA read (main memory vs sram).
+ *	Factor out the little endian/big endian word reads.
  *	Interrupts?
  *	Make sure that everything works with both NetBSD and Ultrix.
  */
@@ -56,7 +78,10 @@
 
 #include "pxreg.h"
 
-#define	PX_DEBUG
+#define	PX_XSIZE	1280
+#define	PX_YSIZE	1024
+
+/* #define PX_DEBUG  */
 
 
 /*
@@ -75,16 +100,28 @@ void dev_px_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_px_dma():
+ *
+ *  This routine performs a (fake) DMA transfer of STAMP commands
+ *  and executes them.
+ *
+ *  For the "PX" board, read from main memory (cpu->mem). For all other
+ *  boards, read from the i860 SRAM portion of the device (d->sram).
  */
 void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 {
 	unsigned char dma_buf[32768];
 	int dma_len = sizeof(dma_buf);
-	int i;
+	int i, bytesperpixel;
 	uint32_t cmdword;
 
+	bytesperpixel = d->bitdepth >> 3;
+
 	dma_len = 56 * 4;	/*  TODO: this is just enough for NetBSD's putchar  */
-	memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+
+	if (d->type == DEV_PX_TYPE_PX)
+		memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+	else
+		memmove(dma_buf, &d->sram[sys_addr & 0x1ffff], dma_len);	/*  TODO:  past end of sram?  */
 
 	if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 		cmdword = dma_buf[0] + (dma_buf[1] << 8) + (dma_buf[2] << 16) + (dma_buf[3] << 24);
@@ -164,7 +201,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		uint32_t nspans, lw;
 		int spannr, ofs;
 		uint32_t span_len, span_src, span_dst;
-		unsigned char pixels[1280];
+		unsigned char pixels[PX_XSIZE * 3];
 
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			nspans = dma_buf[4] + (dma_buf[5] << 8) + (dma_buf[6] << 16) + (dma_buf[7] << 24);
@@ -178,12 +215,18 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 
 		nspans >>= 24;
 		/*  Why not this?  lw = (lw + 1) >> 2;  */
-		debug("px: copyspans:  nspans = %i, lw = %i\n", nspans, lw);
+
+#ifdef PX_DEBUG
+		debug("[ px: copyspans:  nspans = %i, lw = %i ]\n", nspans, lw);
+#endif
 
 		/*  Reread copyspans command if it wasn't completely read:  */
 		if (dma_len < 4*(5 + nspans*3)) {
 			dma_len = 4 * (5+nspans*3);
-			memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+			if (d->type == DEV_PX_TYPE_PX)
+				memory_rw(cpu, cpu->mem, sys_addr, dma_buf, dma_len, MEM_READ, NO_EXCEPTIONS | PHYSICAL);
+			else
+				memmove(dma_buf, &d->sram[sys_addr & 0x1ffff], dma_len);	/*  TODO:  past end of sram?  */
 		}
 
 		ofs = 4*5;
@@ -210,13 +253,24 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 			span_dst >>= 3;
 			span_src >>= 3;
 
-			if (span_len > 1280)
-				span_len = 1280;
+			if (span_len > PX_XSIZE)
+				span_len = PX_XSIZE;
 
-			/*  debug("    span %i: len=%i src=%i dst=%i\n", spannr, span_len, span_src, span_dst);  */
+			/*  debug("  span %i: len=%i src=%i dst=%i\n", spannr, span_len, span_src, span_dst);  */
 
-			dev_fb_access(cpu, cpu->mem, span_src * 1280, pixels, span_len, MEM_READ, d->vfb_data);
-			dev_fb_access(cpu, cpu->mem, span_dst * 1280, pixels, span_len, MEM_WRITE, d->vfb_data);
+			memmove(d->vfb_data->framebuffer + span_dst * PX_XSIZE * bytesperpixel,
+			        d->vfb_data->framebuffer + span_src * PX_XSIZE * bytesperpixel,
+			        span_len * bytesperpixel);
+
+			d->vfb_data->update_x1 = 0; d->vfb_data->update_x2 = PX_XSIZE-1;
+			if (span_dst < d->vfb_data->update_y1)
+				d->vfb_data->update_y1 = span_dst;
+			if (span_dst > d->vfb_data->update_y2)
+				d->vfb_data->update_y2 = span_dst;
+			if (span_src < d->vfb_data->update_y1)
+				d->vfb_data->update_y1 = span_src;
+			if (span_src > d->vfb_data->update_y2)
+				d->vfb_data->update_y2 = span_src;
 		}
 	}
 
@@ -225,8 +279,7 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		uint32_t v1, v2, lw;
 		int x,y,x2,y2;
 		int fb_y;
-		unsigned char pixels[1280];
-		memset(pixels, 0, sizeof(pixels));	/*  TODO: other colors  */
+		unsigned char pixels[PX_XSIZE * 3];
 
 		if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
 			lw = dma_buf[16] + (dma_buf[17] << 8) + (dma_buf[18] << 16) + (dma_buf[19] << 24);
@@ -253,17 +306,33 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 
 		lw = (lw + 1) >> 2;
 
-		debug("px: clear/fill: v1 = 0x%08x  v2 = 0x%08x lw=%i x=%i y=%i x2=%i y2=%i\n", (int)v1, (int)v2, lw, x,y, x2,y2);
+		if (x2 - x > PX_XSIZE)
+			x2 = PX_XSIZE;
+
+#ifdef PX_DEBUG
+		debug("[ px: clear/fill: v1 = 0x%08x  v2 = 0x%08x lw=%i x=%i y=%i x2=%i y2=%i ]\n", (int)v1, (int)v2, lw, x,y, x2,y2);
+#endif
+		memset(pixels, 0, (x2 - x) * bytesperpixel);	/*  TODO: other colors  */
+
+		if (x < d->vfb_data->update_x1)
+			d->vfb_data->update_x1 = x;
+		if (x2 > d->vfb_data->update_x2)
+			d->vfb_data->update_x2 = x2;
 
 		for (fb_y=y; fb_y < y2 + lw; fb_y ++) {
-			dev_fb_access(cpu, cpu->mem, fb_y * 1280 + x, pixels, x2-x, MEM_WRITE, d->vfb_data);
+			memcpy(d->vfb_data->framebuffer + (fb_y * PX_XSIZE + x) * bytesperpixel, pixels, (x2-x)*bytesperpixel);
+
+			if (fb_y < d->vfb_data->update_y1)
+				d->vfb_data->update_y1 = fb_y;
+			if (fb_y > d->vfb_data->update_y2)
+				d->vfb_data->update_y2 = fb_y;
 		}
 	}
 
 	/*  NetBSD and Ultrix putchar  */
 	if (cmdword == 0xa21) {
 		/*  Ugly test code:  */
-		unsigned char pixels[16];
+		unsigned char pixels[16 * 3];
 		int pixels_len = 16;
 		uint32_t v1, v2;
 		int x, y, x2,y2, i, maxi;
@@ -285,12 +354,13 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		x2 = (v2 >> 19) & 2047;
 		y2 = ((v2 - 63) >> 3) & 1023;
 
-		debug("px putchar: v1 = 0x%08x  v2 = 0x%08x x=%i y=%i\n", (int)v1, (int)v2, x,y, x2,y2);
-
-		x %= 1280;
-		y %= 1024;
-		x2 %= 1280;
-		y2 %= 1024;
+#ifdef PX_DEBUG
+		debug("[ px putchar: v1 = 0x%08x  v2 = 0x%08x x=%i y=%i ]\n", (int)v1, (int)v2, x,y, x2,y2);
+#endif
+		x %= PX_XSIZE;
+		y %= PX_YSIZE;
+		x2 %= PX_XSIZE;
+		y2 %= PX_YSIZE;
 
 		pixels_len = x2 - x;
 
@@ -299,20 +369,43 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		maxi = 33;
 
 		for (i=4; i<maxi; i++) {
+			int j;
+
 			if (i == 12)
 				i = 30;
 
-			for (xbit = 0; xbit < 8; xbit ++) {
-				pixels[xbit]     = (dma_buf[i*4 + 0] & (1 << xbit))? 255 : 0;
-				pixels[xbit + 8] = (dma_buf[i*4 + 1] & (1 << xbit))? 255 : 0;
+			for (j=0; j<2; j++) {
+				for (xbit = 0; xbit < 8; xbit ++) {
+					if (bytesperpixel == 3) {
+						/*  24-bit:  */
+						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
+						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
+						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
+						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+					} else {
+						/*  8-bit:  */
+						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? 255 : 0;
+						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? 255 : 0;
+					}
+				}
+
+				memcpy(d->vfb_data->framebuffer + ((y+suby) * PX_XSIZE + x) * bytesperpixel,
+				    pixels, pixels_len * bytesperpixel);
+
+				if (y+suby < d->vfb_data->update_y1)
+					d->vfb_data->update_y1 = y+suby;
+				if (y+suby > d->vfb_data->update_y2)
+					d->vfb_data->update_y2 = y+suby;
+
+				suby ++;
 			}
-			dev_fb_access(cpu, cpu->mem, (y+suby) * 1280 + x, pixels, pixels_len, MEM_WRITE, d->vfb_data);
-			for (xbit = 0; xbit < 8; xbit ++) {
-				pixels[xbit]     = (dma_buf[i*4 + 2] & (1 << xbit))? 255 : 0;
-				pixels[xbit + 8] = (dma_buf[i*4 + 3] & (1 << xbit))? 255 : 0;
-			}
-			dev_fb_access(cpu, cpu->mem, (y+suby+1) * 1280 + x, pixels, pixels_len, MEM_WRITE, d->vfb_data);
-			suby += 2;
+
+		if (x < d->vfb_data->update_x1)
+			d->vfb_data->update_x1 = x;
+		if (x2 > d->vfb_data->update_x2)
+			d->vfb_data->update_x2 = x2;
 		}
 	}
 }
@@ -327,6 +420,7 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 {
 	uint64_t idata = 0, odata = 0;
 	struct px_data *d = extra;
+	int i;
 
 	idata = memory_readmax64(cpu, data, len);
 
@@ -345,17 +439,47 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 		 *
 		 *	sys_addr = ((dma_addr << 9) & 0x7800) +
 		 *		   ((dma_addr << 6) & 0xffff8000);
+		 *
+		 *  If the board type is "PX" then the system address is an address in host
+		 *  memory.  Otherwise, it is relative to 0x200000 (the i860's memory space
+		 *  on the board).
 		 */
 		uint32_t sys_addr;	/*  system address for DMA transfers  */
 		sys_addr = ((relative_addr << 9) & 0x7800) + ((relative_addr << 6) & 0xffff8000);
 
-		/*  If the system address is sane enough, then start a DMA transfer:  */
-		if (sys_addr >= 0x4000)
+		/*
+		 *  If the system address is sane enough, then start a DMA transfer:
+		 *  (for the "PX" board type, don't allow obviously too-low physical addresses)
+		 */
+		if (sys_addr >= 0x4000 || d->type != DEV_PX_TYPE_PX)
 			dev_px_dma(cpu, sys_addr, d);
 
 		/*  Pretend that it was always OK:  */
 		odata = STAMP_OK;
 	}
+
+	/*  N10 sram:  */
+	if (relative_addr >= 0x200000 && relative_addr < 0x280000) {
+		if (d->type == DEV_PX_TYPE_PX)
+			fatal("WARNING: the vdac should be at this address. overlap problems?\n");
+
+		if (writeflag == MEM_WRITE) {
+			for (i=0; i<len; i++)
+				d->sram[relative_addr - 0x200000 + i] = data[i];
+			/*  NOTE:  this return here supresses debug output (which
+				would be printed if we continue)  */
+			return 1;
+		} else {
+			/*
+			 *
+			 */
+			/*  for (i=0; i<len; i++)
+				data[i] = d->sram[relative_addr - 0x200000 + i];  */
+			odata = 1;
+		}
+	}
+
+	/*  TODO:  Most of these aren't implemented yet.  */
 
 	switch (relative_addr) {
 	case 0x180008:		/*  hsync  */
@@ -396,7 +520,10 @@ int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	case 0x180020:		/*  ipdvint  */
 		if (writeflag==MEM_READ) {
 			odata = d->intr;
+
+/*  TODO:  how do interrupts work on the pixelstamp boards?  */
 odata = random();
+
 			debug("[ px: read from ipdvint: 0x%08llx ]\n", (long long)odata);
 		} else {
 			d->intr = idata;
@@ -425,7 +552,7 @@ odata = random();
 		break;
 	case 0x18003c:		/*  modcl  */
 		if (writeflag==MEM_READ) {
-			odata = d->type << 12;
+			odata = (d->type << 12) + (d->xconfig << 11) + (d->yconfig << 9);
 			debug("[ px: read from modcl: 0x%llx ]\n", (long long)odata);
 		} else {
 			debug("[ px: write to modcl: 0x%llx ]\n", (long long)idata);
@@ -463,16 +590,37 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 	d->type = px_type;
 	d->irq_nr = irq_nr;
 
-	d->bitdepth = 24;
-	if (d->type == DEV_PX_TYPE_PX || d->type == DEV_PX_TYPE_PXG)
-		d->bitdepth = 8;
+	d->xconfig = d->yconfig = 0;	/*  4x1  */
 
-	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, 1280 * 1024 * d->bitdepth / 8, DEFAULT_MAX_BITS);
+	d->bitdepth = 24;
+	d->px_name = "(invalid)";
+
+	switch (d->type) {
+	case DEV_PX_TYPE_PX:
+		d->bitdepth = 8;
+		d->px_name = "PX";
+		break;
+	case DEV_PX_TYPE_PXG:
+		d->bitdepth = 8;
+		d->px_name = "PXG";
+		break;
+	case DEV_PX_TYPE_PXGPLUS:
+		d->px_name = "PXG+";
+		break;
+	case DEV_PX_TYPE_PXGPLUSTURBO:
+		d->px_name = "PXG+ TURBO";
+		d->xconfig = d->yconfig = 1;	/*  5x2  */
+		break;
+	default:
+		fatal("dev_px_init(): unimplemented px_type\n");
+	}
+
+	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, PX_XSIZE * PX_YSIZE * d->bitdepth / 8, DEFAULT_MAX_BITS);
 	if (d->fb_mem == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (1)\n");
 		exit(1);
 	}
-	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC, 1280, 1024, 1280, 1024, d->bitdepth, "PX");
+	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC, PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (2)\n");
 		exit(2);
@@ -480,11 +628,12 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 
 	switch (d->type) {
 	case DEV_PX_TYPE_PX:
-		dev_bt459_init(mem, baseaddr + 0x200000, d->vfb_data->rgb_palette, 8);
+		dev_bt459_init(mem, baseaddr + 0x200000, d->vfb_data, 8);
 		break;
 	case DEV_PX_TYPE_PXG:
-		dev_bt459_init(mem, baseaddr + 0x300000, d->vfb_data->rgb_palette, 8);
-		fatal("PXG: TODO\n");
+	case DEV_PX_TYPE_PXGPLUS:
+	case DEV_PX_TYPE_PXGPLUSTURBO:
+		dev_bt459_init(mem, baseaddr + 0x300000, d->vfb_data, d->bitdepth);
 		break;
 	default:
 		fatal("dev_px_init(): unimplemented px_type\n");

@@ -1,6 +1,9 @@
 mips64emul TODO
 ---------------
 
+This file is a mess. Don't trust it to be up-to-date.
+
+
 	Binary translation:  src/bintrans.c
 		o)  invalidate pages written to
 		o)  invalidate "parent" cache entries

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.109 2004-11-25 08:44:28 debug Exp $
+ *  $Id: coproc.c,v 1.110 2004-11-26 09:05:33 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -310,18 +310,20 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		void *p;
 		uint32_t p_paddr;
 
+		if (writeflag)
+			bintrans_invalidate(cpu, paddr_page);
+
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
 			a = (vaddr_page >> 22) & 0x3ff;
 			b = (vaddr_page >> 12) & 0x3ff;
-/*			printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);
-*/			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-/*			printf("tbl1 = %p\n", tbl1);
-*/			if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
+			/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);  */
+			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+			/*  printf("tbl1 = %p\n", tbl1);  */
+			if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
 				/*  Allocate a new table1:  */
-/*				printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
-				    a << 22, (a << 22) + 0x3fffff);
-*/
+				/*  printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
+				    a << 22, (a << 22) + 0x3fffff);  */
 				if (cpu->next_free_vth_table == NULL) {
 					tbl1 = malloc(sizeof(struct vth32_table));
 					if (tbl1 == NULL) {
@@ -341,9 +343,9 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 			/* printf("   p = %p\n", p); */
 			if (p == NULL && p_paddr == 0) {
 				tbl1->refcount ++;
-/*				printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
-				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);
-*/			}
+				/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
+				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
+			}
 			if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
 				/*  Don't degrade a page from writable to readonly.  */
 			} else {
@@ -1660,8 +1662,33 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	/*  Write the new entry:  */
 
 	if (cpu->cpu_type.mmu_model == MMU3K) {
+uint64_t vaddr, paddr;
+int wf = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_D? 1 : 0;
+unsigned char *memblock = NULL;
+
 		cp->tlbs[index].hi = cp->reg[COP0_ENTRYHI];
 		cp->tlbs[index].lo0 = cp->reg[COP0_ENTRYLO0];
+
+vaddr =  cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
+paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
+
+if (paddr < 0x10000000)
+	memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, 1);
+
+if (memblock != NULL && cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_V) {
+	memblock += (paddr & ((1 << BITS_PER_PAGETABLE) - 1));
+
+	if (vaddr < 0x10000000)
+		wf = 0;
+
+	update_translation_table(cpu, vaddr, memblock, wf, paddr);
+
+}
+
+
+
+
+
 	} else {
 		/*  R4000:  */
 		g_bit = (cp->reg[COP0_ENTRYLO0] & cp->reg[COP0_ENTRYLO1]) & ENTRYLO_G;

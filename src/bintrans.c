@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.85 2004-11-25 08:44:28 debug Exp $
+ *  $Id: bintrans.c,v 1.86 2004-11-26 09:05:32 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -41,7 +41,9 @@
  *	o)  When the translation cache is "full", then throw away everything
  *	    translated so far and restart from scratch. The cache is of a
  *	    fixed size, say 20 MB. (This is inspired by a comment in the Qemu
- *	    technical documentation.)
+ *	    technical documentation: "A 16 MByte cache holds the most recently
+ *	    used translations. For simplicity, it is completely flushed when
+ *	    it is full.")
  *
  *	o)  Do not translate over MIPS page boundaries (4 KB).
  *	    (TODO: Perhaps it would be possible if we're running in kernel
@@ -183,7 +185,7 @@ struct translation_page_entry {
 static struct translation_page_entry **translation_page_entry_array;
 
 
-#define	MAX_QUICK_JUMPS		5
+#define	MAX_QUICK_JUMPS		15
 static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
 static int quick_jump_page_offset[MAX_QUICK_JUMPS];
 static int n_quick_jumps;
@@ -232,13 +234,15 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 {
 	int entry_index = PADDR_TO_INDEX(paddr);
 	struct translation_page_entry *tep;
+#if 0
 struct translation_page_entry *prev = NULL;
+#endif
 	uint64_t paddr_page = paddr & ~0xfff;
 
 	tep = translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page)
-#if 0
+#if 1
 			break;
 #else
 {
@@ -248,8 +252,8 @@ struct translation_page_entry *prev = NULL;
 				prev->next = tep->next;
 			return;
 }
+		prev = tep;
 #endif
-prev = tep;
 		tep = tep->next;
 	}
 	if (tep == NULL)
@@ -299,7 +303,6 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	uint64_t delayed_branch_new_p=0;
 	int prev_p;
 
-
 	/*
 	 *  If the chunk space is all used up, we need to start over from
 	 *  an empty chunk space.
@@ -309,6 +312,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 		for (i=0; i<n; i++)
 			translation_page_entry_array[i] = NULL;
 		translation_code_chunk_space_head = 0;
+		n_quick_jumps = 0;
 		debug("bintrans: Starting over!\n");
 	}
 
@@ -656,6 +660,7 @@ default:
 					    &tep->chunk[delayed_branch_new_p/4];
 				else
 					potential_chunk_p = NULL;
+
 				bintrans_write_instruction__delayedbranch(&ca,
 				    potential_chunk_p, &tep->chunk[0], 0,
 				    delayed_branch_new_p & 0xfff);
@@ -683,7 +688,7 @@ default:
 		}
 
 		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate && n_translated > 20 &&
+		if (translated && try_to_translate && n_translated > 25 &&
 		    prev_p < 1015 && tep->chunk[prev_p+1] != 0 &&
 		    !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
@@ -691,7 +696,7 @@ default:
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 100)
+		if (n_translated > 200)
 			try_to_translate = 0;
 
 		p += sizeof(instr);

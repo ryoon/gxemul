@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.26 2004-06-22 01:20:45 debug Exp $
+ *  $Id: diskimage.c,v 1.27 2004-06-22 01:31:55 debug Exp $
  *
  *  Disk image support.
  *
@@ -255,7 +255,9 @@ void diskimage__switch_tape(int disk_id)
 	    diskimages[disk_id]->fname, diskimages[disk_id]->tape_filenr);
 	tmpfname[sizeof(tmpfname)-1] = '\0';
 
-	fclose(diskimages[disk_id]->f);
+	if (diskimages[disk_id]->f != NULL)
+		fclose(diskimages[disk_id]->f);
+
 	diskimages[disk_id]->f = fopen(tmpfname, diskimages[disk_id]->writable? "r+" : "r");
 	if (diskimages[disk_id]->f == NULL) {
 		fprintf(stderr, "[ diskimage: could not (re)open '%s' ]\n", tmpfname);
@@ -555,8 +557,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 			ofs = diskimages[disk_id]->tape_offset;
 
-			fatal("[ READ tape, cmd[1]=%02x size=%i, ofs=%lli ]\n",
-			    xferp->cmd[1], (int)size, (long long)ofs);
+			/*  fatal("[ READ tape, cmd[1]=%02x size=%i, ofs=%lli ]\n",
+			    xferp->cmd[1], (int)size, (long long)ofs);  */
 		} else {
 			if (xferp->cmd[0] == SCSICMD_READ) {
 				if (xferp->cmd_len != 6)
@@ -787,7 +789,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 
 		/*  Close and reopen.  */
 
-		fclose(diskimages[disk_id]->f);
+		if (diskimages[disk_id]->f != NULL)
+			fclose(diskimages[disk_id]->f);
+
 		diskimages[disk_id]->f = fopen(diskimages[disk_id]->fname,
 		    diskimages[disk_id]->writable? "r+" : "r");
 		if (diskimages[disk_id]->f == NULL) {

@@ -28,14 +28,14 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_types.h,v 1.10 2005-01-18 16:22:16 debug Exp $
+ *  $Id: cpu_types.h,v 1.11 2005-01-23 10:47:17 debug Exp $
  *
- *  CPU types.
+ *  MIPS CPU types.
  */
 
 #include <misc.h>
 
-/*  CPU types:  */
+/*  MIPS CPU types:  */
 #include "cpuregs.h"
 
 #define	EXC3K		3
@@ -57,12 +57,14 @@
 #define	CPU_DEFAULT	"R4000"
 
 /*
- *  Please do NOT use this list as a definite source for CPU PrID numbers!
- *  ----------------------------------------------------------------------
+ *  ---------------------------------------------------------------------------
+ *             Please do NOT use this list as a definite source for
+ *               PrID numbers, cache sizes, or anything like that!
+ *  ---------------------------------------------------------------------------
  *
- *  They are gathered from various other places (manuals, mailing list
- *  posts, and from source code from various operating systems), and are
- *  not necessarily correct.
+ *  These numbers are gathered from various other places (manuals, mailing list
+ *  posts, and from source code from various operating systems), and are not
+ *  necessarily correct.
  */
 
 #define	CPU_TYPE_DEFS	{	\

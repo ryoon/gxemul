@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.290 2005-01-21 15:22:20 debug Exp $
+ *  $Id: machine.c,v 1.291 2005-01-23 10:47:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1634,10 +1634,10 @@ void machine_init(struct machine *machine)
 		 *  loaded.
 		 */
 
-		cpu->gpr[GPR_A0] = 3;
-		cpu->gpr[GPR_A1] = DEC_PROM_INITIAL_ARGV;
-		cpu->gpr[GPR_A2] = DEC_PROM_MAGIC;
-		cpu->gpr[GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
+		cpu->gpr[MIPS_GPR_A0] = 3;
+		cpu->gpr[MIPS_GPR_A1] = DEC_PROM_INITIAL_ARGV;
+		cpu->gpr[MIPS_GPR_A2] = DEC_PROM_MAGIC;
+		cpu->gpr[MIPS_GPR_A3] = DEC_PROM_CALLBACK_STRUCT;
 
 		store_32bit_word(cpu, INITIAL_STACK_POINTER + 0x10,
 		    BOOTINFO_MAGIC);
@@ -1707,7 +1707,7 @@ void machine_init(struct machine *machine)
 		/*  Decrease the nr of args, if there are no args :-)  */
 		if (machine->boot_string_argument == NULL ||
 		    machine->boot_string_argument[0] == '\0')
-			cpu->gpr[GPR_A0] --;
+			cpu->gpr[MIPS_GPR_A0] --;
 
 		if (machine->boot_string_argument[0] != '\0') {
 			strcat(bootarg, " ");
@@ -1845,7 +1845,7 @@ void machine_init(struct machine *machine)
 		 *  The bootstring should be stored starting 512 bytes before end
 		 *  of physical ram.
 		 */
-		cpu->gpr[GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
+		cpu->gpr[MIPS_GPR_A0] = machine->physical_ram_in_mb * 1048576 + 0x80000000;
 		bootstr = "root=/dev/hda1 ro";
 		/*  bootstr = "nfsroot=/usr/cobalt/";  */
 		store_string(cpu, 0xffffffff80000000ULL +
@@ -1936,10 +1936,10 @@ void machine_init(struct machine *machine)
 
 		/*  NetBSD/hpcmips and possibly others expects the following:  */
 
-		cpu->gpr[GPR_A0] = 1;	/*  argc  */
-		cpu->gpr[GPR_A1] = machine->physical_ram_in_mb * 1048576
+		cpu->gpr[MIPS_GPR_A0] = 1;	/*  argc  */
+		cpu->gpr[MIPS_GPR_A1] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 512;	/*  argv  */
-		cpu->gpr[GPR_A2] = machine->physical_ram_in_mb * 1048576
+		cpu->gpr[MIPS_GPR_A2] = machine->physical_ram_in_mb * 1048576
 		    + 0xffffffff80000000ULL - 256;	/*  ptr to hpc_bootinfo  */
 
 		bootstr = machine->boot_kernel_filename;
@@ -2032,7 +2032,7 @@ void machine_init(struct machine *machine)
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
 
 		/*  TODO:  Is this necessary?  */
-		cpu->gpr[GPR_SP] = 0x80007f00;
+		cpu->gpr[MIPS_GPR_SP] = 0x80007f00;
 
 		break;
 
@@ -3449,29 +3449,29 @@ config[77] = 0x30;
 		bootarg = machine->boot_string_argument;
 
 		/*  argc, argv, envp in a0, a1, a2:  */
-		cpu->gpr[GPR_A0] = 0;	/*  note: argc is increased later  */
+		cpu->gpr[MIPS_GPR_A0] = 0;	/*  note: argc is increased later  */
 
 		/*  TODO:  not needed?  */
-		cpu->gpr[GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpu->gpr[MIPS_GPR_SP] = machine->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		/*  Set up argc/argv:  */
 		addr = ARC_ENV_STRINGS;
 		addr2 = ARC_ARGV_START;
-		cpu->gpr[GPR_A1] = addr2;
+		cpu->gpr[MIPS_GPR_A1] = addr2;
 
 		/*  bootstr:  */
 		store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 		add_environment_string(cpu, bootstr, &addr);
-		cpu->gpr[GPR_A0] ++;
+		cpu->gpr[MIPS_GPR_A0] ++;
 
 		/*  bootarg:  */
 		if (bootarg[0] != '\0') {
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, bootarg, &addr);
-			cpu->gpr[GPR_A0] ++;
+			cpu->gpr[MIPS_GPR_A0] ++;
 		}
 
-		cpu->gpr[GPR_A2] = addr2;
+		cpu->gpr[MIPS_GPR_A2] = addr2;
 
 		/*
 		 *  Add environment variables.  For each variable, add it
@@ -3591,7 +3591,7 @@ config[77] = 0x30;
 no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 
 		/*  Return address:  (0x20 = ReturnFromMain())  */
-		cpu->gpr[GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
+		cpu->gpr[MIPS_GPR_RA] = ARC_FIRMWARE_ENTRIES + 0x20;
 
 		break;
 
@@ -3627,13 +3627,13 @@ no_arc_prom_emulation:		/*  TODO: ugly, get rid of the goto  */
 		 *  haven't found any docs on how it is used though.
 		 */
 
-		cpu->gpr[GPR_A0] = 1;
-		cpu->gpr[GPR_A1] = 0xa0001000ULL;
-		store_32bit_word(cpu, cpu->gpr[GPR_A1],
+		cpu->gpr[MIPS_GPR_A0] = 1;
+		cpu->gpr[MIPS_GPR_A1] = 0xa0001000ULL;
+		store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A1],
 		    0xa0002000ULL);
 		store_string(cpu, 0xa0002000ULL, "something=somethingelse");
 
-		cpu->gpr[GPR_A2] = 0xa0003000ULL;
+		cpu->gpr[MIPS_GPR_A2] = 0xa0003000ULL;
 		store_string(cpu, 0xa0002000ULL, "hello=world\n");
 
 		break;
@@ -3770,7 +3770,7 @@ void machine_dumpinfo(struct machine *m)
 	debug("\n");
 
 	for (i=0; i<m->ncpus; i++) {
-		struct cpu_type_def *ct = &m->cpus[i]->cpu_type;
+		struct mips_cpu_type_def *ct = &m->cpus[i]->cpu_type;
 
 		debug("cpu%i: %s, %s", i, ct->name,
 		    m->cpus[i]->running? "running" : "stopped");

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.164 2005-01-22 07:43:09 debug Exp $
+ *  $Id: main.c,v 1.165 2005-01-23 10:47:18 debug Exp $
  */
 
 #include <stdio.h>
@@ -148,7 +148,7 @@ void fatal(char *fmt, ...)
 static void usage(char *progname, int longusage)
 {
 	int i;
-	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
 	printf("mips64emul");
 #ifdef VERSION

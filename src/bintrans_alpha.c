@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.106 2005-01-20 06:38:44 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.107 2005-01-23 10:47:17 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -181,15 +181,15 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 #define ofs_n	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
 #define ofs_ds	(((size_t)&dummy_cpu.delay_slot) - ((size_t)&dummy_cpu))
 #define ofs_ja	(((size_t)&dummy_cpu.delay_jmpaddr) - ((size_t)&dummy_cpu))
-#define ofs_sp	(((size_t)&dummy_cpu.gpr[GPR_SP]) - ((size_t)&dummy_cpu))
-#define ofs_ra	(((size_t)&dummy_cpu.gpr[GPR_RA]) - ((size_t)&dummy_cpu))
-#define ofs_a0	(((size_t)&dummy_cpu.gpr[GPR_A0]) - ((size_t)&dummy_cpu))
-#define ofs_a1	(((size_t)&dummy_cpu.gpr[GPR_A1]) - ((size_t)&dummy_cpu))
-#define ofs_t0	(((size_t)&dummy_cpu.gpr[GPR_T0]) - ((size_t)&dummy_cpu))
-#define ofs_t1	(((size_t)&dummy_cpu.gpr[GPR_T1]) - ((size_t)&dummy_cpu))
-#define ofs_t2	(((size_t)&dummy_cpu.gpr[GPR_T2]) - ((size_t)&dummy_cpu))
-#define ofs_v0	(((size_t)&dummy_cpu.gpr[GPR_V0]) - ((size_t)&dummy_cpu))
-#define ofs_s0	(((size_t)&dummy_cpu.gpr[GPR_S0]) - ((size_t)&dummy_cpu))
+#define ofs_sp	(((size_t)&dummy_cpu.gpr[MIPS_GPR_SP]) - ((size_t)&dummy_cpu))
+#define ofs_ra	(((size_t)&dummy_cpu.gpr[MIPS_GPR_RA]) - ((size_t)&dummy_cpu))
+#define ofs_a0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_A0]) - ((size_t)&dummy_cpu))
+#define ofs_a1	(((size_t)&dummy_cpu.gpr[MIPS_GPR_A1]) - ((size_t)&dummy_cpu))
+#define ofs_t0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T0]) - ((size_t)&dummy_cpu))
+#define ofs_t1	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T1]) - ((size_t)&dummy_cpu))
+#define ofs_t2	(((size_t)&dummy_cpu.gpr[MIPS_GPR_T2]) - ((size_t)&dummy_cpu))
+#define ofs_v0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_V0]) - ((size_t)&dummy_cpu))
+#define ofs_s0	(((size_t)&dummy_cpu.gpr[MIPS_GPR_S0]) - ((size_t)&dummy_cpu))
 #define ofs_tbl0 (((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - ((size_t)&dummy_cpu))
 
 static unsigned char bintrans_alpha_jump_to_32bit_pc[25 * 4] = {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.18 2005-01-19 14:24:20 debug Exp $
+ *  $Id: dev_mp.c,v 1.19 2005-01-23 10:47:16 debug Exp $
  *
  *  This is a fake multiprocessor (MP) device. It can be useful for
  *  theoretical experiments, but probably bares no resemblance to any
@@ -82,7 +82,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	case DEV_MP_STARTUPCPU:
 		which_cpu = idata;
 		d->cpus[which_cpu]->pc = d->startup_addr;
-		d->cpus[which_cpu]->gpr[GPR_SP] = d->stack_addr;
+		d->cpus[which_cpu]->gpr[MIPS_GPR_SP] = d->stack_addr;
 		d->cpus[which_cpu]->running = 1;
 		/*  debug("[ dev_mp: starting up cpu%i at 0x%llx ]\n", 
 		    which_cpu, (long long)d->startup_addr);  */

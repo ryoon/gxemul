@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.73 2005-01-20 14:25:19 debug Exp $
+ *  $Id: arcbios.c,v 1.74 2005-01-23 10:47:17 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -1044,8 +1044,8 @@ static void arcbios_handle_to_start_and_size(struct machine *machine,
  */
 static int arcbios_getfileinformation(struct cpu *cpu)
 {
-	int handle = cpu->gpr[GPR_A0];
-	uint64_t addr = cpu->gpr[GPR_A1];
+	int handle = cpu->gpr[MIPS_GPR_A0];
+	uint64_t addr = cpu->gpr[MIPS_GPR_A1];
 	uint64_t start, size;
 
 	arcbios_handle_to_start_and_size(cpu->machine, handle, &start, &size);
@@ -1077,12 +1077,12 @@ void arcbios_private_emul(struct cpu *cpu)
 	switch (vector) {
 	case 0x04:
 		debug("[ ARCBIOS PRIVATE get nvram table(): TODO ]\n");
-		cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[MIPS_GPR_V0] = 0;
 		break;
 	default:
 		cpu_register_dump(cpu, 1, 0x1);
 		debug("a0 points to: ");
-		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A0]);
 		debug("\n");
 		fatal("ARCBIOS: unimplemented PRIVATE vector 0x%x\n", vector);
 		cpu->running = 0;
@@ -1152,7 +1152,7 @@ void arcbios_emul(struct cpu *cpu)
 	case 0x24:		/*  GetPeer(node)  */
 		{
 			uint64_t peer;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 3 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] - 3 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1170,20 +1170,20 @@ void arcbios_emul(struct cpu *cpu)
 				peer = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 			}
 
-			cpu->gpr[GPR_V0] = peer? (peer + 3 * arc_wordlen) : 0;
+			cpu->gpr[MIPS_GPR_V0] = peer? (peer + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->gpr[GPR_V0] = (int64_t)(int32_t) cpu->gpr[GPR_V0];
+				cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetPeer(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_V0]);
+		    (long long)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_V0]);
 		break;
 	case 0x28:		/*  GetChild(node)  */
 		/*  0 for the root, non-0 for children:  */
-		if (cpu->gpr[GPR_A0] == 0)
-			cpu->gpr[GPR_V0] = FIRST_ARC_COMPONENT + arc_wordlen * 3;
+		if (cpu->gpr[MIPS_GPR_A0] == 0)
+			cpu->gpr[MIPS_GPR_V0] = FIRST_ARC_COMPONENT + arc_wordlen * 3;
 		else {
 			uint64_t child = 0;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 2 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] - 2 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1201,18 +1201,18 @@ void arcbios_emul(struct cpu *cpu)
 				child = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 			}
 
-			cpu->gpr[GPR_V0] = child? (child + 3 * arc_wordlen) : 0;
+			cpu->gpr[MIPS_GPR_V0] = child? (child + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->gpr[GPR_V0] = (int64_t)(int32_t) cpu->gpr[GPR_V0];
+				cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetChild(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_V0]);
+		    (long long)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_V0]);
 		break;
 	case 0x2c:		/*  GetParent(node)  */
 		{
 			uint64_t parent;
 
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 1 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] - 1 * arc_wordlen, &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
@@ -1231,25 +1231,25 @@ void arcbios_emul(struct cpu *cpu)
 				parent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 			}
 
-			cpu->gpr[GPR_V0] = parent? (parent + 3 * arc_wordlen) : 0;
+			cpu->gpr[MIPS_GPR_V0] = parent? (parent + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->gpr[GPR_V0] = (int64_t)(int32_t) cpu->gpr[GPR_V0];
+				cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetParent(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_V0]);
+		    (long long)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_V0]);
 		break;
 	case 0x30:		/*  GetConfigurationData(void *configdata, void *node)  */
 		/*  fatal("[ ARCBIOS GetConfigurationData(0x%016llx,0x%016llx) ]\n",
-		    (long long)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1]);  */
-		cpu->gpr[GPR_V0] = ARCBIOS_EINVAL;
+		    (long long)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_A1]);  */
+		cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
 		for (i=0; i<n_configuration_data; i++) {
 			/*  fatal("configuration_data_component[%i] = 0x%016llx\n", i, (long long)configuration_data_component[i]);  */
-			if (cpu->gpr[GPR_A1] == configuration_data_component[i]) {
-				cpu->gpr[GPR_V0] = 0;
+			if (cpu->gpr[MIPS_GPR_A1] == configuration_data_component[i]) {
+				cpu->gpr[MIPS_GPR_V0] = 0;
 				for (j=0; j<configuration_data_len[i]; j++) {
 					unsigned char ch;
 					memory_rw(cpu, cpu->mem, configuration_data_configdata[i] + j, &ch, 1, MEM_READ, CACHE_NONE);
-					memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + j, &ch, 1, MEM_WRITE, CACHE_NONE);
+					memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + j, &ch, 1, MEM_WRITE, CACHE_NONE);
 				}
 				break;
 			}
@@ -1257,10 +1257,10 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x3c:		/*  GetComponent(char *name)  */
 		debug("[ ARCBIOS GetComponent(\"");
-		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A0]);
 		debug("\") ]\n");
 
-		if (cpu->gpr[GPR_A0] == 0) {
+		if (cpu->gpr[MIPS_GPR_A0] == 0) {
 			fatal("[ ARCBIOS GetComponent: NULL ptr ]\n");
 		} else {
 			unsigned char buf[500];
@@ -1269,7 +1269,7 @@ void arcbios_emul(struct cpu *cpu)
 
 			memset(buf, 0, sizeof(buf));
 			for (i=0; i<sizeof(buf); i++) {
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
 				if (buf[i] == '\0')
 					i = sizeof(buf);
 			}
@@ -1279,7 +1279,7 @@ void arcbios_emul(struct cpu *cpu)
 			/*  printf("GetComponent(\"%s\")\n", buf);  */
 
 			/*  Default to NULL return value.  */
-			cpu->gpr[GPR_V0] = 0;
+			cpu->gpr[MIPS_GPR_V0] = 0;
 
 			/*  Scan the string to component table:  */
 			for (i=0; i<arcbios_n_string_to_components; i++) {
@@ -1295,61 +1295,61 @@ void arcbios_emul(struct cpu *cpu)
 
 			if (match_index >= 0) {
 				/*  printf("Longest match: '%s'\n", arcbios_string_to_component[match_index]);  */
-				cpu->gpr[GPR_V0] = arcbios_string_to_component_value[match_index];
+				cpu->gpr[MIPS_GPR_V0] = arcbios_string_to_component_value[match_index];
 			}
 		}
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");
-		cpu->gpr[GPR_V0] = SGI_SYSID_ADDR;
+		cpu->gpr[MIPS_GPR_V0] = SGI_SYSID_ADDR;
 		break;
 	case 0x48:		/*  void *GetMemoryDescriptor(void *ptr)  */
-		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->gpr[GPR_A0]);
+		debug("[ ARCBIOS GetMemoryDescriptor(0x%08x) ]\n", cpu->gpr[MIPS_GPR_A0]);
 
 		/*  If a0=NULL, then return the first descriptor:  */
-		if ((uint32_t)cpu->gpr[GPR_A0] == 0)
-			cpu->gpr[GPR_V0] = arcbios_memdescriptor_base;
+		if ((uint32_t)cpu->gpr[MIPS_GPR_A0] == 0)
+			cpu->gpr[MIPS_GPR_V0] = arcbios_memdescriptor_base;
 		else {
 			int s = arc_64bit? sizeof(struct arcbios_mem64)
 			    : sizeof(struct arcbios_mem);
-			int nr = cpu->gpr[GPR_A0] - arcbios_memdescriptor_base;
+			int nr = cpu->gpr[MIPS_GPR_A0] - arcbios_memdescriptor_base;
 			nr /= s;
 			nr ++;
-			cpu->gpr[GPR_V0] = arcbios_memdescriptor_base + s * nr;
+			cpu->gpr[MIPS_GPR_V0] = arcbios_memdescriptor_base + s * nr;
 			if (nr >= arc_n_memdescriptors)
-				cpu->gpr[GPR_V0] = 0;
+				cpu->gpr[MIPS_GPR_V0] = 0;
 		}
 		break;
 	case 0x50:		/*  GetTime()  */
 		debug("[ ARCBIOS GetTime() ]\n");
-		cpu->gpr[GPR_V0] = 0xffffffff80001000ULL;
+		cpu->gpr[MIPS_GPR_V0] = 0xffffffff80001000ULL;
 		/*  TODO!  */
 		break;
 	case 0x54:		/*  GetRelativeTime()  */
 		debug("[ ARCBIOS GetRelativeTime() ]\n");
-		cpu->gpr[GPR_V0] = (int64_t)(int32_t)time(NULL);
+		cpu->gpr[MIPS_GPR_V0] = (int64_t)(int32_t)time(NULL);
 		break;
 	case 0x5c:		/*  Open(char *path, uint32_t mode, uint32_t *fileID)  */
 		debug("[ ARCBIOS Open(\"");
-		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
-		debug("\",0x%x,0x%x)", (int)cpu->gpr[GPR_A0],
-		    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A0]);
+		debug("\",0x%x,0x%x)", (int)cpu->gpr[MIPS_GPR_A0],
+		    (int)cpu->gpr[MIPS_GPR_A1], (int)cpu->gpr[MIPS_GPR_A2]);
 
-		cpu->gpr[GPR_V0] = ARCBIOS_ENOENT;
+		cpu->gpr[MIPS_GPR_V0] = ARCBIOS_ENOENT;
 
 		handle = 3;
 		/*  TODO: Starting at 0 would require some updates...  */
 		while (file_handle_in_use[handle]) {
 			handle ++;
 			if (handle >= MAX_HANDLES) {
-				cpu->gpr[GPR_V0] = ARCBIOS_EMFILE;
+				cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EMFILE;
 				break;
 			}
 		}
 
 		if (handle >= MAX_HANDLES) {
 			fatal("[ ARCBIOS Open: out of file handles ]\n");
-		} else if (cpu->gpr[GPR_A0] == 0) {
+		} else if (cpu->gpr[MIPS_GPR_A0] == 0) {
 			fatal("[ ARCBIOS Open: NULL ptr ]\n");
 		} else {
 			/*
@@ -1364,39 +1364,39 @@ void arcbios_emul(struct cpu *cpu)
 			}
 			memset(buf, 0, MAX_OPEN_STRINGLEN);
 			for (i=0; i<MAX_OPEN_STRINGLEN; i++) {
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &buf[i], 1, MEM_READ, CACHE_NONE);
 				if (buf[i] == '\0')
 					i = MAX_OPEN_STRINGLEN;
 			}
 			buf[MAX_OPEN_STRINGLEN - 1] = '\0';
 			file_handle_string[handle] = buf;
 			arcbios_current_seek_offset[handle] = 0;
-			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
+			cpu->gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 
-		if (cpu->gpr[GPR_V0] == ARCBIOS_ESUCCESS) {
+		if (cpu->gpr[MIPS_GPR_V0] == ARCBIOS_ESUCCESS) {
 			debug(" = handle %i ]\n", handle);
-			store_32bit_word(cpu, cpu->gpr[GPR_A2], handle);
+			store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A2], handle);
 			file_handle_in_use[handle] = 1;
 		} else
-			debug(" = ERROR %i ]\n", (int)cpu->gpr[GPR_V0]);
+			debug(" = ERROR %i ]\n", (int)cpu->gpr[MIPS_GPR_V0]);
 		break;
 	case 0x60:		/*  Close(uint32_t handle)  */
-		debug("[ ARCBIOS Close(%i) ]\n", (int)cpu->gpr[GPR_A0]);
-		if (!file_handle_in_use[cpu->gpr[GPR_A0]]) {
+		debug("[ ARCBIOS Close(%i) ]\n", (int)cpu->gpr[MIPS_GPR_A0]);
+		if (!file_handle_in_use[cpu->gpr[MIPS_GPR_A0]]) {
 			fatal("ARCBIOS Close(%i): bad handle\n",
-			    (int)cpu->gpr[GPR_A0]);
-			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
+			    (int)cpu->gpr[MIPS_GPR_A0]);
+			cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
-			file_handle_in_use[cpu->gpr[GPR_A0]] = 0;
-			if (file_handle_string[cpu->gpr[GPR_A0]] != NULL)
-				free(file_handle_string[cpu->gpr[GPR_A0]]);
-			file_handle_string[cpu->gpr[GPR_A0]] = NULL;
-			cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
+			file_handle_in_use[cpu->gpr[MIPS_GPR_A0]] = 0;
+			if (file_handle_string[cpu->gpr[MIPS_GPR_A0]] != NULL)
+				free(file_handle_string[cpu->gpr[MIPS_GPR_A0]]);
+			file_handle_string[cpu->gpr[MIPS_GPR_A0]] = NULL;
+			cpu->gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		}
 		break;
 	case 0x64:		/*  Read(handle, void *buf, length, uint32_t *count)  */
-		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
+		if (cpu->gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
 			int i, nread = 0;
 			/*
 			 *  Before going into the loop, make sure stdout
@@ -1409,7 +1409,7 @@ void arcbios_emul(struct cpu *cpu)
 			for (i=0; i<cpu->n_tick_entries; i++)
 				cpu->tick_func[i](cpu, cpu->tick_extra[i]);
 
-			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
+			for (i=0; i<cpu->gpr[MIPS_GPR_A2]; i++) {
 				int x;
 				unsigned char ch;
 
@@ -1439,12 +1439,12 @@ void arcbios_emul(struct cpu *cpu)
 
 				ch = x;
 				nread ++;
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
 			}
-			store_32bit_word(cpu, cpu->gpr[GPR_A3], nread);
-			cpu->gpr[GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
+			store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A3], nread);
+			cpu->gpr[MIPS_GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
 		} else {
-			int handle = cpu->gpr[GPR_A0];
+			int handle = cpu->gpr[MIPS_GPR_A0];
 			int disk_id = arcbios_handle_to_scsi_id(handle);
 			uint64_t partition_offset = 0;
 			int res;
@@ -1454,28 +1454,28 @@ void arcbios_emul(struct cpu *cpu)
 			arcbios_handle_to_start_and_size(cpu->machine,
 			    handle, &partition_offset, &size);
 
-			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[GPR_A0],
-			    (int)cpu->gpr[GPR_A1], (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A3]);
+			debug("[ ARCBIOS Read(%i,0x%08x,0x%08x,0x%08x) ]\n", (int)cpu->gpr[MIPS_GPR_A0],
+			    (int)cpu->gpr[MIPS_GPR_A1], (int)cpu->gpr[MIPS_GPR_A2], (int)cpu->gpr[MIPS_GPR_A3]);
 
-			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			tmp_buf = malloc(cpu->gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[MIPS_GPR_A2]);
 				break;
 			}
 
 			res = diskimage_access(cpu->machine, disk_id, 0,
 			    partition_offset + arcbios_current_seek_offset[handle],
-			    tmp_buf, cpu->gpr[GPR_A2]);
+			    tmp_buf, cpu->gpr[MIPS_GPR_A2]);
 
 			/*  If the transfer was successful, transfer the data to emulated memory:  */
 			if (res) {
-				uint64_t dst = cpu->gpr[GPR_A1];
-				store_buf(cpu, dst, (char *)tmp_buf, cpu->gpr[GPR_A2]);
-				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
-				arcbios_current_seek_offset[handle] += cpu->gpr[GPR_A2];
-				cpu->gpr[GPR_V0] = 0;
+				uint64_t dst = cpu->gpr[MIPS_GPR_A1];
+				store_buf(cpu, dst, (char *)tmp_buf, cpu->gpr[MIPS_GPR_A2]);
+				store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A3], cpu->gpr[MIPS_GPR_A2]);
+				arcbios_current_seek_offset[handle] += cpu->gpr[MIPS_GPR_A2];
+				cpu->gpr[MIPS_GPR_V0] = 0;
 			} else
-				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
+				cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EIO;
 			free(tmp_buf);
 		}
 		break;
@@ -1487,21 +1487,21 @@ void arcbios_emul(struct cpu *cpu)
 		 *
 		 *  TODO: Error codes are things like ARCBIOS_EAGAIN.
 		 */
-		if (cpu->gpr[GPR_A0] == ARCBIOS_STDIN) {
-			cpu->gpr[GPR_V0] = console_charavail()? 0 : 1;
+		if (cpu->gpr[MIPS_GPR_A0] == ARCBIOS_STDIN) {
+			cpu->gpr[MIPS_GPR_V0] = console_charavail()? 0 : 1;
 		} else {
 			fatal("[ ARCBIOS GetReadStatus(%i) from something other than STDIN: TODO ]\n",
-			    (int)cpu->gpr[GPR_A0]);
+			    (int)cpu->gpr[MIPS_GPR_A0]);
 			/*  TODO  */
-			cpu->gpr[GPR_V0] = 1;
+			cpu->gpr[MIPS_GPR_V0] = 1;
 		}
 		break;
 	case 0x6c:		/*  Write(handle, buf, len, &returnlen)  */
-		if (cpu->gpr[GPR_A0] != ARCBIOS_STDOUT) {
+		if (cpu->gpr[MIPS_GPR_A0] != ARCBIOS_STDOUT) {
 			/*
 			 *  TODO: this is just a test
 			 */
-			int handle = cpu->gpr[GPR_A0];
+			int handle = cpu->gpr[MIPS_GPR_A0];
 			int disk_id = arcbios_handle_to_scsi_id(handle);
 			uint64_t partition_offset = 0;
 			int res, i;
@@ -1512,57 +1512,57 @@ void arcbios_emul(struct cpu *cpu)
 			    handle, &partition_offset, &size);
 
 			debug("[ ARCBIOS Write(%i,0x%08llx,%i,0x%08llx) ]\n",
-			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
-			    (int)cpu->gpr[GPR_A2], (long long)cpu->gpr[GPR_A3]);
+			    (int)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_A1],
+			    (int)cpu->gpr[MIPS_GPR_A2], (long long)cpu->gpr[MIPS_GPR_A3]);
 
-			tmp_buf = malloc(cpu->gpr[GPR_A2]);
+			tmp_buf = malloc(cpu->gpr[MIPS_GPR_A2]);
 			if (tmp_buf == NULL) {
-				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[GPR_A2]);
+				fprintf(stderr, "[ ***  Out of memory in arcbios.c, allocating %i bytes ]\n", (int)cpu->gpr[MIPS_GPR_A2]);
 				break;
 			}
 
-			for (i=0; i<cpu->gpr[GPR_A2]; i++)
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i,
+			for (i=0; i<cpu->gpr[MIPS_GPR_A2]; i++)
+				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A1] + i,
 				    &tmp_buf[i], sizeof(char), MEM_READ,
 				    CACHE_NONE);
 
 			res = diskimage_access(cpu->machine, disk_id, 1,
 			    partition_offset + arcbios_current_seek_offset[handle], tmp_buf,
-			    cpu->gpr[GPR_A2]);
+			    cpu->gpr[MIPS_GPR_A2]);
 
 			if (res) {
-				store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
-				arcbios_current_seek_offset[handle] += cpu->gpr[GPR_A2];
-				cpu->gpr[GPR_V0] = 0;
+				store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A3], cpu->gpr[MIPS_GPR_A2]);
+				arcbios_current_seek_offset[handle] += cpu->gpr[MIPS_GPR_A2];
+				cpu->gpr[MIPS_GPR_V0] = 0;
 			} else
-				cpu->gpr[GPR_V0] = ARCBIOS_EIO;
+				cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EIO;
 			free(tmp_buf);
 		} else {
-			for (i=0; i<cpu->gpr[GPR_A2]; i++) {
+			for (i=0; i<cpu->gpr[MIPS_GPR_A2]; i++) {
 				unsigned char ch = '\0';
-				memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
+				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 
 				arcbios_putchar(cpu, ch);
 			}
 		}
-		store_32bit_word(cpu, cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
-		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+		store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A3], cpu->gpr[MIPS_GPR_A2]);
+		cpu->gpr[MIPS_GPR_V0] = 0;	/*  Success.  */
 		break;
 	case 0x70:		/*  Seek(uint32_t handle, int64_t *offset, uint32_t whence): uint32_t  */
 		debug("[ ARCBIOS Seek(%i,0x%08llx,%i): ",
-		    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
-		    (int)cpu->gpr[GPR_A2]);
+		    (int)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_A1],
+		    (int)cpu->gpr[MIPS_GPR_A2]);
 
-		if (cpu->gpr[GPR_A2] != 0) {
+		if (cpu->gpr[MIPS_GPR_A2] != 0) {
 			fatal("[ ARCBIOS Seek(%i,0x%08llx,%i): UNIMPLEMENTED whence=%i ]\n",
-			    (int)cpu->gpr[GPR_A0], (long long)cpu->gpr[GPR_A1],
-			    (int)cpu->gpr[GPR_A2], (int)cpu->gpr[GPR_A2]);
+			    (int)cpu->gpr[MIPS_GPR_A0], (long long)cpu->gpr[MIPS_GPR_A1],
+			    (int)cpu->gpr[MIPS_GPR_A2], (int)cpu->gpr[MIPS_GPR_A2]);
 		}
 
 		{
 			unsigned char buf[8];
 			uint64_t ofs;
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1], &buf[0], sizeof(buf), MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A1], &buf[0], sizeof(buf), MEM_READ, CACHE_NONE);
 			if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 				unsigned char tmp;
 				tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -1573,17 +1573,17 @@ void arcbios_emul(struct cpu *cpu)
 			ofs = buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24) +
 			    ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40) +
 			    ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
-			arcbios_current_seek_offset[cpu->gpr[GPR_A0]] = ofs;
+			arcbios_current_seek_offset[cpu->gpr[MIPS_GPR_A0]] = ofs;
 			debug("%016llx ]\n", (long long)ofs);
 		}
 
-		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
+		cpu->gpr[MIPS_GPR_V0] = 0;	/*  Success.  */
 
 		break;
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */
 		for (i=0; i<sizeof(buf); i++)
-			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
+			memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A0] + i, &buf[i], sizeof(char), MEM_READ, CACHE_NONE);
 		buf[sizeof(buf)-1] = '\0';
 		debug("[ ARCBIOS GetEnvironmentVariable(\"%s\") ]\n", buf);
 		for (i=0; i<0x1000; i++) {
@@ -1596,45 +1596,45 @@ void arcbios_emul(struct cpu *cpu)
 			}
 			memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
-				cpu->gpr[GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
+				cpu->gpr[MIPS_GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
 				return;
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
-		cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x7c:		/*  SetEnvironmentVariable(char *, char *)  */
 		debug("[ ARCBIOS SetEnvironmentVariable(\"");
-		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A0]);
 		debug("\",\"");
-		dump_mem_string(cpu, cpu->gpr[GPR_A1]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A1]);
 		debug("\") ]\n");
 		/*  TODO: This is a dummy.  */
-		cpu->gpr[GPR_V0] = ARCBIOS_ESUCCESS;
+		cpu->gpr[MIPS_GPR_V0] = ARCBIOS_ESUCCESS;
 		break;
 	case 0x80:		/*  GetFileInformation()  */
 		debug("[ ARCBIOS GetFileInformation(%i,0x%x): ",
-		    cpu->gpr[GPR_A0], (int)cpu->gpr[GPR_A1]);
+		    cpu->gpr[MIPS_GPR_A0], (int)cpu->gpr[MIPS_GPR_A1]);
 
-		if (cpu->gpr[GPR_A0] >= MAX_HANDLES) {
+		if (cpu->gpr[MIPS_GPR_A0] >= MAX_HANDLES) {
 			debug("invalid file handle ]\n");
-			cpu->gpr[GPR_V0] = ARCBIOS_EINVAL;
-		} else if (!file_handle_in_use[cpu->gpr[GPR_A0]]) {
+			cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EINVAL;
+		} else if (!file_handle_in_use[cpu->gpr[MIPS_GPR_A0]]) {
 			debug("file handle not in use! ]\n");
-			cpu->gpr[GPR_V0] = ARCBIOS_EBADF;
+			cpu->gpr[MIPS_GPR_V0] = ARCBIOS_EBADF;
 		} else {
-			debug("'%s' ]\n", file_handle_string[cpu->gpr[GPR_A0]]);
-			cpu->gpr[GPR_V0] = arcbios_getfileinformation(cpu);
+			debug("'%s' ]\n", file_handle_string[cpu->gpr[MIPS_GPR_A0]]);
+			cpu->gpr[MIPS_GPR_V0] = arcbios_getfileinformation(cpu);
 		}
 		break;
 	case 0x88:		/*  FlushAllCaches()  */
 		debug("[ ARCBIOS FlushAllCaches(): TODO ]\n");
-		cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x90:		/*  void *GetDisplayStatus(handle)  */
-		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n", cpu->gpr[GPR_A0]);
+		debug("[ ARCBIOS GetDisplayStatus(%i) ]\n", cpu->gpr[MIPS_GPR_A0]);
 		/*  TODO:  handle different values of 'handle'?  */
-		cpu->gpr[GPR_V0] = ARC_DSPSTAT_ADDR;
+		cpu->gpr[MIPS_GPR_V0] = ARC_DSPSTAT_ADDR;
 		break;
 	case 0x100:
 		/*
@@ -1657,7 +1657,7 @@ void arcbios_emul(struct cpu *cpu)
 		cpu->machine->exit_without_entering_debugger = 1;
 #endif
 
-		cpu->gpr[GPR_V0] = 0;
+		cpu->gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x888:
 		/*
@@ -1672,7 +1672,7 @@ void arcbios_emul(struct cpu *cpu)
 		quiet_mode = 0;
 		cpu_register_dump(cpu, 1, 0x1);
 		debug("a0 points to: ");
-		dump_mem_string(cpu, cpu->gpr[GPR_A0]);
+		dump_mem_string(cpu, cpu->gpr[MIPS_GPR_A0]);
 		debug("\n");
 		fatal("ARCBIOS: unimplemented vector 0x%x\n", vector);
 		cpu->running = 0;

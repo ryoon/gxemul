@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.52 2005-01-22 07:53:51 debug Exp $
+ *  $Id: file.c,v 1.53 2005-01-23 10:47:18 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -571,7 +571,7 @@ unknown_coff_symbols:
 	fclose(f);
 
 	cpu->pc              = a_entry;
-	cpu->gpr[GPR_GP]     = a_gp;
+	cpu->gpr[MIPS_GPR_GP]     = a_gp;
 	file_loaded_end_addr = end_addr;
 
 	if (encoding == ELFDATA2LSB)
@@ -1229,7 +1229,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 					debug("%016llx\n", (long long)addr);
 				else
 					debug("%08x\n", (int)addr);
-				cpu->gpr[GPR_GP] = addr;
+				cpu->gpr[MIPS_GPR_GP] = addr;
 			}
 		}
 	}

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.253 2005-01-22 07:43:09 debug Exp $
+ *  $Id: cpu.c,v 1.254 2005-01-23 10:47:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -101,7 +101,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 {
 	struct cpu *cpu;
 	int i, j, tags_size, n_cache_lines, size_per_cache_line;
-	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 	int64_t secondary_cache_size;
 	int x, linesize;
 
@@ -118,7 +118,7 @@ struct cpu *cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
-	cpu->gpr[GPR_SP]	= INITIAL_STACK_POINTER;
+	cpu->gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
 
 	/*  Scan the cpu_type_defs list for this cpu type:  */
 	i = 0;
@@ -1114,7 +1114,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 	n_args_to_print = 5;
 
 	for (x=0; x<n_args_to_print; x++) {
-		int64_t d = cpu->gpr[x + GPR_A0];
+		int64_t d = cpu->gpr[x + MIPS_GPR_A0];
 
 		if (d > -256 && d < 256)
 			debug("%i", (int)d);
@@ -1132,7 +1132,7 @@ static void show_trace(struct cpu *cpu, uint64_t addr)
 		if (x < n_args_to_print - 1)
 			debug(",");
 
-		/*  Cannot go beyound GPR_A3:  */
+		/*  Cannot go beyound MIPS_GPR_A3:  */
 		if (x == 3)
 			break;
 	}
@@ -1249,9 +1249,9 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 			debug(" cause_im=0x%02x", (int)((reg[COP0_CAUSE] & CAUSE_IP_MASK) >> CAUSE_IP_SHIFT));
 			break;
 		case EXCEPTION_SYS:
-			debug(" v0=%i", (int)cpu->gpr[GPR_V0]);
+			debug(" v0=%i", (int)cpu->gpr[MIPS_GPR_V0]);
 			for (x=0; x<4; x++) {
-				int64_t d = cpu->gpr[GPR_A0 + x];
+				int64_t d = cpu->gpr[MIPS_GPR_A0 + x];
 				char strbuf[30];
 
 				if (d > -256 && d < 256)
@@ -1542,7 +1542,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	cached_pc = cpu->pc;
 
 	/*  Hardwire the zero register to 0:  */
-	cpu->gpr[GPR_ZERO] = 0;
+	cpu->gpr[MIPS_GPR_ZERO] = 0;
 
 	if (cpu->delay_slot) {
 		if (cpu->delay_slot == DELAYED) {
@@ -1648,7 +1648,7 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (rom_jal) {
-			cpu->pc = cpu->gpr[GPR_RA];
+			cpu->pc = cpu->gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
 			cpu->delay_slot = NOT_DELAYED;
 

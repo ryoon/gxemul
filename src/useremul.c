@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.26 2005-01-19 15:39:10 debug Exp $
+ *  $Id: useremul.c,v 1.27 2005-01-23 10:47:18 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -114,12 +114,12 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	switch (cpu->machine->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
 		/*  See netbsd/sys/src/arch/mips/mips_machdep.c:setregs()  */
-		cpu->gpr[GPR_A0] = stack_top - stack_margin;
+		cpu->gpr[MIPS_GPR_A0] = stack_top - stack_margin;
 		cpu->gpr[25] = cpu->pc;		/*  reg. t9  */
 		break;
 	case USERLAND_ULTRIX_PMAX:
 		/*  TODO:  is this correct?  */
-		cpu->gpr[GPR_A0] = stack_top - stack_margin;
+		cpu->gpr[MIPS_GPR_A0] = stack_top - stack_margin;
 		cpu->gpr[25] = cpu->pc;		/*  reg. t9  */
 		break;
 	default:
@@ -128,7 +128,7 @@ void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 	}
 
 	/*  The userland stack:  */
-	cpu->gpr[GPR_SP] = stack_top - stack_margin;
+	cpu->gpr[MIPS_GPR_SP] = stack_top - stack_margin;
 	add_symbol_name(&cpu->machine->symbol_context,
 	    stack_top - stacksize, stacksize, "userstack", 0);
 
@@ -245,27 +245,27 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 	switch (cpu->machine->userland_emul) {
 	case USERLAND_NETBSD_PMAX:
-		sysnr = cpu->gpr[GPR_V0];
+		sysnr = cpu->gpr[MIPS_GPR_V0];
 
 		if (sysnr == NETBSD_SYS___syscall) {
-			sysnr = cpu->gpr[GPR_A0] + (cpu->gpr[GPR_A1] << 32);
-			arg0 = cpu->gpr[GPR_A2];
-			arg1 = cpu->gpr[GPR_A3];
+			sysnr = cpu->gpr[MIPS_GPR_A0] + (cpu->gpr[MIPS_GPR_A1] << 32);
+			arg0 = cpu->gpr[MIPS_GPR_A2];
+			arg1 = cpu->gpr[MIPS_GPR_A3];
 			/*  TODO:  stack arguments? Are these correct?  */
-			arg2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
-			arg3 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 16);
-			stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 24);
-			stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 32);
-			stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 40);
+			arg2 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 8);
+			arg3 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 16);
+			stack0 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 24);
+			stack1 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 32);
+			stack2 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 40);
 		} else {
-			arg0 = cpu->gpr[GPR_A0];
-			arg1 = cpu->gpr[GPR_A1];
-			arg2 = cpu->gpr[GPR_A2];
-			arg3 = cpu->gpr[GPR_A3];
+			arg0 = cpu->gpr[MIPS_GPR_A0];
+			arg1 = cpu->gpr[MIPS_GPR_A1];
+			arg2 = cpu->gpr[MIPS_GPR_A2];
+			arg3 = cpu->gpr[MIPS_GPR_A3];
 			/*  TODO:  stack arguments? Are these correct?  */
-			stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
-			stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
-			stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 12);
+			stack0 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 4);
+			stack1 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 8);
+			stack2 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 12);
 		}
 
 		switch (sysnr) {
@@ -580,8 +580,8 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			sysctl_namelen = arg1;
 			sysctl_oldp    = arg2;
 			sysctl_oldlenp = arg3;
-			sysctl_newp    = load_32bit_word(cpu, cpu->gpr[GPR_SP]);		/*  TODO: +4 and +8 ??  */
-			sysctl_newlen  = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
+			sysctl_newp    = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP]);		/*  TODO: +4 and +8 ??  */
+			sysctl_newlen  = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 4);
 			debug("useremul_syscall(): netbsd __sysctl(");
 
 			name0 = load_32bit_word(cpu, sysctl_name + 0);
@@ -624,13 +624,13 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		 *  a3 is 0 if the syscall was ok, otherwise 1.
 		 *  v0 (and sometimes v1) contain the result value.
 		 */
-		cpu->gpr[GPR_A3] = error_flag;
+		cpu->gpr[MIPS_GPR_A3] = error_flag;
 		if (error_flag)
-			cpu->gpr[GPR_V0] = error_code;
+			cpu->gpr[MIPS_GPR_V0] = error_code;
 		else
-			cpu->gpr[GPR_V0] = result_low;
+			cpu->gpr[MIPS_GPR_V0] = result_low;
 		if (result_high_set)
-			cpu->gpr[GPR_V1] = result_high;
+			cpu->gpr[MIPS_GPR_V1] = result_high;
 		break;
 
 	case USERLAND_ULTRIX_PMAX:
@@ -642,16 +642,16 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		 *  then 64-bit args may be passed in two registers or something...
 		 *  If so, then copy from the section above (NetBSD).
 		 */
-		sysnr = cpu->gpr[GPR_V0];
+		sysnr = cpu->gpr[MIPS_GPR_V0];
 
-		arg0 = cpu->gpr[GPR_A0];
-		arg1 = cpu->gpr[GPR_A1];
-		arg2 = cpu->gpr[GPR_A2];
-		arg3 = cpu->gpr[GPR_A3];
+		arg0 = cpu->gpr[MIPS_GPR_A0];
+		arg1 = cpu->gpr[MIPS_GPR_A1];
+		arg2 = cpu->gpr[MIPS_GPR_A2];
+		arg3 = cpu->gpr[MIPS_GPR_A3];
 		/*  TODO:  stack arguments? Are these correct?  */
-		stack0 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 0);
-		stack1 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 4);
-		stack2 = load_32bit_word(cpu, cpu->gpr[GPR_SP] + 8);
+		stack0 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 0);
+		stack1 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 4);
+		stack2 = load_32bit_word(cpu, cpu->gpr[MIPS_GPR_SP] + 8);
 
 		switch (sysnr) {
 
@@ -972,13 +972,13 @@ TODO
 		 *  a3 is 0 if the syscall was ok, otherwise 1.
 		 *  v0 (and sometimes v1) contain the result value.
 		 */
-		cpu->gpr[GPR_A3] = error_flag;
+		cpu->gpr[MIPS_GPR_A3] = error_flag;
 		if (error_flag)
-			cpu->gpr[GPR_V0] = error_code;
+			cpu->gpr[MIPS_GPR_V0] = error_code;
 		else
-			cpu->gpr[GPR_V0] = result_low;
+			cpu->gpr[MIPS_GPR_V0] = result_low;
 		if (result_high_set)
-			cpu->gpr[GPR_V1] = result_high;
+			cpu->gpr[MIPS_GPR_V1] = result_high;
 /* TODO */
 		break;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.127 2005-01-22 07:53:51 debug Exp $
+ *  $Id: emul.c,v 1.128 2005-01-23 10:47:18 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -524,9 +524,9 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
 	    (m->cpus[m->bootstrap_cpu]->pc & 0x80000000ULL))
 		m->cpus[m->bootstrap_cpu]->pc |= 0xffffffff00000000ULL;
 
-	if ((m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] >> 32) == 0 &&
-	    (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] & 0x80000000ULL))
-		m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] |= 0xffffffff00000000ULL;
+	if ((m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP] >> 32) == 0 &&
+	    (m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP] & 0x80000000ULL))
+		m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP] |= 0xffffffff00000000ULL;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<m->ncpus; i++)
@@ -562,14 +562,14 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
 	if (m->cpus[m->bootstrap_cpu]->cpu_type.isa_level < 3 ||
 	    m->cpus[m->bootstrap_cpu]->cpu_type.isa_level == 32) {
 		debug("0x%08x", (int)m->cpus[m->bootstrap_cpu]->pc);
-		if (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] != 0)
+		if (m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP] != 0)
 			debug(" (gp=0x%08x)",
-			    (int)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+			    (int)m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP]);
 	} else {
 		debug("0x%016llx", (long long)m->cpus[m->bootstrap_cpu]->pc);
-		if (m->cpus[m->bootstrap_cpu]->gpr[GPR_GP] != 0)
+		if (m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP] != 0)
 			debug(" (gp=0x%016llx)",
-			    (long long)m->cpus[m->bootstrap_cpu]->gpr[GPR_GP]);
+			    (long long)m->cpus[m->bootstrap_cpu]->gpr[MIPS_GPR_GP]);
 	}
 	debug("\n");
 

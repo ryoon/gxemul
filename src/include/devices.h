@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.29 2004-02-22 13:14:51 debug Exp $
+ *  $Id: devices.h,v 1.30 2004-02-23 23:11:28 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -91,6 +91,11 @@ void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 void dev_dc7085_tick(struct cpu *cpu, void *);
 int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb);
+
+/*  dev_dec5800.c:  */
+#define	DEV_DEC5800_LENGTH			0x1000	/*  ?  */
+int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+void dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_fb.c:  */
 #define	DEV_FB_LENGTH			0x3c0000	/*  3c0000 to not colide with turbochannel rom, otherwise size = (4*1024*1024)  */
@@ -182,9 +187,8 @@ int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_le.c:  */
-#define	DEV_LE_LENGTH			0x1c0100
 int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr);
+void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len);
 
 /*  dev_n64_bios.c:  */
 #define	DEV_N64_BIOS_LENGTH		(0x05000000 - 0x03f00000)

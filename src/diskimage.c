@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.76 2005-01-31 08:15:52 debug Exp $
+ *  $Id: diskimage.c,v 1.77 2005-02-09 14:31:30 debug Exp $
  *
  *  Disk image support.
  *
@@ -340,7 +340,10 @@ static size_t diskimage_access__cdrom(struct diskimage *d, off_t offset,
 	off_t aligned_offset;
 	size_t bytes_read, total_copied = 0;
 	unsigned char cdrom_buf[CDROM_SECTOR_SIZE];
-	int buf_ofs, i = 0;
+	off_t buf_ofs, i = 0;
+
+	/*  printf("diskimage_access__cdrom(): offset=0x%llx size=%lli\n",
+	    (long long)offset, (long long)len);  */
 
 	aligned_offset = (offset / CDROM_SECTOR_SIZE) * CDROM_SECTOR_SIZE;
 	my_fseek(d->f, aligned_offset, SEEK_SET);
@@ -401,11 +404,15 @@ static int diskimage__internal_access(struct diskimage *d, int writeflag,
 
 		lendone = fwrite(buf, 1, len, d->f);
 	} else {
-		lendone = fread(buf, 1, len, d->f);
-
-		/*  Special case for CD-ROMs:  */
-		if (lendone == 0)
+		/*
+		 *  Special case for CD-ROMs. Actually, this is not needed
+		 *  for .iso images, only for physical CDROMS on some OSes,
+		 *  such as FreeBSD.
+		 */
+		if (d->is_a_cdrom)
 			lendone = diskimage_access__cdrom(d, offset, buf, len);
+		else
+			lendone = fread(buf, 1, len, d->f);
 
 		if (lendone < (ssize_t)len)
 			memset(buf + lendone, 0, len - lendone);
@@ -413,9 +420,9 @@ static int diskimage__internal_access(struct diskimage *d, int writeflag,
 
 	/*  Warn about non-complete data transfers:  */
 	if (lendone != (ssize_t)len) {
-		debug("[ diskimage__internal_access(): disk_id %i, offset %lli"
+		fatal("[ diskimage__internal_access(): disk_id %i, offset %lli"
 		    ", transfer not completed. len=%i, len_done=%i ]\n",
-		    d->id, (long long)offset, len, lendone);
+		    d->id, (long long)offset, (int)len, (int)lendone);
 		return 0;
 	}
 

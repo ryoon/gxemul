@@ -7,8 +7,8 @@ Overview
 
 mips64emul is a MIPS machine emulator. The goals are to emulate 32-bit and
 64-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
-capable of running real (unmodified) operating systems, such as NetBSD or
-Linux. This is a spare time hobby project, and many things are not
+capable of running real (unmodified) operating systems, such as NetBSD, Linux,
+or OpenBSD. This is a spare time hobby project, and many things are not
 implemented yet.
 
 (MIPS is a registered trademark of MIPS Technologies. This project is not

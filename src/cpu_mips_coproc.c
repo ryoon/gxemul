@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.5 2005-02-13 20:32:04 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.6 2005-02-21 21:54:40 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -77,6 +77,294 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 
 
 /*
+ *  initialize_cop0_config():
+ *
+ *  Helper function, called from mips_coproc_new().
+ */
+static void initialize_cop0_config(struct cpu *cpu, struct mips_coproc *c)
+{
+#ifdef ENABLE_MIPS16
+	const int m16 = 1;
+#else
+	const int m16 = 0;
+#endif
+	int IB, DB, SB, IC, DC, SC;
+
+	/*  Default values:  */
+	c->reg[COP0_CONFIG] =
+	      (   0 << 31)	/*  config1 present  */
+	    | (0x00 << 16)	/*  implementation dependant  */
+	    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				/*  endian mode  */
+	    | (   2 << 13)	/*  0 = MIPS32,
+				    1 = MIPS64 with 32-bit segments,
+				    2 = MIPS64 with all segments,
+				    3 = reserved  */
+	    | (   0 << 10)	/*  architecture revision level,
+				    0 = "Revision 1", other
+				    values are reserved  */
+	    | (   1 <<  7)	/*  MMU type:  0 = none,
+				    1 = Standard TLB,
+				    2 = Standard BAT,
+				    3 = fixed mapping, 4-7=reserved  */
+	    | (   0 <<  0)	/*  kseg0 coherency algorithm
+				(TODO)  */
+	    ;
+
+	switch (cpu->cd.mips.cpu_type.rev) {
+	case MIPS_R4000:	/*  according to the R4000 manual  */
+	case MIPS_R4600:
+		IB = cpu->machine->cache_picache_linesize - 4;
+		IB = IB < 0? 0 : (IB > 1? 1 : IB);
+		DB = cpu->machine->cache_pdcache_linesize - 4;
+		DB = DB < 0? 0 : (DB > 1? 1 : DB);
+		SB = cpu->machine->cache_secondary_linesize - 4;
+		SB = SB < 0? 0 : (SB > 3? 3 : SB);
+		IC = cpu->machine->cache_picache - 12;
+		IC = IC < 0? 0 : (IC > 7? 7 : IC);
+		DC = cpu->machine->cache_pdcache - 12;
+		DC = DC < 0? 0 : (DC > 7? 7 : DC);
+		SC = cpu->machine->cache_secondary? 0 : 1;
+		c->reg[COP0_CONFIG] =
+		      (   0 << 31)	/*  Master/Checker present bit  */
+		    | (0x00 << 28)	/*  EC: system clock divisor,
+					    0x00 = '2'  */
+		    | (0x00 << 24)	/*  EP  */
+		    | (  SB << 22)	/*  SB  */
+		    | (0x00 << 21)	/*  SS: 0 = mixed i/d scache  */
+		    | (0x00 << 20)	/*  SW  */
+		    | (0x00 << 18)	/*  EW: 0=64-bit  */
+		    | (  SC << 17)	/*  SC: 0=secondary cache present,
+					    1=non-present  */
+		    | (0x00 << 16)	/*  SM: (todo)  */
+		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
+		    | (0x00 << 13)	/*  EB: (todo)  */
+		    | (0x00 << 12)	/*  0 (resered)  */
+		    | (  IC <<  9)	/*  IC: I-cache = 2^(12+IC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (  DC <<  6)	/*  DC: D-cache = 2^(12+DC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (  IB <<  5)	/*  IB: I-cache line size (0=16,
+					    1=32)  */
+		    | (  DB <<  4)	/*  DB: D-cache line size (0=16,
+					    1=32)  */
+		    | (   0 <<  3)	/*  CU: todo  */
+		    | (   0 <<  0)	/*  kseg0 coherency algorithm
+						(TODO)  */
+		    ;
+		break;
+	case MIPS_R4100:	/*  According to the VR4131 manual:  */
+		IB = cpu->machine->cache_picache_linesize - 4;
+		IB = IB < 0? 0 : (IB > 1? 1 : IB);
+		DB = cpu->machine->cache_pdcache_linesize - 4;
+		DB = DB < 0? 0 : (DB > 1? 1 : DB);
+		IC = cpu->machine->cache_picache - 10;
+		IC = IC < 0? 0 : (IC > 7? 7 : IC);
+		DC = cpu->machine->cache_pdcache - 10;
+		DC = DC < 0? 0 : (DC > 7? 7 : DC);
+		c->reg[COP0_CONFIG] =
+		      (   0 << 31)	/*  IS: Instruction Streaming bit  */
+		    | (0x01 << 28)	/*  EC: system clock divisor,
+					    0x01 = 2  */
+		    | (0x00 << 24)	/*  EP  */
+		    | (0x00 << 23)	/*  AD: Accelerate data mode
+					    (0=VR4000-compatible)  */
+		    | ( m16 << 20)	/*  M16: MIPS16 support  */
+		    | (   1 << 17)	/*  '1'  */
+		    | (0x00 << 16)	/*  BP: 'Branch forecast'
+					    (0 = enabled)  */
+		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | (   2 << 13)	/*  '2' hardcoded on VR4131  */
+		    | (   1 << 12)	/*  CS: Cache size mode
+					    (1 on VR4131)  */
+		    | (  IC <<  9)	/*  IC: I-cache = 2^(10+IC) bytes
+					    (0 = 1KB, 4=16K)  */
+		    | (  DC <<  6)	/*  DC: D-cache = 2^(10+DC) bytes
+					    (0 = 1KB, 4=16K)  */
+		    | (  IB <<  5)	/*  IB: I-cache line size (0=16,
+					    1=32)  */
+		    | (  DB <<  4)	/*  DB: D-cache line size (0=16,
+					    1=32)  */
+		    | (   0 <<  0)	/*  kseg0 coherency algorithm (TODO)  */
+		    ;
+		break;
+	case MIPS_R5000:
+	case MIPS_RM5200:	/*  rm5200 is just a wild guess  */
+		/*  These are just guesses: (the comments are wrong) */
+		c->reg[COP0_CONFIG] =
+		      (   0 << 31)	/*  Master/Checker present bit  */
+		    | (0x00 << 28)	/*  EC: system clock divisor,
+					    0x00 = '2'  */
+		    | (0x00 << 24)	/*  EP  */
+		    | (0x00 << 22)	/*  SB  */
+		    | (0x00 << 21)	/*  SS  */
+		    | (0x00 << 20)	/*  SW  */
+		    | (0x00 << 18)	/*  EW: 0=64-bit  */
+		    | (0x01 << 17)	/*  SC: 0=secondary cache present,
+					    1=non-present  */
+		    | (0x00 << 16)	/*  SM: (todo)  */
+		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
+		    | (0x00 << 13)	/*  EB: (todo)  */
+		    | (0x00 << 12)	/*  0 (resered)  */
+		    | (   3 <<  9)	/*  IC: I-cache = 2^(12+IC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (   3 <<  6)	/*  DC: D-cache = 2^(12+DC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (   1 <<  5)	/*  IB: I-cache line size (0=16,
+					    1=32)  */
+		    | (   1 <<  4)	/*  DB: D-cache line size (0=16,
+					    1=32)  */
+		    | (   0 <<  3)	/*  CU: todo  */
+		    | (   2 <<  0)	/*  kseg0 coherency algorithm
+						(TODO)  */
+		    ;
+		break;
+	case MIPS_R10000:
+	case MIPS_R12000:
+	case MIPS_R14000:
+		IC = cpu->machine->cache_picache - 12;
+		IC = IC < 0? 0 : (IC > 7? 7 : IC);
+		DC = cpu->machine->cache_pdcache - 12;
+		DC = DC < 0? 0 : (DC > 7? 7 : DC);
+		SC = cpu->machine->cache_secondary - 19;
+		SC = SC < 0? 0 : (SC > 7? 7 : SC);
+		/*  According to the R10000 User's Manual:  */
+		c->reg[COP0_CONFIG] =
+		      (  IC << 29)	/*  Primary instruction cache size
+					    (3 = 32KB)  */
+		    | (  DC << 26)	/*  Primary data cache size (3 =
+					    32KB)  */
+		    | (   0 << 19)	/*  SCClkDiv  */
+		    | (  SC << 16)	/*  SCSize, secondary cache size.
+					    0 = 512KB. powers of two  */
+		    | (   0 << 15)	/*  MemEnd  */
+		    | (   0 << 14)	/*  SCCorEn  */
+		    | (   1 << 13)	/*  SCBlkSize. 0=16 words,
+					    1=32 words  */
+		    | (   0 <<  9)	/*  SysClkDiv  */
+		    | (   0 <<  7)	/*  PrcReqMax  */
+		    | (   0 <<  6)	/*  PrcElmReq  */
+		    | (   0 <<  5)	/*  CohPrcReqTar  */
+		    | (   0 <<  3)	/*  Device number  */
+		    | (   2 <<  0)	/*  Cache coherency algorithm for
+					    kseg0  */
+		    ;
+		break;
+	case MIPS_R5900:
+		/*
+		 *  R5900 is supposed to have the following (according
+		 *  to NetBSD/playstation2):
+		 *	cpu0: 16KB/64B 2-way set-associative L1 Instruction
+		 *		cache, 48 TLB entries
+		 *	cpu0: 8KB/64B 2-way set-associative write-back L1
+		 *		Data cache
+		 *  The following settings are just guesses:
+		 *  (comments are incorrect)
+		 */
+		c->reg[COP0_CONFIG] =
+		      (   0 << 31)	/*  Master/Checker present bit  */
+		    | (0x00 << 28)	/*  EC: system clock divisor,
+					    0x00 = '2'  */
+		    | (0x00 << 24)	/*  EP  */
+		    | (0x00 << 22)	/*  SB  */
+		    | (0x00 << 21)	/*  SS  */
+		    | (0x00 << 20)	/*  SW  */
+		    | (0x00 << 18)	/*  EW: 0=64-bit  */
+		    | (0x01 << 17)	/*  SC: 0=secondary cache present,
+					    1=non-present  */
+		    | (0x00 << 16)	/*  SM: (todo)  */
+		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
+		    | (0x00 << 13)	/*  EB: (todo)  */
+		    | (0x00 << 12)	/*  0 (resered)  */
+		    | (   3 <<  9)	/*  IC: I-cache = 2^(12+IC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (   3 <<  6)	/*  DC: D-cache = 2^(12+DC) bytes
+					    (1 = 8KB, 4=64K)  */
+		    | (   1 <<  5)	/*  IB: I-cache line size (0=16,
+					    1=32)  */
+		    | (   1 <<  4)	/*  DB: D-cache line size (0=16,
+					    1=32)  */
+		    | (   0 <<  3)	/*  CU: todo  */
+		    | (   0 <<  0)	/*  kseg0 coherency algorithm
+						(TODO)  */
+		    ;
+		break;
+	case MIPS_4Kc:
+	case MIPS_5Kc:
+		/*  According to the MIPS64 5K User's Manual:  */
+		/*  TODO: How good does this work with 4K?  */
+		c->reg[COP0_CONFIG] =
+		      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
+		    | (   0 << 20)	/*  ISD:  instruction scheduling
+					    disable (=1)  */
+		    | (   0 << 17)	/*  DID:  dual issue disable  */
+		    | (   0 << 16)	/*  BM:   burst mode  */
+		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
+				 	/*  endian mode  */
+		    | ((cpu->cd.mips.cpu_type.rev==MIPS_5Kc?2:1) << 13)
+					/*  1=32-bit only, 2=32/64  */
+		    | (   0 << 10)	/*  Architecture revision  */
+		    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
+		    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
+		    ;
+		/*  TODO:  Config select 1: caches and such  */
+		break;
+	default:
+		;
+	}
+}
+
+
+/*
+ *  initialize_cop1():
+ *
+ *  Helper function, called from mips_coproc_new().
+ */
+static void initialize_cop1(struct cpu *cpu, struct mips_coproc *c)
+{
+	int fpu_rev;
+	uint64_t other_stuff = 0;
+
+	switch (cpu->cd.mips.cpu_type.rev & 0xff) {
+	case MIPS_R2000:	fpu_rev = MIPS_R2010;	break;
+	case MIPS_R3000:	fpu_rev = MIPS_R3010;
+				other_stuff |= 0x40;	/*  or 0x30? TODO  */
+				break;
+	case MIPS_R6000:	fpu_rev = MIPS_R6010;	break;
+	case MIPS_R4000:	fpu_rev = MIPS_R4010;	break;
+	case MIPS_4Kc:		/*  TODO: Is this the same as 5Kc?  */
+	case MIPS_5Kc:		other_stuff = COP1_REVISION_DOUBLE
+				    | COP1_REVISION_SINGLE;
+	case MIPS_R5000:
+	case MIPS_RM5200:	fpu_rev = cpu->cd.mips.cpu_type.rev;
+				other_stuff |= 0x10;
+				/*  or cpu->cd.mips.cpu_type.sub ? TODO  */
+				break;
+	case MIPS_R10000:	fpu_rev = MIPS_R10000;	break;
+	case MIPS_R12000:	fpu_rev = 0x9;	break;
+	default:		fpu_rev = MIPS_SOFT;
+	}
+
+	c->fcr[COP1_REVISION] = (fpu_rev << 8) | other_stuff;
+
+#if 0
+	/*  These are mentioned in the MIPS64 documentation:  */
+	    + (1 << 16)		/*  single  */
+	    + (1 << 17)		/*  double  */
+	    + (1 << 18)		/*  paired-single  */
+	    + (1 << 19)		/*  3d  */
+#endif
+}
+
+
+/*
  *  mips_coproc_new():
  *
  *  Create a new MIPS coprocessor object.
@@ -84,12 +372,6 @@ static char *regnames[] = MIPS_REGISTER_NAMES;
 struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 {
 	struct mips_coproc *c;
-#ifdef ENABLE_MIPS16
-	const int m16 = 1;
-#else
-	const int m16 = 0;
-#endif
-	int IB, DB, SB, IC, DC, SC;
 
 	c = malloc(sizeof(struct mips_coproc));
 	if (c == NULL) {
@@ -139,231 +421,14 @@ struct mips_coproc *mips_coproc_new(struct cpu *cpu, int coproc_nr)
 
 		c->reg[COP0_WIRED] = 0;
 
-		c->reg[COP0_CONFIG] =
-		      (   0 << 31)	/*  config1 present  */
-		    | (0x00 << 16)	/*  implementation dependant  */
-		    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15)
-					/*  endian mode  */
-		    | (   2 << 13)	/*  0 = MIPS32,
-					    1 = MIPS64 with 32-bit segments,
-					    2 = MIPS64 with all segments,
-					    3 = reserved  */
-		    | (   0 << 10)	/*  architecture revision level,
-					    0 = "Revision 1", other
-					    values are reserved  */
-		    | (   1 <<  7)	/*  MMU type:  0 = none,
-					    1 = Standard TLB,
-					    2 = Standard BAT,
-					    3 = fixed mapping, 4-7=reserved  */
-		    | (   0 <<  0)	/*  kseg0 coherency algorithm
-					(TODO)  */
-		    ;
-
-		switch (cpu->cd.mips.cpu_type.rev) {
-		case MIPS_R4000:	/*  according to the R4000 manual  */
-		case MIPS_R4600:
-			IB = cpu->machine->cache_picache_linesize - 4;
-			IB = IB < 0? 0 : (IB > 1? 1 : IB);
-			DB = cpu->machine->cache_pdcache_linesize - 4;
-			DB = DB < 0? 0 : (DB > 1? 1 : DB);
-			SB = cpu->machine->cache_secondary_linesize - 4;
-			SB = SB < 0? 0 : (SB > 3? 3 : SB);
-			IC = cpu->machine->cache_picache - 12;
-			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->machine->cache_pdcache - 12;
-			DC = DC < 0? 0 : (DC > 7? 7 : DC);
-			SC = cpu->machine->cache_secondary? 0 : 1;
-			c->reg[COP0_CONFIG] =
-			      (   0 << 31)	/*  Master/Checker present bit  */
-			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
-			    | (0x00 << 24)	/*  EP  */
-			    | (  SB << 22)	/*  SB  */
-			    | (0x00 << 21)	/*  SS: 0 = mixed i/d scache  */
-			    | (0x00 << 20)	/*  SW  */
-			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (  SC << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
-			    | (0x00 << 16)	/*  SM: (todo)  */
-			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
-			    | (0x00 << 13)	/*  EB: (todo)  */
-			    | (0x00 << 12)	/*  0 (resered)  */
-			    | (  IC <<  9)	/*  IC: I-cache = 2^(12+IC) bytes  (1 = 8KB, 4=64K)  */
-			    | (  DC <<  6)	/*  DC: D-cache = 2^(12+DC) bytes  (1 = 8KB, 4=64K)  */
-			    | (  IB <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
-			    | (  DB <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
-			    | (   0 <<  3)	/*  CU: todo  */
-			    | (   0 <<  0)	/*  kseg0 coherency algorithm
-							(TODO)  */
-			    ;
-			break;
-		case MIPS_R4100:	/*  According to the VR4131 manual:  */
-			IB = cpu->machine->cache_picache_linesize - 4;
-			IB = IB < 0? 0 : (IB > 1? 1 : IB);
-			DB = cpu->machine->cache_pdcache_linesize - 4;
-			DB = DB < 0? 0 : (DB > 1? 1 : DB);
-			IC = cpu->machine->cache_picache - 10;
-			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->machine->cache_pdcache - 10;
-			DC = DC < 0? 0 : (DC > 7? 7 : DC);
-			c->reg[COP0_CONFIG] =
-			      (   0 << 31)	/*  IS: Instruction Streaming bit  */
-			    | (0x01 << 28)	/*  EC: system clock divisor, 0x01 = 2  */
-			    | (0x00 << 24)	/*  EP  */
-			    | (0x00 << 23)	/*  AD: Accelerate data mode (0=VR4000-compatible)  */
-			    | ( m16 << 20)	/*  M16: MIPS16 support  */
-			    | (   1 << 17)	/*  '1'  */
-			    | (0x00 << 16)	/*  BP: 'Branch forecast' (0 = enabled)  */
-			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | (   2 << 13)	/*  '2' hardcoded on VR4131  */
-			    | (   1 << 12)	/*  CS: Cache size mode (1 on VR4131)  */
-			    | (  IC <<  9)	/*  IC: I-cache = 2^(10+IC) bytes  (0 = 1KB, 4=16K)  */
-			    | (  DC <<  6)	/*  DC: D-cache = 2^(10+DC) bytes  (0 = 1KB, 4=16K)  */
-			    | (  IB <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
-			    | (  DB <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
-			    | (   0 <<  0)	/*  kseg0 coherency algorithm (TODO)  */
-			    ;
-			break;
-		case MIPS_R5000:
-		case MIPS_RM5200:	/*  rm5200 is just a wild guess  */
-			/*  These are just guesses: (the comments are wrong) */
-			c->reg[COP0_CONFIG] =
-			      (   0 << 31)	/*  Master/Checker present bit  */
-			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
-			    | (0x00 << 24)	/*  EP  */
-			    | (0x00 << 22)	/*  SB  */
-			    | (0x00 << 21)	/*  SS  */
-			    | (0x00 << 20)	/*  SW  */
-			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (0x01 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
-			    | (0x00 << 16)	/*  SM: (todo)  */
-			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
-			    | (0x00 << 13)	/*  EB: (todo)  */
-			    | (0x00 << 12)	/*  0 (resered)  */
-			    | (   3 <<  9)	/*  IC: I-cache = 2^(12+IC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   3 <<  6)	/*  DC: D-cache = 2^(12+DC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   1 <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
-			    | (   1 <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
-			    | (   0 <<  3)	/*  CU: todo  */
-			    | (   2 <<  0)	/*  kseg0 coherency algorithm
-							(TODO)  */
-			    ;
-			break;
-		case MIPS_R10000:
-		case MIPS_R12000:
-		case MIPS_R14000:
-			IC = cpu->machine->cache_picache - 12;
-			IC = IC < 0? 0 : (IC > 7? 7 : IC);
-			DC = cpu->machine->cache_pdcache - 12;
-			DC = DC < 0? 0 : (DC > 7? 7 : DC);
-			SC = cpu->machine->cache_secondary - 19;
-			SC = SC < 0? 0 : (SC > 7? 7 : SC);
-			/*  According to the R10000 User's Manual:  */
-			c->reg[COP0_CONFIG] =
-			      (  IC << 29)	/*  Primary instruction cache size (3 = 32KB)  */
-			    | (  DC << 26)	/*  Primary data cache size (3 = 32KB)  */
-			    | (   0 << 19)	/*  SCClkDiv  */
-			    | (  SC << 16)	/*  SCSize, secondary cache size. 0 = 512KB. powers of two  */
-			    | (   0 << 15)	/*  MemEnd  */
-			    | (   0 << 14)	/*  SCCorEn  */
-			    | (   1 << 13)	/*  SCBlkSize. 0=16 words, 1=32 words  */
-			    | (   0 <<  9)	/*  SysClkDiv  */
-			    | (   0 <<  7)	/*  PrcReqMax  */
-			    | (   0 <<  6)	/*  PrcElmReq  */
-			    | (   0 <<  5)	/*  CohPrcReqTar  */
-			    | (   0 <<  3)	/*  Device number  */
-			    | (   2 <<  0)	/*  Cache coherency algorithm for kseg0  */
-			    ;
-			break;
-		case MIPS_R5900:
-			/*
-			 *  R5900 is supposed to have the following (according
-			 *  to NetBSD/playstation2):
-			 *	cpu0: 16KB/64B 2-way set-associative L1 Instruction cache, 48 TLB entries
-			 *	cpu0: 8KB/64B 2-way set-associative write-back L1 Data cache
-			 *  The following settings are just guesses:
-			 *  (comments are incorrect)
-			 */
-			c->reg[COP0_CONFIG] =
-			      (   0 << 31)	/*  Master/Checker present bit  */
-			    | (0x00 << 28)	/*  EC: system clock divisor, 0x00 = '2'  */
-			    | (0x00 << 24)	/*  EP  */
-			    | (0x00 << 22)	/*  SB  */
-			    | (0x00 << 21)	/*  SS  */
-			    | (0x00 << 20)	/*  SW  */
-			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (0x01 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
-			    | (0x00 << 16)	/*  SM: (todo)  */
-			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
-			    | (0x00 << 13)	/*  EB: (todo)  */
-			    | (0x00 << 12)	/*  0 (resered)  */
-			    | (   3 <<  9)	/*  IC: I-cache = 2^(12+IC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   3 <<  6)	/*  DC: D-cache = 2^(12+DC) bytes  (1 = 8KB, 4=64K)  */
-			    | (   1 <<  5)	/*  IB: I-cache line size (0=16, 1=32)  */
-			    | (   1 <<  4)	/*  DB: D-cache line size (0=16, 1=32)  */
-			    | (   0 <<  3)	/*  CU: todo  */
-			    | (   0 <<  0)	/*  kseg0 coherency algorithm
-							(TODO)  */
-			    ;
-			break;
-		case MIPS_4Kc:
-		case MIPS_5Kc:
-			/*  According to the MIPS64 5K User's Manual:  */
-			/*  TODO: How good does this work with 4K?  */
-			c->reg[COP0_CONFIG] =
-			      (   (uint32_t)1 << 31)/*  Config 1 present bit  */
-			    | (   0 << 20)	/*  ISD:  instruction scheduling disable (=1)  */
-			    | (   0 << 17)	/*  DID:  dual issue disable  */
-			    | (   0 << 16)	/*  BM:   burst mode  */
-			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
-			    | ((cpu->cd.mips.cpu_type.rev==MIPS_5Kc?2:1) << 13)	/*  1=32-bit only, 2=32/64  */
-			    | (   0 << 10)	/*  Architecture revision  */
-			    | (   1 <<  7)	/*  MMU type: 1=TLB, 3=FMT  */
-			    | (   2 <<  0)	/*  kseg0 cache coherency algorithm  */
-			    ;
-			/*  TODO:  Config select 1: caches and such  */
-			break;
-		default:
-			;
-		}
+		initialize_cop0_config(cpu, c);
 
 		/*  Make sure the status register is sign-extended nicely:  */
 		c->reg[COP0_STATUS] = (int64_t)(int32_t)c->reg[COP0_STATUS];
 	}
 
-	if (coproc_nr == 1) {
-		int fpu_rev;
-		uint64_t other_stuff = 0;
-
-		switch (cpu->cd.mips.cpu_type.rev & 0xff) {
-		case MIPS_R2000:	fpu_rev = MIPS_R2010;	break;
-		case MIPS_R3000:	fpu_rev = MIPS_R3010;
-					other_stuff |= 0x40;	/*  or 0x30? TODO  */
-					break;
-		case MIPS_R6000:	fpu_rev = MIPS_R6010;	break;
-		case MIPS_R4000:	fpu_rev = MIPS_R4010;	break;
-		case MIPS_4Kc:		/*  TODO: Is this the same as 5Kc?  */
-		case MIPS_5Kc:		other_stuff = COP1_REVISION_DOUBLE | COP1_REVISION_SINGLE;
-		case MIPS_R5000:
-		case MIPS_RM5200:	fpu_rev = cpu->cd.mips.cpu_type.rev;
-					other_stuff |= 0x10;	/*  or cpu->cd.mips.cpu_type.sub ? TODO  */
-					break;
-		case MIPS_R10000:	fpu_rev = MIPS_R10000;	break;
-		case MIPS_R12000:	fpu_rev = 0x9;	break;
-		default:		fpu_rev = MIPS_SOFT;
-		}
-
-		c->fcr[COP1_REVISION] = (fpu_rev << 8) | other_stuff;
-
-#if 0
-		/*  These are mentioned in the MIPS64 documentation:  */
-		    + (1 << 16)		/*  single  */
-		    + (1 << 17)		/*  double  */
-		    + (1 << 18)		/*  paired-single  */
-		    + (1 << 19)		/*  3d  */
-#endif
-	}
+	if (coproc_nr == 1)
+		initialize_cop1(cpu, c);
 
 	return c;
 }
@@ -419,7 +484,8 @@ void mips_coproc_tlb_set_entry(struct cpu *cpu, int entrynr, int size,
 			    (asid & ENTRYHI_ASID) |
 			    (global? TLB_G : 0);
 		/*  NOTE: The pagemask size is for a "dual" page:  */
-		cpu->cd.mips.coproc[0]->tlbs[entrynr].mask = (2*size - 1) & ~0x1fff;
+		cpu->cd.mips.coproc[0]->tlbs[entrynr].mask =
+		    (2*size - 1) & ~0x1fff;
 		cpu->cd.mips.coproc[0]->tlbs[entrynr].lo0 =
 		    (((paddr0 >> 12) << ENTRYLO_PFN_SHIFT) &
 			ENTRYLO_PFN_MASK) |
@@ -483,7 +549,8 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 				memset(tbl1, 0, sizeof(struct vth32_table));
 			} else {
 				tbl1 = cpu->cd.mips.next_free_vth_table;
-				cpu->cd.mips.next_free_vth_table = tbl1->next_free;
+				cpu->cd.mips.next_free_vth_table =
+				    tbl1->next_free;
 				tbl1->next_free = NULL;
 			}
 			cpu->cd.mips.vaddr_to_hostaddr_table0_kernel[a] = tbl1;
@@ -615,11 +682,13 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 		switch (cpu->cd.mips.cpu_type.mmu_model) {
 		case MMU3K:
 			for (i=0; i<64; i++) {
-				tlb_paddr0 = cpu->cd.mips.coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK;
-				tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
+				tlb_paddr0 = cpu->cd.mips.coproc[0]->
+				    tlbs[i].lo0 & R2K3K_ENTRYLO_PFN_MASK;
+				tlb_vaddr = cpu->cd.mips.coproc[0]->
+				    tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
 				tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
-				    tlb_paddr0 == paddr)
+				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
+				    R2K3K_ENTRYLO_V) && tlb_paddr0 == paddr)
 					invalidate_table_entry(cpu, tlb_vaddr);
 			}
 			break;
@@ -633,7 +702,8 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 					or_pmask = 0x7ff;
 					phys_shift = 10;
 				}
-				switch (cpu->cd.mips.coproc[0]->tlbs[i].mask | or_pmask) {
+				switch (cpu->cd.mips.coproc[0]->
+				    tlbs[i].mask | or_pmask) {
 				case 0x000007ff:	psize = 10; break;
 				case 0x00001fff:	psize = 12; break;
 				case 0x00007fff:	psize = 14; break;
@@ -644,40 +714,54 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 				case 0x01ffffff:	psize = 24; break;
 				case 0x07ffffff:	psize = 26; break;
 				default:
-					printf("invalidate_translation_caches_paddr(): bad pagemask?\n");
+					printf("invalidate_translation_caches"
+					    "_paddr(): bad pagemask?\n");
 				}
-				tlb_paddr0 = (cpu->cd.mips.coproc[0]->tlbs[i].lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
-				tlb_paddr1 = (cpu->cd.mips.coproc[0]->tlbs[i].lo1 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
+				tlb_paddr0 = (cpu->cd.mips.coproc[0]->tlbs[i].
+				    lo0 & ENTRYLO_PFN_MASK)>>ENTRYLO_PFN_SHIFT;
+				tlb_paddr1 = (cpu->cd.mips.coproc[0]->tlbs[i].
+				    lo1 & ENTRYLO_PFN_MASK)>>ENTRYLO_PFN_SHIFT;
 				tlb_paddr0 <<= phys_shift;
 				tlb_paddr1 <<= phys_shift;
 				if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
+					tlb_vaddr = cpu->cd.mips.coproc[0]->
+					    tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
 					if (tlb_vaddr & ((int64_t)1 << 43))
-						tlb_vaddr |=0xfffff00000000000ULL;
+						tlb_vaddr |=
+						    0xfffff00000000000ULL;
 				} else {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK;
+					tlb_vaddr = cpu->cd.mips.coproc[0]->
+					    tlbs[i].hi & ENTRYHI_VPN2_MASK;
 					if (tlb_vaddr & ((int64_t)1 << 39))
-						tlb_vaddr |=0xffffff0000000000ULL;
+						tlb_vaddr |=
+						    0xffffff0000000000ULL;
 				}
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 & ENTRYLO_V) &&
-				    paddr >= tlb_paddr0 && paddr < tlb_paddr0 + (1<<psize)) {
+				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
+				    ENTRYLO_V) && paddr >= tlb_paddr0 &&
+				    paddr < tlb_paddr0 + (1<<psize)) {
 					p2 = 1 << psize;
 					for (p=0; p<p2; p+=4096)
-						invalidate_table_entry(cpu, tlb_vaddr + p);
+						invalidate_table_entry(cpu,
+						    tlb_vaddr + p);
 				}
-				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo1 & ENTRYLO_V) &&
-				    paddr >= tlb_paddr1 && paddr < tlb_paddr1 + (1<<psize)) {
+				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo1 &
+				    ENTRYLO_V) && paddr >= tlb_paddr1 &&
+				    paddr < tlb_paddr1 + (1<<psize)) {
 					p2 = 1 << psize;
 					for (p=0; p<p2; p+=4096)
-						invalidate_table_entry(cpu, tlb_vaddr + p + (1 << psize));
+						invalidate_table_entry(cpu,
+						    tlb_vaddr + p +
+						    (1 << psize));
 				}
 			}
 		}
 #endif
 
 		if (paddr < 0x20000000) {
-			invalidate_table_entry(cpu, 0xffffffff80000000ULL + paddr);
-			invalidate_table_entry(cpu, 0xffffffffa0000000ULL + paddr);
+			invalidate_table_entry(cpu, 0xffffffff80000000ULL
+			    + paddr);
+			invalidate_table_entry(cpu, 0xffffffffa0000000ULL
+			    + paddr);
 		}
 	}
 
@@ -698,79 +782,95 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 /*
  *  invalidate_translation_caches():
  *
- *  This is necessary for every change to the TLB, and when the ASID is
- *  changed, so that for example user-space addresses are not cached when
- *  they should not be.
+ *  This is necessary for every change to the TLB, and when the ASID is changed,
+ *  so that for example user-space addresses are not cached when they should
+ *  not be.
  */
 static void invalidate_translation_caches(struct cpu *cpu,
 	int all, uint64_t vaddr, int kernelspace, int old_asid_to_invalidate)
 {
 	int i;
 
-/* printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
-*/
+	/*  printf("inval(all=%i, kernel=%i, addr=%016llx)\n",
+	    all, kernelspace, (long long)vaddr);  */
+
 #ifdef BINTRANS
-	if (cpu->machine->bintrans_enable) {
-		if (all) {
-			int i;
-			uint64_t tlb_vaddr;
-			switch (cpu->cd.mips.cpu_type.mmu_model) {
-			case MMU3K:
-				for (i=0; i<64; i++) {
-					tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK;
-					tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
-					if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 & R2K3K_ENTRYLO_V) &&
-					    (tlb_vaddr & 0xc0000000ULL) != 0x80000000ULL) {
-						int asid = (cpu->cd.mips.coproc[0]->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
-						if (old_asid_to_invalidate < 0 ||
-						    old_asid_to_invalidate == asid)
-							invalidate_table_entry(cpu, tlb_vaddr);
-					}
-				}
-				break;
-			default:
-				for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
-					int psize = 10, or_pmask = 0x1fff;
-					int phys_shift = 12;
+	if (!cpu->machine->bintrans_enable)
+		goto nobintrans;
 
-					if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
-						or_pmask = 0x7ff;
-						phys_shift = 10;
-					}
-
-					switch (cpu->cd.mips.coproc[0]->tlbs[i].mask | or_pmask) {
-					case 0x000007ff:	psize = 10; break;
-					case 0x00001fff:	psize = 12; break;
-					case 0x00007fff:	psize = 14; break;
-					case 0x0001ffff:	psize = 16; break;
-					case 0x0007ffff:	psize = 18; break;
-					case 0x001fffff:	psize = 20; break;
-					case 0x007fffff:	psize = 22; break;
-					case 0x01ffffff:	psize = 24; break;
-					case 0x07ffffff:	psize = 26; break;
-					default:
-						printf("invalidate_translation_caches_paddr(): bad pagemask?\n");
-					}
-
-					if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
-						tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
-						if (tlb_vaddr & ((int64_t)1 << 43))
-							tlb_vaddr |=0xfffff00000000000ULL;
-					} else {
-						tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK;
-						if (tlb_vaddr & ((int64_t)1 << 39))
-							tlb_vaddr |=0xffffff0000000000ULL;
-					}
-
-					/*  TODO: Check the ASID etc.  */
-
-					invalidate_table_entry(cpu, tlb_vaddr);
-					invalidate_table_entry(cpu, tlb_vaddr | (1 << psize));
+	if (all) {
+		int i;
+		uint64_t tlb_vaddr;
+		switch (cpu->cd.mips.cpu_type.mmu_model) {
+		case MMU3K:
+			for (i=0; i<64; i++) {
+				tlb_vaddr = cpu->cd.mips.coproc[0]->tlbs[i].hi
+				    & R2K3K_ENTRYHI_VPN_MASK;
+				tlb_vaddr = (int64_t)(int32_t)tlb_vaddr;
+				if ((cpu->cd.mips.coproc[0]->tlbs[i].lo0 &
+				    R2K3K_ENTRYLO_V) && (tlb_vaddr &
+				    0xc0000000ULL) != 0x80000000ULL) {
+					int asid = (cpu->cd.mips.coproc[0]->
+					    tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK
+					    ) >> R2K3K_ENTRYHI_ASID_SHIFT;
+					if (old_asid_to_invalidate < 0 ||
+					    old_asid_to_invalidate == asid)
+						invalidate_table_entry(cpu,
+						    tlb_vaddr);
 				}
 			}
-		} else
-			invalidate_table_entry(cpu, vaddr);
-	}
+			break;
+		default:
+			for (i=0; i<cpu->cd.mips.coproc[0]->nr_of_tlbs; i++) {
+				int psize = 10, or_pmask = 0x1fff;
+				int phys_shift = 12;
+
+				if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
+					or_pmask = 0x7ff;
+					phys_shift = 10;
+				}
+
+				switch (cpu->cd.mips.coproc[0]->tlbs[i].mask
+				    | or_pmask) {
+				case 0x000007ff:	psize = 10; break;
+				case 0x00001fff:	psize = 12; break;
+				case 0x00007fff:	psize = 14; break;
+				case 0x0001ffff:	psize = 16; break;
+				case 0x0007ffff:	psize = 18; break;
+				case 0x001fffff:	psize = 20; break;
+				case 0x007fffff:	psize = 22; break;
+				case 0x01ffffff:	psize = 24; break;
+				case 0x07ffffff:	psize = 26; break;
+				default:
+					printf("invalidate_translation_caches"
+					    "(): bad pagemask?\n");
+				}
+
+				if (cpu->cd.mips.cpu_type.mmu_model == MMU10K) {
+					tlb_vaddr = cpu->cd.mips.coproc[0]->
+					    tlbs[i].hi & ENTRYHI_VPN2_MASK_R10K;
+					if (tlb_vaddr & ((int64_t)1 << 43))
+						tlb_vaddr |=
+						    0xfffff00000000000ULL;
+				} else {
+					tlb_vaddr = cpu->cd.mips.coproc[0]->
+					    tlbs[i].hi & ENTRYHI_VPN2_MASK;
+					if (tlb_vaddr & ((int64_t)1 << 39))
+						tlb_vaddr |=
+						    0xffffff0000000000ULL;
+				}
+
+				/*  TODO: Check the ASID etc.  */
+
+				invalidate_table_entry(cpu, tlb_vaddr);
+				invalidate_table_entry(cpu, tlb_vaddr |
+				    (1 << psize));
+			}
+		}
+	} else
+		invalidate_table_entry(cpu, vaddr);
+
+nobintrans:
 
 	/*  TODO: Don't invalidate everything.  */
 	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
@@ -787,14 +887,14 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	/*  Invalidate the tiny translation cache...  */
 	if (!cpu->machine->bintrans_enable)
 		for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-			if (all ||
-			    vaddr == (cpu->cd.mips.translation_cache_instr[i].vaddr_pfn))
+			if (all || vaddr == (cpu->cd.mips.
+			    translation_cache_instr[i].vaddr_pfn))
 				cpu->cd.mips.translation_cache_instr[i].wf = 0;
 
 	if (!cpu->machine->bintrans_enable)
 		for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-			if (all ||
-			    vaddr == (cpu->cd.mips.translation_cache_data[i].vaddr_pfn))
+			if (all || vaddr == (cpu->cd.mips.
+			    translation_cache_data[i].vaddr_pfn))
 				cpu->cd.mips.translation_cache_data[i].wf = 0;
 }
 #endif
@@ -884,11 +984,16 @@ void coproc_register_write(struct cpu *cpu,
 			break;
 		case COP0_ENTRYLO0:
 			unimpl = 0;
-			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K && (tmp & 0xff)!=0) {
+			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+			    (tmp & 0xff)!=0) {
 				/*  char *symbol;
 				    uint64_t offset;
-				    symbol = get_symbol_name(cpu->cd.mips.pc_last, &offset);
-				    fatal("YO! pc = 0x%08llx <%s> lo=%016llx\n", (long long)cpu->cd.mips.pc_last, symbol? symbol : "no symbol", (long long)tmp); */
+				    symbol = get_symbol_name(
+				    cpu->cd.mips.pc_last, &offset);
+				    fatal("YO! pc = 0x%08llx <%s> "
+				    "lo=%016llx\n", (long long)
+				    cpu->cd.mips.pc_last, symbol? symbol :
+				    "no symbol", (long long)tmp); */
 				tmp &= (R2K3K_ENTRYLO_PFN_MASK |
 				    R2K3K_ENTRYLO_N | R2K3K_ENTRYLO_D |
 				    R2K3K_ENTRYLO_V | R2K3K_ENTRYLO_G);
@@ -912,14 +1017,20 @@ void coproc_register_write(struct cpu *cpu,
 			old = cp->reg[COP0_CONTEXT];
 			cp->reg[COP0_CONTEXT] = tmp;
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
-				cp->reg[COP0_CONTEXT] &= ~R2K3K_CONTEXT_BADVPN_MASK;
-				cp->reg[COP0_CONTEXT] |= (old & R2K3K_CONTEXT_BADVPN_MASK);
+				cp->reg[COP0_CONTEXT] &=
+				    ~R2K3K_CONTEXT_BADVPN_MASK;
+				cp->reg[COP0_CONTEXT] |=
+				    (old & R2K3K_CONTEXT_BADVPN_MASK);
 			} else if (cpu->cd.mips.cpu_type.rev == MIPS_R4100) {
-				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK_R4100;
-				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK_R4100);
+				cp->reg[COP0_CONTEXT] &=
+				    ~CONTEXT_BADVPN2_MASK_R4100;
+				cp->reg[COP0_CONTEXT] |=
+				    (old & CONTEXT_BADVPN2_MASK_R4100);
 			} else {
-				cp->reg[COP0_CONTEXT] &= ~CONTEXT_BADVPN2_MASK;
-				cp->reg[COP0_CONTEXT] |= (old & CONTEXT_BADVPN2_MASK);
+				cp->reg[COP0_CONTEXT] &=
+				    ~CONTEXT_BADVPN2_MASK;
+				cp->reg[COP0_CONTEXT] |=
+				    (old & CONTEXT_BADVPN2_MASK);
 			}
 			return;
 		case COP0_PAGEMASK:
@@ -931,13 +1042,15 @@ void coproc_register_write(struct cpu *cpu,
 			    tmp2 != 0x0ff &&
 			    tmp2 != 0x3ff &&
 			    tmp2 != 0xfff)
-				fatal("cpu%i: trying to write an invalid pagemask 0x%08lx to COP0_PAGEMASK\n",
+				fatal("cpu%i: trying to write an invalid"
+				    " pagemask 0x%08lx to COP0_PAGEMASK\n",
 				    cpu->cpu_id, (long)tmp);
 			unimpl = 0;
 			break;
 		case COP0_WIRED:
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
-				fatal("cpu%i: r2k/r3k wired register must always be 8\n", cpu->cpu_id);
+				fatal("cpu%i: r2k/r3k wired register must "
+				    "always be 8\n", cpu->cpu_id);
 				tmp = 8;
 			}
 			cp->reg[COP0_RANDOM] = cp->nr_of_tlbs-1;
@@ -946,7 +1059,8 @@ void coproc_register_write(struct cpu *cpu,
 			break;
 		case COP0_COUNT:
 			if (tmp != (int64_t)(int32_t)tmp)
-				fatal("WARNING: trying to write a 64-bit value to the COUNT register!\n");
+				fatal("WARNING: trying to write a 64-bit value"
+				    " to the COUNT register!\n");
 			tmp = (int64_t)(int32_t)tmp;
 			unimpl = 0;
 			break;
@@ -955,7 +1069,8 @@ void coproc_register_write(struct cpu *cpu,
 			cpu->cd.mips.compare_register_set = 1;
 			mips_cpu_interrupt_ack(cpu, 7);
 			if (tmp != (int64_t)(int32_t)tmp)
-				fatal("WARNING: trying to write a 64-bit value to the COMPARE register!\n");
+				fatal("WARNING: trying to write a 64-bit value"
+				    " to the COMPARE register!\n");
 			tmp = (int64_t)(int32_t)tmp;
 			unimpl = 0;
 			break;
@@ -966,35 +1081,49 @@ void coproc_register_write(struct cpu *cpu,
 			 */
 			switch (cpu->cd.mips.cpu_type.mmu_model) {
 			case MMU3K:
-				old_asid = (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK)
-				    >> R2K3K_ENTRYHI_ASID_SHIFT;
-				if ((cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK) != (tmp & R2K3K_ENTRYHI_ASID_MASK))
+				old_asid = (cp->reg[COP0_ENTRYHI] &
+				    R2K3K_ENTRYHI_ASID_MASK) >>
+				    R2K3K_ENTRYHI_ASID_SHIFT;
+				if ((cp->reg[COP0_ENTRYHI] &
+				    R2K3K_ENTRYHI_ASID_MASK) !=
+				    (tmp & R2K3K_ENTRYHI_ASID_MASK))
 					inval = 1;
 				break;
 			default:
 				old_asid = cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID;
-				if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) != (tmp & ENTRYHI_ASID))
+				if ((cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID) !=
+				    (tmp & ENTRYHI_ASID))
 					inval = 1;
 				break;
 			}
 			if (inval)
-				invalidate_translation_caches(cpu, 1, 0, 0, old_asid);
+				invalidate_translation_caches(cpu, 1, 0, 0,
+				    old_asid);
 			unimpl = 0;
-			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
+			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+			    (tmp & 0x3f)!=0) {
 				/* char *symbol;
 				   uint64_t offset;
-				   symbol = get_symbol_name(cpu->cd.mips.pc_last, &offset);
-				   fatal("YO! pc = 0x%08llx <%s> hi=%016llx\n", (long long)cpu->cd.mips.pc_last, symbol? symbol : "no symbol", (long long)tmp);  */
+				   symbol = get_symbol_name(cpu->
+				    cd.mips.pc_last, &offset);
+				   fatal("YO! pc = 0x%08llx <%s> "
+				    "hi=%016llx\n", (long long)cpu->
+				    cd.mips.pc_last, symbol? symbol :
+				    "no symbol", (long long)tmp);  */
 				tmp &= ~0x3f;
 			}
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K)
-				tmp &= (R2K3K_ENTRYHI_VPN_MASK | R2K3K_ENTRYHI_ASID_MASK);
+				tmp &= (R2K3K_ENTRYHI_VPN_MASK |
+				    R2K3K_ENTRYHI_ASID_MASK);
 			else if (cpu->cd.mips.cpu_type.mmu_model == MMU10K)
-				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
+				tmp &= (ENTRYHI_R_MASK |
+				    ENTRYHI_VPN2_MASK_R10K | ENTRYHI_ASID);
 			else if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
-				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | 0x1800 | ENTRYHI_ASID);
+				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK |
+				    0x1800 | ENTRYHI_ASID);
 			else
-				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK | ENTRYHI_ASID);
+				tmp &= (ENTRYHI_R_MASK | ENTRYHI_VPN2_MASK |
+				    ENTRYHI_ASID);
 			break;
 		case COP0_EPC:
 			unimpl = 0;
@@ -1003,7 +1132,8 @@ void coproc_register_write(struct cpu *cpu,
 			readonly = 1;
 			break;
 		case COP0_CONFIG:
-			/*  fatal("COP0_CONFIG: modifying K0 bits: 0x%08x => ", cp->reg[reg_nr]);  */
+			/*  fatal("COP0_CONFIG: modifying K0 bits: "
+			    "0x%08x => ", cp->reg[reg_nr]);  */
 			tmp = *ptr;
 			tmp &= 0x3;	/*  only bits 2..0 can be written  */
 			cp->reg[reg_nr] &= ~(0x3);  cp->reg[reg_nr] |= tmp;
@@ -1017,16 +1147,19 @@ void coproc_register_write(struct cpu *cpu,
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
 				if (!(oldmode & MIPS1_SR_KU_CUR)
 				    && (tmp & MIPS1_SR_KU_CUR))
-					invalidate_translation_caches(cpu, 0, 0, 1, 0);
+					invalidate_translation_caches(cpu,
+					    0, 0, 1, 0);
 			} else {
 				/*  TODO: don't hardcode  */
 				if ((oldmode & 0xff) != (tmp & 0xff))
-					invalidate_translation_caches(cpu, 0, 0, 1, 0);
+					invalidate_translation_caches(
+					    cpu, 0, 0, 1, 0);
 			}
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
-			/*  A write to the cause register only affects IM bits 0 and 1:  */
+			/*  A write to the cause register only
+			    affects IM bits 0 and 1:  */
 			cp->reg[reg_nr] &= ~(0x3 << STATUS_IM_SHIFT);
 			cp->reg[reg_nr] |= (tmp & (0x3 << STATUS_IM_SHIFT));
 			if (!(cp->reg[COP0_CAUSE] & STATUS_IM_MASK))
@@ -1052,9 +1185,10 @@ void coproc_register_write(struct cpu *cpu,
 			break;
 		case COP0_XCONTEXT:
 			/*
-			 *  TODO:  According to the R10000 manual, the R4400 shares the PTEbase
-			 *  portion of the context registers (that is, xcontext and context).
-			 *  on R10000, they are separate registers.
+			 *  TODO:  According to the R10000 manual, the R4400
+			 *  shares the PTEbase portion of the context registers
+			 *  (that is, xcontext and context). On R10000, they
+			 *  are separate registers.
 			 */
 			/*  debug("[ xcontext 0x%016llx ]\n", tmp);  */
 			unimpl = 0;
@@ -1080,8 +1214,9 @@ void coproc_register_write(struct cpu *cpu,
 
 	if (unimpl) {
 		fatal("cpu%i: warning: write to unimplemented coproc%i "
-		    "register %i (%s), data = 0x%016llx\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
-		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
+		    "register %i (%s), data = 0x%016llx\n", cpu->cpu_id,
+		    cp->coproc_nr, reg_nr, cp->coproc_nr==0?
+		    cop0_names[reg_nr] : "?", (long long)tmp);
 
 		mips_cpu_exception(cpu, EXCEPTION_CPU, 0, 0,
 		    cp->coproc_nr, 0, 0, 0);
@@ -1172,7 +1307,8 @@ static void fpu_interpret_float_value(uint64_t reg,
 		exponent -= (1 << (n_exp-1)) - 1;
 		break;
 	default:
-		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+		fatal("fpu_interpret_float_value(): unimplemented "
+		    "format %i\n", fmt);
 	}
 
 	/*  nan:  */
@@ -1287,7 +1423,8 @@ static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 	case FMT_D:	n_frac = 52; n_exp = 11; signofs = 63; break;
 	case FMT_L:	n_frac = 63; n_exp = 0; signofs = 63; break;
 	default:
-		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
+		fatal("fpu_store_float_value(): unimplemented format"
+		    " %i\n", fmt);
 	}
 
 	if ((fmt == FMT_S || fmt == FMT_D) && nan)
@@ -1321,7 +1458,8 @@ static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 
 		/*
 		 *  How to convert back from double to exponent + fraction:
-		 *  We want fraction to be 1.xxx, that is   1.0 <= fraction < 2.0
+		 *  We want fraction to be 1.xxx, that is
+		 *  1.0 <= fraction < 2.0
 		 *
 		 *  This method is very slow but should work:
 		 */
@@ -1365,7 +1503,8 @@ static void fpu_store_float_value(struct mips_coproc *cp, int fd,
 		break;
 	default:
 		/*  TODO  */
-		fatal("fpu_store_float_value(): unimplemented format %i\n", fmt);
+		fatal("fpu_store_float_value(): unimplemented format "
+		    "%i\n", fmt);
 	}
 
 store_nan:
@@ -1420,35 +1559,42 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 
 	if (fs >= 0) {
 		fs_v = cp->reg[fs];
-		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
+		/*  TODO: register-pair mode and plain
+		    register mode? "FR" bit?  */
 		if (fmt == FMT_D || fmt == FMT_L)
-			fs_v = (fs_v & 0xffffffffULL) + (cp->reg[(fs + 1) & 31] << 32);
+			fs_v = (fs_v & 0xffffffffULL) +
+			    (cp->reg[(fs + 1) & 31] << 32);
 		fpu_interpret_float_value(fs_v, &float_value[0], fmt);
 	}
 	if (ft >= 0) {
 		uint64_t v = cp->reg[ft];
-		/*  TODO: register-pair mode and plain register mode? "FR" bit?  */
+		/*  TODO: register-pair mode and
+		    plain register mode? "FR" bit?  */
 		if (fmt == FMT_D || fmt == FMT_L)
-			v = (v & 0xffffffffULL) + (cp->reg[(ft + 1) & 31] << 32);
+			v = (v & 0xffffffffULL) +
+			    (cp->reg[(ft + 1) & 31] << 32);
 		fpu_interpret_float_value(v, &float_value[1], fmt);
 	}
 
 	switch (op) {
 	case FPU_OP_ADD:
 		nf = float_value[0].f + float_value[1].f;
-		/*  debug("  add: %f + %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
+		/*  debug("  add: %f + %f = %f\n",
+		    float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_SUB:
 		nf = float_value[0].f - float_value[1].f;
-		/*  debug("  sub: %f - %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
+		/*  debug("  sub: %f - %f = %f\n",
+		    float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
 	case FPU_OP_MUL:
 		nf = float_value[0].f * float_value[1].f;
-		/*  debug("  mul: %f * %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
+		/*  debug("  mul: %f * %f = %f\n",
+		    float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt,
 		    float_value[0].nan || float_value[1].nan);
 		break;
@@ -1461,7 +1607,8 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}
-		/*  debug("  div: %f / %f = %f\n", float_value[0].f, float_value[1].f, nf);  */
+		/*  debug("  div: %f / %f = %f\n",
+		    float_value[0].f, float_value[1].f, nf);  */
 		fpu_store_float_value(cp, fd, nf, output_fmt, nan);
 		break;
 	case FPU_OP_SQRT:
@@ -1469,7 +1616,8 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 		if (float_value[0].f >= 0.0)
 			nf = sqrt(float_value[0].f);
 		else {
-			fatal("SQRT by less than zero, %f !!!!\n", float_value[0].f);
+			fatal("SQRT by less than zero, %f !!!!\n",
+			    float_value[0].f);
 			nf = 0.0;	/*  TODO  */
 			nan = 1;
 		}
@@ -1521,30 +1669,45 @@ static int fpu_op(struct cpu *cpu, struct mips_coproc *cp, int op, int fmt,
 			unordered = 1;
 
 		switch (cond) {
-		case 2:		return (float_value[0].f == float_value[1].f);	/*  Equal  */
-		case 4:		return (float_value[0].f < float_value[1].f) || !unordered;	/*  Ordered or Less than  TODO (?)  */
-		case 5:		return (float_value[0].f < float_value[1].f) || unordered;	/*  Unordered or Less than  */
-		case 6:		return (float_value[0].f <= float_value[1].f) || !unordered;	/*  Ordered or Less than or Equal  TODO (?)  */
-		case 7:		return (float_value[0].f <= float_value[1].f) || unordered;	/*  Unordered or Less than or Equal  */
-		case 12:	return (float_value[0].f < float_value[1].f);	/*  Less than  */
-		case 14:	return (float_value[0].f <= float_value[1].f);	/*  Less than or equal  */
+		case 2:	/*  Equal  */
+			return (float_value[0].f == float_value[1].f);
+		case 4:	/*  Ordered or Less than  */
+			return (float_value[0].f < float_value[1].f)
+			    || !unordered;
+		case 5:	/*  Unordered or Less than  */
+			return (float_value[0].f < float_value[1].f)
+			    || unordered;
+		case 6:	/*  Ordered or Less than or Equal  */
+			return (float_value[0].f <= float_value[1].f)
+			    || !unordered;
+		case 7:	/*  Unordered or Less than or Equal  */
+			return (float_value[0].f <= float_value[1].f)
+			    || unordered;
+		case 12:/*  Less than  */
+			return (float_value[0].f < float_value[1].f);
+		case 14:/*  Less than or equal  */
+			return (float_value[0].f <= float_value[1].f);
 
 		/*  The following are not commonly used, so I'll move these out
 		    of the if-0 on a case-by-case basis.  */
 #if 0
-		case 0:		return 0;					/*  False  */
-		case 1:		return 0;					/*  Unordered  */
-		case 3:		return (float_value[0].f == float_value[1].f);	/*  Unordered or Equal  */
-		case 8:		return 0;					/*  Signaling false  */
-		case 9:		return 0;					/*  Not Greater than or Less than or Equal  */
-		case 10:	return (float_value[0].f == float_value[1].f);	/*  Signaling Equal  */
-		case 11:	return (float_value[0].f == float_value[1].f);	/*  Not Greater than or Less than  */
-		case 13:	return !(float_value[0].f >= float_value[1].f);	/*  Not greater than or equal */
-		case 15:	return !(float_value[0].f > float_value[1].f);	/*  Not greater than  */
+case 0:	return 0;					/*  False  */
+case 1:	return 0;					/*  Unordered  */
+case 3:	return (float_value[0].f == float_value[1].f);
+			/*  Unordered or Equal  */
+case 8:	return 0;				/*  Signaling false  */
+case 9:	return 0;	/*  Not Greater than or Less than or Equal  */
+case 10:return (float_value[0].f == float_value[1].f);	/*  Signaling Equal  */
+case 11:return (float_value[0].f == float_value[1].f);	/*  Not Greater
+		than or Less than  */
+case 13:return !(float_value[0].f >= float_value[1].f);	/*  Not greater
+		than or equal */
+case 15:return !(float_value[0].f > float_value[1].f);	/*  Not greater than  */
 #endif
 
 		default:
-			fatal("fpu_op(): unimplemented condition code %i\n", cond);
+			fatal("fpu_op(): unimplemented condition "
+			    "code %i. see cpu_mips_coproc.c\n", cond);
 		}
 		break;
 	default:
@@ -1594,12 +1757,14 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		if (nd == 1 && tf == 1)  instr_mnem = "bc1tl";
 
 		if (cpu->machine->instruction_trace || unassemble_only)
-			debug("%s\t%i,0x%016llx\n", instr_mnem, cc, (long long) (cpu->cd.mips.pc + (imm << 2)));
+			debug("%s\t%i,0x%016llx\n", instr_mnem, cc,
+			    (long long) (cpu->cd.mips.pc + (imm << 2)));
 		if (unassemble_only)
 			return 1;
 
 		if (cpu->cd.mips.delay_slot) {
-			fatal("%s: jump inside a jump's delay slot, or similar. TODO\n", instr_mnem);
+			fatal("%s: jump inside a jump's delay slot, "
+			    "or similar. TODO\n", instr_mnem);
 			cpu->running = 0;
 			return 1;
 		}
@@ -1608,18 +1773,22 @@ static int fpu_function(struct cpu *cpu, struct mips_coproc *cp,
 		if (cc == 0)
 			cond_true = (cp->fcr[FPU_FCSR] >> FCSR_FCC0_SHIFT) & 1;
 		else
-			cond_true = (cp->fcr[FPU_FCSR] >> (FCSR_FCC1_SHIFT + cc-1)) & 1;
+			cond_true = (cp->fcr[FPU_FCSR] >>
+			    (FCSR_FCC1_SHIFT + cc-1)) & 1;
 
 		if (!tf)
 			cond_true = !cond_true;
 
 		if (cond_true) {
 			cpu->cd.mips.delay_slot = TO_BE_DELAYED;
-			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.pc + (imm << 2);
+			cpu->cd.mips.delay_jmpaddr = cpu->cd.mips.pc +
+			    (imm << 2);
 		} else {
 			/*  "likely":  */
-			if (nd)
-				cpu->cd.mips.nullify_next = 1;	/*  nullify delay slot  */
+			if (nd) {
+				/*  nullify the delay slot  */
+				cpu->cd.mips.nullify_next = 1;
+			}
 		}
 
 		return 1;
@@ -1827,10 +1996,12 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 	/*  Read:  */
 	if (readflag) {
 		if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
-			i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >> R2K3K_INDEX_SHIFT;
+			i = (cp->reg[COP0_INDEX] & R2K3K_INDEX_MASK) >>
+			    R2K3K_INDEX_SHIFT;
 			if (i >= cp->nr_of_tlbs) {
 				/*  TODO:  exception?  */
-				fatal("warning: tlbr from index %i (too high)\n", i);
+				fatal("warning: tlbr from index %i (too "
+				    "high)\n", i);
 				return;
 			}
 
@@ -1877,9 +2048,11 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 		vpn2 = cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_VPN_MASK;
 		found = -1;
 		for (i=0; i<cp->nr_of_tlbs; i++)
-			if ( ((cp->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) == (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK))
+			if ( ((cp->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) ==
+			    (cp->reg[COP0_ENTRYHI] & R2K3K_ENTRYHI_ASID_MASK))
 			    || cp->tlbs[i].lo0 & R2K3K_ENTRYLO_G)
-				if ((cp->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) == vpn2) {
+				if ((cp->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK)
+				    == vpn2) {
 					found = i;
 					break;
 				}
@@ -1896,12 +2069,14 @@ void coproc_tlbpr(struct cpu *cpu, int readflag)
 		for (i=0; i<cp->nr_of_tlbs; i++) {
 			int gbit = cp->tlbs[i].hi & TLB_G;
 			if (cpu->cd.mips.cpu_type.rev == MIPS_R4100)
-				gbit = (cp->tlbs[i].lo0 & ENTRYLO_G) && (cp->tlbs[i].lo1 & ENTRYLO_G);
+				gbit = (cp->tlbs[i].lo0 & ENTRYLO_G) &&
+				    (cp->tlbs[i].lo1 & ENTRYLO_G);
 
-			if ( ((cp->tlbs[i].hi & ENTRYHI_ASID) == (cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID))
-			    || gbit) {
+			if ( ((cp->tlbs[i].hi & ENTRYHI_ASID) ==
+			    (cp->reg[COP0_ENTRYHI] & ENTRYHI_ASID)) || gbit) {
 				uint64_t a = vpn2 & ~cp->tlbs[i].mask;
-				uint64_t b = (cp->tlbs[i].hi & xmask) & ~cp->tlbs[i].mask;
+				uint64_t b = (cp->tlbs[i].hi & xmask) &
+				    ~cp->tlbs[i].mask;
 				if (a == b) {
 					found = i;
 					break;
@@ -1976,7 +2151,8 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 	}
 
 	if (index >= cp->nr_of_tlbs) {
-		fatal("warning: tlb index %i too high (max is %i)\n", index, cp->nr_of_tlbs-1);
+		fatal("warning: tlb index %i too high (max is %i)\n",
+		    index, cp->nr_of_tlbs - 1);
 		/*  TODO:  cause an exception?  */
 		return;
 	}
@@ -2143,10 +2319,12 @@ void coproc_eret(struct cpu *cpu)
 		oldmode = 1;
 
 	if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & STATUS_ERL) {
-		cpu->cd.mips.pc = cpu->cd.mips.pc_last = cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
+		cpu->cd.mips.pc = cpu->cd.mips.pc_last =
+		    cpu->cd.mips.coproc[0]->reg[COP0_ERROREPC];
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_ERL;
 	} else {
-		cpu->cd.mips.pc = cpu->cd.mips.pc_last = cpu->cd.mips.coproc[0]->reg[COP0_EPC];
+		cpu->cd.mips.pc = cpu->cd.mips.pc_last =
+		    cpu->cd.mips.coproc[0]->reg[COP0_EPC];
 		cpu->cd.mips.delay_slot = 0;
 		cpu->cd.mips.coproc[0]->reg[COP0_STATUS] &= ~STATUS_EXL;
 	}
@@ -2191,7 +2369,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			return;
 		}
 		fatal("[ pc=0x%016llx cop%i\t0x%08x (coprocessor not "
-		    "available)\n", (long long)cpu->cd.mips.pc, cpnr, (int)function);
+		    "available)\n", (long long)cpu->cd.mips.pc, cpnr,
+		    (int)function);
 		return;
 	}
 
@@ -2214,7 +2393,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			    regnames[rt], cop0_names[rd]);
 			return;
 		}
-		coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr], rd, &tmpvalue);
+		coproc_register_read(cpu, cpu->cd.mips.coproc[cpnr],
+		    rd, &tmpvalue);
 		cpu->cd.mips.gpr[rt] = tmpvalue;
 		if (copz == COPz_MFCz) {
 			/*  Sign-extend:  */
@@ -2259,7 +2439,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 			cpu->cd.mips.gpr[rt] = cp->fcr[fs] & 0xffffffffULL;
 			if (cpu->cd.mips.gpr[rt] & 0x80000000ULL)
 				cpu->cd.mips.gpr[rt] |= 0xffffffff00000000ULL;
-			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
+			/*  TODO: implement delay for gpr[rt]
+			    (for MIPS I,II,III only)  */
 			return;
 		case COPz_CTCz:		/*  Copy to FPU control register  */
 			rt = (function >> 16) & 31;
@@ -2272,32 +2453,38 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 
 			switch (cpnr) {
 			case 0:	/*  System coprocessor  */
-				fatal("[ warning: unimplemented ctc%i, 0x%08x -> ctl reg %i ]\n",
-				    cpnr, (int)cpu->cd.mips.gpr[rt], fs);
+				fatal("[ warning: unimplemented ctc%i, "
+				    "0x%08x -> ctl reg %i ]\n", cpnr,
+				    (int)cpu->cd.mips.gpr[rt], fs);
 				break;
 			case 1:	/*  FPU  */
 				if (fs == 0)
-					fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
+					fatal("[ Attempt to write to FPU "
+					    "control register 0 (?) ]\n");
 				else {
 					uint64_t tmp = cpu->cd.mips.gpr[rt];
 					cp->fcr[fs] = tmp;
 
 					/*  TODO: writing to control register 31
-					    should cause exceptions, depending on
-					    status bits!  */
+					    should cause exceptions, depending
+					    on status bits!  */
 
 					switch (fs) {
 					case FPU_FCCR:
 						cp->fcr[FPU_FCSR] =
-						    (cp->fcr[FPU_FCSR] & 0x017fffffULL)
-						    | ((tmp & 1) << FCSR_FCC0_SHIFT)
-						    | (((tmp & 0xfe) >> 1) << FCSR_FCC1_SHIFT);
+						    (cp->fcr[FPU_FCSR] &
+						    0x017fffffULL) | ((tmp & 1)
+						    << FCSR_FCC0_SHIFT)
+						    | (((tmp & 0xfe) >> 1) <<
+						    FCSR_FCC1_SHIFT);
 						break;
 					case FPU_FCSR:
 						cp->fcr[FPU_FCCR] =
-						    (cp->fcr[FPU_FCCR] & 0xffffff00ULL)
-						    | ((tmp >> FCSR_FCC0_SHIFT) & 1)
-						    | (((tmp >> FCSR_FCC1_SHIFT) & 0x7f) << 1);
+						    (cp->fcr[FPU_FCCR] &
+						    0xffffff00ULL) | ((tmp >>
+						    FCSR_FCC0_SHIFT) & 1) |
+						    (((tmp >> FCSR_FCC1_SHIFT)
+						    & 0x7f) << 1);
 						break;
 					default:
 						;
@@ -2306,7 +2493,8 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				break;
 			}
 
-			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */
+			/*  TODO: implement delay for gpr[rt]
+			    (for MIPS I,II,III only)  */
 			return;
 		default:
 			;
@@ -2404,21 +2592,23 @@ void coproc_function(struct cpu *cpu, struct mips_coproc *cp, int cpnr,
 				}
 				coproc_tlbwri(cpu, op == COP0_TLBWR);
 				return;
-			case COP0_TLBP:		/*  Probe TLB for matching entry  */
+			case COP0_TLBP:		/*  Probe TLB for
+						    matching entry  */
 				if (unassemble_only) {
 					debug("tlbp\n");
 					return;
 				}
 				coproc_tlbpr(cpu, 0);
 				return;
-			case COP0_RFE:		/*  R2000/R3000 only: Return from Exception  */
+			case COP0_RFE:		/*  R2000/R3000 only:
+						    Return from Exception  */
 				if (unassemble_only) {
 					debug("rfe\n");
 					return;
 				}
 				coproc_rfe(cpu);
 				return;
-			case COP0_ERET:		/*  R4000: Return from exception  */
+			case COP0_ERET:	/*  R4000: Return from exception  */
 				if (unassemble_only) {
 					debug("eret\n");
 					return;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.624 2005-03-05 11:18:31 debug Exp $
+$Id: HISTORY,v 1.625 2005-03-05 12:16:08 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1720,3 +1720,5 @@ Changelog for GXemul:
 		compile on i386 with old gcc.)
 		Loading PPC64 ELFs now sets R2 to the TOC base.
 		Changing the name of the emulator from mips64emul to GXemul.
+		Splitting out the configuration file part of the documentation
+		into its own file (configfiles.html).

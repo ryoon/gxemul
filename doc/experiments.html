@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.45 2005-03-05 12:05:29 debug Exp $
+$Id: experiments.html,v 1.46 2005-03-05 12:16:09 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -146,7 +146,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 <pre>
 	$ <b>./gxemul -V -E testmips hello_mips</b>
 	..
-	gxemul&gt; <b>r</b>
+	GXemul&gt; <b>r</b>
 	cpu0:    pc = a800000000030078    <f>
 	cpu0:    hi = 0000000000000000    lo = 0000000000000000
 	cpu0:    zr = 0000000000000000    at = 0000000000000000
@@ -154,7 +154,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 	..
 	cpu0:    gp = a8000000000780c0    sp = ffffffffa0007f00
 	cpu0:    fp = 0000000000000000    ra = 0000000000000000
-	gxemul&gt; <b>s 15</b>
+	GXemul&gt; <b>s 15</b>
 	&lt;f&gt;
 	a800000000030078: 67bdfff0      daddiu  sp,sp,-16
 	a80000000003007c: 3c04a800      lui     a0,0xa800
@@ -173,9 +173,9 @@ learn more about how MIPS programs run, then add -V to the command line:
 	a800000000030030: ffbf0008      sd      ra,8(sp)  [0xffffffffa0007ee8, data=0xa8000000000300a0]
 	a800000000030034: 90820000      lbu     v0,0(a0)  [0xa8000000000300b8 = $LC0, data=0x48]
 	a800000000030038: 00021600      sll     v0,v0,24
-	gxemul&gt; <b>print v0</b>
+	GXemul&gt; <b>print v0</b>
 	v0 = 0x0000000048000000
-	gxemul&gt; <b><blink>_</blink></b>
+	GXemul&gt; <b><blink>_</blink></b>
 </pre>
 
 <p>

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.150 2005-01-20 06:38:45 debug Exp $
+ *  $Id: coproc.c,v 1.151 2005-01-20 09:42:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1051,8 +1051,8 @@ struct internal_float_value {
 /*
  *  fpu_interpret_float_value():
  *
- *  Interprets a float value from binary IEEE format into
- *  a internal_float_value struct.
+ *  Interprets a float value from binary IEEE format into an
+ *  internal_float_value struct.
  */
 static void fpu_interpret_float_value(uint64_t reg,
 	struct internal_float_value *fvp, int fmt)
@@ -1070,7 +1070,8 @@ static void fpu_interpret_float_value(uint64_t reg,
 	case FMT_D:	n_frac = 52; n_exp = 11; break;
 	case FMT_L:	n_frac = 63; n_exp = 0; break;
 	default:
-		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+		fatal("fpu_interpret_float_value(): "
+		    "unimplemented format %i\n", fmt);
 	}
 
 	/*  exponent:  */
@@ -1142,16 +1143,29 @@ static void fpu_interpret_float_value(uint64_t reg,
 		fraction = (fraction / 2.0) + 1.0;
 		break;
 	default:
-		fatal("fpu_interpret_float_value(): unimplemented format %i\n", fmt);
+		fatal("fpu_interpret_float_value(): "
+		    "unimplemented format %i\n", fmt);
 	}
 
 	/*  form the value:  */
 	fvp->f = fraction;
 
-	/*  fatal("load  reg=%016llx sign=%i exponent=%i fraction=%f ", (long long)reg, sign, exponent, fraction);  */
+	/*  fatal("load  reg=%016llx sign=%i exponent=%i fraction=%f ",
+	    (long long)reg, sign, exponent, fraction);  */
 
 	/*  TODO: this is awful for exponents of large magnitude.  */
 	if (exponent > 0) {
+		/*
+		 *  NOTE / TODO:
+		 *
+		 *  This is an ulgy workaround on Alpha, where it seems that
+		 *  multiplying by 2, 1024 times causes a floating point
+		 *  exception. (Triggered by running for example NetBSD/pmax
+		 *  2.0 on an Alpha.)
+		 */
+		if (exponent == 1024)
+			exponent = 1023;
+
 		while (exponent-- > 0)
 			fvp->f *= 2.0;
 	} else if (exponent < 0) {

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004 by Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -23,23 +23,27 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.2 2004-03-07 03:55:40 debug Exp $
+ *  $Id: dev_px.c,v 1.3 2004-03-07 15:02:14 debug Exp $
  *  
  *  TURBOchannel Pixelstamp ("PX", "PXG") graphics device.
  *
  *  See include/pxreg.h (and NetBSD's arch/pmax/dev/px.c) for more information.
  *
- *  NetBSD recognizes this device as px0, Ultrix as ga0.
+ *  Recognizes under different names depending on operating system:
+ *  (this is on a -D2 "3MAX")
+ *
+ *	NetBSD/pmax:		px0 at tc0 slot 0 offset 0x0: 2D, 4x1 stamp, 8 plane
+ *	Ultrix 4.2A rev 47:	px0 at ibus0, pa0 (5x1 8+8+0+0)
+ *	Ultrix 4.2 rev 85:	ga0 at ibus0
  *
  *  TODO:  A lot of stuff:
- *	Scroll/block copy.
  *	Cursor.
  *	Color.
  *	24-bit vs 8-bit.
- *	Make sure that everything works with both NetBSD and Ultrix.
  *	3D?
  *	Don't use so many hardcoded values.
  *	Interrupts?
+ *	Make sure that everything works with both NetBSD and Ultrix.
  */
 
 #include <stdio.h>

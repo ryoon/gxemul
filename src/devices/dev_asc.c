@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.41 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_asc.c,v 1.42 2004-10-18 04:53:46 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models.
  *
@@ -440,8 +440,8 @@ fatal("TODO.......asdgasin\n");
 		debug(" MSG IN");
 		/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
 		dev_asc_fifo_write(d, 0x07);
-		dev_asc_fifo_write(d, 0x07);
-		d->cur_phase = PHASE_STATUS;
+		d->cur_phase = PHASE_COMMAND;
+		all_done = 0;
 	} else if (d->cur_phase == PHASE_COMMAND) {
 		debug(" COMMAND ==> select ");
 		res = dev_asc_select(cpu, d, d->reg_ro[NCR_CFG1] & 7,
@@ -827,12 +827,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			else
 				debug("; Accepting message");
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-/*			d->reg_ro[NCR_INTR] |= NCRINTR_FC; */
 			d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 
-/*  Mach/PMAX test:  */
-d->cur_phase = PHASE_STATUS;
-dev_asc_fifo_flush(d);
 			d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | d->cur_phase;	/*  6?  */
 			d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 
@@ -927,11 +923,26 @@ dev_asc_fifo_flush(d);
 		case NCRCMD_TRPAD:
 			debug("TRPAD");
 
-			if (d->cur_state == STATE_DISCONNECTED) {
-				fatal("[ dev_asc: TRPAD: bad state ]\n");
-				break;
-			}
+			dev_asc_newxfer(d);
+			{
+				int ok;
 
+				ok = dev_asc_transfer(cpu, d,
+				    idata & NCRCMD_DMA? 1 : 0);
+				if (!ok) {
+					d->cur_state = STATE_DISCONNECTED;
+					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
+					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					if (d->xferp != NULL)
+						scsi_transfer_free(d->xferp);
+					d->xferp = NULL;
+				}
+			}
+break;
+
+/*  Old code which didn't work with Mach:  */
+#if 0
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
@@ -948,14 +959,10 @@ dev_asc_fifo_flush(d);
 			d->reg_ro[NCR_STEP] |= 4;
 #endif
 			break;
+#endif
 
 		case NCRCMD_TRANS:
 			debug("TRANS");
-
-			if (d->cur_state == STATE_DISCONNECTED) {
-				fatal("[ dev_asc: TRANS: bad state ]\n");
-				break;
-			}
 
 			{
 				int ok;
@@ -997,7 +1004,9 @@ dev_asc_fifo_flush(d);
 			d->reg_ro[NCR_INTR] = 0;
 			d->reg_ro[NCR_STEP] = 0;
 			d->reg_ro[NCR_STAT] = 0;
-d->reg_ro[NCR_STAT] = PHASE_STATUS;
+
+			/*  For Mach/PMAX? TODO  */
+			d->reg_ro[NCR_STAT] = PHASE_COMMAND;
 		}
 
 		cpu_interrupt_ack(cpu, d->irq_nr);

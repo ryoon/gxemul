@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.71 2004-12-09 00:04:10 debug Exp $
+ *  $Id: dev_fb.c,v 1.72 2004-12-13 05:28:10 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -467,7 +467,7 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 			color_r = color_g = color_b = 0;
 			for (suby=0; suby<scaledown; suby++)
 			    for (subx=0; subx<scaledown; subx++) {
-				int fb_x, fb_y, fb_addr, c;
+				int fb_x, fb_y, fb_addr;
 
 				fb_x = x * scaledown + subx;
 				fb_y = y * scaledown + suby;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.79 2005-02-21 22:20:58 debug Exp $
+ *  $Id: diskimage.c,v 1.80 2005-04-04 21:29:29 debug Exp $
  *
  *  Disk image support.
  *
@@ -1326,6 +1326,7 @@ int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
  *	b	specifies that this is the boot device
  *	c	CD-ROM (instead of normal SCSI DISK)
  *	d	SCSI DISK (this is the default)
+ *	i	IDE (instead of SCSI)
  *	r       read-only (don't allow changes to the file)
  *	t	SCSI tape
  *	0-7	force a specific SCSI ID number
@@ -1341,6 +1342,7 @@ int diskimage_add(struct machine *machine, char *fname)
 	int prefix_b = 0;
 	int prefix_c = 0;
 	int prefix_d = 0;
+	int prefix_i = 0;
 	int prefix_t = 0;
 	int prefix_id = -1;
 	int prefix_r = 0;
@@ -1374,6 +1376,9 @@ int diskimage_add(struct machine *machine, char *fname)
 				break;
 			case 'd':
 				prefix_d = 1;
+				break;
+			case 'i':
+				prefix_i = 1;
 				break;
 			case 't':
 				prefix_t = 1;
@@ -1443,6 +1448,9 @@ int diskimage_add(struct machine *machine, char *fname)
 
 	d->type = DISKIMAGE_SCSI;
 	d->id = id;
+
+	if (prefix_i)
+		d->type = DISKIMAGE_IDE;
 
 	d->fname = strdup(fname);
 	if (d->fname == NULL) {

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.h,v 1.24 2005-01-20 14:25:18 debug Exp $
+ *  $Id: diskimage.h,v 1.25 2005-04-04 21:29:30 debug Exp $
  *
  *  Generic disk image functions.  (See diskimage.c for more info.)
  */
@@ -40,6 +40,7 @@
 
 /*  Diskimage types:  */
 #define	DISKIMAGE_SCSI		1
+#define	DISKIMAGE_IDE		2
 
 struct diskimage {
 	struct diskimage *next;

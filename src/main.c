@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.224 2005-04-04 20:08:58 debug Exp $
+ *  $Id: main.c,v 1.225 2005-04-04 21:29:29 debug Exp $
  */
 
 #include <stdio.h>
@@ -300,6 +300,7 @@ static void usage(int longusage)
 	    " device\n");
 	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
 	printf("                d     SCSI DISK (this is the default)\n");
+	printf("                i     IDE (instead of SCSI)\n");
 	printf("                r     read-only (don't allow changes to the"
 	    " file)\n");
 	printf("                t     SCSI tape\n");

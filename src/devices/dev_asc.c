@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.46 2004-10-23 18:35:36 debug Exp $
+ *  $Id: dev_asc.c,v 1.47 2004-10-24 06:29:55 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -110,9 +110,13 @@ struct asc_data {
 	int		incoming_len;
 	int		incoming_data_addr;
 
-	/*  DMA:  */
+	/*  Built-in DMA memory (for DECstation 5000/200):  */
 	uint32_t	dma_address_reg;
 	unsigned char	dma[128 * 1024];
+
+	void		*dma_controller_data;
+	size_t		(*dma_controller)(void *dma_controller_data,
+			    unsigned char *data, size_t len, int writeflag);
 
 	/*  Read registers and write registers:  */
 	uint32_t	reg_ro[0x10];
@@ -315,10 +319,27 @@ fatal("TODO..............\n");
 				}
 #endif
 
-				memcpy(d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), d->xferp->data_in, len2);
+				/*
+				 *  Are we using an external DMA controller?
+				 *  Then use it. Otherwise place the data in
+				 *  the DECstation 5000/200 built-in DMA
+				 *  region.
+				 */
+				if (d->dma_controller != NULL)
+					d->dma_controller(
+					    d->dma_controller_data,
+					    d->xferp->data_in,
+					    len2, 1);
+				else
+					memcpy(d->dma + (d->dma_address_reg &
+					    ((sizeof(d->dma)-1))),
+					    d->xferp->data_in, len2);
 
 				if (d->xferp->data_in_len > len2) {
 					unsigned char *n;
+
+if (d->dma_controller != NULL)
+	printf("WARNING!!!!!!!!! BUG!!!! Unexpected stuff...\n");
 
 					all_done = 0;
 					/*  fatal("{ asc: multi-transfer data_in, len=%i len2=%i }\n", len, len2);  */
@@ -365,13 +386,39 @@ fatal("TODO.......asdgasin\n");
 
 			/*  fatal("    data out offset=%5i len=%5i\n", d->xferp->data_out_offset, len2);  */
 
+			/*
+			 *  Are we using an external DMA controller?
+			 *  Then use it. Otherwise place the data in
+			 *  the DECstation 5000/200 built-in DMA
+			 *  region.
+			 */
 			if (d->xferp->data_out == NULL) {
-				scsi_transfer_allocbuf(&d->xferp->data_out_len, &d->xferp->data_out, len);
-				memcpy(d->xferp->data_out, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len2);
+				scsi_transfer_allocbuf(&d->xferp->data_out_len,
+				    &d->xferp->data_out, len);
+
+				if (d->dma_controller != NULL)
+					d->dma_controller(
+					    d->dma_controller_data,
+					    d->xferp->data_out,
+					    len2, 0);
+				else
+					memcpy(d->xferp->data_out,
+					    d->dma + (d->dma_address_reg &
+					    ((sizeof(d->dma)-1))), len2);
 				d->xferp->data_out_offset = len2;
 			} else {
 				/*  Continuing a multi-transfer:  */
-				memcpy(d->xferp->data_out + d->xferp->data_out_offset, d->dma + (d->dma_address_reg & ((sizeof(d->dma)-1))), len2);
+				if (d->dma_controller != NULL)
+					d->dma_controller(
+					    d->dma_controller_data,
+					    d->xferp->data_out +
+						d->xferp->data_out_offset,
+					    len2, 0);
+				else
+					memcpy(d->xferp->data_out +
+					    d->xferp->data_out_offset,
+					    d->dma + (d->dma_address_reg &
+					    ((sizeof(d->dma)-1))), len2);
 				d->xferp->data_out_offset += len2;
 			}
 
@@ -1066,7 +1113,10 @@ break;
  */
 void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	uint64_t baseaddr, int irq_nr, void *turbochannel,
-	int mode)
+	int mode,
+	size_t (*dma_controller)(void *dma_controller_data,
+		unsigned char *data, size_t len, int writeflag),
+	void *dma_controller_data)
 {
 	struct asc_data *d;
 
@@ -1079,6 +1129,9 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	d->irq_nr       = irq_nr;
 	d->turbochannel = turbochannel;
 	d->mode         = mode;
+
+	d->dma_controller      = dma_controller;
+	d->dma_controller_data = dma_controller_data;
 
 	memory_device_register(mem, "asc", baseaddr,
 	    mode == DEV_ASC_PICA?

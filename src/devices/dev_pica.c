@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.7 2004-10-24 04:42:34 debug Exp $
+ *  $Id: dev_pica.c,v 1.8 2004-10-24 06:29:56 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -38,11 +38,81 @@
 #include "devices.h"
 
 #include "pica.h"
+#include "jazz_r4030_dma.h"
 
 
 #define	DEV_PICA_TICKSHIFT		9
 
 #define	PICA_TIMER_IRQ			15
+
+
+/*
+ *  dev_pica_dma_controller():
+ */
+size_t dev_pica_dma_controller(void *dma_controller_data,
+	unsigned char *data, size_t len, int writeflag)
+{
+	struct pica_data *d = (struct pica_data *) dma_controller_data;
+	struct cpu *cpu = d->cpu;
+	int i, enab_writeflag;
+	int res;
+	uint32_t dma_addr;
+	unsigned char tr[sizeof(uint32_t)];
+	uint32_t phys_addr;
+
+	fatal("[ dev_pica_dma_controller(): writeflag=%i, len=%i, data =",
+	    writeflag, (int)len);
+	for (i=0; i<len; i++)
+		fatal(" %02x", data[i]);
+	fatal(" mode=%08x enable=%08x count=%08x addr=%08x",
+	    d->dma0_mode, d->dma0_enable, d->dma0_count, d->dma0_addr);
+	fatal(" table=%08x",
+	    d->dma_translation_table_base);
+	fatal(" ]\n");
+
+	if (!(d->dma0_enable & R4030_DMA_ENAB_RUN)) {
+		fatal("[ dev_pica_dma_controller(): dma not enabled? ]\n");
+		return 0;
+	}
+
+	/*  R4030 "write" means write to the device, writeflag as the
+	    argument to this function means write to memory.  */
+	enab_writeflag = (d->dma0_enable & R4030_DMA_ENAB_WRITE)? 0 : 1;
+	if (enab_writeflag != writeflag) {
+		fatal("[ dev_pica_dma_controller(): wrong direction? ]\n");
+		return 0;
+	}
+
+	dma_addr = d->dma0_addr;
+	i = 0;
+	while (dma_addr < d->dma0_addr + d->dma0_count && i < len) {
+
+		res = memory_rw(cpu, cpu->mem, d->dma_translation_table_base +
+		    (dma_addr >> 12) * 8,
+		    tr, sizeof(tr), 0, PHYSICAL | NO_EXCEPTIONS);
+
+		if (cpu->byte_order==EMUL_BIG_ENDIAN)
+			phys_addr = (tr[0] << 24) + (tr[1] << 16) +
+			    (tr[2] << 8) + tr[3];
+		else
+			phys_addr = (tr[3] << 24) + (tr[2] << 16) +
+			    (tr[1] << 8) + tr[0];
+		phys_addr &= ~0xfff;	/*  just in case  */
+		phys_addr += (dma_addr & 0xfff);
+
+		/*  fatal(" !!! dma_addr = %08x, phys_addr = %08x\n",
+		    (int)dma_addr, (int)phys_addr);  */
+
+		res = memory_rw(cpu, cpu->mem, phys_addr,
+		    &data[i], 1, writeflag, PHYSICAL | NO_EXCEPTIONS);
+
+		dma_addr ++;
+		i++;
+	}
+
+
+	return len;
+}
 
 
 /*
@@ -78,32 +148,49 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	regnr = relative_addr / sizeof(uint32_t);
 
 	switch (relative_addr) {
+	case R4030_SYS_TL_BASE:
+		if (writeflag == MEM_WRITE) {
+			d->dma_translation_table_base = idata;
+		} else {
+			odata = d->dma_translation_table_base;
+		}
+		break;
+	case R4030_SYS_TL_LIMIT:
+		if (writeflag == MEM_WRITE) {
+			d->dma_translation_table_limit = idata;
+		} else {
+			odata = d->dma_translation_table_limit;
+		}
+		break;
+	case R4030_SYS_TL_IVALID:
+		/*  TODO: Does invalidation actually need to be implemented?  */
+		break;
 	case R4030_SYS_DMA0_REGS:
-		if (write_flag == MEM_WRITE) {
-			d->dma0 = idata;
+		if (writeflag == MEM_WRITE) {
+			d->dma0_mode = idata;
 		} else {
-			odata = d->dma0;
+			odata = d->dma0_mode;
 		}
 		break;
-	case R4030_SYS_DMA1_REGS:
-		if (write_flag == MEM_WRITE) {
-			d->dma1 = idata;
+	case R4030_SYS_DMA0_REGS + 0x8:
+		if (writeflag == MEM_WRITE) {
+			d->dma0_enable = idata;
 		} else {
-			odata = d->dma1;
+			odata = d->dma0_enable;
 		}
 		break;
-	case R4030_SYS_DMA2_REGS:
-		if (write_flag == MEM_WRITE) {
-			d->dma2 = idata;
+	case R4030_SYS_DMA0_REGS + 0x10:
+		if (writeflag == MEM_WRITE) {
+			d->dma0_count = idata;
 		} else {
-			odata = d->dma2;
+			odata = d->dma0_count;
 		}
 		break;
-	case R4030_SYS_DMA3_REGS:
-		if (write_flag == MEM_WRITE) {
-			d->dma3 = idata;
+	case R4030_SYS_DMA0_REGS + 0x18:
+		if (writeflag == MEM_WRITE) {
+			d->dma0_addr = idata;
 		} else {
-			odata = d->dma3;
+			odata = d->dma0_addr;
 		}
 		break;
 	case R4030_SYS_ISA_VECTOR:
@@ -251,6 +338,8 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct pica_data));
+
+	d->cpu = cpu;
 
 	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
 	    dev_pica_access, (void *)d);

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.102 2004-10-24 04:42:35 debug Exp $
+ *  $Id: devices.h,v 1.103 2004-10-24 06:29:58 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -74,7 +74,11 @@ void dev_8250_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int i
 #define	DEV_ASC_DEC		1
 #define	DEV_ASC_PICA		2
 int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, void *turbochannel, int mode);
+void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, void *turbochannel, int mode,
+	size_t (*dma_controller)(void *dma_controller_data,
+		unsigned char *data, size_t len, int writeflag),
+	void *dma_controller_data);
 
 /*  dev_au1x00.c:  */
 struct au1x00_ic_data {
@@ -318,15 +322,21 @@ void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int 
 /*  dev_pica.c:  */
 #define	DEV_PICA_LENGTH			0x280
 struct pica_data {
+	struct cpu	*cpu;
 	uint32_t	int_enable_mask;
 	uint32_t	int_asserted;
 	int		interval;
 	int		interval_start;
-	uint64_t	dma0;
-	uint64_t	dma1;
-	uint64_t	dma2;
-	uint64_t	dma3;
+	uint64_t	dma_translation_table_base;
+	uint64_t	dma_translation_table_limit;
+	uint32_t	dma0_mode;
+	uint32_t	dma0_enable;
+	uint32_t	dma0_count;
+	uint32_t	dma0_addr;
+	/*  same for dma1,2,3 actually (TODO)  */
 };
+size_t dev_pica_dma_controller(void *dma_controller_data,
+	unsigned char *data, size_t len, int writeflag);
 int dev_pica_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 

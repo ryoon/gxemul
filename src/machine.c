@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.204 2004-10-24 04:42:36 debug Exp $
+ *  $Id: machine.c,v 1.205 2004-10-24 06:29:58 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1049,7 +1049,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL, DEV_ASC_DEC);
+			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8,
+			    NULL, DEV_ASC_DEC, NULL, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1107,7 +1108,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC);
+			dev_asc_init(cpu, mem, KN03_SYS_SCSI,
+			    KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1251,7 +1253,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_mc146818_init(cpu, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000,
-			    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC);
+			    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC, NULL, NULL);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=3";
@@ -1292,7 +1294,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 #if 0
 			dev_turbochannel_init(cpu, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-			dev_asc_init(cpu, mem, 0x17100000, 0, NULL, DEV_ASC_DEC);		/*  irq?  */
+			dev_asc_init(cpu, mem, 0x17100000, 0, NULL, DEV_ASC_DEC, NULL, NULL);		/*  irq?  */
 #endif
 
 			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -2193,7 +2195,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
 				dev_asc_init(cpu, mem,
-				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA);
+				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA,
+				    dev_pica_dma_controller, pica_data);
 
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.45 2004-10-23 19:38:28 debug Exp $
+$Id: RELEASE,v 1.46 2004-10-24 06:29:55 debug Exp $
 
 I'm currently working on post-0.2.1.
 
@@ -132,6 +132,8 @@ them like this is in order:
     This product includes software developed by Charles M. Hannum.
 
     This product includes software developed under OpenBSD by Per Fogelström.
+
+    This product includes software developed by Per Fogelström.
 
     This product includes software developed at Ludd, University of
     Luleå, Sweden and its contributors.

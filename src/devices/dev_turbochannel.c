@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.32 2004-10-21 04:44:06 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.33 2004-10-24 06:29:56 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -204,7 +204,8 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
 		rom_length = 0x201000;
 	} else if (strcmp(device_name, "PMAZ-AA")==0) {
 		/*  asc in NetBSD, SCSI  */
-		dev_asc_init(cpu, mem, baseaddr, irq, d, DEV_ASC_DEC);
+		dev_asc_init(cpu, mem, baseaddr, irq, d,
+		    DEV_ASC_DEC, NULL, NULL);
 		rom_offset = 0xc0000;
 		/*  There is a copy at 0x0, at least that's where Linux
 		    looks for the rom signature  */

@@ -1,9 +1,13 @@
-/*  mips64emul: $Id: jazz_r4030_dma.h,v 1.1 2004-10-24 05:01:40 debug Exp $  */
+/*  mips64emul: $Id: jazz_r4030_dma.h,v 1.2 2004-10-24 06:29:58 debug Exp $  */
 /*	$NetBSD: dma.h,v 1.2 2001/07/24 16:26:53 tsutsui Exp $	*/
 /*	$OpenBSD: dma.h,v 1.3 1997/04/19 17:19:51 pefo Exp $	*/
 
 #ifndef __JAZZ_R4030_DMA
 #define __JAZZ_R4030_DMA
+
+#ifndef MIPS64EMUL
+#define MIPS64EMUL
+#endif
 
 /*
  * Copyright (c) 1996 Per Fogelstrom
@@ -80,6 +84,7 @@ typedef volatile struct {
  *  Structure used to control dma.
  */
 
+#ifndef MIPS64EMUL
 typedef struct dma_softc {
 	struct device	sc_dev;		/* use as a device */
 	struct esp_softc *sc_esp;
@@ -99,6 +104,7 @@ typedef struct dma_softc {
 	int (*intr)(struct dma_softc *);	/* Interrupt routine pointer */
 	void (*end)(struct dma_softc *);	/* Interrupt routine pointer */
 } dma_softc_t;
+#endif	/*  not in mips64emul  */
 
 #define	DMA_TO_DEV	0
 #define	DMA_FROM_DEV	1
@@ -110,6 +116,7 @@ typedef struct dma_softc {
 #define	DMA_DRAIN(r)
 #define	DMA_END(r)		((r->end)(r))
 
+#ifndef MIPS64EMUL
 void picaDmaInit __P((void));
 void picaDmaTLBAlloc __P((dma_softc_t *));
 void picaDmaTLBFree __P((dma_softc_t *));
@@ -118,5 +125,6 @@ void picaDmaStart __P((struct dma_softc *, char *, size_t, int));
 void picaDmaFlush __P((struct dma_softc *, char *, size_t, int));
 void asc_dma_init __P((struct dma_softc *));
 void fdc_dma_init __P((struct dma_softc *));
+#endif	/*  not in mips64emul  */
 
 #endif	/*  __JAZZ_R4030_DMA  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.272 2004-10-24 03:56:43 debug Exp $
+$Id: HISTORY,v 1.273 2004-10-24 06:29:55 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1061,3 +1061,6 @@ HISTORY of mips64emul
 		INSTALL kernel ramdisks). In the case of OpenBSD, a VGA text
 		console and PC-style keyboard controller is used, NetBSD
 		runs on serial console.
+		Adding a framework for DMA transfer for the ASC SCSI
+		controller.
+		Implementing a R4030 DMA controller for PICA.

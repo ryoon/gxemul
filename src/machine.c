@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.42 2004-01-24 21:10:58 debug Exp $
+ *  $Id: machine.c,v 1.43 2004-02-06 06:12:41 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -318,13 +318,13 @@ void machine_init(struct memory *mem)
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
-		fb = dev_fb_init(cpus[0], mem, 0x12000000, VFB_GENERIC, 640,480, 640,480, 24, "generic");
+		fb = dev_fb_init(cpus[bootstrap_cpu], mem, 0x12000000, VFB_GENERIC, 640,480, 640,480, 24, "generic");
 
 		break;
 
 	case EMULTYPE_DEC:
 		/*  An R2020 or R3220 memory thingy:  */
-		cpus[0]->coproc[3] = coproc_new(cpus[0], 3);
+		cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
 
 		/*  There aren't really any good standard values...  */
 		framebuffer_console_name = "osconsole=0,3";
@@ -356,14 +356,14 @@ void machine_init(struct memory *mem)
 			 *  mcclock0 at ibus0 addr 0x1d000000: mc146818 or compatible
 			 *  0x1e000000 = system status and control register
 			 */
-			fb = dev_fb_init(cpus[0], mem, KN01_PHYS_FBUF_START, color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
+			fb = dev_fb_init(cpus[bootstrap_cpu], mem, KN01_PHYS_FBUF_START, color_fb_flag? VFB_DEC_VFB02 : VFB_DEC_VFB01,
 			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
 			dev_le_init(mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE);
-			dev_sii_init(cpus[0], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
-			dev_dc7085_init(cpus[0], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
+			dev_sii_init(cpus[bootstrap_cpu], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
+			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -383,7 +383,7 @@ void machine_init(struct memory *mem)
 				fprintf(stderr, "WARNING! Real KN02 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
 			/*  An R3220 memory thingy:  */
-			cpus[0]->coproc[3] = coproc_new(cpus[0], 3);
+			cpus[bootstrap_cpu]->coproc[3] = coproc_new(cpus[bootstrap_cpu], 3);
 
 			/*
 			 *  According to NetBSD/pmax:
@@ -395,22 +395,22 @@ void machine_init(struct memory *mem)
 			 */
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  */
-			dev_turbochannel_init(cpus[0], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);
-			dev_turbochannel_init(cpus[0], mem, 1, KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END, "", KN02_IP_SLOT1 +8);
-			dev_turbochannel_init(cpus[0], mem, 2, KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END, "", KN02_IP_SLOT2 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN02_PHYS_TC_0_START, KN02_PHYS_TC_0_END, "PMAG-AA", KN02_IP_SLOT0 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN02_PHYS_TC_1_START, KN02_PHYS_TC_1_END, "", KN02_IP_SLOT1 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN02_PHYS_TC_2_START, KN02_PHYS_TC_2_END, "", KN02_IP_SLOT2 +8);
 
 			/*  TURBOchannel slots 3 and 4 are reserved.  */
 
 			/*  TURBOchannel slot 5 is PMAZ-AA (asc SCSI), 6 is PMAD-AA (LANCE ethernet).  */
-			dev_turbochannel_init(cpus[0], mem, 5, KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END, "PMAZ-AA", KN02_IP_SCSI +8);
-			dev_turbochannel_init(cpus[0], mem, 6, KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END, "PMAD-AA", KN02_IP_LANCE +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 5, KN02_PHYS_TC_5_START, KN02_PHYS_TC_5_END, "PMAZ-AA", KN02_IP_SCSI +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 6, KN02_PHYS_TC_6_START, KN02_PHYS_TC_6_END, "PMAD-AA", KN02_IP_LANCE +8);
 
 			/*  TURBOchannel slot 7 is system stuff.  */
-			dev_dc7085_init(cpus[0], mem, KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
+			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
 
 			/*  (kn02 shared irq numbers (IP) are offset by +8 in the emulator)  */
-			kn02_csr = dev_kn02_init(cpus[0], mem, KN02_SYS_CSR);
+			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu], mem, KN02_SYS_CSR);
 
 			framebuffer_console_name = "osconsole=0,7";	/*  fb,keyb  */
 			serial_console_name      = "osconsole=2";
@@ -438,17 +438,17 @@ void machine_init(struct memory *mem)
 			 *  dma for asc0						(0x1c380000) slot 14
 			 */
 			dev_threemin_ioasic_init(mem, 0x1c000000);
-			dev_scc_init(cpus[0], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
-			dev_asc_init(cpus[0], mem, 0x1c300000, KMIN_INTR_SCSI +8);
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards. TODO: irqs  */
-			dev_turbochannel_init(cpus[0], mem, 0, 0x10000000, 0x103fffff, "PMAG-BA", KMIN_INT_TC0);
-			dev_turbochannel_init(cpus[0], mem, 1, 0x14000000, 0x143fffff, "", KMIN_INT_TC1);
-			dev_turbochannel_init(cpus[0], mem, 2, 0x18000000, 0x183fffff, "", KMIN_INT_TC2);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "PMAG-BA", KMIN_INT_TC0);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", KMIN_INT_TC1);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x18000000, 0x183fffff, "", KMIN_INT_TC2);
 
 			/*  (kmin shared irq numbers (IP) are offset by +8 in the emulator)  */
-			/*  TODO:  kmin_csr = dev_kmin_init(cpus[0], mem, KMIN_REG_INTR);  */
+			/*  TODO:  kmin_csr = dev_kmin_init(cpus[bootstrap_cpu], mem, KMIN_REG_INTR);  */
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb, keyb (?)  */
 			serial_console_name      = "osconsole=3";	/*  ?  */
@@ -474,14 +474,14 @@ void machine_init(struct memory *mem)
 			 *  asc0 at ioasic0 offset 0x300000: NCR53C94, 25MHz, SCSI ID 7	(0x1fb00000)
 			 */
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8);
-			dev_scc_init(cpus[0], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
-			dev_mc146818_init(cpus[0], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
-			dev_asc_init(cpus[0], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
+			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
+			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*  TURBOchannel slots 0, 1, and 2 are free for option cards.  TODO: irqs */
-			dev_turbochannel_init(cpus[0], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-AA", KN03_INTR_TC_0 +8);
-			dev_turbochannel_init(cpus[0], mem, 1, KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "", KN03_INTR_TC_1 +8);
-			dev_turbochannel_init(cpus[0], mem, 2, KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "", KN03_INTR_TC_2 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, KN03_PHYS_TC_0_START, KN03_PHYS_TC_0_END, "PMAG-AA", KN03_INTR_TC_0 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, KN03_PHYS_TC_1_START, KN03_PHYS_TC_1_END, "", KN03_INTR_TC_1 +8);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, KN03_PHYS_TC_2_START, KN03_PHYS_TC_2_END, "", KN03_INTR_TC_2 +8);
 
 			/*  TODO: interrupts  */
 			/*  shared (turbochannel) interrupts are +8  */
@@ -523,8 +523,8 @@ void machine_init(struct memory *mem)
 			 */
 			/*  ln (ethernet) at 0x10084x00 ? and 0x10120000 ?  */
 			/*  error registers (?) at 0x17000000 and 0x10080000  */
-			dev_kn210_init(cpus[0], mem, 0x10080000);
-			dev_ssc_init(cpus[0], mem, 0x10140000, 0, use_x11);	/*  TODO:  not irq 0  */
+			dev_kn210_init(cpus[bootstrap_cpu], mem, 0x10080000);
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  TODO:  not irq 0  */
 			break;
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
@@ -556,17 +556,17 @@ void machine_init(struct memory *mem)
 			 */
 
 			/*  TURBOchannel slots (0 and 1). TODO: irqs  */
-			dev_turbochannel_init(cpus[0], mem, 0, 0x10000000, 0x103fffff, "", 0);
-			dev_turbochannel_init(cpus[0], mem, 1, 0x14000000, 0x143fffff, "", 0);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 0, 0x10000000, 0x103fffff, "", 0);
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 1, 0x14000000, 0x143fffff, "", 0);
 
 			/*  TURBOchannel slot 2 is hardwired to be used by the framebuffer: (NOTE: 0x8000000, not 0x18000000)  */
-			dev_turbochannel_init(cpus[0], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
-/*			fb = dev_fb_init(cpus[0], mem, 0xa000000, VFB_DEC_MAXINE, 0,0,0,0,0, "Maxine");  */
+			dev_turbochannel_init(cpus[bootstrap_cpu], mem, 2, 0x8000000, 0xbffffff, "PMAG-DV", 0);
+/*			fb = dev_fb_init(cpus[bootstrap_cpu], mem, 0xa000000, VFB_DEC_MAXINE, 0,0,0,0,0, "Maxine");  */
 
 			/*  TURBOchannel slot 3: fixed, ioasic (the system stuff), 0x1c000000  */
-			dev_scc_init(cpus[0], mem, 0x1c100000, 0, use_x11);
-			dev_mc146818_init(cpus[0], mem, 0x1c200000, 3, MC146818_DEC, 1, emulated_ips);
-			dev_asc_init(cpus[0], mem, 0x1c300000, 0);	/*  (?)  SCSI  */
+			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, 0, use_x11);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, 3, MC146818_DEC, 1, emulated_ips);
+			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, 0);	/*  (?)  SCSI  */
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=2";
@@ -574,7 +574,7 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_5500:	/*  type 11, KN220  */
 			machine_name = "DECsystem 5500 (KN220)";
-			dev_ssc_init(cpus[0], mem, 0x10140000, 0, use_x11);	/*  A wild guess. TODO:  not irq 0  */
+			dev_ssc_init(cpus[bootstrap_cpu], mem, 0x10140000, 0, use_x11);	/*  A wild guess. TODO:  not irq 0  */
 			break;
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
@@ -596,13 +596,13 @@ void machine_init(struct memory *mem)
 			 *  The KN230 cpu board has several devices sharing the same IRQ, so
 			 *  the kn230 CSR contains info about which devices have caused interrupts.
 			 */
-			dev_mc146818_init(cpus[0], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_ips);
-			dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
-			/* dev_dc7085_init(cpus[0], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_ips);
+			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
+			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
 			dev_le_init(mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE);
-			dev_sii_init(cpus[0], mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
-			kn230_csr = dev_kn230_init(cpus[0], mem, KN230_SYS_ICSR);
+			dev_sii_init(cpus[bootstrap_cpu], mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
+			kn230_csr = dev_kn230_init(cpus[bootstrap_cpu], mem, KN230_SYS_ICSR);
 
 			serial_console_name = "osconsole=0";
 			break;
@@ -707,7 +707,7 @@ void machine_init(struct memory *mem)
 		add_environment_string("scsiid0=7", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
-/*  cpus[0]->gpr[GPR_SP] = physical_ram_in_mb*1048576 + 0x80000000 - 0x2100;  */
+/*  cpus[bootstrap_cpu]->gpr[GPR_SP] = physical_ram_in_mb*1048576 + 0x80000000 - 0x2100;  */
 
 		break;
 
@@ -728,7 +728,7 @@ void machine_init(struct memory *mem)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_ips);	*/
-		dev_mc146818_init(cpus[0], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_ips);  	/*  mcclock0  */
+		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_ips);  	/*  mcclock0  */
 		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);				/*  com0  */
 
 		/*
@@ -763,7 +763,7 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_HPCMIPS:
 		machine_name = "hpcmips";
-		dev_fb_init(cpus[0], mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS, HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
+		dev_fb_init(cpus[bootstrap_cpu], mem, HPCMIPS_FB_ADDR, VFB_HPCMIPS, HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE,
 		    HPCMIPS_FB_XSIZE, HPCMIPS_FB_YSIZE, 2, "HPCmips");
 
 		/*
@@ -859,7 +859,7 @@ void machine_init(struct memory *mem)
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
 		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
 		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
@@ -971,7 +971,7 @@ void machine_init(struct memory *mem)
 			switch (machine) {
 			case 20:
 				strcat(machine_name, " (Indigo2)");
-				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 				break;
 			case 22:
 				strcat(machine_name, " (Indy, Indigo2, Challenge S)");
@@ -995,8 +995,8 @@ void machine_init(struct memory *mem)
 				 *  dsclock0 at hpc0 offset 0x60000
 				 */
 				dev_wdsc_init(mem, 0x1fbc4000); 	 	/*  wdsc0  */
-				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
-				dev_sgi_ip22_init(cpus[0], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_sgi_ip22_init(cpus[bootstrap_cpu], mem, 0x1fbd9880);	/*  or 0x1fbd9000 on "fullhouse" machines?  */
 				break;
 			case 27:
 				strcat(machine_name, " (Origin 200/2000, Onyx2)");
@@ -1010,7 +1010,7 @@ void machine_init(struct memory *mem)
 				 *  0x19600000 <get_nasid+0x4>
 				 *  0x190020d0 <get_cpuinfo+0x34>
 				 */
-				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 				dev_sgi_nasid_init(mem, DEV_SGI_NASID_BASE);
 				dev_sgi_cpuinfo_init(mem, DEV_SGI_CPUINFO_BASE);
 				break;
@@ -1071,8 +1071,8 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, 2, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, 8, 0x100);	/*  com1  */
-				dev_mc146818_init(cpus[0], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
-				dev_zs_init(cpus[0], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, 0, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);	/*  serial??  */
 
 				/*
 				 *  PCI devices:   (according to NetBSD's GENERIC config file for sgimips)
@@ -1102,7 +1102,7 @@ dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 			/*  TODO:  sync devices and component tree  */
 			/*  TODO 2: These are model dependant!!!  */
 			pci_data = dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000, 8);
-			dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x2000004000, 8, MC146818_ARC_NEC, 1, emulated_ips);	/*  ???  */
 			dev_pckbc_init(cpus[bootstrap_cpu], mem, 0x2000005000, PCKBC_8042, 0, 0);		/*  ???  */
 			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
 			dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
@@ -1214,7 +1214,7 @@ case arc_CacheClass:
 		store_string(ARC_ARGV_START + 0x2c0, bootarg);
 
 		/*  TODO:  not needed?  */
-		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+		cpus[bootstrap_cpu]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
 

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.66 2004-06-14 07:20:55 debug Exp $
+ *  $Id: devices.h,v 1.67 2004-06-14 22:49:25 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -403,9 +403,19 @@ void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 int dev_sgi_ip19_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 void dev_sgi_ip19_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
+/*  dev_sgi_ip20.c:  */
+#define	DEV_SGI_IP20_LENGTH		0x40
+#define	DEV_SGI_IP20_BASE		0x1fb801c0
+struct sgi_ip20_data {
+	int		dummy;
+};
+int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
+struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
+
 /*  dev_sgi_ip22.c:  */
 #define	DEV_SGI_IP22_LENGTH		0x100
-#define	DEV_SGI_IP22_MEMCTL_LENGTH	0x100
+#define	DEV_SGI_IP22_IMC_LENGTH		0x100
+#define	IP22_IMC_BASE			0x1fa00000
 struct sgi_ip22_data {
 	int		guiness_flag;
 	uint32_t	reg[DEV_SGI_IP22_LENGTH / 4];

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.43 2004-12-04 12:48:42 debug Exp $
+ *  $Id: arcbios.c,v 1.44 2004-12-05 14:17:21 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -39,6 +39,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
@@ -125,11 +126,11 @@ void arcbios_console_init(struct cpu *cpu,
 	for (y=0; y<2; y++)
 		for (x=0; x<arcbios_console_maxx; x++) {
 			char ch = ' ';
-			char *s = " mips64emul "
+			char *s = " mips64emul"
 #ifdef VERSION
-			    "-" VERSION " "
+			    "-" VERSION
 #endif
-			    "ARC text console ";
+			    " ARC text console ";
 
 			if (y == 0) {
 				arcbios_console_curcolor = 0x70;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.226 2004-12-04 12:35:57 debug Exp $
+ *  $Id: machine.c,v 1.227 2004-12-05 14:17:01 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -876,10 +876,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 	struct arcbios_spb_64 arcbios_spb_64;
 	struct arcbios_sysid arcbios_sysid;
 	struct arcbios_dsp_stat arcbios_dsp_stat;
-	struct arcbios_mem arcbios_mem;
-	struct arcbios_mem64 arcbios_mem64;
-	uint64_t mem_base, mem_count, mem_bufaddr;
-	int mem_mb_left;
+	uint64_t mem_base, mem_count;
 	uint64_t system = 0;
 	uint64_t sgi_ram_offset = 0;
 	int arc_wordlen = sizeof(uint32_t);

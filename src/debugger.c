@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.32 2005-01-09 01:55:30 debug Exp $
+ *  $Id: debugger.c,v 1.33 2005-01-15 07:33:11 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -751,8 +751,46 @@ static void debugger_cmd_print(struct emul *emul, char *cmd_line)
  */
 static void debugger_cmd_quiet(struct emul *emul, char *cmd_line)
 {
-	old_quiet_mode = 1 - old_quiet_mode;
-	printf("quiet_mode = %s\n", old_quiet_mode? "ON" : "OFF");
+	int toggle = 1;
+	int previous_mode = old_quiet_mode;
+
+	if (cmd_line[0] != '\0') {
+		while (cmd_line[0] != '\0' && cmd_line[0] == ' ')
+			cmd_line ++;
+		switch (cmd_line[0]) {
+		case '0':
+			toggle = 0;
+			old_quiet_mode = 0;
+			break;
+		case '1':
+			toggle = 0;
+			old_quiet_mode = 1;
+			break;
+		case 'o':
+		case 'O':
+			toggle = 0;
+			switch (cmd_line[1]) {
+			case 'n':
+			case 'N':
+				old_quiet_mode = 1;
+				break;
+			default:
+				old_quiet_mode = 0;
+			}
+			break;
+		default:
+			printf("syntax: quiet [on|off]\n");
+			return;
+		}
+	}
+
+	if (toggle)
+		old_quiet_mode = 1 - old_quiet_mode;
+
+	printf("quiet_mode = %s", old_quiet_mode? "ON" : "OFF");
+	if (old_quiet_mode != previous_mode)
+		printf("  (was: %s)", previous_mode? "ON" : "OFF");
+	printf("\n");
 }
 
 
@@ -1174,7 +1212,7 @@ static struct cmd cmds[] = {
 	{ "print", "expr", 0, debugger_cmd_print,
 		"evaluate an expression without side-effects" },
 
-	{ "quiet", "", 0, debugger_cmd_quiet,
+	{ "quiet", "[on|off]", 0, debugger_cmd_quiet,
 		"toggle quiet_mode on or off" },
 
 	{ "quit", "", 0, debugger_cmd_quit,

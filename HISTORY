@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.550 2005-02-01 17:22:06 debug Exp $
+$Id: HISTORY,v 1.551 2005-02-02 05:25:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1525,7 +1525,7 @@ HISTORY of mips64emul
 		Adding a speed-limit hack to the mc146818 device when running
 		in DECstation mode (limiting to emulated 30 MHz clock, so
 		that Ultrix doesn't freak out).
-		Adding an ulgy workaround for the floating-point bug which
+		Adding an ugly workaround for the floating-point bug which
 		is triggered when running NetBSD/pmax 2.0 on an Alpha host.
 		The count/compare interrupt will not be triggered now, if
 		the compare register is left untouched.
@@ -1611,3 +1611,4 @@ HISTORY of mips64emul
 		to different machines (in different emuls).
 		Beginning to work on the PPC disassembler etc. Hello World
 		for linux-ppc64 can be disassembled :-)
+20050202	Minor updates.

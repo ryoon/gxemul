@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.9 2005-02-01 17:22:08 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.10 2005-02-02 05:25:48 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -195,28 +195,53 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 	char *symbol;
 	uint64_t offset;
 	int i, x = cpu->cpu_id;
+	int bits32 = cpu->cd.ppc.bits == 32;
 
 	if (gprs) {
 		/*  Special registers (pc, ...) first:  */
 		symbol = get_symbol_name(&cpu->machine->symbol_context,
 		    cpu->cd.ppc.pc, &offset);
 
-		debug("cpu%i: pc  = 0x%016llx", x, (long long)cpu->cd.ppc.pc);
+		debug("cpu%i: pc  = 0x", x);
+		if (bits32)
+			debug("%08x", x, (int)cpu->cd.ppc.pc);
+		else
+			debug("%016llx", x, (long long)cpu->cd.ppc.pc);
 		debug("  <%s>\n", symbol != NULL? symbol : " no symbol ");
 
-		debug("cpu%i: lr  = 0x%016llx  cr = 0x%08x\n", x,
-		    (long long)cpu->cd.ppc.lr, (int)cpu->cd.ppc.cr);
+		debug("cpu%i: lr  = 0x", x);
+		if (bits32)
+			debug("%08x", (int)cpu->cd.ppc.lr);
+		else
+			debug("%016llx", (long long)cpu->cd.ppc.lr);
+		debug("  cr = 0x%08x\n", (int)cpu->cd.ppc.cr);
 
-		debug("cpu%i: ctr = 0x%016llx\n", x,
-		    (long long)cpu->cd.ppc.ctr);
+		debug("cpu%i: ctr = 0x", x);
+		if (bits32)
+			debug("%08x\n", (int)cpu->cd.ppc.ctr);
+		else
+			debug("%016llx\n", (long long)cpu->cd.ppc.ctr);
 
-		for (i=0; i<PPC_NGPRS; i++) {
-			if ((i % 2) == 0)
-				debug("cpu%i:", x);
-			debug(" r%02i = 0x%016llx ", i,
-			    (long long)cpu->cd.ppc.gpr[i]);
-			if ((i % 2) == 1)
-				debug("\n");
+		if (bits32) {
+			/*  32-bit:  */
+			for (i=0; i<PPC_NGPRS; i++) {
+				if ((i % 4) == 0)
+					debug("cpu%i:", x);
+				debug(" r%02i = 0x%08x ", i,
+				    (int)cpu->cd.ppc.gpr[i]);
+				if ((i % 4) == 3)
+					debug("\n");
+			}
+		} else {
+			/*  64-bit:  */
+			for (i=0; i<PPC_NGPRS; i++) {
+				if ((i % 2) == 0)
+					debug("cpu%i:", x);
+				debug(" r%02i = 0x%016llx ", i,
+				    (long long)cpu->cd.ppc.gpr[i]);
+				if ((i % 2) == 1)
+					debug("\n");
+			}
 		}
 	}
 
@@ -225,6 +250,8 @@ void ppc_cpu_register_dump(struct cpu *cpu, int gprs, int coprocs)
 		    (long long)cpu->cd.ppc.xer, (int)cpu->cd.ppc.fpscr);
 
 		/*  TODO: show floating-point values :-)  */
+
+		/*  TODO: 32-bit fprs on 32-bit PPC cpus?  */
 
 		for (i=0; i<PPC_NFPRS; i++) {
 			if ((i % 2) == 0)

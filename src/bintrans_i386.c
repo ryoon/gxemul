@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.10 2004-11-19 06:58:03 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.11 2004-11-19 09:09:09 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -47,17 +47,15 @@ void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 }
 
 
-unsigned char bintrans_i386_runchunk[13] = {
+unsigned char bintrans_i386_runchunk[11] = {
 	0x55,					/*  push   %ebp  */
 	0x89, 0xe5,				/*  mov    %esp,%ebp  */
-	0x60,					/*  pusha  */
 
 	/*  In all translated code, esi points to the cpu struct.  */
 
 	0x8b, 0x75, 0x08,			/*  mov    0x8(%ebp),%esi  */
 	0xff, 0x55, 0x0c,			/*  call   *0xc(%ebp)  */
 
-	0x60,					/*  popa  */
 	0xc9,					/*  leave  */
 	0xc3					/*  ret  */
 };
@@ -839,12 +837,6 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	unsigned char *skip1 = NULL, *skip2 = NULL;
 	int ofs;
 
-	/*  TODO: Not yet  */
-	if (instruction_type == HI6_BGTZ ||
-	    instruction_type == HI6_BLEZ ||
-	    instruction_type == HI6_REGIMM)
-		return 0;
-
 	a = *addrp;
 
 	/*
@@ -867,12 +859,10 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 
 	if (instruction_type == HI6_BEQ && rt != rs) {
 		/*  If rt != rs, then skip.  */
-
 		/*  39 c3                   cmp    %eax,%ebx  */
 		/*  75 05                   jne    155 <skip>  */
 		/*  39 d1                   cmp    %edx,%ecx  */
 		/*  75 01                   jne    155 <skip>  */
-
 		*a++ = 0x39; *a++ = 0xc3;
 		*a++ = 0x75; skip1 = a; *a++ = 0x00;
 		*a++ = 0x39; *a++ = 0xd1;
@@ -881,13 +871,11 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 
 	if (instruction_type == HI6_BNE) {
 		/*  If rt != rs, then ok. Otherwise skip.  */
-
 		/*  39 c3                   cmp    %eax,%ebx  */
 		/*  75 06                   jne    156 <bra>  */
 		/*  39 d1                   cmp    %edx,%ecx  */
 		/*  75 02                   jne    156 <bra>  */
 		/*  eb 01                   jmp    157 <skip>  */
-
 		*a++ = 0x39; *a++ = 0xc3;
 		*a++ = 0x75; *a++ = 0x06;
 		*a++ = 0x39; *a++ = 0xd1;
@@ -895,41 +883,62 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		*a++ = 0xeb; skip2 = a; *a++ = 0x00;
 	}
 
-#if 0
 	if (instruction_type == HI6_BLEZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
+		/*  If both eax and edx are zero, then do the branch.  */
+		/*  83 f8 00                cmp    $0x0,%eax  */
+		/*  75 07                   jne    <nott>  */
+		/*  83 fa 00                cmp    $0x0,%edx  */
+		/*  75 02                   jne    23d <nott>  */
+		/*  eb 01                   jmp    <branch>  */
+		*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+		*a++ = 0x75; *a++ = 0x07;
+		*a++ = 0x83; *a++ = 0xfa; *a++ = 0x00;
+		*a++ = 0x75; *a++ = 0x02;
+		*a++ = 0xeb; skip1 = a; *a++ = 0x00;
 
-		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
-		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		/*  If high bit of edx is set, then rs < 0.  */
+		/*  f7 c2 00 00 00 80       test   $0x80000000,%edx  */
+		/*  74 00                   jz     skip  */
+		*a++ = 0xf7; *a++ = 0xc2; *a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x80;
+		*a++ = 0x74; skip2 = a; *a++ = 0x00;
+
+		if (skip1 != NULL)
+			*skip1 = (size_t)a - (size_t)skip1 - 1;
+		skip1 = NULL;
 	}
 	if (instruction_type == HI6_BGTZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
+		/*  If both eax and edx are zero, then skip the branch.  */
+		/*  83 f8 00                cmp    $0x0,%eax  */
+		/*  75 07                   jne    <nott>  */
+		/*  83 fa 00                cmp    $0x0,%edx  */
+		/*  75 02                   jne    23d <nott>  */
+		/*  eb 01                   jmp    <skip>  */
+		*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
+		*a++ = 0x75; *a++ = 0x07;
+		*a++ = 0x83; *a++ = 0xfa; *a++ = 0x00;
+		*a++ = 0x75; *a++ = 0x02;
+		*a++ = 0xeb; skip1 = a; *a++ = 0x00;
 
-		*a++ = 0xa1; *a++ = 0x1d; *a++ = 0x40; *a++ = 0x40;  /*  cmple t1,0,t0  */
-		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		/*  If high bit of edx is set, then rs < 0.  */
+		/*  f7 c2 00 00 00 80       test   $0x80000000,%edx  */
+		/*  75 00                   jnz    skip  */
+		*a++ = 0xf7; *a++ = 0xc2; *a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x80;
+		*a++ = 0x75; skip2 = a; *a++ = 0x00;
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BLTZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xa1; *a++ = 0x19; *a++ = 0x40; *a++ = 0x40;  /*  cmplt t1,0,t0  */
-		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		/*  If high bit of edx is set, then rs < 0.  */
+		/*  f7 c2 00 00 00 80       test   $0x80000000,%edx  */
+		/*  74 00                   jz     skip  */
+		*a++ = 0xf7; *a++ = 0xc2; *a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x80;
+		*a++ = 0x74; skip2 = a; *a++ = 0x00;
 	}
 	if (instruction_type == HI6_REGIMM && regimm_type == REGIMM_BGEZ) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rs, ALPHA_T1);
-
-		*a++ = 0xff; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;  /*  lda t2,-1  */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x43; *a++ = 0x40;  /*  cmple t1,t2,t0  */
-		b = a;
-		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
-		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+		/*  If high bit of edx is not set, then rs >= 0.  */
+		/*  f7 c2 00 00 00 80       test   $0x80000000,%edx  */
+		/*  75 00                   jnz    skip  */
+		*a++ = 0xf7; *a++ = 0xc2; *a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0x80;
+		*a++ = 0x75; skip2 = a; *a++ = 0x00;
 	}
-#endif
 
 	/*
 	 *  Perform the jump by setting cpu->delay_slot = TO_BE_DELAYED

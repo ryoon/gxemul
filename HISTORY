@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.313 2004-11-19 06:58:02 debug Exp $
+$Id: HISTORY,v 1.314 2004-11-19 09:09:08 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1150,3 +1150,4 @@ HISTORY of mips64emul
 		Some load/store (but not for bigendian emulation yet.)
 		Time to reach Ultrix 4.5's graphical login on a 2.8 GHz Xeon
 		host is now down to 20 seconds!
+		Adding bgez, bltz, bgtz, and blez to the i386 backend.

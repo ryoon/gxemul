@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.8 2004-04-02 05:47:23 debug Exp $
+ *  $Id: diskimage.c,v 1.9 2004-04-06 02:17:30 debug Exp $
  *
  *  Disk image support.
  *
@@ -54,6 +54,95 @@ struct diskimage {
 
 static struct diskimage *diskimages[MAX_DISKIMAGES];
 static int n_diskimages = 0;
+
+
+/**************************************************************************/
+
+
+/*
+ *  scsi_transfer_alloc():
+ *
+ *  Allocates memory for a new scsi_transfer struct, and fills it with
+ *  sane data (NULL pointers).
+ *  The return value is a pointer to the new struct.  If allocation
+ *  failed, the program exits.
+ */
+struct scsi_transfer *scsi_transfer_alloc(void)
+{
+	struct scsi_transfer *p;
+
+	p = malloc(sizeof(struct scsi_transfer));
+	if (p == NULL) {
+		fprintf(stderr, "scsi_transfer_alloc(): out of memory\n");
+		exit(1);
+	}
+
+	memset(p, 0, sizeof(struct scsi_transfer));
+
+	return p;
+}
+
+
+/*
+ *  scsi_transfer_free():
+ *
+ *  Frees the space used by a scsi_transfer struct.  All buffers refered
+ *  to by the scsi_transfer struct are freed.
+ */
+void scsi_transfer_free(struct scsi_transfer *p)
+{
+	if (p == NULL) {
+		fprintf(stderr, "scsi_transfer_free(): p == NULL\n");
+		exit(1);
+	}
+
+	if (p->msg_out != NULL)
+		free(p->msg_out);
+	if (p->cmd != NULL)
+		free(p->cmd);
+	if (p->data_out != NULL)
+		free(p->data_out);
+
+	if (p->data_in != NULL)
+		free(p->data_in);
+	if (p->msg_in != NULL)
+		free(p->msg_in);
+	if (p->status != NULL)
+		free(p->status);
+
+	free(p);
+}
+
+
+/*
+ *  scsi_transfer_allocbuf():
+ *
+ *  Helper function, used by diskimage_scsicommand(), and SCSI controller
+ *  devices.  Example of usage:
+ *
+ *	scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+ */
+void scsi_transfer_allocbuf(size_t *lenp, unsigned char **pp, size_t want_len)
+{
+	unsigned char *p = (*pp);
+
+	if (p != NULL) {
+		printf("WARNING! scsi_transfer_allocbuf(): old pointer "
+		    "was not NULL, freeing it now\n");
+		free(p);
+	}
+
+	(*lenp) = want_len;
+	if ((p = malloc(want_len)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+	memset(p, 0, want_len);
+	(*pp) = p;
+}
+
+
+/**************************************************************************/
 
 
 /*
@@ -88,83 +177,108 @@ int64_t diskimage_getsize(int disk_id)
 /*
  *  diskimage_scsicommand():
  *
+ *  Perform a SCSI command on a disk image.
+ *
+ *  The xferp points to a scsi_transfer struct, containing msg_out, command,
+ *  and data_out coming from the SCSI controller device.  This function
+ *  interprets the command, and (if neccessary) creates responses in
+ *  data_in, msg_in, and status.
+ *
  *  Returns 1 if ok, 0 on error.
- *  If ok, then *return_buf_ptr is set to a newly malloced buffer. It is up to
- *  the caller to free this buffer. *return_len is set to the length.
  */
-int diskimage_scsicommand(int disk_id, unsigned char *buf, int len, unsigned char **return_buf_ptr, int *return_len)
+int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 {
-	unsigned char *retbuf = NULL;
-	int retlen = 0;
+	int retlen;
 
-	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL || len<1)
+	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
 		return 0;
 
-	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ", disk_id, buf[0]);
-	switch (buf[0]) {
+	if (xferp->cmd == NULL) {
+		fatal("diskimage_scsicommand(): cmd == NULL\n");
+		return 0;
+	}
+
+	if (xferp->cmd_len < 1) {
+		fatal("diskimage_scsicommand(): cmd_len == %i\n",
+		    xferp->cmd_len);
+		return 0;
+	}
+
+	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ",
+	    disk_id, xferp->cmd[0]);
+
+	switch (xferp->cmd[0]) {
+
 	case SCSICMD_TEST_UNIT_READY:
 		debug("TEST_UNIT_READY");
-		if (len != 6)
-			debug(" (weird len=%i)", len);
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
 
 		/*  TODO: bits 765 of buf[1] contains the LUN  */
 
-		/*  Return status:  */
-		retlen = 1;
-		retbuf = malloc(retlen);
-		if (retbuf == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		memset(retbuf, 0, sizeof(retbuf));
+		/*  Return msg and status:  */
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+
 		break;
+
 	case SCSICMD_INQUIRY:
 		debug("INQUIRY");
-		if (len != 6)
-			debug(" (weird len=%i)", len);
-		if (buf[1] != 0x00) {
-			fatal(" INQUIRY with buf[1]=0x%02x not yet implemented\n");
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
+		if (xferp->cmd[1] != 0x00) {
+			fatal(" INQUIRY with cmd[1]=0x%02x not yet implemented\n");
 			exit(1);
 		}
+
 		/*  Return values:  */
-		retlen = buf[4];
+		retlen = xferp->cmd[4];
 		if (retlen < 36) {
 			fatal("WARNING: SCSI inquiry len=%i, <36!\n", retlen);
 			retlen = 36;
 		}
-		retbuf = malloc(retlen);
-		if (retbuf == NULL) {
-			fprintf(stderr, "out of memory\n");
-			exit(1);
-		}
-		memset(retbuf, 0, sizeof(retbuf));
-		retbuf[0] = 0x00;	/*  Direct-access disk  */
-		retbuf[1] = 0x00;	/*  non-removable  */
-		retbuf[2] = 0x02;	/*  SCSI-2  */
-		retbuf[6] = 0x04;	/*  ACKREQQ  */
-		retbuf[7] = 0x60;	/*  WBus32, WBus16  */
-		memcpy(retbuf+8, "VENDORID", 8);
-		memcpy(retbuf+16, "PRODUCT ID      ", 16);
-		memcpy(retbuf+32, "V0.0", 4);
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+		xferp->data_in[0] = 0x00;	/*  Direct-access disk  */
+		xferp->data_in[1] = 0x00;	/*  non-removable  */
+		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
+		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
+		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
+		memcpy(xferp->data_in+8, "VENDORID", 8);
+		memcpy(xferp->data_in+16, "PRODUCT ID      ", 16);
+		memcpy(xferp->data_in+32, "V0.0", 4);
+
+		/*  Return msg and status:  */
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+
 		break;
+
 	case SCSIBLOCKCMD_READ_CAPACITY:
 		fatal("[ SCSI READ_CAPACITY: TODO ]\n");
 		break;
+
 	case 0x03:
 	case 0x08:
 	case 0x15:
 	case 0x1a:
 	case 0x1b:
-		fatal("[ SCSI 0x%02x: TODO ]\n", buf[0]);
+		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 		break;
+
 	default:
-		fatal("unimplemented SCSI command 0x%02x\n", buf[0]);
+		fatal("unimplemented SCSI command 0x%02x\n", xferp->cmd[0]);
 		exit(1);
 	}
 	debug(" ]\n");
 
-	*return_buf_ptr = retbuf;
-	*return_len = retlen;
 	return 1;
 }
 

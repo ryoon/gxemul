@@ -2,6 +2,8 @@ mips64emul TODO
 ---------------
 
 	Code cleanup:
+		o)  Fix the configure script for all conceivable platforms
+			(for example, find a Linux/i386 machine to try this on)
 		o)  Namespace consistency
 		o)  Struct encapsulation:
 			x)  no global variables, or at least as few as possible

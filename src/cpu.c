@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.113 2004-08-01 10:02:01 debug Exp $
+ *  $Id: cpu.c,v 1.114 2004-08-01 10:41:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -575,9 +575,11 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr)
 		imm = (instr[3] << 24) + (instr[2] << 16) +
 		     (instr[1] << 8) + instr[0];
 		imm &= ((1 << 26) - 1);
-		/*  TODO: disassemble into correct opcode!  */
-		debug("%s\t0x%08x", hi6_names[hi6], imm);
-		break;
+		/*  NOTE: disassembly into correct opcode doesn't
+			happen here!  */
+		/*  debug("%s\t0x%08x", hi6_names[hi6], imm);  */
+		/*  TODO: call coprocessor specific disasm routine  */
+		return;
 	case HI6_CACHE:
 		rt   = ((instr[3] & 3) << 3) + (instr[2] >> 5); /*  base  */
 		copz = instr[2] & 31;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.59 2005-01-19 14:24:20 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.60 2005-01-20 08:57:31 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
@@ -90,9 +90,36 @@ struct mc_data {
  */
 static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 {
+	int64_t emulated_hz;
+	static int warning_printed = 0;
+
+	emulated_hz = cpu->machine->emulated_hz;
+
+	/*
+	 *  A hack to make Ultrix run, even on very fast host machines.
+	 *
+	 *  (Ultrix was probably never meant to be run on machines with
+	 *  faster CPUs than around 33 MHz or so.)
+	 */
+	if (d->access_style == MC146818_DEC && emulated_hz > 30000000) {
+		if (!warning_printed) {
+			fatal("\n*********************************************"
+			    "**********************************\n\n   Your hos"
+			    "t machine is too fast! The emulated CPU speed wil"
+			    "l be limited to\n   30 MHz, and clocks inside the"
+			    " emulated environment might go faster than\n   in"
+			    " the real world.  You have been warned.\n\n******"
+			    "*************************************************"
+			    "************************\n\n");
+			warning_printed = 1;
+		}
+
+		emulated_hz = 30000000;
+	}
+
 	if (d->interrupt_hz > 0)
 		d->interrupt_every_x_cycles =
-		    cpu->machine->emulated_hz / d->interrupt_hz;
+		    emulated_hz / d->interrupt_hz;
 	else
 		d->interrupt_every_x_cycles = 0;
 }

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.506 2005-01-20 08:08:35 debug Exp $
+$Id: HISTORY,v 1.507 2005-01-20 08:57:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1522,3 +1522,6 @@ HISTORY of mips64emul
 20050120	Continuing on the remodelling/cleanup.
 		Fixing the SCSI bug (which was triggered sometimes by
 		NetBSD 2.0/pmax on Linux/i386 hosts).
+		Adding a speed-limit hack to the mc146818 device when running
+		in DECstation mode (limiting to emulated 30 MHz clock, so
+		that Ultrix doesn't freak out).

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.98 2004-12-02 16:28:03 debug Exp $
+ *  $Id: bintrans.c,v 1.99 2004-12-05 14:17:13 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -185,7 +185,7 @@ struct translation_page_entry {
 static struct translation_page_entry **translation_page_entry_array;
 
 
-#define	MAX_QUICK_JUMPS		15
+#define	MAX_QUICK_JUMPS		10
 static unsigned char *quick_jump_host_address[MAX_QUICK_JUMPS];
 static int quick_jump_page_offset[MAX_QUICK_JUMPS];
 static int n_quick_jumps;
@@ -362,7 +362,7 @@ quick_attempt_translate_again:
 
 		/*  ... and align again:  */
 		translation_code_chunk_space_head =
-		    ((translation_code_chunk_space_head - 1) | 31) + 1;
+		    ((translation_code_chunk_space_head - 1) | 63) + 1;
 
 		/*  Add the entry to the array:  */
 		memset(tep, 0, sizeof(struct translation_page_entry));
@@ -697,11 +697,11 @@ quick_attempt_translate_again:
 		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
 		    && !delayed_branch) {
 			bintrans_write_instruction__delayedbranch(
-			    &ca, &tep->chunk[prev_p+1], NULL, 1, prev_p+1);
+			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4);
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 150)
+		if (n_translated > 100)
 			try_to_translate = 0;
 
 		p += sizeof(instr);
@@ -736,7 +736,7 @@ quick_attempt_translate_again:
 
 	/*  Align the code chunk space:  */
 	translation_code_chunk_space_head =
-	    ((translation_code_chunk_space_head - 1) | 31) + 1;
+	    ((translation_code_chunk_space_head - 1) | 63) + 1;
 
 	if (!run_flag)
 		return cpu->bintrans_instructions_executed;

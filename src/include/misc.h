@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.35 2004-02-23 23:11:28 debug Exp $
+ *  $Id: misc.h,v 1.36 2004-03-06 12:55:22 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -547,7 +547,7 @@ struct cpu {
 	"special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz", 			/*  0x00 - 0x07  */	\
 	"addi", "addiu", "slti", "sltiu", "andi", "ori", "xori", "lui",			/*  0x08 - 0x0f  */	\
 	"cop0", "cop1", "cop2", "cop3", "beql", "bnel", "blezl", "bgtzl",		/*  0x10 - 0x17  */	\
-	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "opcode_1e", "opcode_1f",/*  0x18 - 0x1f  */	\
+	"daddi", "daddiu", "ldl", "ldr", "special2", "opcode_1d", "lq_mdmx", "sq",	/*  0x18 - 0x1f  */	\
 	"lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",				/*  0x20 - 0x27  */	\
 	"sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",				/*  0x28 - 0x2f  */	\
 	"ll", "lwc1", "lwc2", "lwc3", "lld", "ldc1", "ldc2", "ld",			/*  0x30 - 0x37  */	\
@@ -565,17 +565,17 @@ struct cpu {
 	"mfhi", "mthi", "mflo", "mtlo", "dsllv", "special_15", "dsrlv", "dsrav",	/*  0x10 - 0x17  */	\
 	"mult", "multu", "div", "divu", "dmult", "dmultu", "ddiv", "ddivu",		/*  0x18 - 0x1f  */	\
 	"add", "addu", "sub", "subu", "and", "or", "xor", "nor",			/*  0x20 - 0x27  */	\
-	"special_28", "special_29", "slt", "sltu", "special_2c", "daddu", "special_2e", "dsubu",  /*  0x28 - 0x2f  */	\
+	"mfsa", "mtsa", "slt", "sltu", "special_2c", "daddu", "special_2e", "dsubu",  /*  0x28 - 0x2f  */	\
 	"special_30", "special_31", "special_32", "special_33", "teq", "special_35", "special_36", "special_37", /*  0x30 - 0x37  */	\
 	"dsll", "special_39", "dsrl", "dsra", "dsll32", "special_3d", "dsrl32", "dsra32"/*  0x38 - 0x3f  */	}
 
 #define	SPECIAL2_NAMES	{	\
 	"madd",        "maddu",       "mul",         "special2_03", "msub",        "msubu",       "special2_06", "special2_07", /*  0x00 - 0x07  */	\
-	"mov_xxx",     "special2_09", "special2_0a", "special2_0b", "special2_0c", "special2_0d", "special2_0e", "special2_0f",	/*  0x08 - 0x0f  */	\
+	"mov_xxx",     "pmfhi_lo",    "special2_0a", "special2_0b", "special2_0c", "special2_0d", "special2_0e", "special2_0f",	/*  0x08 - 0x0f  */	\
 	"special2_10", "special2_11", "special2_12", "special2_13", "special2_14", "special2_15", "special2_16", "special2_17", /*  0x10 - 0x17  */	\
 	"special2_18", "special2_19", "special2_1a", "special2_1b", "special2_1c", "special2_1d", "special2_1e", "special2_1f",	/*  0x18 - 0x1f  */	\
 	"clz",         "clo",         "special2_22", "special2_23", "dclz",        "dclo",        "special2_26", "special2_27", /*  0x20 - 0x27  */	\
-	"special2_28", "special2_29", "special2_2a", "special2_2b", "special2_2c", "special2_2d", "special2_2e", "special2_2f",	/*  0x28 - 0x2f  */	\
+	"special2_28", "por", 	      "special2_2a", "special2_2b", "special2_2c", "special2_2d", "special2_2e", "special2_2f",	/*  0x28 - 0x2f  */	\
 	"special2_30", "special2_31", "special2_32", "special2_33", "special2_34", "special2_35", "special2_36", "special2_37", /*  0x30 - 0x37  */	\
 	"special2_38", "special2_39", "special2_3a", "special2_3b", "special2_3c", "special2_3d", "special2_3e", "sdbbp"	/*  0x38 - 0x3f  */  }
 
@@ -620,8 +620,8 @@ struct cpu {
 #define	    SPECIAL_OR			    0x25    /*  100101  */	/*  MIPS I  */
 #define	    SPECIAL_XOR			    0x26    /*  100110  */	/*  MIPS I  */
 #define	    SPECIAL_NOR			    0x27    /*  100111  */	/*  MIPS I  */
-/*					    0x28	101000  */
-/*					    0x29	101001  */
+#define	    SPECIAL_MFSA		    0x28    /*  101000  */  	/*  Undocumented R5900 ?  */
+#define	    SPECIAL_MTSA		    0x29    /*  101001  */  	/*  Undocumented R5900 ?  */
 #define	    SPECIAL_SLT			    0x2a    /*  101010  */	/*  MIPS I  */
 #define	    SPECIAL_SLTU		    0x2b    /*  101011  */	/*  MIPS I  */
 /*					    0x2c	101100  */
@@ -702,15 +702,17 @@ struct cpu {
 #define	    SPECIAL2_MUL		    0x02    /*  000010  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_MSUB		    0x04    /*  000100  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_MSUBU		    0x05    /*  000001  */  /*  MIPS32 (?) TODO  */
-#define	    SPECIAL2_MOV_XXX		    0x08    /*  001000  */  /*  Undocumented R5900 ???  */
+#define	    SPECIAL2_MOV_XXX		    0x08    /*  001000  */  /*  Undocumented R5900 ?  */
+#define	    SPECIAL2_PMFHI		    0x09    /*  001001  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_CLZ		    0x20    /*  100100  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_CLO		    0x21    /*  100101  */  /*  MIPS32 (?) TODO  */
 #define	    SPECIAL2_DCLZ		    0x24    /*  100100  */  /*  MIPS64 (?) TODO  */
 #define	    SPECIAL2_DCLO		    0x25    /*  100101  */  /*  MIPS64 (?) TODO  */
+#define	    SPECIAL2_POR		    0x29    /*  101001  */  /*  Undocumented R5900 ?  */
 #define	    SPECIAL2_SDBBP		    0x3f    /*  111111  */  /*  EJTAG (?)  TODO  */
-/*					0x1d	    011101  */
-/*					0x1e	    011110  */
-/*					0x1f	    011111  */
+/*	JALX (TODO)			0x1d	    011101  */
+#define	HI6_LQ_MDMX			0x1e	/*  011110  */	/*  lq on R5900, MDMX on others?  */
+#define	HI6_SQ				0x1f	/*  011111  */	/*  R5900 ?  */
 #define	HI6_LB				0x20	/*  100000  */	/*  MIPS I  */
 #define	HI6_LH				0x21	/*  100001  */	/*  MIPS I  */
 #define	HI6_LWL				0x22	/*  100010  */	/*  MIPS I  */

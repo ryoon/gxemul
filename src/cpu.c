@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.35 2004-03-05 13:05:27 debug Exp $
+ *  $Id: cpu.c,v 1.36 2004-03-06 12:55:20 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1475,13 +1475,27 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			}
 
 			break;
+		case SPECIAL_MFSA:
+			/*  R5900? What on earth does this thing do?  */
+			rd = (instr[1] >> 3) & 31;
+			if (instruction_trace)
+				debug("mfsa\tr%i\n", rd);
+			/*  TODO  */
+			break;
+		case SPECIAL_MTSA:
+			/*  R5900? What on earth does this thing do?  */
+			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			if (instruction_trace)
+				debug("mtsa\tr%i\n", rs);
+			/*  TODO  */
+			break;
 		default:
 			if (!instruction_trace) {
 				fatal("cpu%i @ %016llx: %02x%02x%02x%02x%s\t",
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
-			fatal("unimplemented special6 = %02x\n", special6);
+			fatal("unimplemented special6 = 0x%02x\n", special6);
 			cpu->running = 0;
 			return 0;
 		}
@@ -1511,6 +1525,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	case HI6_LW:
 	case HI6_LWU:
 	case HI6_LD:
+	case HI6_LQ_MDMX:
 	case HI6_LWC1:
 	case HI6_LWC2:
 	case HI6_LWC3:
@@ -1522,6 +1537,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 	case HI6_SH:
 	case HI6_SW:
 	case HI6_SD:
+	case HI6_SQ:
 	case HI6_SC:
 	case HI6_SCD:
 	case HI6_SWC1:
@@ -1580,6 +1596,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (hi6 == HI6_LW)	instr_mnem = "lw";
 			if (hi6 == HI6_LWU)	instr_mnem = "lwu";
 			if (hi6 == HI6_LD)	instr_mnem = "ld";
+			if (hi6 == HI6_LQ_MDMX)	instr_mnem = "lq";	/*  R5900 only, otherwise MDMX (TODO)  */
 			if (hi6 == HI6_LWC1)	instr_mnem = "lwc1";
 			if (hi6 == HI6_LWC2)	instr_mnem = "lwc2";
 			if (hi6 == HI6_LWC3)	instr_mnem = "pref";	/* "lwc3"; */
@@ -1595,6 +1612,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			if (hi6 == HI6_SH)	instr_mnem = "sh";
 			if (hi6 == HI6_SW)	instr_mnem = "sw";
 			if (hi6 == HI6_SD)	instr_mnem = "sd";
+			if (hi6 == HI6_SQ)	instr_mnem = "sq";	/*  R5900 ?  */
 			if (hi6 == HI6_SC)	instr_mnem = "sc";
 			if (hi6 == HI6_SCD)	instr_mnem = "scd";
 			if (hi6 == HI6_SWC1)	instr_mnem = "swc1";
@@ -1780,6 +1798,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		case HI6_LW:
 		case HI6_LWU:
 		case HI6_LD:
+		case HI6_LQ_MDMX:
 		case HI6_LWC1:
 		case HI6_LWC2:
 		case HI6_LWC3:	/*  pref  */
@@ -1791,6 +1810,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 		case HI6_SH:
 		case HI6_SW:
 		case HI6_SD:
+		case HI6_SQ:
 		case HI6_SC:
 		case HI6_SCD:
 		case HI6_SWC1:
@@ -1809,6 +1829,9 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 
 			case HI6_LD:	{ wlen = 8; st = 0; signd = 0; }  break;
 			case HI6_SD:	{ wlen = 8; st = 1; signd = 0; }  break;
+
+			case HI6_LQ_MDMX:	{ wlen = 16; st = 0; signd = 0; }  break;	/*  R5900, otherwise MDMX (TODO)  */
+			case HI6_SQ:		{ wlen = 16; st = 1; signd = 0; }  break;	/*  R5900 ?  */
 
 			/*  The rest:  */
 			case HI6_LH:	{ wlen = 2; st = 0; signd = 1; }  break;
@@ -2368,6 +2391,8 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			 *  it uses register rd instead of hi/lo.
 			 *  TODO
 			 */
+			if (instruction_trace)
+				debug("madd\tr(r%i,)r%i,r%i\n", rd, rs, rt);
 			{
 				int32_t a, b;
 				int64_t c;
@@ -2383,6 +2408,41 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 					cpu->hi = (int64_t)((int32_t)(c >> 32));
 				}
 			}
+			break;
+		case SPECIAL2_PMFHI:
+			/*
+			 *  This is just a guess for R5900, I've not found any docs on this one yet.
+			 *
+			 *	pmfhi/pmflo rd
+			 *
+			 *  If the lowest 8 bits of the instruction word are 0x09, it's a pmfhi.
+			 *  If the lowest bits are 0x49, it's a pmflo.
+			 *
+			 *  A wild guess is that this is a 128-bit version of mfhi/mflo.
+			 *  For now, this is implemented as 64-bit only.  (TODO)
+			 */
+			if (instr[0] == 0x49) {
+				if (instruction_trace)
+					debug("pmflo\tr%i rs=%i\n", rd);
+				cpu->gpr[rd] = cpu->lo;
+			} else {
+				if (instruction_trace)
+					debug("pmfhi\tr%i rs=%i\n", rd);
+				cpu->gpr[rd] = cpu->hi;
+			}
+			break;
+		case SPECIAL2_POR:
+			/*
+			 *  This is just a guess for R5900, I've not found any docs on this one yet.
+			 *
+			 *	por dst,src,src2  ==> special_2 = 0x29, rs=src rt=src2 rd=dst
+			 *
+			 *  A wild guess is that this is a 128-bit "or" between two registers.
+			 *  For now, let's just or using 64-bits.  (TODO)
+			 */
+			if (instruction_trace)
+				debug("por\tr%i,r%i,r%i\n", rd, rs, rt);
+			cpu->gpr[rd] = cpu->gpr[rs] | cpu->gpr[rt];
 			break;
 		case SPECIAL2_MOV_XXX:		/*  Undocumented  TODO  */
 			/*  What in the world does this thing do? And what is rs?  */
@@ -2403,7 +2463,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 				    cpu->cpu_id, cpu->pc_last,
 				    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 			}
-			fatal("unimplemented special_2 = %02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
+			fatal("unimplemented special_2 = 0x%02x, rs=0x%02x rt=0x%02x rd=0x%02x\n",
 			    special6, rs, rt, rd);
 			cpu->running = 0;
 			return 0;
@@ -2415,7 +2475,7 @@ int cpu_run_instr(struct cpu *cpu, long *instrcount)
 			    cpu->cpu_id, cpu->pc_last,
 			    instr[3], instr[2], instr[1], instr[0], cpu_flags(cpu));
 		}
-		fatal("unimplemented hi6 = %02x\n", hi6);
+		fatal("unimplemented hi6 = 0x%02x\n", hi6);
 		cpu->running = 0;
 		return 0;
 	}

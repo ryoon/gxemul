@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.111 2004-11-24 05:53:19 debug Exp $
+ *  $Id: memory.c,v 1.112 2004-11-24 08:53:26 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1194,12 +1194,21 @@ into the devices  */
 
 #ifdef BINTRANS
 				if (mem->dev_flags[i] & MEM_BINTRANS_OK) {
+					int wf = writeflag == MEM_WRITE? 1 : 0;
+
 					if (cpu->emul->bintrans_enable && writeflag) {
 						if (paddr < cpu->mem->dev_bintrans_write_low[i])
 						    cpu->mem->dev_bintrans_write_low[i] = paddr;
 						if (paddr > cpu->mem->dev_bintrans_write_high[i])
 						    cpu->mem->dev_bintrans_write_high[i] = paddr;
 					}
+
+					if (!(mem->dev_flags[i] & MEM_BINTRANS_WRITE_OK))
+						wf = 0;
+
+					update_translation_table(cpu, vaddr & ~0xfff,
+					    cpu->mem->dev_bintrans_data[i] + (paddr & ~0xfff),
+					    wf);
 				}
 #endif
 
@@ -1387,6 +1396,9 @@ no_exception_access:
 
 	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
 
+	update_translation_table(cpu, vaddr & ~0xfff,
+	    memblock + (offset & ~0xfff), writeflag == MEM_WRITE? 1 : 0);
+
 	if (writeflag == MEM_WRITE) {
 #ifdef BINTRANS
 		if (cpu->emul->bintrans_enable)
@@ -1434,7 +1446,9 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 	uint64_t *low, uint64_t *high)
 {
 #ifdef BINTRANS
-	int i, j;
+	int i;
+	size_t s;
+	int need_inval = 0;
 
 	/*  TODO: This is O(n), so it might be good to rewrite it some day.
 	    For now, it will be enough, as long as this function is not
@@ -1442,6 +1456,8 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 
 	for (i=0; i<mem->n_mmapped_devices; i++) {
 		if (mem->dev_extra[i] == extra) {
+			if (mem->dev_bintrans_write_low[i] != (uint64_t) -1)
+				need_inval = 1;
 			if (low != NULL)
 				*low = mem->dev_bintrans_write_low[i];
 			mem->dev_bintrans_write_low[i] = (uint64_t) -1;
@@ -1450,22 +1466,22 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 				*high = mem->dev_bintrans_write_high[i];
 			mem->dev_bintrans_write_high[i] = 0;
 
+			if (!need_inval)
+				return;
+
 			/*  Invalidate any pages of this device that might
 			    be in the bintrans load/store cache:  */
 
-			/*  TODO  */
-/* Rewrite using the new system  */
-#if 0
-			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
-				size_t r;
-				r = (size_t)mem->dev_bintrans_data[i];
+			/*  TODO: This only works for R3000-style physical addresses!  */
 
-				r = (size_t)cpu->bintrans_data_hostpage[j] - r;
-				if (r < mem->dev_length[i])
-					cpu->bintrans_data_hostpage[j] = NULL;
-
+			for (s=0; s<mem->dev_length[i]; s+=4096) {
+				update_translation_table(cpu,
+				    (size_t)mem->dev_baseaddr[i] + s + 0x80000000ULL,
+				    NULL, 0);
+				update_translation_table(cpu,
+				    (size_t)mem->dev_baseaddr[i] + s + 0xa0000000ULL,
+				    NULL, 0);
 			}
-#endif
 
 			return;
 		}

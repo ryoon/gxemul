@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.157 2004-11-24 05:53:18 debug Exp $
+ *  $Id: misc.h,v 1.158 2004-11-24 08:53:25 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -554,6 +554,14 @@ struct r4000_cache_line {
 #define	N_SAFE_BINTRANS_LIMIT_SHIFT	14
 #define	N_SAFE_BINTRANS_LIMIT		((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
 
+
+/*  Virtual to host address translation tables:  */
+struct vth32_table {
+	void	*entry[1024];
+	int	refcount;
+};
+
+
 struct cpu {
 	int		byte_order;
 	int		running;
@@ -626,12 +634,10 @@ struct cpu {
 	unsigned char	*chunk_base_address;
 
 	/*  This should work for 32-bit MIPS emulation:  */
-	void		**vaddr_to_hostaddr_nulltable;
-	void		**vaddr_to_hostaddr_tbl0;
-	void		**vaddr_to_hostaddr_tbl1[64];
-	int		vaddr_to_hostaddr_tbl1_freelist[64];
-	int		vaddr_to_hostaddr_tbl1_refcount[64];
-	int		vaddr_to_hostaddr_tbl1_freelist_head;
+	struct vth32_table *vaddr_to_hostaddr_nulltable;
+	struct vth32_table **vaddr_to_hostaddr_table0_kernel;
+	struct vth32_table **vaddr_to_hostaddr_table0_user;
+	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
 
 	void		(*bintrans_fast_rfe)(struct cpu *);
 	void		(*bintrans_fast_eret)(struct cpu *);
@@ -952,6 +958,8 @@ void arcbios_set_64bit_mode(int enable);
 
 /*  coproc.c:  */
 struct coproc *coproc_new(struct cpu *cpu, int coproc_nr);
+void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag);
 void coproc_register_read(struct cpu *cpu,
 	struct coproc *cp, int reg_nr, uint64_t *ptr);
 void coproc_register_write(struct cpu *cpu,

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.82 2004-11-24 05:53:19 debug Exp $
+ *  $Id: bintrans.c,v 1.83 2004-11-24 08:53:26 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -816,22 +816,20 @@ void bintrans_init_cpu(struct cpu *cpu)
 	switch (cpu->cpu_type.mmu_model) {
 	case MMU3K:
 		cpu->vaddr_to_hostaddr_nulltable =
-		    zeroed_alloc(1024 * sizeof(void *));
+		    zeroed_alloc(sizeof(struct vth32_table));
 
-		cpu->vaddr_to_hostaddr_tbl0 =
-		    zeroed_alloc(1024 * sizeof(void *));
+		cpu->vaddr_to_hostaddr_table0_kernel =
+		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+		cpu->vaddr_to_hostaddr_table0_user =
+		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
 
-		for (i=0; i<1024; i++)
-			cpu->vaddr_to_hostaddr_tbl0[i] = cpu->vaddr_to_hostaddr_nulltable;
-
-		for (i=0; i<64; i++) {
-			cpu->vaddr_to_hostaddr_tbl1[i] =
-			    zeroed_alloc(1024 * sizeof(void *));
-			cpu->vaddr_to_hostaddr_tbl1_freelist[i] =
-			    i == 63? -1 : i+1;
-			cpu->vaddr_to_hostaddr_tbl1_refcount[i] = 0;
+		for (i=0; i<1024; i++) {
+			cpu->vaddr_to_hostaddr_table0_kernel[i] = cpu->vaddr_to_hostaddr_nulltable;
+			cpu->vaddr_to_hostaddr_table0_user[i] = cpu->vaddr_to_hostaddr_nulltable;
 		}
-		cpu->vaddr_to_hostaddr_tbl1_freelist_head = 0;
+
+		cpu->vaddr_to_hostaddr_table0 = cpu->vaddr_to_hostaddr_table0_kernel;
+
 		break;
 	}
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.57 2004-11-24 05:53:19 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.58 2004-11-24 08:53:26 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1284,6 +1284,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  t1 = 1023;
 	 *  t2 = (a1 >> 22) & t1;
 	 *  t3 = (a1 >> 12) & t1;
+	 *  t1 = a1 & 4095;
 	 *
 	 *  ff 03 5f 20     lda     t1,1023
 	 *  83 d6 22 4a     srl     a1,22,t2
@@ -1292,6 +1293,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  04 00 82 44     and     t3,t1,t3
 	 *  23 77 60 48     sll     t2,0x3,t2
 	 *  24 77 80 48     sll     t3,0x3,t3
+	 *  ff 0f 5f 20     lda     t1,4095
 	 *  02 00 22 46     and     a1,t1,t1
 	 */
 	*a++ = 0xff; *a++ = 0x03; *a++ = 0x5f; *a++ = 0x20;
@@ -1301,10 +1303,11 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	*a++ = 0x04; *a++ = 0x00; *a++ = 0x82; *a++ = 0x44;
 	*a++ = 0x23; *a++ = 0x77; *a++ = 0x60; *a++ = 0x48;
 	*a++ = 0x24; *a++ = 0x77; *a++ = 0x80; *a++ = 0x48;
+	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x5f; *a++ = 0x20;
 	*a++ = 0x02; *a++ = 0x00; *a++ = 0x22; *a++ = 0x46;
 
 	/*
-	 *  a2 = vaddr_to_hostaddr_tbl0
+	 *  a2 = vaddr_to_hostaddr_table0
 	 *  a3 = tbl0[t2]  (load entry from tbl0)
 	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
 	 *
@@ -1314,7 +1317,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	 *  13 04 64 42     addq    a3,t3,a3
 	 *  00 00 73 a6     ldq     a3,0(a3)
 	 */
-	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_tbl0) - (size_t)&dummy_cpu;
+	ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
 	*a++ = ofs&255; *a++ = ofs>>8; *a++ = 0x50; *a++ = 0xa6;
 	*a++ = 0x12; *a++ = 0x04; *a++ = 0x43; *a++ = 0x42;
 	*a++ = 0x00; *a++ = 0x00; *a++ = 0x72; *a++ = 0xa6;
@@ -1330,9 +1333,33 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	bintrans_write_chunkreturn_fail(&a);
 	*fail = ((size_t)a - (size_t)fail - 4) / 4;
 
+	/*
+	 *  If this is a store, then the lowest bit must be set:
+	 */
+	if (!load) {
+		/*  01 30 60 46     and     a3,0x1,t0  */
+		/*  01 00 20 f4     bne     t0,<okzzz>  */
+		*a++ = 0x01; *a++ = 0x30; *a++ = 0x60; *a++ = 0x46;
+		fail = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+		bintrans_write_chunkreturn_fail(&a);
+		*fail = ((size_t)a - (size_t)fail - 4) / 4;
+	}
 
+/*if (!load)
+ bintrans_write_chunkreturn_fail(&a);
+*/
 
-bintrans_write_chunkreturn_fail(&a);
+	/*
+	 *  The rest of this code was written with t3 as the address.
+	 *
+	 *  fc ff 7f 20     lda     t2,-4	Get rid of the two
+	 *  04 00 63 46     and     a3,t2,t3	lowest bits, and add
+	 *  04 04 82 40     addq    t3,t1,t3	the offset within the page.
+	 */
+	*a++ = 0xfc; *a++ = 0xff; *a++ = 0x7f; *a++ = 0x20;
+	*a++ = 0x04; *a++ = 0x00; *a++ = 0x63; *a++ = 0x46;
+	*a++ = 0x04; *a++ = 0x04; *a++ = 0x82; *a++ = 0x40;
 
 
 

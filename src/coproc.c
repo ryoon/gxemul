@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.101 2004-11-24 05:53:19 debug Exp $
+ *  $Id: coproc.c,v 1.102 2004-11-24 08:53:26 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -298,6 +298,52 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 
 /*
+ *  update_translation_table():
+ */
+void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
+	unsigned char *host_page, int writeflag)
+{
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		int a, b;
+		struct vth32_table *tbl1;
+		void *p;
+
+if ((vaddr_page & 0xc0000000) != 0x80000000)
+	return;
+
+		switch (cpu->cpu_type.mmu_model) {
+		case MMU3K:
+			a = (vaddr_page >> 22) & 0x3ff;
+			b = (vaddr_page >> 12) & 0x3ff;
+/*			printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);
+*/			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+/*			printf("tbl1 = %p\n", tbl1);
+*/			if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
+				/*  Allocate a new table1:  */
+				printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
+				    a << 22, (a << 22) + 0x3fffff);
+				tbl1 = zeroed_alloc(sizeof(struct vth32_table));
+				cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
+			}
+			p = tbl1->entry[b];
+			/* printf("   p = %p\n", p); */
+			if (p == NULL) {
+				tbl1->refcount ++;
+/*				printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
+				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);
+*/			}
+			tbl1->entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+			break;
+		default:
+			;
+		}
+	}
+#endif
+}
+
+
+/*
  *  invalidate_translation_caches():
  *
  *  This is neccessary for every change to the TLB, and when the ASID is
@@ -307,24 +353,29 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 static void invalidate_translation_caches(struct cpu *cpu,
 	int all, uint64_t vaddr, int kernelspace)
 {
-printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
-
+/*printf("inval(all=%i,kernel=%i,addr=%016llx)\n",all,kernelspace,(long long)vaddr);
+*/
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int a, b;
-		void **tbl1;
+		struct vth32_table *tbl1;
 		void *p;
 
 		switch (cpu->cpu_type.mmu_model) {
 		case MMU3K:
 			a = (vaddr >> 22) & 0x3ff;
 			b = (vaddr >> 12) & 0x3ff;
+/*
 			printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
-			tbl1 = cpu->vaddr_to_hostaddr_tbl0[a];
-			printf("tbl1 = %p\n", tbl1);
-			p = tbl1[b];
-			printf("   p = %p\n", p);
-
+*/
+			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+/*			printf("tbl1 = %p\n", tbl1); */
+			p = tbl1->entry[b];
+/*			printf("   p = %p\n", p);
+*/			if (p != NULL) {
+				printf("Found a mapping :-)\n");
+				exit(1);
+			}
 			break;
 		default:
 			;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.275 2005-01-15 08:37:07 debug Exp $
+ *  $Id: machine.c,v 1.276 2005-01-16 06:14:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3466,14 +3466,14 @@ config[77] = 0x30;
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "monitor=h", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "TimeZone=PST8PDT", &addr);
+			add_environment_string(cpu, "TimeZone=GMT", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "nogfxkbd=1", &addr);
 
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "SystemPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(8)", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
-			add_environment_string(cpu, "OSLoadPartition=OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)", &addr);
+			add_environment_string(cpu, "OSLoadPartition=pci(0)scsi(0)disk(2)rdisk(0)partition(0)", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "OSLoadFilename=/unix", &addr);
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));

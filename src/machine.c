@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.359 2005-02-23 22:08:20 debug Exp $
+ *  $Id: machine.c,v 1.360 2005-02-24 13:54:21 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4014,6 +4014,25 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_PREP:
+		/*
+		 *  NetBSD/prep (http://www.netbsd.org/Ports/prep/)
+		 */
+		machine->machine_name = "PowerPC Reference Platform";
+
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.ppc.gpr[i] =
+				    0x12340000 + (i << 8) + 0x55;
+		}
+
+		/*  r6 should point to "residual data"?  */
+		cpu->cd.ppc.gpr[6] = machine->physical_ram_in_mb * 1048576
+		    - 0x1000;
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4257,6 +4276,10 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_BEBOX:
 		/*  For NetBSD/bebox. Dual 133 MHz 603e CPUs, for example.  */
+		m->cpu_name = strdup("PPC603e");
+		break;
+	case MACHINE_PREP:
+		/*  For NetBSD/prep. TODO  */
 		m->cpu_name = strdup("PPC603e");
 		break;
 
@@ -4569,6 +4592,14 @@ void machine_init(void)
 	me->subtype[8] = machine_entry_subtype_new("IP35", 35, 1);
 	me->subtype[8]->aliases[0] = "ip35";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  PReP: (NetBSD/prep etc.)  */
+	me = machine_entry_new("PowerPC Reference Platform", ARCH_PPC,
+	    MACHINE_PREP, 1, 0);
+	me->aliases[0] = "prep";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

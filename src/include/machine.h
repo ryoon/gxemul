@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.30 2005-02-22 06:43:10 debug Exp $
+ *  $Id: machine.h,v 1.31 2005-02-24 13:54:20 debug Exp $
  */
 
 #include <sys/types.h>
@@ -221,6 +221,7 @@ struct machine {
 #define	MACHINE_PMPPC		102
 #define	MACHINE_SANDPOINT	103
 #define	MACHINE_BEBOX		104
+#define	MACHINE_PREP		105
 
 /*  SPARC:  */
 #define	MACHINE_ULTRA1		200

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.39 2005-02-23 22:18:08 debug Exp $
+$Id: experiments.html,v 1.40 2005-02-24 13:54:20 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -711,6 +711,21 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
 	<br>$ <b>./mips64emul -E sandpoint -v -t netbsd-INSTALL</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>PReP:
+    <ul>
+      <li><a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a>:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz</a>
+	<br>gunzip, and try the following:
+	<br>$ <b>./mips64emul -E prep -v -t netbsd-INSTALL</b>
+      <p>
+      <li>Linux:
+	<br><a href="http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux">http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux</a>
+	<br>$ <b>./mips64emul -E prep -v -t vmlinux</b>
     </ul>
   </li>
 

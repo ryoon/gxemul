@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.12 2004-01-10 05:41:35 debug Exp $
+ *  $Id: memory.c,v 1.13 2004-01-14 06:09:01 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -591,6 +591,13 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
+
+#if 0
+/*  Irix weirdness  */
+if ((vaddr & 0xffffffff) == 0xc1806794)
+	printf("pc = %016llx\n", (long long)cpu->pc);
+#endif
+
 
 #if 0
 	if (emulation_type == EMULTYPE_DEC && !no_exceptions)

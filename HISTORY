@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.149 2004-07-10 14:42:01 debug Exp $
+$Id: HISTORY,v 1.150 2004-07-11 00:29:41 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -736,3 +736,12 @@ HISTORY of mips64emul
 		switching between processes in some occasions without actually
 		_writing_ to the TLB, and I had forgotten to invalidate the
 		tiny cache on such a change.
+20040711(early)	I've been trying to repeat the OpenBSD install from yesterday,
+		but appart from the first initial install (which was
+		successful), I've only been able to do one more. Several
+		attempts have failed with a filesystem panic in the middle
+		of install. I'm not sure why.
+20040711	I found the "bug": wget downloaded the simpleroot28.fs.gz file
+		as read-only, and gunzip preserved those flags. Thus, OpenBSD's
+		installer crashed as it didn't get its writes through to the
+		disk.

@@ -181,7 +181,7 @@ of its portability. Then try to compile the hello world program:
 As you can see above, a GCC configured for mips64-unknown-elf can produce
 both 64-bit and 32-bit binaries.
 <p>
-Hopefully this is enough to get you inspired to start. :-)
+Hopefully this is enough to get you inspired. :-)
 
 
 <p><br>
@@ -251,17 +251,17 @@ ROM images from other machines might work as well, but ROM code is
 usually much more sensitive to correctness of the emulator than
 operating system kernels or userland programs are.
 <p>
-The image first needs to be extracted from the machine. (I presume
+The image first needs to be extracted from the machine. I presume
 that these PROMs are not legal to redistribute, so you really need
-to get your dump from a real machine in your possession.) There are
+to extract the PROM from a physical machine that you own. There are
 several ways to do this.
 <ul>
-  <li>Use hardware to read the PROM chip directly. (Not easy if you
-	don't have such a hardware reader.)
+  <li>Use hardware to read the PROM chip(s) directly. Not easy if you
+	don't have such a hardware reader.
   <li>Copy the PROM memory range into a file, from a running
-	operating system. (You need a running OS, and it must
+	operating system. You need a running OS, and it must
 	have access to the PROM memory range. NetBSD, for example,
-	doesn't allow that from userland.)
+	doesn't allow that from userland.
   <li>Hook up a serial console and dump using the PROM's own dump
 	command.
 </ul>
@@ -350,7 +350,7 @@ That's because the emulator doesn't emulate the hardware well enough yet.
 The command line options used are:
 -D3 for DECstation model 3 (5000/xxx), -Q to supress the emulator's own PROM
 call emulation, -M128 for 128MB RAM (because mips64emul doesn't correctly
-emulate memory detection good enough for the PROM to accept, so it will
+emulate memory detection well enough for the PROM to accept, so it will
 always believe there is 128MB ram anyway), and -q to supress debug messages.
 The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
 binary file which should be loaded at a specific virtual address.

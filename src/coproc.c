@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.21 2004-03-22 00:54:58 debug Exp $
+ *  $Id: coproc.c,v 1.22 2004-03-24 02:45:18 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -467,7 +467,14 @@ fatal("xcontext 0x%016llx\n", tmp);
 		unimpl = 0;
 	}
 
+	/*  Most of these are actually TODOs:  */
 	if (cp->coproc_nr==0 && reg_nr==COP0_ERROREPC)
+		unimpl = 0;
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_DEPC)
+		unimpl = 0;
+
+	if (cp->coproc_nr==0 && reg_nr==COP0_PERFCNT)
 		unimpl = 0;
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_ERRCTL) {

@@ -28,18 +28,45 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.h,v 1.1 2005-03-09 07:26:58 debug Exp $
+ *  $Id: cpu_hppa.h,v 1.2 2005-03-09 17:11:03 debug Exp $
  */
 
 #include "misc.h"
 
+#define	N_HPPA_GRS		32
 
 struct cpu_family;
 
 struct hppa_cpu {
-	int		dummy;
+	int		bits;
+	uint64_t	pc_last;
+	uint64_t	gr[N_HPPA_GRS];
 };
 
+
+/*
+ *  Why on earth did they make it this way? Hm. See Appendix E in the HPPA 2.0
+ *  specs for more info. This is insane.
+ *
+ *	assemble_21(x) = x[20],x[9..19],x[5..6],x[0..4],x[7..8]
+ *
+ *  Written in the normal way, where bit 0 is the lowest:
+ *
+ *	asm_21(x) = x[0],x[11..1],x[15..14],x[20..16],x[13..12]
+ *
+ *  That is:
+ *
+ *	    bits   0,11,10, 9, 8, 7, 6, 5, 4, 3, 2,1,15,14,20,19,18,17,16,13,12
+ *      positions 20,19,18,17,16,15,14,13,12,11,10,9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+ *
+ *  YUCK!
+ */
+#define	assemble_21(x) (			\
+	(((x) & 1) << 20) |			\
+	((((x) >> 1) & 0x7ff) << 9) |		\
+	((((x) >> 14) & 3) << 7) |		\
+	((((x) >> 16) & 0x1f) << 2) |		\
+	(((x) >> 12) & 3)			)
 
 /*  cpu_hppa.c:  */
 int hppa_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,

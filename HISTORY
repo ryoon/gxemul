@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.117 2004-06-30 08:23:51 debug Exp $
+$Id: HISTORY,v 1.118 2004-06-30 08:32:32 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -631,5 +631,6 @@ HISTORY of mips64emul
 		The pixels in the mouse cursor (for BT459) are now colored
 		as the emulated OS sets them, although no transparency
 		masking is done on the edges of the cursor yet. (In plain
-		English:  the mouse cursor is no longer just a white
-		square, you can actually see the mouse cursor image.)
+		English:  the mouse cursor is no longer just a white solid
+		square, you can actually see the mouse cursor image
+		on the white square.)

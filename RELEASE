@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.56 2004-11-29 14:14:52 debug Exp $
+$Id: RELEASE,v 1.57 2004-12-01 09:41:50 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -33,7 +33,7 @@ combinations as possible of the following must be tested:
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.X
+Release notes for mips64emul 0.2.3
 ==================================
 
 Copyright (C) 2003-2004  Anders Gavare.

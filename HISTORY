@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.341 2004-12-01 08:02:48 debug Exp $
+$Id: HISTORY,v 1.342 2004-12-01 09:41:50 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1218,3 +1218,4 @@ HISTORY of mips64emul
 		MIPS emulation, which are fast on i386, for example only
 		updating half of the pc register).
 20041201	More updates to the i386 backend, similar to those yesterday.
+		Preparing for release 0.2.3.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.63 2005-02-01 08:26:36 debug Exp $
+ *  $Id: file.c,v 1.64 2005-02-01 11:49:30 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -63,7 +63,7 @@ static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
 	"MIPS", "S370", "MIPS_RS3_LE", "RS6000",		/*  8..11  */
 	"unknown12", "unknown13", "unknown14", "PARISC",	/*  12..15  */
 	"NCUBE", "VPP500", "SPARC32PLUS", "960",		/*  16..19  */
-	"PPC", "unknown21", "unknown22", "unknown23",		/*  20..23  */
+	"PPC", "PPC64", "unknown22", "unknown23",		/*  20..23  */
 	"unknown24", "unknown25", "unknown26", "unknown27",	/*  24..27  */
 	"unknown28", "unknown29", "unknown30", "unknown31",	/*  28..31  */
 	"unknown32", "unknown33", "unknown34", "unknown35",	/*  32..35  */
@@ -928,6 +928,7 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 	case ARCH_PPC:
 		switch (emachine) {
 		case EM_PPC:
+		case EM_PPC64:
 			ok = 1;
 			memory_rw_flags |= PHYSICAL;
 		}

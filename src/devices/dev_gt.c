@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.8 2004-01-06 14:28:02 debug Exp $
+ *  $Id: dev_gt.c,v 1.9 2004-01-14 06:11:00 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -45,6 +45,7 @@
 struct gt_data {
 	int	reg[8];
 	int	irqnr;
+	int	pciirq;
 
 	struct pci_data *pci_data;
 };
@@ -144,7 +145,7 @@ void pci_gt_init(struct cpu *cpu, struct memory *mem)
  *  the caller may add PCI devices.  First, however, we add the GT device
  *  itself.
  */
-struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pciirq)
 {
 	struct gt_data *d;
 
@@ -154,8 +155,9 @@ struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct gt_data));
-	d->irqnr = irq_nr;
-	d->pci_data = bus_pci_init(mem);
+	d->irqnr    = irq_nr;
+	d->pciirq   = pciirq;
+	d->pci_data = bus_pci_init(mem, pciirq);
 
 	/*
 	 *  According to NetBSD/cobalt:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.89 2004-07-04 01:41:26 debug Exp $
+ *  $Id: cpu.c,v 1.90 2004-07-04 03:56:31 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1558,7 +1558,7 @@ int cpu_run_instr(struct cpu *cpu)
 			}
 			break;
 		case SPECIAL_SYNC:
-			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);	/*  stype  */
+			stype = ((instr[1] & 7) << 2) + (instr[0] >> 6);
 			if (instruction_trace)
 				debug("sync\t0x%02x\n", stype);
 			/*  TODO: actually sync  */
@@ -2107,12 +2107,19 @@ int cpu_run_instr(struct cpu *cpu)
 				} else if (wlen == 1) {
 					d[0] = value & 0xff;
 				} else {
-					if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-						for (i=0; i<wlen; i++)
-							d[i] = (value >> (i*8)) & 255;
+					/*  General case:  */
+					uint64_t v = value;
+					if (cpu->byte_order ==
+					    EMUL_LITTLE_ENDIAN)
+						for (i=0; i<wlen; i++) {
+							d[i] = v & 255;
+							v >>= 8;
+						}
 					else
-						for (i=0; i<wlen; i++)
-							d[i] = (value >> ((wlen-1-i)*8)) & 255;
+						for (i=0; i<wlen; i++) {
+							d[wlen-i] = v & 255;
+							v >>= 8;
+						}
 				}
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
 				if (!success) {

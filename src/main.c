@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.56 2004-07-16 18:19:45 debug Exp $
+ *  $Id: main.c,v 1.57 2004-07-25 23:56:36 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -202,6 +202,7 @@ void usage(char *progname)
 	printf("  -i        display each instruction as it is executed\n");
 	printf("  -J        disable speed tricks\n");
 	printf("  -j name   set the name of the kernel  (default = \"netbsd\")\n");
+	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j netbsd.pmax     for the NetBSD/pmax 1.6.2 install CD\n");
 	printf("                -j vmunix          for Ultrix  (REQUIRED to boot Ultrix)\n");
 	printf("  -M m      emulate m MBs of physical RAM  (default = %i)\n", DEFAULT_RAM_IN_MB);

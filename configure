@@ -1,11 +1,11 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.40 2004-07-25 22:54:24 debug Exp $
+#  $Id: configure,v 1.41 2004-07-25 23:56:34 debug Exp $
 #
-#  This is a minimal configure script for mips64emul. This script figures out
-#  which compiler flags will work, and creates Makefiles in subdirs. A config.h
-#  is also created.
+#  This is a minimal configure script, hardcoded for mips64emul. This script
+#  figures out which compiler flags will work, and creates Makefiles in
+#  sub directories. A config.h file is also created.
 #
 #
 #  --->   FOR NORMAL USE, JUST RUN ./configure WITHOUT OPTIONS!
@@ -136,27 +136,36 @@ echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
 
 
 #  Try to detect which C compiler to use, if CC is not set:
+printf "checking which C compiler to use... "
 if [ z"$CC" = z ]; then
 	CC=cc
 
-	gcc _testprog.c -o _testprog > /dev/null 2> /dev/null
+	printf "#!/bin/sh\ngcc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC=gcc
 	fi
 	rm -f _testprog
 
-	cc _testprog.c -o _testprog > /dev/null 2> /dev/null
+	printf "#!/bin/sh\ncc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC=cc
 	fi
 	rm -f _testprog
 
-	ccc _testprog.c -o _testprog > /dev/null 2> /dev/null
+	printf "#!/bin/sh\nccc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
+	./_test.sh > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC="ccc"
 	fi
 	rm -f _testprog
+
+	rm -f _test.sh
 fi
+
+
+printf "$CC\n"
 
 
 if $CC -V 2> /dev/null | grep ompaq 1> /dev/null 2> /dev/null; then
@@ -165,6 +174,8 @@ fi
 
 
 if [ z$NOX11 = z ]; then
+	printf "checking for X11 headers and libs\n"
+
 	#  Try to compile a small X11 test program:
 	printf "#include <X11/Xlib.h>
 	#include <stdio.h>
@@ -207,8 +218,8 @@ if [ z$NOX11 = z ]; then
 	if [ z$XOK = z0 ]; then
 		echo Failed to compile X11 test program. Configuring without X11.
 	else
-		echo X11 includes: $XINCLUDE
-		echo X11 libraries: $XLIB
+		printf "X11 headers: $XINCLUDE\n"
+		printf "X11 libraries: $XLIB\n"
 		echo "XINCLUDE=$XINCLUDE" >> _Makefile.header
 		echo "XLIB=$XLIB" >> _Makefile.header
 		printf "#define WITH_X11\n" >> config.h
@@ -219,19 +230,24 @@ fi
 
 
 #  CWARNINGS:
+printf "checking whether -Wall can be used... "
 $CC _testprog.c -o _testprog -Wall 2> /dev/null
 if [ -x _testprog ]; then
+	printf "yes\n"
 	CWARNINGS="-Wall $CWARNINGS"
 
 	#  Compaq's compiler always seems to warn about the long long type:
 	if [ z"$COMPAQCC" = zYES ]; then
 		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
 	fi
+else
+	printf "no\n"
 fi
 rm -f _testprog
 
 
 #  -lrt for nanosleep?
+printf "checking whether -lrt is required for nanosleep... "
 printf "#include <time.h>\n#include <stdio.h>
 int main(int argc, char *argv[]){nanosleep(NULL,NULL);return 0;}\n" > _testns.c
 $CC _testns.c -o _testns 2> /dev/null
@@ -242,12 +258,16 @@ if [ ! -x _testns ]; then
 	else
 		#  -lrt for nanosleep
 		OTHERLIBS="-lrt $OTHERLIBS"
+		printf "yes\n"
 	fi
+else
+	printf "no\n"
 fi
 rm -f _testns.c _testns
 
 
 #  -lresolv for inet_aton?
+printf "checking whether -lresolv is required for inet_aton... "
 printf "extern void (*inet_aton)(void); int main(int argc, char *argv[]) { void *x; x = inet_aton; return 0; }\n" > _testr.c
 $CC _testr.c -o _testr 2> /dev/null
 if [ ! -x _testr ]; then
@@ -257,12 +277,16 @@ if [ ! -x _testr ]; then
 	else
 		#  -lresolv for inet_aton
 		OTHERLIBS="-lresolv $OTHERLIBS"
+		printf "yes\n"
 	fi
+else
+	printf "no\n"
 fi
 rm -f _testr.c _testr
 
 
 #  strtoll/strtoull missing?
+printf "checking for strtoll... "
 printf "#include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
@@ -270,11 +294,14 @@ int main(int argc, char *argv[]) {
   long long x = strtoll(argv[1], NULL, 0); return 0;}\n" > _tests.c
 $CC _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
+	printf "missing\n"
 	printf "WARNING! strtoll missing from libc. Hack: using strtoll = strtol and
 strtoull = strtoul. This will only work correctly on a machine where
 sizeof(long long) = sizeof(long)  (luckily, for most 64-bit archs, this is
 the case.\n"
 	printf "#define HACK_STRTOLL\n" >> config.h
+else
+	printf "found, ok\n"
 fi
 rm -f _tests.c _tests
 
@@ -284,6 +311,8 @@ rm -f _tests.c _tests
 #  Dynamic binary translation (BINTRANS):
 #
 #############################################################################
+
+printf "checking for bintrans backend... "
 
 if [ z"`uname -m`" = zalpha ]; then
 	printf "#define ALPHA\n" >> config.h
@@ -298,19 +327,22 @@ if [ z"`uname -m`" = zalpha ]; then
 		printf "#define PREFETCH(x) asm(\"ldl \$31,0(%%0)\" : : \"g\" (x))\n" >> config.h
 	fi
 	rm -f _alpha_asm_test.c _alpha_asm_test
-fi
-
+	printf "alpha\n"
+else
 if [ z"`uname -m`" = zi386 ]; then
 	printf "#define I386\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
-fi
-
-#  TODO: "sun4u" on Solaris, but "sparc64" on BSD?
+	printf "i386\n"
+else
 if [ z"`uname -m`" = zsun4u ]; then
 	printf "#define SPARCV9\n" >> config.h
 	printf "#define BINTRANS\n" >> config.h
+	printf "sparcv9\n"
+else
+	printf "not supported on this arch\n"
 fi
-
+fi
+fi
 
 #############################################################################
 #
@@ -399,39 +431,51 @@ fi
 
 
 #  -fpeephole
-$CC $CFLAGS _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
+printf "checking whether -fpeephole can be used... "
+$CC $CFLAGS -fpeephole _testprog.c -o _testprog > _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
-if grep peephole _testprog.error; then
-	rm -f _testprog.error
+if grep peephole _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
 else
 	if [ -x _testprog ]; then
 		COPTIM="-fpeephole $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -fmove-all-movables
-$CC $CFLAGS -fmove-all-movables _testprog.c -o _testprog 1> _testprog.stdout 2> _testprog.error
+printf "checking whether -fmove-all-movables can be used... "
+$CC $CFLAGS -fmove-all-movables _testprog.c -o _testprog > _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
-if grep movables _testprog.error; then
-	rm -f _testprog.error
+if grep movables _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
 else
 	if [ -x _testprog ]; then
 		COPTIM="-fmove-all-movables $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout
 
 
 #  -fomit-frame-pointer
-$CC $CFLAGS _testprog.c -o _testprog -fomit-frame-pointer 1> _testprog.stdout 2> _testprog.error
+printf "checking whether -fomit-frame-pointer can be used... "
+$CC $CFLAGS -fomit-frame-pointer _testprog.c -o _testprog 1> _testprog.stdout 2>&1
 cat _testprog.stdout >> _testprog.error
-if grep frame _testprog.error; then
-	rm -f _testprog.error
+if grep frame _testprog.error > /dev/null 2>&1; then
+	printf "no\n"
 else
 	if [ -x _testprog ]; then
 		COPTIM="-fomit-frame-pointer $COPTIM"
+		printf "yes\n"
+	else
+		printf "no\n"
 	fi
 fi
 rm -f _testprog _testprog.error _testprog.stdout

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.16 2004-05-24 17:57:54 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.17 2004-06-22 23:30:19 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -175,8 +175,11 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 	 *  on and off. Without this code, booting Linux takes forever:
 	 */
 	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
+#if 0
+	/*  TODO:  solve this more nicely  */
 	if ((random() & 0xff) == 0)
 		mc_data->reg[MC_REGA*4] ^= MC_REGA_UIP;
+#endif
 
 	/*  RTC date/time is in binary, not BCD:  */
 	mc_data->reg[MC_REGB*4] |= (1 << 2);

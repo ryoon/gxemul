@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.144 2004-07-18 13:17:26 debug Exp $
+ *  $Id: machine.c,v 1.145 2004-07-26 02:15:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2118,7 +2118,7 @@ void machine_init(struct memory *mem)
 
 		if (arc_wordlen == sizeof(uint64_t)) {
 			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
 			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
 			store_64bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
 			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
@@ -2131,7 +2131,7 @@ void machine_init(struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
 				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.BasePage, mem_base);
 				store_32bit_word_in_host((unsigned char *)&arcbios_mem64.PageCount, mem_count);
 
@@ -2147,7 +2147,7 @@ void machine_init(struct memory *mem)
 			store_buf(mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 		} else {
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+			store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 			store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
 			store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
@@ -2160,7 +2160,7 @@ void machine_init(struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-				store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 2 : 7);
+				store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
 				store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, mem_base);
 				store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, mem_count);
 

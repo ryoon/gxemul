@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.26 2004-07-17 10:27:19 debug Exp $
+ *  $Id: arcbios.c,v 1.27 2004-07-26 02:15:55 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -662,7 +662,8 @@ void arcbios_emul(struct cpu *cpu)
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A1] + i, &ch, sizeof(ch), MEM_READ, CACHE_NONE);
 			console_putchar(ch);
 		}
-		/*  TODO: store len in returnlen  */
+		store_32bit_word(cpu->gpr[GPR_A3], cpu->gpr[GPR_A2]);
+		cpu->gpr[GPR_V0] = 0;	/*  Success.  */
 		break;
 	case 0x78:		/*  GetEnvironmentVariable(char *)  */
 		/*  Find the environment variable given by a0:  */

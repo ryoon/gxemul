@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: dec_prom.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: dec_prom.h,v 1.3 2005-02-11 22:48:20 debug Exp $  */
 #ifndef __P
 #define	__P(x)		x
 #endif
@@ -187,7 +187,7 @@ extern const struct callback callvec;
 #define disableintr (*callv -> _disableintr)
 #define enableintr (*callv -> _enableintr)
 #define testintr (*callv -> _testintr)
-#define console_init (*callv -> _console_init)
+/* #define console_init (*callv -> _console_init) */
 #define halt (*callv -> _halt)
 #define showfault (*callv -> _showfault)
 #define gettcinfo (*callv -> _gettcinfo)

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.112 2004-12-14 02:21:20 debug Exp $
+ *  $Id: devices.h,v 1.113 2004-12-16 02:11:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -244,9 +244,10 @@ int dev_kn01_csr_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 void dev_kn01_csr_init(struct memory *mem, uint64_t baseaddr, int color_fb);
 
 /*  dev_kn02.c:  */
-#define	DEV_KN02_LENGTH		0x10
+#define	DEV_KN02_LENGTH		0x1000
 struct kn02_csr {
-	uint32_t	csr;
+	uint8_t		csr[sizeof(uint32_t)];
+	uint8_t		filler[4096 - sizeof(uint32_t)];  /*  for bintrans mapping  */
 };
 int dev_kn02_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);

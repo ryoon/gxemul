@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.11 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_kn02.c,v 1.12 2004-12-16 02:11:24 debug Exp $
  *  
  *  DEC (KN02) stuff.  See include/dec_kn02.h for more info.
  */
@@ -52,7 +52,8 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0:
 		if (writeflag==MEM_READ) {
-			odata = d->csr;
+			odata = d->csr[0] + (d->csr[1] << 8) +
+			    (d->csr[2] << 16) + (d->csr[3] << 24);
 			/* debug("[ kn02: read from CSR: 0x%08x ]\n", odata); */
 		} else {
 			/*
@@ -65,8 +66,8 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 			 */
 			/* fatal("[ kn02: write to CSR: 0x%08x ]\n", idata); */
 
-			idata &= 0x00ffff00;
-			d->csr = (d->csr & 0xff0000ffULL) | idata;
+			d->csr[1] = (idata >> 8) & 255;
+			d->csr[2] = (idata >> 16) & 255;
 
 			/*  Recalculate interrupt assertions:  */
 			cpu_interrupt(cpu, 8);
@@ -102,7 +103,7 @@ struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 	memset(d, 0, sizeof(struct kn02_csr));
 
 	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH,
-	    dev_kn02_access, d, MEM_DEFAULT, NULL);
+	    dev_kn02_access, d, MEM_BINTRANS_OK, &d->csr[0]);
 
 	return d;
 }

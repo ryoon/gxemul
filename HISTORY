@@ -402,4 +402,9 @@ HISTORY of mips64emul
 20040321	Some really minor updates.
 20040323	Fixes to allow SGI-IP20 and IP22 to work a bit better
 		(aliased memory), and adding "private" firmware-like vectors
-		to arcbios emul.
+		to arcbios emul. An IP22 Irix kernel gets far enough to
+		print an assertion warning (and then double panics). :-)
+20040324	Adding a generalization hack to the SCC serial controller
+		to work with SGI-IP19 (in addition to DECstations).
+		Adding the 'sdc1' instruction.
+		Some progress on various SGI emulation modes.

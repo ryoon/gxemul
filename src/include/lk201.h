@@ -1,4 +1,6 @@
-/*  mips64emul: $Id: lk201.h,v 1.2 2003-12-04 23:29:06 debug Exp $  */
+/*  mips64emul: $Id: lk201.h,v 1.3 2004-06-22 22:27:13 debug Exp $  */
+
+/*  This file contains two files from netbsd, lk201.h and lk201.c.  */
 
 #ifndef LK201_H
 #define LK201_h

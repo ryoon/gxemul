@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.91 2005-02-11 09:29:50 debug Exp $
+ *  $Id: arcbios.c,v 1.92 2005-02-13 13:36:36 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -99,7 +99,7 @@ static unsigned char *file_handle_string[MAX_HANDLES];
 static uint64_t arcbios_current_seek_offset[MAX_HANDLES];
 
 #define	MAX_STRING_TO_COMPONENT		20
-static unsigned char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
+static char *arcbios_string_to_component[MAX_STRING_TO_COMPONENT];
 static uint64_t arcbios_string_to_component_value[MAX_STRING_TO_COMPONENT];
 static int arcbios_n_string_to_components = 0;
 
@@ -114,16 +114,19 @@ void arcbios_add_string_to_component(char *string, uint64_t component)
 		exit(1);
 	}
 
-	arcbios_string_to_component[arcbios_n_string_to_components] = malloc(strlen(string) + 1);
-	if (arcbios_string_to_component[arcbios_n_string_to_components] == NULL) {
-		fprintf(stderr, "out of memory in arcbios_add_string_to_component()\n");
+	arcbios_string_to_component[arcbios_n_string_to_components] =
+	    strdup(string);
+	if (arcbios_string_to_component[arcbios_n_string_to_components] ==
+	    NULL) {
+		fprintf(stderr, "out of memory in "
+		    "arcbios_add_string_to_component()\n");
 		exit(1);
 	}
-	memcpy(arcbios_string_to_component[arcbios_n_string_to_components], string, strlen(string) + 1);
 	debug("adding ARC component mapping: 0x%08x = %s\n",
 	    (int)component, string);
 
-	arcbios_string_to_component_value[arcbios_n_string_to_components] = component;
+	arcbios_string_to_component_value[arcbios_n_string_to_components] =
+	    component;
 	arcbios_n_string_to_components ++;
 }
 
@@ -159,7 +162,8 @@ static void arcbios_putcell(struct cpu *cpu, int ch, int x, int y)
 	buf[0] = ch;
 	buf[1] = arcbios_console_curcolor;
 	if (arcbios_console_reverse)
-		buf[1] = ((buf[1] & 0x70) >> 4) | ((buf[1] & 7) << 4) | (buf[1] & 0x88);
+		buf[1] = ((buf[1] & 0x70) >> 4) | ((buf[1] & 7) << 4)
+		    | (buf[1] & 0x88);
 	cpu->memory_rw(cpu, cpu->mem, arcbios_console_vram +
 	    2*(x + arcbios_console_maxx * y),
 	    &buf[0], sizeof(buf), MEM_WRITE,
@@ -297,10 +301,13 @@ static void handle_esc_seq(struct cpu *cpu)
 		if (i != 0 && i != 2)
 			fatal("{ handle_esc_seq(): %iJ }\n", i);
 		if (i == 0)
-			for (col=arcbios_console_curx; col<arcbios_console_maxx; col++)
-				arcbios_putcell(cpu, ' ', col, arcbios_console_cury);
-		for (col=0; col<arcbios_console_maxx; col++)
-			for (row=i?0:arcbios_console_cury+1; row<arcbios_console_maxy; row++)
+			for (col = arcbios_console_curx;
+			    col < arcbios_console_maxx; col++)
+				arcbios_putcell(cpu, ' ', col,
+				    arcbios_console_cury);
+		for (col = 0; col < arcbios_console_maxx; col++)
+			for (row = i? 0 : arcbios_console_cury+1;
+			    row < arcbios_console_maxy; row++)
 				arcbios_putcell(cpu, ' ', col, row);
 		return;
 	case 'K':
@@ -486,8 +493,12 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 	base /= 4096;
 	len /= 4096;
 
-/*  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?  */
-/*  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag doesn't care?  */
+	/*
+	 *  TODO: Huh? Why isn't it necessary to convert from arc to sgi types?
+	 *
+	 *  TODO 2: It seems that it _is_ neccessary, but NetBSD's arcdiag
+	 *  doesn't handle the sgi case separately.
+	 */
 #if 1
 	if (cpu->machine->machine_type == MACHINE_SGI) {
 		/*  arctype is SGI style  */
@@ -606,29 +617,36 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen,
 		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			unsigned char tmp; tmp = buf[0];
+			buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
-		/*  debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);  */
+		/*  debug("  epeer=%x echild=%x eparent=%x\n",
+		    epeer,echild,eparent);  */
 
-		if ((uint32_t)eparent == (uint32_t)parent && (uint32_t)epeer == 0) {
+		if ((uint32_t)eparent == (uint32_t)parent &&
+		    (uint32_t)epeer == 0) {
 			epeer = a;
 			store_32bit_word(cpu, peeraddr + 0x00, epeer);
-			/*  debug("[ addchild: adding 0x%08x as peer to 0x%08x ]\n", a, peeraddr);  */
+			/*  debug("[ addchild: adding 0x%08x as peer "
+			    "to 0x%08x ]\n", a, peeraddr);  */
 		}
-		if ((uint32_t)peeraddr == (uint32_t)parent && (uint32_t)echild == 0) {
+		if ((uint32_t)peeraddr == (uint32_t)parent &&
+		    (uint32_t)echild == 0) {
 			echild = a;
 			store_32bit_word(cpu, peeraddr + 0x04, echild);
-			/*  debug("[ addchild: adding 0x%08x as child to 0x%08x ]\n", a, peeraddr);  */
+			/*  debug("[ addchild: adding 0x%08x as "
+			    "child to 0x%08x ]\n", a, peeraddr);  */
 		}
 
 		/*  Go to the next component:  */
 		cpu->memory_rw(cpu, cpu->mem, peeraddr + 0x28, &buf[0],
 		    sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			unsigned char tmp; tmp = buf[0];
+			buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
@@ -644,11 +662,13 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 	store_32bit_word(cpu, a + 0x08, parent);
 	store_32bit_word(cpu, a+  0x0c, host_tmp_component->Class);
 	store_32bit_word(cpu, a+  0x10, host_tmp_component->Type);
-	store_32bit_word(cpu, a+  0x14, host_tmp_component->Flags + 65536 * host_tmp_component->Version);
+	store_32bit_word(cpu, a+  0x14, host_tmp_component->Flags +
+	    65536 * host_tmp_component->Version);
 	store_32bit_word(cpu, a+  0x18, host_tmp_component->Revision);
 	store_32bit_word(cpu, a+  0x1c, host_tmp_component->Key);
 	store_32bit_word(cpu, a+  0x20, host_tmp_component->AffinityMask);
-	store_32bit_word(cpu, a+  0x24, host_tmp_component->ConfigurationDataSize);
+	store_32bit_word(cpu, a+  0x24, host_tmp_component->
+	    ConfigurationDataSize);
 	store_32bit_word(cpu, a+  0x28, host_tmp_component->IdentifierLength);
 	store_32bit_word(cpu, a+  0x2c, host_tmp_component->Identifier);
 
@@ -658,13 +678,15 @@ static uint64_t arcbios_addchild(struct cpu *cpu,
 		store_32bit_word(cpu, a + 0x2c, a + 0x30);
 		store_string(cpu, a + 0x30, identifier);
 		if (identifier != NULL)
-			arcbios_next_component_address += strlen(identifier) + 1;
+			arcbios_next_component_address +=
+			    strlen(identifier) + 1;
 	}
 
 	arcbios_next_component_address ++;
 
 	/*  Round up to next 0x4 bytes:  */
-	arcbios_next_component_address = ((arcbios_next_component_address - 1) | 3) + 1;
+	arcbios_next_component_address =
+	    ((arcbios_next_component_address - 1) | 3) + 1;
 
 	n_arc_components ++;
 
@@ -717,7 +739,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		uint64_t eparent, echild, epeer, tmp;
 		unsigned char buf[8];
 
-		/*  debug("[ addchild: peeraddr = 0x%016llx ]\n", (long long)peeraddr);  */
+		/*  debug("[ addchild: peeraddr = 0x%016llx ]\n",
+		    (long long)peeraddr);  */
 
 		cpu->memory_rw(cpu, cpu->mem,
 		    peeraddr + 0 * arc_wordlen, &buf[0], sizeof(eparent),
@@ -733,8 +756,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr +
-		    1 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 1 * arc_wordlen,
+		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
 			tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -746,8 +769,8 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		cpu->memory_rw(cpu, cpu->mem, peeraddr +
-		    2 * arc_wordlen, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
+		cpu->memory_rw(cpu, cpu->mem, peeraddr + 2 * arc_wordlen,
+		    &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
 			tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
@@ -759,22 +782,29 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		    + ((uint64_t)buf[4] << 32) + ((uint64_t)buf[5] << 40)
 		    + ((uint64_t)buf[6] << 48) + ((uint64_t)buf[7] << 56);
 
-		/*  debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);  */
+		/*  debug("  epeer=%x echild=%x eparent=%x\n",
+		    epeer,echild,eparent);  */
 
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
-			store_64bit_word(cpu, peeraddr + 0 * arc_wordlen, epeer);
-			/*  debug("[ addchild: adding 0x%016llx as peer to 0x%016llx ]\n", (long long)a, (long long)peeraddr);  */
+			store_64bit_word(cpu, peeraddr + 0 * arc_wordlen,
+			    epeer);
+			/*  debug("[ addchild: adding 0x%016llx as peer "
+			    "to 0x%016llx ]\n", (long long)a,
+			    (long long)peeraddr);  */
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
-			store_64bit_word(cpu, peeraddr + 1 * arc_wordlen, echild);
-			/*  debug("[ addchild: adding 0x%016llx as child to 0x%016llx ]\n", (long long)a, (long long)peeraddr);  */
+			store_64bit_word(cpu, peeraddr + 1 * arc_wordlen,
+			    echild);
+			/*  debug("[ addchild: adding 0x%016llx as child "
+			    "to 0x%016llx ]\n", (long long)a,
+			    (long long)peeraddr);  */
 		}
 
 		/*  Go to the next component:  */
 		cpu->memory_rw(cpu, cpu->mem, peeraddr + 0x34,
-				&buf[0], sizeof(uint32_t), MEM_READ, CACHE_NONE);
+		    &buf[0], sizeof(uint32_t), MEM_READ, CACHE_NONE);
 		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp;
 			tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
@@ -797,10 +827,12 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 	store_32bit_word(cpu, a+  0x18, host_tmp_component->Class);
 	store_32bit_word(cpu, a+  0x1c, host_tmp_component->Type);
 	store_32bit_word(cpu, a+  0x20, host_tmp_component->Flags);
-	store_32bit_word(cpu, a+  0x24, host_tmp_component->Version + ((uint64_t)host_tmp_component->Revision << 16));
+	store_32bit_word(cpu, a+  0x24, host_tmp_component->Version +
+	    ((uint64_t)host_tmp_component->Revision << 16));
 	store_32bit_word(cpu, a+  0x28, host_tmp_component->Key);
 	store_64bit_word(cpu, a+  0x30, host_tmp_component->AffinityMask);
-	store_64bit_word(cpu, a+  0x38, host_tmp_component->ConfigurationDataSize);
+	store_64bit_word(cpu, a+  0x38, host_tmp_component->
+	    ConfigurationDataSize);
 	store_64bit_word(cpu, a+  0x40, host_tmp_component->IdentifierLength);
 	store_64bit_word(cpu, a+  0x48, host_tmp_component->Identifier);
 
@@ -812,16 +844,17 @@ static uint64_t arcbios_addchild64(struct cpu *cpu,
 		store_64bit_word(cpu, a + 0x48, a + 0x50);
 		store_string(cpu, a + 0x50, identifier);
 		if (identifier != NULL)
-			arcbios_next_component_address += strlen(identifier) + 1;
+			arcbios_next_component_address +=
+			    strlen(identifier) + 1;
 	}
 
 	arcbios_next_component_address ++;
 
 	/*  Round up to next 0x8 bytes:  */
-	arcbios_next_component_address = ((arcbios_next_component_address - 1) | 7) + 1;
+	arcbios_next_component_address =
+	    ((arcbios_next_component_address - 1) | 7) + 1;
 
 	n_arc_components ++;
-
 	return a;
 }
 
@@ -849,7 +882,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		int i;
 
 		if (n_configuration_data >= MAX_CONFIG_DATA) {
-			printf("fatal error: you need to increase MAX_CONFIG_DATA\n");
+			printf("fatal error: you need to increase "
+			    "MAX_CONFIG_DATA\n");
 			exit(1);
 		}
 
@@ -861,14 +895,18 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		}
 
 		configuration_data_len[n_configuration_data] = config_len;
-		configuration_data_configdata[n_configuration_data] = configuration_data_next_addr;
+		configuration_data_configdata[n_configuration_data] =
+		    configuration_data_next_addr;
 		configuration_data_next_addr += config_len;
-		configuration_data_component[n_configuration_data] = arcbios_next_component_address
-		    + (arc_64bit? 0x18 : 0x0c);
+		configuration_data_component[n_configuration_data] =
+		    arcbios_next_component_address + (arc_64bit? 0x18 : 0x0c);
 
-		/*  printf("& ADDING %i: configdata=0x%016llx component=0x%016llx\n",
-		    n_configuration_data, (long long)configuration_data_configdata[n_configuration_data],
-		    (long long)configuration_data_component[n_configuration_data]);  */
+		/*  printf("& ADDING %i: configdata=0x%016llx "
+		    "component=0x%016llx\n", n_configuration_data,
+		    (long long)configuration_data_configdata[
+			n_configuration_data],
+		    (long long)configuration_data_component[
+			n_configuration_data]);  */
 
 		n_configuration_data ++;
 	}
@@ -902,7 +940,8 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 		if (identifier != NULL) {
 			component64.IdentifierLength = strlen(identifier) + 1;
 		}
-		return arcbios_addchild64(cpu, &component64, identifier, parent);
+		return arcbios_addchild64(cpu, &component64, identifier,
+		    parent);
 	}
 }
 
@@ -1186,32 +1225,48 @@ int arcbios_emul(struct cpu *cpu)
 			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
-					tmp = buf[1]; buf[1] = buf[6]; buf[6] = tmp;
-					tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
-					tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[7]; buf[7] = tmp;
+					tmp = buf[1]; buf[1] = buf[6];
+					buf[6] = tmp;
+					tmp = buf[2]; buf[2] = buf[5];
+					buf[5] = tmp;
+					tmp = buf[3]; buf[3] = buf[4];
+					buf[4] = tmp;
 				}
-				peer = (uint64_t)buf[0] + ((uint64_t)buf[1]<<8) + ((uint64_t)buf[2]<<16) + ((uint64_t)buf[3]<<24) +
-				    ((uint64_t)buf[4]<<32) + ((uint64_t)buf[5]<<40) + ((uint64_t)buf[6]<<48) + ((uint64_t)buf[7]<<56);
+				peer = (uint64_t)buf[0] + ((uint64_t)buf[1]<<8)
+				    + ((uint64_t)buf[2]<<16)
+				    + ((uint64_t)buf[3]<<24)
+				    + ((uint64_t)buf[4]<<32)
+				    + ((uint64_t)buf[5]<<40)
+				    + ((uint64_t)buf[6]<<48)
+				    + ((uint64_t)buf[7]<<56);
 			} else {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-					tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[3]; buf[3] = tmp;
+					tmp = buf[1]; buf[1] = buf[2];
+					buf[2] = tmp;
 				}
-				peer = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+				peer = buf[0] + (buf[1]<<8) + (buf[2]<<16)
+				    + (buf[3]<<24);
 			}
 
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = peer? (peer + 3 * arc_wordlen) : 0;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = peer?
+			    (peer + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
+				    (int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetPeer(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
 	case 0x28:		/*  GetChild(node)  */
 		/*  0 for the root, non-0 for children:  */
 		if (cpu->cd.mips.gpr[MIPS_GPR_A0] == 0)
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = FIRST_ARC_COMPONENT + arc_wordlen * 3;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] =
+			    FIRST_ARC_COMPONENT + arc_wordlen * 3;
 		else {
 			uint64_t child = 0;
 			cpu->memory_rw(cpu, cpu->mem,
@@ -1219,27 +1274,43 @@ int arcbios_emul(struct cpu *cpu)
 			    &buf[0], arc_wordlen, MEM_READ, CACHE_NONE);
 			if (arc_64bit) {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[7]; buf[7] = tmp;
-					tmp = buf[1]; buf[1] = buf[6]; buf[6] = tmp;
-					tmp = buf[2]; buf[2] = buf[5]; buf[5] = tmp;
-					tmp = buf[3]; buf[3] = buf[4]; buf[4] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[7]; buf[7] = tmp;
+					tmp = buf[1]; buf[1] = buf[6];
+					buf[6] = tmp;
+					tmp = buf[2]; buf[2] = buf[5];
+					buf[5] = tmp;
+					tmp = buf[3]; buf[3] = buf[4];
+					buf[4] = tmp;
 				}
-				child = (uint64_t)buf[0] + ((uint64_t)buf[1]<<8) + ((uint64_t)buf[2]<<16) + ((uint64_t)buf[3]<<24) +
-				    ((uint64_t)buf[4]<<32) + ((uint64_t)buf[5]<<40) + ((uint64_t)buf[6]<<48) + ((uint64_t)buf[7]<<56);
+				child = (uint64_t)buf[0] +
+				    ((uint64_t)buf[1]<<8) +
+				    ((uint64_t)buf[2]<<16) +
+				    ((uint64_t)buf[3]<<24) +
+				    ((uint64_t)buf[4]<<32) +
+				    ((uint64_t)buf[5]<<40) +
+				    ((uint64_t)buf[6]<<48) +
+				    ((uint64_t)buf[7]<<56);
 			} else {
 				if (cpu->byte_order == EMUL_BIG_ENDIAN) {
-					unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-					tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+					unsigned char tmp; tmp = buf[0];
+					buf[0] = buf[3]; buf[3] = tmp;
+					tmp = buf[1]; buf[1] = buf[2];
+					buf[2] = tmp;
 				}
-				child = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+				child = buf[0] + (buf[1]<<8) + (buf[2]<<16) +
+				    (buf[3]<<24);
 			}
 
-			cpu->cd.mips.gpr[MIPS_GPR_V0] = child? (child + 3 * arc_wordlen) : 0;
+			cpu->cd.mips.gpr[MIPS_GPR_V0] = child?
+			    (child + 3 * arc_wordlen) : 0;
 			if (!arc_64bit)
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)(int32_t) cpu->cd.mips.gpr[MIPS_GPR_V0];
+				cpu->cd.mips.gpr[MIPS_GPR_V0] = (int64_t)
+				    (int32_t)cpu->cd.mips.gpr[MIPS_GPR_V0];
 		}
 		debug("[ ARCBIOS GetChild(node 0x%016llx): 0x%016llx ]\n",
-		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0], (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_A0],
+		    (long long)cpu->cd.mips.gpr[MIPS_GPR_V0]);
 		break;
 	case 0x2c:		/*  GetParent(node)  */
 		{
@@ -1335,8 +1406,12 @@ int arcbios_emul(struct cpu *cpu)
 			}
 
 			if (match_index >= 0) {
-				/*  printf("Longest match: '%s'\n", arcbios_string_to_component[match_index]);  */
-				cpu->cd.mips.gpr[MIPS_GPR_V0] = arcbios_string_to_component_value[match_index];
+				/*  printf("Longest match: '%s'\n",
+				    arcbios_string_to_component[
+				    match_index]);  */
+				cpu->cd.mips.gpr[MIPS_GPR_V0] =
+				    arcbios_string_to_component_value[
+				    match_index];
 			}
 		}
 		break;

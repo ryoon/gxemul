@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.361 2005-02-24 14:26:35 debug Exp $
+ *  $Id: machine.c,v 1.362 2005-02-24 14:50:10 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4049,6 +4049,22 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_DB64360:
+		/*  For playing with PMON2000 for PPC:  */
+		machine->machine_name = "DB64360";
+
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0x1d000020, 0, 4, 1, "serial console");
+
+		{
+			int i;
+			for (i=0; i<32; i++)
+				cpu->cd.ppc.gpr[i] =
+				    0x12340000 + (i << 8) + 0x55;
+		}
+
+		break;
+
 	case MACHINE_ULTRA1:
 		/*
 		 *  NetBSD/sparc64 (http://www.netbsd.org/Ports/sparc64/)
@@ -4300,6 +4316,9 @@ void machine_default_cputype(struct machine *m)
 		break;
 	case MACHINE_MACPPC:
 		m->cpu_name = strdup("G4e");
+		break;
+	case MACHINE_DB64360:
+		m->cpu_name = strdup("PPC750");
 		break;
 
 	/*  SPARC:  */
@@ -4746,6 +4765,13 @@ void machine_init(void)
 	me->subtype[8]->aliases[1] = "mipsmate";
 
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  DB64360: (for playing with PMON for PPC)  */
+	me = machine_entry_new("DB64360", ARCH_PPC, MACHINE_DB64360, 1, 0);
+	me->aliases[0] = "db64360";
+	if (cpu_family_ptr_by_number(ARCH_PPC) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

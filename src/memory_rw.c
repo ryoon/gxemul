@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.8 2005-02-22 12:05:19 debug Exp $
+ *  $Id: memory_rw.c,v 1.9 2005-02-24 14:52:43 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -371,6 +371,9 @@ have_paddr:
 #else
 					symbol = "(unimpl for non-MIPS)";
 #endif
+
+/*  TODO: fix! not mips.pc_last for for example ppc  */
+
 					fatal(" paddr=%llx >= physical_max pc="
 					    "0x%08llx <%s> ]\n",
 					    (long long)paddr,

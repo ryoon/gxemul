@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.3 2003-11-20 02:48:57 debug Exp $
+ *  $Id: memory.c,v 1.4 2003-11-24 04:27:07 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -610,8 +610,8 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	}
 
 	if (paddr >= mem->physical_max) {
-		if ((vaddr & 0xfff00000) == 0xbfc00000) {
-			/*  Ok, this is DEC prom stuff  */
+		if ((vaddr & 0xffc00000) == 0xbfc00000) {
+			/*  Ok, this is PROM stuff  */
 		} else {
 			/*  Semi-ugly hack:  allow for 1KB more, without giving a warning.
 			    This allows some memory detection schemes to work ok.  */

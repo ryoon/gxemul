@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.227 2004-09-17 20:30:04 debug Exp $
+$Id: HISTORY,v 1.228 2004-09-23 23:22:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -951,3 +951,5 @@ HISTORY of mips64emul
 
 ==============  RELEASE 0.2.1  ==============
 
+20040923	Updating the documentation about how to (try to) install
+		Debian GNU/Linux.

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.99 2004-09-23 16:30:59 debug Exp $
+$Id: index.html,v 1.100 2004-09-23 23:22:50 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -64,7 +64,7 @@ SUCH DAMAGE.
   <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
   <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
   <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
-  <li><a href="#declinux">How to run Linux (Debian) for DECstation in the emulator</a>
+  <li><a href="#declinux">How to install Linux (Debian) for DECstation in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#fbres">Changing the framebuffer resolution</a>
   <li><a href="#networking">Networking</a>
@@ -629,43 +629,54 @@ file in the emulator.
 
 
 
+
+
 <p><br>
 <a name="sprite"></a>
 <h3>How to run Sprite for DECstation in the emulator:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
-Read this if you want to find out more about it:
+The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
+has made available a copy of a Sprite harddisk image for a DECstation 5000/200.
+If you want to find out more about Sprite in general, read
 <a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">
-http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>
+http://www.cs.berkeley.edu/projects/sprite/retrospective.html</a>.
 
 <p>
-The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
-has a copy of a Sprite harddisk image for a DECstation 5000/200:<pre>
-	<a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
-	or <a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt">http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt</a>
-	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
-</pre>
+The following instructions should let you run Sprite in the emulator:
+
 <p>
-Once you have compiled the emulator (<b>./configure; make</b>) and 
-downloaded the harddisk image, you can start the emulator with the 
-following command:
-<pre>
-	$ <b>./mips64emul -X -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
 </pre>
+  <li>Download the Sprite harddisk image using ftp or http:<pre>
+	<a href="http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt">http://www.es.embnet.org/Services/ftp/misc/TUHS/sprite/ds5000.bt</a>
+	or <a href="ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt">ftp://ftp.es.embnet.org/misc/TUHS/sprite/ds5000.bt</a>
+	83973120 bytes, MD5 = ec84eeeb20fe77b758370d5e312e4a5e
+
+</pre>
+  <li>Start the emulator with the following command line:<pre>
+	$ <b>./mips64emul -X -D2 -M128 -d ds5000.bt -j vmsprite -o ''</b>
+
+</pre>
+</ol>
+
 <p>
 The first time you boot up with the disk image, you will be asked a number 
 of questions regarding network settings. If you feel like entering correct 
 values, then you should use the following:
 <p>
-<center>
- <table border="0">
-  <tr> <td>Your machine's Ethernet address:</td>  <td>10:20:30:40:50:60</td> </tr>
-  <tr> <td>Your machine's IP:</td>  <td>10.0.0.1</td> </tr>
-  <tr> <td>Subnet mask:</td>  <td>0xff000000</td> </tr>
-  <tr> <td>Gateway's Ethernet address:</td>  <td>60:50:40:30:20:10</td> </tr>
-  <tr> <td>Gateway's IP:</td>  <td>10.0.0.254</td> </tr>
- </table>
-</center>
+
+<pre>
+    Your machine's Ethernet address:    10:20:30:40:50:60
+    Your machine's IP:                  10.0.0.1
+    Subnet mask:                        0xff000000
+    Gateway's Ethernet address:         60:50:40:30:20:10
+    Gateway's IP:                       10.0.0.254
+</pre>
+
 <p>
 Unfortunately I'm not really familiar with Sprite, so I don't know how to 
 actually use the network.
@@ -676,56 +687,55 @@ environment.
 
 
 
+
 <p><br>
 <a name="declinux"></a>
-<h3>How to run Linux (Debian) for DECstation in the emulator:</h3>
+<h3>How to install Linux (Debian) for DECstation in the emulator:</h3>
 
-<font color="#ff0000">NOTE: This is experimental, and does not really work yet!</font>
+The Debian folks have made Linux kernels for DECstation available for download.
+
 <p>
-Debian has made Linux installation boot kernels for DECstation available for download,
-containing ramdisks. For a 5000/200 R3000 KN02 (the -D2 model in mips64emul), try this kernel:
-<p>
-<pre>
-	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
+<ol>
+  <li>Compile mips64emul:<pre>
+	$ <b>./configure; make</b>
+
+</pre>
+  <li>Create an empty harddisk image, which will be the root disk
+	that Debian installs itself onto:<pre>
+	$ <b>dd if=/dev/zero of=debian.img bs=1 count=512 seek=999000000</b>
+
+</pre>
+  <li>Download the install kernel:<pre>
+	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
-	MD5 as of 2004-09-07: 9b635b50e49fae3df7d853a8290a39d8</b>
+	MD5 = 9b635b50e49fae3df7d853a8290a39d8
+
 </pre>
-<p>
-It is a Linux 2.4.26 kernel which will attempt to install Debian Linux from
-the network onto a harddisk image.
-<p>
-Once you have compiled mips64emul (<b>./configure; make</b>), you could try running
-the kernel with graphical framebuffer.
-<p>
-<pre>
-	$ <b>./mips64emul -X -D2 boot.img</b>
+  <li>For a text-mode installation, start the emulator like this:<pre>
+	$ <b>./mips64emul -D2 -M128 -o console=ttyS03 -d debian.img boot.img</b>
+
 </pre>
+</ol>
+
 <p>
-If everything works as it should, you will see the penguin up in the left corner, and
-some boot messages. The RAMDISK will decompress itself (this takes a while), and then
-the installation program will start running.  A language choice dialog box appears.
+(If you want to, you can try <b>-X</b> instead of '<b>-o console=ttyS03</b>' on
+the command line. This will cause Linux to use the graphical framebuffer.
+Unfortunately, Linux does not seem to have a driver for the DZ11 keyboard
+controller yet, so you cannot interact with the system. You will see the
+penguin in the upper lefthand corner :-) and nicely rendered Unicode
+characters, but that's about it.)
+
 <p>
-This is where the fun ends. This specific Linux kernel has no support for the
-keyboard controller. :-(
+You need quite a bit of patience, waiting for the kernel and ramdisk to
+uncompress themselves, and for the install program to download parts
+of itself via the network. Also, for some strange reason, Linux/DECstation runs a
+lot slower than for example NetBSD/pmax in the emulator.
+
 <p>
-It is possible to get further into the installation, by booting in serial console
-mode. This is of course not very good looking, but this is the way things are until
-Linux gets support for the keyboard controller.
-<p>
-<pre>
-	$ <b>./mips64emul -D2 -o 'console=ttyS03' boot.img</b>
-</pre>
-<p>
-<font color="#ff0000">2004-07-21 NOTE: The installation dies with
-some kind of panic or exception while trying to download/run 
-"parted_devices".
+<font color="#ff0000">2004-09-23 NOTE: The installation dies with
+an Oops when running 'parted'.
 </font>
-You could also try this kernel, with <b>-X -CR4400 -D4</b>:
-<pre>
-	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r4k-kn04/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
-	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r4k-kn04/boot.img">installer-mipsel/current/images/r4k-kn04/boot.img</a>
-	MD5 as of 2004-09-07: 0f6a11000694079b6d68a62b5108a6aa</b>
-</pre>
+
 
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.72 2004-03-25 20:58:27 debug Exp $
+ *  $Id: machine.c,v 1.73 2004-03-27 19:26:28 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -400,16 +400,28 @@ void ps2_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR into the INTR:  */
-		ps2_data->intr |= irq_nr;
+		if (irq_nr < 0x10000)
+			ps2_data->intr |= irq_nr;
+		else
+			ps2_data->dmac_reg[0x601] |= (irq_nr >> 16);
 
-		/*  Assert interrupt (which one? TODO):  */
-		cpu_interrupt(cpu, 2);
+		/*  Assert interrupt:   TODO: masks  */
+		if (irq_nr >= 0x10000)
+			cpu_interrupt(cpu, 3);
+		else
+			cpu_interrupt(cpu, 2);
 	} else {
 		/*  AND out of the INTR:  */
-		ps2_data->intr &= ~irq_nr;
+		if (irq_nr < 0x10000)
+			ps2_data->intr &= ~irq_nr;
+		else
+			ps2_data->dmac_reg[0x601] &= ~(irq_nr >> 16);
 
-		if (ps2_data->intr == 0)
+		/*  TODO: masks  */
+		if ((ps2_data->intr & 0xffff) == 0)
 			cpu_interrupt_ack(cpu, 2);
+		if ((ps2_data->dmac_reg[0x601] & 0xffff) == 0)
+			cpu_interrupt_ack(cpu, 3);
 	}
 }
 
@@ -1117,7 +1129,7 @@ void machine_init(struct memory *mem)
 		 *	ohci0: OHCI version 1.0
 		 */
 
-		dev_ps2_gs_init(mem, 0x12000000);
+		dev_ps2_gs_init(cpus[bootstrap_cpu], mem, 0x12000000);
 		ps2_data = dev_ps2_stuff_init(cpus[bootstrap_cpu], mem, 0x10000000, GLOBAL_gif_mem);
 
 		cpus[bootstrap_cpu]->md_interrupt = ps2_interrupt;
@@ -1125,6 +1137,10 @@ void machine_init(struct memory *mem)
 		add_symbol_name(PLAYSTATION2_SIFBIOS, 0x10000, "[SIFBIOS entry]", 0);
 		store_32bit_word(PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(PLAYSTATION2_BDA + 4, "PS2b", 4);
+
+		store_32bit_word(0xa0000000 + physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
+		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
+		store_string(PLAYSTATION2_OPTARGS, bootstr);
 
 		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
 		{

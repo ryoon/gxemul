@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.156 2004-07-12 10:25:59 debug Exp $
+$Id: HISTORY,v 1.157 2004-07-13 10:38:13 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -767,3 +767,4 @@ HISTORY of mips64emul
 		needed when using large disk images (more than 2GB), so the
 		configure script has now been modified to add neccessary
 		compiler flags for Linux.
+20040713	Trying out some minor optimizations.

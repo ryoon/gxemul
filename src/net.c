@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.13 2004-07-12 08:41:28 debug Exp $
+ *  $Id: net.c,v 1.14 2004-07-13 10:38:15 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -240,6 +240,10 @@ static void net_ip_icmp(void *extra, unsigned char *packet, int len)
  *	control=a002 window=4000 checksum=fe58 urgent=0000
  *	and then "options and padding" and then data.
  *	(020405b4010303000101080a0000000000000000)
+ *
+ *  See:
+ *
+ *      http://www.tcpipguide.com/free/t_TCPConnectionTermination.htm
  */
 static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 {

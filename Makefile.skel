@@ -7,7 +7,7 @@ BIN=mips64emul
 LIBS=-lm $(XLIB) $(OTHERLIBS)
 
 all: do_src do_devices
-	$(CC) $(COPTIM) `cd src; make printobjs; cd ..` devices/*.o $(LIBS) -o $(BIN)
+	$(CC) $(COPTIM) $(SRCOBJS) devices/*.o $(LIBS) -o $(BIN)
 
 do_src:
 	cd src; $(MAKE); cd ..

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.105 2004-07-12 21:57:50 debug Exp $
+ *  $Id: cpu.c,v 1.106 2004-07-13 10:38:14 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -193,6 +193,53 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	cpu->pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	return cpu;
+}
+
+
+/*
+ *  cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void cpu_show_full_statistics(struct cpu **cpus)
+{
+	int i, s1, s2;
+
+	for (i=0; i<ncpus; i++) {
+		printf("cpu%i opcode statistics:\n", i);
+		for (s1=0; s1<N_HI6; s1++) {
+			if (cpus[i]->stats_opcode[s1] > 0)
+				printf("  opcode %02x (%7s): %li\n", s1,
+				    hi6_names[s1], cpus[i]->stats_opcode[s1]);
+			if (s1 == HI6_SPECIAL)
+				for (s2=0; s2<N_SPECIAL; s2++)
+					if (cpus[i]->stats__special[s2] > 0)
+						printf("      special %02x (%7s): %li\n",
+						    s2, special_names[s2], cpus[i]->stats__special[s2]);
+			if (s1 == HI6_REGIMM)
+				for (s2=0; s2<N_REGIMM; s2++)
+					if (cpus[i]->stats__regimm[s2] > 0)
+						printf("      regimm %02x (%7s): %li\n",
+						    s2, regimm_names[s2], cpus[i]->stats__regimm[s2]);
+			if (s1 == HI6_SPECIAL2)
+				for (s2=0; s2<N_SPECIAL; s2++)
+					if (cpus[i]->stats__special2[s2] > 0)
+						printf("      special2 %02x (%7s): %li\n",
+						    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
+		}
+
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+		printf("cpu%i exception tag statistics:\n", i);
+		printf("    load  hits:    %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_load_hits);
+		printf("    load  misses:  %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_load_misses);
+		printf("    store hits:    %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_store_hits);
+		printf("    store misses:  %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_store_misses);
+#endif
+	}
 }
 
 
@@ -422,11 +469,9 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
-	int offset, x;
-	char *symbol = "";
-
 	if (!quiet_mode) {
-		symbol = get_symbol_name(cpu->pc_last, &offset);
+		int offset, x;
+		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 
 		debug("[ exception %s%s",
 		    exception_names[exccode], tlb? " <tlb>" : "");
@@ -458,14 +503,16 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 	}
 
 	if (tlb && vaddr == 0) {
-		symbol = get_symbol_name(cpu->pc_last, &offset);
+		int offset;
+		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: NULL reference, exception %s, pc->last=%08llx <%s>\n",
 		    exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
 	}
 
 	if (vaddr != 0 && vaddr < 0x1000) {
-		symbol = get_symbol_name(cpu->pc_last, &offset);
+		int offset;
+		char *symbol = get_symbol_name(cpu->pc_last, &offset);
 		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc->last=%08llx <%s>\n",
 		    (int)vaddr, exception_names[exccode], (long long)cpu->pc_last, symbol? symbol : "(no symbol)");
 /*		tlb_dump = 1;  */
@@ -589,7 +636,7 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
  *  Return value is the number of instructions executed during this call
  *  to cpu_run_instr() (0 if no instruction was executed).
  */
-int cpu_run_instr(struct cpu *cpu)
+static int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	int instruction_trace_cached = instruction_trace;
@@ -604,7 +651,7 @@ int cpu_run_instr(struct cpu *cpu)
 	/*  for instruction trace  */
 	char *instr_mnem = NULL;
 
-	int cond=0, likely, and_link;
+	int cond, likely, and_link;
 
 	/*  for unaligned load/store  */
 	uint64_t dir, is_left, reg_ofs, reg_dir;
@@ -614,8 +661,8 @@ int cpu_run_instr(struct cpu *cpu)
 	int cpnr;			/*  coprocessor nr  */
 
 	/*  for load/store  */
-	uint64_t addr, value, value_hi=0, result_value;
-	int wlen, st, signd, linked, dataflag = 0;
+	uint64_t addr, value, value_hi, result_value;
+	int wlen, st, signd, linked, dataflag;
 	unsigned char d[16];		/*  room for at most 128 bits  */
 
 
@@ -1046,7 +1093,11 @@ int cpu_run_instr(struct cpu *cpu)
 					debug("%s\tr%i,r%i,%i\n", instr_mnem, rd, rt, sa);
 
 			if (special6 == SPECIAL_SLL) {
-				cpu->gpr[rd] = cpu->gpr[rt] << sa;
+				switch (sa) {
+				case 8:	cpu->gpr[rd] = cpu->gpr[rt] << 8; break;
+				case 16:cpu->gpr[rd] = cpu->gpr[rt] << 16; break;
+				default:cpu->gpr[rd] = cpu->gpr[rt] << sa;
+				}
 				/*  Sign-extend rd:  */
 				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
 			}
@@ -1060,23 +1111,28 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->gpr[rd] = cpu->gpr[rt] << (sa + 32);
 			}
 			if (special6 == SPECIAL_SRL) {
-				cpu->gpr[rd] = cpu->gpr[rt];
-				/*  Zero-extend rd:  */
-				cpu->gpr[rd] &= 0xffffffffULL;
-				while (sa > 0) {
-					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
-					sa--;
-				}
-				cpu->gpr[rd] = (int64_t)(int32_t)cpu->gpr[rd];
+				/*
+				 *  Three cases:
+				 *	shift amount = zero:  just copy
+				 *	high bit of rt zero:  plain shift right (of all bits)
+				 *	high bit of rt one:   plain shift right (of lowest 32 bits)
+				 */
+				if (sa == 0)
+					cpu->gpr[rd] = cpu->gpr[rt];
+				else if (!(cpu->gpr[rt] & 0x80000000ULL)) {
+					cpu->gpr[rd] = cpu->gpr[rt] >> sa;
+				} else
+					cpu->gpr[rd] = (cpu->gpr[rt] & 0xffffffffULL) >> sa;
 			}
 			if (special6 == SPECIAL_SRA) {
-				/*  rd = sign-extend of rt:  */
-				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rt];
-				while (sa > 0) {
-					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
-					sa--;
+				int topbit = cpu->gpr[rt] & 0x80000000ULL;
+				switch (sa) {
+				case 8:	cpu->gpr[rd] = cpu->gpr[rt] >> 8; break;
+				case 16:cpu->gpr[rd] = cpu->gpr[rt] >> 16; break;
+				default:cpu->gpr[rd] = cpu->gpr[rt] >> sa;
 				}
-				cpu->gpr[rd] = (int64_t) (int32_t) cpu->gpr[rd];
+				if (topbit)
+					cpu->gpr[rd] |= 0xffffffff00000000ULL;
 			}
 			if (special6 == SPECIAL_DSRL32) {
 				cpu->gpr[rd] = cpu->gpr[rt] >> (sa + 32);
@@ -1716,6 +1772,8 @@ int cpu_run_instr(struct cpu *cpu)
 		if (imm >= 32768)		/*  signed 16-bit  */
 			imm -= 65536;
 
+		dataflag = 0;
+
 		if (instruction_trace_cached) {
 			instr_mnem = NULL;
 			if (hi6 == HI6_BEQ)	instr_mnem = "beq";
@@ -1867,7 +1925,7 @@ int cpu_run_instr(struct cpu *cpu)
 			 */
 			if (speed_tricks && cpu->delay_slot && cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt && cpu->jump_to_self_reg == rs) {
-				if ((int64_t)cpu->gpr[rt] > 5 && imm == -1) {
+				if ((int64_t)cpu->gpr[rt] > 1 && imm == -1) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 
@@ -1877,7 +1935,7 @@ int cpu_run_instr(struct cpu *cpu)
 
 					/*  TODO: return value, cpu->gpr[rt] * 2;  */
 				}
-				if ((int64_t)cpu->gpr[rt] < -5 && imm == 1) {
+				if ((int64_t)cpu->gpr[rt] < -1 && imm == 1) {
 					if (instruction_trace_cached)
 						debug("changing r%i from %016llx to", rt, (long long)cpu->gpr[rt]);
 					cpu->gpr[rt] = 0;
@@ -1890,7 +1948,9 @@ int cpu_run_instr(struct cpu *cpu)
 
 			if (hi6 == HI6_ADDI || hi6 == HI6_ADDIU) {
 				/*  Sign-extend:  */
-				cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
+				cpu->gpr[rt] &= 0xffffffffULL;
+				if (cpu->gpr[rt] & 0x80000000ULL)
+					cpu->gpr[rt] |= 0xffffffff00000000ULL;
 			}
 			return 1;
 		case HI6_BEQ:
@@ -1906,7 +1966,7 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->running = 0;
 				return 1;
 			}
-			likely = 0;
+			likely = cond = 0;
 			switch (hi6) {
 			case HI6_BNEL:	likely = 1;
 			case HI6_BNE:	cond = (cpu->gpr[rt] != cpu->gpr[rs]);
@@ -1946,23 +2006,18 @@ int cpu_run_instr(struct cpu *cpu)
 			    was sign-extended if it was negative.  */
 			break;
 		case HI6_SLTI:
-/*			tmpvalue = imm; */
-			cpu->gpr[rt] = ((int64_t)cpu->gpr[rs] < (int64_t)tmpvalue) ? 1 : 0;
+			cpu->gpr[rt] = (int64_t)cpu->gpr[rs] < (int64_t)tmpvalue;
 			break;
 		case HI6_SLTIU:
-/*			tmpvalue = imm; */
-			cpu->gpr[rt] = (cpu->gpr[rs] < tmpvalue) ? 1 : 0;
+			cpu->gpr[rt] = cpu->gpr[rs] < tmpvalue;
 			break;
 		case HI6_ANDI:
-/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] & (tmpvalue & 0xffff);
 			break;
 		case HI6_ORI:
-/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] | (tmpvalue & 0xffff);
 			break;
 		case HI6_XORI:
-/*			tmpvalue = imm; */
 			cpu->gpr[rt] = cpu->gpr[rs] ^ (tmpvalue & 0xffff);
 			break;
 		case HI6_LB:
@@ -2111,6 +2166,8 @@ int cpu_run_instr(struct cpu *cpu)
 				 */
 				cpu->rmw = 0;
 			}
+
+			value_hi = 0;
 
 			if (st) {
 				/*  store:  */
@@ -2382,6 +2439,8 @@ int cpu_run_instr(struct cpu *cpu)
 					cpu->last_store_vaddr_page = addr & ~0xfff;
 					cpu->tlbmod_tag_of_last_store =
 					    cpu->tlbmod_tag;
+
+					cpu->mem->last_store_host_page = NULL;
 				}
 			} else {
 				if (cpu->mem->last_load_host_page != NULL) {
@@ -2390,6 +2449,8 @@ int cpu_run_instr(struct cpu *cpu)
 					cpu->last_load_vaddr_page = addr & ~0xfff;
 					cpu->tlbmod_tag_of_last_load =
 					    cpu->tlbmod_tag;
+
+					cpu->mem->last_load_host_page = NULL;
 				}
 			}
 
@@ -2560,9 +2621,7 @@ int cpu_run_instr(struct cpu *cpu)
 				debug("%s\tr%i,%016llx\n", instr_mnem, rs, cached_pc + (imm << 2));
 			}
 
-			cond = 0;
-			and_link = 0;
-			likely = 0;
+			cond = and_link = likely = 0;
 
 			switch (regimm5) {
 			case REGIMM_BLTZL:	likely = 1;
@@ -2967,53 +3026,6 @@ do_return:
 
 
 /*
- *  cpu_show_full_statistics():
- *
- *  Show detailed statistics on opcode usage on each cpu.
- */
-void cpu_show_full_statistics(struct cpu **cpus)
-{
-	int i, s1, s2;
-
-	for (i=0; i<ncpus; i++) {
-		printf("cpu%i opcode statistics:\n", i);
-		for (s1=0; s1<N_HI6; s1++) {
-			if (cpus[i]->stats_opcode[s1] > 0)
-				printf("  opcode %02x (%7s): %li\n", s1,
-				    hi6_names[s1], cpus[i]->stats_opcode[s1]);
-			if (s1 == HI6_SPECIAL)
-				for (s2=0; s2<N_SPECIAL; s2++)
-					if (cpus[i]->stats__special[s2] > 0)
-						printf("      special %02x (%7s): %li\n",
-						    s2, special_names[s2], cpus[i]->stats__special[s2]);
-			if (s1 == HI6_REGIMM)
-				for (s2=0; s2<N_REGIMM; s2++)
-					if (cpus[i]->stats__regimm[s2] > 0)
-						printf("      regimm %02x (%7s): %li\n",
-						    s2, regimm_names[s2], cpus[i]->stats__regimm[s2]);
-			if (s1 == HI6_SPECIAL2)
-				for (s2=0; s2<N_SPECIAL; s2++)
-					if (cpus[i]->stats__special2[s2] > 0)
-						printf("      special2 %02x (%7s): %li\n",
-						    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
-		}
-
-#ifdef TLBMOD_LOADSTORE_STATISTICS
-		printf("cpu%i exception tag statistics:\n", i);
-		printf("    load  hits:    %12lli\n", (long long)
-		    cpus[i]->statistics_tagged_load_hits);
-		printf("    load  misses:  %12lli\n", (long long)
-		    cpus[i]->statistics_tagged_load_misses);
-		printf("    store hits:    %12lli\n", (long long)
-		    cpus[i]->statistics_tagged_store_hits);
-		printf("    store misses:  %12lli\n", (long long)
-		    cpus[i]->statistics_tagged_store_misses);
-#endif
-	}
-}
-
-
-/*
  *  cpu_run():
  *
  *  Run instructions from all CPUs, until all CPUs have halted.
@@ -3179,6 +3191,8 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 	if (show_opcode_statistics)
 		cpu_show_full_statistics(cpus);
+
+	fflush(stdout);
 
 	return 0;
 }

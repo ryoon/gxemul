@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.32 2004-07-12 10:23:36 debug Exp $
+#  $Id: configure,v 1.33 2004-07-13 10:38:14 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -392,6 +392,11 @@ for a in ./ src/ devices/ tests/; do
 	cat _Makefile.header > $a/Makefile
 	cat $a/Makefile.skel >> $a/Makefile
 done
+
+#  Insert SRCOBJS=... at the start of ./Makefile:
+echo SRCOBJS=`cd src/; make printobjs; cd ..` > _Makefile_step2
+cat Makefile >> _Makefile_step2
+mv -f _Makefile_step2 Makefile
 
 #  Tail of config.h:
 printf "\n#endif  /*  CONFIG_H  */\n" >> config.h

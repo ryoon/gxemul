@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.173 2004-12-08 11:51:20 debug Exp $
+ *  $Id: misc.h,v 1.174 2004-12-08 13:27:30 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -666,6 +666,10 @@ struct fb_window {
 	int		OLD_cursor_xsize;
 	int		OLD_cursor_ysize;
 	int		OLD_cursor_on;
+
+	/*  Host's X11 cursor:  */
+	Cursor		host_cursor;
+	Pixmap		host_cursor_pixmap;
 #endif
 };
 void x11_redraw_cursor(int);

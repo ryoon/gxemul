@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.32 2004-12-04 19:19:57 debug Exp $
+ *  $Id: x11.c,v 1.33 2004-12-08 13:27:31 debug Exp $
  *
  *  X11-related functions.
  */
@@ -73,6 +73,9 @@ int n_framebuffer_windows = 0;
  */
 void x11_redraw_cursor(int i)
 {
+	int last_color_used;
+	int n_colors_used = 0;
+
 	/*  Remove old cursor, if any:  */
 	if (fb_windows[i].x11_display != NULL && fb_windows[i].OLD_cursor_on) {
 		XPutImage(fb_windows[i].x11_display,
@@ -120,6 +123,13 @@ void x11_redraw_cursor(int i)
 				else
 					p = c;
 
+				if (n_colors_used == 0) {
+					last_color_used = p;
+					n_colors_used = 1;
+				} else
+					if (p != last_color_used)
+						n_colors_used = 2;
+
 				switch (p) {
 				case CURSOR_COLOR_TRANSPARENT:
 					break;
@@ -158,6 +168,37 @@ void x11_redraw_cursor(int i)
 		fb_windows[i].OLD_cursor_xsize = fb_windows[i].cursor_xsize;
 		fb_windows[i].OLD_cursor_ysize = fb_windows[i].cursor_ysize;
 		XFlush(fb_windows[i].x11_display);
+	}
+
+	printf("n_colors_used = %i\n", n_colors_used);
+
+	/*  Remove the old X11 host cursor:  */
+	if (fb_windows[i].host_cursor != 0 && n_colors_used < 2) {
+		XUndefineCursor(fb_windows[i].x11_display, fb_windows[i].x11_fb_window);
+		XFlush(fb_windows[i].x11_display);
+		XFreeCursor(fb_windows[i].x11_display, fb_windows[i].host_cursor);
+		fb_windows[i].host_cursor = 0;
+	}
+
+	if (n_colors_used >= 2 && fb_windows[i].host_cursor == 0) {
+		/*  Create a new X11 host cursor:  */
+		/*  cursor = XCreateFontCursor(fb_windows[i].x11_display, XC_coffee_mug);  */
+		if (fb_windows[i].host_cursor_pixmap != 0) {
+			XFreePixmap(fb_windows[i].x11_display, fb_windows[i].host_cursor_pixmap);
+			fb_windows[i].host_cursor_pixmap = 0;
+		}
+		fb_windows[i].host_cursor_pixmap = XCreatePixmap(fb_windows[i].x11_display, fb_windows[i].x11_fb_window, 1, 1, 1);
+		/*  TODO: put a black pixel in the pixmap :)  The default is undefined.  */
+		fb_windows[i].host_cursor = XCreatePixmapCursor(fb_windows[i].x11_display,
+		    fb_windows[i].host_cursor_pixmap, fb_windows[i].host_cursor_pixmap,
+		    &fb_windows[i].x11_graycolor[N_GRAYCOLORS-1],
+		    &fb_windows[i].x11_graycolor[N_GRAYCOLORS-1],
+		    0, 0);
+		if (fb_windows[i].host_cursor != 0) {
+			XDefineCursor(fb_windows[i].x11_display, fb_windows[i].x11_fb_window,
+			    fb_windows[i].host_cursor);
+			XFlush(fb_windows[i].x11_display);
+		}
 	}
 }
 
@@ -256,6 +297,7 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 	int i;
 	char fg[80], bg[80];
 	char *display_name;
+
 
 	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
 		if (fb_windows[fb_number].x11_fb_winxsize == 0)
@@ -414,28 +456,14 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name,
 
 	x11_putimage_fb(fb_number);
 
-	/*
-	 *  If a "hardware" cursor is to be put onto the framebuffer,
-	 *  it needs to be an XImage as well.
-	 *  TODO: hardcoded to 64x64 pixels.
-	 */
-	{
-		char *cursor_data;
+	/*  Fill the 64x64 "hardware" cursor with white pixels:  */
+	xsize = ysize = 64;
 
-		xsize = ysize = 64;
-
-		cursor_data = malloc(xsize * ysize * alloc_depth / 8);
-		if (cursor_data == NULL) {
-			fprintf(stderr, "out of memory allocating cursor\n");
-			exit(1);
-		}
-
-		/*  Fill the cursor ximage with white pixels:  */
-		for (y=0; y<ysize; y++)
-			for (x=0; x<xsize; x++)
-				fb_windows[fb_number].cursor_pixels[y][x] =
-				    N_GRAYCOLORS-1;
-	}
+	/*  Fill the cursor ximage with white pixels:  */
+	for (y=0; y<ysize; y++)
+		for (x=0; x<xsize; x++)
+			fb_windows[fb_number].cursor_pixels[y][x] =
+			    N_GRAYCOLORS-1;
 
 	return &fb_windows[fb_number];
 }
@@ -458,8 +486,6 @@ void x11_check_event(void)
 			XNextEvent(fb_windows[fb_nr].x11_display, &event);
 
 			if (event.type==ConfigureNotify) {
-/*				x11_winxsize = event.xconfigure.width;
-				x11_winysize = event.xconfigure.height; */
 				need_redraw = 1;
 			}
 
@@ -470,8 +496,8 @@ void x11_check_event(void)
 				 *  the framebuffer that was exposed. Note that
 				 *  the (mouse) cursor must be redrawn too.
 				 */
-/*				x11_winxsize = event.xexpose.width;
-				x11_winysize = event.xexpose.height; */
+				/*  x11_winxsize = event.xexpose.width;
+				    x11_winysize = event.xexpose.height;  */
 				need_redraw = 1;
 			}
 
@@ -484,9 +510,7 @@ void x11_check_event(void)
 					if (fb_windows[fb_nr].x11_display == fb_windows[i].x11_display &&
 					    event.xmotion.window == fb_windows[i].x11_fb_window)
 						found = i;
-/*
-				x11_putpixel_fb(0, event.xmotion.x, event.xmotion.y, 1);
- */
+
 				console_mouse_coordinates(event.xmotion.x * fb_windows[found].scaledown,
 				    event.xmotion.y * fb_windows[found].scaledown, found);
 			}

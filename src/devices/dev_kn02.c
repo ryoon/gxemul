@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.7 2004-07-10 04:03:22 debug Exp $
+ *  $Id: dev_kn02.c,v 1.8 2004-07-10 04:11:34 debug Exp $
  *  
- *  DEC (KN02) stuff.
+ *  DEC (KN02) stuff.  See include/dec_kn02.h for more info.
  */
 
 #include <stdio.h>
@@ -55,7 +55,16 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 			odata = d->csr;
 			/* debug("[ kn02: read from CSR: 0x%08x ]\n", odata); */
 		} else {
-			/* debug("[ kn02: write to CSR: 0x%08x ]\n", idata); */
+			/*
+			 *  Only bits 23..8 are considered writable. The
+			 *  lowest 8 bits are actually writable, but don't
+			 *  affect the interrupt I/O bits; the low 8 bits
+			 *  on write turn on and off LEDs.  (There are no
+			 *  LEDs in the emulator, so those bits are just
+			 *  ignored.)
+			 */
+			/* fatal("[ kn02: write to CSR: 0x%08x ]\n", idata); */
+
 			idata &= 0x00ffff00;
 			d->csr = (d->csr & 0xff0000ffULL) | idata;
 		}

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.23 2004-01-09 16:24:50 debug Exp $
+ *  $Id: devices.h,v 1.24 2004-01-11 16:33:30 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -109,6 +109,7 @@ struct vfb_data {
 	size_t		framebuffer_size;
 	int		x11_xsize, x11_ysize;
 
+	int		updated_last_tick;
 	int		update_x1, update_y1, update_x2, update_y2;
 
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */
@@ -121,6 +122,7 @@ struct vfb_data {
 #define	VFB_MFB_BT459			0x180000
 #define	VFB_MFB_VRAM			0x200000
 #define	VFB_CFB_BT459			0x200000
+void set_grayscale_palette(struct vfb_data *d, int ncolors);
 void dev_fb_tick(struct cpu *, void *);
 int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
 struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,
@@ -257,7 +259,7 @@ void dev_sgi_cpuinfo_init(struct memory *mem, uint64_t baseaddr);
 /*  dev_sgi_gbe.c:  */
 #define	DEV_SGI_GBE_LENGTH		0x1000000
 int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_sgi_gbe_init(struct memory *mem, uint64_t baseaddr);
+void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_sgi_ip22.c:  */
 #define	DEV_SGI_IP22_LENGTH		0x100

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.8 2004-01-09 16:25:35 debug Exp $
+ *  $Id: dev_crime.c,v 1.9 2004-01-10 05:40:36 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -135,10 +135,6 @@ void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 		bank is not valid. (?)  */
 	d->reg[CRM_MEM_BANK_CTRL0 + 6] |= 1;
 
-/*  Random experiments:  */
-d->reg[CRM_MEM_BANK_CTRL0 + 7] = random();
-
-/*
 	d->reg[CRM_MEM_BANK_CTRL1 + 6] |= 1;
 	d->reg[CRM_MEM_BANK_CTRL2 + 6] |= 1;
 	d->reg[CRM_MEM_BANK_CTRL3 + 6] |= 1;
@@ -146,7 +142,6 @@ d->reg[CRM_MEM_BANK_CTRL0 + 7] = random();
 	d->reg[CRM_MEM_BANK_CTRL5 + 6] |= 1;
 	d->reg[CRM_MEM_BANK_CTRL6 + 6] |= 1;
 	d->reg[CRM_MEM_BANK_CTRL7 + 6] |= 1;
-*/
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);

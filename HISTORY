@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.59 2004-04-01 01:44:09 debug Exp $
+$Id: HISTORY,v 1.60 2004-04-02 05:49:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -427,3 +427,4 @@ HISTORY of mips64emul
 		not bgr as before.
 20040330	Some minor updates to the documentation.
 20040401	Adding a dummy ps2 OHCI device.
+20040402	Progress on the asc SCSI controller.

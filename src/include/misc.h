@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.67 2004-06-25 01:04:10 debug Exp $
+ *  $Id: misc.h,v 1.68 2004-06-27 01:09:19 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -71,16 +71,18 @@ typedef uint64_t u_int64_t;
 
 /*  Machine emulation types:  */
 #define	EMULTYPE_NONE		0
-#define	EMULTYPE_DEC		1
-#define	EMULTYPE_COBALT		2
-#define	EMULTYPE_HPCMIPS	3
-#define	EMULTYPE_PS2		4
-#define	EMULTYPE_SGI		5
-#define	EMULTYPE_ARC		6
+#define	EMULTYPE_TEST		1
+#define	EMULTYPE_DEC		2
+#define	EMULTYPE_COBALT		3
+#define	EMULTYPE_HPCMIPS	4
+#define	EMULTYPE_PS2		5
+#define	EMULTYPE_SGI		6
+#define	EMULTYPE_ARC		7
 
 /*  Specific machines:  */
-/*  DEC:  */
 #define	MACHINE_NONE		0
+
+/*  DEC:  */
 #define	MACHINE_PMAX_3100	1
 #define	MACHINE_3MAX_5000	2
 #define	MACHINE_3MIN_5000	3
@@ -114,8 +116,8 @@ typedef uint64_t u_int64_t;
 
 /*  SGI and ARC:  */
 #include "sgi_arcbios.h"
-#define	ARC_MACHINE_NEC		1
-#define	ARC_MACHINE_PICA	2
+#define	MACHINE_ARC_NEC		1
+#define	MACHINE_ARC_PICA	2
 /*
  *  Problem: kernels seem to be loaded at low addresses in RAM, so
  *  storing environment strings and memory descriptors there is a bad
@@ -467,6 +469,11 @@ struct coproc {
 #define	N_TRANSLATION_CACHE		4
 #define	N_TRANSLATION_CACHE_INSTR	4
 
+/*  This should be a value which the program counter
+    can "never" have:  */
+#define	PC_LAST_PAGE_IMPOSSIBLE_VALUE	3
+
+
 struct cpu {
 	int		cpu_id;
 	int		byte_order;
@@ -541,6 +548,8 @@ struct cpu {
 	int		instruction_delay;
 #endif
 
+	int		last_was_rfe;		/*  R2000/R3000, after rfe  */
+
 	int		trace_tree_depth;
 
 	uint64_t	delay_jmpaddr;		/*  only used if delay_slot > 0  */
@@ -550,9 +559,6 @@ struct cpu {
 
 	uint64_t	show_trace_addr;
 	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
-
-	uint64_t	old_status;
-	long		time_since_intr_enabling;
 
 	int		last_was_jumptoself;
 	int		jump_to_self_reg;

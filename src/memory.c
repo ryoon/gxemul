@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.107 2004-11-23 13:25:29 debug Exp $
+ *  $Id: memory.c,v 1.108 2004-11-23 13:47:03 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -130,10 +130,10 @@ struct memory *memory_new(uint64_t physical_max)
 {
 	struct memory *mem;
 	int n, ok;
-	int bits_per_pagetable = DEFAULT_BITS_PER_PAGETABLE;
-	int bits_per_memblock = DEFAULT_BITS_PER_MEMBLOCK;
-	int entries_per_pagetable = 1 << DEFAULT_BITS_PER_PAGETABLE;
-	int max_bits = DEFAULT_MAX_BITS;
+	int bits_per_pagetable = BITS_PER_PAGETABLE;
+	int bits_per_memblock = BITS_PER_MEMBLOCK;
+	int entries_per_pagetable = 1 << BITS_PER_PAGETABLE;
+	int max_bits = MAX_BITS;
 	size_t s;
 
 	mem = malloc(sizeof(struct memory));
@@ -144,17 +144,8 @@ struct memory *memory_new(uint64_t physical_max)
 
 	memset(mem, 0, sizeof(struct memory));
 
-	/*
-	 *  Check bits_per_pagetable and bits_per_memblock for sanity:
-	 *  bits_per_pagetable * n + bits_per_memblock = 64, for some
-	 *  integer n.
-	 */
-	ok = 0;
-	for (n=64; n>0; n--)
-		if (bits_per_pagetable * n + bits_per_memblock == max_bits)
-			ok = 1;
-
-	if (!ok) {
+	/*  Check bits_per_pagetable and bits_per_memblock for sanity:  */
+	if (bits_per_pagetable + bits_per_memblock != max_bits) {
 		fprintf(stderr, "memory_new(): bits_per_pagetable and bits_per_memblock mismatch\n");
 		exit(1);
 	}
@@ -163,15 +154,15 @@ struct memory *memory_new(uint64_t physical_max)
 
 	s = entries_per_pagetable * sizeof(void *);
 
-	mem->first_pagetable = (unsigned char *) mmap(NULL, s,
+	mem->pagetable = (unsigned char *) mmap(NULL, s,
 	    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-	if (mem->first_pagetable == NULL) {
-		mem->first_pagetable = malloc(s);
-		if (mem->first_pagetable == NULL) {
+	if (mem->pagetable == NULL) {
+		mem->pagetable = malloc(s);
+		if (mem->pagetable == NULL) {
 			fprintf(stderr, "out of memory\n");
 			exit(1);
 		}
-		memset(mem->first_pagetable, 0, s);
+		memset(mem->pagetable, 0, s);
 	}
 
 	mem->mmap_dev_minaddr = 0xffffffffffffffffULL;
@@ -309,73 +300,50 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
 unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag)
 {
-	unsigned char *memblock;
 	void **table;
 	int entry;
-	const int mask = (1 << DEFAULT_BITS_PER_PAGETABLE) - 1;
-	int shrcount = DEFAULT_MAX_BITS - DEFAULT_BITS_PER_PAGETABLE;
+	const int mask = (1 << BITS_PER_PAGETABLE) - 1;
+	const int shrcount = MAX_BITS - BITS_PER_PAGETABLE;
 
-	memblock = NULL;
-	table = mem->first_pagetable;
+	table = mem->pagetable;
+	entry = (paddr >> shrcount) & mask;
 
-	/*
-	 *  Step through the pagetables until we find the correct memory
-	 *  block:
-	 */
-	while (shrcount >= DEFAULT_BITS_PER_MEMBLOCK) {
-		/*  printf("addr = %016llx\n", paddr);  */
+	/*  printf("   entry = %x\n", entry);  */
 
-		entry = (paddr >> shrcount) & mask;
+	if (table[entry] == NULL) {
+		size_t alloclen;
 
-		/*  printf("   entry = %x\n", entry);  */
+		/*
+		 *  Special case:  reading from a nonexistant memblock
+		 *  returns all zeroes, and doesn't allocate anything.
+		 *  (If any intermediate pagetable is nonexistant, then
+		 *  the same thing happens):
+		 */
+		if (writeflag == MEM_READ)
+			return NULL;
 
+		/*  Allocate a memblock:  */
+		alloclen = 1 << BITS_PER_MEMBLOCK;
+
+		/*  printf("  allocating for entry %i, len=%i\n",
+		    entry, alloclen);  */
+
+		/*  Anonymous mmap() should return zero-filled memory,
+		    try malloc + memset if mmap failed.  */
+		table[entry] = (void *) mmap(NULL, alloclen,
+		    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
+		    -1, 0);
 		if (table[entry] == NULL) {
-			size_t alloclen;
-
-			/*
-			 *  Special case:  reading from a nonexistant memblock
-			 *  returns all zeroes, and doesn't allocate anything.
-			 *  (If any intermediate pagetable is nonexistant, then
-			 *  the same thing happens):
-			 */
-			if (writeflag == MEM_READ)
-				return NULL;
-
-			/*  Allocate a pagetable, OR a memblock:  */
-			if (shrcount == DEFAULT_BITS_PER_MEMBLOCK)
-				alloclen = 1 << DEFAULT_BITS_PER_MEMBLOCK;
-			else
-				alloclen = (1 << DEFAULT_BITS_PER_PAGETABLE)
-				    * sizeof(void *);
-
-			/*  printf("  allocating for entry %i, len=%i\n",
-			    entry, alloclen);  */
-
-			/*  Anonymous mmap() should return zero-filled memory,
-			    try malloc + memset if mmap failed.  */
-			table[entry] = (void *) mmap(NULL, alloclen,
-			    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE,
-			    -1, 0);
+			table[entry] = malloc(alloclen);
 			if (table[entry] == NULL) {
-				table[entry] = malloc(alloclen);
-				if (table[entry] == NULL) {
-					fatal("out of memory\n");
-					exit(1);
-				}
-				memset(table[entry], 0, alloclen);
+				fatal("out of memory\n");
+				exit(1);
 			}
+			memset(table[entry], 0, alloclen);
 		}
-
-		if (shrcount == DEFAULT_BITS_PER_MEMBLOCK) {
-			memblock = (unsigned char *) table[entry];
-			PREFETCH(memblock + (paddr & ((1 << DEFAULT_BITS_PER_MEMBLOCK)-1)));
-		} else
-			table = (void **) table[entry];
-
-		shrcount -= DEFAULT_BITS_PER_PAGETABLE;
 	}
 
-	return memblock;
+	return (unsigned char *) table[entry];
 }
 
 
@@ -1406,7 +1374,7 @@ no_exception_access:
 		goto do_return_ok;
 	}
 
-	offset = paddr & ((1 << DEFAULT_BITS_PER_PAGETABLE) - 1);
+	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
 
 	if (writeflag == MEM_WRITE) {
 #ifdef BINTRANS

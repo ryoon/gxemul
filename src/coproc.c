@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.96 2004-11-23 13:25:29 debug Exp $
+ *  $Id: coproc.c,v 1.97 2004-11-23 13:47:03 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1549,7 +1549,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, MEM_READ);
 		if (memblock != NULL) {
 			/*  printf("  memblock %p\n", memblock);  */
-			offset = paddr & ((1 << DEFAULT_BITS_PER_MEMBLOCK) - 1);
+			offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 			if (cp->reg[COP0_ENTRYLO0] & ENTRYLO_D)
 				bintrans_invalidate(cpu, paddr);
 

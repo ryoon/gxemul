@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_tlb.c,v 1.5 2004-11-23 13:25:29 debug Exp $
+ *  $Id: memory_fast_tlb.c,v 1.6 2004-11-23 13:47:03 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  *
@@ -177,7 +177,7 @@ urk_fulkod:
 	if (memblock == NULL)
 		return NULL;
 
-	offset = paddr & ((1 << DEFAULT_BITS_PER_PAGETABLE) - 1);
+	offset = paddr & ((1 << BITS_PER_PAGETABLE) - 1);
 
 	if (writeflag)
 		bintrans_invalidate(cpu, paddr);

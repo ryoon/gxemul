@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.154 2004-11-23 13:25:28 debug Exp $
+ *  $Id: misc.h,v 1.155 2004-11-23 13:47:02 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -256,21 +256,8 @@ struct cpu_type_def {
 struct cpu;
 
 struct memory {
-	/*  physical_max must be less than or equal to 1 << max_bits  */
 	uint64_t	physical_max;
-	int		max_bits;
-
-#if 0
-	/*  entries_per_pagetable is "1 << bits_per_pagetable" cached  */
-	int		bits_per_pagetable;
-	int		entries_per_pagetable;
-
-	/*  memblock_size is "1 << bits_per_memblock"  */
-	int		bits_per_memblock;
-	int		memblock_size;
-#endif
-
-	void		*first_pagetable;
+	void		*pagetable;
 
 	int		n_mmapped_devices;
 	int		last_accessed_device;
@@ -293,10 +280,9 @@ struct memory {
 #endif
 };
 
-#define	DEFAULT_BITS_PER_PAGETABLE	20	/*  10  or 12  or 16  or 20  */
-#define	DEFAULT_BITS_PER_MEMBLOCK	20	/*  14  or 16  or 20  */
-/*  Physical address space:  (choose something like 40, 52 or 64)  */
-#define	DEFAULT_MAX_BITS		40
+#define	BITS_PER_PAGETABLE	20
+#define	BITS_PER_MEMBLOCK	20
+#define	MAX_BITS		40
 
 #define	MEM_READ			0
 #define	MEM_WRITE			1
@@ -1007,17 +993,6 @@ void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
 void machine_init(struct emul *emul, struct memory *mem);
-
-
-/*  memory.c:  */
-#if 0
-struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, size_t physical_max, int max_bits);
-int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length);
-char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
-int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char *data, size_t len, int writeflag, int cache);
-void memory_device_register(struct memory *mem, const char *, uint64_t baseaddr, uint64_t len, int (*f)(
-	struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *);
-#endif
 
 
 /*  mips16.c:  */

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.323 2004-11-23 09:20:44 debug Exp $
+$Id: HISTORY,v 1.324 2004-11-23 13:47:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1173,3 +1173,4 @@ HISTORY of mips64emul
 		DECstation emulation from the main memory handling code, and
 		replacing it with a mirror device instead. (This results in
 		a tiny increase in performance, and cleaner code.)
+		Various minor updates.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.10 2004-02-18 09:35:22 debug Exp $
+ *  $Id: dev_asc.c,v 1.11 2004-02-19 10:26:23 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -257,16 +257,26 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 	} else {
 		/*  Data coming into the controller from external device:  */
 		if (!dmaflag) {
-			/*  TODO: non-dma transfer  */
-			len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
+			if (d->incoming_data == NULL) {
+				fatal("no incoming DMA data?\n");
+			} else {
+				len = d->reg_wo[NCR_TCL] + d->reg_wo[NCR_TCM] * 256;
 
-			len--;
-			ch = d->incoming_data[d->incoming_data_addr];
-			d->incoming_data_addr ++;
-			dev_asc_fifo_write(d, ch);
+				len--;
+				ch = d->incoming_data[d->incoming_data_addr];
+				debug(" %02x", ch);
 
-			d->reg_ro[NCR_TCL] = len & 255;
-			d->reg_ro[NCR_TCM] = (len >> 8) & 255;
+				d->incoming_data_addr ++;
+				dev_asc_fifo_write(d, ch);
+
+				if (len == 0) {
+					free(d->incoming_data);
+					d->incoming_data = NULL;
+				}
+
+				d->reg_ro[NCR_TCL] = len & 255;
+				d->reg_ro[NCR_TCM] = (len >> 8) & 255;
+			}
 		} else {
 			/*  Copy from the incoming buf into dma memory:  */
 			if (d->incoming_data == NULL) {
@@ -275,6 +285,10 @@ void dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag, i
 				int len = d->incoming_len;
 				if (len > sizeof(d->dma))
 					len = sizeof(d->dma);
+
+				for (i=0; i<len; i++)
+					debug(" %02x", d->incoming_data[i]);
+
 				memcpy(d->dma, d->incoming_data, len);
 				free(d->incoming_data);
 				d->incoming_data = NULL;
@@ -508,6 +522,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			/*  TODO  */
 
 			if (d->cur_state == STATE_TARGET) {
+				dev_asc_fifo_write(d, 1 << (d->reg_wo[NCR_SELID] & 7));
+				dev_asc_fifo_write(d, 0x00);
+
 				dev_asc_transfer(d, d->reg_wo[NCR_SELID] & 7, d->reg_ro[NCR_CFG1] & 0x7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
@@ -518,10 +535,6 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				d->reg_ro[NCR_STAT] = (d->reg_ro[NCR_STAT] & ~7) | 7;	/*  ?  */
 				d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 4;	/*  ?  */
 				d->cur_state = STATE_INITIATOR;		/*  ?  */
-
-				/*  ?  */
-				dev_asc_fifo_write(d, 0x01);
-				dev_asc_fifo_write(d, 0x00);
 			} else {
 				dev_asc_transfer(d, d->reg_ro[NCR_CFG1] & 0x7, d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0, 0);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.9 2004-04-06 02:17:30 debug Exp $
+ *  $Id: diskimage.c,v 1.10 2004-04-06 09:11:07 debug Exp $
  *
  *  Disk image support.
  *
@@ -54,6 +54,8 @@ struct diskimage {
 
 static struct diskimage *diskimages[MAX_DISKIMAGES];
 static int n_diskimages = 0;
+
+int logical_block_size = 512;
 
 
 /**************************************************************************/
@@ -189,6 +191,7 @@ int64_t diskimage_getsize(int disk_id)
 int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 {
 	int retlen;
+	int64_t size, ofs;
 
 	if (disk_id < 0 || disk_id >= n_diskimages || diskimages[disk_id]==NULL)
 		return 0;
@@ -230,8 +233,9 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 		if (xferp->cmd[1] != 0x00) {
-			fatal(" INQUIRY with cmd[1]=0x%02x not yet implemented\n");
-			exit(1);
+			debug("WARNING: INQUIRY with cmd[1]=0x%02x not yet implemented\n");
+
+			break;
 		}
 
 		/*  Return values:  */
@@ -246,10 +250,13 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		xferp->data_in[0] = 0x00;	/*  Direct-access disk  */
 		xferp->data_in[1] = 0x00;	/*  non-removable  */
 		xferp->data_in[2] = 0x02;	/*  SCSI-2  */
+		xferp->data_in[4] = retlen - 4;	/*  Additional length  */
 		xferp->data_in[6] = 0x04;	/*  ACKREQQ  */
 		xferp->data_in[7] = 0x60;	/*  WBus32, WBus16  */
-		memcpy(xferp->data_in+8, "VENDORID", 8);
-		memcpy(xferp->data_in+16, "PRODUCT ID      ", 16);
+
+		/*  These must be padded with spaces:  */
+		memcpy(xferp->data_in+8, "FAKE    ", 8);
+		memcpy(xferp->data_in+16, "MIPS64EMUL DISK ", 16);
 		memcpy(xferp->data_in+32, "V0.0", 4);
 
 		/*  Return msg and status:  */
@@ -262,14 +269,103 @@ int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 		break;
 
 	case SCSIBLOCKCMD_READ_CAPACITY:
-		fatal("[ SCSI READ_CAPACITY: TODO ]\n");
+		debug("READ_CAPACITY");
+
+		if (xferp->cmd_len != 10)
+			debug(" (weird len=%i)", xferp->cmd_len);
+		if (xferp->cmd[8] & 1) {
+			/*  Partial Medium Indicator bit...  TODO  */
+			fatal("WARNING: READ_CAPACITY with PMI bit set not yet implemented\n");
+		}
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, 8);
+
+		size = diskimages[disk_id]->total_size / logical_block_size;
+		if (diskimages[disk_id]->total_size & (logical_block_size-1))
+			size ++;
+
+		xferp->data_in[0] = (size >> 24) & 255;
+		xferp->data_in[1] = (size >> 16) & 255;
+		xferp->data_in[2] = (size >> 8) & 255;
+		xferp->data_in[3] = size & 255;
+
+		xferp->data_in[4] = (logical_block_size >> 24) & 255;
+		xferp->data_in[5] = (logical_block_size >> 16) & 255;
+		xferp->data_in[6] = (logical_block_size >> 8) & 255;
+		xferp->data_in[7] = logical_block_size & 255;
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_MODE_SENSE:
+		debug("MODE_SENSE");
+
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
+
+		/*  TODO: check more cmd fields  */
+
+		retlen = xferp->cmd[4];
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, retlen);
+
+		/*  TODO: fill in page codes and whatever...  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
+		break;
+
+	case SCSICMD_READ:
+		debug("READ");
+
+		if (xferp->cmd_len != 6)
+			debug(" (weird len=%i)", xferp->cmd_len);
+
+		/*
+		 *  bits 4..0 of cmd[1], and cmd[2] and cmd[3] hold the
+		 *  logical block address.
+		 *
+		 *  cmd[4] holds the number of logical blocks to transfer.
+		 *  (special case if the value is 0, actually means 256.)
+		 */
+		ofs = (xferp->cmd[1] & 0x1f) << 16 +
+		      (xferp->cmd[2]) << 8 + xferp->cmd[3];
+		retlen = xferp->cmd[4];
+		if (retlen == 0)
+			retlen = 256;
+
+		size = retlen * logical_block_size;
+		ofs *= logical_block_size;
+
+		/*  Return data:  */
+		scsi_transfer_allocbuf(&xferp->data_in_len, &xferp->data_in, size);
+
+		diskimage_access(disk_id, 0, ofs, xferp->data_in, size);
+		/*  TODO: how about return code?  */
+
+		/*  Return status and message:  */
+		scsi_transfer_allocbuf(&xferp->status_len, &xferp->status, 1);
+		xferp->status[0] = 0x00;
+		scsi_transfer_allocbuf(&xferp->msg_in_len, &xferp->msg_in, 1);
+		xferp->msg_in[0] = 0x00;
+
 		break;
 
 	case 0x03:
-	case 0x08:
 	case 0x15:
-	case 0x1a:
 	case 0x1b:
+	case 0x1e:
 		fatal("[ SCSI 0x%02x: TODO ]\n", xferp->cmd[0]);
 		break;
 

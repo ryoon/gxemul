@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.17 2004-04-06 02:17:48 debug Exp $
+ *  $Id: dev_asc.c,v 1.18 2004-04-06 09:11:09 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -59,6 +59,8 @@
 #define	PHASE_STATUS		3
 #define	PHASE_MSG_OUT		6
 #define	PHASE_MSG_IN		7
+
+extern int instruction_trace;
 
 
 /*  The controller's SCSI id:  */
@@ -222,8 +224,7 @@ void dev_asc_newxfer(struct asc_data *d)
 int dev_asc_transfer(struct asc_data *d, int from_id, int to_id, int dmaflag)
 {
 	int res = 1;
-	int ok, len, i, retlen, ch;
-	unsigned char *buf, *retbuf;
+	int len, i, ch;
 
 	debug(" { TRANSFER from id %i to id %i: ", from_id, to_id);
 
@@ -327,6 +328,11 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 			debug(" %02x", ch);
 			d->xferp->msg_out[i++] = ch;
 		}
+
+		if ((d->xferp->msg_out[0] & 0x7) != 0x00) {
+			debug(" (LUNs not implemented yet) }");
+			return 0;
+		}
 	} else {
 		debug(" none");
 	}
@@ -357,7 +363,8 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 		    &d->xferp->cmd, len);
 
 		for (i=0; i<len; i++) {
-			ch = d->dma[d->dma_address_reg + i];
+			int ofs = d->dma_address_reg + i;
+			ch = d->dma[ofs & (sizeof(d->dma)-1)];
 			d->xferp->cmd[i] = ch;
 			debug("%02x ", ch);
 		}
@@ -455,6 +462,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			    relative_addr - 0x80000);
 			for (i=0; i<len; i++)
 				debug(" %02x", data[i]);
+
+/* instruction_trace = 1; */
+
+			/*  Don't return the common way, as that would overwrite data.  */
+			debug(" ]\n");
+			return 1;
 		} else {
 			memcpy(d->dma + (relative_addr - 0x80000), data, len);
 			debug("[ asc: write to  DMA addr 0x%05x:",
@@ -527,9 +540,11 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 		case NCRCMD_ICCS:
 			debug("ICCS");
 			/*  Reveice a status byte + a message byte.  */
-			/*  TODO  */
+
+			/*  TODO: these should be read from the xferp  */
 			dev_asc_fifo_write(d, 0);
 			dev_asc_fifo_write(d, 0);
+
 			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 /*			d->reg_ro[NCR_INTR] |= NCRINTR_BS; */
@@ -601,13 +616,22 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 				dev_asc_newxfer(d);
 
-				d->cur_state = STATE_INITIATOR;
-
 				ok = dev_asc_select(d,
 				    d->reg_ro[NCR_CFG1] & 7,
 				    d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0,
 				    n_messagebytes);
+
+				if (ok)
+					d->cur_state = STATE_INITIATOR;
+				else {
+					d->cur_state = STATE_DISCONNECTED;
+					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
+					d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+					d->reg_ro[NCR_STEP] = (d->reg_ro[NCR_STEP] & ~7) | 0;
+					scsi_transfer_free(d->xferp);
+					d->xferp = NULL;
+				}
 			} else {
 				/*
 				 *  Selection failed, non-existant scsi ID:
@@ -696,6 +720,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	}
 
 	debug(" ]\n");
+
+	dev_asc_tick(cpu, extra);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);

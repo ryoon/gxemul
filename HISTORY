@@ -320,3 +320,4 @@ HISTORY of mips64emul
 		ideas to be written down.
 		Increasing performance a little bit by inlining the check for
 		interrupts (which occurs for every instruction).
+20040124	Experimenting with pure userland (syscall) emulation.

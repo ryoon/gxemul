@@ -141,12 +141,26 @@ image is added; the first will be SCSI target 0, the second will be target 1, an
 You can run (some) userland programs as well. This will not emulate any
 particular machine, but instead try to translate syscalls from for example
 NetBSD/pmax into the host's OS' syscalls. For example, running /bin/hostname
-or /bin/date from the NetBSD/pmax distribution works:
+or /bin/date and similarly trivial programs from the NetBSD/pmax distribution
+works:
 <pre>
-	$ <b>./mips64emul -q -u ../../mips/bin/pmax_bin_hostname</b>
+	$ <b>./mips64emul -qu1 pmax_bin_hostname</b>
 	tab.csbnet.se
-	$ <b>./mips64emul -q -u ../../mips/bin/pmax_bin_date</b>
+	$ <b>./mips64emul -qu1 pmax_bin_date</b>
 	Sun Jan 25 02:26:14 GMT 2004
+	$ <b>./mips64emul -qu1 pmax_bin_sleep</b>
+	usage: pmax_bin_sleep seconds
+	$ <b>./mips64emul -qu1 pmax_bin_sleep 5</b>
+	$ <b>./mips64emul -qu1 pmax_bin_sync</b>
+</pre>
+There's also an Ultrix4 emulation mode:
+<pre>
+	$ <b>./mips64emul -qu2 ultrix4_bin_date</b>
+	UNIMPLEMENTED ultrix syscall 54
+	UNIMPLEMENTED ultrix syscall 62
+	Mon Feb  9 12:50:59 WET 2004
+	$ <b>./mips64emul -qu2 ultrix4_bin_hostname</b>
+	tab.csbnet.se
 </pre>
 Userland syscall emulation is still in its beginning stages, so almost
 nothing works.

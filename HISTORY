@@ -323,3 +323,4 @@ HISTORY of mips64emul
 20040124	Experimenting with pure userland (syscall) emulation.
 20040127	Fixes for compiling under Solaris.
 20040206	Some bintrans experiments.
+20040209	Adding some simple Ultrix userland emulation syscalls.

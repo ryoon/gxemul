@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.171 2005-01-26 16:17:14 debug Exp $
+ *  $Id: main.c,v 1.172 2005-01-26 16:47:28 debug Exp $
  */
 
 #include <stdio.h>
@@ -159,13 +159,14 @@ static void usage(char *progname, int longusage)
 	printf("Read the source code and/or documentation for "
 	    "other Copyright messages.\n");
 	printf("\nusage: %s [options] file [...]\n", progname);
+	printf("   or  %s [options] @configfile\n", progname);
 
 	if (!longusage) {
 		printf("\nRun with  -h  for help on command line options.\n\n");
 		goto ret;
 	}
 
-	printf("\n");
+	printf("\nMachine specific options:\n");
 	printf("  -A x      try to emulate an ARC machine (1=NEC-RD94, 2=PICA-61, 3=NEC-R94,\n");
 	printf("            4=Deskstation Tyne, 5=MIPS Magnum, 6=NEC-R98, 7=Olivetti M700,\n");
 	printf("            8=NEC-R96)\n");
@@ -207,7 +208,6 @@ static void usage(char *progname, int longusage)
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -g        try to emulate a NetGear box (WG602)\n");
 	printf("  -H        try to emulate a Linksys WRT54G\n");
-	printf("  -h        display this help message\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic clock adjustments)\n");
 	printf("  -i        display each instruction as it is executed\n");
@@ -216,7 +216,6 @@ static void usage(char *progname, int longusage)
 	printf("                -j netbsd          for NetBSD/pmax\n");
 	printf("                -j bsd             for OpenBSD/pmax\n");
 	printf("                -j vmunix          for Ultrix/RISC\n");
-	printf("  -K        force the debugger to be entered at the end of a simulation\n");
 	printf("  -M m      emulate m MBs of physical RAM\n");
 	printf("  -m nr     run at most nr instructions (on any cpu)\n");
 	printf("  -N        display nr of instructions/second average, at regular intervals\n");
@@ -227,7 +226,6 @@ static void usage(char *progname, int longusage)
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
 	printf("  -p pc     add a breakpoint (remember to use the '0x' prefix for hex!)\n");
 	printf("  -Q        no built-in PROM emulation  (use this for running ROM images)\n");
-	printf("  -q        quiet mode (don't print startup or debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
 	printf("  -r        register dumps before every instruction\n");
 	printf("  -S        initialize emulated RAM to random bytes, instead of zeroes\n");
@@ -238,8 +236,6 @@ static void usage(char *progname, int longusage)
 #ifdef ENABLE_USERLAND
 	printf("  -u x      userland-only (syscall) emulation; 1=NetBSD/pmax, 2=Ultrix/pmax\n");
 #endif
-	printf("  -V        start up in the single-step debugger, paused\n");
-	printf("  -v        verbose debug messages\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times\n");
@@ -248,8 +244,14 @@ static void usage(char *progname, int longusage)
 	printf("  -Z n      set nr of graphics cards, for emulating a dual-head or tripple-head\n"
 	       "            environment (only for DECstation emulation)\n");
 	printf("  -z disp   add disp as an X11 display to use for framebuffers\n");
-	printf("\n");
 
+	printf("\nGeneral options:\n");
+	printf("  -h        display this help message\n");
+	printf("  -K        force the debugger to be entered at the end of a simulation\n");
+	printf("  -q        quiet mode (don't print startup or debug messages)\n");
+	printf("  -V        start up in the single-step debugger, paused\n");
+	printf("  -v        verbose debug messages\n");
+	printf("\n");
 ret:
 	printf("You must specify one or more names of files that you wish to load into memory.\n");
 	printf("Supported formats:  ELF a.out ecoff srec syms raw\n");
@@ -271,6 +273,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int ch, using_switch_d = 0, using_switch_o = 0, using_switch_Z = 0;
 	char *progname = argv[0];
 	int n_cpus_set = 0;
+	int msopts = 0;		/*  Machine-specific options used  */
 	struct machine *m = emul_add_machine(emul, "default");
 
 	while ((ch = getopt(argc, argv, "A:aBbC:D:d:EeF:fG:gHhI:iJj:KM:m:"
@@ -290,9 +293,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'b':
 			m->bintrans_enable = 1;
+			msopts = 1;
 			break;
 		case 'C':
 			m->cpu_name = strdup(optarg);
+			msopts = 1;
 			break;
 		case 'D':
 			m->machine_type = MACHINE_DEC;
@@ -301,6 +306,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'd':
 			diskimage_add(m, optarg);
 			using_switch_d = 1;
+			msopts = 1;
 			break;
 		case 'E':
 			m->machine_type = MACHINE_COBALT;
@@ -336,12 +342,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 		case 'I':
 			m->emulated_hz = atoi(optarg);
 			m->automatic_clock_adjustment = 0;
+			msopts = 1;
 			break;
 		case 'i':
 			m->instruction_trace = 1;
+			msopts = 1;
 			break;
 		case 'J':
 			m->speed_tricks = 0;
+			msopts = 1;
 			break;
 		case 'j':
 			m->boot_kernel_filename = strdup(optarg);
@@ -349,25 +358,31 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				fprintf(stderr, "out of memory\n");
 				exit(1);
 			}
+			msopts = 1;
 			break;
 		case 'K':
 			emul->force_debugger_at_exit = 1;
 			break;
 		case 'M':
 			m->physical_ram_in_mb = atoi(optarg);
+			msopts = 1;
 			break;
 		case 'm':
 			m->max_instructions = atoi(optarg);
+			msopts = 1;
 			break;
 		case 'N':
 			m->show_nr_of_instructions = 1;
+			msopts = 1;
 			break;
 		case 'n':
 			m->ncpus = atoi(optarg);
 			n_cpus_set = 1;
+			msopts = 1;
 			break;
 		case 'O':
 			m->force_netboot = 1;
+			msopts = 1;
 			break;
 		case 'o':
 			m->boot_string_argument = strdup(optarg);
@@ -376,6 +391,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				exit(1);
 			}
 			using_switch_o = 1;
+			msopts = 1;
 			break;
 		case 'p':
 			if (m->n_breakpoints >= MAX_BREAKPOINTS) {
@@ -389,36 +405,46 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			}
 			m->breakpoint_flags[m->n_breakpoints] = 0;
 			m->n_breakpoints ++;
+			msopts = 1;
 			break;
 		case 'Q':
 			m->prom_emulation = 0;
+			msopts = 1;
 			break;
 		case 'q':
 			quiet_mode = 1;
 			break;
 		case 'R':
 			m->use_random_bootstrap_cpu = 1;
+			msopts = 1;
 			break;
 		case 'r':
 			m->register_dump = 1;
+			msopts = 1;
 			break;
 		case 'S':
 			m->random_mem_contents = 1;
+			msopts = 1;
 			break;
 		case 's':
 			m->show_opcode_statistics = 1;
+			msopts = 1;
 			break;
 		case 'T':
 			m->trace_on_bad_address = 1;
+			msopts = 1;
 			break;
 		case 't':
 			m->show_trace_tree = 1;
+			msopts = 1;
 			break;
 		case 'U':
 			m->slow_serial_interrupts_hack_for_linux = 1;
+			msopts = 1;
 			break;
 		case 'u':
 			m->userland_emul = atoi(optarg);
+			msopts = 1;
 			break;
 		case 'V':
 			emul->single_step = 1;
@@ -428,16 +454,20 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'X':
 			m->use_x11 = 1;
+			msopts = 1;
 			break;
 		case 'Y':
 			m->x11_scaledown = atoi(optarg);
+			msopts = 1;
 			break;
 		case 'y':
 			m->max_random_cycles_per_chunk = atoi(optarg);
+			msopts = 1;
 			break;
 		case 'Z':
 			m->n_gfx_cards = atoi(optarg);
 			using_switch_Z = 1;
+			msopts = 1;
 			break;
 		case 'z':
 			m->x11_n_display_names ++;
@@ -455,6 +485,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 				printf("out of memory\n");
 				exit(1);
 			}
+			msopts = 1;
 			break;
 		default:
 			printf("Invalid option.\n");
@@ -468,6 +499,13 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	extra_argc = argc;
 	extra_argv = argv;
+
+
+	if (m->machine_type == MACHINE_NONE && msopts) {
+		printf("Machine specific options used directly on the command "
+		    "line, but no machine\nemulation specified?\n");
+		exit(1);
+	}
 
 
 	/*  -i, -r, -t are pretty verbose:  */

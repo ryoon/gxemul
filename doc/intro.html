@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.22 2005-03-29 07:29:01 debug Exp $
+$Id: intro.html,v 1.23 2005-03-29 07:48:42 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -425,23 +425,16 @@ interacted with similar to a real machine:
 
 <p><br>
 
-<super>*</super> Although Linux runs under DECstation emulation, at the
-time of writing this, Linux has no support for keyboards on the 5000/200
+(<super>*</super> Although Linux runs under DECstation emulation, the 
+default kernel in Debian GNU/Linux does not support keyboards on the 5000/200
 (the specific DECstation model being emulated), so when the login prompt
-is reached you cannot interact with the system. Some people are
-<a href="http://meeting.ffis.de/Oldenburg2004/work.html">working on</a>
-improving the situation. Running in text-mode (emulated serial console) 
-works fine, though, but then you don't get to see the penguin in the corner.
-
-<p>
-[&nbsp;<font color="#ff0000">UPDATE 2005-01-19:</font>&nbsp;
-Kaj-Michael Lang noticed that the current CVS-version of
-<a href="http://www.linux-mips.org/">linux-mips</a> has
-support for keyboards now, on DECstation 5000/200, so it is
-possible to run Linux in GXemul with framebuffer/keyboard.
-He has made a kernel available here:
+is reached you cannot interact with the system.
+Kaj-Michael Lang has made available a newer kernel (which supports
+keyboard input) here:
 <a href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
-&nbsp;]
+This newer kernel, however, does not have Debian's ethernet patches,
+so you will not be able to use keyboard/framebuffer <i>and</i> networking
+at the same time.)
 
 
 <p>

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.23 2005-03-29 07:29:01 debug Exp $
+$Id: guestoses.html,v 1.24 2005-03-29 07:48:42 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -297,13 +297,13 @@ an emulated MobilePro 780, by following these instructions:
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation</a>/<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/installation/netbsd.gz">netbsd.gz</a>
 	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0</a>/<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/hpcmipscd.iso">hpcmipscd.iso</a>
 
-</pre>(Or choose a mirror closer to you, if .se is slow.)
+</pre>(You may want to choose a mirror closer to you, if .se is slow.)
   <p>
   <li>Start the installation like this:<pre>
 	$ <b>gxemul -E hpc -e mobilepro780 -b -X -d nbsd_hpcmips.img -d hpcmipscd.iso netbsd</b>
 
 </pre>
-	and proceed like you would do if you were installing on a real
+	and proceed like you would do if you were installing NetBSD on a real
 	MobilePro 780. (Install onto wd0, choose "Use entire disk" when
 	doing the MBR partitioning, and choose wd1d (not cd0c) as the
 	CDROM device to install from.)

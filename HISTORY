@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.110 2004-06-28 23:40:29 debug Exp $
+$Id: HISTORY,v 1.111 2004-06-29 00:18:23 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -618,3 +618,4 @@ HISTORY of mips64emul
 		scaledown mode. This is now fixed.
 		Adding a small program which removes "zero holes" from
 		harddisk image files.
+20040629	More minor fixes.

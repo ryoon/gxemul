@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.352 2004-12-04 12:48:40 debug Exp $
+$Id: HISTORY,v 1.353 2004-12-04 13:08:38 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1234,7 +1234,7 @@ HISTORY of mips64emul
 		Adding arbios hacks for Open(), Seek(), GetRelativeTime(),
 		and Read() to allow WinNT's SETUPLDR to read the filesystem
 		on the diskimage used for booting.
-20041203	Adding a terminal emulator layer which converts arcbios
+20041203	Adding a terminal emulation layer which converts arcbios
 		stdout writes to "VGA text console" cell characters. Seems
 		to work with Windows NT and arcdiag.
 		Adding a 8x8 font to dev_vga.
@@ -1243,4 +1243,4 @@ HISTORY of mips64emul
 20041204	Minor updates.
 		More updates to dev_vga. Adding a 8x10 font.
 		Adding a hack so that the framebuffer logo is visible at
-		startup with dev_vga.
+		startup with dev_vga. (It disappears at the first scroll.)

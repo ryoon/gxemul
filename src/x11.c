@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.5 2003-11-08 14:25:38 debug Exp $
+ *  $Id: x11.c,v 1.6 2003-11-11 14:25:01 debug Exp $
  *
  *  X11-related functions.
  */
@@ -55,7 +55,9 @@ int x11_fb_winxsize = 0, x11_fb_winysize = 0;
 Display *x11_display = NULL;
 int x11_screen, screen_depth;
 unsigned long fg_COLOR, bg_COLOR;
-/*  int x11_winx, x11_winy; int x11_winxsize, x11_winysize;  */
+
+int x11_using_truecolor;
+XColor x11_graycolor[16];
 
 /*  Framebuffer windows:  */
 #define	MAX_FRAMEBUFFER_WINDOWS		8
@@ -130,6 +132,7 @@ void x11_putimage_fb(int fb_number)
 void x11_init(void)
 {
 	XColor tmpcolor;
+	int i;
 	char fg[80], bg[80];
 
 	x11_display = XOpenDisplay(NULL);
@@ -141,6 +144,11 @@ void x11_init(void)
 	x11_screen = DefaultScreen(x11_display);
 	screen_depth = DefaultDepth(x11_display, x11_screen);
 
+	x11_using_truecolor = screen_depth==24? 1 : 0;
+	if (!x11_using_truecolor)
+		debug("WARNING! default visual is not 24-bit truecolor; "
+		    "using only 16 grayscales instead\n");
+
 	strcpy(bg, "Black");
 	strcpy(fg, "White");
 
@@ -150,6 +158,16 @@ void x11_init(void)
 	XParseColor(x11_display, DefaultColormap(x11_display, x11_screen), bg, &tmpcolor);
 	XAllocColor(x11_display, DefaultColormap(x11_display, x11_screen), &tmpcolor);
 	bg_COLOR = tmpcolor.pixel;
+
+	for (i=0; i<16; i++) {
+		char cname[8];
+		cname[0] = '#';
+		cname[1] = cname[2] = cname[3] =
+		    cname[4] = cname[5] = cname[6] =
+		    "0123456789ABCDEF"[i];
+		XParseColor(x11_display, DefaultColormap(x11_display, x11_screen), cname, &x11_graycolor[i]);
+		XAllocColor(x11_display, DefaultColormap(x11_display, x11_screen), &x11_graycolor[i]);
+	}
 
         XFlush(x11_display);
 
@@ -164,7 +182,7 @@ void x11_init(void)
  */
 struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 {
-	int fb_number = 0;
+	int x, y, fb_number = 0;
 	int bytes_per_pixel = screen_depth / 8;
 
 	while (fb_number < MAX_FRAMEBUFFER_WINDOWS) {
@@ -212,16 +230,23 @@ struct fb_window *x11_fb_init(int xsize, int ysize, char *name)
 		fprintf(stderr, "out of memory allocating ximage_data\n");
 		exit(1);
 	}
-	memset(fb_windows[fb_number].ximage_data, 0, bytes_per_pixel * xsize * ysize);
 
 	fb_windows[fb_number].fb_ximage = XCreateImage(fb_windows[fb_number].x11_display, CopyFromParent,
-	    8 * bytes_per_pixel, XYPixmap, 0, fb_windows[fb_number].ximage_data, xsize, ysize, 8, 0);
+	    8 * bytes_per_pixel, XYPixmap, 0, (char *)fb_windows[fb_number].ximage_data, xsize, ysize, 8, 0);
 	if (fb_windows[fb_number].fb_ximage == NULL) {
 		fprintf(stderr, "out of memory allocating ximage\n");
 		exit(1);
 	}
 
-	XInitImage(fb_windows[fb_number].fb_ximage);
+	/*  Fill the ximage with black pixels:  */
+	if (x11_using_truecolor)
+		memset(fb_windows[fb_number].ximage_data, 0, bytes_per_pixel * xsize * ysize);
+	else {
+		debug("x11_fb_init(): clearing the XImage\n");
+		for (y=0; y<ysize; y++)
+			for (x=0; x<xsize; x++)
+				XPutPixel(fb_windows[fb_number].fb_ximage, x, y, x11_graycolor[0].pixel);
+	}
 
 	x11_putimage_fb(fb_number);
 

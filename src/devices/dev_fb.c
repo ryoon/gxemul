@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.8 2003-11-09 03:59:16 debug Exp $
+ *  $Id: dev_fb.c,v 1.9 2003-11-11 14:24:55 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -60,6 +60,10 @@
 extern int x11_scaledown;
 extern int use_x11;
 
+#ifdef WITH_X11
+extern XColor x11_graycolor[16];
+extern int x11_using_truecolor;
+#endif
 
 /*
  *  set_grayscale_palette():
@@ -160,7 +164,10 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 #ifdef WITH_X11
 			/*  Combine the color into an X11 long and display it:  */
 			/*  TODO:  construct color in a more portable way:  */
-			color = (r << 16) + (g << 8) + b;
+			if (x11_using_truecolor)
+				color = (r << 16) + (g << 8) + b;
+			else
+				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel;
 
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
 				XPutPixel(d->fb_window->fb_ximage, x, y, color);
@@ -239,13 +246,18 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 			color_b += b;
 		    }
 
+#ifdef WITH_X11
 		/*  Average out the pixel color, and combine it to a RGB long:  */
 		/*  TODO:  construct color in a more portable way:  */
-		color = ((color_r / scaledownXscaledown) << 16) +
-			((color_g / scaledownXscaledown) << 8) +
-			(color_b / scaledownXscaledown);
+		if (x11_using_truecolor)
+			color = ((color_r / scaledownXscaledown) << 16) +
+				((color_g / scaledownXscaledown) << 8) +
+				(color_b / scaledownXscaledown);
+		else {
+			color = 15 * (color_r + color_g + color_b) / (scaledownXscaledown * 255 * 3);
+			color = x11_graycolor[color < 0? 0 : (color > 15? 15 : color)].pixel;
+		}
 
-#ifdef WITH_X11
 		if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
 			XPutPixel(d->fb_window->fb_ximage, x, y, color);
 #endif
@@ -459,9 +471,6 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	/*  Clear the framebuffer (all black pixels):  */
 	d->framebuffer_size = size;
 	memset(d->framebuffer, 0, size);
-
-	/*  {  int i; for (i=0; i<size; i++)
-		d->framebuffer[i] = random(); }  */
 
 	d->x11_xsize = d->visible_xsize / d->vfb_scaledown;
 	d->x11_ysize = d->visible_ysize / d->vfb_scaledown;

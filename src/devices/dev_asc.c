@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.4 2003-11-08 11:25:58 debug Exp $
+ *  $Id: dev_asc.c,v 1.5 2003-11-09 04:13:39 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -43,6 +43,7 @@
 
 #include "misc.h"
 #include "devices.h"
+#include "diskimage.h"
 
 #include "ncr53c9xreg.h"
 
@@ -60,6 +61,7 @@ struct asc_data {
 	unsigned char	fifo[ASC_FIFO_LEN];
 	int		fifo_in;
 	int		fifo_out;
+	int		n_bytes_in_fifo;		/*  cached  */
 
 	/*  Read registers and write registers:  */
 	uint32_t	reg_ro[0x10];
@@ -91,6 +93,20 @@ void dev_asc_tick(struct cpu *cpu, void *extra)
 
 
 /*
+ *  dev_asc_fifo_flush():
+ *
+ *  Flush the fifo.
+ */
+void dev_asc_fifo_flush(struct asc_data *d)
+{
+	d->fifo[0] = 0x00;
+	d->fifo_in = 0;
+	d->fifo_out = 0;
+	d->n_bytes_in_fifo = 0;
+}
+
+
+/*
  *  dev_asc_reset():
  *
  *  Reset the state of the asc.
@@ -98,6 +114,7 @@ void dev_asc_tick(struct cpu *cpu, void *extra)
 void dev_asc_reset(struct asc_data *d)
 {
 	d->cur_state = STATE_DISCONNECTED;
+	dev_asc_fifo_flush(d);
 
 	/*  According to table 4.1 in the LSI53CF92A manual:  */
 	memset(d->reg_wo, 0, sizeof(d->reg_wo));
@@ -117,6 +134,7 @@ int dev_asc_fifo_read(struct asc_data *d)
 {
 	int res = d->fifo[d->fifo_out];
 	d->fifo_out = (d->fifo_out + 1) % ASC_FIFO_LEN;
+	d->n_bytes_in_fifo --;
 
 	if (d->fifo_in == d->fifo_out)
 		fatal("dev_asc: WARNING! FIFO overrun!\n");
@@ -134,6 +152,7 @@ void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
 {
 	d->fifo[d->fifo_in] = data;
 	d->fifo_in = (d->fifo_in + 1) % ASC_FIFO_LEN;
+	d->n_bytes_in_fifo ++;
 
 	if (d->fifo_in == d->fifo_out)
 		fatal("dev_asc: WARNING! FIFO overrun on write!\n");
@@ -168,6 +187,9 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 
 	odata_set = 1;  odata = 0;
 	regnr = relative_addr / 4;
+
+
+	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5) + d->n_bytes_in_fifo;
 
 	if (regnr < 0x10) {
 		if (writeflag==MEM_WRITE)
@@ -216,9 +238,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		case NCRCMD_FLUSH:
 			debug("FLUSH");
 			/*  Flush the FIFO:  */
-			d->fifo[0] = 0x00;
-			d->fifo_in = 0;
-			d->fifo_out = 0;
+			dev_asc_fifo_flush(d);
 			break;
 		case NCRCMD_RSTCHIP:
 			debug("RSTCHIP");
@@ -232,39 +252,102 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_SBR;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			d->cur_state = STATE_DISCONNECTED;
+			break;
+		case NCRCMD_ENSEL:
+			debug("ENSEL");
+			/*  TODO  */
+			break;
+		case NCRCMD_SETATN:
+			debug("SETATN");
+			/*  TODO: set ATN  */
+			break;
+		case NCRCMD_RSTATN:
+			debug("RSTATN");
+			/*  TODO: clear ATN  */
 			break;
 		case NCRCMD_SELATN:
-			debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+		case NCRCMD_SELNATN:
+			if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATN)
+				debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+			else
+				debug("SELNATN: select without atn, id %i", d->reg_wo[NCR_SELID] & 7);
 
-			target_exists = 0;
+			target_exists = diskimage_exist(d->reg_wo[NCR_SELID] & 7);
 
 			if (target_exists) {
 				/*  Selected:  */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-				d->reg_ro[NCR_INTR] |= NCRINTR_SELATN;
+				if ((idata & ~NCRCMD_DMA) == NCRCMD_SELATN)
+					d->reg_ro[NCR_INTR] |= NCRINTR_SELATN;
+				else
+					d->reg_ro[NCR_INTR] |= NCRINTR_SEL;
 				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
 				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
 				d->reg_ro[NCR_STEP] &= ~7;
-				d->reg_ro[NCR_STEP] |= 2;
+				d->reg_ro[NCR_STEP] |= 4;
+				d->cur_state = STATE_INITIATOR;
 			} else {
-				/*  Selection failed:  */
+				/*
+				 *  Selection failed, non-existant scsi ID:
+				 *
+				 *  This is good enough to fool both Ultrix and
+				 *  NetBSD to continue detection of other IDs,
+				 *  without giving any warnings.
+				 */
 				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
-				d->reg_ro[NCR_INTR] |= NCRINTR_SELATN;
+				d->reg_ro[NCR_INTR] |= NCRINTR_DIS;
 				d->reg_ro[NCR_STEP] &= ~7;
-				d->reg_ro[NCR_STEP] |= 1;
+				d->reg_ro[NCR_STEP] |= 0;
+				dev_asc_fifo_flush(d);
+				d->cur_state = STATE_DISCONNECTED;
 			}
 			break;
+		case NCRCMD_TRPAD:
+			debug("TRPAD");
+
+			if (d->cur_state == STATE_DISCONNECTED) {
+				fatal("[ dev_asc: TRPAD: bad state ]\n");
+				break;
+			}
+
+			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+			d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			d->reg_ro[NCR_STAT] |= NCRSTAT_TC;
+			d->reg_ro[NCR_TCL] = 0;
+			dev_asc_fifo_flush(d);
+			break;
+		case NCRCMD_TRANS:
+			debug("TRANS");
+
+			if (d->cur_state == STATE_DISCONNECTED) {
+				fatal("[ dev_asc: TRANS: bad state ]\n");
+				break;
+			}
+
+			/*  TODO  */
+
+			d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+			dev_asc_fifo_flush(d);
+			break;
 		default:
-			debug("(unknown cmd)");
+			fatal("(unknown asc cmd 0x%02x)", idata);
+			exit(1);
 		}
 	}
 
 	if (regnr == NCR_INTR && writeflag==MEM_READ) {
 		/*  Reading the interrupt register de-asserts the interrupt pin:  */
 		cpu_interrupt_ack(cpu, d->irq_nr);
-		d->reg_ro[NCR_STAT] &= ~NCRSTAT_INT;
 
-		d->reg_ro[NCR_INTR] = 0;	/*  ?  */
+		if (d->reg_ro[NCR_STAT] & NCRSTAT_INT) {
+			/*  INTR, STEP, and STAT are all cleared, according
+				to page 64 of the LSI53CF92A manual.  */
+			d->reg_ro[NCR_INTR] = 0;
+			d->reg_ro[NCR_STEP] = 0;
+			d->reg_ro[NCR_STAT] = 0;
+		}
 	}
 
 	if (regnr == NCR_CFG1) {

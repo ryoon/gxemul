@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.4 2004-02-22 13:13:30 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.5 2004-04-02 05:49:04 debug Exp $
  *  
  *  SGI IP22 timer stuff.
  */
@@ -48,6 +48,34 @@ struct sgi_ip22_data {
  */
 void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
 {
+}
+
+
+/*
+ *  dev_sgi_ip22_memctl_access():
+ *
+ *  Returns 1 if ok, 0 on error.
+ */
+int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+{
+	uint64_t idata = 0, odata = 0;
+	int regnr;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	switch (relative_addr) {
+	default:
+		if (writeflag == MEM_WRITE) {
+			debug("[ sgi_ip22_memctl: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+		} else {
+			debug("[ sgi_ip22_memctl: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+		}
+	}
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
 }
 
 
@@ -111,5 +139,7 @@ void dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 
 	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH, dev_sgi_ip22_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
+
+	memory_device_register(mem, "sgi_ip22_memctl", 0x1fa00000, 0x1000, dev_sgi_ip22_memctl_access, (void *)d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.4 2004-02-09 12:46:02 debug Exp $
+ *  $Id: useremul.c,v 1.5 2004-02-09 13:42:51 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -224,14 +224,17 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 					exit(1);
 				}
 
-				read(arg0, charbuf, arg2);
+				result_low = read(arg0, charbuf, arg2);
+				if ((int64_t)result_low < 0) {
+					error_code = errno;
+					error_flag = 1;
+				}
 
 				/*  TODO: address validity check  */
 				memory_rw(cpu, cpu->mem, arg1, charbuf, arg2, MEM_WRITE, CACHE_DATA);
 
 				free(charbuf);
 			}
-
 			break;
 
 		case SYS_write:
@@ -249,13 +252,16 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				}
 
 				/*  TODO: address validity check  */
-				memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
+				result_low = memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
+				if ((int64_t)result_low < 0) {
+					error_code = errno;
+					error_flag = 1;
+				}
 
 				write(descr, charbuf, length);
 
 				free(charbuf);
 			}
-
 			break;
 
 		case SYS_open:
@@ -264,7 +270,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			    charbuf, (long long)arg1, (long long)arg2);
 
 			result_low = open(charbuf, arg1, arg2);
-			if (result_low != 0) {
+			if ((int64_t)result_low < 0) {
 				error_flag = 1;
 				error_code = errno;
 			}
@@ -565,6 +571,30 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			cpu->running = 0;
 			break;
 
+		case ULTRIX_SYS_read:
+			debug("useremul_syscall(): ultrix read(%i,0x%llx,%lli)\n",
+			    (int)arg0, (long long)arg1, (long long)arg2);
+
+			if (arg2 > 0) {
+				charbuf = malloc(arg2);
+				if (charbuf == NULL) {
+					fprintf(stderr, "out of memory in useremul_syscall()\n");
+					exit(1);
+				}
+
+				result_low = read(arg0, charbuf, arg2);
+				if ((int64_t)result_low < 0) {
+					error_code = errno;
+					error_flag = 1;
+				}
+
+				/*  TODO: address validity check  */
+				memory_rw(cpu, cpu->mem, arg1, charbuf, arg2, MEM_WRITE, CACHE_DATA);
+
+				free(charbuf);
+			}
+			break;
+
 		case ULTRIX_SYS_write:
 			descr   = arg0;
 			mipsbuf = arg1;
@@ -581,7 +611,13 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 
 				/*  TODO: address validity check  */
 				memory_rw(cpu, cpu->mem, mipsbuf, charbuf, length, MEM_READ, CACHE_DATA);
-				write(descr, charbuf, length);
+
+				result_low = write(descr, charbuf, length);
+				if ((int64_t)result_low < 0) {
+					error_code = errno;
+					error_flag = 1;
+				}
+
 				free(charbuf);
 			}
 			break;
@@ -592,7 +628,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			    charbuf, (long long)arg1, (long long)arg2);
 
 			result_low = open(charbuf, arg1, arg2);
-			if (result_low != 0) {
+			if ((int64_t)result_low < 0) {
 				error_flag = 1;
 				error_code = errno;
 			}
@@ -619,9 +655,28 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			/*  TODO  */
 			break;
 
+		case ULTRIX_SYS_sync:
+			debug("useremul_syscall(): ultrix sync()\n");
+			sync();
+			break;
+
+		case ULTRIX_SYS_dup:
+			debug("useremul_syscall(): ultrix dup(%i)\n", (int)arg0);
+			result_low = dup(arg0);
+			if ((int64_t)result_low < 0) {
+				error_code = errno;
+				error_flag = 1;
+			}
+			break;
+
 		case ULTRIX_SYS_getpagesize:
 			debug("useremul_syscall(): ultrix getpagesize()\n");
 			result_low = 4096;
+			break;
+
+		case ULTRIX_SYS_getdtablesize:
+			debug("useremul_syscall(): ultrix getdtablesize()\n");
+			result_low = getdtablesize();
 			break;
 
 		case ULTRIX_SYS_gethostname:
@@ -640,6 +695,44 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 				error_flag = 1;
 				error_code = 5555; /* TODO */  /*  ENOMEM  */
 			}
+			break;
+
+		case ULTRIX_SYS_writev:
+			descr = arg0;
+			debug("useremul_syscall(): ultrix writev(%lli,0x%llx,%lli)\n",
+			    (long long)arg0, (long long)arg1, (long long)arg2);
+
+			if (arg1 != 0) {
+				int i;
+
+				for (i=0; i<arg2; i++) {
+					uint32_t iov_base, iov_len;
+					iov_base = load_32bit_word(arg1 + 8*i + 0);	/*  char *  */
+					iov_len  = load_32bit_word(arg1 + 8*i + 4);	/*  size_t  */
+
+					if (iov_len > 0) {
+						unsigned char *charbuf = malloc(iov_len);
+						if (charbuf == NULL) {
+							fprintf(stderr, "out of memory in useremul_syscall()\n");
+							exit(1);
+						}
+
+						/*  TODO: address validity check  */
+						memory_rw(cpu, cpu->mem, (uint64_t)iov_base, charbuf, iov_len, MEM_READ, CACHE_DATA);
+						write(descr, charbuf, iov_len);
+						free(charbuf);
+					}
+				}
+			}
+
+			/*  TODO: result code  */
+
+			break;
+
+		case ULTRIX_SYS_gethostid:
+			debug("useremul_syscall(): ultrix gethostid()\n");
+			/*  This is supposed to return a unique 32-bit host id.  */
+			result_low = 0x12345678;
 			break;
 
 		case ULTRIX_SYS_gettimeofday:

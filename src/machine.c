@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.211 2004-10-27 03:22:35 debug Exp $
+ *  $Id: machine.c,v 1.212 2004-10-29 06:41:08 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3056,6 +3056,36 @@ for (i=0; i<32; i++)
 		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
 }
 #endif
+
+		break;
+
+	case EMULTYPE_SONYNEWS:
+		/*
+		 *  There are several models, according to
+		 *  http://www.netbsd.org/Ports/newsmips/:
+		 *
+		 *  "R3000 and hyper-bus based models"
+		 *	NWS-3470D, -3410, -3460, -3710, -3720
+		 *
+		 *  "R4000/4400 and apbus based models"
+		 *	NWS-5000
+		 *
+		 *  For example:
+		 *
+		 *    cpu_model = news3700
+		 *    SONY NET WORK STATION, Model NWS-3710, Machine ID #30145
+		 *    cpu0: MIPS R3000 (0x220) Rev. 2.0 with MIPS R3010 Rev.2.0
+		 *    64KB/4B direct-mapped I, 64KB/4B direct-mapped w-thr. D
+		 */
+		emul->machine_name = "Sony NeWS (NET WORK STATION)";
+
+{
+int i;
+for (i=0; i<32; i++)
+		cpu->gpr[i] = 0x01230000 + (i << 8) + 0x55;
+}
+
+		dev_zs_init(cpu, mem, 0x1e950000, 0, 1);
 
 		break;
 

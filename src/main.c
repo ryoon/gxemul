@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.120 2004-10-27 03:22:35 debug Exp $
+ *  $Id: main.c,v 1.121 2004-10-29 06:41:08 debug Exp $
  */
 
 #include <stdio.h>
@@ -144,6 +144,7 @@ void usage(char *progname)
 	printf("  -E        try to emulate a Cobalt machine\n");
 	printf("  -e        try to emulate a MeshCube\n");
 	printf("  -F        try to emulate an hpcmips machine\n");
+	printf("  -f        try to emulate a Sony NeWS MIPS machine\n");
 	printf("  -G xx     try to emulate an SGI machine, IPxx\n");
 	printf("  -g        try to emulate a NetGear box (WG602)\n");
 	printf("  -H        try to emulate a Linksys WRT54G\n");
@@ -212,7 +213,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	symbol_init(&emul->symbol_context);
 
-	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFfG:gHhI:iJj:M:m:Nn:Oo:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emul->emulation_type = EMULTYPE_ARC;
@@ -247,6 +248,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'F':
 			emul->emulation_type = EMULTYPE_HPCMIPS;
+			emul->machine = 0;
+			break;
+		case 'f':
+			emul->emulation_type = EMULTYPE_SONYNEWS;
 			emul->machine = 0;
 			break;
 		case 'G':
@@ -414,6 +419,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->emulation_type == EMULTYPE_DEC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R2000");
+
+	if (emul->emulation_type == EMULTYPE_SONYNEWS
+	    && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R3000");
 
 	if (emul->emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RM5200");

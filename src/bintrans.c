@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.92 2004-11-27 10:01:18 debug Exp $
+ *  $Id: bintrans.c,v 1.93 2004-11-28 12:26:36 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -762,7 +762,16 @@ run_it:
 			/*  32-bit special case:  */
 			a = (cpu->pc >> 22) & 0x3ff;
 			b = (cpu->pc >> 12) & 0x3ff;
-			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+
+			/*  TODO: There is a bug here; if caches are disabled, and
+			    for some reason the code jumps to a different page, then
+			    this would jump to code in the cache!  The fix is
+			    to check for cache isolation, and if so, use the
+			    kernel table. Otherwise use table0.  */
+
+			/*  tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];  */
+
+			tbl1 = cpu->vaddr_to_hostaddr_table0[a];
 			if (tbl1->haddr_entry[b] != NULL) {
 				paddr = tbl1->paddr_entry[b] | (cpu->pc & 0xfff);
 				ok = 1;
@@ -839,7 +848,7 @@ run_it:
  */
 void bintrans_init_cpu(struct cpu *cpu)
 {
-	int i;
+	int i, offset;
 
 	cpu->chunk_base_address   = translation_code_chunk_space;
 	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
@@ -853,14 +862,42 @@ void bintrans_init_cpu(struct cpu *cpu)
 		cpu->vaddr_to_hostaddr_nulltable =
 		    zeroed_alloc(sizeof(struct vth32_table));
 
+		/*  Data cache:  */
+		offset = 0;
+		cpu->vaddr_to_hostaddr_r2k3k_dcachetable =
+		    zeroed_alloc(sizeof(struct vth32_table));
+		for (i=0; i<1024; i++) {
+			cpu->vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
+			    (void *)(((size_t)cpu->cache[0]+offset) | 1);
+			offset = (offset + 4096) % cpu->cache_size[0];
+		}
+		cpu->vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
+
+		/*  Instruction cache:  */
+		offset = 0;
+		cpu->vaddr_to_hostaddr_r2k3k_icachetable =
+		    zeroed_alloc(sizeof(struct vth32_table));
+		for (i=0; i<1024; i++) {
+			cpu->vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
+			    (void *)(((size_t)cpu->cache[1]+offset) | 1);
+			offset = (offset + 4096) % cpu->cache_size[1];
+		}
+		cpu->vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;
+
 		cpu->vaddr_to_hostaddr_table0_kernel =
 		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
 		cpu->vaddr_to_hostaddr_table0_user =
+		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+		cpu->vaddr_to_hostaddr_table0_cacheisol_i =
+		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+		cpu->vaddr_to_hostaddr_table0_cacheisol_d =
 		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
 
 		for (i=0; i<1024; i++) {
 			cpu->vaddr_to_hostaddr_table0_kernel[i] = cpu->vaddr_to_hostaddr_nulltable;
 			cpu->vaddr_to_hostaddr_table0_user[i] = cpu->vaddr_to_hostaddr_nulltable;
+			cpu->vaddr_to_hostaddr_table0_cacheisol_i[i] = cpu->vaddr_to_hostaddr_r2k3k_icachetable;
+			cpu->vaddr_to_hostaddr_table0_cacheisol_d[i] = cpu->vaddr_to_hostaddr_r2k3k_dcachetable;
 		}
 
 		cpu->vaddr_to_hostaddr_table0 = cpu->vaddr_to_hostaddr_table0_kernel;

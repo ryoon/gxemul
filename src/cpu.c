@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.199 2004-11-26 20:19:00 debug Exp $
+ *  $Id: cpu.c,v 1.200 2004-11-28 12:26:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1447,8 +1447,16 @@ int cpu_run_instr(struct cpu *cpu)
         /*  Caches are not very coozy to handle in bintrans:  */
         switch (cpu->cpu_type.mmu_model) {
         case MMU3K:
-                if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES)
-			cpu->dont_run_next_bintrans = 1;
+                if (cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
+			/*  cpu->dont_run_next_bintrans = 1;  */
+			cpu->vaddr_to_hostaddr_table0 =
+			    cpu->coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES?
+			       cpu->vaddr_to_hostaddr_table0_cacheisol_i
+			     : cpu->vaddr_to_hostaddr_table0_cacheisol_d;
+		} else {
+			cpu->vaddr_to_hostaddr_table0 =
+			    cpu->vaddr_to_hostaddr_table0_kernel;
+		}
                 break;
         /*  TODO: other cache types  */
         }

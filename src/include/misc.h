@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.163 2004-11-26 16:17:22 debug Exp $
+ *  $Id: misc.h,v 1.164 2004-11-28 12:26:35 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -215,7 +215,7 @@ struct cpu_type_def {
 #define	CPU_TYPE_DEFS	{	\
 	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
 	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
-	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
+	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,12,12, 2, 2, 0, 0 }, \
 	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32, 1,16,16, 2, 2, 0, 0 }, /*  instrs/cycle?  */  \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2,13,13, 4, 4,19, 6 }, \
@@ -643,7 +643,11 @@ struct cpu {
 
 	/*  This should work for 32-bit MIPS emulation:  */
 	struct vth32_table *vaddr_to_hostaddr_nulltable;
+	struct vth32_table *vaddr_to_hostaddr_r2k3k_icachetable;
+	struct vth32_table *vaddr_to_hostaddr_r2k3k_dcachetable;
 	struct vth32_table **vaddr_to_hostaddr_table0_kernel;
+	struct vth32_table **vaddr_to_hostaddr_table0_cacheisol_i;
+	struct vth32_table **vaddr_to_hostaddr_table0_cacheisol_d;
 	struct vth32_table **vaddr_to_hostaddr_table0_user;
 	struct vth32_table **vaddr_to_hostaddr_table0;  /*  should point to kernel or user  */
 	struct vth32_table *next_free_vth_table;

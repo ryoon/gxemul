@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.331 2004-11-27 08:49:15 debug Exp $
+$Id: HISTORY,v 1.332 2004-11-28 12:26:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1192,3 +1192,9 @@ HISTORY of mips64emul
 		which runs bintrans code, in src/cpu.c.
 		Adding movn and movz to the Alpha bintrans backend.
 20041127	Various minor updates.
+20041128	Making the R2000/R3000 caches work with bintrans, even in
+		isolated mode. (Not true cache emulation, but it works with
+		NetBSD/pmax, OpenBSD/pmax, and Ultrix.)
+		Making the default cache size for R3000 4KB instr, 4 KB data;
+		a real R3000 could have 64KB each, but emulated OSes run
+		faster when they think the cache is smaller :-)

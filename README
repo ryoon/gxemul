@@ -31,8 +31,8 @@ Here are examples of kernels that can be experimented with:
   This is an old OpenBSD kernel in a.out format.
   Try running with  -D 1.
 
-  Another linux kernel:
-  ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/
+  An ARC linux kernel, ECOFF:  (try running with -A)
+  ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
 
   A NetBSD/playstation2 snapshot kernel is available here:
   ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.6 2004-01-06 06:47:00 debug Exp $
+ *  $Id: dev_gt.c,v 1.7 2004-01-06 09:01:15 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -114,9 +114,37 @@ cpu_interrupt_ack(cpu, d->irqnr);
 
 
 /*
- *  dev_gt_init():
+ *  pci_gt_rr():
  */
-void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+uint32_t pci_gt_rr(int reg)
+{
+	switch (reg) {
+	case 0x00:
+		return PCI_VENDOR_GALILEO + (PCI_PRODUCT_GALILEO_GT64011 << 16);
+	case 0x08:
+		return 0x01;	/*  Revision 1  */
+	default:
+		return 0;
+	}
+}
+
+
+/*
+ *  pci_gt_init():
+ */
+void pci_gt_init(struct memory *mem)
+{
+}
+
+
+/*
+ *  dev_gt_init():
+ *
+ *  Initialize a GT device.  Return a pointer to the pci_data used, so that
+ *  the caller may add PCI devices.  First, however, we add the GT device
+ *  itself.
+ */
+struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
 {
 	struct gt_data *d;
 
@@ -129,7 +157,15 @@ void dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq
 	d->irqnr = irq_nr;
 	d->pci_data = bus_pci_init(mem);
 
+	/*
+	 *  According to NetBSD/cobalt:
+	 *  pchb0 at pci0 dev 0 function 0: Galileo GT-64011 System Controller, rev 1
+	 */
+	bus_pci_add(d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
+
 	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH, dev_gt_access, d);
 	cpu_add_tickfunction(cpu, dev_gt_tick, d, TICK_STEPS_SHIFT);
+
+	return d->pci_data;
 }
 

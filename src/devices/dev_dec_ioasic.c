@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.10 2005-01-30 00:37:05 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.11 2005-02-22 12:15:29 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -65,7 +65,8 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 	regnr = (relative_addr - IOASIC_SLOT_1_START) / 0x10;
 	if (relative_addr < 0x80000 && (relative_addr & 0xf) != 0)
-		fatal("[ dec_ioasic: unaligned access? relative_addr = 0x%x ]\n", (int)relative_addr);
+		fatal("[ dec_ioasic: unaligned access? relative_addr = "
+		    "0x%x ]\n", (int)relative_addr);
 
 	if (regnr >= 0 && regnr < N_DEC_IOASIC_REGS) {
 		if (writeflag == MEM_WRITE)
@@ -76,9 +77,11 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef IOASIC_DEBUG
 	if (writeflag == MEM_WRITE)
-		debug("[ dec_ioasic: write to address 0x%llx, data=0x%016llx ]\n", (long long)relative_addr, (long long)idata);
+		debug("[ dec_ioasic: write to address 0x%llx, data=0x"
+		    "%016llx ]\n", (long long)relative_addr, (long long)idata);
 	else
-		debug("[ dec_ioasic: read from address 0x%llx ]\n", (long long)relative_addr);
+		debug("[ dec_ioasic: read from address 0x%llx ]\n",
+		    (long long)relative_addr);
 #endif
 
 	switch (relative_addr) {
@@ -95,21 +98,29 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_WRITE) {
 			csr = d->reg[(IOASIC_CSR - IOASIC_SLOT_1_START) / 0x10];
 
-			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &= ~IOASIC_INTR_T2_PAGE_END;
+			d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] &=
+			    ~IOASIC_INTR_T2_PAGE_END;
 
 			if (csr & IOASIC_CSR_DMAEN_T2) {
 				/*  Transmit data:  */
-				curptr = (d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] >> 3)
-				    | ((d->reg[(IOASIC_SCC_T2_DMAPTR - IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
+				curptr = (d->reg[(IOASIC_SCC_T2_DMAPTR -
+				    IOASIC_SLOT_1_START) / 0x10] >> 3)
+				    | ((d->reg[(IOASIC_SCC_T2_DMAPTR -
+				    IOASIC_SLOT_1_START) / 0x10] & 0x1f) << 29);
 				dma_len = 0x1000 - (curptr & 0xffc);
 
 				if ((curptr & 0xfff) == 0)
 					break;
 
 				if (d->dma_func[3] != NULL) {
-					d->dma_func[3](cpu, d->dma_func_extra[3], curptr, dma_len, 1);
+					d->dma_func[3](cpu,
+					    d->dma_func_extra[3], curptr,
+					    dma_len, 1);
 				} else
-					fatal("[ dec_ioasic: DMA tx: data @ %08x, len %i bytes, but no handler? ]\n", (int)curptr, dma_len);
+					fatal("[ dec_ioasic: DMA tx: data @ "
+					    "%08x, len %i bytes, but no "
+					    "handler? ]\n", (int)curptr,
+					    dma_len);
 
 				/*  and signal the end of page:  */
 				d->reg[(IOASIC_INTR - IOASIC_SLOT_1_START) / 0x10] |= IOASIC_INTR_T2_PAGE_END;

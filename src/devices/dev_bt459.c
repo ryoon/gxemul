@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.58 2005-01-30 13:14:11 debug Exp $
+ *  $Id: dev_bt459.c,v 1.59 2005-02-22 12:15:29 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -225,16 +225,20 @@ static void bt459_update_X_cursor(struct cpu *cpu, struct bt459_data *d)
 						else
 							pixelvalue = 0;
 					} else {
+						pixelvalue =
+						    CURSOR_COLOR_TRANSPARENT;
 						switch (color) {
 						case 1:
-						case 2:	pixelvalue = (d->bt459_reg[BT459_REG_CCOLOR_2] >> 4) & 0xf;
+						case 2:	pixelvalue = (d->
+							    bt459_reg[
+							    BT459_REG_CCOLOR_2]
+							    >> 4) & 0xf;
 							break;
 						case 3:	pixelvalue = 15 -
-							    ((d->bt459_reg[BT459_REG_CCOLOR_2] >> 4) & 0xf);
+							    ((d->bt459_reg[
+							    BT459_REG_CCOLOR_2]
+							    >> 4) & 0xf);
 							break;
-						default:
-							pixelvalue =
-							    CURSOR_COLOR_TRANSPARENT;
 						}
 					}
 
@@ -373,7 +377,9 @@ int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_bt459_access():
  */
-int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_bt459_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -401,7 +407,8 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	else {
 		/*
 		 *  TODO:  Is it really 0x4a, or 0x4a0000?
-		 *  Ultrix panics with a "bad VDAC ID" message if 0x4a is returned.
+		 *  Ultrix panics with a "bad VDAC ID" message if 0x4a
+		 *  is returned.
 		 */
 		d->bt459_reg[BT459_REG_ID] = 0x4a0000;
 	}
@@ -413,31 +420,37 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case 0x00:		/*  Low byte of address:  */
 		if (writeflag == MEM_WRITE) {
 			if (!quiet_mode)
-				debug("[ bt459: write to Low Address Byte, 0x%02x ]\n", idata);
+				debug("[ bt459: write to Low Address Byte, "
+				    "0x%02x ]\n", (int)idata);
 			d->cur_addr_lo = idata;
 			d->palette_sub_offset = 0;
 		} else {
 			odata = d->cur_addr_lo;
 			if (!quiet_mode)
-				debug("[ bt459: read from Low Address Byte: 0x%0x ]\n", odata);
+				debug("[ bt459: read from Low Address Byte: "
+				    "0x%0x ]\n", (int)odata);
 		}
 		break;
 	case 0x04:		/*  High byte of address:  */
 		if (writeflag == MEM_WRITE) {
 			if (!quiet_mode)
-				debug("[ bt459: write to High Address Byte, 0x%02x ]\n", idata);
+				debug("[ bt459: write to High Address Byte, "
+				    "0x%02x ]\n", (int)idata);
 			d->cur_addr_hi = idata;
 			d->palette_sub_offset = 0;
 		} else {
 			odata = d->cur_addr_hi;
 			if (!quiet_mode)
-				debug("[ bt459: read from High Address Byte: 0x%0x ]\n", odata);
+				debug("[ bt459: read from High Address Byte: "
+				    "0x%0x ]\n", (int)odata);
 		}
 		break;
 	case 0x08:		/*  Register access:  */
 		if (writeflag == MEM_WRITE) {
 			if (!quiet_mode)
-				debug("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+				debug("[ bt459: write to BT459 register "
+				    "0x%04x, value 0x%02x ]\n", btaddr,
+				    (int)idata);
 			modified = (d->bt459_reg[btaddr] != idata);
 			d->bt459_reg[btaddr] = idata;
 
@@ -474,14 +487,17 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				case 0xc0:
 				case 0xc1:	d->cursor_on = 1; break;
 				default:
-					fatal("[ bt459: unimplemented CCR value 0x%08x ]\n", idata);
+					fatal("[ bt459: unimplemented CCR "
+					    "value 0x%08x ]\n", (int)idata);
 				}
 				if (modified)
 					d->need_to_update_cursor_shape = 1;
 				break;
 			default:
 				if (btaddr < 0x100)
-					fatal("[ bt459: write to BT459 register 0x%04x, value 0x%02x ]\n", btaddr, idata);
+					fatal("[ bt459: write to BT459 "
+					    "register 0x%04x, value 0x%02x ]\n",
+					    btaddr, (int)idata);
 			}
 
 			/*  Write to cursor bitmap:  */
@@ -495,7 +511,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				odata = (odata >> 16) & 255;
 
 			if (!quiet_mode)
-				debug("[ bt459: read from BT459 register 0x%04x, value 0x%02x ]\n", btaddr, odata);
+				debug("[ bt459: read from BT459 register "
+				    "0x%04x, value 0x%02x ]\n", btaddr,
+				    (int)odata);
 		}
 
 		/*  Go to next register:  */
@@ -507,7 +525,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		if (writeflag == MEM_WRITE) {
 			idata &= 255;
 			if (!quiet_mode)
-				debug("[ bt459: write to BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, idata);
+				debug("[ bt459: write to BT459 colormap "
+				    "0x%04x subaddr %i, value 0x%02x ]\n",
+				    btaddr, d->palette_sub_offset, (int)idata);
 
 			if (btaddr < 0x100) {
 				if (d->video_on &&
@@ -532,7 +552,9 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 				odata = d->local_rgb_palette[(btaddr & 0xff)
 				    * 3 + d->palette_sub_offset];
 			if (!quiet_mode)
-				debug("[ bt459: read from BT459 colormap 0x%04x subaddr %i, value 0x%02x ]\n", btaddr, d->palette_sub_offset, odata);
+				debug("[ bt459: read from BT459 colormap "
+				    "0x%04x subaddr %i, value 0x%02x ]\n",
+				    btaddr, d->palette_sub_offset, (int)odata);
 		}
 
 		d->palette_sub_offset ++;
@@ -547,9 +569,11 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ bt459: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ bt459: unimplemented write to address 0x%x, "
+			    "data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			debug("[ bt459: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ bt459: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 

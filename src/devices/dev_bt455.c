@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.6 2005-01-09 01:55:24 debug Exp $
+ *  $Id: dev_bt455.c,v 1.7 2005-02-22 12:15:29 debug Exp $
  *  
  *  Brooktree 455, used by TURBOchannel graphics cards.
  *
@@ -38,9 +38,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
 
 
 
@@ -60,7 +60,9 @@ struct bt455_data {
 /*
  *  dev_bt455_access():
  */
-int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_bt455_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct bt455_data *d = (struct bt455_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -82,7 +84,8 @@ int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		break;
 	case 0x04:		/*  addr_cmap_data  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ bt455: write to addr_cmap_data, 0x%02x ]\n", idata);
+			debug("[ bt455: write to addr_cmap_data, 0x%02x ]\n",
+			    (int)idata);
 			d->addr_cmap_data = idata;
 
 			modified = 0;
@@ -91,17 +94,22 @@ int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			if ((d->cur_rgb_offset % 3) == 1) {
 				/*  Update 16 copies:  */
 				for (i=0; i<16; i++) {
-					int addr = (d->cur_rgb_offset + 16*i) % 0x300;
+					int addr = (d->cur_rgb_offset + 16*i)
+					    % 0x300;
 					int newvalue = idata * 0x11;
 
-					if (d->rgb_palette[(addr / 3) * 3 + 0] != newvalue ||
-					    d->rgb_palette[(addr / 3) * 3 + 1] != newvalue ||
-					    d->rgb_palette[(addr / 3) * 3 + 2] != newvalue)
+					if (d->rgb_palette[(addr / 3) * 3 + 0]
+					    != newvalue ||
+					    d->rgb_palette[(addr / 3) * 3 + 1]
+					    != newvalue ||
+					    d->rgb_palette[(addr / 3) * 3 + 2]
+					    != newvalue)
 						modified = 1;
 
-					d->rgb_palette[(addr / 3) * 3 + 0] = newvalue;
-					d->rgb_palette[(addr / 3) * 3 + 1] = newvalue;
-					d->rgb_palette[(addr / 3) * 3 + 2] = newvalue;
+					d->rgb_palette[(addr / 3) * 3 + 0] =
+					    d->rgb_palette[(addr / 3) * 3 + 1] =
+					    d->rgb_palette[(addr / 3) * 3 + 2] =
+					    newvalue;
 				}
 			}
 
@@ -116,32 +124,39 @@ int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			d->cur_rgb_offset ++;
 		} else {
 			odata = d->addr_cmap_data;
-			debug("[ bt455: read from addr_cmap_data: 0x%0x ]\n", odata);
+			debug("[ bt455: read from addr_cmap_data: 0x%0x ]\n",
+			    (int)odata);
 		}
 		break;
 	case 0x08:		/*  addr_clr  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ bt455: write to addr_clr, value 0x%02x ]\n", idata);
+			debug("[ bt455: write to addr_clr, value 0x%02x ]\n",
+			    (int)idata);
 			d->addr_clr = idata;
 		} else {
 			odata = d->addr_clr;
-			debug("[ bt455: read from addr_clr: value 0x%02x ]\n", odata);
+			debug("[ bt455: read from addr_clr: value 0x%02x ]\n",
+			    (int)odata);
 		}
 		break;
 	case 0x0c:		/*  addr_ovly  */
 		if (writeflag == MEM_WRITE) {
-			debug("[ bt455: write to addr_ovly, value 0x%02x ]\n", idata);
+			debug("[ bt455: write to addr_ovly, value 0x%02x ]\n",
+			    (int)idata);
 			d->addr_ovly = idata;
 		} else {
 			odata = d->addr_ovly;
-			debug("[ bt455: read from addr_ovly: value 0x%02x ]\n", odata);
+			debug("[ bt455: read from addr_ovly: value 0x%02x ]\n",
+			    (int)odata);
 		}
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			debug("[ bt455: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ bt455: unimplemented write to address 0x%x,"
+			    " data=0x%02x ]\n", (int)relative_addr, (int)idata);
 		} else {
-			debug("[ bt455: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ bt455: unimplemented read from address "
+			    "0x%x ]\n", (int)relative_addr);
 		}
 	}
 
@@ -155,7 +170,8 @@ int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_bt455_init():
  */
-void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data)
+void dev_bt455_init(struct memory *mem, uint64_t baseaddr,
+	struct vfb_data *vfb_data)
 {
 	struct bt455_data *d = malloc(sizeof(struct bt455_data));
 	if (d == NULL) {
@@ -166,6 +182,7 @@ void dev_bt455_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_
 	d->vfb_data     = vfb_data;
 	d->rgb_palette  = vfb_data->rgb_palette;
 
-	memory_device_register(mem, "bt455", baseaddr, DEV_BT455_LENGTH, dev_bt455_access, (void *)d, MEM_DEFAULT, NULL);
+	memory_device_register(mem, "bt455", baseaddr, DEV_BT455_LENGTH,
+	    dev_bt455_access, (void *)d, MEM_DEFAULT, NULL);
 }
 

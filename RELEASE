@@ -1,11 +1,11 @@
-$Id: RELEASE,v 1.94 2005-02-20 14:47:05 debug Exp $
+$Id: RELEASE,v 1.95 2005-02-22 12:15:28 debug Exp $
 
 I'm now working on post-0.3.
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.3
-================================
+Release notes for mips64emul 0.3.X
+==================================
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -43,23 +43,9 @@ Apart from running guest operating systems, the emulator can also be used for
 other experiments with MIPS-like code.
 
 
-Summary of changes from version 0.2.4.1 to 0.3:
+Summary of changes from version 0.3 to 0.3.X:
 
-	x)  I've performed a major code clean-up.
-
-	x)  Support for using "configuration files" has been added, so settings
-	    do not have to be entered on the command line anymore. (Useful for
-	    complex emulation setups.)
-
-	x)  Multiple machines can now be emulated simultaneously. (This is
-	    still experimental, though, and probably a bit buggy.)
-
-	x)  Some command line options have changed since 0.2.4.1, most notable
-	    the options to select the machine to be emulated. -E should now be
-	    used to select the machine type, and if necessary, -e can be used
-	    to select a subtype.
-
-	x)  Many bugfixes, too many to mention here.
+	x)  ...
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

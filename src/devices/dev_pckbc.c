@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.6 2004-01-11 23:52:53 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.7 2004-01-19 12:53:19 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -211,7 +211,8 @@ int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 	case PS2 + PS2_STATUS:
 		if (writeflag==MEM_READ) {
 			odata = d->clocksignal + 0x08;	/* 0x08 = transmit buffer empty  */
-			fatal("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
+			debug("[ pckbc: read from port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)odata);
+odata = random();
 		} else
 			fatal("[ pckbc: write to port %i, PS2_STATUS: 0x%llx ]\n", port_nr, (long long)idata);
 		break;

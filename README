@@ -15,37 +15,56 @@ uses, but the test program is not neccesary for the emulator to work.
 Real operating system kernels can be downloaded from various places.
 Here are examples of kernels that can be experimented with:
 
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
-  gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -M16 -I1000000 netbsd-INSTALL
-  for a graphical framebuffer console, or use -D2 -q -M16 -I1000000 for
-  serial (stdin/stdout) console.
 
-  ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
-  This is an old OpenBSD kernel in a.out format.
-  Try running with  -D1 or -D2.
+o)  DECstation:
 
-  NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
+    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
+    gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -M16 -I1000000 netbsd-INSTALL
+    for a graphical framebuffer console, or use -D2 -q -M16 -I1000000 for
+    serial (stdin/stdout) console.
 
-  Linux/SGI kernels:  (-G32 -q)
-  http://www.linux-mips.org/~glaurung/
-  You need to add  -CR10000  to the command line for the R10000 kernel.
+    ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
+    This is an old OpenBSD kernel in a.out format.
+    Try running with -q -D1 or -D2.
 
-  NetBSD/arc:  (gunzip, and try running with  -Aq  or  -XAq)
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz
+    http://www.xs4all.nl/~vhouten/mipsel/kernels.html
+    Linux kernels. Try with -q -D1, -D2, -D7, or -D12.
 
-  An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)
-  ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
 
-  ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
-  Try running with  -E -q.
+o)  SGI:
 
-  http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
-  gunzip, and then try running with -E.
+    NetBSD/sgimips:  (gunzip, and try running with  -G32 -q)
+    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/sgimips/binary/kernel/netbsd-INSTALL.gz
 
-  A NetBSD/playstation2 snapshot kernel is available here:
-  ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
-  Try running with  -X -B -q      (-X is required, for the framebuffer).
+    Linux/SGI kernels:  (-G32 -q)
+    http://www.linux-mips.org/~glaurung/
+    You need to add  -CR10000  to the command line for the R10000 kernel.
+
+
+o)  ARC:
+
+    NetBSD/arc:  (gunzip, and try running with  -Aq  or  -XAq)
+    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/arc/binary/kernel/netbsd.RAMDISK.gz
+
+    An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)
+    ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
+
+
+o)  Cobalt:
+
+    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
+    Try running with  -E -q.
+
+    http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
+    gunzip, and then try running with -E.
+
+
+o)  Playstation 2:
+
+    A NetBSD/playstation2 snapshot kernel is available here:
+    ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/
+    Try running with  -X -B -q      (-X is required, for the framebuffer).
+
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.
        Add  -X  to use a X-windows framebuffer, if the emulated machine

@@ -295,3 +295,10 @@ HISTORY of mips64emul
 		Adding a fake 'pref' instruction (lwc3).
 20040106	Separating out memory.h from misc.h.
 		Refactoring of a lot of small code fragments.
+		The PCI bus device is now shared between Cobalt, SGI, and ARC.
+		Support for RAM mirroring (dev_ram.c, not really tested yet).
+		Ugly hack to select the largest of ELF string symbol tables,
+		if there are more than one.
+		Memory hole fix for ARCBIOS, and a fix for very large (>= 4GB)
+		amounts of emulated RAM.
+		Skeleton of a DEC 21030 (TGA) PCI graphics device.

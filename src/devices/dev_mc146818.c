@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.7 2004-01-03 04:05:36 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.8 2004-01-05 03:25:09 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -51,12 +51,12 @@ extern struct cpu **cpus;
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /*  #define MC146818_DEBUG  */
-#define	TICK_STEPS_SHIFT	6
+#define	TICK_STEPS_SHIFT	7
 
 
 #define	N_REGISTERS	256
 struct mc_data {
-	int	pc_style_cmos;
+	int	access_style;
 	int	last_addr;
 
 	int	register_choice;
@@ -121,15 +121,53 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		debug("[ mc146818: read from addr=0x%04x ]\n", relative_addr);
 #endif
 
-	if (writeflag == MEM_WRITE && relative_addr == 0x70) {
-		mc_data->last_addr = data[0];
-		return 1;
-	}
-
 	relative_addr /= mc_data->addrdiv;
 
-	if (relative_addr == 0x71)
-		relative_addr = mc_data->last_addr;
+	/*  Different ways of accessing the registers:  */
+	switch (mc_data->access_style) {
+	case MC146818_PC_CMOS:
+		if (relative_addr == 0x70) {
+			if (writeflag == MEM_WRITE) {
+				mc_data->last_addr = data[0];
+				return 1;
+			} else {
+				data[0] = mc_data->last_addr;
+				return 1;
+			}
+		} else if (relative_addr == 0x71)
+			relative_addr = mc_data->last_addr;
+		else {
+			fatal("[ mc146818: not accessed as an MC146818_PC_CMOS device! ]\n");
+		}
+		break;
+	case MC146818_ARC_NEC:
+		if (relative_addr == 0x01) {
+			if (writeflag == MEM_WRITE) {
+				mc_data->last_addr = data[0];
+				return 1;
+			} else {
+				data[0] = mc_data->last_addr;
+				return 1;
+			}
+		} else if (relative_addr == 0x00)
+			relative_addr = mc_data->last_addr * 4;
+		else {
+			fatal("[ mc146818: not accessed as an MC146818_ARC_NEC device! ]\n");
+		}
+		break;
+	case MC146818_DEC:
+	case MC146818_SGI:
+		/*
+		 *  This device was originally written for DECstation emulation,
+		 *  so no changes are neccessary for that access style.
+		 *
+		 *  SGI access bytes 0x0..0xd at offsets 0x0yz..0xdyz, where yz
+		 *  should be ignored. It works _almost_ as DEC, if offsets are
+		 *  divided by 0x40.
+		 */
+	default:
+		;
+	}
 
 	/*
 	 *  For some reason, Linux/sgimips relies on the UIP bit to go
@@ -245,6 +283,19 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			mc_data->reg[0x1c] = (tmp->tm_mday);
 			mc_data->reg[0x20] = (tmp->tm_mon + 1);
 			mc_data->reg[0x24] = (tmp->tm_year);
+
+			switch (mc_data->access_style) {
+			case MC146818_ARC_NEC:
+				/*  On ARC/NEC, the year 2004 is 0x18. On DEC, 2004 is 104.  */
+				mc_data->reg[0x24] += (0x18 - 104);
+				break;
+			case MC146818_SGI:
+				/*  On SGI, the year 2004 is 100. On DEC, 2004 is 104.  */
+				mc_data->reg[0x24] += (100 - 104);
+				break;
+			default:
+				;
+			}
 			break;
 		default:
 			/*  debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);  */
@@ -270,7 +321,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
  *  Hopefully this will work both on the DECstation 3100/2100, and
  *  on other systems.
  */
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int addrdiv, int emulated_ips)
+void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv, int emulated_ips)
 {
 	unsigned char ether_address[6];
 	int i;
@@ -284,7 +335,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, i
 
 	memset(mc_data, 0, sizeof(struct mc_data));
 	mc_data->irq_nr        = irq_nr;
-	mc_data->pc_style_cmos = pc_style_cmos;
+	mc_data->access_style  = access_style;
 	mc_data->emulated_ips  = emulated_ips;
 	mc_data->addrdiv       = addrdiv;
 

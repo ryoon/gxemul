@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.6 2004-01-05 03:27:28 debug Exp $
+ *  $Id: memory.c,v 1.7 2004-01-05 06:41:50 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -275,10 +275,21 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 			exit(1);
 		}
 
-		/*  Another ugly (incorrect) hack:  (TODO:  Fix)  */
-		if ((vaddr >> 60) == 0xc) {
+		/*
+		 *  Special case hacks, mostly for SGI machines:
+		 *
+		 *  0x9000000080000000 = disable L2 cache (?)
+		 *  TODO:  Make this correct.
+		 */
+		switch (vaddr >> 60) {
+		case 9:
+			*return_addr = vaddr;
+			return 1;
+		case 0xc:
 			*return_addr = vaddr & 0xffffffffff;
 			return 1;
+		default:
+			;
 		}
 
 		/*  Sign-extend vaddr, if neccessary:  */
@@ -426,20 +437,6 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 		exit(1);
 	}
 */
-
-	/*
-	 *  Special case for SGI IP22 machines:
-	 *
-	 *  If a weird address such as 0x9000000080000000 is touched,
-	 *  simply return some other (semi-valid) address.  This is used
-	 *  by NetBSD/sgimips to disable the L2 cache.
-	 *
-	 *  TODO:  Make this correct.
-	 */
-	if ((vaddr >> 60) == 9) {
-		*return_addr = 0x1fcffff0;
-		return 1;
-	}
 
 
 	/*  TLB refill  */

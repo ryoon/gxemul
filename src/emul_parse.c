@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.13 2005-01-28 09:36:25 debug Exp $
+ *  $Id: emul_parse.c,v 1.14 2005-01-28 12:17:57 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -199,6 +199,7 @@ static char cur_machine_prom_emulation[10];
 static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
+static char cur_machine_byte_order[20];
 static char cur_machine_random_mem_contents[10];
 static char cur_machine_force_netboot[10];
 static char cur_machine_ncpus[10];
@@ -212,16 +213,16 @@ static int cur_machine_n_load;
 static char *cur_machine_disk[MAX_N_DISK];
 static int cur_machine_n_disk;
 
-#define ACCEPT_SIMPLE_WORD(w,var) {					\
-		if (strcmp(word, w) == 0) {				\
-			read_one_word(f, word, maxbuflen,		\
-			    line, EXPECT_LEFT_PARENTHESIS);		\
-			read_one_word(f, var, sizeof(var),		\
-			    line, EXPECT_WORD);				\
-			read_one_word(f, word, maxbuflen,		\
-			    line, EXPECT_RIGHT_PARENTHESIS);		\
-			return;						\
-		}							\
+#define SIMPLE_WORD(w,var) {					\
+		if (strcmp(word, w) == 0) {			\
+			read_one_word(f, word, maxbuflen,	\
+			    line, EXPECT_LEFT_PARENTHESIS);	\
+			read_one_word(f, var, sizeof(var),	\
+			    line, EXPECT_WORD);			\
+			read_one_word(f, word, maxbuflen,	\
+			    line, EXPECT_RIGHT_PARENTHESIS);	\
+			return;					\
+		}						\
 	}
 
 
@@ -315,6 +316,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_use_x11[0] = '\0';
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
+		cur_machine_byte_order[0] = '\0';
 		cur_machine_random_mem_contents[0] = '\0';
 		cur_machine_force_netboot[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
@@ -360,8 +362,8 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 		return;
 	}
 
-	ACCEPT_SIMPLE_WORD("ipv4net", cur_net_ipv4net);
-	ACCEPT_SIMPLE_WORD("ipv4len", cur_net_ipv4len);
+	SIMPLE_WORD("ipv4net", cur_net_ipv4net);
+	SIMPLE_WORD("ipv4len", cur_net_ipv4len);
 
 	fatal("line %i: not expecting '%s' in a 'net' section\n", *line, word);
 	exit(1);
@@ -410,6 +412,20 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_random_mem_contents, "no");
 		m->random_mem_contents =
 		    parse_on_off(cur_machine_random_mem_contents);
+
+		m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
+		if (cur_machine_byte_order[0]) {
+			if (strncasecmp(cur_machine_byte_order, "big", 3) == 0)
+				m->byte_order_override = EMUL_BIG_ENDIAN;
+			else if (strncasecmp(cur_machine_byte_order, "little",
+			    6) == 0)
+				m->byte_order_override = EMUL_LITTLE_ENDIAN;
+			else {
+				fatal("Byte order must be big-endian or"
+				    " little-endian\n");
+				exit(1);
+			}
+		}
 
 		if (!cur_machine_bintrans[0])
 			strcpy(cur_machine_bintrans, "no");
@@ -467,21 +483,22 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 		return;
 	}
 
-	ACCEPT_SIMPLE_WORD("name", cur_machine_name);
-	ACCEPT_SIMPLE_WORD("cpu", cur_machine_cpu);
-	ACCEPT_SIMPLE_WORD("type", cur_machine_type);
-	ACCEPT_SIMPLE_WORD("subtype", cur_machine_subtype);
-	ACCEPT_SIMPLE_WORD("bootname", cur_machine_bootname);
-	ACCEPT_SIMPLE_WORD("bootarg", cur_machine_bootarg);
-	ACCEPT_SIMPLE_WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slow_serial);
-	ACCEPT_SIMPLE_WORD("prom_emulation", cur_machine_prom_emulation);
-	ACCEPT_SIMPLE_WORD("use_x11", cur_machine_use_x11);
-	ACCEPT_SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
-	ACCEPT_SIMPLE_WORD("bintrans", cur_machine_bintrans);
-	ACCEPT_SIMPLE_WORD("random_mem_contents", cur_machine_random_mem_contents);
-	ACCEPT_SIMPLE_WORD("force_netboot", cur_machine_force_netboot);
-	ACCEPT_SIMPLE_WORD("ncpus", cur_machine_ncpus);
-	ACCEPT_SIMPLE_WORD("memory", cur_machine_memory);
+	SIMPLE_WORD("name", cur_machine_name);
+	SIMPLE_WORD("cpu", cur_machine_cpu);
+	SIMPLE_WORD("type", cur_machine_type);
+	SIMPLE_WORD("subtype", cur_machine_subtype);
+	SIMPLE_WORD("bootname", cur_machine_bootname);
+	SIMPLE_WORD("bootarg", cur_machine_bootarg);
+	SIMPLE_WORD("slow_serial_interrupts_hack_for_linux", cur_machine_slow_serial);
+	SIMPLE_WORD("prom_emulation", cur_machine_prom_emulation);
+	SIMPLE_WORD("use_x11", cur_machine_use_x11);
+	SIMPLE_WORD("x11_scaledown", cur_machine_x11_scaledown);
+	SIMPLE_WORD("bintrans", cur_machine_bintrans);
+	SIMPLE_WORD("byte_order", cur_machine_byte_order);
+	SIMPLE_WORD("random_mem_contents", cur_machine_random_mem_contents);
+	SIMPLE_WORD("force_netboot", cur_machine_force_netboot);
+	SIMPLE_WORD("ncpus", cur_machine_ncpus);
+	SIMPLE_WORD("memory", cur_machine_memory);
 
 	if (strcmp(word, "load") == 0) {
 		read_one_word(f, word, maxbuflen,

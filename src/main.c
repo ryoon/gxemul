@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.180 2005-01-28 10:25:04 debug Exp $
+ *  $Id: main.c,v 1.181 2005-01-28 12:17:57 debug Exp $
  */
 
 #include <stdio.h>
@@ -325,9 +325,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'E':
 			type = optarg;
+			msopts = 1;
 			break;
 		case 'e':
 			subtype = optarg;
+			msopts = 1;
 			break;
 		case 'F':
 			m->machine_type = MACHINE_HPCMIPS;

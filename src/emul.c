@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.140 2005-01-28 01:43:18 debug Exp $
+ *  $Id: emul.c,v 1.141 2005-01-28 12:17:57 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -571,6 +571,10 @@ void emul_machine_setup(struct machine *machine, int n_load,
 			& 0x80000000ULL))
 		machine->cpus[machine->bootstrap_cpu]->gpr[MIPS_GPR_GP] |=
 		    0xffffffff00000000ULL;
+
+	if (machine->byte_order_override != NO_BYTE_ORDER_OVERRIDE)
+		machine->cpus[machine->bootstrap_cpu]->byte_order =
+		    machine->byte_order_override;
 
 	/*  Same byte order for all CPUs:  */
 	for (i=0; i<machine->ncpus; i++)

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.11 2005-01-28 01:31:07 debug Exp $
+ *  $Id: machine.h,v 1.12 2005-01-28 12:17:56 debug Exp $
  */
 
 #include <sys/types.h>
@@ -76,6 +76,7 @@ struct machine {
 
 	char	*cpu_name;  /*  TODO: remove this, there could be several
 				cpus with different names in a machine  */
+	int	byte_order_override;
 	int	bootstrap_cpu;
 	int	use_random_bootstrap_cpu;
 	int	ncpus;

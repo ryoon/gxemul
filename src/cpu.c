@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.98 2004-07-07 01:33:46 debug Exp $
+ *  $Id: cpu.c,v 1.99 2004-07-07 01:38:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2736,6 +2736,11 @@ int cpu_run_instr(struct cpu *cpu)
 
 /*
  *  cpu_show_cycles():
+ *
+ *  If automatic adjustment of clock interrupts is turned on, then recalculate
+ *  emulated_hz.  Also, if show_nr_of_instructions is on, then print a
+ *  line to stdout about how many instructions/cycles have been executed so
+ *  far.
  */
 void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 {
@@ -2777,7 +2782,9 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 		} else
 			emulated_hz = (7 * emulated_hz +
 			    cur_cycles_per_second) / 8;
-		fatal("[ updating emulated_hz to %lli Hz ]\n", emulated_hz);
+
+		debug("[ updating emulated_hz to %lli Hz ]\n",
+		    (long long)emulated_hz);
 	}
 
 

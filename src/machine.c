@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.111 2004-06-28 00:54:29 debug Exp $
+ *  $Id: machine.c,v 1.112 2004-06-28 01:22:17 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2027,7 +2027,7 @@ void machine_init(struct memory *mem)
 		debug("system = 0x%x\n", system);
 
 		for (i=0; i<ncpus; i++) {
-			uint32_t cpu, fpu;
+			uint32_t cpu, fpu, cache;
 			unsigned int jj;
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
@@ -2046,13 +2046,18 @@ void machine_init(struct memory *mem)
 			fpu = arcbios_addchild_manual(COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
 			    0, 1, 20, 0, 0x0, arc_fpc_name, cpu);
 
-			/*  TODO:  cache (per cpu)  */
-			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x\n", i, cpu, i, fpu);
-/*  NetBSD:
-case arc_CacheClass:
-                if (cf->type == arc_SecondaryDcache)
-                        arc_cpu_l2cache_size = 4096 << (cf->key & 0xffff);
-*/
+			cache = arcbios_addchild_manual(COMPONENT_CLASS_CacheClass,
+			    COMPONENT_TYPE_SecondaryCache, 0, 1, 20,
+			    /*
+			     *  Key bits:  0xYYZZZZ
+			     *  Cache line size is 1 << YY,
+			     *  Cache size is 4KB << ZZZZ.
+			     */
+			    0x40008,	/*  16 bytes per line, 1 MB total  */
+			    0x0, "Cache", system);
+
+			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x, cache%i = 0x%x\n",
+			    i, cpu, i, fpu, i, cache);
 		}
 
 

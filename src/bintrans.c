@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.9 2004-05-06 03:51:54 debug Exp $
+ *  $Id: bintrans.c,v 1.10 2004-05-11 16:23:46 debug Exp $
  *
  *  Binary translation.
  *
@@ -214,7 +214,51 @@ void bintrans_invalidate(struct memory *mem, uint64_t paddr, uint64_t len)
 #define	BT_SW			24
 
 #define	CODECHUNK_SIZE		256
-#define	CODECHUNK_SIZE_MARGIN	64
+#define	CODECHUNK_SIZE_MARGIN	128
+
+
+/*
+ *  bintrans__codechunk_flushpc():
+ *
+ *  Output machine code which flushes the PC.  The value of PC does not
+ *  need to be updated after every instruction, only if an instruction
+ *  may abort, and at the end of a code chunk.
+ */
+void bintrans__codechunk_flushpc(struct cpu *cpu, void *codechunk,
+	size_t *curlengthp, int *n_instructions, int *n_instr_delta)
+{
+	size_t curlength;
+	unsigned char *p;
+	int ofs_pc, imm;
+	int n = *n_instr_delta;
+
+	curlength = *curlengthp;
+
+	p = (unsigned char *)codechunk + curlength;
+
+	/*  Add 4 * n to cpu->pc:  */
+	if (n > 0) {
+		ofs_pc = (size_t)&(cpu->pc) - (size_t)cpu;
+		imm = n * 4;
+
+		p[0] = ofs_pc & 255; p[1] = ofs_pc >> 8; p[2] = 0x30; p[3] = 0xa4;	curlength += 4; p += 4;
+		p[0] = imm & 255; p[1] = (imm >> 8) & 255; p[2] = 0x21; p[3] = 0x20;    curlength += 4; p += 4;
+		p[0] = ofs_pc & 255; p[1] = ofs_pc >> 8; p[2] = 0x30; p[3] = 0xb4;	curlength += 4; p += 4;
+
+		/*
+		 *  TODO:  Actually, PC should be sign extended here if we are running in 32-bit
+		 *  mode, but it would be really uncommon in practice. (pc needs to wrap around
+		 *  from 0x7ffffffc to 0x80000000 for that to happen.)
+		 */
+	}
+
+	(*curlengthp) = curlength;
+	/*  printf("n_instructions increased from %i to", *n_instructions);  */
+	(*n_instructions) += *n_instr_delta;
+	/*  printf("%i\n", *n_instructions);  */
+	(*n_instr_delta) = 0;
+}
+
 
 /*
  *  bintrans__codechunk_addinstr():
@@ -222,10 +266,18 @@ void bintrans_invalidate(struct memory *mem, uint64_t paddr, uint64_t len)
  *  Used internally by bintrans_try_to_add().
  *  This function tries to translate an instruction into native
  *  code.
+ *
+ *  NOTE: Any codechunk creation clause which needs to be able to abort an
+ *  instruction should flush the PC before adding its code.  Also,
+ *  curlength and p need to be recalculated, as flushing the PC can 
+ *  change those values.  This is really ugly. TODO.
+ *
  *  Returns 1 on success, 0 if no code was translated.
  */
-int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct cpu *cpu, struct memory *mem,
-	int bt_instruction, int rt, int rs, int rd, int imm, int n_instructions)
+int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp,
+	struct cpu *cpu, struct memory *mem, int bt_instruction,
+	int rt, int rs, int rd, int imm,
+	int *n_instructions, int *n_instr_delta)
 {
 	void *codechunk;
 	size_t curlength;
@@ -477,8 +529,14 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 		uint32_t t0;
 		int ofs_t0;
 
+		/*  Flush the PC, before this instruction:  */
+		bintrans__codechunk_flushpc(cpu, *codechunkp, curlengthp,
+		    n_instructions, n_instr_delta);
+		curlength = *curlengthp;
+		p = (unsigned char *)codechunk + curlength;
+
 		if (bt_instruction == BT_JAL) {
-			t0 = (cpu->pc + 8 + n_instructions * 4);
+			t0 = (cpu->pc + 8 + (*n_instructions) * 4);
 			/*  printf("t0 jal = %08x\n", t0);  */
 			if (t0 & 0x8000)		/*  alpha hi/lo  */
 				t0 += 0x10000;
@@ -537,6 +595,12 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 		uint32_t t0;
 		int ofs_t0, ofs_rs, ofs_rt;
 
+		/*  Flush the PC, before this instruction:  */
+		bintrans__codechunk_flushpc(cpu, *codechunkp, curlengthp,
+		    n_instructions, n_instr_delta);
+		curlength = *curlengthp;
+		p = (unsigned char *)codechunk + curlength;
+
 		ofs_rs = (size_t)&(cpu->gpr[rs]) - (size_t)cpu;
 		ofs_rt = (size_t)&(cpu->gpr[rt]) - (size_t)cpu;
 
@@ -556,7 +620,7 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 			p[0] = 0x05; p[1] = 0x00; p[2] = 0x20; p[3] = 0xe4;  curlength += 4; p += 4;
 		}
 
-		t0 = cpu->pc + 4 + 4*n_instructions + (imm << 2);
+		t0 = cpu->pc + 4 + 4*(*n_instructions) + (imm << 2);
 		/*  printf("t0 bne = %08x\n", t0);  */
 		if (t0 & 0x8000)		/*  alpha hi/lo  */
 			t0 += 0x10000;
@@ -578,9 +642,31 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 	/*
 	 *  LW:
 	 *
-	 *  TODO:  Perhaps cpu->mem->...->datablock in a1 ?
+	 *  Pseudo-code of what do to:    lw rX,ofs(rY)
+	 *
+	 *  int f(unsigned long *cpu, unsigned long x, unsigned long y) {
+	 *	unsigned long t, t2;
+	 *
+	 *	t = cpu->gpr[rY];
+	 *	t += ofs;
+	 *	t2 = t & ~0xfff;
+	 *	if (t2 != x)
+	 *		return; (abort)
+	 *	t &= 0xfff;
+	 *	(TODO: check alignment, t&3)
+	 *	t += y;
+	 *	t2 = *((unsigned long *)t);
+	 *	cpu->gpr[rX] = t2;
+	 *  }
 	 */
 	if (bt_instruction == BT_LW) {
+		/*  Flush the PC, before this instruction:  */
+		bintrans__codechunk_flushpc(cpu, *codechunkp, curlengthp,
+		    n_instructions, n_instr_delta);
+		curlength = *curlengthp;
+		p = (unsigned char *)codechunk + curlength;
+
+		/*  TODO  */
 
 		success = 0;
 	}
@@ -588,9 +674,31 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 	/*
 	 *  SW:
 	 *
-	 *  TODO:  Perhaps cpu->mem->...->datablock in a1 ?
+	 *  Pseudo-code of what do to:    sw rX,ofs(rY)
+	 *
+	 *  int f(unsigned long *cpu, unsigned long x, unsigned long y) {
+	 *	unsigned long t, t2;
+	 *
+	 *	t = cpu->gpr[rY];
+	 *	t += ofs;
+	 *	t2 = t & ~0xfff;
+	 *	if (t2 != x)
+	 *		return; (abort)
+	 *	t &= 0xfff;
+	 *	(TODO: check alignment, t&3)
+	 *	t += y;
+	 *	t2 = cpu->gpr[rX];
+	 *	*((unsigned long *)t) = t2;
+	 *  }
 	 */
 	if (bt_instruction == BT_SW) {
+		/*  Flush the PC, before this instruction:  */
+		bintrans__codechunk_flushpc(cpu, *codechunkp, curlengthp,
+		    n_instructions, n_instr_delta);
+		curlength = *curlengthp;
+		p = (unsigned char *)codechunk + curlength;
+
+		/*  TODO  */
 
 		success = 0;
 	}
@@ -615,60 +723,29 @@ int bintrans__codechunk_addinstr(void **codechunkp, size_t *curlengthp, struct c
 /*
  *  bintrans__codechunk_addtail():
  */
-void bintrans__codechunk_addtail(struct cpu *cpu, void *codechunk, size_t *curlengthp, int n_instructions)
+void bintrans__codechunk_addtail(struct cpu *cpu, void *codechunk,
+	size_t *curlengthp, int *n_instructions, int *n_instr_delta)
 {
 	size_t curlength;
 	unsigned char *p;
 	int ofs_pc, imm;
 
+	bintrans__codechunk_flushpc(cpu, codechunk, curlengthp,
+	    n_instructions, n_instr_delta);
+
 	curlength = *curlengthp;
 
 	p = (unsigned char *)codechunk + curlength;
 
-	/*  Add 4 * n_instructions to cpu->pc:  */
-	if (n_instructions > 0) {
-		ofs_pc = (size_t)&(cpu->pc) - (size_t)cpu;
-		imm = n_instructions * 4;
-
-		p[0] = ofs_pc & 255; p[1] = ofs_pc >> 8; p[2] = 0x30; p[3] = 0xa4;	curlength += 4; p += 4;
-/*		p[0] = 0x01; p[1] = 0x14 + ((imm & 7) << 5); p[2] = 0x20 + ((imm & 0xf8) >> 3); p[3] = 0x40;  curlength += 4; p += 4;  */
-		p[0] = imm & 255; p[1] = (imm >> 8) & 255; p[2] = 0x21; p[3] = 0x20;    curlength += 4; p += 4;
-		p[0] = ofs_pc & 255; p[1] = ofs_pc >> 8; p[2] = 0x30; p[3] = 0xb4;	curlength += 4; p += 4;
-
-		/*
-		 *  TODO:  Actually, PC should be sign extended here if we are running in 32-bit
-		 *  mode, but it would be really uncommon in practice. (pc needs to wrap around
-		 *  from 0x7ffffffc to 0x80000000 for that to happen.)
-		 */
-	}
-
 	p[0] = 0x01;  p[1] = 0x80;  p[2] = 0xfa;  p[3] = 0x6b;  /*  ret     zero,(ra),0x1  */	p += 4; curlength += 4;
-
-#if 0
-	if ((curlength & 0x7) == 0) {
-		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
-	}
-	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
-
-	if ((curlength & 0x7) == 0) {
-		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
-	}
-	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
-
-	if ((curlength & 0x7) == 0) {
-		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
-	}
-	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
-
-	if ((curlength & 0x7) == 0) {
-		p[0] = 0x1f;  p[1] = 0x04;  p[2] = 0xff;  p[3] = 0x47;	/*  nop  */			p += 4; curlength += 4;
-	}
-	p[0] = 0x00;  p[1] = 0x00;  p[2] = 0xe0;  p[3] = 0x2f;  /*  unop  */			p += 4; curlength += 4;
-#endif
 
 	(*curlengthp) = curlength;
 
-	/*  On alpha, flush the instruction cache:  */
+
+	/*
+	 *  Flush the instruction cache:
+	 */
+
 #ifdef ALPHA
 	/*  Haha, actually this whole file should be ifdef Alpha  */
 	asm("imb");
@@ -694,16 +771,17 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 	uint32_t instrword;
 	int rs, rt, rd, imm;
 	int do_translate;
-	int n_instructions = 0;
+	int n_instructions = 0, n_instr_delta = 0;
 	size_t curlength = 0;
 	uint64_t paddr_start = paddr;
 	unsigned char *hostaddr;
+	int registerhint = 0;
 
 	static int blah_counter = 0;
 
-/*	if ((++blah_counter) & 7)
+	if ((++blah_counter) & 7)
 		return 0;
-*/
+
         mem->bintrans_tickcount ++;
 
 
@@ -752,7 +830,7 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 				imm -= 65536;
 
 			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem,
-			    ((instrword >> 26) == HI6_DADDIU)? BT_DADDIU : BT_ADDIU, rt, rs, 0, imm, n_instructions);
+			    ((instrword >> 26) == HI6_DADDIU)? BT_DADDIU : BT_ADDIU, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  sll:  */
@@ -776,7 +854,7 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			rs = (instrword >>  6) & 0x1f;	/*  rs used as sa  */
 
 			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem,
-			    b, rt, rs, rd, 0, n_instructions);
+			    b, rt, rs, rd, 0, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  many r1,r2,r3 instructions:  */
@@ -807,14 +885,14 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			case SPECIAL_SLTU:	b = BT_SLTU; break;
 			}
 
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, rt, rs, rd, 0, n_instructions);
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, rt, rs, rd, 0, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  lui:  */
 		if ((instrword >> 26) == HI6_LUI) {
 			rt = (instrword >> 16) & 0x1f;
 			imm = instrword & 0xffff;
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_LUI, rt, 0, 0, imm, n_instructions);
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_LUI, rt, 0, 0, imm, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  jal or j:  */
@@ -826,11 +904,11 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			}
 
 			imm = instrword & ((1<<26)-1);
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, 0, 0, 0, imm, n_instructions);
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, 0, 0, 0, imm, &n_instructions, &n_instr_delta);
 
 			/*  XXX  */
 			if (do_translate)
-				n_instructions ++;
+				n_instr_delta ++;
 			do_translate = 0;
 		}
 		else
@@ -848,11 +926,11 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, rt, rs, 0, imm, n_instructions);
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, b, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 
 			/*  XXX  */
 			if (do_translate)
-				n_instructions ++;
+				n_instr_delta ++;
 			do_translate = 0;
 		}
 		else
@@ -864,7 +942,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_LW, rt, rs, 0, imm, n_instructions);
+			registerhint = rs;
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_LW, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  sw:  */
@@ -875,19 +954,20 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 			if (imm >= 32768)
 				imm -= 65536;
 
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_SW, rt, rs, 0, imm, n_instructions);
+			registerhint = rs;
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_SW, rt, rs, 0, imm, &n_instructions, &n_instr_delta);
 		}
 		else
 		/*  nop:  */
 		if (instrword == 0) {
-			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_NOP, 0,0,0,0, n_instructions);
+			do_translate = bintrans__codechunk_addinstr(&mem->bintrans_codechunk[oldest_i], &curlength, cpu, mem, BT_NOP, 0,0,0,0, &n_instructions, &n_instr_delta);
 		}
 
 		paddr += sizeof(instrword);
 		hostaddr += sizeof(instrword);
 
 		if (do_translate)
-			n_instructions ++;
+			n_instr_delta ++;
 
 		/*  Abort if we are crossing a physical MIPS page boundary:  */
 		if ((paddr & 0xfff) == 0)
@@ -907,7 +987,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 		return 0;
 
 	/*  Add tail (exit instructions) to the codechunk.  */
-	bintrans__codechunk_addtail(cpu, mem->bintrans_codechunk[oldest_i], &curlength, n_instructions);
+	bintrans__codechunk_addtail(cpu, mem->bintrans_codechunk[oldest_i],
+	    &curlength, &n_instructions, &n_instr_delta);
 
 #if 0
 {
@@ -926,6 +1007,7 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 
 	mem->bintrans_codechunk_len[oldest_i] = curlength;
 	mem->bintrans_codechunk_time[oldest_i] = mem->bintrans_tickcount;
+	mem->bintrans_codechunk_memregisterhint[oldest_i] = registerhint;
 
 	mem->bintrans_paddr_start[oldest_i] = paddr_start;
 	mem->bintrans_paddr_end[oldest_i] = paddr - 1;
@@ -948,7 +1030,8 @@ int bintrans_try_to_add(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
  */
 int bintrans_try_to_run(struct cpu *cpu, struct memory *mem, uint64_t paddr, int chunk_nr)
 {
-	void (*f)(struct cpu *);
+	void (*f)(struct cpu *, long, long);
+	long vaddrbase, hostaddrbase;
 
 	/*  debug("bintrans_try_to_run(): paddr=0x%016llx\n", (long long)paddr);  */
 
@@ -1015,7 +1098,36 @@ int bintrans_try_to_run(struct cpu *cpu, struct memory *mem, uint64_t paddr, int
 	regs[32] = cpu->pc;
 #endif
 
-	f(cpu);
+	/*
+	 *  Single-page address translation (for translated load and store):
+	 *
+	 *  TODO:  What are good initial values for vaddrbase, hostaddrbase?
+	 */
+	vaddrbase = 0;
+	hostaddrbase = 0;	/*  NULL ptr!!! TODO  */
+
+	if (mem->bintrans_codechunk_memregisterhint[chunk_nr] != 0) {
+		uint64_t paddr;
+		int reg = mem->bintrans_codechunk_memregisterhint[chunk_nr];
+		uint64_t vaddr = cpu->gpr[reg];
+		unsigned char *hostpage;
+
+		if (vaddr < 0x80000000 || cpu->pc >= 0x80000000) {
+			vaddr &= ~0xfff;
+			hostpage = translate_vaddrpage_to_hostpage(cpu, vaddr);
+
+			/*  No hostpage? Then don't run the translated
+			    code chunk.  */
+			if (hostpage == NULL)
+				return 0;
+
+			hostaddrbase = (size_t)hostpage;
+		}
+	}
+
+#ifdef ALPHA
+	f(cpu, vaddrbase, hostaddrbase);
+#endif
 
 #ifdef BINTRANS_REGISTER_DEBUG
 	for (i=0; i<32; i++)

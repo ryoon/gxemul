@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.26 2004-05-06 04:24:14 debug Exp $
+ *  $Id: memory.c,v 1.27 2004-05-11 16:23:46 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -258,7 +258,8 @@ char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr,
  *
  *  TODO:  vpn2 is a bad name for R2K/R3K, as it is the actual framenumber
  */
-int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int writeflag, int no_exceptions)
+int translate_address(struct cpu *cpu, uint64_t vaddr,
+	uint64_t *return_addr, int writeflag, int no_exceptions)
 {
 	int ksu, exl, erl;
 	int x_64;
@@ -566,6 +567,73 @@ exception:
 
 
 /*
+ *  translate_vaddrpage_to_hostpage():
+ *
+ *  Called by binary translation code, to convert a virtual address (which
+ *  must be page aligned) into a physical address on the host.
+ *  If no such page is available, then NULL is returned.
+ *
+ *  NOTE:  In order to not complicate things too much, pages which are not
+ *  writeable will not be returned.  The assemly language code which the
+ *  translator produces will probably want to be able to load/store to/from
+ *  the host's page, without having to care about whether it was writeable
+ *  or not.
+ */
+unsigned char *translate_vaddrpage_to_hostpage(struct cpu *cpu, uint64_t vaddr)
+{
+	int res;
+	uint64_t paddr;
+	int bits_per_memblock, bits_per_pagetable;
+	void **table;
+	unsigned char *memblock = NULL;
+	int shrcount, mask;
+	int entry, i;
+	int offset;
+	struct memory *mem = cpu->mem;
+
+	res = translate_address(cpu, vaddr, &paddr, 1, 1);
+	if (!res)
+		return NULL;
+
+	if ((paddr >> 20) >= physical_ram_in_mb)
+		return NULL;
+
+	bits_per_memblock  = mem->bits_per_memblock;
+	bits_per_pagetable = mem->bits_per_pagetable;
+
+	/*
+	 *  Step through the pagetables until we find the correct memory block:
+	 */
+	table = mem->first_pagetable;
+	mask = (1 << bits_per_pagetable) - 1;
+	shrcount = mem->max_bits - bits_per_pagetable;
+
+	while (shrcount >= bits_per_memblock) {
+		/*  printf("  addr = %016llx\n", paddr);  */
+		entry = (paddr >> shrcount) & mask;
+		/*  printf("    entry = %x\n", entry);  */
+
+		if (table[entry] == NULL)
+			return NULL;
+
+		if (shrcount == bits_per_memblock)
+			memblock = (unsigned char *) table[entry];
+		else
+			table = (void **) table[entry];
+
+		shrcount -= bits_per_pagetable;
+	}
+
+        offset = paddr & ((1 << bits_per_memblock) - 1);
+
+	/*  printf("###  vaddr=%016llx paddr=%016llx hostaddr=%p\n",
+	    (long long)vaddr, (long long)paddr, memblock+offset);  */
+
+	return memblock + offset;
+}
+
+
+/*
  *  memory_rw():
  *
  *  Read or write data from/to memory.
@@ -595,11 +663,11 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr, unsigned char
 	uint64_t endaddr = vaddr + len - 1;
 	uint64_t paddr;
 	int cache, no_exceptions;
-	void **table;
 	unsigned char *memblock = NULL;
 	int bits_per_memblock, bits_per_pagetable;
 	int ok, hit;
 	int entry, i;
+	void **table;
 	int shrcount, mask;
 	int offset;
 	int cachemask[2];

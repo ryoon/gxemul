@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.49 2004-05-06 03:52:08 debug Exp $
+ *  $Id: misc.h,v 1.50 2004-05-11 16:23:44 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -231,6 +231,7 @@ struct memory {
 	void		*bintrans_codechunk[BINTRANS_CACHEENTRIES];
 	size_t		bintrans_codechunk_len[BINTRANS_CACHEENTRIES];
 	size_t		bintrans_codechunk_time[BINTRANS_CACHEENTRIES];	/*  time for most recent use  */
+	int		bintrans_codechunk_memregisterhint[BINTRANS_CACHEENTRIES];
 };
 
 /* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.102 2004-12-06 23:10:14 debug Exp $
+ *  $Id: bintrans.c,v 1.103 2004-12-07 10:34:38 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -125,8 +125,7 @@ void bintrans_init(void)
 static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len);
 static void bintrans_write_chunkreturn(unsigned char **addrp);
 static void bintrans_write_chunkreturn_fail(unsigned char **addrp);
-static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
-	int flag_pc, int flag_ninstr);
+static void bintrans_write_pc_inc(unsigned char **addrp);
 static void bintrans_runchunk(struct cpu *cpu, unsigned char *code);
 static void bintrans_write_quickjump(unsigned char *quickjump_code, uint32_t chunkoffset);
 static int bintrans_write_instruction__addiu_etc(unsigned char **addrp, int rt, int rs, int imm, int instruction_type);
@@ -551,12 +550,14 @@ cpu->pc_last_host_4k_page,(long long)paddr);
 			delayed_branch_new_p = p + 4 + 4*imm;
 			break;
 
+		case HI6_ADDI:
 		case HI6_ADDIU:
 		case HI6_SLTI:
 		case HI6_SLTIU:
 		case HI6_ANDI:
 		case HI6_ORI:
 		case HI6_XORI:
+		case HI6_DADDI:
 		case HI6_DADDIU:
 			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
 			rt = instr[2] & 31;

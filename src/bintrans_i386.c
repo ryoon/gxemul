@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.38 2004-12-06 23:45:03 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.39 2004-12-07 10:34:38 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -148,68 +148,34 @@ static void bintrans_write_chunkreturn_fail(unsigned char **addrp)
 /*
  *  bintrans_write_pc_inc():
  */
-static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
-	int flag_pc, int flag_ninstr)
+static void bintrans_write_pc_inc(unsigned char **addrp)
 {
 	unsigned char *a = *addrp;
 	int ofs;
 
-	if (pc_inc == 0)
-		return;
+	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 
-	if (flag_pc) {
-		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	/*  83 86 xx xx xx xx yy    addl   $yy,xx(%esi)  */
+	*a++ = 0x83; *a++ = 0x86;
+	*a++ = ofs & 255;
+	*a++ = (ofs >> 8) & 255;
+	*a++ = (ofs >> 16) & 255;
+	*a++ = (ofs >> 24) & 255;
+	*a++ = 4;
 
-		if (pc_inc < 0x7c) {
-			/*  83 86 xx xx xx xx yy    addl   $yy,xx(%esi)  */
-			*a++ = 0x83; *a++ = 0x86;
-			*a++ = ofs & 255;
-			*a++ = (ofs >> 8) & 255;
-			*a++ = (ofs >> 16) & 255;
-			*a++ = (ofs >> 24) & 255;
-			*a++ = pc_inc;
-		} else {
-			/*  81 86 xx xx xx xx yy yy   addl   $yy,xx(%esi)  */
-			*a++ = 0x81; *a++ = 0x86;
-			*a++ = ofs & 255;
-			*a++ = (ofs >> 8) & 255;
-			*a++ = (ofs >> 16) & 255;
-			*a++ = (ofs >> 24) & 255;
-			*a++ = pc_inc & 255;
-			*a++ = (pc_inc >> 8) & 255;
-		}
-
-		if (!bintrans_32bit_only) {
-			/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
-			ofs += 4;
-			*a++ = 0x83; *a++ = 0x96;
-			*a++ = ofs & 255;
-			*a++ = (ofs >> 8) & 255;
-			*a++ = (ofs >> 16) & 255;
-			*a++ = (ofs >> 24) & 255;
-			*a++ = 0;
-		}
+	if (!bintrans_32bit_only) {
+		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
+		ofs += 4;
+		*a++ = 0x83; *a++ = 0x96;
+		*a++ = ofs & 255;
+		*a++ = (ofs >> 8) & 255;
+		*a++ = (ofs >> 16) & 255;
+		*a++ = (ofs >> 24) & 255;
+		*a++ = 0;
 	}
 
-	if (flag_ninstr) {
-		pc_inc /= 4;
-
-		if (pc_inc == 1) {
-			/*  45   inc %ebp  */
-			*a++ = 0x45;
-		} else if (pc_inc < 0x7c) {
-			/*  83 c5 yy    addl   $yy,%ebp  */
-			*a++ = 0x83; *a++ = 0xc5;
-			*a++ = pc_inc;
-		} else {
-			/*  81 c5 yy yy yy yy   addl   $yy,%ebp  */
-			*a++ = 0x81; *a++ = 0xc5;
-			*a++ = pc_inc;
-			*a++ = pc_inc >> 8;
-			*a++ = pc_inc >> 16;
-			*a++ = pc_inc >> 24;
-		}
-	}
+	/*  45   inc %ebp  */
+	*a++ = 0x45;
 
 	*addrp = a;
 }
@@ -331,7 +297,7 @@ static int bintrans_write_instruction__lui(unsigned char **addrp, int rt, int im
 	*addrp = a;
 
 rt0:
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -383,7 +349,7 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -417,7 +383,7 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -431,6 +397,13 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	unsigned char *a;
 	unsigned int uimm;
 
+	/*  TODO: overflow detection for ADDI and DADDI  */
+	switch (instruction_type) {
+	case HI6_ADDI:
+	case HI6_DADDI:
+		return 0;
+	}
+
 	a = *addrp;
 
 	if (rt == 0)
@@ -438,14 +411,15 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 
 	uimm = imm & 0xffff;
 
-	if (uimm == 0 && instruction_type == HI6_ADDIU) {
+	if (uimm == 0 && (instruction_type == HI6_ADDIU ||
+	    instruction_type == HI6_ADDI)) {
 		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
 		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 		goto rt0;
 	}
 
 	if (uimm == 0 && (instruction_type == HI6_DADDIU ||
-	    instruction_type == HI6_ORI)) {
+	    instruction_type == HI6_DADDI || instruction_type == HI6_ORI)) {
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 		goto rt0;
@@ -459,6 +433,8 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	switch (instruction_type) {
 	case HI6_ADDIU:
 	case HI6_DADDIU:
+	case HI6_ADDI:
+	case HI6_DADDI:
 		if (imm & 0x8000) {
 			/*  05 39 fd ff ff          add    $0xfffffd39,%eax  */
 			/*  83 d2 ff                adc    $0xffffffff,%edx  */
@@ -598,7 +574,7 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 
 rt0:
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -678,7 +654,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1008,7 +984,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	*addrp = a;
 rd0:
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1184,7 +1160,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1343,7 +1319,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		*skip2 = (size_t)a - (size_t)skip2 - 1;
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1862,7 +1838,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1939,7 +1915,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 	*addrp = a;
 
 	if (itype != TLB_ERET)
-		bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+		bintrans_write_pc_inc(addrp);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.78 2004-12-06 21:47:32 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.79 2004-12-07 10:34:38 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -458,24 +458,15 @@ static void bintrans_move_Alpha_reg_into_MIPS_reg(unsigned char **addrp, int alp
 /*
  *  bintrans_write_pc_inc():
  */
-static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
-	int flag_pc, int flag_ninstr)
+static void bintrans_write_pc_inc(unsigned char **addrp)
 {
 	uint32_t *a = (uint32_t *) *addrp;
 
-	if (pc_inc == 0)
-		return;
+	/*  lda t5,4(t5)  */
+	*a++ = 0x20c60004;
 
-	if (flag_pc) {
-		/*  lda t5,pc_inc(t5)  */
-		*a++ = 0x20c60000 | pc_inc;
-	}
-
-	if (flag_ninstr) {
-		pc_inc /= 4;
-		/*  lda t6,pc_inc(t6)  */
-		*a++ = 0x20e70000 | pc_inc;
-	}
+	/*  lda t6,1(t6)  */
+	*a++ = 0x20e70001;
 
 	*addrp = (unsigned char *) a;
 }
@@ -491,6 +482,13 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	unsigned int uimm;
 	int alpha_rs, alpha_rt;
 
+	/*  TODO: overflow detection for ADDI and DADDI  */
+	switch (instruction_type) {
+	case HI6_ADDI:
+	case HI6_DADDI:
+		return 0;
+	}
+
 	a = (uint32_t *) *addrp;
 
 	if (rt == 0)
@@ -501,7 +499,8 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	alpha_rs = map_MIPS_to_Alpha[rs];
 	alpha_rt = map_MIPS_to_Alpha[rt];
 
-	if (uimm == 0 && (instruction_type == HI6_ADDIU ||
+	if (uimm == 0 && (instruction_type == HI6_ADDI ||
+ 	    instruction_type == HI6_ADDIU || instruction_type == HI6_DADDI ||
 	    instruction_type == HI6_DADDIU || instruction_type == HI6_ORI)) {
 		if (alpha_rs >= 0 && alpha_rt >= 0) {
 			/*  addq rs,0,rt  */
@@ -531,36 +530,71 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 	switch (instruction_type) {
 	case HI6_ADDIU:
 	case HI6_DADDIU:
-		/*  lda rt,imm(rs)  */
-		*a++ = 0x20000000 | (alpha_rt << 21) | (alpha_rs << 16) | uimm;
-		if (instruction_type == HI6_ADDIU) {
-			/*  sign extend, 32->64 bits:  addl t0,zero,t0  */
-			*a++ = 0x40001000 | (alpha_rt << 21) | alpha_rt;
+	case HI6_ADDI:
+	case HI6_DADDI:
+		if (uimm < 256) {
+			if (instruction_type == HI6_ADDI ||
+			    instruction_type == HI6_ADDIU) {
+				/*  addl rs,uimm,rt  */
+				*a++ = 0x40001000 | (alpha_rs << 21)
+				    | (uimm << 13) | alpha_rt;
+			} else {
+				/*  addq rs,uimm,rt  */
+				*a++ = 0x40001400 | (alpha_rs << 21)
+				    | (uimm << 13) | alpha_rt;
+			}
+		} else {
+			/*  lda rt,imm(rs)  */
+			*a++ = 0x20000000 | (alpha_rt << 21) | (alpha_rs << 16) | uimm;
+			if (instruction_type == HI6_ADDI ||
+			    instruction_type == HI6_ADDIU) {
+				/*  sign extend, 32->64 bits:  addl t0,zero,t0  */
+				*a++ = 0x40001000 | (alpha_rt << 21) | alpha_rt;
+			}
 		}
 		break;
 	case HI6_ANDI:
 	case HI6_ORI:
 	case HI6_XORI:
-		/*  lda t1,4660  */
-		*a++ = 0x205f0000 | uimm;
-
-		if (uimm & 0x8000) {
-			/*  01 00 42 24  ldah t1,1(t1)	<-- if negative only  */
-			*a++ = 0x24420001;
+		if (uimm >= 256) {
+			/*  lda t1,4660  */
+			*a++ = 0x205f0000 | uimm;
+			if (uimm & 0x8000) {
+				/*  01 00 42 24  ldah t1,1(t1)	<-- if negative only  */
+				*a++ = 0x24420001;
+			}
 		}
 
 		switch (instruction_type) {
 		case HI6_ANDI:
-			/*  and rs,t1,rt  */
-			*a++ = 0x44020000 | (alpha_rs << 21) | alpha_rt;
+			if (uimm < 256) {
+				/*  and rs,uimm,rt  */
+				*a++ = 0x44001000 | (alpha_rs << 21)
+				    | (uimm << 13) | alpha_rt;
+			} else {
+				/*  and rs,t1,rt  */
+				*a++ = 0x44020000 | (alpha_rs << 21) | alpha_rt;
+			}
 			break;
 		case HI6_ORI:
-			/*  or rs,t1,rt  */
-			*a++ = 0x44020400 | (alpha_rs << 21) | alpha_rt;
+			if (uimm < 256) {
+				/*  or rs,uimm,rt  */
+				*a++ = 0x44001400 | (alpha_rs << 21)
+				    | (uimm << 13) | alpha_rt;
+			} else {
+				/*  or rs,t1,rt  */
+				*a++ = 0x44020400 | (alpha_rs << 21) | alpha_rt;
+			}
 			break;
 		case HI6_XORI:
-			/*  xor rs,t1,rt  */
-			*a++ = 0x44020800 | (alpha_rs << 21) | alpha_rt;
+			if (uimm < 256) {
+				/*  xor rs,uimm,rt  */
+				*a++ = 0x44001800 | (alpha_rs << 21)
+				    | (uimm << 13) | alpha_rt;
+			} else {
+				/*  xor rs,t1,rt  */
+				*a++ = 0x44020800 | (alpha_rs << 21) | alpha_rt;
+			}
 			break;
 		}
 		break;
@@ -591,7 +625,7 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 
 rt0:
 	*addrp = (unsigned char *) a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -794,7 +828,7 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	*addrp = a;
 rd0:
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -901,7 +935,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		*((unsigned char *)b) = ((size_t)a - (size_t)b - 4) / 4;
 
 	*addrp = (unsigned char *) a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -940,7 +974,7 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 			bintrans_move_Alpha_reg_into_MIPS_reg(addrp, ALPHA_T0, rd);
 	}
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -988,7 +1022,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp,
 	    to the main loop, which is fine.  */
 
 	*addrp = (unsigned char *) a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1624,7 +1658,7 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1657,7 +1691,7 @@ static int bintrans_write_instruction__lui(unsigned char **addrp,
 		}
 	}
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 
 	return 1;
 }
@@ -1705,7 +1739,7 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	}
 
 	*addrp = a;
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1873,7 +1907,7 @@ static int bintrans_write_instruction__mfc_mtc(unsigned char **addrp, int coproc
 
 	*addrp = (unsigned char *) a;
 
-	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+	bintrans_write_pc_inc(addrp);
 	return 1;
 }
 
@@ -1975,7 +2009,7 @@ if (itype == TLB_ERET)
 	*addrp = (unsigned char *) a;
 
 	if (itype != TLB_ERET)
-		bintrans_write_pc_inc(addrp, sizeof(uint32_t), 1, 1);
+		bintrans_write_pc_inc(addrp);
 
 	return 1;
 }

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.126 2004-07-04 15:51:11 debug Exp $
+ *  $Id: machine.c,v 1.127 2004-07-05 01:09:06 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -831,7 +831,7 @@ void machine_init(struct memory *mem)
 			    0,0,0,0,0, color_fb_flag? "VFB02":"VFB01");
 			dev_colorplanemask_init(mem, KN01_PHYS_COLMASK_START, &fb->color_plane_mask);
 			dev_vdac_init(mem, KN01_SYS_VDAC, fb->rgb_palette, color_fb_flag);
-			dev_le_init(mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
+			dev_le_init(cpus[bootstrap_cpu], mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
 			dev_sii_init(cpus[bootstrap_cpu], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_hz);
@@ -994,7 +994,8 @@ void machine_init(struct memory *mem)
 			 */
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1f800000);
 
-			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
+			dev_le_init(cpus[bootstrap_cpu], mem, KN03_SYS_LANCE,
+			    0, 0, KN03_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_hz);
@@ -1213,7 +1214,7 @@ void machine_init(struct memory *mem)
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
-			dev_le_init(mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
+			dev_le_init(cpus[bootstrap_cpu], mem, KN230_SYS_LANCE, KN230_SYS_LANCE_B_START, KN230_SYS_LANCE_B_END, KN230_CSR_INTR_LANCE, 4*1048576);
 			dev_sii_init(cpus[bootstrap_cpu], mem, KN230_SYS_SII, KN230_SYS_SII_B_START, KN230_SYS_SII_B_END, KN230_CSR_INTR_SII);
 			kn230_csr = dev_kn230_init(cpus[bootstrap_cpu], mem, KN230_SYS_ICSR);
 

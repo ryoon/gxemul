@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.30 2004-07-07 01:33:45 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.31 2004-07-08 00:39:26 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -53,7 +53,7 @@ extern struct cpu **cpus;
 #define	to_bcd(x)	( (x/10) * 16 + (x%10) )
 
 /* #define MC146818_DEBUG */
-#define	TICK_STEPS_SHIFT	9
+#define	TICK_STEPS_SHIFT	10
 
 
 #define	N_REGISTERS	256
@@ -107,6 +107,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 	     mc_data->interrupt_every_x_cycles > 0) {
 		mc_data->cycles_left_until_interrupt -=
 		    (1 << TICK_STEPS_SHIFT);
+
 		if (mc_data->cycles_left_until_interrupt < 0 ||
 		    mc_data->cycles_left_until_interrupt >=
 		    mc_data->interrupt_every_x_cycles) {
@@ -117,8 +118,9 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
 
 			/*  Reset the cycle countdown:  */
-			mc_data->cycles_left_until_interrupt =
-			    mc_data->interrupt_every_x_cycles;
+			while (mc_data->cycles_left_until_interrupt < 0)
+				mc_data->cycles_left_until_interrupt +=
+				    mc_data->interrupt_every_x_cycles;
 		}
 	}
 }
@@ -150,12 +152,13 @@ int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
  *  dev_mc146818_access():
  */
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
+	uint64_t r, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
 	struct tm *tmp;
 	time_t timet;
 	struct mc_data *mc_data = extra;
+	int relative_addr = r;
 
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {

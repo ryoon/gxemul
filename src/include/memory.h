@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.h,v 1.15 2004-11-21 22:09:06 debug Exp $
+ *  $Id: memory.h,v 1.16 2004-11-23 13:25:28 debug Exp $
  *
  *  Memory controller related functions.
  */
@@ -41,10 +41,12 @@
 uint64_t memory_readmax64(struct cpu *cpu, unsigned char *buf, int len);
 void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len, uint64_t data);
 
-struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_t physical_max, int max_bits);
+struct memory *memory_new(uint64_t physical_max);
 
 int memory_points_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, int min_string_length);
 char *memory_conv_to_string(struct cpu *cpu, struct memory *mem, uint64_t addr, char *buf, int bufsize);
+
+unsigned char *memory_paddr_to_hostaddr(struct memory *mem, uint64_t paddr, int writeflag);
 
 int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, int flags);
 #define FLAG_WRITEFLAG          1

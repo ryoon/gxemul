@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.153 2004-11-22 09:32:05 debug Exp $
+ *  $Id: misc.h,v 1.154 2004-11-23 13:25:28 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -260,6 +260,7 @@ struct memory {
 	uint64_t	physical_max;
 	int		max_bits;
 
+#if 0
 	/*  entries_per_pagetable is "1 << bits_per_pagetable" cached  */
 	int		bits_per_pagetable;
 	int		entries_per_pagetable;
@@ -267,6 +268,7 @@ struct memory {
 	/*  memblock_size is "1 << bits_per_memblock"  */
 	int		bits_per_memblock;
 	int		memblock_size;
+#endif
 
 	void		*first_pagetable;
 
@@ -291,12 +293,8 @@ struct memory {
 #endif
 };
 
-/* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */
-/* #define	DEFAULT_BITS_PER_MEMBLOCK	16 */	/*  14  or 16  */
-
 #define	DEFAULT_BITS_PER_PAGETABLE	20	/*  10  or 12  or 16  or 20  */
 #define	DEFAULT_BITS_PER_MEMBLOCK	20	/*  14  or 16  or 20  */
-
 /*  Physical address space:  (choose something like 40, 52 or 64)  */
 #define	DEFAULT_MAX_BITS		40
 

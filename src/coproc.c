@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.95 2004-11-23 12:30:39 debug Exp $
+ *  $Id: coproc.c,v 1.96 2004-11-23 13:25:29 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -36,6 +36,9 @@
 #include <math.h>
 
 #include "misc.h"
+
+#include "bintrans.h"
+#include "memory.h"
 
 
 char *cop0_names[32] = COP0_NAMES;
@@ -1428,6 +1431,9 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 {
 	struct coproc *cp = cpu->coproc[0];
 	int index, g_bit;
+	uint64_t vaddr, paddr;
+	unsigned char *memblock;
+	int offset;
 
 	/*
 	 *  ... and the last instruction page:
@@ -1499,26 +1505,23 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 	/*  Translation caches must be invalidated:  */
 	if (cpu->cpu_type.mmu_model == MMU3K) {
-		uint64_t vaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
+		vaddr = (cp->tlbs[index].hi & R2K3K_ENTRYHI_VPN_MASK) & ~0x1fff;
 		vaddr &= 0xffffffffULL;
 		if (vaddr & 0x80000000ULL)
 			vaddr |= 0xffffffff00000000ULL;
 		invalidate_translation_caches(cpu, 0, vaddr, 0);
-	} else if (cpu->cpu_type.mmu_model == MMU4K) {
-		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
-		/*  40 addressable bits:  */
-		if (vaddr & 0x8000000000ULL)
-			vaddr |= 0xffffff0000000000ULL;
-		invalidate_translation_caches(cpu, 0, vaddr, 0);
 	} else if (cpu->cpu_type.mmu_model == MMU10K) {
-		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
+		vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
 		/*  44 addressable bits:  */
 		if (vaddr & 0x80000000000ULL)
 			vaddr |= 0xfffff00000000000ULL;
 		invalidate_translation_caches(cpu, 0, vaddr, 0);
-	} else {
-		/*  Invalidate all:  */
-		invalidate_translation_caches(cpu, 1, 0, 0);
+	} else {	/*  Assume MMU4K  */
+		vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
+		/*  40 addressable bits:  */
+		if (vaddr & 0x8000000000ULL)
+			vaddr |= 0xffffff0000000000ULL;
+		invalidate_translation_caches(cpu, 0, vaddr, 0);
 	}
 
 	/*  Write the entry:  */
@@ -1536,6 +1539,27 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		cp->tlbs[index].hi &= ~TLB_G;
 		if (g_bit)
 			cp->tlbs[index].hi |= TLB_G;
+	}
+
+	if (cpu->cpu_type.mmu_model == MMU3K && (cp->reg[COP0_ENTRYLO0] & ENTRYLO_V)) {
+		paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
+
+		/*  printf("vaddr %08x, paddr %08x\n", (int)vaddr,(int)paddr);  */
+
+		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, MEM_READ);
+		if (memblock != NULL) {
+			/*  printf("  memblock %p\n", memblock);  */
+			offset = paddr & ((1 << DEFAULT_BITS_PER_MEMBLOCK) - 1);
+			if (cp->reg[COP0_ENTRYLO0] & ENTRYLO_D)
+				bintrans_invalidate(cpu, paddr);
+
+			cpu->bintrans_next_index --;
+			if (cpu->bintrans_next_index < 0)
+				cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST_R3000 - 1;
+			cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
+			cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr;
+			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cp->reg[COP0_ENTRYLO0] & ENTRYLO_D? 1 : 0;
+		}
 	}
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.106 2004-11-23 12:30:39 debug Exp $
+ *  $Id: memory.c,v 1.107 2004-11-23 13:25:29 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -126,11 +126,15 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
  *  This function creates a new memory object. An emulated machine needs one
  *  of these.
  */
-struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock,
-	uint64_t physical_max, int max_bits)
+struct memory *memory_new(uint64_t physical_max)
 {
 	struct memory *mem;
 	int n, ok;
+	int bits_per_pagetable = DEFAULT_BITS_PER_PAGETABLE;
+	int bits_per_memblock = DEFAULT_BITS_PER_MEMBLOCK;
+	int entries_per_pagetable = 1 << DEFAULT_BITS_PER_PAGETABLE;
+	int max_bits = DEFAULT_MAX_BITS;
+	size_t s;
 
 	mem = malloc(sizeof(struct memory));
 	if (mem == NULL) {
@@ -155,22 +159,20 @@ struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock,
 		exit(1);
 	}
 
-	mem->bits_per_pagetable = bits_per_pagetable;
-	mem->entries_per_pagetable = 1 << bits_per_pagetable;
-	mem->bits_per_memblock = bits_per_memblock;
-	mem->memblock_size = 1 << bits_per_memblock;
-	mem->max_bits = max_bits;
-
 	mem->physical_max = physical_max;
 
-	mem->first_pagetable = malloc(mem->entries_per_pagetable
-	    * sizeof(void *));
+	s = entries_per_pagetable * sizeof(void *);
+
+	mem->first_pagetable = (unsigned char *) mmap(NULL, s,
+	    PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	if (mem->first_pagetable == NULL) {
-		fprintf(stderr, "out of memory\n");
-		exit(1);
+		mem->first_pagetable = malloc(s);
+		if (mem->first_pagetable == NULL) {
+			fprintf(stderr, "out of memory\n");
+			exit(1);
+		}
+		memset(mem->first_pagetable, 0, s);
 	}
-	memset(mem->first_pagetable, 0, mem->entries_per_pagetable
-	    * sizeof(void *));
 
 	mem->mmap_dev_minaddr = 0xffffffffffffffffULL;
 	mem->mmap_dev_maxaddr = 0;
@@ -304,35 +306,26 @@ static void insert_into_tiny_cache(struct cpu *cpu, int instr, int writeflag,
  *  Return value is a pointer to a host memblock, or NULL on failure.
  *  On reads, a NULL return value should be interpreted as reading all zeroes.
  */
-static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
+unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 	uint64_t paddr, int writeflag)
 {
 	unsigned char *memblock;
-	int quick_2020_hack = 0;
 	void **table;
-	int entry, shrcount, mask, bits_per_memblock, bits_per_pagetable;
+	int entry;
+	const int mask = (1 << DEFAULT_BITS_PER_PAGETABLE) - 1;
+	int shrcount = DEFAULT_MAX_BITS - DEFAULT_BITS_PER_PAGETABLE;
 
-	bits_per_memblock  = mem->bits_per_memblock;
-	bits_per_pagetable = mem->bits_per_pagetable;
 	memblock = NULL;
 	table = mem->first_pagetable;
-	mask = mem->entries_per_pagetable - 1;
-	shrcount = mem->max_bits - bits_per_pagetable;
-
-	if (bits_per_pagetable == 20 && bits_per_memblock == 20)
-		quick_2020_hack = 1;
 
 	/*
 	 *  Step through the pagetables until we find the correct memory
 	 *  block:
 	 */
-	while (shrcount >= bits_per_memblock) {
+	while (shrcount >= DEFAULT_BITS_PER_MEMBLOCK) {
 		/*  printf("addr = %016llx\n", paddr);  */
 
-		if (quick_2020_hack)
-			entry = (paddr >> 20) & 0xfffff;
-		else
-			entry = (paddr >> shrcount) & mask;
+		entry = (paddr >> shrcount) & mask;
 
 		/*  printf("   entry = %x\n", entry);  */
 
@@ -349,10 +342,10 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 				return NULL;
 
 			/*  Allocate a pagetable, OR a memblock:  */
-			if (shrcount == bits_per_memblock)
-				alloclen = mem->memblock_size;
+			if (shrcount == DEFAULT_BITS_PER_MEMBLOCK)
+				alloclen = 1 << DEFAULT_BITS_PER_MEMBLOCK;
 			else
-				alloclen = mem->entries_per_pagetable
+				alloclen = (1 << DEFAULT_BITS_PER_PAGETABLE)
 				    * sizeof(void *);
 
 			/*  printf("  allocating for entry %i, len=%i\n",
@@ -373,13 +366,13 @@ static unsigned char *memory_paddr_to_hostaddr(struct memory *mem,
 			}
 		}
 
-		if (shrcount == bits_per_memblock) {
+		if (shrcount == DEFAULT_BITS_PER_MEMBLOCK) {
 			memblock = (unsigned char *) table[entry];
-			PREFETCH(memblock + (paddr & (mem->memblock_size-1)));
+			PREFETCH(memblock + (paddr & ((1 << DEFAULT_BITS_PER_MEMBLOCK)-1)));
 		} else
 			table = (void **) table[entry];
 
-		shrcount -= bits_per_pagetable;
+		shrcount -= DEFAULT_BITS_PER_PAGETABLE;
 	}
 
 	return memblock;
@@ -1413,7 +1406,7 @@ no_exception_access:
 		goto do_return_ok;
 	}
 
-	offset = paddr & (mem->memblock_size - 1);
+	offset = paddr & ((1 << DEFAULT_BITS_PER_PAGETABLE) - 1);
 
 	if (writeflag == MEM_WRITE) {
 #ifdef BINTRANS

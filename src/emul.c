@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.86 2004-11-10 15:41:34 debug Exp $
+ *  $Id: emul.c,v 1.87 2004-11-23 13:25:29 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -656,8 +656,7 @@ void emul_start(struct emul *emul)
 		debug(" (offset by 512MB, SGI hack)");
 		memory_amount += 0x20000000;
 	}
-	mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK,
-	    memory_amount, DEFAULT_MAX_BITS);
+	mem = memory_new(memory_amount);
 	debug("\n");
 
 	/*  Create CPUs:  */

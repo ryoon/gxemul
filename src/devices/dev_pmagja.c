@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.8 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.9 2004-11-23 13:25:27 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -195,7 +195,7 @@ void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	d->irq_nr = irq_nr;
 
-	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, XSIZE * YSIZE * 3, DEFAULT_MAX_BITS);
+	d->fb_mem = memory_new(XSIZE * YSIZE * 3);
 	if (d->fb_mem == NULL) {
 		fprintf(stderr, "dev_pmagja_init(): out of memory (1)\n");
 		exit(1);

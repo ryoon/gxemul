@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.8 2004-11-17 20:37:39 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.9 2004-11-23 13:25:27 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -150,8 +150,7 @@ void dev_ps2_gs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct gs_data));
 
-	d->gif_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE,
-	    DEFAULT_BITS_PER_MEMBLOCK, DEV_PS2_GIF_LENGTH, DEFAULT_MAX_BITS);
+	d->gif_mem = memory_new(DEV_PS2_GIF_LENGTH);
 	GLOBAL_gif_mem = d->gif_mem;
 	dev_ps2_gif_init(cpu, d->gif_mem, 0x00000000);
 

@@ -1,9 +1,9 @@
-$Id: RELEASE,v 1.81 2005-01-28 10:26:16 debug Exp $
+$Id: RELEASE,v 1.82 2005-02-01 06:03:42 debug Exp $
 
 I'm now working on post-0.2.4.1.
 
 Some of the features I'd like to have time to implement, after the
-redesign that I'm currently working on are:
+redesign/cleanup that I'm currently working on are:
 
 	x)  better support for non-DECstation modes
 		o)  for example, netbooting OpenBSD/sgi snapshots,
@@ -32,36 +32,42 @@ developed as a spare-time hobby, and there is no affiliation with MIPS
 Technologies in any way whatsoever.)
 
 
-In its current form, it is possible to use the emulator to install an
-operating systems onto a harddisk image; the "guest" operating system will run
-similar to how it would run on a real physical machine.
-
-The following guest operating systems have been verified to work:
-
-
-    Operating system                   Emulated machine
-    ----------------                   ----------------
-
-    NetBSD/pmax 2.0 (and 1.6.2)        DECstation 5000/200
-    OpenBSD/pmax 2.8-BETA              DECstation 5000/200
-    Ultrix 4.2-4.5                     DECstation 5000/200
-    Sprite demo harddisk image         DECstation 5000/200
-    Debian GNU/Linux for DECstation    DECstation 5000/200 (*)
-    Redhat Linux 7.1 for mips          DECstation 5000/200
-    NetBSD/arc 1.6.2                   Acer PICA-61
-    OpenBSD/arc 2.3                    Acer PICA-61
+The emulator can be used for many different things. One of the most
+interesting uses is to run complete "guest" operating systems. I have
+verified that the following guest operating systems can boot from a
+harddisk image, and act similar to how a real machine would act:
 
 
-(*) = not very stable yet, but it sometimes works.
+       Guest operating system               Emulated machine
+       ----------------------               ----------------
+
+       NetBSD/pmax 2.0 (and 1.6.2)          DECstation 5000/200
+       OpenBSD/pmax 2.8-BETA                DECstation 5000/200
+       Ultrix 4.2-4.5                       DECstation 5000/200
+       Sprite demo harddisk image           DECstation 5000/200
+       Debian GNU/Linux for DECstation      DECstation 5000/200
+       Redhat Linux 7.1 for mips            DECstation 5000/200
+       NetBSD/arc 1.6.2                     Acer PICA-61
+       OpenBSD/arc 2.3                      Acer PICA-61
+
 
 A couple of other emulation modes exist (for SGI's MIPS-based machines,
 Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
+Apart from running guest operating systems, the emulator can also be used
+for other experiments with MIPS-like code.
 
-Here is a short summary of the changes from version 0.2.4.1 to 0.X.X:
 
-	x)  TODO
+Summary of changes from version 0.2.4.1 to 0.2.X:
+
+	x)  In general, the code should be much cleaner than before.
+
+	x)  It is now possible to emulate multiple machines simultaneously,
+	    with one emulator instance. (This is mostly due to the code
+	    cleanup.)
+
+	x)  Many other bugfixes, too many to mention here.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -76,6 +82,7 @@ Files included in this release are:
   README                      Quick start instructions, for the impatient.
   RELEASE                     This file.
   TODO                        TODO notes.
+  configure, Makefile.skel    sh and make scripts for building mips64emul
   doc                         Documentation.
   experiments                 Experimental code (not usually needed).
   src, devices, and include   Source code.
@@ -156,9 +163,8 @@ them like this is in order:
 See individual files for license details, if you plan to redistribute
 mips64emul or reuse code.
 
-And thanks to everyone who has provided me with feedback, ideas, patches,
-or encouraged me to work on specific issues.
+Thanks to everyone who has provided me with feedback.
 
-Don't hesitate to send feedback to me (Anders Gavare, anders(at)gavare.se)
-if you have found mips64emul useful or if you have found a bug.
+If you have found mips64emul useful in some way, or feel like sending be 
+comments or feedback in general, then send mail to anders(at)gavare.se.
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.547 2005-01-31 21:10:33 debug Exp $
+$Id: HISTORY,v 1.548 2005-02-01 06:03:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1604,3 +1604,4 @@ HISTORY of mips64emul
 		Adding 'add_x11_display' to the configure file parser 
 		(corresponding to the -z command line option).
 		Continuing the multi-emul machine cleanup.
+20050201	Minor updates (man page, RELEASE, README).

@@ -1,4 +1,4 @@
-.\" $Id: mips64emul.1,v 1.17 2005-02-01 05:25:02 debug Exp $
+.\" $Id: mips64emul.1,v 1.18 2005-02-01 06:03:44 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -36,7 +36,7 @@
 .SH SYNOPSIS
 .B mips64emul
 [
-.I options
+.I machine and general options
 ]
 [
 .I file
@@ -47,7 +47,7 @@
 
 .B mips64emul
 [
-.I options
+.I general options
 ]
 .I @configfile
 [
@@ -85,7 +85,9 @@ image file.
 Apart from the name of a MIPS binary, it is also necessary to select
 which specific emulation mode to use. For example, a MIPS-based machine
 from DEC (a DECstation) is very different from a MIPS-based machine
-from SGI.
+from SGI. Use
+.B mips64emul \-H
+to get a list of available emulation modes.
 
 (There is an exception to the normal invocation usage mentioned above;
 if you want to use the DECstation emulation mode, and have a bootable
@@ -112,6 +114,16 @@ verbose.
 	mips64emul \-v @mysession
 
 .fi
+If you have compiled the small Hello world program mentioned in the
+mips64emul documentation, the following command will start up an
+emulated test machine in "paused" mode:
+.nf
+
+	mips64emul \-a \-V hello
+
+.fi
+(Paused mode means that you enter the interactive single-step debugger
+directly at startup, instead of launching the Hello world program.)
 
 Please read the documentation for more details.
 .SH AUTHOR

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.1 2004-03-29 23:46:35 debug Exp $
+$Id: RELEASE,v 1.2 2004-03-29 23:50:55 debug Exp $
 
 
 	    =====================================================
@@ -11,11 +11,15 @@ $Id: RELEASE,v 1.1 2004-03-29 23:46:35 debug Exp $
 Only development snapshots of what I have in CVS.  However, I plan to make
 a release some time in the future.
 
-The following things have to work for a release to become a reality:
+The following things have to work before a release to become a reality:
 
 	o)  Diskimages need to be usable under at least some emulation modes,
 	    preferably DECstations (the 'asc' SCSI controller), but others
 	    would be nice as well,
+
+	o)  it must be possible to install an entire operating system within
+	    the emulator, and possibly even compile and run mips64emul
+	    _inside_ the emulated environment,
 
 	o)  regression tests  (yes, the skeleton is there, but it isn't used
 	    yet),
@@ -28,6 +32,7 @@ Then, to make the official release:
 	    following variables:
 
 		x)  Host OS  (Linux, *BSD, Solaris, others?)
+		x)  Host hardware (alpha, i386, mips :-), sparc, ...)
 		x)  emulation mode   (DECstation, SGI?, ..)
 		    and regression tests (if possible)
 		x)  OSes running under emulation (NetBSD, OpenBSD,

@@ -32,6 +32,9 @@ Serious bugs:
       before running the emulator, it seems that the bug isn't triggered.
       (OpenBSD/arc 2.3 on an i386 host also triggers this bug sometimes.)
 
+  o)  bintrans bugs.  (For example, NetBSD/sgimips for IP22/24 hangs during
+      boot with bintrans enabled.)
+
 
 Less serious bugs / issues:
 

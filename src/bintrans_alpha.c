@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.45 2004-11-21 06:50:09 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.46 2004-11-21 07:40:42 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -986,7 +986,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		/*  Don't execute too many instructions. (see comment below)  */
 		*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
 			*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xc2; *a++ = 0x40;	/*  cmple t5,t1,t0  */
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 
@@ -1068,12 +1068,12 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 		 *  abort by returning.
 		 *
 		 *  f4 01 5f 20     lda     t1,500  (some low number...)
-		 *  a1 0d c2 40     cmple   t5,t1,t0
+		 *  a1 0d c2 40     cmple   t6,t1,t0
 		 *  01 00 20 f4     bne     t0,14 <f+0x14>
 		 */
 		*a++ = (N_SAFE_BINTRANS_LIMIT-1)&255; *a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8)&255;
 			*a++ = 0x5f; *a++ = 0x20;	/*  lda t1,0x1fff */
-		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xc2; *a++ = 0x40;	/*  cmple t5,t1,t0  */
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0xe2; *a++ = 0x40;	/*  cmple t6,t1,t0  */
 		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
 		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
 

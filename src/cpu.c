@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.170 2004-10-21 05:06:31 debug Exp $
+ *  $Id: cpu.c,v 1.171 2004-10-22 21:13:55 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -999,7 +999,11 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		char *symbol = get_symbol_name(
 		    &cpu->emul->symbol_context, cpu->pc_last, &offset);
 
-		debug("[ exception %s%s",
+		debug("[ ");
+		if (cpu->emul->ncpus > 1)
+			debug("cpu%i: ", cpu->cpu_id);
+
+		debug("exception %s%s",
 		    exception_names[exccode], tlb? " <tlb>" : "");
 
 		switch (exccode) {

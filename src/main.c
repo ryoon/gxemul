@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.136 2004-12-14 04:19:07 debug Exp $
+ *  $Id: main.c,v 1.137 2004-12-14 04:27:07 debug Exp $
  */
 
 #include <stdio.h>
@@ -173,7 +173,7 @@ static void usage(char *progname, int longusage)
 	       "            present (for DECstation emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC, ARC, or SGI emulation).\n");
 	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
-	printf("  -p pc     add a PC breakpoint\n");
+	printf("  -p pc     add a breakpoint (remember to use the '0x' prefix for hex!)\n");
 	printf("  -Q        no built-in PROM emulation  (use this for running ROM images)\n");
 	printf("  -q        quiet mode (don't print startup or debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");

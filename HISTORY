@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.389 2004-12-14 04:27:06 debug Exp $
+$Id: HISTORY,v 1.390 2004-12-14 04:27:36 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1318,12 +1318,11 @@ HISTORY of mips64emul
 		Separating out the debugger from emul.c into debugger.c.
 		Rewriting parts of the debugger.
 		Removing the -U command line option, as it wasn't really
-		useful.
+		useful. Also removing the -P option.
 		Renaming all instances of dumppoint to breakpoint, as that
 		is what it really is.
 		When a breakpoint is reached, the single-step debugger is
 		entered, instead of just turning on instruction trace.
-		Removing the -P command line option.
 		Adding a 'breakpoints' debugger command.
 		Better fix for coproc unusable on R4000: the KSU bits matter,
 		but the ERL and EXL bits override that.

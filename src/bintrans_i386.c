@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.1 2004-07-02 14:34:31 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.2 2004-10-08 19:24:15 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -37,7 +37,7 @@
  *  Invalidate the host's instruction cache. On i386, this isn't neccessary,
  *  so this is an empty function.
  */
-void bintrans_host_cacheinvalidate()
+void bintrans_host_cacheinvalidate(void)
 {
 }
 

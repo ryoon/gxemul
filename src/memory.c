@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.81 2004-10-08 17:26:35 debug Exp $
+ *  $Id: memory.c,v 1.82 2004-10-08 19:24:15 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1172,7 +1172,23 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 #endif
 
 
+
 have_paddr:
+
+
+	/*  TODO: How about bintrans vs cache emulation?  */
+#ifdef BINTRANS
+	if (cpu->emul->bintrans_enable) {
+		if (cache == CACHE_INSTRUCTION) {
+			cpu->pc_bintrans_paddr_valid = 1;
+			cpu->pc_bintrans_paddr = paddr;
+		}
+
+		if (writeflag == MEM_WRITE)
+			bintrans_invalidate(cpu, paddr);
+	}
+#endif
+
 
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
 		if (no_exceptions)
@@ -1253,20 +1269,6 @@ into the devices  */
 	}
 #endif
 
-
-	/*  TODO: How about bintrans vs cache emulation?  */
-
-#ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
-		if (cache == CACHE_INSTRUCTION) {
-			cpu->pc_bintrans_paddr_valid = 1;
-			cpu->pc_bintrans_paddr = paddr;
-		}
-
-		if (writeflag == MEM_WRITE)
-			bintrans_invalidate(cpu, paddr);
-	}
-#endif
 
 
 	/*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.23 2004-10-08 17:47:43 debug Exp $
+ *  $Id: bintrans.c,v 1.24 2004-10-08 19:24:15 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -136,9 +136,18 @@ void bintrans_init(void)
 #else
 
 
+/*  Instructions that can be translated:  */
+#define	INSTR_NOP		0
+
+
 /*  Function declaration, should be the same as in bintrans_*.c:  */
 
 void bintrans_host_cacheinvalidate(void);
+size_t bintrans_chunk_header_len(void);
+void bintrans_write_chunkhead(unsigned char *p);
+void bintrans_write_chunkreturn(unsigned char **addrp);
+int bintrans_write_instruction(unsigned char **addrp, int instr,
+	int *pc_increment);
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -163,6 +172,7 @@ void bintrans_host_cacheinvalidate(void);
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
 #define	CODE_CHUNK_SPACE_SIZE		(2 * 1048576)
+#define	CODE_CHUNK_SPACE_MARGIN		65536
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where
@@ -183,37 +193,11 @@ struct translation_entry {
 
 	struct translation_entry	*next;
 
-	/*  TODO  */
+	unsigned char			*chunk;
+	size_t				chunk_len;
 };
 
 struct translation_entry **translation_entry_array;
-
-
-/*
- *  bintrans_paddr_is_in_cache():
- *
- *  Checks the translation cache to see if a certain address is translated.
- *  Return 1 if the address is known, 0 otherwise.
- *
- *  Some bits of the physical page number are used as an index into an array
- *  to speed up the search.
- */
-int bintrans_paddr_is_in_cache(struct cpu *cpu, uint64_t paddr)
-{
-	int entry_index = PADDR_TO_INDEX(paddr);
-	struct translation_entry *tep;
-
-	tep = translation_entry_array[entry_index];
-
-	while (tep != NULL) {
-		if (tep->paddr == paddr)
-			return 1;
-
-		tep = tep->next;
-	}
-
-	return 0;
-}
 
 
 /*
@@ -231,8 +215,8 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 	while (tep != NULL) {
 		if (paddr >= tep->paddr && paddr < tep->paddr + tep->len) {
-			printf("bintrans_invalidate(): invalidating"
-			    " %016llx\n", (long long)paddr);
+			/*  printf("bintrans_invalidate(): invalidating"
+			    " %016llx\n", (long long)paddr);  */
 
 			/*  Remove the translation entry from the list,
 			    and free whatever memory it was using:  */
@@ -256,6 +240,41 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 
 /*
+ *  bintrans_runchunk():
+ *
+ *  Checks the translation cache for a physical address. If the address
+ *  is found, then that code is run, and the number of MIPS instructions
+ *  executed is returned.  Otherwise, 0 is returned.
+ */
+int bintrans_runchunk(struct cpu *cpu, uint64_t paddr)
+{
+	int entry_index = PADDR_TO_INDEX(paddr);
+	struct translation_entry *tep;
+	int (*f)(struct cpu *, int *);
+	int instructions_executed = 0;
+
+	tep = translation_entry_array[entry_index];
+
+	while (tep != NULL) {
+		if (tep->paddr == paddr) {
+			/*  printf("bintrans_runchunk(): chunk = %p\n",
+			    tep->chunk);  */
+
+			f = (void *)tep->chunk;
+			f(cpu, &instructions_executed);
+
+			/*  printf("after the chunk has run.\n");  */
+			return instructions_executed;
+		}
+
+		tep = tep->next;
+	}
+
+	return 0;
+}
+
+
+/*
  *  bintrans_attempt_translate():
  *
  *  Attempt to translate a chunk of code, starting at 'paddr'.
@@ -265,9 +284,125 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
  */
 int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 {
-	/*  printf("tr: paddr=%08x\n", (int)paddr);  */
+	int try_to_translate = 1;
+	int pc_increment = 0;
+	int n_translated = 0;
+	int res, hi6, special6, rd;
+	uint64_t p;
+	unsigned char instr[4];
+	unsigned char *chunk_addr = translation_code_chunk_space
+	    + translation_code_chunk_space_head;
+	struct translation_entry *tep;
+	int entry_index;
 
-	return 0;
+	/*
+	 *  If the chunk space is all used up, we need to start over from
+	 *  an empty chunk space.
+	 */
+	if (translation_code_chunk_space_head >= CODE_CHUNK_SPACE_SIZE) {
+
+		fprintf(stderr, "TODO: remove all translation entries!!!\n");
+		exit(1);
+
+		translation_code_chunk_space_head = 0;
+	}
+
+	/*
+	 *  Some backends need a code chunk header, but assuming that
+	 *  this header is of a fixed known size, it does not have to
+	 *  be written until we're sure that a block of code was
+	 *  actually translated.
+	 */
+	chunk_addr += bintrans_chunk_header_len();
+	p = paddr;
+
+	while (try_to_translate) {
+		/*  Read an instruction word from memory:  */
+		res = memory_rw(cpu, cpu->mem, p, &instr[0],
+		    sizeof(instr), MEM_READ, PHYSICAL | NO_EXCEPTIONS);
+		if (!res)
+			break;
+
+		if (cpu->byte_order == EMUL_BIG_ENDIAN) {
+			int tmp;
+			tmp = instr[0]; instr[0] = instr[3]; instr[3] = tmp;
+			tmp = instr[1]; instr[1] = instr[2]; instr[2] = tmp;
+		}
+
+		/*  Assuming that the translation succeeds, let's
+		    increment the pc.  */
+		pc_increment += sizeof(instr);
+
+		hi6 = instr[3] >> 2;
+		special6 = instr[0] & 0x3f;
+
+		/*  Check for instructions that can be translated:  */
+		if (hi6 == HI6_SPECIAL && special6 == SPECIAL_SLL) {
+			rd = (instr[1] >> 3) & 31;
+			if (rd == 0) {
+				/*  NOP  */
+				res = bintrans_write_instruction(
+				    &chunk_addr, INSTR_NOP, &pc_increment);
+				if (!res)
+					try_to_translate = 0;
+				else
+					n_translated += res;
+			} else
+				try_to_translate = 0;
+		} else
+			try_to_translate = 0;
+
+		/*  If the translation of this instruction failed,
+		    then don't count this as an increment of pc.  */
+		if (try_to_translate == 0)
+			pc_increment -= sizeof(instr);
+
+		p += sizeof(instr);
+
+		/*  Did we reach a different page? Then stop here.  */
+		if ((p & 0xfff) == 0)
+			try_to_translate = 0;
+	}
+
+	if (n_translated == 0)
+		return 0;
+
+	/*  Flush the pc, to let it have a correct (emulated) value:  */
+	bintrans_write_pcflush(&chunk_addr, &pc_increment);
+
+	/*  Add code chunk header...  */
+	bintrans_write_chunkhead(translation_code_chunk_space
+	    + translation_code_chunk_space_head);
+
+	/*  ...and return code:  */
+	bintrans_write_chunkreturn(&chunk_addr);
+
+	/*  Invalidate the host's instruction cache, if neccessary:  */
+	bintrans_host_cacheinvalidate();
+
+	/*  Add the translation to the translation entry array:  */
+	tep = malloc(sizeof(struct translation_entry));
+	if (tep == NULL) {
+		fprintf(stderr, "out of memory in bintrans_attempt_translate()\n");
+		exit(1);
+	}
+	memset(tep, 0, sizeof(struct translation_entry));
+	tep->paddr = paddr;
+	tep->len = n_translated * sizeof(instr);
+	tep->chunk = translation_code_chunk_space +
+	    translation_code_chunk_space_head;
+	tep->chunk_len = (size_t)chunk_addr - (size_t)tep->chunk;
+
+	/*  printf("TEP paddr=%08x len=%i chunk=%p chunk_len=%i\n",
+	    (int)tep->paddr, tep->len, tep->chunk, (int)tep->chunk_len);  */
+
+	translation_code_chunk_space_head += tep->chunk_len;
+
+	entry_index = PADDR_TO_INDEX(paddr);
+	tep->next = translation_entry_array[entry_index];
+	translation_entry_array[entry_index] = tep;
+
+	return 1;
 }
 
 
@@ -294,7 +429,8 @@ void bintrans_init(void)
 	    translation entries.  */
 	memset(translation_entry_array, 0, s);
 
-	translation_code_chunk_space = malloc(CODE_CHUNK_SPACE_SIZE);
+	translation_code_chunk_space = malloc(CODE_CHUNK_SPACE_SIZE
+	    + CODE_CHUNK_SPACE_MARGIN);
 	if (translation_code_chunk_space == NULL) {
 		fprintf(stderr, "bintrans_init(): out of memory (2)\n");
 		exit(1);

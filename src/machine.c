@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.188 2004-10-10 14:07:49 debug Exp $
+ *  $Id: machine.c,v 1.189 2004-10-11 17:59:11 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2061,7 +2061,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
 				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
 				if (emul->use_x11)
-					arcbios_addchild_manual(cpu, 4, 19,  0, 1, 20, 0, 0x0, "10110004", system);
+					arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system);
 
 				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
 				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
@@ -2393,34 +2393,34 @@ void machine_init(struct emul *emul, struct memory *mem)
 		switch (emul->emulation_type) {
 		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-			    0, 1, 20, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */);
+			    0, 1, 2, 0, 0xffffffff, short_machine_name, 0  /*  ROOT  */);
 			break;
 		default:
 			/*  ARC:  */
 			switch (emul->machine) {
 			case MACHINE_ARC_NEC_RD94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-RD94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_PICA:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "PICA-61", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_NEC_R94:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-R94", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_DESKTECH_TYNE:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "DESKTECH-TYNE", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_JAZZ:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "Microsoft-Jazz", 0  /*  ROOT  */);
 				break;
 			case MACHINE_ARC_NEC_R98:
 				system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
-				    0, 1, 20, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
+				    0, 1, 2, 0, 0xffffffff, "NEC-R98", 0  /*  ROOT  */);
 				break;
 			default:
 				fatal("Unimplemented ARC machine type %i\n",
@@ -2437,6 +2437,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		for (i=0; i<emul->ncpus; i++) {
 			uint32_t cpuaddr, fpu, picache, pdcache, sdcache;
+			int cache_size, cache_line_size;
 			unsigned int jj;
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
@@ -2452,41 +2453,80 @@ void machine_init(struct emul *emul, struct memory *mem)
 			strcat(arc_fpc_name, "FPC");
 
 			cpuaddr = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_CPU,
-			    0, 1, 20, i, 0xffffffff, arc_cpu_name, system);
+			    0, 1, 2, i, 0xffffffff, arc_cpu_name, system);
 
 			/*  TODO: Maybe this shouldn't be here?  */
 			fpu = arcbios_addchild_manual(cpu, COMPONENT_CLASS_ProcessorClass, COMPONENT_TYPE_FPU,
-			    0, 1, 20, 0, 0xffffffff, arc_fpc_name, cpuaddr);
+			    0, 1, 2, 0, 0xffffffff, arc_fpc_name, cpuaddr);
+
+			cache_size = DEFAULT_PCACHE_SIZE - 12;
+			if (emul->cache_picache)
+				cache_size = emul->cache_picache - 12;
+			if (cache_size < 0)
+				cache_size = 0;
+
+			cache_line_size = DEFAULT_PCACHE_LINESIZE;
+			if (emul->cache_picache_linesize)
+				cache_line_size = emul->cache_picache_linesize;
+			if (cache_line_size < 0)
+				cache_line_size = 0;
 
 			picache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
-			    COMPONENT_TYPE_PrimaryICache, 0, 1, 20,
+			    COMPONENT_TYPE_PrimaryICache, 0, 1, 2,
 			    /*
 			     *  Key bits:  0xXXYYZZZZ
 			     *  XX is refill-size.
 			     *  Cache line size is 1 << YY,
 			     *  Cache size is 4KB << ZZZZ.
 			     */
-			    0x01050002,	/*  32 bytes per line, 16 KB total  */
+			    0x01000000 + (cache_line_size << 16) + cache_size,
+				/*  32 bytes per line, default = 32 KB total  */
 			    0xffffffff, NULL, cpuaddr);
+
+			cache_size = DEFAULT_PCACHE_SIZE - 12;
+			if (emul->cache_pdcache)
+				cache_size = emul->cache_pdcache - 12;
+			if (cache_size < 0)
+				cache_size = 0;
+
+			cache_line_size = DEFAULT_PCACHE_LINESIZE;
+			if (emul->cache_pdcache_linesize)
+				cache_line_size = emul->cache_pdcache_linesize;
+			if (cache_line_size < 0)
+				cache_line_size = 0;
 
 			pdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
-			    COMPONENT_TYPE_PrimaryDCache, 0, 1, 20,
+			    COMPONENT_TYPE_PrimaryDCache, 0, 1, 2,
 			    /*
 			     *  Key bits:  0xYYZZZZ
 			     *  Cache line size is 1 << YY,
 			     *  Cache size is 4KB << ZZZZ.
 			     */
-			    0x01050002,	/*  32 bytes per line, 16 KB total  */
+			    0x01000000 + (cache_line_size << 16) + cache_size,
+				/*  32 bytes per line, default = 32 KB total  */
 			    0xffffffff, NULL, cpuaddr);
 
+			cache_size = 8;	/*  1 MB  */
+			if (emul->cache_secondary)
+				cache_size = emul->cache_secondary - 12;
+			if (cache_size < 0)
+				cache_size = 0;
+
+			cache_line_size = 6;	/*  64 bytes default  */
+			if (emul->cache_secondary_linesize)
+				cache_line_size = emul->cache_secondary_linesize;
+			if (cache_line_size < 0)
+				cache_line_size = 0;
+
 			sdcache = arcbios_addchild_manual(cpu, COMPONENT_CLASS_CacheClass,
-			    COMPONENT_TYPE_SecondaryDCache, 0, 1, 20,
+			    COMPONENT_TYPE_SecondaryDCache, 0, 1, 2,
 			    /*
 			     *  Key bits:  0xYYZZZZ
 			     *  Cache line size is 1 << YY,
 			     *  Cache size is 4KB << ZZZZ.
 			     */
-			    0x01060008,	/*  64 bytes per line, 1 MB total  */
+			    0x01000000 + (cache_line_size << 16) + cache_size,
+				/*  64 bytes per line, default = 1 MB total  */
 			    0xffffffff, NULL, cpuaddr);
 
 			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x,"

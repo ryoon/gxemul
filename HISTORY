@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.249 2004-10-10 14:07:47 debug Exp $
+$Id: HISTORY,v 1.250 2004-10-11 17:59:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1006,3 +1006,6 @@ HISTORY of mips64emul
 		For DECstation, when booting without a disk image (or when
 		"-O" is used on the command line), use "tftp" instead of "rzX"
 		for the boot string.
+20041011	Adding cache size variables to the emul struct, so that these
+		can be set on a per-machine basis (or potentially manually
+		on the command line).

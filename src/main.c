@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.109 2004-10-10 14:17:06 debug Exp $
+ *  $Id: main.c,v 1.110 2004-10-11 17:59:11 debug Exp $
  */
 
 #include <stdio.h>
@@ -422,6 +422,17 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	if (emul->emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RC32334");
+
+	if (emul->emulation_type == EMULTYPE_ARC &&
+	    emul->machine == MACHINE_ARC_PICA && !emul->emul_cpu_name[0]) {
+		strcpy(emul->emul_cpu_name, "R4000");
+		emul->cache_picache = 13;	/*  8 KB  */
+		emul->cache_pdcache = 13;	/*  8 KB  */
+		emul->cache_secondary = 19;	/*  512 MB  */
+		emul->cache_picache_linesize = 4;	/*  16  */
+		emul->cache_pdcache_linesize = 4;	/*  16  */
+		emul->cache_secondary_linesize = 0;	/*  ???  */
+	}
 
 	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4400");

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.114 2004-10-09 19:03:28 debug Exp $
+ *  $Id: misc.h,v 1.115 2004-10-11 17:59:10 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -532,6 +532,9 @@ struct translation_cache_entry {
 
 /*  An "impossible" paddr:  */
 #define	IMPOSSIBLE_PADDR		0x1212343456566767ULL
+
+#define	DEFAULT_PCACHE_SIZE		15	/*  32 KB  */
+#define	DEFAULT_PCACHE_LINESIZE		5	/*  32 bytes  */
 
 struct r3000_cache_line {
 	uint32_t	tag_paddr;

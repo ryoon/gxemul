@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.5 2004-10-10 14:07:48 debug Exp $
+ *  $Id: emul.h,v 1.6 2004-10-11 17:59:10 debug Exp $
  */
 
 #include "misc.h"
@@ -59,6 +59,14 @@ struct emul {
 	uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
 	int	dumppoint_flag_r[MAX_PC_DUMPPOINTS];
 	    /*  0 for instruction trace, 1 for instr.trace + register dump  */
+
+	/*  Cache sizes: (1 << x) x=0 for default values  */
+	int	cache_picache;
+	int	cache_pdcache;
+	int	cache_secondary;
+	int	cache_picache_linesize;
+	int	cache_pdcache_linesize;
+	int	cache_secondary_linesize;
 
 	int	bintrans_enable;
 	int	instruction_trace;

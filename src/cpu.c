@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.163 2004-10-09 11:03:47 debug Exp $
+ *  $Id: cpu.c,v 1.164 2004-10-11 17:59:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -66,7 +66,8 @@ static char *special2_names[] = SPECIAL2_NAMES;
  *
  *  Create a new cpu object.
  */
-struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu_type_name)
+struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id,
+	char *cpu_type_name)
 {
 	struct cpu *cpu;
 	int i, j, tags_size, n_cache_lines, size_per_cache_line;
@@ -112,6 +113,8 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu
 	 *  TODO: These should be configurable at runtime, perhaps.
 	 */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
+		int x;
+
 		switch (cpu->cpu_type.rev) {
 		case MIPS_R2000:
 		case MIPS_R3000:
@@ -120,8 +123,21 @@ struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu
 			size_per_cache_line = sizeof(struct r3000_cache_line);
 			break;
 		default:
-			cpu->cache_size[i] = 32768;
-			cpu->cache_linesize[i] = 32;
+			x = 1 << DEFAULT_PCACHE_SIZE;
+
+			switch (i) {
+			case CACHE_DATA:
+				if (emul->cache_pdcache)
+					x = 1 << emul->cache_pdcache;
+				break;
+			case CACHE_INSTRUCTION:
+				if (emul->cache_picache)
+					x = 1 << emul->cache_picache;
+				break;
+			}
+
+			cpu->cache_size[i] = x;
+			cpu->cache_linesize[i] = 1 << DEFAULT_PCACHE_LINESIZE;
 			size_per_cache_line = sizeof(struct r4000_cache_line);
 		}
 

@@ -160,18 +160,15 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		so on.  Like taking a snapshot)
 
 	Better X-windows functionality:
-		o)  Cursor transparency masking
+		o)  (Mouse) cursor transparency masking
 		o)  More 2D and 3D framebuffer acceleration
+		o)  Hide the host's mouse cursor.
 		o)  Non-resizable windows?  Or choose scaledown depending
 			on size (and center the image, with a black border)
 		o)  Switch scaledown during runtime? (Ala CTRL-ALT-plus/minus)
 		o)  Keyboard and mouse events:
 			x)  Do this for more machines than just DECstation
 			x)  How about multiple framebuffer windows?
-			x)  Try to make the emulated mouse cursor coordinates
-				track the host's X11 mouse! (This might be
-				bad to enable if the cursor is for example
-				a text console cursor.)
 			x)  X11 cursor keycodes and such?
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11
 			specific code to src/x11.c!

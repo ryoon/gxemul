@@ -1,5 +1,18 @@
-mips64emul POST-0.1.1
-=====================
+$Id: README,v 1.31 2004-07-13 10:57:46 debug Exp $
+
+Version 0.1.1 of the emulator was released at 2004-07-02.  The next
+stable release will probably not happen very soon, as there are lots of
+things I'd like to experiment with that might make the code unstable.
+
+I'll probably call the next release 0.2, since it will be different enough
+from the 0.1 and 0.1.1 releases to warrant a big version increase.
+
+
+Preliminary 0.2 README:
+
+-------------------------------------------------------------------------------
+mips64emul 0.2
+==============
 
 
 Overview

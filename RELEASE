@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.14 2004-07-09 05:56:41 debug Exp $
+$Id: RELEASE,v 1.15 2004-07-13 10:57:46 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -8,18 +8,15 @@ I'll probably call the next release 0.2, since it will be different enough
 from the 0.1 and 0.1.1 releases to warrant a big version increase.
 
 
-These were the 0.1.1 release notes:
+Preliminary 0.2 release notes:
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.1.1
-==================================
+Release notes for mips64emul 0.2
+================================
 
 Copyright (C) 2003-2004 by Anders Gavare  (md1gavan@mdstud.chalmers.se)
 
-
-0.1 is the first official release of mips64emul. 0.1.1 contains a few 
-minor updates.
 
 mips64emul is a MIPS machine emulator. The goals are to emulate 32-bit and
 64-bit MIPS-like CPUs and enough surrounding hardware to fake real machines,
@@ -29,13 +26,7 @@ Linux.
 (MIPS is a registered trademark of MIPS Technologies. This project is not
 affiliated with MIPS Technologies in any way whatsoever.) 
 
-In mips64emul's current state, a DECstation machine is emulated well enough
-to let NetBSD/pmax install itself onto a harddisk image, in a manner very
-similar to how an install is performed on a real physical DECstation.
-(Ultrix/RISC is also possible to install this way.)
-
-Other machine types are also emulated, but not well enough yet to let an
-entire OS be installed.
+[ TODO: Key features of release 0.2 ]
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -69,9 +60,9 @@ Files included in this release are:
 and a configure + Makefile.skel combination for configuring and building the
 emulator.
 
-The following platforms and compilers have been used to build the emulator; not
-all of them have been tested for this specific release, but will most probably
-work anyway.
+The following platforms and compilers have been used to build the emulator
+at one time or another; not all of them have been tested for this specific
+release, but will most probably work anyway.
 
 	FreeBSD/alpha 4.9
 		gcc version 2.95.4 20020320 [FreeBSD]
@@ -89,9 +80,9 @@ work anyway.
 	OpenBSD/sparc64
 		gcc 2.95.3 20010125 (prerelease, propolice)
 
-	Solaris/sparc (SunOS 5.9)
-		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
-		gcc version 2.95.3 20010315 (release)
+	OpenBSD/pmax 2.8
+		gcc 2.95.3 19991030 (prerelease)
+			(with CFLAGS="-Dstrtoull=strtoul -Dstrtoll=strtol")
 
 	NetBSD/pmax 1.6.2  (inside the emulator itself)
 		default gcc (2.9x.y) seems to work
@@ -99,11 +90,25 @@ work anyway.
 	NetBSD/i386 2.0/-current
 		gcc 3.3.3
 
+	GNU 0.3
+		gcc 3.3.4
+			(with --nox11)
+
+	Solaris/sparc (SunOS 5.9)
+		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
+		gcc version 2.95.3 20010315 (release)
+
 	HP-UX B.11.00
-		gcc 3.3.2  (this works, but HP-UX default cc doesn't work)
+		gcc 3.3.2
+
+
+Platforms/compilers that are known NOT to work are:
+
+	HP-UX B.11.00
+		using HP-UX' default cc   (gcc 3.3.2 works fine though)
 
 	Ultrix/MIPS  (inside the emulator itself)
-		(default cc does NOT work)
+		the default cc does NOT work
 
 
 Only a few files in the include/ directory are written by me, the rest are

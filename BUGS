@@ -9,14 +9,6 @@ Serious bugs:
       is to not use -CR4000 if you want to run X11 inside emulated
       NetBSD/pmax.
 
-  x)  Sprite runs fine on a Linux host, but not on an Alpha host.
-
-  x)  The mouse pointer is a rectangular shape with no transparency, so
-	    it looks a bit funny.
-
-  x)  The emulator doesn't hide the host's mouse cursor yet.
-
-
 Less serious bugs / issues:
 
   o)  the ssnop instruction doesn't align on a cycle boundary

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.312 2004-11-18 00:41:11 debug Exp $
+$Id: HISTORY,v 1.313 2004-11-19 06:58:02 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1143,3 +1143,10 @@ HISTORY of mips64emul
 		some cases (such as framebuffers).
 20041118	Moving some MIPS registers into Alpha registers, which gives
 		a speed improvement.
+		Beginning to write an i386 bintrans backend. Skeleton stuff
+		works, lui, jr/jalr, addiu/daddiu/andi/ori/xori, j/jal,
+		addu/daddu/subu/xor/or/nor/and.
+20041119	dsubu/sll/srl/sra, rfe,mfc0,dmfc0, beq,bne, delayed branches.
+		Some load/store (but not for bigendian emulation yet.)
+		Time to reach Ultrix 4.5's graphical login on a 2.8 GHz Xeon
+		host is now down to 20 seconds!

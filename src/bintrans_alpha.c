@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.38 2004-11-18 16:25:43 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.39 2004-11-19 06:58:02 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1127,6 +1127,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	unsigned char *a, *cacheskip, *loadjmp = NULL, *manualskip = NULL;
 	int ofs, writeflag, alignment, load=0;
 
+	/*  TODO: Not yet:  */
+	if (instruction_type == HI6_LQ_MDMX || instruction_type == HI6_SQ)
+		return 0;
+
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:
 	case HI6_LD:
@@ -1507,8 +1511,6 @@ static int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	a = *addrp;
 
 	/*
-	 *   gpr[rd] = retaddr
-	 *
 	 *   18 09 30 a4     ldq     t0,hi(a0)  (or lo)
 	 *   18 09 30 b4     stq     t0,rd(a0)
 	 *

@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.70 2004-11-10 19:54:26 debug Exp $
+#  $Id: configure,v 1.71 2004-11-19 06:58:02 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -439,21 +439,20 @@ else
 		BINTRANS=YES
 	fi
 
-# x86 not yet
-#	#  x86:  TODO: interpret all i?86 as i386!
-#	if [ z"`uname -m`" = zi386 ]; then
-#		printf "#define I386\n" >> config.h
-#		printf "#define BINTRANS\n" >> config.h
-#		printf "i386\n"
-#		BINTRANS=YES
-#	else
-#		if [ z"`uname -m`" = zi686 ]; then
-#			printf "#define I386\n" >> config.h
-#			printf "#define BINTRANS\n" >> config.h
-#			printf "i386\n"
-#			BINTRANS=YES
-#		fi
-#	fi
+	#  x86:  TODO: interpret all i?86 as i386!
+	if [ z"`uname -m`" = zi386 ]; then
+		printf "#define I386\n" >> config.h
+		printf "#define BINTRANS\n" >> config.h
+		printf "i386\n"
+		BINTRANS=YES
+	else
+		if [ z"`uname -m`" = zi686 ]; then
+			printf "#define I386\n" >> config.h
+			printf "#define BINTRANS\n" >> config.h
+			printf "i386\n"
+			BINTRANS=YES
+		fi
+	fi
 
 # MIPS not yet
 #	#  MIPS:

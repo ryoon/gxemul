@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.348 2005-02-15 16:45:10 debug Exp $
+ *  $Id: machine.c,v 1.349 2005-02-16 17:42:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -3928,7 +3928,13 @@ for (i=0; i<32; i++)
 		 */
 		machine->machine_name = "\"Bare\" PPC test machine";
 
-		/*  TODO  */
+		machine->main_console_handle = dev_cons_init(
+		    machine, mem, DEV_CONS_ADDRESS, "console");
+
+		dev_mp_init(machine, mem, DEV_MP_ADDRESS);
+
+		fb = dev_fb_init(machine, mem, 0x12000000, VFB_GENERIC,
+		    640,480, 640,480, 24, "generic", 1);
 
 		break;
 

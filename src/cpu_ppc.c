@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.38 2005-02-16 09:02:34 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.39 2005-02-16 17:42:59 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -1192,8 +1192,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			tmp = (~cpu->cd.ppc.gpr[ra]) & 0xffffffff;
 			cpu->cd.ppc.gpr[rt] = tmp + imm + 1;
 			/*  TODO: is this CA correct?  */
-printf("subfic: tmp = %016llx\n", (long long)tmp);
-printf("subfic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
+			/*  printf("subfic: tmp = %016llx\n", (long long)tmp);
+			    printf("subfic:  rt = %016llx\n\n",
+			    (long long)cpu->cd.ppc.gpr[rt]);  */
 			if ((tmp >> 32) != (cpu->cd.ppc.gpr[rt] >> 32))
 				cpu->cd.ppc.xer |= PPC_XER_CA;
 			/*  High 32 bits are probably undefined in
@@ -1276,10 +1277,11 @@ printf("subfic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
 		/*  NOTE: Addic doesn't clear CA!  */
 		if (cpu->cd.ppc.bits == 32) {
 			tmp = cpu->cd.ppc.gpr[ra] & 0xffffffff;
-			cpu->cd.ppc.gpr[rt] = tmp + (int64_t)imm;
+			cpu->cd.ppc.gpr[rt] = tmp + (uint32_t)imm;
 			/*  TODO: is this CA correct?  */
-printf("addic: tmp = %016llx\n", (long long)tmp);
-printf("addic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
+			/*  printf("addic: tmp = %016llx\n", (long long)tmp);
+			    printf("addic:  rt = %016llx\n\n",
+			    (long long)cpu->cd.ppc.gpr[rt]);  */
 			if ((tmp >> 32) != (cpu->cd.ppc.gpr[rt] >> 32))
 				cpu->cd.ppc.xer |= PPC_XER_CA;
 			/*  High 32 bits are probably undefined in
@@ -1829,13 +1831,15 @@ printf("addic:  rt = %016llx\n\n", (long long)cpu->cd.ppc.gpr[rt]);
 			case PPC_31_ADDEO:
 				cpu->cd.ppc.xer &= PPC_XER_CA;
 				if (cpu->cd.ppc.bits == 32) {
-					tmp = (int32_t)cpu->cd.ppc.gpr[ra];
+					tmp = (uint32_t)cpu->cd.ppc.gpr[ra];
 					tmp2 = tmp;
-printf("adde: tmp2 = %016llx\n", (long long)tmp2);
-					tmp += (int32_t)cpu->cd.ppc.gpr[rb];
+					/*  printf("adde: tmp2 = %016llx\n",
+					    (long long)tmp2);  */
+					tmp += (uint32_t)cpu->cd.ppc.gpr[rb];
 					if (cpu->cd.ppc.xer & PPC_XER_CA)
 						tmp ++;
-printf("adde: tmp  = %016llx\n\n", (long long)tmp);
+					/*  printf("adde: tmp  = %016llx\n\n",
+					    (long long)tmp);  */
 					/*  TODO: is this CA correct?  */
 					if ((tmp >> 32) != (tmp2 >> 32))
 						cpu->cd.ppc.xer |= PPC_XER_CA;
@@ -1868,8 +1872,10 @@ printf("adde: tmp  = %016llx\n\n", (long long)tmp);
 					    0xffffffff);
 					if (cpu->cd.ppc.xer & PPC_XER_CA)
 						tmp ++;
-printf("subfe: tmp2 = %016llx\n", (long long)tmp2);
-printf("subfe: tmp  = %016llx\n\n", (long long)tmp);
+					/*  printf("subfe: tmp2 = %016llx\n",
+					    (long long)tmp2);
+					    printf("subfe: tmp  = %016llx\n\n",
+					    (long long)tmp);  */
 					/*  TODO: is this CA correct?  */
 					if ((tmp >> 32) != (tmp2 >> 32))
 						cpu->cd.ppc.xer |= PPC_XER_CA;

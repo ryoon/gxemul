@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.103 2004-09-02 00:47:22 debug Exp $
+ *  $Id: misc.h,v 1.104 2004-09-02 00:58:03 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -87,6 +87,8 @@ typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
 #endif
 
+
+#include "emul.h"
 
 /*  Machine emulation types:  */
 #define	EMULTYPE_NONE		0
@@ -950,7 +952,7 @@ void store_64bit_word(uint64_t addr, uint64_t data64);
 void store_32bit_word(uint64_t addr, uint64_t data32);
 uint32_t load_32bit_word(uint64_t addr);
 void store_buf(uint64_t addr, char *s, size_t len);
-void machine_init(struct memory *mem);
+void machine_init(struct emul *emul, struct memory *mem);
 
 
 /*  memory.c:  */

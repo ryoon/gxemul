@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.69 2004-09-02 00:47:23 debug Exp $
+ *  $Id: main.c,v 1.70 2004-09-02 00:58:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -51,8 +51,6 @@ char **extra_argv;
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
  */
-
-char emul_cpu_name[50];
 
 int emulation_type = EMULTYPE_TEST;
 int machine = MACHINE_NONE;
@@ -256,7 +254,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	int ch, using_switch_d = 0;
 	char *progname = argv[0];
 
-	emul_cpu_name[0] = emul_cpu_name[sizeof(emul_cpu_name)-1] = '\0';
+	emul->emul_cpu_name[0] =
+	    emul->emul_cpu_name[CPU_NAME_MAXLEN-1] = '\0';
 
 	symbol_init();
 
@@ -274,8 +273,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			bintrans_enable = 1;
 			break;
 		case 'C':
-			strncpy(emul_cpu_name, optarg,
-			    sizeof(emul_cpu_name) - 1);
+			strncpy(emul->emul_cpu_name, optarg,
+			    CPU_NAME_MAXLEN - 1);
 			break;
 		case 'D':
 			emulation_type = EMULTYPE_DEC;
@@ -419,48 +418,53 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  Default CPU type:  */
 
-	if (emulation_type == EMULTYPE_PS2 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R5900");
+	if (emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R5900");
 
-	if (emulation_type == EMULTYPE_DEC && machine > 1 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R3000A");
+	if (emulation_type == EMULTYPE_DEC && machine > 1 &&
+	    !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R3000A");
 
-	if (emulation_type == EMULTYPE_DEC && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R2000");
+	if (emulation_type == EMULTYPE_DEC && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R2000");
 
-	if (emulation_type == EMULTYPE_COBALT && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "RM5200");
+	if (emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "RM5200");
 
-	if (emulation_type == EMULTYPE_MESHCUBE && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4400");
+	if (emulation_type == EMULTYPE_MESHCUBE && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R4400");
 		/*  TODO:  Should be AU1500, but Linux doesn't like
 			the absence of caches in the emulator  */
 
-	if (emulation_type == EMULTYPE_NETGEAR && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "RC32334");
+	if (emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "RC32334");
 
-	if (emulation_type == EMULTYPE_ARC && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4000");
+	if (emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R4000");
 
-	if (emulation_type == EMULTYPE_SGI && machine == 35 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R12000");
+	if (emulation_type == EMULTYPE_SGI && machine == 35 &&
+	    !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R12000");
 
 	if (emulation_type == EMULTYPE_SGI && (machine == 25 || machine == 27
-			|| machine == 28 || machine == 30 || machine == 32) && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R10000");
+	    || machine == 28 || machine == 30 || machine == 32)
+	    && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R10000");
 
-	if (emulation_type == EMULTYPE_SGI && (machine == 21 || machine == 26) && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R8000");
+	if (emulation_type == EMULTYPE_SGI && (machine == 21 || machine == 26)
+	    && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R8000");
 
-	if (emulation_type == EMULTYPE_SGI && machine == 24 && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R5000");
+	if (emulation_type == EMULTYPE_SGI && machine == 24 &&
+	    !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R5000");
 
 	/*  SGIs should probably work with R4000, R4400 or R5000 or similar.  */
-	if (emulation_type == EMULTYPE_SGI && !emul_cpu_name[0])
-		strcpy(emul_cpu_name, "R4400");
+	if (emulation_type == EMULTYPE_SGI && !emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, "R4400");
 
-	if (!emul_cpu_name[0])
-		strcpy(emul_cpu_name, CPU_DEFAULT);
+	if (!emul->emul_cpu_name[0])
+		strcpy(emul->emul_cpu_name, CPU_DEFAULT);
 
 
 	/*  Default memory size:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.167 2004-08-28 14:04:40 debug Exp $
+ *  $Id: machine.c,v 1.168 2004-09-02 00:58:04 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -69,7 +69,6 @@
 
 extern int emulation_type;
 extern char *machine_name;
-extern char emul_cpu_name[];
 extern int instruction_trace;
 extern int bootstrap_cpu;
 extern int ncpus;
@@ -781,7 +780,7 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *  This (rather large) function initializes memory, registers, and/or
  *  devices required by specific machine emulations.
  */
-void machine_init(struct memory *mem)
+void machine_init(struct emul *emul, struct memory *mem)
 {
 	uint64_t addr;
 	int i;
@@ -2366,7 +2365,8 @@ void machine_init(struct memory *mem)
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
 
-			strncpy(arc_cpu_name, emul_cpu_name, sizeof(arc_cpu_name));
+			strncpy(arc_cpu_name, emul->emul_cpu_name,
+			    sizeof(arc_cpu_name));
 			arc_cpu_name[sizeof(arc_cpu_name)-1] = 0;
 			for (jj=0; jj<strlen(arc_cpu_name); jj++)
 				if (arc_cpu_name[jj] >= 'a' && arc_cpu_name[jj] <= 'z')

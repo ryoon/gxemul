@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.493 2005-01-18 06:22:56 debug Exp $
+$Id: HISTORY,v 1.494 2005-01-18 07:28:48 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1501,3 +1501,5 @@ HISTORY of mips64emul
 		used by at least VR4131. Thanks to Alexander Yurchenko for
 		noticing this. (I'm assuming for now that all R41xx work
 		this way, which is not necessarily true.)
+		Renicing the "loading files" messages and other things
+		displayed during startup.

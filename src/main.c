@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.151 2005-01-16 09:09:31 debug Exp $
+ *  $Id: main.c,v 1.152 2005-01-18 07:28:50 debug Exp $
  */
 
 #include <stdio.h>
@@ -104,13 +104,11 @@ static void usage(char *progname, int longusage)
 	int i;
 	struct cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
 
-	printf("mips64emul-%s  Copyright (C) 2003-2005  Anders Gavare\n",
+	printf("mips64emul");
 #ifdef VERSION
-	    VERSION
-#else
-	    "(no version)"
+	printf("-" VERSION);
 #endif
-	    );
+	printf("  Copyright (C) 2003-2005  Anders Gavare\n");
 	printf("Read the documentation and/or source code for other Copyright notices.\n");
 	printf("\nusage: %s [options] file [...]\n", progname);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.112 2005-01-17 18:46:33 debug Exp $
+ *  $Id: emul.c,v 1.113 2005-01-18 07:28:50 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -372,6 +372,13 @@ void emul_start(struct emul *emul)
 	int i;
 	uint64_t addr, memory_amount;
 
+	/*  Print startup message:  */
+	debug("mips64emul");
+#ifdef VERSION
+	debug("-" VERSION);
+#endif
+	debug("  Copyright (C) 2003-2005  Anders Gavare\n");
+
 	srandom(time(NULL));
 
 	atexit(fix_console);
@@ -380,10 +387,8 @@ void emul_start(struct emul *emul)
 	if (emul->bintrans_enable)
 		bintrans_init();
 
-	/*
-	 *  Create the system's memory:
-	 */
-	debug("adding memory: %i MB", emul->physical_ram_in_mb);
+	/*  Create the system's memory:  */
+	debug("adding main memory: %i MB", emul->physical_ram_in_mb);
 	memory_amount = (uint64_t)emul->physical_ram_in_mb * 1048576;
 	if (emul->memory_offset_in_mb > 0) {
 		/*
@@ -455,9 +460,6 @@ void emul_start(struct emul *emul)
 	}
 
 	/*  Load files (ROM code, boot code, ...) into memory:  */
-	if (extra_argc > 0)
-		debug("loading files into emulation memory:\n");
-
 	if (emul->booting_from_diskimage)
 		load_bootblock(emul, emul->cpus[emul->bootstrap_cpu]);
 
@@ -522,9 +524,29 @@ void emul_start(struct emul *emul)
 	    emul->emulation_type == EMULTYPE_SGI) && emul->prom_emulation)
 		add_arc_components(emul);
 
-	debug("starting emulation: cpu%i pc=0x%016llx gp=0x%016llx\n\n",
-	    emul->bootstrap_cpu, emul->cpus[emul->bootstrap_cpu]->pc,
-	    emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+	i = 0;
+	debug("starting emulation: cpu%i ", emul->bootstrap_cpu);
+	if (emul->bootstrap_cpu >= 10)  i++;
+	if (emul->bootstrap_cpu >= 100)  i++;
+	if (emul->bootstrap_cpu >= 1000)  i++;
+	if (emul->bootstrap_cpu >= 10000)  i++;
+	if (emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level < 3 ||
+	    emul->cpus[emul->bootstrap_cpu]->cpu_type.isa_level == 32)
+		debug("pc=0x%08x gp=0x%08x",
+		    (int)emul->cpus[emul->bootstrap_cpu]->pc,
+		    (int)emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+	else {
+		debug("pc=0x%016llx gp=0x%016llx",
+		    (long long)emul->cpus[emul->bootstrap_cpu]->pc,
+		    (long long)emul->cpus[emul->bootstrap_cpu]->gpr[GPR_GP]);
+		i += 16;
+	}
+	debug("\n");
+
+	i += strlen("starting emulation: cpuX pc=0x12345678 gp=0x12345678");
+	while (i-- > 0)
+		debug("-");
+	debug("\n\n");
 
 	debugger_init(emul);
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.69 2005-01-17 15:34:11 debug Exp $
+ *  $Id: arcbios.c,v 1.70 2005-01-18 07:28:50 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -478,7 +478,7 @@ void arcbios_add_memory_descriptor(struct cpu *cpu,
 #if 1
 	if (cpu->emul->emulation_type == EMULTYPE_SGI) {
 		/*  arctype is SGI style  */
-printf("%i => ", arctype);
+		/*  printf("%i => ", arctype); */
 		switch (arctype) {
 		case 0:	arctype = 0; break;
 		case 1:	arctype = 1; break;
@@ -489,7 +489,7 @@ printf("%i => ", arctype);
 		case 6:	arctype = 7; break;
 		case 7:	arctype = 2; break;
 		}
-printf("%i\n", arctype);
+		/*  printf("%i\n", arctype);  */
 	}
 #endif
 	if (arc_64bit)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.178 2004-07-26 00:43:38 debug Exp $
+$Id: HISTORY,v 1.179 2004-07-26 03:50:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -838,3 +838,13 @@ HISTORY of mips64emul
 		invalidation code to be used regardless of compiler.
 		Some other minor changes.
 20040726	Minor updates. The configure script is now more verbose.
+		A Debian/IP22 Linux tftp boot kernel requires ARCS memory to
+		be FreeMemory, not FreeContiguous. (This should still work with
+		other SGI and ARC OSes.)
+		Fix for ARCS write(), so it returns good write count and
+		success result (0).
+		Some hacks to the IP22 memory controller, to fake 72MB RAM
+		in bank 0.
+		The IP22 Debian kernel reaches userland (ramdisk) when run
+		with -G24 -M72 -CR4400, if a special hack is done to the
+		zs device.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.30 2004-04-11 15:47:17 debug Exp $
+ *  $Id: main.c,v 1.31 2004-06-08 07:57:39 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -150,7 +150,9 @@ void usage(char *progname)
 	printf("usage: %s [options] file [...]\n", progname);
 	printf("  -A        try to emulate a generic ARC machine (default CPU = R4000)\n");
 	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
+#ifdef BINTRANS
 	printf("  -b        enable binary translation (experimental!)\n");
+#endif
 	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
 
 	/*  List CPU names:  */
@@ -423,6 +425,13 @@ int get_cmd_args(int argc, char *argv[])
 		printf("Too few cpus.\n");
 		exit(1);
 	}
+
+#ifndef BINTRANS
+	if (bintrans_enable) {
+		fprintf(stderr, "Warning: %s was compiled without bintrans support. Ignoring -b.\n", argv[0]);
+		bintrans_enable = 0;
+	}
+#endif
 
 #ifndef WITH_X11
 	if (use_x11) {

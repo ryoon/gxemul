@@ -1,10 +1,20 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.14 2004-04-06 02:30:51 debug Exp $
+#  $Id: configure,v 1.15 2004-06-08 07:57:42 debug Exp $
 #
-#  Configure script for mips64emul.
+#  Minimal configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
 #  makefiles in subdirs.
+#
+#  TODO:  This file is a mess.
+#
+#  The main things that need to be detected are:
+#
+#    o)  which compiler to use
+#    o)  which compiler flags to use
+#    o)  X11 flags and libraries
+#    o)  special hacks for some OSes
+#    o)  binary translation (on supported platforms)
 #
 
 if [ z$1 != z ]; then
@@ -124,6 +134,12 @@ COPTIM=$CFLAGS
 if [ z"`uname -m`" = zalpha ]; then
 	#  This is not an optimization, actually, just a flag:
 	COPTIM="-DALPHA $COPTIM"
+
+	#  BINTRANS, but only when using gcc as ccc doesn't like the inline asm stuff:
+	#  TODO:  Make this more generic
+	if [ z"$CC" = zgcc ]; then
+		COPTIM="-DBINTRANS $COPTIM"
+	fi
 fi
 
 if [ z"`uname`" = zHP-UX ]; then

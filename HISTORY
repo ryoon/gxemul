@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.339 2004-11-30 21:47:40 debug Exp $
+$Id: HISTORY,v 1.340 2004-11-30 22:38:40 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1214,3 +1214,4 @@ HISTORY of mips64emul
 		A couple of other minor fixes.
 		Minor updates to the Alpha backend (directly using Alpha
 		registers in some cases, instead of loading into temporaries).
+		Updates to the i386 backend.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.29 2004-11-30 21:47:43 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.30 2004-11-30 22:38:40 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -170,8 +170,6 @@ static void bintrans_write_pc_inc(unsigned char **addrp, int pc_inc,
 			*a++ = (pc_inc >> 8) & 255;
 		}
 
-		/*  TODO/NOTE: This bugs out if we're jumping from
-		    0xffffffffffffffff to 0x0000000000000000 etc.  */
 		if (!bintrans_32bit_only) {
 			/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
 			ofs += 4;
@@ -337,7 +335,9 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 		/*  83 c0 08                add    $0x8,%eax  */
 		/*  83 d2 00                adc    $0x0,%edx  */
 		*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
+		if (!bintrans_32bit_only) {
+			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
+		}
 
 		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
 	}
@@ -390,24 +390,6 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 {
 	unsigned char *a;
 	unsigned int uimm;
-	int load64 = 0, sign3264 = 1;
-
-	switch (instruction_type) {
-	case HI6_DADDIU:
-	case HI6_ORI:
-	case HI6_XORI:
-	case HI6_SLTI:
-	case HI6_SLTIU:
-		load64 = 1;
-	}
-
-	switch (instruction_type) {
-	case HI6_ANDI:
-	case HI6_ORI:
-	case HI6_XORI:
-	case HI6_DADDIU:
-		sign3264 = 0;
-	}
 
 	a = *addrp;
 
@@ -423,11 +405,7 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		goto rt0;
 	}
 
-	if (load64) {
-		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
-	} else {
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.gpr[rs]);
-	}
+	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 
 	switch (instruction_type) {
 	case HI6_ADDIU:
@@ -436,19 +414,27 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 			/*  05 39 fd ff ff          add    $0xfffffd39,%eax  */
 			/*  83 d2 ff                adc    $0xffffffff,%edx  */
 			*a++ = 0x05; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0xff; *a++ = 0xff;
-			*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
+			if (instruction_type == HI6_DADDIU) {
+				*a++ = 0x83; *a++ = 0xd2; *a++ = 0xff;
+			}
 		} else {
 			/*  05 c7 02 00 00          add    $0x2c7,%eax  */
 			/*  83 d2 00                adc    $0x0,%edx  */
 			*a++ = 0x05; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
-			*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+			if (instruction_type == HI6_DADDIU) {
+				*a++ = 0x83; *a++ = 0xd2; *a++ = 0;
+			}
+		}
+		if (instruction_type == HI6_ADDIU) {
+			/*  99                      cltd   */
+			*a++ = 0x99;
 		}
 		break;
 	case HI6_ANDI:
 		/*  25 34 12 00 00          and    $0x1234,%eax  */
-		/*  ba 00 00 00 00          mov    $0x0,%edx  */
+		/*  31 d2                   xor    %edx,%edx  */
 		*a++ = 0x25; *a++ = uimm; *a++ = uimm >> 8; *a++ = 0; *a++ = 0;
-		*a++ = 0xba; *a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0;
+		*a++ = 0x31; *a++ = 0xd2;
 		break;
 	case HI6_ORI:
 		/*  0d 34 12 00 00          or     $0x1234,%eax  */
@@ -543,11 +529,6 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 		break;
 	}
 
-	if (sign3264) {
-		/*  99                      cltd   */
-		*a++ = 0x99;
-	}
-
 	store_eax_edx(&a, &dummy_cpu.gpr[rt]);
 
 rt0:
@@ -575,8 +556,9 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 		/*  83 c0 08                add    $0x8,%eax  */
 		/*  83 d2 00                adc    $0x0,%edx  */
 		*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
-		*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
-
+		if (!bintrans_32bit_only) {
+			*a++ = 0x83; *a++ = 0xd2; *a++ = 0x00;
+		}
 		store_eax_edx(&a, &dummy_cpu.gpr[31]);
 	}
 

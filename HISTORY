@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.232 2004-09-26 19:33:10 debug Exp $
+$Id: HISTORY,v 1.233 2004-09-28 08:18:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -964,3 +964,4 @@ HISTORY of mips64emul
 		support any delta. Also adding bgtzk and blezl as possible
 		instructions for the speed-hack jumps. (This needs to be
 		tested more.)
+20040928	Minor updates.

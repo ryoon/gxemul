@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.99 2004-07-07 01:38:35 debug Exp $
+ *  $Id: cpu.c,v 1.100 2004-07-08 00:40:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -76,6 +76,9 @@ static char *hi6_names[] = HI6_NAMES;
 static char *regimm_names[] = REGIMM_NAMES;
 static char *special_names[] = SPECIAL_NAMES;
 static char *special2_names[] = SPECIAL2_NAMES;
+
+
+#include "memory.c"
 
 
 /*
@@ -844,13 +847,10 @@ int cpu_run_instr(struct cpu *cpu)
 		 */
 		if (cpu->pc_last_was_in_host_ram &&
 		    (cached_pc & ~0xfff) == cpu->pc_last_virtual_page) {
-			uint64_t paddr = cpu->pc_last_physical_page
-			    | (cached_pc & 0xfff);
-
 			/*  NOTE: This only works on the host if offset is
 			    aligned correctly!  (TODO)  */
 			*(uint32_t *)instr = *(uint32_t *)
-			    (cpu->pc_last_host_4k_page + (paddr & 0xfff));
+			    (cpu->pc_last_host_4k_page + (cached_pc & 0xfff));
 
 			/*  TODO:  Make sure this works with
 			    dynamic binary translation...  */
@@ -2923,16 +2923,16 @@ int cpu_run(struct cpu **cpus, int ncpus)
 					running = 1;
 
 			/*  CPU 0 is special, cpu0instr must be updated.  */
-			for (j=0; j<a_few_instrs; j++)
-				if (cpus[0]->running) {
-					int instrs_run;
-					do {
-						instrs_run =
-						    cpu_run_instr(cpus[0]);
-					} while (instrs_run == 0);
-
-					cpu0instrs += instrs_run;
-				}
+			for (j=0; j<a_few_instrs; j++) {
+				int instrs_run;
+				if (!cpus[0]->running)
+					break;
+				do {
+					instrs_run =
+					    cpu_run_instr(cpus[0]);
+				} while (instrs_run == 0);
+				cpu0instrs += instrs_run;
+			}
 
 			/*  CPU 1 and up:  */
 			for (i=1; i<ncpus_cached; i++) {
@@ -2965,7 +2965,14 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			 *  cause hardware ticks a fraction of a cycle too
 			 *  often.
 			 */
-			cpu0instrs /= cpus[0]->cpu_type.instrs_per_cycle;
+			i = cpus[0]->cpu_type.instrs_per_cycle;
+			switch (i) {
+			case 1:	break;
+			case 2:	cpu0instrs >>= 1; break;
+			case 4:	cpu0instrs >>= 2; break;
+			default:
+				cpu0instrs /= i;
+			}
 
 			for (te=0; te<cpus[0]->n_tick_entries; te++) {
 				cpus[0]->ticks_till_next[te] -= cpu0instrs;

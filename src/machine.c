@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.159 2004-08-11 03:12:11 debug Exp $
+ *  $Id: machine.c,v 1.160 2004-08-11 03:52:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -70,7 +70,7 @@
 extern int emulation_type;
 extern char *machine_name;
 extern char emul_cpu_name[];
-
+extern int instruction_trace;
 extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
@@ -734,6 +734,9 @@ void sgi_ip32_interrupt(struct cpu *cpu, int irq_nr, int assrt)
  *
  *  Interrupts 0..31 are on interrupt controller 0, interrupts 32..63 are
  *  on controller 1.
+ *
+ *  Special case: if irq_nr == 64+8, then this just updates the CPU
+ *  interrupt assertions.
  */
 void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
@@ -742,12 +745,16 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	irq_nr -= 8;
 	debug("au1x00_interrupt(): irq_nr=%i assrt=%i\n", irq_nr, assrt);
 
-	m = 1 << (irq_nr & 31);
+	if (irq_nr < 64) {
+		m = 1 << (irq_nr & 31);
 
-	if (assrt)
-		au1x00_ic_data->request0_int |= m;
-	else
-		au1x00_ic_data->request0_int &= ~m;
+		if (assrt)
+			au1x00_ic_data->request0_int |= m;
+		else
+			au1x00_ic_data->request0_int &= ~m;
+
+		/*  TODO: Controller 1  */
+	}
 
 	if ((au1x00_ic_data->request0_int &
 	    au1x00_ic_data->mask) != 0)
@@ -756,12 +763,6 @@ void au1x00_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 		cpu_interrupt_ack(cpu, 2);
 
 	/*  TODO: What _is_ request1?  */
-
-	if ((au1x00_ic_data->request1_int &
-	    au1x00_ic_data->mask) != 0)
-		cpu_interrupt(cpu, 3);
-	else
-		cpu_interrupt_ack(cpu, 3);
 
 	/*  TODO: Controller 1  */
 }

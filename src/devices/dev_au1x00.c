@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_au1x00.c,v 1.3 2004-08-11 03:12:10 debug Exp $
+ *  $Id: dev_au1x00.c,v 1.4 2004-08-11 03:52:13 debug Exp $
  *  
  *  Au1x00 (eg Au1500) pseudo device. See aureg.h for bitfield details.
  *
@@ -107,11 +107,9 @@ int dev_au1x00_ic_access(struct cpu *cpu, struct memory *mem,
 			d->config2 |= idata;
 		break;
 	case IC_CONFIG2_CLEAR:	/*  or IC_REQUEST0_INT  */
-		if (writeflag == MEM_READ) {
+		if (writeflag == MEM_READ)
 			odata = d->request0_int;
-d->request0_int = 0;	/*  TODO ?  */
-cpu_interrupt_ack(cpu, 2);
-		} else
+		else
 			d->config2 &= ~idata;
 		break;
 	case IC_SOURCE_READ:	/*  READ or SET  */
@@ -171,6 +169,9 @@ cpu_interrupt_ack(cpu, 2);
 			    d->ic_nr, (long)relative_addr, idata);
 		}
 	}
+
+	if (writeflag == MEM_WRITE)
+		cpu_interrupt(cpu, 8 + 64);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -238,6 +239,9 @@ int dev_au1x00_uart_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_au1x00_pc_tick():
+ *
+ *  Cause periodic ticks. (The PC is supposed to give interrupts at
+ *  32768 Hz?)
  */
 void dev_au1x00_pc_tick(struct cpu *cpu, void *extra)
 {

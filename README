@@ -17,9 +17,17 @@ o)  DECstation:
 
     ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz
     ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz
-    gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -M16 -I1000000 netbsd-INSTALL
+    gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -I1500000 netbsd-INSTALL
     for a graphical framebuffer console. Remove -XY2 to use serial (stdin/
     stdout) console.  Try -D1, -D2, -D3, -D4, -D7, and -D12.
+
+    For an installation CDROM iso image, try the following:
+    ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso
+    Add  -d pmaxcd.iso  to the command line to use it.
+
+    To use a (clean) SCSI disk image, first create an empty large file:
+    dd if=/dev/zero of=netbsd_pmax_rootdisk.img bs=1 count=1 oseek=680000000
+    Then add  -d netbsd_pmax_rootdisk.img  to the command line.
 
     ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
     This is an old OpenBSD kernel in a.out format.

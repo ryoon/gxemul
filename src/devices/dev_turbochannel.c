@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.6 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.7 2004-02-18 09:37:36 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -95,6 +95,10 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relati
 			}
 		}
 
+		/*  If this slot is empty, return error:  */
+		if (d->card_module_name[0] ==  ' ')
+			return 0;
+
 		debug(") ]\n");
 	} else {
 		/*  debug("[ turbochannel: write to  0x%08lx: 0x%08x ]\n", (long)relative_addr, idata);  */
@@ -118,8 +122,9 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	struct vfb_data *fb;
 	struct turbochannel_data *d;
 	int rom_offset = 0x3c0000;
+	int rom_length = DEV_TURBOCHANNEL_LEN;
 
-	if (device_name==NULL || device_name[0]=='\0')
+	if (device_name==NULL)
 		return;
 
 	if (strlen(device_name)>8) {
@@ -188,9 +193,13 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 		fb = dev_fb_init(cpu, mem, baseaddr + 0x2000000, VFB_DEC_MAXINE, 0, 0, 0, 0, 0, "PMAG-DV");
 		/*  TODO:  not yet usable, needs a IMS332 vdac  */
 		rom_offset = 0x3c0000;
-	} else if (device_name[0] != '\0')
+	} else if (device_name[0] == '\0') {
+		/*  If this slot is empty, then occupy the entire 4MB slot address range:  */
+		rom_offset = 0;
+		rom_length = 4*1048576;
+	} else
 		fatal("warning: unknown TURBOchannel device name \"%s\"\n", device_name);
 
-	memory_device_register(mem, "turbochannel", baseaddr + rom_offset, DEV_TURBOCHANNEL_LEN, dev_turbochannel_access, d);
+	memory_device_register(mem, "turbochannel", baseaddr + rom_offset, rom_length, dev_turbochannel_access, d);
 }
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.202 2005-01-22 18:30:36 debug Exp $
+$Id: index.html,v 1.203 2005-01-24 16:05:39 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -843,7 +843,7 @@ instructions:
 
 </pre>
   <li>Start the emulator using this command line:<pre>
-	$ <b>./mips64emul -X -A2 -d obsd_arc.img -d openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</b>
+	$ <b>./mips64emul -X -b -A2 -d obsd_arc.img -d openbsd_arc_2.3.iso ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd.rd.elf</b>
 
 </pre>
 	and proceed like you would do if you were installing OpenBSD
@@ -856,13 +856,15 @@ Once the install has finished, the following command should let you
 boot from the harddisk image:
 <p>
 <pre>
-	$ <b>./mips64emul -X -A2 -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
+	$ <b>./mips64emul -X -b -A2 -d obsd_arc.img ftp.se.openbsd.org/pub/OpenBSD/2.3/arc/bsd</b>
 
 </pre>
 
 <p>
-You can experiment with adding <b>-b</b> to the command line, to enable
-dynamic binary translation. This is not 100% stable yet, but sometimes works.
+(The <b>-b</b> command line option enables dynamic binary translation,
+which isn't always 100% stable, so if things seem buggy you might want
+to try to remove that from the command line.)
+
 
 
 

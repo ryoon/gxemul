@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.237 2004-09-29 06:28:38 debug Exp $
+$Id: HISTORY,v 1.238 2004-10-02 06:14:34 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -968,3 +968,9 @@ HISTORY of mips64emul
 		cpu_register_dump() now also dumps coprocessor registers.
 20040929	More ARC updates. Making the code look a tiny bit nicer
 		than before. "arcdiag.ip22" works for -G22 (SGI-IP22).
+		Apparently the overflow support in the 'add' instruction
+		was incorrect, so I disabled it.
+20041002	Trying to install Ultrix in the emulator, but the installer
+		crashes; found (and fixed) the bug rather quickly: the "fix"
+		I implemented a few days ago for the 'sub' instruction
+		(according to the MIPS64 manual) caused the bug.

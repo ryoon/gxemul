@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.157 2004-09-29 05:35:17 debug Exp $
+ *  $Id: cpu.c,v 1.158 2004-10-02 06:14:35 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1794,6 +1794,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				temp1 = cpu->gpr[rs] + ((cpu->gpr[rs] & 0x80000000ULL) << 1);
 				temp2 = cpu->gpr[rt] + ((cpu->gpr[rt] & 0x80000000ULL) << 1);
 				temp = temp1 - temp2;
+#if 0
 				/*  If bits 32 and 31 of temp differ, then it's an overflow  */
 				temp1 = temp & 0x100000000ULL;
 				temp2 = temp & 0x80000000ULL;
@@ -1801,6 +1802,7 @@ static int cpu_run_instr(struct cpu *cpu)
 					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
+#endif
 				cpu->gpr[rd] = temp & 0xffffffffULL;
 				if (cpu->gpr[rd] & 0x80000000ULL)
 					cpu->gpr[rd] |= 0xffffffff00000000ULL;

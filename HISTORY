@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.69 2004-04-15 21:35:34 debug Exp $
+$Id: HISTORY,v 1.70 2004-04-24 22:40:03 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -469,3 +469,7 @@ HISTORY of mips64emul
 		mips64emul can be compiled inside NetBSD inside mips64emul,
 		and it can run NetBSD in that environment. (I'm getting
 		dizzy... :-)
+20040417	Moving some coprocessor stuff from cpu.c to coproc.c.
+20040424	Adding a BT455 vdac for PMAG-AA. Black and white are now
+		rendered correctly in Xpmax.
+		Adding colormap support to the BT459 device, for PMAG-BA.

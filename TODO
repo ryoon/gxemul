@@ -88,9 +88,12 @@ mips64emul TODO
 			x)  QBus-22 (DECsystem 5500, 5400?)
 		o)  DECstations (pmax):
 			boot directly from disk/cd-rom images
-			framebuffers: programmable cursors, overlays, 2D/3D acceleration, VDACs
+			framebuffers:
+				PMAG-AA: VDAC, cursor
+				PMAG-BA: VDAC, cursor?
+				programmable cursors, overlays, 2D/3D acceleration, VDACs
 			status words / control words, make this more portable/cleaner
-			scsi controller(s): sii, asc
+			scsi controller(s): sii, asc (+ DMA)
 			ethernet controller(s): le, fddi?
 			serial controllers: dc, ssc, scc
 			nvram on decstation 5000/125:  when using X11, set console=g or similar

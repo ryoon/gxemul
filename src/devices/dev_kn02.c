@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.8 2004-07-10 04:11:34 debug Exp $
+ *  $Id: dev_kn02.c,v 1.9 2004-07-11 15:25:23 debug Exp $
  *  
  *  DEC (KN02) stuff.  See include/dec_kn02.h for more info.
  */
@@ -67,6 +67,9 @@ int dev_kn02_access(struct cpu *cpu, struct memory *mem,
 
 			idata &= 0x00ffff00;
 			d->csr = (d->csr & 0xff0000ffULL) | idata;
+
+			/*  Recalculate interrupt assertions:  */
+			cpu_interrupt(cpu, 8);
 		}
 		break;
 	default:

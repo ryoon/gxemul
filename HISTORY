@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.488 2005-01-17 15:34:10 debug Exp $
+$Id: HISTORY,v 1.489 2005-01-17 16:12:38 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1490,3 +1490,6 @@ HISTORY of mips64emul
 		Adding a 'put' command to the debugger.
 		ARCBIOS function 0x100 used by IRIX seems to _NOT_ be a
 		ReturnFromMain(), but something else undocumented.
+		The count and compare registers are now 32-bit in all
+		places, as they should be. (This causes, among other things,
+		OpenBSD/sgi to not hang randomly in userspace anymore.)

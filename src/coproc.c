@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.143 2005-01-17 09:55:58 debug Exp $
+ *  $Id: coproc.c,v 1.144 2005-01-17 16:12:42 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -825,11 +825,17 @@ void coproc_register_write(struct cpu *cpu,
 			unimpl = 0;
 			break;
 		case COP0_COUNT:
+			if (tmp != (int64_t)(int32_t)tmp)
+				fatal("WARNING: trying to write a 64-bit value to the COUNT register!\n");
+			tmp = (int64_t)(int32_t)tmp;
 			unimpl = 0;
 			break;
 		case COP0_COMPARE:
 			/*  Clear the timer interrupt bit (bit 7):  */
 			cpu_interrupt_ack(cpu, 7);
+			if (tmp != (int64_t)(int32_t)tmp)
+				fatal("WARNING: trying to write a 64-bit value to the COMPARE register!\n");
+			tmp = (int64_t)(int32_t)tmp;
 			unimpl = 0;
 			break;
 		case COP0_ENTRYHI:

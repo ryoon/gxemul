@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.238 2005-01-17 13:03:30 debug Exp $
+ *  $Id: cpu.c,v 1.239 2005-01-17 16:12:42 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1470,16 +1470,19 @@ int cpu_run_instr(struct cpu *cpu)
 		if (r >= cp0->nr_of_tlbs || r < 8)
 			r = cp0->nr_of_tlbs-1;
 		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
-		/*  TODO: Does the R3000 even have a counter register? :)  */
-		/*  cp0->reg[COP0_COUNT] ++;  */
 	} else {
 		cp0->reg[COP0_RANDOM] --;
 		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
 		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
 			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
 
-		/*  TODO: double count blah blah  */
-		cp0->reg[COP0_COUNT] ++;
+		/*
+		 *  TODO: only increase count every other instruction,
+		 *  according to the R4000 manual. But according to the
+		 *  R5000 manual: increment every other clock cycle.
+		 *  Which one is it? :-)
+		 */
+		cp0->reg[COP0_COUNT] = (int64_t)(int32_t)(cp0->reg[COP0_COUNT] + 1);
 
 		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
 			cpu_interrupt(cpu, 7);
@@ -1869,11 +1872,14 @@ int cpu_run_instr(struct cpu *cpu)
 					res &= BINTRANS_N_MASK;
 
 					if (cpu->cpu_type.exc_model != EXC3K) {
-						if (cp0->reg[COP0_COUNT] < cp0->reg[COP0_COMPARE] &&
-						    cp0->reg[COP0_COUNT] + (res-1) >= cp0->reg[COP0_COMPARE])
+						/*  TODO: 32-bit or 64-bit?  */
+						int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
+						int diff = x - y;
+						if (diff < 0 && diff + (res-1) >= 0)
 							cpu_interrupt(cpu, 7);
 
-						cp0->reg[COP0_COUNT] += (res-1);
+						cp0->reg[COP0_COUNT] = (int64_t)
+						    (int32_t)(cp0->reg[COP0_COUNT] + res-1);
 					}
 
 					return res;

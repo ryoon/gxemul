@@ -1,21 +1,18 @@
-Please report any bugs you find to me.  Here is a list of KNOWN bugs:
+Please report any bugs you find to me.  Here is a list of KNOWN bugs.  (Also,
+anything listed in TODO is not worth reporting.)
 
 
 Serious bugs:
 
-  o)  PMAG-BA / BT459 issues (for example when running DECstation "-D2 -X"
-      emulation):
+  x)  NetBSD/pmax works with X with -CR3000, but not always with -CR4000.
+      Reason and solution unknown at this point. A temporary workaround
+      is to not use -CR4000 if you want to run X11 inside emulated
+      NetBSD/pmax.
 
-	x)  NetBSD/pmax works with X with -CR3000, but not always with -CR4000.
-	    Reason and solution unknown at this point. A temporary workaround
-	    is to not use -CR4000 if you want to run X11 inside emulated
-	    NetBSD/pmax.
-
-        x)  The mouse pointer is a rectangular shape with no transparency, so
+  x)  The mouse pointer is a rectangular shape with no transparency, so
 	    it looks a bit funny.
 
-	x)  The emulator doesn't de-accelerate mouse movements yet, so the
-	    mouse feels funny.
+  x)  The emulator doesn't hide the host's mouse cursor yet.
 
 
 Less serious bugs / issues:
@@ -28,4 +25,7 @@ Less serious bugs / issues:
 
   o)  running Linux/DECstation 2.4.26 with no scsi disks attached causes
       a warning message to be printed by Linux.
+
+  o)  UDP packets that are too large are not handled well by the Lance
+      device.
 

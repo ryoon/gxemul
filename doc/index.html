@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.69 2004-07-11 07:45:29 debug Exp $
+$Id: index.html,v 1.70 2004-07-11 13:10:57 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -383,6 +383,17 @@ the network instead of from the pmax cdrom image.
 
 -->
 
+<p>
+<font color="#ff0000">NOTE: It is possible to install NetBSD/pmax
+via NFS using UDP. TCP is not yet implemented in the emulator, so
+a normal FTP install is not possible, but you can place the
+install sets on an NFS server and install NetBSD that way.
+Read the <a href="technical.html#net">section on networking in the 
+technical documentation</a> for more information about networking
+in general.
+</font>
+
+
 
 <p>
 When the installation is completed, the following command should start
@@ -682,8 +693,9 @@ Here are links to some of the kernels that I usually experiment with.
 </pre>
 	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
 	<br>To try with serial console: <b>-D2 -o 'console=ttyS03' vmlinux-2.4.26-r3k-kn02</b>
-	<br>Here are some older kernels (these don't support framebuffer,
-		I think):
+	<br>You might also want to try an install ramdisk kernel, also Debian:
+		<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">		http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img</a>
+	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
 	<br>Note: Make sure you add <b>-CR4000</b> to the command line for
 		R4000 kernels, as Linux doesn't autodetect CPU type at runtime.

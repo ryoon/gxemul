@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.54 2004-07-10 07:50:58 debug Exp $
+ *  $Id: main.c,v 1.55 2004-07-11 13:10:58 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -451,10 +451,8 @@ int get_cmd_args(int argc, char *argv[])
 	 *  mode is DECstation and there is a diskimage, then try to
 	 *  boot from that.
 	 */
-
 	if (extra_argc == 0) {
 		if (emulation_type == EMULTYPE_DEC && using_switch_d) {
-			debug("EXPERIMENTAL: Booting directly from a diskimage.\n");
 			booting_from_diskimage = 1;
 		} else {
 			usage(progname);

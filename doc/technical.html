@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: technical.html,v 1.8 2004-07-11 01:58:07 debug Exp $
+$Id: technical.html,v 1.9 2004-07-11 13:10:57 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -285,6 +285,45 @@ or, to do it non-interactively (with ugly output):
 
 This, of course, requires that you have put the file <i>filename</i> in 
 the root directory of the tftp server (12.34.56.78).
+
+<p>
+It is also possible to run NFS via UDP. This is very useful if you want to
+share entire directory trees between the emulated environment and another
+machine. These instruction will work for FreeBSD, if you are running
+something else, use your imagination to modify them:
+
+<ul>
+  <li>On the server, add a line to your /etc/exports file, exporting
+	the files you wish to use in the emulator:<pre>
+	/tftpboot -mapall=nobody -ro 123.11.22.33
+</pre>
+	where 123.11.22.33 is the IP address of the machine running the
+	emulator process, as seen from the outside world.
+  <p>
+  <li>Then start up the programs needed to serve NFS via UDP. Note the
+	-n argument to mountd. This is needed to tell mountd to accept
+	connections from unprivileged ports (because the emulator does
+	not need to run as root).<pre>
+	# <b>portmap</b>
+	# <b>nfsd -u</b>       &lt;--- u for UDP
+	# <b>mountd -n</b>
+</pre>
+  <li>In the guest OS in the emulator, once you have ethernet and IPv4
+	configured so that you can use UDP, mounting the filesystem
+	should now be possible:  (this example is for NetBSD/pmax)<pre>
+	# <b>mount -o ro,-r=1024,-w=1024,-U,-s my.server.com:/tftpboot /mnt</b>
+</pre>
+	If you don't supply the read and write sizes, there is a risk
+	that the default values are too large. The emulator currently
+	does not fragment/defragment packets, so going above the ethernet
+	frame size (1518) is a very bad idea.
+</ul>
+
+The example above uses read-only mounts. That is enough for things like
+letting NetBSD/pmax install itself via NFS, without the need for
+an ISO image. You might want to use a read-write mount if you wish
+to share files in both directions.
+
 
 
 <p><br>

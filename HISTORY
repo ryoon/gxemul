@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.153 2004-07-11 07:11:14 debug Exp $
+$Id: HISTORY,v 1.154 2004-07-11 13:10:56 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -752,3 +752,5 @@ HISTORY of mips64emul
 		Trying to make the emulated mouse coordinates follow the host's
 		mouse' coordinates (for lk201, DECstation), by
 		"de-accelerating" the data sent to the emulated OS.
+20040711(later)	Fix so that Sprite detects the PMAG-BA correctly.
+		Adding some stuff about NFS via UDP to the documentation.

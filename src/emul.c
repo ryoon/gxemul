@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.47 2004-08-19 20:59:08 debug Exp $
+ *  $Id: emul.c,v 1.48 2004-08-26 14:27:28 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -625,6 +625,10 @@ void emul(void)
 
 	/*  Create CPUs:  */
 	cpus = malloc(sizeof(struct cpu *) * ncpus);
+	if (cpus == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
 	memset(cpus, 0, sizeof(struct cpu *) * ncpus);
 
 	debug("adding cpu0");

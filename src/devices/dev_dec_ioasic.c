@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.3 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.4 2004-08-26 14:27:26 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -155,7 +155,7 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
 		/*  Station's ethernet address:  */
 		if (writeflag == MEM_WRITE) {
 		} else {
-			odata = ((relative_addr - 0x80000) / 4 + 1) * 0x11;
+			odata = ((relative_addr - 0x80000) / 4 + 1) * 0x10;
 		}
 		break;
 

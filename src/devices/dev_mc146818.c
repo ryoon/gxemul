@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.36 2004-08-19 20:00:00 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.37 2004-08-26 14:27:27 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -472,7 +472,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	/*  Station Ethernet Address:  */
 	for (i=0; i<6; i++)
-		ether_address[i] = 0x11 * (i+1);
+		ether_address[i] = 0x10 * (i+1);
 
 	mc_data->reg[0x01] = ether_address[0];
 	mc_data->reg[0x05] = ether_address[1];

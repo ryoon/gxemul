@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.191 2004-08-05 21:22:11 debug Exp $
+$Id: HISTORY,v 1.192 2004-08-05 22:22:28 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -887,5 +887,8 @@ HISTORY of mips64emul
 		this.
 20040805	Minor updates. Adding some more CPU types/names, but they
 		are probably bogus.
-		Adding a MeshCube emulation mode skeleton.
+		Adding a MeshCube emulation mode. Just a skeleton so far, but
+		enough to let a Linux kernel print some boot messages.
 		Adding the 'deret' instruction.
+20040806	Adding include/impactsr-bsd.h (a newer version of what was in
+		mgras.h before, and this time with only a BSD-style license).

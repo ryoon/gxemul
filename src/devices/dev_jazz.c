@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_jazz.c,v 1.10 2005-01-23 13:43:02 debug Exp $
+ *  $Id: dev_jazz.c,v 1.11 2005-01-29 18:23:39 debug Exp $
  *  
  *  Microsoft Jazz-related stuff (Acer PICA-61, etc).
  */
@@ -58,7 +58,7 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 	struct jazz_data *d = (struct jazz_data *) dma_controller_data;
 	struct cpu *cpu = d->cpu;
 	int i, enab_writeflag;
-	int res;
+	int res, ncpy;
 	uint32_t dma_addr;
 	unsigned char tr[sizeof(uint32_t)];
 	uint32_t phys_addr;
@@ -108,13 +108,22 @@ size_t dev_jazz_dma_controller(void *dma_controller_data,
 		/*  fatal(" !!! dma_addr = %08x, phys_addr = %08x\n",
 		    (int)dma_addr, (int)phys_addr);  */
 
-		res = memory_rw(cpu, cpu->mem, phys_addr,
-		    &data[i], 1, writeflag, PHYSICAL | NO_EXCEPTIONS);
+		/*  Speed up the copying by copying 16 or 256 bytes:  */
+		ncpy = 1;
+		if ((phys_addr & 15) == 0 && i + 15 <= len)
+			ncpy = 15;
+		if ((phys_addr & 255) == 0 && i + 255 <= len)
+			ncpy = 255;
 
-		dma_addr ++;
-		i++;
+		res = memory_rw(cpu, cpu->mem, phys_addr,
+		    &data[i], ncpy, writeflag, PHYSICAL | NO_EXCEPTIONS);
+
+		dma_addr += ncpy;
+		i += ncpy;
 	}
 
+	/*  TODO: Is this correct?  */
+	d->dma0_count = 0;
 
 	return len;
 }
@@ -216,6 +225,13 @@ int dev_jazz_access(struct cpu *cpu, struct memory *mem,
 			d->dma0_addr = idata;
 		} else {
 			odata = d->dma0_addr;
+		}
+		break;
+	case R4030_SYS_DMA1_REGS:
+		if (writeflag == MEM_WRITE) {
+			d->dma1_mode = idata;
+		} else {
+			odata = d->dma1_mode;
 		}
 		break;
 	case R4030_SYS_ISA_VECTOR:

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.72 2005-01-29 14:34:22 debug Exp $
+ *  $Id: diskimage.c,v 1.73 2005-01-29 18:23:41 debug Exp $
  *
  *  Disk image support.
  *
@@ -56,6 +56,7 @@
 
 
 extern int quiet_mode;
+extern int single_step;
 
 
 static struct scsi_transfer *first_free_scsi_transfer_alloc = NULL;
@@ -478,11 +479,16 @@ int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 	    scsi_id, xferp->cmd[0]);
 
 #if 0
-	fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x ]\n",
-	    scsi_id, xferp->cmd[0]);
+	fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x len=%i:",
+	    scsi_id, xferp->cmd[0], xferp->cmd_len);
+	for (i=0; i<xferp->cmd_len; i++)
+		fatal(" %02x", xferp->cmd[i]);
+	fatal("\n");
+if (xferp->cmd_len > 7 && xferp->cmd[5] == 0x11)
+	single_step = 1;
 #endif
 
-#if 1
+#if 0
 {
 	static FILE *f = NULL;
 	if (f == NULL)
@@ -1424,7 +1430,11 @@ int diskimage_add(struct machine *machine, char *fname)
 			 *
 			 *  TODO
 			 */
-			d->logical_block_size = 512;
+
+			if (machine->machine_type == MACHINE_DEC)
+				d->logical_block_size = 512;
+			else
+				d->logical_block_size = 2048;
 		}
 	}
 

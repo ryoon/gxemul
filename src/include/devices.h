@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.134 2005-01-25 07:14:50 debug Exp $
+ *  $Id: devices.h,v 1.135 2005-01-29 18:23:40 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -242,10 +242,13 @@ struct jazz_data {
 
 	uint64_t	dma_translation_table_base;
 	uint64_t	dma_translation_table_limit;
+
 	uint32_t	dma0_mode;
 	uint32_t	dma0_enable;
 	uint32_t	dma0_count;
 	uint32_t	dma0_addr;
+
+	uint32_t	dma1_mode;
 	/*  same for dma1,2,3 actually (TODO)  */
 
 	int		led;

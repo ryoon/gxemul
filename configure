@@ -1,21 +1,28 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.30 2004-07-08 00:38:12 debug Exp $
+#  $Id: configure,v 1.31 2004-07-11 01:13:39 debug Exp $
 #
-#  Minimal configure script for mips64emul.
-#  This script figures out which compiler flags will work, and creates
-#  makefiles in subdirs. A config.h is also created.
+#  This is a minimal configure script for mips64emul. This script figures out
+#  which compiler flags will work, and creates Makefiles in subdirs. A config.h
+#  is also created.
 #
-#  TODO:  This file is a mess.
+#
+#  To compile the emulator with profiling (during development), use
+#  CFLAGS="-pg", run the emulator, and then run 'gprof mips64emul' and study
+#  the results.
+#
+#
+#  TODO:  The command line parsing is a mess.
 #
 #  The main things that need to be detected are:
 #
-#    o)  which compiler to use
-#    o)  which compiler flags to use
-#    o)  X11 flags and libraries
+#    o)  which compiler to use  (overridden by setting CC)
+#    o)  which compiler flags to use  (overridden by setting CFLAGS)
+#    o)  X11 flags and libraries  (TODO: should be possible to override)
 #    o)  special hacks for some OSes
 #    o)  binary translation (on supported platforms)
-#
+#    o)  prefetch capability  (TODO: this is assumed on Alpha, but not all
+#                              Alphas have it...)
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -114,9 +121,10 @@ printf "#
 echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
 
 
-#  CC:
+#  Try to detect which C compiler to use, if CC is not set:
 if [ z"$CC" = z ]; then
 	CC=cc
+
 	gcc _testprog.c -o _testprog > /dev/null 2> /dev/null
 	if [ -x _testprog ]; then
 		CC=gcc

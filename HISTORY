@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.576 2005-02-11 09:29:47 debug Exp $
+$Id: HISTORY,v 1.577 2005-02-11 19:45:36 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1654,3 +1654,6 @@ HISTORY of mips64emul
 		IBM's Hello World example for Linux/PPC64 runs fine now.
 20050211	Continuing the cleanup. Removing the --userland configure
 		option (because support for userland is always included now).
+		Working more on getting OpenBSD/sgi to boot with root on
+		nfs. (Booting with the ramdisk kernel, and ounting root via
+		nfs works, but not yet from the generic kernel.)

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip32.c,v 1.21 2005-02-11 09:29:48 debug Exp $
+ *  $Id: dev_sgi_ip32.c,v 1.22 2005-02-11 19:45:39 debug Exp $
  *  
  *  SGI IP32 devices.
  *
@@ -475,7 +475,7 @@ static int mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 		    "non-zero (0x%3x). TODO ]\n", (int)(base & 0xfff));
 	base &= 0xfffff000ULL;
 	if (base == 0)
-		goto skip_but_goto_next;
+		goto skip;
 
 	/*  printf("rx base = 0x%016llx\n", (long long)base);  */
 
@@ -497,8 +497,8 @@ static int mec_try_rx(struct cpu *cpu, struct sgi_mec_data *d)
 
 	/*  Is this descriptor already in use?  */
 	if (data[0] & 0x80) {
-printf("INTERRUPT for base = 0x%x\n", (int)base);
-		goto skip_but_interrupt;
+		/*  printf("INTERRUPT for base = 0x%x\n", (int)base);  */
+		goto skip_and_advance;
 	}
 
 	if (d->cur_rx_packet == NULL &&
@@ -518,7 +518,7 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 	}
 	/*  printf("\n");  */
 
-#if 0
+#if 1
 	printf("RX: %i bytes, index %i, base = 0x%x\n",
 	    d->cur_rx_packet_len, d->cur_rx_addr_index, (int)base);
 #endif
@@ -539,16 +539,13 @@ printf("INTERRUPT for base = 0x%x\n", (int)base);
 	free(d->cur_rx_packet);
 	d->cur_rx_packet = NULL;
 
-skip_but_interrupt:
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_RX_THRESHOLD;
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &= ~MEC_INT_RX_MCL_FIFO_ALIAS;
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= ((d->cur_rx_addr_index + 1) & 0x1f) << 8;
-
-	retval = 1;
-
-skip_but_goto_next:
+skip_and_advance:
 	d->cur_rx_addr_index ++;
 	d->cur_rx_addr_index %= N_RX_ADDRESSES;
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &= ~MEC_INT_RX_MCL_FIFO_ALIAS;
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= (d->cur_rx_addr_index & 0x1f) << 8;
+	retval = 1;
 
 skip:
 	return retval;
@@ -573,6 +570,13 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 
 	/*  printf("base = 0x%016llx\n", base);  */
 
+	ringread = tx_ring_ptr & MEC_TX_RING_READ_PTR;
+	ringwrite = tx_ring_ptr & MEC_TX_RING_WRITE_PTR;
+	ringread >>= 16;
+	/*  All done? Then abort.  */
+	if (ringread == ringwrite)
+		return 0;
+
 	tx_ring_ptr &= MEC_TX_RING_READ_PTR;
 	tx_ring_ptr >>= 16;
 
@@ -585,9 +589,9 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 
 	/*  Is this packet transmitted already?  */
 	if (data[0] & 0x80) {
-		/*  fatal("[ mec_try_tx: tx_ring_ptr = %i, already"
-		    " transmitted? ]\n", tx_ring_ptr);  */
-		return 0;
+		fatal("[ mec_try_tx: tx_ring_ptr = %i, already"
+		    " transmitted? ]\n", tx_ring_ptr);
+		goto advance_tx;
 	}
 
 	len = data[6] * 256 + data[7];
@@ -680,13 +684,17 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 		d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |=
 		    MEC_INT_TX_PACKET_SENT;
 	}
+	memset(data, 0, 6);	/*  last 2 bytes are len  */
 	data[0] = 0x80;
 	data[5] = 0x80;
-	data[4] = 0x00;
 
 	res = cpu->memory_rw(cpu, cpu->mem, addr,
 	    &data[0], sizeof(data), MEM_WRITE, PHYSICAL);
 
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;
+	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_PACKET_SENT;
+
+advance_tx:
 	/*  Advance the ring Read ptr.  */
 	tx_ring_ptr = d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)];
 	ringread = tx_ring_ptr & MEC_TX_RING_READ_PTR;
@@ -699,8 +707,6 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 	d->reg[MEC_TX_RING_PTR / sizeof(uint64_t)] =
 	    (ringwrite & MEC_TX_RING_WRITE_PTR) |
 	    (ringread & MEC_TX_RING_READ_PTR);
-
-	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] |= MEC_INT_TX_EMPTY;
 
 	d->reg[MEC_INT_STATUS / sizeof(uint64_t)] &=
 	    ~MEC_INT_TX_RING_BUFFER_ALIAS;
@@ -718,12 +724,13 @@ static int mec_try_tx(struct cpu *cpu, struct sgi_mec_data *d)
 void dev_sgi_mec_tick(struct cpu *cpu, void *extra)
 {
 	struct sgi_mec_data *d = (struct sgi_mec_data *) extra;
+	int n = 0;
 
 	while (mec_try_tx(cpu, d))
 		;
 
-	while (mec_try_rx(cpu, d))
-		;
+	while (mec_try_rx(cpu, d) && n < 16)
+		n++;
 
 	/*  Interrupts:  (TODO: only when enabled)  */
 	if (d->reg[MEC_INT_STATUS / sizeof(uint64_t)] & MEC_INT_STATUS_MASK) {

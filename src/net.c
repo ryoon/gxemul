@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.65 2005-02-10 16:03:17 debug Exp $
+ *  $Id: net.c,v 1.66 2005-02-11 19:45:40 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -1364,6 +1364,7 @@ static void net_ip_broadcast(struct net *net, void *extra,
 static void net_arp(struct net *net, void *extra,
 	unsigned char *packet, int len, int reverse)
 {
+	int q;
 	int i;
 
 	/*  TODO: This debug dump assumes ethernet->IPv4 translation:  */
@@ -1399,6 +1400,11 @@ static void net_arp(struct net *net, void *extra,
 
 		switch (r) {
 		case 1:		/*  Request  */
+			/*  Only create a reply if this was meant for the
+			    gateway:  */
+			if (memcmp(packet+24, net->gateway_ipv4_addr, 4) != 0)
+				break;
+
 			lp = net_allocate_packet_link(net, extra, len + 14);
 
 			/*  Copy the old packet first:  */
@@ -1413,7 +1419,8 @@ static void net_arp(struct net *net, void *extra,
 			memcpy(lp->data + 18 + 14, lp->data + 8 + 14, 10);
 
 			/*  Address of the gateway:  */
-			memcpy(lp->data +  8 + 14, net->gateway_ethernet_addr, 6);
+			memcpy(lp->data +  8 + 14, net->gateway_ethernet_addr,
+			    6);
 			memcpy(lp->data + 14 + 14, net->gateway_ipv4_addr, 4);
 
 			/*  This is a Reply:  */
@@ -1435,17 +1442,29 @@ static void net_arp(struct net *net, void *extra,
 			lp->data[6 + 14] = 0x00; lp->data[7 + 14] = 0x04;
 
 			/*  Address of the gateway:  */
-			memcpy(lp->data +  8 + 14, net->gateway_ethernet_addr, 6);
+			memcpy(lp->data +  8 + 14, net->gateway_ethernet_addr,
+			    6);
 			memcpy(lp->data + 14 + 14, net->gateway_ipv4_addr, 4);
 
 			/*  MAC address of emulated machine:  */
 			memcpy(lp->data + 18 + 14, packet + 8, 6);
 
-			/*  IP address of the emulated machine:  */
+			/*
+			 *  IP address of the emulated machine:  Automagically
+			 *  generated from the MAC address. :-)
+			 *
+			 *  packet+8 points to the client's mac address,
+			 *  for example 10:20:30:x0:y0:z0, where x,y,z are
+			 *  1..15.
+			 *  10:20:30:10:10:10 results in 10.0.0.1.
+			 */
+			q = (((packet[8 + 3]) >> 4) - 1);
+			q = q*15 + (((packet[8 + 4]) >> 4) - 1);
+			q = q*15 + (((packet[8 + 5]) >> 4) - 1);
 			lp->data[24 + 14] = 10;
-			lp->data[25 + 14] =  0;
-			lp->data[26 + 14] =  0;
-			lp->data[27 + 14] =  1;
+			lp->data[25 + 14] =  q / 225;	q /= 15;
+			lp->data[26 + 14] =  q / 15;	q /= 15;
+			lp->data[27 + 14] =  q + 1;
 
 			break;
 		case 2:		/*  Reply  */
@@ -1862,6 +1881,10 @@ void net_ethernet_tx(struct net *net, void *extra,
 	if (net == NULL)
 		return;
 
+	/*  Drop too small packets:  */
+	if (len < 20)
+		return;
+
 	/*  Copy this packet to all other NICs on this network:  */
 	if (extra != NULL && net->n_nics > 0) {
 		for (i=0; i<net->n_nics; i++)
@@ -1874,6 +1897,11 @@ void net_ethernet_tx(struct net *net, void *extra,
 				memcpy(lp->data, packet, len);
 			}
 	}
+
+	/*  Drop packets that are not destined for the gateway:  */
+	if (memcmp(packet, net->gateway_ethernet_addr, 6) != 0
+	    && packet[0] != 0xff && packet[0] != 0x00)
+		return;
 
 #if 0
 	fatal("[ net: ethernet: ");

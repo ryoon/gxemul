@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.72 2004-09-02 02:13:14 debug Exp $
+ *  $Id: main.c,v 1.73 2004-09-05 01:47:39 debug Exp $
  */
 
 #include <stdio.h>
@@ -61,6 +61,7 @@ int physical_ram_in_mb = 0;
 int booting_from_diskimage = 0;
 
 int quiet_mode = 0;
+
 int show_opcode_statistics = 0;
 int prom_emulation = 1;
 int register_dump = 0;

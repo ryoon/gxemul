@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.h,v 1.2 2004-09-02 00:47:22 debug Exp $
+ *  $Id: emul.h,v 1.3 2004-09-05 01:47:38 debug Exp $
  */
 
 #include "misc.h"
@@ -44,7 +44,6 @@ struct emul {
 	int	physical_ram_in_mb;
 	int	booting_from_diskimage;
 
-	int	quiet_mode;
 	int	show_opcode_statistics;
 	int	prom_emulation;
 	int	register_dump;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.10 2004-07-05 02:39:01 debug Exp $
+ *  $Id: dev_le.c,v 1.11 2004-07-05 15:38:20 debug Exp $
  *  
  *  LANCE ethernet, as used in DECstations.
  *
@@ -46,23 +46,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "devices.h"
 #include "memory.h"
 #include "misc.h"
-#include "devices.h"
+#include "net.h"
 
 #include "if_lereg.h"
-
-#define	LE_MODE_DTX	2
-#define	LE_MODE_DRX	1
 
 
 /*  #define LE_DEBUG  */
 /*  #define debug fatal  */
 
 
-#define	N_REGISTERS	4
-#define	SRAM_SIZE	(128*1024)
-#define	ROM_SIZE	32
+#define	LE_MODE_LOOP		4
+#define	LE_MODE_DTX		2
+#define	LE_MODE_DRX		1
+
+
+#define	N_REGISTERS		4
+#define	SRAM_SIZE		(128*1024)
+#define	ROM_SIZE		32
 
 
 struct le_data {
@@ -93,11 +96,18 @@ struct le_data {
 	/*  Current rx and tx descriptor indices:  */
 	int		rxp;
 	int		txp;
+
+	unsigned char	*tx_packet;
+	int		tx_packet_len;
+	unsigned char	*rx_packet;
+	int		rx_packet_len;
 };
 
 
 /*
  *  le_read_16bit():
+ *
+ *  Read a 16-bit word from the SRAM.
  */
 uint64_t le_read_16bit(struct le_data *d, int addr)
 {
@@ -105,6 +115,19 @@ uint64_t le_read_16bit(struct le_data *d, int addr)
 	int x = d->sram[addr & (SRAM_SIZE-1)] +
 	       (d->sram[(addr+1) & (SRAM_SIZE-1)] << 8);
 	return x;
+}
+
+
+/*
+ *  le_write_16bit():
+ *
+ *  Write a 16-bit word to the SRAM.
+ */
+void le_write_16bit(struct le_data *d, int addr, uint16_t x)
+{
+	/*  TODO: This is for little endian only  */
+	d->sram[addr & (SRAM_SIZE-1)] = x & 0xff;
+	d->sram[(addr+1) & (SRAM_SIZE-1)] = (x >> 8) & 0xff;
 }
 
 
@@ -162,6 +185,157 @@ void le_chip_init(struct le_data *d)
 	/*  Set IDON and reset the INIT bit when we are done.  */
 	d->reg[0] |= LE_IDON;
 	d->reg[0] &= ~LE_INIT;
+
+	/*  Free any old packets:  */
+	if (d->tx_packet != NULL)
+		free(d->tx_packet);
+	d->tx_packet = NULL;
+	d->tx_packet_len = 0;
+
+	if (d->rx_packet != NULL)
+		free(d->rx_packet);
+	d->rx_packet = NULL;
+	d->rx_packet_len = 0;
+}
+
+
+/*
+ *  le_tx():
+ *
+ *  Check the transmitter descriptor ring for buffers that are owned by the
+ *  Lance chip (that is, buffers that are to be transmitted).
+ *
+ *  This routine should only be called if TXON is enabled.
+ */
+void le_tx(struct le_data *d)
+{
+	int start_txp = d->txp;
+	uint16_t tx_descr[4];
+	int stp, enp, i, cur_packet_offset;
+	uint32_t bufaddr, buflen;
+
+	do {
+		/*  Load the 8 descriptor bytes:  */
+		tx_descr[0] = le_read_16bit(d, d->tdra + d->txp*8 + 0);
+		tx_descr[1] = le_read_16bit(d, d->tdra + d->txp*8 + 2);
+		tx_descr[2] = le_read_16bit(d, d->tdra + d->txp*8 + 4);
+		tx_descr[3] = le_read_16bit(d, d->tdra + d->txp*8 + 6);
+
+		bufaddr = tx_descr[0] + ((tx_descr[1] & 0xff) << 16);
+		stp = tx_descr[1] & LE_STP? 1 : 0;
+		enp = tx_descr[1] & LE_ENP? 1 : 0;
+		buflen = 4096 - (tx_descr[2] & 0xfff);
+
+		/*
+		 *  Check the OWN bit. If it is zero, then this buffer is
+		 *  not ready to be transmitted yet.  Also check the '1111'
+		 *  mark, and make sure that byte-count is reasonable.
+		 */
+		if (!(tx_descr[1] & LE_OWN))
+			return;
+		if ((tx_descr[2] & 0xf000) != 0xf000)
+			return;
+		if (buflen < 12 || buflen > 1900)  /* TODO: eth frame size  */
+			return;
+
+		debug("[ le: tx descr %3i DUMP: 0x%04x 0x%04x 0x%04x 0x%04x => addr=0x%06x, len=%i bytes, STP=%i ENP=%i ]\n",
+		    d->txp, tx_descr[0], tx_descr[1], tx_descr[2], tx_descr[3],
+		    bufaddr, buflen, stp, enp);
+
+		if (d->tx_packet == NULL && !stp) {
+			fatal("[ le: le_tx(): !stp but tx_packet == NULL ]\n");
+			return;
+		}
+
+		if (d->tx_packet != NULL && stp) {
+			fatal("[ le: le_tx(): stp but tx_packet != NULL ]\n");
+			free(d->tx_packet);
+			d->tx_packet = NULL;
+			d->tx_packet_len = 0;
+		}
+
+		/*  Where to write to in the tx_packet:  */
+		cur_packet_offset = d->tx_packet_len;
+
+		/*  Start of a new packet:  */
+		if (stp) {
+			d->tx_packet_len = buflen;
+			d->tx_packet = malloc(buflen);
+			if (d->tx_packet == NULL) {
+				fprintf(stderr, "out of memory (1) in le_tx()\n");
+				exit(1);
+			}
+		} else {
+			d->tx_packet_len += buflen;
+			d->tx_packet = realloc(d->tx_packet, d->tx_packet_len);
+			if (d->tx_packet == NULL) {
+				fprintf(stderr, "out of memory (2) in le_tx()\n");
+				exit(1);
+			}
+		}
+
+		/*  Copy data from SRAM into the tx packet:  */
+		for (i=0; i<buflen; i++) {
+			unsigned char ch;
+			ch = d->sram[(bufaddr + i) & (SRAM_SIZE-1)];
+			d->tx_packet[cur_packet_offset + i] = ch;
+		}
+
+		/*
+		 *  Is this the last buffer in a packet? Then transmit
+		 *  it, cause an interrupt, and free the memory used by
+		 *  the packet.
+		 */
+		if (enp) {
+			fatal("PACKET@0x%05x = ", bufaddr);
+			for (i=0; i<d->tx_packet_len; i++)
+				fatal("%02x", d->tx_packet[i]);
+			fatal("\n");
+
+			free(d->tx_packet);
+			d->tx_packet = NULL;
+			d->tx_packet_len = 0;
+
+			d->reg[0] |= LE_TINT;
+		}
+
+		/*  Clear the OWN bit:  */
+		tx_descr[1] &= ~LE_OWN;
+
+		/*  Write back the descriptor to SRAM:  */
+		le_write_16bit(d, d->tdra + d->txp*8 + 2, tx_descr[1]);
+		le_write_16bit(d, d->tdra + d->txp*8 + 4, tx_descr[2]);
+		le_write_16bit(d, d->tdra + d->txp*8 + 6, tx_descr[3]);
+
+		/*  Go to the next descriptor:  */
+		d->txp ++;
+		if (d->txp >= d->tlen)
+			d->txp = 0;
+	} while (d->txp != start_txp);
+
+	/*  We are here if all descriptors were taken care of.  */
+	fatal("[ le: le_tx(): all TX descriptors used up? ]\n");
+}
+
+
+/*
+ *  le_rx():
+ *
+ *  This routine should only be called if RXON is enabled.
+ */
+void le_rx(struct le_data *d)
+{
+	int start_rxp = d->rxp;
+
+	do {
+		/*  Go to the next descriptor:  */
+		d->rxp ++;
+		if (d->rxp >= d->rlen)
+			d->rxp = 0;
+	} while (d->rxp != start_rxp);
+
+	/*  We are here if all descriptors were taken care of.  */
+	fatal("[ le: le_rx(): all RX descriptors used up? ]\n");
 }
 
 
@@ -170,8 +344,19 @@ void le_chip_init(struct le_data *d)
  */
 void le_register_fix(struct le_data *d)
 {
+	/*  Should the chip be initialized with a new Initialization block?  */
 	if (d->reg[0] & LE_INIT)
 		le_chip_init(d);
+
+	/*  If the transmitter is on, check for outgoing buffers:  */
+	if (d->reg[0] & LE_TXON)
+		le_tx(d);
+
+	/*  If the receiver is on, check for incomming buffers:  */
+/*	if (d->reg[0] & LE_RXON)
+		le_rx(d);
+TODO
+*/
 
 	/*  SERR should be the OR of BABL, CERR, MISS, and MERR:  */
 	d->reg[0] &= ~LE_SERR;
@@ -182,7 +367,7 @@ void le_register_fix(struct le_data *d)
 	d->reg[0] &= ~LE_INTR;
 	if (d->reg[0] & (LE_BABL | LE_MISS | LE_MERR | LE_RINT |
 	    LE_TINT | LE_IDON))
-		d->reg[0] |= LE_SERR;
+		d->reg[0] |= LE_INTR;
 
 	/*  The MERR bit clears some bits:  */
 	if (d->reg[0] & LE_MERR)
@@ -230,8 +415,8 @@ void le_register_write(struct le_data *d, int r, uint32_t x)
 		if (x & LE_MERR)
 			d->reg[r] &= ~LE_MERR;
 		if (x & LE_RINT)
-			d->reg[r] &= ~LE_TINT;
-		if (x & LE_RINT)
+			d->reg[r] &= ~LE_RINT;
+		if (x & LE_TINT)
 			d->reg[r] &= ~LE_TINT;
 		if (x & LE_IDON)
 			d->reg[r] &= ~LE_IDON;
@@ -416,24 +601,30 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memset(d, 0, sizeof(struct le_data));
 	d->irq_nr    = irq_nr;
-	d->len       = len;
 
 	/*  TODO:  Are these actually used yet?  */
+	d->len       = len;
 	d->buf_start = buf_start;
 	d->buf_end   = buf_end;
 
 	/*  Initial register contents:  */
 	d->reg[0] = LE_STOP;
 
-	/*  ROM (including the MAC address):  */
-	d->rom[0] = 0x01;
-	d->rom[1] = 0x02;
-	d->rom[2] = 0x03;
-	d->rom[3] = 0x04;
-	d->rom[4] = 0x05;
-	d->rom[5] = 0x06;
+	d->tx_packet = NULL;
+	d->rx_packet = NULL;
 
-	/*  Copies and checksum:  */
+	/*  ROM (including the MAC address):  */
+	d->rom[0] = 0x11;
+	d->rom[1] = 0x22;
+	d->rom[2] = 0x33;
+	d->rom[3] = 0x44;
+	d->rom[4] = 0x55;
+	d->rom[5] = 0x66;
+
+	/*  Low order bit of a physical MAC address should be clear:  */
+	d->rom[5] &= ~1;
+
+	/*  Copies of the MAC address and a test pattern:  */
 	d->rom[10] = d->rom[21] = d->rom[5];
 	d->rom[11] = d->rom[20] = d->rom[4];
 	d->rom[12] = d->rom[19] = d->rom[3];
@@ -450,6 +641,6 @@ void dev_le_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memory_device_register(mem, "le", baseaddr, len, dev_le_access,
 	    (void *)d);
 
-	cpu_add_tickfunction(cpu, dev_le_tick, d, 10);
+	cpu_add_tickfunction(cpu, dev_le_tick, d, 12);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.20 2003-12-29 09:48:14 debug Exp $
+ *  $Id: machine.c,v 1.21 2003-12-30 03:07:11 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -814,10 +814,11 @@ void machine_init(struct memory *mem)
 
 				/*  TODO:  sync devices and component tree  */
 				/*  TODO 2: These are model dependant!!!  */
-				dev_mc146818_init(cpus[0], mem, 0x2000004000, 0, 0, 1, emulated_ips);	/*  ???  */
+				dev_rd94_init(cpus[bootstrap_cpu], mem, 0x2000000000);
+				dev_mc146818_init(cpus[0], mem, 0x2000004000, 8, 0, 1, emulated_ips);	/*  ???  */
 				dev_pckbc_init(mem, 0x2000005000, 0);					/*  ???  */
-				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 2, 1);		/*  com0  */
-				/* dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 0, 1); */	/*  com1  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000006000, 3, 1);		/*  com0  */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x2000007000, 8, 1);		/*  com1  */
 			}
 
 			/*  Common stuff for both SGI and ARC:  */
@@ -882,9 +883,56 @@ void machine_init(struct memory *mem)
 	case EMULTYPE_NINTENDO64:
 		machine_name = "Nintendo 64";
 
-		/*  TODO: ???  */
+		/*
+		 *  Nintendo 64 emulation is not very important:
+		 *
+		 *	o)  There isn't that much software out there to run
+		 *	    in the emulator, except for games. :-/
+		 *
+		 *	o)  There are already other emulators out there,
+		 *	    specific for Nintendo 64, which are capable of
+		 *	    playing games (which is what the N64 is supposed to do)
+		 *
+		 *  The N64 is supposed to have 4MB SDRAM, some kind of ROM,
+		 *  and some surrounding chips.  Games are loaded via cartridges.
+		 *
+		 *	List according to http://n64.icequake.net/mirror/www.cd64.com/cd64_circuit.htm
+		 *
+		 *	0xb0??????	bios
+		 *	0xb1??????	reserved
+		 *	0xb2??????	cartridge
+		 *	0xb3??????	cartridge
+		 *	0xb4??????	dram
+		 *	0xb5??????	dram
+		 *	0xb6??????	reserved
+		 *	0xb7??????	srom i/o, reg
+		 *
+		 *  TODO:  This emulation is 99.999% non-functional.
+		 */
 
-		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
+		cpus[bootstrap_cpu]->byte_order = EMUL_BIG_ENDIAN;
+		cpus[bootstrap_cpu]->pc = 0xa4000040;
+
+		/*  Numbers from Mupen64:  */
+		cpus[bootstrap_cpu]->gpr[ 6] = 0xFFFFFFFFA4001F0C;
+		cpus[bootstrap_cpu]->gpr[ 7] = 0xFFFFFFFFA4001F08;
+		cpus[bootstrap_cpu]->gpr[ 8] = 0x00000000000000C0;
+		cpus[bootstrap_cpu]->gpr[10] = 0x0000000000000040;
+		cpus[bootstrap_cpu]->gpr[11] = 0xFFFFFFFFA4000040;
+		cpus[bootstrap_cpu]->gpr[29] = 0xFFFFFFFFA4001FF0;
+
+		/*  CIC chip 2:  */
+		cpus[bootstrap_cpu]->gpr[ 1] = 0x0000000000000001;
+		cpus[bootstrap_cpu]->gpr[ 2] = 0x000000000EBDA536;
+		cpus[bootstrap_cpu]->gpr[ 3] = 0x000000000EBDA536;
+		cpus[bootstrap_cpu]->gpr[ 4] = 0x000000000000A536;
+		cpus[bootstrap_cpu]->gpr[ 5] = 0xFFFFFFFFC0F1D859;
+		cpus[bootstrap_cpu]->gpr[12] = 0xFFFFFFFFED10D0B3;
+		cpus[bootstrap_cpu]->gpr[13] = 0x000000001402A4CC;
+		cpus[bootstrap_cpu]->gpr[14] = 0x000000002DE108EA;
+		cpus[bootstrap_cpu]->gpr[15] = 0x000000003103E121;
+		cpus[bootstrap_cpu]->gpr[22] = 0x000000000000003F;
+		cpus[bootstrap_cpu]->gpr[25] = 0xFFFFFFFF9DEBB54F;
 
 		break;
 

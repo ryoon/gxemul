@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.27 2005-02-09 20:36:06 debug Exp $
+$Id: misc.html,v 1.28 2005-02-15 06:49:04 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -52,6 +52,7 @@ SUCH DAMAGE.
   <li><a href="#config">Configuration file syntax</a>
   <li><a href="#networking">Networking</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
+  <li><a href="#compilercontruct">Using mips64emul in compiler contruction courses</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
@@ -233,6 +234,37 @@ they don't work very much at all.  Please keep this in mind, if you plan
 to use mips64emul when porting your code to MIPS.
 
 
+
+
+
+
+
+<p><br>
+<a name="compilercontruct"></a>
+<h3>Using mips64emul in compiler contruction courses:</h3>
+
+If you are learning how to write a compiler, and wish to target a 
+realistic target platform, then MIPS (as emulated by mips64emul)
+might be a suitable choice.
+
+<ul>
+  <li><b>(+)</b>&nbsp;&nbsp;Your compiler needs to output real assembly
+	language code, which the assembler (eg gas, the GNU assembler) can 
+	then compile into object format, and then you need to link this
+	into an executable image. This is much closer to how things work
+	in real life than running assembly language listings in a simulator.
+  <p>
+  <li><b>(-)</b>&nbsp;&nbsp;mips64emul does not simulate out-of-order
+	execution, penalties related to instruction scheduling, or
+	load-delays, so it cannot be used to create optimizing compilers
+	that take advantage of such processor features.
+</ul>
+
+
+
+
+
+
 <p><br>
 <a name="disk"></a>
 <h3>How to start the emulator with a disk image:</h3>
@@ -376,14 +408,18 @@ count.)
 
 You can run (some) userland programs as well. This will not emulate any
 particular machine, but instead try to translate syscalls from for example
-NetBSD/pmax into the host's OS' syscalls. For this to work, you have
-to add <b>--userland</b> to the command line when running ./configure.
+NetBSD/pmax into the host's OS' syscalls. Right now, this is just a 
+proof-of-concept, to show that it would work; there's lots of work left to 
+do to make it actually run useful programs (for example dynamically linked 
+programs).
 
 <p>
-For example, running /bin/hostname or /bin/date and similarly trivial
-programs from the NetBSD/pmax distribution works:
 
-<pre>
+<ul>
+  <li><b>NetBSD/pmax:</b>
+	<br>
+	Running /bin/hostname or /bin/date and similarly trivial
+	programs from the NetBSD/pmax distribution works:<pre>
 	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_hostname</b>
 	tab.csbnet.se
 	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_date</b>
@@ -394,10 +430,10 @@ programs from the NetBSD/pmax distribution works:
 	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sync</b>
 </pre>
 
-<p>
-There's also an Ultrix emulation mode:
-
-<pre>
+  <p>
+  <li><b>Ultrix:</b>
+	<br>
+	At least /bin/date and /bin/hostname work:<pre>
 	$ <b>./mips64emul -q -u ultrix ultrix4_bin_date</b>
 	UNIMPLEMENTED ultrix syscall 54
 	UNIMPLEMENTED ultrix syscall 62
@@ -406,13 +442,32 @@ There's also an Ultrix emulation mode:
 	tab.csbnet.se
 </pre>
 
-<p>
-NOTE: Userland syscall emulation is still in its beginning stages, so almost
-nothing works. It's mostly a proof-of-concept implementation, to show that 
-such cross-platform userland emulation is possible.
+  <p>
+  <li><b>NetBSD/powerpc:</b>
+	<br>
+	/bin/sync from NetBSD/macppc works, but probably not much else.<pre>
+	$ <b>./mips64emul -v -u netbsd/powerpc netbsd-1.6.2-macppc-bin-sync</b>
+	...
+	[ sync() ]
+	[ exit(0) ]
+	cpu_run_deinit(): All CPUs halted.
 
-<p>
-IRIX userland emulation might theoretically also be possible to add.
+</pre>
+
+  <p>
+  <li><b>Linux/PPC64:</b>
+	<br>
+	The <a href="http://www-106.ibm.com/developerworks/library/l-ppc/#h13">64-bit Hello World assembly language example</a>
+	on IBM's developerWorks pages runs:<pre>
+	$ <b>ppc64-unknown-linux-as hello-ppc64.s -o hello-ppc64.o</b>
+	$ <b>ppc64-unknown-linux-ld hello-ppc64.o -o hello-ppc64</b>
+	$ <b>./mips64emul -q -u linux/ppc64 hello-ppc64</b>
+	Hello, world!
+
+</pre>
+
+</ul>
+
 
 
 

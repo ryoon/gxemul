@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.3 2003-11-07 05:09:45 debug Exp $
+ *  $Id: file.c,v 1.4 2003-11-08 08:44:24 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -586,6 +586,9 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	if (((eflags >> 24) & 0xff) == 0x24) {
 		debug("'%s': MIPS16 encoding (e_flags = 0x%08x)\n", filename, eflags);
 		cpu->mips16 = 1;
+	} else if (eentry & 0x3) {
+		debug("'%s': MIPS16 encoding (eentry not 32-bit aligned)\n", filename);
+		cpu->mips16 = 1;
 	}
 
 	/*  Read the program headers:  */
@@ -827,10 +830,6 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	cpu->pc = eentry;
-
-	/*  Clear the lowest bit if MIPS16, as it is (sometimes? or always?) set to 1 in the ELF header  */
-	if (cpu->mips16)
-		cpu->pc = eentry & ~1;
 
 	if (encoding == ELFDATA2LSB)
 		cpu->byte_order = EMUL_LITTLE_ENDIAN;

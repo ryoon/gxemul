@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.14 2004-01-16 17:34:07 debug Exp $
+ *  $Id: memory.c,v 1.15 2004-01-24 21:10:22 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -44,6 +44,7 @@ extern int machine;
 extern int instruction_trace;
 extern int register_dump;
 extern int trace_on_bad_address;
+extern int userland_emul;
 extern int tlb_dump;
 extern int quiet_mode;
 extern int use_x11;
@@ -273,6 +274,11 @@ int translate_address(struct cpu *cpu, uint64_t vaddr, uint64_t *return_addr, in
 
 	if (cpu == NULL)
 		return 1;
+
+	if (userland_emul) {
+		*return_addr = vaddr & 0x7fffffff;
+		return 1;
+	}
 
 	/*
 	 *  R4000 Address Translation:
@@ -743,7 +749,13 @@ if ((vaddr & 0xffffffff) == 0xc1806794)
 		}
 	}
 
-	if (paddr >= mem->physical_max) {
+	/*
+	 *  Outside of physical RAM?  (For userland emulation only,
+	 *  we're using the host's virtual memory and don't care about
+	 *  memory sizes.)
+	 */
+
+	if (paddr >= mem->physical_max && !userland_emul) {
 		if ((vaddr & 0xffc00000) == 0xbfc00000) {
 			/*  Ok, this is PROM stuff  */
 		} else {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.5 2003-11-20 05:06:30 debug Exp $
+ *  $Id: console.c,v 1.6 2003-11-24 02:28:23 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -155,9 +155,7 @@ int console_stdin_avail(void)
  */
 int console_charavail(void)
 {
-	int avail = console_stdin_avail();
-
-	if (avail)
+	while (console_stdin_avail())
 		console_makeavail(getchar());
 
 	if (console_fifo_head == console_fifo_tail)

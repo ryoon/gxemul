@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.35 2004-09-05 02:19:17 debug Exp $
+ *  $Id: dev_asc.c,v 1.36 2004-09-05 05:06:55 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -69,7 +69,6 @@
 #define	PHASE_MSG_IN		7
 
 extern int quiet_mode;
-extern int instruction_trace;
 
 
 /*  The controller's SCSI id:  */

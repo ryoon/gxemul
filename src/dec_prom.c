@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.30 2004-09-05 03:35:39 debug Exp $
+ *  $Id: dec_prom.c,v 1.31 2004-09-05 05:06:56 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -47,9 +47,7 @@
 #include "dec_kn03.h"
 
 
-extern int show_nr_of_instructions;
 extern int quiet_mode;
-extern int use_x11;
 
 
 /*

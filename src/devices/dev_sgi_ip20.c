@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.4 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.5 2004-09-05 05:06:55 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -38,7 +38,6 @@
 #include "devices.h"
 
 
-extern int instruction_trace;
 extern int quiet_mode;
 
 

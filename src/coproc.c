@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.66 2004-09-05 03:35:39 debug Exp $
+ *  $Id: coproc.c,v 1.67 2004-09-05 05:06:56 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -37,8 +37,6 @@
 
 #include "misc.h"
 
-
-extern int register_dump;
 
 char *cop0_names[32] = COP0_NAMES;
 

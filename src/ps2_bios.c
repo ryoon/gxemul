@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.14 2004-09-02 02:13:14 debug Exp $
+ *  $Id: ps2_bios.c,v 1.15 2004-09-05 05:06:56 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -40,11 +40,7 @@
 #include "console.h"
 
 
-extern int emulation_type;
-extern int instruction_trace;
-extern int show_nr_of_instructions;
 extern int quiet_mode;
-extern int use_x11;
 
 
 /*

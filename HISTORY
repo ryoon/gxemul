@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.171 2004-07-20 15:43:06 debug Exp $
+$Id: HISTORY,v 1.172 2004-07-21 02:50:24 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -824,4 +824,7 @@ HISTORY of mips64emul
 		Working more on the TCP stuff; TCP seems to be almost working,
 		the only immediate problem left is that the guest OS gets
 		stuck in the closing and last-ack states, when it shouldn't.
-		It is now possible to install NetBSD and OpenBSD via ftp.
+		It is now possible to install NetBSD and OpenBSD via ftp. :-)
+20040721	Trying to fix the last-ack bug, by sending an RST after the
+		end of a connection. (Probably not a correct fix, but seems
+		to work?)

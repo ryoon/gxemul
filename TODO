@@ -133,6 +133,9 @@ This file is a mess. Order is random. Don't trust it to be up-to-date.
 		o)  Own experiments with ycx2.
 
 	File/disk handling:
+		o)  fseek() takes a long, which is 32-bit on most 32-bit
+		    machines :(  diskimage.c, fseeko() ? (single unix spec)
+		    or loop fseek() by using SEEK_CUR ... ?
 		o)  Read function argument count and types from binaries? (ELF?)
 		o)  zlib support (should be optional) for:
 			x)  loading gzipped kernels directly

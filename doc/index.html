@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.77 2004-07-20 01:08:06 debug Exp $
+$Id: index.html,v 1.78 2004-07-21 02:49:22 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -331,16 +331,26 @@ image looks and acts like a real SCSI disk, but it is just a normal
 file in the host's filesystem.
 <p>
 You need to do the following:
-<ol>
+<ol start="1">
   <li>Compile mips64emul:<pre>
 	$ <b>./configure; make</b>
 
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=900000000</b>
+	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=1900000000</b>
 
 </pre>
+</ol>
+<p>
+From this point, there are two separate ways to continue the installation.
+You can either download a CD-ROM iso image (and let the installation 
+program copy files from the CD-ROM image to the harddisk image), or you 
+can install via ftp. For an installation from a CD-ROM image, follow these 
+steps:
+<p>
+<ol start="3">
+
   <li>Download a NetBSD CD-ROM iso image: (approx. 75 MB)<pre>
 	<a href="ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso">ftp://ftp.netbsd.org/pub/NetBSD/iso/1.6.2/pmaxcd.iso</a>
 
@@ -348,73 +358,45 @@ You need to do the following:
   <li>Start the emulator like this:<pre>
 	$ <b>./mips64emul -X -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
 </pre>
-	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -d netbsddisk.img -d bc:pmaxcd.iso -j netbsd.pmax</b>
-</pre>
-	but then make sure you choose 'vt100' when prompted with which terminal
-	type to use, and not 'rcons'.
 </ol>
+<p>
+For an ftp install, substitute steps 3 and 4 above with these:
+<p>
+<ol start="3">
+
+  <li>Download a NetBSD pmax INSTALL kernel (1.3 MB), and gunzip it:<pre>
+	<a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	MD5 (netbsd-INSTALL.gz) = 14254f73996e8c1abccdcf5e0a0b6521
+
+	$ <b>gunzip netbsd-INSTALL.gz</b>
+
+</pre>
+  <li>Start the emulator like this:<pre>
+	$ <b>./mips64emul -X -D2 -d netbsddisk.img netbsd-INSTALL</b>
+</pre>
+</ol>
+
+<p>
+(If you don't want to use a graphical framebuffer during the install,
+you can remove <b>-X</b> from the command line, but then make sure you
+choose 'vt100' when prompted with which terminal type to use, and not
+'rcons'.)
 
 <p>
 Then proceed like you would do if you were installing NetBSD on a real
 DECstation.  Even if the emulator is running on a very fast host system,
 you should expect the installation to take quite some time.
-
-
-<!--
-
-<table>
-<tr><td width=150>&nbsp;</td><td>
-
-<p><br>
-<font color="#ff0000">2004-07-09 Update: NOTE: THE FOLLOWING DOES NOT WORK
-YET:</font>
-Network emulation is partially implemented, but there is no support for
-TCP yet, which is needed for a network install.  WHEN SUPPORT FOR TCP
-<i>IS</i> IMPLEMENTED, you will (probably) be able to do an install via
-the network instead of from the pmax cdrom image.
-<ul>
-  <li>Skip step 3 above.
-  <li>Replace step 4 above with the following:
-  <li>Download <a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>.
-  <li>Run: <b>gunzip netbsd-INSTALL.gz</b>
-  <li>Run: <b>./mips64emul -X -D2 -d netbsddisk.img netbsd-INSTALL</b>
-  <li>Proceed with the installation as you would if you were installing
-	NetBSD on a real DECstation via the network. Choose 'ftp' instead
-	of 'cdrom', and enter the following networking parameters when
-	asked:<pre>
+If you are installing from the network, then suitable networking 
+parameters are as follows:<pre>
 	Which device shall I use? [le0]: <b>le0</b>
 	..
-	Your DNS domain: <b>your.domain.com</b>
+	Your DNS domain: <b>mydomain.com</b>
 	Your host name: <b>foo</b>
-	Your IPv4 number: <b>10.0.0.1</b>             <font color="#ff0000">&lt;--- these are important</font>
-	IPv4 Netmask [0xff000000]: <b>0xff000000</b>  <font color="#ff0000">&lt;---</font>
-	IPv4 gateway: <b>10.0.0.254</b>               <font color="#ff0000">&lt;---</font>
-	IPv4 name server: <b>129.16.1.3</b>           <font color="#ff0000">&lt;--- replace this with your actual real-world nameserver</font>
-
+	Your IPv4 number: <b>10.0.0.1</b>
+	IPv4 Netmask [0xff000000]: <b>0xff000000</b>
+	IPv4 gateway: <b>10.0.0.254</b>
+	IPv4 name server: <b>129.16.1.3</b>       <i>&lt;--- replace this with your actual real-world nameserver</i>
 </pre>
-  <li>To the outside world, it will look like you are connecting from
-	the host's IP.
-</ul>
-<p><br>
-
-</td></tr>
-</table>
-
--->
-
-<p>
-<font color="#ff0000">NOTE: It is possible to install NetBSD/pmax
-via NFS using UDP, instead of using the CDROM iso image.
-TCP is not yet implemented in the emulator, so
-a normal FTP install is not possible, but you can place the
-install sets on an NFS server and install NetBSD that way.
-Read the <a href="technical.html#net">section on networking in the 
-technical documentation</a> for more information about networking
-in general.
-</font>
-
-
 
 <p>
 When the installation is completed, the following command should start
@@ -507,7 +489,9 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
 		and proceed with the install. Good luck. :-)
-	  <li>Answer "<b>n</b>" when asked if you wish to configure the network.
+	  <li>Answer "<b>y</b>" when asked if you wish to configure the network.
+		(See the section about installing NetBSD/pmax for suitable
+		network settings.)
 	  <li>Install from "<b>c</b>" (cdrom), choose "<b>rz2</b>" as the cdrom device, and "<b>/</b>" as
 		the directory containing the install sets.
 	</ul>
@@ -549,16 +533,10 @@ The time required to do a full install (including X11) is about an hour
 and a half on a 2.8GHz Xeon PC.
 
 <p>
-<font color="#ff0000">NOTE: It is possible to install OpenBSD/pmax
-via NFS using UDP, instead of creating a CDROM iso image.
-TCP is not yet implemented in the emulator, so
-a normal FTP install is not possible, but you can place the
-install sets on an NFS server and install OpenBSD that way.
-You still need the simpleroot filesystem, though.
-Read the <a href="technical.html#net">section on networking in the 
-technical documentation</a> for more information about networking
-in general.
-</font>
+NOTE: It is also possible to install via ftp instead of using a CDROM image. 
+This is not much less akward, you still need the simpleroot filesystem 
+image, and you still have to manually add the X11 install sets and set the 
+root password, and so on.
 
 <p>
 Once you have completed the installation procedure, the following command
@@ -680,9 +658,8 @@ containing ramdisks. For a 5000/200 R3000 KN02 (the -D2 model in mips64emul), tr
 	MD5 as of 2004-07-14: 9395428ac82fbf7c94f15a1312caaa9a</b>
 </pre>
 <p>
-It is a Linux 2.4.26 kernel which (I think) automatically installs Debian Linux
-from the network onto a harddisk image. (Not yet though, as TCP is not working
-in the emulator.)
+It is a Linux 2.4.26 kernel which will attempt to install Debian Linux from
+the network onto a harddisk image.
 <p>
 Once you have compiled mips64emul (<b>./configure; make</b>), you could try running
 the kernel with graphical framebuffer.
@@ -706,11 +683,10 @@ Linux gets support for the keyboard controller.
 	$ <b>./mips64emul -D2 -o 'console=ttyS03' boot.img</b>
 </pre>
 <p>
-The TCP part of networking is not yet implemented in the emulator, so the installation
-will fail when it tries to download installation files via http or ftp.
-<p>
-(I'm currently working on TCP and such things, so this section of
-the documentation will be updated as soon as it works.)
+<font color="#ff0000">NOTE: As of 2004-07-21, the installation dies with
+some kind of panic or exception while trying to download/run 
+"parted_devices".
+</font>
 
 
 
@@ -994,18 +970,20 @@ by adding <b>-Y2</b> to the command line.
 <h3>Networking</h3>
 
 It is possible to let the guest OS running inside the emulator get access to
-the Internet. The guest OS then uses a private IPv4 address, such as 
-10.0.0.1, and the emulator acts as a NAT-like gateway/firewall at IPv4 
+the Internet. If you are interested in the technical details, and the 
+reasons why networking is implemented in the emulator the way it currently 
+is implemented, you might want to read the <a href="technical.html#net">
+networking section in the technical documentation</a>.
+<p>
+The guest OS running inside the emulator uses a private IPv4 address, such
+as 10.0.0.1, and the emulator acts as a NAT-like gateway/firewall at IPv4
 address 10.0.0.254. To the outside world it will seem like it is the host's
 OS that connects to other machines on the internet, not the guest OS.
 <p>
-<font color="#ff0000">NOTE: This is highly experimental!</font>
-As of 2004-07-11, ARP + ICMP + UDP are emulated well enough to fool
-NetBSD/pmax, OpenBSD/pmax, and to some extent Ultrix. <font color="#ff0000">
-TCP is <i>NOT</i> implemented yet!</font>
-<p>
-Read the <a href="technical.html#net">section on networking in the 
-technical documentation</a> for more information.
+<font color="#ff0000">NOTE: This is still highly experimental!
+As of 2004-07-21, ARP + ICMP + UDP + TCP are emulated well enough to let 
+NetBSD and OpenBSD install via ftp, and use the network for many normal 
+activities, but not everything works yet.</font>
 
 
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.15 2004-07-16 18:18:32 debug Exp $
+$Id: technical.html,v 1.16 2004-07-21 02:49:22 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -220,7 +220,10 @@ emulation:
 	is converted into an UDP packet for the emulated OS. (This is not
 	implemented very well yet, but seems to be enough for nameserver
 	lookups, tftp file transfers, and NFS mounts using UDP.)
-  <li><font color="#ff0000">NOTE: TCP is <i>NOT</i> yet working!</font>
+  <li>TCP packets are interpreted one at a time, similar to how UDP 
+	packets are handled (but more state is kept for each connection).
+	<font color="#ff0000">NOTE: Much of the TCP handling code is very
+	ugly and hardcoded.</font>
   <li>RARP is not implemented yet. (I haven't needed it so far.)
 </ul>
 
@@ -267,10 +270,7 @@ Now, host lookups should work:
 	uucp-gw-2.pa.dec.com	172799 IN	A	204.123.2.19
 </pre>
 
-As TCP is <i>NOT</i> yet implemented, most normal TCP/IP applications will 
-not work. However, it is possible to transfer files from another host via 
-the network, without having to resort to using .tar files as diskimages.
-The tftp program, for example, uses UDP.
+To transfer files via UDP, you can use the tftp program.
 
 <pre>
 	# <b>tftp 12.34.56.78</b>
@@ -334,6 +334,12 @@ letting NetBSD/pmax or OpenBSD/pmax install via NFS, without the need for
 a CDROM ISO image. You can use a read-write mount if you wish to share
 files in both directions, but then you should be aware of the 
 fragmentation issue mentioned above.
+
+<p>
+TCP is implemented to some extend, but should not be considered very 
+stable yet. It is enough to let NetBSD/pmax and OpenBSD/pmax install via 
+ftp, though.
+
 
 
 

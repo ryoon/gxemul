@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.93 2004-11-21 08:09:49 debug Exp $
+ *  $Id: coproc.c,v 1.94 2004-11-21 22:09:07 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -301,24 +301,30 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
  *  changed, so that for example user-space addresses are not cached when
  *  they should not be.
  */
-static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vaddr2)
+static void invalidate_translation_caches(struct cpu *cpu,
+	int all, uint64_t vaddr2, int kernelspace)
 {
+	vaddr2 &= ~0x1fff;
+
 #ifdef BINTRANS
 	if (cpu->emul->bintrans_enable) {
 		int i;
 		for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
 			if (all ||
-			    (cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2) {
+			    (cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2 ||
+			    (kernelspace && cpu->bintrans_data_vaddr[i] > 0x7fffffff)) {
 				if ((cpu->bintrans_data_vaddr[i] & ~0x3fffffffULL) != 0xffffffff80000000ULL)
 					cpu->bintrans_data_hostpage[i] = NULL;
 			}
 	}
 #endif
 
+	if (kernelspace)
+		all = 1;
+
 #ifdef USE_TINY_CACHE
 {
 	int i;
-	vaddr2 &= 0xffffe000ULL;
 	vaddr2 >>= 12;
 
 	/*  Invalidate the tiny translation cache...  */
@@ -328,19 +334,9 @@ static void invalidate_translation_caches(struct cpu *cpu, int all, uint64_t vad
 			cpu->translation_cache_instr[i].wf = 0;
 
 	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-{
-/*
-printf("vaddr2=%016llx vaddr_pfn=%016llx\n",
-(long long)vaddr2, (long long)cpu->translation_cache_instr[i].vaddr_pfn);
-
-TODO: Why doesn't this work?
-
 		if (all ||
 		    vaddr2 == (cpu->translation_cache_data[i].vaddr_pfn & ~1))
-*/
 			cpu->translation_cache_data[i].wf = 0;
-}
-
 }
 #endif
 }
@@ -505,7 +501,7 @@ void coproc_register_write(struct cpu *cpu,
 		}
 
 		if (inval)
-			invalidate_translation_caches(cpu, 1, 0);
+			invalidate_translation_caches(cpu, 1, 0, 0);
 
 		unimpl = 0;
 		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
@@ -552,7 +548,21 @@ void coproc_register_write(struct cpu *cpu,
 	}
 
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS) {
+		int oldmode = cp->reg[COP0_STATUS];
 		tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
+
+		/*  Changing from kernel to user mode? Then
+		    invalidate some translation caches:  */
+		if (cpu->cpu_type.mmu_model == MMU3K) {
+			if (!(oldmode & MIPS1_SR_KU_CUR)
+			    && (tmp & MIPS1_SR_KU_CUR))
+				invalidate_translation_caches(cpu, 0, 0, 1);
+		} else {
+			/*  TODO: don't hardcode  */
+			if ((oldmode & 0xff) != (tmp & 0xff))
+				invalidate_translation_caches(cpu, 0, 0, 1);
+		}
+
 		unimpl = 0;
 	}
 
@@ -1492,22 +1502,22 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		vaddr &= 0xffffffffULL;
 		if (vaddr & 0x80000000ULL)
 			vaddr |= 0xffffffff00000000ULL;
-		invalidate_translation_caches(cpu, 0, vaddr);
+		invalidate_translation_caches(cpu, 0, vaddr, 0);
 	} else if (cpu->cpu_type.mmu_model == MMU4K) {
 		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK;
 		/*  40 addressable bits:  */
 		if (vaddr & 0x8000000000ULL)
 			vaddr |= 0xffffff0000000000ULL;
-		invalidate_translation_caches(cpu, 0, vaddr);
+		invalidate_translation_caches(cpu, 0, vaddr, 0);
 	} else if (cpu->cpu_type.mmu_model == MMU10K) {
 		uint64_t vaddr = cp->tlbs[index].hi & ENTRYHI_VPN2_MASK_R10K;
 		/*  44 addressable bits:  */
 		if (vaddr & 0x80000000000ULL)
 			vaddr |= 0xfffff00000000000ULL;
-		invalidate_translation_caches(cpu, 0, vaddr);
+		invalidate_translation_caches(cpu, 0, vaddr, 0);
 	} else {
 		/*  Invalidate all:  */
-		invalidate_translation_caches(cpu, 1, 0);
+		invalidate_translation_caches(cpu, 1, 0, 0);
 	}
 
 	/*  Write the entry:  */
@@ -1541,8 +1551,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 void coproc_function(struct cpu *cpu, struct coproc *cp,
 	uint32_t function, int unassemble_only, int running)
 {
-	int co_bit, op, rt, rd, fs;
-	int copz;
+	int co_bit, op, rt, rd, fs, copz, oldmode, newmode;
 	uint64_t tmpvalue;
 	int cpnr = cp->coproc_nr;
 
@@ -1746,26 +1755,58 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 					debug("rfe\n");
 					return;
 				}
+				oldmode = cpu->coproc[0]->reg[COP0_STATUS]
+				    & MIPS1_SR_KU_CUR;
 				cpu->coproc[0]->reg[COP0_STATUS] =
 				    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 				    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);
+
+				/*  Changing from kernel to user mode?
+				    Then this is neccessary:  */
+				if (!oldmode && 
+				    (cpu->coproc[0]->reg[COP0_STATUS] &
+				    MIPS1_SR_KU_CUR))
+					invalidate_translation_caches(cpu, 0, 0, 1);
 				return;
 			case COP0_ERET:		/*  R4000: Return from exception  */
 				if (unassemble_only) {
 					debug("eret\n");
 					return;
 				}
+
+				/*  Kernel mode flag:  */
+				oldmode = 0;
+				if ((cp->reg[COP0_STATUS] & MIPS3_SR_KSU_MASK)
+						!= MIPS3_SR_KSU_USER
+				    || (cp->reg[COP0_STATUS] & (STATUS_EXL |
+				    STATUS_ERL)) ||
+				    (cp->reg[COP0_STATUS] & 1) == 0)
+					oldmode = 1;
+
 				if (cp->reg[COP0_STATUS] & STATUS_ERL) {
 					cpu->pc = cpu->pc_last = cp->reg[COP0_ERROREPC];
 					cp->reg[COP0_STATUS] &= ~STATUS_ERL;
 				} else {
-/*  printf("ERET: A status = 0x%016llx pc=%016llx\n", cp->reg[COP0_STATUS], (long long)cpu->pc);  */
 					cpu->pc = cpu->pc_last = cp->reg[COP0_EPC];
 					cpu->delay_slot = 0;
 					cp->reg[COP0_STATUS] &= ~STATUS_EXL;
-/*  printf("ERET: B status = 0x%016llx pc=%016llx\n", cp->reg[COP0_STATUS], (long long)cpu->pc);  */
 				}
+
 				cpu->rmw = 0;	/*  the "LL bit"  */
+
+				/*  New kernel mode flag:  */
+				newmode = 0;
+				if ((cp->reg[COP0_STATUS] & MIPS3_SR_KSU_MASK)
+						!= MIPS3_SR_KSU_USER
+				    || (cp->reg[COP0_STATUS] & (STATUS_EXL |
+				    STATUS_ERL)) ||
+				    (cp->reg[COP0_STATUS] & 1) == 0)
+					newmode = 1;
+
+				/*  Changing from kernel to user mode?
+				    Then this is neccessary:  TODO  */
+				if (oldmode && !newmode)
+					invalidate_translation_caches(cpu, 0, 0, 1);
 				return;
 			default:
 				;

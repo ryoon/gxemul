@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.72 2004-11-21 06:50:09 debug Exp $
+ *  $Id: bintrans.c,v 1.73 2004-11-21 22:09:07 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -147,7 +147,11 @@ static int bintrans_write_instruction__tlb(unsigned char **addrp, int itype);
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#define	CODE_CHUNK_SPACE_SIZE		(20 * 1048576)
+#ifndef BINTRANS_SIZE_IN_MB
+#define BINTRANS_SIZE_IN_MB	20
+#endif
+
+#define	CODE_CHUNK_SPACE_SIZE		(BINTRANS_SIZE_IN_MB * 1048576)
 #define	CODE_CHUNK_SPACE_MARGIN		262144
 
 /*
@@ -271,7 +275,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	int rs,rt=0,rd,sa,imm;
 	uint32_t *potential_chunk_p;	/*  for branches  */
 	int byte_order_cached_bigendian;
-	int delayed_branch;
+	int delayed_branch, stop_after_delayed_branch;
 	uint64_t delayed_branch_new_p=0;
 	int prev_p;
 
@@ -354,6 +358,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 	n_translated = 0;
 	res = 0;
 	delayed_branch = 0;
+	stop_after_delayed_branch = 0;
 
 	while (try_to_translate) {
 		ca_justdid = ca;
@@ -409,6 +414,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 				n_translated += translated;
 				delayed_branch = 2;
 				delayed_branch_new_p = -1;	/*  anything, not within this physical page  */
+				if (special6 == SPECIAL_JR)
+					stop_after_delayed_branch = 1;
 				break;
 			case SPECIAL_ADDU:
 			case SPECIAL_DADDU:
@@ -526,6 +533,8 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			n_translated += translated;
 			delayed_branch = 2;
 			delayed_branch_new_p = -1;
+			if (hi6 == HI6_J)
+				stop_after_delayed_branch = 1;
 			break;
 
 		case HI6_ADDIU:
@@ -616,6 +625,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 					potential_chunk_p = NULL;
 				bintrans_write_instruction__delayedbranch(&ca,
 				    potential_chunk_p, &tep->chunk[0], 0);
+
+				if (stop_after_delayed_branch)
+					try_to_translate = 0;
 			}
 		}
 
@@ -633,7 +645,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr, int run_flag)
 			try_to_translate = 0;
 		}
 
-		if (n_translated > 200)
+		if (n_translated > 250)
 			try_to_translate = 0;
 
 		p += sizeof(instr);
@@ -744,9 +756,18 @@ run_it:
 void bintrans_init_cpu(struct cpu *cpu)
 {
 	cpu->chunk_base_address = translation_code_chunk_space;
+
 	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
 	cpu->bintrans_fast_tlbpr = coproc_tlbpr;
-	cpu->bintrans_fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
+
+	switch (cpu->cpu_type.mmu_model) {
+	case MMU3K:
+		cpu->bintrans_fast_vaddr_to_hostaddr =
+		    fast_vaddr_to_hostaddr_r3000;
+		break;
+	default:
+		cpu->bintrans_fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
+	}
 }
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.152 2004-09-25 16:39:09 debug Exp $
+ *  $Id: cpu.c,v 1.153 2004-09-26 00:05:25 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1803,7 +1803,7 @@ static int cpu_run_instr(struct cpu *cpu)
 				break;
 			}
 			if (special6 == SPECIAL_NOR) {
-				cpu->gpr[rd] = ~(cpu->gpr[rs] | cpu->gpr[rt]);		/*  TODO:  is this corrent NOR?  */
+				cpu->gpr[rd] = ~(cpu->gpr[rs] | cpu->gpr[rt]);
 				break;
 			}
 			if (special6 == SPECIAL_SLT) {
@@ -2273,7 +2273,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->gpr[rt] = (int64_t)cpu->gpr[rs] < (int64_t)tmpvalue;
 			break;
 		case HI6_SLTIU:
-			cpu->gpr[rt] = cpu->gpr[rs] < tmpvalue;
+			cpu->gpr[rt] = cpu->gpr[rs] < (uint64_t)imm;
 			break;
 		case HI6_ANDI:
 			cpu->gpr[rt] = cpu->gpr[rs] & (tmpvalue & 0xffff);

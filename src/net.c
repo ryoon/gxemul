@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.28 2004-08-01 01:32:10 debug Exp $
+ *  $Id: net.c,v 1.29 2004-09-26 00:09:06 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -96,8 +96,8 @@ static struct in_addr nameserver_ipv4;
 
 static int64_t net_timestamp = 0;
 
-#define	MAX_TCP_CONNECTIONS	36
-#define	MAX_UDP_CONNECTIONS	12
+#define	MAX_TCP_CONNECTIONS	40
+#define	MAX_UDP_CONNECTIONS	15
 
 struct udp_connection {
 	int		in_use;

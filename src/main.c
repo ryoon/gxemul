@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.117 2004-10-25 01:54:06 debug Exp $
+ *  $Id: main.c,v 1.118 2004-10-25 03:21:24 debug Exp $
  */
 
 #include <stdio.h>
@@ -163,7 +163,7 @@ void usage(char *progname)
 	printf("  -O        fake netboot (tftp instead of rzX), even when a disk image is\n"
 	       "            present (for DECstation emulation)\n");
 	printf("  -o arg    set the boot argument (for DEC or SGI emulation).\n");
-	printf("            Default arg for DEC is -a. The other useful arg would be -s.\n");
+	printf("            Default arg for DEC is '-a', for ARC '-aN'.\n");
 	printf("  -P pc     add a PC dumppoint.  (if the PC register ever holds this value,\n");
 	printf("            register dumping (-r) and instruction trace (-i) are enabled)\n");
 	printf("  -p pc     same as -P, but only enables -i, not -r\n");
@@ -494,6 +494,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 
 	/*  Default Boot string arguments:  */
+
+	if (emul->emulation_type == EMULTYPE_ARC &&
+	    !using_switch_o) {
+		emul->boot_string_argument = "-aN";
+	}
 
 	if (emul->emulation_type == EMULTYPE_DEC &&
 	    !using_switch_o) {

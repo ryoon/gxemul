@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.209 2004-10-25 02:51:20 debug Exp $
+ *  $Id: machine.c,v 1.210 2004-10-25 03:21:23 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2844,20 +2844,34 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		/*  argc, argv, envp in a0, a1, a2:  */
 		cpu->gpr[GPR_A0] = 0;	/*  note: argc is increased later  */
-		cpu->gpr[GPR_A1] = ARC_ARGV_START;
-		cpu->gpr[GPR_A2] = ARC_ENV_POINTERS;
 
 		/*  TODO:  not needed?  */
 		cpu->gpr[GPR_SP] = emul->physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
+
+		/*  Set up argc/argv:  */
+		addr = ARC_ENV_STRINGS;
+		addr2 = ARC_ARGV_START;
+		cpu->gpr[GPR_A1] = addr2;
+
+		/*  bootstr:  */
+		store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+		add_environment_string(cpu, bootstr, &addr);
+		cpu->gpr[GPR_A0] ++;
+
+		/*  bootarg:  */
+		if (bootarg[0] != '\0') {
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
+			add_environment_string(cpu, bootarg, &addr);
+			cpu->gpr[GPR_A0] ++;
+		}
+
+		cpu->gpr[GPR_A2] = addr2;
 
 		/*
 		 *  Add environment variables.  For each variable, add it
 		 *  as a string using add_environment_string(), and add a
 		 *  pointer to it to the ARC_ENV_POINTERS array.
 		 */
-		addr = ARC_ENV_STRINGS;
-		addr2 = ARC_ENV_POINTERS;
-
 		if (emul->use_x11) {
 			if (emul->emulation_type == EMULTYPE_ARC) {
 				store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
@@ -2922,60 +2936,20 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "netaddr=10.0.0.1", &addr);
 		} else {
-			/*  ARC:  */
 			char *tmp;
-			tmp = malloc(strlen(bootarg) +
-			    strlen("OSLOADOPTIONS=") + 2);
+			tmp = malloc(strlen(bootarg) + strlen("OSLOADOPTIONS=") + 2);
 			sprintf(tmp, "OSLOADOPTIONS=%s", bootarg);
-			store_pointer_and_advance(cpu, &addr2, addr,
-			    arc_wordlen==sizeof(uint64_t));
+			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, tmp, &addr);
 
-			/*  TODO:  */
 			store_pointer_and_advance(cpu, &addr2, addr, arc_wordlen==sizeof(uint64_t));
 			add_environment_string(cpu, "OSLOADPARTITION=scsi(0)disk(0)rdisk(0)partition(1)", &addr);
 		}
-
 
 		/*  End the environment strings with an empty zero-terminated
 		    string, and the envp array with a NULL pointer.  */
 		add_environment_string(cpu, "", &addr);	/*  the end  */
 		store_pointer_and_advance(cpu, &addr2,
-		    0, arc_wordlen==sizeof(uint64_t));
-
-		/*  Set up argc/argv:  */
-		addr = ARC_ARGV_START;
-		addr2 = ARC_ENV_POINTERS;
-
-		/*  bootstr:  */
-		store_string(cpu, ARC_ARGV_START + 0x100, bootstr);
-		cpu->gpr[GPR_A0] ++;
-		store_pointer_and_advance(cpu, &addr,
-		    ARC_ARGV_START + 0x100, arc_wordlen==sizeof(uint64_t));
-
-		/*  bootarg:  */
-		if (bootarg[0] != '\0') {
-			store_string(cpu, ARC_ARGV_START + 0x200, bootarg);
-			cpu->gpr[GPR_A0] ++;
-			store_pointer_and_advance(cpu, &addr,
-			    ARC_ARGV_START + 0x200,
-			    arc_wordlen==sizeof(uint64_t));
-		}
-
-		if (emul->emulation_type == EMULTYPE_SGI) {
-			/*
-			 *  See http://guinness.cs.stevens-tech.edu/sgidocs/SGI_EndUser/books/IRIX_EnvVar/sgi_html/ch02.html
-			 *  for more options.  It seems that on SGI machines,
-			 *  _ALL_ environment variables are passed on the
-			 *  command line, but NOT on generic ARC.
-			 */
-
-			/*  Copy envp into end of argv:  */
-			/*  TODO: Is this actually correct? Maybe not.  */
-		}
-
-		/*  End of arguments, an extra NULL pointer:  */
-		store_pointer_and_advance(cpu, &addr,
 		    0, arc_wordlen==sizeof(uint64_t));
 
 		break;

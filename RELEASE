@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.37 2004-09-14 10:44:43 debug Exp $
+$Id: RELEASE,v 1.38 2004-09-17 19:16:49 debug Exp $
 
 This will be the RELEASE file for 0.2.1.
 
@@ -22,7 +22,8 @@ affiliated with MIPS Technologies in any way whatsoever.)
 
 
 This release (0.2.1) is more or less a clean-up of release 0.2, and does not
-contain any major feature additions.
+contain any major feature additions. In fact, 0.2.1 is a bit slower than 
+0.2, so those looking for performance should keep running 0.2.
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel

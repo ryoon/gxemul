@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.20 2004-11-29 10:25:10 debug Exp $
+#  $Id: Makefile.skel,v 1.21 2004-12-13 02:51:18 debug Exp $
 #
 #  Makefile for mips64emul
 #
@@ -25,7 +25,10 @@ regtest:
 install: all
 	@echo
 	@echo "There is no automatic 'make install'. You need to manually copy the mips64emul"
-	@echo "binary and any other files you need to where you want them to reside."
+	@echo "binary and any other files you need to where you want them to reside. The man/"
+	@echo "subdirectory contains a small man-page, it should probably be placed in"
+	@echo "'/usr/.../man/man1' on most systems, and the contents of the doc/ subdirectory"
+	@echo "could be placed in '/usr/.../share/doc/mips64emul'."
 	@echo
 
 clean:

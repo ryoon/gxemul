@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.9 2004-12-14 04:40:58 debug Exp $
+ *  $Id: memory_v2p.c,v 1.10 2004-12-14 04:41:37 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -398,31 +398,6 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 	 *  We are here if for example userland code tried to access
 	 *  kernel memory.
 	 */
-
-#if 0
-	if (!use_tlb) {
-		int i;
-
-		quiet_mode = 0;
-		cpu->emul->instruction_trace = cpu->emul->register_dump = 1;
-
-		debug("not using tlb, but still no hit. TODO\n");
-
-		debug("{ vaddr=%016llx ==> ? pc=%016llx }\n", (long long)vaddr, (long long)cpu->pc);
-
-		for (i=0; i<cpu->cpu_type.nr_of_tlb_entries; i++) {
-			debug("tlb entry %2i: mask=%016llx  hi=%016llx"
-			      " lo1=%016llx lo0=%016llx\n",
-				i,
-				cp0->tlbs[i].mask,
-				cp0->tlbs[i].hi,
-				cp0->tlbs[i].lo1,
-				cp0->tlbs[i].lo0);
-		}
-		exit(1);
-	}
-#endif
-
 
 	/*  TLB refill  */
 

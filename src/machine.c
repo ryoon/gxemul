@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.85 2004-06-07 10:35:01 debug Exp $
+ *  $Id: machine.c,v 1.86 2004-06-10 04:23:06 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -230,6 +230,30 @@ uint32_t load_32bit_word(uint64_t addr)
 	}
 
 	return (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3];
+}
+
+
+/*
+ *  store_64bit_word_in_host():
+ *
+ *  Helper function.
+ */
+void store_64bit_word_in_host(unsigned char *data, uint64_t data64)
+{
+	data[0] = (data64 >> 56) & 255;
+	data[1] = (data64 >> 48) & 255;
+	data[2] = (data64 >> 40) & 255;
+	data[3] = (data64 >> 32) & 255;
+	data[4] = (data64 >> 24) & 255;
+	data[5] = (data64 >> 16) & 255;
+	data[6] = (data64 >> 8) & 255;
+	data[7] = (data64) & 255;
+	if (cpus[bootstrap_cpu]->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[7]; data[7] = tmp;
+		tmp = data[1]; data[1] = data[6]; data[6] = tmp;
+		tmp = data[2]; data[2] = data[5]; data[5] = tmp;
+		tmp = data[3]; data[3] = data[4]; data[4] = tmp;
+	}
 }
 
 
@@ -477,6 +501,7 @@ void machine_init(struct memory *mem)
 
 	/*  ARCBIOS stuff:  */
 	struct arcbios_spb arcbios_spb;
+	struct arcbios_spb_64 arcbios_spb_64;
 	struct arcbios_sysid arcbios_sysid;
 	struct arcbios_dsp_stat arcbios_dsp_stat;
 	struct arcbios_mem arcbios_mem;
@@ -1235,17 +1260,6 @@ void machine_init(struct memory *mem)
 		if (physical_ram_in_mb < 16)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
-		/*  ARCBIOS:  */
-		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
-		store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
-		store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
-		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
-
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
 		if (emulation_type == EMULTYPE_SGI) {
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
@@ -1438,6 +1452,8 @@ void machine_init(struct memory *mem)
 
 				break;
 			case 26:
+				/*  NOTE:  Special case for arc_wordlen:  */
+				arc_wordlen = sizeof(uint64_t);
 				strcat(machine_name, " (uknown SGI-IP26 ?)");	/*  TODO  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 8, 1);		/*  serial? netbsd?  */
 				dev_ram_init(mem, 128 * 1048576, 128 * 1048576, DEV_RAM_MIRROR, 0);
@@ -1478,7 +1494,12 @@ void machine_init(struct memory *mem)
 				/*
 				 *  16550 serial port at paddr=1f620178, addr mul 1
 				 *  (Error messages are printed to this serial port by the PROM.)
+				 *
+				 *  There seems to also be a serial port at 1f620170. The "symmon"
+				 *  program dumps something there, but it doesn't look like
+				 *  readable text.  (TODO)
 				 */
+				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620170, 0, 1);		/*  TODO: irq?  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
 
 				break;
@@ -1630,6 +1651,17 @@ case arc_CacheClass:
 
 		switch (arc_wordlen) {
 		case sizeof(uint64_t):
+			/*  64-bit ARCBIOS SPB:  (TODO: This is just a guess)  */
+			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Version, 1);
+			store_16bit_word_in_host((unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 100 * 4);	/*  ?  */
+			store_64bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb_64.PrivateVectorLength, 100 * 4);	/*  ?  */
+			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb_64, sizeof(arcbios_spb_64));
+
 			store_64bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
 			store_64bit_word(ARC_ARGV_START + 0x4 * 2, ARC_ARGV_START + 0x180);
 			store_64bit_word(ARC_ARGV_START + 0x8 * 2, ARC_ARGV_START + 0x200);
@@ -1676,6 +1708,17 @@ case arc_CacheClass:
 
 			break;
 		default:	/*  32-bit  */
+			/*  ARCBIOS SPB:  */
+			memset(&arcbios_spb, 0, sizeof(arcbios_spb));
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Version, 1);
+			store_16bit_word_in_host((unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, (uint32_t)ARC_FIRMWARE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVector, (uint32_t)ARC_PRIVATE_VECTORS);
+			store_32bit_word_in_host((unsigned char *)&arcbios_spb.PrivateVectorLength, 100 * 4);	/*  ?  */
+			store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
+
 			store_32bit_word(ARC_ARGV_START, ARC_ARGV_START + 0x100);
 			store_32bit_word(ARC_ARGV_START + 0x4, ARC_ARGV_START + 0x180);
 			store_32bit_word(ARC_ARGV_START + 0x8, ARC_ARGV_START + 0x200);

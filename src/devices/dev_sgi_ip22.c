@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.8 2004-06-07 11:52:04 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.9 2004-06-10 04:23:04 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -101,9 +101,9 @@ int dev_sgi_ip22_memctl_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ sgi_ip22_memctl: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
+			debug("[ sgi_ip22_memctl: unimplemented write to address 0x%x, data=0x%08x ]\n", relative_addr, (int)idata);
 		} else {
-			fatal("[ sgi_ip22_memctl: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
+			debug("[ sgi_ip22_memctl: unimplemented read from address 0x%x, data=0x%08x ]\n", relative_addr, (int)odata);
 		}
 	}
 
@@ -179,9 +179,9 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
-			fatal("[ sgi_ip22: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
+			debug("[ sgi_ip22: unimplemented write to address 0x%x, data=0x%02x ]\n", relative_addr, idata);
 		} else {
-			fatal("[ sgi_ip22: unimplemented read from address 0x%x ]\n", relative_addr);
+			debug("[ sgi_ip22: unimplemented read from address 0x%x ]\n", relative_addr);
 		}
 	}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.32 2004-06-08 10:49:45 debug Exp $
+ *  $Id: memory.c,v 1.33 2004-06-10 04:23:06 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -371,17 +371,22 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 		case 9:		/*  0x9000...  */
 			/*
 			 *  On IP30, addresses such as 0x900000001f600050 are used,
-			 *  but also things like 0x90000000a0000000.
+			 *  but also things like 0x90000000a0000000.  (TODO)
 			 */
-			*return_addr = vaddr & 0x1fffffff;
+			*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
 			return 1;
 		case 0xa:		/*  like 0xa8...  */
 			*return_addr = vaddr;
 			return 1;
-		/*  SGI-IP27?  */
+		/*
+		 *  TODO:  SGI-IP27 and others, when running Irix, seem to
+		 *  use these kernel-virtual-addresses as if they were
+		 *  physical addresses.  Maybe a static mapping in the
+		 *  tlb, say entry #0, would be a good solution?
+		 */
 		case 0xc:
 			if (emulation_type == EMULTYPE_SGI && machine >= 25) {
-				*return_addr = vaddr & 0xffffffffff;
+				*return_addr = vaddr & (((uint64_t)1 << 44) - 1);
 				return 1;
 			}
 			break;
@@ -439,6 +444,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 	if (use_tlb) {
 		for (i=0; i<n_tlbs; i++) {
 			if (mmumodel3k) {
+				/*  R3000 or similar:  */
 				entry_vpn2 = (cp0->tlbs[i].hi & R2K3K_ENTRYHI_VPN_MASK) >> R2K3K_ENTRYHI_VPN_SHIFT;
 				entry_asid = (cp0->tlbs[i].hi & R2K3K_ENTRYHI_ASID_MASK) >> R2K3K_ENTRYHI_ASID_SHIFT;
 				g_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_G;
@@ -447,7 +453,7 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 				v_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_V;
 				d_bit = cp0->tlbs[i].lo0 & R2K3K_ENTRYLO_D;
 			} else {
-				/*  R4000  */
+				/*  R4000 or similar:  */
 				pmask = (cp0->tlbs[i].mask & PAGEMASK_MASK) | 0x1fff;
 				switch (pmask) {
 				case 0x0001fff:	pageshift = 12; break;
@@ -483,6 +489,23 @@ int translate_address(struct cpu *cpu, uint64_t vaddr,
 					pfn = (cp0->tlbs[i].lo0 & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_SHIFT;
 					v_bit = cp0->tlbs[i].lo0 & ENTRYLO_V;
 					d_bit = cp0->tlbs[i].lo0 & ENTRYLO_D;
+				}
+
+				if (cpu->cpu_type.mmu_model == MMU8K) {
+					/*
+					 *  TODO:  I don't really know anything about the R8000.
+					 *  http://futuretech.mirror.vuurwerk.net/i2sec7.html
+					 *  says that it has a three-way associative TLB with
+					 *  384 entries, 16KB page size, and some other things.
+					 *
+					 *  It feels like things like the valid bit (ala R4000)
+					 *  and dirty bit are not implemented the same on R8000.
+					 *
+					 *  http://sgistuff.tastensuppe.de/documents/R8000_chipset.html
+					 *  also has some info, but no details.
+					 */
+					v_bit = 1;	/*  Big TODO  */
+					d_bit = 1;
 				}
 			}
 

@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.4 2003-12-20 21:17:17 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.5 2004-06-10 04:23:05 debug Exp $  */
 
 #ifndef SGI_ARCBIOS_H
 #define	SGI_ARCBIOS_H
@@ -116,6 +116,30 @@ struct arcbios_spb {
 	uint32_t	AdapterType;
 	uint32_t	AdapterVectorLength;
 	uint32_t	AdapterVector;			/*  was void *  */
+};
+
+/*
+ *  arcbios_spb_64 is like arcbios_spb, but with 64-bit pointers.
+ *  Irix seems to want this.  TODO: This is just a guess, based on the
+ *  usage of void * in the NetBSD version of arcbios_spb.
+ */
+struct arcbios_spb_64 {
+	uint32_t	SPBSignature;
+	uint32_t	SPBLength;
+	uint16_t	Version;
+	uint16_t	Revision;
+	uint32_t	RestartBlock;			/*  was void * in netbsd  */
+	uint32_t	DebugBlock;			/*  was void *  */
+	uint32_t	GEVector;			/*  was void *  */
+	uint32_t	UTLBMissVector;			/*  was void *  */
+	uint32_t	FirmwareVectorLength;
+	uint64_t	FirmwareVector;			/*  was void *  */
+	uint32_t	PrivateVectorLength;
+	uint64_t	PrivateVector;			/*  was void *  */
+	uint32_t	AdapterCount;
+	uint32_t	AdapterType;
+	uint32_t	AdapterVectorLength;
+	uint64_t	AdapterVector;			/*  was void *  */
 };
 
 #define	ARCBIOS_SPB_SIGNATURE	0x53435241	/* A R C S */

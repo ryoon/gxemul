@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.82 2004-06-09 08:49:20 debug Exp $
+$Id: HISTORY,v 1.83 2004-06-10 04:23:02 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -510,3 +510,5 @@ HISTORY of mips64emul
 		(the mfhi/mflo delay, and the last_used TLB experimental
 		code); this might cause a tiny speedup.
 20040609	Minor fixes.
+20040610	Various minor SGI fixes (64-bit ARCS stuff, and some other
+		random things).

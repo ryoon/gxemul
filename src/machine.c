@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.235 2004-12-09 16:42:57 debug Exp $
+ *  $Id: machine.c,v 1.236 2004-12-10 04:06:43 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -194,18 +194,6 @@ void add_environment_string(struct cpu *cpu, char *s, uint64_t *addr)
 
 
 /*
- *  store_buf():
- *
- *  memcpy()-like helper function, from host RAM to emulated RAM.
- */
-void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
-{
-	while (len-- != 0)
-		store_byte(cpu, addr++, *s++);
-}
-
-
-/*
  *  store_64bit_word():
  *
  *  Stores a 64-bit word in emulated RAM.  Byte order is taken into account.
@@ -253,6 +241,36 @@ void store_32bit_word(struct cpu *cpu, uint64_t addr, uint64_t data32)
 	}
 	memory_rw(cpu, cpu->mem,
 	    addr, data, sizeof(data), MEM_WRITE, CACHE_DATA);
+}
+
+
+/*
+ *  store_buf():
+ *
+ *  memcpy()-like helper function, from host RAM to emulated RAM.
+ */
+void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len)
+{
+	if ((addr & 7) == 0 && (((size_t)s) & 7) == 0) {
+		while (len >= 8) {
+			memory_rw(cpu, cpu->mem, addr, (unsigned char *)s, 8, MEM_WRITE, CACHE_DATA);
+			addr += 8;
+			s += 8;
+			len -= 8;
+		}
+	}
+
+	if ((addr & 3) == 0 && (((size_t)s) & 3) == 0) {
+		while (len >= 4) {
+			memory_rw(cpu, cpu->mem, addr, (unsigned char *)s, 4, MEM_WRITE, CACHE_DATA);
+			addr += 4;
+			s += 4;
+			len -= 4;
+		}
+	}
+
+	while (len-- != 0)
+		store_byte(cpu, addr++, *s++);
 }
 
 

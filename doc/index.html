@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.79 2004-07-23 14:13:48 debug Exp $
+$Id: index.html,v 1.80 2004-07-30 12:34:12 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -45,17 +45,13 @@ SUCH DAMAGE.
   <li><h3><a href="technical.html">Technical Documentation</a></h3>
 </ul>
 
+
+<hr>
 <p><br>
-<p>
-<table width="100%">
-  <tr><td width="100%" bgcolor="#b0b0b0"><font color="#8f2f2f" size="4">
-	mips64emul User Documentation
-  </font></td></tr>
-</table>
+<h2>mips64emul User Documentation</h2>
 
-
-<p>
-
+<p><br>
+<h3>Contents:</h3>
 
 <ul>
   <li><a href="#overview">Overview</a>
@@ -74,11 +70,13 @@ SUCH DAMAGE.
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
+  <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
   <li><a href="#decrom">Using a PROM image from a DECstation</a>
   <p>
   <li><a href="#feedback">Feedback</a>
 </ul>
+
 
 
 <p><br>
@@ -131,22 +129,19 @@ clauses. Please check individual files if you plan to reuse code from mips64emul
 <h3>Which machines does mips64emul emulate?</h3>
 
 A few different machine types are emulated.
-The machine types that are emulated best are:
+The machine type that is emulated best so far is:
 <ul>
   <li>DECstation/DECsystem machines, made by Digital Equipment Corp.
-  <li>Silicon Graphics MIPS-based machines
 </ul>
 <p>
-At the moment, the only machine type emulated well enough to let an
-operating system be installed onto a disk image is the DECstation.
-<p>
-Some other machine types are also emulated, but are not as close to
-running an entire OS as the machine types above are.
+Some other machine types are also emulated, but the degree to which the 
+emulation works for these is generally not very high.
 <ul>
+  <li>Silicon Graphics MIPS-based machines
   <li>ARC (NEC RISCstation 2250 and 2200, Acer Pica-61, and Deskstation Tyne)
   <li>Cobalt
   <li>Sony Playstation 2
-  <li>Handheld "hpcmips" devices
+  <li>Handheld "hpcmips" devices (almost no support at all yet)
 </ul>
 <p>
 Some more notes about the list above:  The machines above all have 64-bit
@@ -175,7 +170,9 @@ as:
   <li>an inter-processor communication device, for SMP experiments
 </ul>
 This mode is useful if you wish to experiment with software for MIPS-like
-systems, but do not with to target any specific real-world machine type.
+systems, but do not with to target any specific real-world machine type, 
+for example for educational purposes or generic MIPS related experiments.
+
 
 
 <p><br>
@@ -187,15 +184,14 @@ Uncompress the .tar.gz file, and run
 	$ <b>./configure</b>
 	$ <b>make</b>
 </pre>
-This should work on any Unix-like system. If not, please report that as
-a bug to me.  (Specific snapshots of mips64emul might have problems on
-different platforms.)
+This should work on any Unix-like system. (If not, then please mail me a
+bug report.)
 <p>
 The emulator's performance is highly dependant on both runtime settings
 and on compiler settings, so you might want to experiment with different
 CC and CFLAGS environment variable values.
 <p>
-Here's a list of available configure options:
+A number of different configure options are available:
 <pre>
     --caches    enable cache emulation
     --delays    enable instruction latency/delay emulation
@@ -203,19 +199,25 @@ Here's a list of available configure options:
     --nox11     configure without x11 support
 </pre>
 <p>
---caches causes an overall slowdown for R3000, but hopefully not for
-the others yet. Enabling caches does <i>not</i> by itself mean correct
-cache miss penalties and such (you need both --caches and --delays for that)
-but it is needed to fool some operating system kernels (eg Mach/pmax)
-that the cache works like it should.
+--caches enables emulation of caches (R3000 only, so far). This causes an 
+overall slowdown, so don't enable it unless you need it. Enabling caches
+does <i>not</i> by itself mean correct cache miss penalties and such (you
+need both --caches and --delays for that) but it is needed to fool some
+operating system kernels (eg Mach/pmax) that the cache works like it should.
 <p>
 --delays simulates instruction latencies. Memory accesses can have penalties.
-When combined with --caches, cache misses cause penalties as well.
+When combined with --caches, cache misses cause penalties as well. This 
+causes an overall slowdown, so don't enable it unless you need it.
 <p>
---mips16 enables the almost non-existant MIPS16 support.
+--mips16 enables MIPS16 instruction support. This doesn't really work yet, 
+as only very few MIPS16 instructions are translated. This causes an overall
+slowdown, so don't enable it unless you need it.
 <p>
 --nox11 disables X11 support completely. (If the configure script cannot
-compile a small X11 test program, it will be disabled anyway.)
+compile a small X11 test program, it will be disabled anyway.)  This might 
+improve performance slightly, but makes it impossible to run certain 
+things in the emulator.
+
 <p>
 (The possible configure options might differ between different releases and
 snapshots, so this list may be incomplete.)
@@ -1161,6 +1163,47 @@ There is another advantage to using symbolic links for tape filenames:
 every time a tape is rewound, it is reopened using the filename given
 on the command line. By changing what the symbolic name points to,
 you can "switch tapes" without quiting and restarting the emulator.
+
+
+
+<p><br>
+<a name="largeimages"></a>
+<h3>How to extract large gzipped disk images:</h3>
+
+Unix filesystems usually support large files with "holes". Holes are 
+zero-filled blocks that don't actually exist on disk. This is very 
+practical for emulated disk images, as it is possible to create a very 
+large disk image without using up much space at all.
+
+<p>
+Using gzip and gunzip on disk images can be <i>very</i> slow, as these 
+files can be multiple gigabytes large, but this is usually neccessary for
+transfering disk images over the internet. If you receive a gzipped disk 
+image, say disk.img, and run a naive
+<p>
+<pre>
+	$ <b>gunzip disk.img.gz</b>
+</pre>
+<p>
+on it, you will not neccessarily end up with an optimized file unless 
+gunzip supports that. (In my experiments, it doesn't.)  In plain English, 
+if you type <b>ls -l</b> and the filesize is 9 GB, it will actually occupy 
+9 GB of disk space! This is often unacceptable.
+<p>
+Using a simple tool which only writes blocks that are non-zero, a lot of 
+space can be saved. Compile the program cp_removeblocks in the 
+experiments/ directory, and type:
+<p>
+<pre>
+	$ <b>gunzip -c disk.img.gz | ./cp_removeblocks /dev/stdin disk.img</b>
+</pre>
+
+<p>
+This will give you a disk.img which looks like it is 9 GB, and works like
+the real file, but the holes are not written out to the disk. (You can see
+this by running for example <b>du disk.img</b> to see the physical block
+count.)
+
 
 
 <p><br>

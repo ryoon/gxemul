@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.17 2004-07-23 14:13:48 debug Exp $
+$Id: technical.html,v 1.18 2004-07-30 12:34:13 debug Exp $
 
 Copyright (C) 2004 by Anders Gavare.  All rights reserved.
 
@@ -45,24 +45,20 @@ SUCH DAMAGE.
   <li><h3><a href="index.html">User Documentation</a></h3>
   <li><h3>Technical Documentation</h3>
 </ul>
-  
-<p><br>
-<p>
- <table width="100%">
-  <tr><td width="100%" bgcolor="#b0b0b0"><font color="#8f2f2f" size="4">
-	mips64emul Technical Documentation
-  </font></td></tr>
-</table>
 
+<hr>
+<p><br>
+<h2>mips64emul Technical Documentation</h2>
 
 <p>
 This page describes some of the internals of mips64emul. For more general 
 documentation, please read the <a href="index.html">User
 Documentation</a>.
 
-<p>
-<font color="#ff0000">NOTE: This page is under construction.</font>
+<p><br>
+<h3>Contents:</h3>
 
+<p>
 <ul>
   <li><a href="#overview">Overview</a>
   <li><a href="#optimizations">Optimizations</a>
@@ -130,10 +126,6 @@ TODO.
 <a name="net"></a>
 <h3>Networking</h3>
 
-<font color="#ff0000">Networking is experimental stuff, not 
-included in the 0.1.1 release!</font>
-
-<p>
 Running an entire operating system under emulation is very interesting in 
 itself, but for several reasons, running a modern OS without access to 
 TCP/IP networking is a bit akward. Hence, I feel the need to implement TCP/IP 

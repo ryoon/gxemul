@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.57 2004-07-25 23:56:36 debug Exp $
+ *  $Id: main.c,v 1.58 2004-07-30 12:34:14 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -167,7 +167,7 @@ void usage(char *progname)
 	printf("            4=Deskstation Tyne)\n");
 	printf("  -B        try to emulate a Playstation 2 machine (default CPU = R5900)\n");
 #ifdef BINTRANS
-	printf("  -b        enable dynamic binary translation (experimental!)\n");
+	printf("  -b        enable dynamic binary translation (not yet!)\n");
 #endif
 	printf("  -C x      try to emulate a specific CPU. x may be one of the following:\n");
 

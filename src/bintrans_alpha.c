@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.93 2005-01-02 20:25:25 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.94 2005-01-02 23:13:11 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1001,6 +1001,8 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	switch (instruction_type) {
 	case HI6_BEQL:
 	case HI6_BNEL:
+	case HI6_BLEZL:
+	case HI6_BGTZL:
 		likely = 1;
 	}
 
@@ -1051,13 +1053,13 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 		b = a;
 		*a++ = 0xf4200001;	/*  bne  */
 	}
-	if (instruction_type == HI6_BLEZ) {
+	if (instruction_type == HI6_BLEZ || instruction_type == HI6_BLEZL) {
 		/*  cmple rs,0,t0  */
 		*a++ = 0x40001da1 | (alpha_rs << 21);
 		b = a;
 		*a++ = 0xe4200001;	/*  beq  */
 	}
-	if (instruction_type == HI6_BGTZ) {
+	if (instruction_type == HI6_BGTZ || instruction_type == HI6_BGTZL) {
 		/*  cmple rs,0,t0  */
 		*a++ = 0x40001da1 | (alpha_rs << 21);
 		b = a;

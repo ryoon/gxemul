@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.80 2004-11-23 20:08:08 debug Exp $
+ *  $Id: bintrans.c,v 1.81 2004-11-24 04:34:48 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -66,8 +66,7 @@
  *	o)  Theoretical support for multiple target architectures (Alpha,
  *	    i386, sparc, mips :-), ...), but only Alpha implemented so far.
  *
- *	o)  Load/stores are relatively complicated, so they call a function,
- *	    fast_vaddr_to_hostaddr(), which does the lookup.
+ *	o)  Load/stores: TODO: Comment.
  *
  *  Testing:  Running regression tests with and without the binary translator
  *  enabled should obviously result in the exact same results, or something is
@@ -793,24 +792,9 @@ run_it:
  */
 void bintrans_init_cpu(struct cpu *cpu)
 {
-	int i;
-
-	for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-		cpu->bintrans_data_vaddr[i] = 0x1;
-
-	cpu->chunk_base_address = translation_code_chunk_space;
-
+	cpu->chunk_base_address   = translation_code_chunk_space;
 	cpu->bintrans_fast_tlbwri = coproc_tlbwri;
-	cpu->bintrans_fast_tlbpr = coproc_tlbpr;
-
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		cpu->bintrans_fast_vaddr_to_hostaddr =
-		    fast_vaddr_to_hostaddr_r3000;
-		break;
-	default:
-		cpu->bintrans_fast_vaddr_to_hostaddr = fast_vaddr_to_hostaddr;
-	}
+	cpu->bintrans_fast_tlbpr  = coproc_tlbpr;
 }
 
 

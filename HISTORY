@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.324 2004-11-23 13:47:01 debug Exp $
+$Id: HISTORY,v 1.325 2004-11-24 04:34:46 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1174,3 +1174,5 @@ HISTORY of mips64emul
 		replacing it with a mirror device instead. (This results in
 		a tiny increase in performance, and cleaner code.)
 		Various minor updates.
+20041124	Ripping out _all_ bintrans load/store code, because I have
+		a new idea I'd like to try out.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.99 2004-11-23 20:00:55 debug Exp $
+ *  $Id: coproc.c,v 1.100 2004-11-24 04:34:48 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -308,23 +308,6 @@ static void invalidate_translation_caches(struct cpu *cpu,
 	int all, uint64_t vaddr2, int kernelspace)
 {
 	vaddr2 &= ~0x1fff;
-
-all = 1;
-
-#ifdef BINTRANS
-	if (cpu->emul->bintrans_enable) {
-		int i;
-		for (i=0; i<N_BINTRANS_VADDR_TO_HOST; i++)
-			if (all ||
-			    (cpu->bintrans_data_vaddr[i] & ~0x1fff) == vaddr2 ||
-			    (kernelspace && cpu->bintrans_data_vaddr[i] > 0x7fffffff)) {
-				if ((cpu->bintrans_data_vaddr[i] & ~0x3fffffffULL) != 0xffffffff80000000ULL) {
-					cpu->bintrans_data_hostpage[i] = NULL;
-					cpu->bintrans_data_vaddr[i] = 0x1;
-				}
-			}
-	}
-#endif
 
 	if (kernelspace)
 		all = 1;
@@ -1544,29 +1527,6 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 		if (g_bit)
 			cp->tlbs[index].hi |= TLB_G;
 	}
-
-#if 0
-	if (cpu->cpu_type.mmu_model == MMU3K && (cp->reg[COP0_ENTRYLO0] & ENTRYLO_V)) {
-		paddr = cp->reg[COP0_ENTRYLO0] & R2K3K_ENTRYLO_PFN_MASK;
-
-		/*  printf("vaddr %08x, paddr %08x\n", (int)vaddr,(int)paddr);  */
-
-		memblock = memory_paddr_to_hostaddr(cpu->mem, paddr, MEM_READ);
-		if (memblock != NULL) {
-			/*  printf("  memblock %p\n", memblock);  */
-			offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
-			if (cp->reg[COP0_ENTRYLO0] & ENTRYLO_D)
-				bintrans_invalidate(cpu, paddr);
-
-			cpu->bintrans_next_index --;
-			if (cpu->bintrans_next_index < 0)
-				cpu->bintrans_next_index = N_BINTRANS_VADDR_TO_HOST_R3000 - 1;
-			cpu->bintrans_data_hostpage[cpu->bintrans_next_index] = memblock + (offset & ~0xfff);
-			cpu->bintrans_data_vaddr[cpu->bintrans_next_index] = vaddr;
-			cpu->bintrans_data_writable[cpu->bintrans_next_index] = cp->reg[COP0_ENTRYLO0] & ENTRYLO_D? 1 : 0;
-		}
-	}
-#endif
 
 	if (randomflag) {
 		if (cpu->cpu_type.exc_model == EXC3K) {

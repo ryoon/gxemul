@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.55 2004-11-23 20:08:08 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.56 2004-11-24 04:34:48 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1201,8 +1201,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a, *cacheskip, *loadjmp = NULL, *memload, *manualskip = NULL;
-	unsigned char *fail;
+	unsigned char *a, *fail;
 	int ofs, alignment, load=0;
 
 	/*  TODO: Not yet:  */
@@ -1224,6 +1223,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		if (rt == 0)
 			return 0;
 	}
+
+
+return 0;
+
 
 	bintrans_write_pc_inc(addrp, sizeof(uint32_t), 0, 1);
 
@@ -1281,151 +1284,12 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*fail = ((size_t)a - (size_t)fail - 4) / 4;
 	}
 
-	/*
-	 *  Quick cache:
-	 *
-	 *  If this is a load, and it is on the same virtual page as the last
-	 *  load/store, then we don't have to call the lookup function.
-	 *
-	 *  If (a1 & ~0xfff) == t7, then host address = t8 + (a1 & 0xfff).
-	 *
-	 *  00 f0 7f 20     lda     t2,-4096
-	 *  02 00 23 46     and     a1,t2,t1
-	 *  a4 05 48 40     cmpeq   t1,t7,t3
-	 *  00 00 80 e4     beq     t3,28 <skip>
-	 */
-	*a++ = 0x00; *a++ = 0xf0; *a++ = 0x7f; *a++ = 0x20;
-	*a++ = 0x02; *a++ = 0x00; *a++ = 0x23; *a++ = 0x46;
-	*a++ = 0xa4; *a++ = 0x05; *a++ = 0x48; *a++ = 0x40;
-	cacheskip = a;
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x80; *a++ = 0xe4;
-
-	if (!load) {
-		/*
-		 *  If the cached writeflag was zero, then we can't store
-		 *  without manual lookup.
-		 *  00 00 e0 e6     beq     t9,manual
-		 */
-		manualskip = a;
-		*a++ = 0x00; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xe6;
-	}
-
-	/*
-	 *  Calculate host address:
-	 *
-	 *  ff 0f bf 20     lda     t4,4095
-	 *  01 00 25 46     and     a1,t4,t0
-	 *  04 04 c1 42     addq    t8,t0,t3
-	 */
-	*a++ = 0xff; *a++ = 0x0f; *a++ = 0xbf; *a++ = 0x20;
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x25; *a++ = 0x46;
-	*a++ = 0x04; *a++ = 0x04; *a++ = 0xc1; *a++ = 0x42;
-	loadjmp = a;
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;	/*  br load  */
-
-	*cacheskip = ((size_t)a - (size_t)cacheskip - 4) / 4;
-
-	if (manualskip != NULL)
-		*manualskip = ((size_t)a - (size_t)manualskip - 4) / 4;
-
-	/*
-	 *  Do manual lookup:
-	 */
-
-	/*  Save pc and delay_slot:  */
-	*a++ = ofs_pc&255; *a++ = ofs_pc>>8; *a++ = 0xd0; *a++ = 0xb4;	/*  stq     t5,"pc"(a0)  */
-	*a++ = ofs_ds&255; *a++ = ofs_ds>>8; *a++ = 0x30; *a++ = 0xb1;	/*  stl     s0,"delay_slot"(a0)  */
-	*a++ = ofs_ja&255; *a++ = ofs_ja>>8; *a++ = 0x50; *a++ = 0xb5;	/*  stq     s1,"jmpaddr"(a0)  */
-
-	/*  Save a0 and the old return address on the stack:  */
-	*a++ = 0x80; *a++ = 0xff; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,-128(sp)  */
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x5e; *a++ = 0xb7;	/*  stq ra,0(sp)  */
-	*a++ = 0x08; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xb6;	/*  stq a0,8(sp)  */
-
-	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xb0;	/*  stl t6,24(sp)  */
-	*a++ = 0x20; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xb7;	/*  stq t10,32(sp)  */
-	*a++ = 0x28; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xb7;	/*  stq t11,40(sp)  */
-	*a++ = 0x30; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xb6;	/*  stq a1,48(sp)  */
-
-	/*
-	 *  args are:
-	 *	a0: struct cpu *cpu
-	 *	a1: uint64_t vaddr
-	 *	a2: int writeflag
-	 *	a3: unsigned char *data
-	 *	a4: int len
-	 */
-	*a++ = load? 0 : 1; *a++ = 0x00; *a++ = 0x5f; *a++ = 0x22;	/*  lda a2,writeflag  */
-	*a++ = 0x40; *a++ = 0x00; *a++ = 0x7e; *a++ = 0x22;		/*  lda a3,64(sp)  */
-	*a++ = alignment+1; *a++ = 0x00; *a++ = 0x9f; *a++ = 0x22;	/*  lda a4,len  */
-
-	if (!load) {
-		bintrans_move_MIPS_reg_into_Alpha_reg(&a, rt, ALPHA_T0);
-		*a++ = 0x40; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xb4;	/*  stq t0,64(sp)  */
-	}
-
-	/*  NOTE: t7,t8,t9 do NOT have to be saved, as they are overwritten
-	    after we've returned from bintrans_fast_vaddr_to_hostaddr anyway  */
-
-	ofs = ((size_t)&dummy_cpu.bintrans_fast_vaddr_to_hostaddr) - (size_t)&dummy_cpu;
-	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x70; *a++ = 0xa7;	/*  ldq t12,0(a0)  */
-
-	/*  Call bintrans_fast_vaddr_to_hostaddr:  */
-	*a++ = 0x00; *a++ = 0x40; *a++ = 0x5b; *a++ = 0x6b;	/*  jsr ra,(t12),<after>  */
-
-	/*  Restore the old return address and a0 from the stack:  */
-	*a++ = 0x00; *a++ = 0x00; *a++ = 0x5e; *a++ = 0xa7;	/*  ldq ra,0(sp)  */
-	*a++ = 0x08; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xa6;	/*  ldq a0,8(sp)  */
-
-	*a++ = 0x18; *a++ = 0x00; *a++ = 0xfe; *a++ = 0xa0;	/*  ldl t6,24(sp)  */
-	*a++ = 0x20; *a++ = 0x00; *a++ = 0x1e; *a++ = 0xa7;	/*  ldq t10,32(sp)  */
-	*a++ = 0x28; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xa7;	/*  ldq t11,40(sp)  */
-	*a++ = 0x30; *a++ = 0x00; *a++ = 0x3e; *a++ = 0xa6;	/*  ldq a1,48(sp)  */
-
-	*a++ = 0x80; *a++ = 0x00; *a++ = 0xde; *a++ = 0x23;	/*  lda sp,128(sp)  */
-
-	/*  Load back pc and delay_slot:  */
-	*a++ = ofs_pc&255; *a++ = ofs_pc>>8; *a++ = 0xd0; *a++ = 0xa4;	/*  ldq     t5,"pc"(a0)  */
-	*a++ = ofs_ds&255; *a++ = ofs_ds>>8; *a++ = 0x30; *a++ = 0xa1;	/*  ldl     s0,"delay_slot"(a0)  */
-	*a++ = ofs_ja&255; *a++ = ofs_ja>>8; *a++ = 0x50; *a++ = 0xa5;	/*  ldq     s1,"jmpaddr"(a0)  */
-
-	/*  If the result was NULL, then return (abort):  */
-	fail = a;
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;	/*  bne v0,<continue>  */
-	bintrans_write_chunkreturn_fail(&a);
-	*fail = ((size_t)a - (size_t)fail - 4) /4;
-
-	/*  The rest of this code was written with t3 as the index, not v0:  */
-	*a++ = 0x04; *a++ = 0x04; *a++ = 0x1f; *a++ = 0x40;	/*  addq v0,zero,t3  */
-
-	/*  If the result was -1, then abort, but do not fail.
-	    This happens if there was an exception.  */
-	*a++ = 0; *a++ = 0x34; *a++ = 0; *a++ = 0x40;  /*  addq v0,0x1,v0  */
-	fail = a;
-	*a++ = 0x01; *a++ = 0x00; *a++ = 0x00; *a++ = 0xf4;	/*  bne v0,<continue>  */
-	bintrans_write_chunkreturn(&a);
-	*fail = ((size_t)a - (size_t)fail - 4) /4;
 
 
-	/*
-	 *  Remember this load/store:
-	 *
-	 *  t3 is the host address (page + offset). a1 is the virtual address.
-	 *
-	 *  ff 0f 7f 20     lda     t2,4095
-	 *  02 00 23 46     and     a1,t2,t1		t1 = offset
-	 *  36 05 82 40     subq    t3,t1,t8		t8(physical page) = hostaddr - offset
-	 *  28 05 22 42     subq    a1,t1,t7		t7(virtual page) = virtualaddr - offset
-	 *  01 00 ff 22     lda     t9,1		t9 = writeflag
-	 */
-	*a++ = 0xff; *a++ = 0x0f; *a++ = 0x7f; *a++ = 0x20;
-	*a++ = 0x02; *a++ = 0x00; *a++ = 0x23; *a++ = 0x46;
-	*a++ = 0x36; *a++ = 0x05; *a++ = 0x82; *a++ = 0x40;
-	*a++ = 0x28; *a++ = 0x05; *a++ = 0x22; *a++ = 0x42;
-	*a++ = load? 0 : 1; *a++ = 0x00; *a++ = 0xff; *a++ = 0x22;
 
-	if (loadjmp != NULL)
-		*loadjmp = ((size_t)a - (size_t)loadjmp - 4) / 4;
+bintrans_write_chunkreturn_fail(&a);
+
+
 
 	switch (instruction_type) {
 	case HI6_LQ_MDMX:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.109 2004-11-23 20:23:04 debug Exp $
+ *  $Id: memory.c,v 1.110 2004-11-24 04:34:48 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1026,16 +1026,6 @@ exception:
 }
 
 
-#ifdef BINTRANS
-#define FAST_VADDR_TO_HOSTADDR fast_vaddr_to_hostaddr
-#include "memory_fast_tlb.c"
-#undef FAST_VADDR_TO_HOSTADDR
-#define FAST_VADDR_TO_HOSTADDR fast_vaddr_to_hostaddr_r3000
-#define FAST_VADDR_R3000
-#include "memory_fast_tlb.c"
-#endif
-
-
 /*
  *  memory_rw():
  *
@@ -1440,13 +1430,20 @@ void memory_device_bintrans_access(struct cpu *cpu, struct memory *mem, void *ex
 
 			/*  Invalidate any pages of this device that might
 			    be in the bintrans load/store cache:  */
+
+			/*  TODO  */
+/* Rewrite using the new system  */
+#if 0
 			for (j=0; j<N_BINTRANS_VADDR_TO_HOST; j++) {
 				size_t r;
 				r = (size_t)mem->dev_bintrans_data[i];
+
 				r = (size_t)cpu->bintrans_data_hostpage[j] - r;
 				if (r < mem->dev_length[i])
 					cpu->bintrans_data_hostpage[j] = NULL;
+
 			}
+#endif
 
 			return;
 		}

@@ -252,3 +252,6 @@ HISTORY of mips64emul
 		to work.
 20031124	Raw binaries can now be loaded into memory.
 20031204	Adding srec binary support.
+20031220	Adding some super-ugly arcbios emulation code.
+		Making some progress on the SGI and ARC machine
+		emulations.

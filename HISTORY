@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.173 2004-07-21 03:05:59 debug Exp $
+$Id: HISTORY,v 1.174 2004-07-23 14:16:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -831,3 +831,4 @@ HISTORY of mips64emul
 		Adding a my_fseek() function, which works like fseek() but
 		with off_t instead of long, so that large disk images can
 		be used on systems where long is 32 bits.
+20040722	Trying to fix some more TCP related bugs.

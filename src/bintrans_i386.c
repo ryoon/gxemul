@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.39 2004-12-07 10:34:38 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.40 2004-12-07 11:46:57 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *  See bintrans.c for more information.  Included from bintrans.c.
@@ -31,6 +31,7 @@
  *  Translated code uses the following conventions at all time:
  *
  *	esi		points to the cpu struct
+ *	edi		lowest 32 bits of cpu->pc
  *	ebp		contains cpu->bintrans_instructions_executed
  */
 
@@ -52,9 +53,10 @@ static void bintrans_host_cacheinvalidate(unsigned char *p, size_t len)
 
 
 #define ofs_i	(((size_t)&dummy_cpu.bintrans_instructions_executed) - ((size_t)&dummy_cpu))
+#define ofs_pc	(((size_t)&dummy_cpu.pc) - ((size_t)&dummy_cpu))
 
 
-unsigned char bintrans_i386_runchunk[29] = {
+unsigned char bintrans_i386_runchunk[41] = {
 	0x57,					/*  push   %edi  */
 	0x56,					/*  push   %esi  */
 	0x55,					/*  push   %ebp  */
@@ -68,13 +70,18 @@ unsigned char bintrans_i386_runchunk[29] = {
 	/*  0=ebx, 4=ebp, 8=esi, 0xc=edi, 0x10=retaddr, 0x14=arg0, 0x18=arg1  */
 
 	0x8b, 0x74, 0x24, 0x14,			/*  mov    0x8(%esp,1),%esi  */
+
 	0x8b, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
 						/*  mov    nr_instr(%esi),%ebp  */
+	0x8b, 0xbe, ofs_pc&255, (ofs_pc>>8)&255, (ofs_pc>>16)&255, (ofs_pc>>24)&255,
+						/*  mov    pc(%esi),%edi  */
 
 	0xff, 0x54, 0x24, 0x18,			/*  call   *0x18(%esp,1)  */
 
 	0x89, 0xae, ofs_i&255, (ofs_i>>8)&255, (ofs_i>>16)&255, (ofs_i>>24)&255,
 						/*  mov    %ebp,0x1234(%esi)  */
+	0x89, 0xbe, ofs_pc&255, (ofs_pc>>8)&255, (ofs_pc>>16)&255, (ofs_pc>>24)&255,
+						/*  mov    %edi,pc(%esi)  */
 
 	0x5b,					/*  pop    %ebx  */
 	0x5d,					/*  pop    %ebp  */
@@ -153,18 +160,12 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 	unsigned char *a = *addrp;
 	int ofs;
 
-	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
-
-	/*  83 86 xx xx xx xx yy    addl   $yy,xx(%esi)  */
-	*a++ = 0x83; *a++ = 0x86;
-	*a++ = ofs & 255;
-	*a++ = (ofs >> 8) & 255;
-	*a++ = (ofs >> 16) & 255;
-	*a++ = (ofs >> 24) & 255;
-	*a++ = 4;
+	/*  83 c7 04                add    $0x4,%edi  */
+	*a++ = 0x83; *a++ = 0xc7; *a++ = 4;
 
 	if (!bintrans_32bit_only) {
 		/*  83 96 zz zz zz zz 00    adcl   $0x0,zz(%esi)  */
+		ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
 		ofs += 4;
 		*a++ = 0x83; *a++ = 0x96;
 		*a++ = ofs & 255;
@@ -176,6 +177,53 @@ static void bintrans_write_pc_inc(unsigned char **addrp)
 
 	/*  45   inc %ebp  */
 	*a++ = 0x45;
+
+	*addrp = a;
+}
+
+
+/*
+ *  load_pc_into_eax_edx():
+ */
+static void load_pc_into_eax_edx(unsigned char **addrp)
+{
+	unsigned char *a;
+	a = *addrp;
+
+	/*  89 f8                   mov    %edi,%eax  */
+	*a++ = 0x89; *a++ = 0xf8;
+
+	if (bintrans_32bit_only) {
+		/*  99                      cltd   */
+		*a++ = 0x99;
+	} else {
+		int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+		/*  8b 96 3c 30 00 00       mov    0x303c(%esi),%edx  */
+		ofs += 4;
+		*a++ = 0x8b; *a++ = 0x96;
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+	}
+
+	*addrp = a;
+}
+
+
+/*
+ *  store_eax_edx_into_pc():
+ */
+static void store_eax_edx_into_pc(unsigned char **addrp)
+{
+	unsigned char *a;
+	int ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	a = *addrp;
+
+	/*  89 c7                   mov    %eax,%edi  */
+	*a++ = 0x89; *a++ = 0xc7;
+
+	/*  89 96 3c 30 00 00       mov    %edx,0x303c(%esi)  */
+	ofs += 4;
+	*a++ = 0x89; *a++ = 0x96;
+	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
 	*addrp = a;
 }
@@ -334,11 +382,11 @@ static int bintrans_write_instruction__jr(unsigned char **addrp, int rs, int rd,
 		/*  gpr[rd] = retaddr    (pc + 8)  */
 
 		if (bintrans_32bit_only) {
-			load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.pc);
+			load_pc_into_eax_edx(&a);
 			/*  83 c0 08                add    $0x8,%eax  */
 			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
 		} else {
-			load_into_eax_edx(&a, &dummy_cpu.pc);
+			load_pc_into_eax_edx(&a);
 			/*  83 c0 08                add    $0x8,%eax  */
 			/*  83 d2 00                adc    $0x0,%edx  */
 			*a++ = 0x83; *a++ = 0xc0; *a++ = 0x08;
@@ -590,10 +638,7 @@ static int bintrans_write_instruction__jal(unsigned char **addrp, int imm, int l
 
 	a = *addrp;
 
-	if (bintrans_32bit_only)
-		load_into_eax_and_sign_extend_into_edx(&a, &dummy_cpu.pc);
-	else
-		load_into_eax_edx(&a, &dummy_cpu.pc);
+	load_pc_into_eax_edx(&a);
 
 	if (link) {
 		/*  gpr[31] = pc + 8  */
@@ -928,6 +973,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 
 	case SPECIAL_MULT:
 	case SPECIAL_MULTU:
+		/*  57    push %edi  */
+		*a++ = 0x57;
 		if (instruction_type == SPECIAL_MULT) {
 			/*  f7 eb                   imul   %ebx  */
 			*a++ = 0xf7; *a++ = 0xeb;
@@ -948,6 +995,8 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		*a++ = 0x99;
 		/*  here: edx:eax = sign-extended hi  */
 		store_eax_edx(&a, &dummy_cpu.hi);
+		/*  5f    pop %edi  */
+		*a++ = 0x5f;
 		do_store = 0;
 		break;
 #if 0
@@ -1298,7 +1347,7 @@ static int bintrans_write_instruction__branch(unsigned char **addrp,
 	*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 	*a++ = TO_BE_DELAYED; *a++ = 0; *a++ = 0; *a++ = 0;
 
-	load_into_eax_edx(&a, &dummy_cpu.pc);
+	load_pc_into_eax_edx(&a);
 
 	/*  05 78 56 34 12          add    $0x12345678,%eax  */
 	/*  83 d2 00                adc    $0x0,%edx  */
@@ -1364,13 +1413,13 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 	*a++ = 0; *a++ = 0; *a++ = 0; *a++ = 0;
 
 	/*  REMEMBER old pc:  */
-	load_into_eax_edx(&a, &dummy_cpu.pc);
+	load_pc_into_eax_edx(&a);
 	/*  89 c3                   mov    %eax,%ebx  */
 	/*  89 d1                   mov    %edx,%ecx  */
 	*a++ = 0x89; *a++ = 0xc3;
 	*a++ = 0x89; *a++ = 0xd1;
 	load_into_eax_edx(&a, &dummy_cpu.delay_jmpaddr);
-	store_eax_edx(&a, &dummy_cpu.pc);
+	store_eax_edx_into_pc(&a);
 
 try_chunk_p:
 
@@ -1401,9 +1450,16 @@ try_chunk_p:
 		*a++ = 0x83; *a++ = 0xeb; *a++ = 0x04;
 		*a++ = 0x83; *a++ = 0xd9; *a++ = 0x00;
 
+		/*  39 d1                   cmp    %edx,%ecx  */
+		/*  74 01                   je     1b9 <ok2>  */
+		/*  c3                      ret    */
+		*a++ = 0x39; *a++ = 0xd1;
+		*a++ = 0x74; *a++ = 0x01;
+		*a++ = 0xc3;
+
 		/*  Remember new pc:  */
-		/*  89 c7                   mov    %eax,%edi  */
-		*a++ = 0x89; *a++ = 0xc7;
+		/*  89 c1                   mov    %eax,%ecx  */
+		*a++ = 0x89; *a++ = 0xc1;
 
 		/*  81 e3 00 f0 ff ff       and    $0xfffff000,%ebx  */
 		/*  25 00 f0 ff ff          and    $0xfffff000,%eax  */
@@ -1413,22 +1469,16 @@ try_chunk_p:
 		/*  39 c3                   cmp    %eax,%ebx  */
 		/*  74 01                   je     <ok1>  */
 		/*  c3                      ret    */
-		/*  39 d1                   cmp    %edx,%ecx  */
-		/*  74 01                   je     1b9 <ok2>  */
-		/*  c3                      ret    */
 		*a++ = 0x39; *a++ = 0xc3;
 		*a++ = 0x74; *a++ = 0x01;
 		*a++ = 0xc3;
-		*a++ = 0x39; *a++ = 0xd1;
-		*a++ = 0x74; *a++ = 0x01;
-		*a++ = 0xc3;
 
-		/*  81 e7 ff 0f 00 00       and    $0xfff,%edi  */
-		*a++ = 0x81; *a++ = 0xe7; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
+		/*  81 e1 ff 0f 00 00       and    $0xfff,%ecx  */
+		*a++ = 0x81; *a++ = 0xe1; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
-		/*  8b 87 78 56 34 12       mov    0x12345678(%edi),%eax  */
+		/*  8b 81 78 56 34 12       mov    0x12345678(%ecx),%eax  */
 		ofs = (size_t)chunks;
-		*a++ = 0x8b; *a++ = 0x87; *a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+		*a++ = 0x8b; *a++ = 0x81; *a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
 		/*  83 f8 00                cmp    $0x0,%eax  */
 		/*  75 01                   jne    1cd <okjump>  */
@@ -1644,20 +1694,20 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 		/*
-		 *  edi = vaddr_to_hostaddr_table0
+		 *  ecx = vaddr_to_hostaddr_table0
 		 *
-		 *  8b be 34 12 00 00       mov    0x1234(%esi),%edi
+		 *  8b 8e 34 12 00 00       mov    0x1234(%esi),%ecx
 		 */
 		ofs = ((size_t)&dummy_cpu.vaddr_to_hostaddr_table0) - (size_t)&dummy_cpu;
-		*a++ = 0x8b; *a++ = 0xbe;
+		*a++ = 0x8b; *a++ = 0x8e;
 		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
 
 		/*
 		 *  ecx = vaddr_to_hostaddr_table0[a]
 		 *
-		 *  8b 0c 1f                mov    (%edi,%ebx,1),%ecx
+		 *  8b 0c 19                mov    (%ecx,%ebx),%ecx
 		 */
-		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x1f;
+		*a++ = 0x8b; *a++ = 0x0c; *a++ = 0x19;
 
 		/*
 		 *  ebx = ((vaddr >> 12) & 1023) * sizeof(void *)
@@ -1671,19 +1721,19 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x81; *a++ = 0xe3; *a++ = 0xfc; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 		/*
-		 *  edi = vaddr_to_hostaddr_table0[a][b]
+		 *  ecx = vaddr_to_hostaddr_table0[a][b]
 		 *
-		 *  8b 3c 19                mov    (%ecx,%ebx,1),%edi
+		 *  8b 0c 19                mov    (%ecx,%ebx,1),%ecx
 		 */
-		*a++ = 0x8b; *a++ = 0x3c;  *a++ = 0x19;
+		*a++ = 0x8b; *a++ = 0x0c;  *a++ = 0x19;
 
 		/*
-		 *  edi = NULL? Then return with failure.
+		 *  ecx = NULL? Then return with failure.
 		 *
-		 *  83 ff 00                cmp    $0x0,%edi
+		 *  83 f9 00                cmp    $0x0,%ecx
 		 *  75 01                   jne    <okzzz>
 		 */
-		*a++ = 0x83; *a++ = 0xff; *a++ = 0x00;
+		*a++ = 0x83; *a++ = 0xf9; *a++ = 0x00;
 		*a++ = 0x75; retfail = a; *a++ = 0x00;
 		bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;
@@ -1693,10 +1743,10 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		 */
 		if (!load) {
 			/*
-			 *  f7 c7 01 00 00 00       test   $0x1,%edi
+			 *  f7 c1 01 00 00 00       test   $0x1,%ecx
 			 *  75 01                   jne    <ok>
 			 */
-			*a++ = 0xf7; *a++ = 0xc7; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
+			*a++ = 0xf7; *a++ = 0xc1; *a++ = 1; *a++ = 0; *a++ = 0; *a++ = 0;
 			*a++ = 0x75; retfail = a; *a++ = 0x00;
 			bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
 			*retfail = (size_t)a - (size_t)retfail - 1;
@@ -1710,13 +1760,13 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		*a++ = 0x25; *a++ = 0xff; *a++ = 0x0f; *a++ = 0; *a++ = 0;
 
 		/*
-		 *  edi = host address   ( = host page + offset)
+		 *  ecx = host address   ( = host page + offset)
 		 *
-		 *  83 e7 fe                and    $0xfffffffe,%edi	clear the lowest bit
-		 *  01 c7                   add    %eax,%edi
+		 *  83 e1 fe                and    $0xfffffffe,%ecx	clear the lowest bit
+		 *  01 c1                   add    %eax,%ecx
 		 */
-		*a++ = 0x83; *a++ = 0xe7; *a++ = 0xfe;
-		*a++ = 0x01; *a++ = 0xc7;
+		*a++ = 0x83; *a++ = 0xe1; *a++ = 0xfe;
+		*a++ = 0x01; *a++ = 0xc1;
 
 	} else {
 		/*  64-bit generic case:  */
@@ -1750,8 +1800,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 		bintrans_write_chunkreturn_fail(&a);            /*  ret (and fail)  */
 		*retfail = (size_t)a - (size_t)retfail - 1;  
 
-		/*  89 c7                   mov    %eax,%edi  */
-		*a++ = 0x89; *a++ = 0xc7;
+		/*  89 c1                   mov    %eax,%ecx  */
+		*a++ = 0x89; *a++ = 0xc1;
 	}
 
 
@@ -1760,75 +1810,75 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	switch (instruction_type) {
 	case HI6_LD:
-		/*  8b 07                   mov    (%edi),%eax  */
-		/*  8b 57 04                mov    0x4(%edi),%edx  */
-		*a++ = 0x8b; *a++ = 0x07;
-		*a++ = 0x8b; *a++ = 0x57; *a++ = 0x04;
+		/*  8b 01                   mov    (%ecx),%eax  */
+		/*  8b 51 04                mov    0x4(%ecx),%edx  */
+		*a++ = 0x8b; *a++ = 0x01;
+		*a++ = 0x8b; *a++ = 0x51; *a++ = 0x04;
 		break;
 	case HI6_LWU:
-		/*  8b 07                   mov    (%edi),%eax  */
+		/*  8b 01                   mov    (%ecx),%eax  */
 		/*  31 d2                   xor    %edx,%edx  */
-		*a++ = 0x8b; *a++ = 0x07;
+		*a++ = 0x8b; *a++ = 0x01;
 		*a++ = 0x31; *a++ = 0xd2;
 		break;
 	case HI6_LW:
-		/*  8b 07                   mov    (%edi),%eax  */
+		/*  8b 01                   mov    (%ecx),%eax  */
 		/*  99                      cltd   */
-		*a++ = 0x8b; *a++ = 0x07;
+		*a++ = 0x8b; *a++ = 0x01;
 		*a++ = 0x99;
 		break;
 	case HI6_LHU:
 		/*  31 c0                   xor    %eax,%eax  */
-		/*  66 8b 07                mov    (%edi),%ax  */
+		/*  66 8b 01                mov    (%ecx),%ax  */
 		/*  99                      cltd   */
 		*a++ = 0x31; *a++ = 0xc0;
-		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x07;
+		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x01;
 		*a++ = 0x99;
 		break;
 	case HI6_LH:
-		/*  66 8b 07                mov    (%edi),%ax  */
+		/*  66 8b 01                mov    (%ecx),%ax  */
 		/*  98                      cwtl   */
 		/*  99                      cltd   */
-		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x07;
+		*a++ = 0x66; *a++ = 0x8b; *a++ = 0x01;
 		*a++ = 0x98;
 		*a++ = 0x99;
 		break;
 	case HI6_LBU:
 		/*  31 c0                   xor    %eax,%eax  */
-		/*  8a 07                   mov    (%edi),%al  */
+		/*  8a 01                   mov    (%ecx),%al  */
 		/*  99                      cltd   */
 		*a++ = 0x31; *a++ = 0xc0;
-		*a++ = 0x8a; *a++ = 0x07;
+		*a++ = 0x8a; *a++ = 0x01;
 		*a++ = 0x99;
 		break;
 	case HI6_LB:
-		/*  8a 07                   mov    (%edi),%al  */
+		/*  8a 01                   mov    (%ecx),%al  */
 		/*  66 98                   cbtw   */
 		/*  98                      cwtl   */
 		/*  99                      cltd   */
-		*a++ = 0x8a; *a++ = 0x07;
+		*a++ = 0x8a; *a++ = 0x01;
 		*a++ = 0x66; *a++ = 0x98;
 		*a++ = 0x98;
 		*a++ = 0x99;
 		break;
 
 	case HI6_SD:
-		/*  89 07                   mov    %eax,(%edi)  */
-		/*  89 57 04                mov    %edx,0x4(%edi)  */
-		*a++ = 0x89; *a++ = 0x07;
-		*a++ = 0x89; *a++ = 0x57; *a++ = 0x04;
+		/*  89 01                   mov    %eax,(%ecx)  */
+		/*  89 51 04                mov    %edx,0x4(%ecx)  */
+		*a++ = 0x89; *a++ = 0x01;
+		*a++ = 0x89; *a++ = 0x51; *a++ = 0x04;
 		break;
 	case HI6_SW:
-		/*  89 07                   mov    %eax,(%edi)  */
-		*a++ = 0x89; *a++ = 0x07;
+		/*  89 01                   mov    %eax,(%ecx)  */
+		*a++ = 0x89; *a++ = 0x01;
 		break;
 	case HI6_SH:
-		/*  66 89 07                mov    %ax,(%edi)  */
-		*a++ = 0x66; *a++ = 0x89; *a++ = 0x07;
+		/*  66 89 01                mov    %ax,(%ecx)  */
+		*a++ = 0x66; *a++ = 0x89; *a++ = 0x01;
 		break;
 	case HI6_SB:
-		/*  88 07                   mov    %al,(%edi)  */
-		*a++ = 0x88; *a++ = 0x07;
+		/*  88 01                   mov    %al,(%ecx)  */
+		*a++ = 0x88; *a++ = 0x01;
 		break;
 	default:
 		;
@@ -1851,6 +1901,11 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 {
 	unsigned char *a;
 	int ofs = 0;	/*  avoid a compiler warning  */
+
+/*  TODO: ERET modifies the PC register  */
+if (itype == TLB_ERET)
+        return 0;
+
 
 	switch (itype) {
 	case TLB_TLBP:

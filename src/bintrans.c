@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.103 2004-12-07 10:34:38 debug Exp $
+ *  $Id: bintrans.c,v 1.104 2004-12-07 11:46:57 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -771,10 +771,6 @@ run_it:
 	/*  printf("AFTER:  pc=%016llx r31=%016llx\n",
 	    (long long)cpu->pc, (long long)cpu->gpr[31]);  */
 
-	if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
-	    cpu->emul->prom_emulation)
-		return cpu->bintrans_instructions_executed;
-
 	if (!cpu->delay_slot && !cpu->nullify_next &&
 	    cpu->bintrans_instructions_executed < N_SAFE_BINTRANS_LIMIT
 	    && (cpu->pc & 3) == 0
@@ -839,6 +835,9 @@ run_it:
 
 #if 1
 			/*  We have no translation.  */
+			if ((cpu->pc & 0xfff00000) == 0xbfc00000 &&
+			    cpu->emul->prom_emulation)
+				return cpu->bintrans_instructions_executed;
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.7 2005-01-23 13:43:05 debug Exp $
+ *  $Id: machine.h,v 1.8 2005-01-26 13:01:13 debug Exp $
  */
 
 #include <sys/time.h>
@@ -248,7 +248,8 @@ void store_32bit_word_in_host(struct cpu *cpu, unsigned char *data,
 	uint64_t data32);
 uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr);
 void store_buf(struct cpu *cpu, uint64_t addr, char *s, size_t len);
-void machine_init(struct machine *machine);
+void machine_init(struct machine *);
+void machine_memsize_fix(struct machine *);
 void machine_dumpinfo(struct machine *);
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.297 2005-01-26 08:57:28 debug Exp $
+ *  $Id: machine.c,v 1.298 2005-01-26 13:01:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -137,6 +137,8 @@ struct machine *machine_new(char *name, struct emul *emul)
 	m->n_gfx_cards = 1;
 	m->dbe_on_nonexistant_memaccess = 1;
 	m->show_symbolic_register_names = 1;
+
+	symbol_init(&m->symbol_context);
 
 	return m;
 }
@@ -3789,6 +3791,96 @@ for (i=0; i<32; i++)
 
 
 /*
+ *  machine_memsize_fix():
+ *
+ *  Sets physical_ram_in_mb (if not already set), and memory_offset_in_mb,
+ *  depending on machine type.
+ */
+void machine_memsize_fix(struct machine *m)
+{
+	if (m == NULL) {
+		fatal("machine_defaultmemsize(): m == NULL?\n");
+		exit(1);
+	}
+
+	if (m->physical_ram_in_mb == 0) {
+		switch (m->machine_type) {
+		case MACHINE_PS2:
+			m->physical_ram_in_mb = 32;
+			break;
+		case MACHINE_SGI:
+			m->physical_ram_in_mb = 64;
+			break;
+		case MACHINE_HPCMIPS:
+			switch (m->machine_subtype) {
+			case MACHINE_HPCMIPS_CASIO_BE300:
+				m->physical_ram_in_mb = 16;
+				break;
+			case MACHINE_HPCMIPS_CASIO_E105:
+				m->physical_ram_in_mb = 32;
+				break;
+			}
+			break;
+		case MACHINE_MESHCUBE:
+			m->physical_ram_in_mb = 64;
+			break;
+		case MACHINE_NETGEAR:
+			m->physical_ram_in_mb = 16;
+			break;
+		case MACHINE_WRT54G:
+			m->physical_ram_in_mb = 32;
+			break;
+		case MACHINE_ARC:
+			switch (m->machine_subtype) {
+			case MACHINE_ARC_JAZZ_PICA:
+				m->physical_ram_in_mb = 64;
+				break;
+			case MACHINE_ARC_JAZZ_M700:
+				m->physical_ram_in_mb = 64;
+				break;
+			default:
+				m->physical_ram_in_mb = 32;
+			}
+			break;
+		case MACHINE_DEC:
+			switch (m->machine_subtype) {
+			case MACHINE_DEC_PMAX_3100:
+				m->physical_ram_in_mb = 24;
+				break;
+			default:
+				m->physical_ram_in_mb = 32;
+			}
+			break;
+		}
+	}
+
+	/*  Special hack for WRT54G:  */
+	if (m->machine_type == MACHINE_WRT54G) {
+		m->dbe_on_nonexistant_memaccess = 0;
+	}
+
+	/*  Special SGI memory offsets:  */
+	if (m->machine_type == MACHINE_SGI) {
+		switch (m->machine_subtype) {
+		case 20:
+		case 22:
+		case 24:
+		case 26:
+			m->memory_offset_in_mb = 128;
+			break;
+		case 28:
+		case 30:
+			m->memory_offset_in_mb = 512;
+			break;
+		}
+	}
+
+	if (m->physical_ram_in_mb == 0)
+		m->physical_ram_in_mb = DEFAULT_RAM_IN_MB;
+}
+
+
+/*
  *  machine_dumpinfo():
  *
  *  Dumps info about a machine in some kind of readable format. (Used by
@@ -3837,5 +3929,4 @@ void machine_dumpinfo(struct machine *m)
 
 	diskimage_dump_info(m);
 }
-
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.134 2005-01-26 10:39:22 debug Exp $
+ *  $Id: emul.c,v 1.135 2005-01-26 13:01:14 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -410,16 +410,23 @@ static void add_arc_components(struct machine *m)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-static void emul_machine_setup(struct emul *emul, int machine_nr)
+void emul_machine_setup(struct machine *machine)
 {
-	struct machine *machine;
+	struct emul *emul;
 	int i, iadd=4;
 	uint64_t addr, memory_amount;
 
-	machine = emul->machines[machine_nr];
+	emul = machine->emul;
 
 	debug("machine \"%s\":\n", machine->name);
 	debug_indentation(iadd);
+
+	if (machine->machine_type == MACHINE_NONE) {
+		fatal("No machine type specified?\n");
+		exit(1);
+	}
+
+	machine_memsize_fix(machine);
 
 	/*  Create the system's memory:  */
 	debug("memory: %i MB", machine->physical_ram_in_mb);
@@ -437,6 +444,8 @@ static void emul_machine_setup(struct emul *emul, int machine_nr)
 	debug("\n");
 
 	/*  Create CPUs:  */
+	if (machine->ncpus < 1)
+		machine->ncpus = 1;
 	machine->cpus = malloc(sizeof(struct cpu *) * machine->ncpus);
 	if (machine->cpus == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -641,7 +650,7 @@ void emul_simple_init(struct emul *emul)
 
 	/*  Create the machine(s):  */
 	for (i=0; i<emul->n_machines; i++)
-		emul_machine_setup(emul, i);
+		emul_machine_setup(emul->machines[i]);
 
 	debug_indentation(-iadd);
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.2 2005-01-26 10:39:38 debug Exp $
+ *  $Id: emul_parse.c,v 1.3 2005-01-26 13:01:14 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -71,6 +71,9 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 	int in_word = 0;
 
 	while (!done) {
+		if (curlen >= buflen - 1)
+			break;
+
 		ch = fgetc(f);
 		if (ch == EOF)
 			break;
@@ -111,6 +114,35 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 		if (ch <= ' ')
 			continue;
 
+		if (ch == '"' || ch == '\'') {
+			/*  This is a quoted word.  */
+			int start_ch = ch;
+
+			if (expect & EXPECT_LEFT_PARENTHESIS) {
+				fatal("unexpected character '%c', line %i\n",
+				    ch, *line);
+				exit(1);
+			}
+
+			while (curlen < buflen - 1) {
+				ch = fgetc(f);
+				if (ch == '\n') {
+					fatal("line %i: newline inside"
+					    " quotes?\n", *line);
+					exit(1);
+				}
+				if (ch == EOF) {
+					fatal("line %i: EOF inside a quoted"
+					    " string?\n", *line);
+					exit(1);
+				}
+				if (ch == start_ch)
+					break;
+				buf[curlen++] = ch;
+			}
+			break;
+		}
+
 		if ((expect & EXPECT_WORD) && is_word_char(ch)) {
 			buf[curlen++] = ch;
 			in_word = 1;
@@ -136,10 +168,13 @@ static void read_one_word(FILE *f, char *buf, int buflen, int *line,
 }
 
 
-#define	PARSESTATE_NONE		0
-#define	PARSESTATE_EMUL		1
-#define	PARSESTATE_NET		2
-#define	PARSESTATE_MACHINE	3
+#define	PARSESTATE_NONE			0
+#define	PARSESTATE_EMUL			1
+#define	PARSESTATE_NET			2
+#define	PARSESTATE_MACHINE		3
+#define	PARSESTATE_MACHINE_NAME		4
+
+static char cur_machine_name[100];
 
 
 /*
@@ -193,6 +228,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		*parsestate = PARSESTATE_MACHINE;
 		read_one_word(f, word, maxbuflen,
 		    line, EXPECT_LEFT_PARENTHESIS);
+
+		cur_machine_name[0] = '\0';
 		return;
 	}
 
@@ -237,20 +274,55 @@ static void parse__net(struct emul *e, FILE *f, int *in_emul, int *line,
 /*
  *  parse__machine():
  *
- *  TODO: words?
+ *  name ( abcdef )
+ *
+ *  TODO: more words?
  */
 static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	int *parsestate, char *word, size_t maxbuflen)
 {
 	if (word[0] == ')') {
 		/*  Finished with the 'machine' section.  */
+		struct machine *m;
+
+		if (!cur_machine_name[0])
+			strcpy(cur_machine_name, "no_name");
+
+		m = emul_add_machine(e, cur_machine_name);
+		emul_machine_setup(m);
 
 		*parsestate = PARSESTATE_EMUL;
 		return;
 	}
 
+	if (strcmp(word, "name") == 0) {
+		*parsestate = PARSESTATE_MACHINE_NAME;
+		read_one_word(f, word, maxbuflen,
+		    line, EXPECT_LEFT_PARENTHESIS);
+		return;
+	}
+
 	fatal("line %i: not expecting '%s' here\n", *line, word);
 	exit(1);
+}
+
+
+/*
+ *  parse__machine_name():
+ */
+static void parse__machine_name(struct emul *e, FILE *f, int *in_emul,
+	int *line, int *parsestate, char *word, size_t maxbuflen)
+{
+	if (word[0] == ')') {
+		fatal("line %i: no name specified\n", *line);
+		exit(1);
+	}
+
+	strncpy(cur_machine_name, word, sizeof(cur_machine_name));
+	cur_machine_name[sizeof(cur_machine_name) - 1] = '\0';
+
+	read_one_word(f, word, maxbuflen, line, EXPECT_RIGHT_PARENTHESIS);
+	*parsestate = PARSESTATE_MACHINE;
 }
 
 
@@ -274,30 +346,29 @@ void emul_parse_config(struct emul *e, FILE *f)
 		if (!word[0])
 			break;
 
-		debug("word = '%s'\n", word);
+		/*  debug("word = '%s'\n", word);  */
 
 		switch (parsestate) {
-
 		case PARSESTATE_NONE:
 			parse__none(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
 			break;
-
 		case PARSESTATE_EMUL:
 			parse__emul(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
 			break;
-
 		case PARSESTATE_NET:
 			parse__net(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
 			break;
-
 		case PARSESTATE_MACHINE:
 			parse__machine(e, f, &in_emul, &line, &parsestate,
 			    word, sizeof(word));
 			break;
-
+		case PARSESTATE_MACHINE_NAME:
+			parse__machine_name(e, f, &in_emul, &line,
+			    &parsestate, word, sizeof(word));
+			break;
 		default:
 			fatal("INTERNAL ERROR in emul_parse.c ("
 			    "parsestate %i is not imlemented yet?)\n",

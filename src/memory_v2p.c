@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_v2p.c,v 1.10 2004-12-14 04:41:37 debug Exp $
+ *  $Id: memory_v2p.c,v 1.11 2004-12-15 17:20:04 debug Exp $
  *
  *  Included from memory.c.
  */
@@ -363,7 +363,7 @@ int TRANSLATE_ADDRESS(struct cpu *cpu, uint64_t vaddr,
 						pfn = ((odd? cached_lo1 : cached_lo0)
 						    & ENTRYLO_PFN_MASK)
 						    >> ENTRYLO_PFN_SHIFT;
-						paddr = (pfn << pageshift) |
+						paddr = (pfn << 12) |
 						    (vaddr & pmask);
 #endif
 

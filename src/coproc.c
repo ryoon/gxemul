@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.32 2004-05-06 03:51:46 debug Exp $
+ *  $Id: coproc.c,v 1.33 2004-06-07 07:20:57 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -484,7 +484,7 @@ void coproc_register_write(struct cpu *cpu,
 		 *  portion of the context registers (that is, xcontext and context).
 		 *  on R10000, they are separate registers.
 		 */
-fatal("xcontext 0x%016llx\n", tmp);
+		debug("xcontext 0x%016llx\n", tmp);
 		unimpl = 0;
 	}
 

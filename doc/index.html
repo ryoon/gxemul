@@ -1,11 +1,20 @@
 <html>
-<head><title>mips64emul documentation</title>
+<head><title>mips64emul User Documentation</title>
 </head>
-<body bgcolor=#ffffff text=#000000 link=#4040f0 vlink=#404040 alink=#ff0000>
+<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<p>
+<table width=100%>
+  <tr><td width=100% bgcolor=#808070><font color=#ffffe0 size=6>
+  <b>mips64emul</b></font></td></tr>
+</table>
+<p>
+
+
+
 
 <!--
 
-$Id: index.html,v 1.72 2004-07-12 10:23:23 debug Exp $
+$Id: index.html,v 1.73 2004-07-14 11:18:24 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -32,12 +41,6 @@ SUCH DAMAGE.
 
 -->
 
-<p>
-<table width=100%>
-  <tr><td width=100% bgcolor=#808070><font color=#ffffe0 size=6>
-  <b>mips64emul</b></font></td></tr></table>
-
-<p>
 <ul>
   <h3>User Documentation</h3>
   <h3><a href="technical.html">Technical Documentation</a></h3>
@@ -47,7 +50,7 @@ SUCH DAMAGE.
 <p>
 <table width=100%>
   <tr><td width=100% bgcolor=#b0b0b0><font color=#8f2f2f size=4>
-	User Documentation
+	mips64emul User Documentation
   </font></td></tr>
 </table>
 
@@ -71,6 +74,7 @@ Documentation for a specific release is included in its release tarball.
   <li><a href="#openbsdinstall">How to install OpenBSD/pmax in the emulator</a>
   <li><a href="#ultrixinstall">How to install Ultrix/RISC in the emulator</a>
   <li><a href="#sprite">How to run Sprite for DECstation in the emulator</a>
+  <li><a href="#declinux">How to run Linux (Debian) for DECstation in the emulator</a>
   <li><a href="#experiments">Experiments with other kernels and guest OSes:</a>
   <li><a href="#networking">Networking</a>
   <li><a href="#hello">Hello world</a>
@@ -662,6 +666,55 @@ environment.
 
 
 <p><br>
+<a name="declinux"></a>
+<h3>How to run Linux (Debian) for DECstation in the emulator</h3>
+
+<font color="#ff0000">NOTE: This is experimental, and does not really work yet!</font>
+<p>
+Debian has made Linux installation boot kernels for DECstation available for download,
+containing ramdisks. For a 5000/200 R3000 KN02 (the -D2 model in mips64emul), try this kernel:
+<p>
+<pre>
+	<b><a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img</a></b>
+	<b>MD5 as of 2004-07-14: 9395428ac82fbf7c94f15a1312caaa9a</b>
+</pre>
+<p>
+It is a Linux 2.4.26 kernel which (I think) automatically installs Debian Linux
+from the network onto a harddisk image. (Not yet though, as TCP is not working
+in the emulator.)
+<p>
+Once you have compiled mips64emul (<b>./configure; make</b>), you could try running
+the kernel with graphical framebuffer.
+<p>
+<pre>
+	$ <b>./mips64emul -X -D2 boot.img</b>
+</pre>
+<p>
+If everything works as it should, you will see the penguin up in the left corner, and
+some boot messages. The RAMDISK will decompress itself (this takes a while), and then
+the installation program will start running.  A language choice dialog box appears.
+<p>
+This is where the fun ends. This specific Linux kernel has no support for the
+keyboard controller. :-(
+<p>
+It is possible to get further into the installation, by booting in serial console
+mode. This is of course not very good looking, but this is the way things are until
+Linux gets support for the keyboard controller.
+<p>
+<pre>
+	$ <b>./mips64emul -D2 -o 'console=ttyS03' boot.img</b>
+</pre>
+<p>
+The TCP part of networking is not yet implemented in the emulator, so the installation
+will fail when it tries to download installation files via http or ftp.
+<p>
+(I'm currently working on TCP and such things, so this section of
+the documentation will be updated as soon as it works.)
+
+
+
+
+<p><br>
 <a name="experiments"></a>
 <h3>Experiments with other kernels and guest OSes:</h3>
 
@@ -770,8 +823,7 @@ Here are links to some of the kernels that I usually experiment with.
 </pre>
 	<br>To try with the framebuffer: <b>-D2 -X vmlinux-2.4.26-r3k-kn02</b>
 	<br>To try with serial console: <b>-D2 -o 'console=ttyS03' vmlinux-2.4.26-r3k-kn02</b>
-	<br>You might also want to try an install ramdisk kernel, also Debian:
-		<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">		http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img</a>
+	<br>Read <a href="#declinux">this section</a> about how to run a Debian Linux install kernel.
 	<br>Here are some older kernels (these don't support framebuffer, I think):
 		<a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
 	<br>Note: Make sure you add <b>-CR4000</b> to the command line for
@@ -1000,7 +1052,7 @@ unless you specify explicitly which ID number the devices should have.
 	$ <b>./mips64emul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
 Note: In the example above, disk2.raw will get scsi id 5.
-</p>
+<p>
 If a filename has a 'c' prefix, or ends with ".iso", then it is assumed to be
 a CDROM device (this can be overridden with a 'd' prefix, to force a read/write disk).
 For example, the following command would start the emulator with two
@@ -1231,7 +1283,7 @@ If you have comments, don't hesitate to mail me at
 md1gavan @mdstud.chalmers.se.
 
 
-<hr>
+
 
 </body>
 </html>

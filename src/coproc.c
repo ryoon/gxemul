@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.134 2004-12-30 18:38:25 debug Exp $
+ *  $Id: coproc.c,v 1.135 2005-01-02 19:47:59 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -392,57 +392,55 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 		if (writeflag > 0)
 			bintrans_invalidate(cpu, paddr_page);
 
-		switch (cpu->cpu_type.mmu_model) {
-		case MMU3K:
-			a = (vaddr_page >> 22) & 0x3ff;
-			b = (vaddr_page >> 12) & 0x3ff;
-			/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);  */
-			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-			/*  printf("tbl1 = %p\n", tbl1);  */
-			if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
-				/*  Allocate a new table1:  */
-				/*  printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
-				    a << 22, (a << 22) + 0x3fffff);  */
-				if (cpu->next_free_vth_table == NULL) {
-					tbl1 = malloc(sizeof(struct vth32_table));
-					if (tbl1 == NULL) {
-						fprintf(stderr, "out of mem\n");
-						exit(1);
-					}
-					memset(tbl1, 0, sizeof(struct vth32_table));
-				} else {
-					tbl1 = cpu->next_free_vth_table;
-					cpu->next_free_vth_table = tbl1->next_free;
-					tbl1->next_free = NULL;
+		/*  This table stuff only works for 32-bit mode:  */
+		if ((vaddr_page >> 32) != 0 && (vaddr_page >> 32) != 0xffffffff)
+			return;
+
+		a = (vaddr_page >> 22) & 0x3ff;
+		b = (vaddr_page >> 12) & 0x3ff;
+		/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr_page,a, b);  */
+		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+		/*  printf("tbl1 = %p\n", tbl1);  */
+		if (tbl1 == cpu->vaddr_to_hostaddr_nulltable) {
+			/*  Allocate a new table1:  */
+			/*  printf("ALLOCATING a new table1, 0x%08x - 0x%08x\n",
+			    a << 22, (a << 22) + 0x3fffff);  */
+			if (cpu->next_free_vth_table == NULL) {
+				tbl1 = malloc(sizeof(struct vth32_table));
+				if (tbl1 == NULL) {
+					fprintf(stderr, "out of mem\n");
+					exit(1);
 				}
-				cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
-			}
-			p = tbl1->haddr_entry[b];
-			p_paddr = tbl1->paddr_entry[b];
-			/* printf("   p = %p\n", p); */
-			if (p == NULL && p_paddr == 0 && (host_page!=NULL || paddr_page!=0)) {
-				tbl1->refcount ++;
-				/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
-				    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
-			}
-			if (writeflag == -1) {
-				/*  Forced downgrade to read-only:  */
-				tbl1->haddr_entry[b] = (void *)
-				    ((size_t)tbl1->haddr_entry[b] & ~1);
-			} else if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
-				/*  Don't degrade a page from writable to readonly.  */
+				memset(tbl1, 0, sizeof(struct vth32_table));
 			} else {
-				if (host_page != NULL)
-					tbl1->haddr_entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
-				else
-					tbl1->haddr_entry[b] = NULL;
-				tbl1->paddr_entry[b] = paddr_page;
+				tbl1 = cpu->next_free_vth_table;
+				cpu->next_free_vth_table = tbl1->next_free;
+				tbl1->next_free = NULL;
 			}
-			tbl1->bintrans_chunks[b] = NULL;
-			break;
-		default:
-			;
+			cpu->vaddr_to_hostaddr_table0_kernel[a] = tbl1;
 		}
+		p = tbl1->haddr_entry[b];
+		p_paddr = tbl1->paddr_entry[b];
+		/* printf("   p = %p\n", p); */
+		if (p == NULL && p_paddr == 0 && (host_page!=NULL || paddr_page!=0)) {
+			tbl1->refcount ++;
+			/*  printf("ADDING %08x -> %p wf=%i (refcount is now %i)\n",
+			    (int)vaddr_page, host_page, writeflag, tbl1->refcount);  */
+		}
+		if (writeflag == -1) {
+			/*  Forced downgrade to read-only:  */
+			tbl1->haddr_entry[b] = (void *)
+			    ((size_t)tbl1->haddr_entry[b] & ~1);
+		} else if (writeflag==0 && (size_t)p & 1 && host_page != NULL) {
+			/*  Don't degrade a page from writable to readonly.  */
+		} else {
+			if (host_page != NULL)
+				tbl1->haddr_entry[b] = (void *)((size_t)host_page + (writeflag?1:0));
+			else
+				tbl1->haddr_entry[b] = NULL;
+			tbl1->paddr_entry[b] = paddr_page;
+		}
+		tbl1->bintrans_chunks[b] = NULL;
 	}
 #endif
 }
@@ -459,35 +457,33 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	void *p;
 	uint32_t p_paddr;
 
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		a = (vaddr >> 22) & 0x3ff;
-		b = (vaddr >> 12) & 0x3ff;
-/*
-		printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
-*/
-		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-/*		printf("tbl1 = %p\n", tbl1); */
-		p = tbl1->haddr_entry[b];
-		p_paddr = tbl1->paddr_entry[b];
-		tbl1->bintrans_chunks[b] = NULL;
-/*		printf("   p = %p\n", p);
-*/		if (p != NULL || p_paddr != 0) {
-/*			printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);
-*/			tbl1->haddr_entry[b] = NULL;
-			tbl1->paddr_entry[b] = 0;
-			tbl1->refcount --;
-			if (tbl1->refcount == 0) {
-				cpu->vaddr_to_hostaddr_table0_kernel[a] =
-				    cpu->vaddr_to_hostaddr_nulltable;
-				/*  "free" tbl1:  */
-				tbl1->next_free = cpu->next_free_vth_table;
-				cpu->next_free_vth_table = tbl1;
-			}
+	/*  This table stuff only works for 32-bit mode:  */
+	if ((vaddr >> 32) != 0 && (vaddr >> 32) != 0xffffffff)
+		return;
+
+	a = (vaddr >> 22) & 0x3ff;
+	b = (vaddr >> 12) & 0x3ff;
+
+	/*  printf("vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
+
+	tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+	/*  printf("tbl1 = %p\n", tbl1);  */
+	p = tbl1->haddr_entry[b];
+	p_paddr = tbl1->paddr_entry[b];
+	tbl1->bintrans_chunks[b] = NULL;
+	/*  printf("   p = %p\n", p);  */
+	if (p != NULL || p_paddr != 0) {
+		/*  printf("Found a mapping, vaddr = %08x, a = %03x, b = %03x\n", (int)vaddr,a, b);  */
+		tbl1->haddr_entry[b] = NULL;
+		tbl1->paddr_entry[b] = 0;
+		tbl1->refcount --;
+		if (tbl1->refcount == 0) {
+			cpu->vaddr_to_hostaddr_table0_kernel[a] =
+			    cpu->vaddr_to_hostaddr_nulltable;
+			/*  "free" tbl1:  */
+			tbl1->next_free = cpu->next_free_vth_table;
+			cpu->next_free_vth_table = tbl1;
 		}
-		break;
-	default:
-		;
 	}
 }
 
@@ -500,18 +496,12 @@ void clear_all_chunks_from_all_tables(struct cpu *cpu)
 	int a, b;
 	struct vth32_table *tbl1;
 
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		for (a=0; a<0x400; a++) {
-			tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
-			if (tbl1 != cpu->vaddr_to_hostaddr_nulltable) {
-				for (b=0; b<0x400; b++)
-					tbl1->bintrans_chunks[b] = NULL;
-			}
+	for (a=0; a<0x400; a++) {
+		tbl1 = cpu->vaddr_to_hostaddr_table0_kernel[a];
+		if (tbl1 != cpu->vaddr_to_hostaddr_nulltable) {
+			for (b=0; b<0x400; b++)
+				tbl1->bintrans_chunks[b] = NULL;
 		}
-		break;
-	default:
-		;
 	}
 }
 #endif
@@ -541,6 +531,8 @@ void invalidate_translation_caches_paddr(struct cpu *cpu, uint64_t paddr)
 				    tlb_paddr == paddr)
 					invalidate_table_entry(cpu, tlb_vaddr);
 			}
+
+		/*  TODO: other mmus, or remove this completely?  */
 
 		}
 #endif
@@ -591,6 +583,14 @@ static void invalidate_translation_caches(struct cpu *cpu,
 						    old_asid_to_invalidate == asid)
 							invalidate_table_entry(cpu, tlb_vaddr);
 					}
+				}
+				break;
+			default:
+				for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
+					/*  TODO: MMU10K  */
+					tlb_vaddr = cpu->coproc[0]->tlbs[i].hi & ENTRYHI_VPN2_MASK;
+					invalidate_table_entry(cpu, tlb_vaddr);
+					invalidate_table_entry(cpu, tlb_vaddr ^ 0x1000);
 				}
 			}
 		} else
@@ -1974,7 +1974,7 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 		return;
 	}
 
-	if (cpnr == 1 && (((function & 0x03e007ff) == (COPz_CFCz << 21))
+	if (cpnr <= 1 && (((function & 0x03e007ff) == (COPz_CFCz << 21))
 	              || ((function & 0x03e007ff) == (COPz_CTCz << 21)))) {
 		switch (copz) {
 		case COPz_CFCz:		/*  Copy from FPU control register  */
@@ -1996,32 +1996,41 @@ void coproc_function(struct cpu *cpu, struct coproc *cp,
 				debug("ctc%i\tr%i,r%i\n", cpnr, rt, fs);
 				return;
 			}
-			if (fs == 0)
-				fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
-			else {
-				uint64_t tmp = cpu->gpr[rt];
-				cp->fcr[fs] = tmp;
 
-				/*  TODO: writing to control register 31
-				    should cause exceptions, depending on
-				    status bits!  */
+			switch (cpnr) {
+			case 0:	/*  System coprocessor  */
+				fatal("[ warning: unimplemented ctc%i, 0x%08x -> ctl reg %i ]\n",
+				    cpnr, (int)cpu->gpr[rt], fs);
+				break;
+			case 1:	/*  FPU  */
+				if (fs == 0)
+					fatal("[ Attempt to write to FPU control register 0 (?) ]\n");
+				else {
+					uint64_t tmp = cpu->gpr[rt];
+					cp->fcr[fs] = tmp;
 
-				switch (fs) {
-				case FPU_FCCR:
-					cp->fcr[FPU_FCSR] =
-					    (cp->fcr[FPU_FCSR] & 0x017fffffULL)
-					    | ((tmp & 1) << FCSR_FCC0_SHIFT)
-					    | (((tmp & 0xfe) >> 1) << FCSR_FCC1_SHIFT);
-					break;
-				case FPU_FCSR:
-					cp->fcr[FPU_FCCR] =
-					    (cp->fcr[FPU_FCCR] & 0xffffff00ULL)
-					    | ((tmp >> FCSR_FCC0_SHIFT) & 1)
-					    | (((tmp >> FCSR_FCC1_SHIFT) & 0x7f) << 1);
-					break;
-				default:
-					;
+					/*  TODO: writing to control register 31
+					    should cause exceptions, depending on
+					    status bits!  */
+
+					switch (fs) {
+					case FPU_FCCR:
+						cp->fcr[FPU_FCSR] =
+						    (cp->fcr[FPU_FCSR] & 0x017fffffULL)
+						    | ((tmp & 1) << FCSR_FCC0_SHIFT)
+						    | (((tmp & 0xfe) >> 1) << FCSR_FCC1_SHIFT);
+						break;
+					case FPU_FCSR:
+						cp->fcr[FPU_FCCR] =
+						    (cp->fcr[FPU_FCCR] & 0xffffff00ULL)
+						    | ((tmp >> FCSR_FCC0_SHIFT) & 1)
+						    | (((tmp >> FCSR_FCC1_SHIFT) & 0x7f) << 1);
+						break;
+					default:
+						;
+					}
 				}
+				break;
 			}
 
 			/*  TODO: implement delay for gpr[rt] (for MIPS I,II,III only)  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.225 2004-12-29 22:34:36 debug Exp $
+ *  $Id: cpu.c,v 1.226 2005-01-02 19:47:59 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1595,7 +1595,10 @@ int cpu_run_instr(struct cpu *cpu)
 			/*  TODO: cpu->vaddr_to_hostaddr_table0_user;  */
 		}
                 break;
-        /*  TODO: other cache types  */
+	default:
+		cpu->vaddr_to_hostaddr_table0 =
+		    cpu->vaddr_to_hostaddr_table0_kernel;
+		/*  TODO: cpu->vaddr_to_hostaddr_table0_user;  */
         }
 #endif
 

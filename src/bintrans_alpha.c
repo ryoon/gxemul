@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.90 2005-01-02 18:58:47 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.91 2005-01-02 19:47:59 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1441,7 +1441,7 @@ static int bintrans_write_instruction__delayedbranch(unsigned char **addrp,
 static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 	int rt, int imm, int rs, int instruction_type, int bigendian)
 {
-	unsigned char *a, *fail;
+	unsigned char *a, *fail, *generic64bit = NULL, *doloadstore = NULL;
 	uint32_t *b;
 	int ofs, alignment, load=0, alpha_rs, alpha_rt;
 
@@ -1559,10 +1559,69 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 			*fail = ((size_t)a - (size_t)fail - 4) / 4;
 		}
 	} else {
+		/*
+		 *  If the highest 32 bits of the address are either 0x00000000
+		 *  or 0xffffffff, then the tables used for 32-bit load/stores
+		 *  can be used.
+		 *
+		 *  81 16 24 4a     srl     a1,0x20,t0
+		 *  03 00 20 e4     beq     t0,14 <ok1>
+		 *  01 30 20 40     addl    t0,0x1,t0
+		 *  01 00 20 e4     beq     t0,14 <ok1>
+		 *  01 00 e0 c3     br      18 <nook>
+		 */
+		*a++ = 0x81; *a++ = 0x16; *a++ = 0x24; *a++ = 0x4a;
+		*a++ = 0x03; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+		*a++ = 0x01; *a++ = 0x30; *a++ = 0x20; *a++ = 0x40;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;
+		generic64bit = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+		ofs = ((size_t)&dummy_cpu.bintrans_loadstore_32bit) - (size_t)&dummy_cpu;
+		/*  ldq t12,bintrans_loadstore_32bit(a0)  */
+		*a++ = ofs; *a++ = ofs >> 8; *a++ = 0x70; *a++ = 0xa7;
+
+		/*  jsr t4,(t12),<after>  */
+		*a++ = 0x00; *a++ = 0x40; *a++ = 0xbb; *a++ = 0x68;
+
+		/*
+		 *  Now:
+		 *	a3 = host page  (or NULL if not found)
+		 *	t0 = 0 for readonly pages, 1 for read/write pages
+		 *	t3 = (potential) address of host load/store
+		 */
+
+		/*
+		 *  NULL? Then return failure.
+		 *  01 00 60 f6     bne     a3,f8 <okzz>
+		 */
+		fail = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x60; *a++ = 0xf6;
+		bintrans_write_chunkreturn_fail(&a);
+		*fail = ((size_t)a - (size_t)fail - 4) / 4;
+
+		/*  If this is a store, then the lowest bit must be set:  */
+		if (!load) {
+			/*  01 00 20 f4     bne     t0,<okzzz>  */
+			fail = a;
+			*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;
+			bintrans_write_chunkreturn_fail(&a);
+			*fail = ((size_t)a - (size_t)fail - 4) / 4;
+		}
+
+		doloadstore = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0xe0; *a++ = 0xc3;
+
+
+		/*
+		 *  Generic (64-bit) load/store:
+		 */
+
+		if (generic64bit != NULL)
+			*generic64bit = ((size_t)a - (size_t)generic64bit - 4) / 4;
+
 		*addrp = a;
 		b = (uint32_t *) *addrp;
-
-		/*  Generic (64-bit) stuff:  */
 
 		/*  Save a0 and the old return address on the stack:  */
 		*b++ = 0x23deff80;		/*  lda sp,-128(sp)  */
@@ -1616,6 +1675,9 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 		/*  04 14 00 40     addq    v0,0,t3  */
 		*a++ = 0x04; *a++ = 0x14; *a++ = 0x00; *a++ = 0x40;
+
+		if (doloadstore != NULL)
+			*doloadstore = ((size_t)a - (size_t)doloadstore - 4) / 4;
 	}
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.121 2004-12-29 18:00:35 debug Exp $
+ *  $Id: bintrans.c,v 1.122 2005-01-02 19:47:59 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -818,7 +818,7 @@ run_it:
 		int ok = 0, a, b;
 		struct vth32_table *tbl1;
 
-		if (bintrans_32bit_only) {
+		if (bintrans_32bit_only || (cpu->pc >> 32) == 0 || (cpu->pc >> 32) == 0xffffffff) {
 			/*  32-bit special case:  */
 			a = (cpu->pc >> 22) & 0x3ff;
 			b = (cpu->pc >> 12) & 0x3ff;
@@ -881,7 +881,7 @@ run_it:
 
 			/*  This special hack might make the time spent
 			    in the main cpu_run_instr() lower:  */
-			if (bintrans_32bit_only) {
+			if (bintrans_32bit_only || (cpu->pc >> 32) == 0 || (cpu->pc >> 32) == 0xffffffff) {
 				/*  32-bit special case:  */
 				a = (cpu->pc >> 22) & 0x3ff;
 				b = (cpu->pc >> 12) & 0x3ff;
@@ -936,53 +936,48 @@ void bintrans_init_cpu(struct cpu *cpu)
 	cpu->fast_vaddr_to_hostaddr    = fast_vaddr_to_hostaddr;
 
 	/*  Initialize vaddr->hostaddr translation tables:  */
-	switch (cpu->cpu_type.mmu_model) {
-	case MMU3K:
-		cpu->vaddr_to_hostaddr_nulltable =
-		    zeroed_alloc(sizeof(struct vth32_table));
+	cpu->vaddr_to_hostaddr_nulltable =
+	    zeroed_alloc(sizeof(struct vth32_table));
 
-		/*  Data cache:  */
-		offset = 0;
-		cpu->vaddr_to_hostaddr_r2k3k_dcachetable =
-		    zeroed_alloc(sizeof(struct vth32_table));
-		for (i=0; i<1024; i++) {
-			cpu->vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
-			    (void *)(((size_t)cpu->cache[0]+offset) | 1);
-			offset = (offset + 4096) % cpu->cache_size[0];
-		}
-		cpu->vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
-
-		/*  Instruction cache:  */
-		offset = 0;
-		cpu->vaddr_to_hostaddr_r2k3k_icachetable =
-		    zeroed_alloc(sizeof(struct vth32_table));
-		for (i=0; i<1024; i++) {
-			cpu->vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
-			    (void *)(((size_t)cpu->cache[1]+offset) | 1);
-			offset = (offset + 4096) % cpu->cache_size[1];
-		}
-		cpu->vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;
-
-		cpu->vaddr_to_hostaddr_table0_kernel =
-		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-		cpu->vaddr_to_hostaddr_table0_user =
-		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-		cpu->vaddr_to_hostaddr_table0_cacheisol_i =
-		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-		cpu->vaddr_to_hostaddr_table0_cacheisol_d =
-		    zeroed_alloc(1024 * sizeof(struct vth32_table *));
-
-		for (i=0; i<1024; i++) {
-			cpu->vaddr_to_hostaddr_table0_kernel[i] = cpu->vaddr_to_hostaddr_nulltable;
-			cpu->vaddr_to_hostaddr_table0_user[i] = cpu->vaddr_to_hostaddr_nulltable;
-			cpu->vaddr_to_hostaddr_table0_cacheisol_i[i] = cpu->vaddr_to_hostaddr_r2k3k_icachetable;
-			cpu->vaddr_to_hostaddr_table0_cacheisol_d[i] = cpu->vaddr_to_hostaddr_r2k3k_dcachetable;
-		}
-
-		cpu->vaddr_to_hostaddr_table0 = cpu->vaddr_to_hostaddr_table0_kernel;
-
-		break;
+	/*  Data cache:  */
+	offset = 0;
+	cpu->vaddr_to_hostaddr_r2k3k_dcachetable =
+	    zeroed_alloc(sizeof(struct vth32_table));
+	for (i=0; i<1024; i++) {
+		cpu->vaddr_to_hostaddr_r2k3k_dcachetable->haddr_entry[i] =
+		    (void *)(((size_t)cpu->cache[0]+offset) | 1);
+		offset = (offset + 4096) % cpu->cache_size[0];
 	}
+	cpu->vaddr_to_hostaddr_r2k3k_dcachetable->refcount = 1024;
+
+	/*  Instruction cache:  */
+	offset = 0;
+	cpu->vaddr_to_hostaddr_r2k3k_icachetable =
+	    zeroed_alloc(sizeof(struct vth32_table));
+	for (i=0; i<1024; i++) {
+		cpu->vaddr_to_hostaddr_r2k3k_icachetable->haddr_entry[i] =
+		    (void *)(((size_t)cpu->cache[1]+offset) | 1);
+		offset = (offset + 4096) % cpu->cache_size[1];
+	}
+	cpu->vaddr_to_hostaddr_r2k3k_icachetable->refcount = 1024;
+
+	cpu->vaddr_to_hostaddr_table0_kernel =
+	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+	cpu->vaddr_to_hostaddr_table0_user =
+	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+	cpu->vaddr_to_hostaddr_table0_cacheisol_i =
+	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+	cpu->vaddr_to_hostaddr_table0_cacheisol_d =
+	    zeroed_alloc(1024 * sizeof(struct vth32_table *));
+
+	for (i=0; i<1024; i++) {
+		cpu->vaddr_to_hostaddr_table0_kernel[i] = cpu->vaddr_to_hostaddr_nulltable;
+		cpu->vaddr_to_hostaddr_table0_user[i] = cpu->vaddr_to_hostaddr_nulltable;
+		cpu->vaddr_to_hostaddr_table0_cacheisol_i[i] = cpu->vaddr_to_hostaddr_r2k3k_icachetable;
+		cpu->vaddr_to_hostaddr_table0_cacheisol_d[i] = cpu->vaddr_to_hostaddr_r2k3k_dcachetable;
+	}
+
+	cpu->vaddr_to_hostaddr_table0 = cpu->vaddr_to_hostaddr_table0_kernel;
 }
 
 

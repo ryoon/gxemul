@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.124 2004-08-29 18:09:02 debug Exp $
+ *  $Id: cpu.c,v 1.125 2004-08-31 15:26:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2377,22 +2377,21 @@ static int cpu_run_instr(struct cpu *cpu)
 						cpu->gpr[rt] = 0;
 
 						/*
-						 *  Operating systems that make use of ll/sc for
-						 *  synchronization should implement back-off protocols
-						 *  of their own, so this code should NOT be used:
-						 *
-						 *	cpu->instruction_delay = random() % (ncpus + 1);
-						 *
-						 *  Search for ENABLE_INSTRUCTION_DELAYS.
+						 *  Operating systems that make
+						 *  use of ll/sc for synchro-
+						 *  nization should implement
+						 *  back-off protocols of their
+						 *  own, so there's no backoff
+						 *  here.
 						 */
 						break;
 					}
 				}
 			} else {
 				/*
-				 *  If any kind of load or store occurs between an ll and an sc,
-				 *  then the ll-sc sequence should fail.  (This is local to
-				 *  each cpu.)
+				 *  If any kind of load or store occurs between
+				 *  an ll and an sc, then the ll-sc sequence
+				 *  should fail.  (This is local to each cpu.)
 				 */
 				cpu->rmw = 0;
 			}

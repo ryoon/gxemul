@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.68 2004-09-16 22:56:33 debug Exp $
+ *  $Id: coproc.c,v 1.69 2004-09-26 00:55:58 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1495,7 +1495,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function,
 					debug("rfe\n");
 					return;
 				}
-				cpu->last_was_rfe = 1;
 				cpu->coproc[0]->reg[COP0_STATUS] =
 				    (cpu->coproc[0]->reg[COP0_STATUS] & ~0x3f) |
 				    ((cpu->coproc[0]->reg[COP0_STATUS] & 0x3c) >> 2);

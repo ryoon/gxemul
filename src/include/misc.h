@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.108 2004-09-16 22:56:32 debug Exp $
+ *  $Id: misc.h,v 1.109 2004-09-26 00:55:57 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -621,8 +621,6 @@ struct cpu {
 	/*  This is set to non-zero, if it is possible at all that an
 	    interrupt will occur.  */
 	int		cached_interrupt_is_possible;
-
-	int		last_was_rfe;		/*  R2000/R3000, after rfe  */
 
 	int		show_trace_delay;	/*  0=normal, > 0 = delay until show_trace  */
 	uint64_t	show_trace_addr;

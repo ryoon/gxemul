@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.153 2004-09-26 00:05:25 debug Exp $
+ *  $Id: cpu.c,v 1.154 2004-09-26 00:55:58 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -314,7 +314,7 @@ void cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	 *  Decode the instruction:
 	 */
 
-	if (cpu->nullify_next) {
+	if (cpu->nullify_next && running) {
 		debug("(nullified)");
 		goto disasm_ret;
 	}
@@ -1420,16 +1420,11 @@ static int cpu_run_instr(struct cpu *cpu)
 			int enabled, mask;
 			int status = cp0->reg[COP0_STATUS];
 
-			if (cpu->last_was_rfe) {
-				enabled = 0;
-				cpu->last_was_rfe = 0;
-			} else {
-				enabled = status & MIPS_SR_INT_IE;
-				mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
-				if (enabled && mask) {
-					cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
-					return 0;
-				}
+			enabled = status & MIPS_SR_INT_IE;
+			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			if (enabled && mask) {
+				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				return 0;
 			}
 		} else {
 			/*  R4000 and others:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.56 2005-02-22 20:18:31 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.57 2005-02-22 20:55:41 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -863,6 +863,7 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case PPC_31_ADD:
 		case PPC_31_ADDO:
 		case PPC_31_MULHW:
+		case PPC_31_MULHWU:
 		case PPC_31_MULLW:
 		case PPC_31_MULLWO:
 		case PPC_31_SUBF:
@@ -895,9 +896,8 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			case PPC_31_ADDO:
 				mnem = power? "caxo" : "addo";
 				break;
-			case PPC_31_MULHW:
-				mnem = "mulhw";
-				break;
+			case PPC_31_MULHW:  mnem = "mulhw"; break;
+			case PPC_31_MULHWU: mnem = "mulhwu"; break;
 			case PPC_31_MULLW:
 				mnem = power? "muls" : "mullw";
 				break;
@@ -926,6 +926,18 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			rt = (iword >> 21) & 31;
 			spr = ((iword >> 6) & 0x3e0) + ((iword >> 16) & 31);
 			debug("mfspr\tr%i,spr%i", rt, spr);
+			break;
+		case PPC_31_TLBIE:
+			/*  TODO: what is ra? The IBM online docs didn't say  */
+			ra = 0;
+			rb = (iword >> 11) & 31;
+			if (power)
+				debug("tlbi\tr%i,r%i", ra, rb);
+			else
+				debug("tlbie\tr%i", rb);
+			break;
+		case PPC_31_TLBSYNC:
+			debug("tlbsync");
 			break;
 		case PPC_31_MFTB:
 			rt = (iword >> 21) & 31;
@@ -1029,6 +1041,25 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			break;
 		case PPC_31_EIEIO:
 			debug("%s", power? "eieio?" : "eieio");
+			break;
+		case PPC_31_EXTSB:
+		case PPC_31_EXTSH:
+		case PPC_31_EXTSW:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_31_EXTSB:
+				mnem = power? "exts" : "extsb";
+				break;
+			case PPC_31_EXTSH:
+				mnem = "extsh";
+				break;
+			case PPC_31_EXTSW:
+				mnem = "extsw";
+				break;
+			}
+			debug("%s%s\tr%i,r%i", mnem, rc? "." : "", ra, rs);
 			break;
 		default:
 			debug("unimplemented hi6_31, xo = 0x%x", xo);
@@ -1994,6 +2025,7 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case PPC_31_ADD:
 		case PPC_31_ADDO:
 		case PPC_31_MULHW:
+		case PPC_31_MULHWU:
 		case PPC_31_MULLW:
 		case PPC_31_MULLWO:
 		case PPC_31_SUBFE:
@@ -2047,15 +2079,21 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				break;
 			case PPC_31_MULHW:
 				cpu->cd.ppc.gpr[rt] = (int64_t) (
-				    (int32_t)cpu->cd.ppc.gpr[ra] *
-				    (int32_t)cpu->cd.ppc.gpr[rb] );
+				    (int64_t)(int32_t)cpu->cd.ppc.gpr[ra] *
+				    (int64_t)(int32_t)cpu->cd.ppc.gpr[rb]);
+				cpu->cd.ppc.gpr[rt] >>= 32;
+				break;
+			case PPC_31_MULHWU:
+				cpu->cd.ppc.gpr[rt] = (uint64_t) (
+				    (uint64_t)(uint32_t)cpu->cd.ppc.gpr[ra] *
+				    (uint64_t)(uint32_t)cpu->cd.ppc.gpr[rb]);
 				cpu->cd.ppc.gpr[rt] >>= 32;
 				break;
 			case PPC_31_MULLW:
 			case PPC_31_MULLWO:
 				cpu->cd.ppc.gpr[rt] = (int64_t) (
 				    (int32_t)cpu->cd.ppc.gpr[ra] *
-				    (int32_t)cpu->cd.ppc.gpr[rb] );
+				    (int32_t)cpu->cd.ppc.gpr[rb]);
 				break;
 			case PPC_31_SUBF:
 			case PPC_31_SUBFO:
@@ -2231,6 +2269,17 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			if (rc)
 				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
+			break;
+
+		case PPC_31_TLBIE:
+			rb = (iword >> 11) & 31;
+			/*  TODO  */
+			break;
+
+		case PPC_31_TLBSYNC:
+			/*  Only on 603 and 604 (?)  */
+
+			/*  TODO  */
 			break;
 
 		case PPC_31_DCCCI:
@@ -2423,6 +2472,30 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 		case PPC_31_EIEIO:
 			/*  TODO: actually eieio  */
+			break;
+
+		case PPC_31_EXTSB:
+		case PPC_31_EXTSH:
+		case PPC_31_EXTSW:
+			rs = (iword >> 21) & 31;
+			ra = (iword >> 16) & 31;
+			rc = iword & 1;
+			switch (xo) {
+			case PPC_31_EXTSB:
+				cpu->cd.ppc.gpr[ra] = (int64_t)
+				    (int8_t)cpu->cd.ppc.gpr[rs];
+				break;
+			case PPC_31_EXTSH:
+				cpu->cd.ppc.gpr[ra] = (int64_t)
+				    (int16_t)cpu->cd.ppc.gpr[rs];
+				break;
+			case PPC_31_EXTSW:
+				cpu->cd.ppc.gpr[ra] = (int64_t)
+				    (int32_t)cpu->cd.ppc.gpr[rs];
+				break;
+			}
+			if (rc)
+				update_cr0(cpu, cpu->cd.ppc.gpr[ra]);
 			break;
 
 		default:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.74 2004-10-23 18:35:37 debug Exp $
+ *  $Id: coproc.c,v 1.75 2004-10-29 15:22:55 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1105,6 +1105,7 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 	/*  c.cond.fmt: Floating-point compare  */
 	if ((function & 0x000000f0) == 0x00000030) {
 		int cond_true;
+		int bit;
 
 		if (cpu->emul->instruction_trace || unassemble_only)
 			debug("c.%i.%i\tr%i,r%i,r%i\n", cond, fmt, cc, fs, ft);
@@ -1123,13 +1124,15 @@ static int fpu_function(struct cpu *cpu, struct coproc *cp,
 			cp->fcr[FPU_FCCR] |= (1 << cc);
 
 		if (cc == 0) {
-			cp->fcr[FPU_FCSR] &= ~(1 << FCSR_FCC0_SHIFT);
+			bit = 1 << FCSR_FCC0_SHIFT;
+			cp->fcr[FPU_FCSR] &= ~bit;
 			if (cond_true)
-				cp->fcr[FPU_FCSR] |= (1 << FCSR_FCC0_SHIFT);
+				cp->fcr[FPU_FCSR] |= bit;
 		} else {
-			cp->fcr[FPU_FCSR] &= ~((cc-1) << FCSR_FCC1_SHIFT);
+			bit = 1 << (FCSR_FCC1_SHIFT + cc-1);
+			cp->fcr[FPU_FCSR] &= ~bit;
 			if (cond_true)
-				cp->fcr[FPU_FCSR] |= ((cc-1) << FCSR_FCC1_SHIFT);
+				cp->fcr[FPU_FCSR] |= bit;
 		}
 
 		return 1;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.283 2004-10-29 09:48:22 debug Exp $
+$Id: HISTORY,v 1.284 2004-10-29 15:22:53 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1083,3 +1083,4 @@ HISTORY of mips64emul
 		Foudn and fixed a bug which prevented Linux/IP32 from running
 		(the speed-hack-jump-optimization fix I made a few weeks ago
 		was buggy).
+		Some other fixes.

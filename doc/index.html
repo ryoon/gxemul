@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.134 2004-10-29 07:45:22 debug Exp $
+$Id: index.html,v 1.135 2004-10-29 15:22:54 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -880,7 +880,7 @@ onto a harddisk image:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=debian.img bs=1 count=512 seek=1999000000</b>
+	$ <b>dd if=/dev/zero of=debian.img bs=512 count=1 seek=2698060</b>
 
 </pre>
   <li>Download the install kernel:<pre>
@@ -949,9 +949,10 @@ Read the following link if you want to know more about Mach in general:
 <a href="http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html">
 http://www-2.cs.cmu.edu/afs/cs/project/mach/public/www/mach.html</a>
 
+<p>
 <font color="#ff0000">NOTE: Mach for DECstation requires some files
 (called 'startup' and 'emulator') which I haven't been able to find
-on the net. Without these, Mach will not get very far. These
+on the web. Without these, Mach will not get very far. These
 installation instructions are preliminary.
 </font>
 

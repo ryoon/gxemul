@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.47 2004-10-24 06:29:55 debug Exp $
+ *  $Id: dev_asc.c,v 1.48 2004-10-29 15:22:53 debug Exp $
  *
  *  'asc' SCSI controller for some DECstation/DECsystem models, and
  *  for PICA-61.
@@ -477,6 +477,7 @@ fatal("TODO.......asdgasin\n");
 #endif
 			}
 
+#ifdef MACH
 			/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
 			if (d->xferp->msg_out_len == 6 &&
 			    (d->xferp->msg_out[0] == 0x80 ||
@@ -490,6 +491,7 @@ fatal("TODO.......asdgasin\n");
 				all_done = 0;
 				d->cur_phase = PHASE_MSG_IN;
 			}
+#endif
 		} else {
 			/*  Copy data from DMA to msg_out:  */
 			fatal("[ DMA MSG OUT: xxx TODO! ]");
@@ -498,6 +500,7 @@ fatal("TODO.......asdgasin\n");
 		}
 	} else if (d->cur_phase == PHASE_MSG_IN) {
 		debug(" MSG IN");
+		fatal("[ MACH HACK! ]");
 		/*  Super-ugly hack for Mach/PMAX:  TODO: make nicer  */
 		dev_asc_fifo_write(d, 0x07);
 		d->cur_phase = PHASE_COMMAND;
@@ -715,7 +718,6 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 	/*  Controller's ID is fixed:  */
 	d->reg_ro[NCR_CFG1] = (d->reg_ro[NCR_CFG1] & ~7) | ASC_SCSI_ID;
-	d->reg_ro[NCR_CFG3] = NCRF9XCFG3_CDB;
 
 	d->reg_ro[NCR_FFLAG] = ((d->reg_ro[NCR_STEP] & 0x7) << 5)
 	    + d->n_bytes_in_fifo;
@@ -1129,6 +1131,8 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	d->irq_nr       = irq_nr;
 	d->turbochannel = turbochannel;
 	d->mode         = mode;
+
+	d->reg_ro[NCR_CFG3] = NCRF9XCFG3_CDB;
 
 	d->dma_controller      = dma_controller;
 	d->dma_controller_data = dma_controller_data;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.55 2004-07-11 13:10:58 debug Exp $
+ *  $Id: main.c,v 1.56 2004-07-16 18:19:45 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -36,8 +36,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "diskimage.h"
 #include "misc.h"
+
+#include "diskimage.h"
 
 
 extern int optind;

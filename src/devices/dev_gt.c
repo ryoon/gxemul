@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.12 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_gt.c,v 1.13 2004-07-16 18:19:32 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -34,8 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
 #include "misc.h"
+
+#include "memory.h"
 #include "devices.h"
 #include "bus_pci.h"
 

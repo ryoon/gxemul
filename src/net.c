@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.16 2004-07-14 19:55:18 debug Exp $
+ *  $Id: net.c,v 1.17 2004-07-16 18:19:45 debug Exp $
  *
  *  Emulated (ethernet / internet) network support.
  *
@@ -68,6 +68,7 @@
 #include <fcntl.h>
 
 #include "misc.h"
+
 #include "net.h"
 
 
@@ -503,18 +504,17 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 
 		/*  Find a free connection id to use:  */
 		if (free_con_id < 0) {
-			int i;
-			int64_t oldest = tcp_connections[0].last_used_timestamp;
-			free_con_id = 0;
-
+#if 1
 			/*
 			 *  TODO:  Reuse the oldest one currently in use, or
 			 *  just drop the new connection attempt? Drop for now.
 			 */
 			fatal("[ TOO MANY TCP CONNECTIONS IN USE! Increase MAX_TCP_CONNECTIONS in src/net.c! ]\n");
 			return;
-
-			/*  ELSE  */
+#else
+			int i;
+			int64_t oldest = tcp_connections[0].last_used_timestamp;
+			free_con_id = 0;
 
 			fatal("[ NO FREE TCP SLOTS, REUSING OLDEST ONE ]\n");
 			for (i=0; i<MAX_TCP_CONNECTIONS; i++)
@@ -523,6 +523,7 @@ static void net_ip_tcp(void *extra, unsigned char *packet, int len)
 					free_con_id = i;
 				}
 			close(tcp_connections[free_con_id].socket);
+#endif
 		}
 
 		con_id = free_con_id;

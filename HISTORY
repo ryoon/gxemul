@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.160 2004-07-14 21:12:21 debug Exp $
+$Id: HISTORY,v 1.161 2004-07-16 18:19:30 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -784,3 +784,7 @@ HISTORY of mips64emul
 		64-bit field, it was 32-bit before.
 		Making ugly hacks to the arcbios emulation to semi-support
 		64-bit equivalents of 32-bit structures.
+20040716	Minor fixes to the configure script (and a few other places)
+		to make the sources compile out-of-the-box on HP-UX (ia64
+		and HPPA), old OpenBSD/pmax (inside the emulator itself), and
+		Tru64 (OSF/1) on Alpha.

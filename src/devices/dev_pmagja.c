@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.5 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.6 2004-07-16 18:19:32 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -130,7 +130,7 @@ for (i=0; i<len; i++)
 
 			ofs = (relative_addr - 0x100000) * 2;
 			y = ofs / XSIZE;
-			x = ofs - x * XSIZE;
+			x = ofs - y * XSIZE;
 
 #if 0
 			if (writeflag == MEM_WRITE) {

@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.33 2004-07-13 10:38:14 debug Exp $
+#  $Id: configure,v 1.34 2004-07-16 18:19:30 debug Exp $
 #
 #  This is a minimal configure script for mips64emul. This script figures out
 #  which compiler flags will work, and creates Makefiles in subdirs. A config.h
@@ -152,6 +152,11 @@ if [ z"$CC" = z ]; then
 fi
 
 
+if $CC -V 2> /dev/null | grep -q -i compaq; then
+	COMPAQCC=YES
+fi
+
+
 if [ z$NOX11 = z ]; then
 	#  Try to compile a small X11 test program:
 	printf "#include <X11/Xlib.h>
@@ -212,11 +217,44 @@ if [ -x _testprog ]; then
 	CWARNINGS="-Wall $CWARNINGS"
 
 	#  Compaq's compiler always seems to warn about the long long type:
-	if [ z"$CC" = zccc ]; then
+	if [ z"$COMPAQCC" = zYES ]; then
 		CWARNINGS="$CWARNINGS -msg_disable longlongtype"
 	fi
 fi
 rm -f _testprog
+
+
+#  -lrt for nanosleep?
+printf "#include <time.h>\n#include <stdio.h>
+int main(int argc, char *argv[]){nanosleep(NULL,NULL);return 0;}\n" > _testns.c
+$CC _testns.c -o _testns 2> /dev/null
+if [ ! -x _testns ]; then
+	$CC -lrt _testns.c -o _testns 2> /dev/null
+	if [ ! -x _testns ]; then
+		printf "WARNING! COULD NOT COMPILE WITH nanosleep AT ALL!\n"
+	else
+		#  -lrt for nanosleep
+		OTHERLIBS="-lrt $OTHERLIBS"
+	fi
+fi
+rm -f _testns.c _testns
+
+
+#  strtoll/strtoull missing?
+printf "#include <stdlib.h>
+#include <limits.h>
+#include <stdio.h>
+int main(int argc, char *argv[]) {
+  long long x = strtoll(argv[1], NULL, 0); return 0;}\n" > _tests.c
+$CC _tests.c -o _tests 2> /dev/null
+if [ ! -x _tests ]; then
+	printf "WARNING! strtoll missing from libc. Hack: using strtoll = strtol and
+strtoull = strtoul. This will only work correctly on a machine where
+sizeof(long long) = sizeof(long)  (luckily, for most 64-bit archs, this is
+the case.\n"
+	printf "#define HACK_STRTOLL\n" >> config.h
+fi
+rm -f _tests.c _tests
 
 
 #############################################################################
@@ -266,15 +304,14 @@ COPTIM=$CFLAGS
 
 
 if [ z"`uname`" = zHP-UX ]; then
-	#  This is not an optimization, actually, just flags:
-	#  TODO:  include correct strtoll and strtoull,
-	#  these are just fake!
-	echo 'NOTE: HPUX weirdness, strtol vs stroll etc.  You have been warned.'
+	COPTIM="-D_XOPEN_SOURCE_EXTENDED $COPTIM"
 	printf "#define HPUX\n" >> config.h
-	printf "#define strtoll strtol\n" >> config.h
-	printf "#define strtoull strtoul\n" >> config.h
 fi
 
+
+if [ z"`uname`" = zOSF1 ]; then
+	COPTIM="-D_XOPEN_SOURCE=500 -D_OSF_SOURCE $COPTIM"
+fi
 
 
 if [ z"`uname`" = zLinux ]; then
@@ -284,7 +321,7 @@ if [ z"`uname`" = zLinux ]; then
 fi
 
 
-if [ z"$CC" = zccc ]; then
+if [ z"$COMPAQCC" = zYES ]; then
 	#  -O4 is possible, but is -O3 better?
 	COPTIM="-O4 $COPTIM"
 else
@@ -314,7 +351,7 @@ rm -f _testprog
 
 #  -fschedule-insns causes bugs on i386 with gcc,
 #  but works OK on my alpha with ccc (compaq's cc).
-if [ z"$CC" = zccc ]; then
+if [ z"$COMPAQCC" = zYES ]; then
 	$CC _testprog.c -o _testprog -fschedule-insns2 2> /dev/null
 	if [ -x _testprog ]; then
 		COPTIM="-fschedule-insns2 $COPTIM"

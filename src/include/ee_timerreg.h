@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: ee_timerreg.h,v 1.1 2004-03-27 05:43:47 debug Exp $  */
+/*  mips64emul: $Id: ee_timerreg.h,v 1.2 2004-07-16 18:19:43 debug Exp $  */
 /*	$NetBSD: timerreg.h,v 1.1 2001/10/16 15:38:40 uch Exp $	*/
 
 /*-
@@ -42,10 +42,10 @@
  *	source: BUSCLK, H-BLNK
  */
 
-#define TIMER_MIN		0
-#define TIMER_MAX		3
+#define EE_TIMER_MIN		0
+#define EE_TIMER_MAX		3
 #define LEGAL_TIMER(x)							\
-	(((x) >= TIMER_MIN) && ((x) <= TIMER_MAX))
+	(((x) >= EE_TIMER_MIN) && ((x) <= EE_TIMER_MAX))
 
 /* Register address. all registers are 32bit wide */
 #define TIMER_REGBASE		0x10000000

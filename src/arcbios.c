@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.24 2004-07-14 21:12:23 debug Exp $
+ *  $Id: arcbios.c,v 1.25 2004-07-16 18:19:45 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -41,8 +41,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "memory.h"
 #include "misc.h"
+
+#include "memory.h"
 #include "console.h"
 
 

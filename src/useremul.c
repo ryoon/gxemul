@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.15 2004-07-02 13:35:26 debug Exp $
+ *  $Id: useremul.c,v 1.16 2004-07-16 18:19:45 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -65,8 +65,9 @@
 #include <time.h>
 #include <errno.h>
 
-#include "memory.h"
 #include "misc.h"
+
+#include "memory.h"
 #include "syscall_netbsd.h"
 #include "sysctl_netbsd.h"
 #include "syscall_ultrix.h"
@@ -404,15 +405,16 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd readlink(\"%s\",0x%lli,%lli)\n",
 			    charbuf, (long long)arg1, (long long)arg2);
 			if (arg2 != 0 && arg2 < 50000) {
-				unsigned char buf2[arg2];
+				unsigned char *buf2 = malloc(arg2);
 				buf2[arg2-1] = '\0';
 				result_low = readlink((char *)charbuf,
-				    (char *)buf2, sizeof(buf2)-1);
+				    (char *)buf2, arg2 - 1);
 				if ((int64_t)result_low < 0) {
 					error_flag = 1;
 					error_code = errno;
 				} else
 					store_string(arg1, (char *)buf2);
+				free(buf2);
 			}
 			break;
 
@@ -522,23 +524,25 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			debug("useremul_syscall(): netbsd __getcwd(0x%llx,%lli): TODO\n",
 			    (long long)arg0, (long long)arg1);
 			if (arg1 != 0 && arg1 < 500000) {
-				char buf[arg1];
+				char *buf = malloc(arg1);
 				unsigned int i;
 
-				getcwd(buf, sizeof(buf));
+				getcwd(buf, arg1);
 
 				/*  zero-terminate in host's space:  */
-				buf[sizeof(buf)-1] = 0;
+				buf[arg1 - 1] = 0;
 
-				for (i = 0; i<sizeof(buf) && i < arg1; i++)
+				for (i = 0; i<arg1 && i < arg1; i++)
 					memory_rw(cpu, cpu->mem, arg0 + i,
 					    (unsigned char *)&buf[i], 1,
 					    MEM_WRITE, CACHE_NONE);
 
 				/*  zero-terminate in emulated space:  */
 				memory_rw(cpu, cpu->mem, arg0 + arg1-1,
-				    (unsigned char *)&buf[sizeof(buf)-1],
+				    (unsigned char *)&buf[arg1 - 1],
 				    1, MEM_WRITE, CACHE_NONE);
+
+				free(buf);
 			}
 			result_low = arg0;
 			break;
@@ -861,13 +865,15 @@ printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			    (long long)arg0, (long long)arg1);
 			result_low = 0;
 			if (arg1 != 0 && arg1 < 500000) {
-				unsigned char buf[arg1];
+				unsigned char *buf = malloc(arg1);
 				unsigned int i;
 
-				result_low = gethostname((char *)buf, sizeof(buf));
+				result_low = gethostname((char *)buf, arg1);
 
-				for (i = 0; i<sizeof(buf) && i < arg1; i++)
+				for (i = 0; i<arg1 && i < arg1; i++)
 					memory_rw(cpu, cpu->mem, arg0 + i, &buf[i], 1, MEM_WRITE, CACHE_NONE);
+
+				free(buf);
 			} else {
 				error_flag = 1;
 				error_code = 5555; /* TODO */  /*  ENOMEM  */

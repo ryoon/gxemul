@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: x11.c,v 1.21 2004-07-11 07:02:22 debug Exp $
+ *  $Id: x11.c,v 1.22 2004-07-16 18:19:45 debug Exp $
  *
  *  X11-related functions.
  */
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "misc.h"
+
 #include "console.h"
 
 

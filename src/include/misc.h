@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.89 2004-07-14 21:12:22 debug Exp $
+ *  $Id: misc.h,v 1.90 2004-07-16 18:19:43 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -74,6 +74,14 @@ typedef uint64_t u_int64_t;
 
 #ifdef HPUX
 /*  For HP-UX:  */
+typedef uint8_t u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
+#endif
+
+#ifdef __osf__
+/*  For OSF/1 (Tru64):  */
 typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;

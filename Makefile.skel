@@ -27,8 +27,9 @@ clean:
 	cd src; $(MAKE) clean; cd ..
 	cd devices; $(MAKE) clean; cd ..
 
+#  Tests are not cleaned on a normal clean, only on a clean_all.
+
 clean_all: clean
-	#  Tests are not cleaned on a normal clean, only on a clean_all.
 	cd tests; $(MAKE) clean; cd ..
 	rm -f config.h Makefile src/Makefile devices/Makefile tests/Makefile
 

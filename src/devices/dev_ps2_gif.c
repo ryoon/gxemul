@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.13 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.14 2004-07-16 18:19:32 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -63,7 +63,7 @@ void test_triangle(struct gif_data *d,
 	int x2, int y2, int r2, int g2, int b2,
 	int x3, int y3, int r3, int g3, int b3)
 {
-	unsigned char line[d->xsize * d->bytes_per_pixel];
+	unsigned char *line = malloc(d->xsize * d->bytes_per_pixel);
 	int y, tmp, scale = 32768;
 	int xofs, xlen, savedxlen, xdir, x;
 	int r, g, b;			/*  scaled  */

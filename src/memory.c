@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.61 2004-07-10 14:57:51 debug Exp $
+ *  $Id: memory.c,v 1.62 2004-07-16 18:19:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -34,8 +34,10 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "memory.h"
 #include "misc.h"
+
+#include "memory.h"
+
 
 extern int emulation_type;
 extern int physical_ram_in_mb;

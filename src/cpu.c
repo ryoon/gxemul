@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.107 2004-07-14 19:55:18 debug Exp $
+ *  $Id: cpu.c,v 1.108 2004-07-16 18:19:45 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -36,14 +36,15 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include "bintrans.h"
-#include "memory.h"
 #include "misc.h"
-#include "console.h"
-#include "devices.h"
 
+#include "bintrans.h"
+#include "console.h"
 #include "dec_5100.h"
 #include "dec_kn02.h"
+#include "devices.h"
+#include "memory.h"
+
 
 extern int emulation_type;
 extern int machine;
@@ -2507,12 +2508,12 @@ static int cpu_run_instr(struct cpu *cpu)
 			reg_dir = -1;
 			reg_ofs = wlen - 1;	/*  byte offset in the register  */
 			if (!is_left) {
-				dir = -1 * dir;
+				dir = -dir;
 				reg_ofs = 0;
 				reg_dir = 1;
 			}
 			if (cpu->byte_order == EMUL_LITTLE_ENDIAN)
-				dir = -1 * dir;
+				dir = -dir;
 
 			result_value = cpu->gpr[rt];
 
@@ -2672,7 +2673,6 @@ static int cpu_run_instr(struct cpu *cpu)
 			return 1;
 		}
 		/*  NOT REACHED  */
-		return 1;
 	case HI6_J:
 	case HI6_JAL:
 		if (cpu->delay_slot) {
@@ -2929,10 +2929,7 @@ static int cpu_run_instr(struct cpu *cpu)
 		return 1;
 	}
 
-	/*  Don't put any code here, after the switch statement!  */
-
-	/*  One instruction executed.  */
-	return 1;
+	/*  NOTREACHED  */
 }
 
 

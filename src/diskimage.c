@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.37 2004-07-12 10:23:18 debug Exp $
+ *  $Id: diskimage.c,v 1.38 2004-07-16 18:19:45 debug Exp $
  *
  *  Disk image support.
  *
@@ -46,6 +46,7 @@
 #include <sys/stat.h>
 
 #include "misc.h"
+
 #include "diskimage.h"
 
 

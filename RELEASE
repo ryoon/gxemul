@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.17 2004-07-14 15:05:46 debug Exp $
+$Id: RELEASE,v 1.18 2004-07-16 18:19:30 debug Exp $
 
 Version 0.1.1 of the emulator was released at 2004-07-02.  The next 
 stable release will probably not happen very soon, as there are lots of 
@@ -13,10 +13,6 @@ Some of the things I'd like to do before a 0.2 release:
 	x)  The configure script:
 		o)  Only enable Alpha prefetch on pca56 or higher, not ev[45]
 		o)  X11 libs and headers via command line option
-		o)  If the system does not have correct strtoll and strtoull,
-		    then write my own version and include/use that? (This
-		    would allow HP-UX and old OpenBSD systems to compile the
-		    emulator out-of-the-box).
 
 	x)  TCP (in src/net.c) working satisfactory.
 
@@ -95,11 +91,20 @@ release, but will most probably work anyway.
 		gcc version 3.4 20030730 (experimental)
 		ccc 6.4.9.005-1
 
-	GNU 0.3
+	GNU 0.3 (i386)
 		gcc 3.3.4   (./configure --nox11)
 
-	HP-UX B.11.00
+	HP-UX/hppa B.11.00 (32-bit)
 		gcc 3.3.2
+		(NOTE: HP's default cc did NOT work)
+
+	HP-UX/hppa B.11.11 (32-bit)
+		ccom: HP92453-01 B.11.11.28706.GP HP C Compiler
+		gcc version 3.3.2 20030829 (prerelease)
+
+	HP-UX/ia64 B.11.23
+		cc: HP aC++/ANSI C B3910B A.05.56 [June 09 2004] [aCC6_beta]
+		gcc 3.3.3
 
 	Linux/i386
 		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
@@ -124,6 +129,9 @@ release, but will most probably work anyway.
 	Solaris/sparc (SunOS 5.9)
 		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
 		gcc version 2.95.3 20010315 (release)
+
+	Tru64/alpha v5.1 (OSF/1)
+		cc: Compaq C V6.5-207 (dtk) on Compaq Tru64 UNIX V5.1B (Rev. 2650)
 
 
 Platforms/compilers that are known NOT to work are:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.31 2004-07-14 12:06:53 debug Exp $
+ *  $Id: emul.c,v 1.32 2004-07-16 18:19:45 debug Exp $
  *
  *  Emulation startup.
  */
@@ -35,12 +35,18 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "misc.h"
+
 #include "bintrans.h"
 #include "console.h"
 #include "diskimage.h"
 #include "memory.h"
-#include "misc.h"
 #include "net.h"
+
+#ifdef HACK_STRTOLL
+#define strtoll strtol
+#define strtoull strtoul
+#endif
 
 
 extern int optind;
@@ -136,12 +142,11 @@ void fix_console(void)
 void load_bootblock(void)
 {
 	int boot_disk_id = diskimage_bootdev();
-	int res;
 	unsigned char minibuf[0x20];
 	unsigned char bootblock_buf[65536];
 	uint64_t bootblock_offset;
 	uint64_t bootblock_loadaddr, bootblock_pc;
-	int n_blocks;
+	int n_blocks, res;
 
 	switch (emulation_type) {
 	case EMULTYPE_DEC:
@@ -185,6 +190,10 @@ void load_bootblock(void)
 
 		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
 		    bootblock_buf, sizeof(bootblock_buf));
+		if (!res) {
+			fatal("ERROR: could not load bootblocks from disk offset 0x%16llx\n",
+			    (long long)bootblock_offset);
+		}
 
 		/*  Convert loadaddr to uncached:  */
 		if ((bootblock_loadaddr & 0xf0000000ULL) != 0x80000000 &&

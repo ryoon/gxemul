@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.31 2004-07-03 19:45:22 debug Exp $
+ *  $Id: file.c,v 1.32 2004-07-16 18:19:45 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -47,12 +47,18 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "memory.h"
 #include "misc.h"
 
 #include "exec_aout.h"
 #include "exec_ecoff.h"
 #include "exec_elf.h"
+#include "memory.h"
+
+
+#ifdef HACK_STRTOLL
+#define strtoll strtol
+#define strtoull strtoul
+#endif
 
 
 /*
@@ -940,8 +946,13 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 			if ((p_vaddr & 0xfff)==0)	align_len = 0x1000;
 			ofs = 0;  len = chunk_len = align_len;
 			while (ofs < (int64_t)p_filesz && len==chunk_len) {
-				unsigned char ch[chunk_len];
+				unsigned char *ch = malloc(chunk_len);
 				int i = 0;
+
+				if (ch == NULL) {
+					fprintf(stderr, "out of memory\n");
+					exit(1);
+				}
 
 				len = fread(&ch[0], 1, chunk_len, f);
 				if (ofs + len > (int64_t)p_filesz)
@@ -954,6 +965,8 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 					ofs += align_len;
 					i += align_len;
 				}
+
+				free(ch);
 			}
 		}
 	}

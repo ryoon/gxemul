@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.17 2005-01-29 09:36:35 debug Exp $
+ *  $Id: emul_parse.c,v 1.18 2005-01-29 09:41:08 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -212,7 +212,8 @@ static char cur_machine_use_x11[10];
 static char cur_machine_x11_scaledown[10];
 static char cur_machine_bintrans[10];
 static char cur_machine_byte_order[20];
-static char cur_machine_random_mem_contents[10];
+static char cur_machine_random_mem[10];
+static char cur_machine_random_cpu[10];
 static char cur_machine_force_netboot[10];
 static char cur_machine_ncpus[10];
 static char cur_machine_n_gfx_cards[10];
@@ -332,7 +333,8 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_x11_scaledown[0] = '\0';
 		cur_machine_bintrans[0] = '\0';
 		cur_machine_byte_order[0] = '\0';
-		cur_machine_random_mem_contents[0] = '\0';
+		cur_machine_random_mem[0] = '\0';
+		cur_machine_random_cpu[0] = '\0';
 		cur_machine_force_netboot[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
 		cur_machine_n_gfx_cards[0] = '\0';
@@ -430,10 +432,15 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_prom_emulation, "yes");
 		m->prom_emulation = parse_on_off(cur_machine_prom_emulation);
 
-		if (!cur_machine_random_mem_contents[0])
-			strcpy(cur_machine_random_mem_contents, "no");
+		if (!cur_machine_random_mem[0])
+			strcpy(cur_machine_random_mem, "no");
 		m->random_mem_contents =
-		    parse_on_off(cur_machine_random_mem_contents);
+		    parse_on_off(cur_machine_random_mem);
+
+		if (!cur_machine_random_cpu[0])
+			strcpy(cur_machine_random_cpu, "no");
+		m->use_random_bootstrap_cpu =
+		    parse_on_off(cur_machine_random_cpu);
 
 		m->byte_order_override = NO_BYTE_ORDER_OVERRIDE;
 		if (cur_machine_byte_order[0]) {
@@ -526,7 +533,8 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("x11_scaledown", cur_machine_x11_scaledown);
 	WORD("bintrans", cur_machine_bintrans);
 	WORD("byte_order", cur_machine_byte_order);
-	WORD("random_mem_contents", cur_machine_random_mem_contents);
+	WORD("random_mem_contents", cur_machine_random_mem);
+	WORD("use_random_bootstrap_cpu", cur_machine_random_cpu);
 	WORD("force_netboot", cur_machine_force_netboot);
 	WORD("ncpus", cur_machine_ncpus);
 	WORD("n_gfx_cards", cur_machine_n_gfx_cards);

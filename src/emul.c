@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.143 2005-01-28 14:58:29 debug Exp $
+ *  $Id: emul.c,v 1.144 2005-01-29 09:41:08 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -36,7 +36,6 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "arcbios.h"
@@ -739,7 +738,6 @@ void emul_run(struct emul **emuls, int n_emuls)
 		return;
 	}
 
-	srandom(time(NULL));
 	atexit(fix_console);
 
 	i = 79;

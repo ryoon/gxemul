@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.4 2003-11-07 02:16:54 debug Exp $
+ *  $Id: dev_fb.c,v 1.5 2003-11-07 03:32:12 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -262,21 +262,25 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 	struct vfb_data *d = extra;
 
 	if (d->update_x1 != -1) {
-		int y, addr, addr2, len;
+		int y, addr, addr2, q = d->vfb_scaledown;
 
 		if (d->update_x1 >= d->visible_xsize)	d->update_x1 = d->visible_xsize - 1;
 		if (d->update_x2 >= d->visible_xsize)	d->update_x2 = d->visible_xsize - 1;
 		if (d->update_y1 >= d->visible_ysize)	d->update_y1 = d->visible_ysize - 1;
 		if (d->update_y2 >= d->visible_ysize)	d->update_y2 = d->visible_ysize - 1;
 
+		d->update_x1 = d->update_x1 / q * q;
+		d->update_x2 = d->update_x2 / q * q;
+		d->update_y1 = d->update_y1 / q * q;
+		d->update_y2 = d->update_y2 / q * q;
+
 		addr  = d->update_y1 * d->bytes_per_line + d->update_x1 * d->bit_depth / 8;
 		addr2 = d->update_y1 * d->bytes_per_line + d->update_x2 * d->bit_depth / 8;
-		len = addr2 - addr + (d->bit_depth + 7) / 8;
 
-		for (y=d->update_y1; y<=d->update_y2; y+=d->vfb_scaledown) {
-			update_framebuffer(d, addr, len);
-			addr  += d->bytes_per_line * d->vfb_scaledown;
-			addr2 += d->bytes_per_line * d->vfb_scaledown;
+		for (y=d->update_y1; y<=d->update_y2; y+=q) {
+			update_framebuffer(d, addr, addr2 - addr);
+			addr  += d->bytes_per_line * q;
+			addr2 += d->bytes_per_line * q;
 		}
 
 #ifdef WITH_X11
@@ -316,27 +320,50 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 	}
 */
 
+	/*  See if a write actually modifies the framebuffer contents:  */
+	if (writeflag == MEM_WRITE) {
+		for (i=0; i<len; i++) {
+			if (data[i] != d->framebuffer[relative_addr + i])
+				break;
+
+			/*  If all bytes are equal to what is already stored in the
+				framebuffer, then simply return:  */
+			if (i==len-1)
+				return 1;
+		}
+	}
+
+	/*
+	 *  If the framebuffer is modified, then we should keep a track
+	 *  of which area(s) we modify, so that the display isn't updated
+	 *  unneccessarily.
+	 *
+	 *  TODO: this doesn't really work with 24-bit stuff
+	 */
 	if (writeflag == MEM_WRITE && use_x11) {
 		int x, y;
 
-		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
+		x = (relative_addr % d->bytes_per_line) * d->eight_div_bit_depth;
 		y = relative_addr / d->bytes_per_line;
 
 		/*  Is this far away from the previous updates? Then update:  */
 		if (d->update_y1 != -1) {
 			int diff1, diff2;
+			int fhmult = 3 * 22;	/*  an integer multiple of the (assumed) font height  */
+
 			diff1 = y - d->update_y1;
 			diff2 = y - d->update_y2;
-			if (diff1 < -30 || diff1 > 30 || diff2 < -30 || diff2 > 30)
+			if (diff1 <= -fhmult || diff1 >= fhmult || diff2 < -fhmult || diff2 > fhmult)
 				dev_fb_tick(cpu, d);
 		}
 
 		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
+		x += len * d->eight_div_bit_depth;	/*  note: x2 is _after_ the last pixel  */
 
-		x += len * 8 / d->bit_depth - 1;	/*  TODO: 24 bit stuff?  */
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
 		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+
+		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
 	}
 
 	/*
@@ -420,6 +447,8 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	else if (d->bit_depth == 8 || d->bit_depth == 1)
 		set_blackwhite_palette(d, 1 << d->bit_depth);
 
+	d->eight_div_bit_depth = 8 / d->bit_depth;
+
 	d->vfb_scaledown = x11_scaledown;
 
 	d->bytes_per_line = d->xsize * d->bit_depth / 8;
@@ -456,7 +485,7 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 
 	memory_device_register(mem, name, baseaddr, size, dev_fb_access, d);
 
-	cpu_add_tickfunction(cpu, dev_fb_tick, d, 18);
+	cpu_add_tickfunction(cpu, dev_fb_tick, d, 19);
 	return d;
 }
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.386 2004-12-14 02:21:19 debug Exp $
+$Id: HISTORY,v 1.387 2004-12-14 03:09:39 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1316,3 +1316,4 @@ HISTORY of mips64emul
 20041214	Minor fix for coproc unusable for R4000 (it's the PC that,
 		matters, not the KSU bits).
 		Separating out the debugger from emul.c into debugger.c.
+		Rewriting parts of the debugger.

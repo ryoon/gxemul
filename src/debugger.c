@@ -23,11 +23,12 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.1 2004-12-14 02:21:21 debug Exp $
+ *  $Id: debugger.c,v 1.2 2004-12-14 03:09:40 debug Exp $
  *
  *  Single-step debugger.
  */
 
+#include <ctype.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,13 +53,6 @@ extern char **extra_argv;
 
 extern int quiet_mode;
 
-int old_instruction_trace = 0;
-int old_quiet_mode = 0;
-int old_show_trace_tree = 0;
-
-
-#define	MAX_CMD_LEN	60
-
 
 /*
  *  Global debugger variables:
@@ -68,6 +62,13 @@ int old_show_trace_tree = 0;
 
 struct emul *debugger_emul;
 
+int old_instruction_trace = 0;
+int old_quiet_mode = 0;
+int old_show_trace_tree = 0;
+
+static int exit_debugger;
+
+#define	MAX_CMD_LEN	60
 static char last_cmd[MAX_CMD_LEN];
 static int last_cmd_len = 0;
 
@@ -102,6 +103,128 @@ void debugger_activate(int x)
 	/*  Reactivate the signal handler:  */
 	signal(SIGINT, debugger_activate);
 }
+
+
+/****************************************************************************/
+
+
+/*
+ *  debugger_cmd_continue():
+ */
+static void debugger_cmd_continue(struct emul *emul, char *cmd_line)
+{
+	exit_debugger = 1;
+}
+
+
+/*  This is defined below.  */
+static void debugger_cmd_help(struct emul *emul, char *cmd_line);
+
+
+/*
+ *  debugger_cmd_quit():
+ */
+static void debugger_cmd_quit(struct emul *emul, char *cmd_line)
+{
+	int i;
+
+	for (i=0; i<emul->ncpus; i++)
+		emul->cpus[i]->running = 0;
+	emul->exit_without_entering_debugger = 1;
+	emul->single_step = 0;
+	exit_debugger = 1;
+}
+
+
+/*
+ *  debugger_cmd_version():
+ */
+static void debugger_cmd_version(struct emul *emul, char *cmd_line)
+{
+#ifdef VERSION
+	printf("%s, %s\n", VERSION, COMPILE_DATE);
+#else
+	printf("(no version), %s\n", COMPILE_DATE);
+#endif
+	last_cmd_len = 0;
+}
+
+
+struct cmd {
+	char	*name;
+	char	*args;
+	int	tmp_flag;
+	void	(*f)(struct emul *, char *cmd_line);
+	char	*description;
+};
+
+static struct cmd cmds[] = {
+	"continue", "",	0, debugger_cmd_continue,
+		"continue execution",
+
+	"dump", "[addr]", 0, NULL/*TODO*/,
+		"dumps memory contents in hex and ASCII",
+
+	"help", "", 0, debugger_cmd_help,
+		"prints this help message",
+
+	"quit",	"", 0, debugger_cmd_quit,
+		"quits the emulator",
+
+	"quiet", "", 0, NULL,
+		"toggles quiet_mode on or off",
+
+	"version", "", 0, debugger_cmd_version,
+		"prints version information",
+
+	NULL, NULL, 0, NULL, NULL
+};
+
+
+/*
+ *  debugger_cmd_help():
+ *
+ *  NOTE: This is placed after the cmds[] array, because it needs to
+ *  access it.
+ */
+static void debugger_cmd_help(struct emul *emul, char *cmd_line)
+{
+	int i, j, max_name_len = 0;
+
+	i = 0;
+	while (cmds[i].name != NULL) {
+		int a = strlen(cmds[i].name);
+		if (cmds[i].args != NULL)
+			a += 1 + strlen(cmds[i].args);
+		if (a > max_name_len)
+			max_name_len = a;
+		i++;
+	}
+
+	i = 0;
+	while (cmds[i].name != NULL) {
+		char buf[100];
+		snprintf(buf, sizeof(buf), "%s", cmds[i].name);
+		if (cmds[i].args != NULL)
+			snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+			    " %s", cmds[i].args);
+
+		printf("  ");
+		for (j=0; j<max_name_len; j++)
+			if (j < strlen(buf))
+				printf("%c", buf[j]);
+			else
+				printf(" ");
+
+		printf("     %s\n", cmds[i].description);
+		i++;
+	}
+
+	last_cmd_len = 0;
+}
+
+
+/****************************************************************************/
 
 
 /*
@@ -244,54 +367,63 @@ static void debugger_tlbdump(struct emul *emul)
 
 
 /*
+ *  debugger_readline():
+ *
+ *  Read a line from the terminal.
+ */
+static void debugger_readline(char *cmd, int max_cmd_len, int *cmd_len)
+{
+	int ch;
+
+	*cmd_len = 0; cmd[0] = '\0';
+	printf("mips64emul> ");
+	fflush(stdout);
+
+	ch = '\0';
+	while (ch != '\n') {
+		/*
+		 *  TODO: This uses up 100% CPU, maybe that isn't too good.
+		 *  The usleep() call might make it a tiny bit nicer on other
+		 *  running processes, but it is still very ugly.
+		 */
+		ch = console_readchar();
+		usleep(1);
+
+		if (ch == '\b' && *cmd_len > 0) {
+			*cmd_len --;
+			cmd[*cmd_len] = '\0';
+			printf("\b \b");
+			fflush(stdout);
+		} else if (ch >= ' ' && *cmd_len < max_cmd_len - 1) {
+			cmd[(*cmd_len) ++] = ch;
+			cmd[*cmd_len] = '\0';
+			printf("%c", ch);
+			fflush(stdout);
+		} else if (ch == '\r' || ch == '\n') {
+			ch = '\n';
+			printf("\n");
+		}
+	}
+}
+
+
+/*
  *  debugger():
  *
- *  An interractive debugger; reads a command from the terminal, and
- *  executes it.
+ *  This is a loop, which reads a command from the terminal, and executes it.
  */
 void debugger(void)
 {
-	int exit_debugger = 0;
-	int ch, i;
+	int i, n, i_match, cmd_len, matchlen;
 	char cmd[MAX_CMD_LEN];
-	int cmd_len;
 	static uint64_t last_dump_addr = 0xffffffff80000000ULL;
 	static uint64_t last_unasm_addr = 0xffffffff80000000ULL;
 
-	cmd[0] = '\0'; cmd_len = 0;
+	exit_debugger = 0;
 
 	while (!exit_debugger) {
-		/*  Read a line of input:  */
-		cmd_len = 0; cmd[0] = '\0';
-		printf("mips64emul> ");
-		fflush(stdout);
-
-		ch = '\0';
-		while (ch != '\n') {
-			/*
-			 *  TODO: This uses up 100% CPU, maybe that isn't
-			 *  very good.  The usleep() call might make it a
-			 *  tiny bit nicer on other running processes, but
-			 *  it is still very ugly.
-			 */
-			ch = console_readchar();
-			usleep(1);
-
-			if (ch == '\b' && cmd_len > 0) {
-				cmd_len --;
-				cmd[cmd_len] = '\0';
-				printf("\b \b");
-				fflush(stdout);
-			} else if (ch >= ' ' && cmd_len < MAX_CMD_LEN-1) {
-				cmd[cmd_len ++] = ch;
-				cmd[cmd_len] = '\0';
-				printf("%c", ch);
-				fflush(stdout);
-			} else if (ch == '\r' || ch == '\n') {
-				ch = '\n';
-				printf("\n");
-			}
-		}
+		/*  Read a line from the terminal:  */
+		debugger_readline(&cmd[0], MAX_CMD_LEN, &cmd_len);
 
 		/*  Just pressing Enter will repeat the last cmd:  */
 		if (cmd_len == 0 && last_cmd_len != 0) {
@@ -305,17 +437,68 @@ void debugger(void)
 		while (cmd_len > 0 && cmd[cmd_len-1] == ' ')
 			cmd[(cmd_len--)-1] = '\0';
 
-		/*  printf("cmd = '%s'\n", cmd);  */
-
 		/*  Remember this cmd:  */
 		if (cmd_len > 0) {
 			memcpy(last_cmd, cmd, cmd_len + 1);
 			last_cmd_len = cmd_len;
 		}
 
-		if (strcasecmp(cmd, "c") == 0 ||
-		    strcasecmp(cmd, "continue") == 0) {
-			exit_debugger = 1;
+		/*  No command? Then read a new line.  */
+		if (cmd_len == 0)
+			continue;
+
+		i = 0;
+		while (cmds[i].name != NULL)
+			cmds[i++].tmp_flag = 0;
+
+		/*  How many chars in cmd to match against:  */
+		matchlen = 0;
+		while (isalpha(cmd[matchlen]))
+			matchlen ++;
+
+		/*  Check for a command name match:  */
+		n = i = 0;
+		while (cmds[i].name != NULL) {
+			if (strncasecmp(cmds[i].name, cmd, matchlen) == 0) {
+				cmds[i].tmp_flag = 1;
+				i_match = i;
+				n++;
+			}
+			i++;
+		}
+
+		/*  No match?  */
+		if (n == 0) {
+			printf("Unknown command '%s'. "
+			    "Type 'help' for help.\n", cmd);
+			last_cmd[0] = cmd[0] = '\0';
+			last_cmd_len = cmd_len = 0;
+			continue;
+		}
+
+		/*  More than one match?  */
+		if (n > 1) {
+			printf("Ambiguous command '%s':  ", cmd);
+			i = 0;
+			while (cmds[i].name != NULL) {
+				if (cmds[i].tmp_flag)
+					printf("  %s", cmds[i].name);
+				i++;
+			}
+			printf("\n");
+			last_cmd[0] = cmd[0] = '\0';
+			last_cmd_len = cmd_len = 0;
+			continue;
+		}
+
+		/*  Exactly one match:  */
+		if (cmds[i_match].f != NULL)
+			cmds[i_match].f(debugger_emul, cmd + matchlen);
+		else
+			printf("FATAL ERROR: internal error in debugger.c:"
+			    " no handler for this command?\n");
+
+#if 0
 		} else if (strcasecmp(cmd, "d") == 0 ||
 		    strcasecmp(cmd, "dump") == 0) {
 			debugger_dump(debugger_emul, last_dump_addr, 8);
@@ -331,6 +514,7 @@ void debugger(void)
 			    address:  */
 			last_cmd_len = 1;
 			strcpy(last_cmd, "d");
+
 		} else if (strcasecmp(cmd, "h") == 0 ||
 		    strcasecmp(cmd, "?") == 0 || strcasecmp(cmd, "help") == 0) {
 			printf("  continue            continues emulation\n");
@@ -349,6 +533,7 @@ void debugger(void)
 			printf("  unassemble [addr]   dumps emulated memory contents as MIPS instructions\n");
 			printf("  version             prints version info\n");
 			last_cmd_len = 0;
+
 		} else if (strcasecmp(cmd, "i") == 0 ||
 		    strcasecmp(cmd, "itrace") == 0) {
 			old_instruction_trace = 1 - old_instruction_trace;
@@ -362,12 +547,7 @@ void debugger(void)
 			old_quiet_mode = 1 - old_quiet_mode;
 			printf("quiet_mode = %s\n",
 			    old_quiet_mode? "ON" : "OFF");
-		} else if (strcasecmp(cmd, "quit") == 0) {
-			for (i=0; i<debugger_emul->ncpus; i++)
-				debugger_emul->cpus[i]->running = 0;
-			debugger_emul->exit_without_entering_debugger = 1;
-			debugger_emul->single_step = 0;
-			exit_debugger = 1;
+
 		} else if (strcasecmp(cmd, "r") == 0 ||
 		    strcasecmp(cmd, "registers") == 0) {
 			for (i=0; i<debugger_emul->ncpus; i++)
@@ -402,21 +582,9 @@ void debugger(void)
 			    enter will continue from the last address:  */
 			last_cmd_len = 1;
 			strcpy(last_cmd, "u");
-		} else if (strcasecmp(cmd, "v") == 0 ||
-		    strcasecmp(cmd, "version") == 0) {
-			printf("%s, %s\n",
-#ifdef VERSION
-			    VERSION,
-#else
-			    "(no version)",
+
 #endif
-			    COMPILE_DATE);
-			last_cmd_len = 0;
-		} else if (cmd[0] != '\0') {
-			printf("Unknown command '%s'. Type 'help' for help.\n",
-			    cmd);
-			cmd[0] = '\0';
-		}
+
 	}
 
 	debugger_emul->single_step = 0;
@@ -424,5 +592,4 @@ void debugger(void)
 	debugger_emul->show_trace_tree = old_show_trace_tree;
 	quiet_mode = old_quiet_mode;
 }
-
 

@@ -84,6 +84,8 @@
 #include "sgi_arcbios.h"
 #define	SGI_SPB_ADDR		0x80001000
 #define	SGI_SYSID_ADDR		0x80001800
+#define	ARC_DSPSTAT_ADDR	0x80001c00
+#define	ARC_MEMDESC_ADDR	0x80001c80
 #define	SGI_ENV_STRINGS		0xbfc20000
 
 
@@ -126,6 +128,7 @@ struct cpu_type_def {
 	{ "R5000",	MIPS_R5000, 0,		DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, \
+	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48 }, \
 	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48 }, \
 	{ NULL } }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.70 2004-06-25 01:04:11 debug Exp $
+ *  $Id: cpu.c,v 1.71 2004-06-27 01:07:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -122,12 +122,20 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	}
 
 	if (i != -1) {
-		fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n", cpu_type_name);
+		fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n",
+		    cpu_type_name);
 		exit(1);
 	}
 
+	/*
+	 *  MIPS Code and Data caches:
+	 *
+	 *  TODO: There aren't really any caches :-)
+	 *  Most of the code related to cache handling is just good enough
+	 *  to fake it to the emulated OS.
+	 */
 	for (i=CACHE_DATA; i<=CACHE_INSTRUCTION; i++) {
-		cpu->cache_size[i] = 65536;
+		cpu->cache_size[i] = 32768;
 		cpu->cache[i] = malloc(cpu->cache_size[i]);
 		if (cpu->cache[i] == NULL) {
 			fprintf(stderr, "out of memory\n");
@@ -137,9 +145,14 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	cpu->coproc[0] = coproc_new(cpu, 0);	/*  System control, MMU  */
 	cpu->coproc[1] = coproc_new(cpu, 1);	/*  FPU  */
 
-	/*  Choose some value which can't happen, for example 3.  */
-	cpu->pc_last_virtual_page = 3;
-	cpu->pc_last_physical_page = 0;
+	/*
+	 *  Initialize the cpu->pc_last_* cache (a 1-entry cache of the
+	 *  last program counter value).  For pc_last_virtual_page, any
+	 *  "impossible" value will do.  The pc should never ever get this
+	 *  value.  (The other pc_last* variables do not need initialization,
+	 *  as they are not used before pc_last_virtual_page.)
+	 */
+	cpu->pc_last_virtual_page = PC_LAST_PAGE_IMPOSSIBLE_VALUE;
 
 	return cpu;
 }
@@ -536,7 +549,7 @@ int cpu_run_instr(struct cpu *cpu)
 	int copz, stype, which_cache, cache_op;
 	char *instr_mnem = NULL;			/*  for instruction trace  */
 
-	int enabled, mask, statusmask;			/*  interrupt delivery  */
+	int enabled, mask;			/*  interrupt delivery  */
 
 	int cond=0, likely, and_link;
 
@@ -660,7 +673,9 @@ int cpu_run_instr(struct cpu *cpu)
 			/*  no need to update cached_pc, as we're returning  */
 			cpu->delay_slot = NOT_DELAYED;
 			cpu->trace_tree_depth --;
-			return 0;
+
+			/*  TODO: how many instrs should this count as?  */
+			return 1;
 		}
 	}
 
@@ -814,6 +829,17 @@ int cpu_run_instr(struct cpu *cpu)
 	}
 
 
+	/*  Nullify this instruction?  (Set by previous instruction)  */
+	if (cpu->nullify_next) {
+		cpu->nullify_next = 0;
+		if (instruction_trace)
+			debug("(nullified)\n");
+
+		/*  Note: Return value is 1, even if no instruction was actually executed.  */
+		return 1;
+	}
+
+
 	/*
 	 *  Update Coprocessor 0 registers:
 	 *
@@ -836,20 +862,9 @@ int cpu_run_instr(struct cpu *cpu)
 		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
 		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
 			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
-	}
 
-	if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
-		cpu_interrupt(cpu, 7);
-
-
-	/*  Nullify this instruction?  (Set by previous instruction)  */
-	if (cpu->nullify_next) {
-		cpu->nullify_next = 0;
-		if (instruction_trace)
-			debug("(nullified)\n");
-
-		/*  Note: Return value is 1, even if no instruction was actually executed.  */
-		return 1;
+		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
+			cpu_interrupt(cpu, 7);
 	}
 
 
@@ -863,27 +878,19 @@ int cpu_run_instr(struct cpu *cpu)
 	 */
 
 	if (cpu->cpu_type.exc_model == EXC3K) {
-		enabled = cp0->reg[COP0_STATUS] & MIPS_SR_INT_IE;
-		statusmask = 0xff01;
+		if (cpu->last_was_rfe) {
+			enabled = 0;
+			cpu->last_was_rfe = 0;
+		} else {
+			enabled = cp0->reg[COP0_STATUS] & MIPS_SR_INT_IE;
+		}
 	} else {
 		/*  R4000:  */
 		enabled = (cp0->reg[COP0_STATUS] & STATUS_IE)
 		    && !(cp0->reg[COP0_STATUS] & STATUS_EXL)
 		    && !(cp0->reg[COP0_STATUS] & STATUS_ERL);
-		statusmask = 0xff07;
 	}
 
-#if 0
-	if (enabled && (cpu->old_status == (cpu->coproc[0]->reg[COP0_STATUS] & statusmask)))
-		cpu->time_since_intr_enabling ++;
-	else
-		cpu->time_since_intr_enabling = 0;
-
-	cpu->old_status = cpu->coproc[0]->reg[COP0_STATUS] & statusmask;
-
-	if (cpu->time_since_intr_enabling < 3)
-		enabled = 0;
-#endif
 	mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE];
 
 	if (enabled && (mask & STATUS_IM_MASK) != 0) {
@@ -1745,19 +1752,19 @@ int cpu_run_instr(struct cpu *cpu)
 
 			/*
 			 *  Super-ugly speed-hack:  (only if speed_tricks != 0)
+			 *  NOTE: This makes the emulation less correct.
 			 *
 			 *  If we encounter a loop such as:
 			 *
 			 *	8012f5f4: 1c40ffff      bgtz r0,r2,ffffffff8012f5f4
 			 *	8012f5f8: 2442ffff (d)  addiu r2,r2,-1
 			 *
-			 *  then it is a small loop which simply waits for r2 to
-			 *  become zero.
+			 *  then it is a small loop which simply waits for r2
+			 *  to become zero.
 			 *
-			 *  TODO:  This should be generalized, and OPTIONAL as it
-			 *  makes the emulation less correct.
-			 *
-			 *  TODO:  increaste the count register, and cause interrupts!!!
+			 *  TODO:  increaste the count register, and cause
+			 *  interrupts!!!  For now: return as if we just
+			 *  executed 1 instruction.
 			 */
 			if (speed_tricks && cpu->delay_slot && cpu->last_was_jumptoself &&
 			    cpu->jump_to_self_reg == rt && cpu->jump_to_self_reg == rs) {
@@ -1784,10 +1791,6 @@ int cpu_run_instr(struct cpu *cpu)
 
 			if (hi6 == HI6_ADDI || hi6 == HI6_ADDIU) {
 				/*  Sign-extend:  */
-/*				cpu->gpr[rt] &= 0xffffffff;
-				if (cpu->gpr[rt] & 0x80000000)
-					cpu->gpr[rt] |= 0xffffffff00000000;
-*/
 				cpu->gpr[rt] = (int64_t) (int32_t) cpu->gpr[rt];
 			}
 			break;
@@ -2681,9 +2684,10 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	 *  n is at most as much as the lowest number of cycles/tick
 	 *  for any hardware device.
 	 */
-	for (te=0; te<cpus[0]->n_tick_entries; te++)
+	for (te=0; te<cpus[0]->n_tick_entries; te++) {
 		if (cpus[0]->ticks_reset_value[te] < a_few_cycles)
 			a_few_cycles = cpus[0]->ticks_reset_value[te];
+	}
 
 	/*  debug("cpu_run(): a_few_cycles = %i\n", a_few_cycles);  */
 
@@ -2730,8 +2734,12 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			 */
 			for (te=0; te<cpus[0]->n_tick_entries; te++) {
 				cpus[0]->ticks_till_next[te] -= cpu0instrs;
+
 				if (cpus[0]->ticks_till_next[te] <= 0) {
-					cpus[0]->ticks_till_next[te] += cpus[0]->ticks_reset_value[te];
+					while (cpus[0]->ticks_till_next[te] <= 0)
+						cpus[0]->ticks_till_next[te] +=
+						    cpus[0]->ticks_reset_value[te];
+
 					cpus[0]->tick_func[te](cpus[0], cpus[0]->tick_extra[te]);
 				}
 			}

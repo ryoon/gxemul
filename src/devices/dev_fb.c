@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.29 2004-04-09 05:11:20 debug Exp $
+ *  $Id: dev_fb.c,v 1.30 2004-04-11 07:58:47 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -161,11 +161,13 @@ void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on,
 	int cursor_xsize, int cursor_ysize)
 {
 #ifdef WITH_X11
-	d->fb_window->cursor_x      = cursor_x;
-	d->fb_window->cursor_y      = cursor_y;
-	d->fb_window->cursor_on     = on;
-	d->fb_window->cursor_xsize  = cursor_xsize;
-	d->fb_window->cursor_ysize  = cursor_ysize;
+	if (d->fb_window != NULL) {
+		d->fb_window->cursor_x      = cursor_x;
+		d->fb_window->cursor_y      = cursor_y;
+		d->fb_window->cursor_on     = on;
+		d->fb_window->cursor_xsize  = cursor_xsize;
+		d->fb_window->cursor_ysize  = cursor_ysize;
+	}
 #endif
 	/*  debug("dev_fb_setcursor(%i,%i, size %i,%i, on=%i)\n",
 	    cursor_x, cursor_y, cursor_xsize, cursor_ysize, on);  */

@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.64 2004-12-12 22:22:28 debug Exp $
+$Id: RELEASE,v 1.65 2004-12-12 22:24:31 debug Exp $
 
 The release "road map" at the moment looks something like this:
 
@@ -84,6 +84,9 @@ Here is a short summary of the changes from version 0.2.3 to 0.2.4:
 	    5000/200, that have a hardware mouse cursor, the host machine's
 	    X cursor is now invisible. (This might not sound like a very
 	    exiting change, but it "feels" a lot better than before.)
+
+	x)  Improvements to the experimental dynamic binary translation
+	    subsystem.
 
 	x)  Various other bugfixes and updates.
 

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.40 2004-06-26 21:46:37 debug Exp $
+$Id: index.html,v 1.41 2004-06-27 18:43:42 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -53,9 +53,9 @@ and various bits of information. Enjoy! :-)
   <li><a href="#free">Is mips64emul free software?</a>
   <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
   <li><a href="#build">How to compile/build the emulator</a>
+  <li><a href="#guestos">Which guest OSes are possible to run?</a>
   <li><a href="#use">How to use the emulator</a>
   <li><a href="#netbsdinstall">How to install NetBSD/pmax inside the emulator</a>
-  <li><a href="#cani">Can I run &lt;os-name&gt; in the emulator?</a>
   <li><a href="#hello">Hello world</a>
   <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
@@ -176,6 +176,54 @@ different platforms.)
 The emulator's performance is highly dependant on both runtime settings
 and on compiler settings, so you might want to experiment with different
 CC and CFLAGS environment variable values.
+
+
+<p><br>
+<a name="guestos"></a>
+<h4>Which guest OSes are possible to run?</h4>
+
+This table sums up the guest OSes that run well enough to be considered
+"working" in the emulator, that is, they can be installed onto some kind
+of harddisk image and be interacted with similar to a real machine:
+<p>
+  <table border="1">
+    <tr>
+      <td><b>Emulation mode:</b></td>
+      <td><b>Guest OS:</b></td>
+      <td><b>Suitable command line arguments:</b></td>
+    </tr>
+
+    <tr>
+      <td>DECstation</td>
+      <td>NetBSD/pmax</td>
+      <td>-D2 -d rootdisk_name name_of_netbsd_pmax_kernel
+	<br>(add -NX for graphical framebuffer)
+	</td>
+    </tr>
+
+    <tr>
+      <td>DECstation</td>
+      <td>Ultrix/pmax</td>
+      <td>-j -D2 -d rootdisk_name name_of_ultrix_kernel
+	<br>(add -NX for graphical framebuffer)
+	</td>
+    </tr>
+
+  </table>
+<p>
+Some other emulation modes, most notably SGI emulation modes,
+work relatively well with NetBSD, but not well enough
+to support SCSI disk images, and definitely not well enough to run Irix.
+<p>
+It is non-trivial to get a specific operating system or OS kernel to
+run in the emulator, so don't expect the list above to grow very quickly.
+<p>
+There is no guarantee that anything
+specific will run in the emulator, but NetBSD (or possibly Linux) is a
+good starting point for someone who wants to experiment. Linux kernels
+don't usually have ramdisks in them, so until some disk controller device
+has been implemented, NetBSD is the way to go if you want to reach
+userland.
 
 
 <p><br>
@@ -364,7 +412,6 @@ Here are links to some kernels that can be experimented with:
 	<br>Try running with <b>-XBN</b>  (<b>-X</b> is required, for the framebuffer).
     </ul>
   </li>
-</pre>
 </ul>
 
 
@@ -439,55 +486,6 @@ Other OSes, such as Ultrix, may be installed in a way similar to NetBSD.
 (For Ultrix, add <b>-j</b> to the command line to fake ultrixboot behaviour.
 The install kernel and generic kernels must be extracted from the installation
 CD-ROM media, by mounting that media as an ufs file system.)
-
-
-<p><br>
-<a name="cani"></a>
-<h4>Can I run &lt;os-name&gt; in the emulator?</h4>
-
-The answer is probably <i>no</i>, unless &lt;os-name&gt; is one of a few
-things that I have tried myself. (It is non-trivial to get a specific
-operating system or OS kernel to run in the emulator.)
-<p>
-This table sums up the guest OSes that run well enough to be considered
-"working" in the emulator, that is, they can be installed onto some kind
-of harddisk image and be interacted with similar to a real machine:
-<p>
-  <table border="1">
-    <tr>
-      <td><b>Emulation mode:</b></td>
-      <td><b>Guest OS:</b></td>
-      <td><b>Suitable command line arguments:</b></td>
-    </tr>
-
-    <tr>
-      <td>DECstation</td>
-      <td>NetBSD/pmax</td>
-      <td>-D2 -M32 -d rootdisk_name name_of_netbsd_pmax_kernel
-	<br>(add -NX for graphical framebuffer, -Y2 to scale down the framebuffer)
-	</td>
-    </tr>
-
-    <tr>
-      <td>DECstation</td>
-      <td>Ultrix/pmax</td>
-      <td>-j -D2 -M32 -d rootdisk_name name_of_ultrix_kernel
-	<br>(add -NX for graphical framebuffer, -Y2 to scale down the framebuffer)
-	</td>
-    </tr>
-
-  </table>
-<p>
-Some other emulation modes, most notably SGI emulation modes,
-work relatively well with NetBSD, but not well enough
-to support SCSI disk images, and definitely not well enough to run Irix.
-<p>
-To sum it up: there is no guarantee that anything
-specific will run in the emulator, but NetBSD (or possibly Linux) is a
-good starting point for someone who wants to experiment. Linux kernels
-don't usually have ramdisks in them, so until some disk controller device
-has been implemented, NetBSD is the way to go if you want to reach
-userland.
 
 
 <p><br>

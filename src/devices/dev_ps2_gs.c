@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gs.c,v 1.5 2004-03-27 19:26:15 debug Exp $
+ *  $Id: dev_ps2_gs.c,v 1.6 2004-07-03 16:25:12 debug Exp $
  *  
  *  Playstation 2 "graphics system".
  */
@@ -85,10 +85,10 @@ char *gs_reg_high_names[4] = {
 
 /*
  *  dev_ps2_gs_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ps2_gs_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int i, regnr;
@@ -150,10 +150,12 @@ void dev_ps2_gs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct gs_data));
 
-	d->gif_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, DEV_PS2_GIF_LENGTH, DEFAULT_MAX_BITS);
+	d->gif_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE,
+	    DEFAULT_BITS_PER_MEMBLOCK, DEV_PS2_GIF_LENGTH, DEFAULT_MAX_BITS);
 	GLOBAL_gif_mem = d->gif_mem;
 	dev_ps2_gif_init(cpu, d->gif_mem, 0x00000000);
 
-	memory_device_register(mem, "ps2_gs", baseaddr, DEV_PS2_GS_LENGTH, dev_ps2_gs_access, d);
+	memory_device_register(mem, "ps2_gs", baseaddr, DEV_PS2_GS_LENGTH,
+	    dev_ps2_gs_access, d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_unreadable.c,v 1.2 2004-06-24 05:41:29 debug Exp $
+ *  $Id: dev_unreadable.c,v 1.3 2004-07-03 16:25:12 debug Exp $
  *  
  *  A dummy device which returns memory read errors (unreadable),
  *  and a device which returns random data (random).
@@ -40,10 +40,10 @@
 
 /*
  *  dev_unreadable_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_unreadable_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_unreadable_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	return 0;
 }
@@ -54,7 +54,9 @@ int dev_unreadable_access(struct cpu *cpu, struct memory *mem, uint64_t relative
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_random_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_random_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	if (writeflag == MEM_READ) {
 		int i;
@@ -71,7 +73,8 @@ int dev_random_access(struct cpu *cpu, struct memory *mem, uint64_t relative_add
  */
 void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
 {
-	memory_device_register(mem, "unreadable", baseaddr, len, dev_unreadable_access, NULL);
+	memory_device_register(mem, "unreadable", baseaddr, len,
+	    dev_unreadable_access, NULL);
 }
 
 
@@ -80,7 +83,8 @@ void dev_unreadable_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
  */
 void dev_random_init(struct memory *mem, uint64_t baseaddr, uint64_t len)
 {
-	memory_device_register(mem, "random", baseaddr, len, dev_random_access, NULL);
+	memory_device_register(mem, "random", baseaddr, len, dev_random_access,
+	    NULL);
 }
 
 

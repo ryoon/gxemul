@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt431.c,v 1.2 2004-06-22 22:25:11 debug Exp $
+ *  $Id: dev_bt431.c,v 1.3 2004-07-03 16:25:11 debug Exp $
  *  
  *  Brooktree 431, used by TURBOchannel graphics cards.
  *
@@ -61,8 +61,6 @@ struct bt431_data {
 
 /*
  *  dev_bt431_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_bt431_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.5 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_kn02.c,v 1.6 2004-07-03 16:25:11 debug Exp $
  *  
  *  DEC (KN02) stuff.
  */
@@ -39,10 +39,10 @@
 
 /*
  *  dev_kn02_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_kn02_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_kn02_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct kn02_csr *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -91,7 +91,9 @@ struct kn02_csr *dev_kn02_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 	}
 	memset(d, 0, sizeof(struct kn02_csr));
 
-	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH, dev_kn02_access, d);
+	memory_device_register(mem, "kn02", baseaddr, DEV_KN02_LENGTH,
+	    dev_kn02_access, d);
+
 	return d;
 }
 

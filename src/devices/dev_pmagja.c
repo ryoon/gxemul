@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pmagja.c,v 1.4 2004-06-27 01:09:54 debug Exp $
+ *  $Id: dev_pmagja.c,v 1.5 2004-07-03 16:25:12 debug Exp $
  *  
  *  TURBOchannel PMAG-JA graphics device.
  *
@@ -62,10 +62,10 @@ struct pmagja_data {
 
 /*
  *  dev_pmagja_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_pmagja_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_pmagja_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct pmagja_data *d = extra;
@@ -181,7 +181,8 @@ for (i=0; i<len; i++)
 /*
  *  dev_pmagja_init():
  */
-void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr)
+void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr)
 {
 	struct pmagja_data *d;
 
@@ -209,6 +210,7 @@ void dev_pmagja_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 	dev_bt459_init(cpu, mem, baseaddr + 0x40000, 0, d->vfb_data, 8, irq_nr, 0);	/*  palette  (TODO: type)  */
 	dev_bt431_init(mem, baseaddr + 0x40010, d->vfb_data, 8);			/*  cursor  */
 
-	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET, DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d);
+	memory_device_register(mem, "pmagja", baseaddr + PMAGJA_FIRSTOFFSET,
+	    DEV_PMAGJA_LENGTH - PMAGJA_FIRSTOFFSET, dev_pmagja_access, d);
 }
 

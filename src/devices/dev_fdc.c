@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fdc.c,v 1.3 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_fdc.c,v 1.4 2004-07-03 16:25:11 debug Exp $
  *  
  *  Floppy controller.
  *
@@ -48,10 +48,10 @@ struct fdc_data {
 
 /*
  *  dev_fdc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_fdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_fdc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int i;
@@ -104,6 +104,7 @@ void dev_fdc_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	memset(d, 0, sizeof(struct fdc_data));
 	d->irqnr = irq_nr;
 
-	memory_device_register(mem, "fdc", baseaddr, DEV_FDC_LENGTH, dev_fdc_access, d);
+	memory_device_register(mem, "fdc", baseaddr, DEV_FDC_LENGTH,
+	    dev_fdc_access, d);
 }
 

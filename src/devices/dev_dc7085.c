@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dc7085.c,v 1.22 2004-06-28 05:41:08 debug Exp $
+ *  $Id: dev_dc7085.c,v 1.23 2004-07-03 16:25:11 debug Exp $
  *  
  *  DC7085 serial controller, used in some DECstation models.
  */
@@ -132,10 +132,10 @@ void dev_dc7085_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_dc7085_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_dc7085_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_dc7085_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int i;
@@ -248,12 +248,12 @@ do_return:
 /*
  *  dev_dc7085_init():
  *
- *  Initialize a dc7085 serial controller device.
- *  use_fb should be non-zero if a framebuffer device is used.
- *  Channel 0 will then be treated as a DECstation keyboard,
- *  instead of a plain serial console.
+ *  Initialize a dc7085 serial controller device. use_fb should be non-zero
+ *  if a framebuffer device is used. Channel 0 will then be treated as a
+ *  DECstation keyboard, instead of a plain serial console.
  */
-void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb)
+void dev_dc7085_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int use_fb)
 {
 	struct dc_data *d;
 
@@ -271,7 +271,8 @@ void dev_dc7085_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int
 
 	lk201_init(&d->lk201, use_fb, add_to_rx_queue, d);
 
-	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH, dev_dc7085_access, d);
+	memory_device_register(mem, "dc7085", baseaddr, DEV_DC7085_LENGTH,
+	    dev_dc7085_access, d);
 	cpu_add_tickfunction(cpu, dev_dc7085_tick, d, 9);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vdac.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_vdac.c,v 1.5 2004-07-03 16:25:12 debug Exp $
  *  
  *  Color map used by DECstation 3100.
  */
@@ -63,10 +63,10 @@ struct vdac_data {
 
 /*
  *  dev_vdac_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_vdac_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct vdac_data *d = (struct vdac_data *) extra;
 
@@ -180,7 +180,8 @@ int dev_vdac_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_vdac_init():
  */
-void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag)
+void dev_vdac_init(struct memory *mem, uint64_t baseaddr,
+	unsigned char *rgb_palette, int color_fb_flag)
 {
 	struct vdac_data *d = malloc(sizeof(struct vdac_data));
 	if (d == NULL) {
@@ -191,6 +192,7 @@ void dev_vdac_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_pal
 	d->rgb_palette   = rgb_palette;
 	d->color_fb_flag = color_fb_flag;
 
-	memory_device_register(mem, "vdac", baseaddr, DEV_VDAC_LENGTH, dev_vdac_access, (void *)d);
+	memory_device_register(mem, "vdac", baseaddr, DEV_VDAC_LENGTH,
+	    dev_vdac_access, (void *)d);
 }
 

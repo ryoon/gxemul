@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip20.c,v 1.3 2004-06-22 22:24:54 debug Exp $
+ *  $Id: dev_sgi_ip20.c,v 1.4 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI IP20 stuff.
  */
@@ -44,10 +44,10 @@ extern int quiet_mode;
 
 /*
  *  dev_sgi_ip20_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	/*  struct sgi_ip20_data *d = (struct sgi_ip20_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
@@ -62,10 +62,10 @@ int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 			/*
 			 *  TODO:
 			 *
-			 *  I haven't had time to figure out what values should be
-			 *  returned by this device.  Simple bit patterns don't seem
-			 *  to be enough, but using random() is obviously pretty
-			 *  bad.  This must be fixed some day.
+			 *  I haven't had time to figure out what values should
+			 *  be returned by this device.  Simple bit patterns
+			 *  don't seem to be enough, but using random() is
+			 *  obviously pretty bad.  This must be fixed some day.
 			 */
 
 			/*  instruction_trace = 1;  quiet_mode = 0;  */
@@ -92,7 +92,8 @@ int dev_sgi_ip20_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_sgi_ip20_init():
  */
-struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct sgi_ip20_data *d = malloc(sizeof(struct sgi_ip20_data));
 	if (d == NULL) {
@@ -101,8 +102,12 @@ struct sgi_ip20_data *dev_sgi_ip20_init(struct cpu *cpu, struct memory *mem, uin
 	}
 	memset(d, 0, sizeof(struct sgi_ip20_data));
 
-	/*  This device is detected as int0 by NetBSD 2.0_BETA, so I call it "_int"  */
-	memory_device_register(mem, "sgi_ip20_int", baseaddr, DEV_SGI_IP20_LENGTH, dev_sgi_ip20_access, (void *)d);
+	/*
+	 *  This device is detected as int0 by NetBSD 2.0_BETA, so I call it
+	 *  "sgi_ip20_int".
+	 */
+	memory_device_register(mem, "sgi_ip20_int", baseaddr,
+	    DEV_SGI_IP20_LENGTH, dev_sgi_ip20_access, (void *)d);
 
 	return d;
 }

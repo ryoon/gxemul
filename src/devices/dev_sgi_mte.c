@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_mte.c,v 1.3 2004-02-18 09:35:36 debug Exp $
+ *  $Id: dev_sgi_mte.c,v 1.4 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI "mte". This device seems to be an accelerator for copying/clearing
  *  memory.  Used in SGI-IP32.
@@ -47,10 +47,10 @@ struct sgi_mte_data {
 
 /*
  *  dev_sgi_mte_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_mte_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_mte_data *d = (struct sgi_mte_data *) extra;
 	uint64_t first_addr, last_addr, zerobuflen, fill_addr, fill_len;
@@ -170,6 +170,7 @@ void dev_sgi_mte_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct sgi_mte_data));
 
-	memory_device_register(mem, "sgi_mte", baseaddr, DEV_SGI_MTE_LENGTH, dev_sgi_mte_access, (void *)d);
+	memory_device_register(mem, "sgi_mte", baseaddr, DEV_SGI_MTE_LENGTH,
+	    dev_sgi_mte_access, (void *)d);
 }
 

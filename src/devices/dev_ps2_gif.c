@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.12 2004-03-28 15:19:12 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.13 2004-07-03 16:25:12 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -187,10 +187,10 @@ void test_triangle(struct gif_data *d,
 
 /*
  *  dev_ps2_gif_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	int i;
 	struct gif_data *d = extra;
@@ -375,6 +375,7 @@ void dev_ps2_gif_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);
 #endif
 
-	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH, dev_ps2_gif_access, d);
+	memory_device_register(mem, "ps2_gif", 0x00000000, DEV_PS2_GIF_LENGTH,
+	    dev_ps2_gif_access, d);
 }
 

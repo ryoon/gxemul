@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_macepci.c,v 1.8 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_macepci.c,v 1.9 2004-07-03 16:25:11 debug Exp $
  *  
  *  SGI "macepci".
  */
@@ -46,10 +46,10 @@ struct macepci_data {
 
 /*
  *  dev_macepci_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_macepci_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct macepci_data *d = (struct macepci_data *) extra;
 	uint64_t idata = 0, odata=0;
@@ -105,7 +105,8 @@ int dev_macepci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 /*
  *  dev_macepci_init():
  */
-struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pciirq)
+struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr,
+	int pciirq)
 {
 	struct macepci_data *d = malloc(sizeof(struct macepci_data));
 	if (d == NULL) {
@@ -116,7 +117,8 @@ struct pci_data *dev_macepci_init(struct memory *mem, uint64_t baseaddr, int pci
 
 	d->pci_data = bus_pci_init(mem, pciirq);
 
-	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH, dev_macepci_access, (void *)d);
+	memory_device_register(mem, "macepci", baseaddr, DEV_MACEPCI_LENGTH,
+	    dev_macepci_access, (void *)d);
 
 	return d->pci_data;
 }

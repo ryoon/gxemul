@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_ahc.c,v 1.3 2004-03-01 17:11:25 debug Exp $
+ *  $Id: pci_ahc.c,v 1.4 2004-07-03 16:25:12 debug Exp $
  *
  *  Adaptec AHC SCSI controller.
  *
@@ -100,10 +100,10 @@ uint32_t pci_ahc_rr(int reg)
 
 /*
  *  dev_ahc_access():
- *
- *  Returns 1 if ok, 0 on error. 
  */
-int dev_ahc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ahc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 /*	struct ahc_data *d = extra;  */
 	uint64_t idata, odata = 0;
@@ -140,6 +140,7 @@ void pci_ahc_init(struct cpu *cpu, struct memory *mem)
 	memset(d, 0, sizeof(struct ahc_data));
 
 	/*  TODO:  this address is based on what NetBSD/sgimips uses...  fix this  */
-	memory_device_register(mem, "ahc", 0x18000000, 0x100, dev_ahc_access, d);
+	memory_device_register(mem, "ahc", 0x18000000, 0x100,
+	    dev_ahc_access, d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn230.c,v 1.5 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_kn230.c,v 1.6 2004-07-03 16:25:11 debug Exp $
  *  
  *  DEC MIPSMATE 5100 (KN230) stuff.
  */
@@ -39,10 +39,10 @@
 
 /*
  *  dev_kn230_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_kn230_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_kn230_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct kn230_csr *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -87,7 +87,8 @@ struct kn230_csr *dev_kn230_init(struct cpu *cpu, struct memory *mem, uint64_t b
 	}
 	memset(d, 0, sizeof(struct kn230_csr));
 
-	memory_device_register(mem, "kn230", baseaddr, DEV_KN230_LENGTH, dev_kn230_access, d);
+	memory_device_register(mem, "kn230", baseaddr, DEV_KN230_LENGTH,
+	    dev_kn230_access, d);
 	return d;
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.5 2004-04-02 05:48:17 debug Exp $
+ *  $Id: dev_wdc.c,v 1.6 2004-07-03 16:25:12 debug Exp $
  *  
  *  Standard IDE controller.
  *
@@ -167,10 +167,10 @@ void wdc_initialize_identify_struct(struct wdc_data *d)
 
 /*
  *  dev_wdc_altstatus_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -198,10 +198,10 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem, uint64_t relat
 
 /*
  *  dev_wdc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_wdc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct wdc_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -412,10 +412,10 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 /*
  *  dev_wdc_init():
  *
- *  base_drive should be 0 for the primary device, and
- *  2 for the secondary.
+ *  base_drive should be 0 for the primary device, and 2 for the secondary.
  */
-void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int base_drive)
+void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int base_drive)
 {
 	struct wdc_data *d;
 
@@ -428,8 +428,10 @@ void dev_wdc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	d->irq_nr     = irq_nr;
 	d->base_drive = base_drive;
 
-	memory_device_register(mem, "wdc_altstatus", baseaddr + 0x206, 1, dev_wdc_altstatus_access, d);
-	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH, dev_wdc_access, d);
+	memory_device_register(mem, "wdc_altstatus", baseaddr + 0x206, 1,
+	    dev_wdc_altstatus_access, d);
+	memory_device_register(mem, "wdc", baseaddr, DEV_WDC_LENGTH,
+	    dev_wdc_access, d);
 
 /*	cpu_add_tickfunction(cpu, dev_wdc_tick, d, 10);  */
 }

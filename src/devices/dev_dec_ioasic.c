@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec_ioasic.c,v 1.2 2004-03-04 03:15:50 debug Exp $
+ *  $Id: dev_dec_ioasic.c,v 1.3 2004-07-03 16:25:11 debug Exp $
  *  
  *  DECstation "3MIN" and "3MAX" IOASIC device.
  *
@@ -45,10 +45,10 @@
 
 /*
  *  dev_dec_ioasic_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct dec_ioasic_data *d = (struct dec_ioasic_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -176,7 +176,8 @@ int dev_dec_ioasic_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 /*
  *  dev_dec_ioasic_init():
  */
-struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem, uint64_t baseaddr)
+struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem,
+	uint64_t baseaddr)
 {
 	struct dec_ioasic_data *d = malloc(sizeof(struct dec_ioasic_data));
 	if (d == NULL) {
@@ -185,7 +186,8 @@ struct dec_ioasic_data *dev_dec_ioasic_init(struct memory *mem, uint64_t baseadd
 	}
 	memset(d, 0, sizeof(struct dec_ioasic_data));
 
-	memory_device_register(mem, "dec_ioasic", baseaddr, DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d);
+	memory_device_register(mem, "dec_ioasic", baseaddr,
+	    DEV_DEC_IOASIC_LENGTH, dev_dec_ioasic_access, (void *)d);
 
 	return d;
 }

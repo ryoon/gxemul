@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.25 2004-07-02 14:17:14 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.26 2004-07-03 16:25:11 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -129,8 +129,6 @@ int dev_mc146818_pica_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_mc146818_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,

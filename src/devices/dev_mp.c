@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.7 2004-07-02 13:35:25 debug Exp $
+ *  $Id: dev_mp.c,v 1.8 2004-07-03 16:25:12 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -47,10 +47,9 @@ extern int ncpus;
 
 /*
  *  dev_mp_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	static uint64_t startup_addr = INITIAL_PC;
 	static uint64_t pause_addr;
@@ -126,6 +125,7 @@ int dev_mp_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
  */
 void dev_mp_init(struct memory *mem, struct cpu *cpus[])
 {
-	memory_device_register(mem, "mp", DEV_MP_ADDRESS, DEV_MP_LENGTH, dev_mp_access, (void *)cpus);
+	memory_device_register(mem, "mp", DEV_MP_ADDRESS, DEV_MP_LENGTH,
+	    dev_mp_access, (void *)cpus);
 }
 

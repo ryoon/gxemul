@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.17 2004-06-27 01:09:54 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.18 2004-07-03 16:25:12 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -55,10 +55,10 @@ struct turbochannel_data {
 
 /*
  *  dev_turbochannel_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_turbochannel_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct turbochannel_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -117,7 +117,8 @@ int dev_turbochannel_access(struct cpu *cpu, struct memory *mem, uint64_t relati
  *  This is a generic turbochannel card device.  device_name should point
  *  to a string such as "PMAG-BA".
  */
-void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq)
+void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr,
+	uint64_t baseaddr, uint64_t endaddr, char *device_name, int irq)
 {
 	struct vfb_data *fb;
 	struct turbochannel_data *d;
@@ -224,6 +225,7 @@ void dev_turbochannel_init(struct cpu *cpu, struct memory *mem, int slot_nr, uin
 	} else
 		fatal("warning: unknown TURBOchannel device name \"%s\"\n", device_name);
 
-	memory_device_register(mem, "turbochannel", baseaddr + rom_offset, rom_length, dev_turbochannel_access, d);
+	memory_device_register(mem, "turbochannel", baseaddr + rom_offset,
+	    rom_length, dev_turbochannel_access, d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_nasid.c,v 1.5 2004-07-02 14:17:14 debug Exp $
+ *  $Id: dev_sgi_nasid.c,v 1.6 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI nasid CPU stuff. (This isn't very documented, I'm basing it on
  *  linux/arch/mips/sgi-ip27/ for now.)
@@ -46,10 +46,10 @@ struct sgi_nasid_data {
 
 /*
  *  dev_sgi_nasid_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_nasid_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 /*	struct sgi_nasid_data *d = (struct sgi_nasid_data *) extra;  */
 	uint64_t idata = 0, odata = 0;

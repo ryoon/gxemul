@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5800.c,v 1.2 2004-03-09 00:05:55 debug Exp $
+ *  $Id: dev_dec5800.c,v 1.3 2004-07-03 16:25:11 debug Exp $
  *  
  *  DEC 5800 (SMP capable system).
  *
@@ -61,10 +61,10 @@ void dev_dec5800_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_dec5800_vectors_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
@@ -91,10 +91,10 @@ int dev_dec5800_vectors_access(struct cpu *cpu, struct memory *mem, uint64_t rel
 
 /*
  *  dev_dec5800_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_dec5800_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct dec5800_data *d = extra;
@@ -138,7 +138,8 @@ int dev_dec5800_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 /*
  *  dev_dec5800_init():
  */
-struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct dec5800_data *dev_dec5800_init(struct cpu *cpu,
+	struct memory *mem, uint64_t baseaddr)
 {
 	struct dec5800_data *d;
 
@@ -149,8 +150,10 @@ struct dec5800_data *dev_dec5800_init(struct cpu *cpu, struct memory *mem, uint6
 	}
 	memset(d, 0, sizeof(struct dec5800_data));
 
-	memory_device_register(mem, "dec5800", baseaddr, DEV_DEC5800_LENGTH, dev_dec5800_access, d);
-	memory_device_register(mem, "dec5800_vectors", baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d);
+	memory_device_register(mem, "dec5800", baseaddr,
+	    DEV_DEC5800_LENGTH, dev_dec5800_access, d);
+	memory_device_register(mem, "dec5800_vectors",
+	    baseaddr + 0x30000000, 0x100, dev_dec5800_vectors_access, d);
 	cpu_add_tickfunction(cpu, dev_dec5800_tick, d, 13);
 
 	return d;

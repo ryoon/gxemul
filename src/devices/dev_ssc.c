@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ssc.c,v 1.9 2004-03-10 02:08:55 debug Exp $
+ *  $Id: dev_ssc.c,v 1.10 2004-07-03 16:25:12 debug Exp $
  *  
  *  Serial controller on DECsystem 5400 and 5800.
  *  Known as System Support Chip on VAX 3600 (KA650).
@@ -106,10 +106,10 @@ void dev_ssc_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_ssc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ssc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct ssc_data *d = extra;
@@ -225,7 +225,8 @@ int dev_ssc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 /*
  *  dev_ssc_init():
  */
-void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, uint32_t *csrp)
+void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int use_fb, uint32_t *csrp)
 {
 	struct ssc_data *d;
 
@@ -239,7 +240,9 @@ void dev_ssc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	d->use_fb = use_fb;
 	d->csrp   = csrp;
 
-	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH, dev_ssc_access, d);
+	memory_device_register(mem, "ssc", baseaddr, DEV_SSC_LENGTH,
+	    dev_ssc_access, d);
+
 	cpu_add_tickfunction(cpu, dev_ssc_tick, d, 12);
 }
 

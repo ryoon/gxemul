@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_gbe.c,v 1.8 2004-06-14 07:21:18 debug Exp $
+ *  $Id: dev_sgi_gbe.c,v 1.9 2004-07-03 16:25:12 debug Exp $
  *
  *  SGI "gbe", graphics controller. Framebuffer.
  *  Loosely inspired by Linux code.
@@ -164,10 +164,10 @@ void dev_sgi_gbe_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_sgi_gbe_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_gbe_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_gbe_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -360,10 +360,12 @@ void dev_sgi_gbe_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	d->yres = 480;
 	d->bitdepth = 8;
 	d->control = 0x20aa000;		/*  or 0x00000001?  */
-	d->fb_data = dev_fb_init(cpu, mem, FAKE_GBE_FB_ADDRESS, VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE");
+	d->fb_data = dev_fb_init(cpu, mem, FAKE_GBE_FB_ADDRESS,
+	    VFB_GENERIC, d->xres, d->yres, d->xres, d->yres, 8, "SGI GBE");
 	set_grayscale_palette(d->fb_data, 256);
 
-	memory_device_register(mem, "sgi_gbe", baseaddr, DEV_SGI_GBE_LENGTH, dev_sgi_gbe_access, d);
+	memory_device_register(mem, "sgi_gbe", baseaddr, DEV_SGI_GBE_LENGTH,
+	    dev_sgi_gbe_access, d);
 	cpu_add_tickfunction(cpu, dev_sgi_gbe_tick, d, 18);
 }
 

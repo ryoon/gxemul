@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_rd94.c,v 1.8 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_rd94.c,v 1.9 2004-07-03 16:25:12 debug Exp $
  *  
  *  RD94 jazzio.
  */
@@ -71,10 +71,10 @@ void dev_rd94_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_rd94_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_rd94_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct rd94_data *d = (struct rd94_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -170,7 +170,8 @@ int dev_rd94_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_rd94_init():
  */
-struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int pciirq)
+struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int pciirq)
 {
 	struct rd94_data *d = malloc(sizeof(struct rd94_data));
 	if (d == NULL) {
@@ -181,7 +182,8 @@ struct pci_data *dev_rd94_init(struct cpu *cpu, struct memory *mem, uint64_t bas
 	d->pciirq   = pciirq;
 	d->pci_data = bus_pci_init(mem, pciirq);
 
-	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH, dev_rd94_access, (void *)d);
+	memory_device_register(mem, "rd94", baseaddr, DEV_RD94_LENGTH,
+	    dev_rd94_access, (void *)d);
 	cpu_add_tickfunction(cpu, dev_rd94_tick, d, 10);
 
 	return d->pci_data;

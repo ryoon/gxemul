@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_dec5500_ioboard.c,v 1.4 2004-07-02 13:35:24 debug Exp $
+ *  $Id: dev_dec5500_ioboard.c,v 1.5 2004-07-03 16:25:11 debug Exp $
  *  
  *  DEC 5500 "ioboard" device.
  *
@@ -48,8 +48,6 @@ struct dec5500_ioboard_data {
 
 /*
  *  dev_dec5500_ioboard_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -95,16 +93,19 @@ int dev_dec5500_ioboard_access(struct cpu *cpu, struct memory *mem,
 /*
  *  dev_dec5500_ioboard_init():
  */
-struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+struct dec5500_ioboard_data *dev_dec5500_ioboard_init(struct cpu *cpu,
+	struct memory *mem, uint64_t baseaddr)
 {
-	struct dec5500_ioboard_data *d = malloc(sizeof(struct dec5500_ioboard_data));
+	struct dec5500_ioboard_data *d =
+	    malloc(sizeof(struct dec5500_ioboard_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct dec5500_ioboard_data));
 
-	memory_device_register(mem, "dec5500_ioboard", baseaddr, DEV_DEC5500_IOBOARD_LENGTH, dev_dec5500_ioboard_access, (void *)d);
+	memory_device_register(mem, "dec5500_ioboard", baseaddr,
+	    DEV_DEC5500_IOBOARD_LENGTH, dev_dec5500_ioboard_access, (void *)d);
 
 	return d;
 }

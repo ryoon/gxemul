@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.18 2004-06-13 13:07:23 debug Exp $
+ *  $Id: dev_crime.c,v 1.19 2004-07-03 16:25:11 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -86,10 +86,10 @@ void dev_crime_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_crime_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_crime_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	int i;
 	struct crime_data *d = extra;
@@ -171,7 +171,8 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_crime_init():
  */
-struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb)
+struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int irq_nr, int use_fb)
 {
 	struct crime_data *d;
 
@@ -184,7 +185,8 @@ struct crime_data *dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t 
 	d->irq_nr = irq_nr;
 	d->use_fb = use_fb;
 
-	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
+	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH,
+	    dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);
 
 	return d;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_colorplanemask.c,v 1.4 2004-01-06 01:59:51 debug Exp $
+ *  $Id: dev_colorplanemask.c,v 1.5 2004-07-03 16:25:11 debug Exp $
  *  
  *  Color plane mask used by DECstation 3100.
  *
@@ -48,8 +48,6 @@ struct colorplanemask_data {
 
 /*
  *  dev_colorplanemask_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
@@ -80,9 +78,11 @@ int dev_colorplanemask_access(struct cpu *cpu, struct memory *mem, uint64_t rela
 /*
  *  dev_colorplanemask_init():
  */
-void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned char *color_plane_mask)
+void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr,
+	unsigned char *color_plane_mask)
 {
-	struct colorplanemask_data *d = malloc(sizeof(struct colorplanemask_data));
+	struct colorplanemask_data *d =
+	    malloc(sizeof(struct colorplanemask_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
@@ -90,6 +90,7 @@ void dev_colorplanemask_init(struct memory *mem, uint64_t baseaddr, unsigned cha
 	memset(d, 0, sizeof(struct colorplanemask_data));
 	d->color_plane_mask = color_plane_mask;
 
-	memory_device_register(mem, "colorplanemask", baseaddr, DEV_COLORPLANEMASK_LENGTH, dev_colorplanemask_access, (void *)d);
+	memory_device_register(mem, "colorplanemask", baseaddr,
+	    DEV_COLORPLANEMASK_LENGTH, dev_colorplanemask_access, (void *)d);
 }
 

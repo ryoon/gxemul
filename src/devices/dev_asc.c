@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.31 2004-06-28 00:55:23 debug Exp $
+ *  $Id: dev_asc.c,v 1.32 2004-07-03 16:25:11 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -594,8 +594,6 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 
 /*
  *  dev_asc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_asc_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,

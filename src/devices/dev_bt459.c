@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.21 2004-07-03 15:38:05 debug Exp $
+ *  $Id: dev_bt459.c,v 1.22 2004-07-03 16:25:11 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -151,7 +151,6 @@ void bt459_sync_xysize(struct bt459_data *d)
  */
 void bt459_update_X_cursor(struct bt459_data *d)
 {
-	struct fb_window *win = d->vfb_data->fb_window;
 	int i, x,y, xmax=0, ymax=0;
 
 	/*  First, let's calculate the size of the cursor:  */
@@ -173,17 +172,17 @@ void bt459_update_X_cursor(struct bt459_data *d)
 	d->cursor_xsize = xmax + 1;
 	d->cursor_ysize = ymax + 1;
 
+#ifdef WITH_X11
 	/*  Now let's use XPutPixel to set cursor_ximage pixels:  */
 	for (y=0; y<=ymax; y++)
 		for (x=0; x<=xmax; x+=4) {
-			int i;
+			struct fb_window *win = d->vfb_data->fb_window;
 			int reg = BT459_REG_CRAM_BASE + y*16 + x/4;
 			unsigned char data = d->bt459_reg[reg];
 
 			for (i=0; i<4; i++) {
 				int color = (data >> (6-2*i)) & 3;
 
-#ifdef WITH_X11
 				/*
 				 *  TODO:  Better (color averaging)
 				 *  scaledown.
@@ -192,9 +191,9 @@ void bt459_update_X_cursor(struct bt459_data *d)
 				    (x + i) / win->scaledown,
 				    y / win->scaledown,
 				    x11_graycolor[color * 5].pixel);
-#endif
 			}
 		}
+#endif
 }
 
 
@@ -212,8 +211,6 @@ void schedule_redraw_of_whole_screen(struct bt459_data *d)
 
 /*
  *  dev_bt459_irq_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
@@ -241,8 +238,6 @@ int dev_bt459_irq_access(struct cpu *cpu, struct memory *mem,
 
 /*
  *  dev_bt459_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {

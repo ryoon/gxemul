@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ram.c,v 1.6 2004-06-14 22:48:39 debug Exp $
+ *  $Id: dev_ram.c,v 1.7 2004-07-03 16:25:12 debug Exp $
  *  
  *  A generic RAM (memory) device.  Can also be used to mirror/alias another
  *  part of RAM.
@@ -53,10 +53,10 @@ struct ram_data {
 
 /*
  *  dev_ram_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ram_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct ram_data *d = extra;
 
@@ -94,7 +94,8 @@ int dev_ram_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 /*
  *  dev_ram_init():
  */
-void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length, int mode, uint64_t otheraddress)
+void dev_ram_init(struct memory *mem, uint64_t baseaddr, uint64_t length,
+	int mode, uint64_t otheraddress)
 {
 	struct ram_data *d;
 

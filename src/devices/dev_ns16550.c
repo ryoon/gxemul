@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.16 2004-06-24 00:39:34 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.17 2004-07-03 16:25:12 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -91,10 +91,10 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_ns16550_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata=0;
 	int i;
@@ -269,7 +269,8 @@ dev_ns16550_tick(cpu, d);
 /*
  *  dev_ns16550_init():
  */
-void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
+void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int addrmult)
 {
 	struct ns_data *d;
 
@@ -288,7 +289,8 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, in
 	d->parity   = 'N';
 	d->stopbits = "1";
 
-	memory_device_register(mem, "ns16550", baseaddr, DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
+	memory_device_register(mem, "ns16550", baseaddr,
+	    DEV_NS16550_LENGTH * addrmult, dev_ns16550_access, d);
 	cpu_add_tickfunction(cpu, dev_ns16550_tick, d, 10);
 }
 

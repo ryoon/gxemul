@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_cons.c,v 1.8 2004-06-09 08:43:02 debug Exp $
+ *  $Id: dev_cons.c,v 1.9 2004-07-03 16:25:11 debug Exp $
  *  
  *  A console device.  (Fake, only useful for simple tests.)
  *
@@ -46,8 +46,6 @@ extern int instruction_trace;
 
 /*
  *  dev_cons_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_cons_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {
@@ -102,6 +100,7 @@ void dev_cons_init(struct memory *mem)
 	 *  or something similar
 	 */
 
-	memory_device_register(mem, "cons", DEV_CONS_ADDRESS, DEV_CONS_LENGTH, dev_cons_access, NULL);
+	memory_device_register(mem, "cons", DEV_CONS_ADDRESS,
+	    DEV_CONS_LENGTH, dev_cons_access, NULL);
 }
 

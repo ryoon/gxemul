@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.43 2004-06-30 08:23:53 debug Exp $
+ *  $Id: dev_fb.c,v 1.44 2004-07-03 16:25:11 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -49,15 +49,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "memory.h"
+#include "misc.h"
+#include "devices.h"
+
 #ifdef WITH_X11
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 #include <X11/Xutil.h>
 #endif
-
-#include "memory.h"
-#include "misc.h"
-#include "devices.h"
 
 
 extern int x11_scaledown;
@@ -648,10 +648,10 @@ skip_update:
 
 /*
  *  dev_fb_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_fb_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct vfb_data *d = extra;
 	int i;
@@ -750,8 +750,9 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
  *
  *  xsize and ysize are ignored if vfb_type is VFB_DEC_VFB01 or 02.
  */
-struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int vfb_type,
-	int visible_xsize, int visible_ysize, int xsize, int ysize, int bit_depth, char *name)
+struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int vfb_type, int visible_xsize, int visible_ysize,
+	int xsize, int ysize, int bit_depth, char *name)
 {
 	struct vfb_data *d;
 	size_t size;
@@ -833,7 +834,8 @@ struct vfb_data *dev_fb_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 
 #ifdef WITH_X11
 	if (use_x11)
-		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize, title, x11_scaledown);
+		d->fb_window = x11_fb_init(d->x11_xsize, d->x11_ysize,
+		    title, x11_scaledown);
 	else
 #endif
 		d->fb_window = NULL;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.3 2004-06-07 09:17:55 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.4 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI IP30 stuff.
  */
@@ -59,10 +59,10 @@ struct sgi_ip30_data {
 
 /*
  *  dev_sgi_ip30_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -109,10 +109,10 @@ int dev_sgi_ip30_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 /*
  *  dev_sgi_ip30_2_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -150,10 +150,10 @@ int dev_sgi_ip30_2_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 
 /*
  *  dev_sgi_ip30_3_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -205,10 +205,10 @@ int dev_sgi_ip30_3_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 
 /*
  *  dev_sgi_ip30_4_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -246,10 +246,10 @@ int dev_sgi_ip30_4_access(struct cpu *cpu, struct memory *mem, uint64_t relative
 
 /*
  *  dev_sgi_ip30_5_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip30_5_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip30_data *d = (struct sgi_ip30_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -291,10 +291,15 @@ void dev_sgi_ip30_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct sgi_ip30_data));
 
-	memory_device_register(mem, "sgi_ip30_1", baseaddr, DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d);
-	memory_device_register(mem, "sgi_ip30_2", 0x10000000, 0x10000, dev_sgi_ip30_2_access, (void *)d);
-	memory_device_register(mem, "sgi_ip30_3", 0x1f000000, 0x10000, dev_sgi_ip30_3_access, (void *)d);
-	memory_device_register(mem, "sgi_ip30_4", 0x1f600000, 0x10000, dev_sgi_ip30_4_access, (void *)d);
-	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000, 0x10000, dev_sgi_ip30_5_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_1", baseaddr,
+	    DEV_SGI_IP30_LENGTH, dev_sgi_ip30_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_2", 0x10000000,
+	    0x10000, dev_sgi_ip30_2_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_3", 0x1f000000,
+	    0x10000, dev_sgi_ip30_3_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_4", 0x1f600000,
+	    0x10000, dev_sgi_ip30_4_access, (void *)d);
+	memory_device_register(mem, "sgi_ip30_5", 0x1f6c0000,
+	    0x10000, dev_sgi_ip30_5_access, (void *)d);
 }
 

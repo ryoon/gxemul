@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.4 2004-06-22 22:24:24 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.5 2004-07-03 16:25:12 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -71,10 +71,10 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_ps2_stuff_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int regnr = 0;
@@ -250,7 +250,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_
  *
  *	mem_gif			pointer to the GIF's memory
  */
-struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, struct memory *mem_gif)
+struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, struct memory *mem_gif)
 {
 	struct ps2_data *d;
 
@@ -263,7 +264,8 @@ struct ps2_data *dev_ps2_stuff_init(struct cpu *cpu, struct memory *mem, uint64_
 
 	d->other_memory[DMA_CH_GIF] = mem_gif;
 
-	memory_device_register(mem, "ps2_stuff", baseaddr, DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d);
+	memory_device_register(mem, "ps2_stuff", baseaddr,
+	    DEV_PS2_STUFF_LENGTH, dev_ps2_stuff_access, d);
 	cpu_add_tickfunction(cpu, dev_ps2_stuff_tick, d, TICK_STEPS_SHIFT);
 
 	return d;

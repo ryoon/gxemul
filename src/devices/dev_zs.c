@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_zs.c,v 1.10 2004-06-29 01:56:41 debug Exp $
+ *  $Id: dev_zs.c,v 1.11 2004-07-03 16:25:12 debug Exp $
  *  
  *  Zilog serial controller, used by (at least) the SGI emulation mode.
  *
@@ -74,10 +74,9 @@ void dev_zs_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_zs_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	struct zs_data *d = extra;
 	uint64_t idata = 0, odata = 0;
@@ -160,7 +159,8 @@ int dev_zs_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 /*
  *  dev_zs_init():
  */
-void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult)
+void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int addrmult)
 {
 	struct zs_data *d;
 
@@ -173,7 +173,9 @@ void dev_zs_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq
 	d->irq_nr   = irq_nr;
 	d->addrmult = addrmult;
 
-	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult, dev_zs_access, d);
+	memory_device_register(mem, "zs", baseaddr, DEV_ZS_LENGTH * addrmult,
+	    dev_zs_access, d);
+
 	cpu_add_tickfunction(cpu, dev_zs_tick, d, 10);
 }
 

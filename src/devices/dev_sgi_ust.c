@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ust.c,v 1.2 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_sgi_ust.c,v 1.3 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI "ust". Unknown function. Used in SGI-IP32.
  */
@@ -45,10 +45,10 @@ struct sgi_ust_data {
 
 /*
  *  dev_sgi_ust_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ust_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ust_data *d = (struct sgi_ust_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -93,6 +93,7 @@ void dev_sgi_ust_init(struct memory *mem, uint64_t baseaddr)
 	}
 	memset(d, 0, sizeof(struct sgi_ust_data));
 
-	memory_device_register(mem, "sgi_ust", baseaddr, DEV_SGI_UST_LENGTH, dev_sgi_ust_access, (void *)d);
+	memory_device_register(mem, "sgi_ust", baseaddr,
+	    DEV_SGI_UST_LENGTH, dev_sgi_ust_access, (void *)d);
 }
 

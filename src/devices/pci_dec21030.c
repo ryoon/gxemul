@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: pci_dec21030.c,v 1.6 2004-07-02 14:17:14 debug Exp $
+ *  $Id: pci_dec21030.c,v 1.7 2004-07-03 16:25:12 debug Exp $
  *
  *  DEC 21030 "tga" graphics.
  *
@@ -114,10 +114,10 @@ uint32_t pci_dec21030_rr(int reg)
 
 /*
  *  dev_dec21030_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_dec21030_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_dec21030_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct dec21030_data *d = extra;
 	uint64_t idata, odata = 0;

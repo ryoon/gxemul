@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: lk201.c,v 1.6 2004-06-28 00:54:52 debug Exp $
+ *  $Id: lk201.c,v 1.7 2004-07-03 16:25:12 debug Exp $
  *  
  *  LK201 keyboard and mouse specifics, used by the dc7085 and scc serial
  *  controller devices.
@@ -157,7 +157,8 @@ void lk201_convert_ascii_to_keybcode(struct lk201_data *d, unsigned char ch)
  *  to try to make the emulated cursor appear under the host's cursor
  *  on the framebuffer.
  */
-void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x, int mouse_y, int mouse_buttons)
+void lk201_send_mouse_update_sequence(struct lk201_data *d, int mouse_x,
+	int mouse_y, int mouse_buttons)
 {
 	int xsign, xdelta, ysign, ydelta;
 
@@ -281,7 +282,8 @@ void lk201_tx_data(struct lk201_data *d, int port, int idata)
  *
  *  Initialize lk201 keyboard/mouse settings.
  */
-void lk201_init(struct lk201_data *d, int use_fb, void (*add_to_rx_queue)(void *,int,int), void *add_data)
+void lk201_init(struct lk201_data *d, int use_fb,
+	void (*add_to_rx_queue)(void *,int,int), void *add_data)
 {
 	memset(d, 0, sizeof(struct lk201_data));
 

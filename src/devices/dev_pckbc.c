@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pckbc.c,v 1.14 2004-06-29 02:30:34 debug Exp $
+ *  $Id: dev_pckbc.c,v 1.15 2004-07-03 16:25:12 debug Exp $
  *  
  *  Standard 8042 PC keyboard controller, and a 8242WB PS2 keyboard/mouse
  *  controller.
@@ -118,10 +118,10 @@ void dev_pckbc_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_pckbc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int i, code, port_nr = 0;

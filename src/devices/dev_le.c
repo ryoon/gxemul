@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_le.c,v 1.6 2004-02-23 23:11:45 debug Exp $
+ *  $Id: dev_le.c,v 1.7 2004-07-03 16:25:11 debug Exp $
  *  
  *  LANCE ethernet.
  */
@@ -53,10 +53,9 @@ struct le_data {
 
 /*
  *  dev_le_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int regnr, i;
@@ -121,7 +120,8 @@ int dev_le_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, u
 /*
  *  dev_le_init():
  */
-void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint64_t buf_end, int irq_nr, int len)
+void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start,
+	uint64_t buf_end, int irq_nr, int len)
 {
 	struct le_data *d = malloc(sizeof(struct le_data));
 	if (d == NULL) {
@@ -135,6 +135,7 @@ void dev_le_init(struct memory *mem, uint64_t baseaddr, uint64_t buf_start, uint
 	d->buf_start = buf_start;
 	d->buf_end   = buf_end;
 
-	memory_device_register(mem, "le", baseaddr, len, dev_le_access, (void *)d);
+	memory_device_register(mem, "le", baseaddr, len, dev_le_access,
+	    (void *)d);
 }
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgec.c,v 1.2 2004-06-22 22:24:54 debug Exp $
+ *  $Id: dev_sgec.c,v 1.3 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGEC (ethernet) used in DECstations.  (Called "ne" in Ultrix.)
  */
@@ -46,10 +46,10 @@ struct sgec_data {
 
 /*
  *  dev_sgec_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgec_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgec_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	/*  struct sgec_data *d = (struct sgec_data *) extra;  */
 	uint64_t idata = 0, odata = 0;
@@ -96,6 +96,7 @@ void dev_sgec_init(struct memory *mem, uint64_t baseaddr, int irq_nr)
 	memset(d, 0, sizeof(struct sgec_data));
 	d->irq_nr = irq_nr;
 
-	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH, dev_sgec_access, (void *)d);
+	memory_device_register(mem, "sgec", baseaddr, DEV_SGEC_LENGTH,
+	    dev_sgec_access, (void *)d);
 }
 

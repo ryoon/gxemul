@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_scc.c,v 1.13 2004-06-24 01:15:09 debug Exp $
+ *  $Id: dev_scc.c,v 1.14 2004-07-03 16:25:12 debug Exp $
  *  
  *  Serial controller on some DECsystems and SGI machines. (Z8530 ?)
  *  Most of the code in here is written for DECsystem emulation, though.
@@ -181,10 +181,10 @@ void dev_scc_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_scc_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_scc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct scc_data *d = (struct scc_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -317,7 +317,8 @@ int dev_scc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
  *	scc_nr = 0 or 1
  *	addmul = 1 in most cases, 8 on SGI?
  */
-void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int use_fb, int scc_nr, int addrmul)
+void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int irq_nr, int use_fb, int scc_nr, int addrmul)
 {
 	struct scc_data *d;
 
@@ -334,7 +335,8 @@ void dev_scc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 
 	lk201_init(&d->lk201, use_fb, dev_scc_add_to_rx_queue, d);
 
-	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH, dev_scc_access, d);
+	memory_device_register(mem, "scc", baseaddr, DEV_SCC_LENGTH,
+	    dev_scc_access, d);
 	cpu_add_tickfunction(cpu, dev_scc_tick, d, 10);
 }
 

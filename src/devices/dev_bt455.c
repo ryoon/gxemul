@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt455.c,v 1.1 2004-04-24 22:38:43 debug Exp $
+ *  $Id: dev_bt455.c,v 1.2 2004-07-03 16:25:11 debug Exp $
  *  
  *  Brooktree 455, used by TURBOchannel graphics cards.
  *
@@ -58,8 +58,6 @@ struct bt455_data {
 
 /*
  *  dev_bt455_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
 int dev_bt455_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
 {

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.13 2004-06-27 01:09:54 debug Exp $
+ *  $Id: dev_px.c,v 1.14 2004-07-03 16:25:12 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -484,10 +484,9 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 
 /*
  *  dev_px_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_px_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	struct px_data *d = extra;
@@ -647,7 +646,8 @@ odata = random();
 /*
  *  dev_px_init():
  */
-void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_type, int irq_nr)
+void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
+	int px_type, int irq_nr)
 {
 	struct px_data *d;
 
@@ -686,12 +686,16 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 		fatal("dev_px_init(): unimplemented px_type\n");
 	}
 
-	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE, DEFAULT_BITS_PER_MEMBLOCK, PX_XSIZE * PX_YSIZE * d->bitdepth / 8, DEFAULT_MAX_BITS);
+	d->fb_mem = memory_new(DEFAULT_BITS_PER_PAGETABLE,
+	    DEFAULT_BITS_PER_MEMBLOCK, PX_XSIZE * PX_YSIZE * d->bitdepth / 8,
+	    DEFAULT_MAX_BITS);
 	if (d->fb_mem == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (1)\n");
 		exit(1);
 	}
-	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC, PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name);
+
+	d->vfb_data = dev_fb_init(cpu, d->fb_mem, 0, VFB_GENERIC,
+	    PX_XSIZE, PX_YSIZE, PX_XSIZE, PX_YSIZE, d->bitdepth, d->px_name);
 	if (d->vfb_data == NULL) {
 		fprintf(stderr, "dev_px_init(): out of memory (2)\n");
 		exit(2);
@@ -699,18 +703,21 @@ void dev_px_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int px_
 
 	switch (d->type) {
 	case DEV_PX_TYPE_PX:
-		dev_bt459_init(cpu, mem, baseaddr + 0x200000, 0, d->vfb_data, 8, irq_nr, BT459_PX);
+		dev_bt459_init(cpu, mem, baseaddr + 0x200000, 0,
+		    d->vfb_data, 8, irq_nr, BT459_PX);
 		break;
 	case DEV_PX_TYPE_PXG:
 	case DEV_PX_TYPE_PXGPLUS:
 	case DEV_PX_TYPE_PXGPLUSTURBO:
-		dev_bt459_init(cpu, mem, baseaddr + 0x300000, 0, d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
+		dev_bt459_init(cpu, mem, baseaddr + 0x300000, 0,
+		    d->vfb_data, d->bitdepth, irq_nr, BT459_PX);
 		break;
 	default:
 		fatal("dev_px_init(): unimplemented px_type\n");
 	}
 
-	memory_device_register(mem, "px", baseaddr, DEV_PX_LENGTH, dev_px_access, d);
+	memory_device_register(mem, "px", baseaddr, DEV_PX_LENGTH,
+	    dev_px_access, d);
 	cpu_add_tickfunction(cpu, dev_px_tick, d, 12);
 }
 

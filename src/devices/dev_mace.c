@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mace.c,v 1.4 2004-06-10 08:25:39 debug Exp $
+ *  $Id: dev_mace.c,v 1.5 2004-07-03 16:25:11 debug Exp $
  *  
  *  SGI "mace".
  */
@@ -40,10 +40,10 @@
 
 /*
  *  dev_mace_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_mace_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	int i;
 	struct mace_data *d = extra;
@@ -79,7 +79,8 @@ int dev_mace_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 /*
  *  dev_mace_init():
  */
-struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr)
+struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr,
+	int irqnr)
 {
 	struct mace_data *d;
 
@@ -91,7 +92,8 @@ struct mace_data *dev_mace_init(struct memory *mem, uint64_t baseaddr, int irqnr
 	memset(d, 0, sizeof(struct mace_data));
 	d->irqnr = irqnr;
 
-	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH, dev_mace_access, d);
+	memory_device_register(mem, "mace", baseaddr, DEV_MACE_LENGTH,
+	    dev_mace_access, d);
 
 	return d;
 }

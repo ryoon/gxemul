@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.14 2004-06-20 15:16:13 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.15 2004-07-03 16:25:12 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -55,10 +55,10 @@ void dev_sgi_ip22_tick(struct cpu *cpu, void *extra)
  *  dev_sgi_ip22_imc_access():
  *
  *  The memory controller (?).
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -127,10 +127,10 @@ int dev_sgi_ip22_imc_access(struct cpu *cpu, struct memory *mem, uint64_t relati
  *  dev_sgi_ip22_unknown_access():
  *
  *  A so far unknown device, used by the IP22 prom during startup.
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -166,10 +166,10 @@ int dev_sgi_ip22_unknown_access(struct cpu *cpu, struct memory *mem, uint64_t re
  *  dev_sgi_ip22_unknown2_access():
  *
  *  A so far unknown device, used by the IP22 prom during startup.
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -201,10 +201,10 @@ int dev_sgi_ip22_unknown2_access(struct cpu *cpu, struct memory *mem, uint64_t r
 
 /*
  *  dev_sgi_ip22_sysid_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -239,7 +239,9 @@ int dev_sgi_ip22_sysid_access(struct cpu *cpu, struct memory *mem, uint64_t rela
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
 {
 	struct sgi_ip22_data *d = (struct sgi_ip22_data *) extra;
 	uint64_t idata = 0, odata = 0;
@@ -356,7 +358,8 @@ int dev_sgi_ip22_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 /*
  *  dev_sgi_ip22_init():
  */
-struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int guiness_flag)
+struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem,
+	uint64_t baseaddr, int guiness_flag)
 {
 	struct sgi_ip22_data *d = malloc(sizeof(struct sgi_ip22_data));
 	if (d == NULL) {
@@ -366,11 +369,17 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem, uin
 	memset(d, 0, sizeof(struct sgi_ip22_data));
 	d->guiness_flag = guiness_flag;
 
-	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH, dev_sgi_ip22_access, (void *)d);
-	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8, dev_sgi_ip22_sysid_access, (void *)d);
-	memory_device_register(mem, "sgi_ip22_imc", IP22_IMC_BASE, DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d);
-	memory_device_register(mem, "sgi_ip22_unknown", 0x1fa01000, 0x10, dev_sgi_ip22_unknown_access, (void *)d);
-	memory_device_register(mem, "sgi_ip22_unknown2", IP22_UNKNOWN2_BASE, DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22", baseaddr, DEV_SGI_IP22_LENGTH,
+	    dev_sgi_ip22_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22_sysid", 0x1fbd9858, 0x8,
+	    dev_sgi_ip22_sysid_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22_imc", IP22_IMC_BASE,
+	    DEV_SGI_IP22_IMC_LENGTH, dev_sgi_ip22_imc_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22_unknown", 0x1fa01000, 0x10,
+	    dev_sgi_ip22_unknown_access, (void *)d);
+	memory_device_register(mem, "sgi_ip22_unknown2", IP22_UNKNOWN2_BASE,
+	    DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access,
+	    (void *)d);
 
 	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
 

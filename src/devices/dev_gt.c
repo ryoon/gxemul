@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_gt.c,v 1.11 2004-07-02 13:35:24 debug Exp $
+ *  $Id: dev_gt.c,v 1.12 2004-07-03 16:25:11 debug Exp $
  *  
  *  The "gt" device used in Cobalt machines.
  *
@@ -64,10 +64,9 @@ void dev_gt_tick(struct cpu *cpu, void *extra)
 
 /*
  *  dev_gt_access():
- *
- *  Returns 1 if ok, 0 on error.
  */
-int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *extra)
+int dev_gt_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
+	unsigned char *data, size_t len, int writeflag, void *extra)
 {
 	uint64_t idata = 0, odata = 0;
 	int i;
@@ -170,7 +169,8 @@ struct pci_data *dev_gt_init(struct cpu *cpu, struct memory *mem, uint64_t basea
 	 */
 	bus_pci_add(cpu, d->pci_data, mem, 0, 0, 0, pci_gt_init, pci_gt_rr);
 
-	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH, dev_gt_access, d);
+	memory_device_register(mem, "gt", baseaddr, DEV_GT_LENGTH,
+	    dev_gt_access, d);
 	cpu_add_tickfunction(cpu, dev_gt_tick, d, TICK_STEPS_SHIFT);
 
 	return d->pci_data;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.7 2003-12-20 21:19:44 debug Exp $
+ *  $Id: arcbios.c,v 1.8 2003-12-22 10:13:14 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -106,43 +106,51 @@ uint32_t arcbios_addchild(struct arcbios_component *host_tmp_component, char *id
 		uint32_t eparent, echild, epeer, tmp;
 		unsigned char buf[4];
 
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
-		}
-		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
-		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
-			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
-			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
-		}
-		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		debug("[ addchild: peeraddr = 0x%08x ]\n", peeraddr);
+
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		epeer   = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 4, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		echild  = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 8, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
+			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		}
+		eparent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
+
+		debug("  epeer=%x echild=%x eparent=%x\n", epeer,echild,eparent);
+
 		if (eparent == parent && epeer == 0) {
 			epeer = a;
-			store_32bit_word(peeraddr + 0x00, echild);
+			store_32bit_word(peeraddr + 0x00, epeer);
+			debug("[ addchild: adding 0x%08x as peer to 0x%08x ]\n", a, peeraddr);
 		}
 		if (peeraddr == parent && echild == 0) {
 			echild = a;
 			store_32bit_word(peeraddr + 0x04, echild);
+			debug("[ addchild: adding 0x%08x as child to 0x%08x ]\n", a, peeraddr);
 		}
 
 		/*  Go to the next component:  */
-		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x28, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
+		memory_rw(cpus[bootstrap_cpu], cpus[bootstrap_cpu]->mem, peeraddr + 0x28, &buf[0], sizeof(eparent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
 		if (cpus[bootstrap_cpu]->byte_order == EMUL_BIG_ENDIAN) {
 			unsigned char tmp; tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
 			tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 		}
 		tmp = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
 		peeraddr += 0x30;
-		peeraddr += tmp;
+		peeraddr += tmp + 1;
 		peeraddr = ((peeraddr - 1) | 3) + 1;
 
 		n_left --;
@@ -229,11 +237,10 @@ void arcbios_emul(struct cpu *cpu)
 	int vector = cpu->pc & 0xffff;
 	int i, j;
 	unsigned char ch2;
-	char buf[40];
+	unsigned char buf[40];
 
 	switch (vector) {
 	case 0x24:		/*  GetPeer(node)  */
-		debug("[ ARCBIOS GetPeer(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
 		{
 			uint32_t peer;
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0xc, &buf[0], sizeof(peer), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
@@ -242,12 +249,11 @@ void arcbios_emul(struct cpu *cpu)
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 			}
 			peer = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
-			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
-			cpu->gpr[GPR_V0] = peer;
+			cpu->gpr[GPR_V0] = peer? peer + 0xc : 0;
 		}
+		debug("[ ARCBIOS GetPeer(node 0x%08x): 0x%08x ]\n", cpu->gpr[GPR_A0], cpu->gpr[GPR_V0]);
 		break;
 	case 0x28:		/*  GetChild(node)  */
-		debug("[ ARCBIOS GetChild(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
 		if (cpu->gpr[GPR_A0] == 0)
 			cpu->gpr[GPR_V0] = FIRST_ARC_COMPONENT + 0xc;
 		else {
@@ -258,12 +264,11 @@ void arcbios_emul(struct cpu *cpu)
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 			}
 			child = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
-			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
-			cpu->gpr[GPR_V0] = child;
+			cpu->gpr[GPR_V0] = child? child + 0xc : 0;
 		}
+		debug("[ ARCBIOS GetChild(node 0x%08x): 0x%08x ]\n", cpu->gpr[GPR_A0], cpu->gpr[GPR_V0]);
 		break;
 	case 0x2c:		/*  GetParent(node)  */
-		debug("[ ARCBIOS GetParent(node 0x%08x) ]\n", cpu->gpr[GPR_A0]);
 		{
 			uint32_t parent;
 			memory_rw(cpu, cpu->mem, cpu->gpr[GPR_A0] - 0x4, &buf[0], sizeof(parent), MEM_READ, CACHE_NONE | NO_EXCEPTIONS);
@@ -272,9 +277,9 @@ void arcbios_emul(struct cpu *cpu)
 				tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
 			}
 			parent = buf[0] + (buf[1]<<8) + (buf[2]<<16) + (buf[3]<<24);
-			/*  TODO:  ugly: this is little endian, ARC only supports little endian...  */
-			cpu->gpr[GPR_V0] = parent;
+			cpu->gpr[GPR_V0] = parent? parent + 0xc : 0;
 		}
+		debug("[ ARCBIOS GetParent(node 0x%08x): 0x%08x ]\n", cpu->gpr[GPR_A0], cpu->gpr[GPR_V0]);
 		break;
 	case 0x44:		/*  GetSystemId()  */
 		debug("[ ARCBIOS GetSystemId() ]\n");

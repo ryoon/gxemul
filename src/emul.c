@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.39 2004-08-18 09:24:13 debug Exp $
+ *  $Id: emul.c,v 1.40 2004-08-18 09:37:40 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -181,12 +181,11 @@ static int last_cmd_len = 0;
  *
  *  Dump emulated memory in hex and ASCII.
  */
-void debugger_dump(uint64_t addr)
+void debugger_dump(uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
-	int x;
-	int lines = 8;
+	int x, r;
 
 	if (cpus == NULL) {
 		printf("No cpus (?)\n");
@@ -201,18 +200,25 @@ void debugger_dump(uint64_t addr)
 
 	while (lines -- > 0) {
 		unsigned char buf[16];
-		memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
+		memset(buf, 0, sizeof(buf));
+		r = memory_rw(c, m, addr, &buf[0], sizeof(buf), MEM_READ,
 		    CACHE_NONE | NO_EXCEPTIONS);
 
 		printf("0x%016llx  ", (long long)addr);
-		for (x=0; x<16; x++)
-			printf("%02x%s", buf[x],
-			    (x&3)==3? " " : "");
-		printf(" ");
-		for (x=0; x<16; x++)
-			printf("%c", (buf[x]>=' ' && buf[x]<127)?
-			    buf[x] : '.');
-		printf("\n");
+
+		if (r == MEMORY_ACCESS_FAILED)
+			printf("(memory access failed)\n");
+		else {
+			for (x=0; x<16; x++)
+				printf("%02x%s", buf[x],
+				    (x&3)==3? " " : "");
+			printf(" ");
+			for (x=0; x<16; x++)
+				printf("%c", (buf[x]>=' ' && buf[x]<127)?
+				    buf[x] : '.');
+			printf("\n");
+		}
+
 		addr += 16;
 	}
 }
@@ -264,7 +270,7 @@ void debugger(void)
 		/*  Just pressing Enter will repeat the last cmd:  */
 		if (cmd_len == 0 && last_cmd_len != 0) {
 			cmd_len = last_cmd_len;
-			memcpy(cmd, last_cmd, cmd_len);
+			memcpy(cmd, last_cmd, cmd_len + 1);
 		}
 
 		/*  Remove spaces:  */
@@ -277,7 +283,7 @@ void debugger(void)
 
 		/*  Remember this cmd:  */
 		if (cmd_len > 0) {
-			memcpy(last_cmd, cmd, cmd_len);
+			memcpy(last_cmd, cmd, cmd_len + 1);
 			last_cmd_len = cmd_len;
 		}
 
@@ -300,18 +306,19 @@ void debugger(void)
 			exit_debugger = 1;
 		} else if (strcasecmp(cmd, "d") == 0 ||
 		    strcasecmp(cmd, "dump") == 0) {
-			debugger_dump(last_dump_addr);
+			debugger_dump(last_dump_addr, 8);
 			last_dump_addr += 8*16;
 		} else if (strncasecmp(cmd, "d ", 2) == 0 ||
 		    strncasecmp(cmd, "dump ", 5) == 0) {
 			last_dump_addr = strtoll(cmd[1]==' '?
 			    cmd + 2 : cmd + 5, NULL, 16);
-			debugger_dump(last_dump_addr);
+			debugger_dump(last_dump_addr, 8);
 			last_dump_addr += 8*16;
 			/*  Set last cmd to just 'd', so that just pressing
 			    enter will cause dump to continue from the last
 			    address:  */
 			last_cmd_len = 1;
+			strcpy(last_cmd, "d");
 		} else if (strcasecmp(cmd, "s") == 0 ||
 		    strcasecmp(cmd, "step") == 0) {
 			return;
@@ -366,10 +373,9 @@ void load_bootblock(void)
 		 *  the 32-bit word at offset 0x1c. This word tells us the
 		 *  starting sector number of the bootblock.
 		 *
-		 *  Two values at offset 0x10 and 0x14 (which accidentally are
-		 *  identical for all cases I've seen) seem to indicate the
-		 *  load address and/or starting PC.  It's usually 0x80600000,
-		 *  or similar.
+		 *  The value at offset 0x10 is the load address, and the
+		 *  value at 0x14 is the initial PC to use.  These two are
+		 *  usually 0x80600000, or similar.
 		 *
 		 *  The value at offset 0x18 seems to be the number of
 		 *  512-byte to read. (TODO: use this)

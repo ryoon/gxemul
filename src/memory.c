@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.119 2004-11-27 08:49:16 debug Exp $
+ *  $Id: memory.c,v 1.120 2004-11-28 21:09:45 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -764,8 +764,10 @@ into the devices  */
 	 *  to a device to
 	 */
 	if (paddr >= mem->mmap_dev_minaddr && paddr < mem->mmap_dev_maxaddr) {
-		int i, start, res;
+#ifdef BINTRANS
 		uint64_t orig_paddr = paddr;
+#endif
+		int i, start, res;
 		i = start = mem->last_accessed_device;
 
 		/*  Scan through all devices:  */

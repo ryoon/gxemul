@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.112 2004-11-26 16:17:24 debug Exp $
+ *  $Id: coproc.c,v 1.113 2004-11-28 21:09:45 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -362,12 +362,12 @@ void update_translation_table(struct cpu *cpu, uint64_t vaddr_page,
 }
 
 
+#ifdef BINTRANS
 /*
  *  invalidate_table_entry():
  */
 static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 {
-#ifdef BINTRANS
 	int a, b;
 	struct vth32_table *tbl1;
 	void *p;
@@ -402,8 +402,8 @@ static void invalidate_table_entry(struct cpu *cpu, uint64_t vaddr)
 	default:
 		;
 	}
-#endif
 }
+#endif
 
 
 /*

@@ -20,3 +20,10 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
+
+
+Some files (mostly header files in the include/ directory, containing
+definitions of bitfields for hardware devices) are copied from NetBSD and
+possibly other sources.  If you plan to reuse code from mips64emul,
+please check individual files for their license terms.
+

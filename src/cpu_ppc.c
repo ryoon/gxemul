@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.39 2005-02-16 17:42:59 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.40 2005-02-18 06:19:21 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  */
@@ -146,6 +146,9 @@ struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
 	}
 
 	cpu->cd.ppc.pir = cpu_id;
+
+	/*  Some default stack pointer value.  TODO: move this?  */
+	cpu->cd.ppc.gpr[1] = 0x77ff0000;
 
 	return cpu;
 }

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.39 2005-02-11 09:53:48 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.40 2005-02-18 06:19:19 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -182,11 +182,12 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 	int rom_offset = 0x3c0000;
 	int rom_length = DEV_TURBOCHANNEL_LEN;
 	int rom_skip = 0;
+	char *name2;
 
-	if (device_name==NULL)
+	if (device_name == NULL)
 		return;
 
-	if (strlen(device_name)>8) {
+	if (strlen(device_name) > 8) {
 		fprintf(stderr, "dev_turbochannel_init(): bad device_name\n");
 		exit(1);
 	}
@@ -319,9 +320,17 @@ void dev_turbochannel_init(struct machine *machine, struct memory *mem,
 
 	d->rom_skip = rom_skip;
 
-	memory_device_register(mem, "turbochannel",
-	    baseaddr + rom_offset + rom_skip,
-	    rom_length - rom_skip, dev_turbochannel_access, d,
-	    MEM_DEFAULT, NULL);
+	name2 = malloc(strlen(device_name) + 30);
+	if (name2 == NULL) {
+		fprintf(stderr, "out of memory in dev_turbochannel_init()\n");
+		exit(1);
+	}
+	if (*device_name)
+		sprintf(name2, "turbochannel [%s]", device_name);
+	else
+		sprintf(name2, "turbochannel");
+
+	memory_device_register(mem, name2, baseaddr + rom_offset + rom_skip,
+	    rom_length-rom_skip, dev_turbochannel_access, d, MEM_DEFAULT, NULL);
 }
 

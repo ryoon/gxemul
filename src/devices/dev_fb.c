@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.86 2005-01-30 12:54:43 debug Exp $
+ *  $Id: dev_fb.c,v 1.87 2005-02-18 06:19:19 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -170,11 +170,11 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	long from_ofs, dest_ofs, linelen;
 
 	if (fillflag)
-		debug("framebuffer_blockcopyfill(FILL, %i,%i, %i,%i, color %i,%i,%i)\n",
-		    x1,y1, x2,y2, fill_r, fill_g, fill_b);
+		debug("framebuffer_blockcopyfill(FILL, %i,%i, %i,%i, "
+		    "color %i,%i,%i)\n", x1,y1, x2,y2, fill_r, fill_g, fill_b);
 	else
-		debug("framebuffer_blockcopyfill(COPY, %i,%i, %i,%i, from %i,%i)\n",
-		    x1,y1, x2,y2, from_x,from_y);
+		debug("framebuffer_blockcopyfill(COPY, %i,%i, %i,%i, from "
+		    "%i,%i)\n", x1,y1, x2,y2, from_x,from_y);
 
 	/*  Clip x:  */
 	if (x1 < 0)		x1 = 0;
@@ -183,7 +183,8 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	if (x2 >= d->xsize)	x2 = d->xsize-1;
 
 	dest_ofs = d->bytes_per_line * y1 + (d->bit_depth/8) * x1;
-	linelen = (x2-x1 + 1) * (d->bit_depth/8);	/*  NOTE: nr of bytes, not pixels  */
+	linelen = (x2-x1 + 1) * (d->bit_depth/8);
+	/*  NOTE: linelen is nr of bytes, not pixels  */
 
 	if (fillflag) {
 		for (y=y1; y<=y2; y++) {
@@ -197,19 +198,23 @@ void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 						buf[x+2] = fill_b;
 					}
 				else
-					printf("TODO: fill for non-24-bit modes\n");
+					printf("TODO: fill for non-24-bit"
+					    " modes\n");
 
-				memmove(d->framebuffer + dest_ofs, buf, linelen);
+				memmove(d->framebuffer + dest_ofs, buf,
+				    linelen);
 			}
 
 			dest_ofs += d->bytes_per_line;
 		}
 	} else {
-		from_ofs = d->bytes_per_line * from_y + (d->bit_depth/8) * from_x;
+		from_ofs = d->bytes_per_line * from_y +
+		    (d->bit_depth/8) * from_x;
 
 		for (y=y1; y<=y2; y++) {
 			if (y>=0 && y<d->ysize)
-				memmove(d->framebuffer + dest_ofs, d->framebuffer + from_ofs, linelen);
+				memmove(d->framebuffer + dest_ofs,
+				    d->framebuffer + from_ofs, linelen);
 
 			from_ofs += d->bytes_per_line;
 			dest_ofs += d->bytes_per_line;
@@ -314,7 +319,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				color_r = color_g = color_b = 0;
 
 				fb_addr = (y * d->xsize + x) * d->bit_depth;
-				/*  fb_addr is now which _bit_ in framebuffer  */
+				/*  fb_addr is now which _bit_ in
+				    the framebuffer  */
 
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
@@ -432,7 +438,8 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 				fb_y = y * scaledown + suby;
 				fb_addr = fb_y * d->xsize + fb_x;
 				fb_addr = fb_addr * d->bit_depth;
-				/*  fb_addr is now which _bit_ in framebuffer  */
+				/*  fb_addr is now which _bit_ in
+				    the framebuffer  */
 
 				c = d->framebuffer[fb_addr >> 3];
 				fb_addr &= 7;
@@ -545,7 +552,8 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 		uint64_t low = -1, high;
 		int x, y;
 
-		memory_device_bintrans_access(cpu, cpu->mem, extra, &low, &high);
+		memory_device_bintrans_access(cpu, cpu->mem,
+		    extra, &low, &high);
 		if ((int64_t)low == -1)
 			break;
 
@@ -554,31 +562,47 @@ void dev_fb_tick(struct cpu *cpu, void *extra)
 
 		x = (low % d->bytes_per_line) * 8 / d->bit_depth;
 		y = low / d->bytes_per_line;
-		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
-		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+		if (x < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y;
 
 		x = ((low+7) % d->bytes_per_line) * 8 / d->bit_depth;
 		y = (low+7) / d->bytes_per_line;
-		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
-		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+		if (x < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y;
 
 		x = (high % d->bytes_per_line) * 8 / d->bit_depth;
 		y = high / d->bytes_per_line;
-		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
-		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+		if (x < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y;
 
 		x = ((high+7) % d->bytes_per_line) * 8 / d->bit_depth;
 		y = (high+7) / d->bytes_per_line;
-		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
-		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+		if (x < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x;
+		if (y < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y;
 
 		/*
 		 *  An update covering more than one line will automatically
@@ -706,12 +730,14 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 
 #ifdef FB_DEBUG
 	if (writeflag == MEM_WRITE) { if (data[0]) {
-		fatal("[ dev_fb: write  to addr=%08lx, data = ", (long)relative_addr);
+		fatal("[ dev_fb: write  to addr=%08lx, data = ",
+		    (long)relative_addr);
 		for (i=0; i<len; i++)
 			fatal("%02x ", data[i]);
 		fatal("]\n");
 	} else {
-		fatal("[ dev_fb: read from addr=%08lx, data = ", (long)relative_addr);
+		fatal("[ dev_fb: read from addr=%08lx, data = ",
+		    (long)relative_addr);
 		for (i=0; i<len; i++)
 			fatal("%02x ", d->framebuffer[relative_addr + i]);
 		fatal("]\n");
@@ -724,8 +750,8 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 			if (data[i] != d->framebuffer[relative_addr + i])
 				break;
 
-			/*  If all bytes are equal to what is already stored in the
-				framebuffer, then simply return:  */
+			/*  If all bytes are equal to what is already stored
+			    in the framebuffer, then simply return:  */
 			if (i==len-1)
 				return 1;
 		}
@@ -741,20 +767,29 @@ int dev_fb_access(struct cpu *cpu, struct memory *mem,
 
 		x = (relative_addr % d->bytes_per_line) * 8 / d->bit_depth;
 		y = relative_addr / d->bytes_per_line;
-		x2 = ((relative_addr + len) % d->bytes_per_line) * 8 / d->bit_depth;
+		x2 = ((relative_addr + len) % d->bytes_per_line)
+		    * 8 / d->bit_depth;
 		y2 = (relative_addr + len) / d->bytes_per_line;
 
-		if (x < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x;
-		if (x > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x;
+		if (x < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x;
+		if (x > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x;
 
-		if (y < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y;
-		if (y > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y;
+		if (y < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y;
+		if (y > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y;
 
-		if (x2 < d->update_x1 || d->update_x1 == -1)	d->update_x1 = x2;
-		if (x2 > d->update_x2 || d->update_x2 == -1)	d->update_x2 = x2;
+		if (x2 < d->update_x1 || d->update_x1 == -1)
+			d->update_x1 = x2;
+		if (x2 > d->update_x2 || d->update_x2 == -1)
+			d->update_x2 = x2;
 
-		if (y2 < d->update_y1 || d->update_y1 == -1)	d->update_y1 = y2;
-		if (y2 > d->update_y2 || d->update_y2 == -1)	d->update_y2 = y2;
+		if (y2 < d->update_y1 || d->update_y1 == -1)
+			d->update_y1 = y2;
+		if (y2 > d->update_y2 || d->update_y2 == -1)
+			d->update_y2 = y2;
 
 		/*
 		 *  An update covering more than one line will automatically
@@ -804,6 +839,7 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 	size_t size;
 	int x, y;
 	char title[400];
+	char *name2;
 
 	d = malloc(sizeof(struct vfb_data));
 	if (d == NULL) {
@@ -886,9 +922,11 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 		d->update_y2 = d->visible_ysize-logo_bottom_margin;
 		for (y=0; y<LOGO_YSIZE; y++)
 			for (x=0; x<LOGO_XSIZE; x++) {
-				int s, a = ((y+d->visible_ysize-LOGO_YSIZE-logo_bottom_margin)*d->xsize
-				    + x) * d->bit_depth / 8;
-				int b = fb_logo[(y*LOGO_XSIZE+x) / 8] & (128 >> (x&7));
+				int s, a = ((y + d->visible_ysize - LOGO_YSIZE
+				    - logo_bottom_margin)*d->xsize + x)
+				    * d->bit_depth / 8;
+				int b = fb_logo[(y*LOGO_XSIZE+x) / 8] &
+				    (128 >> (x&7));
 				for (s=0; s<d->bit_depth / 8; s++)
 					d->framebuffer[a+s] = b? 0 : 255;
 			}
@@ -906,9 +944,15 @@ struct vfb_data *dev_fb_init(struct machine *machine, struct memory *mem,
 #endif
 		d->fb_window = NULL;
 
-	memory_device_register(mem, name, baseaddr, size, dev_fb_access,
-	    d, /* MEM_DEFAULT */
-	    MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
+	name2 = malloc(strlen(name) + 10);
+	if (name2 == NULL) {
+		fprintf(stderr, "out of memory in dev_fb_init()\n");
+		exit(1);
+	}
+	sprintf(name2, "fb [%s]", name);
+
+	memory_device_register(mem, name2, baseaddr, size, dev_fb_access,
+	    d, /* MEM_DEFAULT */  MEM_BINTRANS_OK | MEM_BINTRANS_WRITE_OK,
 	    d->framebuffer);
 
 	machine_add_tickfunction(machine, dev_fb_tick, d, FB_TICK_SHIFT);

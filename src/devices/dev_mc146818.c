@@ -25,13 +25,17 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.57 2005-01-16 14:05:31 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.58 2005-01-17 18:52:00 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *  (DS1687 as used in some SGI machines is similar to MC146818.)
  *
  *  This device contains Date/time, the machine's ethernet address (on
  *  DECstation 3100), and can cause periodic (hardware) interrupts.
+ *
+ *  NOTE: Many register offsets are multiplied by 4 in this code; this is
+ *  because I originally wrote it for DECstation 3100 emulation, where the
+ *  registered are spaced that way.
  */
 
 #include <stdio.h>
@@ -84,13 +88,13 @@ struct mc_data {
  *  dynamically.  We have to recalculate how often interrupts are to be
  *  triggered.
  */
-static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *mc_data)
+static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *d)
 {
-	if (mc_data->interrupt_hz > 0)
-		mc_data->interrupt_every_x_cycles =
-		    cpu->emul->emulated_hz / mc_data->interrupt_hz;
+	if (d->interrupt_hz > 0)
+		d->interrupt_every_x_cycles =
+		    cpu->emul->emulated_hz / d->interrupt_hz;
 	else
-		mc_data->interrupt_every_x_cycles = 0;
+		d->interrupt_every_x_cycles = 0;
 }
 
 
@@ -99,38 +103,38 @@ static void recalc_interrupt_cycle(struct cpu *cpu, struct mc_data *mc_data)
  */
 void dev_mc146818_tick(struct cpu *cpu, void *extra)
 {
-	struct mc_data *mc_data = extra;
+	struct mc_data *d = extra;
 
-	if (mc_data == NULL)
+	if (d == NULL)
 		return;
 
-	recalc_interrupt_cycle(cpu, mc_data);
+	recalc_interrupt_cycle(cpu, d);
 
-	if ((mc_data->reg[MC_REGB*4] & MC_REGB_PIE) &&
-	     mc_data->interrupt_every_x_cycles > 0) {
-		mc_data->cycles_left_until_interrupt -=
+	if ((d->reg[MC_REGB * 4] & MC_REGB_PIE) &&
+	     d->interrupt_every_x_cycles > 0) {
+		d->cycles_left_until_interrupt -=
 		    (1 << TICK_STEPS_SHIFT);
 
-		if (mc_data->cycles_left_until_interrupt < 0 ||
-		    mc_data->cycles_left_until_interrupt >=
-		    mc_data->interrupt_every_x_cycles) {
+		if (d->cycles_left_until_interrupt < 0 ||
+		    d->cycles_left_until_interrupt >=
+		    d->interrupt_every_x_cycles) {
 			/*  debug("[ rtc interrupt (every %i cycles) ]\n",
-			    mc_data->interrupt_every_x_cycles);  */
-			cpu_interrupt(cpu, mc_data->irq_nr);
+			    d->interrupt_every_x_cycles);  */
+			cpu_interrupt(cpu, d->irq_nr);
 
-			mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
+			d->reg[MC_REGC * 4] |= MC_REGC_PF;
 
 			/*  Reset the cycle countdown:  */
-			while (mc_data->cycles_left_until_interrupt < 0)
-				mc_data->cycles_left_until_interrupt +=
-				    mc_data->interrupt_every_x_cycles;
+			while (d->cycles_left_until_interrupt < 0)
+				d->cycles_left_until_interrupt +=
+				    d->interrupt_every_x_cycles;
 		}
 	}
 
-	if (mc_data->reg[MC_REGC*4] & MC_REGC_UF ||
-	    mc_data->reg[MC_REGC*4] & MC_REGC_AF ||
-	    mc_data->reg[MC_REGC*4] & MC_REGC_PF)
-		mc_data->reg[MC_REGC*4] |= MC_REGC_IRQF;
+	if (d->reg[MC_REGC * 4] & MC_REGC_UF ||
+	    d->reg[MC_REGC * 4] & MC_REGC_AF ||
+	    d->reg[MC_REGC * 4] & MC_REGC_PF)
+		d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
 }
 
 
@@ -144,7 +148,7 @@ int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct mc_data *mc_data = extra;
+	struct mc_data *d = extra;
 
 #ifdef MC146818_DEBUG
 	if (writeflag == MEM_WRITE) {
@@ -158,10 +162,10 @@ int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
 #endif
 
 	if (writeflag == MEM_WRITE) {
-		mc_data->last_addr = data[0];
+		d->last_addr = data[0];
 		return 1;
 	} else {
-		data[0] = mc_data->last_addr;
+		data[0] = d->last_addr;
 		return 1;
 	}
 }
@@ -173,7 +177,7 @@ int dev_mc146818_jazz_access(struct cpu *cpu, struct memory *mem,
  *  This function updates the MC146818 registers by reading
  *  the host's clock.
  */
-static void mc146818_update_time(struct mc_data *mc_data)
+static void mc146818_update_time(struct mc_data *d)
 {
 	struct tm *tmp;
 	time_t timet;
@@ -181,17 +185,17 @@ static void mc146818_update_time(struct mc_data *mc_data)
 	timet = time(NULL);
 	tmp = gmtime(&timet);
 
-	mc_data->reg[0x00] = (tmp->tm_sec);
-	mc_data->reg[0x08] = (tmp->tm_min);
-	mc_data->reg[0x10] = (tmp->tm_hour);
-	mc_data->reg[0x18] = (tmp->tm_wday + 1);
-	mc_data->reg[0x1c] = (tmp->tm_mday);
-	mc_data->reg[0x20] = (tmp->tm_mon + 1);
-	mc_data->reg[0x24] = (tmp->tm_year);
+	d->reg[4 * MC_SEC]   = tmp->tm_sec;
+	d->reg[4 * MC_MIN]   = tmp->tm_min;
+	d->reg[4 * MC_HOUR]  = tmp->tm_hour;
+	d->reg[4 * MC_DOW]   = tmp->tm_wday + 1;
+	d->reg[4 * MC_DOM]   = tmp->tm_mday;
+	d->reg[4 * MC_MONTH] = tmp->tm_mon + 1;
+	d->reg[4 * MC_YEAR]  = tmp->tm_year;
 
-	switch (mc_data->access_style) {
+	switch (d->access_style) {
 	case MC146818_ARC_NEC:
-		mc_data->reg[0x24] += (0x18 - 104);
+		d->reg[4 * MC_YEAR] += (0x18 - 104);
 		break;
 	case MC146818_SGI:
 		/*
@@ -203,20 +207,20 @@ static void mc146818_update_time(struct mc_data *mc_data)
 		 *  "If year < 1985, store (year - 1970), else
 		 *   (year - 1940). This matches IRIX semantics."
 		 *
-		 *  A real SGI IP32 box seems to use the value 5
-		 *  for the year 2005.
+		 *  Another rule: It seems that a real SGI IP32 box
+		 *  uses the value 5 for the year 2005.
 		 */
-		mc_data->reg[0x24] =
-		    mc_data->reg[0x24] >= 100 ?
-			(mc_data->reg[0x24] - 100) :
+		d->reg[4 * MC_YEAR] =
+		    d->reg[4 * MC_YEAR] >= 100 ?
+			(d->reg[4 * MC_YEAR] - 100) :
 		      (
-			mc_data->reg[0x24] < 85 ?
-			  (mc_data->reg[0x24] - 30 + 40)
-			: (mc_data->reg[0x24] - 40)
+			d->reg[4 * MC_YEAR] < 85 ?
+			  (d->reg[4 * MC_YEAR] - 30 + 40)
+			: (d->reg[4 * MC_YEAR] - 40)
 		      );
 
 		/*  Century:  */
-		mc_data->reg[72 * 4] = 19 + (tmp->tm_year / 100);
+		d->reg[72 * 4] = 19 + (tmp->tm_year / 100);
 
 		break;
 	case MC146818_DEC:
@@ -224,25 +228,27 @@ static void mc146818_update_time(struct mc_data *mc_data)
 		 *  DECstations must have 72 or 73 in the
 		 *  Year field, or Ultrix screems.  (Weird.)
 		 */
-		mc_data->reg[0x24] = 72;
+		d->reg[4 * MC_YEAR] = 72;
 		break;
 	}
 
-	if (mc_data->use_bcd) {
-		mc_data->reg[0x00] = to_bcd(mc_data->reg[0x00]);
-		mc_data->reg[0x08] = to_bcd(mc_data->reg[0x08]);
-		mc_data->reg[0x10] = to_bcd(mc_data->reg[0x10]);
-		mc_data->reg[0x18] = to_bcd(mc_data->reg[0x18]);
-		mc_data->reg[0x1c] = to_bcd(mc_data->reg[0x1c]);
-		mc_data->reg[0x20] = to_bcd(mc_data->reg[0x20]);
-		mc_data->reg[0x24] = to_bcd(mc_data->reg[0x24]);
-		mc_data->reg[72*4] = to_bcd(mc_data->reg[72*4]);
+	if (d->use_bcd) {
+		d->reg[4 * MC_SEC]   = to_bcd(d->reg[4 * MC_SEC]);
+		d->reg[4 * MC_MIN]   = to_bcd(d->reg[4 * MC_MIN]);
+		d->reg[4 * MC_HOUR]  = to_bcd(d->reg[4 * MC_HOUR]);
+		d->reg[4 * MC_DOW]   = to_bcd(d->reg[4 * MC_DOW]);
+		d->reg[4 * MC_DOM]   = to_bcd(d->reg[4 * MC_DOM]);
+		d->reg[4 * MC_MONTH] = to_bcd(d->reg[4 * MC_MONTH]);
+		d->reg[4 * MC_YEAR]  = to_bcd(d->reg[4 * MC_YEAR]);
+		d->reg[4 * 72]       = to_bcd(d->reg[4 * 72]);
 	}
 }
 
 
 /*
  *  dev_mc146818_access():
+ *
+ *  TODO: This access function only handles 8-bit accesses!
  */
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	uint64_t r, unsigned char *data, size_t len,
@@ -250,24 +256,24 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 {
 	struct tm *tmp;
 	time_t timet;
-	struct mc_data *mc_data = extra;
+	struct mc_data *d = extra;
 	int i, relative_addr = r;
 
-	relative_addr /= mc_data->addrdiv;
+	relative_addr /= d->addrdiv;
 
 	/*  Different ways of accessing the registers:  */
-	switch (mc_data->access_style) {
+	switch (d->access_style) {
 	case MC146818_PC_CMOS:
 		if (relative_addr == 0x70 || relative_addr == 0x00) {
 			if (writeflag == MEM_WRITE) {
-				mc_data->last_addr = data[0];
+				d->last_addr = data[0];
 				return 1;
 			} else {
-				data[0] = mc_data->last_addr;
+				data[0] = d->last_addr;
 				return 1;
 			}
 		} else if (relative_addr == 0x71 || relative_addr == 0x01)
-			relative_addr = mc_data->last_addr * 4;
+			relative_addr = d->last_addr * 4;
 		else {
 			fatal("[ mc146818: not accessed as an MC146818_PC_CMOS device! ]\n");
 		}
@@ -275,21 +281,21 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	case MC146818_ARC_NEC:
 		if (relative_addr == 0x01) {
 			if (writeflag == MEM_WRITE) {
-				mc_data->last_addr = data[0];
+				d->last_addr = data[0];
 				return 1;
 			} else {
-				data[0] = mc_data->last_addr;
+				data[0] = d->last_addr;
 				return 1;
 			}
 		} else if (relative_addr == 0x00)
-			relative_addr = mc_data->last_addr * 4;
+			relative_addr = d->last_addr * 4;
 		else {
 			fatal("[ mc146818: not accessed as an MC146818_ARC_NEC device! ]\n");
 		}
 		break;
 	case MC146818_ARC_JAZZ:
 		/*  See comment for dev_mc146818_jazz_access().  */
-		relative_addr = mc_data->last_addr * 4;
+		relative_addr = d->last_addr * 4;
 		break;
 	case MC146818_DEC:
 	case MC146818_SGI:
@@ -320,11 +326,11 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	 *  For some reason, Linux/sgimips relies on the UIP bit to go
 	 *  on and off. Without this code, booting Linux takes forever:
 	 */
-	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
+	d->reg[MC_REGA * 4] &= ~MC_REGA_UIP;
 #if 1
 	/*  TODO:  solve this more nicely  */
 	if ((random() & 0xff) == 0)
-		mc_data->reg[MC_REGA*4] ^= MC_REGA_UIP;
+		d->reg[MC_REGA * 4] ^= MC_REGA_UIP;
 #endif
 
 	/*
@@ -334,126 +340,100 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	 */
 	timet = time(NULL);
 	tmp = gmtime(&timet);
-	mc_data->reg[MC_REGC*4] &= ~MC_REGC_UF;
-	if (tmp->tm_sec != mc_data->previous_second) {
-		mc_data->reg[MC_REGC*4] |= MC_REGC_UF;
-		mc_data->reg[MC_REGC*4] |= MC_REGC_IRQF;
-		mc_data->previous_second = tmp->tm_sec;
+	d->reg[MC_REGC * 4] &= ~MC_REGC_UF;
+	if (tmp->tm_sec != d->previous_second) {
+		d->reg[MC_REGC * 4] |= MC_REGC_UF;
+		d->reg[MC_REGC * 4] |= MC_REGC_IRQF;
+		d->previous_second = tmp->tm_sec;
 
 		/*  For some reason, some Linux/DECstation KN04 kernels want
 		    the PF (periodic flag) bit set, even though interrupts
 		    are not enabled?  */
-		mc_data->reg[MC_REGC*4] |= MC_REGC_PF;
+		d->reg[MC_REGC * 4] |= MC_REGC_PF;
 	}
 
 	/*  RTC data is in either BCD format or binary:  */
-	if (mc_data->use_bcd) {
-		mc_data->reg[MC_REGB*4] &= ~(1 << 2);
+	if (d->use_bcd) {
+		d->reg[MC_REGB * 4] &= ~(1 << 2);
 	} else {
-		mc_data->reg[MC_REGB*4] |= (1 << 2);
+		d->reg[MC_REGB * 4] |= (1 << 2);
 	}
 
 	/*  RTC date/time is always Valid:  */
-	mc_data->reg[MC_REGD*4] |= MC_REGD_VRT;
+	d->reg[MC_REGD * 4] |= MC_REGD_VRT;
 
 	if (writeflag == MEM_WRITE) {
 		/*  WRITE:  */
 		switch (relative_addr) {
 		case MC_REGA*4:
 			if ((data[0] & MC_REGA_DVMASK) == MC_BASE_32_KHz)
-				mc_data->timebase_hz = 32000;
+				d->timebase_hz = 32000;
 			if ((data[0] & MC_REGA_DVMASK) == MC_BASE_1_MHz)
-				mc_data->timebase_hz = 1000000;
+				d->timebase_hz = 1000000;
 			if ((data[0] & MC_REGA_DVMASK) == MC_BASE_4_MHz)
-				mc_data->timebase_hz = 4000000;
+				d->timebase_hz = 4000000;
 			switch (data[0] & MC_REGA_RSMASK) {
 			case MC_RATE_NONE:
-				mc_data->interrupt_hz = 0;
+				d->interrupt_hz = 0;
 				break;
 			case MC_RATE_1:
-				if (mc_data->timebase_hz == 32000)
-					mc_data->interrupt_hz = 256;
+				if (d->timebase_hz == 32000)
+					d->interrupt_hz = 256;
 				else
-					mc_data->interrupt_hz = 32768;
+					d->interrupt_hz = 32768;
 				break;
 			case MC_RATE_2:
-				if (mc_data->timebase_hz == 32000)
-					mc_data->interrupt_hz = 128;
+				if (d->timebase_hz == 32000)
+					d->interrupt_hz = 128;
 				else
-					mc_data->interrupt_hz = 16384;
+					d->interrupt_hz = 16384;
 				break;
-			case MC_RATE_8192_Hz:
-				mc_data->interrupt_hz = 8192;
-				break;
-			case MC_RATE_4096_Hz:
-				mc_data->interrupt_hz = 4096;
-				break;
-			case MC_RATE_2048_Hz:
-				mc_data->interrupt_hz = 2048;
-				break;
-			case MC_RATE_1024_Hz:
-				mc_data->interrupt_hz = 1024;
-				break;
-			case MC_RATE_512_Hz:
-				mc_data->interrupt_hz = 512;
-				break;
-			case MC_RATE_256_Hz:
-				mc_data->interrupt_hz = 256;
-				break;
-			case MC_RATE_128_Hz:
-				mc_data->interrupt_hz = 128;
-				break;
-			case MC_RATE_64_Hz:
-				mc_data->interrupt_hz = 64;
-				break;
-			case MC_RATE_32_Hz:
-				mc_data->interrupt_hz = 32;
-				break;
-			case MC_RATE_16_Hz:
-				mc_data->interrupt_hz = 16;
-				break;
-			case MC_RATE_8_Hz:
-				mc_data->interrupt_hz = 8;
-				break;
-			case MC_RATE_4_Hz:
-				mc_data->interrupt_hz = 4;
-				break;
-			case MC_RATE_2_Hz:
-				mc_data->interrupt_hz = 2;
-				break;
+			case MC_RATE_8192_Hz:	d->interrupt_hz = 8192;	break;
+			case MC_RATE_4096_Hz:	d->interrupt_hz = 4096;	break;
+			case MC_RATE_2048_Hz:	d->interrupt_hz = 2048;	break;
+			case MC_RATE_1024_Hz:	d->interrupt_hz = 1024;	break;
+			case MC_RATE_512_Hz:	d->interrupt_hz = 512;	break;
+			case MC_RATE_256_Hz:	d->interrupt_hz = 256;	break;
+			case MC_RATE_128_Hz:	d->interrupt_hz = 128;	break;
+			case MC_RATE_64_Hz:	d->interrupt_hz = 64;	break;
+			case MC_RATE_32_Hz:	d->interrupt_hz = 32;	break;
+			case MC_RATE_16_Hz:	d->interrupt_hz = 16;	break;
+			case MC_RATE_8_Hz:	d->interrupt_hz = 8;	break;
+			case MC_RATE_4_Hz:	d->interrupt_hz = 4;	break;
+			case MC_RATE_2_Hz:	d->interrupt_hz = 2;	break;
 			default:
 				/*  debug("[ mc146818: unimplemented MC_REGA RS: %i ]\n", data[0] & MC_REGA_RSMASK);  */
 				;
 			}
 
-			recalc_interrupt_cycle(cpu, mc_data);
+			recalc_interrupt_cycle(cpu, d);
 
-			mc_data->cycles_left_until_interrupt =
-				mc_data->interrupt_every_x_cycles;
+			d->cycles_left_until_interrupt =
+				d->interrupt_every_x_cycles;
 
-			mc_data->reg[MC_REGA*4] =
+			d->reg[MC_REGA * 4] =
 			    data[0] & (MC_REGA_RSMASK | MC_REGA_DVMASK);
 
 			debug("[ rtc set to interrupt every %i:th cycle ]\n",
-			    mc_data->interrupt_every_x_cycles);
+			    d->interrupt_every_x_cycles);
 			break;
 		case MC_REGB*4:
-			if (((data[0] ^ mc_data->reg[MC_REGB*4]) & MC_REGB_PIE))
-				mc_data->cycles_left_until_interrupt =
-				    mc_data->interrupt_every_x_cycles;
-			mc_data->reg[MC_REGB*4] = data[0];
+			if (((data[0] ^ d->reg[MC_REGB*4]) & MC_REGB_PIE))
+				d->cycles_left_until_interrupt =
+				    d->interrupt_every_x_cycles;
+			d->reg[MC_REGB*4] = data[0];
 			if (!(data[0] & MC_REGB_PIE)) {
-				cpu_interrupt_ack(cpu, mc_data->irq_nr);
-				/*  mc_data->cycles_left_until_interrupt = mc_data->interrupt_every_x_cycles;  */
+				cpu_interrupt_ack(cpu, d->irq_nr);
+				/*  d->cycles_left_until_interrupt = d->interrupt_every_x_cycles;  */
 			}
 			/*  debug("[ mc146818: write to MC_REGB, data[0] = 0x%02x ]\n", data[0]);  */
 			break;
 		case MC_REGC*4:
-			mc_data->reg[MC_REGC*4] = data[0];
+			d->reg[MC_REGC * 4] = data[0];
 			debug("[ mc146818: write to MC_REGC, data[0] = 0x%02x ]\n", data[0]);
 			break;
 		case 0x128:
-			mc_data->reg[relative_addr] = data[0];
+			d->reg[relative_addr] = data[0];
 			if (data[0] & 8) {
 				/*  Used on SGI to power off the machine.  */
 				fatal("[ md146818: power off ]\n");
@@ -463,7 +443,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 			}
 			break;
 		default:
-			mc_data->reg[relative_addr] = data[0];
+			d->reg[relative_addr] = data[0];
 
 			debug("[ mc146818: unimplemented write to "
 			    "relative_addr = %08lx: ", (long)relative_addr);
@@ -474,44 +454,47 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 	} else {
 		/*  READ:  */
 		switch (relative_addr) {
-		case MC_REGC*4:	/*  Interrupt ack.  */
 		case 0x01:	/*  Station's ethernet address (6 bytes)  */
-		case 0x05:
+		case 0x05:	/*  (on DECstation 3100)  */
 		case 0x09:
 		case 0x0d:
 		case 0x11:
 		case 0x15:
 			break;
-		case 0x00:
-		case 0x08:
-		case 0x10:
-		case 0x18:
-		case 0x1c:
-		case 0x20:
-		case 0x24:
-		case 288:	/*  Century, on SGI (DS1687)  */
+		case 4 * MC_SEC:
+		case 4 * MC_MIN:
+		case 4 * MC_HOUR:
+		case 4 * MC_DOW:
+		case 4 * MC_DOM:
+		case 4 * MC_MONTH:
+		case 4 * MC_YEAR:
+		case 4 * 72:	/*  Century, on SGI (DS1687)  */
 			/*
 			 *  If the SET bit is set, then we don't automatically
 			 *  update the values.  Otherwise, we update them by
 			 *  reading from the host's clock:
 			 */
-			if (mc_data->reg[MC_REGB*4] & MC_REGB_SET)
+			if (d->reg[MC_REGB * 4] & MC_REGB_SET)
 				break;
 
-			mc146818_update_time(mc_data);
+			mc146818_update_time(d);
+			break;
+		case 4 * MC_REGC:	/*  Interrupt ack.  */
+			/*  NOTE: Acking is done below, _after_ the
+			    register has been read.  */
 			break;
 		default:
 			debug("[ mc146818: read from relative_addr = %04lx ]\n", (long)relative_addr);
 			;
 		}
 
-		data[0] = mc_data->reg[relative_addr];
+		data[0] = d->reg[relative_addr];
 
 		if (relative_addr == MC_REGC*4) {
-			cpu_interrupt_ack(cpu, mc_data->irq_nr);
-			/*  mc_data->cycles_left_until_interrupt =
-			    mc_data->interrupt_every_x_cycles;  */
-			mc_data->reg[MC_REGC * 4] = 0x00;
+			cpu_interrupt_ack(cpu, d->irq_nr);
+			/*  d->cycles_left_until_interrupt =
+			    d->interrupt_every_x_cycles;  */
+			d->reg[MC_REGC * 4] = 0x00;
 		}
 	}
 
@@ -540,65 +523,65 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 {
 	unsigned char ether_address[6];
 	int i, dev_len;
-	struct mc_data *mc_data;
+	struct mc_data *d;
 
-	mc_data = malloc(sizeof(struct mc_data));
-	if (mc_data == NULL) {
+	d = malloc(sizeof(struct mc_data));
+	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
 
-	memset(mc_data, 0, sizeof(struct mc_data));
-	mc_data->irq_nr        = irq_nr;
-	mc_data->access_style  = access_style;
-	mc_data->addrdiv       = addrdiv;
+	memset(d, 0, sizeof(struct mc_data));
+	d->irq_nr        = irq_nr;
+	d->access_style  = access_style;
+	d->addrdiv       = addrdiv;
 
-	/*  Station Ethernet Address:  */
+	/*  Station Ethernet Address, on DECstation 3100:  */
 	for (i=0; i<6; i++)
 		ether_address[i] = 0x10 * (i+1);
 
-	mc_data->reg[0x01] = ether_address[0];
-	mc_data->reg[0x05] = ether_address[1];
-	mc_data->reg[0x09] = ether_address[2];
-	mc_data->reg[0x0d] = ether_address[3];
-	mc_data->reg[0x11] = ether_address[4];
-	mc_data->reg[0x15] = ether_address[5];
+	d->reg[0x01] = ether_address[0];
+	d->reg[0x05] = ether_address[1];
+	d->reg[0x09] = ether_address[2];
+	d->reg[0x0d] = ether_address[3];
+	d->reg[0x11] = ether_address[4];
+	d->reg[0x15] = ether_address[5];
 	/*  TODO:  19, 1d, 21, 25 = checksum bytes 1,2,2,1 resp. */
-	mc_data->reg[0x29] = ether_address[5];
-	mc_data->reg[0x2d] = ether_address[4];
-	mc_data->reg[0x31] = ether_address[3];
-	mc_data->reg[0x35] = ether_address[2];
-	mc_data->reg[0x39] = ether_address[1];
-	mc_data->reg[0x3d] = ether_address[1];
-	mc_data->reg[0x41] = ether_address[0];
-	mc_data->reg[0x45] = ether_address[1];
-	mc_data->reg[0x49] = ether_address[2];
-	mc_data->reg[0x4d] = ether_address[3];
-	mc_data->reg[0x51] = ether_address[4];
-	mc_data->reg[0x55] = ether_address[5];
+	d->reg[0x29] = ether_address[5];
+	d->reg[0x2d] = ether_address[4];
+	d->reg[0x31] = ether_address[3];
+	d->reg[0x35] = ether_address[2];
+	d->reg[0x39] = ether_address[1];
+	d->reg[0x3d] = ether_address[1];
+	d->reg[0x41] = ether_address[0];
+	d->reg[0x45] = ether_address[1];
+	d->reg[0x49] = ether_address[2];
+	d->reg[0x4d] = ether_address[3];
+	d->reg[0x51] = ether_address[4];
+	d->reg[0x55] = ether_address[5];
 	/*  TODO:  59, 5d = checksum bytes 1,2 resp. */
-	mc_data->reg[0x61] = 0xff;
-	mc_data->reg[0x65] = 0x00;
-	mc_data->reg[0x69] = 0x55;
-	mc_data->reg[0x6d] = 0xaa;
-	mc_data->reg[0x71] = 0xff;
-	mc_data->reg[0x75] = 0x00;
-	mc_data->reg[0x79] = 0x55;
-	mc_data->reg[0x7d] = 0xaa;
+	d->reg[0x61] = 0xff;
+	d->reg[0x65] = 0x00;
+	d->reg[0x69] = 0x55;
+	d->reg[0x6d] = 0xaa;
+	d->reg[0x71] = 0xff;
+	d->reg[0x75] = 0x00;
+	d->reg[0x79] = 0x55;
+	d->reg[0x7d] = 0xaa;
 
 	/*  Only SGI uses BCD format (?)  */
-	mc_data->use_bcd = 0;
+	d->use_bcd = 0;
 	if (access_style == MC146818_SGI)
-		mc_data->use_bcd = 1;
+		d->use_bcd = 1;
 
 	if (access_style == MC146818_DEC) {
 		/*  Battery valid, for DECstations  */
-		mc_data->reg[0xf8] = 1;
+		d->reg[0xf8] = 1;
 	}
 
 	if (access_style == MC146818_ARC_JAZZ)
 		memory_device_register(mem, "mc146818_jazz", 0x90000070ULL,
-		    1, dev_mc146818_jazz_access, (void *)mc_data, MEM_DEFAULT, NULL);
+		    1, dev_mc146818_jazz_access, d, MEM_DEFAULT, NULL);
 
 	dev_len = DEV_MC146818_LENGTH;
 	switch (access_style) {
@@ -611,10 +594,10 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 
 	memory_device_register(mem, "mc146818", baseaddr,
 	    dev_len * addrdiv, dev_mc146818_access,
-	    (void *)mc_data, MEM_DEFAULT, NULL);
+	    d, MEM_DEFAULT, NULL);
 
-	mc146818_update_time(mc_data);
+	mc146818_update_time(d);
 
-	cpu_add_tickfunction(cpu, dev_mc146818_tick, mc_data, TICK_STEPS_SHIFT);
+	cpu_add_tickfunction(cpu, dev_mc146818_tick, d, TICK_STEPS_SHIFT);
 }
 

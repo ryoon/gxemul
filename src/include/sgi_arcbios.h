@@ -1,4 +1,4 @@
-/*  mips64emul: $Id: sgi_arcbios.h,v 1.5 2004-06-10 04:23:05 debug Exp $  */
+/*  mips64emul: $Id: sgi_arcbios.h,v 1.6 2004-07-14 19:55:59 debug Exp $  */
 
 #ifndef SGI_ARCBIOS_H
 #define	SGI_ARCBIOS_H
@@ -122,10 +122,12 @@ struct arcbios_spb {
  *  arcbios_spb_64 is like arcbios_spb, but with 64-bit pointers.
  *  Irix seems to want this.  TODO: This is just a guess, based on the
  *  usage of void * in the NetBSD version of arcbios_spb.
+ *
+ *  Linux wants a 64-bit SPBSignature?
  */
 struct arcbios_spb_64 {
-	uint32_t	SPBSignature;
-	uint32_t	SPBLength;
+	uint64_t	SPBSignature;
+/*	uint32_t	SPBLength;  */
 	uint16_t	Version;
 	uint16_t	Revision;
 	uint32_t	RestartBlock;			/*  was void * in netbsd  */

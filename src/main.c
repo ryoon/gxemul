@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.220 2005-03-23 08:45:51 debug Exp $
+ *  $Id: main.c,v 1.221 2005-03-23 09:00:56 debug Exp $
  */
 
 #include <stdio.h>
@@ -81,22 +81,26 @@ static int debug_currently_at_start_of_line = 1;
 static void va_debug(va_list argp, char *fmt)
 {
 	char buf[DEBUG_BUFSIZE + 1];
+	char *s;
 	int i;
 
 	buf[0] = buf[DEBUG_BUFSIZE] = 0;
 	vsnprintf(buf, DEBUG_BUFSIZE, fmt, argp);
 
-	if (debug_currently_at_start_of_line) {
-		for (i=0; i<debug_indent; i++)
-			printf(" ");
+	s = buf;
+	while (*s) {
+		if (debug_currently_at_start_of_line) {
+			for (i=0; i<debug_indent; i++)
+				printf(" ");
+		}
+
+		printf("%c", *s);
+
+		debug_currently_at_start_of_line = 0;
+		if (*s == '\n' || *s == '\r')
+			debug_currently_at_start_of_line = 1;
+		s++;
 	}
-
-	printf("%s", buf);
-	debug_currently_at_start_of_line = 0;
-
-	if (buf[strlen(buf) - 1] == '\n' ||
-	    buf[strlen(buf) - 1] == '\r')
-		debug_currently_at_start_of_line = 1;
 }
 
 

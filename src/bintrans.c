@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.157 2005-03-22 09:12:04 debug Exp $
+ *  $Id: bintrans.c,v 1.158 2005-03-23 09:00:56 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -978,7 +978,7 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
  *  old_bintrans_init_cpu():
  *
  *  This must be called for each cpu wishing to use bintrans. This should
- *  be called after old_bintrans_init(), but before any other function in this
+ *  be called after bintrans_init(), but before any other function in this
  *  module.
  */
 void old_bintrans_init_cpu(struct cpu *cpu)
@@ -1042,11 +1042,30 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 
 
 /*
- *  old_bintrans_init():
+ *  bintrans_init_cpu():
+ *
+ *  This must be called for each cpu wishing to use bintrans. This should
+ *  be called after bintrans_init(), but before any other function in this
+ *  module.
+ */
+void bintrans_init_cpu(struct cpu *cpu)
+{
+	if (cpu->machine->old_bintrans_enable) {
+		old_bintrans_init_cpu(cpu);
+		return;
+	}
+
+	/*  TODO  */
+	debug("\nbintrans_init_cpu(): New bintrans: TODO");
+}
+
+
+/*
+ *  bintrans_init():
  *
  *  Should be called before any other bintrans_*() function is used.
  */
-void old_bintrans_init(struct machine *machine, struct memory *mem)
+void bintrans_init(struct machine *machine, struct memory *mem)
 {
 	int res, i, n = 1 << BINTRANS_CACHE_N_INDEX_BITS;
 	size_t s;
@@ -1110,42 +1129,10 @@ void old_bintrans_init(struct machine *machine, struct memory *mem)
 		    " this usually doesn't really matter...\n", errno);
 
 	bintrans_backend_init();
-}
 
-
-/*
- *  bintrans_init_cpu():
- *
- *  This must be called for each cpu wishing to use bintrans. This should
- *  be called after bintrans_init(), but before any other function in this
- *  module.
- */
-void bintrans_init_cpu(struct cpu *cpu)
-{
-	if (cpu->machine->old_bintrans_enable) {
-		old_bintrans_init_cpu(cpu);
-		return;
+	if (!machine->old_bintrans_enable) {
+		debug("bintrans_init(): TODO: New bintrans (?)\n");
 	}
-
-	/*  TODO  */
-	printf("bintrans_init_cpu(): TODO\n");
-}
-
-
-/*
- *  bintrans_init():
- *
- *  Should be called before any other bintrans_*() function is used.
- */
-void bintrans_init(struct machine *machine, struct memory *mem)
-{
-	if (machine->old_bintrans_enable) {
-		old_bintrans_init(machine, mem);
-		return;
-	}
-
-	/*  TODO  */
-	printf("bintrans_init(): TODO\n");
 }
 
 

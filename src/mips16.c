@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.3 2003-11-07 10:32:53 debug Exp $
+ *  $Id: mips16.c,v 1.4 2003-11-08 08:43:38 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -55,8 +55,9 @@ static int mips16_t = 24;
  */
 int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 {
+	int rs, rd, imm, wlen;
 	int x = (instr16[1] << 8) + instr16[0];
-	int y = 0;	/*  TODO: This should be something 'illegal', so that execution stops  */
+	int y = 0x3e << 26;	/*  This should be something 'illegal', so that execution stops  */
 
 	/*  Translate 16-bit x into 32-bit y:  */
 
@@ -73,7 +74,50 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 		goto mips16_ret;
 	}
 
-	fatal("WARNING: unimplemented MIPS16 instruction 0x%04x\n", x);
+	/*  move y,X:   0x67 + 3 bits rd + 5 bits rs  */
+	if ((x & 0xff00) == 0x6700) {
+		rd = (x >> 5) & 0x07;
+		rs = (x >> 0) & 0x1f;
+		/*  addiu mips16_reg8_to_reg32[rd], reg32[rs], 0  */
+		y = (HI6_ADDIU << 26) + (rs << 21) + (mips16_reg8_to_reg32[rd] << 16);
+		goto mips16_ret;
+	}
+
+	/*  ld y,D(x)  { ld "y,D(x)", 0x3800, 0xf800, WR_y|RD_x, I3 }  */
+	if ((x & 0xf800) == 0x3800) {
+		wlen = 8;	/*  for ld  */
+		rd = (x >> 5) & 0x07;
+		rs = (x >> 8) & 0x07;
+		if (cpu->mips16_extend)
+			imm = (cpu->mips16_extend & 0x7ff) + ((x & 0x1f) << 11);
+		else {
+			imm = (x & 0x1f) * wlen;
+			if (imm >= 0x10)
+				imm |= 0xffe0;		/*  sign-extend  */
+		}
+
+		y = (HI6_LD << 26) + (mips16_reg8_to_reg32[rd] << 16) + (rs << 21) + imm;
+		goto mips16_ret;
+	}
+
+	/*  daddiu    "S,K",      0xfb00, 0xff00, WR_SP|RD_SP, I3   */
+	if ((x & 0xff00) == 0xfb00) {
+
+		/*  TODO: this is wrong  */
+
+		if (cpu->mips16_extend)
+			imm = ((cpu->mips16_extend & 0x7ff) << 5) + (x & 0xff);
+		else {
+			imm = (x & 0xff) << 3;
+			if (imm & (1 << 10))
+				imm |= 0xf800;		/*  sign-extend  */
+		}
+
+		y = (HI6_DADDIU << 26) + (mips16_sp << 21) + (mips16_sp << 16) + (imm & 0xffff);
+		goto mips16_ret;
+	}
+
+	/*  fatal("WARNING: unimplemented MIPS16 instruction 0x%04x\n", x);  */
 
 mips16_ret:
 	instr[3] = (y >> 24) & 255;

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.100 2004-10-22 06:23:23 debug Exp $
+ *  $Id: devices.h,v 1.101 2004-10-24 03:56:45 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -275,7 +275,7 @@ void dev_n64_bios_init(struct memory *mem, uint64_t baseaddr);
 #define	DEV_NS16550_LENGTH		0x0000000000000008
 /*  see comreg.h and ns16550reg.h for more info  */
 int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult);
+void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int addrmult, int in_use);
 
 /*  dev_mace.c:  */
 #define	DEV_MACE_LENGTH			0x100
@@ -312,7 +312,7 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 #define	PCKBC_8042		0
 #define	PCKBC_8242		1
 int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr);
+void dev_pckbc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
 
 /*  dev_pica.c:  */
 #define	DEV_PICA_LENGTH			0x280

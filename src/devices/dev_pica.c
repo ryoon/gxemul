@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.5 2004-10-23 18:35:36 debug Exp $
+ *  $Id: dev_pica.c,v 1.6 2004-10-24 03:56:43 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -179,6 +179,39 @@ int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
 
 
 /*
+ *  dev_pica_access_jazzio():
+ *
+ *  See jazzio_intr() in NetBSD's
+ *  /usr/src/sys/arch/arc/jazz/jazzio.c for more info.
+ */
+int dev_pica_access_jazzio(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct pica_data *d = (struct pica_data *) extra;
+	uint64_t idata = 0, odata = 0;
+	int i, v;
+
+	idata = memory_readmax64(cpu, data, len);
+
+	v = 0;
+	for (i=0; i<15; i++) {
+		if (d->int_asserted & (1<<i)) {
+			v = i+1;
+			break;
+		}
+	}
+
+	odata = v << 2;
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_pica_init():
  */
 struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
@@ -199,6 +232,9 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "pica_a0", 0x900000000a0ULL, 2,
 	    dev_pica_access_a0, (void *)d);
+
+	memory_device_register(mem, "pica_jazzio", 0x3c00000000ULL, 1,
+	    dev_pica_access_jazzio, (void *)d);
 
 	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);
 

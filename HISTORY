@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.271 2004-10-23 04:30:11 debug Exp $
+$Id: HISTORY,v 1.272 2004-10-24 03:56:43 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1054,3 +1054,10 @@ HISTORY of mips64emul
 		when emulating large memory sizes if the memory isn't actually
 		written to.
 20041023	Minor updates.
+20041024	Updates to the PC-style keyboard controller, used by PICA.
+		Updates to the PICA (Jazz) interrupt system. Both NetBSD/arc
+		and OpenBSD/arc now reach userland with PICA emulation, and
+		can be interacted with (there are a few programs on the
+		INSTALL kernel ramdisks). In the case of OpenBSD, a VGA text
+		console and PC-style keyboard controller is used, NetBSD
+		runs on serial console.

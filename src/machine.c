@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.202 2004-10-23 18:35:38 debug Exp $
+ *  $Id: machine.c,v 1.203 2004-10-24 03:56:46 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -536,9 +536,9 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 	if (pica_data->int_asserted /* & pica_data->int_enable_mask */
 	    & ~0x8000 )
-		cpu_interrupt(cpu, 4);
+		cpu_interrupt(cpu, 3);
 	else
-		cpu_interrupt_ack(cpu, 4);
+		cpu_interrupt_ack(cpu, 3);
 
 	if (pica_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
@@ -1542,8 +1542,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpu, mem, 0x10000000, emul->emulated_hz);	*/
-		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4);  	/*  mcclock0  */
-		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1);				/*  com0  */
+		dev_mc146818_init(cpu, mem, 0x10000070, 0, MC146818_PC_CMOS, 4);
+		dev_ns16550_init(cpu, mem, 0x1c800000, 5, 1, 1);
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -1853,7 +1853,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
 				dev_pckbc_init(cpu, mem, 0x1fbd9840, PCKBC_8242,
-				    0, 0);  /*  TODO: irq numbers  */
+				    0, 0, emul->use_x11);  /*  TODO: irq numbers  */
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
@@ -1957,8 +1957,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  program dumps something there, but it doesn't look like
 				 *  readable text.  (TODO)
 				 */
-				dev_ns16550_init(cpu, mem, 0x1f620170, 0, 1);		/*  TODO: irq?  */
-				dev_ns16550_init(cpu, mem, 0x1f620178, 0, 1);		/*  TODO: irq?  */
+				dev_ns16550_init(cpu, mem, 0x1f620170, 0, 1,
+				    emul->use_x11? 0 : 1);  /*  TODO: irq?  */
+				dev_ns16550_init(cpu, mem, 0x1f620178, 0, 1,
+				    0);  /*  TODO: irq?  */
 
 				/*  MardiGras graphics:  */
 				dev_sgi_mardigras_init(cpu, mem, 0x1c000000);
@@ -2037,13 +2039,19 @@ void machine_init(struct emul *emul, struct memory *mem)
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-				dev_pckbc_init(cpu, mem, 0x1f320000, PCKBC_8242, 0x200 + MACE_PERIPH_MISC, 0x800 + MACE_PERIPH_MISC);
+				dev_pckbc_init(cpu, mem, 0x1f320000,
+				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
+				    0x800 + MACE_PERIPH_MISC, emul->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
 
 				dev_sgi_ust_init(mem, 0x1f340000);					/*  ust?  */
 
-				dev_ns16550_init(cpu, mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
-				dev_ns16550_init(cpu, mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
+				dev_ns16550_init(cpu, mem, 0x1f390000,
+				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
+				    emul->use_x11? 0 : 1);	/*  com0  */
+				dev_ns16550_init(cpu, mem, 0x1f398000,
+				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
+				    0);				/*  com1  */
 
 				dev_mc146818_init(cpu, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
 				dev_zs_init(cpu, mem, 0x1fbd9830, 0, 1);	/*  serial??  */
@@ -2102,11 +2110,12 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 0, MC146818_ARC_NEC, 1);
 				dev_pckbc_init(cpu, mem,
-				    0x2000005000ULL, PCKBC_8042, 0, 0);
-				dev_ns16550_init(cpu, mem,
-				    0x2000006000ULL, 3, 1);	/*  com0  */
-				dev_ns16550_init(cpu, mem,
-				    0x2000007000ULL, 0, 1);	/*  com1  */
+				    0x2000005000ULL, PCKBC_8042, 0, 0,
+				    emul->use_x11);
+				dev_ns16550_init(cpu, mem, 0x2000006000ULL,
+				    3, 1, emul->use_x11? 0 : 1);  /*  com0  */
+				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
+				    0, 1, 0);			  /*  com1  */
 				/*  lpt at 0x2000008000  */
 
 				/*  fdc  */
@@ -2189,15 +2198,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
-				/*  TODO: irq numbers  */
-				dev_pckbc_init(cpu, mem,
-				    0x2000005060ULL, PCKBC_8042, 0, 0);
+				dev_pckbc_init(cpu, mem, 0x2000005060ULL,
+				    PCKBC_8042, 8 + 6, 8 + 7, emul->use_x11);
 
-				/*  TODO: irq numbers  */
 				dev_ns16550_init(cpu, mem,
-				    0x2000006000ULL, 0, 1);
+				    0x2000006000ULL, 8 + 8, 1,
+				    emul->use_x11? 0 : 1);
 				dev_ns16550_init(cpu, mem,
-				    0x2000007000ULL, 0, 1);
+				    0x2000007000ULL, 8 + 9, 1, 0);
 
 				break;
 
@@ -2219,10 +2227,14 @@ void machine_init(struct emul *emul, struct memory *mem)
 				    0x900000003d0ULL,
 				    ARC_CONSOLE_MAX_X, ARC_CONSOLE_MAX_Y);
 
-				dev_ns16550_init(cpu, mem, 0x900000003f8ULL, 0, 1);
-				dev_ns16550_init(cpu, mem, 0x900000002f8ULL, 0, 1);
-				dev_ns16550_init(cpu, mem, 0x900000003e8ULL, 0, 1);
-				dev_ns16550_init(cpu, mem, 0x900000002e8ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x900000003f8ULL,
+				    0, 1, emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem, 0x900000002f8ULL,
+				    0, 1, 0);
+				dev_ns16550_init(cpu, mem, 0x900000003e8ULL,
+				    0, 1, 0);
+				dev_ns16550_init(cpu, mem, 0x900000002e8ULL,
+				    0, 1, 0);
 
 				dev_mc146818_init(cpu, mem,
 				    0x90000000070ULL, 2, MC146818_PC_CMOS, 1);
@@ -2232,8 +2244,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_wdc_init(cpu, mem, 0x90000000170ULL, 0, 2);
 #endif
 				/*  PC kbd  */
-				dev_zero_init(mem, 0x90000000064ULL, 1);
-				dev_random_init(mem, 0x90000000060ULL, 1);
+				dev_pckbc_init(cpu, mem, 0x90000000060ULL,
+				    PCKBC_8042, 0, 0, emul->use_x11);
 
 				break;
 
@@ -2264,10 +2276,10 @@ void machine_init(struct emul *emul, struct memory *mem)
 				dev_mc146818_init(cpu, mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1);
 
-				dev_ns16550_init(cpu, mem,
-				    0x2000006000ULL, 0, 1);
-				dev_ns16550_init(cpu, mem,
-				    0x2000007000ULL, 0, 1);
+				dev_ns16550_init(cpu, mem, 0x2000006000ULL,
+				    0, 1, emul->use_x11? 0 : 1);
+				dev_ns16550_init(cpu, mem, 0x2000007000ULL,
+				    0, 1, 0);
 
 				break;
 

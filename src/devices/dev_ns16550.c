@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.18 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.19 2004-10-24 03:56:43 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -50,7 +50,7 @@ struct ns_data {
 	int		irq_enable;
 	int		irqnr;
 	int		addrmult;
-
+	int		in_use;
 	int		dlab;		/*  Divisor Latch Access bit  */
 	int		divisor;
 	int		databits;
@@ -70,10 +70,11 @@ void dev_ns16550_tick(struct cpu *cpu, void *extra)
 	d->reg[com_iir] |= IIR_NOPEND;
 	cpu_interrupt_ack(cpu, d->irqnr);
 
-	if (console_charavail())
-		d->reg[com_iir] |= IIR_RXRDY;
-	else
-		d->reg[com_iir] &= ~IIR_RXRDY;
+	d->reg[com_iir] &= ~IIR_RXRDY;
+	if (d->in_use) {
+		if (console_charavail())
+			d->reg[com_iir] |= IIR_RXRDY;
+	}
 
 	if (d->reg[com_mcr] & MCR_IENABLE) {
 		if (d->irq_enable & IER_ETXRDY && d->reg[com_iir] & IIR_TXRDY) {
@@ -112,8 +113,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 	d->reg[com_iir] &= 0x0f;
 #endif
 
-	if (console_charavail()) {
-		d->reg[com_lsr] |= LSR_RXRDY;
+	if (d->in_use) {
+		if (console_charavail()) {
+			d->reg[com_lsr] |= LSR_RXRDY;
+		}
 	}
 
 	relative_addr /= d->addrmult;
@@ -145,7 +148,10 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem,
 			dev_ns16550_tick(cpu, d);
 			return 1;
 		} else {
-			odata = console_readchar();
+			if (d->in_use)
+				odata = console_readchar();
+			else
+				odata = 0;
 			dev_ns16550_tick(cpu, d);
 		}
 		break;
@@ -270,7 +276,7 @@ dev_ns16550_tick(cpu, d);
  *  dev_ns16550_init():
  */
 void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int addrmult)
+	int irq_nr, int addrmult, int in_use)
 {
 	struct ns_data *d;
 
@@ -280,8 +286,9 @@ void dev_ns16550_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ns_data));
-	d->irqnr = irq_nr;
+	d->irqnr    = irq_nr;
 	d->addrmult = addrmult;
+	d->in_use   = in_use;
 
 	d->dlab = 0;
 	d->divisor  = 115200 / 9600;

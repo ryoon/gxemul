@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.46 2004-06-27 01:07:29 debug Exp $
+ *  $Id: coproc.c,v 1.47 2004-06-28 00:54:39 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -122,7 +122,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    | (0x00 << 21)	/*  SS  */
 			    | (0x00 << 20)	/*  SW  */
 			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (0x01 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
+			    | (0x00 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
 			    | (0x00 << 16)	/*  SM: (todo)  */
 			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
 			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */
@@ -147,7 +147,7 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 			    | (0x00 << 21)	/*  SS  */
 			    | (0x00 << 20)	/*  SW  */
 			    | (0x00 << 18)	/*  EW: 0=64-bit  */
-			    | (0x01 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
+			    | (0x00 << 17)	/*  SC: 0=secondary cache present, 1=non-present  */
 			    | (0x00 << 16)	/*  SM: (todo)  */
 			    | ((cpu->byte_order==EMUL_BIG_ENDIAN? 1 : 0) << 15) 	/*  endian mode  */
 			    | (0x01 << 14)	/*  ECC: 0=enabled, 1=disabled  */

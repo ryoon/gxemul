@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.167 2004-12-14 12:39:59 debug Exp $
+$Id: index.html,v 1.168 2004-12-15 05:15:58 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -1042,13 +1042,12 @@ onto a harddisk image:
 </pre>
   <li>Create an empty harddisk image, which will be the root disk
 	that Debian installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=debian.img bs=512 count=1 seek=2698060</b>
+	$ <b>dd if=/dev/zero of=debian.img bs=1024 count=1 seek=2000000</b>
 
 </pre>
   <li>Download the install kernel:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">http://http.us.debian.org/debian/dists/testing/main/</a>
 	    <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/r3k-kn02/boot.img">installer-mipsel/current/images/r3k-kn02/boot.img</a>
-	4743488 bytes, MD5 = 9b635b50e49fae3df7d853a8290a39d8
 
 </pre>
   <li>For a text-mode installation, start the emulator like this:<pre>
@@ -1160,7 +1159,6 @@ in mips64emul:
   <li>Download a kernel. This is a Debian kernel, but it works fine:<pre>
 	<a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">http://http.us.debian.org/debian/dists/testing/main/</a>
 	 <a href="http://http.us.debian.org/debian/dists/testing/main/installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02">installer-mipsel/current/images/cdrom/vmlinux-2.4.27-r3k-kn02</a>
-	3223460 bytes, md5 = dc44f6501040e04d6fa5151681565434
 
 </pre>
   <li>Download a root filesystem tree:<pre>

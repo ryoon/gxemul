@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip22.c,v 1.20 2005-01-09 01:55:25 debug Exp $
+ *  $Id: dev_sgi_ip22.c,v 1.21 2005-01-16 08:37:14 debug Exp $
  *  
  *  SGI IP22 stuff.
  */
@@ -404,7 +404,7 @@ struct sgi_ip22_data *dev_sgi_ip22_init(struct cpu *cpu, struct memory *mem,
 	    DEV_SGI_IP22_UNKNOWN2_LENGTH, dev_sgi_ip22_unknown2_access,
 	    (void *)d, MEM_DEFAULT, NULL);
 
-	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 10);
+	cpu_add_tickfunction(cpu, dev_sgi_ip22_tick, d, 14);
 
 	return d;
 }

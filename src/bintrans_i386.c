@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_i386.c,v 1.20 2004-11-22 04:46:04 debug Exp $
+ *  $Id: bintrans_i386.c,v 1.21 2004-11-23 20:23:04 debug Exp $
  *
  *  i386 specific code for dynamic binary translation.
  *
@@ -411,6 +411,13 @@ static int bintrans_write_instruction__addiu_etc(unsigned char **addrp,
 
 	uimm = imm & 0xffff;
 
+	if (uimm == 0 && (instruction_type == HI6_ADDIU ||
+	    instruction_type == HI6_DADDIU || instruction_type == HI6_ORI)) {
+		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		store_eax_edx(&a, &dummy_cpu.gpr[rt]);
+		goto rt0;
+	}
+
 	if (load64) {
 		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
 	} else {
@@ -650,6 +657,14 @@ static int bintrans_write_instruction__addu_etc(unsigned char **addrp,
 		goto rd0;
 
 	a = *addrp;
+
+	if ((instruction_type == SPECIAL_ADDU || instruction_type == SPECIAL_DADDU
+	    || instruction_type == SPECIAL_OR) && rt == 0) {
+		load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+		store_eax_edx(&a, &dummy_cpu.gpr[rd]);
+		*addrp = a;
+		goto rd0;
+	}
 
 	/*  edx:eax = rs, ecx:ebx = rt  */
 	if (load64) {
@@ -1298,13 +1313,15 @@ try_chunk_p:
 		/*  81 be 38 30 00 00 f0 1f 00 00    cmpl   $0x1ff0,0x3038(%esi)  */
 		/*  7c 01                            jl     <okk>  */
 		/*  c3                               ret    */
-		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
-		*a++ = 0x81; *a++ = 0xbe;
-		*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
-		*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
-		*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
-		*a++ = 0x7c; *a++ = 0x01;
-		*a++ = 0xc3;
+		if (!only_care_about_chunk_p) {
+			ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed) - (size_t)&dummy_cpu;
+			*a++ = 0x81; *a++ = 0xbe;
+			*a++ = ofs; *a++ = ofs >> 8; *a++ = ofs >> 16; *a++ = ofs >> 24;
+			*a++ = (N_SAFE_BINTRANS_LIMIT-1) & 255;
+			*a++ = ((N_SAFE_BINTRANS_LIMIT-1) >> 8) & 255; *a++ = 0; *a++ = 0;
+			*a++ = 0x7c; *a++ = 0x01;
+			*a++ = 0xc3;
+		}
 
 		/*
 		 *  potential_chunk_p points to an "uint32_t".
@@ -1407,8 +1424,8 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	a = *addrp;
 
-
 	load_into_eax_edx(&a, &dummy_cpu.gpr[rs]);
+
 	if (imm & 0x8000) {
 		/*  05 34 f2 ff ff          add    $0xfffff234,%eax  */
 		/*  83 d2 ff                adc    $0xffffffff,%edx  */
@@ -1493,11 +1510,20 @@ static int bintrans_write_instruction__loadstore(unsigned char **addrp,
 
 	/*  If eax is NULL, then return.  */
 	/*  83 f8 00                cmp    $0x0,%eax  */
-	/*  75 01                   jne    1cd <okjump>  */
+	/*  75 01                   jne    <okjump>  */
 	/*  c3                      ret    */
 	*a++ = 0x83; *a++ = 0xf8; *a++ = 0x00;
 	*a++ = 0x75; retfail = a; *a++ = 0x00;
 	bintrans_write_chunkreturn_fail(&a);		/*  ret (and fail)  */
+	*retfail = (size_t)a - (size_t)retfail - 1;
+
+	/*  If eax is -1, then just return (an exception).  */
+	/*  83 f8 ff                cmp    $-1,%eax  */
+	/*  75 01                   jne    <okjump>  */
+	/*  c3                      ret    */
+	*a++ = 0x83; *a++ = 0xf8; *a++ = 0xff;
+	*a++ = 0x75; retfail = a; *a++ = 0x00;
+	bintrans_write_chunkreturn(&a);		/*  ret (but no fail)  */
 	*retfail = (size_t)a - (size_t)retfail - 1;
 
 	/*  89 c7                   mov    %eax,%edi  */

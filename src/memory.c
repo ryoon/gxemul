@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.108 2004-11-23 13:47:03 debug Exp $
+ *  $Id: memory.c,v 1.109 2004-11-23 20:23:04 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -129,7 +129,6 @@ void memory_writemax64(struct cpu *cpu, unsigned char *buf, int len,
 struct memory *memory_new(uint64_t physical_max)
 {
 	struct memory *mem;
-	int n, ok;
 	int bits_per_pagetable = BITS_PER_PAGETABLE;
 	int bits_per_memblock = BITS_PER_MEMBLOCK;
 	int entries_per_pagetable = 1 << BITS_PER_PAGETABLE;

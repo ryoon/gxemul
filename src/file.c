@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.34 2004-09-14 15:04:46 debug Exp $
+ *  $Id: file.c,v 1.35 2004-10-14 12:11:29 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -410,7 +410,8 @@ static void file_load_ecoff(struct emul *emul, struct memory *mem,
 		}
 
 		/*  Loadable? Then load the section:  */
-		if (s_scnptr != 0 && s_size != 0 && !(s_flags & 0x02)) {
+		if (s_scnptr != 0 && s_size != 0 &&
+		    s_vaddr != 0 && !(s_flags & 0x02)) {
 			/*  Remember the current file offset:  */
 			oldpos = ftell(f);
 

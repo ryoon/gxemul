@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.253 2004-10-13 23:48:36 debug Exp $
+$Id: HISTORY,v 1.254 2004-10-14 12:11:26 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1000,9 +1000,9 @@ HISTORY of mips64emul
 		of the LANCE controller. (This goes against the LANCE
 		documentation though.)
 		In src/net.c, a fix for Ultrix (which seems to send larger
-		ethernet packets than the actual TCP/IP contents). The hack
-		to dev_le.c and this fix is enough to let Ultrix access the
-		the Internet.
+		ethernet packets than the actual TCP/IP contents). The hack to
+		dev_le.c and this fix is enough to let Ultrix access the
+		Internet.
 		For DECstation, when booting without a disk image (or when
 		"-O" is used on the command line), use "tftp" instead of "rzX"
 		for the boot string.
@@ -1018,3 +1018,4 @@ HISTORY of mips64emul
 		a disk or cdrom image (thanks to Alexandru Lazar for making me
 		aware of this).
 		Adding "gets()" to src/dec_prom.c.
+		Working a bit on ARC stuff. Importing pica.h from NetBSD.

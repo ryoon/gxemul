@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.189 2004-10-11 17:59:11 debug Exp $
+ *  $Id: machine.c,v 1.190 2004-10-14 12:11:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2058,11 +2058,6 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  fdc  */
 				dev_fdc_init(mem, 0x200000c000ULL, 0);
 
-				/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
-				/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
-				if (emul->use_x11)
-					arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system);
-
 				/*  PCI devices:  (NOTE: bus must be 0, device must be 3, 4, or 5, for NetBSD to accept interrupts)  */
 				bus_pci_add(cpu, pci_data, mem, 0, 3, 0, pci_dec21030_init, pci_dec21030_rr);	/*  tga graphics  */
 				break;
@@ -2116,9 +2111,11 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 				strcat(emul->machine_name, " (Acer PICA-61)");
 
-				/*  TODO:  lots of stuff  */
+				/*  OpenBSD/arc and NetBSD/arc:  */
+				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL, 0x60000003b0ULL);  */
 				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x60000003d0ULL);
 
+				/*  Cannot be attached yet, too DECstation specific.  */
 				/*  dev_asc_init(cpu, mem,
 				    0x2000002000ULL, 0, NULL);  */
 
@@ -2532,6 +2529,46 @@ void machine_init(struct emul *emul, struct memory *mem)
 			debug("adding ARC components: cpu%i = 0x%x, fpu%i = 0x%x,"
 			    " picache = 0x%x pdcache = 0x%x sdcache = 0x%x\n",
 			    i, cpuaddr, i, fpu, picache, pdcache, sdcache);
+		}
+
+
+		/*
+		 *  Other components:
+		 *
+		 *  TODO: How to build the component tree intermixed with
+		 *  the rest of device initialization?
+		 */
+
+		if (emul->emulation_type == EMULTYPE_ARC &&
+		    ( emul->machine == MACHINE_ARC_NEC_RD94 ||
+		    emul->machine == MACHINE_ARC_NEC_R94 )) {
+			/*  This DisplayController needs to be here, to allow NetBSD to use the TGA card:  */
+			/*  Actually class COMPONENT_CLASS_ControllerClass, type COMPONENT_TYPE_DisplayController  */
+			if (emul->use_x11)
+				arcbios_addchild_manual(cpu, 4, 19,  0, 1, 2, 0, 0x0, "10110004", system);
+		}
+
+		if (emul->emulation_type == EMULTYPE_ARC &&
+		    emul->machine == MACHINE_ARC_PICA) {
+			uint32_t jazzbus;
+			jazzbus = arcbios_addchild_manual(cpu,
+			    3 /*  Adapter  */,
+			    12 /* MultiFunctionAdapter */,
+			    0, 1, 2, 0, 0xffffffff, "Jazz-Internal Bus",
+			    system);
+
+			/*
+			 *  DisplayController, needed by NetBSD:
+			 *  TODO: NetBSD still doesn't use it :(
+			 */
+			if (emul->use_x11)
+				arcbios_addchild_manual(cpu,
+				    4  /*  Controller  */,
+				    19  /* Display controller */,
+				    COMPONENT_FLAG_ConsoleOut |
+					COMPONENT_FLAG_Output,
+				    1, 2, 0, 0xffffffff, "ALI_S3",
+				    jazzbus);
 		}
 
 

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.139 2004-07-08 06:53:12 debug Exp $
+$Id: HISTORY,v 1.140 2004-07-08 22:49:16 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -695,4 +695,14 @@ HISTORY of mips64emul
 		The Lance chip is (apparently) supposed to set the length of
 		received packets to len+4. (I've not found this in any 
 		documentation, but this is what NetBSD expects.) So now, ICMP
-		echo replies work :-)
+		echo replies work :-)  UDP works in the outgoing direction,
+		in the incoming direction, tcpdump can see the packets but they
+		seem to be ignored anyway. (Weird.)
+		Adding a separate virtual-address-to-host-page translation
+		cache, 1-entry for loads, 1-entry for stores. (For now, it
+		only works on R4000 as there are conflicts with cache usage
+		on R3000).
+		Changing the lower clock speed bound from 1 MHz to 1.5 MHz.
+20040709	Incoming UDP checksums were wrong, but are now set to zero
+		and NetBSD inside the emulator now accepts the packets (eg.
+		nameserver responses).

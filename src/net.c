@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: net.c,v 1.9 2004-07-08 06:53:13 debug Exp $
+ *  $Id: net.c,v 1.10 2004-07-08 22:49:18 debug Exp $
  *
  *  Emulated (ethernet) network support.
  *
@@ -482,9 +482,9 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[17] = ip_len & 0xff;
 			lp->data[18] = last_source_udp_id >> 8;
 			lp->data[19] = last_source_udp_id & 0xff;
-			lp->data[20] = 0;	/*  TODO: ofs  */
+			lp->data[20] = 0x40;	/*  TODO: ofs  */
 			lp->data[21] = 0;	/*  TODO: ofs  */
-			lp->data[22] = 2;	/*  ttl  */
+			lp->data[22] = 0x40;	/*  ttl  */
 			lp->data[23] = 17;	/*  p = UDP  */
 			lp->data[26] = ((unsigned char *)&from)[4];
 			lp->data[27] = ((unsigned char *)&from)[5];
@@ -504,15 +504,8 @@ int net_ethernet_rx_avail(void *extra)
 			lp->data[38] = udp_len >> 8;
 			lp->data[39] = udp_len & 0xff;
 			memcpy(lp->data + 42, buf, res);
-			net_ip_checksum(lp->data + 34, 6, 8 + res);
 
-{
-int i;
-printf("\n+++  INCOMING UDP: ");
-for (i=0; i<lp->len; i++)
-	printf(" %02x", lp->data[i]);
-printf("\n\n");
-}
+			/*  TODO:  UDP checksum, if neccessary  */
 		}
 	}
 

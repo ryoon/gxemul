@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.55 2004-07-05 19:25:04 debug Exp $
+ *  $Id: coproc.c,v 1.56 2004-07-08 22:49:17 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -1229,6 +1229,8 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
 					cpu->translation_cache_data[i].wf = 0;
 #endif
+
+			        cpu->tlbmod_tag ++;
 
 				/*
 				 *  ... and the last instruction page:

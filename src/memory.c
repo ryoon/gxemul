@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.59 2004-07-07 06:50:47 debug Exp $
+ *  $Id: memory.c,v 1.60 2004-07-08 22:49:18 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -1086,6 +1086,8 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
+	mem->last_store_host_page = mem->last_load_host_page = NULL;
+
 	if (cpu == NULL) {
 		paddr = vaddr & 0x1fffffff;
 		goto have_paddr;
@@ -1113,7 +1115,6 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		paddr = cpu->pc_last_physical_page | (vaddr & 0xfff);
 		goto have_paddr;
 	}
-
 
 	if (cache_flags & PHYSICAL) {
 		paddr = vaddr;
@@ -1377,6 +1378,8 @@ no_exception_access:
 			*(uint8_t *)(memblock + offset) = *(uint8_t *)data;
 		else
 			memcpy(memblock + offset, data, len);
+
+		mem->last_store_host_page = memblock + (offset & ~0xfff);
 	} else {
 		if (len == sizeof(uint32_t) && (offset & 3)==0)
 			*(uint32_t *)data = *(uint32_t *)(memblock + offset);
@@ -1389,7 +1392,8 @@ no_exception_access:
 			cpu->pc_last_was_in_host_ram = 1;
 			cpu->pc_last_host_4k_page = memblock
 			    + (offset & ~0xfff);
-		}
+		} else
+			mem->last_load_host_page = memblock + (offset & ~0xfff);
 	}
 
 do_return_ok:

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.101 2004-07-08 00:56:13 debug Exp $
+ *  $Id: cpu.c,v 1.102 2004-07-08 22:49:17 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -107,6 +107,9 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
 	cpu->gpr[GPR_SP]	= INITIAL_STACK_POINTER;
+
+	/*  All other tlbmod tags are 0, so we are one step ahead:  */
+	cpu->tlbmod_tag		= 1;
 
 	/*  Scan the cpu_type_defs list for this cpu type:  */
 	i = 0;
@@ -2156,7 +2159,42 @@ int cpu_run_instr(struct cpu *cpu)
 							v >>= 8;
 						}
 				}
+
+				/*
+				 *  For correct cache emulation, we can't use
+				 *  the tlbmod_* optimizaions.
+				 */
+#ifdef ENABLE_CACHE_EMULATION
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
+#else
+				if (cpu->cpu_type.mmu_model >= MMU4K &&
+				    (addr & ~0xfff) == cpu->last_store_vaddr_page
+				    && cpu->tlbmod_tag_of_last_store
+				    == cpu->tlbmod_tag) {
+					/*  debug("[ STORE HIT ]");  */
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+					cpu->statistics_tagged_store_hits ++;
+#endif
+#if 0
+					switch (wlen) {
+					case 4:	*((uint32_t *)(cpu->last_store_host_page + (addr & 0xfff))) = *((uint32_t *)d); break;
+					case 1:	*((uint8_t  *)(cpu->last_store_host_page + (addr & 0xfff))) = *((uint8_t  *)d); break;
+					default:
+						memcpy(cpu->last_store_host_page + (addr & 0xfff), d, wlen);
+					}
+					success = 1;
+#else
+					success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
+#endif
+				} else {
+					/*  debug("[ STORE MISS ]");  */
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+					cpu->statistics_tagged_store_misses ++;
+#endif
+					success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_WRITE, CACHE_DATA);
+				}
+#endif
+
 				if (!success) {
 					/*  The store failed, and might have caused an exception.  */
 					if (instruction_trace_cached && dataflag)
@@ -2168,7 +2206,44 @@ int cpu_run_instr(struct cpu *cpu)
 				int cpnr = 1;
 				int success;
 
+				/*
+				 *  For correct cache emulation, we can't use
+				 *  the tlbmod_* optimizaions.   TODO: It is
+				 *  not 100% obvious that the tlbmod
+				 *  optimization works. Perhaps it will have
+				 *  to be removed.  :-/
+				 */
+#ifdef ENABLE_CACHE_EMULATION
 				success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
+#else
+				if (cpu->cpu_type.mmu_model >= MMU4K &&
+				    (addr & ~0xfff) == cpu->last_load_vaddr_page
+				    && cpu->tlbmod_tag_of_last_load
+				    == cpu->tlbmod_tag) {
+					/*  debug("[ LOAD HIT ]");  */
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+					cpu->statistics_tagged_load_hits ++;
+#endif
+#if 0
+					switch (wlen) {
+					case 4:	*((uint32_t *)d) = *((uint32_t *)(cpu->last_load_host_page + (addr & 0xfff))); break;
+					case 1:	*((uint8_t  *)d) = *((uint8_t  *)(cpu->last_load_host_page + (addr & 0xfff))); break;
+					default:
+						memcpy(d, cpu->last_load_host_page + (addr & 0xfff), wlen);
+					}
+					success = 1;
+#else
+					success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
+#endif
+				} else {
+					/*  debug("[ LOAD MISS ]");  */
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+					cpu->statistics_tagged_load_misses ++;
+#endif
+					success = memory_rw(cpu, cpu->mem, addr, d, wlen, MEM_READ, CACHE_DATA);
+				}
+#endif
+
 				if (!success) {
 					/*  The load failed, and might have caused an exception.  */
 					if (instruction_trace_cached && dataflag)
@@ -2266,6 +2341,35 @@ int cpu_run_instr(struct cpu *cpu)
 
 				cpu->gpr[rt] = 1;
 				cpu->rmw = 0;
+			}
+
+			/*
+			 *  EXPERIMENTAL: exception tag stuff.
+			 *
+			 *  We just did a load or store. If
+			 *  last_{load,store}_host_page was set, then we know
+			 *  which host page this virtual address belongs to.
+			 *  Remember it until the next time a load or store
+			 *  occurs.  (This is a one-entry cache for vaddr-to-
+			 *  hostpage translation, one for loads and one for
+			 *  stores.)
+			 */
+			if (st == 1) {
+				if (cpu->mem->last_store_host_page != NULL) {
+					cpu->last_store_host_page =
+					    cpu->mem->last_store_host_page;
+					cpu->last_store_vaddr_page = addr & ~0xfff;
+					cpu->tlbmod_tag_of_last_store =
+					    cpu->tlbmod_tag;
+				}
+			} else {
+				if (cpu->mem->last_load_host_page != NULL) {
+					cpu->last_load_host_page =
+					    cpu->mem->last_load_host_page;
+					cpu->last_load_vaddr_page = addr & ~0xfff;
+					cpu->tlbmod_tag_of_last_load =
+					    cpu->tlbmod_tag;
+				}
 			}
 
 			if (instruction_trace_cached && dataflag) {
@@ -2782,8 +2886,8 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles, int forced)
 		    (ninstrs-ninstrs_last) / (mseconds-mseconds_last)
 		    / cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
 
-		if (cur_cycles_per_second < 1000000)
-			cur_cycles_per_second = 1000000;
+		if (cur_cycles_per_second < 1500000)
+			cur_cycles_per_second = 1500000;
 
 		if (first_adjustment) {
 			emulated_hz = cur_cycles_per_second;
@@ -2871,6 +2975,18 @@ void cpu_show_full_statistics(struct cpu **cpus)
 						printf("      special2 %02x (%7s): %li\n",
 						    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
 		}
+
+#ifdef TLBMOD_LOADSTORE_STATISTICS
+		printf("cpu%i exception tag statistics:\n", i);
+		printf("    load  hits:    %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_load_hits);
+		printf("    load  misses:  %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_load_misses);
+		printf("    store hits:    %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_store_hits);
+		printf("    store misses:  %12lli\n", (long long)
+		    cpus[i]->statistics_tagged_store_misses);
+#endif
 	}
 }
 

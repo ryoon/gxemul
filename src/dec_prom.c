@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.19 2004-07-07 20:32:18 debug Exp $
+ *  $Id: dec_prom.c,v 1.20 2004-07-08 22:49:18 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -194,6 +194,17 @@ void decstation_prom_emul(struct cpu *cpu)
 	unsigned char buf[100];
 	unsigned char ch1, ch2, ch3;
 	uint64_t slot_base = 0x10000000, slot_size = 0;
+
+
+	/*
+	 *  TODO:  Some things in here (namely the bootread() stuff) seem
+	 *  to interfere with the experimental tlbmod_tag-stuff in cpu.c
+	 *  and memory.c.  If this tag increase isn't put here (or at least
+	 *  in bootread() below), then booting from the NetBSD 1.6.2 pmax
+	 *  cdrom image fails!
+	 */
+	cpu->tlbmod_tag ++;
+
 
 	if (!callback) {
 		vector = dec_jumptable_func(cpu, vector);

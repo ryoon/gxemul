@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.130 2004-07-07 20:32:12 debug Exp $
+ *  $Id: machine.c,v 1.131 2004-07-08 22:49:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1365,8 +1365,9 @@ void machine_init(struct memory *mem)
 			sprintf(tmps, "boot=%s", bootarg);
 			add_environment_string(tmps, &addr);
 
-			sprintf(tmps, "bitmap=0x%x", (uint32_t)(
-			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize)));
+			sprintf(tmps, "bitmap=0x%x", (uint32_t)((
+			    DEC_MEMMAP_ADDR + sizeof(memmap.pagesize))
+			    & 0xffffffffULL));
 			add_environment_string(tmps, &addr);
 
 			sprintf(tmps, "bitmaplen=0x%x",

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.29 2004-07-07 06:33:41 debug Exp $
+ *  $Id: emul.c,v 1.30 2004-07-08 22:49:18 debug Exp $
  *
  *  Emulation startup.
  */
@@ -194,6 +194,7 @@ void load_bootblock(void)
 
 		store_buf(bootblock_loadaddr, (char *)bootblock_buf,
 		    sizeof(bootblock_buf));
+
 		cpus[bootstrap_cpu]->pc = bootblock_loadaddr;
 
 		break;

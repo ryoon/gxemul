@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.58 2004-03-30 01:19:26 debug Exp $
+$Id: HISTORY,v 1.59 2004-04-01 01:44:09 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -426,3 +426,4 @@ HISTORY of mips64emul
 		Big-endian X Windows servers now display correct rgb color,
 		not bgr as before.
 20040330	Some minor updates to the documentation.
+20040401	Adding a dummy ps2 OHCI device.

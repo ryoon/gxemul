@@ -23,9 +23,9 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.4 2003-12-22 19:45:52 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.5 2003-12-30 03:04:00 debug Exp $
  *  
- *  MC146818 real-time clock, used by DECstation machines.
+ *  MC146818 real-time clock, used by many different machines types.
  *
  *  This device contains Date/time, the machine's ethernet address (on
  *  DECstation 3100), and can cause periodic (hardware) interrupts.
@@ -116,6 +116,14 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_a
 
 	if (relative_addr == 0x71)
 		relative_addr = mc_data->last_addr;
+
+	/*
+	 *  For some reason, Linux/sgimips relies on the UIP bit to go
+	 *  on and off. Without this code, booting Linux takes forever:
+	 */
+	mc_data->reg[MC_REGA*4] &= ~MC_REGA_UIP;
+	if ((random() & 0xfff) == 0)
+		mc_data->reg[MC_REGA*4] |= MC_REGA_UIP;
 
 	/*  RTC date/time is in binary, not BCD:  */
 	mc_data->reg[MC_REGB*4] |= (1 << 2);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.57 2004-07-09 07:51:06 debug Exp $
+ *  $Id: coproc.c,v 1.58 2004-07-10 14:42:00 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -273,6 +273,30 @@ struct coproc *coproc_new(struct cpu *cpu, int coproc_nr)
 
 
 /*
+ *  invalidate_translation_caches():
+ *
+ *  This is neccessary for every change to the TLB, and when the ASID is
+ *  changed, so that for example user-space addresses are not cached when
+ *  they should not be.
+ */
+static void invalidate_translation_caches(struct cpu *cpu)
+{
+#ifdef USE_TINY_CACHE
+	int i;
+
+	/*  Invalidate the tiny translation cache...  */
+	for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
+		cpu->translation_cache_instr[i].wf = 0;
+	for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
+		cpu->translation_cache_data[i].wf = 0;
+#endif
+
+	/*  Invalidate the experimental tlbmod stuff:  */
+	cpu->tlbmod_tag ++;
+}
+
+
+/*
  *  coproc_register_read();
  *
  *  Read a value from a coprocessor register.
@@ -407,6 +431,12 @@ void coproc_register_write(struct cpu *cpu,
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI) {
+		/*
+		 *  Translation caches must be invalidated, because the
+		 *  address space might change (if the ASID changes).
+		 */
+		invalidate_translation_caches(cpu);
+
 		unimpl = 0;
 		if (cpu->cpu_type.mmu_model == MMU3K && (tmp & 0x3f)!=0) {
 			/* char *symbol;
@@ -1227,16 +1257,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				return;
 			case COP0_TLBWI:	/*  Write indexed  */
 			case COP0_TLBWR:	/*  Write random  */
-#ifdef USE_TINY_CACHE
-				/*  Invalidate the translation cache...  */
-				for (i=0; i<N_TRANSLATION_CACHE_INSTR; i++)
-					cpu->translation_cache_instr[i].wf = 0;
-				for (i=0; i<N_TRANSLATION_CACHE_DATA; i++)
-					cpu->translation_cache_data[i].wf = 0;
-#endif
-
-			        cpu->tlbmod_tag ++;
-
 				/*
 				 *  ... and the last instruction page:
 				 *
@@ -1258,6 +1278,9 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 				    cpu->pc >= (uint64_t)0xffffffffc0000000ULL)
 					cpu->pc_last_virtual_page =
 					    PC_LAST_PAGE_IMPOSSIBLE_VALUE;
+
+				/*  Translation caches must be invalidated:  */
+				invalidate_translation_caches(cpu);
 
 				if (instruction_trace) {
 					if (op == COP0_TLBWI)

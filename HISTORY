@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.148 2004-07-10 08:45:23 debug Exp $
+$Id: HISTORY,v 1.149 2004-07-10 14:42:01 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -731,3 +731,8 @@ HISTORY of mips64emul
 		but it didn't work that way. I'll have to look into this later.
 		Adding a -o option, useful for selecting '-s' (single user
 		mode) during OpenBSD install and other things.
+		After a lot of debugging, a serious bug related to the tiny
+		cache was found; Linux just changes the ASID and returns when
+		switching between processes in some occasions without actually
+		_writing_ to the TLB, and I had forgotten to invalidate the
+		tiny cache on such a change.

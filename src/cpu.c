@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.149 2004-09-05 04:56:02 debug Exp $
+ *  $Id: cpu.c,v 1.150 2004-09-06 05:22:21 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1171,7 +1171,8 @@ static int cpu_run_instr(struct cpu *cpu)
 					/*  no need to update cached_pc, as we're returning  */
 					cpu->delay_slot = NOT_DELAYED;
 
-					if (cpu->emul->show_trace_tree)
+					if (!quiet_mode_cached &&
+					    cpu->emul->show_trace_tree)
 						cpu->trace_tree_depth --;
 
 					/*  TODO: how many instrs should this count as?  */
@@ -1637,7 +1638,8 @@ static int cpu_run_instr(struct cpu *cpu)
 			cpu->delay_slot = TO_BE_DELAYED;
 			cpu->delay_jmpaddr = cpu->gpr[rs];
 
-			if (rs == 31 && cpu->emul->show_trace_tree) {
+			if (!quiet_mode_cached && cpu->emul->show_trace_tree
+			    && rs == 31) {
 				cpu->trace_tree_depth --;
 			}
 

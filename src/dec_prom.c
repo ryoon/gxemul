@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: dec_prom.c,v 1.3 2003-11-07 08:48:24 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -37,6 +37,7 @@
 #include <sys/resource.h>
 
 #include "misc.h"
+#include "console.h"
 
 #include "dec_5100.h"
 #include "dec_kn01.h"

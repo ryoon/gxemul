@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn02.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  $Id: dev_kn02.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  DEC (KN02) stuff.
  */
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
 
 
 /*

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_colorplanemask.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  $Id: dev_colorplanemask.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  Color plane mask used by DECstation 3100.
  *
@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
 
 
 struct colorplanemask_data {

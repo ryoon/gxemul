@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: console.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  $Id: console.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *
  *  Generic console support functions.
  *
@@ -38,6 +38,7 @@
 #include <sys/time.h>
 
 #include "misc.h"
+#include "console.h"
 
 
 extern int register_dump;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.5 2003-11-07 05:31:06 debug Exp $
+ *  $Id: cpu.c,v 1.6 2003-11-07 08:48:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -37,6 +37,8 @@
 #include <sys/resource.h>
 
 #include "misc.h"
+#include "console.h"
+#include "devices.h"
 
 #include "dec_5100.h"
 #include "dec_kn02.h"
@@ -650,7 +652,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 		cpu_register_dump(cpu);
 	}
 
-#if 0
+#if ALWAYS_SIGNEXTEND_32
 	/*
 	 *  An extra check for 32-bit mode to make sure that all
 	 *  registers are sign-extended:   (Slow, but might be useful
@@ -679,7 +681,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 #endif
 
-#if 0
+#if HALT_IF_PC_ZERO
 	/*  Halt if PC = 0:  */
 	if (cpu->pc == 0) {
 		debug("cpu%i: pc=0, halting\n", cpu->cpu_id);
@@ -728,6 +730,7 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 	}
 
 	/*  Read an instruction:  */
+#if SUPPORT_MIPS16
 	if (cpu->mips16) {
 		/*  16-bit instruction word:  */
 		unsigned char instr16[2];
@@ -788,7 +791,9 @@ int cpu_run_instr(struct cpu *cpu, int instrcount)
 			    instr[3], instr[2], instr[1], instr[0],
 			    cpu_flags(cpu));
 		}
-	} else {
+	} else
+#endif
+		{
 		/*  32-bit instruction word:  */
 		if (!memory_rw(cpu, cpu->mem, cpu->pc, &instr[0], sizeof(instr), MEM_READ, CACHE_INSTRUCTION))
 			return 0;

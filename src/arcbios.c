@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.3 2003-11-07 03:44:20 debug Exp $
+ *  $Id: arcbios.c,v 1.4 2003-11-07 08:48:24 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -40,6 +40,7 @@
 #include <sys/resource.h>
 
 #include "misc.h"
+#include "console.h"
 
 
 extern int machine;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_turbochannel.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  $Id: dev_turbochannel.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  Generic framework for TURBOchannel devices, used in DECstation machines.
  */
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
 
 
 struct turbochannel_data {

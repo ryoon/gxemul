@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sii.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  $Id: dev_sii.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  SII SCSI controller, used in some DECstation systems.
  *
@@ -35,6 +35,8 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
+
 #include "siireg.h"
 
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  MC146818 real-time clock, used by DECstation machines.
  *
@@ -37,6 +37,8 @@
 #include <time.h>
 
 #include "misc.h"
+#include "devices.h"
+
 #include "mc146818reg.h"
 
 extern int register_dump;

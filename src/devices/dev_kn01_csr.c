@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_kn01_csr.c,v 1.2 2003-11-06 13:56:06 debug Exp $
+ *  $Id: dev_kn01_csr.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  PMAX (KN01) System Control Register.
  *
@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
 
 #include "dec_kn01.h"
 

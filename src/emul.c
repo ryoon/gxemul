@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.2 2003-11-06 13:56:08 debug Exp $
+ *  $Id: emul.c,v 1.3 2003-11-07 08:48:24 debug Exp $
  *
  *  Emulation startup.
  */
@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include "misc.h"
+#include "console.h"
 
 
 extern int optind;

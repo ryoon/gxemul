@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mp.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  $Id: dev_mp.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  Multiprocessor support.  (This is a fake device, only for testing.)
  *
@@ -36,6 +36,7 @@
 #include <stdio.h>
 
 #include "misc.h"
+#include "devices.h"
 
 
 extern int register_dump;

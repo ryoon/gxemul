@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_dmac.c,v 1.2 2003-11-06 13:56:07 debug Exp $
+ *  $Id: dev_ps2_dmac.c,v 1.3 2003-11-07 08:48:15 debug Exp $
  *  
  *  Playstation 2 DMA controller.
  */
@@ -33,6 +33,8 @@
 #include <string.h>
 
 #include "misc.h"
+#include "devices.h"
+
 #include "ps2_dmacreg.h"
 
 

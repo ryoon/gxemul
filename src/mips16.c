@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.1 2003-11-07 05:20:12 debug Exp $
+ *  $Id: mips16.c,v 1.2 2003-11-07 08:48:24 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -60,7 +60,6 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 	int y = 0;	/*  TODO: This should be something 'illegal', so that execution stops  */
 
 	/*  Translate 16-bit x into 32-bit y:  */
-	debug("MIPS16: x = 0x%04x\n", x);
 
 	/*  extend:  */
 	if ((x & 0xf800) == 0xf000) {
@@ -78,7 +77,6 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 	fatal("WARNING: unimplemented MIPS16 instruction 0x%04x\n", x);
 
 mips16_ret:
-	debug("  ==> y = 0x%08x\n", y);
 	instr[3] = (y >> 24) & 255;
 	instr[2] = (y >> 16) & 255;
 	instr[1] = (y >> 8) & 255;

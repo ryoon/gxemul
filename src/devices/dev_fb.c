@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.6 2003-11-07 05:19:49 debug Exp $
+ *  $Id: dev_fb.c,v 1.7 2003-11-07 08:48:15 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -54,6 +54,7 @@
 #endif
 
 #include "misc.h"
+#include "devices.h"
 
 
 extern int x11_scaledown;

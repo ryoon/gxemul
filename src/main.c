@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.73 2004-09-05 01:47:39 debug Exp $
+ *  $Id: main.c,v 1.74 2004-09-05 02:19:19 debug Exp $
  */
 
 #include <stdio.h>
@@ -47,20 +47,22 @@ char **extra_argv;
 
 /*
  *  Global emulation variables:
- *
+ */
+
+int quiet_mode = 0;
+
+
+/*
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
  */
 
-int emulation_type = EMULTYPE_TEST;
 int machine = MACHINE_NONE;
 char *machine_name = NULL;
 
 int random_mem_contents = 0;
 int physical_ram_in_mb = 0;
 int booting_from_diskimage = 0;
-
-int quiet_mode = 0;
 
 int show_opcode_statistics = 0;
 int prom_emulation = 1;
@@ -260,11 +262,11 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	while ((ch = getopt(argc, argv, "A:BbC:D:d:EeFG:gHhI:iJj:M:m:Nn:o:P:p:QqRrSsTtUu:vXY:y:")) != -1) {
 		switch (ch) {
 		case 'A':
-			emulation_type = EMULTYPE_ARC;
+			emul->emulation_type = EMULTYPE_ARC;
 			machine = atoi(optarg);
 			break;
 		case 'B':
-			emulation_type = EMULTYPE_PS2;
+			emul->emulation_type = EMULTYPE_PS2;
 			machine = 0;
 			break;
 		case 'b':
@@ -275,7 +277,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			    CPU_NAME_MAXLEN - 1);
 			break;
 		case 'D':
-			emulation_type = EMULTYPE_DEC;
+			emul->emulation_type = EMULTYPE_DEC;
 			machine = atoi(optarg);
 			break;
 		case 'd':
@@ -283,23 +285,23 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			using_switch_d = 1;
 			break;
 		case 'E':
-			emulation_type = EMULTYPE_COBALT;
+			emul->emulation_type = EMULTYPE_COBALT;
 			machine = 0;
 			break;
 		case 'e':
-			emulation_type = EMULTYPE_MESHCUBE;
+			emul->emulation_type = EMULTYPE_MESHCUBE;
 			machine = 0;
 			break;
 		case 'F':
-			emulation_type = EMULTYPE_HPCMIPS;
+			emul->emulation_type = EMULTYPE_HPCMIPS;
 			machine = 0;
 			break;
 		case 'G':
-			emulation_type = EMULTYPE_SGI;
+			emul->emulation_type = EMULTYPE_SGI;
 			machine = atoi(optarg);
 			break;
 		case 'g':
-			emulation_type = EMULTYPE_NETGEAR;
+			emul->emulation_type = EMULTYPE_NETGEAR;
 			machine = 0;
 			break;
 		case 'I':
@@ -416,49 +418,50 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  Default CPU type:  */
 
-	if (emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_PS2 && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R5900");
 
-	if (emulation_type == EMULTYPE_DEC && machine > 1 &&
+	if (emul->emulation_type == EMULTYPE_DEC && machine > 1 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R3000A");
 
-	if (emulation_type == EMULTYPE_DEC && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_DEC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R2000");
 
-	if (emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_COBALT && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RM5200");
 
-	if (emulation_type == EMULTYPE_MESHCUBE && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_MESHCUBE &&
+	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4400");
 		/*  TODO:  Should be AU1500, but Linux doesn't like
 			the absence of caches in the emulator  */
 
-	if (emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_NETGEAR && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "RC32334");
 
-	if (emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_ARC && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4000");
 
-	if (emulation_type == EMULTYPE_SGI && machine == 35 &&
+	if (emul->emulation_type == EMULTYPE_SGI && machine == 35 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R12000");
 
-	if (emulation_type == EMULTYPE_SGI && (machine == 25 || machine == 27
-	    || machine == 28 || machine == 30 || machine == 32)
+	if (emul->emulation_type == EMULTYPE_SGI && (machine == 25 ||
+	    machine == 27 || machine == 28 || machine == 30 || machine == 32)
 	    && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R10000");
 
-	if (emulation_type == EMULTYPE_SGI && (machine == 21 || machine == 26)
-	    && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_SGI &&
+	    (machine == 21 || machine == 26) && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R8000");
 
-	if (emulation_type == EMULTYPE_SGI && machine == 24 &&
+	if (emul->emulation_type == EMULTYPE_SGI && machine == 24 &&
 	    !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R5000");
 
 	/*  SGIs should probably work with R4000, R4400 or R5000 or similar.  */
-	if (emulation_type == EMULTYPE_SGI && !emul->emul_cpu_name[0])
+	if (emul->emulation_type == EMULTYPE_SGI && !emul->emul_cpu_name[0])
 		strcpy(emul->emul_cpu_name, "R4400");
 
 	if (!emul->emul_cpu_name[0])
@@ -467,22 +470,22 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 
 	/*  Default memory size:  */
 
-	if (emulation_type == EMULTYPE_PS2 && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_PS2 && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 32;
 
-	if (emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_SGI && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;
 
-	if (emulation_type == EMULTYPE_MESHCUBE && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_MESHCUBE && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 64;
 
-	if (emulation_type == EMULTYPE_NETGEAR && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_NETGEAR && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 16;
 
-	if (emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
+	if (emul->emulation_type == EMULTYPE_ARC && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 48;
 
-	if (emulation_type == EMULTYPE_DEC && machine == MACHINE_PMAX_3100
+	if (emul->emulation_type == EMULTYPE_DEC && machine == MACHINE_PMAX_3100
 	    && physical_ram_in_mb == 0)
 		physical_ram_in_mb = 24;
 
@@ -499,7 +502,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 *  boot from that.
 	 */
 	if (extra_argc == 0) {
-		if (emulation_type == EMULTYPE_DEC && using_switch_d) {
+		if (emul->emulation_type == EMULTYPE_DEC && using_switch_d) {
 			booting_from_diskimage = 1;
 		} else {
 			usage(progname);

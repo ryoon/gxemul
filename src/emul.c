@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.53 2004-09-02 02:13:14 debug Exp $
+ *  $Id: emul.c,v 1.54 2004-09-05 02:19:18 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -58,7 +58,6 @@ char **extra_argv;
 
 extern int booting_from_diskimage;
 
-extern int emulation_type;
 extern int machine;
 extern int physical_ram_in_mb;
 extern int random_mem_contents;
@@ -499,7 +498,7 @@ void debugger(void)
  *  that, instead of requiring a separate kernel file.  It is then up to the
  *  bootblock to load a kernel.
  */
-static void load_bootblock(struct cpu *cpu)
+static void load_bootblock(struct emul *emul, struct cpu *cpu)
 {
 	int boot_disk_id = diskimage_bootdev();
 	unsigned char minibuf[0x20];
@@ -508,7 +507,7 @@ static void load_bootblock(struct cpu *cpu)
 	uint64_t bootblock_loadaddr, bootblock_pc;
 	int n_blocks, res;
 
-	switch (emulation_type) {
+	switch (emul->emulation_type) {
 	case EMULTYPE_DEC:
 		/*
 		 *  The bootblock for DECstations is 8KB large.  We first read
@@ -638,12 +637,13 @@ void emul_start(struct emul *emul)
 	 */
 	debug("adding memory: %i MB", physical_ram_in_mb);
 	memory_amount = (uint64_t)physical_ram_in_mb * 1048576;
-	if (emulation_type == EMULTYPE_SGI && (machine == 20 || machine == 22
-	    || machine == 24 || machine == 26)) {
+	if (emul->emulation_type == EMULTYPE_SGI && (machine == 20 ||
+	    machine == 22 || machine == 24 || machine == 26)) {
 		debug(" (offset by 128MB, SGI hack)");
 		memory_amount += 128 * 1048576;
 	}
-	if (emulation_type == EMULTYPE_SGI && (machine == 28 || machine == 30)) {
+	if (emul->emulation_type == EMULTYPE_SGI && (machine == 28 ||
+	    machine == 30)) {
 		debug(" (offset by 512MB, SGI hack)");
 		memory_amount += 0x20000000;
 	}
@@ -664,7 +664,7 @@ void emul_start(struct emul *emul)
 		debug(" .. cpu%i", ncpus-1);
 	debug(": %s\n", emul->emul_cpu_name);
 	for (i=0; i<ncpus; i++)
-		cpus[i] = cpu_new(mem, i, emul->emul_cpu_name);
+		cpus[i] = cpu_new(mem, emul, i, emul->emul_cpu_name);
 
 	if (emul->use_random_bootstrap_cpu)
 		emul->bootstrap_cpu = random() % ncpus;
@@ -705,7 +705,7 @@ void emul_start(struct emul *emul)
 		debug("loading files into emulation memory:\n");
 
 	if (booting_from_diskimage)
-		load_bootblock(cpus[emul->bootstrap_cpu]);
+		load_bootblock(emul, cpus[emul->bootstrap_cpu]);
 
 	while (extra_argc > 0) {
 		file_load(mem, extra_argv[0], cpus[emul->bootstrap_cpu]);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdsc.c,v 1.9 2004-07-07 02:44:14 debug Exp $
+ *  $Id: dev_wdsc.c,v 1.10 2004-09-05 02:19:17 debug Exp $
  *  
  *  WDSC SCSI (WD33C93) controller.
  *  (For SGI-IP22. See sys/arch/sgimips/hpc/sbic* in NetBSD for details.)
@@ -82,7 +82,7 @@ void dev_wdsc_tick(struct cpu *cpu, void *extra)
  *
  *  Handle writes to WDSC registers.
  */
-void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
+static void dev_wdsc_regwrite(struct cpu *cpu, struct wdsc_data *d, int idata)
 {
 	d->reg[d->register_select] = idata & 0xff;
 
@@ -259,7 +259,9 @@ void dev_wdsc_regwrite(struct wdsc_data *d, int idata)
 					fatal("wdsc: unimplemented phase %i!\n", d->current_phase);
 				}
 
-				res = diskimage_scsicommand(d->reg[SBIC_selid] & SBIC_SID_IDMASK, d->xfer);
+				res = diskimage_scsicommand(cpu,
+				    d->reg[SBIC_selid] & SBIC_SID_IDMASK,
+				    d->xfer);
 				debug("{ res = %i }", res);
 
 				d->irq_pending = 1;
@@ -346,7 +348,7 @@ int dev_wdsc_access(struct cpu *cpu, struct memory *mem,
 			debug("[ wdsc: read from register %i: 0x%02x ]\n",
 			    d->register_select, (int)odata);
 		} else {
-			dev_wdsc_regwrite(d, idata & 0xff);
+			dev_wdsc_regwrite(cpu, d, idata & 0xff);
 		}
 		break;
 

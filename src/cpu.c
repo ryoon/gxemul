@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.129 2004-09-02 14:35:29 debug Exp $
+ *  $Id: cpu.c,v 1.130 2004-09-05 02:19:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -47,7 +47,6 @@
 #include "memory.h"
 
 
-extern int emulation_type;
 extern int machine;
 
 extern int show_trace_tree;
@@ -88,7 +87,7 @@ static char *special2_names[] = SPECIAL2_NAMES;
  *
  *  Create a new cpu object.
  */
-struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
+struct cpu *cpu_new(struct memory *mem, struct emul *emul, int cpu_id, char *cpu_type_name)
 {
 	struct cpu *cpu;
 	int i, j, tags_size, n_cache_lines, size_per_cache_line;
@@ -104,6 +103,7 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 
 	memset(cpu, 0, sizeof(struct cpu));
 	cpu->mem                = mem;
+	cpu->emul               = emul;
 	cpu->cpu_id             = cpu_id;
 	cpu->byte_order         = EMUL_LITTLE_ENDIAN;
 	cpu->bootstrap_cpu_flag = 0;
@@ -808,7 +808,8 @@ void show_trace(struct cpu *cpu, uint64_t addr)
 		if (d > -256 && d < 256)
 			debug("%i", (int)d);
 		else if (memory_points_to_string(cpu, cpu->mem, d, 1))
-			debug("\"%s\"", memory_conv_to_string(cpu, cpu->mem, d, strbuf, sizeof(strbuf)));
+			debug("\"%s\"", memory_conv_to_string(cpu,
+			    cpu->mem, d, strbuf, sizeof(strbuf)));
 		else
 			debug("0x%llx", (long long)d);
 
@@ -1159,7 +1160,7 @@ static int cpu_run_instr(struct cpu *cpu)
 			 */
 			if ((cached_pc & 0xfff00000) == 0xbfc00000 && prom_emulation) {
 				int rom_jal;
-				switch (emulation_type) {
+				switch (cpu->emul->emulation_type) {
 				case EMULTYPE_DEC:
 					decstation_prom_emul(cpu);
 					rom_jal = 1;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.70 2004-08-19 20:00:02 debug Exp $
+ *  $Id: memory.c,v 1.71 2004-09-05 02:19:19 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -39,7 +39,6 @@
 #include "memory.h"
 
 
-extern int emulation_type;
 extern int physical_ram_in_mb;
 extern int machine;
 extern int instruction_trace;
@@ -804,7 +803,7 @@ static int translate_address(struct cpu *cpu, uint64_t vaddr,
 		 *  tlb, say entry #0, would be a good solution?
 		 */
 		case 0xc:
-			if (emulation_type != EMULTYPE_SGI ||
+			if (cpu->emul->emulation_type != EMULTYPE_SGI ||
 			    machine < 25)
 				break;
 		case 8:
@@ -1155,7 +1154,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  such as 0xbe000000 as if they were physical addresses. (It should
 	 *  be 0x1e000000, so I just take the lowest bits here.)
 	 */
-	if (emulation_type == EMULTYPE_DEC)
+	if (cpu->emul->emulation_type == EMULTYPE_DEC)
 		paddr &= 0x1fffffff;
 	else
 		paddr &= (((uint64_t)1<<(uint64_t)48) - 1);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.34 2004-07-10 04:46:56 debug Exp $
+ *  $Id: dev_asc.c,v 1.35 2004-09-05 02:19:17 debug Exp $
  *
  *  'asc' SCSI controller for some DECsystems.
  *
@@ -118,7 +118,8 @@ char *asc_reg_names[0x10] = {
 
 
 /*  This is referenced below.  */
-int dev_asc_select(struct asc_data *d, int from_id, int to_id, int dmaflag, int n_messagebytes);
+int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
+	int to_id, int dmaflag, int n_messagebytes);
 
 
 /*
@@ -240,7 +241,7 @@ void dev_asc_newxfer(struct asc_data *d)
  *
  *  Returns 1 if ok, 0 on error.
  */
-int dev_asc_transfer(struct asc_data *d, int dmaflag)
+int dev_asc_transfer(struct cpu *cpu, struct asc_data *d, int dmaflag)
 {
 	int res = 1, all_done = 1;
 	int len, i, ch;
@@ -425,7 +426,8 @@ fatal("TODO.......asdgasin\n");
 		}
 	} else if (d->cur_phase == PHASE_COMMAND) {
 		debug(" COMMAND ==> select ");
-		res = dev_asc_select(d, d->reg_ro[NCR_CFG1] & 7, d->reg_wo[NCR_SELID] & 7, dmaflag, 0);
+		res = dev_asc_select(cpu, d, d->reg_ro[NCR_CFG1] & 7,
+		    d->reg_wo[NCR_SELID] & 7, dmaflag, 0);
 		return res;
 	} else {
 		fatal("!!! TODO: unknown/unimplemented phase in transfer: %i\n", d->cur_phase);
@@ -433,7 +435,8 @@ fatal("TODO.......asdgasin\n");
 
 	/*  Redo the command if data was just send using DATA_OUT:  */
 	if (d->cur_phase == PHASE_DATA_OUT) {
-		res = diskimage_scsicommand(d->reg_wo[NCR_SELID] & 7, d->xferp);
+		res = diskimage_scsicommand(cpu,
+		    d->reg_wo[NCR_SELID] & 7, d->xferp);
 	}
 
 	if (all_done) {
@@ -468,8 +471,8 @@ fatal("TODO.......asdgasin\n");
  *
  *  Return value: 1 if ok, 0 on error.
  */
-int dev_asc_select(struct asc_data *d, int from_id, int to_id,
-		int dmaflag, int n_messagebytes)
+int dev_asc_select(struct cpu *cpu, struct asc_data *d, int from_id,
+	int to_id, int dmaflag, int n_messagebytes)
 {
 	int ok, len, i, ch;
 
@@ -575,7 +578,7 @@ int dev_asc_select(struct asc_data *d, int from_id, int to_id,
 	/*
 	 *  Call the SCSI device to perform the command:
 	 */
-	ok = diskimage_scsicommand(to_id, d->xferp);
+	ok = diskimage_scsicommand(cpu, to_id, d->xferp);
 
 
 	/*  Cause an interrupt:  */
@@ -852,7 +855,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 				dev_asc_newxfer(d);
 
-				ok = dev_asc_select(d,
+				ok = dev_asc_select(cpu, d,
 				    d->reg_ro[NCR_CFG1] & 7,
 				    d->reg_wo[NCR_SELID] & 7,
 				    idata & NCRCMD_DMA? 1 : 0,
@@ -921,7 +924,8 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 			{
 				int ok;
 
-				ok = dev_asc_transfer(d, idata & NCRCMD_DMA? 1 : 0);
+				ok = dev_asc_transfer(cpu, d,
+				    idata & NCRCMD_DMA? 1 : 0);
 				if (!ok) {
 					d->cur_state = STATE_DISCONNECTED;
 					d->reg_ro[NCR_INTR] |= NCRINTR_DIS;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.218 2004-09-02 14:40:20 debug Exp $
+$Id: HISTORY,v 1.219 2004-09-05 02:19:16 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -927,3 +927,4 @@ HISTORY of mips64emul
 20040902	Finally beginning the work on separating out the stuff from
 		main.c into a "struct emul". Very time-consuming.
 		Some minor fixes for LL/SC on R10000.
+20040905	Moving more stuff from main.c into struct emul.

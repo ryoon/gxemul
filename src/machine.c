@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.169 2004-09-02 02:13:14 debug Exp $
+ *  $Id: machine.c,v 1.170 2004-09-05 02:19:18 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -67,12 +67,10 @@
 #include "dec_maxine.h"
 
 
-extern int emulation_type;
 extern char *machine_name;
 extern int instruction_trace;
 extern int ncpus;
 extern struct cpu **cpus;
-extern int emulation_type;
 extern int emulated_hz;
 extern int machine;
 extern char *machine_name;
@@ -834,7 +832,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 	machine_name = NULL;
 
-	switch (emulation_type) {
+	switch (emul->emulation_type) {
 
 	case EMULTYPE_NONE:
 		break;
@@ -1634,7 +1632,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			exit(1);
 		}
 
-		if (emulation_type == EMULTYPE_SGI) {
+		if (emul->emulation_type == EMULTYPE_SGI) {
 			cpu->byte_order = EMUL_BIG_ENDIAN;
 			sprintf(short_machine_name, "SGI-IP%i", machine);
 			sprintf(machine_name, "SGI-IP%i", machine);
@@ -1662,7 +1660,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			sprintf(machine_name, "ARC");
 		}
 
-		if (emulation_type == EMULTYPE_SGI) {
+		if (emul->emulation_type == EMULTYPE_SGI) {
 			/*  TODO:  Other machine types?  */
 			switch (machine) {
 			case 19:
@@ -2188,7 +2186,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			fprintf(stderr, "WARNING! The ARC platform specification doesn't allow less than 16 MB of RAM. Continuing anyway.\n");
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
-		if (emulation_type == EMULTYPE_SGI) {
+		if (emul->emulation_type == EMULTYPE_SGI) {
 			strncpy(arcbios_sysid.VendorId,  "SGI", 3);		/*  NOTE: max 8 chars  */
 			switch (machine) {
 			case 22:
@@ -2254,7 +2252,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 
 		if (arc_wordlen == sizeof(uint64_t)) {
 			memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, 
+			    emul->emulation_type == EMULTYPE_SGI? 3 : 2);
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
 			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
@@ -2267,7 +2266,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem64, 0, sizeof(arcbios_mem64));
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.Type,
+				    emul->emulation_type == EMULTYPE_SGI? 3 : 2);
 				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.BasePage, mem_base);
 				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem64.PageCount, mem_count);
 
@@ -2283,7 +2283,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			store_buf(cpu, mem_bufaddr, (char *)&arcbios_mem64, sizeof(arcbios_mem64));
 		} else {
 			memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emul->emulation_type == EMULTYPE_SGI? 3 : 2);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
 			store_buf(cpu, ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
@@ -2296,7 +2296,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 				mem_count = (mem_mb_left <= 512? mem_mb_left : 512) * (1048576 / 4096);
 
 				memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);
+				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.Type, emul->emulation_type == EMULTYPE_SGI? 3 : 2);
 				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.BasePage, mem_base);
 				store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_mem.PageCount, mem_count);
 
@@ -2335,7 +2335,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		if (short_machine_name == NULL)
 			fatal("ERROR: short_machine_name == NULL\n");
 
-		switch (emulation_type) {
+		switch (emul->emulation_type) {
 		case EMULTYPE_SGI:
 			system = arcbios_addchild_manual(cpu, COMPONENT_CLASS_SystemClass, COMPONENT_TYPE_ARC,
 			    0, 1, 20, 0, 0x0, short_machine_name, 0  /*  ROOT  */);
@@ -2440,7 +2440,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			memset(&arcbios_spb_64, 0, sizeof(arcbios_spb_64));
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Version, 1);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			/*  FirmwareVectorLength is a pointer to something?  */
 			store_64bit_word_in_host(cpu, (unsigned char *)&arcbios_spb_64.FirmwareVectorLength, 0xa0000000ULL);	/*  ?  */
@@ -2534,7 +2534,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			memset(&arcbios_spb, 0, sizeof(arcbios_spb));
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
 			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Version, 1);
-			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, emulation_type == EMULTYPE_SGI? 10 : 2);
+			store_16bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.Revision, emul->emulation_type == EMULTYPE_SGI? 10 : 2);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVector, ARC_FIRMWARE_VECTORS);
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.FirmwareVectorLength, 100 * 4);	/*  ?  */
 			store_32bit_word_in_host(cpu, (unsigned char *)&arcbios_spb.PrivateVector, ARC_PRIVATE_VECTORS);
@@ -2599,7 +2599,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		addr = SGI_ENV_STRINGS;
 
 		if (use_x11) {
-			if (emulation_type == EMULTYPE_ARC) {
+			if (emul->emulation_type == EMULTYPE_ARC) {
 				add_environment_string(cpu, "ConsoleIn=multi()key()keyboard()console()", &addr);
 				add_environment_string(cpu, "ConsoleOut=multi()video()monitor()console()", &addr);
 			} else {
@@ -2676,7 +2676,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 		break;
 
 	default:
-		fatal("Unknown emulation type %i\n", emulation_type);
+		fatal("Unknown emulation type %i\n", emul->emulation_type);
 		exit(1);
 	}
 

@@ -1,10 +1,10 @@
-$Id: README,v 1.46 2004-12-01 09:41:50 debug Exp $
+$Id: README,v 1.47 2004-12-06 06:49:39 debug Exp $
 
-Preliminary README for 0.2.3.
+I'm now working on post-0.2.3.
 
 ------------------------------------------------------------------------------
 
-mips64emul 0.2.3
+mips64emul 0.2.X
 ================
 
 Copyright (C) 2003-2004  Anders Gavare.
@@ -38,5 +38,5 @@ Feedback
 
 If you have found mips64emul useful in some way, or found a bug which is 
 not already listed in the BUGS or TODO files, then don't hesitate to send 
-feedback to md1gavan(at)mdstud.chalmers.se.
+feedback to anders(at)gavare.se
 

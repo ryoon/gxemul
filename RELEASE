@@ -1,8 +1,6 @@
-$Id: RELEASE,v 1.61 2004-12-01 23:00:14 debug Exp $
+$Id: RELEASE,v 1.62 2004-12-06 06:49:39 debug Exp $
 
 The release "road map" at the moment looks something like this:
-
-  0.2.3:  experimental bintrans.
 
   0.2.X:  ?
 
@@ -33,7 +31,7 @@ combinations as possible of the following must be tested:
 
 ------------------------------------------------------------------------------
 
-Release notes for mips64emul 0.2.3
+Release notes for mips64emul 0.2.X
 ==================================
 
 Copyright (C) 2003-2004  Anders Gavare.
@@ -73,20 +71,9 @@ Playstation 2, Cobalt, some other ARC machines, etc) but these modes are more
 of a curiosity, and should not be considered working yet.
 
 
-Here is a short summary of the changes from version 0.2.2 to 0.2.3:
+Here is a short summary of the changes from version 0.2.3 to 0.2.X:
 
-	x)  An experimental dynamic binary translation subsystem has been
-	    added, which improves speed.  It should work when emulating
-	    R3000-style CPUs. Add -b to the command line to enable bintrans.
-	    (For R4000-style CPUs, the bintrans system is not entirely
-	    reliable yet.)  Bintrans backends have been written for the
-	    Alpha and i386 platforms.
-
-	x)  Redhat Linux 7.1 for mips has been verified to work under
-	    DECstation 5000/200 emulation. (It could probably run with
-	    earlier versions of the emulator, but I hadn't seen it myself.)
-
-        x)  Lots of minor bug fixes.
+	x)  ... TODO ...
 
 
 This release has a number of known bugs, listed in the BUGS file, but feel
@@ -182,7 +169,6 @@ mips64emul or reuse code.
 And thanks to everyone who has provided me with feedback, ideas, patches,
 or encouraged me to work on specific issues.
 
-Don't hesitate to send feedback to me (Anders Gavare, md1gavan at
-mdstud.chalmers.se) if you have found mips64emul useful or if you have 
-found a bug.
+Don't hesitate to send feedback to me (Anders Gavare, anders(at)gavare.se)
+if you have found mips64emul useful or if you have found a bug.
 

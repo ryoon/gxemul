@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.32 2004-07-01 11:46:03 debug Exp $
+ *  $Id: diskimage.c,v 1.33 2004-07-01 23:07:13 debug Exp $
  *
  *  Disk image support.
  *
@@ -909,7 +909,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 int diskimage_access(int disk_id, int writeflag, off_t offset,
 	unsigned char *buf, size_t len)
 {
-	int len_done;
+	size_t len_done;
+	int res;
 
 	if (disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL) {
 		fatal("trying to access a non-existant disk image (%i)\n",
@@ -917,13 +918,22 @@ int diskimage_access(int disk_id, int writeflag, off_t offset,
 		exit(1);
 	}
 
-	if (len == 0 || buf == NULL)
+	if (buf == NULL) {
+		fprintf(stderr, "diskimage_access(): buf = NULL\n");
+		exit(1);
+	}
+
+	if (len == 0)
 		return 1;
 
 	if (diskimages[disk_id]->f == NULL)
 		return 0;
 
-	fseek(diskimages[disk_id]->f, offset, SEEK_SET);
+	res = fseek(diskimages[disk_id]->f, offset, SEEK_SET);
+	if (res != 0) {
+		fatal("[ diskimage_access(): fseek() failed on disk id %i \n", disk_id);
+		return 0;
+	}
 
 	if (writeflag) {
 		if (!diskimages[disk_id]->writable)

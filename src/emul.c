@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.18 2004-07-01 12:01:42 debug Exp $
+ *  $Id: emul.c,v 1.19 2004-07-01 23:07:03 debug Exp $
  *
  *  Emulation startup.
  */
@@ -136,7 +136,7 @@ void load_bootblock(void)
 {
 	int boot_disk_id = diskimage_bootdev();
 	int res;
-	unsigned char minibuf[4];
+	unsigned char minibuf[0x20];
 	unsigned char bootblock_buf[8192];
 	uint64_t bootblock_offset;
 
@@ -156,11 +156,11 @@ void load_bootblock(void)
 		 *  one at 0x80700000. We start running at 0x80700000 though,
 		 *  because that works with both NetBSD and Ultrix.
 		 */
-		res = diskimage_access(boot_disk_id, 0, 0x1c,
+		res = diskimage_access(boot_disk_id, 0, 0,
 		    minibuf, sizeof(minibuf));
 
-		bootblock_offset = (minibuf[0] + (minibuf[1] << 8)
-		  + (minibuf[2] << 16) + (minibuf[3] << 24)) * 512;
+		bootblock_offset = (minibuf[0x1c] + (minibuf[0x1d] << 8)
+		  + (minibuf[0x1e] << 16) + (minibuf[0x1f] << 24)) * 512;
 
 		res = diskimage_access(boot_disk_id, 0, bootblock_offset,
 		    bootblock_buf, sizeof(bootblock_buf));

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.215 2005-01-28 12:17:56 debug Exp $
+ *  $Id: misc.h,v 1.216 2005-01-29 11:50:18 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  */
@@ -109,7 +109,7 @@ void cpu_dumpinfo(struct cpu *cpu);
 
 
 /*  dec_prom.c:  */
-void decstation_prom_emul(struct cpu *cpu);
+int decstation_prom_emul(struct cpu *cpu);
 
 
 /*  file.c:  */
@@ -128,7 +128,7 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr);
 
 
 /*  ps2_bios.c:  */
-void playstation2_sifbios_emul(struct cpu *cpu);
+int playstation2_sifbios_emul(struct cpu *cpu);
 
 
 /*  useremul.c:  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.310 2005-01-29 10:30:31 debug Exp $
+ *  $Id: machine.c,v 1.311 2005-01-29 11:50:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4091,6 +4091,9 @@ void machine_dumpinfo(struct machine *m)
 		debug(", dbe_on_nonexistant_memaccess");
 	debug("\n");
 
+	if (m->single_step_on_bad_addr)
+		debug("single-step on bad addresses\n");
+
 	debug("bintrans %s, other speedtricks %s\n",
 	    m->bintrans_enable? "enabled" : "disabled",
 	    m->speed_tricks? "enabled" : "disabled");
@@ -4259,7 +4262,7 @@ void machine_init(void)
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  SGI:  */
-	me = machine_entry_new("SGI", MACHINE_SGI, 2, 8);
+	me = machine_entry_new("SGI", MACHINE_SGI, 2, 9);
 	me->aliases[0] = "silicon graphics";
 	me->aliases[1] = "sgi";
 	me->subtype[0] = machine_entry_subtype_new("IP19", 19, 1);
@@ -4269,20 +4272,22 @@ void machine_init(void)
 	me->subtype[2] = machine_entry_subtype_new("IP22", 22, 2);
 	me->subtype[2]->aliases[0] = "ip22";
 	me->subtype[2]->aliases[1] = "indy";
-	me->subtype[3] = machine_entry_subtype_new("IP27", 27, 3);
-	me->subtype[3]->aliases[0] = "ip27";
-	me->subtype[3]->aliases[1] = "origin 200";
-	me->subtype[3]->aliases[2] = "origin 2000";
-	me->subtype[4] = machine_entry_subtype_new("IP28", 28, 1);
-	me->subtype[4]->aliases[0] = "ip28";
-	me->subtype[5] = machine_entry_subtype_new("IP30", 30, 2);
-	me->subtype[5]->aliases[0] = "ip30";
-	me->subtype[5]->aliases[1] = "octane";
-	me->subtype[6] = machine_entry_subtype_new("IP32", 32, 2);
-	me->subtype[6]->aliases[0] = "ip32";
-	me->subtype[6]->aliases[1] = "o2";
-	me->subtype[7] = machine_entry_subtype_new("IP35", 35, 1);
-	me->subtype[7]->aliases[0] = "ip35";
+	me->subtype[3] = machine_entry_subtype_new("IP24", 24, 1);
+	me->subtype[3]->aliases[0] = "ip24";
+	me->subtype[4] = machine_entry_subtype_new("IP27", 27, 3);
+	me->subtype[4]->aliases[0] = "ip27";
+	me->subtype[4]->aliases[1] = "origin 200";
+	me->subtype[4]->aliases[2] = "origin 2000";
+	me->subtype[5] = machine_entry_subtype_new("IP28", 28, 1);
+	me->subtype[5]->aliases[0] = "ip28";
+	me->subtype[6] = machine_entry_subtype_new("IP30", 30, 2);
+	me->subtype[6]->aliases[0] = "ip30";
+	me->subtype[6]->aliases[1] = "octane";
+	me->subtype[7] = machine_entry_subtype_new("IP32", 32, 2);
+	me->subtype[7]->aliases[0] = "ip32";
+	me->subtype[7]->aliases[1] = "o2";
+	me->subtype[8] = machine_entry_subtype_new("IP35", 35, 1);
+	me->subtype[8]->aliases[0] = "ip35";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  NetGear:  */

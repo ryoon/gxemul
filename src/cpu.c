@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.265 2005-01-29 10:30:31 debug Exp $
+ *  $Id: cpu.c,v 1.266 2005-01-29 11:50:19 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1613,19 +1613,19 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	 */
 	if ((cached_pc & 0xfff00000) == 0xbfc00000 &&
 	    cpu->machine->prom_emulation) {
-		int rom_jal;
+		int rom_jal, res = 1;
 		switch (cpu->machine->machine_type) {
 		case MACHINE_DEC:
-			decstation_prom_emul(cpu);
+			res = decstation_prom_emul(cpu);
 			rom_jal = 1;
 			break;
 		case MACHINE_PS2:
-			playstation2_sifbios_emul(cpu);
+			res = playstation2_sifbios_emul(cpu);
 			rom_jal = 1;
 			break;
 		case MACHINE_ARC:
 		case MACHINE_SGI:
-			arcbios_emul(cpu);
+			res = arcbios_emul(cpu);
 			rom_jal = 1;
 			break;
 		default:
@@ -1633,6 +1633,19 @@ int cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 
 		if (rom_jal) {
+			/*
+			 *  Special hack:  If the PROM emulation layer needs
+			 *  to loop (for example when emulating blocking
+			 *  console input) then we should simply return, so
+			 *  that the same PROM routine is called on the next
+			 *  round as well.
+			 *
+			 *  This still has to count as one or more
+			 *  instructions, so 1000 is returned. (Ugly.)
+			 */
+			if (!res)
+				return 1000;
+
 			cpu->pc = cpu->gpr[MIPS_GPR_RA];
 			/*  no need to update cached_pc, as we're returning  */
 			cpu->delay_slot = NOT_DELAYED;
@@ -4030,7 +4043,7 @@ int cpu_run(struct emul *emul, struct machine *machine)
 
 		/*  Let's allow other machines to run.  */
 		rounds ++;
-		if (rounds > 4)
+		if (rounds > 8)
 			break;
 	}
 

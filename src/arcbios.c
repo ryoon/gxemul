@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.c,v 1.81 2005-01-29 10:30:31 debug Exp $
+ *  $Id: arcbios.c,v 1.82 2005-01-29 11:50:19 debug Exp $
  *
  *  ARCBIOS emulation.
  *
@@ -52,7 +52,6 @@
 #include "memory.h"
 #include "mips_cpu.h"
 #include "misc.h"
-#include "x11.h"
 
 
 extern int quiet_mode;
@@ -1110,9 +1109,9 @@ void arcbios_private_emul(struct cpu *cpu)
  *	0x80	GetFileInformation(handle, buf)
  *	0x88	FlushAllCaches()
  *	0x90	GetDisplayStatus(uint32_t handle)
- *	0x100	undocumented IRIX return from main() (?)
+ *	0x100	undocumented IRIX (?)
  */
-void arcbios_emul(struct cpu *cpu)
+int arcbios_emul(struct cpu *cpu)
 {
 	int vector = cpu->pc & 0xfff;
 	int i, j, handle;
@@ -1122,7 +1121,7 @@ void arcbios_emul(struct cpu *cpu)
 	if (cpu->pc >= ARC_PRIVATE_ENTRIES &&
 	    cpu->pc < ARC_PRIVATE_ENTRIES + 100*sizeof(uint32_t)) {
 		arcbios_private_emul(cpu);
-		return;
+		return 1;
 	}
 
 	if (arc_64bit)
@@ -1410,31 +1409,21 @@ void arcbios_emul(struct cpu *cpu)
 				int x;
 				unsigned char ch;
 
-				/*  Read from STDIN is blocking (at least that seems to
-				    be how NetBSD's arcdiag wants it)  */
-				while ((x = console_readchar()) < 0) {
-/*  TODO: How to check for x11 events in a nice way?
-					if (cpu->machine->use_x11)
-						x11_check_event(cpu->machine);
-*/
-					usleep(1);
-				}
+				/*  Read from STDIN is blocking (at least
+				    that seems to be how NetBSD's arcdiag
+				    wants it)  */
+				x = console_readchar();
+				if (x < 0)
+					return 0;
 
 				/*
 				 *  ESC + '[' should be transformed into 0x9b:
 				 *
-				 *  NOTE/TODO: This makes the behaviour of just pressing
-				 *  ESC a bit harder to define.
+				 *  NOTE/TODO: This makes the behaviour of just
+				 *  pressing ESC a bit harder to define.
 				 */
 				if (x == 27) {
-					while ((x = console_readchar()) < 0) {
-/* See above
-						if (cpu->machine->use_x11)
-							x11_check_event(
-							    cpu->machine);
-*/
-						usleep(1);
-					}
+					x = console_readchar();
 					if (x == '[' || x == 'O')
 						x = 0x9b;
 				}
@@ -1442,6 +1431,9 @@ void arcbios_emul(struct cpu *cpu)
 				ch = x;
 				nread ++;
 				memory_rw(cpu, cpu->mem, cpu->gpr[MIPS_GPR_A1] + i, &ch, 1, MEM_WRITE, CACHE_NONE);
+
+				/*  NOTE: Only one char at a time, from STDIN:  */
+				i = cpu->gpr[MIPS_GPR_A2];  /*  :-)  */
 			}
 			store_32bit_word(cpu, cpu->gpr[MIPS_GPR_A3], nread);
 			cpu->gpr[MIPS_GPR_V0] = nread? ARCBIOS_ESUCCESS: ARCBIOS_EAGAIN;	/*  TODO: not EAGAIN?  */
@@ -1599,7 +1591,7 @@ void arcbios_emul(struct cpu *cpu)
 			memory_rw(cpu, cpu->mem, (uint64_t)(ARC_ENV_STRINGS + i + strlen((char *)buf)), &ch2, sizeof(char), MEM_READ, CACHE_NONE);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
 				cpu->gpr[MIPS_GPR_V0] = ARC_ENV_STRINGS + i + strlen((char *)buf) + 1;
-				return;
+				return 1;
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
@@ -1640,25 +1632,10 @@ void arcbios_emul(struct cpu *cpu)
 		break;
 	case 0x100:
 		/*
-		 *  Undocumented, but used by IRIX when shutting down.
-		 *  Like a return_from_main(), or similar.
+		 *  Undocumented, used by IRIX.
 		 */
-		debug("[ ARCBIOS: IRIX return_from_main() (?) ]\n");
-
-/*
- *  Update 2005-01-17:
- *
- *  It seems that this is NOT a return from main,
- *  but something else. Hm...
- */
-
-#if 0
-		/*  Halt all CPUs.  */
-		for (i=0; i<cpu->machine->ncpus; i++)
-			cpu->machine->cpus[i]->running = 0;
-		cpu->machine->exit_without_entering_debugger = 1;
-#endif
-
+		debug("[ ARCBIOS: IRIX 0x100 (?) ]\n");
+		/*  TODO  */
 		cpu->gpr[MIPS_GPR_V0] = 0;
 		break;
 	case 0x888:
@@ -1679,6 +1656,8 @@ void arcbios_emul(struct cpu *cpu)
 		fatal("ARCBIOS: unimplemented vector 0x%x\n", vector);
 		cpu->running = 0;
 	}
+
+	return 1;
 }
 
 

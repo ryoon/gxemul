@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.30 2005-01-26 19:08:44 debug Exp $
+ *  $Id: dev_vga.c,v 1.31 2005-01-29 11:50:17 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -155,7 +155,7 @@ static void vga_update(struct machine *machine, struct vga_data *d,
 				}
 
 				/*  TODO: don't hardcode  */
-				if (addr < 480*640*3)
+				if (addr < 640 * 480 *3)
 					dev_fb_access(machine->cpus[0],
 					    machine->memory, addr, &pixel[0],
 					    sizeof(pixel), MEM_WRITE, d->fb);
@@ -273,13 +273,13 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 			if (d->modified) {
 				if (x < d->update_x1)  d->update_x1 = x;
 				if (x > d->update_x2)  d->update_x2 = x;
-				if (y < d->update_y1)  d->update_x1 = y;
-				if (y > d->update_y2)  d->update_x2 = y;
+				if (y < d->update_y1)  d->update_y1 = y;
+				if (y > d->update_y2)  d->update_y2 = y;
 
 				if (x2 < d->update_x1)  d->update_x1 = x2;
 				if (x2 > d->update_x2)  d->update_x2 = x2;
-				if (y2 < d->update_y1)  d->update_x1 = y2;
-				if (y2 > d->update_y2)  d->update_x2 = y2;
+				if (y2 < d->update_y1)  d->update_y1 = y2;
+				if (y2 > d->update_y2)  d->update_y2 = y2;
 			}
 		} else
 			memcpy(data, d->videomem + relative_addr, len);

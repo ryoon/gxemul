@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dec_prom.c,v 1.44 2005-01-23 11:19:39 debug Exp $
+ *  $Id: dec_prom.c,v 1.45 2005-01-29 11:50:19 debug Exp $
  *
  *  DECstation PROM emulation.
  */
@@ -205,7 +205,7 @@ int dec_jumptable_func(struct cpu *cpu, int vector)
  *	0xa8	execute_cmd()
  *	0xac	rex()
  */
-void decstation_prom_emul(struct cpu *cpu)
+int decstation_prom_emul(struct cpu *cpu)
 {
 	int i, j, ch, argreg, argdata;
 	int vector = cpu->pc & 0xfff;
@@ -217,7 +217,7 @@ void decstation_prom_emul(struct cpu *cpu)
 	if (!callback) {
 		vector = dec_jumptable_func(cpu, vector);
 		if (vector == 0)
-			return;
+			return 1;
 	} else {
 		/*  Vector number is n*4, PC points to n*8.  */
 		vector /= 2;
@@ -449,7 +449,7 @@ void decstation_prom_emul(struct cpu *cpu)
 			    MEM_READ, CACHE_DATA | NO_EXCEPTIONS);
 			if (nmatches == strlen((char *)buf) && ch2 == '=') {
 				cpu->gpr[MIPS_GPR_V0] = DEC_PROM_STRINGS + i + strlen((char *)buf) + 1;
-				return;
+				return 1;
 			}
 		}
 		/*  Return NULL if string wasn't found.  */
@@ -573,5 +573,7 @@ void decstation_prom_emul(struct cpu *cpu)
 		fatal("PROM emulation: unimplemented callback vector 0x%x\n", vector);
 		cpu->running = 0;
 	}
+
+	return 1;
 }
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: arcbios.h,v 1.2 2005-01-26 09:03:52 debug Exp $
+ *  $Id: arcbios.h,v 1.3 2005-01-29 11:50:18 debug Exp $
  *
  *  Headerfile for src/arcbios.c.
  *
@@ -55,7 +55,7 @@ uint64_t arcbios_addchild_manual(struct cpu *cpu,
 	uint64_t revision, uint64_t key, uint64_t affinitymask,
 	char *identifier, uint64_t parent, void *config_data,
 	size_t config_len);
-void arcbios_emul(struct cpu *cpu);
+int arcbios_emul(struct cpu *cpu);
 void arcbios_set_64bit_mode(int enable);
 void arcbios_set_default_exception_handler(struct cpu *cpu);
 void arcbios_init(void);

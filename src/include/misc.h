@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.152 2004-11-22 00:13:55 debug Exp $
+ *  $Id: misc.h,v 1.153 2004-11-22 09:32:05 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -570,7 +570,7 @@ struct r4000_cache_line {
 #define	BINTRANS_N_MASK			0x0ffffff
 
 #define	N_SAFE_BINTRANS_LIMIT_SHIFT	14
-#define	N_SAFE_BINTRANS_LIMIT		(1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1))
+#define	N_SAFE_BINTRANS_LIMIT		((1 << (N_SAFE_BINTRANS_LIMIT_SHIFT - 1)) - 1)
 
 struct cpu {
 	int		byte_order;

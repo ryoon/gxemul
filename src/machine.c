@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.40 2004-01-14 06:10:04 debug Exp $
+ *  $Id: machine.c,v 1.41 2004-01-19 12:52:01 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -705,7 +705,8 @@ void machine_init(struct memory *mem)
 		 *	7	PCI
 		 */
 /*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_ips);	*/
-		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);
+		dev_mc146818_init(cpus[0], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_ips);  	/*  mcclock0  */
+		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);				/*  com0  */
 
 		/*
 		 *  According to NetBSD/cobalt:
@@ -717,7 +718,7 @@ void machine_init(struct memory *mem)
 		 *  pciide0 at pci0 dev 9 function 1: VIA Technologies VT82C586 (Apollo VP) ATA33 cr
 		 *  tlp1 at pci0 dev 12 function 0: DECchip 21143 Ethernet, pass 4.1
 		 */
-		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, 7);
+		pci_data = dev_gt_init(cpus[bootstrap_cpu], mem, 0x14000000, 2, 6);	/*  7 for PCI, not 6?  */
 		/*  bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  7, 0, pci_dec21143_init, pci_dec21143_rr);  */
 		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  8, 0, NULL, NULL);  /*  PCI_VENDOR_SYMBIOS, PCI_PRODUCT_SYMBIOS_860  */
 		bus_pci_add(cpus[bootstrap_cpu], pci_data, mem, 0,  9, 0, pci_vt82c586_isa_init, pci_vt82c586_isa_rr);
@@ -732,8 +733,8 @@ void machine_init(struct memory *mem)
 		 *  of physical ram.
 		 */
 		cpus[bootstrap_cpu]->gpr[GPR_A0] = physical_ram_in_mb * 1048576 + 0x80000000;
-		/*  bootstr = "root=/dev/hda1 ro nfsroot=/usr/cobalt/";  */
-		bootstr = "nfsroot=/usr/cobalt/";
+		bootstr = "root=/dev/hda1 ro";
+		/*  bootstr = "nfsroot=/usr/cobalt/";  */
 		store_string(0x80000000 + physical_ram_in_mb * 1048576 - 512, bootstr);
 		break;
 
@@ -999,13 +1000,19 @@ void machine_init(struct memory *mem)
 			case 32:
 				strcat(machine_name, " (O2)");
 
-dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
-dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
+dev_ram_init(mem, 0x40000000000, 32 * 1048576, DEV_RAM_RAM, 0);
+dev_ram_init(mem, 0x41000000000, 32 * 1048576, DEV_RAM_RAM, 0);
+dev_ram_init(mem,    0x20000000, 32 * 1048576, DEV_RAM_RAM, 0);
+dev_ram_init(mem,    0x40000000, 32 * 1048576, DEV_RAM_RAM, 0);
+
 /*
 dev_ram_init(mem, 0x40000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 dev_ram_init(mem, 0x41000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+
 dev_ram_init(mem, 0x42000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem,    0x20000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
+dev_ram_init(mem,    0x40000000, 128 * 1048576, DEV_RAM_MIRROR, 0xb0000000);
 */
 				dev_crime_init(cpus[bootstrap_cpu], mem, 0x14000000);	/*  crime0  */
 				dev_sgi_mte_init(mem, 0x15000000);			/*  mte ??? memory thing  */
@@ -1026,6 +1033,7 @@ dev_ram_init(mem, 0x47000000000, 128 * 1048576, DEV_RAM_MIRROR, 0xa0000000);
 				 *	1f300000	perif:
 				 *	  1f300000	  audio
 				 *	  1f310000	  isa
+				 *	    1f318000	    (accessed by Irix' pciio_pio_write64)
 				 *	  1f320000	  kbdms
 				 *	  1f330000	  i2c
 				 *	  1f340000	  ust

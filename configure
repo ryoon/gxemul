@@ -27,9 +27,9 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.111 2005-03-04 08:46:51 debug Exp $
+#  $Id: configure,v 1.112 2005-03-05 11:18:31 debug Exp $
 #
-#  This is a minimal configure script, hardcoded for mips64emul. This script
+#  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
 #  sub-directories. A config.h file is also created.
 #
@@ -38,7 +38,7 @@
 #
 #
 #  To compile the emulator with profiling (during development), use
-#  CFLAGS="-pg", run the emulator, and then run 'gprof mips64emul' and study
+#  CFLAGS="-pg", run the emulator, and then run 'gprof gxemul' and study
 #  the results.
 #
 #
@@ -134,7 +134,7 @@ printf "/*
 
 #  Figure out if VERSION should be defined.
 X=`basename \`pwd\`|cut -d \- -f 2-`
-if [ z"$X" = zmips64emul ]; then
+if [ z"$X" = zgxemul ]; then
 	echo '#  No VERSION defined.' >> _Makefile.header
 else
 	printf "#define VERSION \"$X\"\n" >> config.h
@@ -971,7 +971,7 @@ echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
 
 
-printf "Regression test setup: (not really needed to build mips64emul)\n"
+printf "Regression test setup: (not really needed to build gxemul)\n"
 
 
 #  MIPS cross-compiler:
@@ -1102,5 +1102,4 @@ printf "\n#endif  /*  CONFIG_H  */\n" >> config.h
 #  Remove temporary Makefile header:
 rm -f _Makefile.header
 
-echo Configured. You may now run make to build mips64emul.
-
+echo Configured. You may now run make to build gxemul.

@@ -27,7 +27,7 @@ SUCH DAMAGE.
 
 Some files (mostly header files in the include/ directory, containing
 definitions of bitfields for hardware devices) are copied from NetBSD and
-possibly other sources.  If you plan to redistribute mips64emul (for example
-as a binary package), or reuse code from mips64emul, then you should check
-those files for their license terms.
+possibly other sources.  If you plan to redistribute GXemul (for example
+as a binary package), or reuse code from GXemul, then you should check those
+files for their license terms.
 

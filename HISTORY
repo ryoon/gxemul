@@ -1,6 +1,6 @@
-$Id: HISTORY,v 1.623 2005-03-05 10:35:35 debug Exp $
+$Id: HISTORY,v 1.624 2005-03-05 11:18:31 debug Exp $
 
-HISTORY of mips64emul
+Changelog for GXemul:
 ---------------------
 
 20030829	Skeleton. ELF stuff. Some instructions.
@@ -1719,3 +1719,4 @@ HISTORY of mips64emul
 		others) to be dynamically generated. (This allows the code to
 		compile on i386 with old gcc.)
 		Loading PPC64 ELFs now sets R2 to the TOC base.
+		Changing the name of the emulator from mips64emul to GXemul.

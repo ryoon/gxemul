@@ -1,11 +1,11 @@
-$Id: README,v 1.63 2005-03-04 08:46:51 debug Exp $
+$Id: README,v 1.64 2005-03-05 11:18:31 debug Exp $
 
 I'm now working on post-0.3.
 
 ------------------------------------------------------------------------------
 
-mips64emul 0.3.X
-================
+GXemul 0.3.X
+============
 
 Copyright (C) 2003-2005  Anders Gavare.
 
@@ -13,11 +13,11 @@ Copyright (C) 2003-2005  Anders Gavare.
 Overview
 --------
 
-mips64emul is a machine emulator, which can be used to experiment with 
-binary code for (among others) MIPS-based machines. Several emulation
-modes are available. For some emulation modes, processors and surrounding
-hardware components are emulated well enough to let unmodified operating
-systems run as if they were running on a real machine.
+GXemul is a machine emulator, which can be used to experiment with binary code
+for (among others) MIPS-based machines. Several emulation modes are available.
+For some emulation modes, processors and surrounding hardware components are
+emulated well enough to let unmodified operating systems run as if they were
+running on a real machine.
 
 
 Quick start
@@ -33,6 +33,6 @@ information on how to use the emulator.
 Feedback
 --------
 
-If you have found mips64emul useful in some way, or feel like sending be
-comments or feedback in general, then send mail to anders(at)gavare.se.
+If you have found GXemul useful in some way, or feel like sending me comments
+or feedback in general, then mail me at anders(at)gavare.se.
 

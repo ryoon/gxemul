@@ -1,4 +1,4 @@
-$Id: BUGS,v 1.31 2005-02-19 16:22:05 debug Exp $
+$Id: BUGS,v 1.32 2005-03-05 11:18:31 debug Exp $
 
 
 Serious bugs:
@@ -41,6 +41,6 @@ Less serious bugs / issues:
       is a bug. It should check the top 33 bits, not 32. (Alpha only, already
       fixed for i386?)
 
-  o)  NetBSD/arc 2.0 uses the ASC controller in a way which mips64emul
-      cannot yet handle. (NetBSD 1.6.2 works ok.)
+  o)  NetBSD/arc 2.0 uses the ASC controller in a way which GXemul cannot yet
+      handle. (NetBSD 1.6.2 works ok.)
 

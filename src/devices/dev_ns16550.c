@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ns16550.c,v 1.6 2003-12-30 03:04:45 debug Exp $
+ *  $Id: dev_ns16550.c,v 1.7 2003-12-30 05:48:31 debug Exp $
  *  
  *  NS16550 serial controller.
  *
@@ -191,6 +191,8 @@ int dev_ns16550_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			odata = d->reg[relative_addr];
 			odata_set = 1;
 			debug("[ ns16550 read from iir: 0x%02x ]\n", odata);
+d->reg[com_iir] &= ~IIR_TXRDY;
+dev_ns16550_tick(cpu, d);
 		}
 		break;
 	case com_lsr:

@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.14 2004-01-05 01:24:15 debug Exp $
+ *  $Id: devices.h,v 1.15 2004-01-05 03:26:59 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -193,10 +193,14 @@ void dev_macepci_init(struct memory *mem, uint64_t baseaddr);
 
 /*  dev_mc146818.c:  */
 #define	DEV_MC146818_LENGTH		0x0000000000000100
+#define	MC146818_DEC		0
+#define	MC146818_PC_CMOS	1
+#define	MC146818_ARC_NEC	2
+#define	MC146818_SGI		3
 /*  see mc146818reg.h for more info  */
 void dev_mc146818_tick(struct cpu *cpu, void *);
 int dev_mc146818_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int pc_style_cmos, int addrdiv, int emulated_ips);
+void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int irq_nr, int access_style, int addrdiv, int emulated_ips);
 
 /*  dev_mp.c:  */
 #define	DEV_MP_ADDRESS			0x0000000011000000

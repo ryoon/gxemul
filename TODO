@@ -25,7 +25,8 @@ Don't trust it to be up-to-date.
 			the emulator could support other architectures as well.
 		o)  Instructions:
 			o)  Regression tests (see tests/README for more info)
-			o)  Floating point instructions!
+			o)  Floating point exception handling, and
+				add more instructions.
 			o)  Finish the MIPS16 translator, and test it!
 			o)  MIPS V (SIMD vector stuff?)
 			o)  MDMX?  (MIPS Digital Media Extension)

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.105 2004-06-27 14:56:04 debug Exp $
+$Id: HISTORY,v 1.106 2004-06-27 15:38:42 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -603,3 +603,4 @@ HISTORY of mips64emul
 		A number of other minor fixes, optimizations, updated
 		comments and so on.
 		Adding a BUGS file, a list of known bugs.
+		Adding a minimal man page, doc/mips64emul.1.

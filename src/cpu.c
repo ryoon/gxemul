@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.69 2004-06-24 15:06:03 debug Exp $
+ *  $Id: cpu.c,v 1.70 2004-06-25 01:04:11 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -328,14 +328,13 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
  *	tlb		set to non-zero if the exception handler at
  *			0x80000000 should be used. (normal = 0x80000180)
  *	vaddr		virtual address (for some exceptions)
- *	pagemask	pagemask (for some exceptions)
  *	coproc_nr	coprocessor number (for some exceptions)
  *	vaddr_vpn2	vpn2 (for some exceptions)
  *	vaddr_asid	asid (for some exceptions)
  *	x_64		64-bit mode for R4000-style tlb misses
  */
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-	uint64_t pagemask, int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
+	int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64)
 {
 	int offset, x;
 	char *symbol = "";
@@ -524,7 +523,7 @@ const char *cpu_flags(struct cpu *cpu)
  *
  *  Return value is the number of instructions executed.
  */
-int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
+int cpu_run_instr(struct cpu *cpu)
 {
 	int quiet_mode_cached = quiet_mode;
 	struct coproc *cp0 = cpu->coproc[0];
@@ -888,7 +887,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 	mask  = cp0->reg[COP0_STATUS] & cp0->reg[COP0_CAUSE];
 
 	if (enabled && (mask & STATUS_IM_MASK) != 0) {
-		cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0, 0);
+		cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
 		return 0;
 	}
 
@@ -923,12 +922,12 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (userland_emul) {
 				useremul_syscall(cpu, imm);
 			} else
-				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0, 0);
+				cpu_exception(cpu, EXCEPTION_SYS, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_BREAK:
 			if (instruction_trace)
 				debug("break\n");
-			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0, 0);
+			cpu_exception(cpu, EXCEPTION_BP, 0, 0, 0, 0, 0, 0);
 			break;
 		case SPECIAL_SLL:
 		case SPECIAL_SRL:
@@ -1453,37 +1452,37 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 
 			if (special6 == SPECIAL_TGE) {
 				if ((int64_t)cpu->gpr[rs] >= (int64_t)cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
 			if (special6 == SPECIAL_TGEU) {
 				if (cpu->gpr[rs] >= cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
 			if (special6 == SPECIAL_TLT) {
 				if ((int64_t)cpu->gpr[rs] < (int64_t)cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
 			if (special6 == SPECIAL_TLTU) {
 				if (cpu->gpr[rs] < cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
 			if (special6 == SPECIAL_TEQ) {
 				if (cpu->gpr[rs] == cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
 			if (special6 == SPECIAL_TNE) {
 				if (cpu->gpr[rs] != cpu->gpr[rt])
-					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_TR, 0, 0, 0, 0, 0, 0);
 				break;
 			}
 
@@ -1731,14 +1730,14 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				/*  Turn around from 0x7fff.. to 0x800 ?  Then overflow.  */
 				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000) && (tmpvalue & 0x80000000)==0))
 				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000) && (tmpvalue & 0x8000000000000000)==0)) ) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
 			} else {
 				/*  Turn around from 0x8000.. to 0x7fff.. ?  Then overflow.  */
 				if (   ((hi6 == HI6_ADDI && (result_value & 0x80000000)==0 && (tmpvalue & 0x80000000)))
 				    || ((hi6 == HI6_DADDI && (result_value & 0x8000000000000000)==0 && (tmpvalue & 0x8000000000000000))) ) {
-					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0, 0);
+					cpu_exception(cpu, EXCEPTION_OV, 0, 0, 0, 0, 0, 0);
 					break;
 				}
 			}
@@ -1946,7 +1945,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			/*  Check for natural alignment:  */
 			if ((addr & (wlen - 1)) != 0) {
 				cpu_exception(cpu, st? EXCEPTION_ADES : EXCEPTION_ADEL,
-				    0, addr, 0, 0, 0, 0, 0);
+				    0, addr, 0, 0, 0, 0);
 				break;
 			}
 
@@ -2007,7 +2006,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				case HI6_SWC1:	if (cpu->coproc[cpnr] == NULL ||
 						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 						    ) {
-							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
+							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 							cpnr = -1;
 							break;
 						} else {
@@ -2123,7 +2122,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 				case HI6_LWC1:	if (cpu->coproc[cpnr] == NULL ||
 						    (cached_pc <= 0x7fffffff && !(cp0->reg[COP0_STATUS] & ((1 << cpnr) << STATUS_CU_SHIFT)))
 						    ) {
-							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
+							cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 						} else {
 							coproc_register_write(cpu, cpu->coproc[cpnr], rt, &value);
 						}
@@ -2429,7 +2428,7 @@ int cpu_run_instr(struct cpu *cpu, int64_t *instrcount)
 			if (instruction_trace)
 				debug("cop%i\t0x%08x => coprocessor unusable\n", cpnr, (int)imm);
 
-			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cpnr, 0, 0, 0);
+			cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cpnr, 0, 0, 0);
 		} else {
 			/*  The coproc_function code should output instruction trace.  */
 
@@ -2714,13 +2713,13 @@ int cpu_run(struct cpu **cpus, int ncpus)
 			/*  CPU 0 is special, cpu0instr must be updated.  */
 			for (j=0; j<a_few_cycles; j++)
 				if (cpus[0]->running)
-					cpu0instrs += cpu_run_instr(cpus[0], &ncycles);
+					cpu0instrs += cpu_run_instr(cpus[0]);
 
 			/*  CPU 1 and up:  */
 			for (i=1; i<ncpus; i++)
 				for (j=0; j<a_few_cycles; j++)
 					if (cpus[i]->running)
-						cpu_run_instr(cpus[i], &ncycles);
+						cpu_run_instr(cpus[i]);
 
 			/*
 			 *  Hardware 'ticks':  (clocks, interrupt sources...)

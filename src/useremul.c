@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.12 2004-06-22 22:23:54 debug Exp $
+ *  $Id: useremul.c,v 1.13 2004-06-25 01:04:12 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -85,7 +85,7 @@ extern char *last_filename;
  *  userland code.  The program should already have been
  *  loaded into memory when this function is called.
  */
-void useremul_init(struct cpu *cpu, struct memory *mem, int argc, char **host_argv)
+void useremul_init(struct cpu *cpu, int argc, char **host_argv)
 {
 	uint64_t stack_top = 0x7fff0000;
 	uint64_t stacksize = 8 * 1048576;
@@ -523,7 +523,7 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 			    (long long)arg0, (long long)arg1);
 			if (arg1 > 0 && arg1 < 500000) {
 				char buf[arg1];
-				int i;
+				unsigned int i;
 
 				getcwd(buf, sizeof(buf));
 
@@ -858,7 +858,7 @@ printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			result_low = 0;
 			if (arg1 != 0 && arg1 < 500000) {
 				unsigned char buf[arg1];
-				int i;
+				unsigned int i;
 
 				result_low = gethostname((char *)buf, sizeof(buf));
 
@@ -876,7 +876,7 @@ printf("fcntl!!!! res = %i error=%i\n", (int)result_low, (int)error_code);
 			    (long long)arg0, (long long)arg1, (long long)arg2);
 
 			if (arg1 != 0) {
-				int i, total = 0;
+				unsigned int i, total = 0;
 
 				for (i=0; i<arg2; i++) {
 					uint32_t iov_base, iov_len;

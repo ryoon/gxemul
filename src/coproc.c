@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: coproc.c,v 1.44 2004-06-24 21:36:50 debug Exp $
+ *  $Id: coproc.c,v 1.45 2004-06-25 01:04:11 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  *
@@ -313,7 +313,7 @@ void coproc_register_read(struct cpu *cpu,
 		    " register %i (%s)\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?");
 
-		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
+		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 		return;
 	}
 
@@ -520,7 +520,7 @@ void coproc_register_write(struct cpu *cpu,
 		    "register %i (%s), data = 0x%016llx\n", cpu->cpu_id, cp->coproc_nr, reg_nr,
 		    cp->coproc_nr==0? cop0_names[reg_nr] : "?", (long long)tmp);
 
-		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
+		cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 		return;
 	}
 
@@ -740,8 +740,8 @@ void fpu_store_float_value(struct coproc *cp, int fd, double nf, int fmt)
 		exponent += (((uint64_t)1 << (n_exp-1)) - 1);
 		if (exponent < 0)
 			exponent = 0;
-		if (exponent >= ((uint64_t)1 << n_exp))
-			exponent = ((uint64_t)1 << n_exp) - 1;
+		if (exponent >= ((int64_t)1 << n_exp))
+			exponent = ((int64_t)1 << n_exp) - 1;
 		r |= (uint64_t)exponent << n_frac;
 
 		/*  Special case for 0.0:  */
@@ -1425,6 +1425,6 @@ void coproc_function(struct cpu *cpu, struct coproc *cp, uint32_t function)
 */
 return;
 }
-	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, 0, cp->coproc_nr, 0, 0, 0);
+	cpu_exception(cpu, EXCEPTION_CPU, 0, 0, cp->coproc_nr, 0, 0, 0);
 }
 

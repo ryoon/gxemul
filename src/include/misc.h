@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.66 2004-06-24 21:36:49 debug Exp $
+ *  $Id: misc.h,v 1.67 2004-06-25 01:04:10 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -186,7 +186,7 @@ struct cpu_type_def {
 	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48 }, /*  DCOUNT?  */ \
 	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48 }, /*  DCOUNT?  */ \
-	{ NULL } }
+	{ NULL,		0,          0,          0,      0,     0,       0,       0 } }
 
 /*  Debug stuff:  */
 #define	EMUL_DEBUG		"\e[0;1m"	/*  bold  */
@@ -853,7 +853,7 @@ void cpu_register_dump(struct cpu *cpu);
 int cpu_interrupt(struct cpu *cpu, int irq_nr);
 int cpu_interrupt_ack(struct cpu *cpu, int irq_nr);
 void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
-        uint64_t pagemask, int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64);
+	/*  uint64_t pagemask,  */  int coproc_nr, uint64_t vaddr_vpn2, int vaddr_asid, int x_64);
 int cpu_run(struct cpu **cpus, int ncpus);
 
 
@@ -910,7 +910,7 @@ void symbol_init(void);
 #define	USERLAND_NONE		0
 #define	USERLAND_NETBSD_PMAX	1
 #define	USERLAND_ULTRIX_PMAX	2
-void useremul_init(struct cpu *, struct memory *, int, char **);
+void useremul_init(struct cpu *, int, char **);
 void useremul_syscall(struct cpu *cpu, uint32_t code);
 
 

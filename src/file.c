@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.25 2004-06-22 23:29:47 debug Exp $
+ *  $Id: file.c,v 1.26 2004-06-25 01:04:12 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -103,7 +103,8 @@ void file_load_aout(struct memory *mem, char *filename, struct cpu *cpu, int osf
 	FILE *f;
 	int len;
 	int encoding = ELFDATA2LSB;
-	uint32_t entry, datasize, textsize, symbsize;
+	uint32_t entry, datasize, textsize;
+	int32_t symbsize;
 	uint32_t vaddr, total_len;
 	unsigned char buf[1024];
 	unsigned char *syms;
@@ -243,7 +244,7 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 	char *format_name;
 	struct ecoff_scnhdr scnhdr;
 	FILE *f;
-	int len, i, secn, total_len, chunk_size;
+	int len, secn, total_len, chunk_size;
 	int encoding = ELFDATA2LSB;
 	unsigned char buf[4096];
 
@@ -333,6 +334,7 @@ void file_load_ecoff(struct memory *mem, char *filename, struct cpu *cpu)
 		off_t s_scnptr, s_relptr, s_lnnoptr, oldpos;
 		int s_nreloc, s_nlnno, s_flags;
 		int s_size;
+		unsigned int i;
 		uint64_t s_paddr, s_vaddr;
 
 		/*  Read a section header:  */
@@ -739,7 +741,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 	}
 
 	len = fread(&hdr32, 1, sizeof(Elf32_Ehdr), f);
-	if (len < sizeof(Elf32_Ehdr)) {
+	if (len < (signed int)sizeof(Elf32_Ehdr)) {
 		fprintf(stderr, "%s: not an ELF file image\n", filename);
 		exit(1);
 	}
@@ -757,7 +759,7 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 		elf64 = 1;
 		fseek(f, 0, SEEK_SET);
 		len = fread(&hdr64, 1, sizeof(Elf64_Ehdr), f);
-		if (len < sizeof(Elf64_Ehdr)) {
+		if (len < (signed int)sizeof(Elf64_Ehdr)) {
 			fprintf(stderr, "%s: not an ELF64 file image\n", filename);
 			exit(1);
 		}
@@ -919,12 +921,12 @@ void file_load_elf(struct memory *mem, char *filename, struct cpu *cpu)
 			if ((p_vaddr & 0xff)==0)	align_len = 0x100;
 			if ((p_vaddr & 0xfff)==0)	align_len = 0x1000;
 			ofs = 0;  len = chunk_len = align_len;
-			while (ofs < p_filesz && len==chunk_len) {
+			while (ofs < (int64_t)p_filesz && len==chunk_len) {
 				unsigned char ch[chunk_len];
 				int i = 0;
 
 				len = fread(&ch[0], 1, chunk_len, f);
-				if (ofs + len > p_filesz)
+				if (ofs + len > (int64_t)p_filesz)
 					len = p_filesz - ofs;
 
 				while (i < len) {
@@ -1144,7 +1146,7 @@ void file_load(struct memory *mem, char *filename, struct cpu *cpu)
 	len = fread(minibuf, 1, sizeof(minibuf), f);
 	fclose(f);
 
-	if (len < sizeof(minibuf)) {
+	if (len < (signed int)sizeof(minibuf)) {
 		fprintf(stderr, "%s: this file is too small to contain anything useful\n", filename);
 		exit(1);
 	}

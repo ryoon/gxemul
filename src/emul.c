@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.14 2004-06-22 22:26:35 debug Exp $
+ *  $Id: emul.c,v 1.15 2004-06-25 01:04:12 debug Exp $
  *
  *  Emulation startup.
  */
@@ -193,7 +193,7 @@ void emul(void)
 	if (random_mem_contents) {
 		for (i=0; i<physical_ram_in_mb*1048576; i+=256) {
 			unsigned char data[256];
-			int j;
+			unsigned int j;
 			for (j=0; j<sizeof(data); j++)
 				data[j] = random() & 255;
 			addr = 0x80000000 + i;
@@ -235,7 +235,7 @@ void emul(void)
 			cpus[i]->byte_order = cpus[bootstrap_cpu]->byte_order;
 
 	if (userland_emul)
-		useremul_init(cpus[bootstrap_cpu], mem, extra_argc, extra_argv);
+		useremul_init(cpus[bootstrap_cpu], extra_argc, extra_argv);
 
 	/*  Startup the bootstrap CPU:  */
 	cpus[bootstrap_cpu]->bootstrap_cpu_flag = 1;

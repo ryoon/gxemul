@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.30 2004-06-24 03:55:21 debug Exp $
+ *  $Id: diskimage.c,v 1.31 2004-06-25 01:04:12 debug Exp $
  *
  *  Disk image support.
  *
@@ -292,7 +292,8 @@ void diskimage__switch_tape(int disk_id)
 int diskimage_scsicommand(int disk_id, struct scsi_transfer *xferp)
 {
 	int retlen;
-	int64_t size, ofs;
+	uint64_t size;
+	int64_t ofs;
 	int pagecode;
 
 	if (disk_id < 0 || disk_id >= MAX_DISKIMAGES || diskimages[disk_id]==NULL)
@@ -929,12 +930,12 @@ int diskimage_access(int disk_id, int writeflag, off_t offset, unsigned char *bu
 		len_done = fwrite(buf, 1, len, diskimages[disk_id]->f);
 	} else {
 		len_done = fread(buf, 1, len, diskimages[disk_id]->f);
-		if (len_done < len)
+		if (len_done < (ssize_t)len)
 			memset(buf + len_done, 0, len-len_done);
 	}
 
 	/*  Warn about non-complete data transfers:  */
-	if (len_done != len) {
+	if (len_done != (ssize_t)len) {
 		debug("diskimage_access(): disk_id %i, offset %lli, transfer not completed. len=%i, len_done=%i\n",
 		    disk_id, (long long)offset, len, len_done);
 		return 0;

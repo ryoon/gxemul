@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.106 2004-06-24 06:04:25 debug Exp $
+ *  $Id: machine.c,v 1.107 2004-06-25 01:04:12 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -541,7 +541,7 @@ void sgi_crime_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	uint64_t crime_addr = CRIME_INTSTAT;
 	uint64_t mace_addr = 0x14;
 	uint64_t crime_interrupts, crime_interrupts_mask, mace_interrupts;
-	int i;
+	unsigned int i;
 	unsigned char x[8];
 
 	/*
@@ -1204,8 +1204,11 @@ void machine_init(struct memory *mem)
 
 		/*  The system's memmap:  (memmap is a global variable, in dec_prom.h)  */
 		store_32bit_word_in_host((unsigned char *)&memmap.pagesize, 4096);
-		for (i=0; i<sizeof(memmap.bitmap); i++)
-			memmap.bitmap[i] = (i * 4096*8 < 1048576*physical_ram_in_mb)? 0xff : 0x00;
+		{
+			unsigned int i;
+			for (i=0; i<sizeof(memmap.bitmap); i++)
+				memmap.bitmap[i] = ((int)i * 4096*8 < 1048576*physical_ram_in_mb)? 0xff : 0x00;
+		}
 		store_buf(DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
 
 		/*  Environment variables:  */
@@ -1949,7 +1952,7 @@ void machine_init(struct memory *mem)
 
 		for (i=0; i<ncpus; i++) {
 			uint32_t cpu, fpu;
-			int jj;
+			unsigned int jj;
 			char arc_cpu_name[100];
 			char arc_fpc_name[105];
 

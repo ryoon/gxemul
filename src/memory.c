@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.39 2004-06-24 21:36:50 debug Exp $
+ *  $Id: memory.c,v 1.40 2004-06-25 01:04:12 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -658,7 +658,7 @@ exception:
 	}
 
 	cpu_exception(cpu, exccode, tlb_refill, vaddr,
-	    cp0->tlbs[0].mask & PAGEMASK_MASK,
+/*	    cp0->tlbs[0].mask & PAGEMASK_MASK,  */
 	    0, vaddr_vpn2, vaddr_asid, x_64);
 
 	/*  Return failure:  */
@@ -814,7 +814,7 @@ have_paddr:
 				    mem->dev_name[i], (long)paddr);
 
 				/*  If the memory mapped device failed, then return with a DBE exception  */
-				cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0, 0);
+				cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
 				return MEMORY_ACCESS_FAILED;
 			}
 			goto do_return_ok;
@@ -864,9 +864,11 @@ have_paddr:
 				/*  debug("ISOLATED write=%i cache=%i vaddr=%016llx paddr=%016llx => addr in cache = 0x%lx\n",
 				    writeflag, cache, (long long)vaddr, (long long)paddr, addr);  */
 				if (writeflag==MEM_READ) {
+					unsigned int i;
 					for (i=0; i<len; i++)
 						data[i] = cpu->cache[cache][(addr+i) & cachemask[cache]];
 				} else {
+					unsigned int i;
 					for (i=0; i<len; i++)
 						cpu->cache[cache][(addr+i) & cachemask[cache]] = data[i];
 				}
@@ -919,6 +921,7 @@ have_paddr:
 				if (!quiet_mode) {
 					debug("[ memory_rw(): writeflag=%i ", writeflag);
 					if (writeflag) {
+						unsigned int i;
 						debug("data={", writeflag);
 						for (i=0; i<len; i++)
 							debug("%s%02x", i?",":"", data[i]);
@@ -942,7 +945,7 @@ have_paddr:
 				/*  For real data/instruction accesses, there can be exceptions:  */
 				if (cache != CACHE_NONE) {
 					if (paddr >= mem->physical_max && paddr < mem->physical_max + 1048576)
-						cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0, 0);
+						cpu_exception(cpu, EXCEPTION_DBE, 0, vaddr, 0, 0, 0, 0);
 				}
 			}
 

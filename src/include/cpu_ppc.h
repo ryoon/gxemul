@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.h,v 1.13 2005-02-13 23:50:48 debug Exp $
+ *  $Id: cpu_ppc.h,v 1.14 2005-02-14 11:58:41 debug Exp $
  */
 
 #include "misc.h"
@@ -83,6 +83,10 @@ struct ppc_cpu {
 	uint64_t	xer;		/*  FP Exception Register  */
 	uint64_t	fpr[PPC_NFPRS];	/*  Floating-Point Registers  */
 
+	uint32_t	tbl;		/*  Time Base Lower  */
+	uint32_t	tbu;		/*  Time Base Upper  */
+	uint32_t	dec;		/*  Decrementer  */
+	uint32_t	hdec;		/*  Hypervisor Decrementer  */
 	uint64_t	ssr0;		/*  Machine status save/restore
 					    register 0  */
 	uint64_t	ssr1;		/*  Machine status save/restore

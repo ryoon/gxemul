@@ -134,11 +134,11 @@ NetBSD/pmax (kernel found here: <a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1
 http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>)
 running on an emulated DECstation 5000 supports this:
 <pre>
-	$ <b>./mips64emul -D2 -X -Y2 -q -I500000 -M12 netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -X -Y2 -q -I1000000 -M12 netbsd-INSTALL</b>
 </pre>
 -D2 stands for DECstation, type 2; -X means to use X-windows to get a graphical
 framebuffer; -Y2 is used to scale down the window by a factor 2x2; -q supresses
-debug output; -I500000 lets the emulated clock chip on DECstations have
+debug output; -I1000000 lets the emulated clock chip on DECstations have
 a more realistic pace; and -M12 sets the amount of emulated memory to 12 MB.
 The result should looks something like this:
 <p>

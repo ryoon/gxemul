@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_bt459.c,v 1.5 2004-01-16 17:34:05 debug Exp $
+ *  $Id: dev_bt459.c,v 1.6 2004-03-08 03:22:29 debug Exp $
  *  
  *  Brooktree 459 vdac, used by TURBOchannel graphics cards.
  */
@@ -47,7 +47,10 @@ struct bt459_data {
 	unsigned char	cur_addr_lo;
 
 	int		planes;
+	int		cursor_x;
+	int		cursor_y;
 
+	struct vfb_data *vfb_data;
 	unsigned char	*rgb_palette;		/*  ptr to 256 * 3 (r,g,b)  */
 };
 
@@ -61,15 +64,20 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	struct bt459_data *d = (struct bt459_data *) extra;
 	uint64_t idata = 0, odata = 0;
-	int btaddr;
+	int btaddr, new_cursor_x, new_cursor_y;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	/*  ID register is read-only, should always be 0x4a or 0x4a4a4a:  */
 	if (d->planes == 24)
 		d->bt459_reg[BT459_REG_ID] = 0x4a4a4a;
-	else
-		d->bt459_reg[BT459_REG_ID] = 0x4a;
+	else {
+		/*
+		 *  TODO:  Is it really 0x4a, or 0x4a0000?
+		 *  Ultrix panics with a "bad VDAC ID" message if 0x4a is returned.
+		 */
+		d->bt459_reg[BT459_REG_ID] = 0x4a0000;
+	}
 
 	btaddr = ((d->cur_addr_hi << 8) + d->cur_addr_lo) % DEV_BT459_NREGS;
 
@@ -101,6 +109,11 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 			odata = d->bt459_reg[btaddr];
 			debug("[ bt459: read from BT459 register 0x%04x, value 0x%02x ]\n", btaddr, odata);
 		}
+
+		/*  Go to next register:  */
+		d->cur_addr_lo ++;
+		if (d->cur_addr_lo == 0)
+			d->cur_addr_hi ++;
 		break;
 	default:
 		if (writeflag == MEM_WRITE) {
@@ -108,6 +121,20 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 		} else {
 			debug("[ bt459: unimplemented read from address 0x%x ]\n", relative_addr);
 		}
+	}
+
+	/*  The magic 370,37 values are from a NetBSD source code comment.  :-)  */
+	new_cursor_x = (d->bt459_reg[BT459_REG_CXLO] & 255) + ((d->bt459_reg[BT459_REG_CXHI] & 255) << 8) - 370;
+	new_cursor_y = (d->bt459_reg[BT459_REG_CYLO] & 255) + ((d->bt459_reg[BT459_REG_CYHI] & 255) << 8) - 37;
+
+	if (new_cursor_x != d->cursor_x || new_cursor_y != d->cursor_y) {
+		/*  TODO: what do the bits in the CCR do?  */
+		int on = d->bt459_reg[BT459_REG_CCR] ? 1 : 0;
+		d->cursor_x = new_cursor_x;
+		d->cursor_y = new_cursor_y;
+on = 0;
+		debug("[ bt459: cursor = %03i,%03i ]\n", d->cursor_x, d->cursor_y);
+		dev_fb_setcursor(d->vfb_data, d->cursor_x, d->cursor_y, on, 10, 22);
 	}
 
 	if (writeflag == MEM_READ)
@@ -120,7 +147,7 @@ int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 /*
  *  dev_bt459_init():
  */
-void dev_bt459_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int planes)
+void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int planes)
 {
 	struct bt459_data *d = malloc(sizeof(struct bt459_data));
 	if (d == NULL) {
@@ -128,8 +155,11 @@ void dev_bt459_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_pa
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct bt459_data));
-	d->rgb_palette  = rgb_palette;
+	d->vfb_data     = vfb_data;
+	d->rgb_palette  = vfb_data->rgb_palette;
 	d->planes       = planes;
+	d->cursor_x     = -1;
+	d->cursor_y     = -1;
 
 	memory_device_register(mem, "bt459", baseaddr, DEV_BT459_LENGTH, dev_bt459_access, (void *)d);
 }

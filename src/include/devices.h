@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.39 2004-03-07 03:55:38 debug Exp $
+ *  $Id: devices.h,v 1.40 2004-03-08 03:22:27 debug Exp $
  *
  *  Memory mapped devices:
  */
@@ -75,7 +75,8 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 #define	DEV_BT459_LENGTH		0x20
 #define	DEV_BT459_NREGS			0x800
 int dev_bt459_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_bt459_init(struct memory *mem, uint64_t baseaddr, unsigned char *rgb_palette, int color_fb_flag);
+struct vfb_data;
+void dev_bt459_init(struct memory *mem, uint64_t baseaddr, struct vfb_data *vfb_data, int color_fb_flag);
 
 /*  dev_cons.c:  */
 #define	DEV_CONS_ADDRESS		0x0000000010000000
@@ -145,6 +146,12 @@ struct vfb_data {
 	/*  RGB palette for <= 8 bit modes:  (r,g,b bytes for each)  */
 	unsigned char	rgb_palette[256 * 3];
 
+	int		cursor_x;
+	int		cursor_y;
+	int		cursor_xsize;
+	int		cursor_ysize;
+	int		cursor_on;
+
 	/*  These should always be in sync:  */
 	unsigned char	*framebuffer;
 	struct fb_window *fb_window;
@@ -153,6 +160,8 @@ struct vfb_data {
 #define	VFB_MFB_VRAM			0x200000
 #define	VFB_CFB_BT459			0x200000
 void set_grayscale_palette(struct vfb_data *d, int ncolors);
+void dev_fb_setcursor(struct vfb_data *d, int cursor_x, int cursor_y, int on, 
+        int cursor_xsize, int cursor_ysize);
 void framebuffer_blockcopyfill(struct vfb_data *d, int fillflag, int fill_r,
 	int fill_g, int fill_b, int x1, int y1, int x2, int y2,
 	int from_x, int from_y);
@@ -289,10 +298,14 @@ struct px_data {
 	struct memory	*fb_mem;
 	struct vfb_data	*vfb_data;
 	int		type;
+	char		*px_name;
 	int		irq_nr;
 	int		bitdepth;
+	int		xconfig;
+	int		yconfig;
 
 	uint32_t	intr;
+	unsigned char	sram[128 * 1024];
 };
 /*  TODO: perhaps these types are wrong?  */
 #define	DEV_PX_TYPE_PX			0

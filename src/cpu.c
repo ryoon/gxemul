@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.147 2004-09-05 04:22:42 debug Exp $
+ *  $Id: cpu.c,v 1.148 2004-09-05 04:32:04 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -51,10 +51,6 @@ extern int old_show_trace_tree;
 extern int old_instruction_trace;
 extern int old_quiet_mode;
 extern int quiet_mode;
-
-extern int n_dumppoints;
-extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
-extern int dumppoint_flag_r[MAX_PC_DUMPPOINTS];
 
 char *exception_names[] = EXCEPTION_NAMES;
 
@@ -1183,12 +1179,12 @@ static int cpu_run_instr(struct cpu *cpu)
 		cpu->last_was_jumptoself --;
 
 	/*  Check PC dumppoints:  */
-	for (i=0; i<n_dumppoints; i++)
-		if (cached_pc == dumppoint_pc[i]) {
+	for (i=0; i<cpu->emul->n_dumppoints; i++)
+		if (cached_pc == cpu->emul->dumppoint_pc[i]) {
 			cpu->emul->instruction_trace =
 			    instruction_trace_cached = 1;
 			quiet_mode = quiet_mode_cached = 0;
-			if (dumppoint_flag_r[i])
+			if (cpu->emul->dumppoint_flag_r[i])
 				cpu->emul->register_dump = 1;
 		}
 

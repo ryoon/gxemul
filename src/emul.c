@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.68 2004-09-05 04:22:42 debug Exp $
+ *  $Id: emul.c,v 1.69 2004-09-05 04:32:04 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -51,19 +51,14 @@
 #endif
 
 
-extern int optind;
-extern char *optarg;
-int extra_argc;
-char **extra_argv;
+extern int extra_argc;
+extern char **extra_argv;
+
+extern int quiet_mode;
 
 int old_instruction_trace = 0;
 int old_quiet_mode = 0;
 int old_show_trace_tree = 0;
-extern int quiet_mode;
-extern int n_dumppoints;
-extern char *dumppoint_string[];
-extern uint64_t dumppoint_pc[];
-extern int dumppoint_flag_r[];
 
 
 #define	MAX_CMD_LEN	60
@@ -75,15 +70,15 @@ extern int dumppoint_flag_r[];
  *  Take the strings dumppoint_string[] and convert to addresses
  *  (and store them in dumppoint_pc[]).
  */
-void add_pc_dump_points(void)
+static void add_pc_dump_points(struct emul *emul)
 {
 	int i;
 	int string_flag;
 	uint64_t dp;
 
-	for (i=0; i<n_dumppoints; i++) {
+	for (i=0; i<emul->n_dumppoints; i++) {
 		string_flag = 0;
-		dp = strtoull(dumppoint_string[i], NULL, 0);
+		dp = strtoull(emul->dumppoint_string[i], NULL, 0);
 
 		/*
 		 *  If conversion resulted in 0, then perhaps it is a
@@ -91,11 +86,11 @@ void add_pc_dump_points(void)
 		 */
 		if (dp == 0) {
 			uint64_t addr;
-			int res = get_symbol_addr(dumppoint_string[i], &addr);
+			int res = get_symbol_addr(emul->dumppoint_string[i], &addr);
 			if (!res)
 				fprintf(stderr,
 				    "WARNING! PC dumppoint '%s' could not be parsed\n",
-				    dumppoint_string[i]);
+				    emul->dumppoint_string[i]);
 			else {
 				dp = addr;
 				string_flag = 1;
@@ -109,11 +104,11 @@ void add_pc_dump_points(void)
 
 		if ((dp >> 32) == 0 && ((dp >> 31) & 1))
 			dp |= 0xffffffff00000000ULL;
-		dumppoint_pc[i] = dp;
+		emul->dumppoint_pc[i] = dp;
 
 		debug("pc dumppoint %i: %016llx", i, (long long)dp);
 		if (string_flag)
-			debug(" (%s)", dumppoint_string[i]);
+			debug(" (%s)", emul->dumppoint_string[i]);
 		debug("\n");
 	}
 }
@@ -742,7 +737,7 @@ void emul_start(struct emul *emul)
 	emul->cpus[emul->bootstrap_cpu]->running            = 1;
 
 	/*  Add PC dump points:  */
-	add_pc_dump_points();
+	add_pc_dump_points(emul);
 
 	add_symbol_name(0x9fff0000, 0x10000, "r2k3k_cache", 0);
 	symbol_recalc_sizes();

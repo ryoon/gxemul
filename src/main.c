@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.99 2004-09-05 04:22:42 debug Exp $
+ *  $Id: main.c,v 1.100 2004-09-05 04:32:04 debug Exp $
  */
 
 #include <stdio.h>
@@ -50,19 +50,6 @@ char **extra_argv;
  */
 
 int quiet_mode = 0;
-
-
-/*
- *  TODO:  Move out stuff into structures, separating things from main()
- *         completely.
- */
-
-/*  PC Dumppoints: if the PC value ever matches one of these, we set
-	register_dump = instruction_trace = 1  */
-int n_dumppoints = 0;
-char *dumppoint_string[MAX_PC_DUMPPOINTS];
-uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
-int dumppoint_flag_r[MAX_PC_DUMPPOINTS];	/*  0 for instruction trace, 1 for instr.trace + register dump  */
 
 
 /*
@@ -312,13 +299,19 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			break;
 		case 'P':
 		case 'p':
-			if (n_dumppoints >= MAX_PC_DUMPPOINTS) {
+			if (emul->n_dumppoints >= MAX_PC_DUMPPOINTS) {
 				fprintf(stderr, "too many pc dumppoints\n");
 				exit(1);
 			}
-			dumppoint_string[n_dumppoints] = optarg;
-			dumppoint_flag_r[n_dumppoints] = (ch == 'P') ? 1 : 0;
-			n_dumppoints ++;
+			emul->dumppoint_string[emul->n_dumppoints] =
+			    malloc(strlen(optarg) + 1);
+			if (emul->dumppoint_string[emul->n_dumppoints] == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			strcpy(emul->dumppoint_string[emul->n_dumppoints], optarg);
+			emul->dumppoint_flag_r[emul->n_dumppoints] = (ch == 'P') ? 1 : 0;
+			emul->n_dumppoints ++;
 			break;
 		case 'Q':
 			emul->prom_emulation = 0;
@@ -474,10 +467,10 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*
 	 *  Usually, an executable filename must be supplied.
 	 *
-	 *  However, it is possible to boot directly from a harddisk
-	 *  image file.  If no kernel is supplied, and the emulation
-	 *  mode is DECstation and there is a diskimage, then try to
-	 *  boot from that.
+	 *  However, it is possible to boot directly from a harddisk image
+	 *  file. If no kernel is supplied, and the emulation mode is set to
+	 *  DECstation emulation, and there is a diskimage, then try to boot
+	 *  from that.
 	 */
 	if (extra_argc == 0) {
 		if (emul->emulation_type == EMULTYPE_DEC && using_switch_d) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_alpha.c,v 1.1 2005-03-13 09:36:08 debug Exp $
+ *  $Id: cpu_alpha.c,v 1.2 2005-03-13 09:51:41 debug Exp $
  *
  *  Alpha CPU emulation.
  *
@@ -84,7 +84,12 @@ struct cpu *alpha_cpu_new(struct memory *mem, struct machine *machine,
 {
 	struct cpu *cpu;
 
-	if (cpu_type_name == NULL || strcasecmp(cpu_type_name, "ALPHA") != 0)
+	if (cpu_type_name == NULL || (
+	    strcasecmp(cpu_type_name, "ev4") != 0 &&
+	    strcasecmp(cpu_type_name, "ev5") != 0 &&
+	    strcasecmp(cpu_type_name, "ev6") != 0 &&
+	    strcasecmp(cpu_type_name, "ev7") != 0 &&
+	    strcasecmp(cpu_type_name, "pca56") != 0) )
 		return NULL;
 
 	cpu = malloc(sizeof(struct cpu));
@@ -132,7 +137,7 @@ void alpha_cpu_list_available_types(void)
 {
 	/*  TODO  */
 
-	debug("ALPHA\n");
+	debug("EV4       EV5       EV6       EV7       PCA56\n");
 }
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.43 2005-02-22 19:09:02 debug Exp $
+ *  $Id: useremul.c,v 1.44 2005-03-13 09:51:41 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -123,6 +123,26 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 
 
 /*
+ *  useremul__freebsd_setup():
+ *
+ *  Set up an emulated userland environment suitable for running FreeBSD
+ *  binaries.
+ */
+void useremul__freebsd_setup(struct cpu *cpu, int argc, char **host_argv)
+{
+	debug("useremul__freebsd_setup(): TODO\n");
+
+	if (cpu->machine->arch != ARCH_ALPHA) {
+		fatal("non-Alpha not yet implemented for freebsd emul.\n");
+		exit(1);
+	}
+
+	/*  What is a good stack pointer? TODO  */
+	/*  cpu->cd.alpha.gpr[...] = ...  */
+}
+
+
+/*
  *  useremul__linux_setup():
  *
  *  Set up an emulated userland environment suitable for running Linux
@@ -131,6 +151,11 @@ void useremul_setup(struct cpu *cpu, int argc, char **host_argv)
 void useremul__linux_setup(struct cpu *cpu, int argc, char **host_argv)
 {
 	debug("useremul__linux_setup(): TODO\n");
+
+	if (cpu->machine->arch != ARCH_PPC) {
+		fatal("non-PPC not yet implemented for linux emul.\n");
+		exit(1);
+	}
 
 	/*  What is a good stack pointer? TODO  */
 	cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
@@ -347,6 +372,50 @@ void useremul_syscall(struct cpu *cpu, uint32_t code)
 		fatal("useremul_syscall(): cpu->useremul_syscall == NULL\n");
 	} else
 		cpu->useremul_syscall(cpu, code);
+}
+
+
+/*
+ *  useremul__freebsd():
+ *
+ *  FreeBSD syscall emulation.
+ *
+ *  TODO: How to make this work nicely with non-Alpha archs.
+ */
+static void useremul__freebsd(struct cpu *cpu, uint32_t code)
+{
+#if 0
+	unsigned char *cp;
+	int nr;
+	uint64_t arg0, arg1, arg2, arg3;
+
+	nr = cpu->cd.ppc.gpr[0];
+	arg0 = cpu->cd.ppc.gpr[3];
+	arg1 = cpu->cd.ppc.gpr[4];
+	arg2 = cpu->cd.ppc.gpr[5];
+	arg3 = cpu->cd.ppc.gpr[6];
+
+	switch (nr) {
+
+	case LINUX_PPC_SYS_exit:
+		debug("[ exit(%i) ]\n", (int)arg0);
+		cpu->running = 0;
+		break;
+
+	case LINUX_PPC_SYS_write:
+		debug("[ write(%i,0x%llx,%lli) ]\n",
+		    (int)arg0, (long long)arg1, (long long)arg2);
+		cp = get_userland_buf(cpu, arg1, arg2);
+		write(arg0, cp, arg2);
+		free(cp);
+		break;
+
+	default:
+		fatal("useremul__linux(): syscall %i not yet implemented\n",
+		    nr);
+		cpu->running = 0;
+	}
+#endif
 }
 
 
@@ -1388,16 +1457,21 @@ void useremul_list_emuls(void)
  */
 void useremul_init(void)
 {
-	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
-	    useremul__linux, useremul__linux_setup);
+	/*  Note: These are in reverse alphabetic order:  */
 
-	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
-	    useremul__netbsd, useremul__netbsd_setup);
+	add_useremul("Ultrix", ARCH_MIPS, "R3000",
+	    useremul__ultrix, useremul__ultrix_setup);
 
 	add_useremul("NetBSD/powerpc", ARCH_PPC, "PPC750",
 	    useremul__netbsd, useremul__netbsd_setup);
 
-	add_useremul("Ultrix", ARCH_MIPS, "R3000",
-	    useremul__ultrix, useremul__ultrix_setup);
+	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
+	    useremul__netbsd, useremul__netbsd_setup);
+
+	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",
+	    useremul__linux, useremul__linux_setup);
+
+	add_useremul("FreeBSD/Alpha", ARCH_ALPHA, "EV4",
+	    useremul__freebsd, useremul__freebsd_setup);
 }
 

@@ -16,13 +16,13 @@ Real operating system kernels can be downloaded from various places.
 Here are examples of kernels that can be experimented with:
 
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/pmax/binary/kernel/netbsd-INSTALL.gz
-  The best working emulations so far are -D1, -D2, and -D12.
-  NOTE:  With -D1, -D2 and some others, you can also use -X to get a
-  graphical (framebuffer) console.
+  Suitable command line arguments may be  -D2 -XY2 -M16 -I500000
+  for a graphical framebuffer console, or  -D2 -q -M16 -I500000 for
+  serial (stdin/stdout) console.
 
   ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
   This is an old OpenBSD kernel in a.out format.
-  Try running with  -D 1.
+  Try running with  -D1 or -D2.
 
   ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.1/cobalt/binary/kernel/
   Try running with  -E.
@@ -38,8 +38,9 @@ Here are examples of kernels that can be experimented with:
   ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
 
 NOTE:  Add a  -q  to the command line options to supress debug messages.
-       For X-windows framebuffers, you can add  -Y2  to scale down the
-       framebuffer window a bit.
+       Add  -X  to use a X-windows framebuffer, if the emulated machine
+       supports that.  (You can add  -Y2  to scale down the framebuffer
+       window a bit.)
 
 Send feedback to:  md1gavan at mdstud.chalmers.se.
 

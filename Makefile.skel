@@ -18,7 +18,7 @@ do_devices:
 	cd devices; $(MAKE); cd ..
 
 regtest:
-	cd tests; make run_tests; cd ..
+	cd tests; $(MAKE) run_tests; cd ..
 
 install: all
 	@echo

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_px.c,v 1.5 2004-03-11 05:31:41 debug Exp $
+ *  $Id: dev_px.c,v 1.6 2004-03-11 06:22:30 debug Exp $
  *  
  *  TURBOchannel Pixelstamp graphics device.
  *
@@ -350,15 +350,17 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 		/*  Ugly test code:  */
 		unsigned char pixels[16 * 3];
 		int pixels_len = 16;
-		uint32_t v1, v2, fgcolor;
+		uint32_t v1, v2, fgcolor, bgcolor;
 		int x, y, x2,y2, i, maxi;
 		int xbit;
 		int suby;
 		int fg_r, fg_g, fg_b;
+		int bg_r, bg_g, bg_b;
 
 		v1 = px_readword(cpu, dma_buf, 52);
 		v2 = px_readword(cpu, dma_buf, 56);
-		fgcolor = px_readword(cpu, dma_buf, 64);
+		fgcolor = px_readword(cpu, dma_buf, 16 * 4);
+		bgcolor = px_readword(cpu, dma_buf, 29 * 4);
 
 		/*  TODO:  Which one is r, which one is g, and which one is b?  */
 		/*  TODO 2:  Use the BT459 palette, these values are hardcoded for NetBSD and Ultrix grayscale only  */
@@ -372,6 +374,17 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 			fg_r = fg_g = fg_b = 192;
 		else
 			fg_r = fg_g = fg_b = 255;
+
+		bg_r = (bgcolor >> 16) & 255;
+		bg_g = (bgcolor >> 8) & 255;
+		bg_b = bgcolor & 255;
+		if (bg_r == 0)
+			bg_r = bg_g = bg_b = 0;
+		else
+		if (bg_r == 7)
+			bg_r = bg_g = bg_b = 192;
+		else
+			bg_r = bg_g = bg_b = 255;
 
 		x = (v1 >> 19) & 2047;
 		y = ((v1 - 63) >> 3) & 1023;
@@ -403,16 +416,16 @@ void dev_px_dma(struct cpu *cpu, uint32_t sys_addr, struct px_data *d)
 					if (bytesperpixel == 3) {
 						/*  24-bit:  */
 						/*  TODO:  Which one is r, which one is g, which one is b?  */
-						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_r : 0;
-						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_g : 0;
-						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_b : 0;
-						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_r : 0;
-						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_g : 0;
-						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_b : 0;
+						pixels[xbit * 3 + 0]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_r : bg_r;
+						pixels[xbit * 3 + 1]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_g : bg_g;
+						pixels[xbit * 3 + 2]       = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? fg_b : bg_b;
+						pixels[(xbit + 8) * 3 + 0] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_r : bg_r;
+						pixels[(xbit + 8) * 3 + 1] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_g : bg_g;
+						pixels[(xbit + 8) * 3 + 2] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? fg_b : bg_b;
 					} else {
 						/*  8-bit:  */
-						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? (fgcolor & 255) : 0;
-						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? (fgcolor & 255) : 0;
+						pixels[xbit]     = (dma_buf[i*4 + j*2 + 0] & (1 << xbit))? (fgcolor & 255) : (bgcolor & 255);
+						pixels[xbit + 8] = (dma_buf[i*4 + j*2 + 1] & (1 << xbit))? (fgcolor & 255) : (bgcolor & 255);
 					}
 				}
 

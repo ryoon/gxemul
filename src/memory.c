@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.49 2004-07-03 18:37:36 debug Exp $
+ *  $Id: memory.c,v 1.50 2004-07-03 20:06:32 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -179,7 +179,7 @@ struct memory *memory_new(int bits_per_pagetable, int bits_per_memblock, uint64_
 	}
 	memset(mem->first_pagetable, 0, mem->entries_per_pagetable * sizeof(void *));
 
-	mem->mmap_dev_minaddr = -1;
+	mem->mmap_dev_minaddr = 0xffffffffffffffffULL;
 	mem->mmap_dev_maxaddr = 0;
 
 	return mem;
@@ -705,12 +705,16 @@ exception:
  *  If the address indicates access to a memory mapped device, that device'
  *  read/write access function is called.
  *
+ *  If instruction latency/delay support is enabled, then
+ *  cpu->instruction_delay is increased by the number of instruction to
+ *  delay execution.
+ *
  *  Returns one of the following:
- #	MEMORY_ACCESS_FAILED
- #	MEMORY_ACCESS_OK
- #	INSTR_BINTRANS
- #
- #  (MEMORY_ACCESS_FAILED is 0.)
+ *	MEMORY_ACCESS_FAILED
+ *	MEMORY_ACCESS_OK
+ *	INSTR_BINTRANS
+ *
+ *  (MEMORY_ACCESS_FAILED is 0.)
  */
 int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *data, size_t len, int writeflag, int cache_flags)
@@ -730,32 +734,17 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
 
-#if 0
-	/*  Debug message for DECstation PROM access:  */
-	if (emulation_type == EMULTYPE_DEC && !no_exceptions)
-		if ((vaddr & 0xfff00000ULL) == 0xbfc00000ULL
-		    && writeflag==MEM_READ) {
-			if ((vaddr & 0xffff) != 0x8030 && (vaddr & 0xffff) != 0x8064 &&
-			    (vaddr & 0xffff0000ULL) !=
-				(DEC_PROM_STRINGS & 0xffff0000ULL) &&
-			    (vaddr & 0xffff) != 0x8054 && (vaddr & 0xffff) != 0x8058 &&
-			    (vaddr & 0xffff) != 0x8080 && (vaddr & 0xffff) != 0x8084 &&
-			    (vaddr & 0xffff) != 0x80ac)
-				debug("PROM read access: %016llx, len=%i\n", (long long) vaddr, len);
-		}
-#endif
 
 	/*
-	 *  For instruction fetch, are we on the same
-	 *  page as the last instruction we fetched?
+	 *  For instruction fetch, are we on the same page as the last
+	 *  instruction we fetched?
 	 *
-	 *  NOTE: There's no need to check this stuff
-	 *  here if pc_last_was_in_host_ram is true,
-	 *  as it's done at instruction fetch time in
-	 *  cpu.c!  Only check if _in_host_ram == 0.
+	 *  NOTE: There's no need to check this stuff here if
+	 *  pc_last_was_in_host_ram is true, as it's done at instruction fetch
+	 *  time in cpu.c!  Only check if _in_host_ram == 0.
 	 *
-	 *  NOTE 2:  cpu may be NULL here, but "hopefully"
-	 *  not if cache == CACHE_INSTRUCTION.  (TODO)
+	 *  NOTE 2:  cpu may be NULL here, but "hopefully" not if
+	 *  cache == CACHE_INSTRUCTION.  (TODO)
 	 */
 	if (cache == CACHE_INSTRUCTION &&
 	    !cpu->pc_last_was_in_host_ram &&
@@ -782,8 +771,7 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	 *  Physical addresses of the form 0xa8........ and 0x90..........
 	 *  don't actually have all 64 bit significant, only the lower part.
 	 *
-	 *  (TODO:  Is this SGI specific?)
-	 *  (TODO 2:  Is 48 bits ok?)
+	 *  (TODO:  Is this SGI specific?)  (TODO 2:  Is 48 bits ok?)
 	 *
 	 *  It seems that some Ultrix code (or OSF/1) seems to use addresses
 	 *  such as 0xbe000000 as if they were physical addresses. (It should
@@ -804,27 +792,15 @@ int memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 		    if the page is actually in host ram  */
 	}
 
-have_paddr:
 
+have_paddr:
 
 	if (!(cache_flags & PHYSICAL))			/*  <-- hopefully this doesn't break anything (*)  */
 		if (no_exceptions && cpu != NULL)
 			goto no_exception_access;
 
-/*  (*) = I need to access RAM devices easily without hardcoding stuff into the devices  */
-
-	/*
-	 *  TODO:  this optimization is a bit ugly;  TURBOchannel devices
-	 *  may have MIPS opcodes in them (memory mapped), and one possible
-	 *  implementation of the memory aliasing on SGI IP22 (128MB)
-	 *  would be a memory device.
-	 *
-	 *  This code simply bypasses the device check, when reading
-	 *  instructions.
-	 */
-/*	if (cache == CACHE_INSTRUCTION)
-		goto no_exception_access;
-*/
+/*  (*) = I need to access RAM devices easily without hardcoding stuff 
+into the devices  */
 
 
 	/*
@@ -853,17 +829,18 @@ have_paddr:
 
 				res = mem->dev_f[i](cpu, mem, paddr, data, len,
 				    writeflag, mem->dev_extra[i]);
-				if (res == 0)
-					res = -1;
 
 #ifdef ENABLE_INSTRUCTION_DELAYS
-				cpu->instruction_delay += (abs(res) - 1);
+				if (res == 0)
+					res = -1;
+				cpu->instruction_delay += ( (abs(res) - 1)
+				    * cpu->cpu_type.instrs_per_cycle);
 #endif
 				/*
 				 *  If accessing the memory mapped device
 				 *  failed, then return with a DBE exception.
 				 */
-				if (res < 0) {
+				if (res <= 0) {
 					debug("%s device '%s' addr %08lx failed\n",
 					    writeflag? "writing to" : "reading from",
 					    mem->dev_name[i], (long)paddr);
@@ -1122,18 +1099,22 @@ do_return_ok:
 /*
  *  memory_device_register():
  *
- *  Register a (memory mapped) device by adding it to the
- *  dev_* fields of a memory struct.
+ *  Register a (memory mapped) device by adding it to the dev_* fields of a
+ *  memory struct.
  */
 void memory_device_register(struct memory *mem, const char *device_name,
-	uint64_t baseaddr, uint64_t len, int (*f)(struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *), void *extra)
+	uint64_t baseaddr, uint64_t len,
+	int (*f)(struct cpu *,struct memory *,uint64_t,unsigned char *,
+		size_t,int,void *),
+	void *extra)
 {
 	if (mem->n_mmapped_devices >= MAX_DEVICES) {
 		fprintf(stderr, "memory_device_register(): too many devices registered, cannot register '%s'\n", device_name);
 		exit(1);
 	}
 
-	debug("adding device %i at 0x%08lx: %s\n", mem->n_mmapped_devices, (long)baseaddr, device_name);
+	debug("adding device %i at 0x%08lx: %s\n",
+	    mem->n_mmapped_devices, (long)baseaddr, device_name);
 
 	mem->dev_name[mem->n_mmapped_devices] = device_name;
 	mem->dev_baseaddr[mem->n_mmapped_devices] = baseaddr;

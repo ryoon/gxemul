@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.120 2004-07-02 14:17:16 debug Exp $
+ *  $Id: machine.c,v 1.121 2004-07-03 18:38:12 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -74,7 +74,7 @@ extern int bootstrap_cpu;
 extern int ncpus;
 extern struct cpu **cpus;
 extern int emulation_type;
-extern int emulated_ips;
+extern int emulated_hz;
 extern int machine;
 extern char *machine_name;
 extern int physical_ram_in_mb;
@@ -783,8 +783,8 @@ void machine_init(struct memory *mem)
 		 *  A 1 mips "bare" test machine.
 		 */
 		machine_name = "\"Bare\" test machine";
-		if (emulated_ips == 0)
-			emulated_ips = 1000000;
+		if (emulated_hz == 0)
+			emulated_hz = 1000000;
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 		dev_mp_init(mem, cpus);
@@ -805,8 +805,9 @@ void machine_init(struct memory *mem)
 			/*  Supposed to have 12MHz or 16.67MHz R2000 CPU, R2010 FPC, R2020 Memory coprocessor  */
 			machine_name = "DEC PMAX 3100 (KN01)";
 
-			if (emulated_ips == 0)
-				emulated_ips = 16670000;	/*  12 MHz for 2100, 16.67 MHz for 3100  */
+			/*  12 MHz for 2100, 16.67 MHz for 3100  */
+			if (emulated_hz == 0)
+				emulated_hz = 16670000;
 
 			if (physical_ram_in_mb > 24)
 				fprintf(stderr, "WARNING! Real DECstation 3100 machines cannot have more than 24MB RAM. Continuing anyway.\n");
@@ -833,7 +834,7 @@ void machine_init(struct memory *mem)
 			dev_le_init(mem, KN01_SYS_LANCE, KN01_SYS_LANCE_B_START, KN01_SYS_LANCE_B_END, KN01_INT_LANCE, 4*1048576);
 			dev_sii_init(cpus[bootstrap_cpu], mem, KN01_SYS_SII, KN01_SYS_SII_B_START, KN01_SYS_SII_B_END, KN01_INT_SII);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN01_SYS_DZ, KN01_INT_DZ, use_x11);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_ips);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN01_SYS_CLOCK, KN01_INT_CLOCK, MC146818_DEC, 1, emulated_hz);
 			dev_kn01_csr_init(mem, KN01_SYS_CSR, color_fb_flag);
 
 			framebuffer_console_name = "osconsole=0,3";	/*  fb,keyb  */
@@ -845,8 +846,8 @@ void machine_init(struct memory *mem)
 			/*  and a R3220 Memory coprocessor  */
 			machine_name = "DECstation 5000/200 (3MAX, KN02)";
 
-			if (emulated_ips == 0)
-				emulated_ips = 25000000;
+			if (emulated_hz == 0)
+				emulated_hz = 25000000;
 
 			if (physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02 machines do not have less than 8MB RAM. Continuing anyway.\n");
@@ -901,7 +902,7 @@ void machine_init(struct memory *mem)
 			    KN02_SYS_DZ, KN02_IP_DZ +8, use_x11);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem,
 			    KN02_SYS_CLOCK, KN02_INT_CLOCK, MC146818_DEC,
-			    1, emulated_ips);
+			    1, emulated_hz);
 
 			kn02_csr = dev_kn02_init(cpus[bootstrap_cpu],
 			    mem, KN02_SYS_CSR);
@@ -914,8 +915,8 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_3MIN_5000:		/*  type 3, KN02BA  */
 			machine_name = "DECstation 5000/112 or 145 (3MIN, KN02BA)";
-			if (emulated_ips == 0)
-				emulated_ips = 33000000;
+			if (emulated_hz == 0)
+				emulated_hz = 33000000;
 			if (physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real 3MIN machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
@@ -939,7 +940,7 @@ void machine_init(struct memory *mem)
 			dec_ioasic_data = dev_dec_ioasic_init(mem, 0x1c000000);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000, KMIN_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c180000, KMIN_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_ips);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1, emulated_hz);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000, KMIN_INTR_SCSI +8);
 
 			/*
@@ -971,8 +972,8 @@ void machine_init(struct memory *mem)
 			/*  5000/240 (KN03-GA, R3000): 40 MHz  */
 			/*  5000/260 (KN05-NB, R4000): 60 MHz  */
 			/*  TODO: are both these type 4?  */
-			if (emulated_ips == 0)
-				emulated_ips = 40000000;
+			if (emulated_hz == 0)
+				emulated_hz = 40000000;
 			if (physical_ram_in_mb > 480)
 				fprintf(stderr, "WARNING! Real KN03 machines cannot have more than 480MB RAM. Continuing anyway.\n");
 
@@ -996,7 +997,7 @@ void machine_init(struct memory *mem)
 			dev_le_init(mem, KN03_SYS_LANCE, 0, 0, KN03_INTR_LANCE +8, 4*65536);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_scc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, use_x11, 1, 1);
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_ips);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1, emulated_hz);
 			dev_asc_init(cpus[bootstrap_cpu], mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8);
 
 			/*
@@ -1089,8 +1090,8 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_MAXINE_5000:	/*  type 7, KN02CA  */
 			machine_name = "Personal DECstation 5000/xxx (MAXINE) (KN02CA)";
-			if (emulated_ips == 0)
-				emulated_ips = 33000000;
+			if (emulated_hz == 0)
+				emulated_hz = 33000000;
 
 			if (physical_ram_in_mb < 8)
 				fprintf(stderr, "WARNING! Real KN02CA machines do not have less than 8MB RAM. Continuing anyway.\n");
@@ -1139,7 +1140,7 @@ void machine_init(struct memory *mem)
 			dev_scc_init(cpus[bootstrap_cpu], mem, 0x1c100000,
 			    XINE_INTR_SCC_0 +8, use_x11, 0, 1);
 			dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1c200000,
-			    XINE_INT_TOY, MC146818_DEC, 1, emulated_ips);
+			    XINE_INT_TOY, MC146818_DEC, 1, emulated_hz);
 			dev_asc_init(cpus[bootstrap_cpu], mem, 0x1c300000,
 			    XINE_INTR_SCSI +8);
 
@@ -1155,8 +1156,8 @@ void machine_init(struct memory *mem)
 			 *  KN220-AA is a "30 MHz R3000 CPU with R3010 FPU"
 			 *  with "512 kBytes of Prestoserve battery backed RAM."
 			 */
-			if (emulated_ips == 0)
-				emulated_ips = 30000000;
+			if (emulated_hz == 0)
+				emulated_hz = 30000000;
 
 			/*
 			 *  See KN220 docs for more info.
@@ -1191,8 +1192,8 @@ void machine_init(struct memory *mem)
 
 		case MACHINE_MIPSMATE_5100:	/*  type 12  */
 			machine_name = "DEC MIPSMATE 5100 (KN230)";
-			if (emulated_ips == 0)
-				emulated_ips = 20000000;
+			if (emulated_hz == 0)
+				emulated_hz = 20000000;
 			if (physical_ram_in_mb > 128)
 				fprintf(stderr, "WARNING! Real MIPSMATE 5100 machines cannot have more than 128MB RAM. Continuing anyway.\n");
 
@@ -1208,7 +1209,7 @@ void machine_init(struct memory *mem)
 			 *  le0 at ibus0 addr 0x18000000: address 00:00:00:00:00:00
 			 *  sii0 at ibus0 addr 0x1a000000
 			 */
-			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_ips);
+			dev_mc146818_init(cpus[bootstrap_cpu], mem, KN230_SYS_CLOCK, 4, MC146818_DEC, 1, emulated_hz);
 			dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ0, KN230_CSR_INTR_DZ0, use_x11);		/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ1, KN230_CSR_INTR_OPT0, use_x11); */	/*  NOTE: CSR_INTR  */
 			/* dev_dc7085_init(cpus[bootstrap_cpu], mem, KN230_SYS_DZ2, KN230_CSR_INTR_OPT1, use_x11); */	/*  NOTE: CSR_INTR  */
@@ -1378,8 +1379,8 @@ void machine_init(struct memory *mem)
 
 	case EMULTYPE_COBALT:
 		machine_name = "Cobalt";
-		if (emulated_ips == 0)
-			emulated_ips = 1000000;		/*  TODO: how fast are Cobalt machines?  */
+		if (emulated_hz == 0)
+			emulated_hz = 1000000;		/*  TODO: how fast are Cobalt machines?  */
 
 		/*
 		 *  Interrupts seem to be the following:
@@ -1392,8 +1393,8 @@ void machine_init(struct memory *mem)
 		 *	6	VIA southbridge PIC
 		 *	7	PCI
 		 */
-/*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_ips);	*/
-		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_ips);  	/*  mcclock0  */
+/*		dev_XXX_init(cpus[bootstrap_cpu], mem, 0x10000000, emulated_hz);	*/
+		dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x10000070, 0, MC146818_PC_CMOS, 0x4, emulated_hz);  	/*  mcclock0  */
 		dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1c800000, 5, 1);				/*  com0  */
 
 		/*
@@ -1859,7 +1860,7 @@ void machine_init(struct memory *mem)
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f390000, (1<<20) + MACE_PERIPH_SERIAL, 0x100);	/*  com0  */
 				dev_ns16550_init(cpus[bootstrap_cpu], mem, 0x1f398000, (1<<26) + MACE_PERIPH_SERIAL, 0x100);	/*  com1  */
 
-				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40, emulated_ips);  /*  mcclock0  */
+				dev_mc146818_init(cpus[bootstrap_cpu], mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40, emulated_hz);  /*  mcclock0  */
 				dev_zs_init(cpus[bootstrap_cpu], mem, 0x1fbd9830, 0, 1);	/*  serial??  */
 
 				/*
@@ -1907,7 +1908,7 @@ void machine_init(struct memory *mem)
 				    mem, 0x2000000000ULL, 0);
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
 				    0x2000004000ULL, 0, MC146818_ARC_NEC,
-				    1, emulated_ips);	/*  ???  */
+				    1, emulated_hz);	/*  ???  */
 				dev_pckbc_init(cpus[bootstrap_cpu], mem,
 				    0x2000005000ULL, PCKBC_8042, 0, 0);
 				dev_ns16550_init(cpus[bootstrap_cpu], mem,
@@ -1968,10 +1969,10 @@ void machine_init(struct memory *mem)
 				/*  NetBSD: 0x2000004000  */
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
 				    0x800004000ULL, 2, MC146818_ARC_PICA, 1,
-				    emulated_ips);
+				    emulated_hz);
 				dev_mc146818_init(cpus[bootstrap_cpu], mem,
 				    0x2000004000ULL, 2, MC146818_ARC_PICA, 1,
-				    emulated_ips);
+				    emulated_hz);
 
 				/*  TODO: irq numbers  */
 				dev_pckbc_init(cpus[bootstrap_cpu], mem,
@@ -2368,8 +2369,8 @@ void machine_init(struct memory *mem)
 	if (machine_name != NULL)
 		debug("machine: %s", machine_name);
 
-	if (emulated_ips != 0)
-		debug(" (%.2f MHz)\n", (float)emulated_ips / 1000000);
+	if (emulated_hz != 0)
+		debug(" (%.2f MHz)\n", (float)emulated_hz / 1000000);
 	else
 		debug("\n");
 

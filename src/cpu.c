@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.78 2004-07-02 14:17:16 debug Exp $
+ *  $Id: cpu.c,v 1.79 2004-07-03 18:38:12 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -49,7 +49,7 @@ extern int emulation_type;
 extern int machine;
 
 extern int show_trace_tree;
-
+extern int emulated_hz;
 extern int bintrans_enable;
 extern int register_dump;
 extern int instruction_trace;
@@ -157,10 +157,11 @@ struct cpu *cpu_new(struct memory *mem, int cpu_id, char *cpu_type_name)
 /*
  *  cpu_add_tickfunction():
  *
- *  Adds a tick function (a function called every now and then,
- *  depending on clock cycle count).
+ *  Adds a tick function (a function called every now and then, depending on
+ *  clock cycle count).
  */
-void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *), void *extra, int clockshift)
+void cpu_add_tickfunction(struct cpu *cpu, void (*func)(struct cpu *, void *),
+	void *extra, int clockshift)
 {
 	int n = cpu->n_tick_entries;
 
@@ -295,7 +296,7 @@ int cpu_interrupt(struct cpu *cpu, int irq_nr)
 		return 1;
 	}
 
-	if (irq_nr < 2 || irq_nr >= 8)
+	if (irq_nr < 2)
 		return 0;
 
 	cpu->coproc[0]->reg[COP0_CAUSE] |= ((1 << irq_nr) << STATUS_IM_SHIFT);
@@ -319,7 +320,7 @@ int cpu_interrupt_ack(struct cpu *cpu, int irq_nr)
 		return 1;
 	}
 
-	if (irq_nr < 2 || irq_nr >= 8)
+	if (irq_nr < 2)
 		return 0;
 
 	cpu->coproc[0]->reg[COP0_CAUSE] &= ~((1 << irq_nr) << STATUS_IM_SHIFT);
@@ -529,10 +530,11 @@ const char *cpu_flags(struct cpu *cpu)
  *
  *  Execute one instruction on a cpu.
  *
- *  If we are in a delay slot, set cpu->pc
- *  to cpu->delay_jmpaddr after the instruction is executed.
+ *  If we are in a delay slot, set cpu->pc to cpu->delay_jmpaddr after the
+ *  instruction is executed.
  *
- *  Return value is the number of instructions executed.
+ *  Return value is the number of instructions executed during this call
+ *  to cpu_run_instr() (0 if no instruction was executed).
  */
 int cpu_run_instr(struct cpu *cpu)
 {
@@ -558,10 +560,38 @@ int cpu_run_instr(struct cpu *cpu)
 	unsigned char d[16];				/*  room for at most 128 bits  */
 
 
+	/*
+	 *  Update Coprocessor 0 registers:
+	 *
+	 *  The COUNT register needs to be updated on every [other] instruction.
+	 *  The RANDOM register should decrease for every instruction.
+	 */
+
+	if (cpu->cpu_type.exc_model == EXC3K) {
+		int r = (cp0->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
+		r --;
+		if (r >= cp0->nr_of_tlbs || r < 8)
+			r = cp0->nr_of_tlbs-1;
+		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
+		cp0->reg[COP0_COUNT] ++;
+	} else {
+		/*  TODO: double count blah blah  */
+		cp0->reg[COP0_COUNT] ++;
+
+		cp0->reg[COP0_RANDOM] --;
+		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
+		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
+			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
+
+		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
+			cpu_interrupt(cpu, 7);
+	}
+
+
 #ifdef ENABLE_INSTRUCTION_DELAYS
 	if (cpu->instruction_delay > 0) {
 		cpu->instruction_delay --;
-		return 0;
+		return 1;
 	}
 #endif
 
@@ -820,34 +850,6 @@ int cpu_run_instr(struct cpu *cpu)
 
 		/*  Note: Return value is 1, even if no instruction was actually executed.  */
 		return 1;
-	}
-
-
-	/*
-	 *  Update Coprocessor 0 registers:
-	 *
-	 *  The COUNT register needs to be updated on every [other] instruction.
-	 *  The RANDOM register should decrease for every instruction.
-	 */
-
-	if (cpu->cpu_type.exc_model == EXC3K) {
-		int r = (cp0->reg[COP0_RANDOM] & R2K3K_RANDOM_MASK) >> R2K3K_RANDOM_SHIFT;
-		r --;
-		if (r >= cp0->nr_of_tlbs || r < 8)
-			r = cp0->nr_of_tlbs-1;
-		cp0->reg[COP0_RANDOM] = r << R2K3K_RANDOM_SHIFT;
-		cp0->reg[COP0_COUNT] ++;
-	} else {
-		/*  TODO: double count blah blah  */
-		cp0->reg[COP0_COUNT] ++;
-
-		cp0->reg[COP0_RANDOM] --;
-		if ((int64_t)cp0->reg[COP0_RANDOM] >= cp0->nr_of_tlbs ||
-		    (int64_t)cp0->reg[COP0_RANDOM] < (int64_t) cp0->reg[COP0_WIRED])
-			cp0->reg[COP0_RANDOM] = cp0->nr_of_tlbs-1;
-
-		if (cp0->reg[COP0_COUNT] == cp0->reg[COP0_COMPARE])
-			cpu_interrupt(cpu, 7);
 	}
 
 
@@ -2666,11 +2668,12 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 {
 	int offset;
 	char *symbol;
-	int64_t mseconds;
+	int64_t mseconds, ninstrs;
 	struct rusage rusage;
+	int h, m, s, ms;
 
 	static int64_t mseconds_last = 0;
-	static int64_t ncycles_last = -1;
+	static int64_t ninstrs_last = -1;
 
 	symbol = get_symbol_name(cpus[bootstrap_cpu]->pc, &offset);
 
@@ -2685,29 +2688,80 @@ void cpu_show_cycles(struct timeval *starttime, int64_t ncycles)
 	if (mseconds - mseconds_last == 0)
 		mseconds_last --;
 
-	printf("[ %lli cycles, %lli instr/sec current, %lli instr/sec average, cpu%i->pc = %016llx <%s> ]\n",
-	    (long long) ncycles,
-	    (long long) ((long long)1000 * (ncycles-ncycles_last) / (mseconds-mseconds_last)),
-	    (long long) ((long long)1000 * ncycles / mseconds),
-	    bootstrap_cpu,
+	ms = ncycles / (emulated_hz / 1000);
+	h = ms / 3600000;
+	ms -= 3600000 * h;
+	m = ms / 60000;
+	ms -= 60000 * m;
+	s = ms / 1000;
+	ms -= 1000 * s;
+
+	printf("[ emulated time = %02i:%02i:%02i.%03i", h, m, s, ms);
+
+	ninstrs = ncycles * cpus[bootstrap_cpu]->cpu_type.instrs_per_cycle;
+
+	printf(" (%lli cycles = %lli instrs, %lli instr/sec cur, %lli instr/sec avg)",
+	    (long long) ncycles, (long long) ninstrs,
+	    (long long) ((long long)1000 * (ninstrs-ninstrs_last) / (mseconds-mseconds_last)),
+	    (long long) ((long long)1000 * ninstrs / mseconds));
+
+	printf(" pc=%016llx <%s>",
 	    (long long)cpus[bootstrap_cpu]->pc, symbol? symbol : "no symbol");
 
-	ncycles_last = ncycles;
+	printf(" ]\n");
+
+	ninstrs_last = ninstrs;
 	mseconds_last = mseconds;
+}
+
+
+/*
+ *  cpu_show_full_statistics():
+ *
+ *  Show detailed statistics on opcode usage on each cpu.
+ */
+void cpu_show_full_statistics(struct cpu **cpus)
+{
+	int i, s1, s2;
+
+	for (i=0; i<ncpus; i++) {
+		printf("cpu%i opcode statistics:\n", i);
+		for (s1=0; s1<N_HI6; s1++) {
+			if (cpus[i]->stats_opcode[s1] > 0)
+				printf("  opcode %02x (%7s): %li\n", s1,
+				    hi6_names[s1], cpus[i]->stats_opcode[s1]);
+			if (s1 == HI6_SPECIAL)
+				for (s2=0; s2<N_SPECIAL; s2++)
+					if (cpus[i]->stats__special[s2] > 0)
+						printf("      special %02x (%7s): %li\n",
+						    s2, special_names[s2], cpus[i]->stats__special[s2]);
+			if (s1 == HI6_REGIMM)
+				for (s2=0; s2<N_REGIMM; s2++)
+					if (cpus[i]->stats__regimm[s2] > 0)
+						printf("      regimm %02x (%7s): %li\n",
+						    s2, regimm_names[s2], cpus[i]->stats__regimm[s2]);
+			if (s1 == HI6_SPECIAL2)
+				for (s2=0; s2<N_SPECIAL; s2++)
+					if (cpus[i]->stats__special2[s2] > 0)
+						printf("      special2 %02x (%7s): %li\n",
+						    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
+		}
+	}
 }
 
 
 /*
  *  cpu_run():
  *
- *  Run instructions from all cpus.
+ *  Run instructions from all CPUs, until all CPUs have halted.
  */
 int cpu_run(struct cpu **cpus, int ncpus)
 {
 	int te;
 	int64_t ncycles = 0, ncycles_chunk_end, ncycles_show = 0;
-	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;	/*  TODO: overflow?  */
-	int running, cpu0instrs;
+	int64_t ncycles_flush = 0, ncycles_flushx11 = 0;
+		/*  TODO: how about overflow of ncycles?  */
+	int running;
 	struct rusage rusage;
 	struct timeval starttime;
 	int a_few_cycles = 1048576;
@@ -2736,7 +2790,7 @@ int cpu_run(struct cpu **cpus, int ncpus)
 
 		/*  Do a chunk of cycles:  */
 		do {
-			int i, j, te;
+			int i, j, te, cpu0instrs, a_few_instrs;
 
 			running = 0;
 			cpu0instrs = 0;
@@ -2751,23 +2805,51 @@ int cpu_run(struct cpu **cpus, int ncpus)
 					running = 1;
 
 			/*  CPU 0 is special, cpu0instr must be updated.  */
-			for (j=0; j<a_few_cycles; j++)
-				if (cpus[0]->running)
-					cpu0instrs += cpu_run_instr(cpus[0]);
+			a_few_instrs = a_few_cycles *
+			    cpus[0]->cpu_type.instrs_per_cycle;
+			for (j=0; j<a_few_instrs; j++)
+				if (cpus[0]->running) {
+					int instrs_run = 0;
+					while (!instrs_run)
+						instrs_run =
+						    cpu_run_instr(cpus[0]);
+
+					cpu0instrs += instrs_run;
+				}
 
 			/*  CPU 1 and up:  */
-			for (i=1; i<ncpus; i++)
-				for (j=0; j<a_few_cycles; j++)
-					if (cpus[i]->running)
-						cpu_run_instr(cpus[i]);
+			for (i=1; i<ncpus; i++) {
+				a_few_instrs = a_few_cycles *
+				    cpus[i]->cpu_type.instrs_per_cycle;
+				for (j=0; j<a_few_instrs; j++)
+					if (cpus[i]->running) {
+						int instrs_run = 0;
+						while (!instrs_run)
+							instrs_run = cpu_run_instr(cpus[i]);
+					}
+			}
 
 			/*
 			 *  Hardware 'ticks':  (clocks, interrupt sources...)
 			 *
-			 *  TODO: not cpus[0], use some kind of "mainbus" instead.
-			 *  TODO 2: take doublecount into account,
-			 *	dcount = cpus[0]->cpu_type.flags & DCOUNT? 1 : 0;
+			 *  Here, cpu0instrs is the number of instructions
+			 *  executed on cpu0.  (TODO: don't use cpu 0 for this,
+			 *  use some kind of "mainbus" instead.)  Hardware
+			 *  ticks are not per instruction, but per cycle,
+			 *  so we divide by the number of
+			 *  instructions_per_cycle for cpu0.
+			 *
+			 *  TODO:  This doesn't work in a machine with, say,
+			 *  a mixture of R3000, R4000, and R10000 CPUs, if
+			 *  there ever was such a thing.
+			 *
+			 *  TODO 2:  A small bug occurs if cpu0instrs isn't
+			 *  evenly divisible by instrs_per_cycle. We then
+			 *  cause hardware ticks a fraction of a cycle too
+			 *  often.
 			 */
+			cpu0instrs /= cpus[0]->cpu_type.instrs_per_cycle;
+
 			for (te=0; te<cpus[0]->n_tick_entries; te++) {
 				cpus[0]->ticks_till_next[te] -= cpu0instrs;
 
@@ -2822,35 +2904,9 @@ int cpu_run(struct cpu **cpus, int ncpus)
 	if (show_nr_of_instructions || !quiet_mode)
 		cpu_show_cycles(&starttime, ncycles);
 
-	if (show_opcode_statistics) {
-		int i, s1, s2;
-
-		for (i=0; i<ncpus; i++) {
-			printf("cpu%i opcode statistics:\n", i);
-			for (s1=0; s1<N_HI6; s1++) {
-				if (cpus[i]->stats_opcode[s1] > 0)
-					printf("  opcode %02x (%7s): %li\n",
-					    s1, hi6_names[s1], cpus[i]->stats_opcode[s1]);
-				if (s1 == HI6_SPECIAL)
-					for (s2=0; s2<N_SPECIAL; s2++)
-						if (cpus[i]->stats__special[s2] > 0)
-							printf("      special %02x (%7s): %li\n",
-							    s2, special_names[s2], cpus[i]->stats__special[s2]);
-				if (s1 == HI6_REGIMM)
-					for (s2=0; s2<N_REGIMM; s2++)
-						if (cpus[i]->stats__regimm[s2] > 0)
-							printf("      regimm %02x (%7s): %li\n",
-							    s2, regimm_names[s2], cpus[i]->stats__regimm[s2]);
-				if (s1 == HI6_SPECIAL2)
-					for (s2=0; s2<N_SPECIAL; s2++)
-						if (cpus[i]->stats__special2[s2] > 0)
-							printf("      special2 %02x (%7s): %li\n",
-							    s2, special2_names[s2], cpus[i]->stats__special2[s2]);
-			}
-		}
-	}
+	if (show_opcode_statistics)
+		cpu_show_full_statistics(cpus);
 
 	return 0;
 }
-
 

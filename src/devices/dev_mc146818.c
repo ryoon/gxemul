@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_mc146818.c,v 1.26 2004-07-03 16:25:11 debug Exp $
+ *  $Id: dev_mc146818.c,v 1.27 2004-07-03 18:38:10 debug Exp $
  *  
  *  MC146818 real-time clock, used by many different machines types.
  *
@@ -66,7 +66,7 @@ struct mc_data {
 
 	int	timebase_hz;
 	int	interrupt_hz;
-	int	emulated_ips;
+	int	emulated_hz;
 	int	irq_nr;
 
 	int	interrupt_every_x_instructions;
@@ -91,7 +91,7 @@ void dev_mc146818_tick(struct cpu *cpu, void *extra)
 		if (mc_data->instructions_left_until_interrupt < 0 ||
 		    mc_data->instructions_left_until_interrupt >=
 		    mc_data->interrupt_every_x_instructions) {
-			debug("[ rtc interrupt (every %i instructions) ]\n",
+			debug("[ rtc interrupt (every %i cycles) ]\n",
 			    mc_data->interrupt_every_x_instructions);
 			cpu_interrupt(cpus[bootstrap_cpu], mc_data->irq_nr);
 
@@ -291,7 +291,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
 
 			if (mc_data->interrupt_hz > 0)
 				mc_data->interrupt_every_x_instructions =
-				    mc_data->emulated_ips /
+				    mc_data->emulated_hz /
 				    mc_data->interrupt_hz;
 			else
 				mc_data->interrupt_every_x_instructions = 0;
@@ -415,7 +415,7 @@ int dev_mc146818_access(struct cpu *cpu, struct memory *mem,
  *  so it contains both rtc related stuff and the station's Ethernet address.
  */
 void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
-	int irq_nr, int access_style, int addrdiv, int emulated_ips)
+	int irq_nr, int access_style, int addrdiv, int emulated_hz)
 {
 	unsigned char ether_address[6];
 	int i;
@@ -430,7 +430,7 @@ void dev_mc146818_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr,
 	memset(mc_data, 0, sizeof(struct mc_data));
 	mc_data->irq_nr        = irq_nr;
 	mc_data->access_style  = access_style;
-	mc_data->emulated_ips  = emulated_ips;
+	mc_data->emulated_hz   = emulated_hz;
 	mc_data->addrdiv       = addrdiv;
 
 	/*  Station Ethernet Address:  */

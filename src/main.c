@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.48 2004-07-01 11:46:03 debug Exp $
+ *  $Id: main.c,v 1.49 2004-07-03 18:38:12 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -77,7 +77,7 @@ int instruction_trace = 0;
 int trace_on_bad_address = 0;
 int show_nr_of_instructions = 0;
 int max_instructions = 0;
-int emulated_ips = 0;
+int emulated_hz = 0;
 int speed_tricks = 1;
 int userland_emul = 0;
 char *boot_kernel_filename = "netbsd";		/*  overridden with -j  */
@@ -276,7 +276,7 @@ int get_cmd_args(int argc, char *argv[])
 			machine = atoi(optarg);
 			break;
 		case 'I':
-			emulated_ips = atoi(optarg);
+			emulated_hz = atoi(optarg);
 			break;
 		case 'i':
 			instruction_trace = 1;

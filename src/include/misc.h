@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.75 2004-07-03 15:37:14 debug Exp $
+ *  $Id: misc.h,v 1.76 2004-07-03 18:38:11 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -158,13 +158,14 @@ typedef uint64_t u_int64_t;
 
 struct cpu_type_def {
 	char		*name;
-	int		rev;
-	int		sub;
-	int		flags;
-	int		exc_model;		/*  EXC3K or EXC4K  */
-	int		mmu_model;		/*  MMU3K or MMU4K  */
-	int		isa_level;		/*  1, 2, 3, 4, 5  */
-	int		nr_of_tlb_entries;	/*  48, 64, ...  */
+	unsigned char	rev;
+	unsigned char	sub;
+	char		flags;
+	char		exc_model;		/*  EXC3K or EXC4K  */
+	char		mmu_model;		/*  MMU3K or MMU4K  */
+	char		isa_level;		/*  1, 2, 3, 4, 5  */
+	unsigned char	nr_of_tlb_entries;	/*  48, 64, ...  */
+	char		instrs_per_cycle;	/*  simplified, 1, 2, or 4, for example  */
 };
 
 #define	EXC3K		3
@@ -181,27 +182,27 @@ struct cpu_type_def {
 #define	CPU_DEFAULT	"R4000"
 
 #define	CPU_TYPE_DEFS	{	\
-	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
-	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
-	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
-	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
-	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32 }, \
-	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64 }, \
-	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32 }, /*  No DCOUNT?  */ \
-	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
-	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48 }, /*  No DCOUNT?  */ \
-	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192 }, /*  192 tlb entries? or 384?  */ \
-	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64 }, \
-	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64 }, \
-	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
-	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
-	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, /*  DCOUNT?  */ \
-	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48 }, /*  DCOUNT?  */ \
-	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
-	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48 }, /*  DCOUNT?  */ \
-	{ NULL,		0,          0,          0,      0,     0,       0,       0 } }
+	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1 }, \
+	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1 }, \
+	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1 }, \
+	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1 }, \
+	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32, 1 }, /*  instrs/cycle?  */  \
+	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2 }, \
+	{ "R10000",	MIPS_R10000,0x26,	0,	EXC4K, MMU10K,	4,	64, 4 }, \
+	{ "R4300",	MIPS_R4300, 0x00,	0,	EXC4K, MMU4K,	3,	32, 2 }, /*  No DCOUNT?  */ \
+	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2 }, \
+	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48, 2 }, \
+	{ "R4700",	MIPS_R4700, 0x00,	0,	EXC4K, MMU4K,	3,	48, 2 }, /*  No DCOUNT?  */ \
+	{ "R8000",	MIPS_R8000, 0,		0,	EXC4K, MMU8K,	4,     192, 2 }, /*  192 tlb entries? or 384? instrs/cycle?  */ \
+	{ "R12000",	MIPS_R12000,0x23,	0,	EXC4K, MMU10K,	4,	64, 4 }, \
+	{ "R14000",	MIPS_R14000,0,		0,	EXC4K, MMU10K,	4,	64, 4 }, \
+	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48, 4 }, /*  instrs/cycle?  */ \
+	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48, 4 }, /*  instrs/cycle?  */ \
+	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "RM5200",	MIPS_RM5200,0xa0,	0,	EXC4K, MMU4K,	4,	48, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ "RM7000",	MIPS_RM7000,0x0 /* ? */,DCOUNT,	EXC4K, MMU4K,	4,	48, 4 }, /*  instrs/cycle?  */ \
+	{ "5K",		MIPS_5K,    1,		0,	EXC4K, MMU4K,	5,	48, 4 }, /*  DCOUNT?  instrs/cycle?  */ \
+	{ NULL,		0,          0,          0,      0,     0,       0,       0, 0 } }
 
 /*  Debug stuff:  */
 #define	EMUL_DEBUG		"\e[0;1m"	/*  bold  */
@@ -209,7 +210,7 @@ struct cpu_type_def {
 #define	DEBUG_BUFSIZE		1024
 
 #define	DEFAULT_RAM_IN_MB	32
-#define	MAX_PC_DUMPPOINTS	16
+#define	MAX_PC_DUMPPOINTS	8
 #define	MAX_DEVICES		22
 
 

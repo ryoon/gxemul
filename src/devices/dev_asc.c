@@ -23,11 +23,18 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.3 2003-11-07 08:48:15 debug Exp $
+ *  $Id: dev_asc.c,v 1.4 2003-11-08 11:25:58 debug Exp $
  *
- *  SCSI controller for some DECsystems.
+ *  'asc' SCSI controller for some DECsystems.
  *
- *  TODO :-)
+ *  Supposed to support SCSI-1 and SCSI-2. I've not yet found any docs
+ *  on NCR53C9X, so I'll try to implement this device from LSI53CF92A docs
+ *  instead.
+ *
+ *	NCR53C94 registers	at base + 0
+ *	DMA address register	at base + 0x40000
+ *	128K SRAM buffer	at base + 0x80000
+ *	ROM			at base + 0xc0000
  */
 
 #include <stdio.h>
@@ -39,8 +46,20 @@
 
 #include "ncr53c9xreg.h"
 
+#define	ASC_FIFO_LEN		16
+#define	STATE_DISCONNECTED	0
+#define	STATE_INITIATOR		1
+#define	STATE_TARGET		2
+
 struct asc_data {
 	int		irq_nr;
+
+	int		cur_state;
+
+	/*  FIFO:  */
+	unsigned char	fifo[ASC_FIFO_LEN];
+	int		fifo_in;
+	int		fifo_out;
 
 	/*  Read registers and write registers:  */
 	uint32_t	reg_ro[0x10];
@@ -72,6 +91,56 @@ void dev_asc_tick(struct cpu *cpu, void *extra)
 
 
 /*
+ *  dev_asc_reset():
+ *
+ *  Reset the state of the asc.
+ */
+void dev_asc_reset(struct asc_data *d)
+{
+	d->cur_state = STATE_DISCONNECTED;
+
+	/*  According to table 4.1 in the LSI53CF92A manual:  */
+	memset(d->reg_wo, 0, sizeof(d->reg_wo));
+	d->reg_wo[NCR_TCH] = 0x94;
+	d->reg_wo[NCR_CCF] = 2;
+	memcpy(d->reg_ro, d->reg_wo, sizeof(d->reg_ro));
+	d->reg_wo[NCR_SYNCTP] = 5;
+}
+
+
+/*
+ *  dev_asc_fifo_read():
+ *
+ *  Read a byte from the asc FIFO.
+ */
+int dev_asc_fifo_read(struct asc_data *d)
+{
+	int res = d->fifo[d->fifo_out];
+	d->fifo_out = (d->fifo_out + 1) % ASC_FIFO_LEN;
+
+	if (d->fifo_in == d->fifo_out)
+		fatal("dev_asc: WARNING! FIFO overrun!\n");
+
+	return res;
+}
+
+
+/*
+ *  dev_asc_fifo_write():
+ *
+ *  Write a byte to the asc FIFO.
+ */
+void dev_asc_fifo_write(struct asc_data *d, unsigned char data)
+{
+	d->fifo[d->fifo_in] = data;
+	d->fifo_in = (d->fifo_in + 1) % ASC_FIFO_LEN;
+
+	if (d->fifo_in == d->fifo_out)
+		fatal("dev_asc: WARNING! FIFO overrun on write!\n");
+}
+
+
+/*
  *  dev_asc_access():
  *
  *  Returns 1 if ok, 0 on error.
@@ -80,6 +149,7 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 {
 	int i, regnr;
 	struct asc_data *d = extra;
+	int target_exists;
 	int idata = 0, odata=0, odata_set=0;
 
 	dev_asc_tick(cpu, extra);
@@ -96,17 +166,29 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 			idata |= data[i];
 		}
 
-	odata_set = 1;
+	odata_set = 1;  odata = 0;
 	regnr = relative_addr / 4;
 
-	if (writeflag==MEM_WRITE)
-		d->reg_wo[regnr] = idata;
-	else
-		odata = d->reg_ro[regnr];
+	if (regnr < 0x10) {
+		if (writeflag==MEM_WRITE)
+			d->reg_wo[regnr] = idata;
+		else
+			odata = d->reg_ro[regnr];
+
+		if (writeflag==MEM_READ) {
+			debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], odata);
+		} else {
+			debug("[ asc: write to  %s: 0x%02x", asc_reg_names[regnr], idata);
+		}
+	} else {
+		if (writeflag==MEM_READ) {
+			debug("[ asc: read from 0x%04x: 0x%02x", regnr, odata);
+		} else {
+			debug("[ asc: write to  0x%04x: 0x%02x", regnr, idata);
+		}
+	}
 
 	/*  Some registers are read/write. Copy contents of reg_wo to reg_ro:  */
-	d->reg_ro[ 0] = d->reg_wo[0];
-	d->reg_ro[ 1] = d->reg_wo[1];
 	d->reg_ro[ 2] = d->reg_wo[2];
 	d->reg_ro[ 3] = d->reg_wo[3];
 	d->reg_ro[ 8] = d->reg_wo[8];
@@ -114,12 +196,12 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 	d->reg_ro[10] = d->reg_wo[10];
 	d->reg_ro[11] = d->reg_wo[11];
 	d->reg_ro[12] = d->reg_wo[12];
-	d->reg_ro[14] = d->reg_wo[14];
 
-	if (writeflag==MEM_READ) {
-		debug("[ asc: read from %s: 0x%02x", asc_reg_names[regnr], odata);
-	} else {
-		debug("[ asc: write to  %s: 0x%02x", asc_reg_names[regnr], idata);
+	if (regnr == NCR_FIFO) {
+		if (writeflag == MEM_WRITE)
+			dev_asc_fifo_write(d, idata);
+		else
+			odata = dev_asc_fifo_read(d);
 	}
 
 	if (regnr == NCR_CMD && writeflag==MEM_WRITE) {
@@ -127,45 +209,62 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, 
 		if (idata & NCRCMD_DMA)
 			debug("[DMA] ");
 
-		d->reg_ro[NCR_INTR] &= ~(NCRINTR_FC | NCRINTR_SBR | NCRINTR_BS);
-
-		switch (idata & 0x7f) {
+		switch (idata & ~NCRCMD_DMA) {
 		case NCRCMD_NOP:
 			debug("NOP");
 			break;
+		case NCRCMD_FLUSH:
+			debug("FLUSH");
+			/*  Flush the FIFO:  */
+			d->fifo[0] = 0x00;
+			d->fifo_in = 0;
+			d->fifo_out = 0;
+			break;
 		case NCRCMD_RSTCHIP:
 			debug("RSTCHIP");
-			/*  TODO:  actually reset the chip  */
-			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			/*  Hardware reset.  */
+			dev_asc_reset(d);
 			break;
 		case NCRCMD_RSTSCSI:
 			debug("RSTSCSI");
-			/*  TODO:  actually reset the bus  */
+			/*  No interrupt if interrupts are disabled.  */
+			if (!(d->reg_wo[NCR_CFG1] & NCRCFG1_SRR))
+				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 			d->reg_ro[NCR_INTR] |= NCRINTR_SBR;
-/*			d->reg_ro[NCR_INTR] |= NCRINTR_BS; */
-			d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
-/*			d->reg_ro[NCR_INTR] |= NCRINTR_FC;  */
-			break;
-		case NCRCMD_SELNATN:
-			debug("SELNATN: select without atn");
-			/*  TODO  */
-			d->reg_ro[NCR_INTR] |= NCRINTR_BS;
-			d->reg_ro[NCR_INTR] |= NCRINTR_RESEL;
 			d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+			break;
+		case NCRCMD_SELATN:
+			debug("SELATN: select with atn, id %i", d->reg_wo[NCR_SELID] & 7);
+
+			target_exists = 0;
+
+			if (target_exists) {
+				/*  Selected:  */
+				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+				d->reg_ro[NCR_INTR] |= NCRINTR_SELATN;
+				d->reg_ro[NCR_INTR] |= NCRINTR_FC;
+				d->reg_ro[NCR_INTR] |= NCRINTR_BS;
+				d->reg_ro[NCR_STEP] &= ~7;
+				d->reg_ro[NCR_STEP] |= 2;
+			} else {
+				/*  Selection failed:  */
+				d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
+				d->reg_ro[NCR_INTR] |= NCRINTR_SELATN;
+				d->reg_ro[NCR_STEP] &= ~7;
+				d->reg_ro[NCR_STEP] |= 1;
+			}
 			break;
 		default:
 			debug("(unknown cmd)");
 		}
-
-		d->reg_ro[NCR_STAT] |= NCRSTAT_INT;
 	}
 
 	if (regnr == NCR_INTR && writeflag==MEM_READ) {
-		/*  TODO: this ack is just something I made up  */
+		/*  Reading the interrupt register de-asserts the interrupt pin:  */
 		cpu_interrupt_ack(cpu, d->irq_nr);
+		d->reg_ro[NCR_STAT] &= ~NCRSTAT_INT;
 
-		d->reg_ro[NCR_INTR] &= ~NCRINTR_SBR;
-/*		d->reg_ro[NCR_INTR] &= ~NCRINTR_FC; */
+		d->reg_ro[NCR_INTR] = 0;	/*  ?  */
 	}
 
 	if (regnr == NCR_CFG1) {
@@ -206,6 +305,6 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr, int ir
 	d->irq_nr = irq_nr;
 
 	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH, dev_asc_access, d);
-	cpu_add_tickfunction(cpu, dev_asc_tick, d, 10);  /*  every 1024:th cycle  */
+	cpu_add_tickfunction(cpu, dev_asc_tick, d, 12);  /*  every 4096:th cycle  */
 }
 

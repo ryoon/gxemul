@@ -23,9 +23,11 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_sgi_ip30.c,v 1.4 2004-07-03 16:25:12 debug Exp $
+ *  $Id: dev_sgi_ip30.c,v 1.5 2004-07-18 10:52:55 debug Exp $
  *  
  *  SGI IP30 stuff.
+ *
+ *  This is just comprised of hardcoded guesses so far. (Ugly.)
  */
 
 #include <math.h>

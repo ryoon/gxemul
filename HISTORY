@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.166 2004-07-17 22:46:13 debug Exp $
+$Id: HISTORY,v 1.167 2004-07-18 10:52:53 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -807,5 +807,5 @@ HISTORY of mips64emul
 		Removing all of the experimental tlbmod tag optimization code
 		(the 1-entry load/store cache), as it causes more trouble than
 		the performance gain was worth.
-		The MardiGras device works well enough to let Linux draw the
+20040718	The MardiGras device works well enough to let Linux draw the
 		SGI logo and output text.

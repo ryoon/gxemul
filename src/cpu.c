@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.75 2004-06-28 23:40:22 debug Exp $
+ *  $Id: cpu.c,v 1.76 2004-06-30 09:08:24 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -472,19 +472,19 @@ void cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 		/*  Userspace tlb, vs others:  */
 		if (tlb && !(vaddr & 0x80000000) &&
 		    (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS) )
-			cpu->pc = 0xffffffff80000000;
+			cpu->pc = (uint64_t)0xffffffff80000000;
 		else
-			cpu->pc = 0xffffffff80000080;
+			cpu->pc = (uint64_t)0xffffffff80000080;
 	} else {
 		/*  R4000:  */
 		if (tlb && (exccode == EXCEPTION_TLBL || exccode == EXCEPTION_TLBS)
 		    && !(cpu->coproc[0]->reg[COP0_STATUS] & STATUS_EXL)) {
 			if (x_64)
-				cpu->pc = 0xffffffff80000080;
+				cpu->pc = (uint64_t)0xffffffff80000080;
 			else
-				cpu->pc = 0xffffffff80000000;
+				cpu->pc = (uint64_t)0xffffffff80000000;
 		} else
-			cpu->pc = 0xffffffff80000180;
+			cpu->pc = (uint64_t)0xffffffff80000180;
 	}
 
 	if (cpu->cpu_type.exc_model == EXC3K) {
@@ -611,20 +611,20 @@ int cpu_run_instr(struct cpu *cpu)
 		for (i=0; i<32; i++) {
 			cpu->gpr[i] &= 0xffffffff;
 			if (cpu->gpr[i] & 0x80000000)
-				cpu->gpr[i] |= 0xffffffff00000000;
+				cpu->gpr[i] |= (uint64_t)0xffffffff00000000;
 		}
 		for (i=0; i<32; i++) {
 			cpu->coproc[0]->reg[i] &= 0xffffffff;
 			if (cpu->coproc[0]->reg[i] & 0x80000000)
-				cpu->coproc[0]->reg[i] |= 0xffffffff00000000;
+				cpu->coproc[0]->reg[i] |= (uint64_t)0xffffffff00000000;
 		}
 		for (i=0; i<cpu->coproc[0]->nr_of_tlbs; i++) {
 			cpu->coproc[0]->tlbs[i].hi &= 0xffffffff;
 			if (cpu->coproc[0]->tlbs[i].hi & 0x80000000)
-				cpu->coproc[0]->tlbs[i].hi |= 0xffffffff00000000;
+				cpu->coproc[0]->tlbs[i].hi |= (uint64_t)0xffffffff00000000;
 			cpu->coproc[0]->tlbs[i].lo0 &= 0xffffffff;
 			if (cpu->coproc[0]->tlbs[i].lo0 & 0x80000000)
-				cpu->coproc[0]->tlbs[i].lo0 |= 0xffffffff00000000;
+				cpu->coproc[0]->tlbs[i].lo0 |= (uint64_t)0xffffffff00000000;
 		}
 	}
 #endif
@@ -1048,7 +1048,7 @@ int cpu_run_instr(struct cpu *cpu)
 				/*  Sign-extend rd:  */
 				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 			}
 			if (special6 == SPECIAL_SRAV) {
 				sa = cpu->gpr[rs] & 31;
@@ -1056,13 +1056,13 @@ int cpu_run_instr(struct cpu *cpu)
 				/*  Sign-extend rd:  */
 				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 				while (sa > 0) {
 					cpu->gpr[rd] = cpu->gpr[rd] >> 1;
 					sa--;
 				}
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 			}
 			if (special6 == SPECIAL_SRLV) {
 				sa = cpu->gpr[rs] & 31;
@@ -1071,7 +1071,7 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->gpr[rd] = cpu->gpr[rd] >> sa;
 				/*  And finally sign-extend rd:  */
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 			}
 			break;
 		case SPECIAL_JR:
@@ -1272,14 +1272,14 @@ int cpu_run_instr(struct cpu *cpu)
 				cpu->gpr[rd] = cpu->gpr[rs] + cpu->gpr[rt];
 				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 				break;
 			}
 			if (special6 == SPECIAL_SUB || special6 == SPECIAL_SUBU) {
 				cpu->gpr[rd] = cpu->gpr[rs] - cpu->gpr[rt];
 				cpu->gpr[rd] &= 0xffffffff;
 				if (cpu->gpr[rd] & 0x80000000)
-					cpu->gpr[rd] |= 0xffffffff00000000;
+					cpu->gpr[rd] |= (uint64_t)0xffffffff00000000;
 				break;
 			}
 
@@ -1319,10 +1319,10 @@ int cpu_run_instr(struct cpu *cpu)
 				int64_t f1, f2, sum;
 				f1 = cpu->gpr[rs] & 0xffffffff;
 				if (f1 & 0x80000000)		/*  sign extend  */
-					f1 |= 0xffffffff00000000;
+					f1 |= (uint64_t)0xffffffff00000000;
 				f2 = cpu->gpr[rt] & 0xffffffff;
 				if (f2 & 0x80000000)		/*  sign extend  */
-					f2 |= 0xffffffff00000000;
+					f2 |= (uint64_t)0xffffffff00000000;
 				sum = f1 * f2;
 
 				cpu->lo = sum & 0xffffffff;
@@ -1330,9 +1330,9 @@ int cpu_run_instr(struct cpu *cpu)
 
 				/*  sign-extend:  */
 				if (cpu->lo & 0x80000000)
-					cpu->lo |= 0xffffffff00000000;
+					cpu->lo |= (uint64_t)0xffffffff00000000;
 				if (cpu->hi & 0x80000000)
-					cpu->hi |= 0xffffffff00000000;
+					cpu->hi |= (uint64_t)0xffffffff00000000;
 
 				/*  NOTE:  The stuff about rd!=0 is just a guess, judging
 					from how some NetBSD code seems to execute.

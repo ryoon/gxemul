@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.2 2005-01-30 14:06:44 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.3 2005-01-30 19:01:55 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -36,7 +36,56 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cpu.h"
+#include "cpu_ppc.h"
 #include "misc.h"
+
+
+/*
+ *  ppc_cpu_new():
+ *
+ *  Create a new PPC cpu object.
+ */
+struct cpu *ppc_cpu_new(struct memory *mem, struct machine *machine,
+	int cpu_id, char *cpu_type_name)
+{
+	struct cpu *cpu;
+	int i, found;
+	struct ppc_cpu_type_def cpu_type_defs[] = PPC_CPU_TYPE_DEFS;
+
+	/*  Scan the cpu_type_defs list for this cpu type:  */
+	i = 0;
+	found = -1;
+	while (i >= 0 && cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			found = i;
+			break;
+		}
+		i++;
+	}
+	if (found == -1)
+		return NULL;
+
+	cpu = malloc(sizeof(struct cpu));
+	if (cpu == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	memset(cpu, 0, sizeof(struct cpu));
+	cpu->cd.ppc.cpu_type    = cpu_type_defs[found];
+	cpu->mem                = mem;
+	cpu->machine            = machine;
+	cpu->cpu_id             = cpu_id;
+	cpu->byte_order         = EMUL_BIG_ENDIAN;
+	cpu->bootstrap_cpu_flag = 0;
+	cpu->running            = 0;
+
+	if (cpu_id == 0)
+		debug("%s", cpu->cd.ppc.cpu_type.name);
+
+	return cpu;
+}
 
 
 /*
@@ -46,6 +95,17 @@
  */
 void ppc_cpu_list_available_types(void)
 {
-	debug("TODO\n");
+	int i, j;
+	struct ppc_cpu_type_def tdefs[] = PPC_CPU_TYPE_DEFS;
+
+	i = 0;
+	while (tdefs[i].name != NULL) {
+		debug("%s", tdefs[i].name);
+		for (j=10 - strlen(tdefs[i].name); j>0; j--)
+			debug(" ");
+		i++;
+		if ((i % 6) == 0 || tdefs[i].name == NULL)
+			debug("\n");
+	}
 }
 

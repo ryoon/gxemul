@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.h,v 1.18 2005-01-29 14:34:22 debug Exp $
+ *  $Id: machine.h,v 1.19 2005-01-30 19:01:54 debug Exp $
  */
 
 #include <sys/types.h>
@@ -155,19 +155,30 @@ struct machine {
 };
 
 
-/*  Machine emulation types:  */
-#define MACHINE_NONE           0
-#define MACHINE_TEST           1
-#define MACHINE_DEC            2
-#define MACHINE_COBALT         3
-#define MACHINE_HPCMIPS        4
-#define MACHINE_PS2            5
-#define MACHINE_SGI            6
-#define MACHINE_ARC            7
-#define MACHINE_MESHCUBE       8
-#define MACHINE_NETGEAR        9
-#define MACHINE_WRT54G         10
-#define MACHINE_SONYNEWS       11
+/*
+ *  Machine emulation types:
+ */
+
+#define	ARCH_MIPS		1
+#define	ARCH_PPC		2
+
+/*  MIPS:  */
+#define	MACHINE_MIPSTEST	1
+#define	MACHINE_DEC		2
+#define	MACHINE_COBALT		3
+#define	MACHINE_HPCMIPS		4
+#define	MACHINE_PS2		5
+#define	MACHINE_SGI		6
+#define	MACHINE_ARC		7
+#define	MACHINE_MESHCUBE	8
+#define	MACHINE_NETGEAR		9
+#define	MACHINE_WRT54G		10
+#define	MACHINE_SONYNEWS	11
+
+/*  PPC:  */
+#define	MACHINE_PPCTEST		100
+#define	MACHINE_WALNUT		101
+#define	MACHINE_PMPPC		102
 
 
 /*  Specific machines:  */

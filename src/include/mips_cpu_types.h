@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu_types.h,v 1.1 2005-01-23 13:43:05 debug Exp $
+ *  $Id: mips_cpu_types.h,v 1.2 2005-01-30 19:01:54 debug Exp $
  *
  *  MIPS CPU types.
  */
@@ -54,8 +54,6 @@
 #define	NOLLSC		1
 #define	DCOUNT		2
 
-#define	CPU_DEFAULT	"R4000"
-
 /*
  *  ---------------------------------------------------------------------------
  *             Please do NOT use this list as a definite source for
@@ -67,7 +65,7 @@
  *  necessarily correct.
  */
 
-#define	CPU_TYPE_DEFS	{	\
+#define	MIPS_CPU_TYPE_DEFS	{	\
 	{ "R2000",	MIPS_R2000, 0x00,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
 	{ "R2000A",	MIPS_R2000, 0x10,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,13,13, 2, 2, 0, 0 }, \
 	{ "R3000",	MIPS_R3000, 0x20,	NOLLSC,	EXC3K, MMU3K,	1,	64, 1,12,12, 2, 2, 0, 0 }, \

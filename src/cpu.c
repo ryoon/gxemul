@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.273 2005-01-30 14:06:44 debug Exp $
+ *  $Id: cpu.c,v 1.274 2005-01-30 19:01:54 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -49,7 +49,23 @@
 struct cpu *cpu_new(struct memory *mem, struct machine *machine,
         int cpu_id, char *cpu_type_name)
 {
-	return mips_cpu_new(mem, machine, cpu_id, cpu_type_name);
+	struct cpu *c;
+
+	if (cpu_type_name == NULL) {
+		fprintf(stderr, "cpu_new(): cpu name = NULL?\n");
+		exit(1);
+	}
+
+	c = mips_cpu_new(mem, machine, cpu_id, cpu_type_name);
+	if (c != NULL)
+		return c;
+
+	c = ppc_cpu_new(mem, machine, cpu_id, cpu_type_name);
+	if (c != NULL)
+		return c;
+
+	fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n", cpu_type_name);
+	exit(1);
 }
 
 

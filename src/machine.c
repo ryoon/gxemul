@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.318 2005-01-30 13:39:45 debug Exp $
+ *  $Id: machine.c,v 1.319 2005-01-30 19:01:55 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -109,6 +109,7 @@ struct machine_entry {
 	struct machine_entry	*next;
 
 	/*  Machine type:  */
+	int			arch;
 	int			machine_type;	/*  Old-style type  */
 	const char		*name;		/*  Official name  */
 	int			n_aliases;
@@ -1234,17 +1235,16 @@ void machine_setup(struct machine *machine)
 		    "to get help on all command line options.\n");
 		exit(1);
 
-	case MACHINE_TEST:
+	case MACHINE_MIPSTEST:
 		/*
-		 *  A "bare" test machine.
+		 *  A "bare" MIPS test machine.
 		 */
 		cpu->byte_order = EMUL_BIG_ENDIAN;
-
-		machine->machine_name = "\"Bare\" test machine";
+		machine->machine_name = "\"Bare\" MIPS test machine";
 
 		dev_cons_init(mem);		/*  TODO: include address here?  */
 
-		/*  This works with 'mmon':  */
+		/*  This works with 'mmon' (MIPS):  */
 		dev_ns16550_init(machine, mem, 0x10800000, 2, 4, 1);
 
 		dev_mp_init(mem, machine->cpus);
@@ -3867,6 +3867,32 @@ for (i=0; i<32; i++)
 
 		break;
 
+	case MACHINE_PPCTEST:
+		/*
+		 *  A "bare" PPC test machine.
+		 */
+		machine->machine_name = "\"Bare\" PPC test machine";
+
+		/*  TODO  */
+
+		break;
+
+	case MACHINE_WALNUT:
+		/*
+		 *  NetBSD/evbppc (http://www.netbsd.org/Ports/evbppc/)
+		 */
+		machine->machine_name = "Walnut evaluation board";
+
+		break;
+
+	case MACHINE_PMPPC:
+		/*
+		 *  NetBSD/pmppc (http://www.netbsd.org/Ports/pmppc/)
+		 */
+		machine->machine_name = "Artesyn's PM/PPC board";
+
+		break;
+
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -3999,6 +4025,9 @@ void machine_default_cputype(struct machine *m)
 		return;
 
 	switch (m->machine_type) {
+	case MACHINE_MIPSTEST:
+		m->cpu_name = strdup("R4000");
+		break;
 	case MACHINE_PS2:
 		m->cpu_name = strdup("R5900");
 		break;
@@ -4071,6 +4100,26 @@ void machine_default_cputype(struct machine *m)
 		if (m->cpu_name == NULL)
 			m->cpu_name = strdup("R4400");
 		break;
+
+	/*  PowerPC:  */
+	case MACHINE_PPCTEST:
+		m->cpu_name = strdup("PPC970");
+		break;
+	case MACHINE_WALNUT:
+		/*  For NetBSD/evbppc.  */
+		m->cpu_name = strdup("PPC405GP");
+		break;
+	case MACHINE_PMPPC:
+		/*  For NetBSD/pmppc.  */
+		m->cpu_name = strdup("PPC750");
+		break;
+	}
+
+	if (m->cpu_name == NULL) {
+		fprintf(stderr, "machine_default_cputype(): no default"
+		    " cpu for machine type %i subtype %i\n",
+		    m->machine_type, m->machine_subtype);
+		exit(1);
 	}
 }
 
@@ -4138,7 +4187,7 @@ void machine_dumpinfo(struct machine *m)
  *  machine_entry_new():
  */
 static struct machine_entry *machine_entry_new(const char *name,
-	int oldstyle_type, int n_aliases, int n_subtypes)
+	int arch, int oldstyle_type, int n_aliases, int n_subtypes)
 {
 	struct machine_entry *me;
 
@@ -4150,6 +4199,7 @@ static struct machine_entry *machine_entry_new(const char *name,
 
 	memset(me, 0, sizeof(struct machine_entry));
 	me->name = name;
+	me->arch = arch;
 	me->machine_type = oldstyle_type;
 	me->n_aliases = n_aliases;
 	me->aliases = malloc(sizeof(char *) * n_aliases);
@@ -4252,20 +4302,29 @@ void machine_init(void)
 	/*  NOTE: This list is in reverse order, so that the
 	    entries will appear in normal order when listed. :-)  */
 
+	/*  Walnut: (NetBSD/evbppc)  */
+	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,
+	    MACHINE_WALNUT, 2, 0);
+	me->aliases[0] = "walnut";
+	me->aliases[1] = "evbppc";
+	me->next = first_machine_entry; first_machine_entry = me;
+
 	/*  Sony Playstation 2:  */
-	me = machine_entry_new("Sony Playstation 2", MACHINE_PS2, 2, 0);
+	me = machine_entry_new("Sony Playstation 2", ARCH_MIPS,
+	    MACHINE_PS2, 2, 0);
 	me->aliases[0] = "playstation2";
 	me->aliases[1] = "ps2";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  Sony NeWS:  */
-	me = machine_entry_new("Sony NeWS", MACHINE_SONYNEWS, 2, 0);
+	me = machine_entry_new("Sony NeWS", ARCH_MIPS,
+	    MACHINE_SONYNEWS, 2, 0);
 	me->aliases[0] = "sonynews";
 	me->aliases[1] = "news";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  SGI:  */
-	me = machine_entry_new("SGI", MACHINE_SGI, 2, 9);
+	me = machine_entry_new("SGI", ARCH_MIPS, MACHINE_SGI, 2, 9);
 	me->aliases[0] = "silicon graphics";
 	me->aliases[1] = "sgi";
 	me->subtype[0] = machine_entry_subtype_new("IP19", 19, 1);
@@ -4294,24 +4353,27 @@ void machine_init(void)
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  NetGear:  */
-	me = machine_entry_new("NetGear WG602", MACHINE_NETGEAR, 2, 0);
+	me = machine_entry_new("NetGear WG602", ARCH_MIPS,
+	    MACHINE_NETGEAR, 2, 0);
 	me->aliases[0] = "netgear";
 	me->aliases[1] = "wg602";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  Meshcube:  */
-	me = machine_entry_new("Meshcube", MACHINE_MESHCUBE, 1, 0);
+	me = machine_entry_new("Meshcube", ARCH_MIPS, MACHINE_MESHCUBE, 1, 0);
 	me->aliases[0] = "meshcube";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  Linksys:  */
-	me = machine_entry_new("Linksys WRT54G", MACHINE_WRT54G, 2, 0);
+	me = machine_entry_new("Linksys WRT54G", ARCH_MIPS,
+	    MACHINE_WRT54G, 2, 0);
 	me->aliases[0] = "linksys";
 	me->aliases[1] = "wrt54g";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  HPCmips:  */
-	me = machine_entry_new("Handheld MIPS (HPC)", MACHINE_HPCMIPS, 2, 2);
+	me = machine_entry_new("Handheld MIPS (HPC)",
+	    ARCH_MIPS, MACHINE_HPCMIPS, 2, 2);
 	me->aliases[0] = "hpcmips";
 	me->aliases[1] = "hpc";
 	me->subtype[0] = machine_entry_subtype_new(
@@ -4324,13 +4386,21 @@ void machine_init(void)
 	me->subtype[1]->aliases[1] = "e105";
 	me->next = first_machine_entry; first_machine_entry = me;
 
-	/*  Generic test machine:  */
-	me = machine_entry_new("Generic test machine", MACHINE_TEST, 1, 0);
-	me->aliases[0] = "test";
+	/*  Generic PPC test machine:  */
+	me = machine_entry_new("Generic PPC test machine", ARCH_PPC,
+	    MACHINE_PPCTEST, 1, 0);
+	me->aliases[0] = "testppc";
+	me->next = first_machine_entry; first_machine_entry = me;
+
+	/*  Generic MIPS test machine:  */
+	me = machine_entry_new("Generic MIPS test machine", ARCH_MIPS,
+	    MACHINE_MIPSTEST, 1, 0);
+	me->aliases[0] = "testmips";
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  DECstation:  */
-	me = machine_entry_new("DECstation/DECsystem", MACHINE_DEC, 3, 9);
+	me = machine_entry_new("DECstation/DECsystem",
+	    ARCH_MIPS, MACHINE_DEC, 3, 9);
 	me->aliases[0] = "decstation";
 	me->aliases[1] = "decsystem";
 	me->aliases[2] = "dec";
@@ -4380,12 +4450,18 @@ void machine_init(void)
 	me->next = first_machine_entry; first_machine_entry = me;
 
 	/*  Cobalt:  */
-	me = machine_entry_new("Cobalt", MACHINE_COBALT, 1, 0);
+	me = machine_entry_new("Cobalt", ARCH_MIPS, MACHINE_COBALT, 1, 0);
 	me->aliases[0] = "cobalt";
 	me->next = first_machine_entry; first_machine_entry = me;
 
+	/*  Artesyn's PM/PPC board: (NetBSD/pmppc)  */
+	me = machine_entry_new("Artesyn's PM/PPC board", ARCH_PPC,
+	    MACHINE_PMPPC, 1, 0);
+	me->aliases[0] = "pmppc";
+	me->next = first_machine_entry; first_machine_entry = me;
+
 	/*  ARC:  */
-	me = machine_entry_new("ARC", MACHINE_ARC, 1, 8);
+	me = machine_entry_new("ARC", ARCH_MIPS, MACHINE_ARC, 1, 8);
 	me->aliases[0] = "arc";
 
 	me->subtype[0] = machine_entry_subtype_new(

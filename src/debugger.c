@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.69 2005-01-30 13:39:45 debug Exp $
+ *  $Id: debugger.c,v 1.70 2005-01-30 19:01:55 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -35,6 +35,8 @@
  *	This entire module is very much non-reentrant. :-/
  *
  *	Add more functionality that already exists elsewhere in the emulator.
+ *
+ *	Toggle machines on/off (pause?)
  *
  *	Nicer looking output of register dumps, floating point registers,
  *	etc. Warn about weird/invalid register contents.
@@ -51,8 +53,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "misc.h"
-
 #include "console.h"
 #include "cop0.h"
 #include "cpu.h"
@@ -61,6 +61,7 @@
 #include "emul.h"
 #include "machine.h"
 #include "memory.h"
+#include "misc.h"
 #include "net.h"
 #include "x11.h"
 
@@ -1435,7 +1436,7 @@ static char *debugger_readline(void)
 		 */
 		while ((ch = console_readchar()) < 0) {
 			x11_check_event(debugger_emuls, debugger_n_emuls);
-			usleep(1);
+			usleep(2);
 		}
 
 		if ((ch == '\b' || ch == 127) && cursor_pos > 0) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.193 2005-01-30 14:22:15 debug Exp $
+ *  $Id: main.c,v 1.194 2005-01-30 19:01:55 debug Exp $
  */
 
 #include <stdio.h>
@@ -335,7 +335,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			m->machine_subtype = atoi(optarg);
 			break;
 		case 'a':
-			m->machine_type = MACHINE_TEST;
+			m->machine_type = MACHINE_MIPSTEST;
 			m->machine_subtype = 0;
 			break;
 		case 'b':

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.4 2005-01-30 14:22:15 debug Exp $
+ *  $Id: cpu_mips.c,v 1.5 2005-01-30 19:01:55 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -104,17 +104,28 @@ static char *regname(struct machine *machine, int r)
  *
  *  Create a new MIPS cpu object.
  */
-struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id,
-	char *cpu_type_name)
+struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine,
+	int cpu_id, char *cpu_type_name)
 {
 	struct cpu *cpu;
-	int i, j, tags_size, n_cache_lines, size_per_cache_line;
-	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+	int i, found, j, tags_size, n_cache_lines, size_per_cache_line;
+	struct mips_cpu_type_def cpu_type_defs[] = MIPS_CPU_TYPE_DEFS;
 	int64_t secondary_cache_size;
 	int x, linesize;
 
-	if (cpu_type_name == NULL)
-		cpu_type_name = CPU_DEFAULT;
+	/*  Scan the cpu_type_defs list for this cpu type:  */
+	i = 0;
+	found = -1;
+	while (i >= 0 && cpu_type_defs[i].name != NULL) {
+		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
+			found = i;
+			break;
+		}
+		i++;
+	}
+
+	if (found == -1)
+		return NULL;
 
 	cpu = malloc(sizeof(struct cpu));
 	if (cpu == NULL) {
@@ -123,6 +134,7 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 	}
 
 	memset(cpu, 0, sizeof(struct cpu));
+	cpu->cd.mips.cpu_type   = cpu_type_defs[found];
 	cpu->mem                = mem;
 	cpu->machine            = machine;
 	cpu->cpu_id             = cpu_id;
@@ -130,23 +142,6 @@ struct cpu *mips_cpu_new(struct memory *mem, struct machine *machine, int cpu_id
 	cpu->bootstrap_cpu_flag = 0;
 	cpu->running            = 0;
 	cpu->cd.mips.gpr[MIPS_GPR_SP]	= INITIAL_STACK_POINTER;
-
-	/*  Scan the cpu_type_defs list for this cpu type:  */
-	i = 0;
-	while (i >= 0 && cpu_type_defs[i].name != NULL) {
-		if (strcasecmp(cpu_type_defs[i].name, cpu_type_name) == 0) {
-			cpu->cd.mips.cpu_type = cpu_type_defs[i];
-			i = -1;
-			break;
-		}
-		i++;
-	}
-
-	if (i != -1) {
-		fprintf(stderr, "cpu_new(): unknown cpu type '%s'\n",
-		    cpu_type_name);
-		exit(1);
-	}
 
 	if (cpu_id == 0)
 		debug("%s", cpu->cd.mips.cpu_type.name);
@@ -4406,7 +4401,7 @@ void mips_cpu_dumpinfo(struct cpu *cpu)
 void mips_cpu_list_available_types(void)
 {
 	int i, j;
-	struct mips_cpu_type_def cpu_type_defs[] = CPU_TYPE_DEFS;
+	struct mips_cpu_type_def cpu_type_defs[] = MIPS_CPU_TYPE_DEFS;
 
 	i = 0;
 	while (cpu_type_defs[i].name != NULL) {

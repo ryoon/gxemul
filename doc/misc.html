@@ -1,11 +1,11 @@
 <html>
-<head><title>mips64emul documentation: Misc.</title>
+<head><title>GXemul documentation: Misc.</title>
 </head>
 <body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
 <p>
 <table width="100%">
   <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
-  <b>mips64emul documentation: Misc.</b></font></td></tr>
+  <b>GXemul documentation: Misc.</b></font></td></tr>
 </table>
 <p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.32 2005-02-26 12:35:47 debug Exp $
+$Id: misc.html,v 1.33 2005-03-05 12:05:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -51,8 +51,8 @@ SUCH DAMAGE.
 <ul>
   <li><a href="#config">Configuration file syntax</a>
   <li><a href="#networking">Networking</a>
-  <li><a href="#portmips">Porting operating systems to MIPS using mips64emul</a>
-  <li><a href="#compilercontruct">Using mips64emul in compiler contruction courses</a>
+  <li><a href="#portmips">Porting operating systems to MIPS using GXemul</a>
+  <li><a href="#compilercontruct">Using GXemul in compiler contruction courses</a>
   <li><a href="#disk">How to start the emulator with a disk image</a>
   <li><a href="#largeimages">How to extract large gzipped disk images</a>
   <li><a href="#userland">Running userland binaries</a>
@@ -73,9 +73,9 @@ through an example is good enough:
 <p>
 <table border="0"><tr><td width="40">&nbsp;</td><td>
 <pre>
-<font color="#2020cf">!!mips64emul     <-- configuration files must start like this
+<font color="#2020cf">!!gxemul     <-- configuration files must start like this
 !
-!  This is an example configuration file for mips64emul.
+!  This is an example configuration file for GXemul.
 !  Anything following an exclamation mark (and also the exclamation
 !  mark itself) is ignored.
 !
@@ -187,7 +187,7 @@ through an example is good enough:
 Starting the emulator with a configuration file is as simple as
 
 <pre>
-	$ <b>./mips64emul @myconfig</b>
+	$ <b>./gxemul @myconfig</b>
 </pre>
 
 if <b>myconfig</b> is the name of the configuration file.
@@ -225,24 +225,26 @@ activities, but not everything works yet.</font>
 
 <p><br>
 <a name="portmips"></a>
-<h3>Porting operating systems to MIPS using mips64emul:</h3>
+<h3>Porting operating systems to MIPS using GXemul:</h3>
 
 Is this a good idea?  The answer is yes and no, depending on what you are
 trying to port to. If you are developing an operating system or operating
 system kernel of your own, and wish to target MIPS-like systems in general,
 then the answer might be yes, for experimental purposes.
+
 <p>
 However, if you think that you can port an operating system
-to, say, the Silicon Graphics machine mode of mips64emul and hope that your
+to, say, the Silicon Graphics machine mode of GXemul and hope that your
 operating system will run on a real SGI machine, then you will most
-likely fail. mips64emul simply does not emulate things well enough for that to work.
+likely fail. GXemul simply does not emulate things well enough for that to work.
 Another example would be specific CPU details; if your code depends on,
-say, R10000 specifics, chances are that mips64emul will not be sufficient.
+say, R10000 specifics, chances are that GXemul will not be sufficient.
+
 <p>
-In many cases, hardware devices in mips64emul are only implemented well
-enough to fool for example NetBSD that they are working correctly, while in fact
-they don't work very much at all.  Please keep this in mind, if you plan
-to use mips64emul when porting your code to MIPS.
+In many cases, hardware devices in GXemul are only implemented well
+enough to fool for example NetBSD that they are working correctly, while in
+fact they don't work very much at all.  Please keep this in mind, if you plan
+to use GXemul when porting your code to MIPS.
 
 
 
@@ -252,10 +254,10 @@ to use mips64emul when porting your code to MIPS.
 
 <p><br>
 <a name="compilercontruct"></a>
-<h3>Using mips64emul in compiler contruction courses:</h3>
+<h3>Using GXemul in compiler contruction courses:</h3>
 
 If you are learning how to write a compiler, and wish to target a 
-realistic target platform, then MIPS (as emulated by mips64emul)
+realistic target platform, then MIPS (as emulated by GXemul)
 might be a suitable choice.
 
 <ul>
@@ -266,10 +268,10 @@ might be a suitable choice.
 	in real life than running assembly language listings in a simulator
 	(eg SPIM).
   <p>
-  <li><b>(-)</b>&nbsp;&nbsp;mips64emul does not simulate out-of-order
+  <li><b>(-)</b>&nbsp;&nbsp;GXemul does not simulate out-of-order
 	execution, penalties related to instruction scheduling, or
 	load-delays, so it cannot be used to create optimizing compilers
-	that take advantage of such processor features. mips64emul keeps
+	that take advantage of such processor features. GXemul keeps
 	track of the number of instructions executed, but that's it.
 </ul>
 
@@ -283,13 +285,14 @@ might be a suitable choice.
 <h3>How to start the emulator with a disk image:</h3>
 
 Add <i>-d [prefixes:]diskimagefilename</i> to the command line, where prefixes
-are one or more single-character options. Run mips64emul with no command line
-arguments to get a list of possible options.
+are one or more single-character options. Run <b>gxemul -h</b>
+to get a list of possible options.
+
 <p>
 Here are some examples. If you want to run a NetBSD/pmax kernel on an
 emulated DECstation machine, you would use a command line such as this:
 <pre>
-	$ <b>./mips64emul -D2 -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
+	$ <b>./gxemul -D2 -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
 <p>
 NOTE: For some emulation modes, such as the DECstation mode, you do 
@@ -300,7 +303,7 @@ It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on,
 unless you specify explicitly which ID number the devices should have.
 <pre>
-	$ <b>./mips64emul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
+	$ <b>./gxemul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
 Note: In the example above, disk2.raw will get scsi id 5.
 <p>
@@ -309,17 +312,17 @@ a CDROM device (this can be overridden with a 'd' prefix, to force a read/write 
 For example, the following command would start the emulator with two
 CDROM images, and one harddisk image:
 <pre>
-	$ <b>./mips64emul -D2 -d image.iso -d disk0.img -d c:second_cdrom.img netbsd-pmax-INSTALL</b>
+	$ <b>./gxemul -D2 -d image.iso -d disk0.img -d c:second_cdrom.img netbsd-pmax-INSTALL</b>
 </pre>
 Usually, the device with the lowest id becomes the boot device. To override
 this, add a 'b' prefix to one of the devices:
 <pre>
-	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
+	$ <b>./gxemul -D2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
 </pre>
 If you have a physical CD-ROM drive on the host machine, say /dev/cd0c, you can
 use it as a CD-ROM directly accessible from within the emulator:
 <pre>
-	$ <b>./mips64emul -D2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
+	$ <b>./gxemul -D2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
 </pre>
 It is probably possible to use harddisks as well this way, but I would not
 recommend it.
@@ -433,25 +436,25 @@ programs).
 	<br>
 	Running /bin/hostname or /bin/date and similarly trivial
 	programs from the NetBSD/pmax distribution works:<pre>
-	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_hostname</b>
+	$ <b>./gxemul -q -u netbsd/pmax pmax_bin_hostname</b>
 	tab.csbnet.se
-	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_date</b>
+	$ <b>./gxemul -q -u netbsd/pmax pmax_bin_date</b>
 	Sun Jan 25 02:26:14 GMT 2004
-	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sleep</b>
+	$ <b>./gxemul -q -u netbsd/pmax pmax_bin_sleep</b>
 	usage: pmax_bin_sleep seconds
-	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sleep 5</b>
-	$ <b>./mips64emul -q -u netbsd/pmax pmax_bin_sync</b>
+	$ <b>./gxemul -q -u netbsd/pmax pmax_bin_sleep 5</b>
+	$ <b>./gxemul -q -u netbsd/pmax pmax_bin_sync</b>
 </pre>
 
   <p>
   <li><b>Ultrix:</b>
 	<br>
 	At least /bin/date and /bin/hostname work:<pre>
-	$ <b>./mips64emul -q -u ultrix ultrix4_bin_date</b>
+	$ <b>./gxemul -q -u ultrix ultrix4_bin_date</b>
 	UNIMPLEMENTED ultrix syscall 54
 	UNIMPLEMENTED ultrix syscall 62
 	Mon Feb  9 12:50:59 WET 2004
-	$ <b>./mips64emul -q -u ultrix ultrix4_bin_hostname</b>
+	$ <b>./gxemul -q -u ultrix ultrix4_bin_hostname</b>
 	tab.csbnet.se
 </pre>
 
@@ -459,7 +462,7 @@ programs).
   <li><b>NetBSD/powerpc:</b>
 	<br>
 	/bin/sync from NetBSD/macppc works, but probably not much else.<pre>
-	$ <b>./mips64emul -v -u netbsd/powerpc netbsd-1.6.2-macppc-bin-sync</b>
+	$ <b>./gxemul -v -u netbsd/powerpc netbsd-1.6.2-macppc-bin-sync</b>
 	...
 	[ sync() ]
 	[ exit(0) ]
@@ -474,7 +477,7 @@ programs).
 	on IBM's developerWorks pages runs:<pre>
 	$ <b>ppc64-unknown-linux-as hello-ppc64.s -o hello-ppc64.o</b>
 	$ <b>ppc64-unknown-linux-ld hello-ppc64.o -o hello-ppc64</b>
-	$ <b>./mips64emul -q -u linux/ppc64 hello-ppc64</b>
+	$ <b>./gxemul -q -u linux/ppc64 hello-ppc64</b>
 	Hello, world!
 
 </pre>
@@ -545,7 +548,7 @@ and store in a file. Let's call this file DECstation5000_125_promdump.bin.
 </pre>
 This binary image can now be used in the emulator:
 <pre>
-	$ <b>./mips64emul -D3 -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
+	$ <b>./gxemul -D3 -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
 
 	KN02-BA V5.7e   
 	?TFL:  3/scc/access (1:Ln1 reg-12: actual=0x00 xpctd=0x01) [KN02-BA]
@@ -594,10 +597,10 @@ That's because the emulator doesn't emulate the hardware well enough yet.
 <p>
 The command line options used are:
 -D3 for DECstation model 3 (5000/1xx), -Q to supress the emulator's own PROM
-call emulation, -M128 for 128MB RAM (because mips64emul doesn't correctly
+call emulation, -M128 for 128MB RAM (because GXemul doesn't correctly
 emulate memory detection well enough for the PROM to accept, so it will
 always believe there is 128MB ram anyway), and -q to supress debug messages.
-The 0xbfc00000 in front of the filename tells mips64emul that it is a raw
+The 0xbfc00000 in front of the filename tells GXemul that it is a raw
 binary file which should be loaded at a specific virtual address.
 
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.174 2005-03-05 10:35:39 debug Exp $
+ *  $Id: emul.c,v 1.175 2005-03-05 12:05:30 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -820,10 +820,10 @@ struct emul *emul_create_from_configfile(char *fname)
 		exit(1);
 	}
 
-	/*  Read header: (must be !!mips64emul)  */
+	/*  Read header: (must be !!gxemul)  */
 	len = fread(buf, 1, 12, f);
-	if (len != 12 || strncmp(buf, "!!mips64emul", 12) != 0) {
-		fprintf(stderr, "%s: must start with '!!mips64emul'\n", fname);
+	if (len != 12 || strncmp(buf, "!!gxemul", 12) != 0) {
+		fprintf(stderr, "%s: must start with '!!gxemul'\n", fname);
 		exit(1);
 	}
 

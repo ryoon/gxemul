@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.214 2005-02-26 16:53:34 debug Exp $
+ *  $Id: main.c,v 1.215 2005-03-05 12:05:30 debug Exp $
  */
 
 #include <stdio.h>
@@ -221,12 +221,12 @@ unsigned long long mystrtoull(const char *s, char **endp, int base)
 /*
  *  internal_w():
  *
- *  For internal use by mips64emul itself.
+ *  For internal use by gxemul itself.
  */
 void internal_w(char *arg)
 {
 	if (arg == NULL || strncmp(arg, "W@", 2) != 0) {
-		printf("-W is for internal use by mips64emul,"
+		printf("-W is for internal use by gxemul,"
 		    " not for manual use.\n");
 		exit(1);
 	}
@@ -253,7 +253,7 @@ void internal_w(char *arg)
  */
 static void usage(int longusage)
 {
-	printf("mips64emul");
+	printf("gxemul");
 #ifdef VERSION
 	printf("-" VERSION);
 #endif
@@ -710,7 +710,7 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
  *  Two kinds of emulations are started from here:
  *
  *	o)  Simple emulations, using command line arguments, compatible with
- *	    earlier version of mips64emul.
+ *	    earlier version of gxemul.
  *
  *	o)  Emulations set up by parsing special config files. (0 or more.)
  */
@@ -747,7 +747,7 @@ int main(int argc, char *argv[])
 	get_cmd_args(argc, argv, emuls[0]);
 
 	/*  Print startup message:  */
-	debug("mips64emul");
+	debug("gxemul");
 #ifdef VERSION
 	debug("-" VERSION);
 #endif

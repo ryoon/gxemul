@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.93 2005-03-01 08:23:55 debug Exp $
+ *  $Id: debugger.c,v 1.94 2005-03-05 12:05:30 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -344,7 +344,7 @@ static void debugger_cmd_breakpoint(struct machine *m, char *cmd_line)
 
 		if (m->n_breakpoints >= MAX_BREAKPOINTS) {
 			printf("Too many breakpoints. (You need to recompile"
-			    " mips64emul to increase this. Max = %i.)\n",
+			    " gxemul to increase this. Max = %i.)\n",
 			    MAX_BREAKPOINTS);
 			return;
 		}
@@ -1608,7 +1608,7 @@ static char *debugger_readline(void)
 	char *cmd = last_cmd[last_cmd_index];
 
 	cmd_len = 0; cmd[0] = '\0';
-	printf("mips64emul> ");
+	printf("gxemul> ");
 	fflush(stdout);
 
 	ch = '\0';
@@ -1797,7 +1797,7 @@ static char *debugger_readline(void)
 				}
 				if (j != 0)
 					printf("\n");
-				printf("mips64emul> ");
+				printf("gxemul> ");
 				for (i=0; i<cmd_len; i++)
 					printf("%c", cmd[i]);
 			}

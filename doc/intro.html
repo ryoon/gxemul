@@ -1,11 +1,11 @@
 <html>
-<head><title>mips64emul documentation: Introduction</title>
+<head><title>GXemul documentation: Introduction</title>
 </head>
 <body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
 <p>
 <table width="100%">
   <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
-  <b>mips64emul documentation: Introduction</b></font></td></tr>
+  <b>GXemul documentation: Introduction</b></font></td></tr>
 </table>
 <p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.15 2005-03-04 08:46:52 debug Exp $
+$Id: intro.html,v 1.16 2005-03-05 12:05:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -50,11 +50,11 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#overview">Overview</a>
-  <li><a href="#free">Is mips64emul free software?</a>
+  <li><a href="#free">Is GXemul free software?</a>
   <li><a href="#build">How to compile/build the emulator</a>
-  <li><a href="#cpus">Which CPU types does mips64emul emulate?</a>
+  <li><a href="#cpus">Which CPU types does GXemul emulate?</a>
   <li><a href="#accuracy">Emulation accuracy</a>
-  <li><a href="#emulmodes">Which machines does mips64emul emulate?</a>
+  <li><a href="#emulmodes">Which machines does GXemul emulate?</a>
   <li><a href="#guestos">Which guest OSes are possible to run?</a>
 </ul>
 
@@ -66,7 +66,7 @@ SUCH DAMAGE.
 <a name="overview"></a>
 <h3>Overview:</h3>
 
-mips64emul is a machine emulator, which can be used to experiment with
+GXemul is a machine emulator, which can be used to experiment with
 binary code for (among others) MIPS-based machines. Several emulation
 modes are available. For some emulation modes, processors and surrounding
 hardware components are emulated well enough to let unmodified operating
@@ -98,9 +98,9 @@ ROM images. A couple of different file formats are supported (ELF, a.out,
 ECOFF, SREC, raw binaries).
 
 <p>
-(You do not need any MIPS compiler toolchain to build or use mips64emul.
+(You do not need any MIPS compiler toolchain to build or use GXemul.
 If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from mips64emul. There
+such a toolchain, but that is completely separate from GXemul. There
 is a <a href="technical.html#regtest">regression testing</a> framework,
 which requires that a GNU CC for mips64-unknown-elf or similar is available.
 For simply building and using the emulator, it is not required.) 
@@ -111,9 +111,9 @@ For simply building and using the emulator, it is not required.)
 
 <p><br>
 <a name="free"></a>
-<h3>Is mips64emul free software?</h3>
+<h3>Is GXemul free software?</h3>
 
-Yes. mips64emul is distributed under a free license.
+Yes. I have released GXemul under a free license.
 (For a definitions of the four freedoms associated with free software,
 please read <a href="http://www.gnu.org/philosophy/free-sw.html">
 http://www.gnu.org/philosophy/free-sw.html</a>.)
@@ -125,14 +125,14 @@ The code I have written is released under a 3-clause BSD-style license
 Apart from the code I have written, some files are copied from other sources
 such as NetBSD, for example header files containing symbolic names of
 bitfields in device registers. They are also covered by similar licenses,
-but with some additional clauses. If you plan to redistribute mips64emul
-(for example as a binary package), or reuse code from mips64emul,
+but with some additional clauses. If you plan to redistribute GXemul
+(for example as a binary package), or reuse code from GXemul,
 then you should check those files for their license terms.
 
 <p>
 (The licenses usually require that the original Copyright and license 
 terms are included when you make a copy or modification. The "easiest way 
-out" if you plan to redistribute code from mips64emul is to simply supply 
+out" if you plan to redistribute code from GXemul is to simply supply 
 the source code. You should however check individual files for details.)
 
 
@@ -173,8 +173,8 @@ Run <b>./configure --help</b> to get a list of configure options. (The
 possible options differ between different releases and snapshots.)
 
 <p>
-Once you have built mips64emul, running it should be rather 
-straight-forward. To exit the emulator, type CTRL-C to enter the 
+Once you have built GXemul, running it should be rather straight-forward.
+To exit the emulator, type CTRL-C to enter the 
 single-step debugger, and then type <b>quit</b>. By typing CTRL-B instead,
 a CTRL-C is sent to the emulated program.
 
@@ -185,7 +185,7 @@ a CTRL-C is sent to the emulated program.
 
 <p><br>
 <a name="cpus"></a>
-<h3>Which CPU types does mips64emul emulate?</h3>
+<h3>Which CPU types does GXemul emulate?</h3>
 
 <h4>MIPS:</h4>
 
@@ -227,7 +227,7 @@ these modes do not really work.
 <a name="accuracy"></a>
 <h3>Emulation accuracy:</h3>
 
-mips64emul is an instruction-level simulator; things that would happen in
+GXemul is an instruction-level simulator; things that would happen in
 several steps within a real CPU are not taken into account (eg. pipe-line
 stages or out-of-order execution). Still, instruction-level accuracy seems 
 to be enough to be able to run complete guest operating systems inside the 
@@ -239,7 +239,7 @@ emulator.
 
 <p><br>
 <a name="emulmodes"></a>
-<h3>Which machines does mips64emul emulate?</h3>
+<h3>Which machines does GXemul emulate?</h3>
 
 A few different machine types are emulated.
 The machine types that are emulated best at the moment are:
@@ -249,7 +249,7 @@ The machine types that are emulated best at the moment are:
 		mouse), ethernet, SCSI, and graphical framebuffers are
 		emulated.
 	<br>Other models: these differ slightly from the 5000/200 model,
-		and mips64emul doesn't emulate them well enough to run
+		and GXemul doesn't emulate them well enough to run
 		a complete OS yet.
   <p>
   <li><b>Acer Pica-61</b> (an ARC machine)
@@ -259,7 +259,7 @@ The machine types that are emulated best at the moment are:
 </ul>
 
 <p>
-There is code in mips64emul for emulation of many other machine types;
+There is code in GXemul for emulation of many other machine types;
 the degree to which these work range from "almost" being able to run
 a complete OS, to almost completely unsupported (perhaps just enough
 support to output a few boot messages via serial console).
@@ -417,7 +417,7 @@ works fine, though, but then you don't get to see the penguin in the corner.
 Kaj-Michael Lang noticed that the current CVS-version of
 <a href="http://www.linux-mips.org/">linux-mips</a> has
 support for keyboards now, on DECstation 5000/200, so it is
-possible to run Linux in mips64emul with framebuffer/keyboard.
+possible to run Linux in GXemul with framebuffer/keyboard.
 He has made a kernel available here:
 <a href="http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">
 http://home.tal.org/~milang/o2/patches/vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>

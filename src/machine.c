@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.377 2005-03-05 10:35:39 debug Exp $
+ *  $Id: machine.c,v 1.378 2005-03-05 12:05:30 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1223,7 +1223,7 @@ void machine_setup(struct machine *machine)
 		printf("\nNo emulation type specified.\n\n"
 		    "For example, if you want to emulate a DECstation, you "
 		    "need to add -Dx to the\ncommand line, where x is the "
-		    "DECstation specific model type. Run mips64emul -h\n"
+		    "DECstation specific model type. Run gxemul -h\n"
 		    "to get help on all command line options.\n");
 		exit(1);
 
@@ -4621,7 +4621,7 @@ void machine_list_available_types_and_cpus(void)
 	debug_indentation(-iadd);
 
 	debug("\nMost of the machine types are bogus too. Please read the "
-	    "mips64emul\ndocumentation for information about which machine"
+	    "GXemul\ndocumentation for information about which machine"
 	    " types that actually\nwork. Use the alias when selecting a "  
 	    "machine type or subtype, not the\nreal name.\n");
 

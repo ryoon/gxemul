@@ -1,4 +1,4 @@
-/*  Hello world for mips64emul's PPC mode  */
+/*  PPC Hello World for GXemul  */
 
 #define	PUTCHAR_ADDRESS		0x10000000
 #define	HALT_ADDRESS		0x10000010

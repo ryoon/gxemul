@@ -1,11 +1,11 @@
 <html>
-<head><title>mips64emul documentation: Technical details</title>
+<head><title>GXemul documentation: Technical details</title>
 </head>
 <body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
 <p> 
 <table width=100%>
   <tr><td width=100% bgcolor=#808070><font color=#ffffe0 size=6>
-  <b>mips64emul documentation: Technical details</b></font></td></tr>
+  <b>GXemul documentation: Technical details</b></font></td></tr>
 </table>
 <p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.45 2005-02-26 17:46:19 debug Exp $
+$Id: technical.html,v 1.46 2005-03-05 12:05:29 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -49,7 +49,7 @@ SUCH DAMAGE.
 <h2>Technical details</h2>
 
 <p>
-This page describes some of the internals of mips64emul.
+This page describes some of the internals of GXemul.
 
 <p>
 <ul>
@@ -67,7 +67,7 @@ This page describes some of the internals of mips64emul.
 <a name="overview"></a>
 <h3>Overview</h3>
 
-In simple terms, mips64emul is just a simple fetch-and-execute
+In simple terms, GXemul is just a simple fetch-and-execute
 loop; an instruction is fetched from memory, and executed.
 
 <p>
@@ -163,10 +163,10 @@ if a mc146818 device is present.
 
 <p>
 Some emulators make claims such as "x times slowdown," but in the case of
-mips64emul, the host is often not a MIPS-based machine, and hence comparing
+GXemul, the host is often not a MIPS-based machine, and hence comparing
 one MIPS instruction to a host instruction doesn't work. Performance depends on
 a lot of factors, including (but not limited to) host architecture, host speed,
-which compiler and compiler flags were used to build mips64emul, what the
+which compiler and compiler flags were used to build GXemul, what the
 workload is, and so on. For example, if an emulated operating system tries
 to read a block from disk, from its point of view the read was instantaneous
 (no waiting). So 1 MIPS in an emulated OS might have taken more than one
@@ -554,7 +554,7 @@ emulator. If everything goes well, you should see something like this:
 	./do_tests "mips64-unknown-elf-gcc -g -O3 -fno-builtin -fschedule-insns 
 		-mips64 -mabi=64" "mips64-unknown-elf-as -mabi=64 -mips64" 
 		"mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e main 
-		--oformat=elf64-bigmips" "../mips64emul"
+		--oformat=elf64-bigmips" "../gxemul"
 
 	Starting tests:
 	  test_addu.S (-a)

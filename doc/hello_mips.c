@@ -1,4 +1,4 @@
-/*  Hello world for mips64emul  */
+/*  MIPS Hello World for GXemul  */
 
 /*  Note: The cast to a signed int causes the address to be sign-extended
     correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */

@@ -1,11 +1,11 @@
 <html>
-<head><title>mips64emul documentation: Experimenting with mips64emul</title>
+<head><title>GXemul documentation: Experimenting with GXemul</title>
 </head>
 <body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
 <p>
 <table width="100%">
   <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
-  <b>mips64emul documentation: Experimenting with mips64emul</b></font></td></tr>
+  <b>GXemul documentation: Experimenting with GXemul</b></font></td></tr>
 </table>
 <p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: experiments.html,v 1.44 2005-03-05 10:36:13 debug Exp $
+$Id: experiments.html,v 1.45 2005-03-05 12:05:29 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -45,7 +45,7 @@ SUCH DAMAGE.
 <a href="./">Back to the index</a>
 
 <p><br>
-<h2>Experimenting with mips64emul</h2>
+<h2>Experimenting with GXemul</h2>
 
 <p>
 <ul>
@@ -82,7 +82,7 @@ emulated.
 <p>
 <table border="0"><tr><td width="40">&nbsp;</td><td>
 <pre>
-<font color=#f00000>/*  Hello world for mips64emul  */
+<font color=#f00000>/*  Hello world for GXemul  */
 
 /*  Note: The cast to a signed int causes the address to be sign-extended
     correctly to 0xffffffffb00000xx when compiled in 64-bit mode  */
@@ -125,14 +125,14 @@ the hello world program:
 	$ <b>mips64-unknown-elf-ld -Ttext 0xa800000000030000 -e f hello_mips.o -o hello_mips --oformat=elf64-bigmips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 64-bit MSB mips-4 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q -E testmips hello_mips</b>
+	$ <b>./gxemul -q -E testmips hello_mips</b>
 	Hello world
 
 	$ <b>mips64-unknown-elf-gcc -O2 hello_mips.c -c</b>
 	$ <b>mips64-unknown-elf-ld -Ttext 0x80030000 -e f hello_mips.o -o hello_mips</b>
 	$ <b>file hello_mips</b>
 	hello_mips: ELF 32-bit MSB mips-3 executable, MIPS R3000_BE, version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q -E testmips hello_mips</b>
+	$ <b>./gxemul -q -E testmips hello_mips</b>
 	Hello world
 </pre>
 
@@ -144,9 +144,9 @@ learn more about how MIPS programs run, then add -V to the command line:
 
 <p>
 <pre>
-	$ <b>./mips64emul -V -E testmips hello_mips</b>
+	$ <b>./gxemul -V -E testmips hello_mips</b>
 	..
-	mips64emul&gt; <b>r</b>
+	gxemul&gt; <b>r</b>
 	cpu0:    pc = a800000000030078    <f>
 	cpu0:    hi = 0000000000000000    lo = 0000000000000000
 	cpu0:    zr = 0000000000000000    at = 0000000000000000
@@ -154,7 +154,7 @@ learn more about how MIPS programs run, then add -V to the command line:
 	..
 	cpu0:    gp = a8000000000780c0    sp = ffffffffa0007f00
 	cpu0:    fp = 0000000000000000    ra = 0000000000000000
-	mips64emul&gt; <b>s 15</b>
+	gxemul&gt; <b>s 15</b>
 	&lt;f&gt;
 	a800000000030078: 67bdfff0      daddiu  sp,sp,-16
 	a80000000003007c: 3c04a800      lui     a0,0xa800
@@ -173,9 +173,9 @@ learn more about how MIPS programs run, then add -V to the command line:
 	a800000000030030: ffbf0008      sd      ra,8(sp)  [0xffffffffa0007ee8, data=0xa8000000000300a0]
 	a800000000030034: 90820000      lbu     v0,0(a0)  [0xa8000000000300b8 = $LC0, data=0x48]
 	a800000000030038: 00021600      sll     v0,v0,24
-	mips64emul&gt; <b>print v0</b>
+	gxemul&gt; <b>print v0</b>
 	v0 = 0x0000000048000000
-	mips64emul&gt; <b><blink>_</blink></b>
+	gxemul&gt; <b><blink>_</blink></b>
 </pre>
 
 <p>
@@ -189,10 +189,9 @@ Hopefully this is enough to get you inspired. :-)
 
 
 <p><br>
-<h4>Hello World for mips64emul's PPC mode</h4>
+<h4>Hello World for GXemul's PPC mode</h4>
 
-mips64emul also has an experimental PowerPC emulation mode (which is only 
-enabled if --enable-ppc is supplied as a configure option).
+GXemul also has an experimental PowerPC emulation mode.
 <a href="hello_ppc.c">hello_ppc.c</a> is similar to hello_mips.c, but 
 should be compiled and run as follows:
 <p>
@@ -202,7 +201,7 @@ should be compiled and run as follows:
 	$ <b>file hello_ppc</b>
 	hello_ppc: ELF 32-bit MSB executable, PowerPC or cisco 4500,
 	  version 1 (SYSV), statically linked, not stripped
-	$ <b>./mips64emul -q -E testppc hello_ppc</b>
+	$ <b>./gxemul -q -E testppc hello_ppc</b>
 	Hello world
 </pre>
 
@@ -420,7 +419,7 @@ It is a list of kernels that I experiment with.
 For more information about which of these that actually work, read the 
 <a href="intro.html#guestos">section in the Introduction chapter</a>
 that lists guest operating systems. If a system is not listed there, it 
-probably doesn't work in mips64emul.
+probably doesn't work in GXemul.
 
 <p>
 <ul>
@@ -469,7 +468,7 @@ probably doesn't work in mips64emul.
 	<br>Important! Run <b>./configure --caches; make</b>
 	<br>Download <a href="http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z">http://lost-contact.mit.edu/afs/athena/user/d/a/daveg/Info/Links/Mach/src/release/pmax.tar.Z</a>
 	<br>tar xfvz pmax.tar.Z pmax_mach/special/mach.boot.MK83.STD+ANY
-	<br><b>./mips64emul -E dec -e 3max -X pmax_mach/special/mach.boot.MK83.STD+ANY</b>
+	<br><b>./gxemul -E dec -e 3max -X pmax_mach/special/mach.boot.MK83.STD+ANY</b>
     </ul>
   </li>
 
@@ -504,7 +503,7 @@ probably doesn't work in mips64emul.
       <p>
       <li><a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>:
 	<br>Snapshots can be found at <a href="ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/">ftp://ftp.OpenBSD.org/pub/OpenBSD/snapshots/sgi/</a>.
-	<br>Try <b>./mips64emul -b -E sgi -e ip32 bsd.rd</b>
+	<br>Try <b>./gxemul -b -E sgi -e ip32 bsd.rd</b>
       <p>
       <li><a href="http://www.freebsd.org/platforms/mips.html">FreeBSD/MIPS</a>:
 		I don't think public binary snapshots are available yet.
@@ -512,7 +511,7 @@ probably doesn't work in mips64emul.
       <li>arcdiag:
 	<br>The NetBSD people have also made available an "arcdiag" for SGI-IP22:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22">ftp://ftp.netbsd.org/pub/NetBSD/arch/sgimips/arcdiag.ip22</a>
-	<br>Try running <b>./mips64emul -E sgi -e ip22 arcdiag.ip22</b>.
+	<br>Try running <b>./gxemul -E sgi -e ip22 arcdiag.ip22</b>.
     </ul>
   </li>
 
@@ -616,14 +615,14 @@ The following work even less than the ones listed above:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/hpcmips/binary/kernel/netbsd-GENERIC.gz</a>
-	<br>Try <b>./mips64emul -X -b -E hpc -e e105 netbsd-GENERIC</b>
+	<br>Try <b>./gxemul -X -b -E hpc -e e105 netbsd-GENERIC</b>
       <p>
       <li>Linux for BE300: <a href="http://www.linux4.be/2004/linux4be20040908.zip">http://www.linux4.be/2004/linux4be20040908.zip</a>
-	<br>Try <b>./mips64emul -X -b -E hpc -e be300 vmlinux</b>
+	<br>Try <b>./gxemul -X -b -E hpc -e be300 vmlinux</b>
       <p>
       <li><a href="http://www.disorder.ru/openbsd/be300/">OpenBSD/be300</a>:
 	<br><a href="http://www.disorder.ru/openbsd/be300/bsd.rd">http://www.disorder.ru/openbsd/be300/bsd.rd</a>
-	<br>Try <b>./mips64emul -X -b -E hpc -e be300 bsd.rd</b>
+	<br>Try <b>./gxemul -X -b -E hpc -e be300 bsd.rd</b>
 	<br>Note: -b might be buggy, so you can try without that if you want to.
     </ul>
   </li>
@@ -668,7 +667,7 @@ The following work even less than the ones listed above:
 	<br>From offset 60 and forward in the bin file, there is a gzip file.
 	<br>$ <b>dd if=openwrt-g-code.bin of=piggy.gz bs=60 iseek=1 oseek=0</b>
 	<br>$ <b>gunzip piggy.gz</b>
-	<br>$ <b>./mips64emul -E linksys -t 0x80001000:piggy</b>
+	<br>$ <b>./gxemul -E linksys -t 0x80001000:piggy</b>
 	<br>There's also a .bin file available from linksys:
 		<a href="ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin">ftp://ftp.linksys.com/pub/network/WRT54G_1.30.7_US_code.bin</a>
     </ul>
@@ -688,7 +687,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/evbppc/">NetBSD/evbppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/evbppc/binary/kernel/netbsd-INSTALL_WALNUT.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E walnut -v -t netbsd-INSTALL_WALNUT</b>
+	<br>$ <b>./gxemul -E walnut -v -t netbsd-INSTALL_WALNUT</b>
     </ul>
   </li>
 
@@ -699,7 +698,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/pmppc/">NetBSD/pmppc</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmppc/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E pmppc netbsd-INSTALL</b>
+	<br>$ <b>./gxemul -E pmppc netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -710,7 +709,7 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/sandpoint/">NetBSD/sandpoint</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sandpoint/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E sandpoint -v -t netbsd-INSTALL</b>
+	<br>$ <b>./gxemul -E sandpoint -v -t netbsd-INSTALL</b>
     </ul>
   </li>
 
@@ -721,11 +720,11 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/prep/">NetBSD/prep</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/prep/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E prep -v -t netbsd-INSTALL</b>
+	<br>$ <b>./gxemul -E prep -v -t netbsd-INSTALL</b>
       <p>
       <li>Linux:
 	<br><a href="http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux">http://jocelyn.mayer.free.fr/qemu-ppc/linux_images/2.4.25-PPC/vmlinux</a>
-	<br>$ <b>./mips64emul -E prep -v -t vmlinux</b>
+	<br>$ <b>./gxemul -E prep -v -t vmlinux</b>
     </ul>
   </li>
 
@@ -735,11 +734,11 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
     <ul>
       <li><a href="http://www.netbsd.org/Ports/macppc/">NetBSD/macppc</a>:
 	<br>..
-	<br>$ <b>./mips64emul -E macppc -e g4 -t netbsd...</b>
+	<br>$ <b>./gxemul -E macppc -e g4 -t netbsd...</b>
       <p>
       <li><a href="http://www.openbsd.org/macppc.html">OpenBSD/macppc</a>:
 	<br>..
-	<br>$ <b>./mips64emul -E macppc -e g4 -t bsd...</b>
+	<br>$ <b>./gxemul -E macppc -e g4 -t bsd...</b>
     </ul>
   </li>
 
@@ -750,12 +749,12 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/bebox/">NetBSD/bebox</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz">ftp://ftp.netbsd.org/pub/NetBSD/arch/bebox/snapshot/19981119/kern.tgz</a>
 	<br>$ <b>tar tvzf kern.tgz</b>
-	<br>$ <b>./mips64emul -E bebox netbsd</b>
+	<br>$ <b>./gxemul -E bebox netbsd</b>
       <p>
       <li><a href="http://www.bebox.nu/os.php?s=os/linux/index">Linux/bebox</a>:
 	<br><a href="http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz">http://www.bebox.nu/files/linux/BeBox-scsi-980610.gz</a>
 	<br>$ <b>gunzip BeBox-scsi-980610.gz</b>
-	<br>$ <b>./mips64emul -E bebox 0x3100:0x400:BeBox-scsi-980610</b>
+	<br>$ <b>./gxemul -E bebox 0x3100:0x400:BeBox-scsi-980610</b>
     </ul>
   </li>
 
@@ -766,12 +765,12 @@ modes are just skeletons so far. (To enable PPC and/or SPARC support, add
       <li><a href="http://www.netbsd.org/Ports/sparc64/">NetBSD/sparc64</a>:
 	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sparc64/binary/kernel/netbsd-INSTALL.gz</a>
 	<br>gunzip, and try the following:
-	<br>$ <b>./mips64emul -E ultra1 -v -i netbsd-INSTALL</b>
+	<br>$ <b>./gxemul -E ultra1 -v -i netbsd-INSTALL</b>
       <p>
       <li><a href="http://www.openbsd.org/sparc64.html">OpenBSD/sparc64</a>:
 	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd">ftp://ftp.openbsd.org/pub/OpenBSD/3.6/sparc64/bsd.rd</a>
 	<br>rename to bsd.rd.gz, gunzip, and try the following:
-	<br>$ <b>./mips64emul -E ultra1 -v -i bsd.rd</b>
+	<br>$ <b>./gxemul -E ultra1 -v -i bsd.rd</b>
     </ul>
   </li>
 </ul>
@@ -787,9 +786,9 @@ for more info.)
   <li>URISC:
     <ul>
       <li>I've placed a small test program in the experiments directory.
-	<br>Start like this: <b>./mips64emul -E testurisc 0:urisc_test.bin</b>
+	<br>Start like this: <b>./gxemul -E testurisc 0:urisc_test.bin</b>
 	<br>or, if you want to single-step:
-		<b>./mips64emul -V -E testurisc 0:urisc_test.bin</b>
+		<b>./gxemul -V -E testurisc 0:urisc_test.bin</b>
 	<br>2005-03-01: All outputed characters are printed twice. I'll
 	try to make a pseudo-device for outputing to "normal" devices
 	later.

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.18 2004-11-08 20:20:33 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.19 2004-11-09 00:21:10 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -1110,4 +1110,148 @@ int bintrans_write_instruction__mfmthilo(unsigned char **addrp,
 	return 1;
 }
 
+
+/*
+ *  bintrans_write_instruction__branch():
+ */
+int bintrans_write_instruction__branch(unsigned char **addrp,
+	int *pc_inc, int branch_type, int rt, int rs, int imm,
+	unsigned char **potential_chunk_p)
+{
+	unsigned char *a, *b, *b2;
+	int n;
+	int ofs;
+
+	imm *= 4;
+
+/*  TODO: make it work with larger offsets?  */
+if (imm > 0x7ff0 || imm <-0x7ff0)
+	return 0;
+
+
+#if 0
+	/*  Flush the PC, but don't include this instruction.  */
+	(*pc_inc) -= 4;
+	bintrans_write_pcflush(addrp, pc_inc, 1, 1);
+	(*pc_inc) += 4;
+#else
+	/*  Flush the PC. The branch instruction is already included
+	    in the pc_inc count.  */
+	bintrans_write_pcflush(addrp, pc_inc, 1, 1);
+
+	/*  Flush once more, to make sure the instruction in the delay
+	    slot is counted, but _don't_ update the PC:  */
+	(*pc_inc) = 4;
+	bintrans_write_pcflush(addrp, pc_inc, 0, 1);
+#endif
+
+	a = *addrp;
+
+	/*
+	 *  t0 = gpr[rt]; t1 = gpr[rs];
+	 *
+	 *  50 00 30 a4     ldq     t0,80(a0)
+	 *  58 00 50 a4     ldq     t1,88(a0)
+	 */
+
+	ofs = ((size_t)&dummy_cpu.gpr[rt]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	ofs = ((size_t)&dummy_cpu.gpr[rs]) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x50; *a++ = 0xa4;
+
+	/*
+	 *  Compare t0 and t1 for equality.
+	 *  If the result was false (equal to zero), then skip a lot
+	 *  of instructions:
+	 *
+	 *  a1 05 22 40     cmpeq   t0,t1,t0
+	 *  01 00 20 e4     beq     t0,14 <f+0x14>
+	 */
+
+	b = NULL;
+
+	if (branch_type == BRANCH_BEQ && rt != rs) {
+		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
+		b = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xe4;  /*  beq  */
+		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+	}
+	if (branch_type == BRANCH_BNE && rt != rs) {
+		*a++ = 0xa1; *a++ = 0x05; *a++ = 0x22; *a++ = 0x40;  /*  cmpeq  */
+		b = a;
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;  /*  bne  */
+		/*     ^^^^  --- NOTE: This is automagically updated later on.  */
+	}
+
+	/*
+	 *  Perform the jump by changing pc.
+	 *
+	 *  44 04 30 a0     ldl     t0,1092(a0)		load pc
+	 *  34 12 21 20     lda     t0,imm(t0)		add imm
+	 *  88 08 30 b4     stq     t0,2184(a0)		store pc
+	 */
+	ofs = ((size_t)&dummy_cpu.pc) - (size_t)&dummy_cpu;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa4;
+	*a++ = (imm & 255); *a++ = (imm >> 8); *a++ = 0x21; *a++ = 0x20;
+	*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xb4;
+
+	if (potential_chunk_p == NULL) {
+		/*  Not much we can do here if this wasn't to the same
+		    physical page...  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+	} else {
+		/*
+		 *  Just to make sure that we don't become too unreliant
+		 *  on the main program loop, we need to return every once
+		 *  in a while (interrupts etc).
+		 *
+		 *  Load the "nr of instructions executed" (which is an int)
+		 *  and see if it is below a certain threshold. If so, then
+		 *  we go on with the fast path (bintrans), otherwise we
+		 *  abort by returning.
+		 *
+		 *  f4 01 5f 20     lda     t1,500
+		 *  50 00 30 a0     ldl     t0,80(a0)
+		 *  a1 0d 22 40     cmple   t0,t1,t0
+		 *  01 00 20 f4     bne     t0,14 <f+0x14>
+		 */
+		ofs = ((size_t)&dummy_cpu.bintrans_instructions_executed)
+		    - ((size_t)&dummy_cpu);
+		*a++ = 0xf4; *a++ = 0x01; *a++ = 0x5f; *a++ = 0x20;	/*  lda  */
+		*a++ = (ofs & 255); *a++ = (ofs >> 8); *a++ = 0x30; *a++ = 0xa0;
+		*a++ = 0xa1; *a++ = 0x0d; *a++ = 0x22; *a++ = 0x40;	/*  cmple  */
+		*a++ = 0x01; *a++ = 0x00; *a++ = 0x20; *a++ = 0xf4;	/*  bne  */
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+
+		/*
+		 *  potential_chunk_p points to an "unsigned char *".
+		 *  If this value is non-NULL, then it is a piece of Alpha
+		 *  machine language code corresponding to the address
+		 *  we're jumping to. Otherwise, those instructions haven't
+		 *  been translated yet, so we have to return to the main
+		 *  loop.
+		 */
+
+		*a++ = 0x01; *a++ = 0x80; *a++ = 0xfa; *a++ = 0x6b;	/*  ret  */
+	}
+
+	b2 = a;
+	n = (size_t)b2 - (size_t)b - 4;
+	if (b != NULL)
+		*b = n/4;	/*  nr of skipped instructions  */
+
+	*addrp = a;
+
+#if 1
+	/*  Flush _again_; this time, it is to update the PC for the
+	    instruction in the delay slot, but don't update the count
+	    as it is already updated.  */
+	(*pc_inc) += 4;
+	bintrans_write_pcflush(addrp, pc_inc, 1, 0);
+#else
+	(*pc_inc) += 4;
+#endif
+
+	return 2;
+}
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.46 2004-11-08 20:43:44 debug Exp $
+ *  $Id: bintrans.c,v 1.47 2004-11-09 00:21:10 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -173,6 +173,7 @@ int bintrans_write_instruction__lw(unsigned char **addrp, int *pc_inc, int first
 int bintrans_write_instruction__jr(unsigned char **addrp, int *pc_inc, int rs);
 int bintrans_write_instruction__jalr(unsigned char **addrp, int *pc_inc, int rd, int rs);
 int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int rd, int from_flag, int hi_flag);
+int bintrans_write_instruction__branch(unsigned char **addrp, int *pc_inc, int branch_type, int rt, int rs, int imm, unsigned char **potential_chunk_p);
 
 #define	LOAD_TYPE_LW	0
 #define	LOAD_TYPE_LHU	1
@@ -182,6 +183,9 @@ int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int
 #define	LOAD_TYPE_SW	5
 #define	LOAD_TYPE_SH	6
 #define	LOAD_TYPE_SB	7
+
+#define	BRANCH_BEQ	0
+#define	BRANCH_BNE	1
 
 
 /*  Include host architecture specific bintrans code:  */
@@ -209,8 +213,8 @@ int bintrans_write_instruction__mfmthilo(unsigned char **addrp, int *pc_inc, int
 #define	CACHE_INDEX_MASK		((1 << BINTRANS_CACHE_N_INDEX_BITS) - 1)
 #define	PADDR_TO_INDEX(p)		((p >> 12) & CACHE_INDEX_MASK)
 
-#define	CODE_CHUNK_SPACE_SIZE		(12 * 1048576)
-#define	CODE_CHUNK_SPACE_MARGIN		131072
+#define	CODE_CHUNK_SPACE_SIZE		(16 * 1048576)
+#define	CODE_CHUNK_SPACE_MARGIN		262144
 
 /*
  *  translation_code_chunk_space is a large chunk of (linear) memory where
@@ -284,12 +288,15 @@ void bintrans_invalidate(struct cpu *cpu, uint64_t paddr)
 
 	/*  Remove any entry which reaches this address:  */
 	i = 0;
-	while (i < 1024) {
+	while (i <= offset_within_page) {
 		chunklen = tep->length_and_flags[i] & LENMASK;
-		/*  from i to i+chunklen-1  */
-		if (i <= offset_within_page && offset_within_page < i+chunklen) {
-			for (j=i; j<i+chunklen; j++)
-				tep->length_and_flags[j] |= TO_BE_INVALIDATED;
+
+		if (chunklen != 0) {
+			/*  from i to i+chunklen-1  */
+			if (i <= offset_within_page && offset_within_page < i+chunklen) {
+				for (j=i; j<i+chunklen; j++)
+					tep->length_and_flags[j] |= TO_BE_INVALIDATED;
+			}
 		}
 		i++;
 	}
@@ -382,7 +389,9 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 	int (*f)(struct cpu *);
 	struct translation_page_entry *tep;
 	size_t chunk_len;
+	int branch_rs,branch_rt,branch_imm;
 	int rs,rt,rd,sa,imm;
+	unsigned char **potential_chunk_p;	/*  for branches  */
 	int first_load, first_store;
 	int byte_order_cached;
 
@@ -633,40 +642,82 @@ int bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr,
 			}
 			break;
 		case HI6_BEQ:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			if (imm >= 32768)
-				imm -= 65536;
+		case HI6_BNE:
+			branch_rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
+			branch_rt = instr[2] & 31;
+			branch_imm = (instr[1] << 8) + instr[0];
+			if (branch_imm >= 32768)
+				branch_imm -= 65536;
 			if (p == 0xffc) {
 				try_to_translate = 0;
 				break;
 			}
 			res = 0;
-			instrX = *((uint32_t *)(host_mips_page + p + 4));	/*  next instruction  */
-			if (instrX == 0) {	/*  NOP in delay slot  */
-				/*
-				 *  p is 0x000 .. 0xffc. If the jump is to
-				 *  within the same page, then we can use
-				 *  the same translation page to check if
-				 *  there already is a translation.
-				 */
-				new_pc = p + 4 + 4*imm;
-				/*  Different physical page? Then abort:  */
-				if ((new_pc & ~0xfff) != 0) {
-					try_to_translate = 0;
-					break;
-				}
-printf("beq r%i,r%i, %i   p = %08x, p+4+4*imm = %08x chunk=%p\n", rs,rt, imm,
-p, new_pc, tep->chunk[new_pc / 4]);
+			new_pc = p + 4 + 4 * branch_imm;
+			/*  Read the next instruction (in the delay slot):  */
+			*((uint32_t *)&instr2[0]) = *((uint32_t *)(host_mips_page + p + 4));
+			hi6_2 = instr2[3] >> 2;
 #if 0
-				switch (hi6) {
-				case HI6_BEQ:
-					res = bintrans_write_instruction__beq(&ca, &pc_inc, rt, rs, imm);
-					break;
-				}
+			if (hi6_2 == HI6_ADDIU) {
+				rs = ((instr2[3] & 3) << 3) + ((instr2[2] >> 5) & 7);
+				rt = instr2[2] & 31;
+				imm = (instr2[1] << 8) + instr2[0];
+				if (imm >= 32768)
+					imm -= 65536;
+				if (rt == 0)
+					res = 1;
+				else if (rt == branch_rt || rt == branch_rs
+				      || rs == branch_rt || rs == branch_rs)
+					res = 0;
+				else
+					res = bintrans_write_instruction__addiu(&ca, &pc_inc, rt, rs, imm);
+				if (!res)
+					try_to_translate = 0;
+			} else
 #endif
+			if (instr2[0] == 0 && instr2[1] == 0 && instr2[2] == 0 && instr2[3] == 0) {
+				/*  Nop.  */
+			} else
+				try_to_translate = 0;
+
+			if (!try_to_translate)
+				break;
+
+			rt = branch_rt;
+			rs = branch_rs;
+			imm = branch_imm;
+
+			/*
+			 *  p is 0x000 .. 0xffc. If the jump is to
+			 *  within the same page, then we can use
+			 *  the same translation page to check if
+			 *  there already is a translation.
+			 */
+			/*  Same physical page? Then we might
+			    potentially be able to jump using the
+			    tep->chunk[new_pc/4] pointer :)  */
+			if ((new_pc & ~0xfff) == 0)
+				potential_chunk_p =
+				    &tep->chunk[new_pc/4];
+			else
+				potential_chunk_p = NULL;
+
+			/*  printf("branch r%i,r%i, %i; p=%08x,"
+			    " p+4+4*imm=%08x chunk=%p\n", rt, rs,
+			    imm, p, new_pc, tep->chunk[new_pc/4]);  */
+
+			switch (hi6) {
+			case HI6_BEQ:
+				res = bintrans_write_instruction__branch(&ca, &pc_inc, BRANCH_BEQ, rt, rs, imm, potential_chunk_p);
+				break;
+			case HI6_BNE:
+				res = bintrans_write_instruction__branch(&ca, &pc_inc, BRANCH_BNE, rt, rs, imm, potential_chunk_p);
+				break;
 			}
+
+				p += sizeof(instr);
+pc_inc = sizeof(instr);	/*  will be decreased later  */
+try_to_translate = 0;
 			if (!res)
 				try_to_translate = 0;
 			else

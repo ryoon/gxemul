@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.176 2004-11-07 19:58:52 debug Exp $
+ *  $Id: cpu.c,v 1.177 2004-11-09 00:21:10 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1270,6 +1270,54 @@ static int cpu_run_instr(struct cpu *cpu)
 				cpu->emul->register_dump = 1;
 		}
 
+
+	/*  Remember where we are, in case of interrupt or exception:  */
+	cpu->pc_last = cached_pc;
+
+	/*
+	 *  Any pending interrupts?
+	 *
+	 *  If interrupts are enabled, and any interrupt has arrived (ie its
+	 *  bit in the cause register is set) and corresponding enable bits
+	 *  in the status register are set, then cause an interrupt exception
+	 *  instead of executing the current instruction.
+	 *
+	 *  NOTE: cached_interrupt_is_possible is set to 1 whenever an
+	 *  interrupt bit in the cause register is set to one (in
+	 *  cpu_interrupt()) and set to 0 whenever all interrupt bits are
+	 *  cleared (in cpu_interrupt_ack()), so we don't need to do a full
+	 *  check each time.
+	 */
+	if (cpu->cached_interrupt_is_possible) {
+		if (cpu->cpu_type.exc_model == EXC3K) {
+			/*  R3000:  */
+			int enabled, mask;
+			int status = cp0->reg[COP0_STATUS];
+
+			enabled = status & MIPS_SR_INT_IE;
+			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			if (enabled && mask) {
+				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				return 0;
+			}
+		} else {
+			/*  R4000 and others:  */
+			int enabled, mask;
+			int status = cp0->reg[COP0_STATUS];
+
+			enabled = (status & STATUS_IE)
+			    && !(status & STATUS_EXL)
+			    && !(status & STATUS_ERL);
+
+			mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
+			if (enabled && mask) {
+				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
+				return 0;
+			}
+		}
+	}
+
+
 	/*
 	 *  ROM emulation:
 	 *
@@ -1354,9 +1402,6 @@ static int cpu_run_instr(struct cpu *cpu)
 	}
 #endif
 
-
-	/*  Remember where we are, in case of interrupt or exception:  */
-	cpu->pc_last = cached_pc;
 
 	if (!quiet_mode_cached) {
 		/*  Dump CPU registers for debugging:  */
@@ -1543,50 +1588,6 @@ static int cpu_run_instr(struct cpu *cpu)
 	if (cpu->nullify_next) {
 		cpu->nullify_next = 0;
 		return 1;
-	}
-
-
-	/*
-	 *  Any pending interrupts?
-	 *
-	 *  If interrupts are enabled, and any interrupt has arrived (ie its
-	 *  bit in the cause register is set) and corresponding enable bits
-	 *  in the status register are set, then cause an interrupt exception
-	 *  instead of executing the current instruction.
-	 *
-	 *  NOTE: cached_interrupt_is_possible is set to 1 whenever an
-	 *  interrupt bit in the cause register is set to one (in
-	 *  cpu_interrupt()) and set to 0 whenever all interrupt bits are
-	 *  cleared (in cpu_interrupt_ack()), so we don't need to do a full
-	 *  check each time.
-	 */
-	if (cpu->cached_interrupt_is_possible) {
-		if (cpu->cpu_type.exc_model == EXC3K) {
-			/*  R3000:  */
-			int enabled, mask;
-			int status = cp0->reg[COP0_STATUS];
-
-			enabled = status & MIPS_SR_INT_IE;
-			mask  = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
-			if (enabled && mask) {
-				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
-				return 0;
-			}
-		} else {
-			/*  R4000 and others:  */
-			int enabled, mask;
-			int status = cp0->reg[COP0_STATUS];
-
-			enabled = (status & STATUS_IE)
-			    && !(status & STATUS_EXL)
-			    && !(status & STATUS_ERL);
-
-			mask = status & cp0->reg[COP0_CAUSE] & STATUS_IM_MASK;
-			if (enabled && mask) {
-				cpu_exception(cpu, EXCEPTION_INT, 0, 0, 0, 0, 0, 0);
-				return 0;
-			}
-		}
 	}
 
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id: configure,v 1.2 2003-11-06 13:55:43 debug Exp $
+#  $Id: configure,v 1.3 2003-11-11 14:22:16 debug Exp $
 #
 #  Configure script for mips64emul.
 #  This script figures out which compiler flags will work, and creates
@@ -24,6 +24,33 @@ printf "#
 #  the configure script, based on Makefile.skel.
 #\n\n" >> _Makefile.header
 
+
+echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
+
+
+#  CC:
+if [ z"$CC" = z ]; then
+	CC=cc
+	gcc _testprog.c -o _testprog > /dev/null
+	if [ -x _testprog ]; then
+		CC=gcc
+	fi
+	rm -f _testprog
+
+	cc _testprog.c -o _testprog > /dev/null
+	if [ -x _testprog ]; then
+		CC=cc
+	fi
+	rm -f _testprog
+
+	ccc _testprog.c -o _testprog > /dev/null
+	if [ -x _testprog ]; then
+		CC="ccc"
+	fi
+	rm -f _testprog
+fi
+
+
 if [ z$NOX11 = z ]; then
 	#  Try to compile a small X11 test program:
 	printf "#include <X11/Xlib.h>
@@ -39,10 +66,10 @@ if [ z$NOX11 = z ]; then
 	XOK=0
 
 	XINCLUDE=-I/usr/X11R6/include
-	cc _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+	$CC _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
 
 	XLIB="-L/usr/X11R6/lib -lX11"
-	cc _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+	$CC _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
 	if [ -x _test_x11 ]; then
 		XOK=1
@@ -52,11 +79,11 @@ if [ z$NOX11 = z ]; then
 
 	if [ z$XOK = z0 ]; then
 		XINCLUDE=""
-		cc _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
+		$CC _test_x11.c -c -o _test_x11.o $XINCLUDE 2> /dev/null
 
 		#  -lsocket for Solaris
 		XLIB="-lX11 -lsocket"
-		cc _test_x11.o -o _test_x11 $XLIB 2> /dev/null
+		$CC _test_x11.o -o _test_x11 $XLIB 2> /dev/null
 
 		if [ -x _test_x11 ]; then
 			XOK=1
@@ -78,25 +105,6 @@ if [ z$NOX11 = z ]; then
 fi
 
 
-echo 'int main(int argc, char *argv[]) { return 0; }' > _testprog.c
-
-
-#  CC:
-if [ z"$CC" = z ]; then
-	CC=cc
-	gcc _testprog.c -o _testprog > /dev/null
-	if [ -x _testprog ]; then
-		CC=gcc
-	fi
-	rm -f _testprog
-
-	ccc _testprog.c -o _testprog > /dev/null
-	if [ -x _testprog ]; then
-		CC="ccc"
-	fi
-	rm -f _testprog
-fi
-
 #  CWARNINGS:
 $CC _testprog.c -o _testprog -Wall 2> /dev/null
 if [ -x _testprog ]; then
@@ -111,26 +119,29 @@ rm -f _testprog
 #  COPTIM:
 COPTIM=$CFLAGS
 
-if [ z"$CC" = zgcc ]; then
-	$CC _testprog.c -o _testprog -O 2> /dev/null
-	if [ -x _testprog ]; then
-		rm -f _testprog
-		$CC _testprog.c -o _testprog -O2 2> /dev/null
-		if [ -x _testprog ]; then
-			COPTIM="-O2 $COPTIM"
-		else
-			COPTIM="-O $COPTIM"
-		fi
-	fi
+$CC _testprog.c -o _testprog -O 2> /dev/null
+if [ -x _testprog ]; then
 	rm -f _testprog
+	$CC _testprog.c -o _testprog -O2 2> /dev/null
+	if [ -x _testprog ]; then
+		COPTIM="-O2 $COPTIM"
+	else
+		COPTIM="-O $COPTIM"
+	fi
 fi
+rm -f _testprog
 
 if [ z"$CC" = zcc ]; then
-	$CC _testprog.c -o _testprog -xO5 2> /dev/null
-	if [ -x _testprog ]; then
-		COPTIM="-xO5 $COPTIM"
+	$CC -xO5 _testprog.c -o _testprog 1> _testprog.stdout 2> _testprog.stderr
+	cat _testprog.stdout >> _testprog.stderr
+	if grep O5 _testprog.stderr; then
+		rm _testprog.stderr	# no -xO5
+	else
+		if [ -x _testprog ]; then
+			COPTIM="-xO5 $COPTIM"
+		fi
 	fi
-	rm -f _testprog
+	rm -f _testprog _testprog.stderr _testprog.stdout
 fi
 
 #  -fschedule-insns causes bugs on i386 with gcc,
@@ -149,11 +160,16 @@ if [ z"$CC" = zccc ]; then
 	rm -f _testprog
 fi
 
-$CC _testprog.c -o _testprog -fpeephole 2> /dev/null
-if [ -x _testprog ]; then
-	COPTIM="-fpeephole $COPTIM"
+$CC _testprog.c -o _testprog -fpeephole 1> _testprog.stdout 2> _testprog.error
+cat _testprog.stdout >> _testprog.error
+if grep peephole _testprog.error; then
+	rm _testprog.error
+else
+	if [ -x _testprog ]; then
+		COPTIM="-fpeephole $COPTIM"
+	fi
 fi
-rm -f _testprog
+rm -f _testprog _testprog.error _testprog.stdout
 
 $CC _testprog.c -o _testprog -fast 2> /dev/null
 if [ -x _testprog ]; then

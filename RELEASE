@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.5 2004-06-19 12:03:33 debug Exp $
+$Id: RELEASE,v 1.6 2004-06-24 16:06:49 debug Exp $
 
 
 	    =====================================================
@@ -9,7 +9,7 @@ $Id: RELEASE,v 1.5 2004-06-19 12:03:33 debug Exp $
 
 
 Only development snapshots of what I have in CVS.  However, I plan to make
-a release some time in the future.
+an official release some time in the future.
 
 The following things have to work before a release to become a reality:
 
@@ -53,7 +53,8 @@ Then, to make an official release:
 		    Linux, Ultrix?, Irix?, ..)
 
 		For each Host platform:
-			o)  does it configure correctly?  (try multiple compilers)
+			o)  does it configure correctly?  (try multiple
+				compilers)
 			o)  does it build?  (make)
 			o)  does it run?  (try multiple guest kernels/OSes)
 			o)  does it support X11?
@@ -70,3 +71,39 @@ Then, to make an official release:
 	o)  General clean-up.
 
 :-)
+
+------------------------------------------------------------------------------
+
+These platforms were tested at one time or another, and should be tested
+again before a release is made:
+
+	FreeBSD/alpha 4.9
+		gcc version 2.95.4 20020320 [FreeBSD]
+		gcc version 3.3.1 [FreeBSD]
+		ccc 6.4.9.005-1
+
+	Linux/i386
+		gcc version 3.2.2 20030222 (Red Hat Linux 3.2.2-5)
+
+	OpenBSD/i386
+		gcc (which version?)
+
+	OpenBSD/sparc64
+		gcc (which version?)
+
+	Solaris/sparc (SunOS 5.9)
+		cc Sun WorkShop 6 update 2 C 5.3 Patch 111679-12 2003/05/18
+		gcc version 2.95.3 20010315 (release)
+
+	NetBSD/pmax  (inside the emulator itself)
+		default gcc seems to work
+
+	Ultrix/MIPS  (inside the emulator itself)
+		(default cc doesn't seem to work)
+
+	HP-UX B.11.00
+		gcc 3.3.2
+		(default cc doesn't seem to work)
+
+------------------------------------------------------------------------------
+

@@ -5,7 +5,7 @@
 
 <!--
 
-$Id: index.html,v 1.34 2004-06-21 10:54:56 debug Exp $
+$Id: index.html,v 1.35 2004-06-23 14:14:15 debug Exp $
 
 Copyright (C) 2003-2004 by Anders Gavare.  All rights reserved.
 
@@ -264,6 +264,103 @@ The result should looks something like this:
 <center>
 <img src="netbsd-pmax-framebuffer.gif">
 </center>
+<p><br>
+
+<p>
+Other operating system kernels can be downloaded from various places.
+Here are links to some kernels that can be experimented with:
+
+<p>
+<ul>
+  <li>DECstation:
+    <ul>
+      <li>NetBSD/pmax:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
+	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2 -I4000000</b>
+	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
+	Read <a href="#netbsdinstall">here</a> about how to install NetBSD/pmax onto a harddisk image.
+
+      <p>
+      <li>OpenBSD/pmax:
+	<br><a href="ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd">ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd</a>
+	<br>This is an old OpenBSD kernel in a.out format.
+
+      <p>
+      <li>Linux for DECstation:
+	<br><a href="http://www.xs4all.nl/~vhouten/mipsel/kernels.html">http://www.xs4all.nl/~vhouten/mipsel/kernels.html</a>
+	<br>Linux kernels.  Make sure you add <b>-CR4000</b> to the command line for the
+	R4000 kernel, as Linux doesn't autodetect CPU type at runtime.
+    </ul>
+  </li>
+
+  <p>
+
+  <li>SGI:
+    <ul>
+      <li>NetBSD/sgimips:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
+	<br>gunzip, and try running with  <b>-G32 -CR5000 -q</b>
+      <p>
+      <li>Linux/SGI:
+	<br><a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
+	<br>Try running with <b>-G32 -q</b>. You need to add <b>-CR5000</b> or
+		<b>-CR10000</b> to select a specific CPU type, as Linux
+		doesn't autodetect CPU at runtime, and <b>-X</b> for a graphical
+		framebuffer.
+    </ul>
+  </li>
+
+  <p>
+
+  <li>ARC:
+    <ul>
+      <li>NetBSD/arc:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
+	<br>gunzip, and try with <b>-Aq</b>. Add <b>-X -N</b> for a graphical framebuffer.
+
+      <p>
+      <li>Linux:
+	<br><a href="ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz">ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz</a>
+	<br>gunzip, and run with <b>-A</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Cobalt:
+    <ul>
+      <li>NetBSD/cobalt:
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>gunzip, and run with <b>-E -q</b>
+      <p>
+      <li>Linux:
+	<br><a href="http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz">http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz</a>
+	<br>gunzip, and run with <b>-E -q</b>
+    </ul>
+  </li>
+
+  <p>
+
+  <li>Playstation 2:
+    <ul>
+      <li>NetBSD/playstation2:
+	<br>A NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
+	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz</a>
+	<br><a href="ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz</a>
+	<br>Try running with <b>-XBqN</b>  (<b>-X</b> is required, for the framebuffer).
+
+      <p>
+      <li>Linux:
+	<br>A Linux kernel (2.2.21-pre1-xr7) is available from
+	<a href="http://playstation2-linux.com/projects/xrhino-kernel/">http://playstation2-linux.com/projects/xrhino-kernel/</a>
+	<br>Try running with <b>-XBqN</b>  (<b>-X</b> is required, for the framebuffer).
+    </ul>
+  </li>
+</pre>
+</ul>
 
 
 <p><br>
@@ -292,12 +389,10 @@ You need to do the following:
 </pre>
   <li>Start the emulator with both the installation ISO image and the
 	root disk image, and the kernel:<pre>
-	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img  \
-		-d b:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -qN -XY2 -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 	Alternatively, if you don't want to use a graphical framebuffer:<pre>
-	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img  \
-		-d b:pmaxcd.iso netbsd-INSTALL</b>
+	$ <b>./mips64emul -D2 -q -I4000000 -d netbsd_pmax_rootdisk.img -d b:pmaxcd.iso netbsd-INSTALL</b>
 </pre>
 	but then make sure you choose 'vt100' when prompted with which terminal
 	type to use, and not 'rcons'.

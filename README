@@ -10,86 +10,15 @@ and enough surrounding hardware well enough to run unmodified operating systems
 as if they were running on real machines.  This is a spare time hobby project,
 and many things are not implemented yet.
 
+
+Quick start
+-----------
+
 To compile, type './configure' and then 'make'.  (This should work on most
 Unix-like systems, if not then please mail me a bug report.)
 
 Please read the the documentation in the doc/ sub-directory for more detailed
 information.
-
-
-Quick start
------------
-
-Real operating system kernels can be downloaded from various places. Here are
-links to some kernels that can be experimented with:
-
-
-o)  DECstation:
-
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz
-    gunzip the file, and run:   ./mips64emul -D2 -q -XY2 -I1500000 netbsd-INSTALL
-    for a graphical framebuffer console. Remove -XY2 to use serial (stdin/
-    stdout) console.  Try -D1, -D2, -D3, -D4, -D7, and -D12.
-
-    Read the documentation (in doc/) for more information about installing
-    NetBSD/pmax onto a harddisk image.
-
-    ftp://ftp.openbsd.org/pub/OpenBSD/2.8/pmax/bsd
-    This is an old OpenBSD kernel in a.out format.
-
-    http://www.xs4all.nl/~vhouten/mipsel/kernels.html
-    Linux kernels.  Make sure you add -CR4000 to the command line for the
-    r4k kernel, as Linux doesn't autodetect CPU type at runtime.
-
-
-o)  SGI:
-
-    NetBSD/sgimips:  (gunzip, and try running with  -G32 -CR5000 -q)
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz
-
-    Linux/SGI kernels:  (-G32 -q)
-    http://www.linux-mips.org/~glaurung/
-    You need to add  -CR5000  or  -CR10000  to select a specific CPU type,
-    and  -X  to use a graphical framebuffer.
-
-
-o)  ARC:
-
-    NetBSD/arc:  (gunzip, and try running with  -Aq  or  -XAq)
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz
-
-    An ARC linux kernel, ECOFF:  (gunzip, and try running with -A)
-    ftp://ftp.linux-mips.org/pub/linux/mips/mipsel-linux/boot/vmlinux-m700-2.1.131.gz
-
-
-o)  Cobalt:
-
-    ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/cobalt/binary/kernel/netbsd-GENERIC.gz
-    Try running with  -E -q.
-
-    http://people.debian.org/~pm/mips-cobalt/nfsroot/vmlinux_raq-2800.gz
-    Try running with  -E -q.
-
-
-o)  Playstation 2:
-
-    A NetBSD/playstation2 snapshot kernels are available here: (RAMDISK and GENERIC)
-    ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/installation/netbsd.gz
-    ftp://ftp.NetBSD.org/pub/NetBSD/arch/playstation2/snapshot/20020327/binary/kernel/netbsd-GENERIC.gz
-    Try running with  -XBqN      (-X is required, for the framebuffer).
-
-    A Linux kernel (2.2.21-pre1-xr7) is available from
-    http://playstation2-linux.com/projects/xrhino-kernel/
-    Try running with  -XBqN      (-X is required, for the framebuffer).
-
-
-NOTE:  Add a  -q  to the command line options to supress debug messages.
-       Add  -X  to use a X-windows framebuffer, if the emulated machine
-       supports that.  (You can add  -Y2  to scale down the framebuffer
-       window a bit.)
 
 
 Feedback

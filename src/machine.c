@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.8 2003-11-09 04:12:43 debug Exp $
+ *  $Id: machine.c,v 1.9 2003-11-11 14:23:15 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -584,7 +584,7 @@ void machine_init(struct memory *mem)
 		store_buf(BOOTINFO_ADDR, (char *)&xx, sizeof(xx));
 
 		/*  The system's memmap:  (memmap is a global variable, in dec_prom.h)  */
-		store_32bit_word_in_host((char *)&memmap.pagesize, 4096);
+		store_32bit_word_in_host((unsigned char *)&memmap.pagesize, 4096);
 		for (i=0; i<sizeof(memmap.bitmap); i++)
 			memmap.bitmap[i] = (i * 4096*8 < 1048576*physical_ram_in_mb)? 0xff : 0x00;
 		store_buf(DEC_MEMMAP_ADDR, (char *)&memmap, sizeof(memmap));
@@ -693,8 +693,8 @@ void machine_init(struct memory *mem)
 
 		/*  ARCBIOS:  */
 		memset(&arcbios_spb, 0, sizeof(arcbios_spb));
-		store_32bit_word_in_host((char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
-		store_32bit_word_in_host((char *)&arcbios_spb.FirmwareVector, 0xbfc00000);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.SPBSignature, ARCBIOS_SPB_SIGNATURE);
+		store_32bit_word_in_host((unsigned char *)&arcbios_spb.FirmwareVector, 0xbfc00000);
 		store_buf(SGI_SPB_ADDR, (char *)&arcbios_spb, sizeof(arcbios_spb));
 
 		memset(&arcbios_sysid, 0, sizeof(arcbios_sysid));
@@ -710,16 +710,16 @@ void machine_init(struct memory *mem)
 
 		memset(&arcbios_dsp_stat, 0, sizeof(arcbios_dsp_stat));
 		/*  TODO:  get 79 and 24 from the current terminal settings?  */
-		store_16bit_word_in_host((char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
-		store_16bit_word_in_host((char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxXPosition, 79);
+		store_16bit_word_in_host((unsigned char *)&arcbios_dsp_stat.CursorMaxYPosition, 24);
 		arcbios_dsp_stat.ForegroundColor = 7;
 		arcbios_dsp_stat.HighIntensity = 15;
 		store_buf(ARC_DSPSTAT_ADDR, (char *)&arcbios_dsp_stat, sizeof(arcbios_dsp_stat));
 
 		memset(&arcbios_mem, 0, sizeof(arcbios_mem));
-		store_32bit_word_in_host((char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
-		store_32bit_word_in_host((char *)&arcbios_mem.BasePage, 8*1048576 / 4096);
-		store_32bit_word_in_host((char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.Type, emulation_type == EMULTYPE_SGI? 3 : 2);	/*  FreeMemory  */
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.BasePage, 8*1048576 / 4096);
+		store_32bit_word_in_host((unsigned char *)&arcbios_mem.PageCount, (physical_ram_in_mb - 8) * 1048576 / 4096);
 		store_buf(ARC_MEMDESC_ADDR, (char *)&arcbios_mem, sizeof(arcbios_mem));
 
 		add_symbol_name(0xbfc10000, 0x10000, "[ARCBIOS entry]", 0);

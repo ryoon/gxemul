@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.29 2004-01-27 21:52:41 debug Exp $
+ *  $Id: misc.h,v 1.30 2004-01-29 20:48:17 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -201,6 +201,9 @@ struct memory {
 	uint64_t	dev_length[MAX_DEVICES];
 	int		(*dev_f[MAX_DEVICES])(struct cpu *,struct memory *,uint64_t,unsigned char *,size_t,int,void *);
 	void		*dev_extra[MAX_DEVICES];
+
+	/*  Stuff for binary translation:  */
+	uint64_t	bintrans_last_paddr;
 };
 
 /* #define	DEFAULT_BITS_PER_PAGETABLE	12 */	/*  10  or 12  or 16  */
@@ -810,6 +813,8 @@ void symbol_init(void);
 /*  useremul.c:  */
 #define	USERLAND_NONE		0
 #define	USERLAND_NETBSD_PMAX	1
+#define	USERLAND_ULTRIX_PMAX	2
+#define	USERLAND_IRIX		3
 void useremul_init(struct cpu *, struct memory *, int, char **);
 void useremul_syscall(struct cpu *cpu, uint32_t code);
 

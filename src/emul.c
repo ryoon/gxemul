@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.137 2005-01-26 17:19:57 debug Exp $
+ *  $Id: emul.c,v 1.138 2005-01-28 00:23:26 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -413,7 +413,8 @@ static void add_arc_components(struct machine *m)
  *
  *	o)  Special hacks needed after programs have been loaded.
  */
-void emul_machine_setup(struct machine *machine)
+void emul_machine_setup(struct machine *machine, int n_load,
+	char **load_names)
 {
 	struct emul *emul;
 	int i, iadd=4;
@@ -524,8 +525,8 @@ void emul_machine_setup(struct machine *machine)
 	if (machine->booting_from_diskimage)
 		load_bootblock(machine, machine->cpus[machine->bootstrap_cpu]);
 
-	while (extra_argc > 0) {
-		file_load(machine->memory, extra_argv[0],
+	while (n_load > 0) {
+		file_load(machine->memory, *load_names,
 		    machine->cpus[machine->bootstrap_cpu]);
 
 		/*
@@ -533,13 +534,14 @@ void emul_machine_setup(struct machine *machine)
 		 *  on the command line will be passed as parameters
 		 *  to the emulated program, and will not be treated
 		 *  as filenames to load into the emulator.
-		 *  The program's name will be in argv[0], and the
-		 *  rest of the parameters in argv[1] and up.
+		 *  The program's name will be in load_names[0], and the
+		 *  rest of the parameters in load_names[1] and up.
 		 */
 		if (machine->userland_emul)
 			break;
 
-		extra_argc --;  extra_argv ++;
+		n_load --;
+		load_names ++;
 	}
 
 	if (file_n_executables_loaded() == 0 &&
@@ -569,7 +571,7 @@ void emul_machine_setup(struct machine *machine)
 
 	if (machine->userland_emul)
 		useremul_init(machine->cpus[machine->bootstrap_cpu],
-		    extra_argc, extra_argv);
+		    n_load, load_names);
 
 	/*  Startup the bootstrap CPU:  */
 	machine->cpus[machine->bootstrap_cpu]->bootstrap_cpu_flag = 1;
@@ -664,7 +666,7 @@ void emul_simple_init(struct emul *emul)
 
 	/*  Create the machine(s):  */
 	for (i=0; i<emul->n_machines; i++)
-		emul_machine_setup(emul->machines[i]);
+		emul_machine_setup(emul->machines[i], extra_argc, extra_argv);
 
 	debug_indentation(-iadd);
 }

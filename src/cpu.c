@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.136 2004-09-05 03:15:04 debug Exp $
+ *  $Id: cpu.c,v 1.137 2004-09-05 03:16:18 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -61,7 +61,6 @@ extern int tlb_dump;
 extern int64_t max_instructions;
 extern struct cpu **cpus;
 extern int ncpus;
-extern int show_opcode_statistics;
 extern int max_random_cycles_per_chunk;
 extern int n_dumppoints;
 extern uint64_t dumppoint_pc[MAX_PC_DUMPPOINTS];
@@ -1459,14 +1458,14 @@ static int cpu_run_instr(struct cpu *cpu)
 	/*  Get the top 6 bits of the instruction:  */
 	hi6 = instr[3] >> 2;  	/*  & 0x3f  */
 
-	if (show_opcode_statistics)
+	if (cpu->emul->show_opcode_statistics)
 		cpu->stats_opcode[hi6] ++;
 
 	switch (hi6) {
 	case HI6_SPECIAL:
 		special6 = instr[0] & 0x3f;
 
-		if (show_opcode_statistics)
+		if (cpu->emul->show_opcode_statistics)
 			cpu->stats__special[special6] ++;
 
 		switch (special6) {
@@ -2720,7 +2719,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	case HI6_REGIMM:
 		regimm5 = instr[2] & 0x1f;
 
-		if (show_opcode_statistics)
+		if (cpu->emul->show_opcode_statistics)
 			cpu->stats__regimm[regimm5] ++;
 
 		switch (regimm5) {
@@ -2873,7 +2872,7 @@ static int cpu_run_instr(struct cpu *cpu)
 	case HI6_SPECIAL2:
 		special6 = instr[0] & 0x3f;
 
-		if (show_opcode_statistics)
+		if (cpu->emul->show_opcode_statistics)
 			cpu->stats__special2[special6] ++;
 
 		instrword = (instr[3] << 24) + (instr[2] << 16) + (instr[1] << 8) + instr[0];
@@ -3339,7 +3338,7 @@ int cpu_run(struct emul *emul, struct cpu **cpus, int ncpus)
 	if (show_nr_of_instructions || !quiet_mode)
 		cpu_show_cycles(emul, &starttime, ncycles, 1);
 
-	if (show_opcode_statistics)
+	if (emul->show_opcode_statistics)
 		cpu_show_full_statistics(cpus);
 
 	fflush(stdout);

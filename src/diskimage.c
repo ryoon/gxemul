@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.44 2004-10-10 14:07:49 debug Exp $
+ *  $Id: diskimage.c,v 1.45 2004-10-13 11:42:23 debug Exp $
  *
  *  Disk image support.
  *
@@ -335,7 +335,7 @@ void diskimage__switch_tape(int disk_id)
 int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 	struct scsi_transfer *xferp)
 {
-	int retlen;
+	int retlen, i;
 	uint64_t size;
 	int64_t ofs;
 	int pagecode;
@@ -357,6 +357,8 @@ int diskimage_scsicommand(struct cpu *cpu, int disk_id,
 
 	debug("[ diskimage_scsicommand(id=%i) cmd=0x%02x: ",
 	    disk_id, xferp->cmd[0]);
+
+fatal("[ diskimage_scsicommand(id=%i) cmd=0x%02x ]\n", disk_id, xferp->cmd[0]);
 
 	switch (xferp->cmd[0]) {
 
@@ -770,6 +772,9 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 		if (xferp->cmd_len != 6)
 			debug(" (weird len=%i)", xferp->cmd_len);
 
+		for (i=0; i<xferp->cmd_len ; i++)
+			debug(" %02x", xferp->cmd[i]);
+
 		/*  TODO: actualy care about cmd[]  */
 
 		diskimage__return_default_status_and_message(xferp);
@@ -799,6 +804,8 @@ xferp->data_in[4] = 0x2c - 4;	/*  Additional length  */
 			xferp->data_in[2] = 0x80;
 		}
 		debug(": [2]=0x%02x ", xferp->data_in[2]);
+
+printf(" XXX \n");
 
 		/*  TODO  */
 		xferp->data_in[7] = retlen - 7;		/*  additional sense length  */

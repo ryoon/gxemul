@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_crime.c,v 1.7 2004-01-09 04:20:40 debug Exp $
+ *  $Id: dev_crime.c,v 1.8 2004-01-09 16:25:35 debug Exp $
  *  
  *  SGI "crime".
  *
@@ -48,7 +48,7 @@ struct crime_data {
 };
 
 
-#define	CRIME_TICKSHIFT		8
+#define	CRIME_TICKSHIFT		9
 
 
 /*
@@ -84,9 +84,6 @@ int dev_crime_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr
 {
 	int i;
 	struct crime_data *d = extra;
-
-	/*  Set crime version/revision:  */
-	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0x11;
 
 	if (writeflag == MEM_WRITE)
 		memcpy(&d->reg[relative_addr], data, len);
@@ -129,6 +126,27 @@ void dev_crime_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct crime_data));
+
+	/*  Set crime version/revision:  */
+	d->reg[4] = 0x00; d->reg[5] = 0x00; d->reg[6] = 0x00; d->reg[7] = 0x11;
+
+	/*  Amount of memory.  Bit 8 of bank control set ==> 128MB instead of 32MB per bank (?)  */
+	/*  When the bank control registers contain the same value as the previous one, that
+		bank is not valid. (?)  */
+	d->reg[CRM_MEM_BANK_CTRL0 + 6] |= 1;
+
+/*  Random experiments:  */
+d->reg[CRM_MEM_BANK_CTRL0 + 7] = random();
+
+/*
+	d->reg[CRM_MEM_BANK_CTRL1 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL2 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL3 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL4 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL5 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL6 + 6] |= 1;
+	d->reg[CRM_MEM_BANK_CTRL7 + 6] |= 1;
+*/
 
 	memory_device_register(mem, "crime", baseaddr, DEV_CRIME_LENGTH, dev_crime_access, d);
 	cpu_add_tickfunction(cpu, dev_crime_tick, d, CRIME_TICKSHIFT);

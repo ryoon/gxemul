@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.1 2004-08-03 00:58:09 debug Exp $
+ *  $Id: dev_vga.c,v 1.2 2004-08-03 01:25:25 debug Exp $
  *  
  *  VGA text console device.
  */
@@ -59,6 +59,47 @@ struct vga_data {
 
 
 /*
+ *  vga_update():
+ */
+void vga_update(struct cpu *cpu, struct vga_data *d, int start, int end)
+{
+	int fg, bg, i, x,y, subx, line;
+
+	start &= ~1;
+	end |= 1;
+
+	for (i=start; i<end; i+=2) {
+		unsigned char ch = d->videomem[i];
+		fg = d->videomem[i+1] & 15;
+		bg = (d->videomem[i+1] >> 4) & 7;
+
+		x = (i % 160) / 2 * 8;
+		y = (i / 160) * 16;
+
+		for (line = 0; line < 16; line++) {
+			for (subx = 0; subx < 8; subx++) {
+				unsigned char pixel[3];
+				int addr = (640*y + x + subx) * 3;
+
+				pixel[0] = d->fb->rgb_palette[bg * 3 + 0];
+				pixel[1] = d->fb->rgb_palette[bg * 3 + 1];
+				pixel[2] = d->fb->rgb_palette[bg * 3 + 2];
+
+				if (font8x16[ch * 16 + line] & (128 >> subx)) {
+					pixel[0] = d->fb->rgb_palette[fg * 3 + 0];
+					pixel[1] = d->fb->rgb_palette[fg * 3 + 1];
+					pixel[2] = d->fb->rgb_palette[fg * 3 + 2];
+				}
+
+				dev_fb_access(cpu, cpu->mem, addr, &pixel[0], sizeof(pixel), MEM_WRITE, d->fb);
+			}
+			y++;
+		}
+	}
+}
+
+
+/*
  *  dev_vga_access():
  */
 int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
@@ -73,6 +114,7 @@ int dev_vga_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr,
 	if (relative_addr < sizeof(d->videomem)) {
 		if (writeflag == MEM_WRITE) {
 			memcpy(d->videomem + relative_addr, data, len);
+			vga_update(cpu, d, relative_addr, relative_addr + len-1);
 		} else
 			memcpy(data, d->videomem + relative_addr, len);
 		return 1;
@@ -151,6 +193,7 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	uint64_t control_base)
 {
 	struct vga_data *d;
+	int r,g,b,i;
 
 	d = malloc(sizeof(struct vga_data));
 	if (d == NULL) {
@@ -164,7 +207,25 @@ void dev_vga_init(struct cpu *cpu, struct memory *mem, uint64_t videomem_base,
 	d->fb = dev_fb_init(cpu, mem, VGA_FB_ADDR, VFB_GENERIC, 640,480,
 	    640,480, 24, "VGA");
 
-	memory_device_register(mem, "vga_mem", videomem_base, 80*25*2,
+	i = 0;
+	for (r=0; r<2; r++)
+		for (g=0; g<2; g++)
+			for (b=0; b<2; b++) {
+				d->fb->rgb_palette[i + 0] = r * 0x7f;
+				d->fb->rgb_palette[i + 1] = g * 0x7f;
+				d->fb->rgb_palette[i + 2] = b * 0x7f;
+				i+=3;
+			}
+	for (r=0; r<2; r++)
+		for (g=0; g<2; g++)
+			for (b=0; b<2; b++) {
+				d->fb->rgb_palette[i + 0] = r * 0x7f + 0x80;
+				d->fb->rgb_palette[i + 1] = g * 0x7f + 0x80;
+				d->fb->rgb_palette[i + 2] = b * 0x7f + 0x80;
+				i+=3;
+			}
+
+	memory_device_register(mem, "vga_mem", videomem_base, 80*50*2,
 	    dev_vga_access, d);
 	memory_device_register(mem, "vga_ctrl", control_base, 16,
 	    dev_vga_ctrl_access, d);

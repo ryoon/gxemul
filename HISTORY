@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.266 2004-10-21 03:32:05 debug Exp $
+$Id: HISTORY,v 1.267 2004-10-21 04:44:05 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1042,3 +1042,5 @@ HISTORY of mips64emul
 20041021	Minor updates.
 		R1[024]000 cache size bits in the config register should now
 		be ok.
+		Trying to make dev_asc.c work better with PICA.
+		More work on PICA interrupts (but they are broken now).

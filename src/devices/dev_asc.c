@@ -23,18 +23,26 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: dev_asc.c,v 1.42 2004-10-18 04:53:46 debug Exp $
+ *  $Id: dev_asc.c,v 1.43 2004-10-21 04:44:06 debug Exp $
  *
- *  'asc' SCSI controller for some DECstation/DECsystem models.
+ *  'asc' SCSI controller for some DECstation/DECsystem models, and
+ *  for PICA-61.
  *
  *  Supposed to support SCSI-1 and SCSI-2. I've not yet found any docs
  *  on NCR53C9X, so I'll try to implement this device from LSI53CF92A docs
  *  instead.
  *
+ *
+ *  Memory layout on DECstation:
+ *
  *	NCR53C94 registers	at base + 0
  *	DMA address register	at base + 0x40000
  *	128K SRAM buffer	at base + 0x80000
  *	ROM			at base + 0xc0000
+ *
+ *  Memory layout on PICA-61:
+ *
+ *	I haven't had time to look this up yet, but length = 0x1000.
  *
  *
  *  TODO:  This module needs a clean-up, and some testing to see that
@@ -53,8 +61,10 @@
 
 #include "ncr53c9xreg.h"
 
-/*  #define ASC_DEBUG  */
-/*  #define ASC_FULL_REGISTER_ACCESS_DEBUG  */
+
+#define ASC_DEBUG
+#define ASC_FULL_REGISTER_ACCESS_DEBUG
+
 
 #define	ASC_FIFO_LEN		16
 #define	STATE_DISCONNECTED	0
@@ -75,6 +85,8 @@ extern int quiet_mode;
 #define	ASC_SCSI_ID		7
 
 struct asc_data {
+	int		mode;
+
 	void		*turbochannel;
 	int		irq_nr;
 	int		irq_caused_last_time;
@@ -635,7 +647,20 @@ int dev_asc_access(struct cpu *cpu, struct memory *mem,
 
 
 	idata = memory_readmax64(cpu, data, len);
-	regnr = relative_addr / 4;
+
+#if 1
+	fatal("[ asc: writeflag=%i addr=%08x idata=%016llx ]\n",
+	    writeflag, (int)relative_addr, (long long)idata);
+#endif
+
+	switch (d->mode) {
+	case DEV_ASC_DEC:
+		regnr = relative_addr / 4;
+		break;
+	case DEV_ASC_PICA:
+	default:
+		regnr = relative_addr;
+	}
 
 	/*  Controller's ID is fixed:  */
 	d->reg_ro[NCR_CFG1] = (d->reg_ro[NCR_CFG1] & ~7) | ASC_SCSI_ID;
@@ -1036,7 +1061,8 @@ break;
  *  Register an 'asc' device.
  */
 void dev_asc_init(struct cpu *cpu, struct memory *mem,
-	uint64_t baseaddr, int irq_nr, void *turbochannel)
+	uint64_t baseaddr, int irq_nr, void *turbochannel,
+	int mode)
 {
 	struct asc_data *d;
 
@@ -1048,8 +1074,11 @@ void dev_asc_init(struct cpu *cpu, struct memory *mem,
 	memset(d, 0, sizeof(struct asc_data));
 	d->irq_nr       = irq_nr;
 	d->turbochannel = turbochannel;
+	d->mode         = mode;
 
-	memory_device_register(mem, "asc", baseaddr, DEV_ASC_LENGTH,
+	memory_device_register(mem, "asc", baseaddr,
+	    mode == DEV_ASC_PICA?
+		DEV_ASC_PICA_LENGTH : DEV_ASC_DEC_LENGTH,
 	    dev_asc_access, d);
 
 	cpu_add_tickfunction(cpu, dev_asc_tick, d, 15);

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_pica.c,v 1.3 2004-10-17 15:31:39 debug Exp $
+ *  $Id: dev_pica.c,v 1.4 2004-10-21 04:44:06 debug Exp $
  *  
  *  Acer PICA-61 stuff.
  */
@@ -42,7 +42,7 @@
 
 #define	DEV_PICA_TICKSHIFT		9
 
-#define	PICA_TIMER_IRQ			1
+#define	PICA_TIMER_IRQ			15
 
 
 /*
@@ -53,7 +53,7 @@ void dev_pica_tick(struct cpu *cpu, void *extra)
 	struct pica_data *d = extra;
 
 	if (d->interval_start > 0 && d->interval > 0
-	    && (d->int_enable_mask & (1 << PICA_TIMER_IRQ))) {
+	    && (d->int_enable_mask & 2) /* Hm? */ ) {
 		d->interval --;
 		if (d->interval <= 0) {
 			debug("[ pica: interval timer interrupt ]\n");
@@ -81,7 +81,8 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 	case R4030_SYS_ISA_VECTOR:
 		/*  ?  */
 		{
-			uint32_t x = d->int_asserted & d->int_enable_mask;
+			uint32_t x = d->int_asserted
+			    /* & d->int_enable_mask */;
 			odata = 0;
 			while (odata < 16) {
 				if (x & (1 << odata))
@@ -134,6 +135,52 @@ int dev_pica_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
+ *  dev_pica_access_a0():
+ */
+int dev_pica_access_a0(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct pica_data *d = (struct pica_data *) extra;
+	uint64_t idata = 0, odata = 0;
+	int regnr;
+
+	idata = memory_readmax64(cpu, data, len);
+	odata = 0;
+
+/*  TODO  */
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
+ *  dev_pica_access_20():
+ */
+int dev_pica_access_20(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *extra)
+{
+	struct pica_data *d = (struct pica_data *) extra;
+	uint64_t idata = 0, odata = 0;
+	int regnr;
+
+	idata = memory_readmax64(cpu, data, len);
+	odata = 0;
+
+/*  TODO  */
+
+	if (writeflag == MEM_READ)
+		memory_writemax64(cpu, data, len, odata);
+
+	return 1;
+}
+
+
+/*
  *  dev_pica_init():
  */
 struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
@@ -148,6 +195,13 @@ struct pica_data *dev_pica_init(struct cpu *cpu, struct memory *mem,
 
 	memory_device_register(mem, "pica", baseaddr, DEV_PICA_LENGTH,
 	    dev_pica_access, (void *)d);
+
+	memory_device_register(mem, "pica_20", 0x90000000020ULL, 2,
+	    dev_pica_access_20, (void *)d);
+
+	memory_device_register(mem, "pica_a0", 0x900000000a0ULL, 2,
+	    dev_pica_access_a0, (void *)d);
+
 	cpu_add_tickfunction(cpu, dev_pica_tick, d, DEV_PICA_TICKSHIFT);
 
 	return d;

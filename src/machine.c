@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.196 2004-10-21 03:32:07 debug Exp $
+ *  $Id: machine.c,v 1.197 2004-10-21 04:44:07 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -509,16 +509,14 @@ void kn230_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 
 /*
  *  Acer PICA-61 interrupts:
- *
- *  TODO: Are all interrupts really on hardware interrupt line 6?
  */
 void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 {
 	uint32_t irq;
 	irq_nr -= 8;
 
-	/*  fatal("pica_interrupt() irq_nr = %i, assrt = %i\n",
-		irq_nr, assrt);  */
+	debug("pica_interrupt() irq_nr = %i, assrt = %i\n",
+		irq_nr, assrt);
 
 	irq = 1 << irq_nr;
 
@@ -527,10 +525,18 @@ void pica_interrupt(struct cpu *cpu, int irq_nr, int assrt)
 	else
 		pica_data->int_asserted &= ~irq;
 
-	/*  printf("   %08x %08x\n", pica_data->int_asserted,
-		pica_data->int_enable_mask);  */
+	debug("   %08x %08x\n", pica_data->int_asserted,
+		pica_data->int_enable_mask);
 
-	if (pica_data->int_asserted & pica_data->int_enable_mask)
+	/*  TODO: this "15" (0x8000) is the timer... fix this?  */
+
+	if (pica_data->int_asserted /* & pica_data->int_enable_mask */
+	    & ~0x8000 )
+		cpu_interrupt(cpu, 4);
+	else
+		cpu_interrupt_ack(cpu, 4);
+
+	if (pica_data->int_asserted & 0x8000)
 		cpu_interrupt(cpu, 6);
 	else
 		cpu_interrupt_ack(cpu, 6);
@@ -1039,7 +1045,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_scc_init(cpu, mem, 0x1c100000, KMIN_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_scc_init(cpu, mem, 0x1c180000, KMIN_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, 0x1c200000, KMIN_INTR_CLOCK +8, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL);
+			dev_asc_init(cpu, mem, 0x1c300000, KMIN_INTR_SCSI +8, NULL, DEV_ASC_DEC);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1097,7 +1103,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_scc_init(cpu, mem, KN03_SYS_SCC_0, KN03_INTR_SCC_0 +8, emul->use_x11, 0, 1);
 			dev_scc_init(cpu, mem, KN03_SYS_SCC_1, KN03_INTR_SCC_1 +8, emul->use_x11, 1, 1);
 			dev_mc146818_init(cpu, mem, KN03_SYS_CLOCK, KN03_INT_RTC, MC146818_DEC, 1);
-			dev_asc_init(cpu, mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL);
+			dev_asc_init(cpu, mem, KN03_SYS_SCSI, KN03_INTR_SCSI +8, NULL, DEV_ASC_DEC);
 
 			/*
 			 *  TURBOchannel slots 0, 1, and 2 are free for
@@ -1241,7 +1247,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 			dev_mc146818_init(cpu, mem, 0x1c200000,
 			    XINE_INT_TOY, MC146818_DEC, 1);
 			dev_asc_init(cpu, mem, 0x1c300000,
-			    XINE_INTR_SCSI +8, NULL);
+			    XINE_INTR_SCSI +8, NULL, DEV_ASC_DEC);
 
 			framebuffer_console_name = "osconsole=3,2";	/*  keyb,fb ??  */
 			serial_console_name      = "osconsole=3";
@@ -1282,7 +1288,7 @@ void machine_init(struct emul *emul, struct memory *mem)
 #if 0
 			dev_turbochannel_init(cpu, mem, 0, 0x17100000, 0x171fffff, "PMAZ-AA", 0);	/*  irq?  */
 #else
-			dev_asc_init(cpu, mem, 0x17100000, 0, NULL);		/*  irq?  */
+			dev_asc_init(cpu, mem, 0x17100000, 0, NULL, DEV_ASC_DEC);		/*  irq?  */
 #endif
 
 			framebuffer_console_name = "osconsole=0,0";	/*  TODO (?)  */
@@ -2157,9 +2163,8 @@ void machine_init(struct emul *emul, struct memory *mem)
 				/*  dev_vga_init(cpu, mem, 0x100000b0000ULL, 0x60000003b0ULL);  */
 				dev_vga_init(cpu, mem, 0x100000b8000ULL, 0x60000003d0ULL);
 
-				/*  Cannot be attached yet, too DECstation specific.  */
-				/*  dev_asc_init(cpu, mem,
-				    0x2000002000ULL, 0, NULL);  */
+				dev_asc_init(cpu, mem,
+				    0x2000002000ULL, 8 + 5, NULL, DEV_ASC_PICA);
 
 				/*  Linux:  0x800004000  */
 				/*  NetBSD: 0x2000004000  */

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul_parse.c,v 1.15 2005-01-29 09:22:17 debug Exp $
+ *  $Id: emul_parse.c,v 1.16 2005-01-29 09:31:01 debug Exp $
  *
  *  Set up an emulation by parsing a config file.
  *
@@ -210,6 +210,7 @@ static char cur_machine_byte_order[20];
 static char cur_machine_random_mem_contents[10];
 static char cur_machine_force_netboot[10];
 static char cur_machine_ncpus[10];
+static char cur_machine_n_gfx_cards[10];
 static char cur_machine_memory[10];
 #define	MAX_N_LOAD	20
 #define	MAX_LOAD_LEN	4000
@@ -328,6 +329,7 @@ static void parse__emul(struct emul *e, FILE *f, int *in_emul, int *line,
 		cur_machine_random_mem_contents[0] = '\0';
 		cur_machine_force_netboot[0] = '\0';
 		cur_machine_ncpus[0] = '\0';
+		cur_machine_n_gfx_cards[0] = '\0';
 		cur_machine_memory[0] = '\0';
 		return;
 	}
@@ -457,6 +459,9 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 			strcpy(cur_machine_ncpus, "0");
 		m->ncpus = atoi(cur_machine_ncpus);
 
+		if (cur_machine_n_gfx_cards[0])
+			m->n_gfx_cards = atoi(cur_machine_n_gfx_cards);
+
 		/*  NOTE: Default nr of CPUs is 0:  */
 		if (!cur_machine_memory[0])
 			strcpy(cur_machine_memory, "0");
@@ -512,6 +517,7 @@ static void parse__machine(struct emul *e, FILE *f, int *in_emul, int *line,
 	WORD("random_mem_contents", cur_machine_random_mem_contents);
 	WORD("force_netboot", cur_machine_force_netboot);
 	WORD("ncpus", cur_machine_ncpus);
+	WORD("n_gfx_cards", cur_machine_n_gfx_cards);
 	WORD("memory", cur_machine_memory);
 
 	if (strcmp(word, "load") == 0) {

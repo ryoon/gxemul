@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.140 2005-02-07 06:14:48 debug Exp $
+ *  $Id: devices.h,v 1.141 2005-02-07 07:12:25 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -350,8 +350,12 @@ void dev_mp_init(struct memory *mem, struct cpu *cpus[]);
 #define	PCKBC_8042		0
 #define	PCKBC_8242		1
 #define	PCKBC_JAZZ		3
-int dev_pckbc_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);
-void dev_pckbc_init(struct machine *machine, struct memory *mem, uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr, int in_use);
+int dev_pckbc_access(struct cpu *cpu, struct memory *mem,
+	uint64_t relative_addr, unsigned char *data, size_t len,
+	int writeflag, void *);
+int dev_pckbc_init(struct machine *machine, struct memory *mem,
+	uint64_t baseaddr, int type, int keyboard_irqnr, int mouse_irqnr,
+	int in_use);
 
 /*  dev_ps2_gif.c:  */
 #define	DEV_PS2_GIF_LENGTH		0x10000

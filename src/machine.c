@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.336 2005-02-07 06:14:50 debug Exp $
+ *  $Id: machine.c,v 1.337 2005-02-07 07:12:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -1147,7 +1147,7 @@ void au1x00_interrupt(struct machine *m, struct cpu *cpu,
 void machine_setup(struct machine *machine)
 {
 	uint64_t addr, addr2;
-	int i;
+	int i, j;
 	struct memory *mem;
 
 	/*  DECstation:  */
@@ -2344,13 +2344,15 @@ Why is this here? TODO
 				 */
 
 				/*  zsc0 serial console.  */
-				machine->main_console_handle =
-				    dev_zs_init(machine, mem, 0x1fbd9830,
+				i = dev_zs_init(machine, mem, 0x1fbd9830,
 				    8 + 32 + 3 + 64*5, 1, "zsc0");
 
 				/*  Not supported by NetBSD 1.6.2, but by 2.0_BETA:  */
-				dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
+				j = dev_pckbc_init(machine, mem, 0x1fbd9840, PCKBC_8242,
 				    0, 0, machine->use_x11);  /*  TODO: irq numbers  */
+
+				if (machine->use_x11)
+					machine->main_console_handle = j;
 
 				/*  sq0: Ethernet.  TODO:  This should have irq_nr = 8 + 3  */
 				/*  dev_sq_init...  */
@@ -2516,7 +2518,7 @@ Why is this here? TODO
 				 *  intr 7 = MACE_PCI_BRIDGE
 				 */
 
-				dev_pckbc_init(machine, mem, 0x1f320000,
+				i = dev_pckbc_init(machine, mem, 0x1f320000,
 				    PCKBC_8242, 0x200 + MACE_PERIPH_MISC,
 				    0x800 + MACE_PERIPH_MISC, machine->use_x11);
 							/*  keyb+mouse (mace irq numbers)  */
@@ -2535,12 +2537,17 @@ Why is this here? TODO
 
 				dev_sgi_ust_init(mem, 0x1f340000);  /*  ust?  */
 
-				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x1f390000,
+				j = dev_ns16550_init(machine, mem, 0x1f390000,
 				    (1<<20) + MACE_PERIPH_SERIAL, 0x100,
 				    machine->use_x11? 0 : 1, "serial 0");	/*  com0  */
 				dev_ns16550_init(machine, mem, 0x1f398000,
 				    (1<<26) + MACE_PERIPH_SERIAL, 0x100,
 				    0, "serial 1");				/*  com1  */
+
+				if (machine->use_x11)
+					machine->main_console_handle = i;
+				else
+					machine->main_console_handle = j;
 
 				dev_mc146818_init(machine, mem, 0x1f3a0000, (1<<8) + MACE_PERIPH_MISC, MC146818_SGI, 0x40);  /*  mcclock0  */
 				dev_zs_init(machine, mem, 0x1fbd9830, 0, 1, "zs console");
@@ -2613,11 +2620,17 @@ Why is this here? TODO
 
 				dev_sn_init(cpu, mem, 0x80001000ULL, 0);
 				dev_mc146818_init(machine, mem, 0x80004000ULL, 0, MC146818_ARC_NEC, 1);
-				dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
-				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x80006000ULL,
+				i = dev_pckbc_init(machine, mem, 0x80005000ULL, PCKBC_8042, 0, 0, machine->use_x11);
+				j = dev_ns16550_init(machine, mem, 0x80006000ULL,
 				    3, 1, machine->use_x11? 0 : 1, "serial 0");  /*  com0  */
 				dev_ns16550_init(machine, mem, 0x80007000ULL,
 				    0, 1, 0, "serial 1"); /*  com1  */
+
+				if (machine->use_x11)
+					machine->main_console_handle = i;
+				else
+					machine->main_console_handle = j;
+
 				/*  lpt at 0x80008000  */
 				dev_fdc_init(mem, 0x8000c000ULL, 0);
 
@@ -2752,15 +2765,19 @@ Why is this here? TODO
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
-				dev_pckbc_init(machine, mem, 0x80005000ULL,
+				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 
-				machine->main_console_handle =
-				    dev_ns16550_init(machine, mem,
+				j = dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
 				    machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem,
 				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
+
+				if (machine->use_x11)
+					machine->main_console_handle = i;
+				else
+					machine->main_console_handle = j;
 
 				break;
 
@@ -2783,16 +2800,21 @@ Why is this here? TODO
 				dev_mc146818_init(machine, mem,
 				    0x80004000ULL, 2, MC146818_ARC_JAZZ, 1);
 
+				i = 0;		/*  TODO: Yuck!  */
 #if 0
-				dev_pckbc_init(machine, mem, 0x80005000ULL,
+				i = dev_pckbc_init(machine, mem, 0x80005000ULL,
 				    PCKBC_JAZZ, 8 + 6, 8 + 7, machine->use_x11);
 #endif
-				machine->main_console_handle =
-				    dev_ns16550_init(machine, mem,
+				j = dev_ns16550_init(machine, mem,
 				    0x80006000ULL, 8 + 8, 1,
 				    machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem,
 				    0x80007000ULL, 8 + 9, 1, 0, "serial 1");
+
+				if (machine->use_x11)
+					machine->main_console_handle = i;
+				else
+					machine->main_console_handle = j;
 
 				dev_m700_fb_init(machine, mem,
 				    0x180080000ULL, 0x100000000ULL);
@@ -2816,7 +2838,7 @@ Why is this here? TODO
 				    0x9000003c0ULL, ARC_CONSOLE_MAX_X,
 				    ARC_CONSOLE_MAX_Y);
 
-				machine->main_console_handle = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
+				i = dev_ns16550_init(machine, mem, 0x9000003f8ULL, 0, 1, machine->use_x11? 0 : 1, "serial 0");
 				dev_ns16550_init(machine, mem, 0x9000002f8ULL, 0, 1, 0, "serial 1");
 				dev_ns16550_init(machine, mem, 0x9000003e8ULL, 0, 1, 0, "serial 2");
 				dev_ns16550_init(machine, mem, 0x9000002e8ULL, 0, 1, 0, "serial 3");
@@ -2829,8 +2851,13 @@ Why is this here? TODO
 				dev_wdc_init(machine, mem, 0x900000170ULL, 0, 2);
 #endif
 				/*  PC kbd  */
-				dev_pckbc_init(machine, mem, 0x900000060ULL,
+				j = dev_pckbc_init(machine, mem, 0x900000060ULL,
 				    PCKBC_8042, 0, 0, machine->use_x11);
+
+				if (machine->use_x11)
+					machine->main_console_handle = j;
+				else
+					machine->main_console_handle = i;
 
 				break;
 

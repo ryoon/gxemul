@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.8 2005-02-01 16:19:11 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.9 2005-02-01 17:22:08 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -40,9 +40,17 @@
 #include "cpu.h"
 #include "cpu_ppc.h"
 #include "machine.h"
+#include "memory.h"
 #include "misc.h"
 #include "opcodes_ppc.h"
 #include "symbol.h"
+
+
+extern volatile int single_step;
+extern int old_show_trace_tree;   
+extern int old_instruction_trace;
+extern int old_quiet_mode;
+extern int quiet_mode;
 
 
 /*
@@ -480,4 +488,88 @@ void ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 disasm_ret:
 	debug("\n");
 }
+
+
+/*
+ *  ppc_cpu_run_instr():
+ *  
+ *  Execute one instruction on a cpu.
+ *
+ *  Return value is the number of instructions executed during this call,
+ *  0 if no instruction was executed.
+ */
+int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
+{
+	uint32_t iword;
+	unsigned char buf[4];
+	int r, hi6, rt, rs, ra, imm;
+	uint64_t tmp;
+	uint64_t cached_pc = cpu->cd.ppc.pc & ~3;
+
+	r = memory_rw(cpu, cpu->mem, cached_pc, &buf[0], sizeof(buf),
+	    MEM_READ, CACHE_INSTRUCTION | PHYSICAL);
+	if (!r)
+		return 0;
+
+	iword = (buf[0] << 24) ^ (buf[1] << 16) + (buf[2] << 8) | buf[3];
+
+	if (cpu->machine->instruction_trace) {
+		/*  TODO: Yuck.  */
+		int tmp = buf[0]; buf[0] = buf[3]; buf[3] = tmp;
+		tmp = buf[1]; buf[1] = buf[2]; buf[2] = tmp;
+		ppc_cpu_disassemble_instr(cpu, buf, 1, 0, 0);
+	}
+
+	cpu->cd.ppc.pc += sizeof(iword);
+	cached_pc += sizeof(iword);
+
+	hi6 = iword >> 26;
+
+	switch (hi6) {
+
+	case PPC_HI6_ADDI:
+	case PPC_HI6_ADDIS:
+		rt = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		if (hi6 == PPC_HI6_ADDI)
+			imm = (int16_t)(iword & 0xffff);
+		else
+			imm = (int32_t)((iword & 0xffff) << 16);
+		if (ra == 0)
+			tmp = 0;
+		else
+			tmp = cpu->cd.ppc.gpr[ra];
+		cpu->cd.ppc.gpr[rt] += imm;
+		break;
+
+	case PPC_HI6_ORI:
+	case PPC_HI6_ORIS:
+		rs = (iword >> 21) & 31;
+		ra = (iword >> 16) & 31;
+		if (hi6 == PPC_HI6_ORI)
+			imm = (iword & 0xffff);
+		else
+			imm = (iword & 0xffff) << 16;
+		tmp = cpu->cd.ppc.gpr[rs];
+		cpu->cd.ppc.gpr[ra] = tmp | (uint32_t)imm;
+		break;
+
+	default:
+		fatal("[ unimplemented PPC hi6 = 0x%02x, pc = 0x%016llx ]\n",
+		    hi6, (long long) (cached_pc - sizeof(iword)));
+		cpu->running = 0;
+		return 0;
+	}
+
+	return 1;
+}
+
+
+#define CPU_RUN		ppc_cpu_run
+#define CPU_RINSTR	ppc_cpu_run_instr
+#define CPU_RUN_PPC
+#include "cpu_run.c"
+#undef CPU_RINSTR
+#undef CPU_RUN_PPC
+#undef CPU_RUN
 

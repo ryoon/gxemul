@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.277 2005-02-01 14:39:38 debug Exp $
+ *  $Id: cpu.c,v 1.278 2005-02-01 17:22:07 debug Exp $
  *
  *  Common routines for CPU emulation. (Not specific to any CPU type.)
  */
@@ -231,8 +231,11 @@ int cpu_run(struct emul *emul, struct machine *machine)
 	case ARCH_MIPS:
 		return mips_cpu_run(emul, machine);
 		break;
+	case ARCH_PPC:
+		return ppc_cpu_run(emul, machine);
+		break;
 	default:
-		fatal("cpu_run(): not for PPC yet\n");
+		fatal("cpu_run(): ?\n");
 		return 0;
 	}
 }

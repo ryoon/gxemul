@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.549 2005-02-01 07:21:50 debug Exp $
+$Id: HISTORY,v 1.550 2005-02-01 17:22:06 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -1609,3 +1609,5 @@ HISTORY of mips64emul
 		Adding a 'name' field to the emul struct, and adding a command
 		to the debugger ("focus") to make it possible to switch focus
 		to different machines (in different emuls).
+		Beginning to work on the PPC disassembler etc. Hello World
+		for linux-ppc64 can be disassembled :-)

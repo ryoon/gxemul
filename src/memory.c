@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory.c,v 1.17 2004-01-30 03:10:13 debug Exp $
+ *  $Id: memory.c,v 1.18 2004-02-06 06:12:51 debug Exp $
  *
  *  Functions for handling the memory of an emulated machine.
  */
@@ -811,13 +811,16 @@ no_exception_access:
 		 *  On writes to physical RAM addresses, invalidate any
 		 *  binary translations for those addresses.
 		 */
+		int chunk_nr = -1;
 
 		mem->bintrans_last_paddr = paddr;
 
 		if (writeflag == MEM_WRITE)
 			bintrans_invalidate(mem, paddr, len);
 		if (writeflag == MEM_READ && cache == CACHE_INSTRUCTION)
-			transl_cache_hit = bintrans_check_cache(mem, paddr, NULL);
+			transl_cache_hit = bintrans_check_cache(mem, paddr, &chunk_nr);
+
+		mem->bintrans_last_chunk_nr = chunk_nr;
 	}
 
 	/*
@@ -881,6 +884,13 @@ no_exception_access:
 
 
 do_return_ok:
+	if (bintrans_enable) {
+		size_t host4kpage = (size_t)memblock;
+		host4kpage += (offset & ~0xfff);
+
+		mem->bintrans_last_host4kpage = (void *) host4kpage;
+	}
+
 	if (transl_cache_hit)
 		return INSTR_BINTRANS;
 	else

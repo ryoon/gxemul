@@ -32,7 +32,7 @@
 struct pci_device {
 	int		bus, device, function;
 
-	void		(*init)(struct memory *mem);
+	void		(*init)(struct cpu *, struct memory *mem);
 	uint32_t	(*read_register)(int reg);
 
 	struct pci_device *next;
@@ -40,6 +40,8 @@ struct pci_device {
 
 struct pci_data {
 	uint32_t	pci_addr;
+	int		last_was_write_ffffffff;
+
 	struct pci_device *first_device;
 };
 
@@ -53,9 +55,9 @@ struct pci_data {
 
 /*  bus_pci.c:  */
 int bus_pci_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, uint64_t *data, int writeflag, struct pci_data *pci_data);
-void bus_pci_add(struct pci_data *pci_data, struct memory *mem,
+void bus_pci_add(struct cpu *cpu, struct pci_data *pci_data, struct memory *mem,
 	int bus, int device, int function,
-	void (*init)(struct memory *mem), uint32_t (*read_register)(int reg));
+	void (*init)(struct cpu *, struct memory *), uint32_t (*read_register)(int reg));
 struct pci_data *bus_pci_init(struct memory *mem);
 
 
@@ -63,15 +65,19 @@ struct pci_data *bus_pci_init(struct memory *mem);
  *  Individual devices:
  */
 
+/*  dec21030:  */
+uint32_t pci_dec21030_rr(int reg);
+void pci_dec21030_init(struct cpu *, struct memory *mem);
+
 /*  dec21143:  */
 uint32_t pci_dec21143_rr(int reg);
-void pci_dec21143_init(struct memory *mem);
+void pci_dec21143_init(struct cpu *, struct memory *mem);
 
 /*  vt82c586:  */
 uint32_t pci_vt82c586_isa_rr(int reg);
-void pci_vt82c586_isa_init(struct memory *mem);
+void pci_vt82c586_isa_init(struct cpu *, struct memory *mem);
 uint32_t pci_vt82c586_ide_rr(int reg);
-void pci_vt82c586_ide_init(struct memory *mem);
+void pci_vt82c586_ide_init(struct cpu *, struct memory *mem);
 
 
 #endif	/*  PCI_BUS_H  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.11 2004-03-28 15:07:44 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.12 2004-03-28 15:19:12 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -308,7 +308,7 @@ int dev_ps2_gif_access(struct cpu *cpu, struct memory *mem, uint64_t relative_ad
 			xend  = (data[8*8 + 0] + (data[8*8 + 1] << 8)) / 16;
 			yend  = (data[8*8 + 2] + (data[8*8 + 3] << 8)) / 16;
 
-			fatal("[ gif: LINUX cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);
+			debug("[ gif: LINUX cursor at (%i,%i)-(%i,%i) ]\n", xbase, ybase, xend, yend);
 
 			/*  Output the cursor to framebuffer memory:  */
 

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: index.html,v 1.177 2004-12-22 18:06:00 debug Exp $
+$Id: index.html,v 1.178 2004-12-26 13:38:46 debug Exp $
 
 Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
 
@@ -102,12 +102,27 @@ machine, or profiling SMP, memory usage, or system call patterns.
 
 <p>
 The emulator is written in C, depends on no external libraries (except X11,
-which is optional), and should compile and run on any Unix-like system. If it doesn't, that
-is to be considered a bug. No MIPS compiler toolchain is needed if the program you
-wish to run in the emulator is already in binary form. No ROM images are
-needed, the emulator will try to emulate things such as PROM calls by
-itself. However, if you have a ROM image, it might be possible to run it
-in the emulator.
+which is optional), and should compile and run on any Unix-like system. If
+it doesn't, that is to be considered a bug.
+
+<p>
+The emulator contains code which tries to emulate the workings of MIPS-like
+CPUs and surrounding hardware found in real machines, but it does not 
+contain any actual MIPS ROM code or other form of MIPS program code.  You 
+will need some form of program (in binary form) to run in the emulator.
+For many emulation modes, PROM calls are handled by the emulator itself, 
+so you do not need to use any PROM image at all.
+
+<p>
+You can use pre-compiled kernels (for example NetBSD kernels, or
+Linux), or other programs that are in MIPS binary format, and in some
+cases even actual ROM images. A couple of different file formats are
+supported (ELF, a.out, ECOFF, SREC, raw binaries).
+
+<p>
+You do not need any MIPS compiler toolchain to build or use mips64emul.
+If you need to compile MIPS binaries from sources, then of course you need 
+such a toolchain, but that is completely separate from mips64emul.
 
 <p>
 (MIPS is a registered trademark of MIPS Technologies. mips64emul is 
@@ -215,6 +230,13 @@ cause a tiny slowdown, so don't enable it unless you need it.
 <p>
 The possible configure options might differ between different releases and
 snapshots, so this list may be incomplete.
+
+<p>
+Once you have built mips64emul, running it should be rather 
+straight-forward. To exit the emulator, type CTRL-C to enter the 
+single-step debugger, and then type <b>quit</b>. By typing CTRL-B instead,
+a CTRL-C is sent to the emulated program.
+
 
 
 
@@ -1274,91 +1296,19 @@ for DECstation in the emulator:
 <a name="experiments"></a>
 <h3>Experiments with other kernels and guest OSes:</h3>
 
-The emulator contains code which tries to emulate the workings of MIPS-like CPUs
-and surrounding hardware found in real machines, but no actual MIPS ROM code or
-MIPS program code.  You will need some form of program to run in the emulator.
 <p>
-You can use pre-compiled kernels (for example NetBSD or Linux), ROM images, or other programs
-that are in MIPS binary format. A couple of different file formats are supported
-(ELF, a.out, ECOFF, SREC, raw binaries).
-<p>
-As an example, let's say you want to emulate a Silicon Graphics O2 machine.
-This machine type is also known as IP32, in the SGI namespace. Let's also
-say that you want to run NetBSD on this emulated machine. A pre-compiled kernel
-for NetBSD/sgimips can be found here:
-<a href="http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">
-http://ftp.sunet.se/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
-<p>
-Once you have downloaded the kernel and gunzip'd it, you can try it out in the
-emulator like this:
-<pre>
-	$ <b>./mips64emul -G32 -CR5000 -q netbsd-INSTALL</b>
-</pre>
--G signifies that we want SGI emulation, and 32 is the SGI-specific machine type.
--q suppresses debug messages. If everything works like it should, you should see NetBSD's boot messages...
-<pre>
-	$ <b>./mips64emul -G32 -CR5000 -q netbsd-INSTALL</b>
-	zs channel 0 had address 0xbfbd9830
-	 [ no symbols available ]
-	CPU clock speed = 3.00Mhz
-	Copyright (c) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003
-	    The NetBSD Foundation, Inc.  All rights reserved.
-	Copyright (c) 1982, 1986, 1989, 1991, 1993
-	    The Regents of the University of California.  All rights reserved.
-	
-	NetBSD 1.6.2 (RAMDISK) #0: Wed Feb 11 06:38:58 UTC 2004
-	    autobuild@tgm.netbsd.org:/autobuild/netbsd-1-6-PATCH002/sgimips/OBJ/autobuild/
-	netbsd-1-6-PATCH002/src/sys/arch/sgimips/compile/RAMDISK
-	32768 KB memory, 29988 KB free, 0 for ARCS, 1740 KB in 435 buffers
-	mainbus0 (root): SGI-IP32 [SGI, 8], 1 processor
-	cpu0 at mainbus0: MIPS R5000 CPU (0x2321) Rev. 2.1 with built-in FPU Rev. 1.0
-	cpu0: 32KB/32B 2-way set-associative L1 Instruction cache, 48 TLB entries
-	cpu0: 32KB/32B 2-way set-associative write-back L1 Data cache
-	cpu0: 1024KB/16B direct-mapped write-back L2 Data cache
-	crime0 at mainbus0 addr 0x14000000: rev 1.1
-	mace0 at mainbus0 addr 0x1f000000
-	mace0: isa sts 0
-	mace0: isa msk 0
-	com0 at mace0 offset 0x390000 intr 4: ns16550a, working fifo
-	com0: console
-	com1 at mace0 offset 0x398000 intr 4: ns16550a, working fifo
-	pckbc0 at mace0 offset 0x320000 intr 5: stub
-	lpt0 at mace0 offset 0x380000 intr 4: stub
-	mcclock0 at mace0 offset 0x3a0000
-	mec0 at mace0 offset 0x280000 intr 3: MAC-110 Ethernet, rev 0
-	mec0: station address 00:00:00:00:00:00
-	mec0: sorry, this is not a real driver
-	macepci0 at mace0 offset 0x80000 intr 7: rev 1
-	macepci0: ctrl 0
-	pci0 at macepci0 bus 0
-	pci0: i/o space, memory space enabled, rd/line, rd/mult, wr/inv ok
-	biomask 7f netmask 7f ttymask 7f clockmask ff
-	md0: internal 3072 KB image area
-	boot device: <unknown>
-	root on md0a dumps on md0b
-	WARNING: clock gained 28 days -- CHECK AND RESET THE DATE!
-	root file system type: ffs
-	Terminal type? [vt100] <b>_</b>
-</pre>
-and after typing vt100 (or just pressing enter), you'll reach NetBSD's install program.
-You will not be able to install anything though, as the AHC disk controller isn't
-emulated yet.
-<p>
-To exit the emulator, type CTRL-C to enter the single-step debugger,
-and type <b>quit</b>. By typing CTRL-B instead, a CTRL-C is sent to
-the emulated program.
-<p>
-Other operating system kernels can be downloaded from various places.
-Here are links to some of the kernels that I usually experiment with.
-(The degree to which these work in the emulator varies a lot.)
+Operating system kernels and other test programs can be downloaded from 
+various places. Here are links to some of the kernels that I usually 
+experiment with. (The degree to which these work in the emulator varies 
+a lot.)
 
 <p>
 <ul>
   <li>DECstation:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.gz</a>
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/pmax/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>gunzip the files, and run the emulator with <b>-D2 -q -N -XY2</b>
 	for a graphical framebuffer console. Remove <b>-XY2</b> and <b>-N</b> to use serial (stdin/stdout) console.
 	Read <a href="#netbsdinstall">this section</a> about how to install NetBSD/pmax onto a harddisk image.
@@ -1408,10 +1358,12 @@ Here are links to some of the kernels that I usually experiment with.
   <li>SGI:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.gz</a>
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/sgimips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
-	<br>gunzip, and try running with  <b>-G32 -CR5000</b>,
-		or <b>-G22</b> or <b>-G24</b> or <b>-G20</b>.
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP3x.symbols.gz</a>
+	<br>gunzip, and try running with <b>-G32</b>.
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/sgimips/binary/kernel/netbsd-INSTALL32_IP2x.symbols.gz</a>
+	<br>gunzip, and try running with <b>-G22</b> or <b>-G24</b> or <b>-G20</b>.
       <p>
       <li>Linux/SGI:
 	<br><a href="http://www.linux-mips.org/~glaurung/">http://www.linux-mips.org/~glaurung/</a>
@@ -1439,8 +1391,8 @@ Here are links to some of the kernels that I usually experiment with.
   <li>ARC:
     <ul>
       <li><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.gz</a>
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6.2/arc/binary/kernel/netbsd.RAMDISK.symbols.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/arc/binary/kernel/netbsd-RAMDISK.symbols.gz</a>
 	<br>gunzip, and try with <b>-A1 -X -N</b> or <b>-A1</b>.
 	<br>(You may also try other -A<i>x</i> models.)
 	<br>Read <a href="#netbsdarcinstall">this section</a> about how
@@ -1514,8 +1466,8 @@ Here are links to some of the kernels that I usually experiment with.
       <li><a href="http://www.netbsd.org/Ports/newsmips/">NetBSD/newsmips</a>:
 	<br>A NetBSD/newsmips kernel and corresponding symbols are
 		available here:
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.gz</a>
-	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-1.6/newsmips/binary/kernel/netbsd.INSTALL.symbols.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.gz</a>
+	<br><a href="ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz">ftp://ftp.netbsd.org/pub/NetBSD/NetBSD-2.0/newsmips/binary/kernel/netbsd-INSTALL.symbols.gz</a>
 	<br>Try running with <b>-f</b>.
 	<br>There's also a boot floppy available, but the emulator currently
 		doesn't support booting from it:

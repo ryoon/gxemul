@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.66 2005-02-01 16:19:11 debug Exp $
+ *  $Id: file.c,v 1.67 2005-02-02 09:29:41 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -87,6 +87,16 @@ struct aout_symbol {
 	uint32_t	strindex;
 	uint32_t	type;
 	uint32_t	addr;
+};
+
+/*  Special symbol format used by Microsoft-ish COFF files:  */
+struct ms_sym {
+	unsigned char	name[8];
+	unsigned char	value[4];
+	unsigned char	section[2];
+	unsigned char	type[2];
+	unsigned char	storage_class;
+	unsigned char	n_aux_syms;
 };
 
 
@@ -496,16 +506,78 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		unencode(cbExtOffset,   &symhdr.cbExtOffset,   uint32_t);
 
 		if (sym_magic != MIPS_MAGIC_SYM) {
-			debug("symbol magic = 0x%x: ", sym_magic);
-			switch (sym_magic) {
-			case 0x722e:
-				debug("possibly Windows NT (?)");
-				break;
-			default:
-				debug("UNKNOWN");
+			unsigned char *ms_sym_buf;
+			struct ms_sym *sym;
+			int n_real_symbols = 0;
+
+			debug("bad symbol magic, assuming Microsoft format: ");
+			ms_sym_buf = malloc(sizeof(struct ms_sym) * f_nsyms);
+			if (ms_sym_buf == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
 			}
-			debug("\n");
-			goto unknown_coff_symbols;
+			fseek(f, f_symptr, SEEK_SET);
+			len = fread(ms_sym_buf, 1,
+			    sizeof(struct ms_sym) * f_nsyms, f);
+			sym = (struct ms_sym *) ms_sym_buf;
+			for (sym_nr=0; sym_nr<f_nsyms; sym_nr++) {
+				int i;
+				char name[300];
+				uint32_t v, t, altname;
+				/*  debug("sym %5i: '", sym_nr);
+				for (i=0; i<8 && sym->name[i]; i++)
+					debug("%c", sym->name[i]);  */
+				v = sym->value[0] + (sym->value[1] << 8)
+				    + (sym->value[2] << 16)
+				    + (sym->value[3] << 24);
+				altname = sym->name[4] + (sym->name[5] << 8)
+				    + (sym->name[6] << 16)
+				    + (sym->name[3] << 24);
+				t = (sym->type[1] << 8) + sym->type[0];
+				/*  TODO: big endian COFF?  */
+				/*  debug("' value=0x%x type=0x%04x", v, t);  */
+
+				if (t == 0x20 && sym->name[0]) {
+					memcpy(name, sym->name, 8);
+					name[8] = '\0';
+					add_symbol_name(&m->symbol_context,
+					    v, 0, name, 0);
+					n_real_symbols ++;
+				} else if (t == 0x20 && !sym->name[0]) {
+					off_t ofs;
+					ofs = f_symptr + altname +
+					    sizeof(struct ms_sym) * f_nsyms;
+					fseek(f, ofs, SEEK_SET);
+					fread(name, 1, sizeof(name), f);
+					name[sizeof(name)-1] = '\0';
+					/*  debug(" [altname=0x%x '%s']",
+					    altname, name);  */
+					add_symbol_name(&m->symbol_context,
+					    v, 0, name, 0);
+					n_real_symbols ++;
+				}
+
+
+				if (sym->n_aux_syms) {
+					int n = sym->n_aux_syms;
+					/*  debug(" aux='");  */
+					while (n-- > 0) {
+						sym ++; sym_nr ++;
+						/*  for (i=0; i<8 &&
+						    sym->name[i]; i++)
+							debug("%c",
+							    sym->name[i]);  */
+					}
+					/*  debug("'");  */
+				}
+				/*  debug("\n");  */
+				sym ++;
+			}
+
+			debug("%i symbols\n", n_real_symbols);
+			free(ms_sym_buf);
+
+			goto skip_normal_coff_symbols;
 		}
 
 		debug("symbol header: magic = 0x%x\n", sym_magic);
@@ -557,7 +629,7 @@ static void file_load_ecoff(struct machine *m, struct memory *mem,
 		free(extsyms);
 		free(symbol_data);
 
-unknown_coff_symbols:
+skip_normal_coff_symbols:
 		;
 	}
 

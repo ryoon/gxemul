@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.19 2003-12-29 00:52:14 debug Exp $
+ *  $Id: machine.c,v 1.20 2003-12-29 09:48:14 debug Exp $
  *
  *  Emulation of specific machines.
  */
@@ -866,14 +866,28 @@ void machine_init(struct memory *mem)
 		cpus[0]->gpr[GPR_SP] = physical_ram_in_mb * 1048576 + 0x80000000 - 0x2080;
 
 		addr = SGI_ENV_STRINGS;
-		/*  add_environment_string("ConsoleIn=serial(0)", &addr);
-		    add_environment_string("ConsoleOut=serial(0)", &addr);  */
+#if 1
 		add_environment_string("ConsoleOut=arcs", &addr);
+#else
+		add_environment_string("ConsoleIn=serial(0)", &addr);
+		add_environment_string("ConsoleOut=serial(0)", &addr);
+#endif
 		add_environment_string("cpufreq=3", &addr);
 		add_environment_string("dbaud=9600", &addr);
+		add_environment_string("eaddr=00:00:00:00:00:00", &addr);
 		add_environment_string("", &addr);	/*  the end  */
 
 		break;
+
+	case EMULTYPE_NINTENDO64:
+		machine_name = "Nintendo 64";
+
+		/*  TODO: ???  */
+
+		cpus[bootstrap_cpu]->gpr[GPR_SP] = 0x80007f00;
+
+		break;
+
 	default:
 		;
 	}

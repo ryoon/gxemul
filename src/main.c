@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.8 2003-12-22 18:20:18 debug Exp $
+ *  $Id: main.c,v 1.9 2003-12-29 09:48:14 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -166,7 +166,7 @@ void usage(char *progname)
 	printf("  -F        try to emulate a hpcmips machine\n");
 	printf("  -G ss     try to emulate an SGI machine, where ss is the IP number\n");
 	printf("                (22 for IP22, 32 for IP32, and so on)\n");
-	printf("  -H        initialize emulated RAM to random bytes, instead of zeroes\n");
+	printf("  -H        try to emulate a Nintendo 64 machine (default CPU = R4300)\n");
 	printf("  -h        display this help message\n");
 	printf("  -I x      set emulation clock speed to x Hz (affects rtc devices only, not\n");
 	printf("            actual emulation speed) (default depends on CPU and emulation mode)\n");
@@ -182,6 +182,7 @@ void usage(char *progname)
 	printf("  -q        quiet mode (don't print debug messages)\n");
 	printf("  -R        use random bootstrap cpu, instead of nr 0\n");
 	printf("  -r        register dumps before every instruction\n");
+	printf("  -S        initialize emulated RAM to random bytes, instead of zeroes\n");
 	printf("  -s        show opcode usage statistics after simulation\n");
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
@@ -208,7 +209,7 @@ int get_cmd_args(int argc, char *argv[])
 
 	symbol_init();
 
-	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:qRrsTtUXY:")) != -1) {
+	while ((ch = getopt(argc, argv, "ABC:D:d:EFG:HhI:iJM:m:Nn:P:p:qRrSsTtUXY:")) != -1) {
 		switch (ch) {
 		case 'A':
 			emulation_type = EMULTYPE_ARC;
@@ -241,7 +242,8 @@ int get_cmd_args(int argc, char *argv[])
 			machine = atoi(optarg);
 			break;
 		case 'H':
-			random_mem_contents = 1;
+			emulation_type = EMULTYPE_NINTENDO64;
+			machine = 0;
 			break;
 		case 'I':
 			emulated_ips = atoi(optarg);
@@ -285,6 +287,9 @@ int get_cmd_args(int argc, char *argv[])
 		case 'r':
 			register_dump = 1;
 			break;
+		case 'S':
+			random_mem_contents = 1;
+			break;
 		case 's':
 			show_opcode_statistics = 1;
 			break;
@@ -320,6 +325,9 @@ int get_cmd_args(int argc, char *argv[])
 
 	if (emulation_type == EMULTYPE_PS2 && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R5900");
+
+	if (emulation_type == EMULTYPE_NINTENDO64 && !emul_cpu_name[0])
+		strcpy(emul_cpu_name, "R4300");
 
 	if (emulation_type == EMULTYPE_DEC && !emul_cpu_name[0])
 		strcpy(emul_cpu_name, "R2000");

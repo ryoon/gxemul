@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.13 2003-12-28 20:56:35 debug Exp $
+ *  $Id: misc.h,v 1.14 2003-12-29 09:48:19 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -58,6 +58,7 @@
 #define	EMULTYPE_PS2		4
 #define	EMULTYPE_SGI		5
 #define	EMULTYPE_ARC		6
+#define	EMULTYPE_NINTENDO64	7
 
 /*  Specific machines:  */
 /*  DEC:  */
@@ -99,6 +100,9 @@
 #define	ARC_MEMDESC_ADDR	0x80001c80
 #define	SGI_ENV_STRINGS		0xbfc20000
 
+/*  Nintendo 64:  */
+/*  nothing yet  */
+
 
 /*  CPU types:  */
 #include "cpuregs.h"			/*  from NetBSD  */
@@ -133,9 +137,12 @@ struct cpu_type_def {
 	{ "R3000A",	MIPS_R3000, 0x30,	NOLLSC,	EXC3K, MMU3K,	1,	64 }, \
 	{ "R6000",	MIPS_R6000, 0x00,	0,	EXC3K, MMU3K,	2,	32 }, \
 	{ "R4000",	MIPS_R4000, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
+	{ "R10000",	MIPS_R10000,0,		0,	EXC4K, MMU4K,	4,	64 }, \
+	{ "R4300",	MIPS_R4300, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	32 }, /*  32, not 48?  */ \
 	{ "R4400",	MIPS_R4000, 0x40,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
 	{ "R4600",	MIPS_R4600, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, /*  DCOUNT?  */ \
-	{ "R10000",	MIPS_R10000,0,		0,	EXC4K, MMU4K,	4,	64 }, \
+	{ "R4700",	MIPS_R4700, 0x00,	DCOUNT,	EXC4K, MMU4K,	3,	48 }, \
+	{ "R12000",	MIPS_R12000,0,		0,	EXC4K, MMU4K,	4,	64 }, \
 	{ "R5000",	MIPS_R5000, 0x21,	DCOUNT,	EXC4K, MMU4K,	4,	48 }, \
 	{ "R5900",	MIPS_R5900, 0x20,	0,	EXC4K, MMU4K,	3,	48 }, \
 	{ "VR5432",	MIPS_R5400, 13,		0,	EXC4K, MMU4K,	-1,	-1 }, \
@@ -325,7 +332,7 @@ struct coproc {
 #define	   XCONTEXT_R_SHIFT         31
 #define	   XCONTEXT_BADVPN2_MASK    0x7ffffff0
 #define	   XCONTEXT_BADVPN2_SHIFT   4
-#define	COP0_RESERVED_21	21
+#define	COP0_FRAMEMASK		21		/*  R10000  */
 #define	COP0_RESERVED_22	22
 #define	COP0_DEBUG		23
 #define	COP0_DEPC		24
@@ -510,11 +517,11 @@ struct cpu {
 #define	SPECIAL_NAMES	{	\
 	"sll", "special_01", "srl", "sra", "sllv", "special_05", "srlv", "srav",	/*  0x00 - 0x07  */	\
 	"jr", "jalr", "movz", "movn", "syscall", "break", "special_0e", "sync",		/*  0x08 - 0x0f  */	\
-	"mfhi", "mthi", "mflo", "mtlo", "special_14", "special_15", "dsrlv", "dsrav",	/*  0x10 - 0x17  */	\
+	"mfhi", "mthi", "mflo", "mtlo", "dsllv", "special_15", "dsrlv", "dsrav",	/*  0x10 - 0x17  */	\
 	"mult", "multu", "div", "divu", "dmult", "special_1d", "ddiv", "ddivu",		/*  0x18 - 0x1f  */	\
 	"add", "addu", "sub", "subu", "and", "or", "xor", "nor",			/*  0x20 - 0x27  */	\
 	"special_28", "special_29", "slt", "sltu", "special_2c", "daddu", "special_2e", "dsubu",  /*  0x28 - 0x2f  */	\
-	"special_30", "special_31", "special_32", "special_33", "special_34", "special_35", "special_36", "special_37", /*  0x30 - 0x37  */	\
+	"special_30", "special_31", "special_32", "special_33", "teq", "special_35", "special_36", "special_37", /*  0x30 - 0x37  */	\
 	"dsll", "special_39", "dsrl", "dsra", "dsll32", "special_3d", "dsrl32", "dsra32"/*  0x38 - 0x3f  */	}
 
 #define	SPECIAL2_NAMES	{	\
@@ -548,7 +555,7 @@ struct cpu {
 #define	    SPECIAL_MTHI		    0x11    /*	010001  */	/*  MIPS I  */
 #define	    SPECIAL_MFLO		    0x12    /*  010010  */	/*  MIPS I  */
 #define	    SPECIAL_MTLO		    0x13    /*	010011  */	/*  MIPS I  */
-/*					    0x14	010100  */
+#define	    SPECIAL_DSLLV		    0x14    /*	010100  */
 /*					    0x15	010101  */
 #define	    SPECIAL_DSRLV		    0x16    /*  010110  */	/*  MIPS III  */
 #define	    SPECIAL_DSRAV		    0x17    /*  010111  */	/*  MIPS III  */
@@ -580,7 +587,7 @@ struct cpu {
 /*					    0x31	110001  */
 /*					    0x32	110010  */
 /*					    0x33	110011  */
-/*					    0x34	110100  */
+#define	    SPECIAL_TEQ			    0x34    /*	110100  */
 /*					    0x35	110101  */
 /*					    0x36	110110  */
 /*					    0x37	110111  */

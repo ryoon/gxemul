@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.68 2004-08-26 14:06:47 debug Exp $
+ *  $Id: main.c,v 1.69 2004-09-02 00:47:23 debug Exp $
  */
 
 #include <stdio.h>
@@ -36,6 +36,7 @@
 #include "misc.h"
 
 #include "diskimage.h"
+#include "emul.h"
 
 
 extern int optind;
@@ -250,7 +251,7 @@ void usage(char *progname)
  *
  *  Reads command line arguments.
  */
-int get_cmd_args(int argc, char *argv[])
+int get_cmd_args(int argc, char *argv[], struct emul *emul)
 {
 	int ch, using_switch_d = 0;
 	char *progname = argv[0];
@@ -532,9 +533,17 @@ int get_cmd_args(int argc, char *argv[])
  */
 int main(int argc, char *argv[])
 {
-	get_cmd_args(argc, argv);
+	struct emul *emul;
 
-	emul();
+	emul = emul_new();
+	if (emul == NULL) {
+		fprintf(stderr, "out of memory\n");
+		exit(1);
+	}
+
+	get_cmd_args(argc, argv, emul);
+
+	emul_start(emul);
 
 	return 0;
 }

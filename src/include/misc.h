@@ -26,7 +26,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.102 2004-08-19 19:59:45 debug Exp $
+ *  $Id: misc.h,v 1.103 2004-09-02 00:47:22 debug Exp $
  *
  *  Misc. definitions for mips64emul.
  *
@@ -237,7 +237,6 @@ struct cpu_type_def {
 #define	DEBUG_BUFSIZE		1024
 
 #define	DEFAULT_RAM_IN_MB	32
-#define	MAX_PC_DUMPPOINTS	4
 #define	MAX_DEVICES		22
 
 
@@ -936,11 +935,6 @@ int cpu_run(struct cpu **cpus, int ncpus);
 
 /*  dec_prom.c:  */
 void decstation_prom_emul(struct cpu *cpu);
-
-
-/*  emul.c:  */
-void debugger(void);
-void emul(void);
 
 
 /*  file.c:  */

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.49 2004-08-28 14:04:02 debug Exp $
+ *  $Id: emul.c,v 1.50 2004-09-02 00:47:23 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -41,6 +41,7 @@
 #include "bintrans.h"
 #include "console.h"
 #include "diskimage.h"
+#include "emul.h"
 #include "memory.h"
 #include "net.h"
 
@@ -141,7 +142,7 @@ void add_pc_dump_points(void)
 /*
  *  fix_console():
  */
-void fix_console(void)
+static void fix_console(void)
 {
 	console_deinit();
 }
@@ -152,7 +153,7 @@ void fix_console(void)
  *
  *  This is a signal handler for CTRL-C.
  */
-void debugger_activate(int x)
+static void debugger_activate(int x)
 {
 	if (single_step) {
 		/*  Already in the debugger. Do nothing.  */
@@ -186,7 +187,7 @@ static int last_cmd_len = 0;
  *
  *  Dump emulated memory in hex and ASCII.
  */
-void debugger_dump(uint64_t addr, int lines)
+static void debugger_dump(uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
@@ -234,7 +235,7 @@ void debugger_dump(uint64_t addr, int lines)
  *
  *  Dump emulated memory as MIPS instructions.
  */
-void debugger_unasm(uint64_t addr, int lines)
+static void debugger_unasm(uint64_t addr, int lines)
 {
 	struct cpu *c;
 	struct memory *m;
@@ -275,7 +276,7 @@ void debugger_unasm(uint64_t addr, int lines)
  *
  *  Dump each CPU's TLB contents.
  */
-void debugger_tlbdump(void)
+static void debugger_tlbdump(void)
 {
 	int i, j;
 
@@ -499,7 +500,7 @@ void debugger(void)
  *  that, instead of requiring a separate kernel file.  It is then up to the
  *  bootblock to load a kernel.
  */
-void load_bootblock(void)
+static void load_bootblock(void)
 {
 	int boot_disk_id = diskimage_bootdev();
 	unsigned char minibuf[0x20];
@@ -579,15 +580,43 @@ void load_bootblock(void)
 
 
 /*
+ *  emul_new():
+ *
+ *  Returns a reasonably initialized struct emul.
+ */
+struct emul *emul_new(void)
+{
+	struct emul *e;
+	e = malloc(sizeof(struct emul));
+	if (e == NULL)
+		return NULL;
+
+	memset(e, 0, sizeof(struct emul));
+
+	/*  Sane default values:  */
+	e->emulation_type = EMULTYPE_TEST;
+	e->machine = MACHINE_NONE;
+	e->prom_emulation = 1;
+	e->speed_tricks = 1;
+	e->boot_kernel_filename = "netbsd";
+	e->boot_string_argument = "-a";
+	e->ncpus = DEFAULT_NCPUS;
+	e->automatic_clock_adjustment = 1;
+	e->x11_scaledown = 1;
+
+	return e;
+}
+
+
+/*
  *  emul():
  *
- *	o)  Initialize the hardware (RAM, devices, CPUs, ...) to emulate.
- *
- *	o)  Load ROM code and/or other programs into emulated memory.
- *
- *	o)  Start running instructions on the bootstrap cpu.
+ *	o) Initialize the hardware (RAM, devices, CPUs, ...) which
+ *	   will be emulated.
+ *	o) Load ROM code and/or other programs into emulated memory.
+ *	o) Start running instructions on the bootstrap cpu.
  */
-void emul(void)
+void emul_start(struct emul *emul)
 {
 	struct memory *mem;
 	int i;

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.c,v 1.125 2004-08-31 15:26:15 debug Exp $
+ *  $Id: cpu.c,v 1.126 2004-09-02 00:47:23 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -40,6 +40,7 @@
 
 #include "bintrans.h"
 #include "console.h"
+#include "emul.h"
 #include "dec_5100.h"
 #include "dec_kn02.h"
 #include "devices.h"

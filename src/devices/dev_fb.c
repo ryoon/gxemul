@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_fb.c,v 1.27 2004-03-28 14:56:10 debug Exp $
+ *  $Id: dev_fb.c,v 1.28 2004-03-28 15:17:03 debug Exp $
  *  
  *  Generic framebuffer device.
  *
@@ -313,9 +313,12 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 #ifdef WITH_X11
 			/*  Combine the color into an X11 long and display it:  */
 			/*  TODO:  construct color in a more portable way:  */
-			if (x11_using_truecolor)
-				color = (r << 16) + (g << 8) + b;
-			else
+			if (x11_using_truecolor) {
+				if (d->fb_window->fb_ximage->byte_order)
+					color = (b << 16) + (g << 8) + r;
+				else
+					color = (r << 16) + (g << 8) + b;
+			} else
 				color = x11_graycolor[15 * (r + g + b) / (255 * 3)].pixel;
 
 			if (x>=0 && x<d->x11_xsize && y>=0 && y<d->x11_ysize)
@@ -403,9 +406,14 @@ void update_framebuffer(struct vfb_data *d, int addr, int len)
 		/*  Average out the pixel color, and combine it to a RGB long:  */
 		/*  TODO:  construct color in a more portable way:  */
 		if (x11_using_truecolor)
-			color = ((color_r / scaledownXscaledown) << 16) +
-				((color_g / scaledownXscaledown) << 8) +
-				(color_b / scaledownXscaledown);
+			if (d->fb_window->fb_ximage->byte_order)
+				color = ((color_b / scaledownXscaledown) << 16) +
+					((color_g / scaledownXscaledown) << 8) +
+					(color_r / scaledownXscaledown);
+			else
+				color = ((color_r / scaledownXscaledown) << 16) +
+					((color_g / scaledownXscaledown) << 8) +
+					(color_b / scaledownXscaledown);
 		else {
 			color = 15 * (color_r + color_g + color_b) / (scaledownXscaledown * 255 * 3);
 			color = x11_graycolor[color < 0? 0 : (color > 15? 15 : color)].pixel;

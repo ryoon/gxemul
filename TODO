@@ -121,8 +121,6 @@ mips64emul TODO
 	Framebuffer stuff:
 		o)  "Sprites", or overlays  (useful for cursors...)
 		o)  2D and 3D acceleration
-		o)  Playstation 2 writes rgb to framebuffer memory,
-			this is displayed as bgr on big-endian X servers :-/
 		o)  Move the polygon drawing stuff to its own module.
 		o)  Antialiased polygons? :-)
 
@@ -140,7 +138,6 @@ mips64emul TODO
 			x)  How about multiple framebuffer windows?
 		o)  Non-resizable windows
 		o)  Color support for non-24-bit modes?
-		o)  Think about how to solve endianness problems once and for all
 		o)  Generalize the framebuffer stuff by moving _ALL_ X11 specific
 			code to src/x11.c!
 

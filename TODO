@@ -141,11 +141,10 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  No hardcoded values, use #defines
 
 	Multi-cpu stuff:
-		either do it in a way which emulates a real MP MIPS machine,
-		or I'll just implement my own way, with some structures
-		in memory telling the operating system running what
-		cpus there are available, and how to access them)
-		Perhaps Ultrix supports SMP?  Or Irix?  Otherwise, try with
+		Linux and Irix can run SMP/NUMA on SGI's machines. Study the
+		Linux sources for more info.
+		Ultrix could be SMP too, perhaps.  NetBSD is not SMP yet on
+		any MIPS platform, it seems.  And I could try with my own
 		ycx2.
 
 	Caches / memory hierarchies:
@@ -160,6 +159,10 @@ Most important stuff (but these are all non-trivial tasks):
 		o)  ECC stuff, simulation of memory errors?
 		o)  More than 4GB of emulated RAM, when run on a 32-bit host?
 			(using manual swap-out of blocks to disk)
+
+	Binary translation?
+		o)  How to deal with userland?  Self-modifying code?
+		o)  Multiple target archs (alpha, i386, sparc, ...)
 
 	File handling:
 		o)  Read function argument types from binaries? (ELF?)

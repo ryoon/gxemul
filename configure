@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.86 2005-01-25 08:38:26 debug Exp $
+#  $Id: configure,v 1.87 2005-01-26 19:08:23 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -481,7 +481,7 @@ printf "#include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-int main(int argc, char *argv[]) { socklen_t x; recvfrom(0, NULL, 0, 0, NULL, &x); return 0;}\n" > _tests.c
+int main(int argc, char *argv[]) { socklen_t x; return 0;}\n" > _tests.c
 $CC $CFLAGS _tests.c -o _tests 2> /dev/null
 if [ ! -x _tests ]; then
 	printf "no, using int\n"
@@ -860,6 +860,7 @@ echo "" >> _Makefile.header
 
 for a in . src devices devices/fonts tests; do
 	echo "creating $a/Makefile"
+	touch $a/Makefile
 	cat _Makefile.header > $a/Makefile
 	cat $a/Makefile.skel >> $a/Makefile
 done

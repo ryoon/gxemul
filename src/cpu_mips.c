@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.33 2005-03-18 23:20:54 debug Exp $
+ *  $Id: cpu_mips.c,v 1.34 2005-03-20 20:27:26 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -380,14 +380,21 @@ void mips_cpu_show_full_statistics(struct machine *m)
 						    stats__special[s2]);
 			if (s1 == HI6_REGIMM)
 				for (s2=0; s2<N_REGIMM; s2++)
-					if (m->cpus[i]->cd.mips.stats__regimm[s2] > 0)
-						fatal("regimm %02x (%7s): %li\n",
-						    s2, regimm_names[s2], m->cpus[i]->cd.mips.stats__regimm[s2]);
+					if (m->cpus[i]->cd.mips.stats__regimm[
+					    s2] > 0)
+						fatal("regimm %02x (%7s): "
+						    "%li\n", s2, regimm_names[
+						    s2], m->cpus[i]->cd.mips.
+						    stats__regimm[s2]);
 			if (s1 == HI6_SPECIAL2)
 				for (s2=0; s2<N_SPECIAL; s2++)
-					if (m->cpus[i]->cd.mips.stats__special2[s2] > 0)
-						fatal("special2 %02x (%7s): %li\n",
-						    s2, special2_names[s2], m->cpus[i]->cd.mips.stats__special2[s2]);
+					if (m->cpus[i]->cd.mips.stats__special2
+					    [s2] > 0)
+						fatal("special2 %02x (%7s): "
+						    "%li\n", s2,
+						    special2_names[s2], m->
+						    cpus[i]->cd.mips.
+						    stats__special2[s2]);
 			debug_indentation(-iadd);
 		}
 
@@ -440,13 +447,14 @@ void mips_cpu_tlbdump(struct machine *m, int x, int rawflag)
 				    (int) (m->cpus[i]->cd.mips.coproc[0]->
 				    reg[COP0_RANDOM] & RANDOM_MASK));
 				printf(" wired=0x%llx", (long long)
-				    m->cpus[i]->cd.mips.coproc[0]->reg[COP0_WIRED]);
+				    m->cpus[i]->cd.mips.coproc[0]->
+				    reg[COP0_WIRED]);
 			}
 
 			printf(")\n");
 
-			for (j=0; j<m->cpus[i]->cd.mips.cpu_type.nr_of_tlb_entries;
-			    j++) {
+			for (j=0; j<m->cpus[i]->cd.mips.cpu_type.
+			    nr_of_tlb_entries; j++) {
 				uint64_t hi,lo0,lo1,mask;
 				hi = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].hi;
 				lo0 = m->cpus[i]->cd.mips.coproc[0]->tlbs[j].lo0;

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.97 2005-03-14 12:13:52 debug Exp $
+ *  $Id: debugger.c,v 1.98 2005-03-20 20:27:26 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -100,8 +100,8 @@ static struct machine *debugger_machine;
 static int exit_debugger;
 static int n_steps_left_before_interaction = 0;
 
-#define	MAX_CMD_LEN		63
-#define	N_PREVIOUS_CMDS		50
+#define	MAX_CMD_LEN		70
+#define	N_PREVIOUS_CMDS		150
 static char *last_cmd[N_PREVIOUS_CMDS];
 static int last_cmd_index;
 

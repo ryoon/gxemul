@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.649 2005-03-19 09:36:15 debug Exp $
+$Id: HISTORY,v 1.650 2005-03-20 20:27:25 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1760,3 +1760,4 @@ Changelog for GXemul:
 20050318	Minor updates. (Fixing disassembly of MIPS bgtz etc., 
 		continuing on the device cleanup, ...)
 20050319	Minor updates.
+20050320	Minor updates.

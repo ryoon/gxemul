@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.195 2004-08-11 03:12:09 debug Exp $
+$Id: HISTORY,v 1.196 2004-08-11 19:55:53 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -897,3 +897,4 @@ HISTORY of mips64emul
 20040811	Adding the 'clz', 'clo', 'dclz', and 'dclo' special2 (MIPS32
 		and MIPS64) instructions.
 		More Au1500 updates.
+20040812	Using fseeko(), when it is available.

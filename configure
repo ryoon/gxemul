@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.46 2004-08-01 11:00:02 debug Exp $
+#  $Id: configure,v 1.47 2004-08-11 19:55:53 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -306,7 +306,25 @@ sizeof(long long) = sizeof(long)  (luckily, for most 64-bit archs, this is
 the case.\n"
 	printf "#define HACK_STRTOLL\n" >> config.h
 else
-	printf "found, ok\n"
+	printf "yes\n"
+fi
+rm -f _tests.[co] _tests
+
+
+#  fseeko missing?
+printf "checking for fseeko... "
+printf "#include <stdlib.h>
+#include <limits.h>
+#include <stdio.h>
+#include <sys/types.h>
+int main(int argc, char *argv[]) { fseeko(NULL, 0, 0); return 0;}\n" > _tests.c
+$CC _tests.c -o _tests 2> /dev/null
+if [ ! -x _tests ]; then
+	printf "no\n"
+	printf "WARNING! fseeko missing from libc. Using a hack, which probably doesn't work.\n"
+	printf "#define HACK_FSEEKO\n" >> config.h
+else
+	printf "yes\n"
 fi
 rm -f _tests.[co] _tests
 

@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.41 2004-08-01 01:14:03 debug Exp $
+ *  $Id: diskimage.c,v 1.42 2004-08-11 19:55:53 debug Exp $
  *
  *  Disk image support.
  *
@@ -87,16 +87,19 @@ static int n_diskimages = 0;
 /*
  *  my_fseek():
  *
- *  A helper function, like fseek() but takes off_t.  (I know there are
- *  other library functions out there, like fseeko(), but I want this to
- *  run on systems that don't have those.)
+ *  A helper function, like fseek() but takes off_t.  If the system has
+ *  fseeko, then that is used. Otherwise I try to fake off_t offsets here.
  *
  *  The correct position is reached by seeking 2 billion bytes at a time
  *  (or less).  Note: This method is only used for SEEK_SET, for SEEK_CUR
  *  and SEEK_END, normal fseek() is used!
+ *
+ *  TODO: It seemed to work on Linux/i386, but not on Solaris/sparc (?).
+ *  Anyway, most modern systems have fseeko(), so it shouldn't be a problem.
  */
 int my_fseek(FILE *f, off_t offset, int whence)
 {
+#ifdef HACK_FSEEKO
 	if (whence == SEEK_SET) {
 		int res = 0;
 		off_t curoff = 0;
@@ -116,6 +119,9 @@ int my_fseek(FILE *f, off_t offset, int whence)
 		return 0;
 	} else
 		return fseek(f, offset, whence);
+#else
+	return fseeko(f, offset, whence);
+#endif
 }
 
 

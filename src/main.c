@@ -23,7 +23,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.20 2004-01-24 21:10:43 debug Exp $
+ *  $Id: main.c,v 1.21 2004-01-25 11:51:50 debug Exp $
  *
  *  TODO:  Move out stuff into structures, separating things from main()
  *         completely.
@@ -190,7 +190,7 @@ void usage(char *progname)
 	printf("  -T        start -i and -r traces on accesses to invalid memory addresses\n");
 	printf("  -t        show function trace tree\n");
 	printf("  -U        dump TLB entries when the TLB is used for lookups\n");
-	printf("  -u        userland emulation\n");
+	printf("  -u        userland-only (syscall) emulation\n");
 #ifdef WITH_X11
 	printf("  -X        use X11\n");
 	printf("  -Y n      scale down framebuffer windows by n x n times  (default = %i)\n", x11_scaledown);

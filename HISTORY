@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.72 2004-05-06 04:00:23 debug Exp $
+$Id: HISTORY,v 1.73 2004-05-07 00:41:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -489,4 +489,6 @@ HISTORY of mips64emul
 20040505	Both CR and LF now produce the same lk201 scancode, so that
 		pressing 'enter' works as expected in Ultrix.
 20040506	Adding a vaddr to paddr translation cache, causing a speedup
-		of perhaps 50% (in userland, mostly).
+		of perhaps 50% or more.
+20040507	Fixing PMAG-BA color for Ultrix. (Ultrix relies on interrupts
+		coming from the TURBOchannel slot to update the palette.)

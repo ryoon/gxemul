@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_ppc.c,v 1.19 2005-02-13 20:32:04 debug Exp $
+ *  $Id: cpu_ppc.c,v 1.20 2005-02-13 20:52:57 debug Exp $
  *
  *  PowerPC/POWER CPU emulation.
  *
@@ -574,6 +574,9 @@ int ppc_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			l_bit = (iword >> 16) & 1;
 			debug("mtmsr\tr%i,%i", rs, l_bit);
 			break;
+		case PPC_31_SYNC:
+			debug("%s", power? "dcs" : "sync");
+			break;
 		default:
 			debug("unimplemented hi6_31, xo = 0x%x", xo);
 		}
@@ -651,6 +654,21 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case PPC_HI6_19:
+		xo = (iword >> 1) & 1023;
+		switch (xo) {
+		case PPC_19_ISYNC:
+			/*  TODO: actually sync  */
+			break;
+		default:
+			fatal("[ unimplemented PPC hi6_19, xo = 0x%04x, "
+			    "pc = 0x%016llx ]\n",
+			    xo, (long long) (cpu->cd.ppc.pc_last));
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	case PPC_HI6_ORI:
 	case PPC_HI6_ORIS:
 		rs = (iword >> 21) & 31;
@@ -708,6 +726,9 @@ int ppc_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			l_bit = (iword >> 16) & 1;
 			/*  TODO: the l_bit  */
 			reg_access_msr(cpu, &cpu->cd.ppc.gpr[rs], 1);
+			break;
+		case PPC_31_SYNC:
+			/*  TODO: actually sync  */
 			break;
 		default:
 			fatal("[ unimplemented PPC hi6_31, xo = 0x%04x, "

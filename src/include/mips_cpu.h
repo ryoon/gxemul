@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips_cpu.h,v 1.2 2005-01-23 13:43:05 debug Exp $
+ *  $Id: mips_cpu.h,v 1.3 2005-01-24 16:29:43 debug Exp $
  */
 
 #include "misc.h"
@@ -126,6 +126,9 @@ struct coproc {
 #define	MIPS_GPR_T3		11		/*  t3  */
 #define	MIPS_GPR_T4		12		/*  t4  */
 #define	MIPS_GPR_S0		16		/*  s0  */
+#define	MIPS_GPR_S1		17		/*  s1  */
+#define	MIPS_GPR_T8		24		/*  t8  */
+#define	MIPS_GPR_T9		25		/*  t9  */
 #define	MIPS_GPR_K0		26		/*  k0  */
 #define	MIPS_GPR_K1		27		/*  k1  */
 #define	MIPS_GPR_GP		28		/*  gp  */

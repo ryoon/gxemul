@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2004  Anders Gavare.  All rights reserved.
+ *  Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: mips16.c,v 1.10 2005-01-09 01:55:31 debug Exp $
+ *  $Id: mips16.c,v 1.11 2005-01-24 16:29:44 debug Exp $
  *
  *  MIPS16 encoding support, 16-bit to 32-bit instruction translation.
  */
@@ -37,38 +37,50 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "mips_cpu.h"
 #include "misc.h"
 #include "opcodes.h"
 
 
 #ifndef ENABLE_MIPS16
 
-/*  Dummy functions is MIPS16 support is not to be included:  */
-int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr) { return 0; }
+/*  Dummy functions if MIPS16 support is not to be included:  */
+int mips16_to_32(struct cpu *cpu, unsigned char *instr16,
+	unsigned char *instr)
+{
+	fatal("mips16_to_32(): internal error! this function shouldn't "
+	    "be called if ENABLE_MIPS16 isn't defined!\n");
+	return 0;
+}
 
 #else
 
 
 /*  MIPS16 register numbers:  */
-static int mips16_reg8_to_reg32[8] = { 16, 17, 2, 3, 4, 5, 6, 7 };
-static int mips16_sp = 29;
-/*  static int mips16_t = 24;  */
+static int mips16_reg8_to_reg32[8] = {
+	MIPS_GPR_S0, MIPS_GPR_S1, MIPS_GPR_V0, MIPS_GPR_V1,
+	MIPS_GPR_A0, MIPS_GPR_A1, MIPS_GPR_A2, MIPS_GPR_A3
+};
+
+static int mips16_sp = MIPS_GPR_SP;
+/*  static int mips16_t = MIPS_GPR_T8;  */
 
 
 /*
  *  mips16_to_32():
  *
- *  Translate a 16-bit MIPS16 instruction word into a normal
- *  32-bit instruction word.  instr16[1..0] ==> instr[3..0].
+ *  Translate a 16-bit MIPS16 instruction word into a normal 32-bit instruction
+ *  word.  instr16[1..0] ==> instr[3..0].
  *
- *  Returns 1 if there is a resulting 32-bit instruction,
- *  0 if this is an extend.
+ *  Returns 1 if there is a resulting 32-bit instruction, 0 if this is an
+ *  "extend".
  */
 int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 {
 	int rs, rd, imm, wlen;
 	int x = (instr16[1] << 8) + instr16[0];
-	int y = 0x3e << 26;	/*  This should be something 'illegal', so that execution stops  */
+	int y = 0x3e << 26;	/*  This should be something 'illegal',
+				    so that execution stops  */
 
 	/*  Translate 16-bit x into 32-bit y:  */
 
@@ -90,7 +102,8 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 		rd = (x >> 5) & 0x07;
 		rs = (x >> 0) & 0x1f;
 		/*  addiu mips16_reg8_to_reg32[rd], reg32[rs], 0  */
-		y = (HI6_ADDIU << 26) + (rs << 21) + (mips16_reg8_to_reg32[rd] << 16);
+		y = (HI6_ADDIU << 26) + (rs << 21) +
+		    (mips16_reg8_to_reg32[rd] << 16);
 		goto mips16_ret;
 	}
 
@@ -107,7 +120,8 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 				imm |= 0xffe0;		/*  sign-extend  */
 		}
 
-		y = (HI6_LD << 26) + (mips16_reg8_to_reg32[rd] << 16) + (rs << 21) + imm;
+		y = (HI6_LD << 26) + (mips16_reg8_to_reg32[rd] << 16) +
+		    (rs << 21) + imm;
 		goto mips16_ret;
 	}
 
@@ -127,7 +141,8 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 				imm |= 0xffe0;		/*  sign-extend  */
 		}
 
-		y = (HI6_SD << 26) + (mips16_reg8_to_reg32[rd] << 16) + (rs << 21) + imm;
+		y = (HI6_SD << 26) + (mips16_reg8_to_reg32[rd] << 16) +
+		    (rs << 21) + imm;
 		goto mips16_ret;
 	}
 
@@ -144,17 +159,16 @@ int mips16_to_32(struct cpu *cpu, unsigned char *instr16, unsigned char *instr)
 				imm |= 0xf800;		/*  sign-extend  */
 		}
 
-		y = (HI6_DADDIU << 26) + (mips16_sp << 21) + (mips16_sp << 16) + (imm & 0xffff);
+		y = (HI6_DADDIU << 26) + (mips16_sp << 21) + (mips16_sp << 16)
+		    + (imm & 0xffff);
 		goto mips16_ret;
 	}
 
 	/*  fatal("WARNING: unimplemented MIPS16 instruction 0x%04x\n", x);  */
 
 mips16_ret:
-	instr[3] = (y >> 24) & 255;
-	instr[2] = (y >> 16) & 255;
-	instr[1] = (y >> 8) & 255;
-	instr[0] = y & 255;
+	instr[3] = y >> 24; instr[2] = y >> 16;
+	instr[1] = y >> 8;  instr[0] = y;
 	return 1;
 }
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.27 2005-01-23 10:47:18 debug Exp $
+ *  $Id: useremul.c,v 1.28 2005-01-24 16:29:44 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -67,7 +67,9 @@
 #include <time.h>
 #include <errno.h>
 
+#include "emul.h"
 #include "machine.h"
+#include "mips_cpu.h"
 #include "misc.h"
 
 

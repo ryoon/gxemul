@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-#  $Id: configure,v 1.58 2004-09-14 10:44:32 debug Exp $
+#  $Id: configure,v 1.59 2004-09-16 11:45:22 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for mips64emul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -164,6 +164,7 @@ fi
 if [ z"$CC" = z ]; then
 	CC=cc
 
+	#  Try gcc first:
 	printf "#!/bin/sh\ngcc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
@@ -172,6 +173,8 @@ if [ z"$CC" = z ]; then
 	fi
 	rm -f _testprog
 
+	#  If both gcc and cc exist, then cc might be a vendor specific
+	#  compiler which produces faster code than gcc (eg on Solaris):
 	printf "#!/bin/sh\ncc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null
@@ -180,6 +183,7 @@ if [ z"$CC" = z ]; then
 	fi
 	rm -f _testprog
 
+	#  Try ccc (FreeBSD/Alpha):
 	printf "#!/bin/sh\nccc _testprog.c -o _testprog > /dev/null 2> /dev/null\n" > _test.sh
 	chmod 755 _test.sh
 	./_test.sh > /dev/null 2> /dev/null

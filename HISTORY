@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.224 2004-09-14 15:04:43 debug Exp $
+$Id: HISTORY,v 1.225 2004-09-16 11:45:22 debug Exp $
 
 HISTORY of mips64emul
 ---------------------
@@ -940,4 +940,8 @@ HISTORY of mips64emul
 		do some more clean-up first.
 		Minor update to the detection of ECOFF files, but I don't like
 		it; sometimes the endianness of the magic value seems to be
-		swapped, but it doesn't have to do with endianness?
+		swapped, but it doesn't have to do with endianness of the
+		actual data?
+20040916	Minor updates. Adding an Example section to the manpage, but
+		as I'm not really familiar with manpage formatting, it will
+		need to be rewritten later.

@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: technical.html,v 1.46 2005-03-05 12:05:29 debug Exp $
+$Id: technical.html,v 1.47 2005-04-07 15:50:38 debug Exp $
 
 Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 
@@ -240,9 +240,10 @@ support networking.
 Since I have choosen the second kind of implementation, I have to write 
 support explicitly for any kind of network protocol that should be
 supported. As of 2004-07-09, the following has been implemented and seems 
-to work under at least NetBSD/pmax and OpenBSD/pmax under DECstation -D2
-emulation:
+to work under at least NetBSD/pmax and OpenBSD/pmax under DECstation 5000/200
+emulation (-E dec -e 3max):
 
+<p>
 <ul>
   <li>ARP requests sent out from the emulated NIC are interpreted,
 	and converted to ARP responses. (This is used by the emulated OS

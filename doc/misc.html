@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.36 2005-03-22 09:12:03 debug Exp $
+$Id: misc.html,v 1.37 2005-04-07 15:50:38 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -158,7 +158,7 @@ to get a list of possible options.
 Here are some examples. If you want to run a NetBSD/pmax kernel on an
 emulated DECstation machine, you would use a command line such as this:
 <pre>
-	$ <b>gxemul -D2 -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
+	$ <b>gxemul -E dec -e 3max -b -d pmax_diskimage.fs netbsd-pmax-INSTALL</b>
 </pre>
 <p>
 NOTE: For some emulation modes, such as the DECstation mode, you do 
@@ -169,7 +169,7 @@ It is possible to have more than one disk. For each -d argument, a disk
 image is added; the first will be SCSI target 0, the second will be target 1, and so on,
 unless you specify explicitly which ID number the devices should have.
 <pre>
-	$ <b>gxemul -D2 -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
+	$ <b>gxemul -E dec -e 3max -b -d disk0.raw -d disk1.raw -d 5:disk2.raw netbsd-pmax-INSTALL</b>
 </pre>
 Note: In the example above, disk2.raw will get scsi id 5.
 <p>
@@ -178,17 +178,17 @@ a CDROM device (this can be overridden with a 'd' prefix, to force a read/write 
 For example, the following command would start the emulator with two
 CDROM images, and one harddisk image:
 <pre>
-	$ <b>gxemul -D2 -d image.iso -d disk0.img -d c:second_cdrom.img netbsd-pmax-INSTALL</b>
+	$ <b>gxemul -E dec -e 3max -b -d image.iso -d disk0.img -d c:second_cdrom.img netbsd-pmax-INSTALL</b>
 </pre>
 Usually, the device with the lowest id becomes the boot device. To override
 this, add a 'b' prefix to one of the devices:
 <pre>
-	$ <b>gxemul -D2 -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
+	$ <b>gxemul -E dec -e 3max -b -d rootdisk.img -d bc:install-cd.iso name_of_kernel</b>
 </pre>
 If you have a physical CD-ROM drive on the host machine, say /dev/cd0c, you can
 use it as a CD-ROM directly accessible from within the emulator:
 <pre>
-	$ <b>gxemul -D2 -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
+	$ <b>gxemul -E dec -e 3max -b -d rootdisk.img -d bc:/dev/cd0c name_of_kernel</b>
 </pre>
 It is probably possible to use harddisks as well this way, but I would not
 recommend it.
@@ -414,7 +414,7 @@ and store in a file. Let's call this file DECstation5000_125_promdump.bin.
 </pre>
 This binary image can now be used in the emulator:
 <pre>
-	$ <b>gxemul -D3 -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
+	$ <b>gxemul -E dec -e 3min -Q -M128 -q 0xbfc00000:DECstation5000_125_promdump.bin</b>
 
 	KN02-BA V5.7e   
 	?TFL:  3/scc/access (1:Ln1 reg-12: actual=0x00 xpctd=0x01) [KN02-BA]

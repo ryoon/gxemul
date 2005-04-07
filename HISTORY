@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.675 2005-04-06 23:13:35 debug Exp $
+$Id: HISTORY,v 1.676 2005-04-07 15:14:55 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1813,3 +1813,4 @@ Changelog for GXemul:
 		the hpcmips modes.
 		Playing with Linux kernels for MobilePro 770 and 800; they get
 		as far as mounting a root filesystem, but then crash.
+		Doing some testing for the next release.

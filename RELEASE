@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.105 2005-04-05 20:33:07 debug Exp $
+$Id: RELEASE,v 1.106 2005-04-07 15:14:56 debug Exp $
 
 I'm now working on post-0.3. The next release will be 0.3.1.
 
@@ -22,17 +22,17 @@ operating systems run as if they were running on a real machine.
 I have verified that the following "guest" operating systems can run
 inside the emulator:
 
-     Guest operating system              Emulated machine
-     ----------------------              ----------------
-     NetBSD/pmax 2.0 (and 1.6.2)         DECstation 5000/200
-     OpenBSD/pmax 2.8-BETA               DECstation 5000/200
-     Ultrix 4.2-4.5                      DECstation 5000/200
-     Sprite demo harddisk image          DECstation 5000/200
-     Debian GNU/Linux for DECstation     DECstation 5000/200
-     Redhat Linux 7.1 for mips           DECstation 5000/200
-     NetBSD/arc 1.6.2                    Acer PICA-61
-     OpenBSD/arc 2.3                     Acer PICA-61
-     NetBSD/hpcmips 2.0                  NEC MobilePro 770, 780, 800, 880
+    Guest operating system             Emulated machine
+    ----------------------             ----------------
+    NetBSD/pmax 2.0 (and 1.6.2)        DECstation 5000/200
+    OpenBSD/pmax 2.8-BETA              DECstation 5000/200
+    Ultrix 4.2-4.5                     DECstation 5000/200
+    Sprite demo harddisk image         DECstation 5000/200
+    Debian GNU/Linux for DECstation    DECstation 5000/200
+    Redhat Linux 7.1 for mips          DECstation 5000/200
+    NetBSD/arc 1.6.2                   Acer PICA-61
+    OpenBSD/arc 2.3                    Acer PICA-61
+    NetBSD/hpcmips 2.0                 NEC MobilePro 770, 780, 800, 880
 
 A couple of other emulation modes exist. Some of these modes are almost 
 working well enough to run complete guest operating systems, but most are 
@@ -44,12 +44,14 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-The most important changes from version 0.3 to 0.3.1 are:
+The two most visible changes from version 0.3 to 0.3.1 are:
 
 	x)  Name change (from mips64emul to GXemul).
 
 	x)  NetBSD/hpcmips can now be installed and run from a harddisk
 	    image on an emulated NEC MobilePro 770, 780, 800, or 880.
+
+There have also been many other updates and bugfixes, as usual.
 
 This release has a number of known bugs, listed in the BUGS file, but feel
 free to drop me an email regarding other bugs.

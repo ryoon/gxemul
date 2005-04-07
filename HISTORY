@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.676 2005-04-07 15:14:55 debug Exp $
+$Id: HISTORY,v 1.677 2005-04-07 16:12:30 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1814,3 +1814,6 @@ Changelog for GXemul:
 		Playing with Linux kernels for MobilePro 770 and 800; they get
 		as far as mounting a root filesystem, but then crash.
 		Doing some testing for the next release.
+
+==============  RELEASE 0.3.1  ==============
+

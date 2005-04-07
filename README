@@ -1,10 +1,10 @@
-$Id: README,v 1.66 2005-03-31 22:26:59 debug Exp $
+$Id: README,v 1.67 2005-04-07 16:12:31 debug Exp $
 
-I'm now working on post-0.3. 0.3.1 is not released yet.
+I'm now working on post-0.3.1.
 
 ------------------------------------------------------------------------------
 
-GXemul 0.3.1
+GXemul 0.3.X
 ============
 
 Copyright (C) 2003-2005  Anders Gavare.

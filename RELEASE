@@ -1,13 +1,10 @@
-$Id: RELEASE,v 1.106 2005-04-07 15:14:56 debug Exp $
+$Id: RELEASE,v 1.107 2005-04-07 16:12:31 debug Exp $
 
-I'm now working on post-0.3. The next release will be 0.3.1.
-
-I'm not sure how far away the 0.3.1 release is; there are many many things
-that I'd like to have time to experiment with before that.
+I'm now working on post-0.3.1.
 
 ------------------------------------------------------------------------------
 
-Release notes for GXemul 0.3.1
+Release notes for GXemul 0.3.X
 ==============================
 
 Copyright (C) 2003-2005  Anders Gavare.
@@ -44,14 +41,9 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-The two most visible changes from version 0.3 to 0.3.1 are:
+Changes 0.3.1 -> 0.3.X:
 
-	x)  Name change (from mips64emul to GXemul).
-
-	x)  NetBSD/hpcmips can now be installed and run from a harddisk
-	    image on an emulated NEC MobilePro 770, 780, 800, or 880.
-
-There have also been many other updates and bugfixes, as usual.
+	x)  ...
 
 This release has a number of known bugs, listed in the BUGS file, but feel
 free to drop me an email regarding other bugs.

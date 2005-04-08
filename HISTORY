@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.677 2005-04-07 16:12:30 debug Exp $
+$Id: HISTORY,v 1.678 2005-04-08 00:30:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1817,3 +1817,4 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.1  ==============
 
+20050408	Some minor updates to the wdc.

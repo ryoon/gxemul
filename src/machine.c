@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.406 2005-04-06 23:13:37 debug Exp $
+ *  $Id: machine.c,v 1.407 2005-04-08 00:30:14 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2396,7 +2396,7 @@ void machine_setup(struct machine *machine)
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-#if 0
+#if 1
 		/*  Harddisk controller present flag:  */
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 		dev_ps2_spd_init(machine, mem, 0x14000000);
@@ -2424,11 +2424,12 @@ void machine_setup(struct machine *machine)
 		}
 
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 3);
+		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 2);
 
+#if 0
 		/*  TODO:  Is this necessary?  */
 		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0x80007f00;
-
+#endif
 		break;
 
 	case MACHINE_SGI:

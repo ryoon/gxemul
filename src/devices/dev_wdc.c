@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.28 2005-04-01 16:44:34 debug Exp $
+ *  $Id: dev_wdc.c,v 1.29 2005-04-08 00:30:13 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -179,7 +179,7 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 	/*  27-46: Model number  */
 	memcpy(&d->identify_struct[2 * 27],
-	    "Fake GXemul disk                        ", 40);
+	    "Fake GXemul IDE disk                    ", 40);
 	/*  TODO:  Use the diskimage's filename instead?  */
 
 	/*  47: max sectors per multitransfer  */
@@ -202,6 +202,38 @@ static void wdc_initialize_identify_struct(struct cpu *cpu, struct wdc_data *d)
 
 
 /*
+ *  status_byte():
+ */
+static int status_byte(struct wdc_data *d, struct cpu *cpu)
+{
+	int odata = 0;
+
+	if (diskimage_exist(cpu->machine,
+	    d->drive + d->base_drive))
+		odata |= WDCS_DRDY;
+	if (d->inbuf_head != d->inbuf_tail)
+		odata |= WDCS_DRQ;
+	if (d->write_in_progress)
+		odata |= WDCS_DRQ;
+	if (d->error)
+		odata |= WDCS_ERR;
+
+#if 0
+	/*
+	 *  TODO:  Is this correct behaviour?
+	 *
+	 *  NetBSD/cobalt seems to want it, but Linux on MobilePro does not.
+	 */
+	if (!diskimage_exist(cpu->machine,
+	    d->drive + d->base_drive))
+		odata = 0xff;
+#endif
+
+	return odata;
+}
+
+
+/*
  *  dev_wdc_altstatus_access():
  */
 int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
@@ -214,18 +246,14 @@ int dev_wdc_altstatus_access(struct cpu *cpu, struct memory *mem,
 	idata = memory_readmax64(cpu, data, len);
 
 	/*  Same as the normal status byte?  */
-	odata = 0;
-	if (diskimage_exist(cpu->machine, d->drive + d->base_drive))
-		odata |= WDCS_DRDY;
-	if (d->inbuf_head != d->inbuf_tail)
-		odata |= WDCS_DRQ;
+	odata = status_byte(d, cpu);
 
 	if (writeflag==MEM_READ)
 		debug("[ wdc: read from ALTSTATUS: 0x%02x ]\n",
-		    (int)relative_addr, odata);
+		    (int)odata);
 	else
 		debug("[ wdc: write to ALT. CTRL: 0x%02x ]\n",
-		    (int)relative_addr, idata);
+		    (int)idata);
 
 	if (writeflag == MEM_READ)
 		memory_writemax64(cpu, data, len, odata);
@@ -252,15 +280,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_data:	/*  0: data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
-#if 0
-			if (len == 4) {
-				odata += (wdc_get_inbuf(d) << 24);
-				odata += (wdc_get_inbuf(d) << 16);
-			}
-			if (len >= 2)
-				odata += (wdc_get_inbuf(d) << 8);
-			odata += wdc_get_inbuf(d);
-#else
+
 			odata += wdc_get_inbuf(d);
 			if (len >= 2)
 				odata += (wdc_get_inbuf(d) << 8);
@@ -268,13 +288,10 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 				odata += (wdc_get_inbuf(d) << 16);
 				odata += (wdc_get_inbuf(d) << 24);
 			}
-#endif
 
 #ifdef DATA_DEBUG
 			debug("[ wdc: read from DATA: 0x%04x ]\n", odata);
 #endif
-
-
 
 			if (d->inbuf_tail != d->inbuf_head)
 				d->delayed_interrupt = INT_DELAY;
@@ -411,22 +428,7 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 	case wd_command:	/*  7: command or status  */
 		if (writeflag==MEM_READ) {
-			odata = 0;
-			if (diskimage_exist(cpu->machine,
-			    d->drive + d->base_drive))
-				odata |= WDCS_DRDY;
-			if (d->inbuf_head != d->inbuf_tail)
-				odata |= WDCS_DRQ;
-			if (d->write_in_progress)
-				odata |= WDCS_DRQ;
-			if (d->error)
-				odata |= WDCS_ERR;
-
-			/*  TODO:  Is this correct behaviour?  */
-			if (!diskimage_exist(cpu->machine,
-			    d->drive + d->base_drive))
-				odata = 0xff;
-
+			odata = status_byte(d, cpu);
 #if 1
 			debug("[ wdc: read from STATUS: 0x%02x ]\n", odata);
 #endif
@@ -439,8 +441,11 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 
 			/*  TODO:  Is this correct behaviour?  */
 			if (!diskimage_exist(cpu->machine,
-			    d->drive + d->base_drive))
+			    d->drive + d->base_drive)) {
+				d->error |= WDCE_ABRT;
+				d->delayed_interrupt = INT_DELAY;
 				break;
+			}
 
 			/*  Handle the command:  */
 			switch (d->cur_command) {
@@ -546,6 +551,9 @@ printf("WDC write to offset %lli\n", (long long)offset);
 				d->delayed_interrupt = INT_DELAY;
 				break;
 			default:
+				/*  TODO  */
+				d->error |= WDCE_ABRT;
+
 				fatal("[ wdc: unknown command 0x%02x ("
 				    "drive %i, head %i, cylinder %i, sector %i,"
 				    " nsecs %i) ]\n", d->cur_command, d->drive,

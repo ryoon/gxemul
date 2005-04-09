@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.30 2005-04-07 15:43:15 debug Exp $
+$Id: intro.html,v 1.31 2005-04-09 23:02:45 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -247,15 +247,15 @@ emulated best at the moment are:
 
 <p>
 <ul>
-  <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("pmax")
-	<br>(Serial controller (including keyboard and mouse), ethernet,
-	SCSI, and graphical framebuffers.)
+  <li><b>DECstation 5000/200</b>&nbsp;&nbsp;("3max")
+	<br>Serial controller (including keyboard and mouse), ethernet,
+	SCSI, and graphical framebuffers.
   <p>
   <li><b>Acer Pica-61</b>&nbsp;&nbsp;(an ARC machine)
-	<br>(Serial controller, "VGA" text console, and SCSI.)
+	<br>Serial controller, "VGA" text console, and SCSI.
   <p>
   <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
-	<br>(Framebuffer, keyboard, and a PCMCIA IDE controller.)
+	<br>Framebuffer, keyboard, and a PCMCIA IDE controller.
 </ul>
 
 <p>
@@ -295,155 +295,101 @@ You can read more about these experimental devices
 <a name="guestos"></a>
 <h3>Which guest OSes are possible to run?</h3>
 
-This table sums up the guest OSes that run well enough to be considered
+This table lists the guest OSes that run well enough to be considered
 working in the emulator. They can boot from a harddisk image and be
-interacted with similar to a real machine:
+interacted with similar to a real machine.
 
-<p><br>
- <center>
-  <table border="0">
-    <tr><td>
-      <table border="0">
-	<tr><td align="center">
-	  <table border="0">
-	    <tr>
-	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
-	      <td width="15">&nbsp;</td>
-	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
-	      <td width="35">&nbsp;</td>
-	      <td valign="top"><b><u>Guest&nbsp;OS:</u></b></td>
-	      <td width="15">&nbsp;</td>
-	      <td valign="top"><b><u>Emulation&nbsp;mode:</u></b></td>
-	    </tr>
+<p>
+<center><table border="0">
+	<tr>
+	  <td width="20"></td>
+	  <td align="center"><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
+	  <td width="20"></td>
+	  <td><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
+		<br>DECstation 5000/200</td>
+	  <td width="40"></td>
+	  <td align="center"><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
+	  <td width="20"></td>
+	  <td><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
+		<br>Acer Pica-61</td>
 
-	    <tr>
-	      <td height="1"></td>
-	    </tr>
+	</tr>
 
-	    <tr>
-	      <td valign="top"><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a></td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	      <td></td>
-	      <td valign="top"><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a></td>
-	      <td></td>
-	      <td valign="top">ARC&nbsp;(Acer&nbsp;Pica)</td>
-	    </tr>
+	<tr><td height="10"></td></tr>
 
-	    <tr>
-	      <td valign="top"><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a></td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	      <td></td>
-	      <td valign="top"><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a></td>
-	      <td></td>
-	      <td valign="top">ARC (Acer Pica)</td>
-	    </tr>
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.openbsd.org/pmax.html">OpenBSD/pmax</a>
+		<br>DECstation 5000/200</td>
+	  <td></td>
+	  <td align="center"><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
+	  <td></td>
+	  <td><a href="http://www.openbsd.org/arc.html">OpenBSD/arc</a>
+		<br>Acer Pica-61</td>
+	</tr>
 
-	    <tr>
-	      <td valign="top">Ultrix/RISC</td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	      <td></td>
-	      <td valign="top"><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a></td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	    </tr>
+	<tr><td height="10"></td></tr>
 
-	    <tr>
-	      <td valign="top">Redhat&nbsp;Linux<super>*</super></td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	      <td></td>
-	      <td valign="top"><a href="http://www.debian.org/">Debian&nbsp;GNU/Linux</a><super>*</super></td>
-	      <td></td>
-	      <td valign="top">DECstation</td>
-	    </tr>
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
+	  <td></td>
+	  <td>Ultrix/RISC<br>DECstation 5000/200</td>
+	  <td></td>
+	  <td align="center"><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
+	  <td></td>
+	  <td><a href="http://www.debian.org/">Debian&nbsp;GNU/Linux</a>&nbsp;<super>*</super>
+		<br>DECstation 5000/200</td>
+	</tr>
 
-	    <tr>
-	      <td valign="top"><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a></td>
-	      <td></td>
-	      <td valign="top">NEC MobilePro</td>
-	    </tr>
-	  </table>
-	</td></tr>
+	<tr><td height="10"></td></tr>
 
-	<tr><td height="15">&nbsp;</td></tr>
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.cs.berkeley.edu/projects/sprite/retrospective.html">Sprite</a>
+		<br>DECstation 5000/200</td>
+	  <td></td>
+	  <td align="center"><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
+	  <td></td>
+	  <td>Redhat&nbsp;Linux&nbsp;<super>*</super>
+		<br>DECstation 5000/200</td>
+	</tr>
 
-	<tr><td>
-	  <center>
-	    <table border="0">
-	      <tr>
-		<td width=160 align=center><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
-		<td width=160 align=center><a href="openbsd-pmax-20040710.png"><img src="openbsd-pmax-20040710_small.png"></a></td>
-		<td width=160 align=center><a href="ultrix4.5-20040706.png"><img src="ultrix4.5-20040706_small.gif"></a></td>
-	      </tr>
-	      <tr>
-		<td align=center>NetBSD/pmax&nbsp;1.6.2</td>
-		<td align=center>OpenBSD/pmax&nbsp;2.8</td>
-		<td align=center>Ultrix&nbsp;4.5</td>
-	      </tr>
-	      <tr>
-		<td height=10>&nbsp;</td>
-	      </tr>
-	      <tr>
-		<td width=160 align=center><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
-		<td width=160 align=center><a href="20041024-openbsd-arc-installed.gif"><img src="20041024-openbsd-arc-installed_small.gif"></a></td>
-		<td width=160 align=center><a href="sprite-20040711.png"><img src="sprite-20040711_small.png"></a></td>
-	      </tr>
-	      <tr>
-		<td align=center>NetBSD/arc&nbsp;1.6.2</td>
-		<td align=center>OpenBSD/arc&nbsp;2.3</td>
-		<td align=center>Sprite</td>
-	      </tr>
-	      <tr>
-		<td height=10>&nbsp;</td>
-	      </tr>
-	      <tr>
-		<td width=160 align=center><a href="20041129-redhat_mips.png"><img src="20041129-redhat_mips_small.png"></a></td>
-		<td width=160 align=center><a href="20041213-debian_4.png"><img src="20041213-debian_4_small.gif"></a></td>
-		<td width=160 align=center><a href="20050331-netbsd-hpcmips.png"><img src="20050331-netbsd-hpcmips_small.png"></a></td>
-	      </tr>
-	      <tr>
-		<td align=center>Redhat&nbsp;Linux<super>*</super></td>
-		<td align=center>Debian&nbsp;GNU/Linux<super>*</super></td>
-		<td align=center>NetBSD/hpcmips</td>
-	      </tr>
-	    </table>
-	  </center>
-	</td></tr>
-      </table>
-    </td></tr>
-  </table>
- </center>
+	<tr><td height="10"></td></tr>
+
+	<tr>
+	  <td></td>
+	  <td align="center"><a href="20050331-netbsd-hpcmips.png"><img src="20050331-netbsd-hpcmips_small.png"></a></td>
+	  <td></td>
+	  <td><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>
+		<br>NEC MobilePro 770, 780, 800, 880</td>
+	  <td></td>
+	  <td></td>
+	  <td></td>
+	  <td></td>
+	</tr>
+
+</table></center>
+
 
 <p><br>
 
-(<super>*</super> Although Linux runs under DECstation emulation, the 
-default kernel in Debian GNU/Linux does not support keyboards on the 5000/200
-(the specific DECstation model being emulated), so when the login prompt
-is reached you cannot interact with the system.
-Kaj-Michael Lang has compiled and made available a newer kernel from the
-current mips-linux development tree. You can find it here:
-<a href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
+<super>*</super> Although Linux runs under DECstation emulation, the
+default 2.4.27 kernel in Debian GNU/Linux does not support keyboards on
+the 5000/200 (the specific DECstation model being emulated), so when the
+login prompt is reached you cannot interact with the system. Kaj-Michael
+Lang has compiled and made available a newer kernel from the current
+mips-linux development tree. You can find it here: <a
+href="http://home.tal.org/~milang/o2/kernels/">http://home.tal.org/~milang/o2/kernels</a>/<a
+href="http://home.tal.org/~milang/o2/kernels/vmlinux-2.4.29-rc2-r3k-mipsel-decstation">vmlinux-2.4.29-rc2-r3k-mipsel-decstation</a>
 This newer kernel supports keyboard input, but it does not have Debian's
-ethernet patches, so you will not be able to use keyboard/framebuffer 
-<i>and</i> networking at the same time.)
+ethernet patches, so you will not be able to use keyboard/framebuffer
+<i>and</i> networking at the same time.
 
-
-<p>
-It is non-trivial to get a specific operating system or OS kernel to
-run in the emulator, so don't expect the list above to grow too quickly.
-
-<p>
-There is no guarantee that anything specific will run in the emulator, but
-NetBSD is a good starting point for someone who wants to experiment.
-
-
-
-
-
-</p>
 
 </body>
 </html>

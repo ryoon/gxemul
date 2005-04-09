@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.680 2005-04-09 14:43:27 debug Exp $
+$Id: HISTORY,v 1.681 2005-04-09 21:10:52 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1822,3 +1822,6 @@ Changelog for GXemul:
 20050409	Various minor fixes (a bintrans bug, and some other things).
 		The wdc seems to work with Playstation2 emulation, but there
 		is a _long_ annoying delay when disks are detected.
+		Fixing a really important bintrans bug (when devices and RAM
+		are mixed within 4KB pages), which was triggered with
+		NetBSD/playstation2 kernels.

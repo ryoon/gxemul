@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.10 2005-03-01 08:23:55 debug Exp $
+ *  $Id: memory_rw.c,v 1.11 2005-04-09 21:10:54 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -76,6 +76,7 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 	unsigned char *memblock;
 #ifdef BINTRANS
 	int bintrans_cached = cpu->machine->bintrans_enable;
+	int bintrans_device_danger = 0;
 #endif
 	no_exceptions = cache_flags & NO_EXCEPTIONS;
 	cache = cache_flags & CACHE_FLAGS_MASK;
@@ -198,6 +199,37 @@ have_paddr:
 		uint64_t orig_paddr = paddr;
 #endif
 		int i, start, res;
+
+#ifdef BINTRANS
+		/*
+		 *  Really really slow, but unfortunately necessary. This is
+		 *  to avoid the folowing scenario:
+		 *
+		 *	a) offsets 0x000..0x123 are normal memory
+		 *	b) offsets 0x124..0x777 are a device
+		 *
+		 *	1) a read is done from offset 0x100. the page is
+		 *	   added to the bintrans system as a "RAM" page
+		 *	2) a bintranslated read is done from offset 0x200,
+		 *	   which should access the device, but since the
+		 *	   entire page is added, it will access non-existant
+		 *	   RAM instead, without warning.
+		 *
+		 *  Setting bintrans_device_danger = 1 on accesses which are
+		 *  on _any_ offset on pages that are device mapped avoids
+		 *  this problem, but it is probably not very fast.
+		 */
+		if (bintrans_cached) {
+			for (i=0; i<mem->n_mmapped_devices; i++)
+				if (paddr >= (mem->dev_baseaddr[i] & ~0xfff) &&
+				    paddr <= ((mem->dev_baseaddr[i] +
+				    mem->dev_length[i] - 1) | 0xfff)) {
+					bintrans_device_danger = 1;
+					break;
+				}
+		}
+#endif
+
 		i = start = mem->last_accessed_device;
 
 		/*  Scan through all devices:  */
@@ -444,7 +476,7 @@ no_exception_access:
 	offset = paddr & ((1 << BITS_PER_MEMBLOCK) - 1);
 
 #ifdef BINTRANS
-	if (bintrans_cached)
+	if (bintrans_cached && !bintrans_device_danger)
 		update_translation_table(cpu, vaddr & ~0xfff,
 		    memblock + (offset & ~0xfff),
 #if 0

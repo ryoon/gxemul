@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.19 2005-04-09 13:33:36 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.20 2005-04-09 21:10:53 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -265,11 +265,11 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 	case 0xf010:	/*  interrupt mask  */
 		if (writeflag == MEM_READ) {
 			odata = d->imask;
-			debug("[ ps2_stuff: read from Interrupt Mask Register:"
-			    " 0x%llx ]\n", (long long)odata);
+			/*  debug("[ ps2_stuff: read from Interrupt Mask "
+			    "Register: 0x%llx ]\n", (long long)odata);  */
 		} else {
-			debug("[ ps2_stuff: write to Interrupt Mask Register:"
-			    " 0x%llx ]\n", (long long)idata);
+			/*  debug("[ ps2_stuff: write to Interrupt Mask "
+			    "Register: 0x%llx ]\n", (long long)idata);  */
 			d->imask = idata;
 		}
 		break;

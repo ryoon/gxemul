@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ohci.c,v 1.9 2005-02-21 09:37:43 debug Exp $
+ *  $Id: dev_ps2_ohci.c,v 1.10 2005-04-09 21:10:53 debug Exp $
  *  
  *  Playstation 2 OHCI USB host controller.
  *
@@ -39,6 +39,9 @@
 #include "devices.h"
 #include "memory.h"
 #include "misc.h"
+
+
+#define debug fatal
 
 
 struct ps2_ohci_data {
@@ -61,7 +64,7 @@ int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem,
 	switch (relative_addr) {
 	case 0:
 		if (writeflag==MEM_READ) {
-#if 0
+#if 1
 			/*  to make NetBSD say "OHCI version 1.0"  */
 			odata = 0x10;
 #endif

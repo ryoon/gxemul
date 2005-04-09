@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.678 2005-04-08 00:30:12 debug Exp $
+$Id: HISTORY,v 1.679 2005-04-09 13:33:34 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1817,4 +1817,6 @@ Changelog for GXemul:
 
 ==============  RELEASE 0.3.1  ==============
 
-20050408	Some minor updates to the wdc.
+20050408	Some minor updates to the wdc. Linux now doesn't complain
+		anymore if a disk is non-present.
+20050409	Various minor fixes (a bintrans bug, and some other things).

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.18 2005-02-26 10:51:01 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.19 2005-04-09 13:33:36 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -71,7 +71,7 @@ void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 		if (d->timer_mode[0] & T_MODE_ZRET)
 			d->timer_count[0] = 0;
 
-		cpu_interrupt(cpu, 0x200 +8);		/*  0x200 is timer0  */
+		cpu_interrupt(cpu, 8 + 9);	/*  irq 9 is timer0  */
 	}
 }
 
@@ -205,8 +205,8 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 				d->dmac_reg[D2_QWC_REG/0x10] = 0;
 				idata &= ~D_CHCR_STR;
 
-				cpu_interrupt(cpu, (1 << 18) +8);
-				    /*  1<<18 is dma2  */
+				/*  interrupt DMA channel 2  */
+				cpu_interrupt(cpu, 8 + 16 + 2);
 			} else
 				debug("[ ps2_stuff: dmac [ch2] stopping "
 				    "transfer ]\n");
@@ -248,29 +248,28 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 			debug("[ ps2_stuff: read from Interrupt Register:"
 			    " 0x%llx ]\n", (long long)odata);
 
-			/*  TODO: these are possibly not correct,
-			    but makes NetBSD run easier.  */
+			/*  TODO: This is _NOT_ correct behavior:  */
 			d->intr = 0;
 			cpu_interrupt_ack(cpu, 2);
 		} else {
 			debug("[ ps2_stuff: write to Interrupt Register: "
 			    "0x%llx ]\n", (long long)idata);
-			/*  Clear out those bits that are set in idata:  */
+			/*  Clear out bits that are set in idata:  */
 			d->intr &= ~idata;
-			if (idata == 0)
-				d->intr = 0;
-			/*  TODO:  which of the above and below is best?  */
-			if (d->intr == 0) {
-				/*  Hm...  idata +8);  */
+
+			if ((d->intr & d->imask) == 0)
 				cpu_interrupt_ack(cpu, 2);
-			}
 		}
 		break;
 
 	case 0xf010:	/*  interrupt mask  */
-		if (writeflag == MEM_READ)
+		if (writeflag == MEM_READ) {
 			odata = d->imask;
-		else {
+			debug("[ ps2_stuff: read from Interrupt Mask Register:"
+			    " 0x%llx ]\n", (long long)odata);
+		} else {
+			debug("[ ps2_stuff: write to Interrupt Mask Register:"
+			    " 0x%llx ]\n", (long long)idata);
 			d->imask = idata;
 		}
 		break;

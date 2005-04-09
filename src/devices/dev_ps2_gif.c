@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_gif.c,v 1.27 2005-02-26 10:51:01 debug Exp $
+ *  $Id: dev_ps2_gif.c,v 1.28 2005-04-09 13:33:36 debug Exp $
  *  
  *  Playstation 2 "gif" graphics device.
  *
@@ -404,7 +404,7 @@ int devinit_ps2_gif(struct devinit *devinit)
 		exit(1);
 	}
 
-#if 1
+#if 0
 	test_triangle(d,  300,50, 255,0,0,  50,150, 0,255,0,  600,400, 0,0,255);
 	test_triangle(d,  310,210, 128,32,0,  175,410, 0,32,0,  500,470, 125,255,125);
 	test_triangle(d,  100,450, 255,255,0,  250,370, 0,255,255,  400,470, 255,0,255);

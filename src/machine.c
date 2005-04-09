@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.407 2005-04-08 00:30:14 debug Exp $
+ *  $Id: machine.c,v 1.408 2005-04-09 13:33:37 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -830,6 +830,9 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
 
 /*
  *  Playstation 2 interrupt routine:
+ *
+ *  irq_nr =	8 + x		normal irq x
+ *		8 + 16 + y	dma irq y
  */
 void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
@@ -838,29 +841,29 @@ void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 
 	if (assrt) {
 		/*  OR into the INTR:  */
-		if (irq_nr < 0x10000)
-			m->ps2_data->intr |= irq_nr;
+		if (irq_nr < 16)
+			m->ps2_data->intr |= (1 << irq_nr);
 		else
-			m->ps2_data->dmac_reg[0x601] |= (irq_nr >> 16);
-
-		/*  Assert interrupt:   TODO: masks  */
-		if (irq_nr >= 0x10000)
-			cpu_interrupt(cpu, 3);
-		else
-			cpu_interrupt(cpu, 2);
+			m->ps2_data->dmac_reg[0x601] |= (1 << (irq_nr-16));
 	} else {
 		/*  AND out of the INTR:  */
-		if (irq_nr < 0x10000)
-			m->ps2_data->intr &= ~irq_nr;
+		if (irq_nr < 16)
+			m->ps2_data->intr &= ~(1 << irq_nr);
 		else
-			m->ps2_data->dmac_reg[0x601] &= ~(irq_nr >> 16);
-
-		/*  TODO: masks  */
-		if ((m->ps2_data->intr & 0xffff) == 0)
-			cpu_interrupt_ack(cpu, 2);
-		if ((m->ps2_data->dmac_reg[0x601] & 0xffff) == 0)
-			cpu_interrupt_ack(cpu, 3);
+			m->ps2_data->dmac_reg[0x601] &= ~(1 << (irq_nr-16));
 	}
+
+	/*  TODO: Hm? How about the mask?  */
+	if (m->ps2_data->intr /*  & m->ps2_data->imask */ )
+		cpu_interrupt(cpu, 2);
+	else
+		cpu_interrupt_ack(cpu, 2);
+
+	/*  TODO: mask?  */
+	if (m->ps2_data->dmac_reg[0x601] & 0xffff)
+		cpu_interrupt(cpu, 3);
+	else
+		cpu_interrupt_ack(cpu, 3);
 }
 
 
@@ -2396,7 +2399,7 @@ void machine_setup(struct machine *machine)
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-#if 1
+#if 0
 		/*  Harddisk controller present flag:  */
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
 		dev_ps2_spd_init(machine, mem, 0x14000000);
@@ -2426,10 +2429,6 @@ void machine_setup(struct machine *machine)
 		/*  "BOOTINFO_PCMCIA_TYPE" in NetBSD's bootinfo.h. This contains the sbus controller type.  */
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x1c, 2);
 
-#if 0
-		/*  TODO:  Is this necessary?  */
-		cpu->cd.mips.gpr[MIPS_GPR_SP] = 0x80007f00;
-#endif
 		break;
 
 	case MACHINE_SGI:

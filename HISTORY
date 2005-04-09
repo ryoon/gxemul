@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.679 2005-04-09 13:33:34 debug Exp $
+$Id: HISTORY,v 1.680 2005-04-09 14:43:27 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1820,3 +1820,5 @@ Changelog for GXemul:
 20050408	Some minor updates to the wdc. Linux now doesn't complain
 		anymore if a disk is non-present.
 20050409	Various minor fixes (a bintrans bug, and some other things).
+		The wdc seems to work with Playstation2 emulation, but there
+		is a _long_ annoying delay when disks are detected.

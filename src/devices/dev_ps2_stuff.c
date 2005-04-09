@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.20 2005-04-09 21:10:53 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.21 2005-04-09 21:13:57 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -47,7 +47,7 @@
 #include "ee_timerreg.h"
 #include "ps2_dmacreg.h"
 
-#define	TICK_STEPS_SHIFT	16
+#define	TICK_STEPS_SHIFT	14
 
 /*  NOTE/TODO: This should be the same as in ps2_gs:  */
 #define	DEV_PS2_GIF_FAKE_BASE		0x50000000

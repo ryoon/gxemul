@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_fast_v2h.c,v 1.12 2005-02-18 06:01:18 debug Exp $
+ *  $Id: memory_fast_v2h.c,v 1.13 2005-04-09 21:13:58 debug Exp $
  *
  *  Fast virtual memory to host address, used by binary translated code.
  */
@@ -140,11 +140,17 @@ if ((vaddr & 0xc0000000ULL) >= 0xc0000000ULL && writeflag) {
 		return NULL;
 
 	for (i=0; i<cpu->mem->n_mmapped_devices; i++)
-		if (paddr >= cpu->mem->dev_baseaddr[i] &&
-		    paddr < cpu->mem->dev_baseaddr[i] +
-		    cpu->mem->dev_length[i]) {
+		if (paddr >= (cpu->mem->dev_baseaddr[i] & ~0xfff) &&
+		    paddr <= ((cpu->mem->dev_baseaddr[i] +
+		    cpu->mem->dev_length[i] - 1) | 0xfff)) {
 			if (cpu->mem->dev_flags[i] & MEM_BINTRANS_OK) {
 				paddr -= cpu->mem->dev_baseaddr[i];
+
+				/*  Within a device _page_ but not within the
+				    actual device? Then abort:  */
+				if ((int64_t)paddr < 0 ||
+				    paddr >= cpu->mem->dev_length[i])
+					return NULL;
 
 				if (writeflag) {
 					uint64_t low_paddr = paddr & ~0xfff;

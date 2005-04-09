@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.115 2005-04-09 00:48:12 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.116 2005-04-09 14:23:28 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -2295,7 +2295,7 @@ static int bintrans_write_instruction__mfc_mtc(struct memory *mem,
 	if (coproc_nr >= 1)
 		return 0;
 
-	if (rd == COP0_RANDOM || rd == COP0_COUNT)
+	if (rd == COP0_RANDOM) /* || rd == COP0_COUNT) */
 		return 0;
 
 

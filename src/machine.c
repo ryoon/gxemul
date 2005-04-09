@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.408 2005-04-09 13:33:37 debug Exp $
+ *  $Id: machine.c,v 1.409 2005-04-09 14:23:29 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2399,11 +2399,12 @@ void machine_setup(struct machine *machine)
 		store_32bit_word(cpu, PLAYSTATION2_BDA + 0, PLAYSTATION2_SIFBIOS);
 		store_buf(cpu, PLAYSTATION2_BDA + 4, "PS2b", 4);
 
-#if 0
-		/*  Harddisk controller present flag:  */
-		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
-		dev_ps2_spd_init(machine, mem, 0x14000000);
-#endif
+		/*  Set the Harddisk controller present flag, if either
+		    disk 0 or 1 is present:  */
+		if (diskimage_exist(machine, 0) || diskimage_exist(machine, 1)) {
+			store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x0, 0x100);
+			dev_ps2_spd_init(machine, mem, 0x14000000);
+		}
 
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
 		bootstr = "root=/dev/hda1 crtmode=vesa0,60";

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.681 2005-04-09 21:10:52 debug Exp $
+$Id: HISTORY,v 1.682 2005-04-09 22:36:15 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1825,3 +1825,5 @@ Changelog for GXemul:
 		Fixing a really important bintrans bug (when devices and RAM
 		are mixed within 4KB pages), which was triggered with
 		NetBSD/playstation2 kernels.
+20050410	Adding a dummy dev_ps2_ether (just so that NetBSD doesn't
+		complain as much during bootup).

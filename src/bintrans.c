@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.160 2005-04-06 21:16:45 debug Exp $
+ *  $Id: bintrans.c,v 1.161 2005-04-09 00:48:12 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -337,8 +337,6 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 	    (paddr & 3) != 0)
 		return cpu->cd.mips.bintrans_instructions_executed;
 
-	cpu->mem->bintrans_32bit_only = (cpu->cd.mips.cpu_type.isa_level <= 2
-	    || cpu->cd.mips.cpu_type.isa_level == 32);
 	byte_order_cached_bigendian = (cpu->byte_order == EMUL_BIG_ENDIAN);
 
 	/*  Is this a part of something that is already translated?  */
@@ -773,9 +771,10 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 				    cpu->mem, &ca,
 				    potential_chunk_p, &tep->chunk[0], 0,
 				    delayed_branch_new_p & 0xfff, forward);
-
+#if 0
 				if (stop_after_delayed_branch)
 					try_to_translate = 0;
+#endif
 			}
 		}
 
@@ -796,6 +795,17 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					    tep->chunk[prev_p]);
 		}
 
+{
+	int mask = 1 << ((prev_p+1) & 7);
+
+		if (translated && try_to_translate &&
+		    tep->flags[(prev_p+1) >> 3] & mask
+		    && prev_p < 1023 && !delayed_branch) {
+			bintrans_write_chunkreturn_fail(&ca);
+			try_to_translate = 0;
+		}
+}
+
 		/*  Glue together with previously translated code, if any:  */
 		if (translated && try_to_translate &&
 		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
@@ -811,16 +821,6 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
 			try_to_translate = 0;
 		}
-
-{
-	int mask = 1 << ((prev_p+1) & 7);
-
-		if (translated && try_to_translate &&
-		    tep->flags[(prev_p+1) >> 3] & mask
-		    && prev_p < 1023 && !delayed_branch) {
-			bintrans_write_chunkreturn_fail(&ca);
-		}
-}
 
 		p += sizeof(instr);
 
@@ -1071,6 +1071,9 @@ void old_bintrans_init_cpu(struct cpu *cpu)
 	}
 
 	cpu->cd.mips.vaddr_to_hostaddr_table0 = cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
+
+	cpu->mem->bintrans_32bit_only = (cpu->cd.mips.cpu_type.isa_level <= 2
+	    || cpu->cd.mips.cpu_type.isa_level == 32);
 }
 
 

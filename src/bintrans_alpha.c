@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans_alpha.c,v 1.114 2005-03-22 09:12:04 debug Exp $
+ *  $Id: bintrans_alpha.c,v 1.115 2005-04-09 00:48:12 debug Exp $
  *
  *  Alpha specific code for dynamic binary translation.
  *
@@ -244,14 +244,8 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	0xa6730000,
 
 	/*  NULL? Then return failure at once.  */
-	/*  bne a3, skip  */
-	0xf6600003,
-
-	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
-	0x44270407,					/*  or      t0,t6,t6  */
-	0x6bfa8001,					/*  ret  */
-
-	/*  skip:  */
+	/*  beq a3, return  */
+	0xe6600004,
 
 	/*  01 30 60 46     and     a3,0x1,t0  */
 	0x46603001,
@@ -266,7 +260,12 @@ static uint32_t bintrans_alpha_loadstore_32bit[19] = {
 	/*  04 04 62 42     addq    a3,t1,t3  */
 	0x42620404,
 
-	0x6be50000		/*  jmp (t4)  */
+	0x6be50000,		/*  jmp (t4)  */
+
+	/*  return:  */
+	0x243f0000 | (BINTRANS_DONT_RUN_NEXT >> 16),	/*  ldah  t0,256  */
+	0x44270407,					/*  or      t0,t6,t6  */
+	0x6bfa8001					/*  ret  */
 };
 
 static void (*bintrans_runchunk)(struct cpu *, unsigned char *);
@@ -2581,7 +2580,7 @@ static int bintrans_write_instruction__tlb_rfe_etc(unsigned char **addrp,
 static void bintrans_backend_init(void)
 { 
 	int size;
-	uint32_t *p;
+	uint32_t *p, *q;
 
 
 	/*  "runchunk":  */
@@ -2675,8 +2674,8 @@ static void bintrans_backend_init(void)
 	*p++ = 0x205f0000 | (N_SAFE_BINTRANS_LIMIT-1);  /*  lda t1,safe-1 */
 
 	*p++ = 0x40e20da1;		/*  cmple t6,t1,t0  */
-	*p++ = 0xf4200001;		/*  bne  */
-	*p++ = 0x6bfa8001;		/*  ret  */
+	q = p;	/*  *q is updated later  */
+	*p++ = 0xe4200001;		/*  beq ret (far below)  */
 
 	*p++ = 0x40c01411;		/*  addq t5,0,a1  */
 
@@ -2704,7 +2703,7 @@ static void bintrans_backend_init(void)
 	*p++ = 0x205f0ffc;	/*  lda     t1,0xffc  */
 
 	/*
-	 *  a3 = tbl1[t3]  (load entry from tbl1 (whic is a3))
+	 *  a3 = tbl1[t3]  (load entry from tbl1 (which is a3))
 	 */
 	*p++ = 0x42640413;	/*  addq    a3,t3,a3  */
 	*p++ = 0x46220002;	/*  and     a1,t1,t1  */
@@ -2727,6 +2726,9 @@ static void bintrans_backend_init(void)
 
 	*p++ = 0x40230401;	/*  addq t0,t2,t0  */
 	*p++ = 0x6be10000;	/*  jmp (t0)  */
+
+	/*  Now, update *q to point here:  */
+	*q = 0xe4200000 | (((size_t)p - (size_t)q)/4 - 1);	/*  beq ret  */
 
 	/*  Return to the main translation loop.  */
 	*p++ = 0x6bfa8001;		/*  ret  */

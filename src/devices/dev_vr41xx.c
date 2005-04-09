@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vr41xx.c,v 1.28 2005-04-06 17:13:43 debug Exp $
+ *  $Id: dev_vr41xx.c,v 1.29 2005-04-09 12:11:46 debug Exp $
  *  
  *  VR41xx (actually, VR4122 and VR4131) misc functions.
  *
@@ -582,10 +582,18 @@ struct vr41xx_data *dev_vr41xx_init(struct machine *machine,
 	memory_device_register(mem, "vr41xx", baseaddr, DEV_VR41XX_LENGTH,
 	    dev_vr41xx_access, (void *)d, MEM_DEFAULT, NULL);
 
-	/*  At least on VR4131:  */
-	if (cpumodel == 4131)
+	/*
+	 *  TODO: Find out which controllers are at which addresses on
+	 *  which chips.
+	 */
+	if (cpumodel == 4131) {
 		dev_ns16550_init(machine, mem, baseaddr + 0x800,
 		    8 + VRIP_INTR_SIU, 1, 1, "vr41xx siu");
+	} else {
+		/*  This is used by Linux and NetBSD:  */
+		dev_ns16550_init(machine, mem, 0xc000000,
+		    8 + VRIP_INTR_SIU, 1, 1, "vr41xx serial");
+	}
 
 	/*  Hm... maybe this should not be here.  TODO  */
 	device_add(machine, "pcic addr=0x140003e0");

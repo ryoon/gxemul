@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.11 2005-03-15 06:52:14 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.12 2005-04-09 12:11:47 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1172,6 +1172,9 @@ void coproc_register_write(struct cpu *cpu,
 		case COP0_STATUS:
 			oldmode = cp->reg[COP0_STATUS];
 			tmp &= ~(1 << 21);	/*  bit 21 is read-only  */
+#if 0
+/*  Why was this here? It should not be necessary.  */
+
 			/*  Changing from kernel to user mode? Then
 			    invalidate some translation caches:  */
 			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K) {
@@ -1185,6 +1188,7 @@ void coproc_register_write(struct cpu *cpu,
 					invalidate_translation_caches(
 					    cpu, 0, 0, 1, 0);
 			}
+#endif
 			unimpl = 0;
 			break;
 		case COP0_CAUSE:
@@ -2207,7 +2211,7 @@ void coproc_tlbwri(struct cpu *cpu, int randomflag)
 
 /*  TODO: Bug? Why does this if need to be commented out?  */
 
-		/*  if (cp->tlbs[index].lo0 & ENTRYLO_V) */
+		/*  if (cp->tlbs[index].lo0 & ENTRYLO_V)  */
 			invalidate_translation_caches(cpu, 0, oldvaddr, 0, 0);
 		break;
 	default:
@@ -2369,10 +2373,12 @@ void coproc_eret(struct cpu *cpu)
 	    (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & 1) == 0)
 		newmode = 1;
 
+#if 0
 	/*  Changing from kernel to user mode?
 	    Then this is necessary:  TODO  */
 	if (oldmode && !newmode)
 		invalidate_translation_caches(cpu, 0, 0, 1, 0);
+#endif
 }
 
 

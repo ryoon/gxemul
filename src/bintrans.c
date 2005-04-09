@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.161 2005-04-09 00:48:12 debug Exp $
+ *  $Id: bintrans.c,v 1.162 2005-04-09 12:11:47 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -662,7 +662,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 						translated = try_to_translate = bintrans_write_instruction__mfc_mtc(cpu->mem, &ca, 0, 1, rt, rd, 1);
 						n_translated += translated;
 					}
-				}
+				} else
+					try_to_translate = 0;
 				break;
 			case 0x42:
 				if (instr[2] == 0x00 && instr[1] == 0x00 && instr[0] == 0x10) {
@@ -695,7 +696,8 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					/*  standby and suspend on VR41xx etc ==> NOP  */
 					translated = try_to_translate = bintrans_write_instruction__addu_etc(&ca, 0, 0, 0, 0, SPECIAL_SLL);
 					n_translated += translated;
-				}
+				} else
+					try_to_translate = 0;
 				break;
 			default:
 				try_to_translate = 0;

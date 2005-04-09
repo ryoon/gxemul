@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.29 2005-04-08 00:30:13 debug Exp $
+ *  $Id: dev_wdc.c,v 1.30 2005-04-09 12:11:46 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -280,6 +280,8 @@ int dev_wdc_access(struct cpu *cpu, struct memory *mem,
 	case wd_data:	/*  0: data  */
 		if (writeflag==MEM_READ) {
 			odata = 0;
+
+			/*  TODO: This is hardcoded for little-endian?  */
 
 			odata += wdc_get_inbuf(d);
 			if (len >= 2)
@@ -548,6 +550,12 @@ printf("WDC write to offset %lli\n", (long long)offset);
 					wdc_addtoinbuf(d, d->identify_struct
 					    [i+0]);
 				}
+				d->delayed_interrupt = INT_DELAY;
+				break;
+			case WDCC_IDLE_IMMED:
+				debug("[ wdc: IDLE_IMMED drive %i ]\n",
+				    d->drive);
+				/*  TODO: interrupt here?  */
 				d->delayed_interrupt = INT_DELAY;
 				break;
 			default:

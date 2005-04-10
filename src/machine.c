@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.410 2005-04-09 22:36:17 debug Exp $
+ *  $Id: machine.c,v 1.411 2005-04-10 21:18:25 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2391,7 +2391,7 @@ void machine_setup(struct machine *machine)
 		device_add(machine, "ps2_gs addr=0x12000000");
 		device_add(machine, "ps2_ether addr=0x14001000");
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
-		dev_ps2_ohci_init(cpu, mem, 0x1f801600);
+		device_add(machine, "ohci addr=0x1f801600");
 
 		machine->md_interrupt = ps2_interrupt;
 

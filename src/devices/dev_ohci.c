@@ -25,64 +25,73 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ohci.c,v 1.10 2005-04-09 21:10:53 debug Exp $
+ *  $Id: dev_ohci.c,v 1.1 2005-04-10 21:18:23 debug Exp $
  *  
- *  Playstation 2 OHCI USB host controller.
+ *  USB OHCI (Open Host Controller Interface).
  *
- *  TODO:  Generalize this into a machine independant OHCI?
+ *  TODO
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "devices.h"
+#include "cpu.h"
+#include "device.h"
+#include "machine.h"
 #include "memory.h"
 #include "misc.h"
+
+
+/*  Length is 0x1000 at least on Playstation 2  */
+#define	DEV_OHCI_LENGTH		0x1000
 
 
 #define debug fatal
 
 
-struct ps2_ohci_data {
+struct ohci_data {
 	int	dummy;
 };
 
 
 /*
- *  dev_ps2_ohci_access():
+ *  dev_ohci_access():
  */
-int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem,
+int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	/*  struct ps2_ohci_data *d = extra;  */
+	/*  struct ohci_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
+	char *name = NULL;
 
 	idata = memory_readmax64(cpu, data, len);
 
 	switch (relative_addr) {
-	case 0:
-		if (writeflag==MEM_READ) {
-#if 1
-			/*  to make NetBSD say "OHCI version 1.0"  */
-			odata = 0x10;
-#endif
-			debug("[ ps2_ohci: read from addr 0x%x: 0x%llx ]\n",
-			    (int)relative_addr, (long long)odata);
-		} else {
-			debug("[ ps2_ohci: write to addr 0x%x: 0x%llx ]\n",
-			    (int)relative_addr, (long long)idata);
+	case OHCI_REVISION:
+		name = "REVISION";
+		if (writeflag == MEM_READ) {
+			odata = 0x10;	/*  Version 1.0.  */
 		}
 		break;
 	default:
-		if (writeflag==MEM_READ) {
-			debug("[ ps2_ohci: read from addr 0x%x: 0x%llx ]\n",
+		if (writeflag == MEM_READ) {
+			debug("[ ohci: read from addr 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)odata);
 		} else {
-			debug("[ ps2_ohci: write to addr 0x%x: 0x%llx ]\n",
+			debug("[ ohci: write to addr 0x%x: 0x%llx ]\n",
 			    (int)relative_addr, (long long)idata);
 		}
+	}
+
+	if (name != NULL) {
+		if (writeflag == MEM_READ)
+			debug("[ ohci: read from %s: 0x%llx ]\n",
+			    name, (long long)odata);
+		else
+			debug("[ ohci: write to %s: 0x%llx ]\n",
+			    name, (long long)idata);
 	}
 
 	if (writeflag == MEM_READ)
@@ -93,20 +102,23 @@ int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem,
 
 
 /*
- *  dev_ps2_ohci_init():
+ *  devinit_ohci():
  */
-void dev_ps2_ohci_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr)
+int devinit_ohci(struct devinit *devinit)
 {
-	struct ps2_ohci_data *d;
+	struct ohci_data *d;
 
-	d = malloc(sizeof(struct ps2_ohci_data));
+	d = malloc(sizeof(struct ohci_data));
 	if (d == NULL) {
 		fprintf(stderr, "out of memory\n");
 		exit(1);
 	}
-	memset(d, 0, sizeof(struct ps2_ohci_data));
+	memset(d, 0, sizeof(struct ohci_data));
 
-	memory_device_register(mem, "ps2_ohci", baseaddr,
-	    DEV_PS2_OHCI_LENGTH, dev_ps2_ohci_access, d, MEM_DEFAULT, NULL);
+	memory_device_register(devinit->machine->memory,
+	    devinit->name, devinit->addr,
+	    DEV_OHCI_LENGTH, dev_ohci_access, d, MEM_DEFAULT, NULL);
+
+	return 1;
 }
 

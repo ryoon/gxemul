@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.683 2005-04-10 16:42:56 debug Exp $
+$Id: HISTORY,v 1.684 2005-04-10 21:18:22 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1828,3 +1828,4 @@ Changelog for GXemul:
 20050410	Adding a dummy dev_ps2_ether (just so that NetBSD doesn't
 		complain as much during bootup).
 		Symbols starting with '$' are now ignored.
+		Renaming dev_ps2_ohci.c to dev_ohci.c, etc.

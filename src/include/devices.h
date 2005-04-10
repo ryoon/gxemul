@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.160 2005-03-29 09:46:08 debug Exp $
+ *  $Id: devices.h,v 1.161 2005-04-10 21:18:24 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -351,13 +351,6 @@ int dev_pmppc_board_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len, int writeflag,
 	void *);
 void dev_pmppc_init(struct memory *mem);
-
-/*  dev_ps2_ohci.c:  */
-#define	DEV_PS2_OHCI_LENGTH		0x1000
-int dev_ps2_ohci_access(struct cpu *cpu, struct memory *mem,
-	uint64_t relative_addr, unsigned char *data, size_t len,
-	int writeflag, void *);
-void dev_ps2_ohci_init(struct cpu *cpu, struct memory *mem, uint64_t baseaddr);
 
 /*  dev_ps2_spd.c:  */
 #define	DEV_PS2_SPD_LENGTH		0x800

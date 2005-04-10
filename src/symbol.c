@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: symbol.c,v 1.23 2005-03-20 11:11:48 debug Exp $
+ *  $Id: symbol.c,v 1.24 2005-04-10 16:42:56 debug Exp $
  *
  *  Address to symbol translation routines.
  *
@@ -204,6 +204,15 @@ void add_symbol_name(struct symbol_context *sc,
 		    "symbol array is already sorted\n");
 		exit(1);
 	}
+
+	if (name == NULL) {
+		fprintf(stderr, "add_symbol_name(): name = NULL\n");
+		exit(1);
+	}
+
+	/*  TODO: Maybe this should be optional?  */
+	if (name[0] == '$')
+		return;
 
 	if ((addr >> 32) == 0 && (addr & 0x80000000ULL))
 		addr |= 0xffffffff00000000ULL;

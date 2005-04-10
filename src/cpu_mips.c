@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.34 2005-03-20 20:27:26 debug Exp $
+ *  $Id: cpu_mips.c,v 1.35 2005-04-10 21:18:15 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -1608,10 +1608,12 @@ void mips_cpu_exception(struct cpu *cpu, int exccode, int tlb, uint64_t vaddr,
 
 	if (tlb && vaddr < 0x1000) {
 		uint64_t offset;
-		char *symbol = get_symbol_name(
-		    &cpu->machine->symbol_context, cpu->cd.mips.pc_last, &offset);
-		fatal("warning: LOW reference vaddr=0x%08x, exception %s, pc=%08llx <%s>\n",
-		    (int)vaddr, exception_names[exccode], (long long)cpu->cd.mips.pc_last, symbol? symbol : "(no symbol)");
+		char *symbol = get_symbol_name(&cpu->machine->symbol_context,
+		    cpu->cd.mips.pc_last, &offset);
+		fatal("[ warning: LOW reference vaddr=0x%08x, exception %s, "
+		    "pc=%08llx <%s> ]\n", (int)vaddr, exception_names[exccode],
+		    (long long)cpu->cd.mips.pc_last,
+		    symbol? symbol : "(no symbol)");
 	}
 
 	/*  Clear the exception code bits of the cause register...  */

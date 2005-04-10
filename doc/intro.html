@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.32 2005-04-09 23:04:23 debug Exp $
+$Id: intro.html,v 1.33 2005-04-10 16:42:10 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -73,11 +73,11 @@ hardware components are emulated well enough to let unmodified operating
 systems run as if they were running on a real machine.
 
 <p>
-It is important to keep in mind that devices and CPUs are not really
-emulated correctly, they are only "faked" well enough to make eg. NetBSD
-run. Still, the emulator could be of interest for academic research and
-experiments, such as when learning how to write an OS for a real machine,
-or profiling SMP, memory, or system call usage.
+It is important to keep in mind that devices and CPUs are not simulated 
+with 100% accuracy. They are only "faked" well enough to make operating 
+systems (eg NetBSD) run. Still, the emulator could be of interest for
+academic research and experiments, such as when learning how to write 
+operating system code.
 
 <p>
 The emulator is written in C, does not depend on external libraries (except
@@ -175,8 +175,21 @@ possible options differ between different releases and snapshots.)
 <p>
 Once you have built GXemul, running it should be rather straight-forward.
 To exit the emulator, type CTRL-C to enter the 
-single-step debugger, and then type <b>quit</b>. By typing CTRL-B instead,
-a CTRL-C is sent to the emulated program.
+single-step debugger, and then type <b>quit</b>.
+
+<p>
+If you are starting an emulation by entering settings directly on the 
+command line, and you are not using the <b>-x</b> option, then all 
+terminal input and output will go to the main controlling terminal.
+CTRL-C is used to break into the debugger, so in order to send CTRL-C to 
+the running (emulated) program, CTRL-B can be used instead.
+
+<p>
+(This is an ugly hack; there is no way to send an actual CTRL-B. The 
+solution is to either use configuration files, or use <b>-x</b>. Both 
+these solutions cause new xterms to be opened for each emulated serial 
+port. CTRL-B and CTRL-C both have their original meaning in those 
+xterm windows.)
 
 
 

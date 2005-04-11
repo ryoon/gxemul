@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.21 2005-04-09 21:13:57 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.22 2005-04-11 20:44:39 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -274,6 +274,21 @@ int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem,
 		}
 		break;
 
+	case 0xf230:	/*  sbus interrupt register?  */
+		if (writeflag == MEM_READ) {
+			odata = d->sbus_smflg;
+			debug("[ ps2_stuff: read from SBUS SMFLG:"
+			    " 0x%llx ]\n", (long long)odata);
+		} else {
+			/*  Clear bits on write:  */
+			debug("[ ps2_stuff: write to SBUS SMFLG:"
+			    " 0x%llx ]\n", (long long)idata);
+			d->sbus_smflg &= ~idata;
+			/*  irq 1 is SBUS  */
+			if (d->sbus_smflg == 0)
+				cpu_interrupt_ack(cpu, 8 + 1);
+		}
+		break;
 	default:
 		if (writeflag==MEM_READ) {
 			debug("[ ps2_stuff: read from addr 0x%x: 0x%llx ]\n",

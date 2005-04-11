@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.411 2005-04-10 21:18:25 debug Exp $
+ *  $Id: machine.c,v 1.412 2005-04-11 20:44:41 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -833,11 +833,38 @@ void vr41xx_interrupt(struct machine *m, struct cpu *cpu,
  *
  *  irq_nr =	8 + x		normal irq x
  *		8 + 16 + y	dma irq y
+ *		8 + 32 + 0	sbus irq 0 (pcmcia)
+ *		8 + 32 + 1	sbus irq 1 (usb)
  */
 void ps2_interrupt(struct machine *m, struct cpu *cpu, int irq_nr, int assrt)
 {
 	irq_nr -= 8;
 	debug("ps2_interrupt(): irq_nr=0x%x assrt=%i\n", irq_nr, assrt);
+
+	if (irq_nr >= 32) {
+		int msk = 0;
+		switch (irq_nr - 32) {
+		case 0:	/*  PCMCIA:  */
+			msk = 0x100;
+			break;
+		case 1:	/*  USB:  */
+			msk = 0x400;
+			break;
+		default:
+			fatal("ps2_interrupt(): bad irq_nr %i\n", irq_nr);
+		}
+
+		if (assrt)
+			m->ps2_data->sbus_smflg |= msk;
+		else
+			m->ps2_data->sbus_smflg &= ~msk;
+
+		if (m->ps2_data->sbus_smflg != 0)
+			cpu_interrupt(cpu, 8 + 1);
+		else
+			cpu_interrupt_ack(cpu, 8 + 1);
+		return;
+	}
 
 	if (assrt) {
 		/*  OR into the INTR:  */
@@ -2391,7 +2418,8 @@ void machine_setup(struct machine *machine)
 		device_add(machine, "ps2_gs addr=0x12000000");
 		device_add(machine, "ps2_ether addr=0x14001000");
 		dev_ram_init(mem, 0x1c000000, 4 * 1048576, DEV_RAM_RAM, 0);	/*  TODO: how much?  */
-		device_add(machine, "ohci addr=0x1f801600");
+		/*  irq = 8 + 32 + 1 (SBUS/USB)  */
+		device_add(machine, "ohci addr=0x1f801600 irq=41");
 
 		machine->md_interrupt = ps2_interrupt;
 

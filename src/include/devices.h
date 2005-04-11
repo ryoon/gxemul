@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: devices.h,v 1.161 2005-04-10 21:18:24 debug Exp $
+ *  $Id: devices.h,v 1.162 2005-04-11 20:44:40 debug Exp $
  *
  *  Memory mapped devices.
  *
@@ -376,6 +376,7 @@ struct ps2_data {
 
 	uint32_t	intr;
 	uint32_t	imask;
+	uint32_t	sbus_smflg;
 };
 #define	DEV_PS2_STUFF_LENGTH		0x10000
 int dev_ps2_stuff_access(struct cpu *cpu, struct memory *mem, uint64_t relative_addr, unsigned char *data, size_t len, int writeflag, void *);

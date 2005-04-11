@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.2 2005-04-11 00:56:13 debug Exp $
+ *  $Id: dev_ohci.c,v 1.3 2005-04-11 20:44:39 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -53,7 +53,7 @@
 
 
 struct ohci_data {
-	int	dummy;
+	int	irq_nr;
 
 	int	port1reset;
 };
@@ -79,6 +79,16 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 			odata = 0x10;	/*  Version 1.0.  */
 		}
 		break;
+
+
+/*
+ *  TODO: It now sleeps at      tsleep(xfer, PRIBIO, "usbsyn", 0);
+ *  in netbsd/src/sys/dev/usb/usbdi.c
+ *
+ *  Maybe some interrupt should be going somewhere?
+ */
+
+
 	case OHCI_RH_DESCRIPTOR_A:
 		name = "RH_DESCRIPTOR_A";
 		odata = 2;
@@ -88,14 +98,6 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 		break;
 	case OHCI_RH_PORT_STATUS(1):	/*  First port  */
 		name = "RH_PORT_STATUS(1)";
-
-/*
- *  TODO: It now sleeps at      tsleep(xfer, PRIBIO, "usbsyn", 0);
- *  in netbsd/src/sys/dev/usb/usbdi.c
- *
- *  Maybe some interrupt should be going somewhere?
- */
-
 		if (writeflag == MEM_READ) {
 			/*  Status = low 16, Change = top 16  */
 			odata = 0x10101;
@@ -110,6 +112,10 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 			if (idata & 0x100000)
 				d->port1reset = 0;
 		}
+
+/*  BLAH:  */
+odata = 0;
+
 		break;
 	case OHCI_RH_PORT_STATUS(2):	/*  Second port  */
 		name = "RH_PORT_STATUS(2)";
@@ -155,6 +161,7 @@ int devinit_ohci(struct devinit *devinit)
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct ohci_data));
+	d->irq_nr = devinit->irq_nr;
 
 	memory_device_register(devinit->machine->memory,
 	    devinit->name, devinit->addr,

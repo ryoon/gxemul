@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.685 2005-04-11 20:22:31 debug Exp $
+$Id: HISTORY,v 1.686 2005-04-11 20:44:38 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1832,3 +1832,4 @@ Changelog for GXemul:
 20050411	Moving the bintrans-cache-isolation check from cpu_mips.c to
 		cpu_mips_coproc.c. (I thought this would give a speedup, but
 		it's not noticable.)
+		Better playstation2 sbus interrupt code.

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.1 2005-04-10 21:18:23 debug Exp $
+ *  $Id: dev_ohci.c,v 1.2 2005-04-11 00:56:13 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -42,6 +42,8 @@
 #include "memory.h"
 #include "misc.h"
 
+#include "ohcireg.h"
+
 
 /*  Length is 0x1000 at least on Playstation 2  */
 #define	DEV_OHCI_LENGTH		0x1000
@@ -52,6 +54,8 @@
 
 struct ohci_data {
 	int	dummy;
+
+	int	port1reset;
 };
 
 
@@ -62,7 +66,7 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	/*  struct ohci_data *d = extra;  */
+	struct ohci_data *d = extra;
 	uint64_t idata = 0, odata = 0;
 	char *name = NULL;
 
@@ -74,6 +78,43 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 		if (writeflag == MEM_READ) {
 			odata = 0x10;	/*  Version 1.0.  */
 		}
+		break;
+	case OHCI_RH_DESCRIPTOR_A:
+		name = "RH_DESCRIPTOR_A";
+		odata = 2;
+		break;
+	case OHCI_RH_STATUS:
+		name = "RH_STATUS";
+		break;
+	case OHCI_RH_PORT_STATUS(1):	/*  First port  */
+		name = "RH_PORT_STATUS(1)";
+
+/*
+ *  TODO: It now sleeps at      tsleep(xfer, PRIBIO, "usbsyn", 0);
+ *  in netbsd/src/sys/dev/usb/usbdi.c
+ *
+ *  Maybe some interrupt should be going somewhere?
+ */
+
+		if (writeflag == MEM_READ) {
+			/*  Status = low 16, Change = top 16  */
+			odata = 0x10101;
+			/*  0x0001 = connected
+			    0x0100 = power  */
+			if (d->port1reset)
+				odata |= (0x10 << 16) | 0x10;
+		} else {
+			/*  0x10 = UPS_C_PORT_RESET  */
+			if (idata & 0x10)
+				d->port1reset = 1;
+			if (idata & 0x100000)
+				d->port1reset = 0;
+		}
+		break;
+	case OHCI_RH_PORT_STATUS(2):	/*  Second port  */
+		name = "RH_PORT_STATUS(2)";
+		/*  TODO  */
+		odata = 0;
 		break;
 	default:
 		if (writeflag == MEM_READ) {

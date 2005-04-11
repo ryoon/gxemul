@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.35 2005-04-10 21:18:15 debug Exp $
+ *  $Id: cpu_mips.c,v 1.36 2005-04-11 20:22:32 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2118,29 +2118,7 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 
 #ifdef BINTRANS
-        /*  Caches are not very coozy to handle in bintrans:  */
-        switch (cpu->cd.mips.cpu_type.mmu_model) {
-        case MMU3K:
-                if (cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_ISOL_CACHES) {
-			/*  cpu->cd.mips.dont_run_next_bintrans = 1;  */
-			cpu->cd.mips.vaddr_to_hostaddr_table0 =
-			    cpu->cd.mips.coproc[0]->reg[COP0_STATUS] & MIPS1_SWAP_CACHES?
-			       cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_i
-			     : cpu->cd.mips.vaddr_to_hostaddr_table0_cacheisol_d;
-		} else {
-			cpu->cd.mips.vaddr_to_hostaddr_table0 =
-			    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
-
-			/*  TODO: cpu->cd.mips.vaddr_to_hostaddr_table0_user;  */
-		}
-                break;
-	default:
-		cpu->cd.mips.vaddr_to_hostaddr_table0 =
-		    cpu->cd.mips.vaddr_to_hostaddr_table0_kernel;
-		/*  TODO: cpu->cd.mips.vaddr_to_hostaddr_table0_user;  */
-        }
-
-	if ((single_step || cpu->machine->instruction_trace)
+	if ((single_step || instruction_trace_cached)
 	    && cpu->machine->bintrans_enable)
 		cpu->cd.mips.dont_run_next_bintrans = 1;
 #endif

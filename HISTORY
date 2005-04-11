@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.684 2005-04-10 21:18:22 debug Exp $
+$Id: HISTORY,v 1.685 2005-04-11 20:22:31 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1829,3 +1829,6 @@ Changelog for GXemul:
 		complain as much during bootup).
 		Symbols starting with '$' are now ignored.
 		Renaming dev_ps2_ohci.c to dev_ohci.c, etc.
+20050411	Moving the bintrans-cache-isolation check from cpu_mips.c to
+		cpu_mips_coproc.c. (I thought this would give a speedup, but
+		it's not noticable.)

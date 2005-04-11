@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.12 2005-04-09 12:11:47 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.13 2005-04-11 20:22:32 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -1187,6 +1187,33 @@ void coproc_register_write(struct cpu *cpu,
 				if ((oldmode & 0xff) != (tmp & 0xff))
 					invalidate_translation_caches(
 					    cpu, 0, 0, 1, 0);
+			}
+#endif
+
+#ifdef BINTRANS
+			if (cpu->cd.mips.cpu_type.mmu_model == MMU3K &&
+			    (oldmode & MIPS1_ISOL_CACHES) !=
+			    (tmp & MIPS1_ISOL_CACHES)) {
+				/*  R3000-style caches when isolated are
+				    treated in bintrans mode by changing
+				    the vaddr_to_hostaddr_table0 pointer:  */
+				if (tmp & MIPS1_ISOL_CACHES) {
+					/*  cpu->cd.mips.
+					    dont_run_next_bintrans = 1;  */
+					cpu->cd.mips.vaddr_to_hostaddr_table0 =
+					  tmp & MIPS1_SWAP_CACHES?
+					  cpu->cd.mips.
+					  vaddr_to_hostaddr_table0_cacheisol_i
+					  : cpu->cd.mips.
+					  vaddr_to_hostaddr_table0_cacheisol_d;
+				} else {
+					cpu->cd.mips.vaddr_to_hostaddr_table0 =
+					    cpu->cd.mips.
+						vaddr_to_hostaddr_table0_kernel;
+
+					/*  TODO: cpu->cd.mips.
+					    vaddr_to_hostaddr_table0_user;  */
+				}
 			}
 #endif
 			unimpl = 0;

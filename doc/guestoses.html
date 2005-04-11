@@ -1,19 +1,19 @@
 <html>
 <head><title>GXemul documentation: Installing and running "guest OSes"</title>
 </head>
-<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
-<p>
-<table width="100%">
-  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
-  <b>GXemul documentation: Installing and running "guest OSes"</b></font></td></tr>
-</table>
-<p>
+<body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<table border=0 width=100% bgcolor=#c0c0c0><tr>
+<td width=100% align=center valign=center><table border=0 width=100%><tr>
+<td align="left" valign=center bgcolor="#e0e0ff"><font color="#6060e0" size="6">
+<b>GXemul documentation:</b></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<font color="#000000" size="6"><b>Installing and running "guest OSes"</b>
+</font></td></tr></table></td></tr></table><p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
 
 
 <!--
 
-$Id: guestoses.html,v 1.29 2005-04-06 21:15:14 debug Exp $
+$Id: guestoses.html,v 1.30 2005-04-11 21:07:41 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -50,22 +50,22 @@ SUCH DAMAGE.
 <p>
 <ul>
   <li><a href="#generalnotes">General notes on running "guest OSes"</a>
-  <li><a href="#netbsdinstall">How to install NetBSD/pmax in GXemul</a>
-  <li><a href="#netbsdarcinstall">How to install NetBSD/arc in GXemul</a>
-  <li><a href="#netbsdhpcmipsinstall">How to install NetBSD/hpcmips in GXemul</a>
+  <li><a href="#netbsdinstall">Installing NetBSD/pmax in GXemul</a>
+  <li><a href="#netbsdarcinstall">Installing NetBSD/arc in GXemul</a>
+  <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips in GXemul</a>
 <!--
-  <li><a href="#netbsdsgimips">How to run NetBSD/sgimips in GXemul</a>
+  <li><a href="#netbsdsgimips">Running NetBSD/sgimips in GXemul</a>
 -->
-  <li><a href="#openbsdinstall">How to install OpenBSD/pmax in GXemul</a>
-  <li><a href="#openbsdarcinstall">How to install OpenBSD/arc in GXemul</a>
+  <li><a href="#openbsdinstall">Installing OpenBSD/pmax in GXemul</a>
+  <li><a href="#openbsdarcinstall">Installing OpenBSD/arc in GXemul</a>
 <!--
-  <li><a href="#openbsdsgiinstall">How to run OpenBSD/sgi in GXemul</a>
+  <li><a href="#openbsdsgiinstall">Running OpenBSD/sgi in GXemul</a>
 -->
-  <li><a href="#ultrixinstall">How to install Ultrix/RISC in GXemul</a>
-  <li><a href="#sprite">How to run Sprite for DECstation in GXemul</a>
-  <li><a href="#declinux">How to install Debian GNU/Linux for DECstation in GXemul</a>
-  <li><a href="#declinuxredhat">How to run Redhat Linux for DECstation in GXemul</a>
-  <li><a href="#mach">How to run Mach/PMAX in GXemul</a>
+  <li><a href="#ultrixinstall">Installing Ultrix/RISC in GXemul</a>
+  <li><a href="#sprite">Running Sprite for DECstation in GXemul</a>
+  <li><a href="#declinux">Installing Debian GNU/Linux for DECstation in GXemul</a>
+  <li><a href="#declinuxredhat">Running Redhat Linux for DECstation in GXemul</a>
+  <li><a href="#mach">Running Mach/PMAX in GXemul</a>
 </ul>
 
 
@@ -96,7 +96,7 @@ system, the harddisk image looks and acts like a real disk.
 
 <p><br>
 <a name="netbsdinstall"></a>
-<h3>How to install NetBSD/pmax in GXemul:</h3>
+<h3>Installing NetBSD/pmax in GXemul:</h3>
 
 To install NetBSD/pmax onto a harddisk image in the emulator, follow these
 instructions:
@@ -202,7 +202,7 @@ the emulator is less stable than for R3000.
 
 <p><br>
 <a name="netbsdarcinstall"></a>
-<h3>How to install NetBSD/arc in GXemul:</h3>
+<h3>Installing NetBSD/arc in GXemul:</h3>
 
 It is possible to run NetBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -280,7 +280,7 @@ option and try again.
 
 <p><br>
 <a name="netbsdhpcmipsinstall"></a>
-<h3>How to install NetBSD/hpcmips in GXemul:</h3>
+<h3>Installing NetBSD/hpcmips in GXemul:</h3>
 
 It is possible to install NetBSD/hpcmips onto a disk image, on an an
 emulated MobilePro 770, 780, 800, or 880. The emulator treats the
@@ -398,7 +398,7 @@ keyboard input.)
 
 <p><br>
 <a name="netbsdsgimips"></a>
-<h3>How to run NetBSD/sgimips in GXemul:</h3>
+<h3>Running NetBSD/sgimips in GXemul:</h3>
 
 <a href="http://www.netbsd.org/Ports/sgimips/">NetBSD/sgimips</a>
 can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
@@ -434,7 +434,7 @@ for a in etc.tgz base.tgz comp.tgz; do tar zxvfp $a; done
 
 <p><br>
 <a name="openbsdinstall"></a>
-<h3>How to install OpenBSD/pmax in GXemul:</h3>
+<h3>Installing OpenBSD/pmax in GXemul:</h3>
 
 Installing OpenBSD/pmax is a bit harder than installing NetBSD/pmax.
 You should first read the section above on how to install NetBSD/pmax,
@@ -573,7 +573,7 @@ enter <b>rcons</b> if you are using the graphical framebuffer,
 
 <p><br>
 <a name="openbsdarcinstall"></a>
-<h3>How to install OpenBSD/arc in GXemul:</h3>
+<h3>Installing OpenBSD/arc in GXemul:</h3>
 
 It is possible to run OpenBSD/arc on an emulated Acer PICA-61 in the
 emulator.
@@ -640,7 +640,7 @@ to try to remove that from the command line.)
 
 <p><br>
 <a name="openbsdsgiinstall"></a>
-<h3>How to run OpenBSD/sgi in GXemul:</h3>
+<h3>Running OpenBSD/sgi in GXemul:</h3>
 
 <a href="http://www.openbsd.org/sgi.html">OpenBSD/sgi</a>
 can theoretically run in GXemul on an emulated O2 (SGI-IP32) with root on nfs.
@@ -750,7 +750,7 @@ TODO...
 
 <p><br>
 <a name="ultrixinstall"></a>
-<h3>How to install Ultrix/RISC in GXemul:</h3>
+<h3>Installing Ultrix/RISC in GXemul:</h3>
 
 The following instructions should guide you through an install of Ultrix
 onto a disk image:
@@ -834,7 +834,7 @@ file in the emulator.
 
 <p><br>
 <a name="sprite"></a>
-<h3>How to run Sprite for DECstation in GXemul:</h3>
+<h3>Running Sprite for DECstation in GXemul:</h3>
 
 Sprite was a research operating system at the University of Berkeley.
 The Unix Heritage Society (TUHS, <a href="http://www.tuhs.org">www.tuhs.org</a>)
@@ -898,7 +898,7 @@ adding <b>-b</b> to the command line options).
 
 <p><br>
 <a name="declinux"></a>
-<h3>How to install Debian GNU/Linux for DECstation in GXemul:</h3>
+<h3>Installing Debian GNU/Linux for DECstation in GXemul:</h3>
 
 <p>
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
@@ -1031,7 +1031,7 @@ example), but at least it doesn't Oops that often.&nbsp;]
 
 <p><br>
 <a name="declinuxredhat"></a>
-<h3>How to run Redhat Linux for DECstation in GXemul:</h3>
+<h3>Running Redhat Linux for DECstation in GXemul:</h3>
 
 <p>
 <font color="#ff0000">NOTE: This is experimental, and <i>extremely</i>
@@ -1115,7 +1115,7 @@ It should work with framebuffer/keyboard.&nbsp;]
 
 <p><br>
 <a name="mach"></a>
-<h3>How to run Mach/PMAX in GXemul:</h3>
+<h3>Running Mach/PMAX in GXemul:</h3>
 
 <p>
 Read the following link if you want to know more about Mach in general:

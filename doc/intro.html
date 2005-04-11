@@ -1,19 +1,19 @@
 <html>
 <head><title>GXemul documentation: Introduction</title>
 </head>
-<body bgcolor="#ffffff" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
-<p>
-<table width="100%">
-  <tr><td width="100%" bgcolor="#808070"><font color="#ffffe0" size="6">
-  <b>GXemul documentation: Introduction</b></font></td></tr>
-</table>
-<p>
+<body bgcolor="#f8f8f8" text="#000000" link="#4040f0" vlink="#404040" alink="#ff0000">
+<table border=0 width=100% bgcolor=#c0c0c0><tr>
+<td width=100% align=center valign=center><table border=0 width=100%><tr>
+<td align="left" valign=center bgcolor="#e0e0ff"><font color="#6060e0" size="6">
+<b>GXemul documentation:</b></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<font color="#000000" size="6"><b>Introduction</b>
+</font></td></tr></table></td></tr></table><p>
 <!-- The first 10 lines are cut away by the homepage updating script.  -->
 
 
 <!--
 
-$Id: intro.html,v 1.33 2005-04-10 16:42:10 debug Exp $
+$Id: intro.html,v 1.34 2005-04-11 21:07:42 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -83,6 +83,12 @@ operating system code.
 The emulator is written in C, does not depend on external libraries (except
 X11, but that is optional), and should compile and run on most Unix-like
 systems. If it doesn't, then that is a bug.
+(You do not need any MIPS compiler toolchain to build or use GXemul.
+If you need to compile MIPS binaries from sources, then of course you need 
+such a toolchain, but that is completely separate from GXemul. There
+is a <a href="technical.html#regtest">regression testing</a> framework,
+which requires that a GNU CC for mips64-unknown-elf or similar is available.
+For simply building and using the emulator, it is not required.) 
 
 <p>
 The emulator contains code which tries to emulate the workings of CPUs and
@@ -96,14 +102,6 @@ You can use pre-compiled kernels (for example NetBSD kernels, or Linux),
 or other programs that are in binary format, and in some cases even actual
 ROM images. A couple of different file formats are supported (ELF, a.out,
 ECOFF, SREC, raw binaries).
-
-<p>
-(You do not need any MIPS compiler toolchain to build or use GXemul.
-If you need to compile MIPS binaries from sources, then of course you need 
-such a toolchain, but that is completely separate from GXemul. There
-is a <a href="technical.html#regtest">regression testing</a> framework,
-which requires that a GNU CC for mips64-unknown-elf or similar is available.
-For simply building and using the emulator, it is not required.) 
 
 
 
@@ -121,7 +119,7 @@ http://www.gnu.org/philosophy/free-sw.html</a>.)
 <p>
 The code I have written is released under a 3-clause BSD-style license
 (or "revised BSD-style" if one wants to use
-<a href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>.)
+<a href="http://www.gnu.org/philosophy/bsd.html">GNU jargon</a>).
 Apart from the code I have written, some files are copied from other sources
 such as NetBSD, for example header files containing symbolic names of
 bitfields in device registers. They are also covered by similar licenses,

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_stuff.c,v 1.22 2005-04-11 20:44:39 debug Exp $
+ *  $Id: dev_ps2_stuff.c,v 1.23 2005-04-11 22:55:42 debug Exp $
  *  
  *  Playstation 2 misc. stuff:
  *
@@ -59,19 +59,29 @@
 void dev_ps2_stuff_tick(struct cpu *cpu, void *extra)
 {
 	struct ps2_data *d = extra;
+	int i;
 
-	/*  Count-up Enable:   TODO: by how much?  */
-	if (d->timer_mode[0] & T_MODE_CUE)
-		d->timer_count[0] ++;
+	/*
+	 *  Right now this interrupts every now and then.
+	 *  The main interrupt in NetBSD should be 100 Hz. TODO.
+	 */
+	for (i=0; i<N_PS2_TIMERS; i++) {
+		/*  Count-up Enable:   TODO: by how much?  */
+		if (d->timer_mode[i] & T_MODE_CUE)
+			d->timer_count[i] ++;
 
-	/*  TODO:  right now this interrupts every now and then, this should
-		be 100 Hz in NetBSD, but isn't  */
-	if (d->timer_mode[0] & (T_MODE_CMPE | T_MODE_OVFE)) {
-		/*  Zero return:  */
-		if (d->timer_mode[0] & T_MODE_ZRET)
-			d->timer_count[0] = 0;
+		if (d->timer_mode[i] & (T_MODE_CMPE | T_MODE_OVFE)) {
+			/*  Zero return:  */
+			if (d->timer_mode[i] & T_MODE_ZRET)
+				d->timer_count[i] = 0;
 
-		cpu_interrupt(cpu, 8 + 9);	/*  irq 9 is timer0  */
+			/*  irq 9 is timer0, etc.  */
+			cpu_interrupt(cpu, 8 + 9 + i);
+
+			/*  timer 1..3 are "single-shot"? TODO  */
+			if (i > 0)
+				d->timer_mode[i] &= ~(T_MODE_CMPE | T_MODE_OVFF);
+		}
 	}
 }
 

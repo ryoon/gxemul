@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.687 2005-04-11 21:23:00 debug Exp $
+$Id: HISTORY,v 1.688 2005-04-11 22:55:42 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1834,5 +1834,6 @@ Changelog for GXemul:
 		it's not noticable.)
 		Better playstation2 sbus interrupt code.
 		Skip ahead many ticks if the count register is read manually.
-		(This increases the speed of delay-loops that simply reads
+		(This increases the speed of delay-loops that simply read
 		the count register.)
+20050412	Updates to the playstation2 timer/interrupt code.

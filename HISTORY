@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.686 2005-04-11 20:44:38 debug Exp $
+$Id: HISTORY,v 1.687 2005-04-11 21:23:00 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1833,3 +1833,6 @@ Changelog for GXemul:
 		cpu_mips_coproc.c. (I thought this would give a speedup, but
 		it's not noticable.)
 		Better playstation2 sbus interrupt code.
+		Skip ahead many ticks if the count register is read manually.
+		(This increases the speed of delay-loops that simply reads
+		the count register.)

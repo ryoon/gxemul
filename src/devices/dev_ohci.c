@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ohci.c,v 1.3 2005-04-11 20:44:39 debug Exp $
+ *  $Id: dev_ohci.c,v 1.4 2005-04-11 22:58:46 debug Exp $
  *  
  *  USB OHCI (Open Host Controller Interface).
  *
@@ -79,22 +79,28 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 			odata = 0x10;	/*  Version 1.0.  */
 		}
 		break;
-
-
+	case OHCI_COMMAND_STATUS:
+		name = "COMMAND_STATUS";
+		if (idata == 0x2) {
+fatal("URK\n");
+			cpu_interrupt(cpu, d->irq_nr);
+		}
+		break;
+	case OHCI_INTERRUPT_STATUS:
+		name = "INTERRUPT_STATUS";
+		odata = OHCI_WDH;
+		break;
 /*
  *  TODO: It now sleeps at      tsleep(xfer, PRIBIO, "usbsyn", 0);
  *  in netbsd/src/sys/dev/usb/usbdi.c
- *
- *  Maybe some interrupt should be going somewhere?
  */
-
-
 	case OHCI_RH_DESCRIPTOR_A:
 		name = "RH_DESCRIPTOR_A";
-		odata = 2;
+		odata = 2;	/*  Nr of ports  */
 		break;
 	case OHCI_RH_STATUS:
 		name = "RH_STATUS";
+		/*  TODO  */
 		break;
 	case OHCI_RH_PORT_STATUS(1):	/*  First port  */
 		name = "RH_PORT_STATUS(1)";
@@ -112,10 +118,6 @@ int dev_ohci_access(struct cpu *cpu, struct memory *mem,
 			if (idata & 0x100000)
 				d->port1reset = 0;
 		}
-
-/*  BLAH:  */
-odata = 0;
-
 		break;
 	case OHCI_RH_PORT_STATUS(2):	/*  Second port  */
 		name = "RH_PORT_STATUS(2)";

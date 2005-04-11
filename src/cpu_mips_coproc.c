@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.13 2005-04-11 20:22:32 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.14 2005-04-11 21:22:13 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -949,7 +949,14 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_PAGEMASK)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_BADVADDR)	unimpl = 0;
-	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT)	unimpl = 0;
+	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
+		/*  This speeds up delay-loops that just read the
+		    count register until it has reached a certain
+		    value.  TODO: Maybe this should be optional?  */
+		cp->reg[reg_nr] += 250;
+		cp->reg[reg_nr] = (int64_t)(int32_t)cp->reg[reg_nr];
+		unimpl = 0;
+	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_COMPARE)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_STATUS)	unimpl = 0;

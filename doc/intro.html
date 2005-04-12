@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: intro.html,v 1.36 2005-04-11 21:21:21 debug Exp $
+$Id: intro.html,v 1.37 2005-04-12 23:29:09 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -254,8 +254,8 @@ emulator.
 <a name="emulmodes"></a>
 <h3>Which machines does GXemul emulate?</h3>
 
-A few different machine types are emulated. The machine types that are
-emulated best at the moment are:
+A few different machine types are emulated. The following machine types 
+are emulated well enough to run at least one "guest OS":
 
 <p>
 <ul>
@@ -268,6 +268,9 @@ emulated best at the moment are:
   <p>
   <li><b>NEC MobilePro 770, 780, 800, and 880</b>&nbsp;&nbsp;(HPCmips machines)
 	<br>Framebuffer, keyboard, and a PCMCIA IDE controller.
+  <p>
+  <li><b>Cobalt</b>
+	<br>Serial controller and PCI IDE.
 </ul>
 
 <p>
@@ -316,12 +319,12 @@ interacted with similar to a real machine.
 	<tr>
 	  <td width="10"></td>
 	  <td align="center"><a href="netbsd-pmax-20040630.png"><img src="netbsd-pmax-20040630_small.png"></a></td>
-	  <td width="20"></td>
+	  <td width="15"></td>
 	  <td><a href="http://www.netbsd.org/Ports/pmax/">NetBSD/pmax</a>
 		<br>DECstation 5000/200</td>
-	  <td width="40"></td>
+	  <td width="30"></td>
 	  <td align="center"><a href="20041024-netbsd-arc-installed.gif"><img src="20041024-netbsd-arc-installed_small.gif"></a></td>
-	  <td width="20"></td>
+	  <td width="15"></td>
 	  <td><a href="http://www.netbsd.org/Ports/arc/">NetBSD/arc</a>
 		<br>Acer Pica-61</td>
 
@@ -380,9 +383,10 @@ interacted with similar to a real machine.
 	  <td><a href="http://www.netbsd.org/Ports/hpcmips/">NetBSD/hpcmips</a>
 		<br>NEC MobilePro 770, 780, 800, 880</td>
 	  <td></td>
+	  <td align="center"><a href="20050413-netbsd-cobalt.png"><img src="20050413-netbsd-cobalt_small.png"></a></td>
 	  <td></td>
-	  <td></td>
-	  <td></td>
+	  <td><a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a>
+		<br>Cobalt</td>
 	</tr>
 
 </table></center>

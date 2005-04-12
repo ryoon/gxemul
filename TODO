@@ -1,4 +1,4 @@
-$Id: TODO,v 1.125 2005-03-06 08:21:10 debug Exp $
+$Id: TODO,v 1.126 2005-04-12 14:14:10 debug Exp $
 
 Here's a short list of what I have left to do on GXemul. This file is a mess.
 Order is random. Don't trust it to be up-to-date.
@@ -127,17 +127,14 @@ Order is random. Don't trust it to be up-to-date.
 			x)  Memory/interrupt controllers
 			x)  IP30 (Linux with graphics support?)
 			x)  SMP / NUMA?  (SGI and various ARC machines)
+		o)  Playstation 2:
+			Hardware:  OHCI usb controller, keyboard, ...
 		o)  Cobalt:  PCI and interrupt system, ethernet,
 			harddisk controller(s)
-		o)  Playstation 2:
-			Hardware:  OHCI usb controller, keyboard, IDE, ...
-			Has an R3000A as a subsystem (!)
-		o)  hpcmips:  framebuffer(s) and harddisk controller,
-			among other things
-		o)  newsmips:
-			o)  NetBSD/newsmips, get it to detect a "real"
-			    model, right now everything is 100% bogus
 		o)  Less interesting platforms:
+			o)  newsmips:
+				o)  NetBSD/newsmips, get it to detect a "real"
+				    model, right now everything is 100% bogus
 			o)  mipsco? (NetBSD)
 			o)  wgrisc? (big endian R3000, in OpenBSD's attic)
 			o)  other embedded / evaluation MIPS boards
@@ -145,6 +142,7 @@ Order is random. Don't trust it to be up-to-date.
 				No FPU, but something as coproc 2.
 			o)  Nintendo 64, http://www.nintendo.com/systems/n64/n64_specs.jsp
 				(R4300, 4MB RAM, really weird memory map)
+		o)  non-MIPS
 
 	File/disk handling:
 		o)  Read function argument count and types from binaries? (ELF?)

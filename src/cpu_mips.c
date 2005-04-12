@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.36 2005-04-11 20:22:32 debug Exp $
+ *  $Id: cpu_mips.c,v 1.37 2005-04-12 14:14:05 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -2268,7 +2268,6 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					res &= BINTRANS_N_MASK;
 
 					if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
-						/*  TODO: 32-bit or 64-bit?  */
 						int x = cp0->reg[COP0_COUNT], y = cp0->reg[COP0_COMPARE];
 						int diff = x - y;
 						if (diff < 0 && diff + (res-1) >= 0

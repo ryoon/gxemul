@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips_coproc.c,v 1.14 2005-04-11 21:22:13 debug Exp $
+ *  $Id: cpu_mips_coproc.c,v 1.15 2005-04-12 14:14:06 debug Exp $
  *
  *  Emulation of MIPS coprocessors.
  */
@@ -950,11 +950,27 @@ void coproc_register_read(struct cpu *cpu,
 	if (cp->coproc_nr==0 && reg_nr==COP0_WIRED)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_BADVADDR)	unimpl = 0;
 	if (cp->coproc_nr==0 && reg_nr==COP0_COUNT) {
-		/*  This speeds up delay-loops that just read the
-		    count register until it has reached a certain
-		    value.  TODO: Maybe this should be optional?  */
-		cp->reg[reg_nr] += 250;
-		cp->reg[reg_nr] = (int64_t)(int32_t)cp->reg[reg_nr];
+		/*
+		 *  This speeds up delay-loops that just read the count
+		 *  register until it has reached a certain value. (Only for
+		 *  R4000 etc.)
+		 *
+		 *  TODO: Maybe this should be optional?
+		 */
+		if (cpu->cd.mips.cpu_type.exc_model != EXC3K) {
+			int increase = 500;
+			int32_t x = cp->reg[COP0_COUNT];
+			int32_t y = cp->reg[COP0_COMPARE];
+			int32_t diff = x - y;
+			if (diff < 0 && diff + increase >= 0
+			    && cpu->cd.mips.compare_register_set) {
+				mips_cpu_interrupt(cpu, 7);
+				cpu->cd.mips.compare_register_set = 0;
+			}
+			cp->reg[COP0_COUNT] = (int64_t)
+			    (int32_t)(cp->reg[COP0_COUNT] + increase);
+		}
+
 		unimpl = 0;
 	}
 	if (cp->coproc_nr==0 && reg_nr==COP0_ENTRYHI)	unimpl = 0;

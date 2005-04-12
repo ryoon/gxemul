@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.31 2005-04-12 13:57:16 debug Exp $
+$Id: guestoses.html,v 1.32 2005-04-12 23:23:05 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -53,6 +53,7 @@ SUCH DAMAGE.
   <li><a href="#netbsdinstall">Installing NetBSD/pmax in GXemul</a>
   <li><a href="#netbsdarcinstall">Installing NetBSD/arc in GXemul</a>
   <li><a href="#netbsdhpcmipsinstall">Installing NetBSD/hpcmips in GXemul</a>
+  <li><a href="#netbsdcobaltinstall">Installing NetBSD/cobalt in GXemul</a>
 <!--
   <li><a href="#netbsdsgimips">Running NetBSD/sgimips in GXemul</a>
 -->
@@ -384,6 +385,78 @@ the harddisk image, using the following command:<pre>
 When you have logged in as root, you can use <b>startx</b> to start X
 Windows. (Note: There is no mouse support yet; you can only use 
 keyboard input.)
+
+
+
+
+
+
+
+
+<p><br>
+<a name="netbsdcobaltinstall"></a>
+<h3>Installing NetBSD/cobalt in GXemul:</h3>
+
+<a href="http://www.netbsd.org/Ports/cobalt/">NetBSD/cobalt</a> is tricky
+to install, because the Cobalt machines were designed for Linux, and not
+very flexible. There is no INSTALL kernel for NetBSD/cobalt. One way to
+install the NetBSD/cobalt distribution onto a disk image is to do it from
+another (emulated) machine.
+
+<p>
+The following instructions will let you install NetBSD/cobalt onto a disk 
+image, from an emulated DECstation 3MAX machine:
+
+<p>
+<ol>
+  <li>Create an empty harddisk image, which will be the disk image
+	that you will install NetBSD/cobalt onto:<pre>
+	$ <b>dd if=/dev/zero of=nbsd_cobalt.img bs=1024 count=1 seek=1999000</b>
+
+</pre>
+  <li>Install NetBSD/pmax 2.0 according to instructions further up
+	on this page.
+  <p>
+  <li>Download the generic kernel for Cobalt (and gunzip it) and
+	the 2.0 ISO image:<pre>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0/cobalt/binary/kernel/netbsd-GENERIC.gz">ftp://ftp.se.netbsd.org/pub/NetBSD/NetBSD-2.0/cobalt/binary/kernel/netbsd-GENERIC.gz</a>
+	<a href="ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/cobaltcd.iso">ftp://ftp.se.netbsd.org/pub/NetBSD/iso/2.0/cobaltcd.iso</a>
+
+</pre>(You may want to choose a mirror closer to you, if .se is slow.)
+  <p>
+  <li>Start NetBSD/pmax like this:<pre>
+	$ <b>gxemul -b -Edec -e3max -d nbsd_pmax.img -d cobaltcd.iso -d nbsd_cobalt.img</b>
+
+</pre>
+  <li>Log in as root (on the emulated 3MAX machine), and execute the
+	following commands: (adjust according to taste)<pre>
+	# <b>newfs /dev/sd1c</b>
+	# <b>mount /dev/cd0c /mnt</b>
+	# <b>mkdir /mnt2; mount /dev/sd1c /mnt2</b>
+	# <b>cd /mnt2; sh</b>
+	# <b>for a in /mnt/cobalt/binary/sets/*.tgz; do echo $a; tar zxfp $a; done</b>
+	# <b>exit</b>
+	# <b>cd dev; sh ./MAKEDEV all; cd ../etc</b>
+	# <b>echo rc_configured=YES >> rc.conf</b>
+	# <b>echo "/dev/wd0d / ffs rw 1 1" > fstab</b>
+	# <b>cd /; umount /mnt; umount /mnt2; halt</b>
+</pre>
+</ol>
+
+<p>
+You should now be able to boot NetBSD/cobalt like this:<pre>
+	$ <b>gxemul -b -M128 -E cobalt -d nbsd_cobalt.img netbsd-GENERIC</b>
+</pre>
+
+Note that the installation instructions above create a filesystem
+<i>without</i> a disklabel, so there is only one ffs partition and no
+swap. You will need to enter the following things when booting with the
+generic kernel:<pre>
+	root device (default wd0a): <b>wd0d</b>
+	dump device (default wd0b): <b>none</b>
+	file system (default generic): <b>ffs</b>
+</pre>
+
 
 
 

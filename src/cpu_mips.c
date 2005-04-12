@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.37 2005-04-12 14:14:05 debug Exp $
+ *  $Id: cpu_mips.c,v 1.38 2005-04-12 15:01:36 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -3308,7 +3308,9 @@ int mips_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 					 *  (This cache-line was written to by
 					 *  someone else.)
 					 */
-					if (cpu->cd.mips.rmw == 0) {
+					if (cpu->cd.mips.rmw == 0 ||
+					    cpu->cd.mips.rmw_addr != addr ||
+					    cpu->cd.mips.rmw_len != wlen) {
 						/*  The store failed:  */
 						cpu->cd.mips.gpr[rt] = 0;
 						if (instruction_trace_cached)

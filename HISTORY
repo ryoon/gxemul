@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.688 2005-04-11 22:55:42 debug Exp $
+$Id: HISTORY,v 1.689 2005-04-12 15:01:35 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1837,3 +1837,4 @@ Changelog for GXemul:
 		(This increases the speed of delay-loops that simply read
 		the count register.)
 20050412	Updates to the playstation2 timer/interrupt code.
+		Some other minor updates.

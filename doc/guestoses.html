@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: guestoses.html,v 1.30 2005-04-11 21:07:41 debug Exp $
+$Id: guestoses.html,v 1.31 2005-04-12 13:57:16 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -105,10 +105,11 @@ instructions:
 <ol start="1">
   <li>Create an empty harddisk image, which will be the root disk
 	that NetBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=netbsddisk.img bs=1 count=512 seek=1900000000</b>
+	$ <b>dd if=/dev/zero of=nbsd_pmax.img bs=1 count=512 seek=1900000000</b>
 
 </pre>
 </ol>
+
 <p>
 From this point, there are two separate ways to continue the installation.
 You can either download a CD-ROM iso image (and let the installation 
@@ -125,7 +126,7 @@ steps:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>gxemul -X -b -E dec -e 3max -d netbsddisk.img -d bc:pmaxcd.iso</b>
+	$ <b>gxemul -X -b -E dec -e 3max -d nbsd_pmax.img -d bc:pmaxcd.iso</b>
 </pre>
 </ol>
 <p>
@@ -142,7 +143,7 @@ For an ftp install, substitute steps 2 and 3 above with these:
 
 </pre>
   <li>Start the emulator like this:<pre>
-	$ <b>gxemul -X -b -E dec -e 3max -d netbsddisk.img -O netbsd-INSTALL</b>
+	$ <b>gxemul -X -b -E dec -e 3max -d nbsd_pmax.img -O netbsd-INSTALL</b>
 </pre>
 </ol>
 
@@ -173,7 +174,7 @@ IP number of a real-world nameserver instead.)
 <p>
 When the installation is completed, the following command should start
 NetBSD from the harddisk image:<pre>
-	$ <b>gxemul -X -b -M64 -E dec -e 3max -d netbsddisk.img</b>
+	$ <b>gxemul -X -b -M64 -E dec -e 3max -d nbsd_pmax.img</b>
 </pre>
 
 <p>
@@ -186,14 +187,9 @@ switch to WSCONS. For now, if you want X, then try NetBSD 1.6.2.
 
 <p>
 If you want to run without the X framebuffer, use this instead:<pre>
-	$ <b>gxemul -E dec -e 3max -b -d netbsddisk.img</b>
+	$ <b>gxemul -E dec -e 3max -b -d nbsd_pmax.img</b>
 </pre>
 
-<p>
-NetBSD/pmax seems to work fine with dynamic binary translation (enabled 
-by the <b>-b</b> command line option) in R3000 mode. NetBSD also
-supports R4000-like CPUs on pmax, but the bintrans support for R4000 in
-the emulator is less stable than for R3000.
 
 
 
@@ -456,7 +452,7 @@ common sense and imagination to modify them as you see fit.
 <ol>
   <li>Create an empty harddisk image, which will be the root disk
 	that OpenBSD installs itself onto:<pre>
-	$ <b>dd if=/dev/zero of=openbsddisk.img bs=1 count=512 seek=900000000</b>
+	$ <b>dd if=/dev/zero of=obsd_pmax.img bs=1 count=512 seek=900000000</b>
 
 </pre>
   <li>Download the entire pmax directory from the ftp server: (approx. 99 MB)<pre>
@@ -478,7 +474,7 @@ common sense and imagination to modify them as you see fit.
 
 </pre>
   <li>Start the emulator with all three (!) disk images:<pre>
-	$ <b>gxemul -E dec -e 3max -b -d openbsddisk.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
+	$ <b>gxemul -E dec -e 3max -b -d obsd_pmax.img -d b:simpleroot28.fs -j bsd -d c:openbsd_pmax_2.8.iso</b>
 
 </pre>
 	(If you add -X, you will run with the graphical framebuffer. This is <i>REALLY</i> slow
@@ -514,7 +510,7 @@ password! The first time you boot up OpenBSD after the install, you
 need to go into single user mode and run <b>passwd root</b> to set
 the root password, or you will not be able to log in at all!
 <pre>
-	$ <b>gxemul -E dec -e 3max -b -d openbsddisk.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
+	$ <b>gxemul -E dec -e 3max -b -d obsd_pmax.img -d 2c:openbsd_pmax_2.8.iso -j bsd -o '-s'</b>
 </pre>
 While you are at it, you might want to extract the X11 install sets
 as well, as the installer seems to ignore them too. (Perhaps due to a bug
@@ -550,7 +546,7 @@ root password, and so on.
 Once you have completed the installation procedure, the following command
 will let you boot from the new rootdisk image:
 <pre>
-	$ <b>gxemul -E dec -e 3max -b -X -M64 -o '-aN' -d openbsddisk.img -j bsd</b>
+	$ <b>gxemul -E dec -e 3max -b -X -M64 -o '-aN' -d obsd_pmax.img -j bsd</b>
 </pre>
 
 <p>

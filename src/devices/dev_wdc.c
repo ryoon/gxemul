@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.31 2005-04-09 13:33:36 debug Exp $
+ *  $Id: dev_wdc.c,v 1.32 2005-04-12 23:13:24 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -54,8 +54,8 @@ extern int single_step;
 /*  INT_DELAY=2 to be safe, 1 is faster but maybe buggy.  */
 #define	INT_DELAY		1
 
-#define	debug fatal
-/*  #define  DATA_DEBUG  */
+/*  #define debug fatal  */
+/*  #define DATA_DEBUG  */
 
 struct wdc_data {
 	int		irq_nr;

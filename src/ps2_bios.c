@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: ps2_bios.c,v 1.29 2005-02-18 07:04:10 debug Exp $
+ *  $Id: ps2_bios.c,v 1.30 2005-04-13 20:22:26 debug Exp $
  *
  *  Playstation 2 SIFBIOS emulation.
  */
@@ -49,18 +49,6 @@ extern int quiet_mode;
 
 /*
  *  playstation2_sifbios_emul():
- *
- *	SIFBIOS calls:
- *
- *	0	getver()
- *	1	halt(int mode)
- *	2	setdve(int mode)
- *	3	putchar(int ch)
- *	4	getchar()
- *	16	dma_init()
- *	17	dma_exit()
- *	32	cmd_init()
- *	33	cmd_exit()
  */
 int playstation2_sifbios_emul(struct cpu *cpu)
 {
@@ -117,6 +105,10 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 	case 49:
 		debug("[ SIFBIOS rpc_exit(): TODO ]\n");
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;		/*  TODO  */
+		break;
+	case 51:
+		debug("[ SIFBIOS rpc_bind(): TODO ]\n");
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 1;		/*  TODO  */
 		break;
 	case 64:
 		fatal("[ SIFBIOS SBR_IOPH_INIT(0x%x,0x%x,0x%x): TODO ]\n",
@@ -226,6 +218,10 @@ int playstation2_sifbios_emul(struct cpu *cpu)
 			return_addr &= ~4095;
 		}
 		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;
+		break;
+	case 66:
+		debug("[ SIFBIOS iopmem_free(): TODO ]\n");
+		cpu->cd.mips.gpr[MIPS_GPR_V0] = 0;		/*  TODO  */
 		break;
 	default:
 		quiet_mode = 0;

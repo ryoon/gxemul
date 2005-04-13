@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.412 2005-04-11 20:44:41 debug Exp $
+ *  $Id: machine.c,v 1.413 2005-04-13 20:22:26 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -2436,8 +2436,24 @@ void machine_setup(struct machine *machine)
 		}
 
 		store_32bit_word(cpu, 0xa0000000 + machine->physical_ram_in_mb*1048576 - 0x1000 + 0x4, PLAYSTATION2_OPTARGS);
-		bootstr = "root=/dev/hda1 crtmode=vesa0,60";
-		store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
+		{
+			int tmplen = 1000;
+			char *tmp = malloc(tmplen);
+			if (tmp == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+
+			strcpy(tmp, "root=/dev/hda1 crtmode=vesa0,60");
+
+			if (machine->boot_string_argument[0])
+				snprintf(tmp+strlen(tmp), tmplen-strlen(tmp),
+				    " %s", machine->boot_string_argument);
+			tmp[tmplen-1] = '\0';
+
+			bootstr = tmp;
+			store_string(cpu, PLAYSTATION2_OPTARGS, bootstr);
+		}
 
 		/*  TODO:  netbsd's bootinfo.h, for symbolic names  */
 		{

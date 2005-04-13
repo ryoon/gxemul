@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: bintrans.c,v 1.162 2005-04-09 12:11:47 debug Exp $
+ *  $Id: bintrans.c,v 1.163 2005-04-13 03:45:34 debug Exp $
  *
  *  Dynamic binary translation.
  *
@@ -341,18 +341,20 @@ int old_bintrans_attempt_translate(struct cpu *cpu, uint64_t paddr)
 
 	/*  Is this a part of something that is already translated?  */
 	paddr_page = paddr & ~0xfff;
-	offset_within_page = (paddr & 0xfff) / 4;
+	offset_within_page = (paddr & 0xfff) >> 2;
 	entry_index = PADDR_TO_INDEX(paddr);
 	tep = cpu->mem->translation_page_entry_array[entry_index];
 	while (tep != NULL) {
 		if (tep->paddr == paddr_page) {
-			int mask = 1 << (offset_within_page & 7);
+			int mask;
 
 			if (tep->chunk[offset_within_page] != 0) {
 				f = (size_t)tep->chunk[offset_within_page] +
 				    cpu->mem->translation_code_chunk_space;
 				goto run_it;	/*  see further down  */
 			}
+
+			mask = 1 << (offset_within_page & 7);
 			if (tep->flags[offset_within_page >> 3] & mask)
 				return cpu->cd.mips.
 				    bintrans_instructions_executed;
@@ -384,7 +386,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 		cpu->mem->translation_code_chunk_space_head = 0;
 		cpu->mem->n_quick_jumps = 0;
 		tep = NULL;
-		debug("bintrans: Starting over!\n");
+		/*  debug("bintrans: Starting over!\n");  */
 		clear_all_chunks_from_all_tables(cpu);
 	}
 
@@ -432,6 +434,7 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 	 *  Try to translate a chunk of code:
 	 */
 	p = paddr & 0xfff;
+	prev_p = p >> 2;
 	try_to_translate = 1;
 	n_translated = 0;
 	res = 0;
@@ -443,7 +446,6 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 
 	while (try_to_translate) {
 		ca_justdid = ca;
-		prev_p = p/4;
 		translated = 0;
 
 		/*  Read an instruction word from host memory:  */
@@ -619,17 +621,18 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 		case HI6_XORI:
 		case HI6_DADDI:
 		case HI6_DADDIU:
-			rs = ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7);
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			translated = try_to_translate = bintrans_write_instruction__addiu_etc(&ca, rt, rs, imm, hi6);
+			translated = try_to_translate =
+			    bintrans_write_instruction__addiu_etc(&ca,
+			    instr[2] & 31,
+			    ((instr[3] & 3) << 3) + ((instr[2] >> 5) & 7),
+			    (instr[1] << 8) + instr[0], hi6);
 			n_translated += translated;
 			break;
 
 		case HI6_LUI:
-			rt = instr[2] & 31;
-			imm = (instr[1] << 8) + instr[0];
-			translated = try_to_translate = bintrans_write_instruction__lui(&ca, rt, imm);
+			translated = try_to_translate =
+			    bintrans_write_instruction__lui(&ca,
+			    instr[2] & 31, (instr[1] << 8) + instr[0]);
 			n_translated += translated;
 			break;
 
@@ -797,34 +800,35 @@ cpu->cd.mips.pc_last_host_4k_page,(long long)paddr);
 					    tep->chunk[prev_p]);
 		}
 
-{
-	int mask = 1 << ((prev_p+1) & 7);
+		if (translated && try_to_translate && prev_p < 1023) {
+			int mask = 1 << ((prev_p+1) & 7);
 
-		if (translated && try_to_translate &&
-		    tep->flags[(prev_p+1) >> 3] & mask
-		    && prev_p < 1023 && !delayed_branch) {
-			bintrans_write_chunkreturn_fail(&ca);
-			try_to_translate = 0;
-		}
-}
+			if (tep->flags[(prev_p+1) >> 3] & mask
+			    && !delayed_branch) {
+				bintrans_write_chunkreturn_fail(&ca);
+				/*  try_to_translate = 0;  */
+				break;
+			}
 
-		/*  Glue together with previously translated code, if any:  */
-		if (translated && try_to_translate &&
-		    prev_p < 1023 && tep->chunk[prev_p+1] != 0
-		    && !delayed_branch) {
-			bintrans_write_instruction__delayedbranch(cpu->mem,
-			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
-			try_to_translate = 0;
-		}
+			/*  Glue together with previously translated code,
+			    if any:  */
+			if (tep->chunk[prev_p+1] != 0 && !delayed_branch) {
+				bintrans_write_instruction__delayedbranch(cpu->mem,
+				    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
+				/*  try_to_translate = 0;  */
+				break;
+			}
 
-		if (translated && try_to_translate && n_translated > 80
-		    && prev_p < 1023 && !delayed_branch) {
-			bintrans_write_instruction__delayedbranch(cpu->mem,
-			    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
-			try_to_translate = 0;
+			if (n_translated > 80 && !delayed_branch) {
+				bintrans_write_instruction__delayedbranch(cpu->mem,
+				    &ca, &tep->chunk[prev_p+1], NULL, 1, p+4, 1);
+				/*  try_to_translate = 0;  */
+				break;
+			}
 		}
 
 		p += sizeof(instr);
+		prev_p ++;
 
 		/*  If we have reached a different (MIPS) page, then stop translating.  */
 		if (p == 0x1000)
@@ -923,17 +927,18 @@ run_it:
 
 		if (ok) {
 			paddr_page = paddr & ~0xfff;
-			offset_within_page = (paddr & 0xfff) / 4;
+			offset_within_page = (paddr & 0xfff) >> 2;
 			entry_index = PADDR_TO_INDEX(paddr);
 			tep = cpu->mem->translation_page_entry_array[entry_index];
 			while (tep != NULL) {
 				if (tep->paddr == paddr_page) {
-					int mask = 1 << (offset_within_page & 7);
+					int mask;
 					if (tep->chunk[offset_within_page] != 0) {
 						f = (size_t)tep->chunk[offset_within_page] +
 						    cpu->mem->translation_code_chunk_space;
 						goto run_it;
 					}
+					mask = 1 << (offset_within_page & 7);
 					if (tep->flags[offset_within_page >> 3] & mask)
 						return cpu->cd.mips.bintrans_instructions_executed;
 					break;

@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.690 2005-04-12 23:23:04 debug Exp $
+$Id: HISTORY,v 1.691 2005-04-13 17:31:12 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1841,3 +1841,4 @@ Changelog for GXemul:
 20050413	NetBSD/cobalt runs from a disk image :-) including userland;
 		updating the documentation on how to install NetBSD/cobalt
 		using NetBSD/pmax (!).
+		Some minor bintrans updates; no real speed improvement.

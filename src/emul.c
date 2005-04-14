@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.179 2005-03-14 19:14:04 debug Exp $
+ *  $Id: emul.c,v 1.180 2005-04-14 21:01:54 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -604,17 +604,18 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 				cpu->cd.mips.gpr[MIPS_GPR_GP] |=
 				    0xffffffff00000000ULL;
 			break;
+
 		case ARCH_PPC:
 			cpu->cd.ppc.gpr[2] = toc;
 			break;
-		case ARCH_SPARC:
-			break;
-		case ARCH_URISC:
-			break;
-		case ARCH_HPPA:
-			break;
+
 		case ARCH_ALPHA:
+		case ARCH_HPPA:
+		case ARCH_SPARC:
+		case ARCH_URISC:
+		case ARCH_X86:
 			break;
+
 		default:
 			fatal("emul_machine_setup(): Internal error: "
 			    "Unimplemented arch %i\n", m->arch);

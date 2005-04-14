@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.85 2005-04-06 21:28:36 debug Exp $
+ *  $Id: file.c,v 1.86 2005-04-14 21:01:54 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -56,7 +56,7 @@
 
 
 /*  ELF machine types as strings: (same as exec_elf.h)  */
-#define N_ELF_MACHINE_TYPES	54
+#define N_ELF_MACHINE_TYPES	64
 static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
 	"NONE", "M32", "SPARC", "386",				/*  0..3  */
 	"68K", "88K", "486", "860",				/*  4..7  */
@@ -71,7 +71,9 @@ static char *elf_machine_type[N_ELF_MACHINE_TYPES] = {
 	"ARM", "ALPHA", "SH", "SPARCV9",			/*  40..43  */
 	"TRICORE", "ARC", "H8_300", "H8_300H",			/*  44..47  */
 	"H8S", "H8_500", "IA_64", "MIPS_X",			/*  48..51  */
-	"COLDFIRE", "68HC12"					/*  52..53  */
+	"COLDFIRE", "68HC12", "unknown54", "unknown55",		/*  52..55  */
+	"unknown56", "unknown57", "unknown58", "unknown59",	/*  56..59  */
+	"unknown60", "unknown61", "AMD64", "unknown63"		/*  60..63  */
 };
 
 
@@ -1040,6 +1042,19 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 
 	ok = 0;
 	switch (arch) {
+	case ARCH_ALPHA:
+		switch (emachine) {
+		case EM_ALPHA:
+		case -28634:
+			ok = 1;
+		}
+		break;
+	case ARCH_HPPA:
+		switch (emachine) {
+		case EM_PARISC:
+			ok = 1;
+		}
+		break;
 	case ARCH_MIPS:
 		switch (emachine) {
 		case EM_MIPS:
@@ -1061,16 +1076,11 @@ static void file_load_elf(struct machine *m, struct memory *mem,
 			ok = 1;
 		}
 		break;
-	case ARCH_HPPA:
+	case ARCH_X86:
 		switch (emachine) {
-		case EM_PARISC:
-			ok = 1;
-		}
-		break;
-	case ARCH_ALPHA:
-		switch (emachine) {
-		case EM_ALPHA:
-		case -28634:
+		case EM_386:
+		case EM_486:
+		case EM_AMD64:
 			ok = 1;
 		}
 		break;

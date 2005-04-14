@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.119 2005-03-14 12:13:49 debug Exp $
+#  $Id: configure,v 1.120 2005-04-14 21:01:51 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -60,6 +60,7 @@ ENABLEMIPS=YES
 ENABLEPPC=YES
 ENABLESPARC=YES
 ENABLEURISC=YES
+ENABLEX86=YES
 
 if [ z"$*" != z ]; then
 	#  Parse command line options:
@@ -84,6 +85,8 @@ if [ z"$*" != z ]; then
 			ENABLESPARC=NO
 		else if [ z$a = z--disable-urisc ]; then
 			ENABLEURISC=NO
+		else if [ z$a = z--disable-x86 ]; then
+			ENABLEX86=NO
 		else if [ z$a = z--enable-delays ]; then
 			DELAYS=YES
 		else if [ z$a = z--enable-caches ]; then
@@ -109,6 +112,7 @@ if [ z"$*" != z ]; then
 			echo "  --disable-ppc       disable PPC CPU emulation"
 			echo "  --disable-sparc     disable SPARC CPU emulation"
 			echo "  --disable-urisc     disable URISC CPU emulation"
+			echo "  --disable-x86       disable x86 CPU emulation"
 			printf "\nMIPS-specific options:\n"
 			echo "  --enable-mips16     enable MIPS16 instruction" \
 			    "support (experimental)"
@@ -119,7 +123,7 @@ if [ z"$*" != z ]; then
 			echo "Run  $0 --help  to get a list of" \
 			    "available options."
 			exit
-		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
+		fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi; fi
 	done
 fi
 
@@ -189,6 +193,11 @@ if [ z$ENABLEURISC = zYES ]; then
 	printf "#define ENABLE_URISC\n" >> config.h
 else
 	echo 'Disabling URISC emulation support.'
+fi
+if [ z$ENABLEX86 = zYES ]; then
+	printf "#define ENABLE_X86\n" >> config.h
+else
+	echo 'Disabling x86 emulation support.'
 fi
 
 

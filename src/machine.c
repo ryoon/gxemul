@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.413 2005-04-13 20:22:26 debug Exp $
+ *  $Id: machine.c,v 1.414 2005-04-14 21:01:54 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4457,6 +4457,18 @@ for (i=0; i<32; i++)
 		/*  TODO  */
 		break;
 
+	case MACHINE_BAREX86:
+		machine->machine_name = "\"Bare\" x86 machine";
+		break;
+
+	case MACHINE_X86:
+		machine->machine_name = "X86 machine";
+
+		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
+		    machine->machine_name);
+
+		break;
+
 	default:
 		fatal("Unknown emulation type %i\n", machine->machine_type);
 		exit(1);
@@ -4760,6 +4772,12 @@ void machine_default_cputype(struct machine *m)
 	case MACHINE_TESTALPHA:
 		m->cpu_name = strdup("EV4");
 		break;
+
+	/*  x86:  */
+	case MACHINE_BAREX86:
+	case MACHINE_X86:
+		m->cpu_name = strdup("386");
+		break;
 	}
 
 	if (m->cpu_name == NULL) {
@@ -5008,6 +5026,14 @@ void machine_init(void)
 	 *  entries will appear in normal order when listed.  :-)
 	 */
 
+	/*  X86 machine:  */
+	me = machine_entry_new("X86 machine", ARCH_X86,
+	    MACHINE_X86, 1, 0);
+	me->aliases[0] = "x86";
+	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
 	/*  Walnut: (NetBSD/evbppc)  */
 	me = machine_entry_new("Walnut evaluation board", ARCH_PPC,
 	    MACHINE_WALNUT, 2, 0);
@@ -5202,6 +5228,14 @@ void machine_init(void)
 	    "NEC MobilePro 880", MACHINE_HPCMIPS_NEC_MOBILEPRO_880, 1);
 	me->subtype[7]->aliases[0] = "mobilepro880";
 	if (cpu_family_ptr_by_number(ARCH_MIPS) != NULL) {
+		me->next = first_machine_entry; first_machine_entry = me;
+	}
+
+	/*  Generic "bare" X86 machine:  */
+	me = machine_entry_new("Generic \"bare\" X86 machine", ARCH_X86,
+	    MACHINE_BAREX86, 1, 0);
+	me->aliases[0] = "barex86";
+	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}
 

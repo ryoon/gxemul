@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: useremul.c,v 1.45 2005-03-23 08:45:51 debug Exp $
+ *  $Id: useremul.c,v 1.46 2005-04-14 21:01:54 debug Exp $
  *
  *  Userland (syscall) emulation.
  *
@@ -219,10 +219,15 @@ void useremul__netbsd_setup(struct cpu *cpu, int argc, char **host_argv)
 		break;
 
 	case ARCH_PPC:
-		debug("useremul__netbsd_setup(): TODO\n");
+		debug("useremul__netbsd_setup(): PPC: TODO\n");
 
 		/*  What is a good stack pointer? TODO  */
 		cpu->cd.ppc.gpr[1] = 0x7ffff000ULL;
+
+		break;
+
+	case ARCH_X86:
+		debug("useremul__netbsd_setup(): X86: TODO\n");
 
 		break;
 
@@ -1466,6 +1471,9 @@ void useremul_init(void)
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("NetBSD/pmax", ARCH_MIPS, "R3000",
+	    useremul__netbsd, useremul__netbsd_setup);
+
+	add_useremul("NetBSD/amd64", ARCH_X86, "AMD64",
 	    useremul__netbsd, useremul__netbsd_setup);
 
 	add_useremul("Linux/PPC64", ARCH_PPC, "PPC970",

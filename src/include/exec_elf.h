@@ -1,4 +1,4 @@
-/*  gxemul: $Id: exec_elf.h,v 1.4 2005-03-05 12:34:02 debug Exp $  */
+/*  gxemul: $Id: exec_elf.h,v 1.5 2005-04-14 21:01:52 debug Exp $  */
 
 #ifndef	__EXEC_ELF_H
 #define	__EXEC_ELF_H
@@ -196,7 +196,7 @@ typedef struct {
 #define	EM_SPARC32PLUS	18	/* Enhanced instruction set SPARC */
 #define	EM_960		19	/* Intel 80960 */
 #define	EM_PPC		20	/* PowerPC */
-#define	EM_PPC64	21	/* PowerPC 64-bit  (gxemul addition)  */
+#define	EM_PPC64	21	/* PowerPC 64-bit  (GXemul addition)  */
 #define	EM_V800		36	/* NEC V800 */
 #define	EM_FR20		37	/* Fujitsu FR20 */
 #define	EM_RH32		38	/* TRW RH-32 */
@@ -215,6 +215,7 @@ typedef struct {
 #define	EM_MIPS_X	51	/* Stanford MIPS-X */
 #define	EM_COLDFIRE	52	/* Motorola Coldfire */
 #define	EM_68HC12	53	/* Motorola MC68HC12 */
+#define	EM_AMD64	62	/* AMD64  (GXemul addition)  */
 #define	EM_VAX		75	/* DIGITAL VAX */
 #define	EM_ALPHA_EXP	36902	/* used by NetBSD/alpha; obsolete */
 #define	EM_NUM		36903

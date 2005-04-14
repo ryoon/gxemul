@@ -13,7 +13,7 @@
 
 <!--
 
-$Id: misc.html,v 1.38 2005-04-11 21:07:42 debug Exp $
+$Id: misc.html,v 1.39 2005-04-14 20:55:24 debug Exp $
 
 Copyright (C) 2003-2005  Anders Gavare.  All rights reserved.
 
@@ -461,8 +461,8 @@ fixing something else, but this is what it looked like at the time.)</i>
 During bootup, the PROM complains <i>a lot</i> about hardware failures.
 That's because the emulator doesn't emulate the hardware well enough yet.
 <p>
-The command line options used are:
--D3 for DECstation model 3 (5000/1xx), -Q to supress the emulator's own PROM
+The command line options used are: -E dec for DECstation, -e 3min for
+"model 3" (5000/1xx), -Q to supress the emulator's own PROM
 call emulation, -M128 for 128MB RAM (because GXemul doesn't correctly
 emulate memory detection well enough for the PROM to accept, so it will
 always believe there is 128MB ram anyway), and -q to supress debug messages.

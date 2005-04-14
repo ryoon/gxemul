@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_wdc.c,v 1.32 2005-04-12 23:13:24 debug Exp $
+ *  $Id: dev_wdc.c,v 1.33 2005-04-14 20:55:23 debug Exp $
  *  
  *  Standard IDE controller.
  */
@@ -45,8 +45,6 @@
 
 #include "wdcreg.h"
 
-
-extern int single_step;
 
 #define	WDC_TICK_SHIFT		14
 #define	WDC_INBUF_SIZE		(512*257)
@@ -471,7 +469,6 @@ if (d->lba)
 	offset = 512 * (((d->head & 0xf) << 24) + (cyl << 8) + d->sector);
 printf("WDC read from offset %lli\n", (long long)offset);
 #endif
-/*  single_step = 1;  */
 					diskimage_access(cpu->machine,
 					    d->drive + d->base_drive, 0,
 					    offset, buf, 512 * count);

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.414 2005-04-14 21:01:54 debug Exp $
+ *  $Id: machine.c,v 1.415 2005-04-15 00:41:51 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4462,10 +4462,10 @@ for (i=0; i<32; i++)
 		break;
 
 	case MACHINE_X86:
-		machine->machine_name = "X86 machine";
+		machine->machine_name = "Generic x86 PC";
 
 		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
-		    machine->machine_name);
+		    "Generic x86 PC");
 
 		break;
 
@@ -5027,9 +5027,10 @@ void machine_init(void)
 	 */
 
 	/*  X86 machine:  */
-	me = machine_entry_new("X86 machine", ARCH_X86,
-	    MACHINE_X86, 1, 0);
-	me->aliases[0] = "x86";
+	me = machine_entry_new("x86 (generic PC-style machine)", ARCH_X86,
+	    MACHINE_X86, 2, 0);
+	me->aliases[0] = "pc";
+	me->aliases[1] = "x86";
 	if (cpu_family_ptr_by_number(ARCH_X86) != NULL) {
 		me->next = first_machine_entry; first_machine_entry = me;
 	}

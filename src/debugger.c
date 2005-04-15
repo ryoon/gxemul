@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.98 2005-03-20 20:27:26 debug Exp $
+ *  $Id: debugger.c,v 1.99 2005-04-15 00:41:52 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1351,7 +1351,7 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 
 	while (addr < addr_end) {
 		int i, len;
-		unsigned char buf[25];	/*  TODO: How long can an
+		unsigned char buf[32];	/*  TODO: How long can an
 					    instruction be, on weird archs?  */
 		memset(buf, 0, sizeof(buf));
 

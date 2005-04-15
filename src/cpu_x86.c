@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.6 2005-04-15 02:39:19 debug Exp $
+ *  $Id: cpu_x86.c,v 1.7 2005-04-15 03:15:06 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -399,6 +399,42 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		debug("%s\t$0x%x", mnem, (uint32_t)(imm + dumpaddr + 2));
 		/*  TODO: symbol  */
+		break;
+
+	case 0x80:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x39:
+			/*  80 39 yy   cmpb   $yy,(%ecx)  */
+			instr ++;
+			imm = (unsigned char)instr[0];
+			HEXPRINT(instr,1);
+			instr_len += 1;
+			HEXSPACES(instr_len);
+			debug("cmpb\t$%i,(%%ecx)", (int)imm);
+			break;
+		case 0x3d:
+			/*  80 3d xx xx xx xx yy   cmpb   $yy,xx  */
+			/*  Get the address:  */
+			instr ++;
+			imm2 = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			HEXPRINT(instr,4);
+			instr_len += 4;
+			/*  and unsigned imm byte value:  */
+			instr ++;
+			imm = (unsigned char)instr[0];
+			HEXPRINT(instr,1);
+			instr_len += 1;
+			HEXSPACES(instr_len);
+			debug("cmpb\t$%i,0x%08x", (int)imm, (int)imm2);
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
 		break;
 
 	case 0x81:
@@ -1120,6 +1156,40 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    (cpu->cd.x86.eflags & X86_EFLAGS_ZF)))
 				newpc = newpc + imm;
 			break;
+		}
+		break;
+
+	case 0x80:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x39:		/*  cmpb $imm,(%ecx)  */
+			instr ++;
+			imm = (signed char)instr[0];
+			newpc ++;
+			if (x86_load(cpu, cpu->cd.x86.ecx, &tmp, 1)
+			    != MEMORY_ACCESS_OK)
+				return 0;
+			x86_cmp(cpu, tmp, imm);
+			break;
+		case 0x3d:		/*  cmpb $imm,imm2  */
+			instr ++;
+			imm2 = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			newpc += 4;
+			instr ++;
+			imm = (signed char)instr[0];
+			newpc ++;
+			if (x86_load(cpu, imm2, &tmp, 1) != MEMORY_ACCESS_OK)
+				return 0;
+			x86_cmp(cpu, tmp, imm);
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0x80,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
 		}
 		break;
 

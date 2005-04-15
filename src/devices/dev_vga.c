@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.35 2005-03-05 12:31:26 debug Exp $
+ *  $Id: dev_vga.c,v 1.36 2005-04-15 02:47:55 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -451,11 +451,13 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 		exit(1);
 	}
 	memset(d, 0, sizeof(struct vga_data));
+
 	d->videomem_base = videomem_base;
 	d->control_base  = control_base;
 	d->max_x         = max_x;
 	d->max_y         = max_y;
 	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
+	d->cursor_y      = 1;
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->videomem_size - 1) | 0xfff) + 1;
@@ -531,5 +533,7 @@ with Windows NT yet. Why? */
 	d->modified = 0;
 
 	machine_add_tickfunction(machine, dev_vga_tick, d, VGA_TICK_SHIFT);
+
+	vga_update_cursor(d);
 }
 

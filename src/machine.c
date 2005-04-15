@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.416 2005-04-15 02:39:19 debug Exp $
+ *  $Id: machine.c,v 1.417 2005-04-15 02:47:56 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4471,6 +4471,8 @@ for (i=0; i<32; i++)
 
 		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
 		    "Generic x86 PC");
+
+		dev_wdc_init(machine, mem, 0x1000001f0ULL, 14, 0);
 
 		/*  TODO: disable the "enable" flag when a keyboard has
 		    been added:  */

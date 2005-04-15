@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.229 2005-04-15 21:40:00 debug Exp $
+ *  $Id: main.c,v 1.230 2005-04-15 22:28:42 debug Exp $
  */
 
 #include <stdio.h>
@@ -381,12 +381,12 @@ static void usage(int longusage)
 	    "on a binary.\n"
 	    "To load a raw binary into memory, add \"address:\" in front "
 	    "of the filename,\n"
-	    "or \"address:skiplen:\" or \"address:skiplen:initialpc\".\n"
+	    "or \"address:skiplen:\" or \"address:skiplen:initialpc:\".\n"
 	    "Examples:\n"
-	    "    0xbfc00000:rom.bin                  for a raw ROM image\n"
-	    "    0xbfc00000:0x100:rom.bin            for an image with "
+	    "    0xbfc00000:rom.bin                    for a raw ROM image\n"
+	    "    0xbfc00000:0x100:rom.bin              for an image with "
 	    "0x100 bytes header\n"
-	    "    0xbfc00000:0x100:0xbfc00884:rom.bin  "
+	    "    0xbfc00000:0x100:0xbfc00884:rom.bin   "
 	    "start with pc=0xbfc00884\n");
 }
 

@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.27 2005-04-15 22:03:08 debug Exp $
+#  $Id: Makefile.skel,v 1.28 2005-04-15 22:28:42 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -8,16 +8,14 @@ CFLAGS=$(CWARNINGS) $(COPTIM) $(XDEF) $(XINCLUDE)
 BIN=gxemul
 LIBS=$(XLIB) $(OTHERLIBS)
 
-all: $(BIN)
-
-$(BIN):
+build:
 	cd src; $(MAKE); cd ..
 	$(CC) $(COPTIM) src/*.o src/devices/*.o $(LIBS) -o $(BIN)
 
-regtest: gxemul
+regtest: build
 	cd tests; $(MAKE) run_tests; cd ..
 
-install: all
+install: build
 	@echo
 	@echo "There is no automatic 'make install'. You need to manually copy the gxemul"
 	@echo "binary and any other files you need to where you want them to reside. The man/"

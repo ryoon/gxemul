@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.5 2005-04-15 02:12:09 debug Exp $
+ *  $Id: cpu_x86.c,v 1.6 2005-04-15 02:39:19 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -489,6 +489,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		break;
 
+	case 0x84:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0xc0:
+			HEXSPACES(instr_len);
+			debug("test\t%%al,%%al");
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
 	case 0x85:
 		instr++;
 		instr_len++;
@@ -497,6 +512,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0xc0:
 			HEXSPACES(instr_len);
 			debug("test\t%%eax,%%eax");
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
+	case 0x88:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x02:
+			HEXSPACES(instr_len);
+			debug("mov\t%%al,(%%edx)");
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -524,6 +554,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0xf6:
 			HEXSPACES(instr_len);
 			debug("mov\t%%esi,%%esi");
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
+	case 0x8a:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x01:
+			HEXSPACES(instr_len);
+			debug("mov\t(%%ecx),%%al");
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -578,6 +623,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 
 	/*  A couple of single-byte opcodes:  */
+	case 0x40:
+	case 0x41:
+	case 0x42:
+	case 0x43:
 	case 0x53:
 	case 0x55:
 	case 0x56:
@@ -588,6 +637,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case 0xee:
 		HEXSPACES(instr_len);
 		switch (op) {
+		case 0x40:  debug("inc\t%%eax"); break;
+		case 0x41:  debug("inc\t%%ecx"); break;
+		case 0x42:  debug("inc\t%%edx"); break;
+		case 0x43:  debug("inc\t%%ebx"); break;
 		case 0x53:  debug("push\t%%ebx"); break;
 		case 0x55:  debug("push\t%%ebp"); break;
 		case 0x56:  debug("push\t%%esi"); break;
@@ -654,6 +707,25 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			instr_len += 1;
 			HEXSPACES(instr_len);
 			debug("shr\t$%i,%%edx", imm);
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
+	case 0xc6:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x02:
+			instr ++;
+			imm = (unsigned char)instr[0];
+			HEXPRINT(instr,1);
+			instr_len += 1;
+			HEXSPACES(instr_len);
+			debug("movb\t$%i,(%%edx)", imm);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -966,6 +1038,27 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case 0x40:
+	case 0x41:
+	case 0x42:
+	case 0x43:
+		/*  inc  */
+		switch (op) {
+		case 0x40:
+			cpu->cd.x86.eax = (uint32_t)(cpu->cd.x86.eax + 1);
+			break;
+		case 0x41:
+			cpu->cd.x86.ecx = (uint32_t)(cpu->cd.x86.ecx + 1);
+			break;
+		case 0x42:
+			cpu->cd.x86.edx = (uint32_t)(cpu->cd.x86.edx + 1);
+			break;
+		case 0x43:
+			cpu->cd.x86.ebx = (uint32_t)(cpu->cd.x86.ebx + 1);
+			break;
+		}
+		break;
+
 	case 0x53:
 	case 0x55:
 	case 0x56:
@@ -997,6 +1090,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		break;
 
 	case 0x73:	/*  jae  */
+	case 0x74:	/*  je  */
 	case 0x75:	/*  jne  */
 	case 0x76:	/*  jna  */
 	case 0x77:	/*  ja  */
@@ -1006,6 +1100,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		switch (op) {
 		case 0x73:
 			if (!(cpu->cd.x86.eflags & X86_EFLAGS_CF))
+				newpc = newpc + imm;
+			break;
+		case 0x74:
+			if (cpu->cd.x86.eflags & X86_EFLAGS_ZF)
 				newpc = newpc + imm;
 			break;
 		case 0x75:
@@ -1117,6 +1215,24 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case 0x84:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0xc0:
+			/*  test %al,%al  */
+			x86_test(cpu, cpu->cd.x86.eax & 0xff,
+			    cpu->cd.x86.eax & 0xff);
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0x84,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	case 0x85:
 		instr ++;
 		newpc ++;
@@ -1124,6 +1240,25 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 0xc0:
 			/*  test %eax,%eax  */
 			x86_test(cpu, cpu->cd.x86.eax, cpu->cd.x86.eax);
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0x85,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case 0x88:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x02:
+			/*  mov %al,(%edx)  */
+			if (x86_store(cpu, cpu->cd.x86.edx,
+			    cpu->cd.x86.eax & 0xff, 1) != MEMORY_ACCESS_OK)
+				return 0;
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
@@ -1158,6 +1293,26 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
 			    "0x89,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
+	case 0x8a:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x01:
+			/*  mov (%ecx),%al  */
+			if (x86_load(cpu, cpu->cd.x86.ecx, &tmp, 1)
+			    != MEMORY_ACCESS_OK)
+				return 0;
+			cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xff) | tmp;
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0xc6,0x%02x at pc=0x%016llx\n", instr[0],
 			    (long long)cpu->pc);
 			cpu->running = 0;
 			return 0;
@@ -1288,6 +1443,28 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		cpu->cd.x86.esp += sizeof(uint32_t);
 		newpc = tmp;
+		break;
+
+	case 0xc6:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x02:
+			instr ++;
+			imm = instr[0];
+			newpc ++;
+			/*  movb $imm,(%edx)  */
+			if (x86_store(cpu, cpu->cd.x86.edx,
+			    imm, 1) != MEMORY_ACCESS_OK)
+				return 0;
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0xc6,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
 		break;
 
 	case 0xc7:

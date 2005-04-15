@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.415 2005-04-15 00:41:51 debug Exp $
+ *  $Id: machine.c,v 1.416 2005-04-15 02:39:19 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4464,8 +4464,18 @@ for (i=0; i<32; i++)
 	case MACHINE_X86:
 		machine->machine_name = "Generic x86 PC";
 
+		if (!machine->use_x11)
+			fprintf(stderr, "WARNING! You are emulating a PC "
+			    "without -X. You will miss any output going\n"
+			    "to the screen!\n\n");
+
 		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
 		    "Generic x86 PC");
+
+		/*  TODO: disable the "enable" flag when a keyboard has
+		    been added:  */
+		machine->main_console_handle = dev_ns16550_init(machine, mem,
+		    0x1000003f8, 4, 1, 1, "serial console");
 
 		break;
 

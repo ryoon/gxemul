@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.109 2005-04-15 21:56:24 debug Exp $
+$Id: RELEASE,v 1.110 2005-04-15 22:06:09 debug Exp $
 
 I'm now working on post-0.3.1.
 
@@ -69,8 +69,8 @@ Building the emulator should work on most Unix-like systems. (One system which
 is specifically known to NOT work is Ultrix/RISC inside the emulator; Ultrix
 chokes on the configure script and the default cc in Ultrix doesn't work.)
 
-Regarding files in the include/ directory:  only some of these are written by
-me, the rest are from other sources (such as NetBSD). The license text says
+Regarding files in the src/include/ directory: only some of these are written
+by me, the rest are from other sources (such as NetBSD). The license text says
 that "All advertising materials mentioning features or use of this software"
 must display acknowledgements. Even though I do NOT feel I mention features or
 use of the header files (the "software") in any advertising materials, I am

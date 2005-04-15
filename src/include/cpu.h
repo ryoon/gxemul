@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu.h,v 1.21 2005-04-14 21:01:52 debug Exp $
+ *  $Id: cpu.h,v 1.22 2005-04-15 21:56:25 debug Exp $
  *
  *  See cpu.c.
  */
@@ -39,7 +39,7 @@
 #include <sys/time.h>
 
 /*  This is needed for undefining 'mips' or 'ppc', on weird systems:  */
-#include "../config.h"
+#include "../../config.h"
 
 #include "cpu_alpha.h"
 #include "cpu_hppa.h"

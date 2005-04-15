@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.227 2005-03-08 22:58:58 debug Exp $
+ *  $Id: misc.h,v 1.228 2005-04-15 21:56:25 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -38,12 +38,12 @@
 #include <inttypes.h>
 
 /*
- *  ../config.h contains #defines set by the configure script. Some of these
+ *  ../../config.h contains #defines set by the configure script. Some of these
  *  might reduce speed of the emulator, so don't enable them unless you
  *  need them.
  */
 
-#include "../config.h"
+#include "../../config.h"
 
 /*  
  *  ENABLE_INSTRUCTION_DELAYS should be defined on the cc commandline using

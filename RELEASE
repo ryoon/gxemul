@@ -1,4 +1,4 @@
-$Id: RELEASE,v 1.108 2005-04-12 23:29:08 debug Exp $
+$Id: RELEASE,v 1.109 2005-04-15 21:56:24 debug Exp $
 
 I'm now working on post-0.3.1.
 
@@ -42,15 +42,12 @@ that GXemul does not simulate things smaller than an instruction; this
 means that pipe-line stalls, penalties caused by branch-prediction misses,
 and other effects are not simulated.
 
-Changes 0.3.1 -> 0.3.X:
+The most important/visible changes from 0.3.1 to 0.3.X are:
 
 	x)  NetBSD/cobalt can run from a harddisk image. (Installation
 	    must be done using another OS though, for example NetBSD/pmax.)
 
 	x)  ..
-
-This release has a number of known bugs, listed in the BUGS file, but feel
-free to drop me an email regarding other bugs.
 
 Files included in this release are:
 
@@ -60,10 +57,10 @@ Files included in this release are:
   README                      Quick start instructions, for the impatient.
   RELEASE                     This file.
   TODO                        TODO notes.
-  configure, Makefile.skel    sh and make scripts for building GXemul
+  configure, Makefile.skel    sh and make scripts for building GXemul.
   doc                         Documentation.
   experiments                 Experimental code. (Usually not needed.)
-  src, devices, and include   Source code.
+  src                         Source code.
   tests                       Regression tests.
 
 To build the emulator, run the ./configure script, and then run make.

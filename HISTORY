@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.693 2005-04-14 21:01:51 debug Exp $
+$Id: HISTORY,v 1.694 2005-04-15 00:42:02 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1844,3 +1844,4 @@ Changelog for GXemul:
 		Some minor bintrans updates (no real speed improvement) and
 		other minor updates (playstation2 now uses the -o options).
 20050414	Adding a dummy x86 (and AMD64) mode.
+20050415	Adding some x86 instructions.

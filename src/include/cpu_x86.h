@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.1 2005-04-14 21:01:52 debug Exp $
+ *  $Id: cpu_x86.h,v 1.2 2005-04-15 00:42:03 debug Exp $
  */
 
 #include "misc.h"
@@ -38,7 +38,27 @@ struct cpu_family;
 
 struct x86_cpu {
 	int		bits;
+
+	/*  TODO: change into 64-bit registers for amd64  */
+	uint32_t	eax;
+	uint32_t	ebx;
+	uint32_t	ecx;
+	uint32_t	edx;
+	uint32_t	esi;
+	uint32_t	edi;
+	uint32_t	ebp;
+	uint32_t	esp;
+
+	uint32_t	eflags;
 };
+
+
+#define	X86_EFLAGS_CF	(1)		/*  Carry Flag  */
+#define	X86_EFLAGS_PF	(4)		/*  Parity Flag  */
+#define	X86_EFLAGS_AF	(16)		/*  Adjust Flag  */
+#define	X86_EFLAGS_ZF	(64)		/*  Zero Flag  */
+#define	X86_EFLAGS_SF	(128)		/*  Sign Flag  */
+#define	X86_EFLAGS_OF	(2048)		/*  Overflow Flag  */
 
 
 /*  cpu_x86.c:  */

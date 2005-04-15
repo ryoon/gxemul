@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.3 2005-04-15 01:30:56 debug Exp $
+ *  $Id: cpu_x86.c,v 1.4 2005-04-15 01:42:21 debug Exp $
  *
  *  x86 (and amd64) CPU emulation.
  *
@@ -277,6 +277,32 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 	switch ((op = instr[0])) {
 
+	case 0x0f:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x85:
+			op = instr[0];
+			instr ++;
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			imm = dumpaddr + 6 + imm;
+			HEXPRINT(instr,4);
+			instr_len += 4;
+			HEXSPACES(instr_len);
+			switch (op) {
+			case 0x85: mnem = "jne"; break;
+			}
+			debug("%s\t$0x%x", mnem, (uint32_t)imm);
+			/*  TODO: symbol  */
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
 	case 0x25:
 		instr ++;
 		imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
@@ -362,6 +388,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			instr_len += 4;
 			HEXSPACES(instr_len);
 			debug("andl\t$0x%08x,0x%x(%%ebp)", (int)imm2, (int)imm);
+			break;
+		case 0xfb:
+			instr ++;
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			HEXPRINT(instr,4);
+			instr_len += 4;
+			HEXSPACES(instr_len);
+			debug("cmp\t$0x%08x,%%ebx", (int)imm);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -785,6 +820,32 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	switch ((op = instr[0])) {
 
+	case 0x0f:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x85:
+			/*  jne 32-bit  */
+			instr ++;
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			newpc += 4;
+			switch (op) {
+			case 0x85:
+				if (!(cpu->cd.x86.eflags & X86_EFLAGS_ZF))
+					newpc = newpc + imm;
+				break;
+			}
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0x0f,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	case 0x25:
 		/*  and $imm,%eax etc  */
 		instr ++;
@@ -885,6 +946,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			instr ++;
 			imm = (signed char)instr[0];
 			newpc ++;
+			instr ++;
 			imm2 = instr[0] + (instr[1] << 8) + (instr[2] << 16)
 			    + (instr[3] << 24);
 			newpc += 4;
@@ -895,6 +957,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			if (x86_store(cpu, cpu->cd.x86.ebp + imm,
 			    tmp & imm2, sizeof(uint32_t)) != MEMORY_ACCESS_OK)
 				return 0;
+			break;
+		case 0xfb:
+			instr ++;
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			newpc += 4;
+			/*  cmp $imm,%ebx  */
+			x86_cmp(cpu, (uint32_t)imm, cpu->cd.x86.ebx);
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "

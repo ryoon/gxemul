@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.81 2005-04-04 21:50:05 debug Exp $
+ *  $Id: diskimage.c,v 1.82 2005-04-15 21:39:59 debug Exp $
  *
  *  Disk image support.
  *
@@ -1300,8 +1300,13 @@ int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
 {
 	struct diskimage *d = machine->first_diskimage;
 
+	/*
+	 *  TODO: How about mixing SCSI, IDE, and FLOPPY in one
+	 *        emulated machine?
+	 */
+
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
 			break;
 		d = d->next;
 	}
@@ -1325,10 +1330,12 @@ int diskimage_access(struct machine *machine, int scsi_id, int writeflag,
  *
  *	b	specifies that this is the boot device
  *	c	CD-ROM (instead of normal SCSI DISK)
- *	d	SCSI DISK (this is the default)
+ *	d	DISK (this is the default)
+ *	f	FLOPPY (instead of SCSI)
  *	i	IDE (instead of SCSI)
  *	r       read-only (don't allow changes to the file)
- *	t	SCSI tape
+ *	s	SCSI (this is the default)
+ *	t	tape
  *	0-7	force a specific SCSI ID number
  *
  *  machine is assumed to be non-NULL.
@@ -1342,10 +1349,12 @@ int diskimage_add(struct machine *machine, char *fname)
 	int prefix_b = 0;
 	int prefix_c = 0;
 	int prefix_d = 0;
+	int prefix_f = 0;
 	int prefix_i = 0;
+	int prefix_r = 0;
+	int prefix_s = 0;
 	int prefix_t = 0;
 	int prefix_id = -1;
-	int prefix_r = 0;
 
 	if (fname == NULL) {
 		fprintf(stderr, "diskimage_add(): NULL ptr\n");
@@ -1377,14 +1386,20 @@ int diskimage_add(struct machine *machine, char *fname)
 			case 'd':
 				prefix_d = 1;
 				break;
+			case 'f':
+				prefix_f = 1;
+				break;
 			case 'i':
 				prefix_i = 1;
 				break;
-			case 't':
-				prefix_t = 1;
-				break;
 			case 'r':
 				prefix_r = 1;
+				break;
+			case 's':
+				prefix_s = 1;
+				break;
+			case 't':
+				prefix_t = 1;
 				break;
 			case ':':
 				break;
@@ -1449,8 +1464,22 @@ int diskimage_add(struct machine *machine, char *fname)
 	d->type = DISKIMAGE_SCSI;
 	d->id = id;
 
+	/*  Special case: x86 machines usually have FLOPPY/IDE, not SCSI:  */
+	if (machine->arch == ARCH_X86)
+		d->type = DISKIMAGE_IDE;
+
+	if (prefix_i + prefix_f + prefix_s > 1) {
+		fprintf(stderr, "Invalid disk image prefix(es). You can"
+		    "only use one of i, f, and s\nfor each disk image.\n");
+		exit(1);
+	}
+
 	if (prefix_i)
 		d->type = DISKIMAGE_IDE;
+	if (prefix_f)
+		d->type = DISKIMAGE_FLOPPY;
+	if (prefix_s)
+		d->type = DISKIMAGE_SCSI;
 
 	d->fname = strdup(fname);
 	if (d->fname == NULL) {
@@ -1499,6 +1528,9 @@ int diskimage_add(struct machine *machine, char *fname)
 	}
 
 	diskimage_recalc_size(d);
+
+	if (d->total_size == 1474560 && !prefix_i && !prefix_s)
+		d->type = DISKIMAGE_FLOPPY;
 
 	d->rpms = 3600;
 
@@ -1604,6 +1636,9 @@ void diskimage_dump_info(struct machine *machine)
 		case DISKIMAGE_IDE:
 			debug("IDE");
 			break;
+		case DISKIMAGE_FLOPPY:
+			debug("FLOPPY");
+			break;
 		default:
 			debug("UNKNOWN type %i", d->type);
 		}
@@ -1613,8 +1648,12 @@ void diskimage_dump_info(struct machine *machine)
 		debug(" id %i, ", d->id);
 		debug("%s, ", d->writable? "read/write" : "read-only");
 
-		debug("%lli MB (%lli sectors)%s\n",
-		    (long long) (d->total_size / 1048576),
+		if (d->type == DISKIMAGE_FLOPPY)
+			debug("%lli KB", (long long) (d->total_size / 1024));
+		else
+			debug("%lli MB", (long long) (d->total_size / 1048576));
+
+		debug(" (%lli sectors)%s\n",
 		    (long long) (d->total_size / 512),
 		    d->is_boot_device? " (BOOT)" : "");
 

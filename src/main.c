@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.228 2005-04-07 15:43:17 debug Exp $
+ *  $Id: main.c,v 1.229 2005-04-15 21:40:00 debug Exp $
  */
 
 #include <stdio.h>
@@ -299,11 +299,13 @@ static void usage(int longusage)
 	printf("                b     specifies that this is the boot"
 	    " device\n");
 	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
-	printf("                d     SCSI DISK (this is the default)\n");
+	printf("                d     DISK (this is the default)\n");
+	printf("                f     FLOPPY\n");
 	printf("                i     IDE (instead of SCSI)\n");
 	printf("                r     read-only (don't allow changes to the"
 	    " file)\n");
-	printf("                t     SCSI tape\n");
+	printf("                s     SCSI (this is the default)\n");
+	printf("                t     tape\n");
 	printf("                0-7   force a specific SCSI ID number\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects"
 	    " rtc devices only, not\n");
@@ -394,7 +396,8 @@ static void usage(int longusage)
  *
  *  Reads command line arguments.
  */
-int get_cmd_args(int argc, char *argv[], struct emul *emul)
+int get_cmd_args(int argc, char *argv[], struct emul *emul,
+	char ***diskimagesp, int *n_diskimagesp)
 {
 	int ch, res, using_switch_d = 0, using_switch_Z = 0;
 	char *type = NULL, *subtype = NULL;
@@ -421,7 +424,15 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 			fully_deterministic = 1;
 			break;
 		case 'd':
-			diskimage_add(m, optarg);
+			/*  diskimage_add() is called further down  */
+			(*n_diskimagesp) ++;
+			(*diskimagesp) = realloc(*diskimagesp,
+			    sizeof(char *) * (*n_diskimagesp));
+			if (*diskimagesp == NULL) {
+				fprintf(stderr, "out of memory\n");
+				exit(1);
+			}
+			(*diskimagesp)[(*n_diskimagesp) - 1] = strdup(optarg);
 			using_switch_d = 1;
 			msopts = 1;
 			break;
@@ -640,22 +651,22 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	/*  -i, -r, -t are pretty verbose:  */
 
 	if (m->instruction_trace && !verbose) {
-		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
-		    "because of -i\n");
+		fprintf(stderr, "Implicitly %sturning on -v, because"
+		    " of -i\n", quiet_mode? "turning off -q and " : "");
 		verbose = 1;
 		quiet_mode = 0;
 	}
 
 	if (m->register_dump && !verbose) {
-		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
-		    "because of -r\n");
+		fprintf(stderr, "Implicitly %sturning on -v, because"
+		    " of -r\n", quiet_mode? "turning off -q and " : "");
 		verbose = 1;
 		quiet_mode = 0;
 	}
 
 	if (m->show_trace_tree && !verbose) {
-		fprintf(stderr, "Implicitly turning of -q and turning on -v, "
-		    "because of -t\n");
+		fprintf(stderr, "Implicitly %sturning on -v, because"
+		    " of -t\n", quiet_mode? "turning off -q and " : "");
 		verbose = 1;
 		quiet_mode = 0;
 	}
@@ -665,9 +676,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 	 *  Usually, an executable filename must be supplied.
 	 *
 	 *  However, it is possible to boot directly from a harddisk image
-	 *  file. If no kernel is supplied, and the emulation mode is set to
-	 *  DECstation emulation, and there is a diskimage, then try to boot
-	 *  from that.
+	 *  file. If no kernel is supplied, but a diskimage is being used,
+	 *  then try to boot from disk.
 	 */
 	if (extra_argc == 0) {
 		if (using_switch_d) {
@@ -756,6 +766,8 @@ int get_cmd_args(int argc, char *argv[], struct emul *emul)
 int main(int argc, char *argv[])
 {
 	struct emul **emuls;
+	char **diskimages = NULL;
+	int n_diskimages = 0;
 	int n_emuls;
 	int i;
 
@@ -781,7 +793,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	get_cmd_args(argc, argv, emuls[0]);
+	get_cmd_args(argc, argv, emuls[0], &diskimages, &n_diskimages);
 
 	if (!fully_deterministic) {
 		/*  TODO: More than just time(). Use gettimeofday().  */
@@ -805,6 +817,10 @@ int main(int argc, char *argv[])
 
 	if (emuls[0]->machines[0]->machine_type == MACHINE_NONE)
 		n_emuls --;
+	else {
+		for (i=0; i<n_diskimages; i++)
+			diskimage_add(emuls[0]->machines[0], diskimages[i]);
+	}
 
 	/*  Simple initialization, from command line arguments:  */
 	if (n_emuls > 0) {

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_ps2_ether.c,v 1.1 2005-04-09 22:36:16 debug Exp $
+ *  $Id: dev_ps2_ether.c,v 1.2 2005-04-15 21:39:56 debug Exp $
  *  
  *  Playstation 2 ethernet (smap and emac3).
  *
@@ -57,7 +57,7 @@ int dev_ps2_ether_access(struct cpu *cpu, struct memory *mem,
 	uint64_t relative_addr, unsigned char *data, size_t len,
 	int writeflag, void *extra)
 {
-	struct ps2_ether_data *d = extra;
+	/*  struct ps2_ether_data *d = extra;  */
 	uint64_t idata = 0, odata = 0;
 
 	idata = memory_readmax64(cpu, data, len);

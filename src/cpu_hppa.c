@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_hppa.c,v 1.3 2005-03-10 23:56:21 debug Exp $
+ *  $Id: cpu_hppa.c,v 1.4 2005-04-15 21:39:59 debug Exp $
  *
  *  HPPA CPU emulation.
  *
@@ -184,9 +184,9 @@ void hppa_cpu_register_match(struct machine *m, char *name,
 int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
         int running, uint64_t dumpaddr, int bintrans)
 {
-	uint64_t offset, addr;
+	uint64_t offset;
 	uint32_t iword;
-	char *symbol, *mnem = "ERROR";
+	char *symbol;
 	int hi6, imm, rr, rb;
 
 	if (running)
@@ -245,7 +245,6 @@ int hppa_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 
 disasm_ret:
         debug("\n");
-disasm_ret_nonewline:
         return sizeof(iword);
 }
 
@@ -262,7 +261,6 @@ int hppa_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
 	uint32_t iword;
 	unsigned char buf[4];
-	unsigned char tmp_data[8];
 	uint64_t cached_pc;
 	int r, i, hi6, rt, imm;
 

@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: emul.c,v 1.180 2005-04-14 21:01:54 debug Exp $
+ *  $Id: emul.c,v 1.181 2005-04-15 21:39:59 debug Exp $
  *
  *  Emulation startup and misc. routines.
  */
@@ -244,6 +244,28 @@ static void load_bootblock(struct machine *m, struct cpu *cpu)
 
 		debug(readofs == 0x18? ": no blocks?\n" : " blocks\n");
 		break;
+
+	case MACHINE_X86:
+		cpu->cd.x86.mode = 16;
+		cpu->pc = 0x7c00;
+
+		bootblock_buf = malloc(512);
+		if (bootblock_buf == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			exit(1);
+		}
+
+		res = diskimage_access(m, boot_disk_id, 0, 0,
+		    bootblock_buf, 512);
+		if (!res) {
+			printf("Couldn't read the disk image. Aborting.\n");
+			exit(1);
+		}
+
+		store_buf(cpu, 0x7c00, (char *)bootblock_buf, 512);
+		free(bootblock_buf);
+		break;
+
 	default:
 		fatal("Booting from disk without a separate kernel "
 		    "doesn't work in this emulation mode.\n");
@@ -613,7 +635,11 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 		case ARCH_HPPA:
 		case ARCH_SPARC:
 		case ARCH_URISC:
+			break;
+
 		case ARCH_X86:
+			/*  TODO: amd64  */
+			cpu->pc &= 0xffffffffULL;
 			break;
 
 		default:
@@ -728,8 +754,16 @@ void emul_machine_setup(struct machine *m, int n_load, char **load_names,
 			cpu->pc = entrypoint;
 		}
 		break;
+	case ARCH_X86:
+		if (cpu->cd.x86.mode == 16)
+			debug("0x%04x:0x%04x", cpu->cd.x86.cs, (int)cpu->pc);
+		else if (cpu->cd.x86.mode == 32)
+			debug("0x%08x", (int)cpu->pc);
+		else
+			debug("0x%016llx", (long long)cpu->pc);
+		break;
 	default:
-		debug("0x%016llx", (long long)entrypoint);
+		debug("0x%016llx", (long long)cpu->pc);
 	}
 	debug("\n");
 

@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.h,v 1.2 2005-04-15 00:42:03 debug Exp $
+ *  $Id: cpu_x86.h,v 1.3 2005-04-15 21:39:57 debug Exp $
  */
 
 #include "misc.h"
@@ -37,7 +37,17 @@
 struct cpu_family;
 
 struct x86_cpu {
-	int		bits;
+	int		bits;		/*  32 or 64  */
+	int		mode;		/*  16, 32, or 64  */
+
+	uint16_t	cursegment;	/*  for 16-bit memory_rw  */
+
+	uint16_t	cs;
+	uint16_t	ds;
+	uint16_t	es;
+	uint16_t	fs;
+	uint16_t	gs;
+	uint16_t	ss;
 
 	/*  TODO: change into 64-bit registers for amd64  */
 	uint32_t	eax;
@@ -50,16 +60,23 @@ struct x86_cpu {
 	uint32_t	esp;
 
 	uint32_t	eflags;
+	uint32_t	cr3;
 };
 
 
 #define	X86_EFLAGS_CF	(1)		/*  Carry Flag  */
 #define	X86_EFLAGS_PF	(4)		/*  Parity Flag  */
-#define	X86_EFLAGS_AF	(16)		/*  Adjust Flag  */
+#define	X86_EFLAGS_AF	(16)		/*  Adjust/AuxilaryCarry Flag  */
 #define	X86_EFLAGS_ZF	(64)		/*  Zero Flag  */
 #define	X86_EFLAGS_SF	(128)		/*  Sign Flag  */
+#define	X86_EFLAGS_TF	(256)		/*  Trap Flag  */
+#define	X86_EFLAGS_IF	(512)		/*  Interrupt Enable Flag  */
+#define	X86_EFLAGS_DF	(1024)		/*  Direction Flag  */
 #define	X86_EFLAGS_OF	(2048)		/*  Overflow Flag  */
-
+/*  Bits 12 and 13 are I/O Privilege Level  */
+#define	X86_EFLAGS_NT	(1<<14)		/*  Nested Task Flag  */
+#define	X86_EFLAGS_RF	(1<<16)		/*  Resume Flag  */
+#define	X86_EFLAGS_VM	(1<<17)		/*  VM86 Flag  */
 
 /*  cpu_x86.c:  */
 int x86_memory_rw(struct cpu *cpu, struct memory *mem, uint64_t vaddr,

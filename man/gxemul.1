@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.12 2005-04-07 16:00:24 debug Exp $
+.\" $Id: gxemul.1,v 1.13 2005-04-15 21:39:58 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -131,21 +131,25 @@ you can modify the disk image's behaviour. Available modifiers are:
 .It b
 Specifies that this is a boot device.
 .It c
-CD-ROM (instead of a normal SCSI DISK).
+CD-ROM.
 .It d
-SCSI DISK (this is the default).
+DISK (this is the default).
+.It f
+FLOPPY.
 .It i
-IDE (instead of SCSI).
+IDE.
 .It r
 Read-only (don't allow changes to be written to the file).
+.It s
+SCSI (this is the default for most machine types).
 .It t
-SCSI tape.
+Tape.
 .It 0-7
 Force a specific SCSI ID number.
 .El
 .Pp
 Filenames ending with ".iso" are assumed to be CDROM images, all others
-are assumed to be normal SCSI disks.
+are assumed to be disks.
 .It Fl I Ar x
 Emulate clock interrupts at
 .Ar x

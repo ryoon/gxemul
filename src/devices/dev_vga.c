@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *   
  *
- *  $Id: dev_vga.c,v 1.36 2005-04-15 02:47:55 debug Exp $
+ *  $Id: dev_vga.c,v 1.37 2005-04-15 21:39:56 debug Exp $
  *  
  *  VGA text console device.
  *
@@ -457,7 +457,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	d->max_x         = max_x;
 	d->max_y         = max_y;
 	d->videomem_size = max_x * VGA_MEM_MAXY * 2;
-	d->cursor_y      = 1;
+	d->cursor_y      = 2;
 
 	/*  Allocate in 4KB pages, to make it possible to use bintrans:  */
 	allocsize = ((d->videomem_size - 1) | 0xfff) + 1;
@@ -470,7 +470,7 @@ void dev_vga_init(struct machine *machine, struct memory *mem,
 	for (y=0; y<VGA_MEM_MAXY; y++) {
 		char s[81];
 #ifdef VERSION
-		strcpy(s, " GXemul-" VERSION);
+		strcpy(s, " GXemul " VERSION);
 #else
 		strcpy(s, " GXemul");
 #endif

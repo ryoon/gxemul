@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: debugger.c,v 1.99 2005-04-15 00:41:52 debug Exp $
+ *  $Id: debugger.c,v 1.100 2005-04-15 21:39:59 debug Exp $
  *
  *  Single-step debugger.
  *
@@ -1343,9 +1343,6 @@ static void debugger_cmd_unassemble(struct machine *m, char *cmd_line)
 	mem = m->cpus[m->bootstrap_cpu]->mem;
 
 	addr = addr_start;
-
-	if ((addr & 3) != 0)
-		printf("WARNING! You entered an unaligned address.\n");
 
 	ctrl_c = 0;
 

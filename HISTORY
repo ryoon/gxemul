@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.694 2005-04-15 00:42:02 debug Exp $
+$Id: HISTORY,v 1.695 2005-04-15 21:39:54 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1844,4 +1844,6 @@ Changelog for GXemul:
 		Some minor bintrans updates (no real speed improvement) and
 		other minor updates (playstation2 now uses the -o options).
 20050414	Adding a dummy x86 (and AMD64) mode.
-20050415	Adding some x86 instructions.
+20050415	Adding some (32-bit and 16-bit) x86 instructions.
+		Adding some initial support for non-SCSI, non-IDE floppy
+		images. (The x86 mode can boot from these, more or less.)

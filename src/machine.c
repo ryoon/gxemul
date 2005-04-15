@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.417 2005-04-15 02:47:56 debug Exp $
+ *  $Id: machine.c,v 1.418 2005-04-15 21:39:59 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -4477,7 +4477,8 @@ for (i=0; i<32; i++)
 		/*  TODO: disable the "enable" flag when a keyboard has
 		    been added:  */
 		machine->main_console_handle = dev_ns16550_init(machine, mem,
-		    0x1000003f8, 4, 1, 1, "serial console");
+		    0x1000003f8ULL, 4, 1, 1, "com1");
+		dev_ns16550_init(machine, mem, 0x100000378ULL, 3, 1, 0, "com2");
 
 		break;
 

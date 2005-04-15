@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_mips.c,v 1.38 2005-04-12 15:01:36 debug Exp $
+ *  $Id: cpu_mips.c,v 1.39 2005-04-15 21:39:59 debug Exp $
  *
  *  MIPS core CPU emulation.
  */
@@ -727,6 +727,9 @@ int mips_cpu_disassemble_instr(struct cpu *cpu, unsigned char *originstr,
 
 	if (running)
 		dumpaddr = cpu->pc;
+
+	if ((dumpaddr & 3) != 0)
+		printf("WARNING: Unaligned address!\n");
 
 	symbol = get_symbol_name(&cpu->machine->symbol_context,
 	    dumpaddr, &offset);

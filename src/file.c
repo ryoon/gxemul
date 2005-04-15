@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: file.c,v 1.86 2005-04-14 21:01:54 debug Exp $
+ *  $Id: file.c,v 1.87 2005-04-15 21:39:59 debug Exp $
  *
  *  This file contains functions which load executable images into (emulated)
  *  memory.  File formats recognized so far:
@@ -1631,6 +1631,10 @@ void file_load(struct machine *machine, struct memory *mem,
 		    "image?\n");
 		exit(1);
 	}
+
+	if (size == 1474560)
+		fprintf(stderr, "Hm... this file is the size of a 1.44 MB "
+		    "floppy image. Maybe you forgot the\n-d switch?\n");
 
 	/*
 	 *  Last resort:  symbol definitions from nm (or nm -S):

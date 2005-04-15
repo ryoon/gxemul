@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.695 2005-04-15 21:39:54 debug Exp $
+$Id: HISTORY,v 1.696 2005-04-15 21:48:07 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1847,3 +1847,4 @@ Changelog for GXemul:
 20050415	Adding some (32-bit and 16-bit) x86 instructions.
 		Adding some initial support for non-SCSI, non-IDE floppy
 		images. (The x86 mode can boot from these, more or less.)
+		Moving the devices/ directory to src/devices/.

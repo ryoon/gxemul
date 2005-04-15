@@ -27,7 +27,7 @@
 #  SUCH DAMAGE.
 #
 #
-#  $Id: configure,v 1.120 2005-04-14 21:01:51 debug Exp $
+#  $Id: configure,v 1.121 2005-04-15 21:48:07 debug Exp $
 #
 #  This is a minimal configure script, hardcoded for GXemul. This script
 #  figures out which compiler flags will work, and creates Makefiles in
@@ -1049,12 +1049,14 @@ fi
 ###############################################################################
 
 INCLUDE=-I../include/
+DINCLUDE=-I../../include/
 
-echo C compiler flags: $CFLAGS $CWARNINGS $INCLUDE
+echo C compiler flags: $CFLAGS $CWARNINGS
 echo Linker flags: $OTHERLIBS
 echo "CWARNINGS=$CWARNINGS" >> _Makefile.header
 echo "COPTIM=$CFLAGS" >> _Makefile.header
 echo "INCLUDE=$INCLUDE" >> _Makefile.header
+echo "DINCLUDE=$DINCLUDE" >> _Makefile.header
 echo "CC=$CC" >> _Makefile.header
 echo "OTHERLIBS=$OTHERLIBS" >> _Makefile.header
 echo "" >> _Makefile.header
@@ -1215,7 +1217,7 @@ echo "" >> _Makefile.header
 
 #  Create the Makefiles:
 
-for a in . src devices devices/fonts tests; do
+for a in . src src/devices src/devices/fonts tests; do
 	echo "creating $a/Makefile"
 	touch $a/Makefile
 	cat _Makefile.header > $a/Makefile

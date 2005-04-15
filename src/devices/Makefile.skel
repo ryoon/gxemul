@@ -1,10 +1,10 @@
 #
-#  $Id: Makefile.skel,v 1.76 2005-04-10 21:18:23 debug Exp $
+#  $Id: Makefile.skel,v 1.77 2005-04-15 21:48:09 debug Exp $
 #
 #  Makefile for GXemul devices
 #
 
-CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(INCLUDE)
+CFLAGS=$(CWARNINGS) $(COPTIM) $(XINCLUDE) $(DINCLUDE)
 OBJS=lk201.o \
 	dev_ram.o dev_cons.o dev_mp.o dev_unreadable.o dev_zero.o dev_random.o \
 	dev_gt.o \

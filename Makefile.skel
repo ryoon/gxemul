@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.25 2005-03-05 11:18:31 debug Exp $
+#  $Id: Makefile.skel,v 1.26 2005-04-15 21:48:07 debug Exp $
 #
 #  Makefile for GXemul
 #
@@ -10,14 +10,9 @@ LIBS=$(XLIB) $(OTHERLIBS)
 
 all: $(BIN)
 
-$(BIN): do_src do_devices
-	$(CC) $(COPTIM) src/*.o devices/*.o $(LIBS) -o $(BIN)
-
-do_src:
+$(BIN):
 	cd src; $(MAKE); cd ..
-
-do_devices:
-	cd devices; $(MAKE); cd ..
+	$(CC) $(COPTIM) src/*.o src/devices/*.o $(LIBS) -o $(BIN)
 
 regtest: gxemul
 	cd tests; $(MAKE) run_tests; cd ..
@@ -34,12 +29,10 @@ install: all
 clean:
 	rm -f $(BIN) *core core.* *.gmon _*
 	cd src; $(MAKE) clean; cd ..
-	cd devices; $(MAKE) clean; cd ..
 
 #  Tests are not cleaned on a normal clean, only on a clean_all.
 
 clean_all: clean
 	cd tests; $(MAKE) clean_all; cd ..
-	cd devices; $(MAKE) clean_all; cd ..
-	rm -f config.h Makefile src/Makefile devices/Makefile tests/Makefile
+	rm -f config.h Makefile src/Makefile src/devices/Makefile tests/Makefile
 

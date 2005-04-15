@@ -1,5 +1,5 @@
 #
-#  $Id: Makefile.skel,v 1.77 2005-04-15 21:48:09 debug Exp $
+#  $Id: Makefile.skel,v 1.78 2005-04-15 21:58:04 debug Exp $
 #
 #  Makefile for GXemul devices
 #
@@ -70,5 +70,5 @@ clean:
 
 clean_all: clean
 	cd fonts; $(MAKE) clean_all; cd ..
-	rm -f Makefile
+	rm -f Makefile fonts/Makefile
 

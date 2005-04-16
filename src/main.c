@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: main.c,v 1.230 2005-04-15 22:28:42 debug Exp $
+ *  $Id: main.c,v 1.231 2005-04-16 06:05:21 debug Exp $
  */
 
 #include <stdio.h>
@@ -298,15 +298,15 @@ static void usage(int longusage)
 	printf("            where xxx is one or more of the following:\n");
 	printf("                b     specifies that this is the boot"
 	    " device\n");
-	printf("                c     CD-ROM (instead of normal SCSI DISK)\n");
-	printf("                d     DISK (this is the default)\n");
+	printf("                c     CD-ROM\n");
+	printf("                d     DISK\n");
 	printf("                f     FLOPPY\n");
-	printf("                i     IDE (instead of SCSI)\n");
+	printf("                i     IDE\n");
 	printf("                r     read-only (don't allow changes to the"
 	    " file)\n");
-	printf("                s     SCSI (this is the default)\n");
+	printf("                s     SCSI\n");
 	printf("                t     tape\n");
-	printf("                0-7   force a specific SCSI ID number\n");
+	printf("                0-7   force a specific ID\n");
 	printf("  -I x      emulate clock interrupts at x Hz (affects"
 	    " rtc devices only, not\n");
 	printf("            actual runtime speed) (this disables automatic"

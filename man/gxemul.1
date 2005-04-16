@@ -1,4 +1,4 @@
-.\" $Id: gxemul.1,v 1.13 2005-04-15 21:39:58 debug Exp $
+.\" $Id: gxemul.1,v 1.14 2005-04-16 02:38:21 debug Exp $
 .\"
 .\" Copyright (C) 2004-2005  Anders Gavare.  All rights reserved.
 .\"
@@ -148,7 +148,8 @@ Tape.
 Force a specific SCSI ID number.
 .El
 .Pp
-Filenames ending with ".iso" are assumed to be CDROM images, all others
+Filenames ending with ".iso" are assumed to be CDROM images. Files with a 
+size of exactly 1.44 MB are assumed to be floppy images. All others
 are assumed to be disks.
 .It Fl I Ar x
 Emulate clock interrupts at

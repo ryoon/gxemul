@@ -25,9 +25,15 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.17 2005-04-16 07:34:14 debug Exp $
+ *  $Id: cpu_x86.c,v 1.18 2005-04-16 19:29:18 debug Exp $
  *
  *  x86 (and potentially amd64) CPU emulation.
+ *
+ *  Only a few instructions are supported so far, so it will not run anything
+ *  more than hello world. And probably not even that.
+ *
+ *  Hahaha, this module is super-ugly and should be rewritten from scratch!
+ *  The best way would probably be to do it straight out of an amd64 manual.
  *
  *  TODO:
  *

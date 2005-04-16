@@ -1,4 +1,4 @@
-$Id: HISTORY,v 1.697 2005-04-15 21:56:24 debug Exp $
+$Id: HISTORY,v 1.698 2005-04-16 02:02:26 debug Exp $
 
 Changelog for GXemul:
 ---------------------
@@ -1849,3 +1849,5 @@ Changelog for GXemul:
 		images. (The x86 mode can boot from these, more or less.)
 		Moving the devices/ and include/ directories to src/devices/
 		and src/include/, respectively.
+20050416	Continuing on the x86 stuff. (Adding pc_bios.c and some simple
+		support for software interrupts in 16-bit mode.)

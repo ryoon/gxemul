@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.9 2005-04-15 21:39:59 debug Exp $
+ *  $Id: cpu_x86.c,v 1.10 2005-04-16 02:02:27 debug Exp $
  *
  *  x86 (and potentially amd64) CPU emulation.
  *
@@ -929,12 +929,17 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 
 	case 0xb0:
+	case 0xb5:
 		instr ++;
 		imm = instr[0];
 		HEXPRINT(instr,1);
 		instr_len += 1;
 		HEXSPACES(instr_len);
-		debug("mov\t$0x%x,%%al", (uint32_t)imm);
+		switch (op) {
+		case 0xb0: tmp = "al"; break;
+		case 0xb5: tmp = "ch"; break;
+		}
+		debug("mov\t$0x%x,%%%s", (uint32_t)imm, tmp);
 		break;
 
 	case 0xb8:
@@ -1033,6 +1038,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			HEXSPACES(instr_len);
 			debug("UNIMPLEMENTED");
 		}
+		break;
+
+	case 0xcd:
+		instr ++;
+		imm = instr[0];
+		HEXPRINT(instr,1);
+		instr_len += 1;
+		HEXSPACES(instr_len);
+		debug("int\t$0x%x", imm);
 		break;
 
 	case 0xe8:	/*  call (16/32 bits)  */
@@ -1185,6 +1199,43 @@ static int x86_store(struct cpu *cpu, uint64_t addr, uint64_t data, int len)
 
 
 /*
+ *  x86_interrupt():
+ *
+ *  NOTE/TODO: Only for 16-bit mode.
+ */
+static void x86_interrupt(struct cpu *cpu, int nr)
+{
+	uint64_t seg, ofs;
+	const int len = sizeof(uint16_t);
+
+	/*  Read the interrupt vector from beginning of RAM:  */
+	cpu->cd.x86.cursegment = 0;
+	x86_load(cpu, nr * 4 + 0, &ofs, sizeof(uint16_t));
+	x86_load(cpu, nr * 4 + 2, &seg, sizeof(uint16_t));
+
+	/*  Push flags, cs, and ip (pc):  */
+	cpu->cd.x86.cursegment = cpu->cd.x86.ss;
+	if (x86_store(cpu, cpu->cd.x86.esp - len * 1, cpu->cd.x86.eflags,
+	    len) != MEMORY_ACCESS_OK)
+		fatal("x86_interrupt(): TODO: how to handle this\n");
+	if (x86_store(cpu, cpu->cd.x86.esp - len * 2, cpu->cd.x86.cs,
+	    len) != MEMORY_ACCESS_OK)
+		fatal("x86_interrupt(): TODO: how to handle this\n");
+	if (x86_store(cpu, cpu->cd.x86.esp - len * 3, cpu->pc,
+	    len) != MEMORY_ACCESS_OK)
+		fatal("x86_interrupt(): TODO: how to handle this\n");
+
+	cpu->cd.x86.esp = (cpu->cd.x86.esp & ~0xffff)
+	    | ((cpu->cd.x86.esp - len*3) & 0xffff);
+
+	/*  TODO: clear the Interrupt Flag?  */
+
+	cpu->cd.x86.cs = seg;
+	cpu->pc = ofs;
+}
+
+
+/*
  *  x86_cmp():
  */
 static void x86_cmp(struct cpu *cpu, uint64_t a, uint64_t b)
@@ -1236,7 +1287,7 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
  */
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
-	int i, r, op, len, mode = cpu->cd.x86.mode;
+	int i, r, rep = 0, op, len, mode = cpu->cd.x86.mode;
 	uint32_t imm, imm2, value;
 	unsigned char buf[32];
 	unsigned char *instr = buf;
@@ -1253,6 +1304,13 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				single_step = 1;
 				return 0;
 			}
+
+	/*  16-bit BIOS emulation:  */
+	if (mode == 16 && ((newpc + (cpu->cd.x86.cs << 4)) & 0xff000)
+	    == 0xf8000 && cpu->machine->prom_emulation) {
+		pc_bios_emul(cpu);
+		return 1;
+	}
 
 	/*  Read an instruction from memory:  */
 	cpu->cd.x86.cursegment = cpu->cd.x86.cs;
@@ -1272,7 +1330,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 
 	/*  Any prefix?  */
 	while (instr[0] == 0x66 || instr[0] == 0x26 || instr[0] == 0x36
-	    || instr[0] == 0x2e || instr[0] == 0x3e) {
+	    || instr[0] == 0x2e || instr[0] == 0x3e || instr[0] == 0xf3) {
 		if (instr[0] == 0x26)
 			cpu->cd.x86.cursegment = cpu->cd.x86.es;
 		if (instr[0] == 0x2e)
@@ -1287,8 +1345,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			else
 				mode = 16;
 		}
-		/*  TODO: rep, lock etc  */
+		if (instr[0] == 0xf3)
+			rep = 1;
+		/*  TODO: repnz, lock etc  */
 		instr ++;
+		newpc ++;
 	}
 
 	switch ((op = instr[0])) {
@@ -1902,7 +1963,46 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case 0xaa:
+		/*  stosb always uses es:[e]di as destination  */
+		cpu->cd.x86.cursegment = cpu->cd.x86.es;
+		len = 1;	/*  stosb  */
+		for (;;) {
+			if (x86_store(cpu, cpu->cd.x86.edi,
+			    cpu->cd.x86.eax, len) != MEMORY_ACCESS_OK)
+				return 0;
+
+			if (cpu->cd.x86.eflags & X86_EFLAGS_DF)
+				cpu->cd.x86.edi -= len;
+			else
+				cpu->cd.x86.edi += len;
+
+			if (!rep)
+				break;
+			else {
+				uint32_t count = cpu->cd.x86.ecx;
+				if (mode == 16)
+					count &= 0xffff;
+				if (count == 0) {
+					fatal("rep with count 0: TODO\n");
+					exit(1);
+				}
+				count --;
+				if (mode == 16)
+					cpu->cd.x86.ecx = (cpu->cd.x86.ecx
+					    & ~0xffff) | (count & 0xffff);
+				else
+					cpu->cd.x86.ecx = count;
+				if (count == 0)
+					break;
+				/*  TODO: also break on repnz or repz
+					if the zero flag is [not] set  */
+			}
+		}
+		break;
+
 	case 0xb0:
+	case 0xb5:
 		/*  mov $imm,%al etc  */
 		instr ++;
 		imm = instr[0];
@@ -1910,6 +2010,10 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		switch (op) {
 		case 0xb0:
 			cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xff) | imm;
+			break;
+		case 0xb5:
+			cpu->cd.x86.ecx = (cpu->cd.x86.ecx & ~0xff00) |
+			    (imm << 8);
 			break;
 		}
 		break;
@@ -2066,6 +2170,20 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			cpu->cd.x86.esp += sizeof(uint32_t);
 			cpu->cd.x86.ebp = tmp;
+		}
+		break;
+
+	case 0xcd:
+		instr ++;
+		newpc ++;
+		imm = instr[0];
+		if (mode == 16) {
+			cpu->pc = newpc;
+			x86_interrupt(cpu, imm);
+			return 1;
+		} else {
+			fatal("x86 'int' only implemented for 16-bit so far\n");
+			exit(1);
 		}
 		break;
 

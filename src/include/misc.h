@@ -28,7 +28,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: misc.h,v 1.228 2005-04-15 21:56:25 debug Exp $
+ *  $Id: misc.h,v 1.229 2005-04-16 02:02:28 debug Exp $
  *
  *  Misc. definitions for gxemul.
  */
@@ -126,6 +126,10 @@ unsigned long long mystrtoull(const char *s, char **endp, int base);
 
 /*  of.c:  */
 int of_emul(struct cpu *cpu);
+
+
+/*  pc_bios.c:  */
+int pc_bios_emul(struct cpu *cpu);
 
 
 /*  ps2_bios.c:  */

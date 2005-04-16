@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: machine.c,v 1.418 2005-04-15 21:39:59 debug Exp $
+ *  $Id: machine.c,v 1.419 2005-04-16 02:02:27 debug Exp $
  *
  *  Emulation of specific machines.
  *
@@ -484,6 +484,29 @@ uint32_t load_32bit_word(struct cpu *cpu, uint64_t addr)
 	}
 
 	return (data[0] << 24) + (data[1] << 16) + (data[2] << 8) + data[3];
+}
+
+
+/*
+ *  load_16bit_word():
+ *
+ *  Helper function.  Prints a warning and returns 0, if the read failed.
+ *  Emulated byte order is taken into account.
+ */
+uint16_t load_16bit_word(struct cpu *cpu, uint64_t addr)
+{
+	unsigned char data[2];
+
+	if ((addr >> 32) == 0)
+		addr = (int64_t)(int32_t)addr;
+	cpu->memory_rw(cpu, cpu->mem,
+	    addr, data, sizeof(data), MEM_READ, CACHE_DATA);
+
+	if (cpu->byte_order == EMUL_LITTLE_ENDIAN) {
+		int tmp = data[0]; data[0] = data[1]; data[1] = tmp;
+	}
+
+	return (data[0] << 8) + data[1];
 }
 
 
@@ -4468,6 +4491,15 @@ for (i=0; i<32; i++)
 			fprintf(stderr, "WARNING! You are emulating a PC "
 			    "without -X. You will miss any output going\n"
 			    "to the screen!\n\n");
+
+		/*
+		 *  Initialize all 16-bit interrupt vectors to point to
+		 *  somewhere within the PC BIOS area (0xf000:0x8yyy):
+		 */
+		for (i=0; i<256; i++) {
+			store_16bit_word(cpu, i*4, 0x8000 + i);
+			store_16bit_word(cpu, i*4 + 2, 0xf000);
+		}
 
 		dev_vga_init(machine, mem, 0xb8000ULL, 0x1000003c0ULL, 80, 25,
 		    "Generic x86 PC");

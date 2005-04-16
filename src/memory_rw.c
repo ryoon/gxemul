@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: memory_rw.c,v 1.14 2005-04-15 21:40:00 debug Exp $
+ *  $Id: memory_rw.c,v 1.15 2005-04-16 02:02:27 debug Exp $
  *
  *  Generic memory_rw(), with special hacks for specific CPU families.
  *
@@ -92,10 +92,13 @@ int MEMORY_RW(struct cpu *cpu, struct memory *mem, uint64_t vaddr,
 			vaddr &= 0xffffffff;
 
 		/*  TODO: Actual address translation  */
-		vaddr &= 0x0fffffff;
+		if ((vaddr >> 32) == 0) {
+			vaddr &= 0x0fffffff;
 
-		if (cpu->cd.x86.mode == 16) {
-			vaddr = (cpu->cd.x86.cursegment<<4) + (vaddr & 0xffff);
+			if (cpu->cd.x86.mode == 16) {
+				vaddr = (cpu->cd.x86.cursegment<<4) +
+				    (vaddr & 0xffff);
+			}
 		}
 	}
 #endif

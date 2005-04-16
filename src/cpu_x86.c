@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.10 2005-04-16 02:02:27 debug Exp $
+ *  $Id: cpu_x86.c,v 1.11 2005-04-16 04:12:33 debug Exp $
  *
  *  x86 (and potentially amd64) CPU emulation.
  *
@@ -340,7 +340,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	int instr_len = 0, op, rep = 0;
 	uint64_t offset;
 	uint32_t imm=0, imm2, mode = cpu->cd.x86.mode;
-	char *symbol, *tmp = "ERROR", *mnem = "ERROR";
+	char *symbol, *tmp = "ERROR", *mnem = "ERROR", *e = "e";
 
 	if (running)
 		dumpaddr = cpu->pc;
@@ -396,6 +396,9 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		HEXPRINT(instr,1);
 	}
 
+	if (mode == 16)
+		e = "";
+
 	switch ((op = instr[0])) {
 
 	case 0x0f:
@@ -440,9 +443,24 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		HEXSPACES(instr_len);
 		switch (op) {
-		case 0x25: tmp = "eax"; break;
+		case 0x25: tmp = "ax"; break;
 		}
-		debug("and\t$0x%x,%%%s", (uint32_t)imm, tmp);
+		debug("and\t$0x%x,%%%s%s", (uint32_t)imm, e, tmp);
+		break;
+
+	case 0x30:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0xe4:
+			HEXSPACES(instr_len);
+			debug("xor\t%%ah,%%ah");
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
 		break;
 
 	case 0x31:
@@ -452,12 +470,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (instr[0]) {
 		case 0xc0:
 			HEXSPACES(instr_len);
-			if (mode == 32)
-				debug("xor\t%%eax,%%eax");
-			else if (mode == 16)
-				debug("xor\t%%ax,%%ax");
-			else
-				debug("31/c0 TODO");
+			debug("xor\t%%%sax,%%%sax", e, e);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -472,12 +485,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (instr[0]) {
 		case 0xc0:
 			HEXSPACES(instr_len);
-			if (mode == 32)
-				debug("xor\t%%eax,%%eax");
-			else if (mode == 16)
-				debug("xor\t%%ax,%%ax");
-			else
-				debug("31/c0 TODO");
+			debug("xor\t%%%sax,%%%sax", e, e);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -492,12 +500,21 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (instr[0]) {
 		case 0xd0:
 			HEXSPACES(instr_len);
-			debug("cmp\t%%edx,%%eax");
+			debug("cmp\t%%%sdx,%%%sax", e, e);
 			break;
 		default:
 			HEXSPACES(instr_len);
 			debug("UNIMPLEMENTED");
 		}
+		break;
+
+	case 0x3c:
+		instr ++;
+		imm = (unsigned char)instr[0];
+		HEXPRINT(instr,1);
+		instr_len += 1;
+		HEXSPACES(instr_len);
+		debug("cmp\t$0x%x,%%al", (int)imm);
 		break;
 
 	case 0x68:
@@ -518,6 +535,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case 0x75:
 	case 0x76:
 	case 0x77:
+	case 0x78:
+	case 0x79:
+	case 0x7a:
+	case 0x7b:
+	case 0x7c:
+	case 0x7d:
+	case 0x7e:
+	case 0x7f:
 		instr ++;
 		imm = (signed char) instr[0];
 		HEXPRINT(instr,1);
@@ -532,6 +557,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0x75: mnem = "jne"; break;
 		case 0x76: mnem = "jna"; break;
 		case 0x77: mnem = "ja"; break;
+		case 0x78: mnem = "js"; break;
+		case 0x79: mnem = "jns"; break;
+		case 0x7a: mnem = "jpe"; break;
+		case 0x7b: mnem = "jpo"; break;
+		case 0x7c: mnem = "jl"; break;
+		case 0x7d: mnem = "jge"; break;
+		case 0x7e: mnem = "jle"; break;
+		case 0x7f: mnem = "jg"; break;
 		}
 		debug("%s\t$0x%x", mnem, (uint32_t)(imm + dumpaddr + 2));
 		/*  TODO: symbol  */
@@ -671,7 +704,15 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			HEXPRINT(instr,1);
 			instr_len += 1;
 			HEXSPACES(instr_len);
-			debug("add\t$%i,%%esp", imm);
+			debug("add\t$%i,%%%ssp", imm, e);
+			break;
+		case 0xc7:
+			instr ++;
+			imm = (signed char)instr[0];
+			HEXPRINT(instr,1);
+			instr_len += 1;
+			HEXSPACES(instr_len);
+			debug("add\t$%i,%%%sdi", imm, e);
 			break;
 		case 0xec:
 			instr ++;
@@ -679,7 +720,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 			HEXPRINT(instr,1);
 			instr_len += 1;
 			HEXSPACES(instr_len);
-			debug("sub\t$%i,%%esp", imm);
+			debug("sub\t$%i,%%%ssp", imm, e);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -695,6 +736,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0xc0:
 			HEXSPACES(instr_len);
 			debug("test\t%%al,%%al");
+			break;
+		case 0xd2:
+			HEXSPACES(instr_len);
+			debug("test\t%%dl,%%dl");
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -739,7 +784,19 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (instr[0]) {
 		case 0x02:
 			HEXSPACES(instr_len);
-			debug("mov\t%%eax,(%%edx)");
+			debug("mov\t%%%sax,(%%%sdx)", e, e);
+			break;
+		case 0x15:
+			HEXSPACES(instr_len);
+			debug("mov\t%%%sdx,(%%%sdi)", e, e);
+			break;
+		case 0x55:
+			instr ++;
+			imm = (signed char)instr[0];
+			HEXPRINT(instr,1);
+			instr_len += 1;
+			HEXSPACES(instr_len);
+			debug("mov\t%%%sdx,0x%x(%%%sdi)", e, imm, e);
 			break;
 		case 0x75:
 			instr ++;
@@ -774,7 +831,11 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		switch (instr[0]) {
 		case 0x01:
 			HEXSPACES(instr_len);
-			debug("mov\t(%%ecx),%%al");
+			debug("mov\t(%%%scx),%%al", e);
+			break;
+		case 0x0d:
+			HEXSPACES(instr_len);
+			debug("mov\t(%%%sdi),%%cl", e);
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -833,12 +894,17 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		instr_len++;
 		HEXPRINT(instr,1);
 		switch (instr[0]) {
+		case 0xc1:
+			HEXSPACES(instr_len);
+			debug("mov\t%%cx,%%es");
+			break;
 		case 0xd0:
 			HEXSPACES(instr_len);
-			if (mode == 16)
-				debug("mov\t%%ax,%%ss");
-			else
-				debug("mov\t%%eax,%%ss");
+			debug("mov\t%%ax,%%ss");
+			break;
+		case 0xd8:
+			HEXSPACES(instr_len);
+			debug("mov\t%%ax,%%ds");
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -862,11 +928,25 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	case 0x45:
 	case 0x46:
 	case 0x47:
+	case 0x48:
+	case 0x49:
+	case 0x4a:
+	case 0x4b:
+	case 0x4c:
+	case 0x4d:
+	case 0x4e:
+	case 0x4f:
+	case 0x50:
+	case 0x51:
+	case 0x52:
 	case 0x53:
+	case 0x54:
 	case 0x55:
 	case 0x56:
 	case 0x57:
 	case 0x90:
+	case 0xaa:
+	case 0xab:
 	case 0xc3:
 	case 0xc9:
 	case 0xee:
@@ -885,19 +965,33 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0x17:  debug("pop\t%%ss"); break;
 		case 0x1e:  debug("push\t%%ds"); break;
 		case 0x1f:  debug("pop\t%%ds"); break;
-		case 0x40:  debug("inc\t%%eax"); break;
-		case 0x41:  debug("inc\t%%ecx"); break;
-		case 0x42:  debug("inc\t%%edx"); break;
-		case 0x43:  debug("inc\t%%ebx"); break;
-		case 0x44:  debug("inc\t%%esp"); break;
-		case 0x45:  debug("inc\t%%ebp"); break;
-		case 0x46:  debug("inc\t%%esi"); break;
-		case 0x47:  debug("inc\t%%edi"); break;
-		case 0x53:  debug("push\t%%ebx"); break;
-		case 0x55:  debug("push\t%%ebp"); break;
-		case 0x56:  debug("push\t%%esi"); break;
-		case 0x57:  debug("push\t%%edi"); break;
+		case 0x40:  debug("inc\t%%%sax", e); break;
+		case 0x41:  debug("inc\t%%%scx", e); break;
+		case 0x42:  debug("inc\t%%%sdx", e); break;
+		case 0x43:  debug("inc\t%%%sbx", e); break;
+		case 0x44:  debug("inc\t%%%ssp", e); break;
+		case 0x45:  debug("inc\t%%%sbp", e); break;
+		case 0x46:  debug("inc\t%%%ssi", e); break;
+		case 0x47:  debug("inc\t%%%sdi", e); break;
+		case 0x48:  debug("dec\t%%%sax", e); break;
+		case 0x49:  debug("dec\t%%%scx", e); break;
+		case 0x4a:  debug("dec\t%%%sdx", e); break;
+		case 0x4b:  debug("dec\t%%%sbx", e); break;
+		case 0x4c:  debug("dec\t%%%ssp", e); break;
+		case 0x4d:  debug("dec\t%%%sbp", e); break;
+		case 0x4e:  debug("dec\t%%%ssi", e); break;
+		case 0x4f:  debug("dec\t%%%sdi", e); break;
+		case 0x50:  debug("push\t%%%sax", e); break;
+		case 0x51:  debug("push\t%%%sdx", e); break;
+		case 0x52:  debug("push\t%%%scx", e); break;
+		case 0x53:  debug("push\t%%%sbx", e); break;
+		case 0x54:  debug("push\t%%%ssp", e); break;
+		case 0x55:  debug("push\t%%%sbp", e); break;
+		case 0x56:  debug("push\t%%%ssi", e); break;
+		case 0x57:  debug("push\t%%%sdi", e); break;
 		case 0x90:  debug("nop"); break;
+		case 0xaa:  debug("stosb"); break;
+		case 0xab:  debug("stosw"); break;
 		case 0xc3:  debug("ret"); break;
 		case 0xc9:  debug("leave"); break;
 		case 0xee:  debug("out\t%%al,(%%dx)"); break;
@@ -911,21 +1005,39 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		break;
 
 	case 0xa0:
+	case 0xa1:
+	case 0xa2:
+	case 0xa3:
 		instr ++;
-		imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
-		    + (instr[3] << 24);
-		HEXPRINT(instr,4);
-		instr_len += 4;
+		if (mode == 16) {
+			imm = instr[0] + (instr[1] << 8);
+			HEXPRINT(instr,2);
+			instr_len += 2;
+		} else {
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			HEXPRINT(instr,4);
+			instr_len += 4;
+		}
 		HEXSPACES(instr_len);
 		switch (op) {
+		case 0xa2:
 		case 0xa0: tmp = "al"; break;
+		case 0xa3:
+		case 0xa1: tmp = (mode==32)? "eax" : "ax"; break;
 		}
-		debug("mov\t0x%x,%%%s", (uint32_t)imm, tmp);
-		break;
-
-	case 0xaa:
-		HEXSPACES(instr_len);
-		debug("stosb");
+		switch (op) {
+		case 0xa0:
+		case 0xa1:
+			/*  "load"  */
+			debug("mov\t0x%x,%%%s", imm, tmp);
+			break;
+		case 0xa2:
+		case 0xa3:
+			/*  "store"  */
+			debug("mov\t%%%s,0x%x", tmp, imm);
+			break;
+		}
 		break;
 
 	case 0xb0:
@@ -1111,6 +1223,47 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		}
 		break;
 
+	case 0xf7:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0x26:
+			instr++;
+			if (mode == 32) {
+				imm = instr[0] + (instr[1] << 8) +
+				    (instr[2] << 16) + (instr[3] << 24);
+				HEXPRINT(instr,4);
+				instr_len += 4;
+			} else {
+				imm = instr[0] + (instr[1] << 8);
+				HEXPRINT(instr,2);
+				instr_len += 2;
+			}
+			HEXSPACES(instr_len);
+			debug("mul\t%sword at 0x%x", mode==32? "d" : "", imm);
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
+	case 0xfe:
+		instr++;
+		instr_len++;
+		HEXPRINT(instr,1);
+		switch (instr[0]) {
+		case 0xc4:
+			HEXSPACES(instr_len);
+			debug("inc\t%%ah");
+			break;
+		default:
+			HEXSPACES(instr_len);
+			debug("UNIMPLEMENTED");
+		}
+		break;
+
 	default:
 		HEXSPACES(instr_len);
 		debug("UNIMPLEMENTED");
@@ -1287,7 +1440,7 @@ static void x86_test(struct cpu *cpu, uint64_t a, uint64_t b)
  */
 int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 {
-	int i, r, rep = 0, op, len, mode = cpu->cd.x86.mode;
+	int i, r, rep = 0, op, len, diff, mode = cpu->cd.x86.mode;
 	uint32_t imm, imm2, value;
 	unsigned char buf[32];
 	unsigned char *instr = buf;
@@ -1401,6 +1554,23 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
+	case 0x30:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0xe4:
+			/*  xor %ah,%ah  */
+			cpu->cd.x86.eax &= ~0xff00;
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0x30,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	case 0x31:
 		instr ++;
 		newpc ++;
@@ -1462,28 +1632,86 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		}
 		break;
 
-	case 0x40:	/*  inc eax  */
-		cpu->cd.x86.eax = (uint32_t)(cpu->cd.x86.eax + 1); break;
-	case 0x41:	/*  inc ecx  */
-		cpu->cd.x86.ecx = (uint32_t)(cpu->cd.x86.ecx + 1); break;
-	case 0x42:	/*  inc edx  */
-		cpu->cd.x86.edx = (uint32_t)(cpu->cd.x86.edx + 1); break;
-	case 0x43:	/*  inc ebx  */
-		cpu->cd.x86.ebx = (uint32_t)(cpu->cd.x86.ebx + 1); break;
-	case 0x44:	/*  inc esp  */
-		cpu->cd.x86.esp = (uint32_t)(cpu->cd.x86.esp + 1); break;
-	case 0x45:	/*  inc ebp  */
-		cpu->cd.x86.ebp = (uint32_t)(cpu->cd.x86.ebp + 1); break;
-	case 0x46:	/*  inc esi  */
-		cpu->cd.x86.esi = (uint32_t)(cpu->cd.x86.esi + 1); break;
-	case 0x47:	/*  inc edi  */
-		cpu->cd.x86.edi = (uint32_t)(cpu->cd.x86.edi + 1); break;
+	case 0x3c:	/*  cmp $imm,%al  */
+		instr ++;
+		imm = (unsigned char)instr[0];
+		newpc ++;
+		x86_cmp(cpu, cpu->cd.x86.eax & 0xff, imm);
+		break;
+
+	case 0x40:
+	case 0x41:
+	case 0x42:
+	case 0x43:
+	case 0x44:
+	case 0x45:
+	case 0x46:
+	case 0x47:
+	case 0x48:
+	case 0x49:
+	case 0x4a:
+	case 0x4b:
+	case 0x4c:
+	case 0x4d:
+	case 0x4e:
+	case 0x4f:
+		switch (op & 7) {
+		case 0:	tmp = cpu->cd.x86.eax; break;
+		case 1:	tmp = cpu->cd.x86.ecx; break;
+		case 2:	tmp = cpu->cd.x86.edx; break;
+		case 3:	tmp = cpu->cd.x86.ebx; break;
+		case 4:	tmp = cpu->cd.x86.esp; break;
+		case 5:	tmp = cpu->cd.x86.ebp; break;
+		case 6:	tmp = cpu->cd.x86.esi; break;
+		case 7:	tmp = cpu->cd.x86.edi; break;
+		}
+
+		/*  40..47 = inc, 48..4f = dec  */
+		if (op < 0x48)
+			diff = 1;
+		else
+			diff = -1;
+
+		if (mode == 16) {
+			tmp = (tmp & ~0xffff) | ((tmp + diff) & 0xffff);
+			if ((tmp & 0xffff) == 0)
+				r = 0;
+			else
+				r = 1;
+		} else {
+			tmp += diff;
+			if (tmp == 0)
+				r = 0;
+			else
+				r = 1;
+		}
+
+		if (r == 0)
+			cpu->cd.x86.eflags |= X86_EFLAGS_ZF;
+		else
+			cpu->cd.x86.eflags &= ~X86_EFLAGS_ZF;
+
+		switch (op & 7) {
+		case 0:	cpu->cd.x86.eax = tmp; break;
+		case 1:	cpu->cd.x86.ecx = tmp; break;
+		case 2:	cpu->cd.x86.edx = tmp; break;
+		case 3:	cpu->cd.x86.ebx = tmp; break;
+		case 4:	cpu->cd.x86.esp = tmp; break;
+		case 5:	cpu->cd.x86.ebp = tmp; break;
+		case 6:	cpu->cd.x86.esi = tmp; break;
+		case 7:	cpu->cd.x86.edi = tmp; break;
+		}
+		break;
 
 	case 0x06:
 	case 0x0e:
 	case 0x16:
 	case 0x1e:
+	case 0x50:
+	case 0x51:
+	case 0x52:
 	case 0x53:
+	case 0x54:
 	case 0x55:
 	case 0x56:
 	case 0x57:
@@ -1497,7 +1725,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		case 0x0e:	value = cpu->cd.x86.cs; len = 2; break;
 		case 0x16:	value = cpu->cd.x86.ss; len = 2; break;
 		case 0x1e:	value = cpu->cd.x86.ds; len = 2; break;
+		case 0x50:	value = cpu->cd.x86.eax; break;
+		case 0x51:	value = cpu->cd.x86.edx; break;
+		case 0x52:	value = cpu->cd.x86.ecx; break;
 		case 0x53:	value = cpu->cd.x86.ebx; break;
+		case 0x54:	value = cpu->cd.x86.esp; break;
 		case 0x55:	value = cpu->cd.x86.ebp; break;
 		case 0x56:	value = cpu->cd.x86.esi; break;
 		case 0x57:	value = cpu->cd.x86.edi; break;
@@ -1590,6 +1822,8 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case 0x75:	/*  jne  */
 	case 0x76:	/*  jna  */
 	case 0x77:	/*  ja  */
+	case 0x7c:	/*  jl  */
+	case 0x7d:	/*  jge  */
 		instr ++;
 		imm = (signed char) instr[0];
 		newpc += 1;
@@ -1616,7 +1850,21 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			    (cpu->cd.x86.eflags & X86_EFLAGS_ZF)))
 				newpc = newpc + imm;
 			break;
+		case 0x7c:
+			r = cpu->cd.x86.eflags & X86_EFLAGS_SF? 1 : 0;
+			r ^= (cpu->cd.x86.eflags & X86_EFLAGS_OF? 1 : 0);
+			if (r)
+				newpc = newpc + imm;
+			break;
+		case 0x7d:
+			r = cpu->cd.x86.eflags & X86_EFLAGS_SF? 1 : 0;
+			r ^= (cpu->cd.x86.eflags & X86_EFLAGS_OF? 1 : 0);
+			if (!r)
+				newpc = newpc + imm;
+			break;
 		}
+		if (mode == 16)
+			newpc &= 0xffff;
 		break;
 
 	case 0x80:
@@ -1723,7 +1971,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case 0x83:
 		instr ++;
 		newpc ++;
-		switch (instr[0]) {
+		switch ((op = instr[0])) {
 		case 0x3c:
 			instr ++;
 			newpc ++;
@@ -1748,10 +1996,28 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			}
 			break;
 		case 0xc4:
+		case 0xc7:
 			instr ++;
 			imm = (signed char)instr[0];
 			newpc ++;
-			cpu->cd.x86.esp += imm;
+			switch (op) {
+			case 0xc4:	if (mode == 16) {
+						cpu->cd.x86.esp = (~0xffff
+						    & cpu->cd.x86.esp) +
+						    (cpu->cd.x86.esp + imm)
+						    & 0xffff;
+					} else
+						cpu->cd.x86.esp += imm;
+					break;
+			case 0xc7:	if (mode == 16) {
+						cpu->cd.x86.edi = (~0xffff
+						    & cpu->cd.x86.edi) +
+						    (cpu->cd.x86.edi + imm)
+						    & 0xffff;
+					} else
+						cpu->cd.x86.edi += imm;
+					break;
+			}
 			break;
 		case 0xec:
 			instr ++;
@@ -1776,6 +2042,11 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			/*  test %al,%al  */
 			x86_test(cpu, cpu->cd.x86.eax & 0xff,
 			    cpu->cd.x86.eax & 0xff);
+			break;
+		case 0xd2:
+			/*  test %dl,%dl  */
+			x86_test(cpu, cpu->cd.x86.edx & 0xff,
+			    cpu->cd.x86.edx & 0xff);
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
@@ -1815,7 +2086,7 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
-			    "0x85,0x%02x at pc=0x%016llx\n", instr[0],
+			    "0x88,0x%02x at pc=0x%016llx\n", instr[0],
 			    (long long)cpu->pc);
 			cpu->running = 0;
 			return 0;
@@ -1825,11 +2096,29 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 	case 0x89:
 		instr ++;
 		newpc ++;
+		len = sizeof(uint32_t);
+		if (mode == 16)
+			len = sizeof(uint16_t);
 		switch (instr[0]) {
 		case 0x02:
 			/*  mov %eax,(%edx)  */
 			if (x86_store(cpu, cpu->cd.x86.edx, cpu->cd.x86.eax,
-			    sizeof(uint32_t)) != MEMORY_ACCESS_OK)
+			    len) != MEMORY_ACCESS_OK)
+				return 0;
+			break;
+		case 0x15:
+			/*  mov %edx,(%edi)  */
+			if (x86_store(cpu, cpu->cd.x86.edi, cpu->cd.x86.edx,
+			    len) != MEMORY_ACCESS_OK)
+				return 0;
+			break;
+		case 0x55:
+			/*  mov %edx,imm(%edi)  */
+			instr ++;
+			imm = (signed char)instr[0];
+			newpc ++;
+			if (x86_store(cpu, cpu->cd.x86.edi + imm,
+			    cpu->cd.x86.edx, len) != MEMORY_ACCESS_OK)
 				return 0;
 			break;
 		case 0x75:
@@ -1873,9 +2162,16 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 				return 0;
 			cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xff) | tmp;
 			break;
+		case 0x0d:
+			/*  mov (%edi),%cl  */
+			if (x86_load(cpu, cpu->cd.x86.edi, &tmp, 1)
+			    != MEMORY_ACCESS_OK)
+				return 0;
+			cpu->cd.x86.ecx = (cpu->cd.x86.ecx & ~0xff) | tmp;
+			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
-			    "0xc6,0x%02x at pc=0x%016llx\n", instr[0],
+			    "0x8a,0x%02x at pc=0x%016llx\n", instr[0],
 			    (long long)cpu->pc);
 			cpu->running = 0;
 			return 0;
@@ -1932,8 +2228,14 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		instr ++;
 		newpc ++;
 		switch (instr[0]) {
+		case 0xc1:
+			cpu->cd.x86.es = cpu->cd.x86.ecx & 0xffff;
+			break;
 		case 0xd0:
 			cpu->cd.x86.ss = cpu->cd.x86.eax & 0xffff;
+			break;
+		case 0xd8:
+			cpu->cd.x86.ds = cpu->cd.x86.eax & 0xffff;
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
@@ -1948,25 +2250,53 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		/*  NOP  */
 		break;
 
-	case 0xa0:
-		/*  mov imm,%al etc  */
+	case 0xa0:	/*  mov imm,%al  */
+	case 0xa1:	/*  mov imm,%ax  */
+	case 0xa2:	/*  mov %al,imm  */
+	case 0xa3:	/*  mov %ax,imm  */
 		instr ++;
-		imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
-		    + (instr[3] << 24);
-		newpc += 4;
+		if (mode == 16) {
+			imm = instr[0] + (instr[1] << 8);
+			newpc += 2;
+		} else {
+			imm = instr[0] + (instr[1] << 8) + (instr[2] << 16)
+			    + (instr[3] << 24);
+			newpc += 4;
+		}
+		len = 1;
+		if (op & 1)
+			len = mode / 8;
+		if (op < 0xa2)
+			if (x86_load(cpu, imm, &tmp, len) != MEMORY_ACCESS_OK)
+				return 0;
 		switch (op) {
 		case 0xa0:
-			if (x86_load(cpu, imm, &tmp, 1) != MEMORY_ACCESS_OK)
-				return 0;
 			cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xff) | tmp;
 			break;
+		case 0xa1:
+			if (mode == 16) {
+				cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xffff)
+				    | tmp;
+			} else
+				cpu->cd.x86.eax = tmp;
+			break;
+		case 0xa2:
+		case 0xa3:
+			tmp = cpu->cd.x86.eax;
+			break;
 		}
+		if (op >= 0xa2)
+			if (x86_store(cpu, imm, tmp, len) != MEMORY_ACCESS_OK)
+				return 0;
 		break;
 
 	case 0xaa:
-		/*  stosb always uses es:[e]di as destination  */
+	case 0xab:
+		/*  stosb etc. always uses es:[e]di as destination  */
 		cpu->cd.x86.cursegment = cpu->cd.x86.es;
 		len = 1;	/*  stosb  */
+		if (op == 0xab)
+			len = 2;
 		for (;;) {
 			if (x86_store(cpu, cpu->cd.x86.edi,
 			    cpu->cd.x86.eax, len) != MEMORY_ACCESS_OK)
@@ -2238,6 +2568,41 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		    + 0x100000000ULL, &databuf[0], 1, MEM_WRITE, CACHE_NONE);
 		break;
 
+	case 0xf7:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0x26:
+			instr ++;
+			if (mode == 32) {
+				imm = instr[0] + (instr[1] << 8) +
+				    (instr[2] << 16) + (instr[3] << 24);
+				newpc += 4;
+			} else {
+				imm = instr[0] + (instr[1] << 8);
+				newpc += 2;
+			}
+			/*  mul [d]word at address imm  */
+			if (x86_load(cpu, imm,
+			    &tmp, sizeof(uint32_t)) != MEMORY_ACCESS_OK)
+				return 0;
+			if (mode == 32)
+				cpu->cd.x86.eax *= tmp;
+			else {
+				tmp *= (cpu->cd.x86.eax & 0xffff);
+				cpu->cd.x86.eax = (cpu->cd.x86.eax &
+				    ~0xffff) | (tmp & 0xffff);
+			}
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0xf7,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	case 0xf8:	/*  clc  */
 		cpu->cd.x86.eflags &= ~X86_EFLAGS_CF;
 		break;
@@ -2262,9 +2627,26 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		cpu->cd.x86.eflags |= X86_EFLAGS_DF;
 		break;
 
+	case 0xfe:
+		instr ++;
+		newpc ++;
+		switch (instr[0]) {
+		case 0xc4:	/*  inc %%ah  */
+			cpu->cd.x86.eax = (cpu->cd.x86.eax & ~0xff00)
+			    | ((cpu->cd.x86.eax + 0x100) & ~0xff00);
+			break;
+		default:
+			fatal("x86_cpu_run_instr(): unimplemented subopcode: "
+			    "0xfe,0x%02x at pc=0x%016llx\n", instr[0],
+			    (long long)cpu->pc);
+			cpu->running = 0;
+			return 0;
+		}
+		break;
+
 	default:
 		fatal("x86_cpu_run_instr(): unimplemented opcode 0x%02x"
-		    " at pc=0x%016llx\n", instr[0], (long long)newpc);
+		    " at pc=0x%016llx\n", instr[0], (long long)cpu->pc);
 		cpu->running = 0;
 		return 0;
 	}

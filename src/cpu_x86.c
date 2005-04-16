@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.11 2005-04-16 04:12:33 debug Exp $
+ *  $Id: cpu_x86.c,v 1.12 2005-04-16 04:19:47 debug Exp $
  *
  *  x86 (and potentially amd64) CPU emulation.
  *
@@ -37,6 +37,8 @@
  *
  *	x)  Better 16-bit support (for booting from disks, MS-DOS etc)
  *		x)  BIOS emulation
+ *
+ *	x)  0x66 and 0x67 should affect 32/16-bit stuff differently.
  *
  *	x)  AMD64 stuff.
  *
@@ -468,6 +470,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		instr_len++;
 		HEXPRINT(instr,1);
 		switch (instr[0]) {
+		case 0xdb:
+			HEXSPACES(instr_len);
+			debug("xor\t%%%sbx,%%%sbx", e, e);
+			break;
 		case 0xc0:
 			HEXSPACES(instr_len);
 			debug("xor\t%%%sax,%%%sax", e, e);
@@ -894,6 +900,10 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		instr_len++;
 		HEXPRINT(instr,1);
 		switch (instr[0]) {
+		case 0xc0:
+			HEXSPACES(instr_len);
+			debug("mov\t%%ax,%%es");
+			break;
 		case 0xc1:
 			HEXSPACES(instr_len);
 			debug("mov\t%%cx,%%es");
@@ -905,6 +915,14 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 		case 0xd8:
 			HEXSPACES(instr_len);
 			debug("mov\t%%ax,%%ds");
+			break;
+		case 0xe0:
+			HEXSPACES(instr_len);
+			debug("mov\t%%ax,%%fs");
+			break;
+		case 0xe8:
+			HEXSPACES(instr_len);
+			debug("mov\t%%ax,%%gs");
 			break;
 		default:
 			HEXSPACES(instr_len);
@@ -1575,6 +1593,15 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		instr ++;
 		newpc ++;
 		switch (instr[0]) {
+		case 0xdb:
+			/*  xor %ebx,%ebx  */
+			if (mode == 32)
+				cpu->cd.x86.ebx = 0;
+			else if (mode == 16)
+				cpu->cd.x86.ebx &= ~0xffff;
+			else
+				fatal("31/c0 TODO\n");
+			break;
 		case 0xc0:
 			/*  xor %eax,%eax  */
 			if (mode == 32)
@@ -2228,6 +2255,9 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 		instr ++;
 		newpc ++;
 		switch (instr[0]) {
+		case 0xc0:
+			cpu->cd.x86.es = cpu->cd.x86.eax & 0xffff;
+			break;
 		case 0xc1:
 			cpu->cd.x86.es = cpu->cd.x86.ecx & 0xffff;
 			break;
@@ -2236,6 +2266,12 @@ int x86_cpu_run_instr(struct emul *emul, struct cpu *cpu)
 			break;
 		case 0xd8:
 			cpu->cd.x86.ds = cpu->cd.x86.eax & 0xffff;
+			break;
+		case 0xe0:
+			cpu->cd.x86.fs = cpu->cd.x86.eax & 0xffff;
+			break;
+		case 0xe8:
+			cpu->cd.x86.gs = cpu->cd.x86.eax & 0xffff;
 			break;
 		default:
 			fatal("x86_cpu_run_instr(): unimplemented subopcode: "

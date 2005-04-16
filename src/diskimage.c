@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: diskimage.c,v 1.82 2005-04-15 21:39:59 debug Exp $
+ *  $Id: diskimage.c,v 1.83 2005-04-16 19:59:12 debug Exp $
  *
  *  Disk image support.
  *
@@ -216,7 +216,7 @@ int diskimage_exist(struct machine *machine, int scsi_id)
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
 			return 1;
 		d = d->next;
 	}
@@ -270,7 +270,7 @@ int64_t diskimage_getsize(struct machine *machine, int scsi_id)
 	struct diskimage *d = machine->first_diskimage;
 
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
 			return d->total_size;
 		d = d->next;
 	}
@@ -464,7 +464,7 @@ int diskimage_scsicommand(struct cpu *cpu, int scsi_id,
 
 	d = machine->first_diskimage;
 	while (d != NULL) {
-		if (d->type == DISKIMAGE_SCSI && d->id == scsi_id)
+		if ( /* d->type == DISKIMAGE_SCSI && */ d->id == scsi_id)
 			break;
 		d = d->next;
 	}
@@ -1464,8 +1464,9 @@ int diskimage_add(struct machine *machine, char *fname)
 	d->type = DISKIMAGE_SCSI;
 	d->id = id;
 
-	/*  Special case: x86 machines usually have FLOPPY/IDE, not SCSI:  */
-	if (machine->arch == ARCH_X86)
+	/*  Special cases: some machines usually have FLOPPY/IDE, not SCSI:  */
+	if (machine->arch == ARCH_X86 ||
+	    machine->machine_type == MACHINE_COBALT)
 		d->type = DISKIMAGE_IDE;
 
 	if (prefix_i + prefix_f + prefix_s > 1) {

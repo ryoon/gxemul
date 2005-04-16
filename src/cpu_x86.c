@@ -25,7 +25,7 @@
  *  SUCH DAMAGE.
  *
  *
- *  $Id: cpu_x86.c,v 1.18 2005-04-16 19:29:18 debug Exp $
+ *  $Id: cpu_x86.c,v 1.19 2005-04-16 19:59:11 debug Exp $
  *
  *  x86 (and potentially amd64) CPU emulation.
  *
@@ -428,7 +428,7 @@ int x86_cpu_disassemble_instr(struct cpu *cpu, unsigned char *instr,
 	instr_len=1;
 
 	/*  Any prefix?  */
-	while (instr[0] == 0x66 || instr[0] == 0xf3 || instr[0] == 0x26) {
+	while (instr[0] == 0x66 || instr[0] == 0xf3 || instr[0] == 0x26) {
 		switch (instr[0]) {
 		case 0x26:
 			prefix = "es";
